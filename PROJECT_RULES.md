@@ -1,5 +1,22 @@
 # O que ESTE projeto VAI ser
 
+## Plataforma alvo
+
+O aplicativo SoloForte é **mobile-first e mobile-only**.
+
+Plataformas suportadas:
+- iOS
+- Android
+
+Plataformas NÃO suportadas neste projeto:
+- Web
+- Windows
+- macOS
+- Linux
+
+As pastas dessas plataformas existem apenas por padrão do Flutter
+e **não fazem parte do escopo funcional do produto** neste momento.
+
 Marca isso mentalmente como imutável:
 
 - **App Flutter (Dart)**
