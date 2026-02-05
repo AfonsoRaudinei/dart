@@ -13,12 +13,19 @@ class BaseMapSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: SoloForteColors.white,
-        borderRadius: BorderRadius.only(
+        borderRadius: const BorderRadius.only(
           topLeft: Radius.circular(SoloRadius.lg),
           topRight: Radius.circular(SoloRadius.lg),
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.15),
+            blurRadius: 20,
+            offset: const Offset(0, -5),
+          ),
+        ],
       ),
       padding: const EdgeInsets.only(top: 12, bottom: 30),
       child: Column(
@@ -93,10 +100,9 @@ class LayersSheet extends ConsumerWidget {
           _LayerItem(
             label: 'Relevo',
             isSelected: currentLayer == LayerType.terrain,
-            icon: Icons.terrain,
-            onTap: () => ref
-                .read(activeLayerProvider.notifier)
-                .setLayer(LayerType.terrain),
+            icon: Icons.lock_outline,
+            isDisabled: true,
+            onTap: null,
           ),
           const SizedBox(height: 20),
           const Text('Sobreposições', style: SoloTextStyles.label),
@@ -116,6 +122,7 @@ class LayersSheet extends ConsumerWidget {
 class _LayerItem extends StatelessWidget {
   final String label;
   final bool isSelected;
+  final bool isDisabled;
   final IconData icon;
   final VoidCallback? onTap;
 
@@ -123,13 +130,14 @@ class _LayerItem extends StatelessWidget {
     required this.label,
     required this.isSelected,
     required this.icon,
+    this.isDisabled = false,
     this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
+      onTap: isDisabled ? null : onTap,
       child: Container(
         margin: const EdgeInsets.only(bottom: 10),
         decoration: BoxDecoration(
@@ -137,16 +145,19 @@ class _LayerItem extends StatelessWidget {
           border: Border.all(
             color: isSelected
                 ? SoloForteColors.greenIOS
-                : SoloForteColors.border,
+                : (isDisabled ? Colors.transparent : SoloForteColors.border),
           ),
           borderRadius: SoloRadius.radiusMd,
         ),
         child: ListTile(
+          enabled: !isDisabled,
           leading: Icon(
             icon,
             color: isSelected
                 ? SoloForteColors.greenIOS
-                : SoloForteColors.textSecondary,
+                : (isDisabled
+                      ? SoloForteColors.textTertiary
+                      : SoloForteColors.textSecondary),
           ),
           title: Text(
             label,
@@ -155,7 +166,11 @@ class _LayerItem extends StatelessWidget {
                     fontWeight: FontWeight.w600,
                     color: SoloForteColors.textSuccess,
                   )
-                : SoloTextStyles.body,
+                : (isDisabled
+                      ? SoloTextStyles.body.copyWith(
+                          color: SoloForteColors.textTertiary,
+                        )
+                      : SoloTextStyles.body),
           ),
           trailing: isSelected
               ? const Icon(Icons.check_circle, color: SoloForteColors.greenIOS)

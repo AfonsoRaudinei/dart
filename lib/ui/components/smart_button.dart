@@ -2,77 +2,97 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:soloforte_app/ui/theme/soloforte_theme.dart';
+import 'package:soloforte_app/core/router/app_routes.dart';
 
 class SmartButton extends ConsumerWidget {
   const SmartButton({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // We need to know the current route location
-    // GoRouterState can be accessed but sometimes it's tricky inside a Shell without getting rebuilds.
-    // However, we can use the router listener or just check GoRouter.of(context)
-
+    // Access current route URI
     final RouteMatchList matchList = GoRouter.of(
       context,
     ).routerDelegate.currentConfiguration;
-    final String uri = matchList.uri.toString();
+    final String uri = matchList.uri.path;
 
-    // Logic:
-    // /public-map -> "Acessar" (Login)
-    // /map -> "Menu" (Open Drawer)
-    // /settings, /relatorios, etc -> "Voltar ao mapa"
-
-    String label = '';
-    IconData? icon;
-    VoidCallback? onTap;
-
-    if (uri == '/public-map' || uri == '/') {
-      label = 'Acessar';
-      icon = Icons.login;
-      onTap = () => context.go('/login');
-    } else if (uri == '/map') {
-      label = 'Menu';
-      icon = Icons.menu;
-      onTap = () {
-        Scaffold.of(
-          context,
-        ).openEndDrawer(); // Right side menu implies EndDrawer usually or we position it right.
-        // Prompt says "SmartButton (lado direito)". drawer is usually left, endDrawer right.
-        // "SideMenu reduzido" - generic. I'll use EndDrawer for "Right side".
-      };
-    } else if (['/login', '/signup'].contains(uri)) {
-      // Maybe hide it or show back to public?
-      // Prompt: "qualquer outra rota -> 'Voltar ao mapa'"
-      if (uri == '/login') {
-        label = 'Voltar';
-        icon = Icons.arrow_back;
-        onTap = () => context.go('/public-map');
-      } else {
-        // Signup
-        label = 'Voltar';
-        icon = Icons.arrow_back;
-        onTap = () => context.go('/public-map');
-      }
-    } else {
-      // Other auth routes
-      label = 'Voltar';
-      icon = Icons.arrow_back;
-      onTap = () => context.go('/map');
+    // 0. PUBLIC MAP (CTA)
+    if (uri == AppRoutes.publicMap || uri == '/') {
+      return Container(
+        margin: const EdgeInsets.only(bottom: 40, right: 20),
+        child: FloatingActionButton.extended(
+          onPressed: () => context.go(AppRoutes.login),
+          backgroundColor: SoloForteColors.greenIOS,
+          label: const Text(
+            'Acessar SoloForte',
+            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+          ),
+          icon: const Icon(Icons.login, color: Colors.white),
+        ),
+      );
     }
 
+    // 1. MAP (ROOT)
+    // O mapa é o home real do sistema.
+    // Usamos a constante global.
+    final bool isMapRoot = uri == AppRoutes.dashboard;
+
+    if (isMapRoot) {
+      return Container(
+        margin: const EdgeInsets.only(bottom: 40, right: 20),
+        child: FloatingActionButton(
+          onPressed: () {
+            Scaffold.of(context).openEndDrawer();
+          },
+          backgroundColor: SoloForteColors.greenIOS,
+          child: const Icon(Icons.menu, color: Colors.white),
+        ),
+      );
+    }
+
+    // 2. MÓDULOS PRINCIPAIS (LEVEL 1)
+    // Regra CONTRATUAL: L1 sempre volta para o Mapa (sem exceção).
+    // Não decide entre Menu ou Back. Sempre Back to Map.
+    final Set<String> moduleRoots = {
+      AppRoutes.clients,
+      AppRoutes.reports,
+      AppRoutes.settings,
+      AppRoutes.agenda,
+      AppRoutes.feedback,
+    };
+
+    // Strict exact match for L1
+    final bool isModuleRoot = moduleRoots.contains(uri);
+
+    if (isModuleRoot) {
+      return Container(
+        margin: const EdgeInsets.only(bottom: 40, right: 20),
+        child: FloatingActionButton(
+          onPressed: () {
+            // L1 action: Always go to Map Root
+            context.go(AppRoutes.dashboard);
+          },
+          backgroundColor: SoloForteColors.greenIOS,
+          child: const Icon(Icons.arrow_back, color: Colors.white),
+        ),
+      );
+    }
+
+    // 3. SUBMÓDULOS (LEVEL 2+)
+    // Regra: Sub-telas apenas fazem pop.
+    // Se não houver histórico (refresh), fallback para Mapa.
     return Container(
       margin: const EdgeInsets.only(bottom: 40, right: 20),
-      child: FloatingActionButton.extended(
-        onPressed: onTap,
+      child: FloatingActionButton(
+        onPressed: () {
+          if (context.canPop()) {
+            context.pop();
+          } else {
+            // Fallback para ROOT
+            context.go(AppRoutes.dashboard);
+          }
+        },
         backgroundColor: SoloForteColors.greenIOS,
-        label: Text(
-          label,
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
-        ),
-        icon: Icon(icon, color: Colors.white),
+        child: const Icon(Icons.arrow_back, color: Colors.white),
       ),
     );
   }

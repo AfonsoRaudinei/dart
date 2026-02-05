@@ -50,3 +50,14 @@ Se tentar encaixar algo disso agora, você se atrasa.
 6. Supabase OK
 7. Offline OK
 8. Só então: fluxo
+
+## 0.4 — CONTRATO DE NAVEGAÇÃO E AGENTES
+
+Existe um documento **CONGELADO** que define a arquitetura de navegação:
+`docs/arquitetura-navegacao.md`
+
+**REGRA PARA PROMPTS (OBRIGATÓRIO):**
+Todo prompt técnico para agentes deve conter:
+> "Seguir rigorosamente `docs/arquitetura-navegacao.md`. Se houver conflito, o documento prevalece."
+
+Sem isso, o prompt é inválido.

@@ -11,6 +11,10 @@ import '../../core/domain/map_models.dart';
 import 'package:flutter_map_marker_cluster/flutter_map_marker_cluster.dart';
 import '../../core/utils/map_logger.dart';
 import '../../core/utils/debouncer.dart';
+import '../../modules/consultoria/clients/presentation/providers/field_providers.dart';
+import '../../modules/consultoria/services/talhao_map_adapter.dart';
+import '../../modules/dashboard/pages/map/drawing/drawing_sheet.dart';
+import '../../modules/dashboard/pages/map/drawing/drawing_controller.dart';
 
 class PrivateMapScreen extends ConsumerStatefulWidget {
   const PrivateMapScreen({super.key});
@@ -21,22 +25,27 @@ class PrivateMapScreen extends ConsumerStatefulWidget {
 
 class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
   final MapController _mapController = MapController();
+  final DrawingController _drawingController =
+      DrawingController(); // Local Drawing Controller
   final _mapEventDebouncer = Debouncer(
     delay: const Duration(milliseconds: 300),
   );
 
   bool _hasInitialFocused = false;
-  bool _isDrawMode = false;
+  // bool _isDrawMode = false; // Removed legacy mode
   bool _isCheckedIn = false;
+  String? _activeSheetName;
 
   @override
   void dispose() {
     _mapEventDebouncer.dispose();
+    _drawingController.dispose();
     super.dispose();
   }
 
-  void _showSheet(BuildContext context, Widget sheet) {
-    showModalBottomSheet(
+  void _showSheet(BuildContext context, Widget sheet, String name) async {
+    setState(() => _activeSheetName = name);
+    await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -47,6 +56,9 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
         builder: (_, controller) => sheet,
       ),
     );
+    if (mounted) {
+      setState(() => _activeSheetName = null);
+    }
   }
 
   String _getLayerUrl(LayerType type) {
@@ -80,37 +92,14 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
     } catch (_) {}
   }
 
-  void _toggleDrawMode() {
+  void _openDrawingMode() {
     HapticFeedback.lightImpact();
-    setState(() {
-      _isDrawMode = !_isDrawMode;
-    });
-
-    if (_isDrawMode) {
-      ScaffoldMessenger.of(context).hideCurrentSnackBar();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Modo de Desenho Ativo'),
-          backgroundColor: SoloForteColors.greenDark,
-          duration: const Duration(seconds: 2),
-        ),
-      );
-    } else {
-      // Protection against accidental exit
-      ScaffoldMessenger.of(context).hideCurrentSnackBar();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Edição cancelada'),
-          action: SnackBarAction(
-            label: 'DESFAZER',
-            textColor: SoloForteColors.greenIOS,
-            onPressed: () {
-              setState(() => _isDrawMode = true);
-            },
-          ),
-        ),
-      );
-    }
+    // Open Drawing Sheet
+    _showSheet(
+      context,
+      DrawingSheet(controller: _drawingController),
+      'drawing',
+    );
   }
 
   void _toggleCheckIn() {
@@ -148,6 +137,8 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
     final activeLayer = ref.watch(activeLayerProvider);
     final showMarkers = ref.watch(showMarkersProvider);
     final publications = ref.watch(publicationsDataProvider);
+    final mapFields = ref.watch(mapFieldsProvider);
+    final selectedTalhaoId = ref.watch(selectedTalhaoIdProvider);
 
     // Auto-focus Logic
     ref.listen(publicationsDataProvider, (prev, next) {
@@ -200,6 +191,41 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
             initialZoom: 14.0,
             minZoom: 4.0,
             maxZoom: 19.0,
+            onTap: (tapPos, point) {
+              final fields = mapFields.valueOrNull ?? [];
+              bool hit = false;
+
+              for (final field in fields) {
+                if (field.geometry == null) continue;
+                // Lazy parse for hit test (optimization: cache parsed polygons if needed)
+                // Here purely for hit detection
+                final polygonPoints = TalhaoMapAdapter.toPolygon(field).points;
+
+                if (TalhaoMapAdapter.isPointInside(point, polygonPoints)) {
+                  ref.read(selectedTalhaoIdProvider.notifier).state = field.id;
+                  hit = true;
+                  HapticFeedback.selectionClick();
+
+                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Talhão: ${field.name}'),
+                      backgroundColor: SoloForteColors.greenIOS,
+                      duration: const Duration(seconds: 1),
+                    ),
+                  );
+                  break; // Stop on first hit
+                }
+              }
+
+              if (!hit) {
+                // Deselect if tapping empty space
+                if (selectedTalhaoId != null) {
+                  ref.read(selectedTalhaoIdProvider.notifier).state = null;
+                  HapticFeedback.lightImpact();
+                }
+              }
+            },
             onPositionChanged: (pos, hasGesture) {
               if (hasGesture) {
                 _mapEventDebouncer.run(() {
@@ -220,6 +246,15 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
               urlTemplate: _getLayerUrl(activeLayer),
               userAgentPackageName: 'com.soloforte.app',
             ),
+            if (mapFields.hasValue)
+              PolygonLayer(
+                polygons: mapFields.value!.map((t) {
+                  return TalhaoMapAdapter.toPolygon(
+                    t,
+                    isSelected: t.id == selectedTalhaoId,
+                  );
+                }).toList(),
+              ),
             if (markers.isNotEmpty)
               MarkerClusterLayerWidget(
                 options: MarkerClusterLayerOptions(
@@ -308,9 +343,9 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
             children: [
               _MapActionButton(
                 icon: Icons.edit,
-                label: 'Talhão',
-                isActive: _isDrawMode,
-                onTap: _toggleDrawMode,
+                label: 'Desenhar',
+                isActive: _activeSheetName == 'drawing',
+                onTap: _openDrawingMode,
               ),
               const SizedBox(height: 12),
 
@@ -327,19 +362,30 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
               _MapActionButton(
                 icon: Icons.layers,
                 label: 'Camadas',
-                onTap: () => _showSheet(context, const LayersSheet()),
+                isActive: _activeSheetName == 'layers',
+                onTap: () => _showSheet(context, const LayersSheet(), 'layers'),
               ),
               const SizedBox(height: 12),
               _MapActionButton(
                 icon: Icons.warning_amber_rounded,
                 label: 'Ocorrências',
-                onTap: () => _showSheet(context, const OccurrencesSheet()),
+                isActive: _activeSheetName == 'occurrences',
+                onTap: () => _showSheet(
+                  context,
+                  const OccurrencesSheet(),
+                  'occurrences',
+                ),
               ),
               const SizedBox(height: 12),
               _MapActionButton(
                 icon: Icons.article_outlined,
                 label: 'Publicações',
-                onTap: () => _showSheet(context, const PublicationsSheet()),
+                isActive: _activeSheetName == 'publications',
+                onTap: () => _showSheet(
+                  context,
+                  const PublicationsSheet(),
+                  'publications',
+                ),
               ),
             ],
           ),
