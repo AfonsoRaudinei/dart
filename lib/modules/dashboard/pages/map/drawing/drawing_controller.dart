@@ -192,8 +192,9 @@ class DrawingController extends ChangeNotifier {
   void confirmUnion() {
     if (_pendingFeatureA == null ||
         _pendingFeatureB == null ||
-        _previewGeometry == null)
+        _previewGeometry == null) {
       return;
+    }
 
     // 1. Archive originals (active=false, new version if needed? No, just deactivate)
     // Actually, prompt says: "Mantêm histórico" and "Áreas originais: ativo = false"

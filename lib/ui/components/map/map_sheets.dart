@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../theme/soloforte_theme.dart';
+import '../../../modules/consultoria/occurrences/presentation/controllers/occurrence_controller.dart';
+import '../../../modules/consultoria/occurrences/domain/occurrence.dart';
+import 'package:soloforte_app/ui/theme/soloforte_theme.dart';
 import '../../../core/domain/map_models.dart';
 import '../../../core/state/map_state.dart';
 
@@ -181,34 +183,131 @@ class _LayerItem extends StatelessWidget {
   }
 }
 
-class OccurrencesSheet extends StatelessWidget {
+class OccurrencesSheet extends ConsumerWidget {
   const OccurrencesSheet({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final occurrencesAsync = ref.watch(occurrencesListProvider);
+
     return BaseMapSheet(
       title: 'Ocorrências',
-      child: ListView(
-        shrinkWrap: true,
-        padding: SoloSpacing.paddingCard,
-        children: const [
-          _OccurrenceItem(
-            title: 'Alerta de Praga',
-            time: 'Há 2 horas',
-            type: 'Urgente',
-            color: SoloForteColors.error,
+      child: Stack(
+        children: [
+          occurrencesAsync.when(
+            data: (occurrences) {
+              if (occurrences.isEmpty) {
+                return const Center(
+                  child: Text('Nenhuma ocorrência registrada.'),
+                );
+              }
+              return ListView.builder(
+                shrinkWrap: true,
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 80),
+                itemCount: occurrences.length,
+                itemBuilder: (context, index) {
+                  final occurrence = occurrences[index];
+                  // Determine color based on type
+                  Color color;
+                  switch (occurrence.type) {
+                    case 'Urgente':
+                      color = SoloForteColors.error;
+                      break;
+                    case 'Aviso':
+                      color = Colors.orange;
+                      break;
+                    default:
+                      color = SoloForteColors.brand;
+                  }
+
+                  return _OccurrenceItem(
+                    title: occurrence.type,
+                    description: occurrence.description,
+                    time: _formatDate(occurrence.createdAt),
+                    type: occurrence.visitSessionId != null
+                        ? 'Em Visita'
+                        : 'Avulso',
+                    color: color,
+                  );
+                },
+              );
+            },
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (e, s) => Center(child: Text('Erro: $e')),
           ),
-          _OccurrenceItem(
-            title: 'Manutenção Necessária',
-            time: 'Há 5 horas',
-            type: 'Aviso',
-            color: Colors.orange,
+          Positioned(
+            bottom: 20,
+            right: 20,
+            child: FloatingActionButton(
+              backgroundColor: SoloForteColors.greenIOS,
+              child: const Icon(Icons.add, color: Colors.white),
+              onPressed: () => _showAddOccurrenceDialog(context, ref),
+            ),
           ),
-          _OccurrenceItem(
-            title: 'Colheita Finalizada',
-            time: 'Ontem',
-            type: 'Info',
-            color: SoloForteColors.brand,
+        ],
+      ),
+    );
+  }
+
+  String _formatDate(DateTime date) {
+    final now = DateTime.now();
+    final diff = now.difference(date);
+    if (diff.inMinutes < 60) return 'Há ${diff.inMinutes} min';
+    if (diff.inHours < 24) return 'Há ${diff.inHours} horas';
+    return '${date.day}/${date.month}';
+  }
+
+  void _showAddOccurrenceDialog(BuildContext context, WidgetRef ref) {
+    final descriptionController = TextEditingController();
+    String selectedType = 'Aviso';
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Nova Ocorrência'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            DropdownButtonFormField<String>(
+              value: selectedType,
+              items: [
+                'Urgente',
+                'Aviso',
+                'Info',
+              ].map((t) => DropdownMenuItem(value: t, child: Text(t))).toList(),
+              onChanged: (v) => selectedType = v!,
+              decoration: const InputDecoration(labelText: 'Tipo'),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: descriptionController,
+              decoration: const InputDecoration(labelText: 'Descrição'),
+              maxLines: 3,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: SoloForteColors.greenIOS,
+            ),
+            onPressed: () {
+              ref
+                  .read(occurrenceControllerProvider)
+                  .createOccurrence(
+                    type: selectedType,
+                    description: descriptionController.text,
+                    lat:
+                        0, // Mock lat/long for now or get from provider if needed
+                    long: 0,
+                  );
+              Navigator.pop(context);
+            },
+            child: const Text('Salvar', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -218,12 +317,14 @@ class OccurrencesSheet extends StatelessWidget {
 
 class _OccurrenceItem extends StatelessWidget {
   final String title;
+  final String description;
   final String time;
   final String type;
   final Color color;
 
   const _OccurrenceItem({
     required this.title,
+    required this.description,
     required this.time,
     required this.type,
     required this.color,
@@ -244,7 +345,14 @@ class _OccurrenceItem extends StatelessWidget {
           title,
           style: SoloTextStyles.headingMedium.copyWith(fontSize: 15),
         ),
-        subtitle: Text(time, style: SoloTextStyles.label),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(description, style: SoloTextStyles.body),
+            const SizedBox(height: 4),
+            Text(time, style: SoloTextStyles.label),
+          ],
+        ),
         trailing: Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(

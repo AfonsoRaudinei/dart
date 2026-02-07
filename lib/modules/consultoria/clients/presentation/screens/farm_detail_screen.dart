@@ -38,8 +38,9 @@ class FarmDetailScreen extends ConsumerWidget {
       backgroundColor: Colors.white,
       body: farmAsync.when(
         data: (farm) {
-          if (farm == null)
+          if (farm == null) {
             return const Center(child: Text('Fazenda não encontrada'));
+          }
 
           return SafeArea(
             child: Column(
@@ -148,10 +149,11 @@ class FarmDetailScreen extends ConsumerWidget {
                         FutureBuilder(
                           future: fieldsFuture,
                           builder: (context, snapshot) {
-                            if (!snapshot.hasData)
+                            if (!snapshot.hasData) {
                               return const Center(
                                 child: CircularProgressIndicator(),
                               );
+                            }
                             final fields = snapshot.data as List;
 
                             if (fields.isEmpty) {

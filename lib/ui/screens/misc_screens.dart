@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/session/session_controller.dart';
 import 'package:soloforte_app/ui/theme/soloforte_theme.dart';
+import '../../modules/consultoria/reports/presentation/widgets/kpi_dashboard_widget.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -33,11 +34,17 @@ class RelatoriosScreen extends StatelessWidget {
   const RelatoriosScreen({super.key});
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Text(
-        'Relatórios & Marketing',
-        style: SoloTextStyles.headingMedium,
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text(
+          'Relatórios & Performance',
+          style: SoloTextStyles.headingMedium,
+        ),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        centerTitle: false,
       ),
+      body: const KpiDashboardWidget(),
     );
   }
 }

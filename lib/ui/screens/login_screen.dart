@@ -43,6 +43,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
+              Image.asset('assets/images/soloforte_logo.png', height: 120),
+              const SizedBox(height: 24),
               Text('SoloForte Login', style: SoloTextStyles.headingLarge),
               const SizedBox(height: 40),
               TextField(

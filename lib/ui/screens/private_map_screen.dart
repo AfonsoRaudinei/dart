@@ -15,6 +15,14 @@ import '../../modules/consultoria/clients/presentation/providers/field_providers
 import '../../modules/consultoria/services/talhao_map_adapter.dart';
 import '../../modules/dashboard/pages/map/drawing/drawing_sheet.dart';
 import '../../modules/dashboard/pages/map/drawing/drawing_controller.dart';
+import '../../modules/dashboard/controllers/location_controller.dart';
+import '../../modules/dashboard/domain/location_state.dart';
+import '../../modules/visitas/presentation/controllers/visit_controller.dart';
+import '../../modules/visitas/presentation/widgets/visit_sheet.dart';
+import '../../modules/visitas/presentation/controllers/geofence_controller.dart';
+import '../../modules/consultoria/occurrences/presentation/controllers/occurrence_controller.dart';
+import '../../modules/consultoria/occurrences/domain/occurrence.dart' as occ;
+import '../components/map/occurrence_pins.dart';
 
 class PrivateMapScreen extends ConsumerStatefulWidget {
   const PrivateMapScreen({super.key});
@@ -22,6 +30,9 @@ class PrivateMapScreen extends ConsumerStatefulWidget {
   @override
   ConsumerState<PrivateMapScreen> createState() => _PrivateMapScreenState();
 }
+
+// Enum para rastrear o modo armado
+enum ArmedMode { none, occurrences }
 
 class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
   final MapController _mapController = MapController();
@@ -33,8 +44,21 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
 
   bool _hasInitialFocused = false;
   // bool _isDrawMode = false; // Removed legacy mode
-  bool _isCheckedIn = false;
+  // bool _isCheckedIn = false; // Replaced by VisitController
   String? _activeSheetName;
+  late LocationController _locationController;
+  ArmedMode _armedMode = ArmedMode.none; // Estado do modo armado
+
+  @override
+  void initState() {
+    super.initState();
+    _locationController = LocationController(ref);
+    // Inicializar GPS ao carregar a tela
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _locationController.init();
+      ref.read(geofenceControllerProvider); // Start Geofence Monitoring
+    });
+  }
 
   @override
   void dispose() {
@@ -93,6 +117,12 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
   }
 
   void _openDrawingMode() {
+    // 🚫 Bloqueio: GPS obrigatório para desenhar
+    if (!_locationController.isAvailable) {
+      _showGPSRequiredMessage();
+      return;
+    }
+
     HapticFeedback.lightImpact();
     // Open Drawing Sheet
     _showSheet(
@@ -102,33 +132,285 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
     );
   }
 
-  void _toggleCheckIn() {
+  void _toggleOccurrenceMode() {
+    // 🚫 Bloqueio: GPS obrigatório para ocorrências
+    if (!_locationController.isAvailable) {
+      _showGPSRequiredMessage();
+      return;
+    }
+
     HapticFeedback.lightImpact();
 
-    if (_isCheckedIn) {
+    setState(() {
+      if (_armedMode == ArmedMode.occurrences) {
+        // Desarmar modo (toggle off)
+        _armedMode = ArmedMode.none;
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      } else {
+        // Armar modo (toggle on)
+        _armedMode = ArmedMode.occurrences;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('📍 Toque no mapa para registrar a ocorrência'),
+            backgroundColor: SoloForteColors.greenIOS,
+            duration: const Duration(seconds: 30),
+            action: SnackBarAction(
+              label: 'CANCELAR',
+              textColor: Colors.white,
+              onPressed: () {
+                setState(() => _armedMode = ArmedMode.none);
+              },
+            ),
+          ),
+        );
+      }
+    });
+  }
+
+  void _toggleCheckIn() async {
+    // 🚫 Bloqueio: GPS obrigatório para check-in
+    if (!_locationController.isAvailable) {
+      _showGPSRequiredMessage();
+      return;
+    }
+
+    HapticFeedback.lightImpact();
+
+    final visitState = ref.read(visitControllerProvider);
+    final isActive = visitState.value?.status == 'active';
+
+    if (isActive) {
       // Ending Check-in (Protection)
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('Encerrar Check-in?'),
+          content: const Text('Encerrar Visita em Campo?'),
           action: SnackBarAction(
-            label: 'CONFIRMAR',
-            textColor: SoloForteColors.greenIOS,
+            label: 'ENCERRAR',
+            textColor: Colors.redAccent,
             onPressed: () {
-              setState(() => _isCheckedIn = false);
+              ref.read(visitControllerProvider.notifier).endSession();
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Visita encerrada com sucesso.')),
+              );
             },
           ),
+          duration: const Duration(seconds: 5),
         ),
       );
     } else {
-      // Starting
-      setState(() => _isCheckedIn = true);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Check-in iniciado. Bom trabalho!'),
-          backgroundColor: SoloForteColors.greenDark,
+      // Starting - Show Visit Sheet
+      // Need location first
+      final position = await _locationController.getCurrentPosition();
+      if (position == null) {
+        _showGPSRequiredMessage();
+        return;
+      }
+
+      if (!mounted) return;
+
+      _showSheet(
+        context,
+        VisitSheet(
+          onConfirm: (clientId, areaId, activity) {
+            ref
+                .read(visitControllerProvider.notifier)
+                .startSession(
+                  clientId,
+                  areaId,
+                  activity,
+                  position.latitude,
+                  position.longitude,
+                );
+
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Visita iniciada. Bom trabalho!'),
+                backgroundColor: SoloForteColors.greenDark,
+              ),
+            );
+          },
         ),
+        'visit_sheet',
       );
     }
+  }
+
+  void _showGPSRequiredMessage() {
+    final state = _locationController.currentState;
+    String message;
+
+    switch (state) {
+      case LocationState.permissionDenied:
+        message =
+            'GPS indisponível: permissão negada. Habilite nas configurações do app.';
+        break;
+      case LocationState.serviceDisabled:
+        message =
+            'GPS desligado. Ative o GPS nas configurações do dispositivo.';
+        break;
+      case LocationState.checking:
+        message = 'Aguardando verificação do GPS...';
+        break;
+      default:
+        message = 'GPS indisponível. Funções geográficas bloqueadas.';
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.orange.shade700,
+        duration: const Duration(seconds: 3),
+      ),
+    );
+  }
+
+  void _centerOnUser() {
+    // 🚫 Bloqueio: GPS obrigatório para centralizar
+    if (!_locationController.isAvailable) {
+      _showGPSRequiredMessage();
+      return;
+    }
+
+    HapticFeedback.lightImpact();
+    // Centralizar na posição real do usuário
+    _locationController.getCurrentPosition().then((position) {
+      if (position != null) {
+        _mapController.move(
+          LatLng(position.latitude, position.longitude),
+          16.0,
+        );
+      }
+    });
+  }
+
+  void _openOccurrenceDialog(double lat, double lng) async {
+    if (!mounted) return;
+
+    final descriptionController = TextEditingController();
+    String selectedType = 'Aviso'; // Urgência
+    occ.OccurrenceCategory selectedCategory = occ.OccurrenceCategory.doenca;
+
+    await showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: const Text('Nova Ocorrência'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Categoria (tipo agronômico)
+                const Text(
+                  'Categoria',
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: occ.OccurrenceCategory.values.map((category) {
+                    final isSelected = selectedCategory == category;
+                    return ChoiceChip(
+                      selected: isSelected,
+                      label: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(category.emoji),
+                          const SizedBox(width: 4),
+                          Text(
+                            category.label,
+                            style: const TextStyle(fontSize: 11),
+                          ),
+                        ],
+                      ),
+                      selectedColor: SoloForteColors.greenIOS,
+                      labelStyle: TextStyle(
+                        color: isSelected ? Colors.white : Colors.black87,
+                      ),
+                      onSelected: (selected) {
+                        if (selected) {
+                          setState(() => selectedCategory = category);
+                        }
+                      },
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: 16),
+                // Urgência
+                DropdownButtonFormField<String>(
+                  value: selectedType,
+                  items: ['Urgente', 'Aviso', 'Info']
+                      .map((t) => DropdownMenuItem(value: t, child: Text(t)))
+                      .toList(),
+                  onChanged: (v) => setState(() => selectedType = v!),
+                  decoration: const InputDecoration(labelText: 'Urgência'),
+                ),
+                const SizedBox(height: 16),
+                // Descrição
+                TextField(
+                  controller: descriptionController,
+                  decoration: const InputDecoration(labelText: 'Descrição'),
+                  maxLines: 3,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Localização: ${lat.toStringAsFixed(6)}, ${lng.toStringAsFixed(6)}',
+                  style: SoloTextStyles.label,
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancelar'),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: SoloForteColors.greenIOS,
+              ),
+              onPressed: () {
+                ref
+                    .read(occurrenceControllerProvider)
+                    .createOccurrence(
+                      type: selectedType,
+                      description: descriptionController.text,
+                      lat: lat,
+                      long: lng,
+                      category: selectedCategory.name,
+                      status: 'draft',
+                    );
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Ocorrência registrada com sucesso!'),
+                    backgroundColor: SoloForteColors.greenIOS,
+                  ),
+                );
+              },
+              child: const Text(
+                'Salvar',
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _handleOccurrencePinTap(occ.Occurrence occurrence) {
+    HapticFeedback.lightImpact();
+    // Implement what happens when an occurrence pin is tapped
+    // For example, show a detailed sheet or dialog for the occurrence
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Ocorrência: ${occurrence.description}'),
+        backgroundColor: SoloForteColors.greenIOS,
+        duration: const Duration(seconds: 2),
+      ),
+    );
   }
 
   @override
@@ -139,6 +421,9 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
     final publications = ref.watch(publicationsDataProvider);
     final mapFields = ref.watch(mapFieldsProvider);
     final selectedTalhaoId = ref.watch(selectedTalhaoIdProvider);
+    final locationState = ref.watch(locationStateProvider);
+    final visitState = ref.watch(visitControllerProvider);
+    final isCheckedIn = visitState.value?.status == 'active';
 
     // Auto-focus Logic
     ref.listen(publicationsDataProvider, (prev, next) {
@@ -192,6 +477,21 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
             minZoom: 4.0,
             maxZoom: 19.0,
             onTap: (tapPos, point) {
+              // 🎯 Prioridade 1: Verificar modo armado de ocorrências
+              if (_armedMode == ArmedMode.occurrences) {
+                final lat = point.latitude;
+                final lng = point.longitude;
+
+                // Desarmar imediatamente para evitar múltiplos taps
+                setState(() => _armedMode = ArmedMode.none);
+                ScaffoldMessenger.of(context).hideCurrentSnackBar();
+
+                // Abrir dialog de criação de ocorrência com coordenadas
+                _openOccurrenceDialog(lat, lng);
+                return; // Não processar lógica de talhão
+              }
+
+              // 🎯 Comportamento normal: Seleção de talhão
               final fields = mapFields.valueOrNull ?? [];
               bool hit = false;
 
@@ -283,6 +583,15 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
                   },
                 ),
               ),
+            // Layer de pins de ocorrências
+            if (ref.watch(occurrencesListProvider).hasValue)
+              MarkerLayer(
+                markers: OccurrencePinGenerator.generatePins(
+                  occurrences: ref.watch(occurrencesListProvider).value!,
+                  currentZoom: _mapController.camera.zoom,
+                  onPinTap: _handleOccurrencePinTap,
+                ),
+              ),
           ],
         ),
 
@@ -329,6 +638,32 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
                     style: SoloTextStyles.label.copyWith(fontSize: 10),
                   ),
                 ),
+                const SizedBox(height: 8),
+                // GPS Status Indicator
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      locationState == LocationState.available
+                          ? Icons.gps_fixed
+                          : Icons.gps_off,
+                      size: 12,
+                      color: locationState == LocationState.available
+                          ? SoloForteColors.greenIOS
+                          : Colors.orange.shade700,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      _getGPSStatusText(locationState),
+                      style: SoloTextStyles.label.copyWith(
+                        fontSize: 9,
+                        color: locationState == LocationState.available
+                            ? SoloForteColors.greenIOS
+                            : Colors.orange.shade700,
+                      ),
+                    ),
+                  ],
+                ),
               ],
             ),
           ),
@@ -352,10 +687,7 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
               _MapActionButton(
                 icon: Icons.my_location,
                 label: 'Eu',
-                onTap: () {
-                  HapticFeedback.lightImpact();
-                  _mapController.move(const LatLng(-23.5505, -46.6333), 16.0);
-                },
+                onTap: _centerOnUser,
               ),
               const SizedBox(height: 12),
 
@@ -369,12 +701,8 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
               _MapActionButton(
                 icon: Icons.warning_amber_rounded,
                 label: 'Ocorrências',
-                isActive: _activeSheetName == 'occurrences',
-                onTap: () => _showSheet(
-                  context,
-                  const OccurrencesSheet(),
-                  'occurrences',
-                ),
+                isActive: _armedMode == ArmedMode.occurrences,
+                onTap: _toggleOccurrenceMode, // ✅ Spec: Clique arma modo
               ),
               const SizedBox(height: 12),
               _MapActionButton(
@@ -397,41 +725,62 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
           right: 20,
           child: GestureDetector(
             onTap: _toggleCheckIn,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                color: _isCheckedIn
-                    ? SoloForteColors.greenIOS
-                    : SoloForteColors.white,
-                borderRadius: BorderRadius.circular(30),
-                boxShadow: SoloShadows.shadowButton,
-                border: Border.all(color: SoloForteColors.greenIOS, width: 2),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    _isCheckedIn ? Icons.check : Icons.sync_alt,
-                    color: _isCheckedIn
-                        ? Colors.white
-                        : SoloForteColors.greenIOS,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    _isCheckedIn ? 'Em Campo' : 'Check-in',
-                    style: SoloTextStyles.body.copyWith(
-                      color: _isCheckedIn
-                          ? Colors.white
-                          : SoloForteColors.greenIOS,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
+            child: _buildCheckInStartButton(
+              isCheckedIn: isCheckedIn,
+              label: isCheckedIn ? 'Em Campo' : 'Check-in',
+              color: isCheckedIn
+                  ? SoloForteColors.greenIOS
+                  : SoloForteColors.white,
+              textColor: isCheckedIn ? Colors.white : SoloForteColors.greenIOS,
             ),
           ),
         ),
       ],
     );
+  }
+
+  // Helper widget to avoid rebuilding entire map for button
+  Widget _buildCheckInStartButton({
+    required bool isCheckedIn,
+    required String label,
+    required Color color,
+    required Color textColor,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(30),
+        boxShadow: SoloShadows.shadowButton,
+        border: Border.all(color: SoloForteColors.greenIOS, width: 2),
+      ),
+      child: Row(
+        children: [
+          Icon(isCheckedIn ? Icons.check : Icons.sync_alt, color: textColor),
+          const SizedBox(width: 8),
+          Text(
+            label,
+            style: SoloTextStyles.body.copyWith(
+              color: textColor,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _getGPSStatusText(LocationState state) {
+    switch (state) {
+      case LocationState.available:
+        return 'GPS OK';
+      case LocationState.permissionDenied:
+        return 'GPS: Sem permissão';
+      case LocationState.serviceDisabled:
+        return 'GPS: Desligado';
+      case LocationState.checking:
+        return 'GPS: Verificando...';
+    }
   }
 }
 

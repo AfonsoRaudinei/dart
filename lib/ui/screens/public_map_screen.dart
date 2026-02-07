@@ -36,7 +36,11 @@ class PublicMapScreen extends StatelessWidget {
             ),
             child: Row(
               children: [
-                const Icon(Icons.public, color: SoloForteColors.greenIOS),
+                Image.asset(
+                  'assets/images/soloforte_logo.png',
+                  height: 24,
+                  width: 24,
+                ),
                 const SizedBox(width: 8),
                 Text(
                   'Mapa Público',

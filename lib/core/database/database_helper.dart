@@ -20,7 +20,7 @@ class DatabaseHelper {
     String path = join(documentsDirectory.path, 'soloforte.db');
     return await openDatabase(
       path,
-      version: 2,
+      version: 5,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -97,6 +97,82 @@ class DatabaseHelper {
     await db.execute('''
       CREATE INDEX idx_fields_sync ON fields(sync_status);
     ''');
+
+    await db.execute('''
+      CREATE TABLE visit_sessions (
+        id TEXT PRIMARY KEY,
+        producer_id TEXT NOT NULL,
+        area_id TEXT NOT NULL,
+        activity_type TEXT NOT NULL,
+        start_time TEXT NOT NULL,
+        end_time TEXT,
+        initial_lat REAL,
+        initial_long REAL,
+        status TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        sync_status INTEGER DEFAULT 1
+      )
+    ''');
+
+    await db.execute('''
+      CREATE INDEX idx_visit_sessions_status ON visit_sessions(status);
+    ''');
+
+    await db.execute('''
+      CREATE TABLE occurrences (
+        id TEXT PRIMARY KEY,
+        visit_session_id TEXT,
+        type TEXT NOT NULL,
+        description TEXT,
+        photo_path TEXT,
+        lat REAL,
+        long REAL,
+        created_at TEXT NOT NULL,
+        sync_status INTEGER DEFAULT 1,
+        FOREIGN KEY (visit_session_id) REFERENCES visit_sessions (id)
+      )
+    ''');
+    await db.execute(
+      'CREATE INDEX idx_occurrences_session ON occurrences(visit_session_id)',
+    );
+
+    await db.execute('''
+      CREATE TABLE visit_reports (
+        id TEXT PRIMARY KEY,
+        visit_session_id TEXT NOT NULL UNIQUE,
+        content TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        sync_status INTEGER DEFAULT 1,
+        FOREIGN KEY (visit_session_id) REFERENCES visit_sessions (id)
+      )
+    ''');
+    await db.execute(
+      'CREATE INDEX idx_visit_reports_session ON visit_reports(visit_session_id)',
+    );
+
+    await db.execute('''
+      CREATE TABLE agenda_events (
+        id TEXT PRIMARY KEY,
+        producer_id TEXT NOT NULL,
+        area_id TEXT NOT NULL,
+        activity_type TEXT NOT NULL,
+        scheduled_date TEXT NOT NULL,
+        description TEXT,
+        visit_session_id TEXT,
+        status TEXT NOT NULL,
+        realized_at TEXT,
+        created_at TEXT NOT NULL,
+        sync_status INTEGER DEFAULT 1,
+        FOREIGN KEY (visit_session_id) REFERENCES visit_sessions (id)
+      )
+    ''');
+    await db.execute(
+      'CREATE INDEX idx_agenda_date ON agenda_events(scheduled_date)',
+    );
+    await db.execute(
+      'CREATE INDEX idx_agenda_producer ON agenda_events(producer_id)',
+    );
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
@@ -115,6 +191,92 @@ class DatabaseHelper {
         'ALTER TABLE fields ADD COLUMN sync_status INTEGER DEFAULT 1',
       );
       await db.execute('CREATE INDEX idx_fields_sync ON fields(sync_status)');
+      await db.execute(
+        'ALTER TABLE fields ADD COLUMN sync_status INTEGER DEFAULT 1',
+      );
+      await db.execute('CREATE INDEX idx_fields_sync ON fields(sync_status)');
+    }
+
+    if (oldVersion < 3) {
+      await db.execute('''
+        CREATE TABLE visit_sessions (
+          id TEXT PRIMARY KEY,
+          producer_id TEXT NOT NULL,
+          area_id TEXT NOT NULL,
+          activity_type TEXT NOT NULL,
+          start_time TEXT NOT NULL,
+          end_time TEXT,
+          initial_lat REAL,
+          initial_long REAL,
+          status TEXT NOT NULL,
+          created_at TEXT NOT NULL,
+          updated_at TEXT NOT NULL,
+          sync_status INTEGER DEFAULT 1
+        )
+      ''');
+
+      await db.execute('''
+        CREATE INDEX idx_visit_sessions_status ON visit_sessions(status);
+      ''');
+    }
+
+    if (oldVersion < 4) {
+      await db.execute('''
+        CREATE TABLE occurrences (
+          id TEXT PRIMARY KEY,
+          visit_session_id TEXT,
+          type TEXT NOT NULL,
+          description TEXT,
+          photo_path TEXT,
+          lat REAL,
+          long REAL,
+          created_at TEXT NOT NULL,
+          sync_status INTEGER DEFAULT 1,
+          FOREIGN KEY (visit_session_id) REFERENCES visit_sessions (id)
+        )
+      ''');
+      await db.execute(
+        'CREATE INDEX idx_occurrences_session ON occurrences(visit_session_id)',
+      );
+
+      await db.execute('''
+        CREATE TABLE visit_reports (
+          id TEXT PRIMARY KEY,
+          visit_session_id TEXT NOT NULL UNIQUE,
+          content TEXT NOT NULL,
+          created_at TEXT NOT NULL,
+          sync_status INTEGER DEFAULT 1,
+          FOREIGN KEY (visit_session_id) REFERENCES visit_sessions (id)
+        )
+      ''');
+      await db.execute(
+        'CREATE INDEX idx_visit_reports_session ON visit_reports(visit_session_id)',
+      );
+    }
+
+    if (oldVersion < 5) {
+      await db.execute('''
+        CREATE TABLE agenda_events (
+          id TEXT PRIMARY KEY,
+          producer_id TEXT NOT NULL,
+          area_id TEXT NOT NULL,
+          activity_type TEXT NOT NULL,
+          scheduled_date TEXT NOT NULL,
+          description TEXT,
+          visit_session_id TEXT,
+          status TEXT NOT NULL,
+          realized_at TEXT,
+          created_at TEXT NOT NULL,
+          sync_status INTEGER DEFAULT 1,
+          FOREIGN KEY (visit_session_id) REFERENCES visit_sessions (id)
+        )
+      ''');
+      await db.execute(
+        'CREATE INDEX idx_agenda_date ON agenda_events(scheduled_date)',
+      );
+      await db.execute(
+        'CREATE INDEX idx_agenda_producer ON agenda_events(producer_id)',
+      );
     }
   }
 

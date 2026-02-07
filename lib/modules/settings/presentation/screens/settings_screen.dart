@@ -21,129 +21,147 @@ class SettingsScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
-      body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header Customizado
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Text(
-                'Configurações',
-                style: const TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: -0.5,
-                  color: Colors.black,
+      body: Stack(
+        children: [
+          Positioned.fill(
+            child: Center(
+              child: Opacity(
+                opacity: 0.1,
+                child: Image.asset(
+                  'assets/images/soloforte_logo.png',
+                  width: 300,
                 ),
               ),
             ),
-            // Scrollable Content
-            Expanded(
-              child: ListView(
-                padding: EdgeInsets.zero,
-                children: [
-                  // Perfil
-                  _buildSectionHeader('PERFIL'),
-                  _buildSection(context, [
-                    _buildProfileTile(context, ref, userProfile),
-                    _buildSwitchTile(
-                      context,
-                      title: 'Usar como ícone do app',
-                      value: userProfile.useAsAppIcon,
-                      onChanged: (val) => ref
-                          .read(profileProvider.notifier)
-                          .toggleUseAsAppIcon(val),
-                    ),
-                  ]),
-
-                  // Aparência
-                  _buildSectionHeader('APARÊNCIA'),
-                  _buildSection(context, [
-                    _buildThemeSelector(context, ref, currentThemeMode),
-                  ]),
-
-                  // Dados Offline
-                  _buildSectionHeader('DADOS OFFLINE'),
-                  _buildSection(context, [
-                    _buildSwitchTile(
-                      context,
-                      title: 'Modo Offline',
-                      subtitle: 'Baixar mapas e dados para uso sem internet.',
-                      value: false, // Placeholder
-                      onChanged: (val) {},
-                      icon: Icons.offline_pin_outlined,
-                    ),
-                    // Storage Usage
-                    _buildStorageUsageTile(context, ref),
-                    _buildActionTile(
-                      context,
-                      title: 'Limpar cache',
-                      icon: Icons.cleaning_services_outlined,
-                      onTap: () async {
-                        // Placeholder action
-                      },
-                    ),
-                    _buildActionTile(
-                      context,
-                      title: 'Limpar dados locais',
-                      icon: Icons.delete_outline,
-                      isDestructive: true,
-                      onTap: () => _showClearConfirmation(context),
-                    ),
-                  ]),
-
-                  // Preferências
-                  _buildSectionHeader('PREFERÊNCIAS'),
-                  _buildSection(context, [
-                    _buildSwitchTile(
-                      context,
-                      title: 'Notificações',
-                      value: true,
-                      onChanged: (val) {},
-                      icon: Icons.notifications_none,
-                    ),
-                    _buildTile(
-                      context,
-                      title: 'Relatórios & Exportação',
-                      icon: Icons.bar_chart,
-                      onTap: () {},
-                    ),
-                    _buildTile(
-                      context,
-                      title: 'Termos de Serviço',
-                      icon: Icons.description_outlined,
-                      onTap: () {},
-                    ),
-                  ]),
-
-                  // Sessão
-                  _buildSectionHeader('SESSÃO'),
-                  _buildSection(context, [
-                    _buildActionTile(
-                      context,
-                      title: 'Sair do aplicativo',
-                      icon: Icons.logout,
-                      isDestructive: true,
-                      onTap: () {
-                        ref.read(sessionControllerProvider.notifier).logout();
-                      },
-                    ),
-                  ]),
-
-                  const SizedBox(height: 40),
-                  Center(
-                    child: Text(
-                      'SoloForte v1.0.0',
-                      style: SoloTextStyles.label,
+          ),
+          SafeArea(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header Customizado
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Text(
+                    'Configurações',
+                    style: const TextStyle(
+                      fontSize: 32,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: -0.5,
+                      color: Colors.black,
                     ),
                   ),
-                  const SizedBox(height: 20),
-                ],
-              ),
+                ),
+                // Scrollable Content
+                Expanded(
+                  child: ListView(
+                    padding: EdgeInsets.zero,
+                    children: [
+                      // Perfil
+                      _buildSectionHeader('PERFIL'),
+                      _buildSection(context, [
+                        _buildProfileTile(context, ref, userProfile),
+                        _buildSwitchTile(
+                          context,
+                          title: 'Usar como ícone do app',
+                          value: userProfile.useAsAppIcon,
+                          onChanged: (val) => ref
+                              .read(profileProvider.notifier)
+                              .toggleUseAsAppIcon(val),
+                        ),
+                      ]),
+
+                      // Aparência
+                      _buildSectionHeader('APARÊNCIA'),
+                      _buildSection(context, [
+                        _buildThemeSelector(context, ref, currentThemeMode),
+                      ]),
+
+                      // Dados Offline
+                      _buildSectionHeader('DADOS OFFLINE'),
+                      _buildSection(context, [
+                        _buildSwitchTile(
+                          context,
+                          title: 'Modo Offline',
+                          subtitle:
+                              'Baixar mapas e dados para uso sem internet.',
+                          value: false, // Placeholder
+                          onChanged: (val) {},
+                          icon: Icons.offline_pin_outlined,
+                        ),
+                        // Storage Usage
+                        _buildStorageUsageTile(context, ref),
+                        _buildActionTile(
+                          context,
+                          title: 'Limpar cache',
+                          icon: Icons.cleaning_services_outlined,
+                          onTap: () async {
+                            // Placeholder action
+                          },
+                        ),
+                        _buildActionTile(
+                          context,
+                          title: 'Limpar dados locais',
+                          icon: Icons.delete_outline,
+                          isDestructive: true,
+                          onTap: () => _showClearConfirmation(context),
+                        ),
+                      ]),
+
+                      // Preferências
+                      _buildSectionHeader('PREFERÊNCIAS'),
+                      _buildSection(context, [
+                        _buildSwitchTile(
+                          context,
+                          title: 'Notificações',
+                          value: true,
+                          onChanged: (val) {},
+                          icon: Icons.notifications_none,
+                        ),
+                        _buildTile(
+                          context,
+                          title: 'Relatórios & Exportação',
+                          icon: Icons.bar_chart,
+                          onTap: () {},
+                        ),
+                        _buildTile(
+                          context,
+                          title: 'Termos de Serviço',
+                          icon: Icons.description_outlined,
+                          onTap: () {},
+                        ),
+                      ]),
+
+                      // Sessão
+                      _buildSectionHeader('SESSÃO'),
+                      _buildSection(context, [
+                        _buildActionTile(
+                          context,
+                          title: 'Sair do aplicativo',
+                          icon: Icons.logout,
+                          isDestructive: true,
+                          onTap: () {
+                            ref
+                                .read(sessionControllerProvider.notifier)
+                                .logout();
+                          },
+                        ),
+                      ]),
+
+                      const SizedBox(height: 40),
+                      Center(
+                        child: Text(
+                          'SoloForte v1.0.0',
+                          style: SoloTextStyles.label,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                    ],
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
