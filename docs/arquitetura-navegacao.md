@@ -1,16 +1,25 @@
-# CONTRATO ARQUITETURAL DE NAVEGAÇÃO
+# CONTRATO ARQUITETURAL DE NAVEGAÇÃO - SOLOFROTE
 **STATUS: CONTRATO CONGELADO**
-**DATA:** 04/02/2026
+**DATA:** 08/02/2026
+
 
 Este documento define a verdade absoluta sobre a navegação e estrutura UI do SoloForte.
 Qualquer alteração neste documento exige uma revisão arquitetural explícita.
 
+⚠️ **IMPORTANTE:** Este documento trabalha em conjunto com:
+- `arquitetura-namespaces-rotas.md` (detecção de contexto por namespace)
+- `arquitetura-persistencia.md` (offline-first)
+- `arquitetura-ocorrencias.md` (eventos geoespaciais)
+
 ---
+
 
 ## 1. REGRA DE OURO (GOLDEN RULE)
 
-> **Nenhuma decisão de navegação, botão, rota ou fluxo pode ser tomada sem estar explicitamente alinhada com este documento.**
+> **"Rota descreve o estado do aplicativo, não apenas a tela."**
+> **"O mapa é único. Os contextos nunca são."**
 
+Nenhuma decisão de navegação, botão, rota ou fluxo pode ser tomada sem estar explicitamente alinhada com este documento.
 Proibido improvisar "voltar", "home", ou "menus" fora deste padrão.
 
 ---
@@ -26,92 +35,111 @@ Proibido improvisar "voltar", "home", ou "menus" fora deste padrão.
 ### 2.2. Sem AppBar (No AppBar)
 * **NÃO** utilizamos a AppBar padrão do Material Design (`Scaffold(appBar: ...)`).
 * O topo da tela é área do mapa ou overlays transparentes.
-* Títulos e controles devem flutuar ou estar em BottomSheets/Cards, nunca em uma barra sólida no topo que rouba espaço vertical.
+* Títulos e controles devem flutuar ou estar em BottomSheets/Cards.
 
 ### 2.3. One FAB (SmartButton)
 * Existe apenas **UM** botão de ação flutuante principal na tela: o **SmartButton**.
-* Localizado no canto inferior direito (padrão FAB).
+* Localizado no canto inferior direito.
 * **Comportamento Dinâmico:**
-    * No Mapa: Abre o MENU PRINCIPAL (ícone Menu Hambúrguer ou similar).
-    * Em Sub-rotas/Formulários: Atua como ação primária ou contexto específico.
-* **Proibido:** Adicionar múltiplos FABs espalhados pela tela.
+    * No Dashboard (Namespace `/dashboard`): Abre o MENU (ícone ☰).
+    * Fora do Dashboard: Volta para o Dashboard (ícone ←).
 
 ### 2.4. SideMenu (Apenas no Mapa)
-* O Menu Lateral (Drawer/SideMenu) é acessível **apenas** quando se está na rota raiz do Mapa.
-* Não deve ser acessível via "swipe" em telas de detalhe para evitar conflitos de gestos.
+* O Menu Lateral (Drawer/SideMenu) é acessível **apenas** quando se está no Dashboard.
 
 ---
 
-## 3. ESTRUTURA DE NAVEGAÇÃO
+## 3. ARQUITETURA DO DASHBOARD (MAP-CENTRIC)
 
-A navegação é hierárquica, não baseada em abas (BottomNavigationBar está proibido como navegação primária).
+O Dashboard é o centro absoluto do sistema, representado por um único mapa físico, porém com múltiplos contextos funcionais.
 
-### 3.1. Rota Raiz: `/dashboard/mapa-tecnico`
-* Contém: Mapa, SmartButton (Modo Menu), Overlays de Status.
+### 3.1. Namespace Oficial
+Todas as rotas que representam o mapa e seus contextos devem viver sob:
+`/dashboard`
 
-### 3.2. Fluxos Secundários (BottomSheets ou FullScreen)
-* Devem ser chamados a partir do Mapa ou do Menu.
-* Telas de "Cadastro", "Listas", "Relatórios" entram sobre o mapa ou navegam para uma nova tela cheia.
-* **Voltar:** Deve sempre haver um mecanismo claro de "Voltar" (seja botão físico, gesto ou botão na UI customizada), levando de volta ao nível anterior (até chegar no Mapa).
+### 3.2. Sub-contextos Oficiais
+As rotas representam **estados declarativos**, não apenas telas.
+Exemplos oficiais:
+
+* `/dashboard` → Container base (redirect para contexto padrão)
+* `/dashboard/mapa-tecnico` → Contexto técnico (talhões, desenho, operações)
+* `/dashboard/clima-eventos` → Contexto climático
+* `/dashboard/ocorrencias` → Ocorrências e registros
+* `/dashboard/publicacoes` → Marketing / publicações
+* `/dashboard/ndvi` → Índices vegetativos (futuro)
+
+**O mapa físico é o mesmo.** O que muda entre rotas:
+* Camadas ativas
+* Botões visíveis
+* Permissões
+* Overlays
+* Comportamento de interação
+
+### 3.3. O Que É Proibido (Antipadrões)
+* ❌ Usar uma única rota `/dashboard` com `if (modo == X)`.
+* ❌ Basear contexto em widget visível ou variáveis globais.
+* ❌ Criar dashboards paralelos fora do namespace `/dashboard/*`.
+* ❌ Depender de histórico de navegação (`pop`, `canPop`).
 
 ---
 
-## 4. REGRA PARA AGENTES (PROMPTS FUTUROS)
+## 4. ESTRUTURA DE NAVEGAÇÃO GERAL
 
-Para garantir a integridade deste contrato, todo prompt técnico submetido a um agente de deve conter a seguinte instrução:
+A navegação é hierárquica e determinística.
+
+### 4.1. Rota Raiz: `/dashboard`
+* Contém: Mapa (Singleton Widget), SmartButton (Modo Menu), Overlays de Contexto.
+
+### 4.2. Fluxos Secundários (BottomSheets ou FullScreen)
+* Telas de "Cadastro", "Listas", "Relatórios" navegam para fora do namespace `/dashboard` ou abrem sobre ele.
+* **Voltar:** Sempre navega explicitamente para `/dashboard` (reset state) ou para a rota pai definida.
+
+---
+
+## 5. BOTÃO GLOBAL DE NAVEGAÇÃO (SMARTBUTTON)
+
+### Comportamento Oficial
+* **Rota inicia com `/dashboard`**:
+  * Ícone: ☰ (Menu)
+  * Ação: Abrir SideMenu
+* **Rota NÃO inicia com `/dashboard`**:
+  * Ícone: ← (Voltar)
+  * Ação: `go('/dashboard')`
+
+Esse comportamento depende exclusivamente do namespace da rota.
+
+---
+
+## 6. MODO DESENHO E EDIÇÃO GEOGRÁFICA
+
+O **Modo Desenho** é um estado operacional do Dashboard, não uma rota.
+
+### 6.1. Princípio Fundamental
+> **"Desenho é um modo de interação do mapa, não uma tela."**
+
+* O mapa permanece o mesmo.
+* A URL permanece a mesma (ex: `/dashboard/mapa-tecnico`).
+* O que muda: Ferramentas visíveis, comportamento de toque, overlays.
+
+### 6.2. Interação com a Navegação
+* **SmartButton:** Permanece exibindo o Menu (☰) se estiver no Dashboard.
+    * O botão **NÃO** muda para "Salvar" ou "Cancelar".
+    * O botão **NÃO** executa `pop()`.
+* **Cancelamento/Confirmação:** Devem ser ações explícitas na interface de desenho (botões dedicados na tela ou bottom sheet), nunca implícitas pela navegação.
+
+### 6.3. Proibições (Antipadrões)
+* ❌ Criar rotas como `/dashboard/desenho` ou `/editor`.
+* ❌ Usar o botão "Voltar" do Android/iOS para cancelar o desenho (o back button deve respeitar a hierarquia de navegação ou sair do app, não controlar estado local de widgets).
+* ❌ Esconder o SmartButton durante o desenho (ele é âncora sistêmica).
+
+---
+
+## 7. REGRA PARA AGENTES (PROMPTS FUTUROS)
+
+Para garantir a integridade deste contrato, todo prompt técnico deve conter:
 
 > "Seguir rigorosamente `docs/arquitetura-navegacao.md`.
+> O Soloforte possui um único mapa físico, mas múltiplos contextos via rotas `/dashboard/*`.
 > Se houver conflito, o documento prevalece."
 
 **Agentes são instruídos a rejeitar solicitações que violem este contrato.**
-
----
-
-## Botão Global de Navegação (SmartButton)
-
-O SoloForte adota um modelo de navegação **map-centric**, no qual o
-Dashboard (`/dashboard`) representa o centro absoluto do sistema.
-
-### Princípio Fundamental
-O botão global de navegação **não utiliza histórico de navegação**.
-Ele não executa `pop()` e não depende da stack do Navigator.
-
-A navegação é **declarativa e determinística**, baseada exclusivamente
-na rota atual.
-
-### Comportamento Oficial
-
-- Quando a rota ativa é `/dashboard`:
-  - O botão exibe o ícone ☰ (menu)
-  - A ação é abrir o SideMenu global
-
-- Quando a rota ativa é qualquer outra:
-  - O botão exibe o ícone ← (voltar)
-  - A ação é navegar diretamente para `/dashboard`
-
-Esse comportamento é obrigatório, inclusive em:
-- Deep links
-- Refresh de aplicação
-- Rotas aninhadas profundas
-- Fluxos encadeados entre módulos
-
-### Restrições Técnicas
-
-É expressamente proibido:
-- Utilizar `Navigator.pop()`
-- Utilizar `canPop()` ou lógica baseada em stack
-- Implementar exceções por módulo ou submódulo
-- Alterar o SideMenu com base na rota
-
-### Justificativa Arquitetural
-
-Em aplicativos GIS / agrícolas / operacionais:
-- O mapa é o ponto de orientação cognitiva do usuário
-- O acesso rápido e previsível ao mapa é crítico
-- Navegação por histórico gera erros e confusão em campo
-
-Esse padrão garante:
-- Consistência de UX
-- Redução de bugs
-- Escalabilidade de módulos
-- Facilidade de auditoria técnica

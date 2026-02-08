@@ -102,11 +102,11 @@ class _OccurrenceListSheetState extends ConsumerState<OccurrenceListSheet> {
           Flexible(
             child: occurrencesAsync.when(
               data: (allOccurrences) {
-                // Filtrar por viewport
                 final inViewport = widget.mapBounds != null
                     ? allOccurrences.where((occ) {
-                        if (occ.lat == null || occ.long == null) return false;
-                        final point = LatLng(occ.lat!, occ.long!);
+                        final coords = occ.getCoordinates();
+                        if (coords == null) return false;
+                        final point = LatLng(coords['lat']!, coords['long']!);
                         return widget.mapBounds!.contains(point);
                       }).toList()
                     : allOccurrences;

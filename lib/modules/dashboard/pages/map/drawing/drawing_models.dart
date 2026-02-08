@@ -1,4 +1,3 @@
-
 // =============================================================================
 // ENUMS
 // =============================================================================
@@ -42,6 +41,16 @@ enum AuthorType {
 
   String toJson() => name;
   static AuthorType fromJson(String json) => values.byName(json);
+}
+
+enum DrawingInteraction {
+  normal,
+  importing, // Selecting KML/KMZ
+  importPreview, // Viewing imported geometry before confirm
+  editing, // Editing existing feature vertices
+  unionSelection, // Combining areas
+  differenceSelection, // Subtracting area B from A
+  intersectionSelection, // Keep only overlapping area
 }
 
 // =============================================================================
@@ -134,6 +143,16 @@ class DrawingMultiPolygon extends DrawingGeometry {
 // PROPERTIES
 // =============================================================================
 
+enum SyncStatus {
+  local_only,
+  pending_sync,
+  synced,
+  conflict;
+
+  String toJson() => name;
+  static SyncStatus fromJson(String json) => values.byName(json);
+}
+
 class DrawingProperties {
   final String nome;
   final DrawingType tipo;
@@ -148,6 +167,7 @@ class DrawingProperties {
   final bool ativo;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final SyncStatus syncStatus;
 
   // Pivot Metadata
   final String? subtipo; // "pivo"
@@ -170,6 +190,7 @@ class DrawingProperties {
     required this.ativo,
     required this.createdAt,
     required this.updatedAt,
+    this.syncStatus = SyncStatus.local_only,
     this.subtipo,
     this.raioMetros,
     this.versaoAnteriorId,
@@ -189,6 +210,7 @@ class DrawingProperties {
     'ativo': ativo,
     'created_at': createdAt.toIso8601String(),
     'updated_at': updatedAt.toIso8601String(),
+    'sync_status': syncStatus.toJson(),
     'subtipo': subtipo,
     'raio_metros': raioMetros,
     'versao_anterior_id': versaoAnteriorId,
@@ -209,6 +231,9 @@ class DrawingProperties {
       ativo: json['ativo'] ?? true,
       createdAt: DateTime.parse(json['created_at']),
       updatedAt: DateTime.parse(json['updated_at']),
+      syncStatus: json['sync_status'] != null
+          ? SyncStatus.fromJson(json['sync_status'])
+          : SyncStatus.local_only,
       subtipo: json['subtipo'],
       raioMetros: json['raio_metros']?.toDouble(),
       versaoAnteriorId: json['versao_anterior_id'],
@@ -229,6 +254,7 @@ class DrawingProperties {
     bool? ativo,
     DateTime? createdAt,
     DateTime? updatedAt,
+    SyncStatus? syncStatus,
     String? subtipo,
     double? raioMetros,
     String? versaoAnteriorId,
@@ -247,6 +273,7 @@ class DrawingProperties {
       ativo: ativo ?? this.ativo,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      syncStatus: syncStatus ?? this.syncStatus,
       subtipo: subtipo ?? this.subtipo,
       raioMetros: raioMetros ?? this.raioMetros,
       versaoAnteriorId: versaoAnteriorId ?? this.versaoAnteriorId,

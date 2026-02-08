@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'dart:convert';
 import '../../domain/occurrence.dart';
 import '../../data/occurrence_repository.dart';
 import '../../../../../modules/visitas/presentation/controllers/visit_controller.dart';
@@ -30,20 +31,28 @@ class OccurrenceController {
     String? category,
     String? status,
   }) async {
-    // 1. Get active session ID if any
     final visitState = ref.read(visitControllerProvider);
     final String? sessionId = (visitState.value?.status == 'active')
         ? visitState.value!.id
         : null;
 
+    String? geometry;
+    if (lat != null && long != null) {
+      geometry = jsonEncode({
+        'type': 'Point',
+        'coordinates': [long, lat],
+      });
+    }
+
     final occurrence = Occurrence(
       id: const Uuid().v4(),
-      visitSessionId: sessionId, // Auto-bind
+      visitSessionId: sessionId,
       type: type,
       description: description,
       photoPath: photoPath,
       lat: lat,
       long: long,
+      geometry: geometry,
       createdAt: DateTime.now(),
       category: category,
       status: status ?? 'draft',
@@ -51,7 +60,6 @@ class OccurrenceController {
 
     await _repository.saveOccurrence(occurrence);
 
-    // Refresh list
     ref.invalidate(occurrencesListProvider);
   }
 }

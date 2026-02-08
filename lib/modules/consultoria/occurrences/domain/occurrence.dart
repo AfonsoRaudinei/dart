@@ -1,9 +1,10 @@
-// 🔄 Estados de sincronização offline-first
+import 'dart:convert';
+
 enum SyncStatus {
-  local, // Criado offline, nunca sincronizado
-  synced, // Espelhado no backend
-  updated, // Alterado localmente após sync
-  deleted; // Exclusão lógica pendente
+  local,
+  synced,
+  updated,
+  deleted;
 
   static SyncStatus fromString(String? value) {
     if (value == null) return SyncStatus.local;
@@ -22,7 +23,6 @@ enum SyncStatus {
   }
 }
 
-// Categorias agronômicas de ocorrências
 enum OccurrenceCategory {
   doenca('Doença', '🦠'),
   insetos('Insetos', '🐛'),
@@ -59,7 +59,6 @@ enum OccurrenceCategory {
   }
 }
 
-// Status da ocorrência
 enum OccurrenceStatus {
   draft('Rascunho'),
   confirmed('Confirmada');
@@ -71,17 +70,17 @@ enum OccurrenceStatus {
 class Occurrence {
   final String id;
   final String? visitSessionId;
-  final String type; // 'Urgente', 'Aviso', 'Info' (urgência/prioridade)
+  final String type;
   final String description;
   final String? photoPath;
   final double? lat;
   final double? long;
+  final String? geometry;
   final DateTime createdAt;
-  final DateTime
-  updatedAt; // 🔄 Para resolver conflitos (local sempre ganha se mais recente)
-  final String syncStatus; // 🔄 'local' | 'synced' | 'updated' | 'deleted'
-  final String? category; // Categoria agronômica: 'doenca', 'insetos', etc
-  final String? status; // 'draft' ou 'confirmed'
+  final DateTime updatedAt;
+  final String syncStatus;
+  final String? category;
+  final String? status;
 
   Occurrence({
     required this.id,
@@ -91,9 +90,10 @@ class Occurrence {
     this.photoPath,
     this.lat,
     this.long,
+    this.geometry,
     required this.createdAt,
     DateTime? updatedAt,
-    this.syncStatus = 'local', // 🔄 Default: criado offline
+    this.syncStatus = 'local',
     this.category,
     this.status = 'draft',
   }) : updatedAt = updatedAt ?? DateTime.now();
@@ -107,6 +107,7 @@ class Occurrence {
       photoPath: map['photo_path'],
       lat: map['lat'],
       long: map['long'],
+      geometry: map['geometry'],
       createdAt: DateTime.parse(map['created_at']),
       updatedAt: map['updated_at'] != null
           ? DateTime.parse(map['updated_at'])
@@ -126,6 +127,7 @@ class Occurrence {
       'photo_path': photoPath,
       'lat': lat,
       'long': long,
+      'geometry': geometry,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
       'sync_status': syncStatus,
@@ -142,6 +144,7 @@ class Occurrence {
     String? photoPath,
     double? lat,
     double? long,
+    String? geometry,
     DateTime? createdAt,
     DateTime? updatedAt,
     String? syncStatus,
@@ -156,11 +159,35 @@ class Occurrence {
       photoPath: photoPath ?? this.photoPath,
       lat: lat ?? this.lat,
       long: long ?? this.long,
+      geometry: geometry ?? this.geometry,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       syncStatus: syncStatus ?? this.syncStatus,
       category: category ?? this.category,
       status: status ?? this.status,
     );
+  }
+
+  Map<String, double>? getCoordinates() {
+    if (geometry != null) {
+      try {
+        final decoded = jsonDecode(geometry!);
+        if (decoded['type'] == 'Point' && decoded['coordinates'] != null) {
+          final coords = decoded['coordinates'] as List;
+          if (coords.length >= 2) {
+            return {
+              'lat': (coords[1] as num).toDouble(),
+              'long': (coords[0] as num).toDouble(),
+            };
+          }
+        }
+      } catch (_) {}
+    }
+
+    if (lat != null && long != null) {
+      return {'lat': lat!, 'long': long!};
+    }
+
+    return null;
   }
 }

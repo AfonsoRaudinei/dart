@@ -20,7 +20,7 @@ class DatabaseHelper {
     String path = join(documentsDirectory.path, 'soloforte.db');
     return await openDatabase(
       path,
-      version: 5,
+      version: 8,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -128,8 +128,12 @@ class DatabaseHelper {
         photo_path TEXT,
         lat REAL,
         long REAL,
+        geometry TEXT,
         created_at TEXT NOT NULL,
-        sync_status INTEGER DEFAULT 1,
+        updated_at TEXT NOT NULL,
+        sync_status TEXT DEFAULT 'local',
+        category TEXT,
+        status TEXT DEFAULT 'draft',
         FOREIGN KEY (visit_session_id) REFERENCES visit_sessions (id)
       )
     ''');
@@ -230,8 +234,12 @@ class DatabaseHelper {
           photo_path TEXT,
           lat REAL,
           long REAL,
+          geometry TEXT,
           created_at TEXT NOT NULL,
-          sync_status INTEGER DEFAULT 1,
+          updated_at TEXT NOT NULL,
+          sync_status TEXT DEFAULT 'local',
+          category TEXT,
+          status TEXT DEFAULT 'draft',
           FOREIGN KEY (visit_session_id) REFERENCES visit_sessions (id)
         )
       ''');
@@ -277,6 +285,52 @@ class DatabaseHelper {
       await db.execute(
         'CREATE INDEX idx_agenda_producer ON agenda_events(producer_id)',
       );
+    }
+
+    if (oldVersion < 6) {
+      await db.execute('ALTER TABLE occurrences ADD COLUMN updated_at TEXT');
+      await db.execute('ALTER TABLE occurrences ADD COLUMN category TEXT');
+      await db.execute('ALTER TABLE occurrences ADD COLUMN status TEXT');
+      await db.execute(
+        'UPDATE occurrences SET updated_at = created_at WHERE updated_at IS NULL',
+      );
+      await db.execute(
+        "UPDATE occurrences SET status = 'draft' WHERE status IS NULL",
+      );
+    }
+
+    if (oldVersion < 7) {
+      await db.execute('ALTER TABLE occurrences ADD COLUMN geometry TEXT');
+    }
+
+    if (oldVersion < 8) {
+      await db.execute('''
+        CREATE TABLE drawings (
+          id TEXT PRIMARY KEY,
+          nome TEXT NOT NULL,
+          tipo TEXT NOT NULL,
+          origem TEXT NOT NULL,
+          status TEXT NOT NULL,
+          geojson TEXT NOT NULL,
+          area_ha REAL,
+          autor_id TEXT NOT NULL,
+          autor_tipo TEXT NOT NULL,
+          sync_status TEXT NOT NULL,
+          versao INTEGER,
+          subtipo TEXT,
+          raio_metros REAL,
+          created_at TEXT NOT NULL,
+          updated_at TEXT NOT NULL,
+          deleted_at TEXT,
+          versao_anterior_id TEXT,
+          referencia_id TEXT,
+          ativo INTEGER DEFAULT 1
+        )
+      ''');
+      await db.execute(
+        'CREATE INDEX idx_drawings_sync ON drawings(sync_status)',
+      );
+      await db.execute('CREATE INDEX idx_drawings_ativo ON drawings(ativo)');
     }
   }
 

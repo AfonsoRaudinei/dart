@@ -53,6 +53,10 @@ dependencies:
   permission_handler: ^11.3.1
   flutter_local_notifications: ^20.0.0
   connectivity_plus: ^6.1.2
+  file_picker: ^10.3.10
+  xml: ^6.6.1
+  archive: ^4.0.7
+  turf: ^0.0.10
 
 dev_dependencies:
   flutter_test:

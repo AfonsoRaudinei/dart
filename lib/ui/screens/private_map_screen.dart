@@ -4,6 +4,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:soloforte_app/ui/theme/soloforte_theme.dart';
 import 'package:soloforte_app/ui/components/map/map_sheets.dart';
+import 'package:soloforte_app/ui/components/map/map_occurrence_sheet.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/state/map_state.dart';
 import '../../core/domain/map_models.dart';
@@ -283,118 +284,42 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
     });
   }
 
-  void _openOccurrenceDialog(double lat, double lng) async {
+  void _openOccurrenceSheet(double lat, double lng) async {
     if (!mounted) return;
 
-    final descriptionController = TextEditingController();
-    String selectedType = 'Aviso'; // Urgência
-    occ.OccurrenceCategory selectedCategory = occ.OccurrenceCategory.doenca;
-
-    await showDialog(
+    await showModalBottomSheet(
       context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
-          title: const Text('Nova Ocorrência'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Categoria (tipo agronômico)
-                const Text(
-                  'Categoria',
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-                ),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: occ.OccurrenceCategory.values.map((category) {
-                    final isSelected = selectedCategory == category;
-                    return ChoiceChip(
-                      selected: isSelected,
-                      label: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(category.emoji),
-                          const SizedBox(width: 4),
-                          Text(
-                            category.label,
-                            style: const TextStyle(fontSize: 11),
-                          ),
-                        ],
-                      ),
-                      selectedColor: SoloForteColors.greenIOS,
-                      labelStyle: TextStyle(
-                        color: isSelected ? Colors.white : Colors.black87,
-                      ),
-                      onSelected: (selected) {
-                        if (selected) {
-                          setState(() => selectedCategory = category);
-                        }
-                      },
-                    );
-                  }).toList(),
-                ),
-                const SizedBox(height: 16),
-                // Urgência
-                DropdownButtonFormField<String>(
-                  initialValue: selectedType,
-                  items: ['Urgente', 'Aviso', 'Info']
-                      .map((t) => DropdownMenuItem(value: t, child: Text(t)))
-                      .toList(),
-                  onChanged: (v) => setState(() => selectedType = v!),
-                  decoration: const InputDecoration(labelText: 'Urgência'),
-                ),
-                const SizedBox(height: 16),
-                // Descrição
-                TextField(
-                  controller: descriptionController,
-                  decoration: const InputDecoration(labelText: 'Descrição'),
-                  maxLines: 3,
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  'Localização: ${lat.toStringAsFixed(6)}, ${lng.toStringAsFixed(6)}',
-                  style: SoloTextStyles.label,
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancelar'),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.6, // Reduzir um pouco para não cobrir tudo de cara
+        minChildSize: 0.4,
+        maxChildSize: 0.9,
+        expand: false,
+        snap: true,
+        builder: (_, controller) => MapOccurrenceSheet(
+          scrollController: controller,
+          latitude: lat,
+          longitude: lng,
+          onConfirm: (category, urgency, description) {
+            ref
+                .read(occurrenceControllerProvider)
+                .createOccurrence(
+                  type: urgency,
+                  description: description,
+                  lat: lat,
+                  long: lng,
+                  category: category,
+                  status: 'draft',
+                );
+
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Ocorrência registrada com sucesso!'),
                 backgroundColor: SoloForteColors.greenIOS,
               ),
-              onPressed: () {
-                ref
-                    .read(occurrenceControllerProvider)
-                    .createOccurrence(
-                      type: selectedType,
-                      description: descriptionController.text,
-                      lat: lat,
-                      long: lng,
-                      category: selectedCategory.name,
-                      status: 'draft',
-                    );
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Ocorrência registrada com sucesso!'),
-                    backgroundColor: SoloForteColors.greenIOS,
-                  ),
-                );
-              },
-              child: const Text(
-                'Salvar',
-                style: TextStyle(color: Colors.white),
-              ),
-            ),
-          ],
+            );
+          },
         ),
       ),
     );
@@ -486,8 +411,8 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
                 setState(() => _armedMode = ArmedMode.none);
                 ScaffoldMessenger.of(context).hideCurrentSnackBar();
 
-                // Abrir dialog de criação de ocorrência com coordenadas
-                _openOccurrenceDialog(lat, lng);
+                // Abrir sheet de criação de ocorrência com coordenadas
+                _openOccurrenceSheet(lat, lng);
                 return; // Não processar lógica de talhão
               }
 

@@ -12,23 +12,24 @@ class OccurrencePinGenerator {
     required Function(Occurrence) onPinTap,
   }) {
     return occurrences
-        .where((occ) {
-          return occ.lat != null && occ.long != null;
-        })
         .map((occ) {
+          final coords = occ.getCoordinates();
+          if (coords == null) return null;
+
           return Marker(
-            point: LatLng(occ.lat!, occ.long!),
+            point: LatLng(coords['lat']!, coords['long']!),
             width: 32,
             height: 32,
             child: GestureDetector(
               onTap: () => onPinTap(occ),
               child: _OccurrencePin(
                 occurrence: occ,
-                showIcon: currentZoom >= 13, // Ícone aparece em zoom médio
+                showIcon: currentZoom >= 13,
               ),
             ),
           );
         })
+        .whereType<Marker>()
         .toList();
   }
 }
