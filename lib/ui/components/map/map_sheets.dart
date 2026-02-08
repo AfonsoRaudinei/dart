@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../modules/consultoria/occurrences/presentation/controllers/occurrence_controller.dart';
-import '../../../modules/consultoria/occurrences/domain/occurrence.dart';
 import 'package:soloforte_app/ui/theme/soloforte_theme.dart';
 import '../../../core/domain/map_models.dart';
 import '../../../core/state/map_state.dart';
