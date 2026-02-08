@@ -110,7 +110,7 @@ class _VisitSheetState extends ConsumerState<VisitSheet> {
 
           // 4. Atividade
           DropdownButtonFormField<String>(
-            value: _selectedActivity,
+            initialValue: _selectedActivity,
             decoration: InputDecoration(
               labelText: 'Atividade',
               border: OutlineInputBorder(
@@ -178,7 +178,7 @@ class _VisitSheetState extends ConsumerState<VisitSheet> {
     String emptyMessage = 'Vazio',
   }) {
     return DropdownButtonFormField<T>(
-      value: value,
+      initialValue: value,
       decoration: InputDecoration(
         labelText: label,
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),

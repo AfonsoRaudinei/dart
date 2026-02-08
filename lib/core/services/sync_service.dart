@@ -1,8 +1,6 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:soloforte_app/core/services/connectivity_service.dart';
-import 'package:soloforte_app/modules/consultoria/occurrences/presentation/controllers/occurrence_controller.dart';
-import 'package:soloforte_app/modules/visitas/presentation/controllers/visit_controller.dart';
 
 /// 🔄 Serviço de Sincronização Silenciosa
 ///

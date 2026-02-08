@@ -64,3 +64,54 @@ Para garantir a integridade deste contrato, todo prompt técnico submetido a um 
 > Se houver conflito, o documento prevalece."
 
 **Agentes são instruídos a rejeitar solicitações que violem este contrato.**
+
+---
+
+## Botão Global de Navegação (SmartButton)
+
+O SoloForte adota um modelo de navegação **map-centric**, no qual o
+Dashboard (`/dashboard`) representa o centro absoluto do sistema.
+
+### Princípio Fundamental
+O botão global de navegação **não utiliza histórico de navegação**.
+Ele não executa `pop()` e não depende da stack do Navigator.
+
+A navegação é **declarativa e determinística**, baseada exclusivamente
+na rota atual.
+
+### Comportamento Oficial
+
+- Quando a rota ativa é `/dashboard`:
+  - O botão exibe o ícone ☰ (menu)
+  - A ação é abrir o SideMenu global
+
+- Quando a rota ativa é qualquer outra:
+  - O botão exibe o ícone ← (voltar)
+  - A ação é navegar diretamente para `/dashboard`
+
+Esse comportamento é obrigatório, inclusive em:
+- Deep links
+- Refresh de aplicação
+- Rotas aninhadas profundas
+- Fluxos encadeados entre módulos
+
+### Restrições Técnicas
+
+É expressamente proibido:
+- Utilizar `Navigator.pop()`
+- Utilizar `canPop()` ou lógica baseada em stack
+- Implementar exceções por módulo ou submódulo
+- Alterar o SideMenu com base na rota
+
+### Justificativa Arquitetural
+
+Em aplicativos GIS / agrícolas / operacionais:
+- O mapa é o ponto de orientação cognitiva do usuário
+- O acesso rápido e previsível ao mapa é crítico
+- Navegação por histórico gera erros e confusão em campo
+
+Esse padrão garante:
+- Consistência de UX
+- Redução de bugs
+- Escalabilidade de módulos
+- Facilidade de auditoria técnica

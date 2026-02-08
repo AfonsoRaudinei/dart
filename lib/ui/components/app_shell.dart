@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
-import '../../core/router/app_routes.dart';
 import '../../core/session/session_controller.dart';
 import '../../core/session/session_models.dart';
 import 'side_menu.dart';
@@ -23,10 +21,9 @@ class AppShell extends ConsumerWidget {
       // We can adjust position if needed.
       floatingActionButton: const SmartButton(),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-      endDrawer:
-          (isAuth && GoRouterState.of(context).uri.path == AppRoutes.dashboard)
-          ? const SideMenu()
-          : null,
+      // SideMenu global: disponível em todas as rotas autenticadas
+      // O SmartButton controla quando o ícone ☰ aparece (apenas no dashboard)
+      endDrawer: isAuth ? const SideMenu() : null,
       drawerScrimColor: Colors.black54,
       resizeToAvoidBottomInset:
           false, // Maps usually don't resize, but forms do. Shell might handle it.

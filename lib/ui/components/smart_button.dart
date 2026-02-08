@@ -1,3 +1,42 @@
+/*
+════════════════════════════════════════════════════════════════════
+SMART BUTTON — CONTRATO DE NAVEGAÇÃO (SOLOFORTE)
+════════════════════════════════════════════════════════════════════
+
+Este botão é um CONTROLE SISTÊMICO, não um botão de tela.
+
+REGRA CANÔNICA:
+- O Dashboard (/dashboard) é o centro absoluto do aplicativo.
+- O botão NUNCA depende de stack, histórico ou Navigator.pop().
+- O comportamento é 100% determinístico e baseado apenas na rota atual.
+
+COMPORTAMENTO OBRIGATÓRIO:
+1) Quando a rota atual for EXACTAMENTE /dashboard:
+   - Ícone: ☰ (menu)
+   - Ação: abrir o SideMenu global
+
+2) Quando estiver em QUALQUER outra rota:
+   - Ícone: ← (voltar)
+   - Ação: navegar DIRETAMENTE para /dashboard (context.go)
+   - NÃO usar pop, canPop, maybePop ou variações
+
+PROIBIÇÕES ABSOLUTAS:
+- ❌ Navigator.pop()
+- ❌ context.pop()
+- ❌ canPop()
+- ❌ lógica baseada em stack ou níveis hierárquicos
+- ❌ exceções por módulo
+
+MOTIVAÇÃO TÉCNICA:
+Apps map-centric exigem uma âncora de navegação estável.
+O Dashboard é a raiz única. Tudo sai dele. Tudo volta para ele.
+
+⚠️ Qualquer alteração neste comportamento exige revisão
+da documentação de navegação do SoloForte.
+
+Autor: Contrato arquitetural validado por engenheiro sênior Flutter/Dart
+════════════════════════════════════════════════════════════════════
+*/
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -16,6 +55,7 @@ class SmartButton extends ConsumerWidget {
     final String uri = matchList.uri.path;
 
     // 0. PUBLIC MAP (CTA)
+    // Contexto público: botão CTA para login
     if (uri == AppRoutes.publicMap || uri == '/') {
       return Container(
         margin: const EdgeInsets.only(bottom: 40, right: 20),
@@ -31,12 +71,14 @@ class SmartButton extends ConsumerWidget {
       );
     }
 
-    // 1. MAP (ROOT)
-    // O mapa é o home real do sistema.
-    // Usamos a constante global.
-    final bool isMapRoot = uri == AppRoutes.dashboard;
+    // REGRA ÚNICA (fonte da verdade):
+    // isDashboard = rota atual é exatamente /dashboard
+    final bool isDashboard = uri == AppRoutes.dashboard;
 
-    if (isMapRoot) {
+    // 1. DASHBOARD (/dashboard)
+    // Ícone: ☰ (menu)
+    // Ação: abrir SideMenu
+    if (isDashboard) {
       return Container(
         margin: const EdgeInsets.only(bottom: 40, right: 20),
         child: FloatingActionButton(
@@ -49,47 +91,16 @@ class SmartButton extends ConsumerWidget {
       );
     }
 
-    // 2. MÓDULOS PRINCIPAIS (LEVEL 1)
-    // Regra CONTRATUAL: L1 sempre volta para o Mapa (sem exceção).
-    // Não decide entre Menu ou Back. Sempre Back to Map.
-    final Set<String> moduleRoots = {
-      AppRoutes.clients,
-      AppRoutes.reports,
-      AppRoutes.settings,
-      AppRoutes.agenda,
-      AppRoutes.feedback,
-    };
-
-    // Strict exact match for L1
-    final bool isModuleRoot = moduleRoots.contains(uri);
-
-    if (isModuleRoot) {
-      return Container(
-        margin: const EdgeInsets.only(bottom: 40, right: 20),
-        child: FloatingActionButton(
-          onPressed: () {
-            // L1 action: Always go to Map Root
-            context.go(AppRoutes.dashboard);
-          },
-          backgroundColor: SoloForteColors.greenIOS,
-          child: const Icon(Icons.arrow_back, color: Colors.white),
-        ),
-      );
-    }
-
-    // 3. SUBMÓDULOS (LEVEL 2+)
-    // Regra: Sub-telas apenas fazem pop.
-    // Se não houver histórico (refresh), fallback para Mapa.
+    // 2. QUALQUER OUTRA ROTA AUTENTICADA
+    // Ícone: ← (voltar)
+    // Ação: navegar direto para /dashboard via go_router declarativo
+    // Sem uso de pop() - navegação determinística
     return Container(
       margin: const EdgeInsets.only(bottom: 40, right: 20),
       child: FloatingActionButton(
         onPressed: () {
-          if (context.canPop()) {
-            context.pop();
-          } else {
-            // Fallback para ROOT
-            context.go(AppRoutes.dashboard);
-          }
+          // Navegação declarativa: sempre volta para o dashboard
+          context.go(AppRoutes.dashboard);
         },
         backgroundColor: SoloForteColors.greenIOS,
         child: const Icon(Icons.arrow_back, color: Colors.white),

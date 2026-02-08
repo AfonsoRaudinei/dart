@@ -269,7 +269,7 @@ class OccurrencesSheet extends ConsumerWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             DropdownButtonFormField<String>(
-              value: selectedType,
+              initialValue: selectedType,
               items: [
                 'Urgente',
                 'Aviso',

@@ -339,7 +339,7 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
                 const SizedBox(height: 16),
                 // Urgência
                 DropdownButtonFormField<String>(
-                  value: selectedType,
+                  initialValue: selectedType,
                   items: ['Urgente', 'Aviso', 'Info']
                       .map((t) => DropdownMenuItem(value: t, child: Text(t)))
                       .toList(),
