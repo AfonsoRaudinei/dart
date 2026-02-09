@@ -402,16 +402,18 @@ class DrawingUtils {
     } else if (geometry is DrawingMultiPolygon) {
       for (var poly in geometry.coordinates) {
         final p = DrawingPolygon(coordinates: poly);
-        if (!_isValidPolygon(p))
+        if (!_isValidPolygon(p)) {
           return const DrawingValidationResult.error(
             "Parte do multipolígono é inválida.",
           );
+        }
 
         if (!skipExpensiveChecks) {
-          if (_hasSelfIntersection(p))
+          if (_hasSelfIntersection(p)) {
             return const DrawingValidationResult.error(
               "Linhas da área estão se cruzando.",
             );
+          }
         }
       }
     }
@@ -451,8 +453,9 @@ class DrawingUtils {
     if (b1.minX > b2.maxX ||
         b1.maxX < b2.minX ||
         b1.minY > b2.maxY ||
-        b1.maxY < b2.minY)
+        b1.maxY < b2.minY) {
       return false;
+    }
 
     // Check intersection or containment
     return _checkIntersectionOrContainment(g1, g2);
@@ -465,8 +468,9 @@ class DrawingUtils {
     // Flatten geometries to list of polygons (rings)
     List<List<List<double>>> getRings(DrawingGeometry g) {
       if (g is DrawingPolygon) return g.coordinates;
-      if (g is DrawingMultiPolygon)
+      if (g is DrawingMultiPolygon) {
         return g.coordinates.expand((i) => i).toList();
+      }
       return [];
     }
 

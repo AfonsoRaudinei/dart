@@ -109,8 +109,9 @@ class DrawingController extends ChangeNotifier {
   /// Returns the text instruction for the tooltip
   String get instructionText {
     if (_errorMessage != null) return "Erro: $_errorMessage";
-    if (!_validationResult.isValid)
+    if (!_validationResult.isValid) {
       return "⚠️ ${_validationResult.message}"; // Validation Error
+    }
 
     switch (_interactionMode) {
       case DrawingInteraction.importing:
@@ -118,21 +119,25 @@ class DrawingController extends ChangeNotifier {
       case DrawingInteraction.importPreview:
         return "Confira a área e confirme ou cancele";
       case DrawingInteraction.unionSelection:
-        if (_pendingFeatureB == null)
+        if (_pendingFeatureB == null) {
           return "Seleção de União: Toque na segunda área";
+        }
         return "Confirme a união das áreas";
       case DrawingInteraction.differenceSelection:
-        if (_previewGeometry == null)
+        if (_previewGeometry == null) {
           return "Seleção de Diferença: Toque na área a subtrair";
+        }
         return "Confirme a subtração";
       case DrawingInteraction.intersectionSelection:
-        if (_pendingFeatureB == null)
+        if (_pendingFeatureB == null) {
           return "Seleção de Interseção: Toque na segunda área";
+        }
         return "Confirme a interseção";
 
       case DrawingInteraction.editing:
-        if (_isHighComplexity)
+        if (_isHighComplexity) {
           return "⚠️ Área complexa — validação simplificada";
+        }
         if (_isSnapping) return "⚡ Ponto ajustado (snap)";
         return "Arraste: Mover • Toque na linha: Adicionar • Toque no ponto: Remover";
       case DrawingInteraction.normal:

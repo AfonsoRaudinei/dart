@@ -1,32 +1,40 @@
 /*
 ════════════════════════════════════════════════════════════════════
-SMART BUTTON — CONTRATO DE NAVEGAÇÃO (SOLOFORTE)
+SMART BUTTON — CONTRATO MAP-FIRST (SOLOFORTE)
 ════════════════════════════════════════════════════════════════════
 
-Este botão é um CONTROLE SISTÊMICO, não um botão de tela.
+Este botão é um CONTROLE SISTÊMICO ÚNICO, não um botão de tela.
 
 REGRA CANÔNICA (TRAVA DETERMINÍSTICA):
-- O Dashboard (/dashboard) é o centro absoluto do aplicativo.
+- O Mapa (/map) é o centro absoluto do aplicativo.
 - O comportamento é 100% determinístico e baseado APENAS na rota atual.
-- Classificação via AppRoutes.getLevel() — SEM heurísticas frágeis.
+- Classificação via AppRoutes.getLevel() — SEM heurísticas.
+- Navegação SEMPRE declarativa via context.go() — SEM pop()/canPop().
 
-NÍVEIS DE NAVEGAÇÃO:
+COMPORTAMENTO OFICIAL:
 ┌─────────┬───────────────────────┬─────────┬───────────────────────────────┐
 │ Nível   │ Rota                  │ Ícone   │ Ação                          │
 ├─────────┼───────────────────────┼─────────┼───────────────────────────────┤
-│ L0      │ /dashboard            │ ☰       │ Abrir SideMenu                │
-│ L1      │ /settings, /clients   │ ←       │ go('/dashboard')              │
-│ L2+     │ /clients/:id/...      │ ←       │ pop() ou go('/dashboard')     │
+│ L0      │ /map                  │ ☰       │ Abrir SideMenu                │
+│ L1/L2+  │ Qualquer outra        │ ←       │ go('/map')                    │
 │ PUBLIC  │ /public-map, /login   │ CTA     │ "Acessar SoloForte"           │
 └─────────┴───────────────────────┴─────────┴───────────────────────────────┘
 
 PROIBIÇÕES ABSOLUTAS:
-❌ Lógica baseada em Navigator.canPop() para decidir ícone
-❌ Depender de stack ou histórico implícito
-❌ Comparar URI com contains() como regra principal
-❌ Exceções por módulo sem estar no Set explícito
+❌ Navigator.pop() ou context.pop()
+❌ Navigator.canPop() ou context.canPop()
+❌ Lógica baseada em stack de navegação
+❌ Múltiplos FABs no sistema
+❌ Esconder o FAB em qualquer fluxo
+❌ Transformar FAB em botão contextual (salvar, cancelar, etc.)
 
-⚠️ Qualquer alteração neste comportamento exige revisão arquitetural.
+PRINCÍPIO DE OURO:
+"No mapa, o FAB governa o sistema."
+"Fora do mapa, o FAB retorna ao mapa."
+Nada além disso.
+
+⚠️ Qualquer alteração exige revisão arquitetural formal.
+Ver: docs/arquitetura-navegacao.md (Seção 5)
 ════════════════════════════════════════════════════════════════════
 */
 import 'package:flutter/material.dart';
@@ -81,7 +89,8 @@ class SmartButton extends ConsumerWidget {
 
       case RouteLevel.l0:
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // L0: DASHBOARD/MAPA — ☰ Abre SideMenu
+        // L0: MAPA — ☰ Abre SideMenu
+        // Único FAB que não navega
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         return _buildFAB(
           context,
@@ -96,38 +105,20 @@ class SmartButton extends ConsumerWidget {
         );
 
       case RouteLevel.l1:
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // L1: MÓDULOS RAIZ — ← Volta para o mapa via go()
-        // NÃO usa pop() — navegação declarativa direta
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        return _buildFAB(
-          context,
-          child: FloatingActionButton(
-            heroTag: 'smart_button_back_l1',
-            onPressed: () {
-              context.go(AppRoutes.dashboard);
-            },
-            backgroundColor: SoloForteColors.greenIOS,
-            child: const Icon(Icons.arrow_back, color: Colors.white),
-          ),
-        );
-
       case RouteLevel.l2Plus:
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // L2+: SUBTELAS — ← Volta um nível via pop()
-        // Se stack vazia, fallback para go('/dashboard')
+        // L1/L2+: FORA DO MAPA — ← Retorna ao mapa via go()
+        // CONTRATO MAP-FIRST: Navegação declarativa obrigatória
+        // ❌ SEM pop() — ❌ SEM canPop() — ❌ SEM stack
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         return _buildFAB(
           context,
           child: FloatingActionButton(
-            heroTag: 'smart_button_back_l2',
+            heroTag: 'smart_button_back',
             onPressed: () {
-              // Tenta pop; se não puder, vai para dashboard
-              if (context.canPop()) {
-                context.pop();
-              } else {
-                context.go(AppRoutes.dashboard);
-              }
+              // Retorno EXPLÍCITO e DECLARATIVO para o mapa
+              // Funciona sempre: deep link, hot restart, app kill, etc.
+              context.go(AppRoutes.map);
             },
             backgroundColor: SoloForteColors.greenIOS,
             child: const Icon(Icons.arrow_back, color: Colors.white),

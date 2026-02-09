@@ -44,9 +44,9 @@ GoRouter router(Ref ref) {
         return AppRoutes.publicMap;
       }
 
-      // If auth, redirect login/signup/public-map to dashboard
+      // If auth, redirect login/signup/public-map to map
       if (isAuth && isPublicRoute) {
-        return AppRoutes.dashboard;
+        return AppRoutes.map;
       }
 
       return null;
@@ -67,12 +67,19 @@ GoRouter router(Ref ref) {
             path: AppRoutes.signup,
             builder: (_, __) => const SignupScreen(),
           ),
+          // ════════════════════════════════════════════════════════════════
+          // ROTA CANÔNICA: /map (MAP-FIRST)
+          // ════════════════════════════════════════════════════════════════
           GoRoute(
-            path: AppRoutes.dashboard,
+            path: AppRoutes.map,
             builder: (_, __) => const PrivateMapScreen(),
           ),
-          // Redirect legado /map -> /dashboard
-          GoRoute(path: '/map', redirect: (_, __) => AppRoutes.dashboard),
+          // Redirect legado /dashboard -> /map
+          // ignore: deprecated_member_use_from_same_package
+          GoRoute(
+            path: AppRoutes.dashboard,
+            redirect: (_, __) => AppRoutes.map,
+          ),
           GoRoute(
             path: AppRoutes.settings,
             builder: (_, __) => const SettingsScreen(),

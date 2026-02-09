@@ -1,6 +1,6 @@
 # CONTRATO ARQUITETURAL DE NAMESPACES DE ROTAS
 **STATUS: CONTRATO CONGELADO**
-**DATA:** 08/02/2026
+**ÚLTIMA ATUALIZAÇÃO:** 09/02/2026 — Decisão Arquitetural MAP-FIRST
 
 Este documento define a estratégia oficial de namespaces de rotas no SoloForte.
 É a fonte da verdade para toda lógica que depende de contexto de navegação.
@@ -37,19 +37,18 @@ deve operar sobre **namespaces**, nunca sobre strings exatas.
 
 ## 3. NAMESPACES CANÔNICOS DO SISTEMA
 
-### 3.1. `/dashboard/*` — Namespace Central (Mapa)
+### 3.1. `/map` — Namespace Central (Mapa)
 
-O Dashboard é o **centro do app** e é tratado como **namespace raiz funcional**.
+O Mapa é o **centro do app** e é tratado como **namespace raiz funcional**.
 
-**Inclui, mas não se limita a:**
-- `/dashboard`
-- `/dashboard/mapa-tecnico`
-- `/dashboard/clima-eventos`
-- `/dashboard/ocorrencias`
-- `/dashboard/publicacoes`
-- Qualquer rota futura sob `/dashboard/*`
+**Rota canônica:**
+- `/map`
 
-⚠️ **Todas essas rotas SÃO Dashboard** do ponto de vista arquitetural.
+⚠️ **IMPORTANTE:** `/map` é um **singleton** — não possui sub-rotas válidas.
+
+**Contextos do mapa (clima, ocorrências, NDVI, etc.) são estado interno, NÃO rotas.**
+
+Qualquer tentativa de criar `/map/mapa-tecnico`, `/map/ocorrencias`, etc. é **violação arquitetural grave**.
 
 ---
 
@@ -63,9 +62,9 @@ O Dashboard é o **centro do app** e é tratado como **namespace raiz funcional*
 - Histórico
 
 **Rotas sob esse namespace:**
-- **NÃO** são Dashboard
+- **NÃO** são Mapa
 - **NÃO** abrem SideMenu
-- Usam botão global de **retorno ao Dashboard**
+- Usam botão global de **retorno ao Mapa** (`/map`)
 
 ---
 
@@ -78,8 +77,8 @@ O Dashboard é o **centro do app** e é tratado como **namespace raiz funcional*
 - Sessão
 
 **Mesmo comportamento:**
-- Fora do Dashboard
-- Retorno explícito para `/dashboard`
+- Fora do Mapa
+- Retorno explícito para `/map`
 
 ---
 
@@ -90,24 +89,22 @@ O Dashboard é o **centro do app** e é tratado como **namespace raiz funcional*
 ```dart
 final path = GoRouterState.of(context).uri.path;
 
-final bool isDashboard =
-    path == AppRoutes.dashboard ||
-    path.startsWith('${AppRoutes.dashboard}/');
+final bool isMap = path == AppRoutes.map;
 ```
 
 **Ou, com constantes:**
 ```dart
-final bool isDashboard = path == AppRoutes.dashboard || 
-                         path.startsWith('${AppRoutes.dashboard}/');
-
+final bool isMap = path == AppRoutes.map;
 final bool isConsultoria = path.startsWith('/consultoria/');
 final bool isSettings = path.startsWith('/settings');
 ```
 
+⚠️ **IMPORTANTE:** `/map` NÃO aceita `startsWith('/map/')` porque **não possui sub-rotas válidas**.
+
 ### 4.2. Proibições Absolutas
 
 É expressamente proibido:
-- ❌ Usar igualdade exata apenas (`path == '/dashboard'`)
+- ❌ Usar `path.startsWith('/map/')` (não existem sub-rotas)
 - ❌ Inferir namespace por widget visível
 - ❌ Usar histórico de navegação (`canPop`, stack)
 - ❌ Criar exceções "só para essa rota"
@@ -143,8 +140,8 @@ O SoloForte adota navegação **declarativa e determinística**.
 - ❌ Navegação baseada em stack
 
 **Obrigatório:**
-- ✅ `context.go('/dashboard')`
-- ✅ `context.go(AppRoutes.dashboard)`
+- ✅ `context.go('/map')`
+- ✅ `context.go(AppRoutes.map)`
 - ✅ Rotas explícitas
 
 O **namespace define o destino**, não o histórico.
@@ -155,8 +152,8 @@ O **namespace define o destino**, não o histórico.
 
 É expressamente proibido:
 
-1. Criar lógica especial para `/dashboard/mapa-tecnico` isoladamente
-2. Tratar `/dashboard` como tela única (ignorando sub-rotas)
+1. Criar sub-rotas sob `/map` (ex: `/map/mapa-tecnico`)
+2. Tratar `/map` como namespace com sub-rotas
 3. Criar exceções "só para essa rota" sem namespace
 4. Basear comportamento em `ModalRoute.of(context)`
 5. Inferir contexto por visibilidade de widget
@@ -193,19 +190,18 @@ O SoloForte é:
 ### 9.1. SmartButton (Correto)
 ```dart
 final path = GoRouterState.of(context).uri.path;
-final bool isDashboard = path == AppRoutes.dashboard || 
-                         path.startsWith('${AppRoutes.dashboard}/');
+final bool isMap = path == AppRoutes.map;
 
-if (isDashboard) {
+if (isMap) {
   // Ícone: ☰ (Menu)
   return FloatingActionButton(
     onPressed: () => Scaffold.of(context).openEndDrawer(),
     child: Icon(Icons.menu),
   );
 } else {
-  // Ícone: ← (Voltar para Dashboard)
+  // Ícone: ← (Voltar para Mapa)
   return FloatingActionButton(
-    onPressed: () => context.go(AppRoutes.dashboard),
+    onPressed: () => context.go(AppRoutes.map),
     child: Icon(Icons.arrow_back),
   );
 }
@@ -213,8 +209,8 @@ if (isDashboard) {
 
 ### 9.2. SmartButton (ERRADO — NÃO FAZER)
 ```dart
-// ❌ ERRADO: Usa igualdade exata
-final bool isDashboard = path == '/dashboard';
+// ❌ ERRADO: Tenta usar sub-rotas de /map que não existem
+final bool isMap = path.startsWith('/map/');
 
 // ❌ ERRADO: Depende de widget
 if (child is PrivateMapScreen) { ... }
@@ -231,7 +227,7 @@ Ao criar um novo domínio funcional (ex: `/marketing/*`, `/analise/*`):
 
 1. **Documentar** o namespace em `AppRoutes`
 2. **Atualizar** SmartButton se necessário
-3. **Definir** comportamento de retorno (sempre para `/dashboard`)
+3. **Definir** comportamento de retorno (sempre para `/map`)
 4. **Testar** deep links e navegação direta
 5. **NÃO** criar lógica especial por rota exata
 
@@ -241,8 +237,8 @@ Ao criar um novo domínio funcional (ex: `/marketing/*`, `/analise/*`):
 
 Todo agente técnico, humano ou IA, deve respeitar:
 
-> "Dashboard é um **namespace**, não uma rota única.
-> Sub-rotas pertencem ao mesmo domínio.
+> "O Mapa (`/map`) é um **singleton**, não um namespace com sub-rotas.
+> Contextos do mapa (clima, ocorrências, NDVI) são **estado interno**, não rotas.
 > Componentes globais **nunca** usam igualdade exata de path.
 > Navegação é **declarativa**, não baseada em stack."
 
