@@ -76,8 +76,6 @@ class FieldMapAdapter {
       case SyncStatus.local_only:
         status = FieldSyncStatus.localOnly;
         break;
-      default:
-        status = FieldSyncStatus.error;
     }
 
     // Color logic

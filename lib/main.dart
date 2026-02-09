@@ -4,7 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'core/router/app_router.dart';
 import 'core/session/session_storage.dart';
-import 'core/services/sync_service.dart';
+import 'core/services/sync_orchestrator.dart';
 import 'modules/settings/data/settings_repository.dart';
 import 'modules/settings/presentation/providers/settings_providers.dart';
 import 'modules/settings/presentation/theme/app_themes.dart';
@@ -38,7 +38,7 @@ class SoloForteApp extends ConsumerWidget {
     final router = ref.watch(routerProvider);
     final themeMode = ref.watch(themeProvider);
 
-    ref.read(syncServiceProvider);
+    ref.read(syncOrchestratorProvider);
 
     return MaterialApp.router(
       title: 'SoloForte',
