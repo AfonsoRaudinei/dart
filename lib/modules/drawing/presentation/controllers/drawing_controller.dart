@@ -2,14 +2,16 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:latlong2/latlong.dart';
-import 'drawing_models.dart';
-import 'drawing_utils.dart';
-import 'drawing_repository.dart';
+import '../../domain/models/drawing_models.dart';
+import '../../domain/drawing_utils.dart';
+import '../../domain/drawing_state.dart';
+import '../../data/repositories/drawing_repository.dart';
 
 /// Controller for the Drawing Mode state.
 /// This manages the current list of features (active drawings) and the current interaction state.
 class DrawingController extends ChangeNotifier {
   final DrawingRepository _repository;
+  final DrawingStateMachine _stateMachine = DrawingStateMachine();
 
   DrawingController({DrawingRepository? repository})
     : _repository = repository ?? DrawingRepository() {
@@ -53,6 +55,7 @@ class DrawingController extends ChangeNotifier {
   DrawingGeometry? _previewGeometry; // Result preview
   bool _isDirty = false;
   bool _isSnapping = false; // RT-DRAW-09 Feedback state
+  final List<LatLng> _currentPoints = []; // Pontos do desenho atual
 
   // Performance State
   bool _isHighComplexity = false;
@@ -63,19 +66,104 @@ class DrawingController extends ChangeNotifier {
   List<DrawingFeature> get features => List.unmodifiable(_features);
   DrawingFeature? get selectedFeature => _selectedFeature;
   bool get isHighComplexity => _isHighComplexity;
+
+  // Legacy getters (deprecated - use currentState)
   DrawingInteraction get interactionMode => _interactionMode;
+
+  // New state machine getters
+  DrawingState get currentState => _stateMachine.currentState;
+  DrawingTool get currentTool => _stateMachine.currentTool;
+  BooleanOperationType get booleanOperation => _stateMachine.booleanOperation;
+
   DrawingFeature? get pendingFeatureA => _pendingFeatureA;
   DrawingFeature? get pendingFeatureB => _pendingFeatureB;
+
   DrawingGeometry? get previewGeometry => _previewGeometry;
 
-  DrawingGeometry? get liveGeometry {
-    if (_interactionMode == DrawingInteraction.importPreview) {
-      return _previewGeometry;
+  // Helper to map legacy DrawingInteraction to new DrawingState
+  DrawingState _mapInteractionToState(DrawingInteraction interaction) {
+    switch (interaction) {
+      case DrawingInteraction.normal:
+        return DrawingState.idle;
+      case DrawingInteraction.importing:
+        return DrawingState.armed; // Importing is like selecting import tool
+      case DrawingInteraction.importPreview:
+        return DrawingState.importPreview;
+      case DrawingInteraction.editing:
+        return DrawingState.editing;
+      case DrawingInteraction.unionSelection:
+      case DrawingInteraction.differenceSelection:
+      case DrawingInteraction.intersectionSelection:
+        return DrawingState.booleanOperation;
     }
-    if (_interactionMode == DrawingInteraction.editing) {
+  }
+
+  // Helper to sync state machine with legacy _interactionMode
+  void _syncStateMachine() {
+    final targetState = _mapInteractionToState(_interactionMode);
+    if (_stateMachine.currentState != targetState) {
+      try {
+        _stateMachine.transitionTo(targetState);
+      } catch (e) {
+        // Transition not allowed - reset to idle
+        if (kDebugMode) {
+          print(
+            'State transition failed: ${_stateMachine.currentState} -> $targetState',
+          );
+        }
+        _stateMachine.reset();
+        _interactionMode = DrawingInteraction.normal;
+      }
+    }
+  }
+
+  DrawingGeometry? get liveGeometry {
+    // 1. Editing
+    if (currentState == DrawingState.editing ||
+        _interactionMode == DrawingInteraction.editing) {
       return _editGeometry;
     }
+
+    // 2. Import / Boolean Ops
+    if (currentState == DrawingState.importPreview ||
+        currentState == DrawingState.booleanOperation) {
+      return _previewGeometry;
+    }
+
+    // 3. Manual Sketch (Drawing)
+    if (_currentPoints.isNotEmpty) {
+      if (_currentPoints.length < 2) return null;
+      final ring = _currentPoints
+          .map((p) => [p.longitude, p.latitude])
+          .toList();
+
+      // Auto-close for visual polygon
+      if (currentTool == DrawingTool.polygon ||
+          currentTool == DrawingTool.freehand) {
+        if (ring.length > 2) {
+          if ((ring.first[0] - ring.last[0]).abs() > 1e-9 ||
+              (ring.first[1] - ring.last[1]).abs() > 1e-9) {
+            ring.add(ring.first);
+          }
+        }
+        return DrawingPolygon(coordinates: [ring]);
+      }
+    }
+
     return _manualSketch;
+  }
+
+  void appendDrawingPoint(LatLng point) {
+    if (currentState != DrawingState.armed &&
+        currentState != DrawingState.drawing)
+      return;
+
+    if (currentState == DrawingState.armed) {
+      _stateMachine.beginAddingPoints();
+    }
+
+    _currentPoints.add(point);
+    notifyListeners();
   }
 
   // Manual Sketch State
@@ -278,6 +366,8 @@ class DrawingController extends ChangeNotifier {
     _repository.saveFeature(newFeature); // Persist
     _selectedFeature = newFeature;
     _isDirty = true;
+    _stateMachine.confirm(); // State machine reset
+    _interactionMode = DrawingInteraction.normal;
     notifyListeners();
   }
 
@@ -370,6 +460,47 @@ class DrawingController extends ChangeNotifier {
   }
 
   // ===========================================================================
+  // TOOL SELECTION
+  // ===========================================================================
+
+  void selectTool(String toolKey) {
+    DrawingTool tool;
+    switch (toolKey) {
+      case 'polygon':
+        tool = DrawingTool.polygon;
+        break;
+      case 'freehand':
+        tool = DrawingTool.freehand;
+        break;
+      case 'pivot':
+        tool = DrawingTool.pivot;
+        break;
+      case 'rectangle':
+        tool = DrawingTool.rectangle;
+        break;
+      case 'circle':
+        tool = DrawingTool.circle;
+        break;
+      default:
+        tool = DrawingTool.none;
+    }
+
+    // Sync with state machine
+    try {
+      if (tool != DrawingTool.none) {
+        _stateMachine.startDrawing(tool);
+        _interactionMode =
+            DrawingInteraction.normal; // Ensure mode is normal for drawing
+      } else {
+        _stateMachine.cancel();
+      }
+    } catch (e) {
+      if (kDebugMode) print('Tool selection failed: $e');
+    }
+    notifyListeners();
+  }
+
+  // ===========================================================================
   // BOOLEAN OPERATIONS FLOW (RT-DRAW-07)
   // ===========================================================================
 
@@ -381,6 +512,8 @@ class DrawingController extends ChangeNotifier {
     _manualSketch = null;
     _currentImportOrigin = null;
     _errorMessage = null;
+    _stateMachine.cancel(); // Use state machine cancel
+    _syncStateMachine();
     notifyListeners();
   }
 
@@ -390,6 +523,22 @@ class DrawingController extends ChangeNotifier {
         _interactionMode != DrawingInteraction.importing) {}
 
     _manualSketch = geometry;
+
+    // Detect state transition from ARMED to DRAWING
+    if (_manualSketch != null &&
+        _stateMachine.currentState == DrawingState.armed) {
+      try {
+        _stateMachine.beginAddingPoints();
+      } catch (e) {
+        // Already drawing or invalid
+      }
+    }
+
+    // If sketch is cleared, go back to armed if we were drawing
+    if (_manualSketch == null &&
+        _stateMachine.currentState == DrawingState.drawing) {
+      // Optionally handle cancel here or wait for user action
+    }
 
     // Snap logic for manual sketch
     // Reset snap state
@@ -422,6 +571,7 @@ class DrawingController extends ChangeNotifier {
     _undoStack.add(_cloneGeometry(_editGeometry!));
 
     _interactionMode = DrawingInteraction.editing;
+    _syncStateMachine();
     notifyListeners();
   }
 
@@ -431,6 +581,7 @@ class DrawingController extends ChangeNotifier {
     // Revert to selected state (normal or selected)
     // Actually keep selection but exit edit mode
     _interactionMode = DrawingInteraction.normal;
+    _syncStateMachine();
     notifyListeners();
   }
 
@@ -462,6 +613,36 @@ class DrawingController extends ChangeNotifier {
       _editGeometry = _cloneGeometry(_undoStack.last);
       notifyListeners();
     }
+  }
+
+  /// Attempts to find a feature at the given coordinate.
+  DrawingFeature? findFeatureAt(LatLng point) {
+    // Iterate in reverse to pick top-most feature
+    for (var i = _features.length - 1; i >= 0; i--) {
+      final f = _features[i];
+      if (!f.properties.ativo) continue;
+
+      if (f.geometry is DrawingPolygon) {
+        final poly = f.geometry as DrawingPolygon;
+        if (poly.coordinates.isEmpty) continue;
+
+        // Check outer ring
+        if (DrawingUtils.isPointInPolygon(point, poly.coordinates.first)) {
+          // Check holes
+          bool inHole = false;
+          if (poly.coordinates.length > 1) {
+            for (var j = 1; j < poly.coordinates.length; j++) {
+              if (DrawingUtils.isPointInPolygon(point, poly.coordinates[j])) {
+                inHole = true;
+                break;
+              }
+            }
+          }
+          if (!inHole) return f;
+        }
+      }
+    }
+    return null;
   }
 
   /// Called by Map when a user drags a vertex.
@@ -615,6 +796,7 @@ class DrawingController extends ChangeNotifier {
     _selectedFeature = null;
     _interactionMode = DrawingInteraction.importing;
     _errorMessage = null;
+    _syncStateMachine();
     notifyListeners();
   }
 
@@ -642,6 +824,7 @@ class DrawingController extends ChangeNotifier {
           _currentImportOrigin = isKmz
               ? DrawingOrigin.importacao_kmz
               : DrawingOrigin.importacao_kml;
+          _syncStateMachine();
         } else {
           _interactionMode = DrawingInteraction.normal;
           _errorMessage = "O arquivo não contém geometria válida (Polygon).";
@@ -667,6 +850,7 @@ class DrawingController extends ChangeNotifier {
     _pendingFeatureB = null;
     _previewGeometry = null;
     _interactionMode = DrawingInteraction.unionSelection;
+    _stateMachine.startBooleanOperation(BooleanOperationType.union);
     notifyListeners();
   }
 
@@ -676,6 +860,7 @@ class DrawingController extends ChangeNotifier {
     _pendingFeatureB = null;
     _previewGeometry = null;
     _interactionMode = DrawingInteraction.differenceSelection;
+    _stateMachine.startBooleanOperation(BooleanOperationType.difference);
     notifyListeners();
   }
 
@@ -685,6 +870,7 @@ class DrawingController extends ChangeNotifier {
     _pendingFeatureB = null;
     _previewGeometry = null;
     _interactionMode = DrawingInteraction.intersectionSelection;
+    _stateMachine.startBooleanOperation(BooleanOperationType.intersection);
     notifyListeners();
   }
 

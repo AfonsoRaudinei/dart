@@ -1,6 +1,6 @@
-import 'drawing_local_store.dart';
-import 'drawing_models.dart';
-import 'drawing_sync_service.dart';
+import '../data_sources/drawing_local_store.dart';
+import '../../domain/models/drawing_models.dart';
+import '../data_sources/drawing_sync_service.dart';
 
 class DrawingRepository {
   final DrawingLocalStore _localStore;

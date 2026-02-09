@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'drawing_controller.dart';
-import 'drawing_models.dart';
+import '../controllers/drawing_controller.dart';
+import '../../domain/models/drawing_models.dart';
 
 class DrawingSheet extends StatefulWidget {
   final DrawingController controller;

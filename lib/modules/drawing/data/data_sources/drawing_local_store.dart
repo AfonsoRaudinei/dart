@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:sqflite/sqflite.dart';
-import '../../../../../../core/database/database_helper.dart';
-import 'drawing_models.dart';
+import '../../../../core/database/database_helper.dart';
+import '../../domain/models/drawing_models.dart';
 
 class DrawingLocalStore {
   final DatabaseHelper _dbHelper = DatabaseHelper.instance;

@@ -1,4 +1,4 @@
-import 'drawing_models.dart';
+import '../../domain/models/drawing_models.dart';
 
 class DrawingRemoteStore {
   // Stub for remote API integration

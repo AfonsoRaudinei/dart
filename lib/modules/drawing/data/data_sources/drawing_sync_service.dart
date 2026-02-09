@@ -1,6 +1,6 @@
 import 'drawing_local_store.dart';
 import 'drawing_remote_store.dart';
-import 'drawing_models.dart';
+import '../../domain/models/drawing_models.dart';
 
 class DrawingSyncResult {
   final List<DrawingFeature> updated;

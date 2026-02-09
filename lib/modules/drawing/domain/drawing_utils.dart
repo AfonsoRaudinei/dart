@@ -6,7 +6,7 @@ import 'package:archive/archive.dart';
 import 'package:latlong2/latlong.dart';
 
 import 'package:uuid/uuid.dart';
-import 'drawing_models.dart';
+import 'models/drawing_models.dart';
 
 class DrawingUtils {
   static const Uuid _uuid = Uuid();
@@ -942,6 +942,25 @@ class DrawingUtils {
     double dy = y - yy;
 
     return math.sqrt(dx * dx + dy * dy);
+  }
+
+  /// Tests if a point [lng, lat] is inside a polygon ring [[lng, lat], ...].
+  /// Uses Ray Casting algorithm.
+  /// Point is LatLng. Ring is List<List<double>> ie [[lng, lat], ...]
+  static bool isPointInPolygon(LatLng point, List<List<double>> ring) {
+    bool inside = false;
+    double x = point.longitude;
+    double y = point.latitude;
+
+    for (int i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+      double xi = ring[i][0], yi = ring[i][1];
+      double xj = ring[j][0], yj = ring[j][1];
+
+      bool intersect =
+          ((yi > y) != (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+      if (intersect) inside = !inside;
+    }
+    return inside;
   }
 }
 
