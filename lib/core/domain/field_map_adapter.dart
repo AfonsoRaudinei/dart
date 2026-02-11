@@ -38,9 +38,9 @@ class FieldMapAdapter {
       type: FieldMapSource.consultoria,
       syncStatus:
           FieldSyncStatus.synced, // Assumindo synced pois vem do backend
-      fillColor: isSelected
-          ? Colors.green.withOpacity(0.4)
-          : Colors.green.withOpacity(0.15),
+        fillColor: isSelected
+          ? Colors.green.withValues(alpha: 0.4)
+          : Colors.green.withValues(alpha: 0.15),
       strokeColor: isSelected ? Colors.white : Colors.green[800]!,
       strokeWidth: isSelected ? 3.0 : 1.5,
       isSelected: isSelected,
@@ -80,8 +80,9 @@ class FieldMapAdapter {
 
     // Color logic
     Color baseColor = Colors.blue;
-    if (feature.properties.autorTipo == AuthorType.consultor)
+    if (feature.properties.autorTipo == AuthorType.consultor) {
       baseColor = Colors.purple;
+    }
 
     return FieldMapEntity(
       id: feature.id,
@@ -90,9 +91,9 @@ class FieldMapAdapter {
       geometryRings: rings,
       type: FieldMapSource.drawing,
       syncStatus: status,
-      fillColor: isSelected
-          ? baseColor.withOpacity(0.4)
-          : baseColor.withOpacity(0.15),
+        fillColor: isSelected
+          ? baseColor.withValues(alpha: 0.4)
+          : baseColor.withValues(alpha: 0.15),
       strokeColor: isSelected ? Colors.white : baseColor,
       strokeWidth: isSelected ? 3.0 : 2.0,
       isSelected: isSelected,

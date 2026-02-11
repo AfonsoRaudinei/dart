@@ -19,6 +19,10 @@ Future<void> main() async {
 
   final prefs = await SharedPreferences.getInstance();
 
+  // Limpar token fake de sessão anterior (one-time cleanup)
+  // TODO: Remover após primeiro run limpo
+  await prefs.remove('session_token');
+
   runApp(
     ProviderScope(
       overrides: [

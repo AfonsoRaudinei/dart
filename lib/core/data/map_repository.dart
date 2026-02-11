@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:latlong2/latlong.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../domain/map_models.dart';
+import '../domain/publicacao.dart';
 import '../utils/map_logger.dart';
 import '../utils/map_metrics.dart';
 
@@ -24,8 +25,9 @@ class MapRepository {
     }
   }
 
-  // -- Publications Flow --
+  // -- Publications Flow (Legacy — @deprecated, use fetchPublicacoes/addPublicacao) --
 
+  @Deprecated('Use fetchPublicacoes() instead — ADR-007')
   Future<List<Publication>> fetchPublications() async {
     // Observability: Load metrics from disk on start
     await MapMetrics.loadMetrics();
@@ -74,6 +76,7 @@ class MapRepository {
     }
   }
 
+  @Deprecated('Use addPublicacao() instead — ADR-007')
   Future<void> addPublication(Publication pub) async {
     final prefs = await SharedPreferences.getInstance();
     final cachedString = prefs.getString(_kPublicationsCacheKey);
@@ -124,7 +127,9 @@ class MapRepository {
 
     try {
       final decoded = jsonDecode(cachedString);
+      // ignore: deprecated_member_use_from_same_package
       List<Publication> currentList = (decoded['data'] as List)
+          // ignore: deprecated_member_use_from_same_package
           .map((e) => Publication.fromJson(e))
           .toList();
       bool listModified = false;
@@ -223,6 +228,7 @@ class MapRepository {
     }
   }
 
+  // ignore: deprecated_member_use_from_same_package
   Future<void> _savePublicationsToCache(List<Publication> list) async {
     final prefs = await SharedPreferences.getInstance();
     final cachePayload = {
@@ -273,8 +279,134 @@ class MapRepository {
     return _getMockLayers();
   }
 
-  // -- Mocks --
+  // -- Publicacoes (Canonical — ADR-007) --
 
+  static const String _kPublicacoesCacheKey = 'cache_publicacoes_v2';
+
+  Future<List<Publicacao>> fetchPublicacoes() async {
+    await MapMetrics.loadMetrics();
+
+    final prefs = await SharedPreferences.getInstance();
+    final cachedString = prefs.getString(_kPublicacoesCacheKey);
+
+    if (cachedString != null) {
+      try {
+        final decoded = jsonDecode(cachedString);
+        final List dataList = decoded['data'];
+        final cachedData =
+            dataList.map((e) => Publicacao.fromJson(e)).toList();
+
+        MapLogger.logEvent(
+          'Publicacoes: Loaded ${cachedData.length} items from local cache',
+        );
+        return cachedData;
+      } catch (e, s) {
+        MapLogger.logError('Failed to parse publicacoes cache', s);
+      }
+    }
+
+    try {
+      if (await _isOnline()) {
+        MapLogger.logEvent('Publicacoes Cache Empty. Fetching Remote...');
+        await Future.delayed(const Duration(milliseconds: 500));
+        final remoteData = _getMockPublicacoes();
+        await _savePublicacoesToCache(remoteData);
+        return remoteData;
+      } else {
+        MapLogger.logEvent('Offline and Publicacoes Cache Empty.');
+        return [];
+      }
+    } catch (e, s) {
+      MapLogger.logError('Fetch Publicacoes failed', s);
+      return [];
+    }
+  }
+
+  Future<void> addPublicacao(Publicacao pub) async {
+    final prefs = await SharedPreferences.getInstance();
+    final cachedString = prefs.getString(_kPublicacoesCacheKey);
+    List<Publicacao> currentList = [];
+
+    if (cachedString != null) {
+      try {
+        final decoded = jsonDecode(cachedString);
+        currentList = (decoded['data'] as List)
+            .map((e) => Publicacao.fromJson(e))
+            .toList();
+      } catch (_) {}
+    }
+
+    currentList.add(pub);
+    await _savePublicacoesToCache(currentList);
+    MapLogger.logEvent('Publicacao Added Locally: ${pub.id}');
+  }
+
+  Future<void> _savePublicacoesToCache(List<Publicacao> list) async {
+    final prefs = await SharedPreferences.getInstance();
+    final cachePayload = {
+      'timestamp': DateTime.now().toIso8601String(),
+      'data': list.map((e) => e.toJson()).toList(),
+    };
+    await prefs.setString(_kPublicacoesCacheKey, jsonEncode(cachePayload));
+  }
+
+  List<Publicacao> _getMockPublicacoes() {
+    return [
+      Publicacao(
+        id: 'pub-1',
+        latitude: -23.555,
+        longitude: -46.638,
+        createdAt: DateTime.now().subtract(const Duration(hours: 2)),
+        status: 'ativo',
+        isVisible: true,
+        type: PublicacaoType.resultado,
+        title: 'Resultado de Campo — Soja',
+        description: 'Praga identificada na soja. Recomendo aplicação imediata.',
+        clientName: 'Fazenda São Jorge',
+        areaName: 'Talhão 12',
+        media: [
+          MediaItem(
+            id: 'media-1',
+            path: 'assets/images/placeholder.png',
+            caption: 'Vista geral',
+            isCover: true,
+          ),
+        ],
+      ),
+      Publicacao(
+        id: 'pub-2',
+        latitude: -23.548,
+        longitude: -46.628,
+        createdAt: DateTime.now().subtract(const Duration(days: 1)),
+        status: 'ativo',
+        isVisible: true,
+        type: PublicacaoType.tecnico,
+        title: 'Análise de Solo Concluída',
+        description: 'Análise de solo concluída. pH ideal para plantio.',
+        clientName: 'Fazenda Boa Vista',
+        areaName: 'Lote 3',
+        media: [],
+      ),
+      Publicacao(
+        id: 'pub-3',
+        latitude: -23.560,
+        longitude: -46.645,
+        createdAt: DateTime.now().subtract(const Duration(days: 3)),
+        status: 'ativo',
+        isVisible: true,
+        type: PublicacaoType.institucional,
+        title: 'Visita Técnica Realizada',
+        description: 'Visita de campo realizada. Tudo conforme o planejado.',
+        clientName: 'Cooperativa Central',
+        areaName: 'Sede',
+        media: [],
+      ),
+    ];
+  }
+
+  // -- Mocks (Legacy — @deprecated) --
+
+  @Deprecated('Use _getMockPublicacoes() instead — ADR-007')
   List<Publication> _getMockPublications() {
     return [
       Publication(

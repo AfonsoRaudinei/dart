@@ -1,3 +1,4 @@
+// ignore_for_file: constant_identifier_names
 // =============================================================================
 // ENUMS
 // =============================================================================
@@ -161,6 +162,7 @@ class DrawingProperties {
   final String autorId;
   final AuthorType autorTipo;
   final String? operacaoId;
+  final String? clienteId;  // 🆕 NOVO CAMPO
   final String? fazendaId;
   final double areaHa;
   final int versao;
@@ -184,6 +186,7 @@ class DrawingProperties {
     required this.autorId,
     required this.autorTipo,
     this.operacaoId,
+    this.clienteId,     // 🆕 NOVO CAMPO
     this.fazendaId,
     required this.areaHa,
     required this.versao,
@@ -204,6 +207,7 @@ class DrawingProperties {
     'autor_id': autorId,
     'autor_tipo': autorTipo.toJson(),
     'operacao_id': operacaoId,
+    'cliente_id': clienteId,  // 🆕 NOVO CAMPO
     'fazenda_id': fazendaId,
     'area_ha': areaHa,
     'versao': versao,
@@ -225,6 +229,7 @@ class DrawingProperties {
       autorId: json['autor_id'],
       autorTipo: AuthorType.fromJson(json['autor_tipo']),
       operacaoId: json['operacao_id'],
+      clienteId: json['cliente_id'],  // 🆕 NOVO CAMPO
       fazendaId: json['fazenda_id'],
       areaHa: (json['area_ha'] as num).toDouble(),
       versao: json['versao'],
@@ -248,6 +253,7 @@ class DrawingProperties {
     String? autorId,
     AuthorType? autorTipo,
     String? operacaoId,
+    String? clienteId,     // 🆕 NOVO CAMPO
     String? fazendaId,
     double? areaHa,
     int? versao,
@@ -267,6 +273,7 @@ class DrawingProperties {
       autorId: autorId ?? this.autorId,
       autorTipo: autorTipo ?? this.autorTipo,
       operacaoId: operacaoId ?? this.operacaoId,
+      clienteId: clienteId ?? this.clienteId,     // 🆕 NOVO CAMPO
       fazendaId: fazendaId ?? this.fazendaId,
       areaHa: areaHa ?? this.areaHa,
       versao: versao ?? this.versao,

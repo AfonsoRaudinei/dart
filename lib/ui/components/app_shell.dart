@@ -1,18 +1,24 @@
 /*
 ════════════════════════════════════════════════════════════════════
-APP SHELL — CONTRATO DE NAVEGAÇÃO (SOLOFORTE)
+APP SHELL — ARQUITETURA STACK-BASED (SOLOFORTE)
 ════════════════════════════════════════════════════════════════════
 
-Este widget é o SHELL GLOBAL do aplicativo, responsável por:
-1. Exibir o SmartButton (FAB global) — SEMPRE visível em rotas autenticadas
-2. Gerenciar o SideMenu (drawer) — SOMENTE disponível no Dashboard/Mapa
+Shell global refatorado para arquitetura Stack.
+
+PROBLEMAS RESOLVIDOS:
+1. ✅ Botão verde (SmartButton) não some mais quando menu abre
+2. ✅ SideMenu como overlay controlado, não Drawer do Scaffold
+3. ✅ Botão sempre visível, acima de tudo (z-index correto)
+
+HIERARQUIA (z-index do Stack):
+ ├── child (conteúdo da tela)
+ ├── SideMenuOverlay (overlay do menu)
+ └── SmartButton (sempre no topo)
 
 REGRAS:
-- SmartButton: Sempre presente (ele decide seu próprio ícone/ação)
-- SideMenu (endDrawer): APENAS quando AppRoutes.canOpenSideMenu() = true
-- drawerEnableOpenDragGesture: DESABILITADO fora do mapa (evitar swipe acidental)
-
-⚠️ Qualquer alteração neste comportamento exige revisão arquitetural.
+- SmartButton: Sempre visível, nunca coberto
+- SideMenu: Overlay controlado via provider, não Drawer
+- Sem dependência de Scaffold endDrawer
 ════════════════════════════════════════════════════════════════════
 */
 import 'package:flutter/material.dart';
@@ -20,9 +26,24 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/session/session_controller.dart';
 import '../../core/session/session_models.dart';
-import '../../core/router/app_routes.dart';
-import 'side_menu.dart';
+import 'side_menu_overlay.dart';
 import 'smart_button.dart';
+
+/// Wrapper que força rebuild do SmartButton a cada mudança de rota.
+/// GoRouterState.of(context) registra dependência no InheritedWidget
+/// do GoRouter, causando rebuild automático quando a rota muda.
+class _SmartButtonWrapper extends StatelessWidget {
+  const _SmartButtonWrapper();
+
+  @override
+  Widget build(BuildContext context) {
+    // Ler a rota aqui registra a dependência no InheritedWidget do GoRouter.
+    // Quando a rota muda, este widget é reconstruído, e consequentemente
+    // o SmartButton filho também, recebendo a rota atualizada.
+    final uri = GoRouterState.of(context).uri.path;
+    return SmartButton(key: ValueKey(uri));
+  }
+}
 
 class AppShell extends ConsumerWidget {
   final Widget child;
@@ -37,37 +58,34 @@ class AppShell extends ConsumerWidget {
     final isAuth = session is SessionAuthenticated;
 
     // ═══════════════════════════════════════════════════════════════
-    // 2. OBTER ROTA ATUAL PARA DECIDIR SOBRE SIDEMENU
-    // ═══════════════════════════════════════════════════════════════
-    final String currentPath = GoRouterState.of(context).uri.path;
-
-    // SideMenu SOMENTE no Dashboard (L0)
-    // Usar método determinístico de AppRoutes
-    final bool canOpenMenu = isAuth && AppRoutes.canOpenSideMenu(currentPath);
-
-    // ═══════════════════════════════════════════════════════════════
-    // 3. SCAFFOLD COM REGRAS ESTRITAS
+    // 2. SCAFFOLD SIMPLES (SEM DRAWER)
     // ═══════════════════════════════════════════════════════════════
     return Scaffold(
-      body: child,
+      body: Stack(
+        children: [
+          // Camada 1: Conteúdo da tela (child)
+          child,
 
-      // SmartButton SEMPRE visível (ele decide seu próprio comportamento)
-      floatingActionButton: const SmartButton(),
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+          // Camada 2: SideMenu Overlay (apenas se autenticado)
+          // Backdrop do menu NÃO bloqueia botão (z-index inferior)
+          if (isAuth) const SideMenuOverlay(),
 
-      // SideMenu SOMENTE disponível no L0 (Dashboard/Mapa)
-      // null em qualquer outra rota = impossível abrir mesmo programaticamente
-      endDrawer: canOpenMenu ? const SideMenu() : null,
-
-      // Desabilitar swipe para abrir drawer fora do mapa
-      // Isso evita abertura acidental em outras telas
-      endDrawerEnableOpenDragGesture: canOpenMenu,
-
-      // Cor do overlay quando drawer está aberto
-      drawerScrimColor: Colors.black54,
+          // Camada 3: SmartButton (sempre no topo)
+          // Z-index máximo garante:
+          // - Visível com menu aberto
+          // - Clicável com menu aberto
+          // - Não bloqueado por backdrop
+          // NÃO usar const — precisa rebuild a cada mudança de rota
+          if (isAuth)
+            const Positioned(
+              bottom: 40,
+              right: 20,
+              child: _SmartButtonWrapper(),
+            ),
+        ],
+      ),
 
       // Mapas não redimensionam com teclado (mas forms sim)
-      // Shell mantém false; telas individuais podem sobrescrever
       resizeToAvoidBottomInset: false,
     );
   }

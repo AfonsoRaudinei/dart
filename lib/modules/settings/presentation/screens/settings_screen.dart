@@ -40,15 +40,19 @@ class SettingsScreen extends ConsumerWidget {
               children: [
                 // Header Customizado
                 Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Text(
-                    'Configurações',
-                    style: const TextStyle(
-                      fontSize: 32,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: -0.5,
-                      color: Colors.black,
-                    ),
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                  child: Row(
+                    children: [
+                      Text(
+                        'Configurações',
+                        style: const TextStyle(
+                          fontSize: 32,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: -0.5,
+                          color: Colors.black,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 // Scrollable Content

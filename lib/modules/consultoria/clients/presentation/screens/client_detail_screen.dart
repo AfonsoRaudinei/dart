@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart'; // For calls/whatsapp
+import 'package:soloforte_app/core/router/app_routes.dart';
 import 'package:soloforte_app/ui/theme/soloforte_theme.dart';
 import '../providers/clients_providers.dart';
-import '../../../../../core/router/app_routes.dart';
 
 class ClientDetailScreen extends ConsumerWidget {
   final String clientId;
@@ -35,8 +35,8 @@ class ClientDetailScreen extends ConsumerWidget {
                   child: Row(
                     children: [
                       IconButton(
-                        icon: const Icon(Icons.arrow_back, color: Colors.black),
-                        onPressed: () => context.pop(),
+                        icon: const Icon(Icons.arrow_back),
+                        onPressed: () => Navigator.of(context).pop(),
                       ),
                       Expanded(
                         child: Text(
@@ -279,7 +279,7 @@ class _ActionButton extends StatelessWidget {
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.2),
+                  color: Colors.black.withValues(alpha: 0.2),
                   blurRadius: 8,
                   offset: const Offset(0, 4),
                 ),

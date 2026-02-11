@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
@@ -10,6 +9,7 @@ import 'package:uuid/uuid.dart';
 import '../../../clients/presentation/providers/clients_providers.dart';
 import '../../domain/report_model.dart';
 import '../providers/reports_providers.dart';
+import 'package:go_router/go_router.dart';
 
 class ReportFormScreen extends ConsumerStatefulWidget {
   const ReportFormScreen({super.key});
@@ -125,20 +125,19 @@ class _ReportFormScreenState extends ConsumerState<ReportFormScreen> {
                 vertical: 8.0,
               ),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
-                    'Novo Relatório',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black,
+                  Expanded(
+                    child: Text(
+                      'Novo Relatório',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black,
+                      ),
                     ),
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.close, color: Colors.black),
-                    onPressed: () => context.pop(),
-                  ),
+                  const SizedBox(width: 48),
                 ],
               ),
             ),

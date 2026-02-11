@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:soloforte_app/core/database/database_helper.dart';
 
@@ -7,8 +8,8 @@ class AgronomicSyncService {
   AgronomicSyncService(this._supabase);
 
   // Status Constants
-  static const int STATUS_SYNCED = 0;
-  static const int STATUS_DIRTY = 1;
+  static const int statusSynced = 0;
+  static const int statusDirty = 1;
 
   Future<void> syncNow() async {
     // 1. Push Pending Changes (Local -> Remote)
@@ -29,7 +30,7 @@ class AgronomicSyncService {
     final dirtyClients = await db.query(
       'clients',
       where: 'sync_status = ?',
-      whereArgs: [STATUS_DIRTY],
+      whereArgs: [statusDirty],
     );
 
     for (final row in dirtyClients) {
@@ -43,13 +44,13 @@ class AgronomicSyncService {
         // Mark as synced
         await db.update(
           'clients',
-          {'sync_status': STATUS_SYNCED},
+          {'sync_status': statusSynced},
           where: 'id = ?',
           whereArgs: [row['id']],
         );
       } catch (e) {
         // Keep dirty. Log error ideally.
-        print('Error syncing client ${row['id']}: $e');
+        debugPrint('Error syncing client ${row['id']}: $e');
       }
     }
   }
@@ -59,7 +60,7 @@ class AgronomicSyncService {
     final dirtyFarms = await db.query(
       'farms',
       where: 'sync_status = ?',
-      whereArgs: [STATUS_DIRTY],
+      whereArgs: [statusDirty],
     );
 
     for (final row in dirtyFarms) {
@@ -70,12 +71,12 @@ class AgronomicSyncService {
         await _supabase.from('farms').upsert(data);
         await db.update(
           'farms',
-          {'sync_status': STATUS_SYNCED},
+          {'sync_status': statusSynced},
           where: 'id = ?',
           whereArgs: [row['id']],
         );
       } catch (e) {
-        print('Error syncing farm ${row['id']}: $e');
+        debugPrint('Error syncing farm ${row['id']}: $e');
       }
     }
   }
@@ -85,7 +86,7 @@ class AgronomicSyncService {
     final dirtyFields = await db.query(
       'fields',
       where: 'sync_status = ?',
-      whereArgs: [STATUS_DIRTY],
+      whereArgs: [statusDirty],
     );
 
     for (final row in dirtyFields) {
@@ -96,12 +97,12 @@ class AgronomicSyncService {
         await _supabase.from('fields').upsert(data);
         await db.update(
           'fields',
-          {'sync_status': STATUS_SYNCED},
+          {'sync_status': statusSynced},
           where: 'id = ?',
           whereArgs: [row['id']],
         );
       } catch (e) {
-        print('Error syncing field ${row['id']}: $e');
+        debugPrint('Error syncing field ${row['id']}: $e');
       }
     }
   }
@@ -157,7 +158,7 @@ class AgronomicSyncService {
         // If remote is newer, overwrite.
 
         if (remoteUpdatedAt.isBefore(localUpdatedAt) &&
-            (local.first['sync_status'] == STATUS_DIRTY)) {
+            (local.first['sync_status'] == statusDirty)) {
           shouldUpdate = false;
         }
       }
@@ -165,7 +166,7 @@ class AgronomicSyncService {
       if (shouldUpdate) {
         final data = Map<String, dynamic>.from(remote as Map);
         data['sync_status'] =
-            STATUS_SYNCED; // Coming from remote, so it is synced
+            statusSynced; // Coming from remote, so it is synced
 
         final exists = await db.query(
           'clients',
@@ -202,14 +203,14 @@ class AgronomicSyncService {
         );
         final remoteUpdatedAt = DateTime.parse(remote['updated_at'] as String);
         if (remoteUpdatedAt.isBefore(localUpdatedAt) &&
-            (local.first['sync_status'] == STATUS_DIRTY)) {
+            (local.first['sync_status'] == statusDirty)) {
           shouldUpdate = false;
         }
       }
 
       if (shouldUpdate) {
         final data = Map<String, dynamic>.from(remote as Map);
-        data['sync_status'] = STATUS_SYNCED;
+        data['sync_status'] = statusSynced;
 
         final exists = await db.query(
           'farms',
@@ -246,14 +247,14 @@ class AgronomicSyncService {
         );
         final remoteUpdatedAt = DateTime.parse(remote['updated_at'] as String);
         if (remoteUpdatedAt.isBefore(localUpdatedAt) &&
-            (local.first['sync_status'] == STATUS_DIRTY)) {
+            (local.first['sync_status'] == statusDirty)) {
           shouldUpdate = false;
         }
       }
 
       if (shouldUpdate) {
         final data = Map<String, dynamic>.from(remote as Map);
-        data['sync_status'] = STATUS_SYNCED;
+        data['sync_status'] = statusSynced;
 
         final exists = await db.query(
           'fields',

@@ -1,3 +1,4 @@
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -19,7 +20,8 @@ import '../../modules/drawing/presentation/widgets/drawing_layers.dart';
 import '../../modules/drawing/presentation/controllers/drawing_controller.dart';
 import '../../modules/drawing/domain/drawing_state.dart';
 import '../../modules/drawing/presentation/widgets/drawing_state_indicator.dart';
-import '../../modules/dashboard/controllers/location_controller.dart';
+import '../../modules/dashboard/controllers/location_controller.dart'
+    show LocationController, locationStateProvider, userPositionProvider;
 import '../../modules/dashboard/domain/location_state.dart';
 import '../../modules/visitas/presentation/controllers/visit_controller.dart';
 import '../../modules/visitas/presentation/widgets/visit_sheet.dart';
@@ -27,6 +29,9 @@ import '../../modules/visitas/presentation/controllers/geofence_controller.dart'
 import '../../modules/consultoria/occurrences/presentation/controllers/occurrence_controller.dart';
 import '../../modules/consultoria/occurrences/domain/occurrence.dart' as occ;
 import '../components/map/occurrence_pins.dart';
+import '../../core/domain/publicacao.dart';
+import '../components/map/publicacao_pins.dart';
+import '../components/map/publicacao_preview_sheet.dart';
 
 class PrivateMapScreen extends ConsumerStatefulWidget {
   const PrivateMapScreen({super.key});
@@ -47,11 +52,20 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
   );
 
   bool _hasInitialFocused = false;
+  bool _isMapReady = false; // 🔒 Guard: MapController só pode ser usado se true
   // bool _isDrawMode = false; // Removed legacy mode
   // bool _isCheckedIn = false; // Replaced by VisitController
   String? _activeSheetName;
   late LocationController _locationController;
   ArmedMode _armedMode = ArmedMode.none; // Estado do modo armado
+
+  // ── Publicações canônicas (estado local ao mapa — ADR-007) ──
+  final List<Publicacao> _publicacoes = _getMockPublicacoes();
+
+  void _handlePublicacaoPinTap(Publicacao publicacao) {
+    // Pin abre preview contextual — nunca navega diretamente
+    showPublicacaoPreview(context, publicacao);
+  }
 
   @override
   void initState() {
@@ -100,21 +114,29 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
     }
   }
 
-  void _handleAutoZoom(List<Publication>? pubs) {
+  void _handleAutoZoom(List<Publicacao>? pubs) {
     if (_hasInitialFocused || pubs == null || pubs.isEmpty) return;
+
+    // 🔒 Guard: Só executar se o mapa estiver pronto
+    if (!_isMapReady) return;
 
     // "Contexto Inicial Inteligente" - First Load Only
     _hasInitialFocused = true;
 
     try {
-      final points = pubs.map((e) => e.location).toList();
+      final points = pubs.map((e) => LatLng(e.latitude, e.longitude)).toList();
       if (points.isNotEmpty) {
         final bounds = LatLngBounds.fromPoints(points);
         // Slightly delay to allow map to render size
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          _mapController.fitCamera(
-            CameraFit.bounds(bounds: bounds, padding: const EdgeInsets.all(50)),
-          );
+          if (_isMapReady && mounted) {
+            _mapController.fitCamera(
+              CameraFit.bounds(
+                bounds: bounds,
+                padding: const EdgeInsets.all(50),
+              ),
+            );
+          }
         });
       }
     } catch (_) {}
@@ -269,6 +291,9 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
   }
 
   void _centerOnUser() {
+    // � Guard: Verificar se o mapa está pronto
+    if (!_isMapReady) return;
+
     // 🚫 Bloqueio: GPS obrigatório para centralizar
     if (!_locationController.isAvailable) {
       _showGPSRequiredMessage();
@@ -278,7 +303,7 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
     HapticFeedback.lightImpact();
     // Centralizar na posição real do usuário
     _locationController.getCurrentPosition().then((position) {
-      if (position != null) {
+      if (position != null && _isMapReady && mounted) {
         _mapController.move(
           LatLng(position.latitude, position.longitude),
           16.0,
@@ -346,15 +371,16 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
     final stopwatch = Stopwatch()..start();
     final activeLayer = ref.watch(activeLayerProvider);
     final showMarkers = ref.watch(showMarkersProvider);
-    final publications = ref.watch(publicationsDataProvider);
+    final publications = ref.watch(publicacoesDataProvider);
     final mapFields = ref.watch(mapFieldsProvider);
     final selectedTalhaoId = ref.watch(selectedTalhaoIdProvider);
     final locationState = ref.watch(locationStateProvider);
+    final userPosition = ref.watch(userPositionProvider);
     final visitState = ref.watch(visitControllerProvider);
     final isCheckedIn = visitState.value?.status == 'active';
 
     // Auto-focus Logic
-    ref.listen(publicationsDataProvider, (prev, next) {
+    ref.listen(publicacoesDataProvider, (prev, next) {
       if (next.hasValue && !_hasInitialFocused) {
         _handleAutoZoom(next.value);
       }
@@ -368,7 +394,7 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
         markers.addAll(
           pubs.map(
             (pub) => Marker(
-              point: pub.location,
+              point: LatLng(pub.latitude, pub.longitude),
               width: 40,
               height: 40,
               child: const Icon(
@@ -406,6 +432,20 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
               FlutterMap(
                 mapController: _mapController,
                 options: MapOptions(
+                  onMapReady: () {
+                    // 🎯 OPÇÃO A: Callback oficial do FlutterMap v7
+                    setState(() => _isMapReady = true);
+
+                    // Tentar executar auto-zoom pendente após o mapa estar pronto
+                    if (!_hasInitialFocused) {
+                      final pubs = ref
+                          .read(publicacoesDataProvider)
+                          .valueOrNull;
+                      if (pubs != null && pubs.isNotEmpty) {
+                        _handleAutoZoom(pubs);
+                      }
+                    }
+                  },
                   initialCenter: const LatLng(-23.5505, -46.6333),
                   initialZoom: 14.0,
                   minZoom: 4.0,
@@ -563,7 +603,8 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
                       ),
                     ),
                   // Layer de pins de ocorrências
-                  if (ref.watch(occurrencesListProvider).hasValue)
+                  if (ref.watch(occurrencesListProvider).hasValue &&
+                      _isMapReady)
                     MarkerLayer(
                       markers: OccurrencePinGenerator.generatePins(
                         occurrences: ref.watch(occurrencesListProvider).value!,
@@ -571,87 +612,166 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
                         onPinTap: _handleOccurrencePinTap,
                       ),
                     ),
+                  // Layer de pins de Publicação (ADR-007)
+                  // Pin → tap → preview contextual (bottom sheet)
+                  if (showMarkers && _publicacoes.isNotEmpty && _isMapReady)
+                    MarkerLayer(
+                      markers: PublicacaoPinGenerator.generatePins(
+                        publicacoes: _publicacoes,
+                        currentZoom: _mapController.camera.zoom,
+                        onPinTap: _handlePublicacaoPinTap,
+                      ),
+                    ),
+                  // Ponto azul da localização do usuário - iOS style
+                  if (_isMapReady &&
+                      locationState == LocationState.available &&
+                      userPosition != null)
+                    MarkerLayer(
+                      markers: [
+                        Marker(
+                          point: userPosition,
+                          width: 60,
+                          height: 60,
+                          alignment: Alignment.center,
+                          child: Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              Container(
+                                width: 36,
+                                height: 36,
+                                decoration: BoxDecoration(
+                                  color: const Color(
+                                    0xFF007AFF,
+                                  ).withValues(alpha: 0.12),
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: const Color(
+                                      0xFF007AFF,
+                                    ).withValues(alpha: 0.25),
+                                    width: 1.5,
+                                  ),
+                                ),
+                              ),
+                              Container(
+                                width: 16,
+                                height: 16,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF007AFF),
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: Colors.white,
+                                    width: 3,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                 ],
               ),
 
-              // 1. Header with Data Trust (Top Left)
+              // 1. Header with Data Trust (Top Left) - Estilo Premium iOS
               Positioned(
                 top: 60,
                 left: 20,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    color: SoloForteColors.white.withValues(alpha: 0.95),
-                    borderRadius: SoloRadius.radiusMd,
-                    boxShadow: [SoloShadows.shadowSm],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Container(
-                            width: 8,
-                            height: 8,
-                            decoration: const BoxDecoration(
-                              color: SoloForteColors.greenIOS,
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            'SoloForte Privado',
-                            style: SoloTextStyles.headingMedium.copyWith(
-                              fontSize: 14,
-                            ),
-                          ),
-                        ],
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: BackdropFilter(
+                    filter: ui.ImageFilter.blur(
+                      sigmaX: 10,
+                      sigmaY: 10,
+                    ), // Glass effect
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
                       ),
-                      const SizedBox(height: 2),
-                      Padding(
-                        padding: const EdgeInsets.only(left: 16),
-                        child: Text(
-                          'Atualizado agora', // Data Trust State
-                          style: SoloTextStyles.label.copyWith(fontSize: 10),
+                      decoration: BoxDecoration(
+                        color: SoloForteColors.white.withValues(alpha: 0.90),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.2),
+                          width: 1.5,
                         ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.05),
+                            offset: const Offset(0, 4),
+                            blurRadius: 16,
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 8),
-                      // GPS Status Indicator
-                      Row(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(
-                            locationState == LocationState.available
-                                ? Icons.gps_fixed
-                                : Icons.gps_off,
-                            size: 12,
-                            color: locationState == LocationState.available
-                                ? SoloForteColors.greenIOS
-                                : Colors.orange.shade700,
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                width: 8,
+                                height: 8,
+                                decoration: BoxDecoration(
+                                  color: SoloForteColors.greenIOS,
+                                  shape: BoxShape.circle,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: SoloForteColors.greenIOS
+                                          .withValues(alpha: 0.4),
+                                      blurRadius: 6,
+                                      spreadRadius: 2,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'SoloForte Privado',
+                                style: SoloTextStyles.headingMedium.copyWith(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: -0.5,
+                                ),
+                              ),
+                            ],
                           ),
-                          const SizedBox(width: 4),
-                          Text(
-                            _getGPSStatusText(locationState),
-                            style: SoloTextStyles.label.copyWith(
-                              fontSize: 9,
-                              color: locationState == LocationState.available
-                                  ? SoloForteColors.greenIOS
-                                  : Colors.orange.shade700,
+                          const SizedBox(height: 4),
+                          Padding(
+                            padding: const EdgeInsets.only(left: 16),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  locationState == LocationState.available
+                                      ? Icons.near_me_rounded
+                                      : Icons.location_disabled_rounded,
+                                  size: 12,
+                                  color:
+                                      locationState == LocationState.available
+                                      ? SoloForteColors.textSecondary
+                                      : SoloForteColors.error,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  _getGPSStatusText(locationState),
+                                  style: SoloTextStyles.label.copyWith(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w500,
+                                    color: SoloForteColors.textSecondary,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ],
                       ),
-                    ],
+                    ),
                   ),
                 ),
               ),
 
-              // 2. Action Column (Right Side)
+              // 2. Action Column (Right Side) - Floating Buttons Premium
               Positioned(
                 top: 100,
                 right: 20,
@@ -659,43 +779,44 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     _MapActionButton(
-                      icon: Icons.edit,
+                      icon: Icons.edit_outlined,
                       label: 'Desenhar',
                       isActive: _activeSheetName == 'drawing',
                       onTap: _openDrawingMode,
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 16),
 
                     _MapActionButton(
-                      icon: Icons.my_location,
+                      icon: Icons.near_me_outlined,
                       label: 'Eu',
                       onTap: _centerOnUser,
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 16),
 
                     _MapActionButton(
-                      icon: Icons.layers,
+                      icon: Icons.layers_outlined,
                       label: 'Camadas',
                       isActive: _activeSheetName == 'layers',
                       onTap: () =>
                           _showSheet(context, const LayersSheet(), 'layers'),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 16),
                     _MapActionButton(
                       icon: Icons.warning_amber_rounded,
-                      label: 'Ocorrências',
+                      label: 'Alertar',
                       isActive: _armedMode == ArmedMode.occurrences,
-                      onTap: _toggleOccurrenceMode, // ✅ Spec: Clique arma modo
+                      isWarning: true,
+                      onTap: _toggleOccurrenceMode,
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 16),
                     _MapActionButton(
                       icon: Icons.article_outlined,
                       label: 'Publicações',
-                      isActive: _activeSheetName == 'publications',
+                      isActive: _activeSheetName == 'publicacoes',
                       onTap: () => _showSheet(
                         context,
-                        const PublicationsSheet(),
-                        'publications',
+                        const PublicacoesSheet(),
+                        'publicacoes',
                       ),
                     ),
                   ],
@@ -735,22 +856,34 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
     required Color textColor,
   }) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       decoration: BoxDecoration(
         color: color,
         borderRadius: BorderRadius.circular(30),
-        boxShadow: SoloShadows.shadowButton,
-        border: Border.all(color: SoloForteColors.greenIOS, width: 2),
+        boxShadow: [
+          BoxShadow(
+            color: isCheckedIn
+                ? SoloForteColors.greenIOS.withValues(alpha: 0.4)
+                : Colors.black.withValues(alpha: 0.1),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
+        border: isCheckedIn
+            ? null
+            : Border.all(color: SoloForteColors.greenIOS, width: 2),
       ),
       child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(isCheckedIn ? Icons.check : Icons.sync_alt, color: textColor),
+          Icon(isCheckedIn ? Icons.check : Icons.near_me, color: textColor),
           const SizedBox(width: 8),
           Text(
             label,
             style: SoloTextStyles.body.copyWith(
               color: textColor,
               fontWeight: FontWeight.bold,
+              fontSize: 16,
             ),
           ),
         ],
@@ -772,59 +905,112 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
   }
 }
 
-class _MapActionButton extends StatelessWidget {
+class _MapActionButton extends StatefulWidget {
   final IconData icon;
   final String label;
   final VoidCallback onTap;
   final bool isActive;
+  final bool isWarning;
 
   const _MapActionButton({
     required this.icon,
     required this.label,
     required this.onTap,
     this.isActive = false,
+    this.isWarning = false,
   });
 
   @override
+  State<_MapActionButton> createState() => _MapActionButtonState();
+}
+
+class _MapActionButtonState extends State<_MapActionButton>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 100),
+    );
+    _scaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 0.9,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _onTapDown(_) => _controller.forward();
+  void _onTapUp(_) {
+    _controller.reverse();
+    widget.onTap();
+  }
+
+  void _onTapCancel() => _controller.reverse();
+
+  @override
   Widget build(BuildContext context) {
+    final bgColor = widget.isActive
+        ? (widget.isWarning ? Colors.orange.shade600 : SoloForteColors.greenIOS)
+        : SoloForteColors.white;
+
+    final iconColor = widget.isActive
+        ? Colors.white
+        : SoloForteColors.textPrimary;
+
     return Column(
       children: [
         GestureDetector(
-          onTap: onTap,
-          child: Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: isActive
-                  ? SoloForteColors.greenIOS
-                  : SoloForteColors.white,
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: isActive
-                      ? SoloForteColors.greenIOS.withValues(alpha: 0.4)
-                      : Colors.black.withValues(alpha: 0.1),
-                  blurRadius: 8,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Icon(
-              icon,
-              color: isActive ? Colors.white : SoloForteColors.textPrimary,
+          onTapDown: _onTapDown,
+          onTapUp: _onTapUp,
+          onTapCancel: _onTapCancel,
+          child: ScaleTransition(
+            scale: _scaleAnimation,
+            child: Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: bgColor,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: widget.isActive
+                        ? bgColor.withValues(alpha: 0.4)
+                        : Colors.black.withValues(alpha: 0.1),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+                border: widget.isActive
+                    ? null
+                    : Border.all(
+                        color: Colors.white.withValues(alpha: 0.5),
+                        width: 1.5,
+                      ),
+              ),
+              child: Icon(widget.icon, color: iconColor, size: 24),
             ),
           ),
         ),
         const SizedBox(height: 4),
         Text(
-          label,
+          widget.label,
           style: SoloTextStyles.label.copyWith(
-            color: Colors.black,
-            fontWeight: FontWeight.bold,
+            color: const Color(0xFF1A1A1A),
+            fontWeight: FontWeight.w600,
+            fontSize: 11,
             shadows: [
               Shadow(
                 offset: const Offset(0, 1),
-                blurRadius: 2,
+                blurRadius: 4,
                 color: Colors.white.withValues(alpha: 0.8),
               ),
             ],
@@ -833,4 +1019,68 @@ class _MapActionButton extends StatelessWidget {
       ],
     );
   }
+}
+
+// ════════════════════════════════════════════════════════════════════
+// DADOS MOCK DE PUBLICAÇÃO (ADR-007)
+// Estado local ao mapa. Sem provider global. Sem módulo externo.
+// Será substituído por repositório real quando backend estiver pronto.
+// ════════════════════════════════════════════════════════════════════
+
+List<Publicacao> _getMockPublicacoes() {
+  return [
+    Publicacao(
+      id: 'pub-001',
+      latitude: -23.552,
+      longitude: -46.635,
+      createdAt: DateTime.now().subtract(const Duration(days: 5)),
+      status: 'published',
+      isVisible: true,
+      type: PublicacaoType.resultado,
+      title: 'Resultado Safra Soja',
+      description: 'Aumento de 38% na produtividade após tratamento.',
+      clientName: 'Fazenda Santa Rita',
+      areaName: 'Talhão 12',
+      media: const [
+        MediaItem(id: 'm1', path: '', caption: 'Foto resultado', isCover: true),
+      ],
+    ),
+    Publicacao(
+      id: 'pub-002',
+      latitude: -23.545,
+      longitude: -46.625,
+      createdAt: DateTime.now().subtract(const Duration(days: 10)),
+      status: 'published',
+      isVisible: true,
+      type: PublicacaoType.comparativo,
+      title: 'Antes e Depois — Irrigação',
+      description: 'Redução de 65% no consumo de água.',
+      clientName: 'Granja São Pedro',
+      areaName: 'Área Norte',
+      media: const [
+        MediaItem(id: 'm2', path: '', caption: 'Antes', isCover: true),
+        MediaItem(id: 'm3', path: '', caption: 'Depois'),
+      ],
+    ),
+    Publicacao(
+      id: 'pub-003',
+      latitude: -23.558,
+      longitude: -46.642,
+      createdAt: DateTime.now().subtract(const Duration(days: 2)),
+      status: 'published',
+      isVisible: true,
+      type: PublicacaoType.caseSucesso,
+      title: 'Case Produtividade Milho',
+      description: 'Economia de R\$ 22k na safra com manejo correto.',
+      clientName: 'Sítio Boa Esperança',
+      media: const [
+        MediaItem(
+          id: 'm4',
+          path: '',
+          caption: 'Resultado final',
+          isCover: true,
+        ),
+      ],
+    ),
+  ];
 }

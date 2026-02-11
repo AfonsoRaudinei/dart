@@ -1,6 +1,7 @@
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:flutter/foundation.dart';
 import 'dart:io';
 
 class DatabaseHelper {
@@ -20,7 +21,7 @@ class DatabaseHelper {
     String path = join(documentsDirectory.path, 'soloforte.db');
     return await openDatabase(
       path,
-      version: 8,
+      version: 9, // 🆕 Incrementado para v9
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -331,6 +332,36 @@ class DatabaseHelper {
         'CREATE INDEX idx_drawings_sync ON drawings(sync_status)',
       );
       await db.execute('CREATE INDEX idx_drawings_ativo ON drawings(ativo)');
+    }
+
+    // 🆕 MIGRAÇÃO v9: Adicionar cliente_id e fazenda_id
+    if (oldVersion < 9) {
+      // Adicionar coluna cliente_id
+      await db.execute('ALTER TABLE drawings ADD COLUMN cliente_id TEXT');
+
+      // Adicionar coluna fazenda_id (se ainda não existir)
+      try {
+        await db.execute('ALTER TABLE drawings ADD COLUMN fazenda_id TEXT');
+      } catch (e) {
+        // Coluna pode já existir, ignorar erro
+      }
+
+      // Criar índice para melhorar performance
+      await db.execute('''
+        CREATE INDEX IF NOT EXISTS idx_drawings_cliente_id 
+        ON drawings(cliente_id)
+      ''');
+
+      await db.execute('''
+        CREATE INDEX IF NOT EXISTS idx_drawings_fazenda_id 
+        ON drawings(fazenda_id)
+      ''');
+
+      if (kDebugMode) {
+        debugPrint(
+          '✅ Migração v8 → v9: cliente_id e fazenda_id adicionados à tabela drawings',
+        );
+      }
     }
   }
 

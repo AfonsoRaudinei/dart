@@ -20,7 +20,6 @@ class TalhaoMapAdapter {
           : SoloForteColors.greenIOS.withValues(alpha: 0.15),
       borderColor: isSelected ? Colors.white : SoloForteColors.greenDark,
       borderStrokeWidth: isSelected ? 3.0 : 1.5,
-      isFilled: true,
       label: talhao.name,
       labelStyle: TextStyle(
         color: Colors.black,
@@ -52,7 +51,7 @@ class TalhaoMapAdapter {
         }
       }
     } catch (e) {
-      print('Error parsing geometry: $e');
+      debugPrint('Error parsing geometry: $e');
     }
     return [];
   }

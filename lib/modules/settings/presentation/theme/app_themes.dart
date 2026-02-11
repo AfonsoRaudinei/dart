@@ -1,36 +1,138 @@
 import 'package:flutter/material.dart';
 
 class AppThemes {
-  // --- Green (Original) ---
+  // --- Design System - Estilo iOS Profissional ---
   static ThemeData get greenTheme {
+    // Design System Tokens
+    const primaryColor = Color(0xFF4ADE80); // Verde Vibrante
+    const secondaryColor = Color(0xFF1E3A2F); // Verde Escuro
+    const backgroundColor = Color(0xFFFFFFFF); // Branco principal
+    const errorColor = Color(0xFFDC2626); // Vermelho
+    const textColor = Color(0xFF1A1A1A); // Preto/Carvão
+    const secondaryTextColor = Color(0xFF6B7280); // Cinza Médio
+    const borderColor = Color(0xFFE5E7EB); // Cinza Claro (Bordas)
+
     return ThemeData(
-      primaryColor: const Color(0xFF34C759),
-      scaffoldBackgroundColor: const Color(0xFFF5F5F7),
-      fontFamily: 'SF Pro Text',
+      primaryColor: primaryColor,
+      scaffoldBackgroundColor: backgroundColor,
+      fontFamily: 'SF Pro Text', // Mantendo a fonte do sistema iOS/Android
+
       colorScheme: const ColorScheme.light(
-        primary: Color(0xFF34C759),
-        secondary: Color(0xFF2DA94D),
-        error: Color(0xFFFF3B30),
-        surface: Color(0xFFFFFFFF),
-        onPrimary: Color(0xFFFFFFFF),
-        onSecondary: Color(0xFFFFFFFF),
-        onSurface: Color(0xFF1D1D1F),
+        primary: primaryColor,
+        secondary: secondaryColor,
+        error: errorColor,
+        surface: backgroundColor,
+        onPrimary: Colors.white,
+        onSecondary: Colors.white,
+        onSurface: textColor,
       ),
+
       appBarTheme: const AppBarTheme(
-        backgroundColor: Color(0xFFF2F2F7),
+        backgroundColor: backgroundColor,
         elevation: 0,
-        foregroundColor: Color(0xFF1D1D1F),
+        centerTitle: true,
+        iconTheme: IconThemeData(color: textColor),
+        titleTextStyle: TextStyle(
+          color: textColor,
+          fontSize: 17,
+          fontWeight: FontWeight.w600,
+          fontFamily: 'SF Pro Text',
+        ),
       ),
+
+      textTheme: const TextTheme(
+        // Título de Página (24-28px Bold)
+        headlineMedium: TextStyle(
+          fontSize: 24,
+          fontWeight: FontWeight.bold,
+          color: textColor,
+          height: 1.2,
+        ),
+        // Card Title (18-20px Semibold)
+        titleLarge: TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.w600,
+          color: textColor,
+          height: 1.3,
+        ),
+        // Body (16px Regular)
+        bodyLarge: TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w400,
+          color: textColor,
+        ),
+        // Body Secundário / Labels
+        bodyMedium: TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w400,
+          color: secondaryTextColor,
+        ),
+        // Caption / Small Labels
+        bodySmall: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w400,
+          color: secondaryTextColor,
+        ),
+        // Valores Monetários (20-32px Bold)
+        displaySmall: TextStyle(
+          fontSize: 24,
+          fontWeight: FontWeight.bold,
+          color: textColor,
+        ),
+      ),
+
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: Colors.white,
+        contentPadding: const EdgeInsets.all(16), // Aumentado padding interno
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12), // Arredondamento maior
+          borderSide: const BorderSide(color: borderColor),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: borderColor),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: primaryColor, width: 2),
+        ),
+        labelStyle: const TextStyle(color: secondaryTextColor),
+        hintStyle: const TextStyle(color: Color(0xFF9CA3AF)),
+      ),
+
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF34C759),
+          backgroundColor: primaryColor,
           foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(16), // 12-16px conforme design
           ),
-          elevation: 0,
+          elevation: 4, // Sombra sutil para destaque CTA
+          shadowColor: primaryColor.withValues(alpha: 0.3),
+          textStyle: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600, // Semibold
+          ),
         ),
+      ),
+
+      // Adicionando CardTheme para consistência
+      cardTheme: CardThemeData(
+        color: Colors.white,
+        elevation: 2,
+        shadowColor: Colors.black.withValues(alpha: 0.08),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        margin: const EdgeInsets.only(bottom: 16),
+      ),
+
+      iconTheme: const IconThemeData(color: textColor, size: 24),
+
+      dividerTheme: const DividerThemeData(
+        color: borderColor,
+        thickness: 1,
+        space: 1,
       ),
     );
   }

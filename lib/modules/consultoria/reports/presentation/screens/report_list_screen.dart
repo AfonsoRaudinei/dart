@@ -23,15 +23,16 @@ class RelatoriosScreen extends ConsumerWidget {
             Padding(
               padding: const EdgeInsets.all(16.0),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
-                    'Relatórios',
-                    style: TextStyle(
-                      fontSize: 32,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: -0.5,
-                      color: Colors.black,
+                  const Expanded(
+                    child: Text(
+                      'Relatórios',
+                      style: TextStyle(
+                        fontSize: 32,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: -0.5,
+                        color: Colors.black,
+                      ),
                     ),
                   ),
                   IconButton(
@@ -117,7 +118,8 @@ class _FilterChip extends StatelessWidget {
       label: Text(label),
       selected: selected,
       onSelected: onSelected,
-      selectedColor: Theme.of(context).primaryColor.withOpacity(0.2),
+        selectedColor:
+          Theme.of(context).primaryColor.withValues(alpha: 0.2),
       checkmarkColor: Theme.of(context).primaryColor,
     );
   }
@@ -168,7 +170,7 @@ class _ReportCard extends ConsumerWidget {
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.blue.withOpacity(0.1),
+                      color: Colors.blue.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(

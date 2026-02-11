@@ -37,8 +37,8 @@ class _ClientFormScreenState extends ConsumerState<ClientFormScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   IconButton(
-                    icon: const Icon(Icons.close, color: Colors.black),
-                    onPressed: () => context.pop(),
+                    icon: const Icon(Icons.arrow_back),
+                    onPressed: () => Navigator.of(context).pop(),
                   ),
                   const Text(
                     'Novo Cliente',

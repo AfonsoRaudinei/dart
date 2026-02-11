@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../modules/consultoria/occurrences/presentation/controllers/occurrence_controller.dart';
 import 'package:soloforte_app/ui/theme/soloforte_theme.dart';
 import '../../../core/domain/map_models.dart';
+import '../../../core/domain/publicacao.dart';
 import '../../../core/state/map_state.dart';
 
 class BaseMapSheet extends StatelessWidget {
@@ -372,12 +373,13 @@ class _OccurrenceItem extends StatelessWidget {
   }
 }
 
-class PublicationsSheet extends ConsumerWidget {
-  const PublicationsSheet({super.key});
+/// Sheet de listagem de Publicações — migrado para Publicacao canônica (ADR-007).
+class PublicacoesSheet extends ConsumerWidget {
+  const PublicacoesSheet({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final pubsAsync = ref.watch(publicationsDataProvider);
+    final pubsAsync = ref.watch(publicacoesDataProvider);
 
     return BaseMapSheet(
       title: 'Publicações',
@@ -394,47 +396,75 @@ class PublicationsSheet extends ConsumerWidget {
               children: [
                 Row(
                   children: [
-                    const CircleAvatar(
-                      radius: 16,
-                      backgroundColor: SoloForteColors.textTertiary,
+                    Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: _typeColor(pub.type).withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Icon(
+                        _typeIcon(pub.type),
+                        size: 16,
+                        color: _typeColor(pub.type),
+                      ),
                     ),
                     const SizedBox(width: 10),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          pub.userName,
-                          style: SoloTextStyles.body.copyWith(
-                            fontWeight: FontWeight.w600,
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            pub.title ?? 'Sem título',
+                            style: SoloTextStyles.body.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
-                        ),
-                        Text(pub.userRole, style: SoloTextStyles.label),
-                      ],
+                          if (pub.clientName != null)
+                            Text(pub.clientName!, style: SoloTextStyles.label),
+                        ],
+                      ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 10),
                 Text(
-                  pub.description,
+                  pub.description ?? '',
                   style: SoloTextStyles.body.copyWith(
                     color: SoloForteColors.textSecondary,
                   ),
                 ),
-                // Only show image placeholder if we had real images, keeping style consistent with v1.1 stub but using "real" data fields
                 const SizedBox(height: 10),
-                Container(
-                  height: 150,
-                  decoration: BoxDecoration(
-                    color: SoloForteColors.grayLight,
-                    borderRadius: SoloRadius.radiusMd,
-                  ),
-                  child: Center(
-                    child: Icon(
-                      Icons.image,
-                      color: SoloForteColors.textTertiary,
+                // Cover image or placeholder
+                Builder(builder: (context) {
+                  final cover = pub.coverMedia;
+                  if (cover.path.isNotEmpty) {
+                    return Container(
+                      height: 150,
+                      decoration: BoxDecoration(
+                        color: SoloForteColors.grayLight,
+                        borderRadius: SoloRadius.radiusMd,
+                        image: DecorationImage(
+                          image: AssetImage(cover.path),
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                    );
+                  }
+                  return Container(
+                    height: 150,
+                    decoration: BoxDecoration(
+                      color: SoloForteColors.grayLight,
+                      borderRadius: SoloRadius.radiusMd,
                     ),
-                  ),
-                ),
+                    child: Center(
+                      child: Icon(
+                        Icons.image,
+                        color: SoloForteColors.textTertiary,
+                      ),
+                    ),
+                  );
+                }),
               ],
             );
           },
@@ -446,4 +476,38 @@ class PublicationsSheet extends ConsumerWidget {
       ),
     );
   }
+
+  Color _typeColor(PublicacaoType type) {
+    switch (type) {
+      case PublicacaoType.institucional:
+        return SoloForteColors.brand;
+      case PublicacaoType.tecnico:
+        return Colors.blue;
+      case PublicacaoType.resultado:
+        return SoloForteColors.greenIOS;
+      case PublicacaoType.comparativo:
+        return Colors.orange;
+      case PublicacaoType.caseSucesso:
+        return Colors.purple;
+    }
+  }
+
+  IconData _typeIcon(PublicacaoType type) {
+    switch (type) {
+      case PublicacaoType.institucional:
+        return Icons.business;
+      case PublicacaoType.tecnico:
+        return Icons.science;
+      case PublicacaoType.resultado:
+        return Icons.bar_chart;
+      case PublicacaoType.comparativo:
+        return Icons.compare_arrows;
+      case PublicacaoType.caseSucesso:
+        return Icons.star;
+    }
+  }
 }
+
+/// Legacy alias — mantido para backward-compatibility.
+@Deprecated('Use PublicacoesSheet instead — ADR-007')
+typedef PublicationsSheet = PublicacoesSheet;

@@ -109,9 +109,9 @@ class _OptionCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          border: Border.all(color: color.withOpacity(0.3)),
+          border: Border.all(color: color.withValues(alpha: 0.3)),
           borderRadius: BorderRadius.circular(12),
-          color: color.withOpacity(0.05),
+          color: color.withValues(alpha: 0.05),
         ),
         child: Column(
           children: [

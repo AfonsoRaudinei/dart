@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../domain/map_models.dart';
+import '../domain/publicacao.dart';
 import '../data/map_repository.dart';
 
 part 'map_state.g.dart';
@@ -59,12 +60,24 @@ class ShowMarkers extends _$ShowMarkers {
   }
 }
 
-// State for publications data
+// State for publications data (Legacy — @deprecated)
+@Deprecated('Use PublicacoesData instead — ADR-007')
 @Riverpod(keepAlive: true)
 class PublicationsData extends _$PublicationsData {
   @override
   Future<List<Publication>> build() async {
     final repo = ref.read(mapRepositoryProvider);
+    // ignore: deprecated_member_use_from_same_package
     return repo.fetchPublications();
+  }
+}
+
+// State for publicações data (Canonical — ADR-007)
+@Riverpod(keepAlive: true)
+class PublicacoesData extends _$PublicacoesData {
+  @override
+  Future<List<Publicacao>> build() async {
+    final repo = ref.read(mapRepositoryProvider);
+    return repo.fetchPublicacoes();
   }
 }

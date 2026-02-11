@@ -53,7 +53,33 @@ class AgendaScreen extends StatelessWidget {
   const AgendaScreen({super.key});
   @override
   Widget build(BuildContext context) {
-    return Center(child: Text('Agenda', style: SoloTextStyles.headingMedium));
+    return Scaffold(
+      body: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Row(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.arrow_back),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                  const SizedBox(width: 12),
+                  Text('Agenda', style: SoloTextStyles.headingMedium),
+                ],
+              ),
+            ),
+            Expanded(
+              child: Center(
+                child: Text('Agenda', style: SoloTextStyles.headingMedium),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 
@@ -62,13 +88,5 @@ class ClientesScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Center(child: Text('Clientes', style: SoloTextStyles.headingMedium));
-  }
-}
-
-class FeedbackScreen extends StatelessWidget {
-  const FeedbackScreen({super.key});
-  @override
-  Widget build(BuildContext context) {
-    return Center(child: Text('Feedback', style: SoloTextStyles.headingMedium));
   }
 }

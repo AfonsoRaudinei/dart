@@ -67,7 +67,9 @@ class GeofenceController {
                 const Duration(minutes: 5)) {
           // If old, try fresh but with timeout
           position = await Geolocator.getCurrentPosition(
-            timeLimit: const Duration(seconds: 10),
+            locationSettings: const LocationSettings(
+              timeLimit: Duration(seconds: 10),
+            ),
           );
         }
       }

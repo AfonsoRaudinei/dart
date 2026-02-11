@@ -131,7 +131,6 @@ class ReportDetailScreen extends ConsumerWidget {
                     children: [
                       // Header Customizado
                       Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Expanded(
                             child: Text(

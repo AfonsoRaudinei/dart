@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 
 class FieldDetailScreen extends StatelessWidget {
   final String farmId;
@@ -24,20 +23,23 @@ class FieldDetailScreen extends StatelessWidget {
                 vertical: 8.0,
               ),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
-                    'Talhão', // "Talhão" in Portuguese
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black,
+                  IconButton(
+                    icon: const Icon(Icons.arrow_back),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                  Expanded(
+                    child: Text(
+                      'Talhão',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black,
+                      ),
                     ),
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.close, color: Colors.black),
-                    onPressed: () => context.pop(),
-                  ),
+                  const SizedBox(width: 48),
                 ],
               ),
             ),

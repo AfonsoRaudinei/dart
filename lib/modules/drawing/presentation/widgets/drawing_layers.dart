@@ -7,7 +7,9 @@ import '../controllers/drawing_controller.dart';
 
 /// Widget responsável por renderizar as camadas de desenho no mapa.
 /// Ele escuta o controller e atualiza os polígonos conforme o estado.
-class DrawingLayerWidget extends StatelessWidget {
+///
+/// ⚡ OTIMIZADO: Usa cache para evitar reconstrução de polígonos
+class DrawingLayerWidget extends StatefulWidget {
   final DrawingController controller;
   final Function(DrawingFeature)? onFeatureTap;
 
@@ -18,11 +20,40 @@ class DrawingLayerWidget extends StatelessWidget {
   });
 
   @override
+  State<DrawingLayerWidget> createState() => _DrawingLayerWidgetState();
+}
+
+class _DrawingLayerWidgetState extends State<DrawingLayerWidget> {
+  // ⚡ CACHE: Evita reconstruir polígonos quando features não mudaram
+  List<Polygon>? _cachedPolygons;
+  List<DrawingFeature>? _lastFeatures;
+  String? _lastSelectedId;
+  DrawingGeometry? _lastLiveGeo;
+
+  @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
-      listenable: controller,
+      listenable: widget.controller,
       builder: (context, _) {
-        final features = controller.features;
+        final features = widget.controller.features;
+        final selectedId = widget.controller.selectedFeature?.id;
+        final liveGeo = widget.controller.liveGeometry;
+
+        // ⚡ CACHE CHECK: Só reconstrói se algo mudou
+        final needsRebuild =
+            _lastFeatures != features ||
+            _lastSelectedId != selectedId ||
+            _lastLiveGeo != liveGeo;
+
+        if (!needsRebuild && _cachedPolygons != null) {
+          return PolygonLayer(polygons: _cachedPolygons!);
+        }
+
+        // Atualizar cache
+        _lastFeatures = features;
+        _lastSelectedId = selectedId;
+        _lastLiveGeo = liveGeo;
+
         final polygons = <Polygon>[];
 
         // 1. Renderiza features salvas
@@ -45,7 +76,7 @@ class DrawingLayerWidget extends StatelessWidget {
                   }).toList()
                 : null;
 
-            final isSelected = feature.id == controller.selectedFeature?.id;
+            final isSelected = feature.id == selectedId;
 
             // Determina estilo
             // Se estiver selecionado no controller, sobrescreve o estilo base
@@ -74,7 +105,6 @@ class DrawingLayerWidget extends StatelessWidget {
         }
 
         // 2. Renderiza sketch manual (desenho em progresso)
-        final liveGeo = controller.liveGeometry;
         if (liveGeo is DrawingPolygon && liveGeo.coordinates.isNotEmpty) {
           final outerRing = liveGeo.coordinates.first
               .map((c) => LatLng(c[1], c[0]))
@@ -90,6 +120,9 @@ class DrawingLayerWidget extends StatelessWidget {
             ),
           );
         }
+
+        // ⚡ Salvar cache
+        _cachedPolygons = polygons;
 
         return PolygonLayer(polygons: polygons);
       },

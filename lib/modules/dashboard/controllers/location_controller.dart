@@ -1,11 +1,15 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:latlong2/latlong.dart';
 import '../domain/location_state.dart';
 
 /// Provider do estado de localização
 final locationStateProvider = StateProvider<LocationState>(
   (ref) => LocationState.checking,
 );
+
+/// Provider da posição atual do usuário
+final userPositionProvider = StateProvider<LatLng?>((ref) => null);
 
 /// Controller responsável por gerenciar o estado GPS/Localização
 /// Validação e dependência obrigatória do mapa
@@ -68,12 +72,20 @@ class LocationController {
     if (!isAvailable) return null;
 
     try {
-      return await Geolocator.getCurrentPosition(
+      final position = await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(
           accuracy: LocationAccuracy.high,
           distanceFilter: 10,
         ),
       );
+
+      // Armazenar posição no provider para renderização no mapa
+      ref.read(userPositionProvider.notifier).state = LatLng(
+        position.latitude,
+        position.longitude,
+      );
+
+      return position;
     } catch (e) {
       // Em caso de erro, retorna null
       return null;

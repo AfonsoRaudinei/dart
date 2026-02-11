@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:soloforte_app/ui/theme/soloforte_theme.dart';
 import 'package:soloforte_app/modules/consultoria/farms/data/repositories/farm_repository.dart';
 import 'package:soloforte_app/modules/consultoria/clients/presentation/providers/field_providers.dart';
@@ -54,8 +53,8 @@ class FarmDetailScreen extends ConsumerWidget {
                   child: Row(
                     children: [
                       IconButton(
-                        icon: const Icon(Icons.arrow_back, color: Colors.black),
-                        onPressed: () => context.pop(),
+                        icon: const Icon(Icons.arrow_back),
+                        onPressed: () => Navigator.of(context).pop(),
                       ),
                       Expanded(
                         child: Text(

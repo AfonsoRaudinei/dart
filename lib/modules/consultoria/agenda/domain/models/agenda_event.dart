@@ -1,4 +1,11 @@
-enum AgendaStatus { planned, in_progress, realized, cancelled }
+enum AgendaStatus {
+  planned,
+  // Mantém snake_case para compatibilidade com o backend.
+  // ignore: constant_identifier_names
+  in_progress,
+  realized,
+  cancelled,
+}
 
 class AgendaEvent {
   final String id;

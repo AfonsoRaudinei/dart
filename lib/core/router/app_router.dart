@@ -1,3 +1,8 @@
+import 'dart:convert';
+import 'dart:developer' as developer;
+
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -10,6 +15,7 @@ import '../../ui/screens/login_screen.dart';
 import '../../ui/screens/signup_screen.dart';
 import '../../ui/screens/misc_screens.dart'
     hide SettingsScreen, ClientesScreen, RelatoriosScreen;
+import '../../ui/screens/publicacao_editor_screen.dart';
 import '../../../modules/settings/presentation/screens/settings_screen.dart';
 import '../../../modules/consultoria/clients/presentation/screens/client_list_screen.dart';
 import '../../../modules/consultoria/clients/presentation/screens/client_form_screen.dart';
@@ -19,10 +25,99 @@ import '../../../modules/consultoria/reports/presentation/screens/report_form_sc
 import '../../../modules/consultoria/reports/presentation/screens/report_detail_screen.dart';
 import '../../../modules/consultoria/clients/presentation/screens/farm_detail_screen.dart';
 import '../../../modules/consultoria/clients/presentation/screens/field_detail_screen.dart';
+import '../../../modules/feedback/presentation/screens/feedback_screen.dart';
 
 import 'app_routes.dart';
 
 part 'app_router.g.dart';
+
+const String _runtimeEnvironment = String.fromEnvironment(
+  'SOLOFORTE_ENV',
+  defaultValue: 'dev',
+);
+
+bool get _isProdEnvironment =>
+    kReleaseMode && _runtimeEnvironment.toLowerCase() == 'prod';
+
+String get _environmentLabel =>
+    _isProdEnvironment ? 'prod' : _runtimeEnvironment.toLowerCase();
+
+bool get _shouldShowDashboardWarning => !_isProdEnvironment;
+
+void _instrumentDashboardRedirect({
+  required BuildContext context,
+  required SessionState session,
+  required GoRouterState state,
+}) {
+  final payload = <String, dynamic>{
+    // ignore: deprecated_member_use_from_same_package
+    'route_hit': AppRoutes.dashboard,
+    'timestamp': DateTime.now().toIso8601String(),
+    'environment': _environmentLabel,
+    'userId': _resolveObfuscatedUserId(session),
+    'source': _resolveRouteSource(state),
+  }..removeWhere((_, value) => value == null);
+
+  developer.log(jsonEncode(payload), name: 'Navigation.DeprecatedDashboard');
+
+  if (_shouldShowDashboardWarning) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final messenger = _resolveMessenger(context);
+      messenger?.showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Rota /dashboard será removida em breve. Redirecionando para /map.',
+          ),
+          behavior: SnackBarBehavior.floating,
+          duration: Duration(seconds: 4),
+        ),
+      );
+    });
+  }
+}
+
+String? _resolveObfuscatedUserId(SessionState session) {
+  if (session is SessionAuthenticated && session.token.isNotEmpty) {
+    final hash = session.token.hashCode;
+    return 'auth#$hash';
+  }
+  return null;
+}
+
+String _resolveRouteSource(GoRouterState state) {
+  final qpSource = state.uri.queryParameters['source'];
+  if (qpSource != null && qpSource.isNotEmpty) {
+    return qpSource;
+  }
+
+  final extra = state.extra;
+  if (extra is Map && extra['source'] is String) {
+    final fromExtra = (extra['source'] as String).trim();
+    if (fromExtra.isNotEmpty) {
+      return fromExtra;
+    }
+  }
+
+  if (state.uri.path.startsWith('http')) {
+    return 'deep_link';
+  }
+  return 'internal';
+}
+
+ScaffoldMessengerState? _resolveMessenger(BuildContext context) {
+  final messenger = ScaffoldMessenger.maybeOf(context);
+  if (messenger != null) {
+    return messenger;
+  }
+
+  final fallbackContext = GoRouter.of(
+    context,
+  ).routerDelegate.navigatorKey.currentContext;
+  if (fallbackContext != null) {
+    return ScaffoldMessenger.maybeOf(fallbackContext);
+  }
+  return null;
+}
 
 @Riverpod(keepAlive: true)
 GoRouter router(Ref ref) {
@@ -73,12 +168,31 @@ GoRouter router(Ref ref) {
           GoRoute(
             path: AppRoutes.map,
             builder: (_, __) => const PrivateMapScreen(),
+            routes: [
+              // Sub-rota de edição de Publicação (ADR-007)
+              // Permanece L0 (AppRoutes.getLevel detecta /map/*)
+              // Acesso exclusivo via CTA do preview contextual
+              GoRoute(
+                path: 'publicacao/edit',
+                builder: (_, state) {
+                  final id = state.uri.queryParameters['id'] ?? '';
+                  return PublicacaoEditorScreen(publicacaoId: id);
+                },
+              ),
+            ],
           ),
-          // Redirect legado /dashboard -> /map
-          // ignore: deprecated_member_use_from_same_package
+          // Redirect legado /dashboard -> /map com telemetria controlada
           GoRoute(
+            // ignore: deprecated_member_use_from_same_package
             path: AppRoutes.dashboard,
-            redirect: (_, __) => AppRoutes.map,
+            redirect: (context, state) {
+              _instrumentDashboardRedirect(
+                context: context,
+                session: session,
+                state: state,
+              );
+              return AppRoutes.map;
+            },
           ),
           GoRoute(
             path: AppRoutes.settings,

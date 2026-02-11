@@ -24,15 +24,16 @@ class ClientListScreen extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
-                        'Clientes',
-                        style: TextStyle(
-                          fontSize: 32,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: -0.5,
-                          color: Colors.black,
+                      const Expanded(
+                        child: Text(
+                          'Clientes',
+                          style: TextStyle(
+                            fontSize: 32,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: -0.5,
+                            color: Colors.black,
+                          ),
                         ),
                       ),
                       IconButton(
@@ -131,7 +132,7 @@ class ClientListScreen extends ConsumerWidget {
                             borderRadius: BorderRadius.circular(16),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.05),
+                                color: Colors.black.withValues(alpha: 0.05),
                                 blurRadius: 10,
                                 offset: const Offset(0, 4),
                               ),

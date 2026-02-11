@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:latlong2/latlong.dart';
@@ -18,11 +19,24 @@ class DrawingController extends ChangeNotifier {
     loadFeatures();
   }
 
+  bool _isDisposed = false;
+
+  @override
+  void dispose() {
+    _isDisposed = true;
+    _validationDebounce?.cancel();
+    super.dispose();
+  }
+
   Future<void> loadFeatures() async {
     _features = await _repository.getAllFeatures();
     notifyListeners();
   }
 
+  /// Sincroniza features locais com o servidor remoto.
+  ///
+  /// Trata erros específicos de rede e timeout.
+  /// Em caso de conflito, notifica o usuário para resolução manual.
   Future<void> syncFeatures() async {
     try {
       final result = await _repository.sync();
@@ -38,8 +52,20 @@ class DrawingController extends ChangeNotifier {
       }
 
       await loadFeatures();
-    } catch (e) {
-      _errorMessage = "Erro na sincronização: $e";
+    } on TimeoutException {
+      _errorMessage = "Tempo esgotado. Verifique sua conexão.";
+      if (kDebugMode) debugPrint('Sync timeout');
+      notifyListeners();
+    } on SocketException {
+      _errorMessage = "Sem conexão com a internet.";
+      if (kDebugMode) debugPrint('No internet connection');
+      notifyListeners();
+    } catch (e, stackTrace) {
+      _errorMessage = "Erro na sincronização. Tente novamente.";
+      if (kDebugMode) {
+        debugPrint('Sync error: $e');
+        debugPrint('Stack: $stackTrace');
+      }
       notifyListeners();
     }
   }
@@ -67,6 +93,11 @@ class DrawingController extends ChangeNotifier {
   DrawingFeature? get selectedFeature => _selectedFeature;
   bool get isHighComplexity => _isHighComplexity;
 
+  /// ⚡ COMPUTED PROPERTY: Evita cálculo no build()
+  int get pendingSyncCount => _features
+      .where((f) => f.properties.syncStatus != SyncStatus.synced)
+      .length;
+
   // Legacy getters (deprecated - use currentState)
   DrawingInteraction get interactionMode => _interactionMode;
 
@@ -77,8 +108,64 @@ class DrawingController extends ChangeNotifier {
 
   DrawingFeature? get pendingFeatureA => _pendingFeatureA;
   DrawingFeature? get pendingFeatureB => _pendingFeatureB;
-
   DrawingGeometry? get previewGeometry => _previewGeometry;
+
+  // Retorna a geometria sendo desenhada ou o preview de importação
+  DrawingGeometry? get liveGeometry {
+    final isEditing =
+        _interactionMode == DrawingInteraction.editing ||
+        _stateMachine.currentState == DrawingState.editing;
+    if (isEditing) {
+      return _editGeometry;
+    }
+
+    final isPreviewing =
+        _interactionMode == DrawingInteraction.importPreview ||
+        _stateMachine.currentState == DrawingState.importPreview ||
+        _stateMachine.currentState == DrawingState.booleanOperation;
+    if (isPreviewing) {
+      return _previewGeometry;
+    }
+
+    if (_currentPoints.isNotEmpty) {
+      if (_currentPoints.length < 2) return null;
+      final ring = _currentPoints
+          .map((p) => [p.longitude, p.latitude])
+          .toList();
+
+      final isPolygonTool =
+          currentTool == DrawingTool.polygon ||
+          currentTool == DrawingTool.freehand;
+      if (isPolygonTool && ring.length > 2) {
+        final first = ring.first;
+        final last = ring.last;
+        final needsClosure =
+            (first[0] - last[0]).abs() > 1e-9 ||
+            (first[1] - last[1]).abs() > 1e-9;
+        if (needsClosure) {
+          ring.add(first);
+        }
+        return DrawingPolygon(coordinates: [ring]);
+      }
+      return DrawingPolygon(coordinates: [ring]);
+    }
+
+    return _manualSketch;
+  }
+
+  void appendDrawingPoint(LatLng point) {
+    if (currentState != DrawingState.armed &&
+        currentState != DrawingState.drawing) {
+      return;
+    }
+
+    if (currentState == DrawingState.armed) {
+      _stateMachine.beginAddingPoints();
+    }
+
+    _currentPoints.add(point);
+    notifyListeners();
+  }
 
   // Helper to map legacy DrawingInteraction to new DrawingState
   DrawingState _mapInteractionToState(DrawingInteraction interaction) {
@@ -107,7 +194,7 @@ class DrawingController extends ChangeNotifier {
       } catch (e) {
         // Transition not allowed - reset to idle
         if (kDebugMode) {
-          print(
+          debugPrint(
             'State transition failed: ${_stateMachine.currentState} -> $targetState',
           );
         }
@@ -115,55 +202,6 @@ class DrawingController extends ChangeNotifier {
         _interactionMode = DrawingInteraction.normal;
       }
     }
-  }
-
-  DrawingGeometry? get liveGeometry {
-    // 1. Editing
-    if (currentState == DrawingState.editing ||
-        _interactionMode == DrawingInteraction.editing) {
-      return _editGeometry;
-    }
-
-    // 2. Import / Boolean Ops
-    if (currentState == DrawingState.importPreview ||
-        currentState == DrawingState.booleanOperation) {
-      return _previewGeometry;
-    }
-
-    // 3. Manual Sketch (Drawing)
-    if (_currentPoints.isNotEmpty) {
-      if (_currentPoints.length < 2) return null;
-      final ring = _currentPoints
-          .map((p) => [p.longitude, p.latitude])
-          .toList();
-
-      // Auto-close for visual polygon
-      if (currentTool == DrawingTool.polygon ||
-          currentTool == DrawingTool.freehand) {
-        if (ring.length > 2) {
-          if ((ring.first[0] - ring.last[0]).abs() > 1e-9 ||
-              (ring.first[1] - ring.last[1]).abs() > 1e-9) {
-            ring.add(ring.first);
-          }
-        }
-        return DrawingPolygon(coordinates: [ring]);
-      }
-    }
-
-    return _manualSketch;
-  }
-
-  void appendDrawingPoint(LatLng point) {
-    if (currentState != DrawingState.armed &&
-        currentState != DrawingState.drawing)
-      return;
-
-    if (currentState == DrawingState.armed) {
-      _stateMachine.beginAddingPoints();
-    }
-
-    _currentPoints.add(point);
-    notifyListeners();
   }
 
   // Manual Sketch State
@@ -174,16 +212,12 @@ class DrawingController extends ChangeNotifier {
   final List<DrawingGeometry> _undoStack = [];
 
   // Metrics Getters
+  /// Retorna a área em hectares da geometria sendo desenhada.
   double get liveAreaHa {
     final g = liveGeometry;
-    if (g is DrawingPolygon || g is DrawingMultiPolygon) {
-      // Simplify area calc for multi by iterating
-      if (g is DrawingPolygon && g.coordinates.isNotEmpty) {
-        return DrawingUtils.calculateAreaHa(g.coordinates.first);
-      }
-      // MultiPolygon support if needed
-    }
-    return 0.0;
+    if (g == null) return 0.0;
+    // ⚡ Usar método unificado
+    return DrawingUtils.calculateGeometryArea(g);
   }
 
   double get livePerimeterKm => DrawingUtils.calculatePerimeterKm(liveGeometry);
@@ -263,6 +297,11 @@ class DrawingController extends ChangeNotifier {
   String? get errorMessage => _errorMessage;
 
   void clearError() {
+    // ⚡ OTIMIZAÇÃO: Só notificar se algo realmente mudou
+    if (_errorMessage == null && _validationResult.isValid) {
+      return; // Nada mudou, evitar rebuild
+    }
+
     _errorMessage = null;
     _validationResult = const DrawingValidationResult.valid();
     notifyListeners();
@@ -298,15 +337,32 @@ class DrawingController extends ChangeNotifier {
     stopwatch.stop();
     if (stopwatch.elapsedMilliseconds > 16) {
       if (kDebugMode) {
-        print(
+        debugPrint(
           "Validation took ${stopwatch.elapsedMilliseconds}ms (Vertices: $count)",
         );
       }
     }
   }
 
-  /// Adds a new feature to the map (e.g. finished drawing).
-  /// [geometry] should come from the map interaction hook.
+  /// Adiciona uma nova feature ao mapa após validação.
+  ///
+  /// Valida a geometria antes de adicionar. Se inválida, define [_errorMessage]
+  /// e retorna sem adicionar.
+  ///
+  /// Calcula automaticamente a área em hectares e cria um novo [DrawingFeature]
+  /// com status 'rascunho' e sync_status 'local_only'.
+  ///
+  /// Parâmetros:
+  /// - [geometry]: Geometria a ser adicionada (Polygon ou MultiPolygon)
+  /// - [nome]: Nome descritivo da área
+  /// - [tipo]: Tipo de desenho (talhao, zona_manejo, etc)
+  /// - [origem]: Origem do desenho (manual, importação, sistema)
+  /// - [autorId]: ID do usuário que criou
+  /// - [autorTipo]: Tipo do autor (consultor, cliente, sistema)
+  /// - [subtipo]: Subtipo opcional (ex: 'pivo' para pivôs)
+  /// - [raioMetros]: Raio em metros (para pivôs circulares)
+  /// - [clienteId]: ID do cliente associado
+  /// - [fazendaId]: ID da fazenda associada
   void addFeature({
     required DrawingGeometry geometry,
     required String nome,
@@ -316,6 +372,8 @@ class DrawingController extends ChangeNotifier {
     required AuthorType autorTipo,
     String? subtipo,
     double? raioMetros,
+    String? clienteId, // 🆕 NOVO PARÂMETRO
+    String? fazendaId,
   }) {
     // Validate before adding
     geometry = DrawingUtils.normalizeGeometry(geometry);
@@ -326,20 +384,8 @@ class DrawingController extends ChangeNotifier {
       return;
     }
 
-    double areaHa = 0.0;
-    if (geometry is DrawingPolygon) {
-      if (geometry.coordinates.isNotEmpty) {
-        areaHa = DrawingUtils.calculateAreaHa(geometry.coordinates.first);
-      }
-    }
-    // For MultiPolygon, sum areas (simplified)
-    else if (geometry is DrawingMultiPolygon) {
-      for (var poly in geometry.coordinates) {
-        if (poly.isNotEmpty) {
-          areaHa += DrawingUtils.calculateAreaHa(poly.first);
-        }
-      }
-    }
+    // ⚡ Usar método unificado para calcular área
+    final areaHa = DrawingUtils.calculateGeometryArea(geometry);
 
     final newFeature = DrawingFeature(
       id: DrawingUtils.generateId(),
@@ -351,6 +397,8 @@ class DrawingController extends ChangeNotifier {
         status: DrawingStatus.rascunho,
         autorId: autorId,
         autorTipo: autorTipo,
+        clienteId: clienteId, // 🆕 NOVO CAMPO
+        fazendaId: fazendaId, // 🆕 NOVO CAMPO
         areaHa: areaHa,
         versao: 1,
         ativo: true,
@@ -390,11 +438,8 @@ class DrawingController extends ChangeNotifier {
     // If geometry changes, we MUST version.
     if (newGeometry != null && editorId != null && editorType != null) {
       // 1. Calculate new area
-      double newArea = oldFeature.properties.areaHa;
-      // (Reuse area logic - potentially refactor into private helper)
-      if (newGeometry is DrawingPolygon && newGeometry.coordinates.isNotEmpty) {
-        newArea = DrawingUtils.calculateAreaHa(newGeometry.coordinates.first);
-      }
+      // ⚡ Usar método unificado
+      final newArea = DrawingUtils.calculateGeometryArea(newGeometry);
 
       // 2. Create V+1
       updatedFeature = oldFeature.createNewVersion(
@@ -437,6 +482,11 @@ class DrawingController extends ChangeNotifier {
   }
 
   void selectFeature(DrawingFeature? feature) {
+    // ⚡ OTIMIZAÇÃO: Só notificar se a seleção mudou
+    if (_selectedFeature?.id == feature?.id) {
+      return; // Já está selecionado
+    }
+
     if (feature == null) {
       _selectedFeature = null;
     } else {
@@ -495,7 +545,7 @@ class DrawingController extends ChangeNotifier {
         _stateMachine.cancel();
       }
     } catch (e) {
-      if (kDebugMode) print('Tool selection failed: $e');
+      if (kDebugMode) debugPrint('Tool selection failed: $e');
     }
     notifyListeners();
   }
@@ -678,6 +728,7 @@ class DrawingController extends ChangeNotifier {
       _validationDebounce = Timer(
         const Duration(milliseconds: _validationDebounceMs),
         () {
+          if (_isDisposed) return; // 🔧 FIX: Evitar chamada após dispose
           validateGeometry(
             _editGeometry,
             forceFull: false,

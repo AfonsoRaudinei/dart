@@ -1,21 +1,32 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../controllers/drawing_controller.dart';
 import '../../domain/models/drawing_models.dart';
+import '../../domain/drawing_state.dart';
+import '../../../consultoria/clients/presentation/providers/clients_providers.dart';
+import '../../../consultoria/clients/domain/client.dart';
+import '../../../consultoria/clients/domain/agronomic_models.dart';
 
-class DrawingSheet extends StatefulWidget {
+class DrawingSheet extends ConsumerStatefulWidget {
   final DrawingController controller;
 
   const DrawingSheet({super.key, required this.controller});
 
   @override
-  State<DrawingSheet> createState() => _DrawingSheetState();
+  ConsumerState<DrawingSheet> createState() => _DrawingSheetState();
 }
 
-class _DrawingSheetState extends State<DrawingSheet> {
+class _DrawingSheetState extends ConsumerState<DrawingSheet> {
   // Local state for visual selection only, as per ticket RT-DRAW-02
   String? _selectedToolKey;
   OverlayEntry? _tooltipOverlay;
+
+  // 🆕 Estado para formulário de metadados
+  final _nomeController = TextEditingController();
+  final _descricaoController = TextEditingController();
+  Client? _selectedClient;
+  Farm? _selectedFarm;
 
   @override
   void initState() {
@@ -32,6 +43,8 @@ class _DrawingSheetState extends State<DrawingSheet> {
   void dispose() {
     widget.controller.removeListener(_updateTooltip);
     _removeTooltip();
+    _nomeController.dispose();
+    _descricaoController.dispose();
     super.dispose();
   }
 
@@ -44,9 +57,19 @@ class _DrawingSheetState extends State<DrawingSheet> {
       return;
     }
 
+    // Toggle: se já está selecionado, desativa
+    final bool shouldActivate = _selectedToolKey != key;
+
     setState(() {
-      _selectedToolKey = (_selectedToolKey == key) ? null : key;
+      _selectedToolKey = shouldActivate ? key : null;
     });
+
+    // 🔧 FIX CRÍTICO: Notificar o controller para ativar/desativar a ferramenta
+    if (shouldActivate) {
+      widget.controller.selectTool(key);
+    } else {
+      widget.controller.selectTool('none'); // Desativa ferramenta
+    }
   }
 
   void _showTooltip() {
@@ -71,8 +94,13 @@ class _DrawingSheetState extends State<DrawingSheet> {
   }
 
   void _removeTooltip() {
-    _tooltipOverlay?.remove();
-    _tooltipOverlay = null;
+    try {
+      _tooltipOverlay?.remove();
+    } catch (e) {
+      debugPrint('Erro ao remover tooltip: $e');
+    } finally {
+      _tooltipOverlay = null;
+    }
   }
 
   Widget _buildSyncBadge(SyncStatus status) {
@@ -108,7 +136,7 @@ class _DrawingSheetState extends State<DrawingSheet> {
       child: Container(
         padding: const EdgeInsets.all(6),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
+          color: color.withValues(alpha: 0.1),
           shape: BoxShape.circle,
         ),
         child: Icon(icon, size: 18, color: color),
@@ -150,6 +178,10 @@ class _DrawingSheetState extends State<DrawingSheet> {
 
                     if (widget.controller.errorMessage != null)
                       _buildErrorState(context)
+                    // 🆕 Modo de revisão: Formulário após desenhar
+                    else if (widget.controller.currentState ==
+                        DrawingState.reviewing)
+                      _buildReviewingMode(context)
                     else if (widget.controller.interactionMode ==
                         DrawingInteraction.importing)
                       _buildImportingMode(context)
@@ -316,9 +348,8 @@ class _DrawingSheetState extends State<DrawingSheet> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final isNarrow = constraints.maxWidth < 360;
-        final pendingCount = widget.controller.features
-            .where((f) => f.properties.syncStatus != SyncStatus.synced)
-            .length;
+        // ⚡ OTIMIZAÇÃO: Usar computed property ao invés de calcular no build
+        final pendingCount = widget.controller.pendingSyncCount;
 
         final grid = isNarrow
             ? GridView.count(
@@ -703,6 +734,353 @@ class _DrawingSheetState extends State<DrawingSheet> {
         ],
       ),
     );
+  }
+
+  // 🆕 FORMULÁRIO DE METADADOS COMPLETO (Inspirado FAMS/Climate)
+  Widget _buildReviewingMode(BuildContext context) {
+    final clientsAsync = ref.watch(clientsListProvider);
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Título iOS Style
+          const Text(
+            'Novo Desenho',
+            style: TextStyle(
+              fontSize: 28,
+              fontWeight: FontWeight.bold,
+              letterSpacing: -0.5,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Preencha os dados do talhão',
+            style: TextStyle(fontSize: 15, color: Colors.grey[600]),
+          ),
+          const SizedBox(height: 24),
+
+          // Nome do Talhão (Obrigatório)
+          _buildTextField(
+            controller: _nomeController,
+            label: 'Nome do Talhão',
+            hint: 'Ex: Talhão Sul, Field 01',
+            icon: Icons.label_outline,
+            required: true,
+          ),
+          const SizedBox(height: 16),
+
+          // Cliente (Dropdown)
+          _buildClientDropdown(clientsAsync),
+          const SizedBox(height: 16),
+
+          // Fazenda (Dropdown condicional)
+          if (_selectedClient != null) ...[
+            _buildFarmDropdown(),
+            const SizedBox(height: 16),
+          ],
+
+          // Descrição (Opcional)
+          _buildTextField(
+            controller: _descricaoController,
+            label: 'Notas / Descrição',
+            hint: 'Observações sobre o talhão...',
+            icon: Icons.notes,
+            maxLines: 3,
+          ),
+          const SizedBox(height: 24),
+
+          // Botões de ação
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () {
+                    _clearForm();
+                    widget.controller.cancelOperation();
+                  },
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    side: const BorderSide(color: Colors.grey),
+                  ),
+                  child: const Text('Cancelar', style: TextStyle(fontSize: 16)),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: _canSave() ? _saveDrawing : null,
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    backgroundColor: Colors.green,
+                    disabledBackgroundColor: Colors.grey[300],
+                  ),
+                  child: const Text(
+                    'Salvar',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Helper: Campo de texto iOS Style
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String label,
+    required String hint,
+    required IconData icon,
+    bool required = false,
+    int maxLines = 1,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(icon, size: 16, color: Colors.grey[600]),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: Colors.grey[700],
+              ),
+            ),
+            if (required)
+              const Text(
+                ' *',
+                style: TextStyle(color: Colors.red, fontSize: 13),
+              ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        TextField(
+          controller: controller,
+          maxLines: maxLines,
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: TextStyle(color: Colors.grey[400]),
+            filled: true,
+            fillColor: Colors.grey[50],
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.grey[300]!),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.grey[300]!),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Colors.green, width: 2),
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 12,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // Helper: Dropdown de clientes
+  Widget _buildClientDropdown(AsyncValue<List<Client>> clientsAsync) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(Icons.person_outline, size: 16, color: Colors.grey[600]),
+            const SizedBox(width: 6),
+            Text(
+              'Cliente',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: Colors.grey[700],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        clientsAsync.when(
+          data: (clients) {
+            return Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                color: Colors.grey[50],
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey[300]!),
+              ),
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<Client>(
+                  isExpanded: true,
+                  value: _selectedClient,
+                  hint: Text(
+                    'Selecione um cliente',
+                    style: TextStyle(color: Colors.grey[400]),
+                  ),
+                  icon: const Icon(Icons.arrow_drop_down),
+                  items: clients.map((client) {
+                    return DropdownMenuItem(
+                      value: client,
+                      child: Text(
+                        client.name,
+                        style: const TextStyle(fontSize: 15),
+                      ),
+                    );
+                  }).toList(),
+                  onChanged: (client) {
+                    setState(() {
+                      _selectedClient = client;
+                      _selectedFarm = null; // Reset farm
+                    });
+                  },
+                ),
+              ),
+            );
+          },
+          loading: () => Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.grey[50],
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.grey[300]!),
+            ),
+            child: const Row(
+              children: [
+                SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+                SizedBox(width: 12),
+                Text('Carregando clientes...'),
+              ],
+            ),
+          ),
+          error: (err, _) => Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.red[50],
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.red[200]!),
+            ),
+            child: Text(
+              'Erro ao carregar clientes',
+              style: TextStyle(color: Colors.red[900]),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // Helper: Dropdown de fazendas
+  Widget _buildFarmDropdown() {
+    final farms = _selectedClient?.farms ?? [];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(Icons.agriculture, size: 16, color: Colors.grey[600]),
+            const SizedBox(width: 6),
+            Text(
+              'Fazenda',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: Colors.grey[700],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          decoration: BoxDecoration(
+            color: Colors.grey[50],
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.grey[300]!),
+          ),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<Farm>(
+              isExpanded: true,
+              value: _selectedFarm,
+              hint: Text(
+                farms.isEmpty
+                    ? 'Nenhuma fazenda cadastrada'
+                    : 'Selecione uma fazenda',
+                style: TextStyle(color: Colors.grey[400]),
+              ),
+              icon: const Icon(Icons.arrow_drop_down),
+              items: farms.map((farm) {
+                return DropdownMenuItem(
+                  value: farm,
+                  child: Text(farm.name, style: const TextStyle(fontSize: 15)),
+                );
+              }).toList(),
+              onChanged: farms.isEmpty
+                  ? null
+                  : (farm) {
+                      setState(() {
+                        _selectedFarm = farm;
+                      });
+                    },
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // Helper: Validação
+  bool _canSave() {
+    return _nomeController.text.trim().isNotEmpty;
+  }
+
+  // Helper: Salvar desenho
+  void _saveDrawing() {
+    final geometry = widget.controller.liveGeometry;
+    if (geometry == null) return;
+
+    widget.controller.addFeature(
+      geometry: geometry,
+      nome: _nomeController.text.trim(),
+      tipo: DrawingType.talhao,
+      origem: DrawingOrigin.desenho_manual,
+      autorId: 'current_user', // TODO: pegar do session
+      autorTipo: AuthorType.consultor,
+      clienteId: _selectedClient?.id,
+      fazendaId: _selectedFarm?.id,
+    );
+
+    _clearForm();
+  }
+
+  // Helper: Limpar formulário
+  void _clearForm() {
+    _nomeController.clear();
+    _descricaoController.clear();
+    setState(() {
+      _selectedClient = null;
+      _selectedFarm = null;
+    });
   }
 }
 

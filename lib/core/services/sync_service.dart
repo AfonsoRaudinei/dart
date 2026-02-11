@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:soloforte_app/core/services/connectivity_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -47,9 +48,9 @@ class SyncService {
       await _syncVisits();
       await _syncOccurrences();
 
-      print('🔄 Sync completo (silencioso)');
+      debugPrint('🔄 Sync completo (silencioso)');
     } catch (e) {
-      print('⚠️ Sync falhou (será retentado): $e');
+      debugPrint('⚠️ Sync falhou (será retentado): $e');
     } finally {
       _isSyncing = false;
     }
@@ -61,7 +62,7 @@ class SyncService {
       final visitSync = VisitSyncService(supabase);
       await visitSync.syncVisits();
     } catch (e) {
-      print('⚠️ Sync Visitas falhou: $e');
+      debugPrint('⚠️ Sync Visitas falhou: $e');
     }
   }
 
@@ -71,7 +72,7 @@ class SyncService {
       final occurrenceSync = OccurrenceSyncService(supabase);
       await occurrenceSync.syncOccurrences();
     } catch (e) {
-      print('⚠️ Sync Ocorrências falhou: $e');
+      debugPrint('⚠️ Sync Ocorrências falhou: $e');
     }
   }
 

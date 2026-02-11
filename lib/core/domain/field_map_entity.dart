@@ -42,6 +42,7 @@ class FieldMapEntity {
   FieldMapEntity copyWith({
     String? id,
     String? label,
+    String? subtitle,
     List<List<LatLng>>? geometryRings,
     FieldMapSource? type,
     FieldSyncStatus? syncStatus,

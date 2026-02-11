@@ -28,6 +28,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:soloforte_app/ui/components/smart_button.dart';
 import 'package:soloforte_app/core/router/app_routes.dart';
+import 'package:soloforte_app/core/state/side_menu_state.dart';
 
 void main() {
   group('SmartButton - Map-First Contract', () {
@@ -39,15 +40,22 @@ void main() {
         'ENTÃO deve exibir ícone de menu (☰) '
         'E ao clicar deve abrir o SideMenu '
         'E NÃO deve executar navegação', (WidgetTester tester) async {
-      // ARRANGE: Criar router mockado com rota /map
+      // ARRANGE: Container para capturar ref do provider
+      late WidgetRef capturedRef;
+
+      // Criar router mockado com rota /map
       final router = GoRouter(
         initialLocation: AppRoutes.map,
         routes: [
           GoRoute(
             path: AppRoutes.map,
-            builder: (context, state) => Scaffold(
-              endDrawer: const Drawer(child: Text('SideMenu')),
-              body: const SmartButton(),
+            builder: (context, state) => Consumer(
+              builder: (context, ref, _) {
+                capturedRef = ref;
+                return const Scaffold(
+                  body: SmartButton(),
+                );
+              },
             ),
           ),
         ],
@@ -68,14 +76,18 @@ void main() {
       final icon = (fab.child as Icon);
       expect(icon.icon, equals(Icons.menu));
 
-      // ASSERT 3: Ao clicar, abre drawer (não navega)
+      // ASSERT 3: Ao clicar, abre SideMenu via provider (não navega)
       final initialLocation =
           router.routerDelegate.currentConfiguration.uri.path;
+      
+      // Verificar que menu está fechado antes do clique
+      expect(capturedRef.read(sideMenuOpenProvider), isFalse);
+      
       await tester.tap(fabFinder);
       await tester.pumpAndSettle();
 
-      // Drawer deve estar aberto
-      expect(find.text('SideMenu'), findsOneWidget);
+      // SideMenu deve estar aberto (via provider)
+      expect(capturedRef.read(sideMenuOpenProvider), isTrue);
 
       // Rota NÃO deve ter mudado
       final currentLocation =
