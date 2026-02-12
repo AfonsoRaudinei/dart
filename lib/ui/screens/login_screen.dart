@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/session/session_controller.dart';
+import '../../core/router/app_routes.dart';
 import '../theme/soloforte_theme.dart';
 import '../components/login/login_input_field.dart';
 import '../components/login/gradient_button.dart';
@@ -135,45 +136,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   }
 
   void _handleForgotPassword() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: SoloRadius.radiusXl),
-        title: const Text(
-          'Recuperar Senha',
-          style: SoloTextStyles.headingMedium,
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              'Digite seu email para receber instruções de recuperação:',
-              style: SoloTextStyles.body,
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              decoration: InputDecoration(
-                hintText: 'seu@email.com',
-                border: OutlineInputBorder(borderRadius: SoloRadius.radiusMd),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _showSuccessMessage('Email de recuperação enviado!');
-            },
-            child: const Text('Enviar'),
-          ),
-        ],
-      ),
-    );
+    context.push(AppRoutes.recoverPassword);
   }
 
   @override
@@ -379,7 +342,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                       ),
                       TextButton(
                         onPressed: () {
-                          context.push('/signup');
+                          context.push(AppRoutes.register);
                         },
                         child: const Text(
                           'Cadastrar',

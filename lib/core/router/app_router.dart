@@ -12,7 +12,8 @@ import '../../ui/components/app_shell.dart';
 import '../../ui/screens/public_map_screen.dart';
 import '../../ui/screens/private_map_screen.dart';
 import '../../ui/screens/login_screen.dart';
-import '../../ui/screens/signup_screen.dart';
+import '../../modules/auth/pages/register_page.dart';
+import '../../modules/auth/pages/recover_password_page.dart';
 import '../../ui/screens/misc_screens.dart'
     hide SettingsScreen, ClientesScreen, RelatoriosScreen;
 import '../../ui/screens/publicacao_editor_screen.dart';
@@ -133,13 +134,14 @@ GoRouter router(Ref ref) {
       final isPublicRoute =
           path == AppRoutes.publicMap ||
           path == AppRoutes.login ||
-          path == AppRoutes.signup;
+          path == AppRoutes.register ||
+          path == AppRoutes.recoverPassword;
 
       if (!isAuth && !isPublicRoute) {
         return AppRoutes.publicMap;
       }
 
-      // If auth, redirect login/signup/public-map to map
+      // If auth, redirect login/register/public-map to map
       if (isAuth && isPublicRoute) {
         return AppRoutes.map;
       }
@@ -159,8 +161,12 @@ GoRouter router(Ref ref) {
             builder: (_, __) => const LoginScreen(),
           ),
           GoRoute(
-            path: AppRoutes.signup,
-            builder: (_, __) => const SignupScreen(),
+            path: AppRoutes.register,
+            builder: (_, __) => const RegisterPage(),
+          ),
+          GoRoute(
+            path: AppRoutes.recoverPassword,
+            builder: (_, __) => const RecoverPasswordPage(),
           ),
           // ════════════════════════════════════════════════════════════════
           // ROTA CANÔNICA: /map (MAP-FIRST)

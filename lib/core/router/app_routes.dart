@@ -10,7 +10,8 @@ class AppRoutes {
   // Públicas
   static const String publicMap = '/public-map';
   static const String login = '/login';
-  static const String signup = '/signup';
+  static const String register = '/register';
+  static const String recoverPassword = '/recover-password';
 
   // ════════════════════════════════════════════════════════════════════
   // DECISÃO ARQUITETURAL: MAP-FIRST (09/02/2026)
@@ -52,7 +53,8 @@ class AppRoutes {
   static const Set<String> publicRoutes = {
     publicMap,
     login,
-    signup,
+    register,
+    recoverPassword,
     '/', // Landing page redirect
   };
 

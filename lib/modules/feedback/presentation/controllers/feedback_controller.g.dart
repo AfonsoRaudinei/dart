@@ -7,7 +7,7 @@ part of 'feedback_controller.dart';
 // **************************************************************************
 
 String _$feedbackRepositoryHash() =>
-    r'c7215ba15acde7c6fec9e5e16f506f082c79204c';
+    r'95ad089678c0ac856015236cf51be63a7723626b';
 
 /// See also [feedbackRepository].
 @ProviderFor(feedbackRepository)
@@ -25,7 +25,7 @@ final feedbackRepositoryProvider =
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef FeedbackRepositoryRef = AutoDisposeProviderRef<IFeedbackRepository>;
-String _$feedbackStatsHash() => r'9d21124fca2ab12af8030e80bbfaf335eeaba545';
+String _$feedbackStatsHash() => r'acf39488e4acb6877b8f04718c53d08d9e808069';
 
 /// See also [feedbackStats].
 @ProviderFor(feedbackStats)
