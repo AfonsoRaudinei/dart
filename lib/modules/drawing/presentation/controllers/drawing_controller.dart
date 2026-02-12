@@ -23,6 +23,7 @@ class DrawingController extends ChangeNotifier {
 
   @override
   void dispose() {
+    if (_isDisposed) return; // 🔧 FIX-DRAW-FLOW-02: Permitir múltiplos dispose
     _isDisposed = true;
     _validationDebounce?.cancel();
     super.dispose();
@@ -30,7 +31,9 @@ class DrawingController extends ChangeNotifier {
 
   Future<void> loadFeatures() async {
     _features = await _repository.getAllFeatures();
-    notifyListeners();
+    if (!_isDisposed) {
+      notifyListeners();
+    }
   }
 
   /// Sincroniza features locais com o servidor remoto.
@@ -38,8 +41,12 @@ class DrawingController extends ChangeNotifier {
   /// Trata erros específicos de rede e timeout.
   /// Em caso de conflito, notifica o usuário para resolução manual.
   Future<void> syncFeatures() async {
+    if (_isDisposed) return;
+    
     try {
       final result = await _repository.sync();
+
+      if (_isDisposed) return;
 
       if (result.errors > 0) {
         // Soft error feedback
@@ -53,14 +60,17 @@ class DrawingController extends ChangeNotifier {
 
       await loadFeatures();
     } on TimeoutException {
+      if (_isDisposed) return;
       _errorMessage = "Tempo esgotado. Verifique sua conexão.";
       if (kDebugMode) debugPrint('Sync timeout');
       notifyListeners();
     } on SocketException {
+      if (_isDisposed) return;
       _errorMessage = "Sem conexão com a internet.";
       if (kDebugMode) debugPrint('No internet connection');
       notifyListeners();
     } catch (e, stackTrace) {
+      if (_isDisposed) return;
       _errorMessage = "Erro na sincronização. Tente novamente.";
       if (kDebugMode) {
         debugPrint('Sync error: $e');
@@ -154,6 +164,8 @@ class DrawingController extends ChangeNotifier {
   }
 
   void appendDrawingPoint(LatLng point) {
+    if (_isDisposed) return;
+    
     if (currentState != DrawingState.armed &&
         currentState != DrawingState.drawing) {
       return;
@@ -263,7 +275,23 @@ class DrawingController extends ChangeNotifier {
         if (_isSnapping) return "⚡ Ponto ajustado (snap)";
         return "Arraste: Mover • Toque na linha: Adicionar • Toque no ponto: Remover";
       case DrawingInteraction.normal:
-        // Manual Drawing Logic
+        // 🔧 FIX-DRAW-FLOW-01: Consultar state machine para armed/drawing
+        if (_stateMachine.currentState == DrawingState.armed) {
+          return "Toque no mapa para iniciar o desenho";
+        }
+        if (_stateMachine.currentState == DrawingState.drawing ||
+            _currentPoints.isNotEmpty) {
+          final pointCount = _currentPoints.length;
+          if (pointCount == 0) {
+            return "Toque no mapa para iniciar o desenho";
+          }
+          if (_isSnapping) return "⚡ Ponto ajustado (snap)";
+          if (pointCount < 3) {
+            return "Continue tocando para desenhar a área";
+          }
+          return "Toque para continuar ou no ponto inicial para fechar";
+        }
+        // Manual Drawing Logic (legacy _manualSketch)
         if (_manualSketch == null) {
           // Idle / Ready to start
           return "Selecione uma ferramenta ou toque no mapa";
@@ -514,6 +542,8 @@ class DrawingController extends ChangeNotifier {
   // ===========================================================================
 
   void selectTool(String toolKey) {
+    if (_isDisposed) return;
+    
     DrawingTool tool;
     switch (toolKey) {
       case 'polygon':
@@ -538,11 +568,23 @@ class DrawingController extends ChangeNotifier {
     // Sync with state machine
     try {
       if (tool != DrawingTool.none) {
+        // 🔧 FIX-DRAW-FLOW-01: Resetar estado anterior se necessário
+        // Se já estava em armed/drawing, voltar para idle antes de re-armar
+        if (_stateMachine.currentState != DrawingState.idle) {
+          _stateMachine.reset();
+        }
+        // Limpar pontos de desenho anterior
+        _currentPoints.clear();
+        _manualSketch = null;
+        _selectedFeature = null;
+
         _stateMachine.startDrawing(tool);
         _interactionMode =
             DrawingInteraction.normal; // Ensure mode is normal for drawing
       } else {
         _stateMachine.cancel();
+        _currentPoints.clear();
+        _manualSketch = null;
       }
     } catch (e) {
       if (kDebugMode) debugPrint('Tool selection failed: $e');
@@ -555,6 +597,8 @@ class DrawingController extends ChangeNotifier {
   // ===========================================================================
 
   void cancelOperation() {
+    if (_isDisposed) return;
+    
     _interactionMode = DrawingInteraction.normal;
     _pendingFeatureA = null;
     _pendingFeatureB = null;
@@ -562,6 +606,7 @@ class DrawingController extends ChangeNotifier {
     _manualSketch = null;
     _currentImportOrigin = null;
     _errorMessage = null;
+    _currentPoints.clear(); // 🔧 FIX-DRAW-FLOW-02: Limpar pontos ao cancelar
     _stateMachine.cancel(); // Use state machine cancel
     _syncStateMachine();
     notifyListeners();

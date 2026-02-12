@@ -67,6 +67,11 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
     // 🔧 FIX CRÍTICO: Notificar o controller para ativar/desativar a ferramenta
     if (shouldActivate) {
       widget.controller.selectTool(key);
+      // 🔧 FIX-DRAW-FLOW-01: Fechar bottom sheet e ativar modo de desenho imediatamente
+      _removeTooltip();
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
     } else {
       widget.controller.selectTool('none'); // Desativa ferramenta
     }
