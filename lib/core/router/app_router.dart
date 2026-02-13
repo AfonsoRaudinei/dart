@@ -14,8 +14,9 @@ import '../../ui/screens/private_map_screen.dart';
 import '../../ui/screens/login_screen.dart';
 import '../../modules/auth/pages/register_page.dart';
 import '../../modules/auth/pages/recover_password_page.dart';
-import '../../ui/screens/misc_screens.dart'
-    hide SettingsScreen, ClientesScreen, RelatoriosScreen;
+import '../../modules/agenda/presentation/pages/agenda_month_page.dart';
+import '../../modules/agenda/presentation/pages/agenda_day_page.dart';
+import '../../modules/agenda/presentation/pages/agenda_event_detail_page.dart';
 import '../../ui/screens/publicacao_editor_screen.dart';
 import '../../../modules/settings/presentation/screens/settings_screen.dart';
 import '../../../modules/consultoria/clients/presentation/screens/client_list_screen.dart';
@@ -221,7 +222,25 @@ GoRouter router(Ref ref) {
           ),
           GoRoute(
             path: AppRoutes.agenda,
-            builder: (_, __) => const AgendaScreen(),
+            builder: (_, __) => const AgendaMonthPage(),
+            routes: [
+              GoRoute(
+                path: 'day',
+                builder: (_, state) {
+                  final dateStr = state.uri.queryParameters['date'];
+                  final date = dateStr != null
+                      ? DateTime.parse(dateStr)
+                      : DateTime.now();
+                  return AgendaDayPage(selectedDate: date);
+                },
+              ),
+              GoRoute(
+                path: 'event/:id',
+                builder: (_, state) => AgendaEventDetailPage(
+                  eventId: state.pathParameters['id']!,
+                ),
+              ),
+            ],
           ),
           // Redirect mantido temporariamente por compatibilidade com Side Menu legado.
           GoRoute(path: '/clientes', redirect: (_, __) => AppRoutes.clients),

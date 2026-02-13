@@ -20,6 +20,10 @@ import '../../modules/drawing/presentation/widgets/drawing_layers.dart';
 import '../../modules/drawing/presentation/controllers/drawing_controller.dart';
 import '../../modules/drawing/domain/drawing_state.dart';
 import '../../modules/drawing/presentation/widgets/drawing_state_indicator.dart';
+import '../../modules/drawing/presentation/widgets/drawing_disabled_widget.dart';
+import '../../core/feature_flags/feature_flag_providers.dart';
+import '../../core/feature_flags/feature_flag_resolver.dart';
+import '../../core/feature_flags/feature_flag_analytics.dart';
 import '../../modules/dashboard/controllers/location_controller.dart'
     show LocationController, locationStateProvider, userPositionProvider;
 import '../../modules/dashboard/domain/location_state.dart';
@@ -142,7 +146,7 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
     } catch (_) {}
   }
 
-  void _openDrawingMode() {
+  void _openDrawingMode() async {
     // 🚫 Bloqueio: GPS obrigatório para desenhar
     if (!_locationController.isAvailable) {
       _showGPSRequiredMessage();
@@ -150,12 +154,49 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
     }
 
     HapticFeedback.lightImpact();
-    // Open Drawing Sheet
+
+    // 🚦 Feature Flag: Verificar se Drawing está habilitado
+    final isEnabled = await _checkDrawingFeatureFlag();
+
+    // Open Drawing Sheet (ou fallback se desabilitado)
+    if (!mounted) return; // Guard para async gap
     _showSheet(
       context,
-      DrawingSheet(controller: _drawingController),
+      isEnabled
+          ? DrawingSheet(controller: _drawingController)
+          : const DrawingDisabledWidget(),
       'drawing',
     );
+  }
+
+  /// Verifica se feature flag drawing_v1 está ativa para usuário atual.
+  Future<bool> _checkDrawingFeatureFlag() async {
+    try {
+      // TODO: Obter userId e role real do usuário autenticado
+      // Por enquanto, usar valores mock para desenvolvimento
+      const user = FeatureFlagUser(
+        userId: 'dev-user-001', // TODO: userId real
+        role: 'consultor',      // TODO: role real
+        appVersion: '1.1.0',    // TODO: versão real do app
+      );
+
+      final isEnabled = await ref.read(
+        isDrawingEnabledProvider(user).future,
+      );
+
+      // 📊 Analytics: Registrar acesso (habilitado ou bloqueado)
+      FeatureFlagAnalytics.trackDrawingAccess(
+        userId: user.userId,
+        userRole: user.role,
+        wasEnabled: isEnabled,
+      );
+
+      return isEnabled;
+    } catch (e) {
+      // Em caso de erro, fail-safe para desabilitado
+      debugPrint('❌ Erro ao verificar feature flag: $e');
+      return false;
+    }
   }
 
   void _toggleOccurrenceMode() {

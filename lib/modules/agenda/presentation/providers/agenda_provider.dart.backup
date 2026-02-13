@@ -1,0 +1,370 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:uuid/uuid.dart';
+import '../../domain/entities/event.dart';
+import '../../domain/entities/visit_session.dart';
+import '../../domain/enums/event_status.dart';
+import '../../domain/enums/event_type.dart';
+import '../../domain/rules/event_rules.dart';
+import '../../data/repositories/agenda_repository.dart';
+import '../../data/services/agenda_notification_service.dart';
+
+/// Estado da Agenda
+class AgendaState {
+  final List<Event> events;
+  final List<VisitSession> sessions;
+  final List<Event> conflicts;
+  final bool isLoading;
+  final String? error;
+
+  const AgendaState({
+    this.events = const [],
+    this.sessions = const [],
+    this.conflicts = const [],
+    this.isLoading = false,
+    this.error,
+  });
+
+  AgendaState copyWith({
+    List<Event>? events,
+    List<VisitSession>? sessions,
+    List<Event>? conflicts,
+    bool? isLoading,
+    String? error,
+  }) {
+    return AgendaState(
+      events: events ?? this.events,
+      sessions: sessions ?? this.sessions,
+      conflicts: conflicts ?? this.conflicts,
+      isLoading: isLoading ?? this.isLoading,
+      error: error,
+    );
+  }
+}
+
+/// Provider da Agenda - gerencia eventos e sessões de visita
+class AgendaNotifier extends StateNotifier<AgendaState> {
+  final AgendaRepository _repository;
+  final AgendaNotificationService _notificationService;
+
+  AgendaNotifier(this._repository, this._notificationService)
+      : super(const AgendaState()) {
+    _loadFromDatabase();
+    _initializeNotifications();
+  }
+
+  final _uuid = const Uuid();
+
+  /// Inicializa serviço de notificações
+  Future<void> _initializeNotifications() async {
+    await _notificationService.initialize();
+  }
+
+  /// Carrega eventos e sessões do banco de dados
+  Future<void> _loadFromDatabase() async {
+    state = state.copyWith(isLoading: true);
+    
+    try {
+      final events = await _repository.getAllEvents();
+      final sessions = await _repository.getAllSessions();
+      
+      state = state.copyWith(
+        events: events,
+        sessions: sessions,
+        isLoading: false,
+      );
+    } catch (e) {
+      state = state.copyWith(
+        error: 'Erro ao carregar agenda: $e',
+        isLoading: false,
+      );
+    }
+  }
+
+  /// Recarrega dados do banco
+  Future<void> reload() async {
+    await _loadFromDatabase();
+  }
+
+  /// Cria um novo evento
+  ///
+  /// Detecta conflitos automaticamente e os armazena no estado
+  Future<Event> createEvent({
+    required EventType tipo,
+    required String clienteId,
+    String? fazendaId,
+    String? talhaoId,
+    required String titulo,
+    required DateTime dataInicioPlanejada,
+    required DateTime dataFimPlanejada,
+    String? currentUserId,
+  }) async {
+    // Validações
+    final dateError = EventRules.validateEventDates(
+      dataInicioPlanejada,
+      dataFimPlanejada,
+    );
+    if (dateError != null) {
+      throw ArgumentError(dateError);
+    }
+// Salva no banco de dados
+    await _repository.saveEvent(newEvent);
+
+    
+    final titleError = EventRules.validateTitulo(titulo);
+    if (titleError != null) {
+      throw ArgumentError(titleError);
+    }
+
+    final now = DateTime.now();
+    final newEvent = Event(
+      id: _uuid.v4(),
+      tipo: tipo,
+      clienteId: clienteId,
+      fazendaId: fazendaId,
+      talhaoId: talhaoId,
+      titulo: titulo,
+      dataInicioPlanejada: dataInicioPlanejada,
+      dataFimPlanejada: dataFimPlanejada,
+      status: EventStatus.agendado,
+      createdAt: now,
+      updatedAt: now,
+      syncStatus: 'pending',
+    );
+
+    // Detecta conflitos
+    final conflicts = EventRules.detectConflicts(newEvent, state.events);
+
+    // Salva no banco de dados
+    await _repository.saveEvent(newEvent);
+
+    // Agenda notificações
+    await _notificationService.scheduleEventNotifications(newEvent);
+
+    // Adiciona o evento mesmo com conflitos (política: permitir com aviso)
+    state = state.copyWith(
+      events: [...state.events, newEvent],
+      conflicts: conflicts,
+    );
+
+    return newEvent;
+  }
+
+  /// Inicia um evento (AGENDADO → EM_ANDAMENTO)
+  ///
+  /// Cria automaticamente uma VisitSession
+  Future<VisitSession> startEvent(String eventId, String currentUserId) async {
+    final event = state.events.firstWhere(
+      (e) => e.id == eventId,
+      orElse: () => throw ArgumentError('Evento não encontrado'),
+    );
+
+    if (!EventRules.canTransitionTo(event.status, EventStatus.emAndamento)) {
+      throw StateError('Evento não pode ser iniciado no status ${event.status.label}');
+    }
+
+    final now = DateTime.now();
+
+    // Cria a VisitSession
+    final session = VisitSession(
+      id: _uuid.v4(),
+      eventoId: eventId,
+      startAtReal: now,
+      createdBy: currentUserId,
+      createdAt: now,
+      syncStatus: 'pending',
+    );
+
+    // Atualiza o evento
+    final updatedEvent = event.copyWith(
+      status: EventStatus.emAndamento,
+      visitSessionId: session.id,
+      updatedAt: now,
+      syncStatus: 'pending',
+    );
+
+    _updateEvent(updatedEvent);
+    state = state.copyWith(
+    // Salva no banco de dados
+    await _repository.updateEvent(updatedEvent);
+    await _repository.saveSession(session);
+
+      sessions: [...state.sessions, session],
+    );
+
+    return session;
+  }
+
+  /// Finaliza um evento (EM_ANDAMENTO → FINALIZANDO)
+  Future<Event> finalizeEvent(String eventId) async {
+    final event = state.events.firstWhere(
+      (e) => e.id == eventId,
+      orElse: () => throw ArgumentError('Evento não encontrado'),
+    );
+
+    if (!EventRules.canTransitionTo(event.status, EventStatus.finalizando)) {
+      throw StateError('Evento não pode ser finalizado no status ${event.status.label}');
+    }
+
+    await _repository.updateEvent(updatedEvent);
+    
+    final updatedEvent = event.copyWith(
+      status: EventStatus.finalizando,
+      updatedAt: DateTime.now(),
+      syncStatus: 'pending',
+    );
+
+    _updateEvent(updatedEvent);
+    return updatedEvent;
+  }
+
+  /// Completa um evento (FINALIZANDO → CONCLUIDO)
+  ///
+  /// Fecha a VisitSession associada
+  Future<Event> completeEvent(
+    String eventId, {
+    String? notasFinais,
+  }) async {
+    final event = state.events.firstWhere(
+      (e) => e.id == eventId,
+      orElse: () => throw ArgumentError('Evento não encontrado'),
+    );
+
+    if (!EventRules.canTransitionTo(event.status, EventStatus.concluido)) {
+      throw StateError('Evento não pode ser concluído no status ${event.status.label}');
+    }
+
+    final now = DateTime.now();
+
+    // Atualiza o evento
+    final updatedEvent = event.copyWith(
+      status: EventStatus.concluido,
+      updatedAt: now,
+      syncStatus: 'pending',
+    );
+
+    // Fecha a sessão se existir
+    if (event.visitSessionId != null) {
+      final session = state.sessions.firstWhere(
+        (s) => s.id == event.visitSessionId,
+        orElse: () => throw ArgumentError('Sessão não encontrada'),
+      );
+  await _repository.updateSession(updatedSession);
+    }
+
+    _updateEvent(updatedEvent);
+    await _repository.updateEvent(updatedEvent);
+    
+        duracaoMin: now.difference(session.startAtReal).inMinutes,
+        notasFinais: notasFinais,
+        syncStatus: 'pending',
+      );
+
+      _updateSession(updatedSession);
+    }
+
+    _updateEvent(updatedEvent);
+    return updatedEvent;
+  }
+
+  /// Cancela um evento
+  Future<Event> cancelEvent(String eventId) async {
+    final event = state.events.firstWhere(
+      (e) => e.id == eventId,
+      orElse: () => throw ArgumentError('Evento não encontrado'),
+    );
+
+    if (!EventRules.canCancel(event.status)) {
+      throw StateError('Evento não pode ser cancelado no status ${event.status.label}');
+    }
+
+    final now = DateTime.now();
+
+    // Cancela sessão se estiver ativa
+    if (event.visitSessionId != null) {
+      final session = state.sessions.firstWhere(
+        await _repository.updateSession(updatedSession);
+      }
+    }
+
+    final updatedEvent = event.copyWith(
+      status: EventStatus.cancelado,
+      updatedAt: now,
+      syncStatus: 'pending',
+    );
+
+    _updateEvent(updatedEvent);
+    await _repository.updateEvent(updatedEvent);
+    ,
+        );
+        _updateSession(updatedSession);
+      }
+    }
+
+    final updatedEvent = event.copyWith(
+      status: EventStatus.cancelado,
+      updatedAt: now,
+      syncStatus: 'pending',
+    );
+
+    _updateEvent(updatedEvent);
+    return updatedEvent;
+  }
+
+  /// Retorna eventos de um período específico
+  List<Event> getEventsByDateRange(DateTime start, DateTime end) {
+    return state.events.where((event) {
+      return event.dataInicioPlanejada.isBefore(end) &&
+          event.dataFimPlanejada.isAfter(start);
+    }).toList();
+  }
+
+  /// Retorna eventos de um dia específico
+  List<Event> getEventsByDay(DateTime day) {
+    final start = DateTime(day.year, day.month, day.day);
+    final end = start.add(const Duration(days: 1));
+    return getEventsByDateRange(start, end);
+  }
+
+  /// Retorna sessões ativas
+  List<VisitSession> getActiveSessions() {
+    return state.sessions.where((s) => s.isActive).toList();
+  }
+
+  /// Atualiza um evento na lista
+  void _updateEvent(Event event) {
+    final index = state.events.indexWhere((e) => e.id == event.id);
+    if (index != -1) {
+      final updatedEvents = [...state.events];
+      updatedEvents[index] = event;
+      state = state.copyWith(events: updatedEvents);
+    }
+  }
+
+  /// Atualiza uma sessão na lista
+  void _updateSession(VisitSession session) {
+    final index = state.sessions.indexWhere((s) => s.id == session.id);
+    if (index != -1) {
+      final udo repositório
+final agendaRepositoryProvider = Provider<AgendaRepository>((ref) {
+  return AgendaRepository();
+});
+
+/// Provider global da Agenda
+final agendaProvider = StateNotifierProvider<AgendaNotifier, AgendaState>(
+  (ref) {
+    final repository = ref.watch(agendaRepositoryProvider);
+    return AgendaNotifier(repository);
+  }h(sessions: updatedSessions);
+    }
+  }
+
+  /// Limpa conflitos detectados
+  void clearConflicts() {
+    state = state.copyWith(conflicts: []);
+  }
+}
+
+/// Provider global da Agenda
+final agendaProvider = StateNotifierProvider<AgendaNotifier, AgendaState>(
+  (ref) => AgendaNotifier(),
+);

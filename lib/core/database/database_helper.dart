@@ -21,7 +21,7 @@ class DatabaseHelper {
     String path = join(documentsDirectory.path, 'soloforte.db');
     return await openDatabase(
       path,
-      version: 9, // 🆕 Incrementado para v9
+      version: 10, // 🆕 Incrementado para v10 (Agenda)
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -360,6 +360,78 @@ class DatabaseHelper {
       if (kDebugMode) {
         debugPrint(
           '✅ Migração v8 → v9: cliente_id e fazenda_id adicionados à tabela drawings',
+        );
+      }
+    }
+
+    // 🆕 MIGRAÇÃO v10: Tabelas da Agenda
+    if (oldVersion < 10) {
+      // Tabela de eventos da agenda
+      await db.execute('''
+        CREATE TABLE agenda_events (
+          id TEXT PRIMARY KEY,
+          tipo TEXT NOT NULL,
+          cliente_id TEXT NOT NULL,
+          fazenda_id TEXT,
+          talhao_id TEXT,
+          titulo TEXT NOT NULL,
+          data_inicio_planejada TEXT NOT NULL,
+          data_fim_planejada TEXT NOT NULL,
+          status TEXT NOT NULL,
+          visit_session_id TEXT,
+          serie_id TEXT,
+          created_at TEXT NOT NULL,
+          updated_at TEXT NOT NULL,
+          sync_status TEXT NOT NULL DEFAULT 'pending'
+        )
+      ''');
+
+      // Tabela de sessões de visita
+      await db.execute('''
+        CREATE TABLE agenda_visit_sessions (
+          id TEXT PRIMARY KEY,
+          evento_id TEXT NOT NULL,
+          start_at_real TEXT NOT NULL,
+          end_at_real TEXT,
+          duracao_min INTEGER,
+          notas_finais TEXT,
+          checklist_snapshot TEXT,
+          created_by TEXT NOT NULL,
+          created_at TEXT NOT NULL,
+          sync_status TEXT NOT NULL DEFAULT 'pending',
+          FOREIGN KEY (evento_id) REFERENCES agenda_events (id)
+        )
+      ''');
+
+      // Índices para performance
+      await db.execute('''
+        CREATE INDEX idx_agenda_events_cliente 
+        ON agenda_events(cliente_id)
+      ''');
+
+      await db.execute('''
+        CREATE INDEX idx_agenda_events_status 
+        ON agenda_events(status)
+      ''');
+
+      await db.execute('''
+        CREATE INDEX idx_agenda_events_data 
+        ON agenda_events(data_inicio_planejada)
+      ''');
+
+      await db.execute('''
+        CREATE INDEX idx_agenda_events_sync 
+        ON agenda_events(sync_status)
+      ''');
+
+      await db.execute('''
+        CREATE INDEX idx_agenda_sessions_evento 
+        ON agenda_visit_sessions(evento_id)
+      ''');
+
+      if (kDebugMode) {
+        debugPrint(
+          '✅ Migração v9 → v10: Tabelas agenda_events e agenda_visit_sessions criadas',
         );
       }
     }

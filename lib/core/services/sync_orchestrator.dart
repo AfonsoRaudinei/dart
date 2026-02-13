@@ -7,6 +7,8 @@ import 'package:soloforte_app/modules/consultoria/services/agronomic_sync_servic
 import 'package:soloforte_app/modules/drawing/data/data_sources/drawing_sync_service.dart';
 import 'package:soloforte_app/modules/consultoria/occurrences/data/occurrence_sync_service.dart';
 import 'package:soloforte_app/modules/visitas/data/repositories/visit_sync_service.dart';
+import 'package:soloforte_app/modules/agenda/data/services/agenda_sync_service.dart';
+import 'package:soloforte_app/modules/agenda/data/repositories/agenda_repository.dart';
 
 enum SyncPriority {
   immediate, // User-triggered, high priority
@@ -119,6 +121,7 @@ final syncOrchestratorProvider = ChangeNotifierProvider<SyncOrchestrator>((
   orchestrator.registerModule(DrawingSyncModule());
   orchestrator.registerModule(OccurrenceSyncModule(supabase));
   orchestrator.registerModule(VisitSyncModule(supabase));
+  orchestrator.registerModule(AgendaSyncModule(supabase));
 
   return orchestrator;
 });
@@ -156,4 +159,16 @@ class VisitSyncModule implements SyncModule {
   String get name => 'Visitas Técnicas';
   @override
   Future<void> sync() => VisitSyncService(supabase).syncVisits();
+}
+
+class AgendaSyncModule implements SyncModule {
+  final SupabaseClient supabase;
+  AgendaSyncModule(this.supabase);
+  @override
+  String get name => 'Agenda';
+  @override
+  Future<void> sync() {
+    final repository = AgendaRepository();
+    return AgendaSyncService(supabase, repository).sync();
+  }
 }
