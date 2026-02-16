@@ -107,4 +107,55 @@ class ClientsRepository {
       'sync_status': 1, // Dirty
     };
   }
+
+  Future<List<Farm>> getFarms(String clientId) async {
+    final db = await _db;
+    final results = await db.query(
+      'farms',
+      where: 'cliente_id = ? AND deleted_at IS NULL',
+      whereArgs: [clientId],
+      orderBy: 'nome ASC',
+    );
+
+    return results
+        .map(
+          (f) => Farm(
+            id: f['id'] as String,
+            name: f['nome'] as String,
+            city: f['municipio'] as String? ?? '',
+            state: f['uf'] as String? ?? '',
+            totalAreaHa: (f['area_total'] as num?)?.toDouble() ?? 0.0,
+            fields: [],
+          ),
+        )
+        .toList();
+  }
+
+  Future<void> saveFarm(Farm farm, String clientId) async {
+    final db = await _db;
+    final data = {
+      'id': farm.id,
+      'cliente_id': clientId,
+      'nome': farm.name,
+      'municipio': farm.city,
+      'uf': farm.state,
+      'area_total': farm.totalAreaHa,
+      'created_at': DateTime.now()
+          .toIso8601String(), // Ideally keep original if exists
+      'updated_at': DateTime.now().toIso8601String(),
+      'sync_status': 1, // pending sync
+      'deleted_at': null,
+    };
+
+    // Upsert logic
+    final count = await db.update(
+      'farms',
+      data,
+      where: 'id = ?',
+      whereArgs: [farm.id],
+    );
+    if (count == 0) {
+      await db.insert('farms', data);
+    }
+  }
 }

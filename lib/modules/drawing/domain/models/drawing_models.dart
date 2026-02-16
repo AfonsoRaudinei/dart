@@ -162,7 +162,7 @@ class DrawingProperties {
   final String autorId;
   final AuthorType autorTipo;
   final String? operacaoId;
-  final String? clienteId;  // 🆕 NOVO CAMPO
+  final String? clienteId; // 🆕 NOVO CAMPO
   final String? fazendaId;
   final double areaHa;
   final int versao;
@@ -175,6 +175,10 @@ class DrawingProperties {
   final String? subtipo; // "pivo"
   final double? raioMetros;
 
+  // 🆕 PROPRIEDADES VISUAIS E DE GRUPO
+  final String? grupo;
+  final int? cor;
+
   // Versioning
   final String? versaoAnteriorId;
 
@@ -186,7 +190,7 @@ class DrawingProperties {
     required this.autorId,
     required this.autorTipo,
     this.operacaoId,
-    this.clienteId,     // 🆕 NOVO CAMPO
+    this.clienteId,
     this.fazendaId,
     required this.areaHa,
     required this.versao,
@@ -196,6 +200,8 @@ class DrawingProperties {
     this.syncStatus = SyncStatus.local_only,
     this.subtipo,
     this.raioMetros,
+    this.grupo, // 🆕
+    this.cor, // 🆕
     this.versaoAnteriorId,
   });
 
@@ -207,7 +213,7 @@ class DrawingProperties {
     'autor_id': autorId,
     'autor_tipo': autorTipo.toJson(),
     'operacao_id': operacaoId,
-    'cliente_id': clienteId,  // 🆕 NOVO CAMPO
+    'cliente_id': clienteId,
     'fazenda_id': fazendaId,
     'area_ha': areaHa,
     'versao': versao,
@@ -217,6 +223,8 @@ class DrawingProperties {
     'sync_status': syncStatus.toJson(),
     'subtipo': subtipo,
     'raio_metros': raioMetros,
+    'grupo': grupo, // 🆕
+    'cor': cor, // 🆕
     'versao_anterior_id': versaoAnteriorId,
   };
 
@@ -229,7 +237,7 @@ class DrawingProperties {
       autorId: json['autor_id'],
       autorTipo: AuthorType.fromJson(json['autor_tipo']),
       operacaoId: json['operacao_id'],
-      clienteId: json['cliente_id'],  // 🆕 NOVO CAMPO
+      clienteId: json['cliente_id'],
       fazendaId: json['fazenda_id'],
       areaHa: (json['area_ha'] as num).toDouble(),
       versao: json['versao'],
@@ -241,6 +249,8 @@ class DrawingProperties {
           : SyncStatus.local_only,
       subtipo: json['subtipo'],
       raioMetros: json['raio_metros']?.toDouble(),
+      grupo: json['grupo'], // 🆕
+      cor: json['cor'], // 🆕
       versaoAnteriorId: json['versao_anterior_id'],
     );
   }
@@ -253,7 +263,7 @@ class DrawingProperties {
     String? autorId,
     AuthorType? autorTipo,
     String? operacaoId,
-    String? clienteId,     // 🆕 NOVO CAMPO
+    String? clienteId,
     String? fazendaId,
     double? areaHa,
     int? versao,
@@ -263,6 +273,8 @@ class DrawingProperties {
     SyncStatus? syncStatus,
     String? subtipo,
     double? raioMetros,
+    String? grupo, // 🆕
+    int? cor, // 🆕
     String? versaoAnteriorId,
   }) {
     return DrawingProperties(
@@ -273,7 +285,7 @@ class DrawingProperties {
       autorId: autorId ?? this.autorId,
       autorTipo: autorTipo ?? this.autorTipo,
       operacaoId: operacaoId ?? this.operacaoId,
-      clienteId: clienteId ?? this.clienteId,     // 🆕 NOVO CAMPO
+      clienteId: clienteId ?? this.clienteId,
       fazendaId: fazendaId ?? this.fazendaId,
       areaHa: areaHa ?? this.areaHa,
       versao: versao ?? this.versao,
@@ -283,6 +295,8 @@ class DrawingProperties {
       syncStatus: syncStatus ?? this.syncStatus,
       subtipo: subtipo ?? this.subtipo,
       raioMetros: raioMetros ?? this.raioMetros,
+      grupo: grupo ?? this.grupo, // 🆕
+      cor: cor ?? this.cor, // 🆕
       versaoAnteriorId: versaoAnteriorId ?? this.versaoAnteriorId,
     );
   }

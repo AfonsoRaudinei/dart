@@ -129,6 +129,15 @@ extension DrawingFeatureStyle on DrawingFeature {
   FieldStyle get style {
     switch (visualState) {
       case FieldVisualState.standard:
+        // 🆕 Se tiver cor personalizada definida (via grupo ou manual), usa ela
+        if (properties.cor != null) {
+          final customColor = Color(properties.cor!);
+          return FieldStyle(
+            fillColor: customColor,
+            borderColor: customColor,
+            fillOpacity: 0.2,
+          );
+        }
         return FieldStyle.standard;
       case FieldVisualState.draft:
         return FieldStyle.draft;

@@ -7,18 +7,32 @@ import 'package:soloforte_app/modules/drawing/data/repositories/drawing_reposito
 
 /// Mock repository que não acessa banco de dados
 class MockDrawingRepository extends DrawingRepository {
+  int saveCount = 0;
+  DrawingFeature? lastSavedFeature;
+  final List<DrawingFeature> features = [];
+
   @override
   Future<List<DrawingFeature>> getAllFeatures() async {
-    return [];
+    return features;
   }
 
   @override
   Future<void> saveFeature(DrawingFeature feature) async {
+    saveCount++;
+    lastSavedFeature = feature;
+
+    final index = features.indexWhere((f) => f.id == feature.id);
+    if (index != -1) {
+      features[index] = feature;
+    } else {
+      features.add(feature);
+    }
     return;
   }
 
   @override
   Future<void> deleteFeature(String id) async {
+    features.removeWhere((f) => f.id == id);
     return;
   }
 }
@@ -451,6 +465,120 @@ void main() {
       controller.appendDrawingPoint(const LatLng(-15.7801, -47.9292));
 
       expect(controller.liveAreaHa, greaterThan(0.0));
+    });
+  });
+
+  group('FIX-DRAW-FLOW-02 — Regressão: Vertex Dragging (RT-DRAW-DRAG)', () {
+    late DrawingController controller;
+    late MockDrawingRepository repository;
+
+    setUp(() {
+      repository = MockDrawingRepository();
+      controller = DrawingController(repository: repository);
+    });
+
+    tearDown(() {
+      controller.dispose();
+    });
+
+    test('🖐️ Iniciar arrasto deve sinalizar estado de dragging', () {
+      controller.onDragStart(0);
+      expect(controller.isDraggingVertex, isTrue);
+      expect(controller.draggedVertexIndex, equals(0));
+    });
+
+    test('🖐️ Mover vértice deve atualizar geometria em live mode', () async {
+      // Setup: Mock an existing feature to edit
+      final feature = DrawingFeature(
+        id: 'feat1',
+        geometry: DrawingPolygon(
+          coordinates: [
+            [
+              [0.0, 0.0],
+              [1.0, 0.0],
+              [1.0, 1.0],
+              [0.0, 0.0],
+            ],
+          ],
+        ),
+        properties: DrawingProperties(
+          nome: 'Test',
+          tipo: DrawingType.talhao,
+          origem: DrawingOrigin.desenho_manual,
+          status: DrawingStatus.rascunho,
+          autorId: 'user1',
+          autorTipo: AuthorType.consultor,
+          areaHa: 10.0,
+          versao: 1,
+          ativo: true,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        ),
+      );
+
+      // Populate controller list by adding it
+      await repository.saveFeature(feature);
+      await controller.loadFeatures();
+
+      controller.selectFeature(feature);
+      controller.startEditMode();
+
+      // Mover o primeiro vértice (0.0, 0.0) para (0.5, 0.5)
+      controller.onDragStart(0);
+      controller.moveVertex(0, 0, const LatLng(0.5, 0.5));
+
+      final editedPoly = controller.liveGeometry as DrawingPolygon;
+      expect(editedPoly.coordinates[0][0], equals([0.5, 0.5]));
+      // Closure check: O último ponto também deve ter mudado
+      expect(editedPoly.coordinates[0].last, equals([0.5, 0.5]));
+    });
+
+    test('🖐️ Finalizar arrasto deve persistir no repositório', () async {
+      final feature = DrawingFeature(
+        id: 'feat1',
+        geometry: DrawingPolygon(
+          coordinates: [
+            [
+              [0.0, 0.0],
+              [1.0, 0.0],
+              [1.0, 1.0],
+              [0.0, 0.0],
+            ],
+          ],
+        ),
+        properties: DrawingProperties(
+          nome: 'Test',
+          tipo: DrawingType.talhao,
+          origem: DrawingOrigin.desenho_manual,
+          status: DrawingStatus.rascunho,
+          autorId: 'user1',
+          autorTipo: AuthorType.consultor,
+          areaHa: 10.0,
+          versao: 1,
+          ativo: true,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        ),
+      );
+
+      await repository.saveFeature(feature);
+      await controller.loadFeatures();
+
+      controller.selectFeature(feature);
+      controller.startEditMode();
+
+      final initialSaveCount = repository.saveCount;
+
+      controller.onDragStart(0);
+      controller.moveVertex(0, 0, const LatLng(2.0, 2.0));
+      controller.onDragEnd();
+
+      // Deve ter resetado estado de drag
+      expect(controller.isDraggingVertex, isFalse);
+
+      // Deve ter chamado saveFeature no repositório
+      expect(repository.saveCount, greaterThan(initialSaveCount));
+      expect(repository.lastSavedFeature?.geometry, isA<DrawingPolygon>());
     });
   });
 }

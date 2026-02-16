@@ -10,6 +10,7 @@ class MapCanvas extends StatelessWidget {
   final Function(TapPosition, LatLng) onTap;
   final Function(MapCamera, bool) onPositionChanged;
   final List<Widget> children;
+  final InteractionOptions? interactionOptions;
 
   const MapCanvas({
     super.key,
@@ -18,6 +19,7 @@ class MapCanvas extends StatelessWidget {
     required this.onTap,
     required this.onPositionChanged,
     required this.children,
+    this.interactionOptions,
   });
 
   @override
@@ -32,9 +34,11 @@ class MapCanvas extends StatelessWidget {
         maxZoom: 19.0,
         onTap: onTap,
         onPositionChanged: onPositionChanged,
-        interactionOptions: const InteractionOptions(
-          flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
-        ),
+        interactionOptions:
+            interactionOptions ??
+            const InteractionOptions(
+              flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
+            ),
       ),
       children: children,
     );

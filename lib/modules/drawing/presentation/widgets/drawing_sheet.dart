@@ -4,12 +4,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../controllers/drawing_controller.dart';
 import '../../domain/models/drawing_models.dart';
 import '../../domain/drawing_state.dart';
-import '../../../consultoria/clients/domain/client.dart';
-import '../../../consultoria/clients/domain/agronomic_models.dart';
+import '../../../consultoria/clients/domain/client.dart'; // 🆕 Re-import
+import '../../../consultoria/clients/domain/agronomic_models.dart'; // 🆕 Re-import
 import 'components/drawing_tool_selector.dart';
-import 'components/drawing_metadata_panel.dart';
 import 'components/drawing_actions_bar.dart';
 import 'components/drawing_hint_overlay.dart';
+import 'package:soloforte_app/ui/theme/soloforte_theme.dart';
 
 class DrawingSheet extends ConsumerStatefulWidget {
   final DrawingController controller;
@@ -25,11 +25,18 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
   String? _selectedToolKey;
   OverlayEntry? _tooltipOverlay;
 
-  // 🆕 Estado para formulário de metadados
-  final _nomeController = TextEditingController();
-  final _descricaoController = TextEditingController();
+  // 🆕 ESTADO LOCAL PARA REVISÃO COMPLETA
+  final _formKey = GlobalKey<FormState>();
+
+  // Hierarquia: Cliente -> Fazenda -> Talhão
   Client? _selectedClient;
   Farm? _selectedFarm;
+  final bool _isConsultant = true; // TODO: Obter do AuthProvider
+
+  Color _selectedColor = SoloForteColors.primary;
+
+  final _nomeController = TextEditingController();
+  final _descricaoController = TextEditingController();
 
   @override
   void initState() {
@@ -39,7 +46,15 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
     // Initial show? No, wait for layout or first build.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _showTooltip();
+
+      // Auto-load clients if consultant
+      if (_isConsultant) {
+        widget.controller.loadClients();
+      }
     });
+
+    // Suggest logical name
+    _nomeController.text = "Talhão Novo";
   }
 
   @override
@@ -535,9 +550,28 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
       onDifference: widget.controller.startDifferenceMode,
       onIntersection: widget.controller.startIntersectionMode,
       onDelete: () async {
-        // Confirmar e deletar
+        // 1. Guardar referência para undo
+        final deletedFeature = feature;
+
+        // 2. Deletar imediatamente
         widget.controller.deleteFeature(feature.id);
+
+        // 3. Fechar o sheet
         Navigator.of(context).pop();
+
+        // 4. Mostrar feedback com Undo
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('"${deletedFeature.properties.nome}" removido'),
+            action: SnackBarAction(
+              label: 'DESFAZER',
+              onPressed: () {
+                widget.controller.restoreFeature(deletedFeature);
+              },
+            ),
+            duration: const Duration(seconds: 5),
+          ),
+        );
       },
     );
   }
@@ -602,59 +636,364 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
     );
   }
 
-  // 🆕 FORMULÁRIO DE METADADOS COMPLETO (Inspirado FAMS/Climate)
+  // 🆕 ESTADO LOCAL JÁ DEFINIDO NO INÍCIO DA CLASSE
+  // init state logic merged above
+
+  // ... (dispose and other methods remain)
+
+  // 🆕 FORMULÁRIO DE METADADOS (Climate FieldView Style - Hierárquico)
   Widget _buildReviewingMode(BuildContext context) {
-    // 🆕 REFATORADO: Usar DrawingMetadataPanel component
-    return DrawingMetadataPanel(
-      nomeController: _nomeController,
-      descricaoController: _descricaoController,
-      selectedClient: _selectedClient,
-      selectedFarm: _selectedFarm,
-      onClientChanged: (client) {
-        setState(() {
-          _selectedClient = client;
-          _selectedFarm = null; // Reset farm quando muda cliente
-        });
-      },
-      onFarmChanged: (farm) {
-        setState(() {
-          _selectedFarm = farm;
-        });
-      },
-      onTypeChanged: (type) {
-        // TODO: Adicionar tipo ao estado
-      },
-      onConfirm: () {
-        final geometry = widget.controller.liveGeometry;
-        if (geometry == null) return;
+    final area = widget.controller.liveAreaHa;
+    final perimeter = widget.controller.livePerimeterKm;
+    final f = NumberFormat("##0.##", "pt_BR");
 
-        widget.controller.addFeature(
-          geometry: geometry,
-          nome: _nomeController.text.trim(),
-          tipo: DrawingType.talhao,
-          origem: DrawingOrigin.desenho_manual,
-          autorId: 'current_user', // TODO: pegar do session
-          autorTipo: AuthorType.consultor,
-          clienteId: _selectedClient?.id,
-          fazendaId: _selectedFarm?.id,
-        );
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text(
+              'Salvar Polígono',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
 
-        _clearForm();
-      },
-      onCancel: () {
-        _clearForm();
-        widget.controller.cancelOperation();
-      },
+            // 📊 Métricas
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.grey[50],
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey[200]!),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _BigMetric(
+                    icon: Icons.aspect_ratio,
+                    value: '${f.format(area)} ha',
+                    label: 'Área',
+                  ),
+                  Container(width: 1, height: 40, color: Colors.grey[300]),
+                  _BigMetric(
+                    icon: Icons.straighten,
+                    value: '${f.format(perimeter)} km',
+                    label: 'Perímetro',
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // 1. Selecionar Cliente (Apenas Consultor)
+            if (_isConsultant) ...[
+              const Text(
+                '👤 Cliente',
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black54,
+                ),
+              ),
+              const SizedBox(height: 8),
+              DropdownButtonFormField<Client>(
+                value: _selectedClient,
+                decoration: InputDecoration(
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                hint: const Text('Selecione o cliente...'),
+                items: widget.controller.clients.map((c) {
+                  return DropdownMenuItem(value: c, child: Text(c.name));
+                }).toList(),
+                onChanged: (client) {
+                  setState(() {
+                    _selectedClient = client;
+                    _selectedFarm = null; // Reset farm
+                  });
+                  if (client != null) {
+                    widget.controller.loadFarms(client.id);
+                  }
+                },
+                validator: (v) => v == null ? 'Selecione um cliente' : null,
+              ),
+              const SizedBox(height: 16),
+            ],
+
+            // 2. Selecionar Fazenda
+            const Text(
+              '🚜 Fazenda / Grupo',
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                color: Colors.black54,
+              ),
+            ),
+            const SizedBox(height: 8),
+            DropdownButtonFormField<dynamic>(
+              // Dynamic to allow 'NEW_FARM' string or Farm object
+              value: _selectedFarm,
+              decoration: InputDecoration(
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              hint: const Text('Selecione a fazenda...'),
+              items: [
+                ...widget.controller.farms.map(
+                  (f) => DropdownMenuItem(value: f, child: Text(f.name)),
+                ),
+                const DropdownMenuItem(
+                  value: 'NEW_FARM',
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.add_circle_outline,
+                        size: 16,
+                        color: Colors.blue,
+                      ),
+                      SizedBox(width: 8),
+                      Text(
+                        'Nova Fazenda',
+                        style: TextStyle(color: Colors.blue),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+              onChanged: (getValue) {
+                if (getValue == 'NEW_FARM') {
+                  if (_selectedClient == null && _isConsultant) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Selecione o Cliente primeiro'),
+                      ),
+                    );
+                    return;
+                  }
+                  _showCreateFarmDialog();
+                } else {
+                  setState(() => _selectedFarm = getValue as Farm?);
+                }
+              },
+              validator: (v) => v == null && _selectedFarm == null
+                  ? 'Selecione uma fazenda'
+                  : null,
+            ),
+            const SizedBox(height: 16),
+
+            // 3. Nome do Talhão
+            const Text(
+              '🏷️ Nome do Talhão',
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                color: Colors.black54,
+              ),
+            ),
+            const SizedBox(height: 8),
+            TextFormField(
+              controller: _nomeController,
+              decoration: InputDecoration(
+                hintText: 'Ex: Talhão Norte',
+                suffixText: '${f.format(area)} ha',
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              validator: (v) =>
+                  v == null || v.trim().isEmpty ? 'Informe o nome' : null,
+            ),
+            const SizedBox(height: 16),
+
+            // 4. Cor e Ações
+            Row(
+              children: [
+                // Seletor de cor simplificado
+                _ColorOption(
+                  color: _selectedColor,
+                  selected: _selectedColor,
+                  onTap: (_) {},
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        _ColorOption(
+                          color: SoloForteColors.primary,
+                          selected: _selectedColor,
+                          onTap: (c) => setState(() => _selectedColor = c),
+                        ),
+                        _ColorOption(
+                          color: Colors.blue,
+                          selected: _selectedColor,
+                          onTap: (c) => setState(() => _selectedColor = c),
+                        ),
+                        _ColorOption(
+                          color: Colors.amber,
+                          selected: _selectedColor,
+                          onTap: (c) => setState(() => _selectedColor = c),
+                        ),
+                        _ColorOption(
+                          color: Colors.redAccent,
+                          selected: _selectedColor,
+                          onTap: (c) => setState(() => _selectedColor = c),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+
+            // Actions Buttons
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () {
+                      _resetReviewForm();
+                      widget.controller.cancelOperation();
+                    },
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                    ),
+                    child: const Text(
+                      'CANCELAR',
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () {
+                      if (!_formKey.currentState!.validate()) return;
+
+                      final geometry = widget.controller.liveGeometry;
+                      if (geometry == null) return;
+
+                      // 🚀 SALVAR com IDs
+                      widget.controller.addFeature(
+                        geometry: geometry,
+                        nome: _nomeController.text.trim(),
+                        tipo: DrawingType.talhao,
+                        origem: DrawingOrigin.desenho_manual,
+                        autorId: 'current_user',
+                        autorTipo: _isConsultant
+                            ? AuthorType.consultor
+                            : AuthorType.cliente, // FIXED
+                        clienteId:
+                            _selectedClient?.id ??
+                            'SELF', // If producer, assumes self
+                        fazendaId: _selectedFarm?.id,
+                        // Opcional: passar grupo como Nome da Fazenda para compatibilidade visual
+                        grupo: _selectedFarm?.name,
+                        cor: _selectedColor.value,
+                      );
+
+                      _resetReviewForm();
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: SoloForteColors.greenIOS,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                    ),
+                    child: const Text(
+                      'SALVAR',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 
-  // Helper: Limpar formulário
-  void _clearForm() {
-    _nomeController.clear();
-    _descricaoController.clear();
+  void _showCreateFarmDialog() {
+    final nameController = TextEditingController();
+    final cityController = TextEditingController();
+    final stateController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Nova Fazenda'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: nameController,
+              decoration: const InputDecoration(labelText: 'Nome da Fazenda'),
+              autofocus: true,
+            ),
+            TextField(
+              controller: cityController,
+              decoration: const InputDecoration(labelText: 'Município'),
+            ),
+            TextField(
+              controller: stateController,
+              decoration: const InputDecoration(labelText: 'UF'),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              if (nameController.text.isEmpty) return;
+
+              final clientId =
+                  _selectedClient?.id ??
+                  'SELF'; // TODO: Handle Producer ID properly
+              await widget.controller.createFarm(
+                nameController.text,
+                clientId,
+                cityController.text,
+                stateController.text,
+              );
+              Navigator.pop(context);
+
+              // Auto-select the newly created farm (Assume it's the last one or find by name)
+              // Simple approach: reload farms handled by controller, then user selects.
+              // Or better: controller could return the ID.
+            },
+            child: const Text('Criar'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Antigo helper de limpar form
+  void _resetReviewForm() {
+    _nomeController.text = "Talhão Novo";
+    // _descricaoController.clear(); // Removed as per instruction
     setState(() {
       _selectedClient = null;
       _selectedFarm = null;
+      _selectedColor = SoloForteColors.primary;
     });
   }
 }
@@ -757,6 +1096,82 @@ class _FormatButton extends StatelessWidget {
             Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _BigMetric extends StatelessWidget {
+  final IconData icon;
+  final String value;
+  final String label;
+
+  const _BigMetric({
+    required this.icon,
+    required this.value,
+    required this.label,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Icon(icon, color: SoloForteColors.textSecondary, size: 20),
+        const SizedBox(height: 8),
+        Text(
+          value,
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        ),
+        Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+      ],
+    );
+  }
+}
+
+class _ColorOption extends StatelessWidget {
+  final Color color;
+  final Color selected;
+  final ValueChanged<Color> onTap;
+
+  const _ColorOption({
+    required this.color,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isSelected = color.value == selected.value;
+    return GestureDetector(
+      onTap: () => onTap(color),
+      child: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          color: color,
+          shape: BoxShape.circle,
+          border: isSelected
+              ? Border.all(color: Colors.white, width: 3)
+              : Border.all(color: Colors.grey[200]!, width: 1),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: color.withOpacity(0.4),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ]
+              : null,
+        ),
+        child: isSelected
+            ? Container(
+                margin: const EdgeInsets.all(2),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.black12, width: 1),
+                ),
+              )
+            : null,
       ),
     );
   }

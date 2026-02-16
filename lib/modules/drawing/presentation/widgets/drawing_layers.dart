@@ -12,11 +12,13 @@ import '../controllers/drawing_controller.dart';
 class DrawingLayerWidget extends StatefulWidget {
   final DrawingController controller;
   final Function(DrawingFeature)? onFeatureTap;
+  final VoidCallback? onDrawingComplete;
 
   const DrawingLayerWidget({
     super.key,
     required this.controller,
     this.onFeatureTap,
+    this.onDrawingComplete,
   });
 
   @override
@@ -26,6 +28,7 @@ class DrawingLayerWidget extends StatefulWidget {
 class _DrawingLayerWidgetState extends State<DrawingLayerWidget> {
   // ⚡ CACHE: Evita reconstruir polígonos quando features não mudaram
   List<Polygon>? _cachedPolygons;
+  List<Marker>? _cachedMarkers;
   List<DrawingFeature>? _lastFeatures;
   String? _lastSelectedId;
   DrawingGeometry? _lastLiveGeo;
@@ -45,16 +48,25 @@ class _DrawingLayerWidgetState extends State<DrawingLayerWidget> {
             _lastSelectedId != selectedId ||
             _lastLiveGeo != liveGeo;
 
-        if (!needsRebuild && _cachedPolygons != null) {
-          return PolygonLayer(polygons: _cachedPolygons!);
+        if (!needsRebuild &&
+            _cachedPolygons != null &&
+            _cachedMarkers != null) {
+          return Stack(
+            children: [
+              PolygonLayer(polygons: _cachedPolygons!),
+              if (_cachedMarkers!.isNotEmpty)
+                MarkerLayer(markers: _cachedMarkers!),
+            ],
+          );
         }
 
-        // Atualizar cache
+        // Atualizar cache vars
         _lastFeatures = features;
         _lastSelectedId = selectedId;
         _lastLiveGeo = liveGeo;
 
         final polygons = <Polygon>[];
+        final markers = <Marker>[];
 
         // 1. Renderiza features salvas
         for (final feature in features) {
@@ -113,18 +125,60 @@ class _DrawingLayerWidgetState extends State<DrawingLayerWidget> {
           polygons.add(
             Polygon(
               points: outerRing,
-              color: Colors.blue.withValues(alpha: 0.1),
-              borderColor: Colors.blue,
-              borderStrokeWidth: 2,
-              pattern: StrokePattern.dashed(segments: [10, 5]),
+              color: Colors.white.withValues(alpha: 0.2), // Mais claro
+              borderColor: Colors.white, // Alto contraste
+              borderStrokeWidth: 3, // Mais visível
+              pattern: const StrokePattern.dotted(), // Estilo "em construção"
             ),
           );
+
+          // Renderizar vértices durante o desenho (feedback visual imediato)
+          for (int i = 0; i < outerRing.length; i++) {
+            final point = outerRing[i];
+            final isStart = i == 0;
+            final size = isStart ? 18.0 : 14.0;
+
+            markers.add(
+              Marker(
+                point: point,
+                width: size,
+                height: size,
+                child: GestureDetector(
+                  onTap: isStart ? widget.onDrawingComplete : null,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: isStart ? Colors.green : Colors.black26,
+                        width: isStart ? 2 : 1,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.3),
+                          blurRadius: 2,
+                          offset: const Offset(0, 1),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                alignment: Alignment.center,
+              ),
+            );
+          }
         }
 
         // ⚡ Salvar cache
         _cachedPolygons = polygons;
+        _cachedMarkers = markers;
 
-        return PolygonLayer(polygons: polygons);
+        return Stack(
+          children: [
+            PolygonLayer(polygons: polygons),
+            if (markers.isNotEmpty) MarkerLayer(markers: markers),
+          ],
+        );
       },
     );
   }

@@ -7,16 +7,81 @@ import '../../domain/models/drawing_models.dart';
 import '../../domain/drawing_utils.dart';
 import '../../domain/drawing_state.dart';
 import '../../data/repositories/drawing_repository.dart';
+// 🆕 Client Module Integration
+import '../../../consultoria/clients/data/clients_repository.dart';
+import '../../../consultoria/clients/domain/client.dart';
+import '../../../consultoria/clients/domain/agronomic_models.dart';
 
 /// Controller for the Drawing Mode state.
 /// This manages the current list of features (active drawings) and the current interaction state.
 class DrawingController extends ChangeNotifier {
   final DrawingRepository _repository;
+  final ClientsRepository? _clientsRepository; // 🆕 Injected
   final DrawingStateMachine _stateMachine = DrawingStateMachine();
 
-  DrawingController({DrawingRepository? repository})
-    : _repository = repository ?? DrawingRepository() {
+  // 🆕 Client Data State
+  List<Client> _clients = [];
+  List<Farm> _farms = [];
+
+  List<Client> get clients => List.unmodifiable(_clients);
+  List<Farm> get farms => List.unmodifiable(_farms);
+
+  DrawingController({
+    DrawingRepository? repository,
+    ClientsRepository? clientsRepository, // 🆕
+  }) : _repository = repository ?? DrawingRepository(),
+       _clientsRepository = clientsRepository {
     loadFeatures();
+    loadClients(); // 🆕 Start loading clients
+  }
+
+  // 🆕 Carregar Clientes para o Dropdown
+  Future<void> loadClients() async {
+    if (_clientsRepository == null) return;
+    try {
+      _clients = await _clientsRepository.getClients();
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Erro ao carregar clientes: $e');
+    }
+  }
+
+  // 🆕 Carregar Fazendas de um Cliente
+  Future<void> loadFarms(String clientId) async {
+    if (_clientsRepository == null) return;
+    try {
+      _farms = []; // Clear previous
+      notifyListeners();
+
+      _farms = await _clientsRepository.getFarms(clientId);
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Erro ao carregar fazendas: $e');
+    }
+  }
+
+  // 🆕 Criar nova fazenda
+  Future<void> createFarm(
+    String name,
+    String clientId,
+    String city,
+    String state,
+  ) async {
+    if (_clientsRepository == null) return;
+    try {
+      final newFarm = Farm(
+        id: DateTime.now().millisecondsSinceEpoch.toString(), // Temp ID
+        name: name,
+        city: city,
+        state: state,
+        totalAreaHa: 0.0,
+        fields: [],
+      );
+      await _clientsRepository.saveFarm(newFarm, clientId);
+      await loadFarms(clientId); // Reload
+    } catch (e) {
+      debugPrint('Erro ao criar fazenda: $e');
+    }
   }
 
   bool _isDisposed = false;
@@ -96,12 +161,17 @@ class DrawingController extends ChangeNotifier {
   // Performance State
   bool _isHighComplexity = false;
   Timer? _validationDebounce;
+  bool _isDraggingVertex = false; // RT-DRAW-DRAG
+  int? _draggedVertexIndex;
   static const int _complexityThreshold = 2000;
   static const int _validationDebounceMs = 300;
 
   List<DrawingFeature> get features => List.unmodifiable(_features);
   DrawingFeature? get selectedFeature => _selectedFeature;
   bool get isHighComplexity => _isHighComplexity;
+
+  bool get isDraggingVertex => _isDraggingVertex;
+  int? get draggedVertexIndex => _draggedVertexIndex;
 
   /// ⚡ COMPUTED PROPERTY: Evita cálculo no build()
   int get pendingSyncCount => _features
@@ -419,8 +489,11 @@ class DrawingController extends ChangeNotifier {
     required AuthorType autorTipo,
     String? subtipo,
     double? raioMetros,
-    String? clienteId, // 🆕 NOVO PARÂMETRO
+    String? clienteId,
     String? fazendaId,
+    // 🆕 Novos parâmetros opcionais
+    String? grupo,
+    int? cor,
   }) {
     // Validate before adding
     geometry = DrawingUtils.normalizeGeometry(geometry);
@@ -444,8 +517,8 @@ class DrawingController extends ChangeNotifier {
         status: DrawingStatus.rascunho,
         autorId: autorId,
         autorTipo: autorTipo,
-        clienteId: clienteId, // 🆕 NOVO CAMPO
-        fazendaId: fazendaId, // 🆕 NOVO CAMPO
+        clienteId: clienteId,
+        fazendaId: fazendaId,
         areaHa: areaHa,
         versao: 1,
         ativo: true,
@@ -454,6 +527,9 @@ class DrawingController extends ChangeNotifier {
         subtipo: subtipo,
         raioMetros: raioMetros,
         syncStatus: SyncStatus.local_only,
+        // 🆕 Repassar novos campos
+        grupo: grupo,
+        cor: cor,
       ),
     );
 
@@ -539,7 +615,8 @@ class DrawingController extends ChangeNotifier {
     } else {
       _selectedFeature = _features.firstWhere(
         (f) => f.id == feature.id,
-        orElse: () => _features.first,
+        orElse: () =>
+            feature, // Use the provided feature instance if not found in list
       );
     }
     notifyListeners();
@@ -554,6 +631,17 @@ class DrawingController extends ChangeNotifier {
     }
     _isDirty = true;
     notifyListeners();
+  }
+
+  /// Restaura uma feature excluída (Undo action)
+  void restoreFeature(DrawingFeature feature) {
+    if (!_features.any((f) => f.id == feature.id)) {
+      _features.add(feature);
+      _repository.saveFeature(feature);
+      _selectedFeature = feature;
+      _isDirty = true;
+      notifyListeners();
+    }
   }
 
   // ===========================================================================
@@ -816,125 +904,199 @@ class DrawingController extends ChangeNotifier {
     return null;
   }
 
-  /// Called by Map when a user drags a vertex.
-  /// [geometry] is the generic updated geometry from the map helper.
-  void updateEditGeometry(DrawingGeometry geometry) {
-    if (_interactionMode != DrawingInteraction.editing) return;
+  // ===========================================================================
+  // VERTEX EDITING (RT-DRAW-06)
+  // ===========================================================================
 
-    // Reset snap for this frame
-    _isSnapping = false;
-
-    // Check complexity before snapping
-    final count = DrawingUtils.getVertexCount(geometry);
+  void _throttledValidate() {
+    // Logic from old updateEditGeometry
+    final count = DrawingUtils.getVertexCount(_editGeometry);
     final isComplex = count > _complexityThreshold;
 
-    DrawingGeometry processingGeo = geometry;
-
-    // Only snap if not complex
-    if (!isComplex) {
-      if (geometry is DrawingPolygon) {
-        final snappedCoords = geometry.coordinates.map((ring) {
-          return ring.map((p) => _snapIfClose(p)).toList();
-        }).toList();
-        processingGeo = DrawingPolygon(coordinates: snappedCoords);
-      }
-    }
-
-    _editGeometry = processingGeo;
-
-    // Throttle validation
     if (isComplex) {
-      // Debounce full validation
       _validationDebounce?.cancel();
       _validationDebounce = Timer(
         const Duration(milliseconds: _validationDebounceMs),
         () {
-          if (_isDisposed) return; // 🔧 FIX: Evitar chamada após dispose
-          validateGeometry(
-            _editGeometry,
-            forceFull: false,
-          ); // Still allow skip if really huge, but run basic checks
+          if (_isDisposed) return;
+          validateGeometry(_editGeometry, forceFull: false);
           notifyListeners();
         },
       );
-      // Immediate: Just checks valid structure (min points), skips topology
-      validateGeometry(_editGeometry, forceFull: false);
+      // Immediate basic check?
+      // validateGeometry(_editGeometry, forceFull: false); // maybe too heavy?
     } else {
       validateGeometry(_editGeometry);
     }
+  }
 
+  /// Moves a single vertex to a new position.
+  /// Handles maintaining polygon closure automatically.
+  void moveVertex(int ringIndex, int pointIndex, LatLng newPos) {
+    if (_editGeometry is! DrawingPolygon) return;
+
+    final poly = _editGeometry as DrawingPolygon;
+    if (ringIndex >= poly.coordinates.length) return;
+
+    final ring = poly.coordinates[ringIndex];
+    if (pointIndex >= ring.length) return;
+
+    // Create deep copy for mutation
+    final newRing = List<List<double>>.from(
+      ring.map((p) => List<double>.from(p)),
+    );
+
+    // Check closure
+    final isClosed =
+        newRing.isNotEmpty &&
+        (newRing.first[0] == newRing.last[0] &&
+            newRing.first[1] == newRing.last[1]);
+
+    // Update point
+    newRing[pointIndex] = [newPos.longitude, newPos.latitude];
+
+    // Maintain closure
+    if (isClosed) {
+      if (pointIndex == 0) {
+        newRing[newRing.length - 1] = [newPos.longitude, newPos.latitude];
+      } else if (pointIndex == newRing.length - 1) {
+        newRing[0] = [newPos.longitude, newPos.latitude];
+      }
+    }
+
+    final newCoords = List<List<List<double>>>.from(poly.coordinates);
+    newCoords[ringIndex] = newRing;
+
+    _editGeometry = DrawingPolygon(coordinates: newCoords);
+
+    _throttledValidate();
     notifyListeners();
   }
 
-  /// Call BEFORE a distinct modification action (like drag end, add point, remove point)
-  void snapshotEdit() {
+  /// Call this when starting a drag operation to save state for Undo
+  void onDragStart([int? index]) {
+    _isDraggingVertex = true;
+    _draggedVertexIndex = index;
     if (_editGeometry != null) {
       _undoStack.add(_cloneGeometry(_editGeometry!));
-      if (_undoStack.length > 20) {
-        _undoStack.removeAt(0);
-      }
-    }
-  }
-
-  void addVertex(int ringIndex, int segmentIndex, LatLng point) {
-    if (_editGeometry == null) return;
-    snapshotEdit(); // Save state before change
-
-    // Logic to insert point
-    if (_editGeometry is DrawingPolygon) {
-      final poly = _editGeometry as DrawingPolygon;
-      if (ringIndex < poly.coordinates.length) {
-        final ring = poly.coordinates[ringIndex];
-        // Insert at segmentIndex + 1 (after the start of segment)
-        // Segment i is p[i] -> p[i+1]. We want to insert between.
-        if (segmentIndex >= 0 && segmentIndex < ring.length - 1) {
-          ring.insert(segmentIndex + 1, [point.longitude, point.latitude]);
-        }
-      }
+      if (_undoStack.length > 20) _undoStack.removeAt(0);
     }
     notifyListeners();
   }
 
-  void removeVertex(int ringIndex, int pointIndex) {
-    if (_editGeometry == null) return;
+  /// Call this when ending a drag operation.
+  /// Triggers persistence as per Requirement 4.
+  void onDragEnd() {
+    _isDraggingVertex = false;
+    _draggedVertexIndex = null;
 
-    // Check min points
-    int count = 0;
-    if (_editGeometry is DrawingPolygon) {
-      final poly = _editGeometry as DrawingPolygon;
-      if (ringIndex < poly.coordinates.length) {
-        count = poly.coordinates[ringIndex].length;
-      }
+    // RT-DRAW-DRAG: Immediate persistence if editing existing feature
+    if (_editGeometry != null && _selectedFeature != null) {
+      updateFeature(
+        _selectedFeature!.id,
+        newGeometry: _editGeometry,
+        editorId: "sistema",
+        editorType: AuthorType.sistema,
+      );
     }
 
-    // Polygon must be closed (first=last). Min valid points is 4 (triangle closed).
-    if (count <= 4) {
-      _errorMessage = "A área precisa ter pelo menos 3 pontos (triângulo).";
+    notifyListeners();
+  }
+
+  /// Inserts a new vertex after the specified segment index.
+  /// Index i means insert between i and i+1.
+  void insertVertex(int ringIndex, int segmentIndex, LatLng point) {
+    if (_editGeometry is! DrawingPolygon) return;
+
+    final poly = _editGeometry as DrawingPolygon;
+    if (ringIndex >= poly.coordinates.length) return;
+
+    // Save state for undo
+    onDragStart();
+
+    final newRing = List<List<double>>.from(poly.coordinates[ringIndex]);
+
+    // Insert safely
+    if (segmentIndex >= 0 && segmentIndex < newRing.length - 1) {
+      newRing.insert(segmentIndex + 1, [point.longitude, point.latitude]);
+    } else {
+      // Append if somehow at end, but usually we insert in segments
+      newRing.add([point.longitude, point.latitude]);
+    }
+
+    final newCoords = List<List<List<double>>>.from(poly.coordinates);
+    newCoords[ringIndex] = newRing;
+
+    _editGeometry = DrawingPolygon(coordinates: newCoords);
+    validateGeometry(_editGeometry);
+    notifyListeners();
+  }
+
+  /// Removes a vertex at the specified index.
+  void removeVertex(int ringIndex, int pointIndex) {
+    if (_editGeometry is! DrawingPolygon) return;
+
+    final poly = _editGeometry as DrawingPolygon;
+    if (ringIndex >= poly.coordinates.length) return;
+
+    final ring = poly.coordinates[ringIndex];
+
+    // Validation: Don't allow breaking the polygon
+    // Closed polygon needs at least 4 points (A-B-C-A) to form a triangle.
+    if (ring.length <= 4) {
+      _errorMessage = "A área precisa ter pelo menos 3 pontos.";
       notifyListeners();
       return;
     }
 
-    snapshotEdit();
+    // Save state for undo
+    onDragStart();
 
-    if (_editGeometry is DrawingPolygon) {
-      final poly = _editGeometry as DrawingPolygon;
-      final ring = poly.coordinates[ringIndex];
+    final newRing = List<List<double>>.from(ring);
 
-      ring.removeAt(pointIndex);
+    // Identify if we are removing a closure point
+    final isClosed =
+        newRing.first[0] == newRing.last[0] &&
+        newRing.first[1] == newRing.last[1];
 
-      // Re-close if needed
+    newRing.removeAt(pointIndex);
+
+    // Restore closure if needed
+    if (isClosed) {
       if (pointIndex == 0) {
-        if (ring.isNotEmpty) {
-          ring.last = [ring.first[0], ring.first[1]];
-        }
-      }
-
-      // Ensure closed
-      if (ring.isNotEmpty &&
-          (ring.first[0] != ring.last[0] || ring.first[1] != ring.last[1])) {
-        ring.add([ring.first[0], ring.first[1]]);
+        // We removed Head. The old Tail is still there, but it matched old Head.
+        // New Head is the old second point.
+        // Tail must match New Head.
+        newRing.last = [newRing.first[0], newRing.first[1]];
+      } else if (pointIndex == ring.length - 1) {
+        // We removed Tail.
+        // New Tail is old second-to-last.
+        // It must match Head.
+        // Effectively, removing tail just exposes previous point.
+        // We must force it to match Head.
+        newRing.add([newRing.first[0], newRing.first[1]]);
       }
     }
+
+    // Robust Closure Check
+    if (newRing.isNotEmpty) {
+      if (newRing.first[0] != newRing.last[0] ||
+          newRing.first[1] != newRing.last[1]) {
+        // It's broken.
+        if (pointIndex == 0 || pointIndex == ring.length - 1) {
+          if (newRing.first[0] != newRing.last[0] ||
+              newRing.first[1] != newRing.last[1]) {
+            newRing.add([newRing.first[0], newRing.first[1]]);
+          }
+        }
+      }
+    }
+
+    final newCoords = List<List<List<double>>>.from(poly.coordinates);
+    newCoords[ringIndex] = newRing;
+
+    _editGeometry = DrawingPolygon(coordinates: newCoords);
+    validateGeometry(_editGeometry);
     notifyListeners();
   }
 
@@ -957,6 +1119,64 @@ class DrawingController extends ChangeNotifier {
       );
     }
     return g;
+  }
+
+  // 🆕 GRUPOS (MOCK)
+  // No futuro, isso viria de um repository dedicado
+  final List<String> _groups = [
+    'Soja 2025/26',
+    'Milho 2024',
+    'Algodão Safra 1',
+  ];
+  List<String> get groups => List.unmodifiable(_groups);
+
+  void createGroup(String name) {
+    if (!_groups.contains(name)) {
+      _groups.add(name);
+      notifyListeners();
+    }
+  }
+
+  // ===========================================================================
+  // DRAWING FLOW
+  // ===========================================================================
+
+  /// Completa o desenho manual e entra em modo de revisão
+  void completeDrawing() {
+    if (_stateMachine.currentState == DrawingState.drawing) {
+      final success = _stateMachine.completeDrawing();
+      if (success) {
+        validateGeometry(_manualSketch);
+        notifyListeners();
+      }
+    }
+  }
+
+  /// Atualiza propriedades específicas de uma feature
+  void updateFeatureProperties(String id, {String? grupo, int? cor}) {
+    final index = _features.indexWhere((f) => f.id == id);
+    if (index == -1) return;
+
+    final feature = _features[index];
+    final updatedProperties = feature.properties.copyWith(
+      grupo: grupo,
+      cor: cor,
+      updatedAt: DateTime.now(),
+    );
+
+    final updatedFeature = DrawingFeature(
+      id: feature.id,
+      geometry: feature.geometry,
+      properties: updatedProperties,
+    );
+
+    _features[index] = updatedFeature;
+
+    if (_selectedFeature?.id == id) {
+      _selectedFeature = updatedFeature;
+    }
+
+    notifyListeners();
   }
 
   // ===========================================================================

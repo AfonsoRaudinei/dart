@@ -28,6 +28,9 @@ import '../components/map/widgets/map_layers.dart';
 import '../components/map/widgets/map_markers.dart';
 import '../components/map/widgets/map_controls_overlay.dart';
 import '../components/map/widgets/isolated_marker_layers.dart';
+import '../components/map/widgets/editing_controls_overlay.dart';
+import '../../modules/drawing/presentation/widgets/drawing_edit_layer.dart';
+import '../../core/domain/map_models.dart';
 
 class PrivateMapScreen extends ConsumerStatefulWidget {
   const PrivateMapScreen({super.key});
@@ -207,6 +210,48 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
     );
   }
 
+  // 🔧 Helper to finish drawing
+  Future<void> _finishDrawing() async {
+    final controller = ref.read(drawingControllerProvider);
+
+    // Verificar se há pontos suficientes
+    if (controller.liveGeometry == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Adicione pelo menos 3 pontos para criar um polígono'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+
+    // 🔧 CHANGE STATE: Mudar para modo de revisão
+    // Isso prepara o controller para exibir o formulário correto no sheet
+    controller.completeDrawing();
+
+    // Abrir sheet para adicionar metadados
+    // O sheet irá usar liveGeometry para criar a feature
+    await showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      // 🔒 Prevent closing by tap outside during review?
+      // User requested "Safety". Let's keep it default for now but maybe isDismissible: false?
+      isDismissible: false,
+      enableDrag: false,
+      builder: (_) => DrawingSheet(controller: controller),
+    );
+
+    // Desativar modo desenho
+    setState(() => _isDrawMode = false);
+
+    // Se o sheet fechou e ainda estamos em reviewing (ex: swipe down se permitido, ou back button),
+    // devemos cancelar para evitar estado inconsistente.
+    if (controller.currentState == DrawingState.reviewing) {
+      controller.cancelOperation();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final stopwatch = Stopwatch()..start();
@@ -222,6 +267,26 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
     final drawingTool = ref.watch(
       drawingControllerProvider.select((c) => c.currentTool),
     );
+
+    // Watch drawing state changes to switch layers
+    ref.listen(drawingControllerProvider.select((s) => s.currentState), (
+      prev,
+      next,
+    ) {
+      if (next == DrawingState.drawing || next == DrawingState.editing) {
+        // Auto-switch to Satellite
+        final currentLayer = ref.read(activeLayerProvider);
+        if (currentLayer != LayerType.satellite) {
+          ref.read(activeLayerProvider.notifier).setLayer(LayerType.satellite);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Modo Satélite ativado para melhor visualização'),
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+      }
+    });
 
     // Auto-focus Logic (mantido para zoom inicial)
     ref.listen(publicacoesDataProvider, (prev, next) {
@@ -362,6 +427,13 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
                   ref.read(drawingControllerProvider).selectFeature(feature);
                   HapticFeedback.selectionClick();
                 },
+                onDrawingComplete: _finishDrawing,
+              ),
+
+              // 🔧 Camada de Edição (Vertex Handles)
+              DrawingEditLayer(
+                controller: ref.read(drawingControllerProvider),
+                mapController: _mapController,
               ),
 
               // 🔒 MARKERS ISOLADOS: Não rebuildam por GPS/zoom/pan
@@ -402,34 +474,7 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
                   FloatingActionButton(
                     heroTag: 'complete_drawing',
                     backgroundColor: SoloForteColors.greenIOS,
-                    onPressed: () async {
-                      final controller = ref.read(drawingControllerProvider);
-
-                      // Verificar se há pontos suficientes
-                      if (controller.liveGeometry == null) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text(
-                              'Adicione pelo menos 3 pontos para criar um polígono',
-                            ),
-                            duration: Duration(seconds: 2),
-                          ),
-                        );
-                        return;
-                      }
-
-                      // Abrir sheet para adicionar metadados
-                      // O sheet irá usar liveGeometry para criar a feature
-                      await showModalBottomSheet(
-                        context: context,
-                        backgroundColor: Colors.transparent,
-                        isScrollControlled: true,
-                        builder: (_) => DrawingSheet(controller: controller),
-                      );
-
-                      // Desativar modo desenho
-                      setState(() => _isDrawMode = false);
-                    },
+                    onPressed: _finishDrawing,
                     child: const Icon(SFIcons.check, color: Colors.white),
                   ),
                   const SizedBox(height: 12),
@@ -454,6 +499,22 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
                     child: const Icon(SFIcons.close, color: Colors.white),
                   ),
                 ],
+              ),
+            ),
+
+          // 🔧 Controles de Edição (Vertex Editing)
+          if (drawingState == DrawingState.editing)
+            Positioned(
+              bottom: 100,
+              left: 20,
+              right: 20,
+              child: Center(
+                child: EditingControlsOverlay(
+                  onSave: () => ref.read(drawingControllerProvider).saveEdit(),
+                  onCancel: () =>
+                      ref.read(drawingControllerProvider).cancelEdit(),
+                  onUndo: () => ref.read(drawingControllerProvider).undoEdit(),
+                ),
               ),
             ),
         ],
