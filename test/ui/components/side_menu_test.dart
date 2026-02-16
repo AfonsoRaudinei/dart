@@ -21,20 +21,13 @@ import 'package:soloforte_app/core/router/app_routes.dart';
 
 void main() {
   group('AppRoutes.getLevel', () {
-    group('1️⃣ L0 — Dashboard/Mapa (raiz absoluta)', () {
-      test('Dashboard raiz é L0', () {
-        expect(AppRoutes.getLevel('/dashboard'), RouteLevel.l0);
+    group('1️⃣ L0 — Mapa (raiz absoluta)', () {
+      test('Mapa raiz é L0', () {
+        expect(AppRoutes.getLevel('/map'), RouteLevel.l0);
       });
 
-      test('Sub-rota do dashboard (mapa-tecnico) é L0', () {
-        expect(AppRoutes.getLevel('/dashboard/mapa-tecnico'), RouteLevel.l0);
-      });
-
-      test('Sub-rota profunda do dashboard é L0', () {
-        expect(
-          AppRoutes.getLevel('/dashboard/ocorrencias/novo'),
-          RouteLevel.l0,
-        );
+      test('Sub-rota do mapa é L0', () {
+        expect(AppRoutes.getLevel('/map/alguma-coisa'), RouteLevel.l0);
       });
     });
 
@@ -119,8 +112,8 @@ void main() {
         expect(AppRoutes.getLevel('/login'), RouteLevel.public);
       });
 
-      test('Signup é PUBLIC', () {
-        expect(AppRoutes.getLevel('/signup'), RouteLevel.public);
+      test('Signup (Register) é PUBLIC', () {
+        expect(AppRoutes.getLevel('/register'), RouteLevel.public);
       });
 
       test('Raiz (/) é PUBLIC', () {
@@ -133,19 +126,19 @@ void main() {
         expect(AppRoutes.getLevel(''), RouteLevel.l2Plus);
       });
 
-      test('Dashboard com barra final é L0', () {
-        // /dashboard/ ainda inicia com /dashboard/ então é L0
-        expect(AppRoutes.getLevel('/dashboard/'), RouteLevel.l0);
+      test('Mapa com barra final é L0', () {
+        // /map/ ainda inicia com /map/ então é L0
+        expect(AppRoutes.getLevel('/map/'), RouteLevel.l0);
       });
     });
 
     group('6️⃣ AppRoutes.canOpenSideMenu', () {
-      test('Pode abrir SideMenu no dashboard', () {
-        expect(AppRoutes.canOpenSideMenu('/dashboard'), true);
+      test('Pode abrir SideMenu no mapa', () {
+        expect(AppRoutes.canOpenSideMenu('/map'), true);
       });
 
-      test('Pode abrir SideMenu em sub-rota do dashboard', () {
-        expect(AppRoutes.canOpenSideMenu('/dashboard/mapa-tecnico'), true);
+      test('Pode abrir SideMenu em sub-rota do mapa', () {
+        expect(AppRoutes.canOpenSideMenu('/map/qualquer'), true);
       });
 
       test('Não pode abrir SideMenu em /settings', () {

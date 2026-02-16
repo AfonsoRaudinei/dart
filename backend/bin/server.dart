@@ -2,10 +2,10 @@ import 'dart:io';
 import 'package:shelf/shelf.dart';
 import 'package:shelf/shelf_io.dart' as shelf_io;
 import 'package:shelf_router/shelf_router.dart';
-import '../lib/storage/feature_flag_storage.dart';
-import '../lib/routes/feature_flag_routes.dart';
-import '../lib/routes/admin_routes.dart';
-import '../lib/middleware/auth_middleware.dart';
+import 'package:soloforte_backend/storage/feature_flag_storage.dart';
+import 'package:soloforte_backend/routes/feature_flag_routes.dart';
+import 'package:soloforte_backend/routes/admin_routes.dart';
+import 'package:soloforte_backend/middleware/auth_middleware.dart';
 
 void main(List<String> args) async {
   // Parse argumentos (porta, etc.)
@@ -26,14 +26,14 @@ void main(List<String> args) async {
   app.mount('/api/', 
     Pipeline()
       .addMiddleware(AuthMiddleware.appAuth())
-      .addHandler(featureFlagRoutes.router),
+      .addHandler(featureFlagRoutes.router.call),
   );
 
   // Routes administrativas (com autenticação de admin)
   app.mount('/admin/', 
     Pipeline()
       .addMiddleware(AuthMiddleware.adminAuth())
-      .addHandler(adminRoutes.router),
+      .addHandler(adminRoutes.router.call),
   );
 
   // Health check (sem autenticação)
@@ -53,7 +53,7 @@ void main(List<String> args) async {
       .addMiddleware(corsHeaders())
       .addMiddleware(requestLogger())
       .addMiddleware(AuthMiddleware.rateLimit(maxRequests: 1000))
-      .addHandler(app);
+      .addHandler(app.call);
 
   // Iniciar servidor
   final server = await shelf_io.serve(

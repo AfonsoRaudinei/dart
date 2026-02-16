@@ -42,7 +42,7 @@ class DrawingController extends ChangeNotifier {
   /// Em caso de conflito, notifica o usuário para resolução manual.
   Future<void> syncFeatures() async {
     if (_isDisposed) return;
-    
+
     try {
       final result = await _repository.sync();
 
@@ -165,14 +165,33 @@ class DrawingController extends ChangeNotifier {
 
   void appendDrawingPoint(LatLng point) {
     if (_isDisposed) return;
-    
+
+    // 🔧 FIX: Validação explícita de estado antes de adicionar pontos
+    // Se não estiver em armed ou drawing, não processar
     if (currentState != DrawingState.armed &&
         currentState != DrawingState.drawing) {
+      // Se está em idle, significa que a ferramenta não foi selecionada corretamente
+      if (currentState == DrawingState.idle) {
+        if (kDebugMode) {
+          debugPrint(
+            'DRAW-ERROR: appendDrawingPoint chamado em estado idle. '
+            'Ferramenta deve ser selecionada primeiro via selectTool().',
+          );
+        }
+      }
       return;
     }
 
+    // 🔧 FIX-DRAW-REDSCREEN: Transicionar de armed -> drawing de forma segura
     if (currentState == DrawingState.armed) {
-      _stateMachine.beginAddingPoints();
+      final success = _stateMachine.beginAddingPoints();
+      if (!success) {
+        // Transição falhou (não devería acontecer pois já validamos acima)
+        if (kDebugMode) {
+          debugPrint('DRAW-ERROR: Falha ao transicionar armed -> drawing');
+        }
+        return;
+      }
     }
 
     _currentPoints.add(point);
@@ -201,10 +220,10 @@ class DrawingController extends ChangeNotifier {
   void _syncStateMachine() {
     final targetState = _mapInteractionToState(_interactionMode);
     if (_stateMachine.currentState != targetState) {
-      try {
-        _stateMachine.transitionTo(targetState);
-      } catch (e) {
-        // Transition not allowed - reset to idle
+      // 🔧 FIX-DRAW-REDSCREEN: Usar tryTransitionTo para evitar exceptions
+      final success = _stateMachine.tryTransitionTo(targetState);
+      if (!success) {
+        // Transição não permitida - resetar para idle
         if (kDebugMode) {
           debugPrint(
             'State transition failed: ${_stateMachine.currentState} -> $targetState',
@@ -543,7 +562,7 @@ class DrawingController extends ChangeNotifier {
 
   void selectTool(String toolKey) {
     if (_isDisposed) return;
-    
+
     DrawingTool tool;
     switch (toolKey) {
       case 'polygon':
@@ -565,29 +584,73 @@ class DrawingController extends ChangeNotifier {
         tool = DrawingTool.none;
     }
 
-    // Sync with state machine
-    try {
-      if (tool != DrawingTool.none) {
-        // 🔧 FIX-DRAW-FLOW-01: Resetar estado anterior se necessário
-        // Se já estava em armed/drawing, voltar para idle antes de re-armar
-        if (_stateMachine.currentState != DrawingState.idle) {
-          _stateMachine.reset();
-        }
-        // Limpar pontos de desenho anterior
-        _currentPoints.clear();
-        _manualSketch = null;
-        _selectedFeature = null;
+    if (kDebugMode) {
+      debugPrint('DRAW-DEBUG: selectTool($toolKey) → $tool');
+      debugPrint(
+        'DRAW-DEBUG: Estado atual antes: ${_stateMachine.currentState.name}',
+      );
+    }
 
-        _stateMachine.startDrawing(tool);
-        _interactionMode =
-            DrawingInteraction.normal; // Ensure mode is normal for drawing
-      } else {
-        _stateMachine.cancel();
-        _currentPoints.clear();
-        _manualSketch = null;
+    // 🔧 FIX-AUDIT: Bloquear mudança de ferramenta durante drawing
+    // Evita perda de trabalho do usuário sem aviso
+    if (_stateMachine.currentState == DrawingState.drawing &&
+        tool != DrawingTool.none) {
+      if (kDebugMode) {
+        debugPrint(
+          'DRAW-WARN: selectTool bloqueado durante drawing state. '
+          'Usuário deve concluir ou cancelar primeiro.',
+        );
       }
-    } catch (e) {
-      if (kDebugMode) debugPrint('Tool selection failed: $e');
+      _errorMessage =
+          "Conclua ou cancele o desenho atual antes de trocar de ferramenta";
+      notifyListeners();
+      return;
+    }
+
+    // Sync with state machine
+    if (tool != DrawingTool.none) {
+      // 🔧 FIX-DRAW-FLOW-01: Resetar estado anterior se necessário
+      // Se já estava em armed, permitir trocar ferramenta
+      if (_stateMachine.currentState != DrawingState.idle) {
+        _stateMachine.reset();
+        if (kDebugMode) {
+          debugPrint('DRAW-DEBUG: Estado resetado para idle');
+        }
+      }
+      // Limpar pontos de desenho anterior
+      _currentPoints.clear();
+      _manualSketch = null;
+      _selectedFeature = null;
+
+      // 🔧 FIX-DRAW-REDSCREEN: startDrawing agora retorna bool, não lança
+      final success = _stateMachine.startDrawing(tool);
+      if (!success) {
+        if (kDebugMode) {
+          debugPrint('DRAW-ERROR: startDrawing falhou para $tool');
+        }
+        _stateMachine.reset();
+        _interactionMode = DrawingInteraction.normal;
+        notifyListeners();
+        return;
+      }
+
+      _interactionMode =
+          DrawingInteraction.normal; // Ensure mode is normal for drawing
+
+      if (kDebugMode) {
+        debugPrint(
+          'DRAW-DEBUG: Estado após startDrawing: ${_stateMachine.currentState.name}',
+        );
+        debugPrint('DRAW-DEBUG: Ferramenta: ${_stateMachine.currentTool.name}');
+      }
+    } else {
+      _stateMachine.cancel();
+      _currentPoints.clear();
+      _manualSketch = null;
+
+      if (kDebugMode) {
+        debugPrint('DRAW-DEBUG: Modo desenho desativado');
+      }
     }
     notifyListeners();
   }
@@ -598,7 +661,7 @@ class DrawingController extends ChangeNotifier {
 
   void cancelOperation() {
     if (_isDisposed) return;
-    
+
     _interactionMode = DrawingInteraction.normal;
     _pendingFeatureA = null;
     _pendingFeatureB = null;
@@ -617,15 +680,28 @@ class DrawingController extends ChangeNotifier {
     if (_interactionMode != DrawingInteraction.normal &&
         _interactionMode != DrawingInteraction.importing) {}
 
+    // 🔧 FIX-DRAW-STATE: Blindagem contra transição inválida idle -> drawing
+    // Se o estado estiver idle, significa que a ferramenta não foi selecionada
+    // corretamente. Não processar o sketch para evitar transição inválida.
+    if (_stateMachine.currentState == DrawingState.idle) {
+      if (kDebugMode) {
+        debugPrint(
+          'DRAW-WARN: updateManualSketch ignorado em estado idle. '
+          'Ferramenta deve ser selecionada primeiro via selectTool().',
+        );
+      }
+      return;
+    }
+
     _manualSketch = geometry;
 
     // Detect state transition from ARMED to DRAWING
     if (_manualSketch != null &&
         _stateMachine.currentState == DrawingState.armed) {
-      try {
-        _stateMachine.beginAddingPoints();
-      } catch (e) {
-        // Already drawing or invalid
+      // 🔧 FIX-DRAW-REDSCREEN: Usar retorno booleano em vez de try-catch
+      final success = _stateMachine.beginAddingPoints();
+      if (!success && kDebugMode) {
+        debugPrint('DRAW-ERROR: Falha ao transicionar armed -> drawing');
       }
     }
 
@@ -992,7 +1068,7 @@ class DrawingController extends ChangeNotifier {
 
     switch (_interactionMode) {
       case DrawingInteraction.unionSelection:
-        result = DrawingUtils.union(
+        result = DrawingUtils.unionGeometries(
           _pendingFeatureA!.geometry,
           _pendingFeatureB!.geometry,
         );

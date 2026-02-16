@@ -1,5 +1,6 @@
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
+import '../../../../modules/map/design/sf_icons.dart';
 import 'package:flutter_map/flutter_map.dart';
 import '../../../core/domain/publicacao.dart';
 
@@ -45,10 +46,7 @@ class _PublicacaoPin extends StatelessWidget {
   final Publicacao publicacao;
   final bool showDetails;
 
-  const _PublicacaoPin({
-    required this.publicacao,
-    required this.showDetails,
-  });
+  const _PublicacaoPin({required this.publicacao, required this.showDetails});
 
   Color _getTypeColor() {
     switch (publicacao.type) {
@@ -68,15 +66,15 @@ class _PublicacaoPin extends StatelessWidget {
   IconData _getTypeIcon() {
     switch (publicacao.type) {
       case PublicacaoType.institucional:
-        return Icons.campaign;
+        return SFIcons.campaign;
       case PublicacaoType.tecnico:
-        return Icons.agriculture;
+        return SFIcons.agriculture;
       case PublicacaoType.resultado:
-        return Icons.trending_up;
+        return SFIcons.trendingUp;
       case PublicacaoType.comparativo:
-        return Icons.compare_arrows;
+        return SFIcons.compareArrows;
       case PublicacaoType.caseSucesso:
-        return Icons.star_outline;
+        return SFIcons.starOutline;
     }
   }
 
@@ -173,11 +171,7 @@ class _PublicacaoPin extends StatelessWidget {
                       color: color,
                       shape: BoxShape.circle,
                     ),
-                    child: Icon(
-                      _getTypeIcon(),
-                      size: 12,
-                      color: Colors.white,
-                    ),
+                    child: Icon(_getTypeIcon(), size: 12, color: Colors.white),
                   ),
                 ),
               ],

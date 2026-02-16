@@ -43,6 +43,23 @@ class VisitController extends StateNotifier<AsyncValue<VisitSession?>> {
     checkActiveSession();
   }
 
+  /// Decide a ação do Check-in baseado no estado atual.
+  /// Centraliza a lógica de negócio fora do overlay.
+  void handleCheckInTap({
+    required void Function() onShowStartSheet,
+    required void Function() onShowEndConfirmation,
+  }) {
+    if (state.isLoading) return;
+
+    final isActive = state.valueOrNull != null;
+
+    if (isActive) {
+      onShowEndConfirmation();
+    } else {
+      onShowStartSheet();
+    }
+  }
+
   Future<void> checkActiveSession() async {
     try {
       final session = await _repository.getActiveSession();

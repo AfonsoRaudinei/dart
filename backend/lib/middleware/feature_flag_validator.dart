@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
 import 'package:crypto/crypto.dart';
 import 'package:shelf/shelf.dart';
 import '../storage/feature_flag_storage.dart';
@@ -130,8 +129,12 @@ class FeatureFlagValidator {
       final currentParts = current.split('.').map(int.parse).toList();
       final requiredParts = required.split('.').map(int.parse).toList();
 
-      while (currentParts.length < 3) currentParts.add(0);
-      while (requiredParts.length < 3) requiredParts.add(0);
+      while (currentParts.length < 3) {
+        currentParts.add(0);
+      }
+      while (requiredParts.length < 3) {
+        requiredParts.add(0);
+      }
 
       for (int i = 0; i < 3; i++) {
         if (currentParts[i] > requiredParts[i]) return true;

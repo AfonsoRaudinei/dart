@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../modules/map/design/sf_icons.dart';
 import 'package:soloforte_app/ui/theme/soloforte_theme.dart';
 import '../../../modules/consultoria/occurrences/domain/occurrence.dart';
 
@@ -92,7 +93,7 @@ class _MapOccurrenceSheetState extends State<MapOccurrenceSheet> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   const Icon(
-                    Icons.location_on_rounded,
+                    SFIcons.locationOn,
                     size: 14,
                     color: SoloForteColors.textSecondary,
                   ),

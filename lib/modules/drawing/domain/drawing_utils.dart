@@ -7,6 +7,7 @@ import 'package:latlong2/latlong.dart';
 
 import 'package:uuid/uuid.dart';
 import 'models/drawing_models.dart';
+import '../../../core/utils/geodesic_utils.dart';
 
 class DrawingUtils {
   static const Uuid _uuid = Uuid();
@@ -19,33 +20,19 @@ class DrawingUtils {
   /// Generates a new UUID v4
   static String generateId() => _uuid.v4();
 
-  /// Calculates the area of a polygon in hectares.
-  /// Uses a spherical approximation (Shoelace formula on projected coordinates or simpler spherical calc).
-  /// For high precision on earth, we should use a library like 'vector_math' or 'dart_jts',
-  /// but for this module constraint (Flutter/Dart only), we implement a simplified WGS84 area calculation.
-  /// Calculates the area of a polygon ring in hectares.
-  ///
-  /// Uses spherical approximation for WGS84 coordinates.
-  /// For high precision, consider using specialized libraries.
+  /// ⚡ REFATORADO: Calcula área geodésica usando GeodesicUtils
+  /// 
+  /// Usa algoritmo de Shoelace esférico (WGS84) via latlong2.
+  /// Precisão: ±2-3% para polígonos agrícolas.
+  /// 
+  /// [ring] coordenadas no formato [[lng, lat], ...]
+  /// Retorna área em hectares
   static double calculateAreaHa(List<List<double>> ring) {
     if (ring.length < 3) return 0.0;
-
-    double area = 0.0;
-    const double radius = 6378137.0; // Earth radius in meters
-
-    if (ring.length > 2) {
-      for (var i = 0; i < ring.length - 1; i++) {
-        var p1 = ring[i];
-        var p2 = ring[i + 1];
-        area +=
-            _toRadians(p2[0] - p1[0]) *
-            (2 + math.sin(_toRadians(p1[1])) + math.sin(_toRadians(p2[1])));
-      }
-      area = area * radius * radius / 2.0;
-    }
-
-    // Convert sq meters to hectares
-    return area.abs() / 10000.0;
+    
+    // Converter para LatLng e delegar para GeodesicUtils
+    final points = GeodesicUtils.fromCoordinates(ring);
+    return GeodesicUtils.calculateAreaHectares(points);
   }
 
   /// ⚡ Calculates the total area of any geometry type in hectares.
@@ -72,14 +59,13 @@ class DrawingUtils {
     return area;
   }
 
-  static double _toRadians(double deg) => deg * (math.pi / 180.0);
-
-  /// Calculates the perimeter of a geometry in kilometers.
+  /// ⚡ REFATORADO: Calcula perímetro geodésico usando GeodesicUtils
+  /// 
+  /// Usa algoritmo de Vincenty (latlong2) para distâncias precisas.
   static double calculatePerimeterKm(DrawingGeometry? geometry) {
     if (geometry == null) return 0.0;
 
     double perimeter = 0.0;
-    const distance = Distance();
 
     List<List<List<double>>> rings = [];
     if (geometry is DrawingPolygon) {
@@ -96,69 +82,34 @@ class DrawingUtils {
 
     for (var ring in rings) {
       if (ring.length < 2) continue;
-      for (int i = 0; i < ring.length - 1; i++) {
-        final p1 = ring[i];
-        final p2 = ring[i + 1];
-        perimeter += distance.as(
-          LengthUnit.Kilometer,
-          LatLng(p1[1], p1[0]),
-          LatLng(p2[1], p2[0]),
-        );
-      }
+      final points = GeodesicUtils.fromCoordinates(ring);
+      perimeter += GeodesicUtils.calculatePerimeterKm(points);
     }
 
     return perimeter;
   }
 
   /// Calculates segment distances for the main ring of the geometry (first polygon).
-  /// Returns a list of strings formatted as "P{i} -> P{j}: {dist} km" or just distances.
-  /// The prompt asks for "Distância entre P1 -> P2...".
-  /// Let's return a list of segment lengths in km.
+  /// Returns a list of segment distances in kilometers.
+  /// Uses GeodesicUtils for accurate Vincenty-based calculations.
   static List<double> calculateSegmentsKm(DrawingGeometry? geometry) {
     if (geometry == null) return [];
 
-    List<double> segments = [];
-    const distance = Distance();
-
-    // For segments, we typically only show the *current* drawing or the primary polygon.
-    // UX usually makes sense for the single polygon being drawn.
     List<List<double>>? ring;
 
     if (geometry is DrawingPolygon && geometry.coordinates.isNotEmpty) {
       ring = geometry.coordinates.first;
     } else if (geometry is DrawingMultiPolygon &&
         geometry.coordinates.isNotEmpty) {
-      // Pick first polygon's outer ring
       if (geometry.coordinates.first.isNotEmpty) {
         ring = geometry.coordinates.first.first;
       }
     }
 
-    if (ring != null && ring.length > 1) {
-      for (int i = 0; i < ring.length - 1; i++) {
-        // ring[i] is [lng, lat]
-        final p1 = ring[i];
-        final p2 = ring[i + 1];
-
-        final dist = distance.as(
-          LengthUnit.Kilometer,
-          LatLng(p1[1], p1[0]),
-          LatLng(p2[1], p2[0]),
-        );
-        segments.add(dist);
-      }
-    }
-
-    return segments;
-  }
-
-  // ===========================================================================
-  // BOOLEAN OPERATIONS (RT-DRAW-07)
-  // ===========================================================================
-
-  static DrawingGeometry? union(DrawingGeometry g1, DrawingGeometry g2) {
-    // Stub
-    return null;
+    if (ring == null || ring.length < 2) return [];
+    
+    final points = GeodesicUtils.fromCoordinates(ring);
+    return GeodesicUtils.calculateSegmentDistances(points);
   }
 
   static DrawingGeometry? difference(

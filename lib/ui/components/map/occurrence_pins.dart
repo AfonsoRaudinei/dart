@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../modules/map/design/sf_icons.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import '../../../modules/consultoria/occurrences/domain/occurrence.dart';
@@ -61,15 +62,15 @@ class _OccurrencePin extends StatelessWidget {
     final category = OccurrenceCategory.fromString(occurrence.category);
     switch (category) {
       case OccurrenceCategory.doenca:
-        return Icons.coronavirus_outlined; // 🦠
+        return SFIcons.coronavirus; // 🦠
       case OccurrenceCategory.insetos:
-        return Icons.bug_report_outlined; // 🐛
+        return SFIcons.bugReport; // 🐛
       case OccurrenceCategory.daninhas:
-        return Icons.grass_outlined; // 🌿
+        return SFIcons.grass; // 🌿
       case OccurrenceCategory.nutricional:
-        return Icons.science_outlined; // ⚗️
+        return SFIcons.science; // ⚗️
       case OccurrenceCategory.agua:
-        return Icons.water_drop_outlined; // 💧
+        return SFIcons.waterDrop; // 💧
     }
   }
 

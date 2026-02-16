@@ -1,6 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
-import 'package:crypto/crypto.dart';
 import 'package:shelf/shelf.dart';
 
 /// Middleware para validação de autenticação via Bearer token.

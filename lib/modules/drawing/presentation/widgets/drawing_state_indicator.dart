@@ -82,8 +82,6 @@ class DrawingStateIndicator extends StatelessWidget {
         return Colors.green.shade600;
       case DrawingState.editing:
         return Colors.purple.shade600;
-      case DrawingState.measuring:
-        return Colors.teal.shade600;
       case DrawingState.importPreview:
         return Colors.indigo.shade600;
       case DrawingState.booleanOperation:
@@ -104,8 +102,6 @@ class DrawingStateIndicator extends StatelessWidget {
         return Icons.check_circle_outline;
       case DrawingState.editing:
         return Icons.edit;
-      case DrawingState.measuring:
-        return Icons.straighten;
       case DrawingState.importPreview:
         return Icons.visibility;
       case DrawingState.booleanOperation:
@@ -133,9 +129,22 @@ class DrawingStateIndicator extends StatelessWidget {
 
   /// Retorna a mensagem descritiva do estado
   String _messageForState(DrawingState state) {
-    final machine = DrawingStateMachine();
-    machine.transitionTo(state);
-    return machine.getStateMessage();
+    switch (state) {
+      case DrawingState.idle:
+        return 'Toque no mapa para navegar';
+      case DrawingState.armed:
+        return 'Toque para iniciar desenho';
+      case DrawingState.drawing:
+        return 'Desenhando... (toque duplo para finalizar)';
+      case DrawingState.reviewing:
+        return 'Revisar e confirmar';
+      case DrawingState.editing:
+        return 'Editando vértices';
+      case DrawingState.importPreview:
+        return 'Visualizando importação';
+      case DrawingState.booleanOperation:
+        return 'Operação booleana em andamento';
+    }
   }
 }
 
@@ -210,8 +219,6 @@ class DrawingStateBadge extends StatelessWidget {
         return Colors.green;
       case DrawingState.editing:
         return Colors.purple;
-      case DrawingState.measuring:
-        return Colors.teal;
       case DrawingState.importPreview:
         return Colors.indigo;
       case DrawingState.booleanOperation:
@@ -231,8 +238,6 @@ class DrawingStateBadge extends StatelessWidget {
         return 'REVISÃO';
       case DrawingState.editing:
         return 'EDITANDO';
-      case DrawingState.measuring:
-        return 'MEDINDO';
       case DrawingState.importPreview:
         return 'VISUALIZANDO';
       case DrawingState.booleanOperation:

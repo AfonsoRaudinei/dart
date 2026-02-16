@@ -12,9 +12,9 @@ class ClientListScreen extends ConsumerWidget {
     final clientsAsync = ref.watch(filteredClientsProvider);
     final filter = ref.watch(clientFilterProvider);
 
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
+    return Material(
+      color: Colors.white,
+      child: SafeArea(
         child: Column(
           children: [
             // Header & Search

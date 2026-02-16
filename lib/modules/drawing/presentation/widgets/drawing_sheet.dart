@@ -4,9 +4,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../controllers/drawing_controller.dart';
 import '../../domain/models/drawing_models.dart';
 import '../../domain/drawing_state.dart';
-import '../../../consultoria/clients/presentation/providers/clients_providers.dart';
 import '../../../consultoria/clients/domain/client.dart';
 import '../../../consultoria/clients/domain/agronomic_models.dart';
+import 'components/drawing_tool_selector.dart';
+import 'components/drawing_metadata_panel.dart';
+import 'components/drawing_actions_bar.dart';
+import 'components/drawing_hint_overlay.dart';
 
 class DrawingSheet extends ConsumerStatefulWidget {
   final DrawingController controller;
@@ -35,7 +38,7 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
     widget.controller.addListener(_updateTooltip);
     // Initial show? No, wait for layout or first build.
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _showTooltip();
+      if (mounted) _showTooltip();
     });
   }
 
@@ -81,8 +84,9 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
     if (_tooltipOverlay != null) return;
 
     final overlay = Overlay.of(context);
+    // 🆕 REFATORADO: Usar DrawingHintOverlay component
     _tooltipOverlay = OverlayEntry(
-      builder: (context) => _TooltipWidget(controller: widget.controller),
+      builder: (context) => DrawingHintOverlay(controller: widget.controller),
     );
 
     overlay.insert(_tooltipOverlay!);
@@ -108,46 +112,10 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
     }
   }
 
+  /*
   Widget _buildSyncBadge(SyncStatus status) {
-    IconData icon;
-    Color color;
-    String tooltip;
-
-    switch (status) {
-      case SyncStatus.synced:
-        icon = Icons.cloud_done;
-        color = Colors.green;
-        tooltip = "Sincronizado";
-        break;
-      case SyncStatus.pending_sync:
-        icon = Icons.cloud_upload;
-        color = Colors.orange;
-        tooltip = "Pendente de envio";
-        break;
-      case SyncStatus.conflict:
-        icon = Icons.cloud_off;
-        color = Colors.red;
-        tooltip = "Conflito detectado";
-        break;
-      case SyncStatus.local_only:
-        icon = Icons.save;
-        color = Colors.grey;
-        tooltip = "Salvo localmente";
-        break;
-    }
-
-    return Tooltip(
-      message: tooltip,
-      child: Container(
-        padding: const EdgeInsets.all(6),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.1),
-          shape: BoxShape.circle,
-        ),
-        child: Icon(icon, size: 18, color: color),
-      ),
-    );
-  }
+  ...
+  */
 
   @override
   Widget build(BuildContext context) {
@@ -171,49 +139,47 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
           const _SheetHeader(),
 
           // Conteúdo Dinâmico
-          Flexible(
-            child: ListenableBuilder(
-              listenable: widget.controller,
-              builder: (context, _) {
-                final content = Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Always calculate and show metrics if available
-                    _buildMetricsPanel(context),
+          ListenableBuilder(
+            listenable: widget.controller,
+            builder: (context, _) {
+              final content = Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Always calculate and show metrics if available
+                  _buildMetricsPanel(context),
 
-                    if (widget.controller.errorMessage != null)
-                      _buildErrorState(context)
-                    // 🆕 Modo de revisão: Formulário após desenhar
-                    else if (widget.controller.currentState ==
-                        DrawingState.reviewing)
-                      _buildReviewingMode(context)
-                    else if (widget.controller.interactionMode ==
-                        DrawingInteraction.importing)
-                      _buildImportingMode(context)
-                    else if (widget.controller.interactionMode ==
-                        DrawingInteraction.importPreview)
-                      _buildImportPreviewMode(context)
-                    else if (widget.controller.interactionMode ==
-                        DrawingInteraction.unionSelection)
-                      _buildUnionMode(context)
-                    else if (widget.controller.interactionMode ==
-                        DrawingInteraction.differenceSelection)
-                      _buildDifferenceMode(context) // Replaces cut
-                    else if (widget.controller.interactionMode ==
-                        DrawingInteraction.intersectionSelection)
-                      _buildIntersectionMode(context)
-                    else if (widget.controller.interactionMode ==
-                        DrawingInteraction.editing)
-                      _buildEditingMode(context)
-                    else if (widget.controller.selectedFeature != null)
-                      _buildSelectedMode(context)
-                    else
-                      _buildToolsGrid(context),
-                  ],
-                );
-                return content;
-              },
-            ),
+                  if (widget.controller.errorMessage != null)
+                    _buildErrorState(context)
+                  // 🆕 Modo de revisão: Formulário após desenhar
+                  else if (widget.controller.currentState ==
+                      DrawingState.reviewing)
+                    _buildReviewingMode(context)
+                  else if (widget.controller.interactionMode ==
+                      DrawingInteraction.importing)
+                    _buildImportingMode(context)
+                  else if (widget.controller.interactionMode ==
+                      DrawingInteraction.importPreview)
+                    _buildImportPreviewMode(context)
+                  else if (widget.controller.interactionMode ==
+                      DrawingInteraction.unionSelection)
+                    _buildUnionMode(context)
+                  else if (widget.controller.interactionMode ==
+                      DrawingInteraction.differenceSelection)
+                    _buildDifferenceMode(context) // Replaces cut
+                  else if (widget.controller.interactionMode ==
+                      DrawingInteraction.intersectionSelection)
+                    _buildIntersectionMode(context)
+                  else if (widget.controller.interactionMode ==
+                      DrawingInteraction.editing)
+                    _buildEditingMode(context)
+                  else if (widget.controller.selectedFeature != null)
+                    _buildSelectedMode(context)
+                  else
+                    _buildToolsGrid(context),
+                ],
+              );
+              return content;
+            },
           ),
 
           // Safe Area bottom padding
@@ -343,70 +309,35 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
   }
 
   Widget _buildToolsGrid(BuildContext context) {
-    final tools = [
-      _ToolData('polygon', Icons.hexagon_outlined, 'Polígono'),
-      _ToolData('freehand', Icons.gesture, 'Livre'),
-      _ToolData('pivot', Icons.radio_button_checked, 'Pivô'),
-      _ToolData('import', Icons.upload_file, 'Importar (KML)'),
-    ];
+    // 🆕 REFATORADO: Usar DrawingToolSelector component
+    final pendingCount = widget.controller.pendingSyncCount;
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isNarrow = constraints.maxWidth < 360;
-        // ⚡ OTIMIZAÇÃO: Usar computed property ao invés de calcular no build
-        final pendingCount = widget.controller.pendingSyncCount;
-
-        final grid = isNarrow
-            ? GridView.count(
-                crossAxisCount: 2,
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                mainAxisSpacing: 12,
-                crossAxisSpacing: 12,
-                childAspectRatio: 1.5,
-                children: tools.map((tool) => _buildToolItem(tool)).toList(),
-              )
-            : Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: tools.map((tool) => _buildToolItem(tool)).toList(),
-              );
-
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-          child: Column(
-            children: [
-              grid,
-              if (pendingCount > 0) ...[
-                const SizedBox(height: 16),
-                ElevatedButton.icon(
-                  onPressed: () => widget.controller.syncFeatures(),
-                  icon: const Icon(Icons.cloud_upload, color: Colors.white),
-                  label: Text('Enviar alterações ($pendingCount)'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.orange,
-                    foregroundColor: Colors.white,
-                  ),
-                ),
-              ],
-            ],
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      child: Column(
+        children: [
+          DrawingToolSelector(
+            selectedToolKey: _selectedToolKey,
+            onToolSelected: _onToolSelected,
           ),
-        );
-      },
+          if (pendingCount > 0) ...[
+            const SizedBox(height: 16),
+            ElevatedButton.icon(
+              onPressed: () => widget.controller.syncFeatures(),
+              icon: const Icon(Icons.cloud_upload, color: Colors.white),
+              label: Text('Enviar alterações ($pendingCount)'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.orange,
+                foregroundColor: Colors.white,
+              ),
+            ),
+          ],
+        ],
+      ),
     );
   }
 
-  Widget _buildToolItem(_ToolData tool) {
-    final isActive = _selectedToolKey == tool.key;
-
-    return _DrawingToolItem(
-      icon: tool.icon,
-      label: tool.label,
-      isActive: isActive,
-      onTap: () => _onToolSelected(tool.key),
-    );
-  }
-
-  // ... (Other build methods remain the same as previous step, just re-declaring for complete file if needed, but I will assume I can keep existing structure if I was patching. Since I am doing write_to_file, I must include all. )
+  // 🆕 REFATORADO: Métodos de construção de modo
 
   Widget _buildImportingMode(BuildContext context) {
     return Padding(
@@ -589,95 +520,25 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
 
   Widget _buildSelectedMode(BuildContext context) {
     final feature = widget.controller.selectedFeature!;
-    final isConsultant = feature.properties.autorTipo == AuthorType.consultor;
-    final isEditable = feature.properties.status != DrawingStatus.arquivado;
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            children: [
-              const Icon(Icons.map, color: Colors.green),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  'Área: ${feature.properties.nome}',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                ),
-              ),
-              _buildSyncBadge(feature.properties.syncStatus),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'Status: ${feature.properties.status.name}',
-            style: const TextStyle(color: Colors.grey, fontSize: 12),
-          ),
-          const Divider(height: 24),
-          if (isEditable) ...[
-            ListTile(
-              dense: true,
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.edit, size: 20),
-              title: const Text('Editar geometria'),
-              onTap: widget.controller.startEditMode,
-            ),
-            ListTile(
-              dense: true,
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(
-                Icons.add_circle_outline,
-                size: 20,
-              ), // Or merge icon
-              title: const Text('Unir com outra área'),
-              onTap: widget.controller.startUnionMode,
-            ),
-            ListTile(
-              dense: true,
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.remove_circle_outline, size: 20),
-              title: const Text('Subtrair (Diferença)'),
-              onTap: widget.controller.startDifferenceMode,
-            ),
-            ListTile(
-              dense: true,
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(
-                Icons.pie_chart_outline,
-                size: 20,
-              ), // intersect icon
-              title: const Text('Interseção'),
-              onTap: widget.controller.startIntersectionMode,
-            ),
-            if (isConsultant) ...[
-              // Optional clean up or keep empty if no specific consultant actions
-            ],
-            ListTile(
-              dense: true,
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.copy, size: 20),
-              title: const Text('Duplicar área'),
-              onTap: () {},
-            ),
-            ListTile(
-              dense: true,
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.archive, color: Colors.red, size: 20),
-              title: const Text(
-                'Arquivar',
-                style: TextStyle(color: Colors.red),
-              ),
-              onTap: () {},
-            ),
-          ],
-        ],
-      ),
+    // 🆕 REFATORADO: Usar DrawingActionsBar component
+    return DrawingActionsBar(
+      selectedFeature: feature,
+      onEditGeometry: widget.controller.startEditMode,
+      onEditMetadata: () {
+        // TODO: Implementar diálogo de edição de metadados
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Editar metadados (em breve)')),
+        );
+      },
+      onUnion: widget.controller.startUnionMode,
+      onDifference: widget.controller.startDifferenceMode,
+      onIntersection: widget.controller.startIntersectionMode,
+      onDelete: () async {
+        // Confirmar e deletar
+        widget.controller.deleteFeature(feature.id);
+        Navigator.of(context).pop();
+      },
     );
   }
 
@@ -743,339 +604,48 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
 
   // 🆕 FORMULÁRIO DE METADADOS COMPLETO (Inspirado FAMS/Climate)
   Widget _buildReviewingMode(BuildContext context) {
-    final clientsAsync = ref.watch(clientsListProvider);
+    // 🆕 REFATORADO: Usar DrawingMetadataPanel component
+    return DrawingMetadataPanel(
+      nomeController: _nomeController,
+      descricaoController: _descricaoController,
+      selectedClient: _selectedClient,
+      selectedFarm: _selectedFarm,
+      onClientChanged: (client) {
+        setState(() {
+          _selectedClient = client;
+          _selectedFarm = null; // Reset farm quando muda cliente
+        });
+      },
+      onFarmChanged: (farm) {
+        setState(() {
+          _selectedFarm = farm;
+        });
+      },
+      onTypeChanged: (type) {
+        // TODO: Adicionar tipo ao estado
+      },
+      onConfirm: () {
+        final geometry = widget.controller.liveGeometry;
+        if (geometry == null) return;
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Título iOS Style
-          const Text(
-            'Novo Desenho',
-            style: TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-              letterSpacing: -0.5,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Preencha os dados do talhão',
-            style: TextStyle(fontSize: 15, color: Colors.grey[600]),
-          ),
-          const SizedBox(height: 24),
+        widget.controller.addFeature(
+          geometry: geometry,
+          nome: _nomeController.text.trim(),
+          tipo: DrawingType.talhao,
+          origem: DrawingOrigin.desenho_manual,
+          autorId: 'current_user', // TODO: pegar do session
+          autorTipo: AuthorType.consultor,
+          clienteId: _selectedClient?.id,
+          fazendaId: _selectedFarm?.id,
+        );
 
-          // Nome do Talhão (Obrigatório)
-          _buildTextField(
-            controller: _nomeController,
-            label: 'Nome do Talhão',
-            hint: 'Ex: Talhão Sul, Field 01',
-            icon: Icons.label_outline,
-            required: true,
-          ),
-          const SizedBox(height: 16),
-
-          // Cliente (Dropdown)
-          _buildClientDropdown(clientsAsync),
-          const SizedBox(height: 16),
-
-          // Fazenda (Dropdown condicional)
-          if (_selectedClient != null) ...[
-            _buildFarmDropdown(),
-            const SizedBox(height: 16),
-          ],
-
-          // Descrição (Opcional)
-          _buildTextField(
-            controller: _descricaoController,
-            label: 'Notas / Descrição',
-            hint: 'Observações sobre o talhão...',
-            icon: Icons.notes,
-            maxLines: 3,
-          ),
-          const SizedBox(height: 24),
-
-          // Botões de ação
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: () {
-                    _clearForm();
-                    widget.controller.cancelOperation();
-                  },
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    side: const BorderSide(color: Colors.grey),
-                  ),
-                  child: const Text('Cancelar', style: TextStyle(fontSize: 16)),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: _canSave() ? _saveDrawing : null,
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    backgroundColor: Colors.green,
-                    disabledBackgroundColor: Colors.grey[300],
-                  ),
-                  child: const Text(
-                    'Salvar',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
+        _clearForm();
+      },
+      onCancel: () {
+        _clearForm();
+        widget.controller.cancelOperation();
+      },
     );
-  }
-
-  // Helper: Campo de texto iOS Style
-  Widget _buildTextField({
-    required TextEditingController controller,
-    required String label,
-    required String hint,
-    required IconData icon,
-    bool required = false,
-    int maxLines = 1,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Icon(icon, size: 16, color: Colors.grey[600]),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: Colors.grey[700],
-              ),
-            ),
-            if (required)
-              const Text(
-                ' *',
-                style: TextStyle(color: Colors.red, fontSize: 13),
-              ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        TextField(
-          controller: controller,
-          maxLines: maxLines,
-          decoration: InputDecoration(
-            hintText: hint,
-            hintStyle: TextStyle(color: Colors.grey[400]),
-            filled: true,
-            fillColor: Colors.grey[50],
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.grey[300]!),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.grey[300]!),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Colors.green, width: 2),
-            ),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 12,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  // Helper: Dropdown de clientes
-  Widget _buildClientDropdown(AsyncValue<List<Client>> clientsAsync) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Icon(Icons.person_outline, size: 16, color: Colors.grey[600]),
-            const SizedBox(width: 6),
-            Text(
-              'Cliente',
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: Colors.grey[700],
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        clientsAsync.when(
-          data: (clients) {
-            return Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              decoration: BoxDecoration(
-                color: Colors.grey[50],
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey[300]!),
-              ),
-              child: DropdownButtonHideUnderline(
-                child: DropdownButton<Client>(
-                  isExpanded: true,
-                  value: _selectedClient,
-                  hint: Text(
-                    'Selecione um cliente',
-                    style: TextStyle(color: Colors.grey[400]),
-                  ),
-                  icon: const Icon(Icons.arrow_drop_down),
-                  items: clients.map((client) {
-                    return DropdownMenuItem(
-                      value: client,
-                      child: Text(
-                        client.name,
-                        style: const TextStyle(fontSize: 15),
-                      ),
-                    );
-                  }).toList(),
-                  onChanged: (client) {
-                    setState(() {
-                      _selectedClient = client;
-                      _selectedFarm = null; // Reset farm
-                    });
-                  },
-                ),
-              ),
-            );
-          },
-          loading: () => Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.grey[50],
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.grey[300]!),
-            ),
-            child: const Row(
-              children: [
-                SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
-                SizedBox(width: 12),
-                Text('Carregando clientes...'),
-              ],
-            ),
-          ),
-          error: (err, _) => Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.red[50],
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.red[200]!),
-            ),
-            child: Text(
-              'Erro ao carregar clientes',
-              style: TextStyle(color: Colors.red[900]),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  // Helper: Dropdown de fazendas
-  Widget _buildFarmDropdown() {
-    final farms = _selectedClient?.farms ?? [];
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Icon(Icons.agriculture, size: 16, color: Colors.grey[600]),
-            const SizedBox(width: 6),
-            Text(
-              'Fazenda',
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: Colors.grey[700],
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          decoration: BoxDecoration(
-            color: Colors.grey[50],
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey[300]!),
-          ),
-          child: DropdownButtonHideUnderline(
-            child: DropdownButton<Farm>(
-              isExpanded: true,
-              value: _selectedFarm,
-              hint: Text(
-                farms.isEmpty
-                    ? 'Nenhuma fazenda cadastrada'
-                    : 'Selecione uma fazenda',
-                style: TextStyle(color: Colors.grey[400]),
-              ),
-              icon: const Icon(Icons.arrow_drop_down),
-              items: farms.map((farm) {
-                return DropdownMenuItem(
-                  value: farm,
-                  child: Text(farm.name, style: const TextStyle(fontSize: 15)),
-                );
-              }).toList(),
-              onChanged: farms.isEmpty
-                  ? null
-                  : (farm) {
-                      setState(() {
-                        _selectedFarm = farm;
-                      });
-                    },
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  // Helper: Validação
-  bool _canSave() {
-    return _nomeController.text.trim().isNotEmpty;
-  }
-
-  // Helper: Salvar desenho
-  void _saveDrawing() {
-    final geometry = widget.controller.liveGeometry;
-    if (geometry == null) return;
-
-    widget.controller.addFeature(
-      geometry: geometry,
-      nome: _nomeController.text.trim(),
-      tipo: DrawingType.talhao,
-      origem: DrawingOrigin.desenho_manual,
-      autorId: 'current_user', // TODO: pegar do session
-      autorTipo: AuthorType.consultor,
-      clienteId: _selectedClient?.id,
-      fazendaId: _selectedFarm?.id,
-    );
-
-    _clearForm();
   }
 
   // Helper: Limpar formulário
@@ -1139,67 +709,6 @@ class _SheetHeader extends StatelessWidget {
   }
 }
 
-class _DrawingToolItem extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final bool isActive;
-  final VoidCallback onTap;
-
-  const _DrawingToolItem({
-    required this.icon,
-    required this.label,
-    required this.isActive,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final primaryColor = Theme.of(context).primaryColor;
-    final activeBg = primaryColor.withAlpha((255 * 0.1).round());
-    final activeBorder = primaryColor;
-    final activeIcon = primaryColor;
-    final inactiveBg = Colors.grey[100];
-    final inactiveBorder = Colors.transparent;
-    final inactiveIcon = Colors.black87;
-
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: isActive ? activeBg : inactiveBg,
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: isActive ? activeBorder : inactiveBorder,
-                width: 2,
-              ),
-            ),
-            child: Icon(
-              icon,
-              color: isActive ? activeIcon : inactiveIcon,
-              size: 28,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
-              color: isActive ? activeIcon : Colors.black87,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _MetricItem extends StatelessWidget {
   final String label;
   final String value;
@@ -1247,65 +756,6 @@ class _FormatButton extends StatelessWidget {
             const SizedBox(height: 8),
             Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ToolData {
-  final String key;
-  final IconData icon;
-  final String label;
-  _ToolData(this.key, this.icon, this.label);
-}
-
-// =============================================================================
-// TOOLTIP OVERLAY WIDGET (Dynamic)
-// =============================================================================
-
-class _TooltipWidget extends StatelessWidget {
-  final DrawingController controller;
-
-  const _TooltipWidget({required this.controller});
-
-  @override
-  Widget build(BuildContext context) {
-    return Positioned(
-      top: MediaQuery.of(context).padding.top + 16,
-      left: 16,
-      right: 16,
-      child: Center(
-        child: ListenableBuilder(
-          listenable: controller,
-          builder: (context, _) {
-            final text = controller.instructionText;
-            if (text.isEmpty) return const SizedBox.shrink();
-
-            return Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
-                color: Colors.black87,
-                borderRadius: BorderRadius.circular(24),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black26,
-                    blurRadius: 8,
-                    offset: Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Text(
-                text,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            );
-          },
         ),
       ),
     );

@@ -19,9 +19,9 @@ class SettingsScreen extends ConsumerWidget {
     final userProfile = ref.watch(profileProvider);
     final currentThemeMode = ref.watch(themeProvider);
 
-    return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      body: Stack(
+    return Material(
+      color: theme.scaffoldBackgroundColor,
+      child: Stack(
         children: [
           Positioned.fill(
             child: Center(

@@ -21,10 +21,6 @@ class AppRoutes {
   // Privadas — L0 (Mapa = raiz absoluta e centro do app)
   static const String map = '/map';
 
-  // LEGADO: Dashboard agora é apenas alias para compatibilidade
-  @Deprecated('Use AppRoutes.map. /dashboard será removido em versão futura.')
-  static const String dashboard = '/dashboard';
-
   // Privadas — L1 (Módulos raiz que voltam direto para o mapa)
   static const String settings = '/settings';
   static const String agenda = '/agenda';
@@ -73,7 +69,7 @@ class AppRoutes {
   /// Regras de classificação (em ordem de prioridade):
   /// 1. Se está em [publicRoutes] → [RouteLevel.public]
   /// 2. Se é exatamente [map] ou inicia com '/map/' → [RouteLevel.l0]
-  /// 3. Se é exatamente '/dashboard' ou inicia com '/dashboard/' → [RouteLevel.l0] (LEGADO)
+
   /// 4. Se está em [level1Routes] (match exato) → [RouteLevel.l1]
   /// 5. Qualquer outra rota autenticada → [RouteLevel.l2Plus]
   static RouteLevel getLevel(String path) {
@@ -84,11 +80,6 @@ class AppRoutes {
 
     // 2. L0 = Map (mapa) - NAMESPACE CANÔNICO
     if (path == map || path.startsWith('$map/')) {
-      return RouteLevel.l0;
-    }
-
-    // 3. L0 = Dashboard (LEGADO - manter compatibilidade temporária)
-    if (_isLegacyDashboard(path)) {
       return RouteLevel.l0;
     }
 
@@ -105,13 +96,5 @@ class AppRoutes {
   /// SideMenu SOMENTE disponível no L0 (Mapa).
   static bool canOpenSideMenu(String path) {
     return getLevel(path) == RouteLevel.l0;
-  }
-
-  static bool _isLegacyDashboard(String path) {
-    // ignore: deprecated_member_use_from_same_package
-    final matchesExact = path == dashboard;
-    // ignore: deprecated_member_use_from_same_package
-    final matchesNested = path.startsWith('$dashboard/');
-    return matchesExact || matchesNested;
   }
 }

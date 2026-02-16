@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../modules/map/design/sf_icons.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -138,11 +139,7 @@ class _CoverSection extends StatelessWidget {
 
   Widget _placeholder() {
     return Center(
-      child: Icon(
-        Icons.image_outlined,
-        size: 48,
-        color: SoloForteColors.textTertiary,
-      ),
+      child: Icon(SFIcons.image, size: 48, color: SoloForteColors.textTertiary),
     );
   }
 }
@@ -251,7 +248,7 @@ class _InfoSection extends StatelessWidget {
               // Cliente
               if (publicacao.clientName != null) ...[
                 Icon(
-                  Icons.person_outline,
+                  SFIcons.personOutline,
                   size: 14,
                   color: SoloForteColors.textTertiary,
                 ),
@@ -269,7 +266,7 @@ class _InfoSection extends StatelessWidget {
               // Área
               if (publicacao.areaName != null) ...[
                 Icon(
-                  Icons.place_outlined,
+                  SFIcons.place,
                   size: 14,
                   color: SoloForteColors.textTertiary,
                 ),
@@ -291,7 +288,7 @@ class _InfoSection extends StatelessWidget {
           Row(
             children: [
               Icon(
-                Icons.calendar_today_outlined,
+                SFIcons.calendar,
                 size: 14,
                 color: SoloForteColors.textTertiary,
               ),
@@ -302,7 +299,7 @@ class _InfoSection extends StatelessWidget {
               ),
               const SizedBox(width: 16),
               Icon(
-                Icons.photo_library_outlined,
+                SFIcons.photoLibrary,
                 size: 14,
                 color: SoloForteColors.textTertiary,
               ),
@@ -339,7 +336,7 @@ class _CTASection extends StatelessWidget {
             // Navegar via CTA explícito para rota existente sob /map
             context.go('/map/publicacao/edit?id=${publicacao.id}');
           },
-          icon: const Icon(Icons.open_in_new, size: 18),
+          icon: const Icon(SFIcons.openInNew, size: 18),
           label: const Text('Ver detalhes'),
           style: ElevatedButton.styleFrom(
             backgroundColor: SoloForteColors.greenIOS,

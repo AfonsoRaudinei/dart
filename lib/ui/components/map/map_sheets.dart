@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../modules/map/design/sf_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../modules/consultoria/occurrences/presentation/controllers/occurrence_controller.dart';
 import 'package:soloforte_app/ui/theme/soloforte_theme.dart';
@@ -53,7 +54,7 @@ class BaseMapSheet extends StatelessWidget {
                 ),
                 IconButton(
                   icon: const Icon(
-                    Icons.close,
+                    SFIcons.close,
                     color: SoloForteColors.textSecondary,
                   ),
                   onPressed: () => Navigator.pop(context),
@@ -86,7 +87,7 @@ class LayersSheet extends ConsumerWidget {
           _LayerItem(
             label: 'Padrão',
             isSelected: currentLayer == LayerType.standard,
-            icon: Icons.map,
+            icon: SFIcons.map,
             onTap: () => ref
                 .read(activeLayerProvider.notifier)
                 .setLayer(LayerType.standard),
@@ -94,7 +95,7 @@ class LayersSheet extends ConsumerWidget {
           _LayerItem(
             label: 'Satélite',
             isSelected: currentLayer == LayerType.satellite,
-            icon: Icons.satellite_alt,
+            icon: SFIcons.satellite,
             onTap: () => ref
                 .read(activeLayerProvider.notifier)
                 .setLayer(LayerType.satellite),
@@ -102,7 +103,7 @@ class LayersSheet extends ConsumerWidget {
           _LayerItem(
             label: 'Relevo',
             isSelected: currentLayer == LayerType.terrain,
-            icon: Icons.lock_outline,
+            icon: SFIcons.lock,
             isDisabled: true,
             onTap: null,
           ),
@@ -175,7 +176,7 @@ class _LayerItem extends StatelessWidget {
                       : SoloTextStyles.body),
           ),
           trailing: isSelected
-              ? const Icon(Icons.check_circle, color: SoloForteColors.greenIOS)
+              ? const Icon(SFIcons.checkCircle, color: SoloForteColors.greenIOS)
               : null,
         ),
       ),
@@ -240,7 +241,7 @@ class OccurrencesSheet extends ConsumerWidget {
             right: 20,
             child: FloatingActionButton(
               backgroundColor: SoloForteColors.greenIOS,
-              child: const Icon(Icons.add, color: Colors.white),
+              child: const Icon(SFIcons.add, color: Colors.white),
               onPressed: () => _showAddOccurrenceDialog(context, ref),
             ),
           ),
@@ -339,7 +340,7 @@ class _OccurrenceItem extends StatelessWidget {
       child: ListTile(
         leading: CircleAvatar(
           backgroundColor: color.withValues(alpha: 0.2),
-          child: Icon(Icons.warning_amber_rounded, color: color),
+          child: Icon(SFIcons.warning, color: color),
         ),
         title: Text(
           title,
@@ -436,35 +437,37 @@ class PublicacoesSheet extends ConsumerWidget {
                 ),
                 const SizedBox(height: 10),
                 // Cover image or placeholder
-                Builder(builder: (context) {
-                  final cover = pub.coverMedia;
-                  if (cover.path.isNotEmpty) {
+                Builder(
+                  builder: (context) {
+                    final cover = pub.coverMedia;
+                    if (cover.path.isNotEmpty) {
+                      return Container(
+                        height: 150,
+                        decoration: BoxDecoration(
+                          color: SoloForteColors.grayLight,
+                          borderRadius: SoloRadius.radiusMd,
+                          image: DecorationImage(
+                            image: AssetImage(cover.path),
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                      );
+                    }
                     return Container(
                       height: 150,
                       decoration: BoxDecoration(
                         color: SoloForteColors.grayLight,
                         borderRadius: SoloRadius.radiusMd,
-                        image: DecorationImage(
-                          image: AssetImage(cover.path),
-                          fit: BoxFit.cover,
+                      ),
+                      child: Center(
+                        child: Icon(
+                          SFIcons.image,
+                          color: SoloForteColors.textTertiary,
                         ),
                       ),
                     );
-                  }
-                  return Container(
-                    height: 150,
-                    decoration: BoxDecoration(
-                      color: SoloForteColors.grayLight,
-                      borderRadius: SoloRadius.radiusMd,
-                    ),
-                    child: Center(
-                      child: Icon(
-                        Icons.image,
-                        color: SoloForteColors.textTertiary,
-                      ),
-                    ),
-                  );
-                }),
+                  },
+                ),
               ],
             );
           },
@@ -495,15 +498,15 @@ class PublicacoesSheet extends ConsumerWidget {
   IconData _typeIcon(PublicacaoType type) {
     switch (type) {
       case PublicacaoType.institucional:
-        return Icons.business;
+        return SFIcons.business;
       case PublicacaoType.tecnico:
-        return Icons.science;
+        return SFIcons.science;
       case PublicacaoType.resultado:
-        return Icons.bar_chart;
+        return SFIcons.barChart;
       case PublicacaoType.comparativo:
-        return Icons.compare_arrows;
+        return SFIcons.compareArrows;
       case PublicacaoType.caseSucesso:
-        return Icons.star;
+        return SFIcons.star;
     }
   }
 }

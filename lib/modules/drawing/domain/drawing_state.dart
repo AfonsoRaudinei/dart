@@ -23,6 +23,8 @@ REGRAS:
 ════════════════════════════════════════════════════════════════════
 */
 
+import 'package:flutter/foundation.dart';
+
 /// Estados possíveis da máquina de desenho
 enum DrawingState {
   /// Navegação normal do mapa (estado inicial)
@@ -40,14 +42,14 @@ enum DrawingState {
   /// Editando geometria existente (movendo vértices)
   editing,
 
-  /// Medindo área/perímetro
-  measuring,
-
   /// Visualizando geometria importada antes de confirmar
   importPreview,
 
   /// Operações booleanas (união, diferença, interseção)
   booleanOperation,
+
+  // REMOVIDO: measuring (estado órfão nunca usado)
+  // Se precisar de medição no futuro, usar reviewing + flag
 }
 
 /// Tipos de ferramentas de desenho
@@ -101,7 +103,7 @@ class DrawingStateMachine {
       DrawingState.booleanOperation,
     ],
     DrawingState.editing: [DrawingState.reviewing, DrawingState.idle],
-    DrawingState.measuring: [DrawingState.idle],
+    // REMOVIDO: DrawingState.measuring (estado órfão)
     DrawingState.importPreview: [DrawingState.idle, DrawingState.reviewing],
     DrawingState.booleanOperation: [DrawingState.reviewing, DrawingState.idle],
   };
@@ -115,16 +117,42 @@ class DrawingStateMachine {
     return _validTransitions[_currentState]?.contains(newState) ?? false;
   }
 
-  /// Transiciona para um novo estado
+  /// Tenta transicionar para um novo estado.
   ///
-  /// Lança [StateError] se a transição for inválida.
-  void transitionTo(DrawingState newState, {DrawingTool? tool}) {
+  /// Retorna `true` se a transição foi bem-sucedida, `false` caso contrário.
+  /// **Nunca lança exceções** — ideal para chamadas de UI onde um throw
+  /// causa red screen.
+  bool tryTransitionTo(DrawingState newState, {DrawingTool? tool}) {
     if (!canTransitionTo(newState)) {
-      throw StateError(
-        'Transição inválida: ${_currentState.name} -> ${newState.name}',
-      );
+      return false;
     }
+    _applyTransition(newState, tool: tool);
+    return true;
+  }
 
+  /// Transiciona para um novo estado.
+  ///
+  /// 🔧 FIX-DRAW-REDSCREEN: Não lança mais StateError.
+  /// Retorna `true` se transição bem-sucedida, `false` se inválida.
+  /// Usa [debugPrint] em modo debug para rastrear transições inválidas.
+  bool transitionTo(DrawingState newState, {DrawingTool? tool}) {
+    if (!canTransitionTo(newState)) {
+      // 🔧 FIX: Log em vez de throw para evitar red screen
+      assert(() {
+        debugPrint(
+          'DRAW-WARN: Transição inválida ignorada: '
+          '${_currentState.name} -> ${newState.name}',
+        );
+        return true;
+      }());
+      return false;
+    }
+    _applyTransition(newState, tool: tool);
+    return true;
+  }
+
+  /// Aplica a transição (método interno, já validado)
+  void _applyTransition(DrawingState newState, {DrawingTool? tool}) {
     _currentState = newState;
 
     // Atualizar ferramenta se fornecida
@@ -139,63 +167,77 @@ class DrawingStateMachine {
     }
   }
 
-  /// Inicia o modo de desenho com uma ferramenta
-  void startDrawing(DrawingTool tool) {
-    transitionTo(DrawingState.armed, tool: tool);
+  /// Inicia o modo de desenho com uma ferramenta.
+  /// Retorna `true` se transição foi bem-sucedida.
+  bool startDrawing(DrawingTool tool) {
+    return transitionTo(DrawingState.armed, tool: tool);
   }
 
-  /// Começa a adicionar pontos (primeiro ponto adicionado)
-  void beginAddingPoints() {
-    transitionTo(DrawingState.drawing);
+  /// Começa a adicionar pontos (primeiro ponto adicionado).
+  /// Retorna `true` se transição foi bem-sucedida.
+  /// 🔧 FIX-DRAW-REDSCREEN: Era o ponto exato do crash (idle -> drawing).
+  bool beginAddingPoints() {
+    return transitionTo(DrawingState.drawing);
   }
 
-  /// Completa o desenho e vai para revisão
-  void completeDrawing() {
-    transitionTo(DrawingState.reviewing);
+  /// Completa o desenho e vai para revisão.
+  /// Retorna `true` se transição foi bem-sucedida.
+  bool completeDrawing() {
+    return transitionTo(DrawingState.reviewing);
   }
 
-  /// Inicia edição de uma geometria existente
-  void startEditing() {
-    transitionTo(DrawingState.editing);
+  /// Inicia edição de uma geometria existente.
+  /// Retorna `true` se transição foi bem-sucedida.
+  bool startEditing() {
+    return transitionTo(DrawingState.editing);
   }
 
-  /// Salva a edição e volta para revisão
-  void saveEditing() {
-    transitionTo(DrawingState.reviewing);
+  /// Salva a edição e volta para revisão.
+  /// Retorna `true` se transição foi bem-sucedida.
+  bool saveEditing() {
+    return transitionTo(DrawingState.reviewing);
   }
 
-  /// Cancela a operação atual e volta ao idle
-  void cancel() {
-    transitionTo(DrawingState.idle);
+  /// Cancela a operação atual e volta ao idle.
+  /// Retorna `true` se transição foi bem-sucedida.
+  bool cancel() {
+    return transitionTo(DrawingState.idle);
   }
 
-  /// Confirma a geometria e finaliza
-  void confirm() {
-    transitionTo(DrawingState.idle);
+  /// Confirma a geometria e finaliza.
+  /// Retorna `true` se transição foi bem-sucedida.
+  bool confirm() {
+    return transitionTo(DrawingState.idle);
   }
 
-  /// Inicia visualização de importação
-  void startImportPreview() {
-    transitionTo(DrawingState.importPreview);
+  /// Inicia visualização de importação.
+  /// Retorna `true` se transição foi bem-sucedida.
+  bool startImportPreview() {
+    return transitionTo(DrawingState.importPreview);
   }
 
-  /// Confirma importação e vai para revisão
-  void confirmImport() {
-    transitionTo(DrawingState.reviewing);
+  /// Confirma importação e vai para revisão.
+  /// Retorna `true` se transição foi bem-sucedida.
+  bool confirmImport() {
+    return transitionTo(DrawingState.reviewing);
   }
 
-  /// Inicia operação booleana
-  void startBooleanOperation(BooleanOperationType opType) {
+  /// Inicia operação booleana.
+  /// Retorna `true` se transição foi bem-sucedida.
+  bool startBooleanOperation(BooleanOperationType opType) {
     _booleanOp = opType;
-    transitionTo(DrawingState.booleanOperation);
+    return transitionTo(DrawingState.booleanOperation);
   }
 
-  /// Completa operação booleana e vai para revisão
-  void completeBooleanOperation() {
-    transitionTo(DrawingState.reviewing);
+  /// Completa operação booleana e vai para revisão.
+  /// Retorna `true` se transição foi bem-sucedida.
+  bool completeBooleanOperation() {
+    return transitionTo(DrawingState.reviewing);
   }
 
-  /// Reseta a máquina de estados
+  /// Reseta a máquina de estados.
+  ///
+  /// Sempre permitido — volta direto para idle sem validação.
   void reset() {
     _currentState = DrawingState.idle;
     _currentTool = DrawingTool.none;
@@ -215,8 +257,6 @@ class DrawingStateMachine {
         return 'Revisar e confirmar';
       case DrawingState.editing:
         return 'Editando vértices';
-      case DrawingState.measuring:
-        return 'Medindo área';
       case DrawingState.importPreview:
         return 'Visualizando importação';
       case DrawingState.booleanOperation:
