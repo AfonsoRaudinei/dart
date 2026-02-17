@@ -6,11 +6,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../modules/dashboard/controllers/location_controller.dart';
 import '../../../../modules/dashboard/domain/location_state.dart';
 import '../../../theme/soloforte_theme.dart';
-import '../map_sheets.dart';
-import '../../../../modules/visitas/presentation/controllers/visit_controller.dart';
-import '../../../../modules/visitas/presentation/widgets/visit_sheet.dart';
-import '../../../../modules/dashboard/services/location_service.dart';
-import '../../../../modules/map/presentation/widgets/map_layers_bottom_sheet.dart';
+// unused imports removed
+
+import '../../../../modules/drawing/domain/drawing_state.dart';
+import './editing_controls_overlay.dart';
 
 /// Overlay de controles do mapa (header, botões, check-in).
 /// Observa apenas locationStateProvider para status do GPS.
@@ -23,6 +22,12 @@ class MapControlsOverlay extends ConsumerStatefulWidget {
   final bool isOccurrenceMode;
   final LatLng currentCenter;
   final double currentZoom;
+  final DrawingState drawingState;
+  final VoidCallback onFinishDrawing;
+  final VoidCallback onCancelDrawing;
+  final VoidCallback onSaveEdit;
+  final VoidCallback onCancelEdit;
+  final VoidCallback onUndoEdit;
 
   const MapControlsOverlay({
     super.key,
@@ -34,6 +39,12 @@ class MapControlsOverlay extends ConsumerStatefulWidget {
     required this.currentCenter,
     required this.currentZoom,
     required this.onTabSelected,
+    required this.drawingState,
+    required this.onFinishDrawing,
+    required this.onCancelDrawing,
+    required this.onSaveEdit,
+    required this.onCancelEdit,
+    required this.onUndoEdit,
   });
 
   @override
@@ -41,115 +52,6 @@ class MapControlsOverlay extends ConsumerStatefulWidget {
 }
 
 class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
-  void _handleCheckInTap() {
-    final visitController = ref.read(visitControllerProvider.notifier);
-
-    visitController.handleCheckInTap(
-      onShowEndConfirmation: () => _showEndConfirmationDialog(),
-      onShowStartSheet: () => _showStartVisitSheet(),
-    );
-  }
-
-  void _showEndConfirmationDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Encerrar Check-in'),
-        content: const Text('Deseja realmente encerrar a visita atual?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              ref.read(visitControllerProvider.notifier).endSession();
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Visita encerrada com sucesso.')),
-              );
-            },
-            child: const Text('Encerrar'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showStartVisitSheet() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => DraggableScrollableSheet(
-        initialChildSize: 0.7,
-        minChildSize: 0.5,
-        maxChildSize: 0.95,
-        expand: false,
-        builder: (_, controller) => VisitSheet(
-          onConfirm: (clientId, areaId, activityType) async {
-            final locService = LocationService();
-            final pos = await locService.getCurrentPosition();
-
-            if (pos == null) {
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text(
-                      'Erro: Localização necessária para check-in.',
-                    ),
-                  ),
-                );
-              }
-              return;
-            }
-
-            await ref
-                .read(visitControllerProvider.notifier)
-                .startSession(
-                  clientId,
-                  areaId,
-                  activityType,
-                  pos.latitude,
-                  pos.longitude,
-                );
-
-            if (context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Visita iniciada. Bom trabalho!'),
-                  backgroundColor: SoloForteColors.greenIOS,
-                ),
-              );
-            }
-          },
-        ),
-      ),
-    );
-  }
-
-  void _showSheet(BuildContext context, Widget sheet, String name) {
-    debugPrint("📑 MapOverlay: Abrindo sheet '$name'");
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      useRootNavigator: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => DraggableScrollableSheet(
-        initialChildSize: 0.6,
-        minChildSize: 0.3,
-        maxChildSize: 0.9,
-        builder: (context, scrollController) => Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-          ),
-          child: sheet,
-        ),
-      ),
-    );
-  }
-
   String _getGPSStatusText(LocationState state) {
     switch (state) {
       case LocationState.available:
@@ -167,10 +69,6 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
   Widget build(BuildContext context) {
     // ⚡ Otimização: Observar apenas o LocationState (não toda a posição)
     final locationState = ref.watch(locationStateProvider);
-    // Observar o estado da visita real
-    final visitAsync = ref.watch(visitControllerProvider);
-    final isSessionActive = visitAsync.valueOrNull != null;
-    final isLoading = visitAsync.isLoading;
 
     // Use SafeArea top padding to ensure elements are below the status bar/notch
     final safeTop = MediaQuery.of(context).padding.top;
@@ -320,35 +218,13 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
               _MapActionButton(
                 icon: SFIcons.edit,
                 isActive: widget.isDrawMode,
-                onTap: () {
-                  debugPrint("✏️ MapOverlay: Clique em 'Desenhar'");
-                  widget.onToggleDrawMode();
-                },
+                onTap: () => widget.onTabSelected(0),
               ),
               // REMOVIDO: Botão de localização duplicado
               const SizedBox(height: 12),
               _MapActionButton(
                 icon: SFIcons.layers,
-                onTap: () {
-                  showModalBottomSheet(
-                    context: context,
-                    isScrollControlled: true,
-                    backgroundColor: Colors.transparent,
-                    builder: (_) => DraggableScrollableSheet(
-                      initialChildSize: 0.6,
-                      minChildSize: 0.4,
-                      maxChildSize: 0.9,
-                      expand: false,
-                      builder: (context, scrollController) {
-                        return MapLayersBottomSheet(
-                          scrollController: scrollController,
-                          currentCenter: widget.currentCenter,
-                          currentZoom: widget.currentZoom,
-                        );
-                      },
-                    ),
-                  );
-                },
+                onTap: () => widget.onTabSelected(0),
               ),
               const SizedBox(height: 12),
               _MapActionButton(
@@ -367,67 +243,51 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
               const SizedBox(height: 12),
               _MapActionButton(
                 icon: SFIcons.articleOutlined,
-                onTap: () => _showSheet(
-                  context,
-                  const PublicacoesSheet(),
-                  'Publicações',
-                ),
+                onTap: () => widget.onTabSelected(1),
               ),
             ],
           ),
         ),
 
-        // 4. Botão Check-in (CTA separado)
-        Positioned(
-          bottom: 120,
-          right: 20,
-          child: GestureDetector(
-            onTap: isLoading
-                ? null
-                : () {
-                    debugPrint("✅ MapOverlay: Clique em 'Check-in'");
-                    _handleCheckInTap();
-                  },
-            behavior: HitTestBehavior.opaque,
-            child: Opacity(
-              opacity: isLoading ? 0.6 : 1.0,
-              child: Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  color: isSessionActive
-                      ? SoloForteColors.greenIOS
-                      : SoloForteColors.white,
-                  shape: BoxShape.circle,
-                  boxShadow: SoloShadows.shadowButton,
-                  border: Border.all(color: SoloForteColors.greenIOS, width: 2),
+        // 4. Drawing Actions (Conditional)
+        if (widget.drawingState == DrawingState.drawing)
+          Positioned(
+            bottom: 120,
+            right: 16,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                FloatingActionButton(
+                  heroTag: 'complete_drawing_overlay',
+                  backgroundColor: SoloForteColors.greenIOS,
+                  onPressed: widget.onFinishDrawing,
+                  child: const Icon(SFIcons.check, color: Colors.white),
                 ),
-                child: isLoading
-                    ? Center(
-                        child: SizedBox(
-                          width: 24,
-                          height: 24,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2.5,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              isSessionActive
-                                  ? Colors.white
-                                  : SoloForteColors.greenIOS,
-                            ),
-                          ),
-                        ),
-                      )
-                    : Icon(
-                        isSessionActive ? SFIcons.check : SFIcons.syncAlt,
-                        size: 28,
-                        color: isSessionActive
-                            ? Colors.white
-                            : SoloForteColors.greenIOS,
-                      ),
+                const SizedBox(height: 12),
+                FloatingActionButton(
+                  heroTag: 'cancel_drawing_overlay',
+                  backgroundColor: Colors.redAccent,
+                  onPressed: widget.onCancelDrawing,
+                  child: const Icon(SFIcons.close, color: Colors.white),
+                ),
+              ],
+            ),
+          ),
+
+        // 5. Editing Controls (Conditional)
+        if (widget.drawingState == DrawingState.editing)
+          Positioned(
+            bottom: 120,
+            left: 20,
+            right: 20,
+            child: Center(
+              child: EditingControlsOverlay(
+                onSave: widget.onSaveEdit,
+                onCancel: widget.onCancelEdit,
+                onUndo: widget.onUndoEdit,
               ),
             ),
           ),
-        ),
       ],
     );
   }

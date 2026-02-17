@@ -23,13 +23,13 @@ import 'map_occurrence_sheet.dart';
 
 /// Bottom Sheet estilo iOS "Buscar" com 3 detents
 /// Compacto → Médio → Expandido
-enum SheetDetent { compact, medium, expanded }
+enum SheetDetent { closed, compact, medium, expanded }
 
 class MapBottomSheet extends ConsumerStatefulWidget {
   final DrawingController drawingController;
   final VoidCallback onLocationRequested;
   final VoidCallback onOccurrenceArmed;
-  final int selectedTabIndex;
+  final int? selectedTabIndex;
   final ValueChanged<int> onTabChanged;
   final LatLng? creationLocation; // Coordenadas para iniciar criação imediata
 
@@ -59,6 +59,11 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
   @override
   void initState() {
     super.initState();
+    // Start closed if index is null
+    if (widget.selectedTabIndex == null) {
+      _currentDetent = SheetDetent.closed;
+    }
+
     _heightController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 250),
@@ -80,20 +85,27 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
   void didUpdateWidget(MapBottomSheet oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.selectedTabIndex != oldWidget.selectedTabIndex) {
-      // Mapear tabs de atalho para sub-ações diretas
-      switch (widget.selectedTabIndex) {
-        case 1: // Publicações
-          _mapSubActionIndex = 2;
-          break;
-        case 3: // Check-in
-          _mapSubActionIndex = 3;
-          break;
-        // Case 2 (Ocorrências) é tratado nativamente pelo _buildTabContent ou via creationLocation
-      }
+      if (widget.selectedTabIndex == null) {
+        _animateToDetent(SheetDetent.closed);
+      } else {
+        // Open/Switch
+        if (_currentDetent == SheetDetent.closed) {
+          _animateToDetent(SheetDetent.compact);
+        }
 
-      // Se sheet estiver compacto, expandir para médio ao trocar tab
-      if (_currentDetent == SheetDetent.compact) {
-        _animateToDetent(SheetDetent.medium);
+        switch (widget.selectedTabIndex) {
+          case 1: // Publicações
+            _mapSubActionIndex = 2;
+            break;
+          case 3: // Check-in
+            _mapSubActionIndex = 3;
+            break;
+        }
+
+        if (_currentDetent == SheetDetent.compact &&
+            widget.selectedTabIndex != 0) {
+          _animateToDetent(SheetDetent.medium);
+        }
       }
     }
 
@@ -213,6 +225,8 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
     final keyboardHeight = mediaQuery.viewInsets.bottom;
 
     switch (detent) {
+      case SheetDetent.closed:
+        return 0;
       case SheetDetent.compact:
         return 90;
       case SheetDetent.medium:
@@ -243,6 +257,8 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
 
   double _getSheetHeight() {
     switch (_currentDetent) {
+      case SheetDetent.closed:
+        return 0;
       case SheetDetent.compact:
         return 90; // Só tab bar (iOS style)
       case SheetDetent.medium:

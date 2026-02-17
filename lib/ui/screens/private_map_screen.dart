@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../modules/map/design/sf_icons.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
@@ -28,7 +27,6 @@ import '../components/map/widgets/map_layers.dart';
 import '../components/map/widgets/map_markers.dart';
 import '../components/map/widgets/map_controls_overlay.dart';
 import '../components/map/widgets/isolated_marker_layers.dart';
-import '../components/map/widgets/editing_controls_overlay.dart';
 import '../../modules/drawing/presentation/widgets/drawing_edit_layer.dart';
 import '../../core/domain/map_models.dart';
 
@@ -65,7 +63,8 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
   ArmedMode _armedMode = ArmedMode.none; // Estado do modo armado
 
   // 🛡 UI STATE: MapBottomSheet Consolidation
-  int _activeTabIndex = 0; // 0: Map, 1: Pubs, 2: Occurrences, 3: Check-in
+  int?
+  _activeTabIndex; // null: Closed, 0: Map, 1: Pubs, 2: Occurrences, 3: Check-in
   LatLng? _pendingOccurrenceLocation; // Se != null, abre sheet em modo Create
 
   // ── Publicações canônicas (estado local ao mapa — ADR-007) ──
@@ -548,18 +547,30 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
             onToggleDrawMode: _toggleDrawMode,
             onToggleOccurrenceMode: () {
               if (_armedMode == ArmedMode.occurrences) {
-                // Disarm if already armed
                 setState(() => _armedMode = ArmedMode.none);
                 ScaffoldMessenger.of(context).hideCurrentSnackBar();
               } else {
-                // Arm
                 _armOccurrenceMode();
               }
             },
             isDrawMode: _isDrawMode,
             isOccurrenceMode: _armedMode == ArmedMode.occurrences,
-            // 🔧 SAFEGUARD: Só acessar properties do controller se o mapa estiver pronto
-            // Isso evita a exception "FlutterMap widget rendered at least once..."
+            drawingState: drawingState,
+            onFinishDrawing: _finishDrawing,
+            onCancelDrawing: () {
+              ref.read(drawingControllerProvider).cancelOperation();
+              setState(() => _isDrawMode = false);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Desenho cancelado'),
+                  duration: Duration(seconds: 2),
+                ),
+              );
+            },
+            onSaveEdit: () => ref.read(drawingControllerProvider).saveEdit(),
+            onCancelEdit: () =>
+                ref.read(drawingControllerProvider).cancelEdit(),
+            onUndoEdit: () => ref.read(drawingControllerProvider).undoEdit(),
             currentCenter: _isMapReady
                 ? _mapController.camera.center
                 : const LatLng(0, 0),
@@ -567,86 +578,30 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
             onTabSelected: (index) {
               setState(() {
                 _activeTabIndex = index;
-                _pendingOccurrenceLocation = null; // Reset pending creation
+                _pendingOccurrenceLocation = null;
               });
             },
           ),
 
           // 🛡 CONSOLIDATION: Main BottomSheet
-          // Always present, handles all sub-tabs
-          Positioned(
-            bottom: 0,
-            left: 0,
-            right: 0,
-            child: MapBottomSheet(
-              drawingController: ref.read(drawingControllerProvider),
-              selectedTabIndex: _activeTabIndex,
-              onTabChanged: (index) {
-                setState(() {
-                  _activeTabIndex = index;
-                  // Se trocou de tab, limpa intenção de criação
-                  if (index != 2) _pendingOccurrenceLocation = null;
-                });
-              },
-              creationLocation: _pendingOccurrenceLocation,
-              onOccurrenceArmed: _armOccurrenceMode,
-              onLocationRequested: _centerOnUser,
-            ),
-          ),
-
-          // Controles de finalização de desenho
-          if (drawingState == DrawingState.drawing)
+          // Conditional mount as requested
+          if (_activeTabIndex != null)
             Positioned(
-              bottom: 100,
-              right: 16,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Botão Concluir
-                  FloatingActionButton(
-                    heroTag: 'complete_drawing',
-                    backgroundColor: SoloForteColors.greenIOS,
-                    onPressed: _finishDrawing,
-                    child: const Icon(SFIcons.check, color: Colors.white),
-                  ),
-                  const SizedBox(height: 12),
-                  // Botão Cancelar
-                  FloatingActionButton(
-                    heroTag: 'cancel_drawing',
-                    backgroundColor: Colors.redAccent,
-                    onPressed: () {
-                      final controller = ref.read(drawingControllerProvider);
-                      controller.cancelOperation();
-
-                      // Desativar modo desenho
-                      setState(() => _isDrawMode = false);
-
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Desenho cancelado'),
-                          duration: Duration(seconds: 2),
-                        ),
-                      );
-                    },
-                    child: const Icon(SFIcons.close, color: Colors.white),
-                  ),
-                ],
-              ),
-            ),
-
-          // 🔧 Controles de Edição (Vertex Editing)
-          if (drawingState == DrawingState.editing)
-            Positioned(
-              bottom: 100,
-              left: 20,
-              right: 20,
-              child: Center(
-                child: EditingControlsOverlay(
-                  onSave: () => ref.read(drawingControllerProvider).saveEdit(),
-                  onCancel: () =>
-                      ref.read(drawingControllerProvider).cancelEdit(),
-                  onUndo: () => ref.read(drawingControllerProvider).undoEdit(),
-                ),
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: MapBottomSheet(
+                drawingController: ref.read(drawingControllerProvider),
+                selectedTabIndex: _activeTabIndex,
+                onTabChanged: (index) {
+                  setState(() {
+                    _activeTabIndex = index;
+                    if (index != 2) _pendingOccurrenceLocation = null;
+                  });
+                },
+                creationLocation: _pendingOccurrenceLocation,
+                onOccurrenceArmed: _armOccurrenceMode,
+                onLocationRequested: _centerOnUser,
               ),
             ),
         ],

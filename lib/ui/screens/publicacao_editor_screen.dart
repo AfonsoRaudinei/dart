@@ -5,33 +5,29 @@ import '../theme/soloforte_theme.dart';
 
 // ════════════════════════════════════════════════════════════════════
 // TELA DE EDIÇÃO DE PUBLICAÇÃO (ADR-007)
-//
-// Tela dedicada, acessada SOMENTE via CTA do preview contextual.
-// Rota: /map/publicacao/edit?id=<id> (sub-rota de /map, permanece L0)
-//
-// - AppBar presente (diferente do preview)
-// - Edição completa permitida
-// - Botão "Voltar" retorna ao mapa
-// - Persistência ocorre aqui (não no preview)
 // ════════════════════════════════════════════════════════════════════
 
 class PublicacaoEditorScreen extends StatefulWidget {
   final String publicacaoId;
 
-  const PublicacaoEditorScreen({super.key, required this.publicacaoId});
+  const PublicacaoEditorScreen({
+    super.key,
+    required this.publicacaoId,
+  });
 
   @override
-  State<PublicacaoEditorScreen> createState() => _PublicacaoEditorScreenState();
+  State<PublicacaoEditorScreen> createState() =>
+      _PublicacaoEditorScreenState();
 }
 
-class _PublicacaoEditorScreenState extends State<PublicacaoEditorScreen> {
-  // Estado local de edição — nunca global
+class _PublicacaoEditorScreenState
+    extends State<PublicacaoEditorScreen> {
   late TextEditingController _titleController;
   late TextEditingController _descriptionController;
+
   bool _isLoading = true;
-  // ignore: unused_field
-  Publicacao?
-  _publicacao; // Preenchido por _loadPublicacao (TODO: via repositório)
+
+  Publicacao? _publicacao;
 
   @override
   void initState() {
@@ -49,21 +45,18 @@ class _PublicacaoEditorScreenState extends State<PublicacaoEditorScreen> {
   }
 
   Future<void> _loadPublicacao() async {
-    // TODO: Carregar Publicacao pelo id via repositório existente
-    // Por enquanto, apenas remove o loading
+    // TODO: carregar via repositório real
     setState(() => _isLoading = false);
   }
 
   void _handleSave() {
-    // TODO: Salvar via repositório existente
-    // Persistência ocorre AQUI, nunca no preview
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Publicação salva com sucesso!'),
         backgroundColor: SoloForteColors.greenIOS,
       ),
     );
-    // Retorno limpo ao mapa
+
     context.go('/map');
   }
 
@@ -72,13 +65,14 @@ class _PublicacaoEditorScreenState extends State<PublicacaoEditorScreen> {
     if (_isLoading) {
       return const Scaffold(
         body: Center(
-          child: CircularProgressIndicator(color: SoloForteColors.greenIOS),
+          child: CircularProgressIndicator(
+            color: SoloForteColors.greenIOS,
+          ),
         ),
       );
     }
 
     return Scaffold(
-      // AppBar presente na edição (diferente do preview)
       appBar: AppBar(
         title: const Text('Editar Publicação'),
         backgroundColor: SoloForteColors.white,
@@ -87,7 +81,6 @@ class _PublicacaoEditorScreenState extends State<PublicacaoEditorScreen> {
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () {
-            // Retorno limpo ao mapa — sem sheets residuais
             context.go('/map');
           },
         ),
@@ -109,12 +102,13 @@ class _PublicacaoEditorScreenState extends State<PublicacaoEditorScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Info do ID (debug/referência)
+            // ID info
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: SoloForteColors.grayLight,
-                borderRadius: BorderRadius.circular(SoloRadius.sm),
+                borderRadius:
+                    BorderRadius.circular(SoloRadius.sm),
               ),
               child: Row(
                 children: [
@@ -135,23 +129,29 @@ class _PublicacaoEditorScreenState extends State<PublicacaoEditorScreen> {
                 ],
               ),
             ),
+
             const SizedBox(height: 20),
 
             // Título
-            Text('Título', style: SoloTextStyles.label),
+            Text(
+              'Título',
+              style: SoloTextStyles.label,
+            ),
             const SizedBox(height: 8),
             TextField(
               controller: _titleController,
               decoration: InputDecoration(
                 hintText: 'Título da publicação',
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(SoloRadius.md),
+                  borderRadius:
+                      BorderRadius.circular(SoloRadius.md),
                   borderSide: const BorderSide(
                     color: SoloForteColors.borderLight,
                   ),
                 ),
                 focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(SoloRadius.md),
+                  borderRadius:
+                      BorderRadius.circular(SoloRadius.md),
                   borderSide: const BorderSide(
                     color: SoloForteColors.greenIOS,
                     width: 2,
@@ -159,10 +159,14 @@ class _PublicacaoEditorScreenState extends State<PublicacaoEditorScreen> {
                 ),
               ),
             ),
+
             const SizedBox(height: 20),
 
             // Descrição
-            Text('Descrição', style: SoloTextStyles.label),
+            Text(
+              'Descrição',
+              style: SoloTextStyles.label,
+            ),
             const SizedBox(height: 8),
             TextField(
               controller: _descriptionController,
@@ -170,13 +174,15 @@ class _PublicacaoEditorScreenState extends State<PublicacaoEditorScreen> {
               decoration: InputDecoration(
                 hintText: 'Descrição da publicação',
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(SoloRadius.md),
+                  borderRadius:
+                      BorderRadius.circular(SoloRadius.md),
                   borderSide: const BorderSide(
                     color: SoloForteColors.borderLight,
                   ),
                 ),
                 focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(SoloRadius.md),
+                  borderRadius:
+                      BorderRadius.circular(SoloRadius.md),
                   borderSide: const BorderSide(
                     color: SoloForteColors.greenIOS,
                     width: 2,
@@ -184,19 +190,23 @@ class _PublicacaoEditorScreenState extends State<PublicacaoEditorScreen> {
                 ),
               ),
             ),
+
             const SizedBox(height: 20),
 
-            // Seção de fotos (placeholder)
-            Text('Fotos', style: SoloTextStyles.label),
+            // Fotos
+            Text(
+              'Fotos',
+              style: SoloTextStyles.label,
+            ),
             const SizedBox(height: 8),
             Container(
               height: 120,
               decoration: BoxDecoration(
                 color: SoloForteColors.grayLight,
-                borderRadius: BorderRadius.circular(SoloRadius.md),
+                borderRadius:
+                    BorderRadius.circular(SoloRadius.md),
                 border: Border.all(
                   color: SoloForteColors.borderLight,
-                  style: BorderStyle.solid,
                 ),
               ),
               child: Center(
@@ -206,13 +216,15 @@ class _PublicacaoEditorScreenState extends State<PublicacaoEditorScreen> {
                     Icon(
                       Icons.add_photo_alternate_outlined,
                       size: 32,
-                      color: SoloForteColors.textTertiary,
+                      color:
+                          SoloForteColors.textTertiary,
                     ),
                     const SizedBox(height: 8),
                     Text(
                       'Adicionar fotos',
                       style: SoloTextStyles.label.copyWith(
-                        color: SoloForteColors.textTertiary,
+                        color:
+                            SoloForteColors.textTertiary,
                       ),
                     ),
                   ],
