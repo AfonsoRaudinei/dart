@@ -1,5 +1,6 @@
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
+import 'package:latlong2/latlong.dart';
 import '../../../../../../modules/map/design/sf_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../modules/dashboard/controllers/location_controller.dart';
@@ -9,6 +10,7 @@ import '../map_sheets.dart';
 import '../../../../modules/visitas/presentation/controllers/visit_controller.dart';
 import '../../../../modules/visitas/presentation/widgets/visit_sheet.dart';
 import '../../../../modules/dashboard/services/location_service.dart';
+import '../../../../modules/map/presentation/widgets/map_layers_bottom_sheet.dart';
 
 /// Overlay de controles do mapa (header, botões, check-in).
 /// Observa apenas locationStateProvider para status do GPS.
@@ -16,12 +18,16 @@ class MapControlsOverlay extends ConsumerStatefulWidget {
   final VoidCallback onCenterUser;
   final VoidCallback onToggleDrawMode;
   final bool isDrawMode;
+  final LatLng currentCenter;
+  final double currentZoom;
 
   const MapControlsOverlay({
     super.key,
     required this.onCenterUser,
     required this.onToggleDrawMode,
     required this.isDrawMode,
+    required this.currentCenter,
+    required this.currentZoom,
   });
 
   @override
@@ -317,8 +323,26 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
               const SizedBox(height: 12),
               _MapActionButton(
                 icon: SFIcons.layers,
-                onTap: () =>
-                    _showSheet(context, const LayersSheet(), 'Camadas'),
+                onTap: () {
+                  showModalBottomSheet(
+                    context: context,
+                    isScrollControlled: true,
+                    backgroundColor: Colors.transparent,
+                    builder: (_) => DraggableScrollableSheet(
+                      initialChildSize: 0.6,
+                      minChildSize: 0.4,
+                      maxChildSize: 0.9,
+                      expand: false,
+                      builder: (context, scrollController) {
+                        return MapLayersBottomSheet(
+                          scrollController: scrollController,
+                          currentCenter: widget.currentCenter,
+                          currentZoom: widget.currentZoom,
+                        );
+                      },
+                    ),
+                  );
+                },
               ),
               const SizedBox(height: 12),
               _MapActionButton(

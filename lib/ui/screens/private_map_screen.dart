@@ -5,6 +5,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:soloforte_app/ui/theme/soloforte_theme.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/state/map_state.dart';
 import '../../core/utils/map_logger.dart';
 import '../../core/utils/debouncer.dart';
@@ -32,6 +33,15 @@ import '../components/map/widgets/editing_controls_overlay.dart';
 import '../../modules/drawing/presentation/widgets/drawing_edit_layer.dart';
 import '../../core/domain/map_models.dart';
 
+// 🛡 HARDENING: Máquina de estados para inicialização determinística
+enum InitialViewportState {
+  idle,
+  waitingForMap,
+  waitingForData,
+  applied,
+  aborted,
+}
+
 class PrivateMapScreen extends ConsumerStatefulWidget {
   const PrivateMapScreen({super.key});
 
@@ -48,7 +58,9 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
     delay: const Duration(milliseconds: 300),
   );
 
-  bool _hasInitialFocused = false;
+  // 🛡 Estado da máquina de inicialização (substitui boolean simples)
+  InitialViewportState _viewportState = InitialViewportState.idle;
+
   bool _isMapReady = false; // 🔒 Guard: MapController só pode ser usado se true
   bool _isDrawMode = false;
   ArmedMode _armedMode = ArmedMode.none; // Estado do modo armado
@@ -77,32 +89,99 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
     super.dispose();
   }
 
-  void _handleAutoZoom(List<Publicacao>? pubs) {
-    if (_hasInitialFocused || pubs == null || pubs.isEmpty) return;
+  // 🛡 HARDENING DEFINITIVO: Máquina de Decisão de Viewport
+  // Determinístico. Idempotente. Sem race loops.
+  void _applyInitialViewport() async {
+    // 🔒 Gate 0: Se já aplicado ou abortado, TERMINAR IMEDIATAMENTE.
+    if (_viewportState == InitialViewportState.applied ||
+        _viewportState == InitialViewportState.aborted) {
+      return;
+    }
 
-    // 🔒 Guard: Só executar se o mapa estiver pronto
-    if (!_isMapReady) return;
+    // 🔒 Gate 1: Map Ready
+    if (!_isMapReady) {
+      _viewportState = InitialViewportState.waitingForMap;
+      return;
+    }
 
-    // "Contexto Inicial Inteligente" - First Load Only
-    _hasInitialFocused = true;
+    final user = Supabase.instance.client.auth.currentUser;
+    // 🔒 Gate 2: Role Ready
+    if (user == null) {
+      _viewportState = InitialViewportState.waitingForData;
+      return;
+    }
 
-    try {
-      final points = pubs.map((e) => LatLng(e.latitude, e.longitude)).toList();
-      if (points.isNotEmpty) {
-        final bounds = LatLngBounds.fromPoints(points);
-        // Slightly delay to allow map to render size
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (_isMapReady && mounted) {
-            _mapController.fitCamera(
-              CameraFit.bounds(
-                bounds: bounds,
-                padding: const EdgeInsets.all(50),
-              ),
-            );
-          }
-        });
+    final role = user.userMetadata?['role'] as String?;
+    final isProducer = role == 'produtor';
+
+    // 🔒 Gate 3: Decisão de Estratégia
+    if (isProducer) {
+      // 🚜 ESTRATÉGIA PRODUTOR
+      final fieldsState = ref.read(mapFieldsProvider);
+
+      if (fieldsState.isLoading) {
+        _viewportState = InitialViewportState.waitingForData;
+        return;
       }
-    } catch (_) {}
+
+      if (fieldsState.hasError ||
+          !fieldsState.hasValue ||
+          fieldsState.value == null ||
+          fieldsState.value!.isEmpty) {
+        // Fallback: Sem fazenda → Abortar para usar GPS manual
+        _viewportState = InitialViewportState.aborted;
+        return;
+      }
+
+      // Sucesso: Aplicar Viewport
+      final fields = fieldsState.value!;
+      final allPoints = fields
+          .expand((f) => TalhaoMapAdapter.toPolygon(f).points)
+          .toList();
+
+      if (allPoints.isNotEmpty) {
+        final bounds = LatLngBounds.fromPoints(allPoints);
+        try {
+          _mapController.fitCamera(
+            CameraFit.bounds(bounds: bounds, padding: const EdgeInsets.all(50)),
+          );
+          _viewportState = InitialViewportState.applied; // ✅ FINALIZADO
+        } catch (_) {
+          _viewportState = InitialViewportState.aborted;
+        }
+      } else {
+        _viewportState = InitialViewportState.aborted;
+      }
+    } else {
+      // 👤 ESTRATÉGIA CONSUMIDOR (GPS)
+      final locationState = ref.read(locationStateProvider);
+
+      if (locationState == LocationState.checking) {
+        // Ainda verificando → Aguardar
+        _viewportState = InitialViewportState.waitingForData;
+        return;
+      }
+
+      if (locationState == LocationState.permissionDenied ||
+          locationState == LocationState.serviceDisabled) {
+        // Erro permanente → Abortar (evita loop)
+        _viewportState = InitialViewportState.aborted;
+        return;
+      }
+
+      if (locationState == LocationState.available) {
+        final locationService = LocationService();
+        final position = await locationService.getCurrentPosition();
+
+        if (position != null && mounted) {
+          _mapController.move(position, 16.0);
+          _viewportState = InitialViewportState.applied; // ✅ FINALIZADO
+        } else {
+          // Disponível mas posição nula? Aguardar.
+          _viewportState = InitialViewportState.waitingForData;
+        }
+      }
+    }
   }
 
   void _showGPSRequiredMessage() {
@@ -214,6 +293,12 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
   Future<void> _finishDrawing() async {
     final controller = ref.read(drawingControllerProvider);
 
+    // 🔒 GUARD: Evitar re-entrância ou chamadas duplicadas (Fix Duplication)
+    // Só processar se estiver no estado de desenho
+    if (controller.currentState != DrawingState.drawing) {
+      return;
+    }
+
     // Verificar se há pontos suficientes
     if (controller.liveGeometry == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -229,6 +314,12 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
     // Isso prepara o controller para exibir o formulário correto no sheet
     controller.completeDrawing();
 
+    // 🔒 VALIDATION: Garantir que a transição ocorreu com sucesso
+    // Se a máquina de estados rejeitou (ex: validação falhou), não abrir sheet
+    if (controller.currentState != DrawingState.reviewing) {
+      return;
+    }
+
     // Abrir sheet para adicionar metadados
     // O sheet irá usar liveGeometry para criar a feature
     await showModalBottomSheet(
@@ -242,11 +333,14 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
       builder: (_) => DrawingSheet(controller: controller),
     );
 
-    // Desativar modo desenho
-    setState(() => _isDrawMode = false);
+    // Desativar modo desenho na UI local (Sync com controller)
+    if (mounted) {
+      setState(() => _isDrawMode = false);
+    }
 
     // Se o sheet fechou e ainda estamos em reviewing (ex: swipe down se permitido, ou back button),
     // devemos cancelar para evitar estado inconsistente.
+    // VERIFICAÇÃO FINAL: Se o usuário confirmou no sheet, o estado já será 'idle'.
     if (controller.currentState == DrawingState.reviewing) {
       controller.cancelOperation();
     }
@@ -288,10 +382,22 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
       }
     });
 
-    // Auto-focus Logic (mantido para zoom inicial)
-    ref.listen(publicacoesDataProvider, (prev, next) {
-      if (next.hasValue && !_hasInitialFocused) {
-        _handleAutoZoom(next.value);
+    // 🔒 LISTENERS PARA FOCO INICIAL (Idempotentes)
+    // Observar carregamento dos fields (para Produtores)
+    ref.listen(mapFieldsProvider, (prev, next) {
+      if (_viewportState != InitialViewportState.applied &&
+          _viewportState != InitialViewportState.aborted &&
+          _isMapReady) {
+        _applyInitialViewport();
+      }
+    });
+
+    // Observar disponibilidade de GPS (para Outros)
+    ref.listen(locationStateProvider, (prev, next) {
+      if (_viewportState != InitialViewportState.applied &&
+          _viewportState != InitialViewportState.aborted &&
+          _isMapReady) {
+        _applyInitialViewport();
       }
     });
 
@@ -308,14 +414,14 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
           MapCanvas(
             mapController: _mapController,
             onMapReady: () {
-              setState(() => _isMapReady = true);
+              // Mark map as ready FIRST
+              if (mounted) {
+                // Ao montar, marcamos como pronto.
+                // setState trigger rebuild, permitindo que Overlay use controller depois.
+                setState(() => _isMapReady = true);
 
-              // Tentar executar auto-zoom pendente após o mapa estar pronto
-              if (!_hasInitialFocused) {
-                final pubs = ref.read(publicacoesDataProvider).valueOrNull;
-                if (pubs != null && pubs.isNotEmpty) {
-                  _handleAutoZoom(pubs);
-                }
+                // Trigger viewport logic immediately
+                _applyInitialViewport();
               }
             },
             onTap: (tapPos, point) {
@@ -460,6 +566,12 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
             onCenterUser: _centerOnUser,
             onToggleDrawMode: _toggleDrawMode,
             isDrawMode: _isDrawMode,
+            // 🔧 SAFEGUARD: Só acessar properties do controller se o mapa estiver pronto
+            // Isso evita a exception "FlutterMap widget rendered at least once..."
+            currentCenter: _isMapReady
+                ? _mapController.camera.center
+                : const LatLng(0, 0),
+            currentZoom: _isMapReady ? _mapController.camera.zoom : 13.0,
           ),
 
           // Controles de finalização de desenho
