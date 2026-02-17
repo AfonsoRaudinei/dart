@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import '../../../../modules/map/design/sf_icons.dart';
 import 'package:flutter/services.dart';
+import '../../theme/soloforte_theme.dart';
 
 /// Botão de menu flutuante isolado — Canto inferior direito
-/// Verde SoloForte (#22C55E), circular, com ícone de menu
+/// Verde SoloForte (Primary), circular, com ícone de menu
+/// Refatorado para Design System v2 (Map-First Premium)
 class FloatingMenuButton extends StatefulWidget {
   final VoidCallback onTap;
 
@@ -39,11 +41,12 @@ class _FloatingMenuButtonState extends State<FloatingMenuButton>
 
   @override
   Widget build(BuildContext context) {
-    const soloForteGreen = Color(0xFF22C55E);
+    // Usando tokens oficiais
+    final primaryColor = SoloForteColors.primary;
 
     return Positioned(
-      bottom: MediaQuery.of(context).padding.bottom + 22,
-      right: 20,
+      bottom: MediaQuery.of(context).padding.bottom + 24, // 24px do bottom safe
+      right: 16, // Contrato: 16px da borda lateral
       child: GestureDetector(
         onTapDown: (_) => _scaleController.forward(),
         onTapUp: (_) {
@@ -58,15 +61,9 @@ class _FloatingMenuButtonState extends State<FloatingMenuButton>
             width: 56,
             height: 56,
             decoration: BoxDecoration(
-              color: soloForteGreen,
+              color: primaryColor,
               shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: soloForteGreen.withValues(alpha: 0.25),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
-                ),
-              ],
+              boxShadow: SoloShadows.shadowButton, // Sombra padrão
             ),
             child: const Icon(SFIcons.menu, size: 24, color: Colors.white),
           ),

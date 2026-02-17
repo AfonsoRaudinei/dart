@@ -17,7 +17,10 @@ import '../../../../modules/map/presentation/widgets/map_layers_bottom_sheet.dar
 class MapControlsOverlay extends ConsumerStatefulWidget {
   final VoidCallback onCenterUser;
   final VoidCallback onToggleDrawMode;
+  final VoidCallback? onToggleOccurrenceMode;
+  final Function(int) onTabSelected;
   final bool isDrawMode;
+  final bool isOccurrenceMode;
   final LatLng currentCenter;
   final double currentZoom;
 
@@ -25,9 +28,12 @@ class MapControlsOverlay extends ConsumerStatefulWidget {
     super.key,
     required this.onCenterUser,
     required this.onToggleDrawMode,
+    this.onToggleOccurrenceMode,
     required this.isDrawMode,
+    this.isOccurrenceMode = false,
     required this.currentCenter,
     required this.currentZoom,
+    required this.onTabSelected,
   });
 
   @override
@@ -347,11 +353,16 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
               const SizedBox(height: 12),
               _MapActionButton(
                 icon: SFIcons.warning,
-                onTap: () => _showSheet(
-                  context,
-                  const OccurrencesSheet(),
-                  'Ocorrências',
-                ),
+                isActive: widget.isOccurrenceMode,
+                onTap: () {
+                  // Se tivermos callback de toggle, usamos ele (prioridade para armado)
+                  if (widget.onToggleOccurrenceMode != null) {
+                    widget.onToggleOccurrenceMode!();
+                  } else {
+                    // Fallback antigo: abre a tab direto
+                    widget.onTabSelected(2);
+                  }
+                },
               ),
               const SizedBox(height: 12),
               _MapActionButton(

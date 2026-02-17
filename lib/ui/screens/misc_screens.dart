@@ -36,7 +36,8 @@ class RelatoriosScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
+        // Removido const
+        title: Text(
           'Relatórios & Performance',
           style: SoloTextStyles.headingMedium,
         ),
@@ -67,12 +68,14 @@ class AgendaScreen extends StatelessWidget {
                     onPressed: () => Navigator.of(context).pop(),
                   ),
                   const SizedBox(width: 12),
+                  // Removido const/style fixo
                   Text('Agenda', style: SoloTextStyles.headingMedium),
                 ],
               ),
             ),
             Expanded(
               child: Center(
+                // Removido const/style fixo
                 child: Text('Agenda', style: SoloTextStyles.headingMedium),
               ),
             ),
@@ -87,6 +90,7 @@ class ClientesScreen extends StatelessWidget {
   const ClientesScreen({super.key});
   @override
   Widget build(BuildContext context) {
+    // Removido const
     return Center(child: Text('Clientes', style: SoloTextStyles.headingMedium));
   }
 }

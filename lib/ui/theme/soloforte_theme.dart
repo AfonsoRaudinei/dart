@@ -1,12 +1,49 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class SoloForteColors {
-  // DESIGN SYSTEM - CORES PRIMÁRIAS
-  static const Color primary = Color(0xFF4ADE80); // Verde Vibrante
-  static const Color primaryDark = Color(0xFF1E3A2F); // Verde Escuro
-  static const Color accent = Color(0xFFD1FAE5); // Verde Menta Claro
+  // === PALETA OFICIAL (Design System v2) ===
 
-  // AZUL SAMSUNG - MANTIDO PARA LEGADO (mas desencorajado)
+  // BRAND & ACENTS
+  static const Color primary = Color(0xFF4ADE80); // Verde Técnico
+  static const Color primaryDark = Color(0xFF1E3A2F); // Verde Profundo
+  static const Color accent = Color(0xFFD1FAE5); // Mint (Feedback)
+
+  // BASE - LIGHT MODE
+  static const Color backgroundLight = Color(0xFFFFFFFF);
+  static const Color surfaceLight = Color(0xFFF3F4F6);
+  static const Color surfaceElevatedLight = Color(0xFFFFFFFF);
+
+  // BASE - DARK MODE (Técnico)
+  static const Color backgroundDark = Color(0xFF0F1113);
+  static const Color surfaceDark = Color(0xFF161A1D);
+  static const Color surfaceElevatedDark = Color(0xFF1E2428);
+
+  // TEXTO
+  static const Color textPrimary = Color(0xFF1A1A1A);
+  static const Color textSecondary = Color(0xFF6B7280);
+  static const Color textTertiary = Color(0xFF9CA3AF); // Placeholder/Disabled
+
+  static const Color textPrimaryDark = Color(0xFFE6E6E6);
+  static const Color textSecondaryDark = Color(0xFF9CA3AF);
+
+  // FEEDBACK E ESTADOS
+  static const Color success = Color(0xFF4ADE80);
+  static const Color error = Color(0xFFDC2626); // Vermelho Técnico
+  static const Color warning = Color(0xFFF59E0B);
+  static const Color info = Color(0xFF0EA5E9);
+
+  // BORDAS E DIVISORES
+  static const Color border = Color(0xFFE5E7EB);
+  static const Color borderDark = Color(0xFF2A3136);
+
+  // === LEGADO ( Mantido para compatibilidade, mas mapeado para novas cores ou depreciado) ===
+  static const Color white = Color(0xFFFFFFFF);
+  static const Color grayLight = surfaceLight;
+  static const Color brand = primary;
+
+  // LEGACY BLUES (Mantidos apenas para evitar quebra de compilação)
+  // O Design System proíbe o uso de cores fora da paleta oficial.
   static const Color blueSamsung = Color(0xFF1B6EE0);
   static const Color blueDark = Color(0xFF0F5FC9);
   static const Color blueLight = Color(0xFF2E7FED);
@@ -15,27 +52,11 @@ class SoloForteColors {
   static const Color cyanBright = Color(0xFF00BCD4);
   static const Color skyBlue = Color(0xFF0EA5E9);
 
-  // VERDE IOS - CORES LEGADAS
-  static const Color greenIOS = Color(0xFF4ADE80); // Atualizado para nova cor
-  static const Color greenDark = Color(0xFF1E3A2F); // Atualizado para nova cor
+  // LEGACY GREENS
+  static const Color greenIOS = primary;
+  static const Color greenDark = primaryDark;
 
-  // BÁSICAS
-  static const Color white = Color(0xFFFFFFFF);
-  static const Color grayLight = Color(
-    0xFFF3F4F6,
-  ); // Atualizado para tom do design
-
-  // TEXTO
-  static const Color textPrimary = Color(0xFF1A1A1A); // Atualizado
-  static const Color textSecondary = Color(0xFF6B7280); // Atualizado
-  static const Color textTertiary = Color(0xFF9CA3AF); // Atualizado
-
-  // ESTADO
-  static const Color success = Color(0xFF4ADE80); // Atualizado
-  static const Color error = Color(0xFFDC2626); // Atualizado
-  static const Color warning = Color(0xFFF59E0B);
-  static const Color info = Color(0xFF0EA5E9); // Sky blue
-
+  // LEGACY STATES
   static const Color bgSuccess = Color(0xFFECFDF5);
   static const Color bgError = Color(0xFFFEF2F2);
   static const Color bgWarning = Color(0xFFFFFBEB);
@@ -46,236 +67,241 @@ class SoloForteColors {
   static const Color textWarning = Color(0xFFD97706);
   static const Color textInfo = Color(0xFF1E40AF);
 
-  // BORDAS
-  static const Color border = Color(0xFFE5E7EB); // Atualizado
-  static const Color borderLight = Color(0xFFF3F4F6);
-
-  // BRAND
-  static const Color brand = Color(0xFF4ADE80); // Atualizado para Verde
+  static const Color borderLight = border;
 }
 
 class SoloForteGradients {
-  // Novo Gradiente Principal (Verde Vibrante -> Verde Escuro)
+  // O Design System v2 proíbe gradientes dramáticos.
+  // Mantemos os tipos LinearGradient para compatibilidade, mas as cores são visualmente sólidas.
+
+  // Primary agora é visualmente sólido (Verde Técnico)
   static const LinearGradient primary = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [Color(0xFF4ADE80), Color(0xFF1E3A2F)],
+    colors: [SoloForteColors.primary, SoloForteColors.primary],
   );
 
-  // Samsung → Petróleo (Legado)
+  // Legacy Blues - "Achatados" para reduzir ruído visual
   static const LinearGradient blue = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [Color(0xFF1B6EE0), Color(0xFF0D7C8C)],
+    colors: [Color(0xFF1B6EE0), Color(0xFF1B6EE0)],
   );
 
-  // Petróleo Puro
   static const LinearGradient petrol = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [Color(0xFF0D7C8C), Color(0xFF0A5A66)],
+    colors: [Color(0xFF0D7C8C), Color(0xFF0D7C8C)],
   );
 
-  // Sky Blue
   static const LinearGradient sky = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [Color(0xFF0EA5E9), Color(0xFF1B6EE0)],
+    colors: [Color(0xFF0EA5E9), Color(0xFF0EA5E9)],
   );
 
-  // Azul Escuro (Marinho)
   static const LinearGradient dark = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [Color(0xFF0A3A5C), Color(0xFF041E31)],
+    colors: [Color(0xFF0A1F16), Color(0xFF0A1F16)],
   );
 
-  // Background
   static const LinearGradient background = LinearGradient(
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
-    colors: [Color(0xFFFFFFFF), Color(0xFFF3F4F6)],
+    colors: [SoloForteColors.backgroundLight, SoloForteColors.surfaceLight],
   );
 
-  // Verde legado
   static const LinearGradient green = primary;
 }
 
 class SoloFontSizes {
-  static const double xs = 12.0; // 0.75em
-  static const double sm = 13.6; // 0.85em
-  static const double base = 15.2; // 0.95em
-  static const double lg = 17.6; // 1.1em
-  static const double xl = 19.2; // 1.2em
-  static const double xxl = 32.0; // 2em
+  // Hierarquia Estrita
+  static const double xs = 12.0; // Caption/Meta
+  static const double sm = 14.0; // Body Small (Legacy fallback)
+  static const double base = 16.0; // Body Default / Inputs
+  static const double lg = 18.0; // Section Title
+  static const double xl = 24.0; // Page Title
+  static const double xxl = 32.0; // Key Metrics
 }
 
 class SoloFontWeights {
   static const FontWeight regular = FontWeight.w400;
-  static const FontWeight medium = FontWeight.w500;
-  static const FontWeight semibold = FontWeight.w600;
+  static const FontWeight medium = FontWeight.w500; // Uso moderado
+  static const FontWeight semibold = FontWeight.w600; // Títulos e Botões
+  static const FontWeight bold = FontWeight.w700; // Apenas destaques
 }
 
 class SoloTextStyles {
-  // We can't use const with .copy with GoogleFonts if we were using it inside here dynamically,
-  // but to match the design file identically, we keep these static constants.
-  // In usage, we might wrap them with GoogleFonts if strictly required, or rely on Theme.
-
-  static const TextStyle headingLarge = TextStyle(
-    fontSize: 32.0,
-    fontWeight: FontWeight.w600,
-    color: Color(0xFF1D1D1F),
+  // Compatibilidade com código existente
+  static TextStyle get headingLarge => GoogleFonts.inter(
+    fontSize: SoloFontSizes.xxl,
+    fontWeight: SoloFontWeights.semibold,
+    color: SoloForteColors.textPrimary,
     height: 1.2,
   );
 
-  static const TextStyle headingMedium = TextStyle(
-    fontSize: 19.2,
-    fontWeight: FontWeight.w600,
-    color: Color(0xFF1D1D1F),
+  static TextStyle get headingMedium => GoogleFonts.inter(
+    fontSize: 22.0,
+    fontWeight: SoloFontWeights.semibold,
+    color: SoloForteColors.textPrimary,
     height: 1.3,
   );
 
-  static const TextStyle label = TextStyle(
-    fontSize: 12.0,
-    fontWeight: FontWeight.w500,
-    color: Color(0xFF86868B),
+  static TextStyle get body => GoogleFonts.inter(
+    fontSize: SoloFontSizes.base,
+    fontWeight: SoloFontWeights.regular,
+    color: SoloForteColors.textPrimary,
+  );
+
+  static TextStyle get label => GoogleFonts.inter(
+    fontSize: SoloFontSizes.xs,
+    fontWeight: SoloFontWeights.medium,
+    color: SoloForteColors.textSecondary,
     letterSpacing: 0.5,
   );
 
-  static const TextStyle body = TextStyle(
-    fontSize: 15.2,
-    fontWeight: FontWeight.w400,
-    color: Color(0xFF1D1D1F),
+  static TextStyle get caption => GoogleFonts.inter(
+    fontSize: SoloFontSizes.xs,
+    fontWeight: SoloFontWeights.regular,
+    color: SoloForteColors.textSecondary,
   );
 
-  static const TextStyle textBlue = TextStyle(
-    fontSize: 15.2,
-    color: Color(0xFF1B6EE0),
-  );
-
-  static const TextStyle caption = TextStyle(
-    fontSize: 13.6,
-    fontWeight: FontWeight.w400,
-    color: Color(0xFF86868B),
+  static TextStyle get textBlue => GoogleFonts.inter(
+    fontSize: SoloFontSizes.base,
+    color: SoloForteColors.info,
   );
 }
 
 class SoloSpacing {
+  // Sistema 8px Grid
   static const double xs = 8.0;
-  static const double sm = 12.0;
-  static const double md = 16.0;
-  static const double lg = 20.0;
-  static const double xl = 24.0;
-  static const double xxl = 30.0;
+  static const double sm = 12.0; // Legado (evitar)
+  static const double md = 16.0; // Padrão
+  static const double lg = 24.0; // Seções
+  static const double xl = 32.0; // Blocos maiores
+  static const double xxl = 48.0;
 
-  static const EdgeInsets paddingCard = EdgeInsets.all(20.0);
-  static const EdgeInsets paddingInput = EdgeInsets.all(12.0);
+  static const EdgeInsets paddingCard = EdgeInsets.all(md);
+  static const EdgeInsets paddingInput = EdgeInsets.all(md);
   static const EdgeInsets paddingButton = EdgeInsets.symmetric(
-    horizontal: 16.0,
-    vertical: 10.0,
+    horizontal: md,
+    vertical: 12.0,
   );
 }
 
 class SoloRadius {
-  static const double sm = 6.0;
-  static const double md = 8.0;
-  static const double lg = 10.0;
-  static const double xl = 12.0;
-  static const double circle = 999.0;
+  // Sistema Simplificado
+  static const double sm = 8.0; // Pequenos elementos
+  static const double md = 16.0; // Cards, Botões, Inputs (Padrão Ouro)
+  static const double lg = 24.0; // Bottom Sheets
+  static const double xl = 32.0;
+  static const double circle = 99.0; // Pills
 
-  static final BorderRadius radiusSm = BorderRadius.circular(6.0);
-  static final BorderRadius radiusMd = BorderRadius.circular(8.0);
-  static final BorderRadius radiusLg = BorderRadius.circular(10.0);
-  static final BorderRadius radiusXl = BorderRadius.circular(12.0);
+  static final BorderRadius radiusSm = BorderRadius.circular(sm);
+  static final BorderRadius radiusMd = BorderRadius.circular(md);
+  static final BorderRadius radiusLg = BorderRadius.circular(lg);
+  static final BorderRadius radiusXl = BorderRadius.circular(xl);
+  static final BorderRadius radiusCircle = BorderRadius.circular(circle);
 }
 
 class SoloShadows {
+  // Sombras discretas e funcionais
+
   static const BoxShadow shadowSm = BoxShadow(
-    color: Color.fromRGBO(0, 0, 0, 0.08),
+    color: Color.fromRGBO(0, 0, 0, 0.05),
     offset: Offset(0, 1),
-    blurRadius: 3,
+    blurRadius: 2,
   );
 
   static const BoxShadow shadowMd = BoxShadow(
-    color: Color.fromRGBO(0, 0, 0, 0.04),
-    offset: Offset(0, 2),
-    blurRadius: 8,
+    color: Color.fromRGBO(0, 0, 0, 0.08),
+    offset: Offset(0, 4),
+    blurRadius: 12,
+    spreadRadius: -2,
   );
 
-  static const List<BoxShadow> shadowCard = [
-    BoxShadow(
-      color: Color.fromRGBO(0, 0, 0, 0.08),
-      offset: Offset(0, 1),
-      blurRadius: 3,
-    ),
-    BoxShadow(
-      color: Color.fromRGBO(0, 0, 0, 0.04),
-      offset: Offset(0, 2),
-      blurRadius: 8,
-    ),
-  ];
+  static const List<BoxShadow> shadowCard = [shadowSm];
 
   static const List<BoxShadow> shadowButton = [
     BoxShadow(
-      color: Color.fromRGBO(74, 222, 128, 0.3), // Green Shadow
+      color: Color.fromRGBO(0, 0, 0, 0.1),
       offset: Offset(0, 4),
-      blurRadius: 12,
+      blurRadius: 6,
     ),
   ];
 
-  static const List<BoxShadow> shadowPetrol = [
-    BoxShadow(
-      color: Color.fromRGBO(13, 124, 140, 0.3),
-      offset: Offset(0, 4),
-      blurRadius: 12,
-    ),
-  ];
+  // Legado mapeado para shadowButton
+  static const List<BoxShadow> shadowPetrol = shadowButton;
 }
 
 class SoloForteTheme {
+  // Configuração Global de Design System
+
+  static TextTheme _buildTextTheme(Color primaryColor, Color secondaryColor) {
+    return TextTheme(
+      displayLarge: GoogleFonts.inter(
+        fontSize: SoloFontSizes.xxl,
+        fontWeight: SoloFontWeights.bold,
+        color: primaryColor,
+      ),
+      headlineMedium: GoogleFonts.inter(
+        fontSize: 22.0,
+        fontWeight: SoloFontWeights.semibold,
+        color: primaryColor,
+      ),
+      titleMedium: GoogleFonts.inter(
+        fontSize: SoloFontSizes.lg,
+        fontWeight: SoloFontWeights.semibold,
+        color: primaryColor,
+      ),
+      bodyLarge: GoogleFonts.inter(
+        fontSize: SoloFontSizes.base,
+        fontWeight: SoloFontWeights.regular,
+        color: primaryColor,
+      ),
+      bodyMedium: GoogleFonts.inter(
+        fontSize: SoloFontSizes.sm, // Ajustado para 14 no legado, mas ideal 16
+        fontWeight: SoloFontWeights.regular,
+        color: secondaryColor,
+      ),
+      labelSmall: GoogleFonts.inter(
+        fontSize: SoloFontSizes.xs,
+        fontWeight: SoloFontWeights.medium,
+        color: secondaryColor,
+        letterSpacing: 0.5,
+      ),
+    );
+  }
+
   static ThemeData get lightTheme {
     return ThemeData(
-      primaryColor: const Color(0xFF4ADE80), // Updated to Green
-      scaffoldBackgroundColor: const Color(0xFFFFFFFF), // Updated to White
-      fontFamily:
-          'SF Pro Text', // Will use fallback or system default if not loaded
+      useMaterial3: true,
+      brightness: Brightness.light,
+      primaryColor: SoloForteColors.primary,
+      scaffoldBackgroundColor: SoloForteColors.backgroundLight,
 
       colorScheme: const ColorScheme.light(
-        primary: Color(0xFF4ADE80), // Green
-        secondary: Color(0xFF1E3A2F), // Dark Green
-        error: Color(0xFFDC2626), // Red
-        surface: Color(0xFFFFFFFF),
-        onPrimary: Color(0xFFFFFFFF),
-        onSecondary: Color(0xFFFFFFFF),
-        onSurface: Color(0xFF1A1A1A), // Dark Text
+        primary: SoloForteColors.primary,
+        secondary: SoloForteColors.primaryDark,
+        surface: SoloForteColors.surfaceLight,
+        error: SoloForteColors.error,
+        onPrimary: Colors.white,
+        onSurface: SoloForteColors.textPrimary,
       ),
 
-      textTheme: const TextTheme(
-        displayLarge: TextStyle(
-          fontSize: 32,
-          fontWeight: FontWeight.w600,
-          color: Color(0xFF1A1A1A),
-        ),
-        headlineMedium: TextStyle(
-          fontSize: 19.2,
-          fontWeight: FontWeight.w600,
-          color: Color(0xFF1A1A1A),
-        ),
-        bodyLarge: TextStyle(
-          fontSize: 15.2,
-          fontWeight: FontWeight.w400,
-          color: Color(0xFF1A1A1A),
-        ),
-        bodyMedium: TextStyle(fontSize: 15.2, color: Color(0xFF6B7280)),
+      textTheme: _buildTextTheme(
+        SoloForteColors.textPrimary,
+        SoloForteColors.textSecondary,
       ),
 
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF4ADE80),
+          backgroundColor: SoloForteColors.primary,
           foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          padding: SoloSpacing.paddingButton,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(SoloRadius.md),
           ),
           elevation: 0,
         ),
@@ -284,15 +310,98 @@ class SoloForteTheme {
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: Colors.white,
+        contentPadding: SoloSpacing.paddingInput,
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+          borderRadius: BorderRadius.circular(SoloRadius.md),
+          borderSide: const BorderSide(color: SoloForteColors.border),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(SoloRadius.md),
+          borderSide: const BorderSide(color: SoloForteColors.border),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFF4ADE80), width: 2),
+          borderRadius: BorderRadius.circular(SoloRadius.md),
+          borderSide: const BorderSide(
+            color: SoloForteColors.primary,
+            width: 2,
+          ),
         ),
-        contentPadding: const EdgeInsets.all(16),
+        labelStyle: TextStyle(
+          color: SoloForteColors.textSecondary,
+          fontSize: SoloFontSizes.sm,
+        ),
+      ),
+
+      dividerTheme: const DividerThemeData(
+        color: SoloForteColors.border,
+        thickness: 1,
+        space: 1,
+      ),
+    );
+  }
+
+  static ThemeData get darkTheme {
+    return ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.dark,
+      primaryColor: SoloForteColors.primary,
+      scaffoldBackgroundColor: SoloForteColors.backgroundDark,
+
+      colorScheme: const ColorScheme.dark(
+        primary: SoloForteColors.primary,
+        secondary: SoloForteColors.accent,
+        surface: SoloForteColors.surfaceDark,
+        error: SoloForteColors.error,
+        onPrimary: Colors.black, // Contraste no verde
+        onSurface: SoloForteColors.textPrimaryDark,
+      ),
+
+      textTheme: _buildTextTheme(
+        SoloForteColors.textPrimaryDark,
+        SoloForteColors.textSecondaryDark,
+      ),
+
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: SoloForteColors.primary,
+          foregroundColor: Colors.black, // Contraste
+          padding: SoloSpacing.paddingButton,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(SoloRadius.md),
+          ),
+          elevation: 0,
+        ),
+      ),
+
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: SoloForteColors.surfaceElevatedDark,
+        contentPadding: SoloSpacing.paddingInput,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(SoloRadius.md),
+          borderSide: const BorderSide(color: SoloForteColors.borderDark),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(SoloRadius.md),
+          borderSide: const BorderSide(color: SoloForteColors.borderDark),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(SoloRadius.md),
+          borderSide: const BorderSide(
+            color: SoloForteColors.primary,
+            width: 1.5,
+          ),
+        ),
+        labelStyle: TextStyle(
+          color: SoloForteColors.textSecondaryDark,
+          fontSize: SoloFontSizes.sm,
+        ),
+      ),
+
+      dividerTheme: const DividerThemeData(
+        color: SoloForteColors.borderDark,
+        thickness: 1,
+        space: 1,
       ),
     );
   }

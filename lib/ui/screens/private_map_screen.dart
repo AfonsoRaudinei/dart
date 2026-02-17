@@ -20,9 +20,8 @@ import '../../modules/dashboard/providers/location_providers.dart';
 import '../../modules/dashboard/domain/location_state.dart';
 import '../../modules/dashboard/services/location_service.dart';
 import '../../modules/visitas/presentation/controllers/geofence_controller.dart';
-import '../../modules/consultoria/occurrences/presentation/controllers/occurrence_controller.dart';
 import '../../modules/consultoria/occurrences/domain/occurrence.dart' as occ;
-import '../components/map/map_occurrence_sheet.dart';
+import '../components/map/map_bottom_sheet.dart';
 import '../../core/domain/publicacao.dart';
 import '../components/map/widgets/map_canvas.dart';
 import '../components/map/widgets/map_layers.dart';
@@ -64,6 +63,10 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
   bool _isMapReady = false; // 🔒 Guard: MapController só pode ser usado se true
   bool _isDrawMode = false;
   ArmedMode _armedMode = ArmedMode.none; // Estado do modo armado
+
+  // 🛡 UI STATE: MapBottomSheet Consolidation
+  int _activeTabIndex = 0; // 0: Map, 1: Pubs, 2: Occurrences, 3: Check-in
+  LatLng? _pendingOccurrenceLocation; // Se != null, abre sheet em modo Create
 
   // ── Publicações canônicas (estado local ao mapa — ADR-007) ──
   final List<Publicacao> _publicacoes = _getMockPublicacoes();
@@ -235,45 +238,23 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
     }
   }
 
-  void _openOccurrenceSheet(double lat, double lng) async {
-    if (!mounted) return;
-
-    await showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => DraggableScrollableSheet(
-        initialChildSize: 0.6, // Reduzir um pouco para não cobrir tudo de cara
-        minChildSize: 0.4,
-        maxChildSize: 0.9,
-        expand: false,
-        snap: true,
-        builder: (_, controller) => MapOccurrenceSheet(
-          scrollController: controller,
-          latitude: lat,
-          longitude: lng,
-          onConfirm: (category, urgency, description) {
-            ref
-                .read(occurrenceControllerProvider)
-                .createOccurrence(
-                  type: urgency,
-                  description: description,
-                  lat: lat,
-                  long: lng,
-                  category: category,
-                  status: 'draft',
-                );
-
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Ocorrência registrada com sucesso!'),
-                backgroundColor: SoloForteColors.greenIOS,
-              ),
-            );
-          },
-        ),
+  void _armOccurrenceMode() {
+    setState(() => _armedMode = ArmedMode.occurrences);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Toque no mapa para registrar a ocorrência'),
+        duration: Duration(seconds: 2),
       ),
     );
+  }
+
+  void _openOccurrenceSheet(double lat, double lng) async {
+    // 🛡 CONSOLIDATION: Redirect to MapBottomSheet
+    if (!mounted) return;
+    setState(() {
+      _activeTabIndex = 2; // Switch to Occurrences Tab
+      _pendingOccurrenceLocation = LatLng(lat, lng); // Trigger Creation Mode
+    });
   }
 
   void _handleOccurrencePinTap(occ.Occurrence occurrence) {
@@ -565,13 +546,52 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
           MapControlsOverlay(
             onCenterUser: _centerOnUser,
             onToggleDrawMode: _toggleDrawMode,
+            onToggleOccurrenceMode: () {
+              if (_armedMode == ArmedMode.occurrences) {
+                // Disarm if already armed
+                setState(() => _armedMode = ArmedMode.none);
+                ScaffoldMessenger.of(context).hideCurrentSnackBar();
+              } else {
+                // Arm
+                _armOccurrenceMode();
+              }
+            },
             isDrawMode: _isDrawMode,
+            isOccurrenceMode: _armedMode == ArmedMode.occurrences,
             // 🔧 SAFEGUARD: Só acessar properties do controller se o mapa estiver pronto
             // Isso evita a exception "FlutterMap widget rendered at least once..."
             currentCenter: _isMapReady
                 ? _mapController.camera.center
                 : const LatLng(0, 0),
             currentZoom: _isMapReady ? _mapController.camera.zoom : 13.0,
+            onTabSelected: (index) {
+              setState(() {
+                _activeTabIndex = index;
+                _pendingOccurrenceLocation = null; // Reset pending creation
+              });
+            },
+          ),
+
+          // 🛡 CONSOLIDATION: Main BottomSheet
+          // Always present, handles all sub-tabs
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            child: MapBottomSheet(
+              drawingController: ref.read(drawingControllerProvider),
+              selectedTabIndex: _activeTabIndex,
+              onTabChanged: (index) {
+                setState(() {
+                  _activeTabIndex = index;
+                  // Se trocou de tab, limpa intenção de criação
+                  if (index != 2) _pendingOccurrenceLocation = null;
+                });
+              },
+              creationLocation: _pendingOccurrenceLocation,
+              onOccurrenceArmed: _armOccurrenceMode,
+              onLocationRequested: _centerOnUser,
+            ),
           ),
 
           // Controles de finalização de desenho

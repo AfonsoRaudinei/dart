@@ -30,7 +30,8 @@ class _PublicacaoEditorScreenState extends State<PublicacaoEditorScreen> {
   late TextEditingController _descriptionController;
   bool _isLoading = true;
   // ignore: unused_field
-  Publicacao? _publicacao; // Preenchido por _loadPublicacao (TODO: via repositório)
+  Publicacao?
+  _publicacao; // Preenchido por _loadPublicacao (TODO: via repositório)
 
   @override
   void initState() {
@@ -137,7 +138,7 @@ class _PublicacaoEditorScreenState extends State<PublicacaoEditorScreen> {
             const SizedBox(height: 20),
 
             // Título
-            const Text('Título', style: SoloTextStyles.label),
+            Text('Título', style: SoloTextStyles.label),
             const SizedBox(height: 8),
             TextField(
               controller: _titleController,
@@ -161,7 +162,7 @@ class _PublicacaoEditorScreenState extends State<PublicacaoEditorScreen> {
             const SizedBox(height: 20),
 
             // Descrição
-            const Text('Descrição', style: SoloTextStyles.label),
+            Text('Descrição', style: SoloTextStyles.label),
             const SizedBox(height: 8),
             TextField(
               controller: _descriptionController,
@@ -186,7 +187,7 @@ class _PublicacaoEditorScreenState extends State<PublicacaoEditorScreen> {
             const SizedBox(height: 20),
 
             // Seção de fotos (placeholder)
-            const Text('Fotos', style: SoloTextStyles.label),
+            Text('Fotos', style: SoloTextStyles.label),
             const SizedBox(height: 8),
             Container(
               height: 120,

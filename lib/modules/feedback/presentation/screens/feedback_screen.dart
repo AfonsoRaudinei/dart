@@ -72,7 +72,7 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
                     const SizedBox(height: 24),
 
                     // Header
-                    const Text('Feedback', style: SoloTextStyles.headingLarge),
+                    Text('Feedback', style: SoloTextStyles.headingLarge),
                     const SizedBox(height: 8),
                     Text(
                       'Ajude-nos a melhorar o SoloForte',

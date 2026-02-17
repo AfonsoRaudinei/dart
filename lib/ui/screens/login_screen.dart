@@ -198,10 +198,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                               gradient: SoloForteGradients.primary,
                               borderRadius: BorderRadius.circular(20),
                             ),
-                            child: const Icon(
-                              Icons.agriculture,
-                              size: 40,
-                              color: Colors.white,
+                            child: Padding(
+                              padding: const EdgeInsets.all(SoloSpacing.md),
+                              child: Image.asset(
+                                'assets/images/app_icon.png',
+                                fit: BoxFit.contain,
+                              ),
                             ),
                           );
                         },
@@ -212,7 +214,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                   const SizedBox(height: 16),
 
                   // Título
-                  const Text(
+                  Text(
                     'SoloForte Login',
                     textAlign: TextAlign.center,
                     style: SoloTextStyles.headingLarge,
@@ -236,15 +238,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                   // Ilustração placeholder
                   Container(
                     height: 120,
+                    padding: const EdgeInsets.all(SoloSpacing.lg),
                     decoration: BoxDecoration(
-                      color: SoloForteColors.accent,
+                      color: SoloForteColors.accent.withValues(alpha: 0.3),
                       borderRadius: SoloRadius.radiusXl,
                     ),
-                    child: const Center(
-                      child: Icon(
-                        Icons.agriculture_outlined,
-                        size: 60,
-                        color: SoloForteColors.primary,
+                    child: Center(
+                      child: Image.asset(
+                        'assets/images/app_icon.png',
+                        height: 90,
+                        fit: BoxFit.contain,
                       ),
                     ),
                   ),

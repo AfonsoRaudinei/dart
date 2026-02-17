@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../modules/map/design/sf_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../modules/consultoria/occurrences/presentation/controllers/occurrence_controller.dart';
+
 import 'package:soloforte_app/ui/theme/soloforte_theme.dart';
 import '../../../core/domain/map_models.dart';
 import '../../../core/domain/publicacao.dart';
@@ -18,7 +18,7 @@ class BaseMapSheet extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: SoloForteColors.white,
-        borderRadius: const BorderRadius.only(
+        borderRadius: BorderRadius.only(
           topLeft: Radius.circular(SoloRadius.lg),
           topRight: Radius.circular(SoloRadius.lg),
         ),
@@ -108,10 +108,10 @@ class LayersSheet extends ConsumerWidget {
             onTap: null,
           ),
           const SizedBox(height: 20),
-          const Text('Sobreposições', style: SoloTextStyles.label),
+          Text('Sobreposições', style: SoloTextStyles.label),
           const SizedBox(height: 10),
           SwitchListTile(
-            title: const Text('Mostrar Pinos', style: SoloTextStyles.body),
+            title: Text('Mostrar Pinos', style: SoloTextStyles.body),
             value: showMarkers,
             activeTrackColor: SoloForteColors.greenIOS,
             onChanged: (v) => ref.read(showMarkersProvider.notifier).toggle(),
@@ -178,196 +178,6 @@ class _LayerItem extends StatelessWidget {
           trailing: isSelected
               ? const Icon(SFIcons.checkCircle, color: SoloForteColors.greenIOS)
               : null,
-        ),
-      ),
-    );
-  }
-}
-
-class OccurrencesSheet extends ConsumerWidget {
-  const OccurrencesSheet({super.key});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final occurrencesAsync = ref.watch(occurrencesListProvider);
-
-    return BaseMapSheet(
-      title: 'Ocorrências',
-      child: Stack(
-        children: [
-          occurrencesAsync.when(
-            data: (occurrences) {
-              if (occurrences.isEmpty) {
-                return const Center(
-                  child: Text('Nenhuma ocorrência registrada.'),
-                );
-              }
-              return ListView.builder(
-                shrinkWrap: true,
-                padding: const EdgeInsets.fromLTRB(20, 0, 20, 80),
-                itemCount: occurrences.length,
-                itemBuilder: (context, index) {
-                  final occurrence = occurrences[index];
-                  // Determine color based on type
-                  Color color;
-                  switch (occurrence.type) {
-                    case 'Urgente':
-                      color = SoloForteColors.error;
-                      break;
-                    case 'Aviso':
-                      color = Colors.orange;
-                      break;
-                    default:
-                      color = SoloForteColors.brand;
-                  }
-
-                  return _OccurrenceItem(
-                    title: occurrence.type,
-                    description: occurrence.description,
-                    time: _formatDate(occurrence.createdAt),
-                    type: occurrence.visitSessionId != null
-                        ? 'Em Visita'
-                        : 'Avulso',
-                    color: color,
-                  );
-                },
-              );
-            },
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (e, s) => Center(child: Text('Erro: $e')),
-          ),
-          Positioned(
-            bottom: 20,
-            right: 20,
-            child: FloatingActionButton(
-              backgroundColor: SoloForteColors.greenIOS,
-              child: const Icon(SFIcons.add, color: Colors.white),
-              onPressed: () => _showAddOccurrenceDialog(context, ref),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  String _formatDate(DateTime date) {
-    final now = DateTime.now();
-    final diff = now.difference(date);
-    if (diff.inMinutes < 60) return 'Há ${diff.inMinutes} min';
-    if (diff.inHours < 24) return 'Há ${diff.inHours} horas';
-    return '${date.day}/${date.month}';
-  }
-
-  void _showAddOccurrenceDialog(BuildContext context, WidgetRef ref) {
-    final descriptionController = TextEditingController();
-    String selectedType = 'Aviso';
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Nova Ocorrência'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            DropdownButtonFormField<String>(
-              initialValue: selectedType,
-              items: [
-                'Urgente',
-                'Aviso',
-                'Info',
-              ].map((t) => DropdownMenuItem(value: t, child: Text(t))).toList(),
-              onChanged: (v) => selectedType = v!,
-              decoration: const InputDecoration(labelText: 'Tipo'),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: descriptionController,
-              decoration: const InputDecoration(labelText: 'Descrição'),
-              maxLines: 3,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar'),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: SoloForteColors.greenIOS,
-            ),
-            onPressed: () {
-              ref
-                  .read(occurrenceControllerProvider)
-                  .createOccurrence(
-                    type: selectedType,
-                    description: descriptionController.text,
-                    lat:
-                        0, // Mock lat/long for now or get from provider if needed
-                    long: 0,
-                  );
-              Navigator.pop(context);
-            },
-            child: const Text('Salvar', style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _OccurrenceItem extends StatelessWidget {
-  final String title;
-  final String description;
-  final String time;
-  final String type;
-  final Color color;
-
-  const _OccurrenceItem({
-    required this.title,
-    required this.description,
-    required this.time,
-    required this.type,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      elevation: 0,
-      color: SoloForteColors.grayLight,
-      margin: const EdgeInsets.only(bottom: 10),
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: color.withValues(alpha: 0.2),
-          child: Icon(SFIcons.warning, color: color),
-        ),
-        title: Text(
-          title,
-          style: SoloTextStyles.headingMedium.copyWith(fontSize: 15),
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(description, style: SoloTextStyles.body),
-            const SizedBox(height: 4),
-            Text(time, style: SoloTextStyles.label),
-          ],
-        ),
-        trailing: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(4),
-          ),
-          child: Text(
-            type,
-            style: TextStyle(
-              color: color,
-              fontSize: 10,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
         ),
       ),
     );

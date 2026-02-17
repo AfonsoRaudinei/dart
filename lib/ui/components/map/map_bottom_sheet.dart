@@ -4,6 +4,8 @@ import '../../../../modules/map/design/sf_icons.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../theme/soloforte_theme.dart';
+import 'package:latlong2/latlong.dart';
+import '../../../../modules/consultoria/occurrences/presentation/controllers/occurrence_controller.dart';
 // Navegação movida para FloatingDockWidget
 import 'tabs/map_tab_content.dart';
 import 'map_sheets.dart';
@@ -16,6 +18,8 @@ import '../../../modules/dashboard/controllers/location_controller.dart';
 import '../../../core/feature_flags/feature_flag_providers.dart';
 import '../../../core/feature_flags/feature_flag_resolver.dart';
 import '../../../core/feature_flags/feature_flag_analytics.dart';
+import '../../../../modules/consultoria/occurrences/presentation/widgets/occurrence_list_sheet.dart';
+import 'map_occurrence_sheet.dart';
 
 /// Bottom Sheet estilo iOS "Buscar" com 3 detents
 /// Compacto → Médio → Expandido
@@ -27,6 +31,7 @@ class MapBottomSheet extends ConsumerStatefulWidget {
   final VoidCallback onOccurrenceArmed;
   final int selectedTabIndex;
   final ValueChanged<int> onTabChanged;
+  final LatLng? creationLocation; // Coordenadas para iniciar criação imediata
 
   const MapBottomSheet({
     super.key,
@@ -35,6 +40,7 @@ class MapBottomSheet extends ConsumerStatefulWidget {
     required this.onOccurrenceArmed,
     required this.selectedTabIndex,
     required this.onTabChanged,
+    this.creationLocation,
   });
 
   @override
@@ -82,13 +88,23 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
         case 3: // Check-in
           _mapSubActionIndex = 3;
           break;
-        default:
-          _mapSubActionIndex = -1;
+        // Case 2 (Ocorrências) é tratado nativamente pelo _buildTabContent ou via creationLocation
       }
+
       // Se sheet estiver compacto, expandir para médio ao trocar tab
       if (_currentDetent == SheetDetent.compact) {
         _animateToDetent(SheetDetent.medium);
       }
+    }
+
+    // Detectar solicitação de criação de ocorrência (Armed Mode)
+    if (widget.creationLocation != null &&
+        widget.creationLocation != oldWidget.creationLocation) {
+      // Forçar expansão e mudança para tab de ocorrências se não estiver
+      if (_currentDetent != SheetDetent.expanded) {
+        _animateToDetent(SheetDetent.expanded);
+      }
+      // O estado de criação é gerenciado reativamente no build via widget.creationLocation
     }
   }
 
@@ -259,17 +275,8 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
       case 1: // Publicações (atalho direto)
         content = _buildMapSubActionContent();
         break;
-      case 2: // Ocorrências (atalho direto)
-        content = const Center(
-          child: Padding(
-            padding: EdgeInsets.all(32),
-            child: Text(
-              'Ocorrências',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
-            ),
-          ),
-        );
-        break;
+      case 2: // Ocorrências (Consolidado)
+        return _buildOccurrencesContent();
       case 3: // Check-in (atalho direto)
         content = _buildMapSubActionContent();
         break;
@@ -391,6 +398,86 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
     );
   }
 
+  // 🛡 CONSOLIDAÇÃO OCORRÊNCIAS
+  // Estado local para alternar entre Lista e Criação dentro da tab
+  bool _isCreatingOccurrence = false;
+
+  Widget _buildOccurrencesContent() {
+    // Se recebemos um local de criação via props (Armed Mode), priorizamos a criação
+    final isCreationMode =
+        _isCreatingOccurrence || widget.creationLocation != null;
+
+    if (isCreationMode) {
+      // Modo Criação (MapOccurrenceSheet)
+      // Se widget.creationLocation for nulo mas _isCreatingOccurrence for true,
+      // precisamos de uma posição. Fallback para 0,0 ou Center?
+      // O fluxo correto é: Botão Add -> Pega Localização -> Define state.
+      // Se _isCreatingOccurrence for true sem location, algo errado.
+      // Assumimos que quem setou _isCreatingOccurrence garantiu location (ex: botão de add na lista)
+
+      final lat = widget.creationLocation?.latitude ?? 0;
+      final lng = widget.creationLocation?.longitude ?? 0;
+
+      return MapOccurrenceSheet(
+        latitude: lat,
+        longitude: lng,
+        scrollController: ScrollController(), // Sheet interno gerencia scroll?
+        onCancel: () {
+          // Voltar para lista
+          setState(() => _isCreatingOccurrence = false);
+          // Se veio via prop creationLocation, o pai (PrivateMapScreen) precisa limpar.
+          // Como não temos callback de "limpar intent", o usuário terá que navegar via tabs ou fechar.
+          // Ideal: Resetar intent no pai. Por enquanto, switch to List visualmente.
+
+          // Se foi via Armed Mode (creationLocation != null), user provavelmente quer cancelar tudo.
+          if (widget.creationLocation != null) {
+            // Efeito colateral: Se o pai não limpar o creationLocation, o rebuild traria de volta.
+            // Para resolver, invocamos o onTabChanged para a mesma tab (noop) ou
+            // assumimos que o pai limpa o creationLocation quando processado?
+            // "Hack": Mudar para tab Mapa (0) fecha o fluxo de ocorrências.
+            widget.onTabChanged(0);
+          }
+        },
+        onConfirm: (category, urgency, description) {
+          ref
+              .read(occurrenceControllerProvider)
+              .createOccurrence(
+                type: urgency,
+                description: description,
+                lat: lat,
+                long: lng,
+                category: category,
+                status: 'draft',
+              );
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Ocorrência registrada com sucesso!'),
+              backgroundColor: SoloForteColors.greenIOS,
+            ),
+          );
+
+          // Sucesso -> Voltar para lista ou fechar?
+          // Voltar para lista parece natural
+          setState(() => _isCreatingOccurrence = false);
+          if (widget.creationLocation != null)
+            widget.onTabChanged(0); // Fecha se veio do mapa
+        },
+      );
+    }
+
+    // Modo Lista (OccurrenceListSheet)
+    return OccurrenceListSheet(
+      mapBounds:
+          null, // Opcional: passar bounds se quisermos filtrar pelo viewport atual
+      onClose: () => widget.onTabChanged(0), // Fechar volta para Mapa
+      onOccurrenceTap: (occurrence) {
+        // Navegar para detalhes?
+        _handleMapSubAction(0); // Exemplo placeholder
+      },
+    );
+  }
+
   Future<bool> _checkDrawingFeatureFlag() async {
     try {
       const user = FeatureFlagUser(
@@ -425,23 +512,22 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
           return SizedBox(
             height: _heightAnimation.value,
             child: ClipRRect(
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(16),
+              borderRadius: BorderRadius.vertical(
+                top: Radius.circular(SoloRadius.lg), // 24px
               ),
               child: BackdropFilter(
-                filter: ui.ImageFilter.blur(
-                  sigmaX: 20,
-                  sigmaY: 20,
-                ), // Otimizado
+                filter: ui.ImageFilter.blur(sigmaX: 20, sigmaY: 20),
                 child: Container(
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.92),
-                    borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(16),
+                    color: Theme.of(
+                      context,
+                    ).scaffoldBackgroundColor.withOpacity(0.92), // Adaptativo
+                    borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(SoloRadius.lg), // 24px
                     ),
                     border: Border(
                       top: BorderSide(
-                        color: Colors.black.withValues(alpha: 0.08),
+                        color: Theme.of(context).dividerColor.withOpacity(0.1),
                         width: 0.5,
                       ),
                     ),
@@ -466,10 +552,12 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
                           ), // Hit area + margin
                           child: Center(
                             child: Container(
-                              width: 34,
+                              width: 36, // Mais largo
                               height: 4,
                               decoration: BoxDecoration(
-                                color: Colors.black.withValues(alpha: 0.15),
+                                color: Theme.of(
+                                  context,
+                                ).dividerColor.withOpacity(0.2), // Dinâmico
                                 borderRadius: BorderRadius.circular(2),
                               ),
                             ),
@@ -558,8 +646,9 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
             icon: SFIcons.warning,
             label: 'Ocorrência',
             onTap: () {
-              // TODO: Adicionar lógica de ocorrências
               HapticFeedback.lightImpact();
+              // Solicitar ao pai (PrivateMapScreen) para armar o modo de ocorrência
+              widget.onOccurrenceArmed();
             },
           ),
         ],

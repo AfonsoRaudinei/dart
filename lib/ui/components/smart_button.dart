@@ -44,16 +44,17 @@ class SmartButton extends ConsumerWidget {
     // ═══════════════════════════════════════════════════════════════
     // 1. OBTER ROTA ATUAL (reativo via GoRouterState InheritedWidget)
     // ═══════════════════════════════════════════════════════════════
-    // GoRouterState.of(context) registra dependência no InheritedWidget,
-    // garantindo rebuild automático a cada mudança de rota.
-    // Diferente de GoRouter.of(context).routerDelegate.currentConfiguration
-    // que NÃO registra dependência e não causa rebuild.
     final String uri = GoRouterState.of(context).uri.path;
 
     // ═══════════════════════════════════════════════════════════════
     // 2. CLASSIFICAR NÍVEL (DETERMINÍSTICO via AppRoutes)
     // ═══════════════════════════════════════════════════════════════
     final RouteLevel level = AppRoutes.getLevel(uri);
+
+    // Tokens oficiais
+    final primaryColor = SoloForteColors.primary;
+    final buttonPadding = SoloSpacing.paddingButton;
+    final safeElevation = 2.0; // Sombra mínima conforme design
 
     // ═══════════════════════════════════════════════════════════════
     // 3. RENDERIZAR BASEADO NO NÍVEL
@@ -66,10 +67,14 @@ class SmartButton extends ConsumerWidget {
         return FloatingActionButton.extended(
           heroTag: 'smart_button_cta',
           onPressed: () => context.go(AppRoutes.login),
-          backgroundColor: SoloForteColors.greenIOS,
-          label: const Text(
+          backgroundColor: primaryColor,
+          elevation: safeElevation,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(SoloRadius.circle),
+          ),
+          label: Text(
             'Acessar SoloForte',
-            style: TextStyle(
+            style: SoloTextStyles.body.copyWith(
               fontWeight: FontWeight.bold,
               color: Colors.white,
             ),
@@ -88,7 +93,9 @@ class SmartButton extends ConsumerWidget {
             // Abrir menu via provider (overlay)
             ref.read(sideMenuOpenProvider.notifier).state = true;
           },
-          backgroundColor: SoloForteColors.greenIOS,
+          backgroundColor: primaryColor,
+          elevation: safeElevation,
+          shape: const CircleBorder(), // Design: Botões flutuantes circulares
           child: const Icon(Icons.menu, color: Colors.white),
         );
 
@@ -105,7 +112,9 @@ class SmartButton extends ConsumerWidget {
             // Retorno EXPLÍCITO e DECLARATIVO para o mapa
             context.go(AppRoutes.map);
           },
-          backgroundColor: SoloForteColors.greenIOS,
+          backgroundColor: primaryColor,
+          elevation: safeElevation,
+          shape: const CircleBorder(),
           child: const Icon(Icons.arrow_back, color: Colors.white),
         );
     }
