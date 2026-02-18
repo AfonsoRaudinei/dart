@@ -699,7 +699,7 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
               ),
               const SizedBox(height: 8),
               DropdownButtonFormField<Client>(
-                value: _selectedClient,
+                initialValue: _selectedClient,
                 decoration: InputDecoration(
                   contentPadding: const EdgeInsets.symmetric(
                     horizontal: 16,
@@ -738,7 +738,7 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
             const SizedBox(height: 8),
             DropdownButtonFormField<dynamic>(
               // Dynamic to allow 'NEW_FARM' string or Farm object
-              value: _selectedFarm,
+              initialValue: _selectedFarm,
               decoration: InputDecoration(
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: 16,

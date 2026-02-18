@@ -577,7 +577,11 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
             currentZoom: _isMapReady ? _mapController.camera.zoom : 13.0,
             onTabSelected: (index) {
               setState(() {
-                _activeTabIndex = index;
+                if (_activeTabIndex == index) {
+                  _activeTabIndex = null;
+                } else {
+                  _activeTabIndex = index;
+                }
                 _pendingOccurrenceLocation = null;
               });
             },
@@ -597,6 +601,12 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
                   setState(() {
                     _activeTabIndex = index;
                     if (index != 2) _pendingOccurrenceLocation = null;
+                  });
+                },
+                onClose: () {
+                  setState(() {
+                    _activeTabIndex = null;
+                    _pendingOccurrenceLocation = null;
                   });
                 },
                 creationLocation: _pendingOccurrenceLocation,

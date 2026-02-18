@@ -29,6 +29,7 @@ class MapBottomSheet extends ConsumerStatefulWidget {
   final DrawingController drawingController;
   final VoidCallback onLocationRequested;
   final VoidCallback onOccurrenceArmed;
+  final VoidCallback onClose; // 🔹 Callback de fechamento real (ETAPA 1)
   final int? selectedTabIndex;
   final ValueChanged<int> onTabChanged;
   final LatLng? creationLocation; // Coordenadas para iniciar criação imediata
@@ -38,6 +39,7 @@ class MapBottomSheet extends ConsumerStatefulWidget {
     required this.drawingController,
     required this.onLocationRequested,
     required this.onOccurrenceArmed,
+    required this.onClose,
     required this.selectedTabIndex,
     required this.onTabChanged,
     this.creationLocation,
@@ -193,11 +195,14 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
           _animateToDetent(SheetDetent.expanded);
         }
       } else {
-        // Flick para baixo → retrair
+        // Flick para baixo → retrair ou fechar
         if (_currentDetent == SheetDetent.expanded) {
           _animateToDetent(SheetDetent.medium);
         } else if (_currentDetent == SheetDetent.medium) {
           _animateToDetent(SheetDetent.compact);
+        } else if (_currentDetent == SheetDetent.compact) {
+          // 🔹 FECHAMENTO REAL: Flick down no compact (ETAPA 3)
+          widget.onClose();
         }
       }
       return;
@@ -207,9 +212,13 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
     final compactHeight = _getDetentHeight(SheetDetent.compact);
     final mediumHeight = _getDetentHeight(SheetDetent.medium);
     final expandedHeight = _getDetentHeight(SheetDetent.expanded);
+    final closeThreshold = compactHeight * 0.7; // 70% do compact para fechar
 
     // Calcular em qual "zona" está
-    if (currentHeight < (compactHeight + mediumHeight) * 0.5) {
+    if (currentHeight < closeThreshold) {
+      // 🔹 FECHAMENTO REAL: Drag abaixo do threshold (ETAPA 3)
+      widget.onClose();
+    } else if (currentHeight < (compactHeight + mediumHeight) * 0.5) {
       _animateToDetent(SheetDetent.compact);
     } else if (currentHeight < (mediumHeight + expandedHeight) * 0.5) {
       _animateToDetent(SheetDetent.medium);
@@ -274,16 +283,12 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
     switch (widget.selectedTabIndex) {
       case 0: // Mapa (principal)
         if (_mapSubActionIndex == -1) {
-          if (_currentDetent == SheetDetent.expanded) {
-            content = MapTabContent(
-              onDrawingTap: () => _handleMapSubAction(0),
-              onLayersTap: () => _handleMapSubAction(1),
-              onPublicationsTap: () => _handleMapSubAction(2),
-              onCheckInTap: () => _handleMapSubAction(3),
-            );
-          } else {
-            content = _buildQuickActionsBar();
-          }
+          content = MapTabContent(
+            onDrawingTap: () => _handleMapSubAction(0),
+            onLayersTap: () => _handleMapSubAction(1),
+            onPublicationsTap: () => _handleMapSubAction(2),
+            onCheckInTap: () => _handleMapSubAction(3),
+          );
         } else {
           content = _buildMapSubActionContent();
         }
@@ -359,15 +364,13 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
             ElevatedButton(
               onPressed: () {
                 ref.read(visitControllerProvider.notifier).endSession();
-                setState(() {
-                  _mapSubActionIndex = -1;
-                  _currentDetent = SheetDetent.compact;
-                });
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
                     content: Text('Visita encerrada com sucesso.'),
                   ),
                 );
+                // 🔹 FECHAMENTO REAL: Encerrar visita fecha o sheet (ETAPA 5)
+                widget.onClose();
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.red,
@@ -397,11 +400,6 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
               0.0,
             );
 
-        setState(() {
-          _mapSubActionIndex = -1;
-          _currentDetent = SheetDetent.compact;
-        });
-
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -410,6 +408,8 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
             ),
           );
         }
+        // 🔹 FECHAMENTO REAL: Iniciar visita fecha o sheet (ETAPA 5)
+        widget.onClose();
       },
     );
   }
@@ -441,17 +441,13 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
         onCancel: () {
           // Voltar para lista
           setState(() => _isCreatingOccurrence = false);
-          // Se veio via prop creationLocation, o pai (PrivateMapScreen) precisa limpar.
-          // Como não temos callback de "limpar intent", o usuário terá que navegar via tabs ou fechar.
-          // Ideal: Resetar intent no pai. Por enquanto, switch to List visualmente.
-
-          // Se foi via Armed Mode (creationLocation != null), user provavelmente quer cancelar tudo.
+          // 🔹 FECHAMENTO REAL: Cancelar fecha o sheet se solicitado via creationLocation (ETAPA 5)
           if (widget.creationLocation != null) {
-            // Efeito colateral: Se o pai não limpar o creationLocation, o rebuild traria de volta.
-            // Para resolver, invocamos o onTabChanged para a mesma tab (noop) ou
-            // assumimos que o pai limpa o creationLocation quando processado?
-            // "Hack": Mudar para tab Mapa (0) fecha o fluxo de ocorrências.
-            widget.onTabChanged(0);
+            widget.onClose();
+          } else {
+            // Se estava criando manualmente, volta pra lista ou fecha?
+            // Segundo o prompt: "No botão Cancelar: Chamar widget.onClose();"
+            widget.onClose();
           }
         },
         onConfirm: (category, urgency, description) {
@@ -473,11 +469,9 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
             ),
           );
 
-          // Sucesso -> Voltar para lista ou fechar?
-          // Voltar para lista parece natural
           setState(() => _isCreatingOccurrence = false);
-          if (widget.creationLocation != null)
-            widget.onTabChanged(0); // Fecha se veio do mapa
+          // 🔹 FECHAMENTO REAL: Salvar fecha o sheet (ETAPA 4)
+          widget.onClose();
         },
       );
     }
@@ -486,7 +480,7 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
     return OccurrenceListSheet(
       mapBounds:
           null, // Opcional: passar bounds se quisermos filtrar pelo viewport atual
-      onClose: () => widget.onTabChanged(0), // Fechar volta para Mapa
+      onClose: () => widget.onClose(), // 🔹 FECHAMENTO REAL (ETAPA 1)
       onOccurrenceTap: (occurrence) {
         // Navegar para detalhes?
         _handleMapSubAction(0); // Exemplo placeholder
@@ -629,119 +623,5 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
     } else {
       _animateToDetent(SheetDetent.compact);
     }
-  }
-
-  /// Barra de ações rápidas (estados compacto/médio)
-  Widget _buildQuickActionsBar() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          _QuickActionButton(
-            icon: SFIcons.edit,
-            label: 'Desenhar',
-            onTap: () => _handleMapSubAction(0),
-          ),
-          _QuickActionButton(
-            icon: SFIcons.layers,
-            label: 'Camadas',
-            onTap: () => _handleMapSubAction(1),
-          ),
-          _QuickActionButton(
-            icon: SFIcons.article,
-            label: 'Publicar',
-            onTap: () => _handleMapSubAction(2),
-          ),
-          _QuickActionButton(
-            icon: SFIcons.checkCircle,
-            label: 'Check',
-            onTap: () => _handleMapSubAction(3),
-          ),
-          _QuickActionButton(
-            icon: SFIcons.warning,
-            label: 'Ocorrência',
-            onTap: () {
-              HapticFeedback.lightImpact();
-              // Solicitar ao pai (PrivateMapScreen) para armar o modo de ocorrência
-              widget.onOccurrenceArmed();
-            },
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Botão de ação rápida (somente ícone)
-class _QuickActionButton extends StatefulWidget {
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-
-  const _QuickActionButton({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-  });
-
-  @override
-  State<_QuickActionButton> createState() => _QuickActionButtonState();
-}
-
-class _QuickActionButtonState extends State<_QuickActionButton>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _scaleController;
-  late Animation<double> _scaleAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _scaleController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 100),
-    );
-    _scaleAnimation = Tween<double>(
-      begin: 1.0,
-      end: 0.96,
-    ).animate(CurvedAnimation(parent: _scaleController, curve: Curves.easeOut));
-  }
-
-  @override
-  void dispose() {
-    _scaleController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final iconColor = Colors.black.withValues(alpha: 0.6);
-
-    return GestureDetector(
-      onTapDown: (_) {
-        _scaleController.forward();
-      },
-      onTapUp: (_) {
-        _scaleController.reverse();
-        HapticFeedback.lightImpact();
-        widget.onTap();
-      },
-      onTapCancel: () {
-        _scaleController.reverse();
-      },
-      behavior: HitTestBehavior.opaque,
-      child: ScaleTransition(
-        scale: _scaleAnimation,
-        child: Container(
-          width: 56,
-          height: 56,
-          decoration: BoxDecoration(
-            color: Colors.transparent,
-            borderRadius: BorderRadius.circular(28),
-          ),
-          child: Icon(widget.icon, size: 28, color: iconColor),
-        ),
-      ),
-    );
   }
 }

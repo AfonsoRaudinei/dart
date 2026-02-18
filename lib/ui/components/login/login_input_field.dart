@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../theme/soloforte_theme.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 class LoginInputField extends StatefulWidget {
   final TextEditingController controller;
