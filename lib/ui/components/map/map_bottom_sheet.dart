@@ -61,23 +61,17 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
   @override
   void initState() {
     super.initState();
+    debugPrint('🟢 MapBottomSheet INIT'); // 🔎 PASSO 2
+
     // Start closed if index is null
     if (widget.selectedTabIndex == null) {
       _currentDetent = SheetDetent.closed;
     }
-
-    _heightController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 250),
-    );
-    _heightAnimation =
-        Tween<double>(begin: _getSheetHeight(), end: _getSheetHeight()).animate(
-          CurvedAnimation(parent: _heightController, curve: Curves.easeOut),
-        );
   }
 
   @override
   void dispose() {
+    debugPrint('🧨 MapBottomSheet DISPOSE chamado'); // 🔎 PASSO 1
     _heightController.dispose();
     _scrollController.dispose();
     super.dispose();
@@ -512,6 +506,7 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
 
   @override
   Widget build(BuildContext context) {
+    debugPrint('🟡 MapBottomSheet BUILD | tab=${widget.selectedTabIndex}');
     return GestureDetector(
       onVerticalDragStart: _handleDragStart,
       onVerticalDragUpdate: _handleVerticalDrag,

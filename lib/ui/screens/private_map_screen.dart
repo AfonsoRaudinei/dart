@@ -91,6 +91,17 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
     super.dispose();
   }
 
+  // 🔎 INSTRUMENTATION: Rastrear quem altera o estado
+  void _setActiveTabIndex(int? value, String reason) {
+    debugPrint(
+      '🕵️ TAB CHANGE | old=$_activeTabIndex | new=$value | reason=$reason',
+    );
+    // debugPrint(StackTrace.current.toString()); // Descomente para stack trace completo
+    setState(() {
+      _activeTabIndex = value;
+    });
+  }
+
   // 🛡 HARDENING DEFINITIVO: Máquina de Decisão de Viewport
   // Determinístico. Idempotente. Sem race loops.
   void _applyInitialViewport() async {
@@ -250,8 +261,10 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
   void _openOccurrenceSheet(double lat, double lng) async {
     // 🛡 CONSOLIDATION: Redirect to MapBottomSheet
     if (!mounted) return;
+
+    // Usando setter instrumentado
+    _setActiveTabIndex(2, 'OpenOccurrenceSheet (Create Mode)');
     setState(() {
-      _activeTabIndex = 2; // Switch to Occurrences Tab
       _pendingOccurrenceLocation = LatLng(lat, lng); // Trigger Creation Mode
     });
   }
@@ -575,13 +588,19 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
                 ? _mapController.camera.center
                 : const LatLng(0, 0),
             currentZoom: _isMapReady ? _mapController.camera.zoom : 13.0,
-            onTabSelected: (index) {
+            onTabSelected: (index, source) {
+              if (_activeTabIndex == index) {
+                _setActiveTabIndex(
+                  null,
+                  'MapControlsOverlay: Toggle Close (Source: $source)',
+                );
+              } else {
+                _setActiveTabIndex(
+                  index,
+                  'MapControlsOverlay: Select Tab $index (Source: $source)',
+                );
+              }
               setState(() {
-                if (_activeTabIndex == index) {
-                  _activeTabIndex = null;
-                } else {
-                  _activeTabIndex = index;
-                }
                 _pendingOccurrenceLocation = null;
               });
             },
@@ -598,14 +617,14 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
                 drawingController: ref.read(drawingControllerProvider),
                 selectedTabIndex: _activeTabIndex,
                 onTabChanged: (index) {
+                  _setActiveTabIndex(index, 'MapBottomSheet: Tab Changed');
                   setState(() {
-                    _activeTabIndex = index;
                     if (index != 2) _pendingOccurrenceLocation = null;
                   });
                 },
                 onClose: () {
+                  _setActiveTabIndex(null, 'MapBottomSheet: onClose');
                   setState(() {
-                    _activeTabIndex = null;
                     _pendingOccurrenceLocation = null;
                   });
                 },

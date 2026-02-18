@@ -17,7 +17,7 @@ class MapControlsOverlay extends ConsumerStatefulWidget {
   final VoidCallback onCenterUser;
   final VoidCallback onToggleDrawMode;
   final VoidCallback? onToggleOccurrenceMode;
-  final Function(int) onTabSelected;
+  final Function(int, String) onTabSelected;
   final bool isDrawMode;
   final bool isOccurrenceMode;
   final LatLng currentCenter;
@@ -218,13 +218,13 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
               _MapActionButton(
                 icon: SFIcons.edit,
                 isActive: widget.isDrawMode,
-                onTap: () => widget.onTabSelected(0),
+                onTap: () => widget.onTabSelected(0, 'Button_Edit'),
               ),
               // REMOVIDO: Botão de localização duplicado
               const SizedBox(height: 12),
               _MapActionButton(
                 icon: SFIcons.layers,
-                onTap: () => widget.onTabSelected(0),
+                onTap: () => widget.onTabSelected(0, 'Button_Layers'),
               ),
               const SizedBox(height: 12),
               _MapActionButton(
@@ -236,14 +236,14 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
                     widget.onToggleOccurrenceMode!();
                   } else {
                     // Fallback antigo: abre a tab direto
-                    widget.onTabSelected(2);
+                    widget.onTabSelected(2, 'Button_Occurrences');
                   }
                 },
               ),
               const SizedBox(height: 12),
               _MapActionButton(
                 icon: SFIcons.articleOutlined,
-                onTap: () => widget.onTabSelected(1),
+                onTap: () => widget.onTabSelected(1, 'Button_Publications'),
               ),
             ],
           ),
