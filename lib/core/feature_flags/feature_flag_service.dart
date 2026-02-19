@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
-import 'package:shared_preferences/shared_preferences.dart';
+import '../infra/preferences_service.dart';
+import '../utils/app_logger.dart';
 import 'feature_flag_model.dart';
 
 /// Serviço de gerenciamento de Feature Flags.
@@ -13,7 +14,7 @@ import 'feature_flag_model.dart';
 class FeatureFlagService {
   // Dependências externas (injetadas para testabilidade)
   final Future<Map<String, dynamic>> Function() _fetchFromBackend;
-  final Future<SharedPreferences> Function() _getPreferences;
+  final PreferencesService _prefs;
 
   // Configuração de cache
   static const String _cachePrefix = 'feature_flag_';
@@ -26,9 +27,9 @@ class FeatureFlagService {
 
   FeatureFlagService({
     required Future<Map<String, dynamic>> Function() fetchFromBackend,
-    Future<SharedPreferences> Function()? getPreferences,
+    required PreferencesService prefs,
   })  : _fetchFromBackend = fetchFromBackend,
-        _getPreferences = getPreferences ?? SharedPreferences.getInstance;
+        _prefs = prefs;
 
   /// Inicia atualização automática em background.
   void startBackgroundUpdates() {
@@ -92,12 +93,11 @@ class FeatureFlagService {
   /// Verifica cache local e valida TTL.
   Future<FeatureFlag?> _getCachedFlag(String key) async {
     try {
-      final prefs = await _getPreferences();
       final cacheKey = _cachePrefix + key;
       final timestampKey = cacheKey + _cacheTimestampSuffix;
 
-      final flagJson = prefs.getString(cacheKey);
-      final timestamp = prefs.getInt(timestampKey);
+      final flagJson = _prefs.getString(cacheKey);
+      final timestamp = _prefs.getInt(timestampKey);
 
       if (flagJson == null || timestamp == null) {
         return null;
@@ -119,9 +119,8 @@ class FeatureFlagService {
   /// Recupera cache expirado (usado como fallback em caso de falha de rede).
   Future<FeatureFlag?> _getStaleCache(String key) async {
     try {
-      final prefs = await _getPreferences();
       final cacheKey = _cachePrefix + key;
-      final flagJson = prefs.getString(cacheKey);
+      final flagJson = _prefs.getString(cacheKey);
 
       if (flagJson == null) return null;
 
@@ -135,17 +134,16 @@ class FeatureFlagService {
   /// Salva flag no cache local com timestamp.
   Future<void> _cacheFlag(String key, FeatureFlag flag) async {
     try {
-      final prefs = await _getPreferences();
       final cacheKey = _cachePrefix + key;
       final timestampKey = cacheKey + _cacheTimestampSuffix;
 
       final flagJson = jsonEncode(flag.toJson());
       final timestamp = DateTime.now().millisecondsSinceEpoch;
 
-      await prefs.setString(cacheKey, flagJson);
-      await prefs.setInt(timestampKey, timestamp);
+      await _prefs.setString(cacheKey, flagJson);
+      await _prefs.setInt(timestampKey, timestamp);
     } catch (e) {
-      // Falha de cache não é crítica
+      AppLogger.warning('Falha ao persistir cache de feature flag "$key" — não crítico', tag: 'FeatureFlags', error: e);
     }
   }
 
@@ -160,7 +158,7 @@ class FeatureFlagService {
         await _cacheFlag(entry.key, entry.value);
       }
     } catch (e) {
-      // Falha silenciosa em background
+      AppLogger.warning('Falha ao atualizar cache em background', tag: 'FeatureFlags', error: e);
     }
   }
 
@@ -185,7 +183,7 @@ class FeatureFlagService {
         result[flag.key] = flag;
       }
     } catch (e) {
-      // Parsing falhou → retornar vazio (fallback para cache/disabled)
+      AppLogger.warning('Falha ao parsear resposta de feature flags — retornando vazio', tag: 'FeatureFlags', error: e);
     }
 
     return result;
@@ -194,16 +192,15 @@ class FeatureFlagService {
   /// Limpa todo o cache de feature flags.
   Future<void> clearCache() async {
     try {
-      final prefs = await _getPreferences();
-      final keys = prefs.getKeys();
+      final keys = _prefs.getKeys();
 
       for (final key in keys) {
         if (key.startsWith(_cachePrefix)) {
-          await prefs.remove(key);
+          await _prefs.remove(key);
         }
       }
     } catch (e) {
-      // Falha não crítica
+      AppLogger.warning('Falha ao limpar cache de feature flags', tag: 'FeatureFlags', error: e);
     }
   }
 

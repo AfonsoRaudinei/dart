@@ -3,6 +3,7 @@ import 'package:sqflite/sqflite.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:io';
+import '../utils/app_logger.dart';
 
 class DatabaseHelper {
   static final DatabaseHelper instance = DatabaseHelper._privateConstructor();
@@ -39,14 +40,14 @@ class DatabaseHelper {
 
   Future<void> _onCreate(Database db, int version) async {
     if (kDebugMode) {
-      debugPrint('🛠️ Database: Iniciando instalação limpa (v0 → v$version)');
+      AppLogger.debug('Database: Instalação limpa (v0 → v$version)', tag: 'DB');
     }
     await _runMigrations(db, 0, version);
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
     if (kDebugMode) {
-      debugPrint('🚀 Database Upgrade: v$oldVersion → v$newVersion');
+      AppLogger.debug('Database Upgrade: v$oldVersion → v$newVersion', tag: 'DB');
     }
     await _runMigrations(db, oldVersion, newVersion);
   }
@@ -58,7 +59,7 @@ class DatabaseHelper {
     int toVersion,
   ) async {
     for (int v = fromVersion + 1; v <= toVersion; v++) {
-      if (kDebugMode) debugPrint('📦 Aplicando migração: v$v');
+      if (kDebugMode) AppLogger.debug('Aplicando migração: v$v', tag: 'DB');
       switch (v) {
         case 1:
           await _migrateToV1(db);
@@ -148,17 +149,23 @@ class DatabaseHelper {
       await db.execute(
         'ALTER TABLE clients ADD COLUMN sync_status INTEGER DEFAULT 1',
       );
-    } catch (_) {}
+    } catch (e) {
+      AppLogger.debug('V2: sync_status em clients já existe — $e', tag: 'DB.Migration');
+    }
     try {
       await db.execute(
         'ALTER TABLE farms ADD COLUMN sync_status INTEGER DEFAULT 1',
       );
-    } catch (_) {}
+    } catch (e) {
+      AppLogger.debug('V2: sync_status em farms já existe — $e', tag: 'DB.Migration');
+    }
     try {
       await db.execute(
         'ALTER TABLE fields ADD COLUMN sync_status INTEGER DEFAULT 1',
       );
-    } catch (_) {}
+    } catch (e) {
+      AppLogger.debug('V2: sync_status em fields já existe — $e', tag: 'DB.Migration');
+    }
 
     await db.execute(
       'CREATE INDEX IF NOT EXISTS idx_clients_nome ON clients(nome)',
@@ -254,13 +261,19 @@ class DatabaseHelper {
   Future<void> _migrateToV6(Database db) async {
     try {
       await db.execute('ALTER TABLE occurrences ADD COLUMN updated_at TEXT');
-    } catch (_) {}
+    } catch (e) {
+      AppLogger.debug('V6: updated_at em occurrences já existe — $e', tag: 'DB.Migration');
+    }
     try {
       await db.execute('ALTER TABLE occurrences ADD COLUMN category TEXT');
-    } catch (_) {}
+    } catch (e) {
+      AppLogger.debug('V6: category em occurrences já existe — $e', tag: 'DB.Migration');
+    }
     try {
       await db.execute('ALTER TABLE occurrences ADD COLUMN status TEXT');
-    } catch (_) {}
+    } catch (e) {
+      AppLogger.debug('V6: status em occurrences já existe — $e', tag: 'DB.Migration');
+    }
     await db.execute(
       "UPDATE occurrences SET status = 'draft' WHERE status IS NULL",
     );
@@ -269,7 +282,9 @@ class DatabaseHelper {
   Future<void> _migrateToV7(Database db) async {
     try {
       await db.execute('ALTER TABLE occurrences ADD COLUMN geometry TEXT');
-    } catch (_) {}
+    } catch (e) {
+      AppLogger.debug('V7: geometry em occurrences já existe — $e', tag: 'DB.Migration');
+    }
   }
 
   Future<void> _migrateToV8(Database db) async {
@@ -307,10 +322,14 @@ class DatabaseHelper {
   Future<void> _migrateToV9(Database db) async {
     try {
       await db.execute('ALTER TABLE drawings ADD COLUMN cliente_id TEXT');
-    } catch (_) {}
+    } catch (e) {
+      AppLogger.debug('V9: cliente_id em drawings já existe — $e', tag: 'DB.Migration');
+    }
     try {
       await db.execute('ALTER TABLE drawings ADD COLUMN fazenda_id TEXT');
-    } catch (_) {}
+    } catch (e) {
+      AppLogger.debug('V9: fazenda_id em drawings já existe — $e', tag: 'DB.Migration');
+    }
     await db.execute(
       'CREATE INDEX IF NOT EXISTS idx_drawings_cliente_id ON drawings(cliente_id)',
     );
@@ -386,9 +405,9 @@ class DatabaseHelper {
         [table],
       );
       if (res.isEmpty) {
-        debugPrint('❌ ERRO CRÍTICO: Tabela "$table" não encontrada após boot.');
+        AppLogger.error('ERRO CRÍTICO: Tabela "$table" não encontrada após boot.', tag: 'DB');
       } else {
-        debugPrint('✅ Database: Tabela "$table" validada com sucesso.');
+        AppLogger.debug('Database: Tabela "$table" validada.', tag: 'DB');
       }
     }
   }

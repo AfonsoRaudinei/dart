@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
 import '../../modules/consultoria/clients/domain/agronomic_models.dart';
 import '../../modules/drawing/domain/models/drawing_models.dart';
+import '../utils/app_logger.dart';
 import 'field_map_entity.dart';
 
 class FieldMapAdapter {
@@ -26,7 +27,7 @@ class FieldMapAdapter {
               .cast<List<LatLng>>();
         }
       } catch (e) {
-        debugPrint('Error parsing Talhao geometry: $e');
+        AppLogger.warning('Erro ao parsear geometry do Talhão', tag: 'FieldMapAdapter', error: e);
       }
     }
 

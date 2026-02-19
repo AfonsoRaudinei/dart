@@ -1,4 +1,5 @@
 import 'dart:convert';
+import '../../../../core/utils/app_logger.dart';
 
 enum SyncStatus {
   local,
@@ -181,7 +182,9 @@ class Occurrence {
             };
           }
         }
-      } catch (_) {}
+      } catch (e) {
+        AppLogger.debug('Falha ao parsear geometry da ocorrência — $e', tag: 'Occurrence');
+      }
     }
 
     if (lat != null && long != null) {

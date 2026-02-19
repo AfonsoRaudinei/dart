@@ -1,8 +1,8 @@
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:flutter/foundation.dart';
 import 'dart:convert';
+import '../../../../core/utils/app_logger.dart';
 import 'visita_model.dart';
 
 class VisitaDatabaseService {
@@ -61,7 +61,7 @@ class VisitaDatabaseService {
       'created_at': visita.createdAt.toIso8601String(),
     }, conflictAlgorithm: ConflictAlgorithm.replace);
 
-    debugPrint('✅ Visita persistida em SQLite (ID: $id)');
+    AppLogger.debug('Visita persistida em SQLite (ID: $id)', tag: 'VisitaDB');
   }
 
   Future<List<VisitaModel>> readAllVisitas() async {

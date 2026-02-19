@@ -181,7 +181,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                       ),
                     ),
 
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 24),
 
                   // Logo
                   Hero(
@@ -215,7 +215,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
 
                   // Título
                   Text(
-                    'SoloForte Login',
+                    'Entrar',
                     textAlign: TextAlign.center,
                     style: SoloTextStyles.headingLarge,
                   ),
@@ -227,7 +227,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                     'Transforme complexidade\nem decisões simples',
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      fontSize: 15.2,
+                      fontSize: 14.0,
                       color: SoloForteColors.textSecondary,
                       height: 1.4,
                     ),
@@ -240,8 +240,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                     height: 120,
                     padding: const EdgeInsets.all(SoloSpacing.lg),
                     decoration: BoxDecoration(
-                      color: SoloForteColors.accent.withValues(alpha: 0.3),
+                      color: SoloForteColors.surfaceLight,
                       borderRadius: SoloRadius.radiusXl,
+                      border: Border.all(
+                        color: SoloForteColors.border,
+                        width: 1,
+                      ),
                     ),
                     child: Center(
                       child: Image.asset(
@@ -267,7 +271,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                     onSubmitted: (_) => _passFocusNode.requestFocus(),
                   ),
 
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 16),
 
                   // Password Input
                   LoginInputField(
@@ -388,7 +392,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                     iconColor: Colors.black,
                   ),
 
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 8),
 
                   // Botão Google
                   SocialAuthButton(

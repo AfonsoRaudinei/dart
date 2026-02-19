@@ -1,14 +1,17 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:soloforte_app/ui/theme/soloforte_theme.dart';
+import '../../../../modules/consultoria/relatorio_visita/data/draft_storage_service.dart';
 import '../../../../modules/consultoria/relatorio_visita/data/image_storage_service.dart';
 import '../../../../modules/map/design/sf_icons.dart';
 import 'widgets/visit_panels.dart';
 import '../../../../modules/consultoria/relatorio_visita/data/visita_model.dart';
-import '../../../../modules/consultoria/relatorio_visita/data/draft_storage_service.dart';
 import '../../../../modules/consultoria/relatorio_visita/data/visita_database_service.dart';
+import '../../../core/utils/app_logger.dart';
 
 // ════════════════════════════════════════════════════════════════════
 // MODELS AUXILIARES (ESTÁGIOS)
@@ -457,7 +460,7 @@ class CategoryGrid extends StatelessWidget {
 // MAIN SCREEN
 // ════════════════════════════════════════════════════════════════════
 
-class MapOccurrenceSheet extends StatefulWidget {
+class MapOccurrenceSheet extends ConsumerStatefulWidget {
   final double latitude;
   final double longitude;
   final Function(String category, String urgency, String description) onConfirm;
@@ -474,11 +477,13 @@ class MapOccurrenceSheet extends StatefulWidget {
   });
 
   @override
-  State<MapOccurrenceSheet> createState() => _MapOccurrenceSheetState();
+  ConsumerState<MapOccurrenceSheet> createState() =>
+      _MapOccurrenceSheetState();
 }
 
-class _MapOccurrenceSheetState extends State<MapOccurrenceSheet> {
+class _MapOccurrenceSheetState extends ConsumerState<MapOccurrenceSheet> {
   late VisitaModel _draft;
+  late DraftStorageService _draftService;
   final _dateFormat = DateFormat('dd/MM/yyyy');
   final _areaController = TextEditingController();
   final _cultivarController = TextEditingController();
@@ -489,13 +494,16 @@ class _MapOccurrenceSheetState extends State<MapOccurrenceSheet> {
   void initState() {
     super.initState();
     // Initialize temporary draft to avoid UI errors before load
+    final currentUser = Supabase.instance.client.auth.currentUser;
+    final userName =
+        currentUser?.userMetadata?['full_name'] as String? ?? '';
     _draft = VisitaModel(
       dataVisita: DateTime.now(),
       latitude: widget.latitude,
       longitude: widget.longitude,
-      produtor: 'Fazenda Santa Rita', // Mock default
-      propriedade: 'Talhão 12', // Mock default
-      tecnico: 'Raudinei Silva', // Mock default
+      produtor: '',
+      propriedade: '',
+      tecnico: userName,
     );
 
     _loadDraft();
@@ -511,7 +519,7 @@ class _MapOccurrenceSheetState extends State<MapOccurrenceSheet> {
   }
 
   Future<void> _loadDraft() async {
-    final savedDraft = await DraftStorageService().loadDraft();
+    final savedDraft = await _draftService.loadDraft();
     if (savedDraft != null) {
       // Check if coordinates match (approximate check for "same location")
       const double tolerance = 0.0001; // ~11 meters
@@ -528,9 +536,9 @@ class _MapOccurrenceSheetState extends State<MapOccurrenceSheet> {
           }
           _obsController.text = _draft.observacoes;
         });
-        debugPrint('🔄 Draft restaurado para o local.');
+        AppLogger.debug('Draft restaurado para o local.', tag: 'OccurrenceSheet');
       } else {
-        debugPrint('📍 Local diferente. Iniciando novo relatório.');
+        AppLogger.debug('Local diferente. Iniciando novo relatório.', tag: 'OccurrenceSheet');
       }
     }
   }
@@ -538,7 +546,7 @@ class _MapOccurrenceSheetState extends State<MapOccurrenceSheet> {
   void _scheduleAutoSave() {
     if (_autoSaveTimer?.isActive ?? false) _autoSaveTimer!.cancel();
     _autoSaveTimer = Timer(const Duration(milliseconds: 400), () {
-      DraftStorageService().saveDraft(_draft);
+      _draftService.saveDraft(_draft);
     });
   }
 
@@ -563,10 +571,10 @@ class _MapOccurrenceSheetState extends State<MapOccurrenceSheet> {
     await VisitaDatabaseService.instance.save(_draft);
 
     // 2. Clear Local Draft
-    await DraftStorageService().clearDraft();
+    await _draftService.clearDraft();
     _autoSaveTimer?.cancel();
 
-    debugPrint('📝 VISITA TÉCNICA SALVA COM SUCESSO: ${_draft.id}');
+    AppLogger.debug('VISITA TÉCNICA SALVA COM SUCESSO: ${_draft.id}', tag: 'OccurrenceSheet');
 
     if (!mounted) return;
 
@@ -597,7 +605,7 @@ class _MapOccurrenceSheetState extends State<MapOccurrenceSheet> {
           TextButton(
             onPressed: () {
               Navigator.pop(ctx);
-              DraftStorageService().clearDraft();
+              _draftService.clearDraft();
               widget.onCancel?.call();
             },
             child: const Text(

@@ -1,14 +1,40 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import '../../../../core/router/app_routes.dart';
+import '../../../../core/session/session_controller.dart';
+import '../../../../core/session/session_models.dart';
 import '../../../../modules/map/design/sf_icons.dart';
 import 'package:flutter/services.dart';
 import '../../../theme/soloforte_theme.dart';
 
-/// Tab 4 — PERFIL (Institucional: Configurações, Conta, Suporte)
-class ProfileTabContent extends StatelessWidget {
+/// Tab 4 — PERFIL
+/// Exibe dados reais do usuário autenticado via Supabase.
+class ProfileTabContent extends ConsumerWidget {
   const ProfileTabContent({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final session = ref.watch(sessionControllerProvider);
+
+    String displayName = 'Usuário';
+    String displayRole = '';
+
+    if (session is SessionAuthenticated) {
+      final user = session.user;
+      displayName =
+          (user.userMetadata?['full_name'] as String?)?.trim().isNotEmpty == true
+              ? user.userMetadata!['full_name'] as String
+              : user.email ?? 'Usuário';
+
+      final role = user.userMetadata?['role'] as String?;
+      displayRole = switch (role) {
+        'produtor' => 'Produtor Rural',
+        'consultor' => 'Consultor Agronômico',
+        _ => '',
+      };
+    }
+
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -34,19 +60,21 @@ class ProfileTabContent extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Raudinei Silva Pereira',
+                      displayName,
                       style: SoloTextStyles.headingMedium.copyWith(
                         fontSize: 18,
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Consultor Agronômico',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.black.withValues(alpha: 0.5),
+                    if (displayRole.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        displayRole,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.black.withValues(alpha: 0.5),
+                        ),
                       ),
-                    ),
+                    ],
                   ],
                 ),
               ),
@@ -58,30 +86,22 @@ class ProfileTabContent extends StatelessWidget {
           _ProfileTile(
             icon: SFIcons.settings,
             title: 'Configurações',
-            onTap: () {
-              // TODO: Navegar para configurações
-            },
+            onTap: () => context.push(AppRoutes.settings),
           ),
           _ProfileTile(
             icon: SFIcons.accountCircle,
             title: 'Minha Conta',
-            onTap: () {
-              // TODO: Navegar para conta
-            },
+            onTap: () {},
           ),
           _ProfileTile(
             icon: SFIcons.help,
             title: 'Suporte',
-            onTap: () {
-              // TODO: Navegar para suporte
-            },
+            onTap: () {},
           ),
           _ProfileTile(
             icon: SFIcons.info,
             title: 'Sobre',
-            onTap: () {
-              // TODO: Navegar para sobre
-            },
+            onTap: () {},
           ),
           const SizedBox(height: 16),
           const Divider(height: 1),
@@ -90,9 +110,33 @@ class ProfileTabContent extends StatelessWidget {
             icon: SFIcons.logout,
             title: 'Sair',
             isDestructive: true,
-            onTap: () {
-              // TODO: Implementar logout
+            onTap: () => _confirmLogout(context, ref),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _confirmLogout(BuildContext context, WidgetRef ref) {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Sair da conta'),
+        content: const Text(
+          'Deseja mesmo sair? Seus dados locais serão mantidos.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            onPressed: () async {
+              Navigator.of(ctx).pop();
+              await ref.read(sessionControllerProvider.notifier).logout();
             },
+            child: const Text('Sair'),
           ),
         ],
       ),

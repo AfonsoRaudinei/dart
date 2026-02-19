@@ -1,5 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:soloforte_app/core/database/database_helper.dart';
+import 'package:soloforte_app/core/utils/app_logger.dart';
+import 'package:soloforte_app/core/network/network_policy.dart';
 import '../domain/occurrence.dart';
 import 'dart:convert';
 
@@ -33,14 +35,16 @@ class OccurrenceSyncService {
         final userId = _supabase.auth.currentUser?.id;
         if (userId == null) continue;
 
-        await _supabase.from('occurrences').upsert({
-          'id': occurrence.id,
-          'user_id': userId,
-          'visit_session_id': occurrence.visitSessionId,
-          'geometry': payload['geometry'],
-          'sync_status': 'synced',
-          'updated_at': occurrence.updatedAt.toIso8601String(),
-        });
+        await NetworkPolicy.withTimeout(
+          () => _supabase.from('occurrences').upsert({
+            'id': occurrence.id,
+            'user_id': userId,
+            'visit_session_id': occurrence.visitSessionId,
+            'geometry': payload['geometry'],
+            'sync_status': 'synced',
+            'updated_at': occurrence.updatedAt.toIso8601String(),
+          }),
+        );
 
         await db.update(
           'occurrences',
@@ -60,11 +64,13 @@ class OccurrenceSyncService {
     if (userId == null) return;
 
     try {
-      final remoteOccurrences = await _supabase
-          .from('occurrences')
-          .select()
-          .eq('user_id', userId)
-          .order('updated_at');
+      final remoteOccurrences = await NetworkPolicy.withTimeout(
+        () => _supabase
+            .from('occurrences')
+            .select()
+            .eq('user_id', userId)
+            .order('updated_at'),
+      );
 
       for (final remote in remoteOccurrences) {
         final localResults = await db.query(
@@ -146,7 +152,9 @@ class OccurrenceSyncService {
               lat = (coords[1] as num).toDouble();
             }
           }
-        } catch (_) {}
+        } catch (e) {
+          AppLogger.debug('Falha ao parsear geometry no sync — $e', tag: 'OccurrenceSync');
+        }
       } else {
         final geometry = remote['geometry'] as Map<String, dynamic>;
         geometryJson = jsonEncode(geometry);

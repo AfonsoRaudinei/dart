@@ -1,36 +1,42 @@
 import 'dart:convert';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/infra/preferences_service.dart';
+import '../../../../core/utils/app_logger.dart';
 import 'visita_model.dart';
-import 'package:flutter/foundation.dart';
 
 class DraftStorageService {
+  const DraftStorageService(this._prefs);
+
+  final PreferencesService _prefs;
   static const String _key = 'draft_visita';
 
   Future<void> saveDraft(VisitaModel model) async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(_key, jsonEncode(model.toJson()));
-      debugPrint('💾 Draft salvo (auto): ${model.id}');
+      await _prefs.setString(_key, jsonEncode(model.toJson()));
+      AppLogger.debug('Draft salvo (auto): ${model.id}', tag: 'DraftStorage');
     } catch (e) {
-      debugPrint('❌ Erro ao salvar draft: $e');
+      AppLogger.warning('Erro ao salvar draft', tag: 'DraftStorage', error: e);
     }
   }
 
   Future<VisitaModel?> loadDraft() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final jsonString = prefs.getString(_key);
+      final jsonString = _prefs.getString(_key);
       if (jsonString == null) return null;
       return VisitaModel.fromJson(jsonDecode(jsonString));
     } catch (e) {
-      debugPrint('❌ Erro ao carregar draft: $e');
+      AppLogger.warning('Erro ao carregar draft', tag: 'DraftStorage', error: e);
       return null;
     }
   }
 
   Future<void> clearDraft() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_key);
-    debugPrint('🗑️ Draft limpo');
+    await _prefs.remove(_key);
+    AppLogger.debug('Draft limpo', tag: 'DraftStorage');
   }
 }
+
+/// Provider de [DraftStorageService].
+final draftStorageServiceProvider = Provider<DraftStorageService>((ref) {
+  return DraftStorageService(ref.read(preferencesServiceProvider));
+});

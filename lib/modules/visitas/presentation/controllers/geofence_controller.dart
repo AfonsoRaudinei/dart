@@ -8,6 +8,7 @@ import '../../../consultoria/clients/presentation/providers/field_providers.dart
 import '../../../consultoria/services/talhao_map_adapter.dart';
 import '../../../consultoria/clients/domain/agronomic_models.dart';
 import 'package:latlong2/latlong.dart';
+import '../../../../core/utils/app_logger.dart';
 
 // State Provider for Geofence
 final geofenceStateProvider = StateProvider<GeofenceState>((ref) {
@@ -73,8 +74,9 @@ class GeofenceController {
           );
         }
       }
-    } catch (_) {
-      return; // Fail silently
+    } catch (e) {
+      AppLogger.warning('Falha ao obter posição para geofence', tag: 'Geofence', error: e);
+      return;
     }
 
     if (position == null) return;

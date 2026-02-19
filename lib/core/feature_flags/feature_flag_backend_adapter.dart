@@ -1,16 +1,16 @@
 import 'dart:async';
+import '../config/app_config.dart';
 
 /// Adapter para backend de feature flags.
 ///
-/// Em produção, conecta ao endpoint real.
-/// Em desenvolvimento, usa mock local.
+/// Em produção (`ENV=production` ou `ENV=staging`), conectará ao endpoint real.
+/// Em desenvolvimento (`ENV=development`), usa mock local.
 class FeatureFlagBackendAdapter {
-  // TODO: Substituir por URL real do backend
-  // ignore: unused_field
+  // ignore: unused_field — será usado quando HTTP real for implementado (PR #10)
   static const String _backendUrl = 'https://api.soloforte.com/feature-flags';
-  
-  /// Modo de desenvolvimento (usa mock)
-  static const bool _isDevelopment = true; // TODO: Configurar por ambiente
+
+  /// Verdadeiro quando o ambiente não é produção — lido de [AppConfig].
+  static bool get _isDevelopment => !AppConfig.isProduction;
 
   /// Busca flags do backend.
   ///

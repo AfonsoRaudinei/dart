@@ -1,7 +1,7 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:soloforte_app/core/services/connectivity_service.dart';
+import 'package:soloforte_app/core/utils/app_logger.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:soloforte_app/modules/consultoria/occurrences/data/occurrence_sync_service.dart';
 import 'package:soloforte_app/modules/visitas/data/repositories/visit_sync_service.dart';
@@ -48,9 +48,9 @@ class SyncService {
       await _syncVisits();
       await _syncOccurrences();
 
-      debugPrint('🔄 Sync completo (silencioso)');
+      AppLogger.debug('Sync completo', tag: 'SyncService');
     } catch (e) {
-      debugPrint('⚠️ Sync falhou (será retentado): $e');
+      AppLogger.warning('Sync falhou (será retentado)', tag: 'SyncService', error: e);
     } finally {
       _isSyncing = false;
     }
@@ -62,7 +62,7 @@ class SyncService {
       final visitSync = VisitSyncService(supabase);
       await visitSync.syncVisits();
     } catch (e) {
-      debugPrint('⚠️ Sync Visitas falhou: $e');
+      AppLogger.warning('Sync Visitas falhou', tag: 'SyncService', error: e);
     }
   }
 
@@ -72,7 +72,7 @@ class SyncService {
       final occurrenceSync = OccurrenceSyncService(supabase);
       await occurrenceSync.syncOccurrences();
     } catch (e) {
-      debugPrint('⚠️ Sync Ocorrências falhou: $e');
+      AppLogger.warning('Sync Ocorrências falhou', tag: 'SyncService', error: e);
     }
   }
 

@@ -6,6 +6,8 @@ import 'package:soloforte_app/ui/theme/soloforte_theme.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/state/map_state.dart';
+import '../../core/state/map_ui_providers.dart';
+import '../../core/utils/app_logger.dart';
 import '../../core/utils/map_logger.dart';
 import '../../core/utils/debouncer.dart';
 import '../../modules/consultoria/clients/presentation/providers/field_providers.dart';
@@ -20,7 +22,6 @@ import '../../modules/dashboard/services/location_service.dart';
 import '../../modules/visitas/presentation/controllers/geofence_controller.dart';
 import '../../modules/consultoria/occurrences/domain/occurrence.dart' as occ;
 import '../components/map/map_bottom_sheet.dart';
-import '../../core/domain/publicacao.dart';
 import '../components/map/widgets/map_canvas.dart';
 import '../components/map/widgets/map_layers.dart';
 import '../components/map/widgets/map_markers.dart';
@@ -29,15 +30,6 @@ import '../components/map/widgets/isolated_marker_layers.dart';
 import '../../modules/drawing/presentation/widgets/drawing_edit_layer.dart';
 import '../../core/domain/map_models.dart';
 import '../components/map/map_sheet_state.dart'; // 🛡 REFATORAÇÃO: Modelo compartilhado
-
-// 🛡 HARDENING: Máquina de estados para inicialização determinística
-enum InitialViewportState {
-  idle,
-  waitingForMap,
-  waitingForData,
-  applied,
-  aborted,
-}
 
 class PrivateMapScreen extends ConsumerStatefulWidget {
   const PrivateMapScreen({super.key});
@@ -55,19 +47,10 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
     delay: const Duration(milliseconds: 300),
   );
 
-  // 🛡 Estado da máquina de inicialização (substitui boolean simples)
-  InitialViewportState _viewportState = InitialViewportState.idle;
-
   bool _isMapReady = false; // 🔒 Guard: MapController só pode ser usado se true
-  bool _isDrawMode = false;
   ArmedMode _armedMode = ArmedMode.none; // Estado do modo armado
 
-  // 🛡 REFATORAÇÃO: Estado explícito do MapBottomSheet (null = fechado)
-  MapSheetState? _sheetState;
   LatLng? _pendingOccurrenceLocation; // Se != null, abre sheet em modo Create
-
-  // ── Publicações canônicas (estado local ao mapa — ADR-007) ──
-  final List<Publicacao> _publicacoes = _getMockPublicacoes();
 
   @override
   void initState() {
@@ -92,42 +75,45 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
 
   // 🔎 INSTRUMENTATION: Rastrear quem altera o estado
   void _setSheetState(MapSheetState? state, String reason) {
-    debugPrint(
-      '🕵️ SHEET CHANGE | old=${_sheetState?.type} | new=${state?.type} | reason=$reason',
+    final currentSheet = ref.read(mapSheetStateProvider);
+    AppLogger.debug(
+      'SHEET CHANGE | old=${currentSheet?.type} | new=${state?.type} | reason=$reason',
+      tag: 'PrivateMap',
     );
 
     // 🔧 FIX-DRAW-SYNC: Sincronizar DrawingController com MapSheetState
     // Se está SAINDO do modo desenho, cancelar desenho automaticamente
-    if (_sheetState?.type == MapSheetType.draw &&
+    if (currentSheet?.type == MapSheetType.draw &&
         state?.type != MapSheetType.draw) {
-      debugPrint('🎨 AUTO-CANCEL: Saindo do modo desenho');
+      AppLogger.debug('AUTO-CANCEL: Saindo do modo desenho', tag: 'PrivateMap');
       ref.read(drawingControllerProvider).selectTool('none');
     }
 
-    setState(() {
-      _sheetState = state;
-    });
+    ref.read(mapSheetStateProvider.notifier).state = state;
   }
 
   // 🛡 HARDENING DEFINITIVO: Máquina de Decisão de Viewport
   // Determinístico. Idempotente. Sem race loops.
   void _applyInitialViewport() async {
     // 🔒 Gate 0: Se já aplicado ou abortado, TERMINAR IMEDIATAMENTE.
-    if (_viewportState == InitialViewportState.applied ||
-        _viewportState == InitialViewportState.aborted) {
+    final vp = ref.read(viewportStateProvider);
+    if (vp == InitialViewportState.applied ||
+        vp == InitialViewportState.aborted) {
       return;
     }
 
     // 🔒 Gate 1: Map Ready
     if (!_isMapReady) {
-      _viewportState = InitialViewportState.waitingForMap;
+      ref.read(viewportStateProvider.notifier).state =
+          InitialViewportState.waitingForMap;
       return;
     }
 
     final user = Supabase.instance.client.auth.currentUser;
     // 🔒 Gate 2: Role Ready
     if (user == null) {
-      _viewportState = InitialViewportState.waitingForData;
+      ref.read(viewportStateProvider.notifier).state =
+          InitialViewportState.waitingForData;
       return;
     }
 
@@ -140,7 +126,8 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
       final fieldsState = ref.read(mapFieldsProvider);
 
       if (fieldsState.isLoading) {
-        _viewportState = InitialViewportState.waitingForData;
+        ref.read(viewportStateProvider.notifier).state =
+            InitialViewportState.waitingForData;
         return;
       }
 
@@ -149,7 +136,8 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
           fieldsState.value == null ||
           fieldsState.value!.isEmpty) {
         // Fallback: Sem fazenda → Abortar para usar GPS manual
-        _viewportState = InitialViewportState.aborted;
+        ref.read(viewportStateProvider.notifier).state =
+            InitialViewportState.aborted;
         return;
       }
 
@@ -165,12 +153,15 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
           _mapController.fitCamera(
             CameraFit.bounds(bounds: bounds, padding: const EdgeInsets.all(50)),
           );
-          _viewportState = InitialViewportState.applied; // ✅ FINALIZADO
+          ref.read(viewportStateProvider.notifier).state =
+              InitialViewportState.applied; // ✅ FINALIZADO
         } catch (_) {
-          _viewportState = InitialViewportState.aborted;
+          ref.read(viewportStateProvider.notifier).state =
+              InitialViewportState.aborted;
         }
       } else {
-        _viewportState = InitialViewportState.aborted;
+        ref.read(viewportStateProvider.notifier).state =
+            InitialViewportState.aborted;
       }
     } else {
       // 👤 ESTRATÉGIA CONSUMIDOR (GPS)
@@ -178,14 +169,16 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
 
       if (locationState == LocationState.checking) {
         // Ainda verificando → Aguardar
-        _viewportState = InitialViewportState.waitingForData;
+        ref.read(viewportStateProvider.notifier).state =
+            InitialViewportState.waitingForData;
         return;
       }
 
       if (locationState == LocationState.permissionDenied ||
           locationState == LocationState.serviceDisabled) {
         // Erro permanente → Abortar (evita loop)
-        _viewportState = InitialViewportState.aborted;
+        ref.read(viewportStateProvider.notifier).state =
+            InitialViewportState.aborted;
         return;
       }
 
@@ -195,10 +188,12 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
 
         if (position != null && mounted) {
           _mapController.move(position, 16.0);
-          _viewportState = InitialViewportState.applied; // ✅ FINALIZADO
-        } else {
+          ref.read(viewportStateProvider.notifier).state =
+              InitialViewportState.applied; // ✅ FINALIZADO
+        } else if (mounted) {
           // Disponível mas posição nula? Aguardar.
-          _viewportState = InitialViewportState.waitingForData;
+          ref.read(viewportStateProvider.notifier).state =
+              InitialViewportState.waitingForData;
         }
       }
     }
@@ -338,11 +333,7 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
     }
 
     // 🔧 FIX: O DrawingSheet no MapBottomSheet já está observando o estado
-    // Não precisa abrir modal separado - o sheet unificado já reage ao estado
-    // Apenas sincronizar UI local
-    if (mounted) {
-      setState(() => _isDrawMode = false);
-    }
+    // Transição para reviewing é suficiente — sem sincronizaçao local necessária
   }
 
   @override
@@ -360,6 +351,7 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
     final drawingTool = ref.watch(
       drawingControllerProvider.select((c) => c.currentTool),
     );
+    final sheetState = ref.watch(mapSheetStateProvider);
 
     // Watch drawing state changes to switch layers
     ref.listen(drawingControllerProvider.select((s) => s.currentState), (
@@ -384,8 +376,9 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
     // 🔒 LISTENERS PARA FOCO INICIAL (Idempotentes)
     // Observar carregamento dos fields (para Produtores)
     ref.listen(mapFieldsProvider, (prev, next) {
-      if (_viewportState != InitialViewportState.applied &&
-          _viewportState != InitialViewportState.aborted &&
+      final vp = ref.read(viewportStateProvider);
+      if (vp != InitialViewportState.applied &&
+          vp != InitialViewportState.aborted &&
           _isMapReady) {
         _applyInitialViewport();
       }
@@ -393,8 +386,9 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
 
     // Observar disponibilidade de GPS (para Outros)
     ref.listen(locationStateProvider, (prev, next) {
-      if (_viewportState != InitialViewportState.applied &&
-          _viewportState != InitialViewportState.aborted &&
+      final vp = ref.read(viewportStateProvider);
+      if (vp != InitialViewportState.applied &&
+          vp != InitialViewportState.aborted &&
           _isMapReady) {
         _applyInitialViewport();
       }
@@ -545,11 +539,6 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
               // Markers globais (MapMarkersWidget já otimizado)
               const MapMarkersWidget(),
 
-              // Markers de publicações locais (isolados)
-              IsolatedLocalPublicationMarkersLayer(
-                localPublications: _publicacoes,
-              ),
-
               // Markers de ocorrências (isolados)
               IsolatedOccurrenceMarkersLayer(
                 onOccurrenceTap: _handleOccurrencePinTap,
@@ -574,13 +563,12 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
                 _armOccurrenceMode();
               }
             },
-            isDrawMode: _isDrawMode,
+            isDrawMode: sheetState?.type == MapSheetType.draw,
             isOccurrenceMode: _armedMode == ArmedMode.occurrences,
             drawingState: drawingState,
             onFinishDrawing: _finishDrawing,
             onCancelDrawing: () {
               ref.read(drawingControllerProvider).cancelOperation();
-              setState(() => _isDrawMode = false);
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
                   content: Text('Desenho cancelado'),
@@ -605,7 +593,7 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
                 4: MapSheetType.layers,
               };
 
-              final currentType = _sheetState?.type;
+              final currentType = sheetState?.type;
               final newType = sheetTypeMap[index];
 
               if (currentType == newType) {
@@ -629,14 +617,14 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
 
           // 🛡 CONSOLIDATION: Main BottomSheet
           // Conditional mount as requested
-          if (_sheetState != null)
+          if (sheetState != null)
             Positioned(
               bottom: 0,
               left: 0,
               right: 0,
               child: MapBottomSheet(
                 drawingController: ref.read(drawingControllerProvider),
-                state: _sheetState!,
+                state: sheetState,
                 onStateChange: (newState) {
                   _setSheetState(newState, 'MapBottomSheet: State Changed');
                   // Limpar pending location se mudar de tab
@@ -670,12 +658,9 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
         const MapSheetState(type: MapSheetType.draw),
         'ToggleDrawMode: Opening draw sheet',
       );
-      setState(() => _isDrawMode = true);
     } else {
       // 🎯 Se já está em algum modo (drawing, armed), cancela a operação
       controller.cancelOperation();
-      setState(() => _isDrawMode = false);
-      
       // Fechar o sheet também
       _setSheetState(null, 'ToggleDrawMode: Cancel and close');
 
@@ -688,68 +673,4 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
       );
     }
   }
-}
-
-// ════════════════════════════════════════════════════════════════════
-// DADOS MOCK DE PUBLICAÇÃO (ADR-007)
-// Estado local ao mapa. Sem provider global. Sem módulo externo.
-// Será substituído por repositório real quando backend estiver pronto.
-// ════════════════════════════════════════════════════════════════════
-
-List<Publicacao> _getMockPublicacoes() {
-  return [
-    Publicacao(
-      id: 'pub-001',
-      latitude: -23.552,
-      longitude: -46.635,
-      createdAt: DateTime.now().subtract(const Duration(days: 5)),
-      status: 'published',
-      isVisible: true,
-      type: PublicacaoType.resultado,
-      title: 'Resultado Safra Soja',
-      description: 'Aumento de 38% na produtividade após tratamento.',
-      clientName: 'Fazenda Santa Rita',
-      areaName: 'Talhão 12',
-      media: const [
-        MediaItem(id: 'm1', path: '', caption: 'Foto resultado', isCover: true),
-      ],
-    ),
-    Publicacao(
-      id: 'pub-002',
-      latitude: -23.545,
-      longitude: -46.625,
-      createdAt: DateTime.now().subtract(const Duration(days: 10)),
-      status: 'published',
-      isVisible: true,
-      type: PublicacaoType.comparativo,
-      title: 'Antes e Depois — Irrigação',
-      description: 'Redução de 65% no consumo de água.',
-      clientName: 'Granja São Pedro',
-      areaName: 'Área Norte',
-      media: const [
-        MediaItem(id: 'm2', path: '', caption: 'Antes', isCover: true),
-        MediaItem(id: 'm3', path: '', caption: 'Depois'),
-      ],
-    ),
-    Publicacao(
-      id: 'pub-003',
-      latitude: -23.558,
-      longitude: -46.642,
-      createdAt: DateTime.now().subtract(const Duration(days: 2)),
-      status: 'published',
-      isVisible: true,
-      type: PublicacaoType.caseSucesso,
-      title: 'Case Produtividade Milho',
-      description: 'Economia de R\$ 22k na safra com manejo correto.',
-      clientName: 'Sítio Boa Esperança',
-      media: const [
-        MediaItem(
-          id: 'm4',
-          path: '',
-          caption: 'Resultado final',
-          isCover: true,
-        ),
-      ],
-    ),
-  ];
 }

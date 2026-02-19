@@ -7,6 +7,7 @@ import 'package:latlong2/latlong.dart';
 
 import 'package:uuid/uuid.dart';
 import 'models/drawing_models.dart';
+import '../../../core/utils/app_logger.dart';
 import '../../../core/utils/geodesic_utils.dart';
 
 class DrawingUtils {
@@ -243,7 +244,7 @@ class DrawingUtils {
         return _parseKmzContent(bytes);
       }
     } catch (e) {
-      // debugPrint('Error parsing file: $e');
+      AppLogger.warning('Erro ao parsear arquivo KML/KMZ', tag: 'DrawingUtils', error: e);
     }
     return null;
   }

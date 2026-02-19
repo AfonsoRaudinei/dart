@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:image_picker/image_picker.dart';
 import '../domain/settings_models.dart';
+import '../../../core/utils/app_logger.dart';
 
 class SettingsRepository {
   final SharedPreferences _prefs;
@@ -89,7 +90,9 @@ class SettingsRepository {
           }
         }
       }
-    } catch (_) {}
+    } catch (e) {
+      AppLogger.warning('Erro ao calcular espaço usado em disco', tag: 'Settings', error: e);
+    }
     return total;
   }
 

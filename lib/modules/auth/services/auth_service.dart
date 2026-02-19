@@ -1,5 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import '../../../core/network/network_policy.dart';
 import '../models/register_dto.dart';
 
 part 'auth_service.g.dart';
@@ -14,10 +15,12 @@ class AuthService extends _$AuthService {
   Future<void> register(RegisterDto dto) async {
     try {
       // 1. Criar usuário no Auth do Supabase
-      final AuthResponse res = await _client.auth.signUp(
-        email: dto.email,
-        password: dto.password,
-        data: {'full_name': dto.name, 'role': dto.role},
+      final AuthResponse res = await NetworkPolicy.withTimeout(
+        () => _client.auth.signUp(
+          email: dto.email,
+          password: dto.password,
+          data: {'full_name': dto.name, 'role': dto.role},
+        ),
       );
 
       final userId = res.user?.id;
@@ -32,30 +35,34 @@ class AuthService extends _$AuthService {
             '$userId.${DateTime.now().millisecondsSinceEpoch}.$fileExt';
         final filePath = 'avatars/$fileName';
 
-        await _client.storage
-            .from('users')
-            .upload(
-              filePath,
-              dto.photo!,
-              fileOptions: const FileOptions(
-                cacheControl: '3600',
-                upsert: true,
+        await NetworkPolicy.withTimeout(
+          () => _client.storage
+              .from('users')
+              .upload(
+                filePath,
+                dto.photo!,
+                fileOptions: const FileOptions(
+                  cacheControl: '3600',
+                  upsert: true,
+                ),
               ),
-            );
+        );
 
         photoUrl = _client.storage.from('users').getPublicUrl(filePath);
       }
 
       // 3. Salvar na tabela public.users
       // Nota: Assume-se que a tabela public.users existe conforme solicitado
-      await _client.from('users').upsert({
-        'id': userId,
-        'name': dto.name,
-        'phone': dto.phone,
-        'role': dto.role,
-        'photo_url': photoUrl,
-        'updated_at': DateTime.now().toIso8601String(),
-      });
+      await NetworkPolicy.withTimeout(
+        () => _client.from('users').upsert({
+          'id': userId,
+          'name': dto.name,
+          'phone': dto.phone,
+          'role': dto.role,
+          'photo_url': photoUrl,
+          'updated_at': DateTime.now().toIso8601String(),
+        }),
+      );
     } catch (e) {
       rethrow;
     }
@@ -63,7 +70,9 @@ class AuthService extends _$AuthService {
 
   Future<void> recoverPassword(String email) async {
     try {
-      await _client.auth.resetPasswordForEmail(email);
+      await NetworkPolicy.withTimeout(
+        () => _client.auth.resetPasswordForEmail(email),
+      );
     } catch (e) {
       rethrow;
     }

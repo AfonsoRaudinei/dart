@@ -23,12 +23,13 @@ class SocialAuthButton extends StatelessWidget {
       onPressed: onPressed,
       style: OutlinedButton.styleFrom(
         foregroundColor: SoloForteColors.textPrimary,
+        minimumSize: const Size.fromHeight(48),
         side: BorderSide(
           color: borderColor ?? SoloForteColors.border,
-          width: 1.5,
+          width: 1,
         ),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        shape: RoundedRectangleBorder(borderRadius: SoloRadius.radiusLg),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        shape: RoundedRectangleBorder(borderRadius: SoloRadius.radiusMd),
         backgroundColor: Colors.white,
       ),
       child: Row(
@@ -39,7 +40,7 @@ class SocialAuthButton extends StatelessWidget {
           Text(
             text,
             style: const TextStyle(
-              fontSize: 15.2,
+              fontSize: 14.0,
               fontWeight: FontWeight.w500,
               color: SoloForteColors.textPrimary,
             ),

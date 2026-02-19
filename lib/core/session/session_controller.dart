@@ -1,69 +1,68 @@
+import 'dart:async';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import '../auth/auth_service.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'session_models.dart';
-import 'session_storage.dart';
 
 part 'session_controller.g.dart';
 
 @Riverpod(keepAlive: true)
 class SessionController extends _$SessionController {
+  StreamSubscription<AuthState>? _authSubscription;
+
   @override
   SessionState build() {
-    // Initial state check
-    // We can't use async in build easily for sync state unless we return AsyncValue usually.
-    // But typical riverpod pattern for auth is AsyncValue<SessionState> or handling loading.
-    // However, prompt mandated states: unknown, public, authenticated.
-    // We will start 'unknown' and then check storage.
+    // Inicia listener do stream de autenticação do Supabase.
+    // O stream emite imediatamente com o estado atual e depois em cada mudança.
+    _startListening();
 
-    _initialize();
-    return const SessionUnknown();
-  }
+    // Garante cancelamento ao dispor o provider.
+    ref.onDispose(() => _authSubscription?.cancel());
 
-  Future<void> _initialize() async {
-    // Artificial delay to show splash or check usage
-    await Future.delayed(Duration.zero);
-
-    final storage = ref.read(sessionStorageProvider);
-    final token = storage.getToken();
-
-    if (token != null) {
-      state = SessionAuthenticated(token);
-    } else {
-      state = const SessionPublic();
+    // Estado síncrono inicial baseado na sessão persistida pelo Supabase.
+    final currentUser = Supabase.instance.client.auth.currentUser;
+    if (currentUser != null) {
+      return SessionAuthenticated(currentUser);
     }
+    return const SessionPublic();
   }
 
+  void _startListening() {
+    _authSubscription?.cancel();
+    _authSubscription = Supabase.instance.client.auth.onAuthStateChange.listen(
+      (data) {
+        final user = data.session?.user;
+        if (user != null) {
+          state = SessionAuthenticated(user);
+        } else {
+          state = const SessionPublic();
+        }
+      },
+    );
+  }
+
+  /// Login real via Supabase Auth.
+  /// Lança exceção com mensagem tratável em caso de falha.
   Future<void> login(String email, String password) async {
-    try {
-      final authService = AuthService(); // We could inject this too
-      final token = await authService.login(email, password);
-
-      final storage = ref.read(sessionStorageProvider);
-      await storage.saveToken(token);
-
-      state = SessionAuthenticated(token);
-    } catch (e) {
-      rethrow;
-    }
+    await Supabase.instance.client.auth.signInWithPassword(
+      email: email,
+      password: password,
+    );
+    // O stream onAuthStateChange atualiza o state automaticamente.
   }
 
+  /// Cadastro real via Supabase Auth.
   Future<void> signup(String name, String email, String password) async {
-    try {
-      final authService = AuthService();
-      final token = await authService.signup(name, email, password);
-
-      final storage = ref.read(sessionStorageProvider);
-      await storage.saveToken(token);
-
-      state = SessionAuthenticated(token);
-    } catch (e) {
-      rethrow;
-    }
+    await Supabase.instance.client.auth.signUp(
+      email: email,
+      password: password,
+      data: {'full_name': name},
+    );
+    // O stream onAuthStateChange atualiza o state automaticamente.
   }
 
+  /// Logout real via Supabase Auth.
   Future<void> logout() async {
-    final storage = ref.read(sessionStorageProvider);
-    await storage.clearToken();
-    state = const SessionPublic();
+    await Supabase.instance.client.auth.signOut();
+    // O stream onAuthStateChange seta state = SessionPublic() automaticamente.
   }
 }

@@ -1,8 +1,7 @@
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import '../session/session_controller.dart';
-import '../session/session_models.dart';
+import 'router_notifier.dart';
 import '../../ui/components/app_shell.dart';
 import '../../ui/screens/public_map_screen.dart';
 import '../../ui/screens/private_map_screen.dart';
@@ -30,13 +29,16 @@ part 'app_router.g.dart';
 
 @Riverpod(keepAlive: true)
 GoRouter router(Ref ref) {
-  // Watch session to rebuild router on auth change
-  final session = ref.watch(sessionControllerProvider);
+  // RouterNotifier é criado uma vez (keepAlive). Mudanças de auth
+  // disparam notifyListeners() → GoRouter re-avalia o redirect
+  // sem recriar o router nem destruir a navigation stack.
+  final notifier = ref.watch(routerNotifierProvider);
 
   return GoRouter(
     initialLocation: AppRoutes.publicMap,
+    refreshListenable: notifier,
     redirect: (context, state) {
-      final isAuth = session is SessionAuthenticated;
+      final isAuth = notifier.isAuthenticated;
 
       final path = state.uri.path;
       final isPublicRoute =

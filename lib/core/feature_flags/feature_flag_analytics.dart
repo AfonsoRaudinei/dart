@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart';
+import '../utils/app_logger.dart';
 
 /// Analytics para monitoramento de Feature Flags.
 ///
@@ -33,9 +33,9 @@ class FeatureFlagAnalytics {
 
     // Por enquanto, apenas log
     if (wasEnabled) {
-      debugPrint('📊 [Analytics] Feature $featureKey HABILITADA para $userId ($userRole)');
+      AppLogger.debug('[Analytics] Feature $featureKey HABILITADA para $userId ($userRole)', tag: 'FeatureAnalytics');
     } else {
-      debugPrint('📊 [Analytics] Feature $featureKey BLOQUEADA para $userId - Motivo: $blockReason');
+      AppLogger.debug('[Analytics] Feature $featureKey BLOQUEADA para $userId - $blockReason', tag: 'FeatureAnalytics');
     }
   }
 
@@ -58,7 +58,7 @@ class FeatureFlagAnalytics {
     //   },
     // );
 
-    debugPrint('📊 [Analytics] Feature $featureKey - Ação: $action por $userId');
+    AppLogger.debug('[Analytics] Feature $featureKey - Ação: $action por $userId', tag: 'FeatureAnalytics');
   }
 
   /// Registra erro relacionado a feature flag.
@@ -78,7 +78,7 @@ class FeatureFlagAnalytics {
     //   },
     // );
 
-    debugPrint('❌ [Analytics] Erro Feature Flag $featureKey: $errorMessage');
+    AppLogger.warning('[Analytics] Erro Feature Flag $featureKey: $errorMessage', tag: 'FeatureAnalytics');
   }
 
   /// Registra métricas de performance de feature.
@@ -102,7 +102,7 @@ class FeatureFlagAnalytics {
     //   },
     // );
 
-    debugPrint('📊 [Analytics] Performance $featureKey - $metric: $value${unit ?? 'ms'}');
+    AppLogger.debug('[Analytics] Performance $featureKey - $metric: $value${unit ?? 'ms'}', tag: 'FeatureAnalytics');
   }
 
   // ─────────────────────────────────────────────────────────────────────────

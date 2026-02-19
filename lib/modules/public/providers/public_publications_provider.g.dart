@@ -7,7 +7,7 @@ part of 'public_publications_provider.dart';
 // **************************************************************************
 
 String _$publicPublicationsHash() =>
-    r'6ccffd06ce3d7714b4e5c5fb0f830676b959aa15';
+    r'b018b0ffa54a877b65b55afa64b1a01804b527cd';
 
 /// Provider de publicações públicas para o mapa público.
 ///

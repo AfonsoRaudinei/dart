@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:soloforte_app/core/feature_flags/feature_flag_model.dart';
 import 'package:soloforte_app/core/feature_flags/feature_flag_resolver.dart';
 import 'package:soloforte_app/core/feature_flags/feature_flag_service.dart';
+import 'package:soloforte_app/core/infra/preferences_service.dart';
 import 'package:soloforte_app/modules/drawing/presentation/controllers/drawing_controller.dart';
 import 'package:soloforte_app/modules/drawing/presentation/widgets/drawing_sheet.dart';
 import 'package:soloforte_app/modules/drawing/data/repositories/drawing_repository.dart';
@@ -244,7 +246,10 @@ void main() {
         };
       }
 
-      final service = FeatureFlagService(fetchFromBackend: mockBackend);
+      final service = FeatureFlagService(
+        fetchFromBackend: mockBackend,
+        prefs: PreferencesService(await SharedPreferences.getInstance()),
+      );
 
       // Act
       final flag = await service.getDrawingFlag();
@@ -264,7 +269,10 @@ void main() {
         throw Exception('Network error');
       }
 
-      final service = FeatureFlagService(fetchFromBackend: mockBackend);
+      final service = FeatureFlagService(
+        fetchFromBackend: mockBackend,
+        prefs: PreferencesService(await SharedPreferences.getInstance()),
+      );
 
       // Act
       final flag = await service.getDrawingFlag();

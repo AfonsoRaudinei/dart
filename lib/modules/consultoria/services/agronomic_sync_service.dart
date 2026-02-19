@@ -1,6 +1,7 @@
-import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:soloforte_app/core/database/database_helper.dart';
+import 'package:soloforte_app/core/utils/app_logger.dart';
+import 'package:soloforte_app/core/network/network_policy.dart';
 
 class AgronomicSyncService {
   final SupabaseClient _supabase;
@@ -39,7 +40,7 @@ class AgronomicSyncService {
       data.remove('sync_status');
 
       try {
-        await _supabase.from('clients').upsert(data);
+        await NetworkPolicy.withTimeout(() => _supabase.from('clients').upsert(data));
 
         // Mark as synced
         await db.update(
@@ -49,8 +50,8 @@ class AgronomicSyncService {
           whereArgs: [row['id']],
         );
       } catch (e) {
-        // Keep dirty. Log error ideally.
-        debugPrint('Error syncing client ${row['id']}: $e');
+        // Keep dirty.
+        AppLogger.warning('Erro ao sincronizar client ${row["id"]}', tag: 'AgronomicSync', error: e);
       }
     }
   }
@@ -68,7 +69,7 @@ class AgronomicSyncService {
       data.remove('sync_status');
 
       try {
-        await _supabase.from('farms').upsert(data);
+        await NetworkPolicy.withTimeout(() => _supabase.from('farms').upsert(data));
         await db.update(
           'farms',
           {'sync_status': statusSynced},
@@ -76,7 +77,7 @@ class AgronomicSyncService {
           whereArgs: [row['id']],
         );
       } catch (e) {
-        debugPrint('Error syncing farm ${row['id']}: $e');
+        AppLogger.warning('Erro ao sincronizar farm ${row["id"]}', tag: 'AgronomicSync', error: e);
       }
     }
   }
@@ -94,7 +95,7 @@ class AgronomicSyncService {
       data.remove('sync_status');
 
       try {
-        await _supabase.from('fields').upsert(data);
+        await NetworkPolicy.withTimeout(() => _supabase.from('fields').upsert(data));
         await db.update(
           'fields',
           {'sync_status': statusSynced},
@@ -102,7 +103,7 @@ class AgronomicSyncService {
           whereArgs: [row['id']],
         );
       } catch (e) {
-        debugPrint('Error syncing field ${row['id']}: $e');
+        AppLogger.warning('Erro ao sincronizar field ${row["id"]}', tag: 'AgronomicSync', error: e);
       }
     }
   }
@@ -115,24 +116,21 @@ class AgronomicSyncService {
     // Optimization: Filter by user/tenant if applicable.
 
     // FETCH CLIENTS
-    final remoteClients = await _supabase
-        .from('clients')
-        .select()
-        .order('updated_at');
+    final remoteClients = await NetworkPolicy.withTimeout(
+      () => _supabase.from('clients').select().order('updated_at'),
+    );
     await _upsertLocalClients(remoteClients);
 
     // FETCH FARMS
-    final remoteFarms = await _supabase
-        .from('farms')
-        .select()
-        .order('updated_at');
+    final remoteFarms = await NetworkPolicy.withTimeout(
+      () => _supabase.from('farms').select().order('updated_at'),
+    );
     await _upsertLocalFarms(remoteFarms);
 
     // FETCH FIELDS
-    final remoteFields = await _supabase
-        .from('fields')
-        .select()
-        .order('updated_at');
+    final remoteFields = await NetworkPolicy.withTimeout(
+      () => _supabase.from('fields').select().order('updated_at'),
+    );
     await _upsertLocalFields(remoteFields);
   }
 

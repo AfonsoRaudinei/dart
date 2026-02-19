@@ -1,9 +1,9 @@
 import 'dart:io';
-import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import 'package:uuid/uuid.dart';
+import '../../../../core/utils/app_logger.dart';
 
 class ImageStorageService {
   static final ImageStorageService _instance = ImageStorageService._internal();
@@ -28,7 +28,7 @@ class ImageStorageService {
       final savedFile = await _saveToAppDirectory(File(pickedFile.path));
       return savedFile.path;
     } catch (e) {
-      debugPrint('❌ Erro ao capturar/salvar imagem: $e');
+      AppLogger.warning('Erro ao capturar/salvar imagem', tag: 'ImageStorage', error: e);
       return null;
     }
   }
@@ -54,10 +54,10 @@ class ImageStorageService {
       final file = File(path);
       if (await file.exists()) {
         await file.delete();
-        debugPrint('🗑️ Imagem deletada fisicamente: $path');
+        AppLogger.debug('Imagem deletada: $path', tag: 'ImageStorage');
       }
     } catch (e) {
-      debugPrint('❌ Erro ao deletar imagem: $e');
+      AppLogger.warning('Erro ao deletar imagem', tag: 'ImageStorage', error: e);
     }
   }
 }

@@ -14,7 +14,7 @@ class FakeFeedbackRepository implements IFeedbackRepository {
   @override
   Future<FeedbackStats> getStats() async {
     if (shouldThrowError) throw Exception('Fake error');
-    return statsResponse ?? FeedbackStats.mock();
+    return statsResponse ?? FeedbackStats.empty();
   }
 
   @override

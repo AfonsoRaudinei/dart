@@ -18,6 +18,7 @@ import '../../../core/feature_flags/feature_flag_analytics.dart';
 import '../../../../modules/consultoria/occurrences/presentation/widgets/occurrence_list_sheet.dart';
 import 'map_occurrence_sheet.dart';
 import 'map_sheet_state.dart'; // 🛡 REFATORAÇÃO: Modelo compartilhado
+import '../../../core/utils/app_logger.dart';
 
 /// Bottom Sheet estilo iOS "Buscar" com 3 detents
 /// Compacto → Médio → Expandido
@@ -60,7 +61,7 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
   @override
   void initState() {
     super.initState();
-    debugPrint('🟢 MapBottomSheet INIT | type=${widget.state.type}');
+    AppLogger.debug('MapBottomSheet INIT | type=${widget.state.type}', tag: 'MapSheet');
 
     // 🔧 FIX: Apenas inicializar estados de UI (animação)
     _currentDetent = SheetDetent.compact;
@@ -76,7 +77,7 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
 
   @override
   void dispose() {
-    debugPrint('🧨 MapBottomSheet DISPOSE chamado'); // 🔎 PASSO 1
+    AppLogger.debug('MapBottomSheet DISPOSE', tag: 'MapSheet');
     _heightController.dispose();
     _scrollController.dispose();
     super.dispose();
@@ -369,7 +370,7 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
         mapBounds: null,
         onClose: () => widget.onClose(),
         onOccurrenceTap: (occurrence) {
-          debugPrint('🔵 Ocorrência tocada: ${occurrence.id}');
+          AppLogger.debug('Ocorrência tocada: ${occurrence.id}', tag: 'MapSheet');
         },
         onRequestNewOccurrence: () {
           // 🆕 Armar modo de ocorrência e fechar sheet
@@ -450,7 +451,7 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
 
   @override
   Widget build(BuildContext context) {
-    debugPrint('🟡 MapBottomSheet BUILD | type=${widget.state.type}');
+    AppLogger.debug('MapBottomSheet BUILD | type=${widget.state.type}', tag: 'MapSheet');
     return GestureDetector(
       onVerticalDragStart: _handleDragStart,
       onVerticalDragUpdate: _handleVerticalDrag,

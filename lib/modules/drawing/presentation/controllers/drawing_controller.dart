@@ -11,6 +11,7 @@ import '../../data/repositories/drawing_repository.dart';
 import '../../../consultoria/clients/data/clients_repository.dart';
 import '../../../consultoria/clients/domain/client.dart';
 import '../../../consultoria/clients/domain/agronomic_models.dart';
+import '../../../../core/utils/app_logger.dart';
 
 /// Controller for the Drawing Mode state.
 /// This manages the current list of features (active drawings) and the current interaction state.
@@ -42,7 +43,7 @@ class DrawingController extends ChangeNotifier {
       _clients = await _clientsRepository.getClients();
       notifyListeners();
     } catch (e) {
-      debugPrint('Erro ao carregar clientes: $e');
+      AppLogger.warning('Erro ao carregar clientes', tag: 'DrawingController', error: e);
     }
   }
 
@@ -56,7 +57,7 @@ class DrawingController extends ChangeNotifier {
       _farms = await _clientsRepository.getFarms(clientId);
       notifyListeners();
     } catch (e) {
-      debugPrint('Erro ao carregar fazendas: $e');
+      AppLogger.warning('Erro ao carregar fazendas', tag: 'DrawingController', error: e);
     }
   }
 
@@ -80,7 +81,7 @@ class DrawingController extends ChangeNotifier {
       await _clientsRepository.saveFarm(newFarm, clientId);
       await loadFarms(clientId); // Reload
     } catch (e) {
-      debugPrint('Erro ao criar fazenda: $e');
+      AppLogger.warning('Erro ao criar fazenda', tag: 'DrawingController', error: e);
     }
   }
 
@@ -127,19 +128,18 @@ class DrawingController extends ChangeNotifier {
     } on TimeoutException {
       if (_isDisposed) return;
       _errorMessage = "Tempo esgotado. Verifique sua conexão.";
-      if (kDebugMode) debugPrint('Sync timeout');
+      if (kDebugMode) AppLogger.debug('Sync timeout', tag: 'DrawingController');
       notifyListeners();
     } on SocketException {
       if (_isDisposed) return;
       _errorMessage = "Sem conexão com a internet.";
-      if (kDebugMode) debugPrint('No internet connection');
+      if (kDebugMode) AppLogger.debug('No internet connection', tag: 'DrawingController');
       notifyListeners();
     } catch (e, stackTrace) {
       if (_isDisposed) return;
       _errorMessage = "Erro na sincronização. Tente novamente.";
       if (kDebugMode) {
-        debugPrint('Sync error: $e');
-        debugPrint('Stack: $stackTrace');
+        AppLogger.error('Sync error', tag: 'DrawingController', error: e, stackTrace: stackTrace);
       }
       notifyListeners();
     }
@@ -243,9 +243,9 @@ class DrawingController extends ChangeNotifier {
       // Se está em idle, significa que a ferramenta não foi selecionada corretamente
       if (currentState == DrawingState.idle) {
         if (kDebugMode) {
-          debugPrint(
-            'DRAW-ERROR: appendDrawingPoint chamado em estado idle. '
-            'Ferramenta deve ser selecionada primeiro via selectTool().',
+          AppLogger.debug(
+            'DRAW-ERROR: appendDrawingPoint em estado idle.',
+            tag: 'DrawingController',
           );
         }
       }
@@ -258,51 +258,14 @@ class DrawingController extends ChangeNotifier {
       if (!success) {
         // Transição falhou (não devería acontecer pois já validamos acima)
         if (kDebugMode) {
-          debugPrint('DRAW-ERROR: Falha ao transicionar armed -> drawing');
-        }
+            AppLogger.debug('DRAW-ERROR: Falha ao transicionar armed -> drawing', tag: 'DrawingController');
+          }
         return;
       }
     }
 
     _currentPoints.add(point);
     notifyListeners();
-  }
-
-  // Helper to map legacy DrawingInteraction to new DrawingState
-  DrawingState _mapInteractionToState(DrawingInteraction interaction) {
-    switch (interaction) {
-      case DrawingInteraction.normal:
-        return DrawingState.idle;
-      case DrawingInteraction.importing:
-        return DrawingState.armed; // Importing is like selecting import tool
-      case DrawingInteraction.importPreview:
-        return DrawingState.importPreview;
-      case DrawingInteraction.editing:
-        return DrawingState.editing;
-      case DrawingInteraction.unionSelection:
-      case DrawingInteraction.differenceSelection:
-      case DrawingInteraction.intersectionSelection:
-        return DrawingState.booleanOperation;
-    }
-  }
-
-  // Helper to sync state machine with legacy _interactionMode
-  void _syncStateMachine() {
-    final targetState = _mapInteractionToState(_interactionMode);
-    if (_stateMachine.currentState != targetState) {
-      // 🔧 FIX-DRAW-REDSCREEN: Usar tryTransitionTo para evitar exceptions
-      final success = _stateMachine.tryTransitionTo(targetState);
-      if (!success) {
-        // Transição não permitida - resetar para idle
-        if (kDebugMode) {
-          debugPrint(
-            'State transition failed: ${_stateMachine.currentState} -> $targetState',
-          );
-        }
-        _stateMachine.reset();
-        _interactionMode = DrawingInteraction.normal;
-      }
-    }
   }
 
   // Manual Sketch State
@@ -454,8 +417,9 @@ class DrawingController extends ChangeNotifier {
     stopwatch.stop();
     if (stopwatch.elapsedMilliseconds > 16) {
       if (kDebugMode) {
-        debugPrint(
-          "Validation took ${stopwatch.elapsedMilliseconds}ms (Vertices: $count)",
+        AppLogger.debug(
+          'Validation took ${stopwatch.elapsedMilliseconds}ms (Vertices: $count)',
+          tag: 'DrawingController',
         );
       }
     }
@@ -673,10 +637,7 @@ class DrawingController extends ChangeNotifier {
     }
 
     if (kDebugMode) {
-      debugPrint('DRAW-DEBUG: selectTool($toolKey) → $tool');
-      debugPrint(
-        'DRAW-DEBUG: Estado atual antes: ${_stateMachine.currentState.name}',
-      );
+      AppLogger.debug('selectTool($toolKey) → $tool | estado: ${_stateMachine.currentState.name}', tag: 'DrawingController');
     }
 
     // 🔧 FIX-AUDIT: Bloquear mudança de ferramenta durante drawing
@@ -684,10 +645,7 @@ class DrawingController extends ChangeNotifier {
     if (_stateMachine.currentState == DrawingState.drawing &&
         tool != DrawingTool.none) {
       if (kDebugMode) {
-        debugPrint(
-          'DRAW-WARN: selectTool bloqueado durante drawing state. '
-          'Usuário deve concluir ou cancelar primeiro.',
-        );
+        AppLogger.debug('selectTool bloqueado durante drawing state.', tag: 'DrawingController');
       }
       _errorMessage =
           "Conclua ou cancele o desenho atual antes de trocar de ferramenta";
@@ -702,7 +660,7 @@ class DrawingController extends ChangeNotifier {
       if (_stateMachine.currentState != DrawingState.idle) {
         _stateMachine.reset();
         if (kDebugMode) {
-          debugPrint('DRAW-DEBUG: Estado resetado para idle');
+          AppLogger.debug('Estado resetado para idle', tag: 'DrawingController');
         }
       }
       // Limpar pontos de desenho anterior
@@ -714,7 +672,7 @@ class DrawingController extends ChangeNotifier {
       final success = _stateMachine.startDrawing(tool);
       if (!success) {
         if (kDebugMode) {
-          debugPrint('DRAW-ERROR: startDrawing falhou para $tool');
+          AppLogger.debug('startDrawing falhou para $tool', tag: 'DrawingController');
         }
         _stateMachine.reset();
         _interactionMode = DrawingInteraction.normal;
@@ -726,10 +684,10 @@ class DrawingController extends ChangeNotifier {
           DrawingInteraction.normal; // Ensure mode is normal for drawing
 
       if (kDebugMode) {
-        debugPrint(
-          'DRAW-DEBUG: Estado após startDrawing: ${_stateMachine.currentState.name}',
+        AppLogger.debug(
+          'Estado após startDrawing: ${_stateMachine.currentState.name} | Ferramenta: ${_stateMachine.currentTool.name}',
+          tag: 'DrawingController',
         );
-        debugPrint('DRAW-DEBUG: Ferramenta: ${_stateMachine.currentTool.name}');
       }
     } else {
       _stateMachine.cancel();
@@ -737,7 +695,7 @@ class DrawingController extends ChangeNotifier {
       _manualSketch = null;
 
       if (kDebugMode) {
-        debugPrint('DRAW-DEBUG: Modo desenho desativado');
+        AppLogger.debug('Modo desenho desativado', tag: 'DrawingController');
       }
     }
     notifyListeners();
@@ -759,7 +717,6 @@ class DrawingController extends ChangeNotifier {
     _errorMessage = null;
     _currentPoints.clear(); // 🔧 FIX-DRAW-FLOW-02: Limpar pontos ao cancelar
     _stateMachine.cancel(); // Use state machine cancel
-    _syncStateMachine();
     notifyListeners();
   }
 
@@ -773,10 +730,7 @@ class DrawingController extends ChangeNotifier {
     // corretamente. Não processar o sketch para evitar transição inválida.
     if (_stateMachine.currentState == DrawingState.idle) {
       if (kDebugMode) {
-        debugPrint(
-          'DRAW-WARN: updateManualSketch ignorado em estado idle. '
-          'Ferramenta deve ser selecionada primeiro via selectTool().',
-        );
+        AppLogger.debug('updateManualSketch ignorado em estado idle.', tag: 'DrawingController');
       }
       return;
     }
@@ -789,7 +743,7 @@ class DrawingController extends ChangeNotifier {
       // 🔧 FIX-DRAW-REDSCREEN: Usar retorno booleano em vez de try-catch
       final success = _stateMachine.beginAddingPoints();
       if (!success && kDebugMode) {
-        debugPrint('DRAW-ERROR: Falha ao transicionar armed -> drawing');
+        AppLogger.debug('DRAW-ERROR: Falha ao transicionar armed -> drawing', tag: 'DrawingController');
       }
     }
 
@@ -830,7 +784,7 @@ class DrawingController extends ChangeNotifier {
     _undoStack.add(_cloneGeometry(_editGeometry!));
 
     _interactionMode = DrawingInteraction.editing;
-    _syncStateMachine();
+    _stateMachine.startEditing();
     notifyListeners();
   }
 
@@ -840,7 +794,7 @@ class DrawingController extends ChangeNotifier {
     // Revert to selected state (normal or selected)
     // Actually keep selection but exit edit mode
     _interactionMode = DrawingInteraction.normal;
-    _syncStateMachine();
+    _stateMachine.cancel();
     notifyListeners();
   }
 
@@ -1188,7 +1142,6 @@ class DrawingController extends ChangeNotifier {
     _selectedFeature = null;
     _interactionMode = DrawingInteraction.importing;
     _errorMessage = null;
-    _syncStateMachine();
     notifyListeners();
   }
 
@@ -1216,7 +1169,7 @@ class DrawingController extends ChangeNotifier {
           _currentImportOrigin = isKmz
               ? DrawingOrigin.importacao_kmz
               : DrawingOrigin.importacao_kml;
-          _syncStateMachine();
+          _stateMachine.startImportPreview();
         } else {
           _interactionMode = DrawingInteraction.normal;
           _errorMessage = "O arquivo não contém geometria válida (Polygon).";

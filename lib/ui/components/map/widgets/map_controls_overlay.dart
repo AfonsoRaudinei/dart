@@ -9,6 +9,7 @@ import '../../../theme/soloforte_theme.dart';
 // unused imports removed
 
 import '../../../../modules/drawing/domain/drawing_state.dart';
+import '../../../../core/utils/app_logger.dart';
 import './editing_controls_overlay.dart';
 
 /// Overlay de controles do mapa (header, botões, check-in).
@@ -177,9 +178,7 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
           right: 16, // Layout pedido: 16
           child: GestureDetector(
             onTap: () {
-              debugPrint(
-                "🎯 MapOverlay: Clique em 'Centralizar Usuário' (Topo)",
-              );
+              AppLogger.debug("MapOverlay: Clique em 'Centralizar Usuário'", tag: 'MapControls');
               widget.onCenterUser();
             },
             behavior: HitTestBehavior.opaque,

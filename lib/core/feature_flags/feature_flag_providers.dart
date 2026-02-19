@@ -1,14 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import '../infra/preferences_service.dart';
 import 'feature_flag_model.dart';
 import 'feature_flag_resolver.dart';
 import 'feature_flag_service.dart';
 import 'feature_flag_backend_adapter.dart';
-
-/// Provider para SharedPreferences (singleton)
-final sharedPreferencesProvider = Provider<Future<SharedPreferences>>((ref) {
-  return SharedPreferences.getInstance();
-});
 
 /// Provider para FeatureFlagBackendAdapter
 final featureFlagBackendProvider = Provider<FeatureFlagBackendAdapter>((ref) {
@@ -18,10 +13,11 @@ final featureFlagBackendProvider = Provider<FeatureFlagBackendAdapter>((ref) {
 /// Provider para FeatureFlagService
 final featureFlagServiceProvider = Provider<FeatureFlagService>((ref) {
   final backend = ref.watch(featureFlagBackendProvider);
-  
+  final prefs = ref.read(preferencesServiceProvider);
+
   return FeatureFlagService(
     fetchFromBackend: backend.fetchFlags,
-    getPreferences: () => SharedPreferences.getInstance(),
+    prefs: prefs,
   );
 });
 

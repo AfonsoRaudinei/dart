@@ -174,7 +174,29 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const SizedBox(height: 20),
+                // Botão Voltar
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton.icon(
+                    onPressed: () =>
+                        context.canPop() ? context.pop() : context.go(AppRoutes.publicMap),
+                    icon: const Icon(
+                      Icons.arrow_back_ios,
+                      size: 16,
+                      color: SoloForteColors.primary,
+                    ),
+                    label: const Text(
+                      'VOLTAR',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: SoloForteColors.primary,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
                 Text(
                   'Criar Conta',
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
@@ -191,13 +213,13 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                   ),
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 30),
+                const SizedBox(height: 32),
 
                 ProfileAvatarPicker(
                   onImageSelected: (file) => setState(() => _photo = file),
                 ),
 
-                const SizedBox(height: 30),
+                const SizedBox(height: 32),
 
                 // Name
                 TextFormField(
@@ -384,8 +406,9 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                       alpha: 0.5,
                     ),
                     padding: const EdgeInsets.symmetric(vertical: 16),
+                    minimumSize: const Size.fromHeight(48),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(SoloRadius.md),
                     ),
                   ),
                   child: _isLoading

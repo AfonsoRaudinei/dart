@@ -74,3 +74,9 @@ ios/Flutter/.last_build_id
 .pub/
 build/
 API_KEYS_MASTER.md
+
+# Scripts locais com credenciais reais (nunca versionar)
+scripts/*.local.sh
+
+# Arquivos de defines locais (dart-define)
+*.define.local

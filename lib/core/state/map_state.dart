@@ -1,15 +1,20 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import '../infra/preferences_service.dart';
+import '../services/connectivity_service.dart';
 import '../domain/map_models.dart';
 import '../domain/publicacao.dart';
 import '../data/map_repository.dart';
+import '../utils/app_logger.dart';
 
 part 'map_state.g.dart';
 
 @Riverpod(keepAlive: true)
 MapRepository mapRepository(Ref ref) {
-  return MapRepository();
+  return MapRepository(
+    ref.watch(preferencesServiceProvider),
+    ref.watch(connectivityServiceProvider),
+  );
 }
 
 // State for active layer type
@@ -25,7 +30,7 @@ class ActiveLayer extends _$ActiveLayer {
 
   Future<void> _loadPersistedLayer() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
+      final prefs = ref.read(preferencesServiceProvider);
       final saved = prefs.getString(_kLayerKey);
       if (saved != null) {
         final verify = LayerType.values.firstWhere(
@@ -36,14 +41,15 @@ class ActiveLayer extends _$ActiveLayer {
           state = verify;
         }
       }
-    } catch (_) {}
+    } catch (e) {
+      AppLogger.warning('Falha ao restaurar layer persistida — usando padrão', tag: 'MapState', error: e);
+    }
   }
 
   void setLayer(LayerType type) {
     state = type;
-    SharedPreferences.getInstance().then((prefs) {
-      prefs.setString(_kLayerKey, type.toString());
-    });
+    final prefs = ref.read(preferencesServiceProvider);
+    prefs.setString(_kLayerKey, type.toString());
   }
 }
 

@@ -23,7 +23,7 @@ REGRAS:
 ════════════════════════════════════════════════════════════════════
 */
 
-import 'package:flutter/foundation.dart';
+import '../../../core/utils/app_logger.dart';
 
 /// Estados possíveis da máquina de desenho
 enum DrawingState {
@@ -134,14 +134,15 @@ class DrawingStateMachine {
   ///
   /// 🔧 FIX-DRAW-REDSCREEN: Não lança mais StateError.
   /// Retorna `true` se transição bem-sucedida, `false` se inválida.
-  /// Usa [debugPrint] em modo debug para rastrear transições inválidas.
+  /// Usa [AppLogger.debug] em modo debug para rastrear transições inválidas.
   bool transitionTo(DrawingState newState, {DrawingTool? tool}) {
     if (!canTransitionTo(newState)) {
       // 🔧 FIX: Log em vez de throw para evitar red screen
       assert(() {
-        debugPrint(
+        AppLogger.debug(
           'DRAW-WARN: Transição inválida ignorada: '
           '${_currentState.name} -> ${newState.name}',
+          tag: 'DrawingSM',
         );
         return true;
       }());

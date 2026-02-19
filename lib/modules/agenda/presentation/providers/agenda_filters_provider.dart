@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import '../../../../core/infra/preferences_service.dart';
+import '../../../../core/utils/app_logger.dart';
 import '../../domain/enums/event_type.dart';
 import '../../domain/enums/event_status.dart';
 
@@ -68,36 +69,35 @@ class AgendaFilters {
 
 /// Notifier para gerenciar filtros
 class AgendaFiltersNotifier extends StateNotifier<AgendaFilters> {
-  AgendaFiltersNotifier() : super(const AgendaFilters()) {
+  AgendaFiltersNotifier(this._prefs) : super(const AgendaFilters()) {
     _loadFromPreferences();
   }
 
+  final PreferencesService _prefs;
   static const _prefsKey = 'agenda_filters';
 
   /// Carrega filtros salvos
   Future<void> _loadFromPreferences() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final json = prefs.getString(_prefsKey);
-      
+      final json = _prefs.getString(_prefsKey);
+
       if (json != null) {
         // Parse JSON manually to avoid dependency issues
         // For now, start with empty filters
         // TODO: Implement proper JSON parsing
       }
     } catch (e) {
-      // Ignore errors, start with empty filters
+      AppLogger.warning('Falha ao carregar filtros da agenda — usando padrão', tag: 'AgendaFilters', error: e);
     }
   }
 
   /// Salva filtros
   Future<void> _saveToPreferences() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
       // TODO: Serialize and save
-      await prefs.setString(_prefsKey, '{}');
+      await _prefs.setString(_prefsKey, '{}');
     } catch (e) {
-      // Ignore save errors
+      AppLogger.warning('Falha ao salvar filtros da agenda', tag: 'AgendaFilters', error: e);
     }
   }
 
@@ -153,5 +153,5 @@ class AgendaFiltersNotifier extends StateNotifier<AgendaFilters> {
 /// Provider de filtros
 final agendaFiltersProvider =
     StateNotifierProvider<AgendaFiltersNotifier, AgendaFilters>(
-  (ref) => AgendaFiltersNotifier(),
+  (ref) => AgendaFiltersNotifier(ref.read(preferencesServiceProvider)),
 );

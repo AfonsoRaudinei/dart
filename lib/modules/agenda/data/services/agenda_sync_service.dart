@@ -1,5 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:flutter/foundation.dart';
+import '../../../../core/network/network_policy.dart';
+import '../../../../core/utils/app_logger.dart';
 import '../repositories/agenda_repository.dart';
 import '../../domain/entities/event.dart';
 import '../../domain/entities/visit_session.dart';
@@ -21,13 +22,9 @@ class AgendaSyncService {
       await _pullEvents();
       await _pullSessions();
 
-      if (kDebugMode) {
-        debugPrint('✅ Agenda: Sync completo');
-      }
+      AppLogger.debug('Agenda: Sync completo', tag: 'AgendaSync');
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint('⚠️ Agenda: Erro no sync - $e');
-      }
+      AppLogger.warning('Agenda: Erro no sync', tag: 'AgendaSync', error: e);
       rethrow;
     }
   }
@@ -49,28 +46,28 @@ class AgendaSyncService {
           continue;
         }
 
-        await _supabase.from('agenda_events').upsert({
-          'id': event.id,
-          'user_id': userId,
-          'tipo': event.tipo.name,
-          'cliente_id': event.clienteId,
-          'fazenda_id': event.fazendaId,
-          'talhao_id': event.talhaoId,
-          'titulo': event.titulo,
-          'data_inicio_planejada': event.dataInicioPlanejada.toIso8601String(),
-          'data_fim_planejada': event.dataFimPlanejada.toIso8601String(),
-          'status': event.status.name,
-          'visit_session_id': event.visitSessionId,
-          'serie_id': event.serieId,
-          'created_at': event.createdAt.toIso8601String(),
-          'updated_at': event.updatedAt.toIso8601String(),
-        });
+        await NetworkPolicy.withTimeout(
+          () => _supabase.from('agenda_events').upsert({
+            'id': event.id,
+            'user_id': userId,
+            'tipo': event.tipo.name,
+            'cliente_id': event.clienteId,
+            'fazenda_id': event.fazendaId,
+            'talhao_id': event.talhaoId,
+            'titulo': event.titulo,
+            'data_inicio_planejada': event.dataInicioPlanejada.toIso8601String(),
+            'data_fim_planejada': event.dataFimPlanejada.toIso8601String(),
+            'status': event.status.name,
+            'visit_session_id': event.visitSessionId,
+            'serie_id': event.serieId,
+            'created_at': event.createdAt.toIso8601String(),
+            'updated_at': event.updatedAt.toIso8601String(),
+          }),
+        );
 
         await _repository.markEventAsSynced(event.id);
       } catch (e) {
-        if (kDebugMode) {
-          debugPrint('⚠️ Falha ao sincronizar evento ${event.id}: $e');
-        }
+        AppLogger.warning('Falha ao sincronizar evento ${event.id}', tag: 'AgendaSync', error: e);
         continue; // Best effort - continua para o próximo
       }
     }
@@ -85,26 +82,26 @@ class AgendaSyncService {
 
     for (final session in pendingSessions) {
       try {
-        await _supabase.from('agenda_visit_sessions').upsert({
-          'id': session.id,
-          'user_id': userId,
-          'evento_id': session.eventoId,
-          'start_at_real': session.startAtReal.toIso8601String(),
-          'end_at_real': session.endAtReal?.toIso8601String(),
-          'duracao_min': session.duracaoMin,
-          'notas_finais': session.notasFinais,
-          'checklist_snapshot': session.checklistSnapshot,
-          'created_by': session.createdBy,
-          'created_at': session.createdAt.toIso8601String(),
-        });
+        await NetworkPolicy.withTimeout(
+          () => _supabase.from('agenda_visit_sessions').upsert({
+            'id': session.id,
+            'user_id': userId,
+            'evento_id': session.eventoId,
+            'start_at_real': session.startAtReal.toIso8601String(),
+            'end_at_real': session.endAtReal?.toIso8601String(),
+            'duracao_min': session.duracaoMin,
+            'notas_finais': session.notasFinais,
+            'checklist_snapshot': session.checklistSnapshot,
+            'created_by': session.createdBy,
+            'created_at': session.createdAt.toIso8601String(),
+          }),
+        );
 
         // Marcar como synced via update
         final updatedSession = session.copyWith(syncStatus: 'synced');
         await _repository.updateSession(updatedSession);
       } catch (e) {
-        if (kDebugMode) {
-          debugPrint('⚠️ Falha ao sincronizar sessão ${session.id}: $e');
-        }
+        AppLogger.warning('Falha ao sincronizar sessão ${session.id}', tag: 'AgendaSync', error: e);
         continue;
       }
     }
@@ -119,11 +116,13 @@ class AgendaSyncService {
     if (userId == null) return;
 
     try {
-      final remoteEvents = await _supabase
-          .from('agenda_events')
-          .select()
-          .eq('user_id', userId)
-          .order('updated_at', ascending: false);
+      final remoteEvents = await NetworkPolicy.withTimeout(
+        () => _supabase
+            .from('agenda_events')
+            .select()
+            .eq('user_id', userId)
+            .order('updated_at', ascending: false),
+      );
 
       for (final remote in remoteEvents) {
         final localEvent = await _repository.getEventById(remote['id']);
@@ -141,9 +140,7 @@ class AgendaSyncService {
         }
       }
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint('⚠️ Falha ao baixar eventos: $e');
-      }
+      AppLogger.warning('Falha ao baixar eventos', tag: 'AgendaSync', error: e);
     }
   }
 
@@ -152,11 +149,13 @@ class AgendaSyncService {
     if (userId == null) return;
 
     try {
-      final remoteSessions = await _supabase
-          .from('agenda_visit_sessions')
-          .select()
-          .eq('user_id', userId)
-          .order('created_at', ascending: false);
+      final remoteSessions = await NetworkPolicy.withTimeout(
+        () => _supabase
+            .from('agenda_visit_sessions')
+            .select()
+            .eq('user_id', userId)
+            .order('created_at', ascending: false),
+      );
 
       for (final remote in remoteSessions) {
         final localSession = await _repository.getSessionById(remote['id']);
@@ -167,9 +166,7 @@ class AgendaSyncService {
         // Sessões geralmente não são editadas, apenas criadas/finalizadas
       }
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint('⚠️ Falha ao baixar sessões: $e');
-      }
+      AppLogger.warning('Falha ao baixar sessões', tag: 'AgendaSync', error: e);
     }
   }
 

@@ -8,6 +8,7 @@ import '../../../consultoria/clients/domain/client.dart'; // 🆕 Re-import
 import '../../../consultoria/clients/domain/agronomic_models.dart'; // 🆕 Re-import
 import 'components/drawing_tool_selector.dart';
 import 'components/drawing_actions_bar.dart';
+import '../../../../core/utils/app_logger.dart';
 import 'components/drawing_hint_overlay.dart';
 import 'package:soloforte_app/ui/theme/soloforte_theme.dart';
 
@@ -119,7 +120,7 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
     try {
       _tooltipOverlay?.remove();
     } catch (e) {
-      debugPrint('Erro ao remover tooltip: $e');
+      AppLogger.debug('Erro ao remover tooltip: $e', tag: 'DrawingSheet');
     } finally {
       _tooltipOverlay = null;
     }
@@ -971,7 +972,7 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
                 cityController.text,
                 stateController.text,
               );
-              Navigator.pop(context);
+              if (context.mounted) Navigator.pop(context);
 
               // Auto-select the newly created farm (Assume it's the last one or find by name)
               // Simple approach: reload farms handled by controller, then user selects.

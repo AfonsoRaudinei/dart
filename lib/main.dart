@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'core/config/app_config.dart';
+import 'core/infra/preferences_service.dart';
 import 'core/router/app_router.dart';
-import 'core/session/session_storage.dart';
 import 'core/services/sync_orchestrator.dart';
 import 'modules/settings/data/settings_repository.dart';
 import 'modules/settings/presentation/providers/settings_providers.dart';
@@ -12,21 +13,24 @@ import 'modules/settings/presentation/theme/app_themes.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // Falha imediata e explícita se variáveis de ambiente não forem fornecidas.
+  // Ver: lib/core/config/app_config.dart para instruções de uso.
+  AppConfig.validate();
+
   await Supabase.initialize(
-    url: 'https://your-project.supabase.co',
-    anonKey: 'your-anon-key',
+    url: AppConfig.supabaseUrl,
+    anonKey: AppConfig.supabaseAnonKey,
   );
 
+  // SharedPreferences inicializado uma única vez e injetado via Riverpod.
+  // PreferencesService é o único ponto de acesso — sem getInstance() no app.
   final prefs = await SharedPreferences.getInstance();
-
-  // Limpar token fake de sessão anterior (one-time cleanup)
-  // TODO: Remover após primeiro run limpo
-  await prefs.remove('session_token');
+  final preferencesService = PreferencesService(prefs);
 
   runApp(
     ProviderScope(
       overrides: [
-        sessionStorageProvider.overrideWith((ref) => SessionStorage(prefs)),
+        preferencesServiceProvider.overrideWithValue(preferencesService),
         settingsRepositoryProvider.overrideWithValue(SettingsRepository(prefs)),
       ],
       child: const SoloForteApp(),

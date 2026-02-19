@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/router/app_routes.dart';
+import '../../../ui/theme/soloforte_theme.dart';
 import '../services/auth_service.dart';
 
 class RecoverPasswordPage extends ConsumerStatefulWidget {
@@ -48,6 +49,7 @@ class _RecoverPasswordPageState extends ConsumerState<RecoverPasswordPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: SoloForteColors.backgroundLight,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
@@ -56,9 +58,22 @@ class _RecoverPasswordPageState extends ConsumerState<RecoverPasswordPage> {
             children: [
               Align(
                 alignment: Alignment.centerLeft,
-                child: IconButton(
-                  icon: const Icon(Icons.arrow_back),
+                child: TextButton.icon(
                   onPressed: () => context.pop(),
+                  icon: const Icon(
+                    Icons.arrow_back_ios,
+                    size: 16,
+                    color: SoloForteColors.primary,
+                  ),
+                  label: const Text(
+                    'VOLTAR',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: SoloForteColors.primary,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
                 ),
               ),
               _sent ? _buildSuccess() : _buildForm(),
@@ -75,23 +90,32 @@ class _RecoverPasswordPageState extends ConsumerState<RecoverPasswordPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const SizedBox(height: 20),
+          const SizedBox(height: 24),
           Text(
             'Esqueceu sua senha?',
-            style: Theme.of(context).textTheme.headlineMedium,
+            style: SoloTextStyles.headingMedium,
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 8),
           const Text(
-            'Digite seu e-mail e enviaremos um link para você redefinir sua senha.',
+            'Digite seu e-mail e enviaremos um link para redefinir sua senha.',
             textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 14,
+              color: SoloForteColors.textSecondary,
+              height: 1.5,
+            ),
           ),
-          const SizedBox(height: 40),
+          const SizedBox(height: 32),
           TextFormField(
             controller: _emailController,
             decoration: const InputDecoration(
               labelText: 'E-mail',
-              prefixIcon: Icon(Icons.email_outlined),
+              prefixIcon: Icon(
+                Icons.email_outlined,
+                color: SoloForteColors.primary,
+                size: 20,
+              ),
             ),
             keyboardType: TextInputType.emailAddress,
             validator: (value) {
@@ -100,19 +124,37 @@ class _RecoverPasswordPageState extends ConsumerState<RecoverPasswordPage> {
               return null;
             },
           ),
-          const SizedBox(height: 30),
-          ElevatedButton(
-            onPressed: _isLoading ? null : _handleRecover,
-            child: _isLoading
-                ? const SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Colors.white,
+          const SizedBox(height: 32),
+          SizedBox(
+            height: 48,
+            child: ElevatedButton(
+              onPressed: _isLoading ? null : _handleRecover,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: SoloForteColors.primary,
+                disabledBackgroundColor: SoloForteColors.surfaceLight,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(SoloRadius.md),
+                ),
+                elevation: 0,
+              ),
+              child: _isLoading
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Text(
+                      'Enviar link',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
                     ),
-                  )
-                : const Text('Enviar link'),
+            ),
           ),
         ],
       ),
@@ -124,22 +166,49 @@ class _RecoverPasswordPageState extends ConsumerState<RecoverPasswordPage> {
       mainAxisAlignment: MainAxisAlignment.center,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Icon(Icons.check_circle_outline, size: 80, color: Colors.green),
         const SizedBox(height: 24),
-        const Text(
+        const Icon(
+          Icons.check_circle_outline,
+          size: 80,
+          color: SoloForteColors.success,
+        ),
+        const SizedBox(height: 24),
+        Text(
           'E-mail enviado!',
-          style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+          style: SoloTextStyles.headingMedium,
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 16),
         Text(
           'Se o e-mail ${_emailController.text} estiver cadastrado, você receberá um link em alguns instantes.',
           textAlign: TextAlign.center,
+          style: const TextStyle(
+            fontSize: 14,
+            color: SoloForteColors.textSecondary,
+            height: 1.5,
+          ),
         ),
-        const SizedBox(height: 40),
-        ElevatedButton(
-          onPressed: () => context.go(AppRoutes.login),
-          child: const Text('Voltar para Login'),
+        const SizedBox(height: 32),
+        SizedBox(
+          height: 48,
+          child: ElevatedButton(
+            onPressed: () => context.go(AppRoutes.login),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: SoloForteColors.primary,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(SoloRadius.md),
+              ),
+              elevation: 0,
+            ),
+            child: const Text(
+              'Voltar para Login',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
+              ),
+            ),
+          ),
         ),
       ],
     );

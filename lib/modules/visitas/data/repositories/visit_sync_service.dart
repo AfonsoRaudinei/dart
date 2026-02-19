@@ -1,5 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:soloforte_app/core/database/database_helper.dart';
+import '../../../../core/network/network_policy.dart';
 import '../../domain/models/visit_session.dart';
 
 class VisitSyncService {
@@ -32,14 +33,16 @@ class VisitSyncService {
 
         final localId = visit.id;
 
-        await _supabase.from('visit_sessions').upsert({
-          'id': visit.id,
-          'user_id': userId,
-          'started_at': visit.startTime.toIso8601String(),
-          'ended_at': visit.endTime?.toIso8601String(),
-          'sync_status': 'synced',
-          'updated_at': visit.updatedAt.toIso8601String(),
-        });
+        await NetworkPolicy.withTimeout(
+          () => _supabase.from('visit_sessions').upsert({
+            'id': visit.id,
+            'user_id': userId,
+            'started_at': visit.startTime.toIso8601String(),
+            'ended_at': visit.endTime?.toIso8601String(),
+            'sync_status': 'synced',
+            'updated_at': visit.updatedAt.toIso8601String(),
+          }),
+        );
 
         await db.update(
           'visit_sessions',
@@ -59,11 +62,13 @@ class VisitSyncService {
     if (userId == null) return;
 
     try {
-      final remoteVisits = await _supabase
-          .from('visit_sessions')
-          .select()
-          .eq('user_id', userId)
-          .order('updated_at');
+      final remoteVisits = await NetworkPolicy.withTimeout(
+        () => _supabase
+            .from('visit_sessions')
+            .select()
+            .eq('user_id', userId)
+            .order('updated_at'),
+      );
 
       for (final remote in remoteVisits) {
         final localResults = await db.query(

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:soloforte_app/core/services/connectivity_service.dart';
+import 'package:soloforte_app/core/utils/app_logger.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:soloforte_app/modules/consultoria/services/agronomic_sync_service.dart';
 import 'package:soloforte_app/modules/drawing/data/data_sources/drawing_sync_service.dart';
@@ -81,7 +82,7 @@ class SyncOrchestrator extends ChangeNotifier {
         try {
           await module.sync();
         } catch (e) {
-          debugPrint('Sync Error in ${module.name}: $e');
+          AppLogger.warning('Sync Error in ${module.name}', tag: 'SyncOrchestrator', error: e);
           _lastError = 'Erro em ${module.name}: $e';
         }
         completed++;

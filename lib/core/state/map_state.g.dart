@@ -6,7 +6,7 @@ part of 'map_state.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$mapRepositoryHash() => r'8817467e7dde658f0b734ab52d570e8939b97631';
+String _$mapRepositoryHash() => r'ec009f50eb6f932e4b33edff7f97c3e4d5e85fb9';
 
 /// See also [mapRepository].
 @ProviderFor(mapRepository)
@@ -23,7 +23,7 @@ final mapRepositoryProvider = Provider<MapRepository>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef MapRepositoryRef = ProviderRef<MapRepository>;
-String _$activeLayerHash() => r'ce2b7762f599f3beaca8a85515cf66435c9486df';
+String _$activeLayerHash() => r'550a00f8ba0c38e4c7a758ab8dfefc5716186626';
 
 /// See also [ActiveLayer].
 @ProviderFor(ActiveLayer)

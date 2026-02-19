@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import '../../data/repositories/mock_feedback_repository.dart';
+import '../../data/repositories/supabase_feedback_repository.dart';
 import '../../domain/entities/feedback_stats.dart';
 import '../../domain/entities/feedback_type.dart';
 import '../../domain/repositories/i_feedback_repository.dart';
@@ -10,7 +10,7 @@ part 'feedback_controller.g.dart';
 
 @riverpod
 IFeedbackRepository feedbackRepository(Ref ref) {
-  return MockFeedbackRepository();
+  return SupabaseFeedbackRepository();
 }
 
 // Separate provider for stats (FutureProvider pattern)
