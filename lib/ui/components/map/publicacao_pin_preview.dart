@@ -7,21 +7,24 @@ import '../../../core/domain/publicacao.dart';
 import '../../theme/soloforte_theme.dart';
 
 // ════════════════════════════════════════════════════════════════════
-// PREVIEW CONTEXTUAL DE PUBLICAÇÃO (ADR-007 — iOS Maps Style)
+// PREVIEW INDIVIDUAL DE PIN DE PUBLICAÇÃO (iOS Maps Style)
+// ════════════════════════════════════════════════════════════════════
 //
-// O que este widget É:
-//   - DraggableScrollableSheet contextual (~30% peek)
-//   - Exibição somente-leitura de dados da Publicacao
-//   - CTA explícito para edição via context.go()
+// QUANDO USAR:
+//   ✅ Usuário toca em PIN de publicação no mapa
+//   ✅ Preview contextual rápido (30% peek com scroll)
+//   ✅ CTA para navegação completa/edição
 //
-// O que este widget NÃO É:
-//   ❌ Não é rota
-//   ❌ Não é fullscreen
-//   ❌ Não é editor
-//   ❌ Não salva dados
-//   ❌ Não navega implicitamente
-//   ❌ Não tem AppBar
-//   ❌ Não tem abas
+// NÃO CONFUNDIR COM:
+//   ⚠️ PublicacoesSheet → Lista completa no MapBottomSheet
+//   ⚠️ Usado via botão de publicações na toolbar
+//
+// ARQUITETURA:
+//   - ADR-007 compliant (DraggableScrollableSheet)
+//   - Exibição somente-leitura
+//   - Navegação explícita via context.go()
+//   - Não é rota, não é fullscreen, não é editor
+//
 // ════════════════════════════════════════════════════════════════════
 
 /// Abre o preview contextual da publicação como bottom sheet.

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:soloforte_app/core/domain/publicacao.dart';
-import 'package:soloforte_app/ui/components/map/publicacao_preview_sheet.dart';
+import 'package:soloforte_app/ui/components/map/publicacao_pin_preview.dart';
 
 // ════════════════════════════════════════════════════════════════════
 // TESTE 2 — Gate ADR-007: Pin → Preview → CTA (Widget Test)

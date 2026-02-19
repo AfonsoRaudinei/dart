@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:soloforte_app/core/router/app_routes.dart';
 import 'package:soloforte_app/core/domain/publicacao.dart';
-import 'package:soloforte_app/ui/components/map/publicacao_preview_sheet.dart';
+import 'package:soloforte_app/ui/components/map/publicacao_pin_preview.dart';
 
 // ════════════════════════════════════════════════════════════════════
 // TESTES DE PUBLICAÇÃO — ADR-007 (Guard Tests)

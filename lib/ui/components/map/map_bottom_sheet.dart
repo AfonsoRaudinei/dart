@@ -6,20 +6,18 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../theme/soloforte_theme.dart';
 import 'package:latlong2/latlong.dart';
 import '../../../../modules/consultoria/occurrences/presentation/controllers/occurrence_controller.dart';
-// Navegação movida para FloatingDockWidget
-import 'tabs/map_tab_content.dart';
 import 'map_sheets.dart';
 import '../../../modules/drawing/presentation/widgets/drawing_sheet.dart';
 import '../../../modules/drawing/presentation/widgets/drawing_disabled_widget.dart';
 import '../../../modules/drawing/presentation/controllers/drawing_controller.dart';
 import '../../../modules/visitas/presentation/widgets/visit_sheet.dart';
 import '../../../modules/visitas/presentation/controllers/visit_controller.dart';
-import '../../../modules/dashboard/controllers/location_controller.dart';
 import '../../../core/feature_flags/feature_flag_providers.dart';
 import '../../../core/feature_flags/feature_flag_resolver.dart';
 import '../../../core/feature_flags/feature_flag_analytics.dart';
 import '../../../../modules/consultoria/occurrences/presentation/widgets/occurrence_list_sheet.dart';
 import 'map_occurrence_sheet.dart';
+import 'map_sheet_state.dart'; // 🛡 REFATORAÇÃO: Modelo compartilhado
 
 /// Bottom Sheet estilo iOS "Buscar" com 3 detents
 /// Compacto → Médio → Expandido
@@ -29,10 +27,11 @@ class MapBottomSheet extends ConsumerStatefulWidget {
   final DrawingController drawingController;
   final VoidCallback onLocationRequested;
   final VoidCallback onOccurrenceArmed;
-  final VoidCallback onClose; // 🔹 Callback de fechamento real (ETAPA 1)
-  final int? selectedTabIndex;
-  final ValueChanged<int> onTabChanged;
-  final LatLng? creationLocation; // Coordenadas para iniciar criação imediata
+  final VoidCallback onClose;
+  final MapSheetState state; // 🛡 REFATORAÇÃO: Estado explícito do pai
+  final Function(MapSheetState)
+  onStateChange; // 🛡 REFATORAÇÃO: Callback de mudança
+  final LatLng? creationLocation;
 
   const MapBottomSheet({
     super.key,
@@ -40,8 +39,8 @@ class MapBottomSheet extends ConsumerStatefulWidget {
     required this.onLocationRequested,
     required this.onOccurrenceArmed,
     required this.onClose,
-    required this.selectedTabIndex,
-    required this.onTabChanged,
+    required this.state,
+    required this.onStateChange,
     this.creationLocation,
   });
 
@@ -51,8 +50,8 @@ class MapBottomSheet extends ConsumerStatefulWidget {
 
 class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
     with SingleTickerProviderStateMixin {
+  // 🛡 APENAS ESTADOS EFÉMEROS DE UI (animação e drag)
   SheetDetent _currentDetent = SheetDetent.compact;
-  int _mapSubActionIndex = -1; // Sub-ação dentro da tab Mapa (-1 = nenhum)
 
   late AnimationController _heightController;
   late Animation<double> _heightAnimation;
@@ -61,12 +60,18 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
   @override
   void initState() {
     super.initState();
-    debugPrint('🟢 MapBottomSheet INIT'); // 🔎 PASSO 2
+    debugPrint('🟢 MapBottomSheet INIT | type=${widget.state.type}');
 
-    // Start closed if index is null
-    if (widget.selectedTabIndex == null) {
-      _currentDetent = SheetDetent.closed;
-    }
+    // 🔧 FIX: Apenas inicializar estados de UI (animação)
+    _currentDetent = SheetDetent.compact;
+
+    _heightController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+
+    final initialHeight = 90.0; // Sempre começa compacto
+    _heightAnimation = AlwaysStoppedAnimation(initialHeight);
   }
 
   @override
@@ -80,39 +85,21 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
   @override
   void didUpdateWidget(MapBottomSheet oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.selectedTabIndex != oldWidget.selectedTabIndex) {
-      if (widget.selectedTabIndex == null) {
-        _animateToDetent(SheetDetent.closed);
-      } else {
-        // Open/Switch
-        if (_currentDetent == SheetDetent.closed) {
-          _animateToDetent(SheetDetent.compact);
-        }
 
-        switch (widget.selectedTabIndex) {
-          case 1: // Publicações
-            _mapSubActionIndex = 2;
-            break;
-          case 3: // Check-in
-            _mapSubActionIndex = 3;
-            break;
-        }
-
-        if (_currentDetent == SheetDetent.compact &&
-            widget.selectedTabIndex != 0) {
-          _animateToDetent(SheetDetent.medium);
-        }
+    // 🛡 REFATORAÇÃO: Apenas reagir a mudanças de tipo para animar detent
+    if (widget.state.type != oldWidget.state.type) {
+      // Expandir automaticamente quando mudar de tipo
+      if (_currentDetent == SheetDetent.compact) {
+        _animateToDetent(SheetDetent.medium);
       }
     }
 
-    // Detectar solicitação de criação de ocorrência (Armed Mode)
+    // Expandir se solicitou criação de ocorrência
     if (widget.creationLocation != null &&
         widget.creationLocation != oldWidget.creationLocation) {
-      // Forçar expansão e mudança para tab de ocorrências se não estiver
       if (_currentDetent != SheetDetent.expanded) {
         _animateToDetent(SheetDetent.expanded);
       }
-      // O estado de criação é gerenciado reativamente no build via widget.creationLocation
     }
   }
 
@@ -129,24 +116,6 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
         );
 
     _heightController.forward(from: 0);
-  }
-
-  void _handleMapSubAction(int subIndex) async {
-    HapticFeedback.lightImpact();
-
-    // GPS check para ações que requerem localização
-    final locationController = ref.read(locationStateProvider);
-    final needsGPS = subIndex == 0 || subIndex == 3; // Desenhar ou Check-in
-
-    if (needsGPS && !_isGPSAvailable(locationController)) {
-      _showGPSRequiredMessage();
-      return;
-    }
-
-    setState(() {
-      _mapSubActionIndex = subIndex;
-    });
-    _animateToDetent(SheetDetent.expanded);
   }
 
   void _handleVerticalDrag(DragUpdateDetails details) {
@@ -242,22 +211,6 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
     }
   }
 
-  bool _isGPSAvailable(dynamic state) {
-    return state.toString().contains('available');
-  }
-
-  void _showGPSRequiredMessage() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text(
-          'GPS indisponível. Habilite para usar esta função.',
-        ),
-        backgroundColor: Colors.orange.shade700,
-        duration: const Duration(seconds: 3),
-      ),
-    );
-  }
-
   double _getSheetHeight() {
     switch (_currentDetent) {
       case SheetDetent.closed:
@@ -272,69 +225,68 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
   }
 
   Widget _buildTabContent() {
-    Widget content;
-
-    switch (widget.selectedTabIndex) {
-      case 0: // Mapa (principal)
-        if (_mapSubActionIndex == -1) {
-          content = MapTabContent(
-            onDrawingTap: () => _handleMapSubAction(0),
-            onLayersTap: () => _handleMapSubAction(1),
-            onPublicationsTap: () => _handleMapSubAction(2),
-            onCheckInTap: () => _handleMapSubAction(3),
-          );
-        } else {
-          content = _buildMapSubActionContent();
-        }
-        break;
-      case 1: // Publicações (atalho direto)
-        content = _buildMapSubActionContent();
-        break;
-      case 2: // Ocorrências (Consolidado)
-        return _buildOccurrencesContent();
-      case 3: // Check-in (atalho direto)
-        content = _buildMapSubActionContent();
-        break;
-      default:
-        content = const SizedBox.shrink();
+    // 🛡 REFATORAÇÃO: Switch explícito baseado em MapSheetType (determinístico)
+    switch (widget.state.type) {
+      case MapSheetType.draw:
+        return _buildDraw();
+      case MapSheetType.layers:
+        return _buildLayers();
+      case MapSheetType.publications:
+        return _buildPublications();
+      case MapSheetType.occurrences:
+        return widget.state.isCreatingOccurrence
+            ? _buildOccurrenceForm()
+            : _buildOccurrenceList();
+      case MapSheetType.checkIn:
+        return _buildCheckIn();
     }
+  }
 
-    // Envolver em SingleChildScrollView com ScrollController
+  Widget _buildDraw() {
     return SingleChildScrollView(
       controller: _scrollController,
       physics: const BouncingScrollPhysics(),
-      child: content,
+      child: FutureBuilder<bool>(
+        future: _checkDrawingFeatureFlag(),
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) {
+            return const Center(
+              child: Padding(
+                padding: EdgeInsets.all(32),
+                child: CircularProgressIndicator(),
+              ),
+            );
+          }
+          return snapshot.data!
+              ? DrawingSheet(controller: widget.drawingController)
+              : const DrawingDisabledWidget();
+        },
+      ),
     );
   }
 
-  Widget _buildMapSubActionContent() {
-    switch (_mapSubActionIndex) {
-      case 0: // Desenhar
-        return FutureBuilder<bool>(
-          future: _checkDrawingFeatureFlag(),
-          builder: (context, snapshot) {
-            if (!snapshot.hasData) {
-              return const Center(
-                child: Padding(
-                  padding: EdgeInsets.all(32),
-                  child: CircularProgressIndicator(),
-                ),
-              );
-            }
-            return snapshot.data!
-                ? DrawingSheet(controller: widget.drawingController)
-                : const DrawingDisabledWidget();
-          },
-        );
-      case 1: // Camadas
-        return const LayersSheet();
-      case 2: // Publicações
-        return const PublicacoesSheet();
-      case 3: // Check-in
-        return _buildCheckInContent();
-      default:
-        return const SizedBox.shrink();
-    }
+  Widget _buildLayers() {
+    return SingleChildScrollView(
+      controller: _scrollController,
+      physics: const BouncingScrollPhysics(),
+      child: LayersSheet(onClose: widget.onClose),
+    );
+  }
+
+  Widget _buildPublications() {
+    return SingleChildScrollView(
+      controller: _scrollController,
+      physics: const BouncingScrollPhysics(),
+      child: PublicacoesSheet(onClose: widget.onClose),
+    );
+  }
+
+  Widget _buildCheckIn() {
+    return SingleChildScrollView(
+      controller: _scrollController,
+      physics: const BouncingScrollPhysics(),
+      child: _buildCheckInContent(),
+    );
   }
 
   Widget _buildCheckInContent() {
@@ -408,41 +360,45 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
     );
   }
 
-  // 🛡 CONSOLIDAÇÃO OCORRÊNCIAS
-  // Estado local para alternar entre Lista e Criação dentro da tab
-  bool _isCreatingOccurrence = false;
+  // 🛡 REFATORAÇÃO: Renderização de ocorrências (lista vs formulário)
+  Widget _buildOccurrenceList() {
+    return SingleChildScrollView(
+      controller: _scrollController,
+      physics: const BouncingScrollPhysics(),
+      child: OccurrenceListSheet(
+        mapBounds: null,
+        onClose: () => widget.onClose(),
+        onOccurrenceTap: (occurrence) {
+          debugPrint('🔵 Ocorrência tocada: ${occurrence.id}');
+        },
+        onRequestNewOccurrence: () {
+          // 🆕 Armar modo de ocorrência e fechar sheet
+          widget.onOccurrenceArmed();
+          // Não fecha o sheet, apenas instrui o usuário
+        },
+      ),
+    );
+  }
 
-  Widget _buildOccurrencesContent() {
-    // Se recebemos um local de criação via props (Armed Mode), priorizamos a criação
-    final isCreationMode =
-        _isCreatingOccurrence || widget.creationLocation != null;
+  Widget _buildOccurrenceForm() {
+    final lat = widget.creationLocation?.latitude ?? 0;
+    final lng = widget.creationLocation?.longitude ?? 0;
 
-    if (isCreationMode) {
-      // Modo Criação (MapOccurrenceSheet)
-      // Se widget.creationLocation for nulo mas _isCreatingOccurrence for true,
-      // precisamos de uma posição. Fallback para 0,0 ou Center?
-      // O fluxo correto é: Botão Add -> Pega Localização -> Define state.
-      // Se _isCreatingOccurrence for true sem location, algo errado.
-      // Assumimos que quem setou _isCreatingOccurrence garantiu location (ex: botão de add na lista)
-
-      final lat = widget.creationLocation?.latitude ?? 0;
-      final lng = widget.creationLocation?.longitude ?? 0;
-
-      return MapOccurrenceSheet(
+    return SingleChildScrollView(
+      controller: _scrollController,
+      physics: const BouncingScrollPhysics(),
+      child: MapOccurrenceSheet(
         latitude: lat,
         longitude: lng,
-        scrollController: ScrollController(), // Sheet interno gerencia scroll?
+        scrollController: ScrollController(),
         onCancel: () {
-          // Voltar para lista
-          setState(() => _isCreatingOccurrence = false);
-          // 🔹 FECHAMENTO REAL: Cancelar fecha o sheet se solicitado via creationLocation (ETAPA 5)
-          if (widget.creationLocation != null) {
-            widget.onClose();
-          } else {
-            // Se estava criando manualmente, volta pra lista ou fecha?
-            // Segundo o prompt: "No botão Cancelar: Chamar widget.onClose();"
-            widget.onClose();
-          }
+          // 🛡 REFATORAÇÃO: Voltar para lista
+          widget.onStateChange(
+            const MapSheetState(
+              type: MapSheetType.occurrences,
+              isCreatingOccurrence: false,
+            ),
+          );
         },
         onConfirm: (category, urgency, description) {
           ref
@@ -463,22 +419,10 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
             ),
           );
 
-          setState(() => _isCreatingOccurrence = false);
-          // 🔹 FECHAMENTO REAL: Salvar fecha o sheet (ETAPA 4)
+          // Fechar o sheet após salvar
           widget.onClose();
         },
-      );
-    }
-
-    // Modo Lista (OccurrenceListSheet)
-    return OccurrenceListSheet(
-      mapBounds:
-          null, // Opcional: passar bounds se quisermos filtrar pelo viewport atual
-      onClose: () => widget.onClose(), // 🔹 FECHAMENTO REAL (ETAPA 1)
-      onOccurrenceTap: (occurrence) {
-        // Navegar para detalhes?
-        _handleMapSubAction(0); // Exemplo placeholder
-      },
+      ),
     );
   }
 
@@ -506,7 +450,7 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
 
   @override
   Widget build(BuildContext context) {
-    debugPrint('🟡 MapBottomSheet BUILD | tab=${widget.selectedTabIndex}');
+    debugPrint('🟡 MapBottomSheet BUILD | type=${widget.state.type}');
     return GestureDetector(
       onVerticalDragStart: _handleDragStart,
       onVerticalDragUpdate: _handleVerticalDrag,
@@ -590,7 +534,7 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
                               );
                             },
                             child: Container(
-                              key: ValueKey(widget.selectedTabIndex),
+                              key: ValueKey(widget.state.type),
                               child: _buildTabContent(),
                             ),
                           ),

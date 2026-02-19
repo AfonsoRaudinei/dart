@@ -218,13 +218,13 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
               _MapActionButton(
                 icon: SFIcons.edit,
                 isActive: widget.isDrawMode,
-                onTap: () => widget.onTabSelected(0, 'Button_Edit'),
+                onTap: widget.onToggleDrawMode,
               ),
               // REMOVIDO: Botão de localização duplicado
               const SizedBox(height: 12),
               _MapActionButton(
                 icon: SFIcons.layers,
-                onTap: () => widget.onTabSelected(0, 'Button_Layers'),
+                onTap: () => widget.onTabSelected(4, 'Button_Layers'),
               ),
               const SizedBox(height: 12),
               _MapActionButton(

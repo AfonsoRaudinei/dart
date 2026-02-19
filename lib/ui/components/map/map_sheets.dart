@@ -10,8 +10,15 @@ import '../../../core/state/map_state.dart';
 class BaseMapSheet extends StatelessWidget {
   final String title;
   final Widget child;
+  final VoidCallback?
+  onClose; // 🔧 FIX: Callback externo (não usar Navigator.pop)
 
-  const BaseMapSheet({required this.title, required this.child, super.key});
+  const BaseMapSheet({
+    required this.title,
+    required this.child,
+    this.onClose,
+    super.key,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -52,13 +59,15 @@ class BaseMapSheet extends StatelessWidget {
                 Expanded(
                   child: Text(title, style: SoloTextStyles.headingMedium),
                 ),
-                IconButton(
-                  icon: const Icon(
-                    SFIcons.close,
-                    color: SoloForteColors.textSecondary,
+                // 🔧 FIX: Só mostrar botão X se onClose foi fornecido
+                if (onClose != null)
+                  IconButton(
+                    icon: const Icon(
+                      SFIcons.close,
+                      color: SoloForteColors.textSecondary,
+                    ),
+                    onPressed: onClose,
                   ),
-                  onPressed: () => Navigator.pop(context),
-                ),
               ],
             ),
           ),
@@ -71,7 +80,9 @@ class BaseMapSheet extends StatelessWidget {
 }
 
 class LayersSheet extends ConsumerWidget {
-  const LayersSheet({super.key});
+  final VoidCallback? onClose; // 🔧 FIX: Callback de fechamento externo
+
+  const LayersSheet({super.key, this.onClose});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -80,41 +91,69 @@ class LayersSheet extends ConsumerWidget {
 
     return BaseMapSheet(
       title: 'Camadas',
+      onClose: onClose, // 🔧 FIX: Passar callback para BaseMapSheet
       child: ListView(
         shrinkWrap: true,
-        padding: SoloSpacing.paddingCard,
+        padding: const EdgeInsets.all(20),
         children: [
-          _LayerItem(
-            label: 'Padrão',
-            isSelected: currentLayer == LayerType.standard,
-            icon: SFIcons.map,
-            onTap: () => ref
-                .read(activeLayerProvider.notifier)
-                .setLayer(LayerType.standard),
+          // Grid de Camadas com Preview Visual
+          Row(
+            children: [
+              Expanded(
+                child: _LayerCardPreview(
+                  label: 'Padrão',
+                  isSelected: currentLayer == LayerType.standard,
+                  color: Colors.orange.shade100,
+                  onTap: () => ref
+                      .read(activeLayerProvider.notifier)
+                      .setLayer(LayerType.standard),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _LayerCardPreview(
+                  label: 'Satélite',
+                  isSelected: currentLayer == LayerType.satellite,
+                  color: Colors.green.shade200,
+                  onTap: () => ref
+                      .read(activeLayerProvider.notifier)
+                      .setLayer(LayerType.satellite),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _LayerCardPreview(
+                  label: 'Relevo',
+                  isSelected: currentLayer == LayerType.terrain,
+                  color: Colors.brown.shade200,
+                  isDisabled: true,
+                  onTap: null,
+                ),
+              ),
+            ],
           ),
-          _LayerItem(
-            label: 'Satélite',
-            isSelected: currentLayer == LayerType.satellite,
-            icon: SFIcons.satellite,
-            onTap: () => ref
-                .read(activeLayerProvider.notifier)
-                .setLayer(LayerType.satellite),
+          const SizedBox(height: 32),
+          // Seção de Sobreposições
+          Text(
+            'Sobreposições',
+            style: SoloTextStyles.label.copyWith(
+              color: SoloForteColors.textSecondary,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
           ),
-          _LayerItem(
-            label: 'Relevo',
-            isSelected: currentLayer == LayerType.terrain,
-            icon: SFIcons.lock,
-            isDisabled: true,
-            onTap: null,
-          ),
-          const SizedBox(height: 20),
-          Text('Sobreposições', style: SoloTextStyles.label),
-          const SizedBox(height: 10),
-          SwitchListTile(
-            title: Text('Mostrar Pinos', style: SoloTextStyles.body),
-            value: showMarkers,
-            activeTrackColor: SoloForteColors.greenIOS,
-            onChanged: (v) => ref.read(showMarkersProvider.notifier).toggle(),
+          const SizedBox(height: 12),
+          Container(
+            decoration: BoxDecoration(
+              color: SoloForteColors.grayLight,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: SwitchListTile(
+              title: Text('Mostrar Pinos', style: SoloTextStyles.body),
+              value: showMarkers,
+              activeTrackColor: SoloForteColors.greenIOS,
+              onChanged: (v) => ref.read(showMarkersProvider.notifier).toggle(),
+            ),
           ),
         ],
       ),
@@ -122,17 +161,18 @@ class LayersSheet extends ConsumerWidget {
   }
 }
 
-class _LayerItem extends StatelessWidget {
+// Novo widget: Card de preview de camada
+class _LayerCardPreview extends StatelessWidget {
   final String label;
   final bool isSelected;
   final bool isDisabled;
-  final IconData icon;
+  final Color color;
   final VoidCallback? onTap;
 
-  const _LayerItem({
+  const _LayerCardPreview({
     required this.label,
     required this.isSelected,
-    required this.icon,
+    required this.color,
     this.isDisabled = false,
     this.onTap,
   });
@@ -141,52 +181,53 @@ class _LayerItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: isDisabled ? null : onTap,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 10),
-        decoration: BoxDecoration(
-          color: isSelected ? SoloForteColors.bgSuccess : Colors.white,
-          border: Border.all(
-            color: isSelected
-                ? SoloForteColors.greenIOS
-                : (isDisabled ? Colors.transparent : SoloForteColors.border),
-          ),
-          borderRadius: SoloRadius.radiusMd,
-        ),
-        child: ListTile(
-          enabled: !isDisabled,
-          leading: Icon(
-            icon,
-            color: isSelected
-                ? SoloForteColors.greenIOS
-                : (isDisabled
-                      ? SoloForteColors.textTertiary
-                      : SoloForteColors.textSecondary),
-          ),
-          title: Text(
-            label,
-            style: isSelected
-                ? SoloTextStyles.body.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: SoloForteColors.textSuccess,
+      child: Column(
+        children: [
+          Container(
+            height: 80,
+            decoration: BoxDecoration(
+              color: color,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: isSelected
+                    ? SoloForteColors.greenIOS
+                    : Colors.grey.shade300,
+                width: isSelected ? 3 : 1,
+              ),
+            ),
+            child: isSelected
+                ? Center(
+                    child: Icon(
+                      SFIcons.checkCircle,
+                      color: SoloForteColors.greenIOS,
+                      size: 32,
+                    ),
                   )
-                : (isDisabled
-                      ? SoloTextStyles.body.copyWith(
-                          color: SoloForteColors.textTertiary,
-                        )
-                      : SoloTextStyles.body),
+                : null,
           ),
-          trailing: isSelected
-              ? const Icon(SFIcons.checkCircle, color: SoloForteColors.greenIOS)
-              : null,
-        ),
+          const SizedBox(height: 8),
+          Text(
+            label,
+            style: SoloTextStyles.body.copyWith(
+              fontSize: 13,
+              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+              color: isDisabled
+                  ? SoloForteColors.textTertiary
+                  : SoloForteColors.textPrimary,
+            ),
+          ),
+        ],
       ),
     );
   }
 }
 
-/// Sheet de listagem de Publicações — migrado para Publicacao canônica (ADR-007).
+/// 📄 Sheet de Publicações — Reconstruído conforme design_soloforte.md
+/// ADR-007: Entidade canônica do mapa
 class PublicacoesSheet extends ConsumerWidget {
-  const PublicacoesSheet({super.key});
+  final VoidCallback? onClose;
+
+  const PublicacoesSheet({super.key, this.onClose});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -194,131 +235,324 @@ class PublicacoesSheet extends ConsumerWidget {
 
     return BaseMapSheet(
       title: 'Publicações',
+      onClose: onClose,
       child: pubsAsync.when(
-        data: (pubs) => ListView.separated(
-          shrinkWrap: true,
-          padding: SoloSpacing.paddingCard,
-          itemCount: pubs.length,
-          separatorBuilder: (_, __) => const Divider(height: 30),
-          itemBuilder: (ctx, index) {
-            final pub = pubs[index];
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+        data: (pubs) {
+          if (pubs.isEmpty) {
+            return _buildEmptyState();
+          }
+          
+          return ListView.separated(
+            shrinkWrap: true,
+            padding: const EdgeInsets.all(16), // Grid 16
+            itemCount: pubs.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 16), // Grid 16
+            itemBuilder: (ctx, index) => _PublicacaoCard(pub: pubs[index]),
+          );
+        },
+        loading: () => const Center(
+          child: Padding(
+            padding: EdgeInsets.all(40),
+            child: CircularProgressIndicator(
+              color: SoloForteColors.greenIOS,
+              strokeWidth: 2,
+            ),
+          ),
+        ),
+        error: (err, stack) => Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Row(
-                  children: [
-                    Container(
-                      width: 32,
-                      height: 32,
-                      decoration: BoxDecoration(
-                        color: _typeColor(pub.type).withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Icon(
-                        _typeIcon(pub.type),
-                        size: 16,
-                        color: _typeColor(pub.type),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            pub.title ?? 'Sem título',
-                            style: SoloTextStyles.body.copyWith(
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          if (pub.clientName != null)
-                            Text(pub.clientName!, style: SoloTextStyles.label),
-                        ],
-                      ),
-                    ),
-                  ],
+                Icon(
+                  SFIcons.warningOutlined,
+                  size: 48,
+                  color: SoloForteColors.error,
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 16),
                 Text(
-                  pub.description ?? '',
+                  'Erro ao carregar publicações',
                   style: SoloTextStyles.body.copyWith(
-                    color: SoloForteColors.textSecondary,
+                    color: SoloForteColors.error,
                   ),
                 ),
-                const SizedBox(height: 10),
-                // Cover image or placeholder
-                Builder(
-                  builder: (context) {
-                    final cover = pub.coverMedia;
-                    if (cover.path.isNotEmpty) {
-                      return Container(
-                        height: 150,
-                        decoration: BoxDecoration(
-                          color: SoloForteColors.grayLight,
-                          borderRadius: SoloRadius.radiusMd,
-                          image: DecorationImage(
-                            image: AssetImage(cover.path),
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                      );
-                    }
-                    return Container(
-                      height: 150,
-                      decoration: BoxDecoration(
-                        color: SoloForteColors.grayLight,
-                        borderRadius: SoloRadius.radiusMd,
-                      ),
-                      child: Center(
-                        child: Icon(
-                          SFIcons.image,
-                          color: SoloForteColors.textTertiary,
-                        ),
-                      ),
-                    );
-                  },
-                ),
               ],
-            );
-          },
+            ),
+          ),
         ),
-        loading: () => const Center(
-          child: CircularProgressIndicator(color: SoloForteColors.greenIOS),
-        ),
-        error: (err, stack) => Center(child: Text('Erro: $err')),
       ),
     );
   }
 
-  Color _typeColor(PublicacaoType type) {
-    switch (type) {
-      case PublicacaoType.institucional:
-        return SoloForteColors.brand;
-      case PublicacaoType.tecnico:
-        return Colors.blue;
-      case PublicacaoType.resultado:
-        return SoloForteColors.greenIOS;
-      case PublicacaoType.comparativo:
-        return Colors.orange;
-      case PublicacaoType.caseSucesso:
-        return Colors.purple;
-    }
+  Widget _buildEmptyState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(40),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              SFIcons.article,
+              size: 64,
+              color: SoloForteColors.textTertiary,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Nenhuma publicação',
+              style: SoloTextStyles.headingMedium.copyWith(
+                color: SoloForteColors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'As publicações aparecerão aqui',
+              style: SoloTextStyles.label.copyWith(
+                color: SoloForteColors.textTertiary,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Card individual de publicação
+/// Segue design_soloforte: consistência, hierarquia, clareza
+class _PublicacaoCard extends StatelessWidget {
+  final Publicacao pub;
+
+  const _PublicacaoCard({required this.pub});
+
+  @override
+  Widget build(BuildContext context) {
+    final typeInfo = _getTypeInfo(pub.type);
+    
+    return Container(
+      decoration: BoxDecoration(
+        color: SoloForteColors.white,
+        borderRadius: BorderRadius.circular(16), // Radius padrão
+        border: Border.all(
+          color: SoloForteColors.borderLight,
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // 🖼️ Imagem de capa
+          _buildCoverImage(),
+          
+          // 📝 Conteúdo
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Badge de tipo
+                _buildTypeBadge(typeInfo),
+                const SizedBox(height: 8),
+                
+                // Título
+                if (pub.title != null && pub.title!.isNotEmpty)
+                  Text(
+                    pub.title!,
+                    style: SoloTextStyles.headingMedium.copyWith(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                
+                // Descrição
+                if (pub.description != null && pub.description!.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    pub.description!,
+                    style: SoloTextStyles.body.copyWith(
+                      fontSize: 14,
+                      color: SoloForteColors.textSecondary,
+                    ),
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+                
+                // Metadados (Cliente, Área)
+                if (pub.clientName != null || pub.areaName != null) ...[
+                  const SizedBox(height: 12),
+                  _buildMetadata(),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
-  IconData _typeIcon(PublicacaoType type) {
+  Widget _buildCoverImage() {
+    final cover = pub.coverMedia;
+    
+    return Container(
+      height: 180,
+      decoration: BoxDecoration(
+        color: SoloForteColors.grayLight,
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(16),
+          topRight: Radius.circular(16),
+        ),
+      ),
+      child: cover.path.isNotEmpty
+          ? ClipRRect(
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(16),
+                topRight: Radius.circular(16),
+              ),
+              child: Image.asset(
+                cover.path,
+                fit: BoxFit.cover,
+                width: double.infinity,
+                errorBuilder: (_, __, ___) => _buildPlaceholder(),
+              ),
+            )
+          : _buildPlaceholder(),
+    );
+  }
+
+  Widget _buildPlaceholder() {
+    return Center(
+      child: Icon(
+        SFIcons.image,
+        size: 48,
+        color: SoloForteColors.textTertiary.withValues(alpha: 0.3),
+      ),
+    );
+  }
+
+  Widget _buildTypeBadge(_TypeInfo info) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: info.color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(99), // Pill
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            info.icon,
+            size: 12,
+            color: info.color,
+          ),
+          const SizedBox(width: 4),
+          Text(
+            info.label,
+            style: SoloTextStyles.label.copyWith(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: info.color,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMetadata() {
+    return Row(
+      children: [
+        if (pub.clientName != null) ...[
+          Icon(
+            SFIcons.person,
+            size: 14,
+            color: SoloForteColors.textTertiary,
+          ),
+          const SizedBox(width: 4),
+          Text(
+            pub.clientName!,
+            style: SoloTextStyles.label.copyWith(
+              fontSize: 12,
+              color: SoloForteColors.textSecondary,
+            ),
+          ),
+        ],
+        if (pub.clientName != null && pub.areaName != null)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: Text(
+              '•',
+              style: TextStyle(color: SoloForteColors.textTertiary),
+            ),
+          ),
+        if (pub.areaName != null) ...[
+          Icon(
+            SFIcons.locationOn,
+            size: 14,
+            color: SoloForteColors.textTertiary,
+          ),
+          const SizedBox(width: 4),
+          Text(
+            pub.areaName!,
+            style: SoloTextStyles.label.copyWith(
+              fontSize: 12,
+              color: SoloForteColors.textSecondary,
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  _TypeInfo _getTypeInfo(PublicacaoType type) {
     switch (type) {
       case PublicacaoType.institucional:
-        return SFIcons.business;
+        return _TypeInfo(
+          label: 'Institucional',
+          icon: SFIcons.business,
+          color: SoloForteColors.brand,
+        );
       case PublicacaoType.tecnico:
-        return SFIcons.science;
+        return _TypeInfo(
+          label: 'Técnico',
+          icon: SFIcons.science,
+          color: const Color(0xFF3B82F6), // Blue
+        );
       case PublicacaoType.resultado:
-        return SFIcons.barChart;
+        return _TypeInfo(
+          label: 'Resultado',
+          icon: SFIcons.barChart,
+          color: SoloForteColors.greenIOS,
+        );
       case PublicacaoType.comparativo:
-        return SFIcons.compareArrows;
+        return _TypeInfo(
+          label: 'Comparativo',
+          icon: SFIcons.compareArrows,
+          color: const Color(0xFFF59E0B), // Orange
+        );
       case PublicacaoType.caseSucesso:
-        return SFIcons.star;
+        return _TypeInfo(
+          label: 'Case de Sucesso',
+          icon: SFIcons.star,
+          color: const Color(0xFFA855F7), // Purple
+        );
     }
   }
+}
+
+/// Helper para informações de tipo
+class _TypeInfo {
+  final String label;
+  final IconData icon;
+  final Color color;
+
+  const _TypeInfo({
+    required this.label,
+    required this.icon,
+    required this.color,
+  });
 }
 
 /// Legacy alias — mantido para backward-compatibility.

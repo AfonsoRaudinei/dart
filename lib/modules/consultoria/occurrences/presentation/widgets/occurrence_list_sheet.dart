@@ -13,12 +13,14 @@ class OccurrenceListSheet extends ConsumerStatefulWidget {
   final LatLngBounds? mapBounds;
   final VoidCallback? onClose;
   final Function(Occurrence)? onOccurrenceTap;
+  final VoidCallback? onRequestNewOccurrence; // 🆕 Novo callback
 
   const OccurrenceListSheet({
     super.key,
     this.mapBounds,
     this.onClose,
     this.onOccurrenceTap,
+    this.onRequestNewOccurrence,
   });
 
   @override
@@ -38,21 +40,23 @@ class _OccurrenceListSheetState extends ConsumerState<OccurrenceListSheet> {
         ? visitState.value!.id
         : null;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: SoloForteColors.white,
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(SoloRadius.lg),
-          topRight: Radius.circular(SoloRadius.lg),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.15),
-            blurRadius: 20,
-            offset: const Offset(0, -5),
+    return Stack(
+      children: [
+        Container(
+          decoration: BoxDecoration(
+            color: SoloForteColors.white,
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(SoloRadius.lg),
+              topRight: Radius.circular(SoloRadius.lg),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.15),
+                blurRadius: 20,
+                offset: const Offset(0, -5),
+              ),
+            ],
           ),
-        ],
-      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -220,6 +224,23 @@ class _OccurrenceListSheetState extends ConsumerState<OccurrenceListSheet> {
           ),
         ],
       ),
+    ),
+        // 🆕 Botão flutuante para adicionar nova ocorrência
+        if (widget.onRequestNewOccurrence != null)
+          Positioned(
+            bottom: 20,
+            right: 20,
+            child: FloatingActionButton.extended(
+              onPressed: widget.onRequestNewOccurrence,
+              backgroundColor: SoloForteColors.greenIOS,
+              icon: const Icon(Icons.add, color: Colors.white),
+              label: const Text(
+                'Nova Ocorrência',
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+              ),
+            ),
+          ),
+      ],
     );
   }
 }

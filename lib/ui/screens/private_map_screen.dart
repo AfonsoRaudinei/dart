@@ -10,7 +10,6 @@ import '../../core/utils/map_logger.dart';
 import '../../core/utils/debouncer.dart';
 import '../../modules/consultoria/clients/presentation/providers/field_providers.dart';
 import '../../modules/consultoria/services/talhao_map_adapter.dart';
-import '../../modules/drawing/presentation/widgets/drawing_sheet.dart';
 import '../../modules/drawing/presentation/widgets/drawing_layers.dart';
 import '../../modules/drawing/presentation/providers/drawing_provider.dart';
 import '../../modules/drawing/domain/drawing_state.dart';
@@ -29,6 +28,7 @@ import '../components/map/widgets/map_controls_overlay.dart';
 import '../components/map/widgets/isolated_marker_layers.dart';
 import '../../modules/drawing/presentation/widgets/drawing_edit_layer.dart';
 import '../../core/domain/map_models.dart';
+import '../components/map/map_sheet_state.dart'; // 🛡 REFATORAÇÃO: Modelo compartilhado
 
 // 🛡 HARDENING: Máquina de estados para inicialização determinística
 enum InitialViewportState {
@@ -62,9 +62,8 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
   bool _isDrawMode = false;
   ArmedMode _armedMode = ArmedMode.none; // Estado do modo armado
 
-  // 🛡 UI STATE: MapBottomSheet Consolidation
-  int?
-  _activeTabIndex; // null: Closed, 0: Map, 1: Pubs, 2: Occurrences, 3: Check-in
+  // 🛡 REFATORAÇÃO: Estado explícito do MapBottomSheet (null = fechado)
+  MapSheetState? _sheetState;
   LatLng? _pendingOccurrenceLocation; // Se != null, abre sheet em modo Create
 
   // ── Publicações canônicas (estado local ao mapa — ADR-007) ──
@@ -92,13 +91,21 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
   }
 
   // 🔎 INSTRUMENTATION: Rastrear quem altera o estado
-  void _setActiveTabIndex(int? value, String reason) {
+  void _setSheetState(MapSheetState? state, String reason) {
     debugPrint(
-      '🕵️ TAB CHANGE | old=$_activeTabIndex | new=$value | reason=$reason',
+      '🕵️ SHEET CHANGE | old=${_sheetState?.type} | new=${state?.type} | reason=$reason',
     );
-    // debugPrint(StackTrace.current.toString()); // Descomente para stack trace completo
+
+    // 🔧 FIX-DRAW-SYNC: Sincronizar DrawingController com MapSheetState
+    // Se está SAINDO do modo desenho, cancelar desenho automaticamente
+    if (_sheetState?.type == MapSheetType.draw &&
+        state?.type != MapSheetType.draw) {
+      debugPrint('🎨 AUTO-CANCEL: Saindo do modo desenho');
+      ref.read(drawingControllerProvider).selectTool('none');
+    }
+
     setState(() {
-      _activeTabIndex = value;
+      _sheetState = state;
     });
   }
 
@@ -249,7 +256,18 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
   }
 
   void _armOccurrenceMode() {
+    // 🔧 FIX: Abrir o sheet de ocorrências primeiro
+    _setSheetState(
+      const MapSheetState(
+        type: MapSheetType.occurrences,
+        isCreatingOccurrence: false,
+      ),
+      'ArmOccurrenceMode: Opening occurrence sheet',
+    );
+    
+    // Armar o modo para quando clicar no mapa
     setState(() => _armedMode = ArmedMode.occurrences);
+    
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Toque no mapa para registrar a ocorrência'),
@@ -263,7 +281,13 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
     if (!mounted) return;
 
     // Usando setter instrumentado
-    _setActiveTabIndex(2, 'OpenOccurrenceSheet (Create Mode)');
+    _setSheetState(
+      const MapSheetState(
+        type: MapSheetType.occurrences,
+        isCreatingOccurrence: true,
+      ),
+      'OpenOccurrenceSheet (Create Mode)',
+    );
     setState(() {
       _pendingOccurrenceLocation = LatLng(lat, lng); // Trigger Creation Mode
     });
@@ -308,34 +332,16 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
     controller.completeDrawing();
 
     // 🔒 VALIDATION: Garantir que a transição ocorreu com sucesso
-    // Se a máquina de estados rejeitou (ex: validação falhou), não abrir sheet
+    // Se a máquina de estados rejeitou (ex: validação falhou), não processar
     if (controller.currentState != DrawingState.reviewing) {
       return;
     }
 
-    // Abrir sheet para adicionar metadados
-    // O sheet irá usar liveGeometry para criar a feature
-    await showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      // 🔒 Prevent closing by tap outside during review?
-      // User requested "Safety". Let's keep it default for now but maybe isDismissible: false?
-      isDismissible: false,
-      enableDrag: false,
-      builder: (_) => DrawingSheet(controller: controller),
-    );
-
-    // Desativar modo desenho na UI local (Sync com controller)
+    // 🔧 FIX: O DrawingSheet no MapBottomSheet já está observando o estado
+    // Não precisa abrir modal separado - o sheet unificado já reage ao estado
+    // Apenas sincronizar UI local
     if (mounted) {
       setState(() => _isDrawMode = false);
-    }
-
-    // Se o sheet fechou e ainda estamos em reviewing (ex: swipe down se permitido, ou back button),
-    // devemos cancelar para evitar estado inconsistente.
-    // VERIFICAÇÃO FINAL: Se o usuário confirmou no sheet, o estado já será 'idle'.
-    if (controller.currentState == DrawingState.reviewing) {
-      controller.cancelOperation();
     }
   }
 
@@ -447,11 +453,11 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
                 if (drawingFeature != null) {
                   drawCtrl.selectFeature(drawingFeature);
                   HapticFeedback.selectionClick();
-                  showModalBottomSheet(
-                    context: context,
-                    backgroundColor: Colors.transparent,
-                    isScrollControlled: true,
-                    builder: (_) => DrawingSheet(controller: drawCtrl),
+                  // 🔧 FIX-DRAW-SYNC: Reutilizar MapBottomSheet existente
+                  // Em vez de abrir novo modal, navegar o sheet persistente
+                  _setSheetState(
+                    const MapSheetState(type: MapSheetType.draw),
+                    'Feature tap: editing existing drawing',
                   );
                   return;
                 }
@@ -560,8 +566,10 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
             onToggleDrawMode: _toggleDrawMode,
             onToggleOccurrenceMode: () {
               if (_armedMode == ArmedMode.occurrences) {
+                // Desarmar e fechar o sheet
                 setState(() => _armedMode = ArmedMode.none);
                 ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                _setSheetState(null, 'Toggle OFF: Closing occurrence sheet');
               } else {
                 _armOccurrenceMode();
               }
@@ -589,15 +597,28 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
                 : const LatLng(0, 0),
             currentZoom: _isMapReady ? _mapController.camera.zoom : 13.0,
             onTabSelected: (index, source) {
-              if (_activeTabIndex == index) {
-                _setActiveTabIndex(
+              // 🛡 REFATORAÇÃO: Mapear index para MapSheetType
+              final sheetTypeMap = {
+                1: MapSheetType.publications,
+                2: MapSheetType.occurrences,
+                3: MapSheetType.checkIn,
+                4: MapSheetType.layers,
+              };
+
+              final currentType = _sheetState?.type;
+              final newType = sheetTypeMap[index];
+
+              if (currentType == newType) {
+                // Toggle: fechar se já está aberto
+                _setSheetState(
                   null,
                   'MapControlsOverlay: Toggle Close (Source: $source)',
                 );
               } else {
-                _setActiveTabIndex(
-                  index,
-                  'MapControlsOverlay: Select Tab $index (Source: $source)',
+                // Abrir nova tab
+                _setSheetState(
+                  MapSheetState(type: newType!),
+                  'MapControlsOverlay: Select Tab $newType (Source: $source)',
                 );
               }
               setState(() {
@@ -608,22 +629,23 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
 
           // 🛡 CONSOLIDATION: Main BottomSheet
           // Conditional mount as requested
-          if (_activeTabIndex != null)
+          if (_sheetState != null)
             Positioned(
               bottom: 0,
               left: 0,
               right: 0,
               child: MapBottomSheet(
                 drawingController: ref.read(drawingControllerProvider),
-                selectedTabIndex: _activeTabIndex,
-                onTabChanged: (index) {
-                  _setActiveTabIndex(index, 'MapBottomSheet: Tab Changed');
-                  setState(() {
-                    if (index != 2) _pendingOccurrenceLocation = null;
-                  });
+                state: _sheetState!,
+                onStateChange: (newState) {
+                  _setSheetState(newState, 'MapBottomSheet: State Changed');
+                  // Limpar pending location se mudar de tab
+                  if (newState.type != MapSheetType.occurrences) {
+                    setState(() => _pendingOccurrenceLocation = null);
+                  }
                 },
                 onClose: () {
-                  _setActiveTabIndex(null, 'MapBottomSheet: onClose');
+                  _setSheetState(null, 'MapBottomSheet: onClose');
                   setState(() {
                     _pendingOccurrenceLocation = null;
                   });
@@ -643,25 +665,19 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
     final controller = ref.read(drawingControllerProvider);
 
     if (controller.currentState == DrawingState.idle) {
-      // 🎯 Se está idle, abre a seleção de ferramentas (BottomSheet)
-      showModalBottomSheet(
-        context: context,
-        backgroundColor: Colors.transparent,
-        isScrollControlled: true,
-        useRootNavigator: true, // Garante que abra sobre a shell se necessário
-        builder: (_) => DrawingSheet(controller: controller),
-      ).then((_) {
-        // Após fechar o sheet, sincronizamos o estado local
-        if (mounted) {
-          setState(() {
-            _isDrawMode = controller.currentState != DrawingState.idle;
-          });
-        }
-      });
+      // 🔧 FIX: Usar MapBottomSheet unificado ao invés de modal separado
+      _setSheetState(
+        const MapSheetState(type: MapSheetType.draw),
+        'ToggleDrawMode: Opening draw sheet',
+      );
+      setState(() => _isDrawMode = true);
     } else {
       // 🎯 Se já está em algum modo (drawing, armed), cancela a operação
       controller.cancelOperation();
       setState(() => _isDrawMode = false);
+      
+      // Fechar o sheet também
+      _setSheetState(null, 'ToggleDrawMode: Cancel and close');
 
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
       ScaffoldMessenger.of(context).showSnackBar(
