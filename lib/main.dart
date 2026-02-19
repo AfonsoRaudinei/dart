@@ -38,21 +38,49 @@ Future<void> main() async {
   );
 }
 
-class SoloForteApp extends ConsumerWidget {
+class SoloForteApp extends ConsumerStatefulWidget {
   const SoloForteApp({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SoloForteApp> createState() => _SoloForteAppState();
+}
+
+class _SoloForteAppState extends ConsumerState<SoloForteApp> {
+  @override
+  void initState() {
+    super.initState();
+    // Inicializa SyncOrchestrator APÓS o primeiro frame para não bloquear renderização.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        ref.read(syncOrchestratorProvider);
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final router = ref.watch(routerProvider);
     final themeMode = ref.watch(themeProvider);
-
-    ref.read(syncOrchestratorProvider);
 
     return MaterialApp.router(
       title: 'SoloForte',
       theme: AppThemes.getTheme(themeMode),
       routerConfig: router,
       debugShowCheckedModeBanner: false,
+      // Fallback para erro crítico durante build do router
+      builder: (context, child) {
+        if (child == null) {
+          return const Scaffold(
+            body: Center(
+              child: Text(
+                'Erro ao carregar aplicativo',
+                style: TextStyle(color: Colors.red),
+              ),
+            ),
+          );
+        }
+        return child;
+      },
     );
   }
 }

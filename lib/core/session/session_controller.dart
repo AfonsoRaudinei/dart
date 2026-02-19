@@ -19,9 +19,14 @@ class SessionController extends _$SessionController {
     ref.onDispose(() => _authSubscription?.cancel());
 
     // Estado síncrono inicial baseado na sessão persistida pelo Supabase.
-    final currentUser = Supabase.instance.client.auth.currentUser;
-    if (currentUser != null) {
-      return SessionAuthenticated(currentUser);
+    try {
+      final currentUser = Supabase.instance.client.auth.currentUser;
+      if (currentUser != null) {
+        return SessionAuthenticated(currentUser);
+      }
+    } catch (_) {
+      // Se Supabase não inicializou ou tem credenciais inválidas,
+      // retorna estado público seguro.
     }
     return const SessionPublic();
   }
@@ -36,6 +41,11 @@ class SessionController extends _$SessionController {
         } else {
           state = const SessionPublic();
         }
+      },
+      onError: (error) {
+        // Em caso de erro no stream, mantém estado público seguro.
+        // Erro pode ocorrer se Supabase estiver com credenciais inválidas.
+        state = const SessionPublic();
       },
     );
   }
