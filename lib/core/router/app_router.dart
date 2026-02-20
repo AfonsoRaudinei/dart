@@ -29,10 +29,11 @@ part 'app_router.g.dart';
 
 @Riverpod(keepAlive: true)
 GoRouter router(Ref ref) {
-  // RouterNotifier é criado uma vez (keepAlive). Mudanças de auth
-  // disparam notifyListeners() → GoRouter re-avalia o redirect
-  // sem recriar o router nem destruir a navigation stack.
-  final notifier = ref.watch(routerNotifierProvider);
+  // RouterNotifier lido com ref.read (não ref.watch) para garantir que
+  // o GoRouter seja instanciado uma única vez e nunca recriado.
+  // Mudanças de auth disparam notifyListeners() via refreshListenable
+  // → GoRouter re-avalia apenas o redirect, sem destruir a navigation stack.
+  final notifier = ref.read(routerNotifierProvider);
 
   return GoRouter(
     initialLocation: AppRoutes.publicMap,
