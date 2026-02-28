@@ -27,7 +27,9 @@ class AgendaNotificationService {
     tz.setLocalLocation(tz.getLocation('America/Sao_Paulo'));
 
     // Configuração Android
-    const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const androidSettings = AndroidInitializationSettings(
+      '@mipmap/ic_launcher',
+    );
 
     // Configuração iOS
     const iosSettings = DarwinInitializationSettings(
@@ -58,18 +60,16 @@ class AgendaNotificationService {
     // Android 13+
     await _notifications
         .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>()
+          AndroidFlutterLocalNotificationsPlugin
+        >()
         ?.requestNotificationsPermission();
 
     // iOS
     await _notifications
         .resolvePlatformSpecificImplementation<
-            IOSFlutterLocalNotificationsPlugin>()
-        ?.requestPermissions(
-          alert: true,
-          badge: true,
-          sound: true,
-        );
+          IOSFlutterLocalNotificationsPlugin
+        >()
+        ?.requestPermissions(alert: true, badge: true, sound: true);
   }
 
   /// Callback quando notificação é tocada
@@ -223,7 +223,8 @@ class AgendaNotificationService {
     await _notifications.show(
       id: DateTime.now().millisecondsSinceEpoch % 100000,
       title: '${event.tipo.icon} ${event.titulo}',
-      body: 'Evento agendado para ${_formatDateTime(event.dataInicioPlanejada)}',
+      body:
+          'Evento agendado para ${_formatDateTime(event.dataInicioPlanejada)}',
       notificationDetails: details,
       payload: event.id,
     );

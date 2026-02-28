@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/session/session_controller.dart';
 import '../../core/router/app_routes.dart';
-import '../theme/soloforte_theme.dart';
 import '../components/login/login_input_field.dart';
 import '../components/login/gradient_button.dart';
 import '../components/login/social_auth_button.dart';
@@ -111,10 +111,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: SoloForteColors.success,
+        backgroundColor: const Color(0xFF34C759),
         behavior: SnackBarBehavior.floating,
         duration: const Duration(seconds: 2),
-        shape: RoundedRectangleBorder(borderRadius: SoloRadius.radiusMd),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
   }
@@ -123,10 +123,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: SoloForteColors.error,
+        backgroundColor: const Color(0xFFFF3B30),
         behavior: SnackBarBehavior.floating,
         duration: const Duration(seconds: 3),
-        shape: RoundedRectangleBorder(borderRadius: SoloRadius.radiusMd),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
   }
@@ -144,7 +144,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     final canGoBack = context.canPop();
 
     return Scaffold(
-      backgroundColor: SoloForteColors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: FadeTransition(
           opacity: _fadeAnimation,
@@ -167,14 +167,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                         icon: const Icon(
                           Icons.arrow_back_ios,
                           size: 16,
-                          color: SoloForteColors.primary,
+                          color: PremiumTokens.brandGreen,
                         ),
                         label: const Text(
                           'VOLTAR',
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
-                            color: SoloForteColors.primary,
+                            color: PremiumTokens.brandGreen,
                             letterSpacing: 0.5,
                           ),
                         ),
@@ -195,11 +195,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                             height: 80,
                             width: 80,
                             decoration: BoxDecoration(
-                              gradient: SoloForteGradients.primary,
+                              gradient: PremiumTokens.brandGradient,
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: Padding(
-                              padding: const EdgeInsets.all(SoloSpacing.md),
+                              padding: const EdgeInsets.all(16.0),
                               child: Image.asset(
                                 'assets/images/app_icon.png',
                                 fit: BoxFit.contain,
@@ -217,18 +217,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                   Text(
                     'Entrar',
                     textAlign: TextAlign.center,
-                    style: SoloTextStyles.headingLarge,
+                    style: Theme.of(
+                      context,
+                    ).textTheme.displayLarge?.copyWith(fontSize: 28),
                   ),
 
                   const SizedBox(height: 8),
 
                   // Slogan
-                  const Text(
+                  Text(
                     'Transforme complexidade\nem decisões simples',
                     textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 14.0,
-                      color: SoloForteColors.textSecondary,
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      color: PremiumTokens.textSecondaryLight,
                       height: 1.4,
                     ),
                   ),
@@ -238,12 +239,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                   // Ilustração placeholder
                   Container(
                     height: 120,
-                    padding: const EdgeInsets.all(SoloSpacing.lg),
+                    padding: const EdgeInsets.all(20.0),
                     decoration: BoxDecoration(
-                      color: SoloForteColors.surfaceLight,
-                      borderRadius: SoloRadius.radiusXl,
+                      color: PremiumTokens.backgroundLight,
+                      borderRadius: BorderRadius.circular(20),
                       border: Border.all(
-                        color: SoloForteColors.border,
+                        color: PremiumTokens.hairlineLight,
                         width: 1,
                       ),
                     ),
@@ -299,18 +300,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                           onChanged: (value) {
                             setState(() => _rememberMe = value ?? false);
                           },
-                          activeColor: SoloForteColors.primary,
+                          activeColor: PremiumTokens.brandGreen,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(4),
                           ),
                         ),
                       ),
                       const SizedBox(width: 8),
-                      const Text(
+                      Text(
                         'Lembrar-me',
-                        style: TextStyle(
-                          fontSize: 14.0,
-                          color: SoloForteColors.textSecondary,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: PremiumTokens.textSecondaryLight,
                         ),
                       ),
                     ],
@@ -338,14 +338,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                           'Esqueceu a senha?',
                           style: TextStyle(
                             fontSize: 14,
-                            color: SoloForteColors.primary,
+                            color: PremiumTokens.brandGreen,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
                       ),
                       const Text(
                         ' | ',
-                        style: TextStyle(color: SoloForteColors.border),
+                        style: TextStyle(color: PremiumTokens.hairlineLight),
                       ),
                       TextButton(
                         onPressed: () {
@@ -355,7 +355,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                           'Cadastrar',
                           style: TextStyle(
                             fontSize: 14,
-                            color: SoloForteColors.primary,
+                            color: PremiumTokens.brandGreen,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -369,14 +369,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                   Row(
                     children: [
                       const Expanded(
-                        child: Divider(color: SoloForteColors.border),
+                        child: Divider(color: PremiumTokens.hairlineLight),
                       ),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Text('ou', style: SoloTextStyles.caption),
+                        child: Text(
+                          'ou',
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: Colors.grey,
+                          ),
+                        ),
                       ),
                       const Expanded(
-                        child: Divider(color: SoloForteColors.border),
+                        child: Divider(color: PremiumTokens.hairlineLight),
                       ),
                     ],
                   ),

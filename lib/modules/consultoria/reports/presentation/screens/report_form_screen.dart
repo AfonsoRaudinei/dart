@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
@@ -66,6 +67,7 @@ class _ReportFormScreenState extends ConsumerState<ReportFormScreen> {
   }
 
   Future<void> _save() async {
+    HapticFeedback.mediumImpact();
     if (_formKey.currentState!.validate()) {
       if (_selectedType == null) {
         ScaffoldMessenger.of(context).showSnackBar(

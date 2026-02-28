@@ -3,18 +3,18 @@ import '../models/drawing_models.dart';
 import '../../../../core/utils/geodesic_utils.dart';
 
 /// Serviço puro de geometria.
-/// 
+///
 /// Responsabilidades:
 /// - Cálculos geométricos (área, perímetro, distâncias)
 /// - Validação topológica
 /// - Operações booleanas (união, diferença, interseção)
 /// - Normalização de polígonos
-/// 
+///
 /// ⚠️ IMPORTANTE: Este serviço NÃO deve ter:
 /// - Dependências de UI (Flutter Widgets)
 /// - Estado mutável
 /// - Side effects
-/// 
+///
 /// Todos os métodos são estáticos e puros (mesma entrada = mesma saída).
 class GeometryService {
   GeometryService._(); // Prevenir instanciação
@@ -24,9 +24,9 @@ class GeometryService {
   // ===========================================================================
 
   /// Calcula a área de uma geometria em hectares.
-  /// 
+  ///
   /// Usa cálculos geodésicos via [GeodesicUtils] para precisão em coordenadas geográficas.
-  /// 
+  ///
   /// Retorna 0 para geometrias inválidas ou vazias.
   static double calculateArea(DrawingGeometry? geometry) {
     if (geometry == null) return 0.0;
@@ -54,7 +54,7 @@ class GeometryService {
   }
 
   /// Calcula o perímetro de uma geometria em quilômetros.
-  /// 
+  ///
   /// Usa algoritmo de Vincenty via [GeodesicUtils] para alta precisão.
   static double calculatePerimeter(DrawingGeometry? geometry) {
     if (geometry == null) return 0.0;
@@ -81,7 +81,7 @@ class GeometryService {
   }
 
   /// Calcula distâncias individuais entre pontos consecutivos.
-  /// 
+  ///
   /// Retorna lista de distâncias em quilômetros.
   /// Útil para exibir "P1 -> P2: 1.2 km".
   static List<double> calculateSegmentDistances(DrawingGeometry? geometry) {
@@ -109,7 +109,7 @@ class GeometryService {
   // ===========================================================================
 
   /// Valida se um polígono tem geometria válida.
-  /// 
+  ///
   /// Verifica:
   /// - Mínimo 3 pontos (triângulo)
   /// - Polígono fechado (primeiro ponto == último ponto)
@@ -148,7 +148,7 @@ class GeometryService {
   }
 
   /// Verifica auto-interseção em um anel.
-  /// 
+  ///
   /// ⚠️ Algoritmo O(n²) - usar apenas para polígonos pequenos (<100 vértices).
   /// Para polígonos complexos, considerar algoritmo de varredura.
   static bool _hasSelfIntersection(List<List<double>> ring) {
@@ -160,12 +160,7 @@ class GeometryService {
         // Não testar segmento final com inicial (são conectados)
         if (i == 0 && j == ring.length - 2) continue;
 
-        if (_segmentsIntersect(
-          ring[i],
-          ring[i + 1],
-          ring[j],
-          ring[j + 1],
-        )) {
+        if (_segmentsIntersect(ring[i], ring[i + 1], ring[j], ring[j + 1])) {
           return true;
         }
       }
@@ -175,7 +170,7 @@ class GeometryService {
   }
 
   /// Verifica se dois segmentos se interceptam.
-  /// 
+  ///
   /// Usa determinantes para teste rápido de interseção.
   static bool _segmentsIntersect(
     List<double> p1,
@@ -206,7 +201,7 @@ class GeometryService {
   // ===========================================================================
 
   /// Normaliza um polígono para formato consistente.
-  /// 
+  ///
   /// Ações:
   /// - Fecha anéis abertos
   /// - Remove pontos duplicados consecutivos
@@ -229,7 +224,8 @@ class GeometryService {
       final current = ring[i];
       final previous = cleaned.last;
 
-      final isDuplicate = (current[0] - previous[0]).abs() < 1e-9 &&
+      final isDuplicate =
+          (current[0] - previous[0]).abs() < 1e-9 &&
           (current[1] - previous[1]).abs() < 1e-9;
 
       if (!isDuplicate) {
@@ -242,7 +238,8 @@ class GeometryService {
       final first = cleaned.first;
       final last = cleaned.last;
 
-      final needsClosure = (first[0] - last[0]).abs() > 1e-9 ||
+      final needsClosure =
+          (first[0] - last[0]).abs() > 1e-9 ||
           (first[1] - last[1]).abs() > 1e-9;
 
       if (needsClosure) {
@@ -258,7 +255,7 @@ class GeometryService {
   // ===========================================================================
 
   /// Verifica se um ponto está dentro de um polígono.
-  /// 
+  ///
   /// Usa algoritmo Ray Casting (O(n) onde n = número de vértices).
   static bool isPointInPolygon(LatLng point, List<List<double>> ring) {
     final lat = point.latitude;
@@ -282,7 +279,7 @@ class GeometryService {
   }
 
   /// Simplifica geometria removendo pontos redundantes.
-  /// 
+  ///
   /// Usa algoritmo Ramer-Douglas-Peucker com tolerância em metros.
   static DrawingPolygon simplifyPolygon(
     DrawingPolygon polygon, {

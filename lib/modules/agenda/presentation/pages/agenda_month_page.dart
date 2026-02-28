@@ -33,7 +33,9 @@ class _AgendaMonthPageState extends ConsumerState<AgendaMonthPage> {
     final firstDay = DateTime(_currentMonth.year, _currentMonth.month, 1);
     final lastDay = DateTime(_currentMonth.year, _currentMonth.month + 1, 0);
 
-    final monthEvents = ref.read(agendaProvider.notifier).getEventsByDateRange(firstDay, lastDay);
+    final monthEvents = ref
+        .read(agendaProvider.notifier)
+        .getEventsByDateRange(firstDay, lastDay);
     final filteredEvents = _applyFilters(monthEvents, filters);
     final eventsByDay = _groupEventsByDay(filteredEvents);
 
@@ -46,14 +48,21 @@ class _AgendaMonthPageState extends ConsumerState<AgendaMonthPage> {
               padding: const EdgeInsets.only(right: 8),
               child: Center(
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: theme.primaryColor,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
                     '${_countActiveFilters(filters)}',
-                    style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ),
@@ -74,7 +83,10 @@ class _AgendaMonthPageState extends ConsumerState<AgendaMonthPage> {
             icon: const Icon(Icons.today),
             onPressed: () {
               setState(() {
-                _currentMonth = DateTime(DateTime.now().year, DateTime.now().month);
+                _currentMonth = DateTime(
+                  DateTime.now().year,
+                  DateTime.now().month,
+                );
               });
             },
             tooltip: 'Ir para hoje',
@@ -97,8 +109,10 @@ class _AgendaMonthPageState extends ConsumerState<AgendaMonthPage> {
                     },
                   ),
                   const SizedBox(height: 24),
-                  if (filteredEvents.isNotEmpty) _buildMonthSummary(filteredEvents, theme),
-                  if (agendaState.conflicts.isNotEmpty) _buildConflictWarning(agendaState.conflicts.length),
+                  if (filteredEvents.isNotEmpty)
+                    _buildMonthSummary(filteredEvents, theme),
+                  if (agendaState.conflicts.isNotEmpty)
+                    _buildConflictWarning(agendaState.conflicts.length),
                 ],
               ),
             ),
@@ -124,7 +138,13 @@ class _AgendaMonthPageState extends ConsumerState<AgendaMonthPage> {
       decoration: BoxDecoration(
         color: theme.cardColor,
         borderRadius: BorderRadius.circular(12),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4, offset: const Offset(0, 2))],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -133,19 +153,27 @@ class _AgendaMonthPageState extends ConsumerState<AgendaMonthPage> {
             icon: const Icon(Icons.chevron_left),
             onPressed: () {
               setState(() {
-                _currentMonth = DateTime(_currentMonth.year, _currentMonth.month - 1);
+                _currentMonth = DateTime(
+                  _currentMonth.year,
+                  _currentMonth.month - 1,
+                );
               });
             },
           ),
           Text(
             _formatMonthYear(_currentMonth),
-            style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+            style: theme.textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
           ),
           IconButton(
             icon: const Icon(Icons.chevron_right),
             onPressed: () {
               setState(() {
-                _currentMonth = DateTime(_currentMonth.year, _currentMonth.month + 1);
+                _currentMonth = DateTime(
+                  _currentMonth.year,
+                  _currentMonth.month + 1,
+                );
               });
             },
           ),
@@ -170,7 +198,10 @@ class _AgendaMonthPageState extends ConsumerState<AgendaMonthPage> {
           Expanded(
             child: Text(
               '$count evento(s) com conflito de horário',
-              style: TextStyle(color: Colors.orange.shade900, fontWeight: FontWeight.w500),
+              style: TextStyle(
+                color: Colors.orange.shade900,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ),
           TextButton(onPressed: () {}, child: const Text('Ver')),
@@ -190,19 +221,35 @@ class _AgendaMonthPageState extends ConsumerState<AgendaMonthPage> {
       decoration: BoxDecoration(
         color: theme.cardColor,
         borderRadius: BorderRadius.circular(12),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4, offset: const Offset(0, 2))],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Resumo do Mês', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+          Text(
+            'Resumo do Mês',
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+          ),
           const SizedBox(height: 12),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               _buildSummaryItem('Total', total, theme.primaryColor, theme),
               _buildSummaryItem('Agendados', agendados, Colors.blue, theme),
-              _buildSummaryItem('Em Andamento', emAndamento, Colors.orange, theme),
+              _buildSummaryItem(
+                'Em Andamento',
+                emAndamento,
+                Colors.orange,
+                theme,
+              ),
               _buildSummaryItem('Concluídos', concluidos, Colors.green, theme),
             ],
           ),
@@ -211,18 +258,46 @@ class _AgendaMonthPageState extends ConsumerState<AgendaMonthPage> {
     );
   }
 
-  Widget _buildSummaryItem(String label, int count, Color color, ThemeData theme) {
+  Widget _buildSummaryItem(
+    String label,
+    int count,
+    Color color,
+    ThemeData theme,
+  ) {
     return Column(
       children: [
-        Text('$count', style: theme.textTheme.headlineSmall?.copyWith(color: color, fontWeight: FontWeight.bold)),
+        Text(
+          '$count',
+          style: theme.textTheme.headlineSmall?.copyWith(
+            color: color,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         const SizedBox(height: 4),
-        Text(label, style: theme.textTheme.bodySmall, textAlign: TextAlign.center),
+        Text(
+          label,
+          style: theme.textTheme.bodySmall,
+          textAlign: TextAlign.center,
+        ),
       ],
     );
   }
 
   String _formatMonthYear(DateTime date) {
-    const months = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+    const months = [
+      'Janeiro',
+      'Fevereiro',
+      'Março',
+      'Abril',
+      'Maio',
+      'Junho',
+      'Julho',
+      'Agosto',
+      'Setembro',
+      'Outubro',
+      'Novembro',
+      'Dezembro',
+    ];
     return '${months[date.month - 1]} ${date.year}';
   }
 
@@ -238,10 +313,19 @@ class _AgendaMonthPageState extends ConsumerState<AgendaMonthPage> {
   List<Event> _applyFilters(List<Event> events, AgendaFilters filters) {
     if (!filters.hasActiveFilters) return events;
     return events.where((event) {
-      if (filters.types.isNotEmpty && !filters.types.contains(event.tipo)) return false;
-      if (filters.statuses.isNotEmpty && !filters.statuses.contains(event.status)) return false;
-      if (filters.clienteId != null && event.clienteId != filters.clienteId) return false;
-      if (filters.fazendaId != null && event.fazendaId != filters.fazendaId) return false;
+      if (filters.types.isNotEmpty && !filters.types.contains(event.tipo)) {
+        return false;
+      }
+      if (filters.statuses.isNotEmpty &&
+          !filters.statuses.contains(event.status)) {
+        return false;
+      }
+      if (filters.clienteId != null && event.clienteId != filters.clienteId) {
+        return false;
+      }
+      if (filters.fazendaId != null && event.fazendaId != filters.fazendaId) {
+        return false;
+      }
       return true;
     }).toList();
   }

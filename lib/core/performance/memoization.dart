@@ -1,12 +1,12 @@
 import 'package:flutter/foundation.dart';
 
 /// Utilitários para memoização e cache de objetos caros de construir.
-/// 
+///
 /// Útil para:
 /// - Markers de mapa (evitar reconstrução a cada frame)
 /// - Polígonos complexos (cache de coordenadas processadas)
 /// - Ícones customizados (cache de ByteData)
-/// 
+///
 /// Exemplo:
 /// ```dart
 /// final markerCache = MemoizedCache<String, Marker>(
@@ -19,10 +19,7 @@ class MemoizedCache<K, V> {
   final V Function(K key) compute;
   final int maxSize;
 
-  MemoizedCache({
-    required this.compute,
-    this.maxSize = 100,
-  });
+  MemoizedCache({required this.compute, this.maxSize = 100});
 
   /// Obtém valor do cache ou calcula se não existir.
   V get(K key) {
@@ -59,7 +56,7 @@ class MemoizedCache<K, V> {
 }
 
 /// Cache especializado para markers de mapa.
-/// 
+///
 /// Usa hash de propriedades para detectar mudanças.
 class MarkerCache<T> {
   final Map<String, T> _cache = {};
@@ -106,14 +103,14 @@ class MarkerCache<T> {
 }
 
 /// Memoiza resultado de função pura baseado em parâmetros.
-/// 
+///
 /// Exemplo:
 /// ```dart
 /// final expensiveCalc = memoize((int n) {
 ///   // Cálculo pesado
 ///   return fibonacci(n);
 /// });
-/// 
+///
 /// expensiveCalc(10); // Calcula
 /// expensiveCalc(10); // Retorna do cache
 /// ```
@@ -127,27 +124,29 @@ Function memoize(Function fn) {
       return cache[key];
     }
 
-    final result = Function.apply(fn, [a, b, c, d, e].where((x) => x != null).toList());
+    final result = Function.apply(
+      fn,
+      [a, b, c, d, e].where((x) => x != null).toList(),
+    );
     cache[key] = result;
     return result;
   };
 }
 
 /// ValueNotifier memoizado que só notifica quando valor realmente muda.
-/// 
+///
 /// Previne rebuilds desnecessários quando valor é semanticamente igual.
 class MemoizedValueNotifier<T> extends ValueNotifier<T> {
   final bool Function(T a, T b)? equals;
 
-  MemoizedValueNotifier(
-    super.value, {
-    this.equals,
-  });
+  MemoizedValueNotifier(super.value, {this.equals});
 
   @override
   set value(T newValue) {
     // Usar comparador customizado ou == padrão
-    final areEqual = equals != null ? equals!(value, newValue) : value == newValue;
+    final areEqual = equals != null
+        ? equals!(value, newValue)
+        : value == newValue;
 
     if (!areEqual) {
       super.value = newValue;
@@ -156,7 +155,7 @@ class MemoizedValueNotifier<T> extends ValueNotifier<T> {
 }
 
 /// Lista memoizada que só notifica quando conteúdo realmente muda.
-/// 
+///
 /// Útil para listas de features/markers que podem ser recalculadas mas
 /// frequentemente resultam nos mesmos objetos.
 class MemoizedListNotifier<T> extends ValueNotifier<List<T>> {

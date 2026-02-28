@@ -63,7 +63,11 @@ class MapRepository {
             .map((e) => Publication.fromJson(e))
             .toList();
       } catch (e) {
-        AppLogger.warning('Cache de publications corrompido — descartando', tag: 'MapRepo', error: e);
+        AppLogger.warning(
+          'Cache de publications corrompido — descartando',
+          tag: 'MapRepo',
+          error: e,
+        );
       }
     }
 
@@ -265,8 +269,7 @@ class MapRepository {
       try {
         final decoded = jsonDecode(cachedString);
         final List dataList = decoded['data'];
-        final cachedData =
-            dataList.map((e) => Publicacao.fromJson(e)).toList();
+        final cachedData = dataList.map((e) => Publicacao.fromJson(e)).toList();
 
         MapLogger.logEvent(
           'Publicacoes: Loaded ${cachedData.length} items from local cache',
@@ -278,7 +281,9 @@ class MapRepository {
     }
 
     // TODO(backend): Integrar com Supabase quando tabela publicacoes estiver pronta
-    MapLogger.logEvent('Publicacoes: Cache vazio. Backend não integrado — retornando lista vazia.');
+    MapLogger.logEvent(
+      'Publicacoes: Cache vazio. Backend não integrado — retornando lista vazia.',
+    );
     return [];
   }
 
@@ -293,7 +298,11 @@ class MapRepository {
             .map((e) => Publicacao.fromJson(e))
             .toList();
       } catch (e) {
-        AppLogger.warning('Cache de publicacoes corrompido — descartando', tag: 'MapRepo', error: e);
+        AppLogger.warning(
+          'Cache de publicacoes corrompido — descartando',
+          tag: 'MapRepo',
+          error: e,
+        );
       }
     }
 

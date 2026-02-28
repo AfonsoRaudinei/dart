@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../../../modules/map/design/sf_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:soloforte_app/ui/theme/soloforte_theme.dart';
+import '../../theme/premium/design_tokens.dart';
 import '../../../core/domain/map_models.dart';
 import '../../../core/domain/publicacao.dart';
 import '../../../core/state/map_state.dart';
@@ -24,18 +25,12 @@ class BaseMapSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: SoloForteColors.white,
+        color: PremiumTokens.surfaceLight,
         borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(SoloRadius.lg),
-          topRight: Radius.circular(SoloRadius.lg),
+          topLeft: Radius.circular(24.0),
+          topRight: Radius.circular(24.0),
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.15),
-            blurRadius: 20,
-            offset: const Offset(0, -5),
-          ),
-        ],
+        boxShadow: PremiumTokens.premiumShadow,
       ),
       padding: const EdgeInsets.only(top: 12, bottom: 30),
       child: Column(
@@ -46,7 +41,7 @@ class BaseMapSheet extends StatelessWidget {
             width: 40,
             height: 4,
             decoration: BoxDecoration(
-              color: SoloForteColors.grayLight,
+              color: PremiumTokens.backgroundLight,
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -57,21 +52,29 @@ class BaseMapSheet extends StatelessWidget {
             child: Row(
               children: [
                 Expanded(
-                  child: Text(title, style: SoloTextStyles.headingMedium),
+                  child: Text(
+                    title,
+                    style:
+                        (Theme.of(context).textTheme.titleLarge ??
+                        const TextStyle()),
+                  ),
                 ),
                 // 🔧 FIX: Só mostrar botão X se onClose foi fornecido
                 if (onClose != null)
-                  IconButton(
-                    icon: const Icon(
-                      SFIcons.close,
-                      color: SoloForteColors.textSecondary,
-                    ),
+                  TextButton(
                     onPressed: onClose,
+                    child: const Text(
+                      'Cancelar',
+                      style: TextStyle(
+                        color: PremiumTokens.brandGreen,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ),
               ],
             ),
           ),
-          const Divider(height: 1, color: SoloForteColors.borderLight),
+          const Divider(height: 1, color: PremiumTokens.hairlineLight),
           Flexible(child: child),
         ],
       ),
@@ -136,23 +139,33 @@ class LayersSheet extends ConsumerWidget {
           // Seção de Sobreposições
           Text(
             'Sobreposições',
-            style: SoloTextStyles.label.copyWith(
-              color: SoloForteColors.textSecondary,
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-            ),
+            style:
+                (Theme.of(context).textTheme.labelMedium ?? const TextStyle())
+                    .copyWith(
+                      color: PremiumTokens.textSecondaryLight,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
           ),
           const SizedBox(height: 12),
           Container(
             decoration: BoxDecoration(
-              color: SoloForteColors.grayLight,
+              color: PremiumTokens.backgroundLight,
               borderRadius: BorderRadius.circular(12),
             ),
             child: SwitchListTile(
-              title: Text('Mostrar Pinos', style: SoloTextStyles.body),
+              title: Text(
+                'Mostrar Pinos',
+                style:
+                    (Theme.of(context).textTheme.bodyMedium ??
+                    const TextStyle()),
+              ),
               value: showMarkers,
-              activeTrackColor: SoloForteColors.greenIOS,
-              onChanged: (v) => ref.read(showMarkersProvider.notifier).toggle(),
+              activeTrackColor: PremiumTokens.brandGreen,
+              onChanged: (v) {
+                HapticFeedback.lightImpact();
+                ref.read(showMarkersProvider.notifier).toggle();
+              },
             ),
           ),
         ],
@@ -190,7 +203,7 @@ class _LayerCardPreview extends StatelessWidget {
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 color: isSelected
-                    ? SoloForteColors.greenIOS
+                    ? PremiumTokens.brandGreen
                     : Colors.grey.shade300,
                 width: isSelected ? 3 : 1,
               ),
@@ -199,7 +212,7 @@ class _LayerCardPreview extends StatelessWidget {
                 ? Center(
                     child: Icon(
                       SFIcons.checkCircle,
-                      color: SoloForteColors.greenIOS,
+                      color: PremiumTokens.brandGreen,
                       size: 32,
                     ),
                   )
@@ -208,13 +221,14 @@ class _LayerCardPreview extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             label,
-            style: SoloTextStyles.body.copyWith(
-              fontSize: 13,
-              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-              color: isDisabled
-                  ? SoloForteColors.textTertiary
-                  : SoloForteColors.textPrimary,
-            ),
+            style: (Theme.of(context).textTheme.bodyMedium ?? const TextStyle())
+                .copyWith(
+                  fontSize: 13,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                  color: isDisabled
+                      ? PremiumTokens.textTertiaryLight
+                      : PremiumTokens.textPrimaryLight,
+                ),
           ),
         ],
       ),
@@ -239,9 +253,9 @@ class PublicacoesSheet extends ConsumerWidget {
       child: pubsAsync.when(
         data: (pubs) {
           if (pubs.isEmpty) {
-            return _buildEmptyState();
+            return _buildEmptyState(context);
           }
-          
+
           return ListView.separated(
             shrinkWrap: true,
             padding: const EdgeInsets.all(16), // Grid 16
@@ -254,7 +268,7 @@ class PublicacoesSheet extends ConsumerWidget {
           child: Padding(
             padding: EdgeInsets.all(40),
             child: CircularProgressIndicator(
-              color: SoloForteColors.greenIOS,
+              color: PremiumTokens.brandGreen,
               strokeWidth: 2,
             ),
           ),
@@ -268,14 +282,15 @@ class PublicacoesSheet extends ConsumerWidget {
                 Icon(
                   SFIcons.warningOutlined,
                   size: 48,
-                  color: SoloForteColors.error,
+                  color: PremiumTokens.alertError,
                 ),
                 const SizedBox(height: 16),
                 Text(
                   'Erro ao carregar publicações',
-                  style: SoloTextStyles.body.copyWith(
-                    color: SoloForteColors.error,
-                  ),
+                  style:
+                      (Theme.of(context).textTheme.bodyMedium ??
+                              const TextStyle())
+                          .copyWith(color: PremiumTokens.alertError),
                 ),
               ],
             ),
@@ -285,7 +300,7 @@ class PublicacoesSheet extends ConsumerWidget {
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(BuildContext context) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(40),
@@ -295,21 +310,21 @@ class PublicacoesSheet extends ConsumerWidget {
             Icon(
               SFIcons.article,
               size: 64,
-              color: SoloForteColors.textTertiary,
+              color: PremiumTokens.textTertiaryLight,
             ),
             const SizedBox(height: 16),
             Text(
               'Nenhuma publicação',
-              style: SoloTextStyles.headingMedium.copyWith(
-                color: SoloForteColors.textSecondary,
-              ),
+              style:
+                  (Theme.of(context).textTheme.titleLarge ?? const TextStyle())
+                      .copyWith(color: PremiumTokens.textSecondaryLight),
             ),
             const SizedBox(height: 8),
             Text(
               'As publicações aparecerão aqui',
-              style: SoloTextStyles.label.copyWith(
-                color: SoloForteColors.textTertiary,
-              ),
+              style:
+                  (Theme.of(context).textTheme.labelMedium ?? const TextStyle())
+                      .copyWith(color: PremiumTokens.textTertiaryLight),
             ),
           ],
         ),
@@ -328,22 +343,19 @@ class _PublicacaoCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final typeInfo = _getTypeInfo(pub.type);
-    
+
     return Container(
       decoration: BoxDecoration(
-        color: SoloForteColors.white,
+        color: PremiumTokens.surfaceLight,
         borderRadius: BorderRadius.circular(16), // Radius padrão
-        border: Border.all(
-          color: SoloForteColors.borderLight,
-          width: 1,
-        ),
+        border: Border.all(color: PremiumTokens.hairlineLight, width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // 🖼️ Imagem de capa
           _buildCoverImage(),
-          
+
           // 📝 Conteúdo
           Padding(
             padding: const EdgeInsets.all(16),
@@ -351,39 +363,45 @@ class _PublicacaoCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Badge de tipo
-                _buildTypeBadge(typeInfo),
+                _buildTypeBadge(context, typeInfo),
                 const SizedBox(height: 8),
-                
+
                 // Título
                 if (pub.title != null && pub.title!.isNotEmpty)
                   Text(
                     pub.title!,
-                    style: SoloTextStyles.headingMedium.copyWith(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                    ),
+                    style:
+                        (Theme.of(context).textTheme.titleLarge ??
+                                const TextStyle())
+                            .copyWith(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                            ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
-                
+
                 // Descrição
                 if (pub.description != null && pub.description!.isNotEmpty) ...[
                   const SizedBox(height: 8),
                   Text(
                     pub.description!,
-                    style: SoloTextStyles.body.copyWith(
-                      fontSize: 14,
-                      color: SoloForteColors.textSecondary,
-                    ),
+                    style:
+                        (Theme.of(context).textTheme.bodyMedium ??
+                                const TextStyle())
+                            .copyWith(
+                              fontSize: 14,
+                              color: PremiumTokens.textSecondaryLight,
+                            ),
                     maxLines: 3,
                     overflow: TextOverflow.ellipsis,
                   ),
                 ],
-                
+
                 // Metadados (Cliente, Área)
                 if (pub.clientName != null || pub.areaName != null) ...[
                   const SizedBox(height: 12),
-                  _buildMetadata(),
+                  _buildMetadata(context),
                 ],
               ],
             ),
@@ -395,11 +413,11 @@ class _PublicacaoCard extends StatelessWidget {
 
   Widget _buildCoverImage() {
     final cover = pub.coverMedia;
-    
+
     return Container(
       height: 180,
       decoration: BoxDecoration(
-        color: SoloForteColors.grayLight,
+        color: PremiumTokens.backgroundLight,
         borderRadius: const BorderRadius.only(
           topLeft: Radius.circular(16),
           topRight: Radius.circular(16),
@@ -427,12 +445,12 @@ class _PublicacaoCard extends StatelessWidget {
       child: Icon(
         SFIcons.image,
         size: 48,
-        color: SoloForteColors.textTertiary.withValues(alpha: 0.3),
+        color: PremiumTokens.textTertiaryLight.withValues(alpha: 0.3),
       ),
     );
   }
 
-  Widget _buildTypeBadge(_TypeInfo info) {
+  Widget _buildTypeBadge(BuildContext context, _TypeInfo info) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
@@ -442,41 +460,41 @@ class _PublicacaoCard extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            info.icon,
-            size: 12,
-            color: info.color,
-          ),
+          Icon(info.icon, size: 12, color: info.color),
           const SizedBox(width: 4),
           Text(
             info.label,
-            style: SoloTextStyles.label.copyWith(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              color: info.color,
-            ),
+            style:
+                (Theme.of(context).textTheme.labelMedium ?? const TextStyle())
+                    .copyWith(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: info.color,
+                    ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildMetadata() {
+  Widget _buildMetadata(BuildContext context) {
     return Row(
       children: [
         if (pub.clientName != null) ...[
           Icon(
             SFIcons.person,
             size: 14,
-            color: SoloForteColors.textTertiary,
+            color: PremiumTokens.textTertiaryLight,
           ),
           const SizedBox(width: 4),
           Text(
             pub.clientName!,
-            style: SoloTextStyles.label.copyWith(
-              fontSize: 12,
-              color: SoloForteColors.textSecondary,
-            ),
+            style:
+                (Theme.of(context).textTheme.labelMedium ?? const TextStyle())
+                    .copyWith(
+                      fontSize: 12,
+                      color: PremiumTokens.textSecondaryLight,
+                    ),
           ),
         ],
         if (pub.clientName != null && pub.areaName != null)
@@ -484,22 +502,24 @@ class _PublicacaoCard extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 8),
             child: Text(
               '•',
-              style: TextStyle(color: SoloForteColors.textTertiary),
+              style: TextStyle(color: PremiumTokens.textTertiaryLight),
             ),
           ),
         if (pub.areaName != null) ...[
           Icon(
             SFIcons.locationOn,
             size: 14,
-            color: SoloForteColors.textTertiary,
+            color: PremiumTokens.textTertiaryLight,
           ),
           const SizedBox(width: 4),
           Text(
             pub.areaName!,
-            style: SoloTextStyles.label.copyWith(
-              fontSize: 12,
-              color: SoloForteColors.textSecondary,
-            ),
+            style:
+                (Theme.of(context).textTheme.labelMedium ?? const TextStyle())
+                    .copyWith(
+                      fontSize: 12,
+                      color: PremiumTokens.textSecondaryLight,
+                    ),
           ),
         ],
       ],
@@ -512,7 +532,7 @@ class _PublicacaoCard extends StatelessWidget {
         return _TypeInfo(
           label: 'Institucional',
           icon: SFIcons.business,
-          color: SoloForteColors.brand,
+          color: PremiumTokens.brandGreen,
         );
       case PublicacaoType.tecnico:
         return _TypeInfo(
@@ -524,7 +544,7 @@ class _PublicacaoCard extends StatelessWidget {
         return _TypeInfo(
           label: 'Resultado',
           icon: SFIcons.barChart,
-          color: SoloForteColors.greenIOS,
+          color: PremiumTokens.brandGreen,
         );
       case PublicacaoType.comparativo:
         return _TypeInfo(

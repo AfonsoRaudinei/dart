@@ -9,10 +9,7 @@ import '../../../../modules/dashboard/domain/location_state.dart';
 class MapUserLocationWidget extends ConsumerWidget {
   final bool isMapReady;
 
-  const MapUserLocationWidget({
-    super.key,
-    required this.isMapReady,
-  });
+  const MapUserLocationWidget({super.key, required this.isMapReady});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -54,10 +51,7 @@ class MapUserLocationWidget extends ConsumerWidget {
                 decoration: BoxDecoration(
                   color: const Color(0xFF007AFF),
                   shape: BoxShape.circle,
-                  border: Border.all(
-                    color: Colors.white,
-                    width: 3,
-                  ),
+                  border: Border.all(color: Colors.white, width: 3),
                 ),
               ),
             ],

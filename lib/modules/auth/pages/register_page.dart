@@ -1,9 +1,10 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/router/app_routes.dart';
-import '../../../ui/theme/soloforte_theme.dart';
+
 import '../models/register_dto.dart';
 import '../services/auth_service.dart';
 import '../utils/auth_validators.dart';
@@ -127,7 +128,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Conta criada com sucesso! Verifique seu email.'),
-            backgroundColor: SoloForteColors.success,
+            backgroundColor: Color(0xFF34C759),
           ),
         );
         context.go(AppRoutes.login);
@@ -152,7 +153,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: SoloForteColors.error,
+        backgroundColor: const Color(0xFFFF3B30),
         behavior: SnackBarBehavior.floating,
       ),
     );
@@ -163,7 +164,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     RegisterPage.buildCount++;
 
     return Scaffold(
-      backgroundColor: SoloForteColors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
@@ -178,19 +179,20 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                 Align(
                   alignment: Alignment.centerLeft,
                   child: TextButton.icon(
-                    onPressed: () =>
-                        context.canPop() ? context.pop() : context.go(AppRoutes.publicMap),
+                    onPressed: () => context.canPop()
+                        ? context.pop()
+                        : context.go(AppRoutes.publicMap),
                     icon: const Icon(
                       Icons.arrow_back_ios,
                       size: 16,
-                      color: SoloForteColors.primary,
+                      color: PremiumTokens.brandGreen,
                     ),
                     label: const Text(
                       'VOLTAR',
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
-                        color: SoloForteColors.primary,
+                        color: PremiumTokens.brandGreen,
                         letterSpacing: 0.5,
                       ),
                     ),
@@ -201,7 +203,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                   'Criar Conta',
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: SoloForteColors.textPrimary,
+                    color: PremiumTokens.textPrimaryLight,
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -209,7 +211,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                 Text(
                   'Preencha seus dados para começar',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: SoloForteColors.textSecondary,
+                    color: PremiumTokens.textSecondaryLight,
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -228,8 +230,6 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                   decoration: const InputDecoration(
                     labelText: 'Nome Completo',
                     prefixIcon: Icon(Icons.person_outline),
-                    filled: true,
-                    fillColor: Colors.white,
                   ),
                   validator: AuthValidators.validateName,
                   textInputAction: TextInputAction.next,
@@ -243,8 +243,6 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                   decoration: const InputDecoration(
                     labelText: 'E-mail',
                     prefixIcon: Icon(Icons.email_outlined),
-                    filled: true,
-                    fillColor: Colors.white,
                   ),
                   keyboardType: TextInputType.emailAddress,
                   validator: AuthValidators.validateEmail,
@@ -259,8 +257,6 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                   decoration: const InputDecoration(
                     labelText: 'Telefone',
                     prefixIcon: Icon(Icons.phone_outlined),
-                    filled: true,
-                    fillColor: Colors.white,
                   ),
                   keyboardType: TextInputType.phone,
                   validator: AuthValidators.validatePhone,
@@ -275,8 +271,6 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                   decoration: const InputDecoration(
                     labelText: 'Tipo de Usuário',
                     prefixIcon: Icon(Icons.badge_outlined),
-                    filled: true,
-                    fillColor: Colors.white,
                   ),
                   items: const [
                     DropdownMenuItem(
@@ -302,8 +296,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                   decoration: InputDecoration(
                     labelText: 'Senha',
                     prefixIcon: const Icon(Icons.lock_outline),
-                    filled: true,
-                    fillColor: Colors.white,
+
                     suffixIcon: IconButton(
                       icon: Icon(
                         _obscurePassword
@@ -365,8 +358,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                   decoration: InputDecoration(
                     labelText: 'Confirmar Senha',
                     prefixIcon: const Icon(Icons.lock_clock_outlined),
-                    filled: true,
-                    fillColor: Colors.white,
+
                     suffixIcon: IconButton(
                       icon: Icon(
                         _obscureConfirmPassword
@@ -401,14 +393,13 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                       ? _handleRegister
                       : null,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: SoloForteColors.primary,
-                    disabledBackgroundColor: SoloForteColors.primary.withValues(
-                      alpha: 0.5,
-                    ),
+                    backgroundColor: PremiumTokens.brandGreen,
+                    disabledBackgroundColor: PremiumTokens.brandGreen
+                        .withValues(alpha: 0.5),
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     minimumSize: const Size.fromHeight(48),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(SoloRadius.md),
+                      borderRadius: BorderRadius.circular(10.0),
                     ),
                   ),
                   child: _isLoading
@@ -420,13 +411,10 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                             color: Colors.white,
                           ),
                         )
-                      : const Text(
+                      : Text(
                           'Criar Conta',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(color: Colors.white),
                         ),
                 ),
 
@@ -437,14 +425,14 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                   children: [
                     Text(
                       'Já tem conta? ',
-                      style: TextStyle(color: SoloForteColors.textSecondary),
+                      style: TextStyle(color: PremiumTokens.textSecondaryLight),
                     ),
                     TextButton(
                       onPressed: () => context.go(AppRoutes.login),
-                      child: const Text(
+                      child: Text(
                         'Entrar',
-                        style: TextStyle(
-                          color: SoloForteColors.primary,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: PremiumTokens.brandGreen,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -462,11 +450,11 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   Widget _buildStrengthBar(int index, PasswordStrength strength) {
     Color color = Colors.grey[300]!;
     if (strength == PasswordStrength.weak) {
-      if (index == 0) color = SoloForteColors.error;
+      if (index == 0) color = const Color(0xFFFF3B30);
     } else if (strength == PasswordStrength.medium) {
-      if (index <= 1) color = SoloForteColors.warning;
+      if (index <= 1) color = const Color(0xFFFF9500);
     } else if (strength == PasswordStrength.strong) {
-      color = SoloForteColors.success;
+      color = const Color(0xFF34C759);
     }
 
     return Container(
@@ -492,11 +480,11 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   Color _getStrengthColor(PasswordStrength strength) {
     switch (strength) {
       case PasswordStrength.weak:
-        return SoloForteColors.error;
+        return const Color(0xFFFF3B30);
       case PasswordStrength.medium:
-        return SoloForteColors.warning;
+        return const Color(0xFFFF9500);
       case PasswordStrength.strong:
-        return SoloForteColors.success;
+        return const Color(0xFF34C759);
     }
   }
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../controllers/drawing_controller.dart';
@@ -10,7 +11,7 @@ import 'components/drawing_tool_selector.dart';
 import 'components/drawing_actions_bar.dart';
 import '../../../../core/utils/app_logger.dart';
 import 'components/drawing_hint_overlay.dart';
-import 'package:soloforte_app/ui/theme/soloforte_theme.dart';
+import '../../../../ui/theme/premium/design_tokens.dart';
 
 class DrawingSheet extends ConsumerStatefulWidget {
   final DrawingController controller;
@@ -34,7 +35,7 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
   Farm? _selectedFarm;
   final bool _isConsultant = true; // TODO: Obter do AuthProvider
 
-  Color _selectedColor = SoloForteColors.primary;
+  Color _selectedColor = PremiumTokens.brandGreen;
 
   final _nomeController = TextEditingController();
   final _descricaoController = TextEditingController();
@@ -390,9 +391,15 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
             ],
           ),
           const SizedBox(height: 16),
-          OutlinedButton(
+          TextButton(
             onPressed: widget.controller.cancelOperation,
-            child: const Text('Cancelar'),
+            child: const Text(
+              'Cancelar',
+              style: TextStyle(
+                color: PremiumTokens.brandGreen,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
         ],
       ),
@@ -461,15 +468,21 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
           Row(
             children: [
               Expanded(
-                child: OutlinedButton(
+                child: TextButton(
                   onPressed: widget.controller.cancelOperation,
-                  child: const Text('Cancelar'),
+                  child: const Text(
+                    'Cancelar',
+                    style: TextStyle(
+                      color: PremiumTokens.brandGreen,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: ElevatedButton(
-                  onPressed: onConfirm,
+                  onPressed: () { HapticFeedback.mediumImpact(); onConfirm(); },
                   style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
                   child: const Text(
                     'Confirmar',
@@ -507,9 +520,15 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
           Row(
             children: [
               Expanded(
-                child: OutlinedButton(
+                child: TextButton(
                   onPressed: widget.controller.cancelOperation,
-                  child: const Text('Cancelar'),
+                  child: const Text(
+                    'Cancelar',
+                    style: TextStyle(
+                      color: PremiumTokens.brandGreen,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(width: 12),
@@ -612,9 +631,15 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
           Row(
             children: [
               Expanded(
-                child: OutlinedButton(
+                child: TextButton(
                   onPressed: widget.controller.cancelEdit,
-                  child: const Text('Cancelar'),
+                  child: const Text(
+                    'Cancelar',
+                    style: TextStyle(
+                      color: PremiumTokens.brandGreen,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(width: 12),
@@ -834,24 +859,24 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
                     child: Row(
                       children: [
                         _ColorOption(
-                          color: SoloForteColors.primary,
+                          color: PremiumTokens.brandGreen,
                           selected: _selectedColor,
-                          onTap: (c) => setState(() => _selectedColor = c),
+                          onTap: (c) { HapticFeedback.selectionClick(); setState(() => _selectedColor = c); },
                         ),
                         _ColorOption(
                           color: Colors.blue,
                           selected: _selectedColor,
-                          onTap: (c) => setState(() => _selectedColor = c),
+                          onTap: (c) { HapticFeedback.selectionClick(); setState(() => _selectedColor = c); },
                         ),
                         _ColorOption(
                           color: Colors.amber,
                           selected: _selectedColor,
-                          onTap: (c) => setState(() => _selectedColor = c),
+                          onTap: (c) { HapticFeedback.selectionClick(); setState(() => _selectedColor = c); },
                         ),
                         _ColorOption(
                           color: Colors.redAccent,
                           selected: _selectedColor,
-                          onTap: (c) => setState(() => _selectedColor = c),
+                          onTap: (c) { HapticFeedback.selectionClick(); setState(() => _selectedColor = c); },
                         ),
                       ],
                     ),
@@ -910,7 +935,7 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
                       _resetReviewForm();
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: SoloForteColors.greenIOS,
+                      backgroundColor: PremiumTokens.brandGreen,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                     ),
                     child: const Text(
@@ -992,7 +1017,7 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
     setState(() {
       _selectedClient = null;
       _selectedFarm = null;
-      _selectedColor = SoloForteColors.primary;
+      _selectedColor = PremiumTokens.brandGreen;
     });
   }
 }
@@ -1115,7 +1140,7 @@ class _BigMetric extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Icon(icon, color: SoloForteColors.textSecondary, size: 20),
+        Icon(icon, color: PremiumTokens.textSecondaryLight, size: 20),
         const SizedBox(height: 8),
         Text(
           value,

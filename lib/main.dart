@@ -7,9 +7,10 @@ import 'core/config/app_config.dart';
 import 'core/infra/preferences_service.dart';
 import 'core/router/app_router.dart';
 import 'core/services/sync_orchestrator.dart';
+import 'modules/map/presentation/providers/visit_completion_observer.dart';
 import 'modules/settings/data/settings_repository.dart';
 import 'modules/settings/presentation/providers/settings_providers.dart';
-import 'modules/settings/presentation/theme/app_themes.dart';
+import 'ui/theme/premium/premium_app_theme.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -95,9 +96,14 @@ class _SoloForteAppState extends ConsumerState<SoloForteApp> {
   void initState() {
     super.initState();
     // Inicializa SyncOrchestrator APÓS o primeiro frame para não bloquear renderização.
+    // Inicializa VisitCompletionObserver (ADR-010): detecta conclusão de visita → gera RelatorioTecnico.
+    // keepAlive: true garante que o listener persiste durante toda a sessão.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         ref.read(syncOrchestratorProvider);
+        ref.read(
+          visitCompletionObserverProvider,
+        ); // ADR-010: ativa listener agenda → relatorio
       }
     });
   }
@@ -109,7 +115,9 @@ class _SoloForteAppState extends ConsumerState<SoloForteApp> {
 
     return MaterialApp.router(
       title: 'SoloForte',
-      theme: AppThemes.getTheme(themeMode),
+      theme: PremiumAppTheme.lightTheme,
+      darkTheme: PremiumAppTheme.darkTheme,
+      themeMode: themeMode == 'dark' ? ThemeMode.dark : ThemeMode.light,
       routerConfig: router,
       debugShowCheckedModeBanner: false,
       // Fallback para erro crítico durante build do router

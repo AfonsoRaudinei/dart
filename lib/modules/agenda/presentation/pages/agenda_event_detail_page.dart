@@ -11,10 +11,7 @@ import '../widgets/event_type_badge.dart';
 class AgendaEventDetailPage extends ConsumerWidget {
   final String eventId;
 
-  const AgendaEventDetailPage({
-    super.key,
-    required this.eventId,
-  });
+  const AgendaEventDetailPage({super.key, required this.eventId});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -24,9 +21,7 @@ class AgendaEventDetailPage extends ConsumerWidget {
     if (event == null) {
       return Scaffold(
         appBar: AppBar(title: const Text('Evento não encontrado')),
-        body: const Center(
-          child: Text('Evento não encontrado'),
-        ),
+        body: const Center(child: Text('Evento não encontrado')),
       );
     }
 
@@ -97,11 +92,7 @@ class AgendaEventDetailPage extends ConsumerWidget {
                 'Atualizado em',
                 _formatDateTime(event.updatedAt),
               ),
-              _buildInfoRow(
-                Icons.sync,
-                'Status Sync',
-                event.syncStatus,
-              ),
+              _buildInfoRow(Icons.sync, 'Status Sync', event.syncStatus),
             ]),
             const SizedBox(height: 24),
 
@@ -128,9 +119,7 @@ class AgendaEventDetailPage extends ConsumerWidget {
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: theme.primaryColor.withValues(alpha: 0.2),
-        ),
+        border: Border.all(color: theme.primaryColor.withValues(alpha: 0.2)),
       ),
       child: Row(
         children: [
@@ -152,7 +141,9 @@ class AgendaEventDetailPage extends ConsumerWidget {
                 Text(
                   _formatDate(event.dataInicioPlanejada),
                   style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.7),
+                    color: theme.textTheme.bodySmall?.color?.withValues(
+                      alpha: 0.7,
+                    ),
                   ),
                 ),
               ],
@@ -169,10 +160,7 @@ class AgendaEventDetailPage extends ConsumerWidget {
       children: [
         Text(
           title,
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 12),
         Container(
@@ -250,11 +238,7 @@ class AgendaEventDetailPage extends ConsumerWidget {
         '${session.currentDurationMin} minutos',
       ),
       if (session.notasFinais != null)
-        _buildInfoRow(
-          Icons.notes,
-          'Notas',
-          session.notasFinais!,
-        ),
+        _buildInfoRow(Icons.notes, 'Notas', session.notasFinais!),
     ]);
   }
 
@@ -264,20 +248,16 @@ class AgendaEventDetailPage extends ConsumerWidget {
       children: [
         const Text(
           'Ações',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 12),
         if (event.status == EventStatus.agendado)
           ElevatedButton.icon(
             onPressed: () async {
               try {
-                await ref.read(agendaProvider.notifier).startEvent(
-                      event.id,
-                      'user-current',
-                    );
+                await ref
+                    .read(agendaProvider.notifier)
+                    .startEvent(event.id, 'user-current');
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Evento iniciado!')),
@@ -285,9 +265,9 @@ class AgendaEventDetailPage extends ConsumerWidget {
                 }
               } catch (e) {
                 if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Erro: $e')),
-                  );
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(SnackBar(content: Text('Erro: $e')));
                 }
               }
             },
@@ -311,9 +291,9 @@ class AgendaEventDetailPage extends ConsumerWidget {
                 }
               } catch (e) {
                 if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Erro: $e')),
-                  );
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(SnackBar(content: Text('Erro: $e')));
                 }
               }
             },
@@ -338,9 +318,9 @@ class AgendaEventDetailPage extends ConsumerWidget {
                 }
               } catch (e) {
                 if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Erro: $e')),
-                  );
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(SnackBar(content: Text('Erro: $e')));
                 }
               }
             },
@@ -385,9 +365,9 @@ class AgendaEventDetailPage extends ConsumerWidget {
                 }
               } catch (e) {
                 if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Erro: $e')),
-                  );
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(SnackBar(content: Text('Erro: $e')));
                 }
               }
             }
@@ -405,9 +385,9 @@ class AgendaEventDetailPage extends ConsumerWidget {
 
   void _showEditDialog(BuildContext context, WidgetRef ref, Event event) {
     // TODO: Implementar edição completa
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Edição em desenvolvimento')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Edição em desenvolvimento')));
   }
 
   String _formatDate(DateTime date) {

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/session/session_controller.dart';
-import 'package:soloforte_app/ui/theme/soloforte_theme.dart';
+
 import '../../modules/consultoria/reports/presentation/widgets/kpi_dashboard_widget.dart';
 
 class SettingsScreen extends ConsumerWidget {
@@ -13,11 +13,11 @@ class SettingsScreen extends ConsumerWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text('Configurações', style: SoloTextStyles.headingMedium),
+          Text('Configurações', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
           const SizedBox(height: 20),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: SoloForteColors.error,
+              backgroundColor: const Color(0xFFFF3B30),
             ),
             onPressed: () {
               ref.read(sessionControllerProvider.notifier).logout();
@@ -39,7 +39,7 @@ class RelatoriosScreen extends StatelessWidget {
         // Removido const
         title: Text(
           'Relatórios & Performance',
-          style: SoloTextStyles.headingMedium,
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         ),
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -69,14 +69,14 @@ class AgendaScreen extends StatelessWidget {
                   ),
                   const SizedBox(width: 12),
                   // Removido const/style fixo
-                  Text('Agenda', style: SoloTextStyles.headingMedium),
+                  Text('Agenda', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
                 ],
               ),
             ),
             Expanded(
               child: Center(
                 // Removido const/style fixo
-                child: Text('Agenda', style: SoloTextStyles.headingMedium),
+                child: Text('Agenda', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
               ),
             ),
           ],
@@ -91,6 +91,6 @@ class ClientesScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Removido const
-    return Center(child: Text('Clientes', style: SoloTextStyles.headingMedium));
+    return Center(child: Text('Clientes', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)));
   }
 }

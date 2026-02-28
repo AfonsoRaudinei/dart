@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:soloforte_app/ui/theme/soloforte_theme.dart';
 
 class FeedbackStatsCard extends StatelessWidget {
   final String label;
@@ -33,7 +32,7 @@ class FeedbackStatsCard extends StatelessWidget {
             const SizedBox(height: 12),
             Text(
               count.toString(),
-              style: SoloTextStyles.headingLarge.copyWith(
+              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold).copyWith(
                 color: color,
                 fontWeight: FontWeight.bold,
               ),
@@ -41,7 +40,7 @@ class FeedbackStatsCard extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               label,
-              style: SoloTextStyles.body.copyWith(
+              style: Theme.of(context).textTheme.bodyMedium!.copyWith(
                 color: color,
                 fontWeight: FontWeight.w500,
               ),

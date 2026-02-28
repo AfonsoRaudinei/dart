@@ -43,7 +43,11 @@ class DrawingController extends ChangeNotifier {
       _clients = await _clientsRepository.getClients();
       notifyListeners();
     } catch (e) {
-      AppLogger.warning('Erro ao carregar clientes', tag: 'DrawingController', error: e);
+      AppLogger.warning(
+        'Erro ao carregar clientes',
+        tag: 'DrawingController',
+        error: e,
+      );
     }
   }
 
@@ -57,7 +61,11 @@ class DrawingController extends ChangeNotifier {
       _farms = await _clientsRepository.getFarms(clientId);
       notifyListeners();
     } catch (e) {
-      AppLogger.warning('Erro ao carregar fazendas', tag: 'DrawingController', error: e);
+      AppLogger.warning(
+        'Erro ao carregar fazendas',
+        tag: 'DrawingController',
+        error: e,
+      );
     }
   }
 
@@ -81,7 +89,11 @@ class DrawingController extends ChangeNotifier {
       await _clientsRepository.saveFarm(newFarm, clientId);
       await loadFarms(clientId); // Reload
     } catch (e) {
-      AppLogger.warning('Erro ao criar fazenda', tag: 'DrawingController', error: e);
+      AppLogger.warning(
+        'Erro ao criar fazenda',
+        tag: 'DrawingController',
+        error: e,
+      );
     }
   }
 
@@ -133,13 +145,20 @@ class DrawingController extends ChangeNotifier {
     } on SocketException {
       if (_isDisposed) return;
       _errorMessage = "Sem conexão com a internet.";
-      if (kDebugMode) AppLogger.debug('No internet connection', tag: 'DrawingController');
+      if (kDebugMode) {
+        AppLogger.debug('No internet connection', tag: 'DrawingController');
+      }
       notifyListeners();
     } catch (e, stackTrace) {
       if (_isDisposed) return;
       _errorMessage = "Erro na sincronização. Tente novamente.";
       if (kDebugMode) {
-        AppLogger.error('Sync error', tag: 'DrawingController', error: e, stackTrace: stackTrace);
+        AppLogger.error(
+          'Sync error',
+          tag: 'DrawingController',
+          error: e,
+          stackTrace: stackTrace,
+        );
       }
       notifyListeners();
     }
@@ -258,8 +277,11 @@ class DrawingController extends ChangeNotifier {
       if (!success) {
         // Transição falhou (não devería acontecer pois já validamos acima)
         if (kDebugMode) {
-            AppLogger.debug('DRAW-ERROR: Falha ao transicionar armed -> drawing', tag: 'DrawingController');
-          }
+          AppLogger.debug(
+            'DRAW-ERROR: Falha ao transicionar armed -> drawing',
+            tag: 'DrawingController',
+          );
+        }
         return;
       }
     }
@@ -637,7 +659,10 @@ class DrawingController extends ChangeNotifier {
     }
 
     if (kDebugMode) {
-      AppLogger.debug('selectTool($toolKey) → $tool | estado: ${_stateMachine.currentState.name}', tag: 'DrawingController');
+      AppLogger.debug(
+        'selectTool($toolKey) → $tool | estado: ${_stateMachine.currentState.name}',
+        tag: 'DrawingController',
+      );
     }
 
     // 🔧 FIX-AUDIT: Bloquear mudança de ferramenta durante drawing
@@ -645,7 +670,10 @@ class DrawingController extends ChangeNotifier {
     if (_stateMachine.currentState == DrawingState.drawing &&
         tool != DrawingTool.none) {
       if (kDebugMode) {
-        AppLogger.debug('selectTool bloqueado durante drawing state.', tag: 'DrawingController');
+        AppLogger.debug(
+          'selectTool bloqueado durante drawing state.',
+          tag: 'DrawingController',
+        );
       }
       _errorMessage =
           "Conclua ou cancele o desenho atual antes de trocar de ferramenta";
@@ -660,7 +688,10 @@ class DrawingController extends ChangeNotifier {
       if (_stateMachine.currentState != DrawingState.idle) {
         _stateMachine.reset();
         if (kDebugMode) {
-          AppLogger.debug('Estado resetado para idle', tag: 'DrawingController');
+          AppLogger.debug(
+            'Estado resetado para idle',
+            tag: 'DrawingController',
+          );
         }
       }
       // Limpar pontos de desenho anterior
@@ -672,7 +703,10 @@ class DrawingController extends ChangeNotifier {
       final success = _stateMachine.startDrawing(tool);
       if (!success) {
         if (kDebugMode) {
-          AppLogger.debug('startDrawing falhou para $tool', tag: 'DrawingController');
+          AppLogger.debug(
+            'startDrawing falhou para $tool',
+            tag: 'DrawingController',
+          );
         }
         _stateMachine.reset();
         _interactionMode = DrawingInteraction.normal;
@@ -730,7 +764,10 @@ class DrawingController extends ChangeNotifier {
     // corretamente. Não processar o sketch para evitar transição inválida.
     if (_stateMachine.currentState == DrawingState.idle) {
       if (kDebugMode) {
-        AppLogger.debug('updateManualSketch ignorado em estado idle.', tag: 'DrawingController');
+        AppLogger.debug(
+          'updateManualSketch ignorado em estado idle.',
+          tag: 'DrawingController',
+        );
       }
       return;
     }
@@ -743,7 +780,10 @@ class DrawingController extends ChangeNotifier {
       // 🔧 FIX-DRAW-REDSCREEN: Usar retorno booleano em vez de try-catch
       final success = _stateMachine.beginAddingPoints();
       if (!success && kDebugMode) {
-        AppLogger.debug('DRAW-ERROR: Falha ao transicionar armed -> drawing', tag: 'DrawingController');
+        AppLogger.debug(
+          'DRAW-ERROR: Falha ao transicionar armed -> drawing',
+          tag: 'DrawingController',
+        );
       }
     }
 

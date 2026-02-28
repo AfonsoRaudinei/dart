@@ -40,18 +40,18 @@ class MediaItem {
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'path': path,
-        'caption': caption,
-        'isCover': isCover,
-      };
+    'id': id,
+    'path': path,
+    'caption': caption,
+    'isCover': isCover,
+  };
 
   factory MediaItem.fromJson(Map<String, dynamic> json) => MediaItem(
-        id: json['id'] as String,
-        path: json['path'] as String,
-        caption: json['caption'] as String?,
-        isCover: json['isCover'] as bool? ?? false,
-      );
+    id: json['id'] as String,
+    path: json['path'] as String,
+    caption: json['caption'] as String?,
+    isCover: json['isCover'] as bool? ?? false,
+  );
 }
 
 /// Entidade canônica de Publicação (ADR-007).
@@ -95,11 +95,7 @@ class Publicacao {
   /// Se não há mídia, retorna placeholder defensivo.
   MediaItem get coverMedia {
     if (media.isEmpty) {
-      return const MediaItem(
-        id: '__placeholder__',
-        path: '',
-        isCover: true,
-      );
+      return const MediaItem(id: '__placeholder__', path: '', isCover: true);
     }
     final covers = media.where((m) => m.isCover);
     return covers.isNotEmpty ? covers.first : media.first;
@@ -152,36 +148,36 @@ class Publicacao {
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'latitude': latitude,
-        'longitude': longitude,
-        'createdAt': createdAt.toIso8601String(),
-        'status': status,
-        'isVisible': isVisible,
-        'type': type.name,
-        'title': title,
-        'description': description,
-        'clientName': clientName,
-        'areaName': areaName,
-        'media': media.map((m) => m.toJson()).toList(),
-      };
+    'id': id,
+    'latitude': latitude,
+    'longitude': longitude,
+    'createdAt': createdAt.toIso8601String(),
+    'status': status,
+    'isVisible': isVisible,
+    'type': type.name,
+    'title': title,
+    'description': description,
+    'clientName': clientName,
+    'areaName': areaName,
+    'media': media.map((m) => m.toJson()).toList(),
+  };
 
   factory Publicacao.fromJson(Map<String, dynamic> json) => Publicacao(
-        id: json['id'] as String,
-        latitude: (json['latitude'] as num).toDouble(),
-        longitude: (json['longitude'] as num).toDouble(),
-        createdAt: DateTime.parse(json['createdAt'] as String),
-        status: json['status'] as String,
-        isVisible: json['isVisible'] as bool? ?? true,
-        type: PublicacaoType.values.byName(json['type'] as String),
-        title: json['title'] as String?,
-        description: json['description'] as String?,
-        clientName: json['clientName'] as String?,
-        areaName: json['areaName'] as String?,
-        media: (json['media'] as List<dynamic>?)
-                ?.map(
-                    (m) => MediaItem.fromJson(m as Map<String, dynamic>))
-                .toList() ??
-            const [],
-      );
+    id: json['id'] as String,
+    latitude: (json['latitude'] as num).toDouble(),
+    longitude: (json['longitude'] as num).toDouble(),
+    createdAt: DateTime.parse(json['createdAt'] as String),
+    status: json['status'] as String,
+    isVisible: json['isVisible'] as bool? ?? true,
+    type: PublicacaoType.values.byName(json['type'] as String),
+    title: json['title'] as String?,
+    description: json['description'] as String?,
+    clientName: json['clientName'] as String?,
+    areaName: json['areaName'] as String?,
+    media:
+        (json['media'] as List<dynamic>?)
+            ?.map((m) => MediaItem.fromJson(m as Map<String, dynamic>))
+            .toList() ??
+        const [],
+  );
 }

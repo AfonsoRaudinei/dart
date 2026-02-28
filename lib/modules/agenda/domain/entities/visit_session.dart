@@ -94,15 +94,15 @@ class VisitSession extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        eventoId,
-        startAtReal,
-        endAtReal,
-        duracaoMin,
-        notasFinais,
-        checklistSnapshot,
-        createdBy,
-        createdAt,
-        syncStatus,
-      ];
+    id,
+    eventoId,
+    startAtReal,
+    endAtReal,
+    duracaoMin,
+    notasFinais,
+    checklistSnapshot,
+    createdBy,
+    createdAt,
+    syncStatus,
+  ];
 }

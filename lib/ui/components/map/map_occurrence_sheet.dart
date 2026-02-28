@@ -4,10 +4,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:soloforte_app/ui/theme/soloforte_theme.dart';
+import '../../theme/premium/design_tokens.dart';
+import '../../../../modules/map/design/sf_icons.dart';
 import '../../../../modules/consultoria/relatorio_visita/data/draft_storage_service.dart';
 import '../../../../modules/consultoria/relatorio_visita/data/image_storage_service.dart';
-import '../../../../modules/map/design/sf_icons.dart';
 import 'widgets/visit_panels.dart';
 import '../../../../modules/consultoria/relatorio_visita/data/visita_model.dart';
 import '../../../../modules/consultoria/relatorio_visita/data/visita_database_service.dart';
@@ -187,15 +187,9 @@ class SectionCard extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: const [
-          BoxShadow(
-            color: Color.fromRGBO(0, 0, 0, 0.05),
-            blurRadius: 10,
-            offset: Offset(0, 4),
-          ),
-        ],
+        color: PremiumTokens.surfaceLight,
+        borderRadius: BorderRadius.circular(12),
+        // boxShadow: PremiumTokens.tightShadow,
       ),
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -207,7 +201,7 @@ class SectionCard extends StatelessWidget {
               style: const TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
-                color: SoloForteColors.textSecondary,
+                color: PremiumTokens.textSecondaryLight,
                 letterSpacing: 0.8,
               ),
             ),
@@ -238,7 +232,7 @@ class FormFieldRow extends StatelessWidget {
             style: const TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
-              color: SoloForteColors.textPrimary,
+              color: PremiumTokens.textPrimaryLight,
             ),
           ),
           const SizedBox(height: 8),
@@ -260,13 +254,13 @@ class DapBadge extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         color: dap > 0
-            ? SoloForteColors.greenIOS.withValues(alpha: 0.1)
-            : SoloForteColors.grayLight,
+            ? PremiumTokens.brandGreen.withValues(alpha: 0.1)
+            : PremiumTokens.backgroundLight,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
           color: dap > 0
-              ? SoloForteColors.greenIOS.withValues(alpha: 0.3)
-              : SoloForteColors.border,
+              ? PremiumTokens.brandGreen.withValues(alpha: 0.3)
+              : PremiumTokens.hairlineLight,
         ),
       ),
       child: Row(
@@ -276,7 +270,7 @@ class DapBadge extends StatelessWidget {
             'DAP: ',
             style: TextStyle(
               fontSize: 12,
-              color: SoloForteColors.textSecondary,
+              color: PremiumTokens.textSecondaryLight,
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -286,8 +280,8 @@ class DapBadge extends StatelessWidget {
               fontSize: 14,
               fontWeight: FontWeight.bold,
               color: dap > 0
-                  ? SoloForteColors.greenIOS
-                  : SoloForteColors.textSecondary,
+                  ? PremiumTokens.brandGreen
+                  : PremiumTokens.textSecondaryLight,
             ),
           ),
         ],
@@ -314,7 +308,7 @@ class StageSelector extends StatelessWidget {
       initialValue: selectedStageCode,
       decoration: InputDecoration(
         filled: true,
-        fillColor: SoloForteColors.grayLight,
+        fillColor: PremiumTokens.backgroundLight,
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 16,
           vertical: 12,
@@ -326,7 +320,7 @@ class StageSelector extends StatelessWidget {
       ),
       hint: const Text(
         'Selecione o estádio',
-        style: TextStyle(color: SoloForteColors.textTertiary),
+        style: TextStyle(color: PremiumTokens.textTertiaryLight),
       ),
       items: estagiosSoja.map((stage) {
         return DropdownMenuItem(
@@ -387,12 +381,12 @@ class CategoryGrid extends StatelessWidget {
                 (MediaQuery.of(context).size.width - 80) / 3, // 3 cols approx
             padding: const EdgeInsets.symmetric(vertical: 16),
             decoration: BoxDecoration(
-              color: isSelected ? SoloForteColors.greenIOS : Colors.white,
+              color: isSelected ? PremiumTokens.brandGreen : Colors.white,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 color: isSelected
-                    ? SoloForteColors.greenIOS
-                    : SoloForteColors.border,
+                    ? PremiumTokens.brandGreen
+                    : PremiumTokens.hairlineLight,
               ),
               boxShadow: [
                 if (!isSelected)
@@ -409,7 +403,7 @@ class CategoryGrid extends StatelessWidget {
                   cat['icon'] as IconData,
                   color: isSelected
                       ? Colors.white
-                      : SoloForteColors.textPrimary,
+                      : PremiumTokens.textPrimaryLight,
                 ),
                 const SizedBox(height: 8),
                 Text(
@@ -419,7 +413,7 @@ class CategoryGrid extends StatelessWidget {
                     fontWeight: FontWeight.w600,
                     color: isSelected
                         ? Colors.white
-                        : SoloForteColors.textPrimary,
+                        : PremiumTokens.textPrimaryLight,
                   ),
                 ),
                 if (count > 0) ...[
@@ -432,7 +426,7 @@ class CategoryGrid extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: isSelected
                           ? Colors.white.withValues(alpha: 0.2)
-                          : SoloForteColors.grayLight,
+                          : PremiumTokens.backgroundLight,
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
@@ -442,7 +436,7 @@ class CategoryGrid extends StatelessWidget {
                         fontWeight: FontWeight.bold,
                         color: isSelected
                             ? Colors.white
-                            : SoloForteColors.textSecondary,
+                            : PremiumTokens.textSecondaryLight,
                       ),
                     ),
                   ),
@@ -477,8 +471,7 @@ class MapOccurrenceSheet extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<MapOccurrenceSheet> createState() =>
-      _MapOccurrenceSheetState();
+  ConsumerState<MapOccurrenceSheet> createState() => _MapOccurrenceSheetState();
 }
 
 class _MapOccurrenceSheetState extends ConsumerState<MapOccurrenceSheet> {
@@ -495,8 +488,7 @@ class _MapOccurrenceSheetState extends ConsumerState<MapOccurrenceSheet> {
     super.initState();
     // Initialize temporary draft to avoid UI errors before load
     final currentUser = Supabase.instance.client.auth.currentUser;
-    final userName =
-        currentUser?.userMetadata?['full_name'] as String? ?? '';
+    final userName = currentUser?.userMetadata?['full_name'] as String? ?? '';
     _draft = VisitaModel(
       dataVisita: DateTime.now(),
       latitude: widget.latitude,
@@ -536,9 +528,15 @@ class _MapOccurrenceSheetState extends ConsumerState<MapOccurrenceSheet> {
           }
           _obsController.text = _draft.observacoes;
         });
-        AppLogger.debug('Draft restaurado para o local.', tag: 'OccurrenceSheet');
+        AppLogger.debug(
+          'Draft restaurado para o local.',
+          tag: 'OccurrenceSheet',
+        );
       } else {
-        AppLogger.debug('Local diferente. Iniciando novo relatório.', tag: 'OccurrenceSheet');
+        AppLogger.debug(
+          'Local diferente. Iniciando novo relatório.',
+          tag: 'OccurrenceSheet',
+        );
       }
     }
   }
@@ -574,7 +572,10 @@ class _MapOccurrenceSheetState extends ConsumerState<MapOccurrenceSheet> {
     await _draftService.clearDraft();
     _autoSaveTimer?.cancel();
 
-    AppLogger.debug('VISITA TÉCNICA SALVA COM SUCESSO: ${_draft.id}', tag: 'OccurrenceSheet');
+    AppLogger.debug(
+      'VISITA TÉCNICA SALVA COM SUCESSO: ${_draft.id}',
+      tag: 'OccurrenceSheet',
+    );
 
     if (!mounted) return;
 
@@ -599,7 +600,7 @@ class _MapOccurrenceSheetState extends ConsumerState<MapOccurrenceSheet> {
             onPressed: () => Navigator.pop(ctx),
             child: const Text(
               'Voltar',
-              style: TextStyle(color: SoloForteColors.textSecondary),
+              style: TextStyle(color: PremiumTokens.textSecondaryLight),
             ),
           ),
           TextButton(
@@ -610,7 +611,7 @@ class _MapOccurrenceSheetState extends ConsumerState<MapOccurrenceSheet> {
             },
             child: const Text(
               'Descartar',
-              style: TextStyle(color: SoloForteColors.error),
+              style: TextStyle(color: PremiumTokens.alertError),
             ),
           ),
         ],
@@ -650,7 +651,7 @@ class _MapOccurrenceSheetState extends ConsumerState<MapOccurrenceSheet> {
   Widget build(BuildContext context) {
     return Container(
       decoration: const BoxDecoration(
-        color: SoloForteColors.grayLight, // Background scaffold color
+        color: PremiumTokens.backgroundLight, // Background scaffold color
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       child: Column(
@@ -662,7 +663,7 @@ class _MapOccurrenceSheetState extends ConsumerState<MapOccurrenceSheet> {
               width: 48,
               height: 5,
               decoration: BoxDecoration(
-                color: SoloForteColors.border,
+                color: PremiumTokens.hairlineLight,
                 borderRadius: BorderRadius.circular(2.5),
               ),
             ),
@@ -676,14 +677,20 @@ class _MapOccurrenceSheetState extends ConsumerState<MapOccurrenceSheet> {
               children: [
                 Text(
                   'Relatório de Visita',
-                  style: SoloTextStyles.headingMedium.copyWith(fontSize: 20),
+                  style:
+                      (Theme.of(context).textTheme.titleLarge ??
+                              const TextStyle())
+                          .copyWith(fontSize: 20),
                 ),
-                IconButton(
-                  icon: const Icon(
-                    Icons.close,
-                    color: SoloForteColors.textSecondary,
-                  ),
+                TextButton(
                   onPressed: _handleCancel,
+                  child: const Text(
+                    'Cancelar',
+                    style: TextStyle(
+                      color: PremiumTokens.brandGreen,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -706,9 +713,10 @@ class _MapOccurrenceSheetState extends ConsumerState<MapOccurrenceSheet> {
                             label: 'Produtor',
                             child: Text(
                               _draft.produtor,
-                              style: SoloTextStyles.body.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
+                              style:
+                                  (Theme.of(context).textTheme.bodyMedium ??
+                                          const TextStyle())
+                                      .copyWith(fontWeight: FontWeight.bold),
                             ),
                           ),
                         ),
@@ -717,9 +725,10 @@ class _MapOccurrenceSheetState extends ConsumerState<MapOccurrenceSheet> {
                             label: 'Propriedade',
                             child: Text(
                               _draft.propriedade,
-                              style: SoloTextStyles.body.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
+                              style:
+                                  (Theme.of(context).textTheme.bodyMedium ??
+                                          const TextStyle())
+                                      .copyWith(fontWeight: FontWeight.bold),
                             ),
                           ),
                         ),
@@ -740,7 +749,7 @@ class _MapOccurrenceSheetState extends ConsumerState<MapOccurrenceSheet> {
                                 vertical: 12,
                               ),
                               decoration: BoxDecoration(
-                                color: SoloForteColors.grayLight,
+                                color: PremiumTokens.backgroundLight,
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Text(
@@ -763,7 +772,7 @@ class _MapOccurrenceSheetState extends ConsumerState<MapOccurrenceSheet> {
                               decoration: InputDecoration(
                                 hintText: '0',
                                 filled: true,
-                                fillColor: SoloForteColors.grayLight,
+                                fillColor: PremiumTokens.backgroundLight,
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
                                   borderSide: BorderSide.none,
@@ -796,7 +805,7 @@ class _MapOccurrenceSheetState extends ConsumerState<MapOccurrenceSheet> {
                               decoration: InputDecoration(
                                 hintText: 'Ex: Garra 63i64',
                                 filled: true,
-                                fillColor: SoloForteColors.grayLight,
+                                fillColor: PremiumTokens.backgroundLight,
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
                                   borderSide: BorderSide.none,
@@ -827,11 +836,11 @@ class _MapOccurrenceSheetState extends ConsumerState<MapOccurrenceSheet> {
                                   horizontal: 12,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: SoloForteColors.grayLight,
+                                  color: PremiumTokens.backgroundLight,
                                   borderRadius: BorderRadius.circular(12),
                                   border: Border.all(
                                     color: _draft.dataPlantio == null
-                                        ? SoloForteColors.border
+                                        ? PremiumTokens.hairlineLight
                                         : Colors.transparent,
                                   ),
                                 ),
@@ -841,8 +850,8 @@ class _MapOccurrenceSheetState extends ConsumerState<MapOccurrenceSheet> {
                                       : _dateFormat.format(_draft.dataPlantio!),
                                   style: TextStyle(
                                     color: _draft.dataPlantio == null
-                                        ? SoloForteColors.textTertiary
-                                        : SoloForteColors.textPrimary,
+                                        ? PremiumTokens.textTertiaryLight
+                                        : PremiumTokens.textPrimaryLight,
                                   ),
                                 ),
                               ),
@@ -890,7 +899,7 @@ class _MapOccurrenceSheetState extends ConsumerState<MapOccurrenceSheet> {
                                   const Icon(
                                     Icons.info_outline,
                                     size: 16,
-                                    color: SoloForteColors.warning,
+                                    color: PremiumTokens.alertWarning,
                                   ),
                                   const SizedBox(width: 8),
                                   Expanded(
@@ -898,7 +907,7 @@ class _MapOccurrenceSheetState extends ConsumerState<MapOccurrenceSheet> {
                                       alerta,
                                       style: const TextStyle(
                                         fontSize: 13,
-                                        color: SoloForteColors.textSecondary,
+                                        color: PremiumTokens.textSecondaryLight,
                                       ),
                                     ),
                                   ),
@@ -974,7 +983,7 @@ class _MapOccurrenceSheetState extends ConsumerState<MapOccurrenceSheet> {
                         hintText:
                             'Descreva o cenário encontrado, recomendações e observações relevantes...',
                         filled: true,
-                        fillColor: SoloForteColors.grayLight,
+                        fillColor: PremiumTokens.backgroundLight,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                           borderSide: BorderSide.none,
@@ -997,13 +1006,13 @@ class _MapOccurrenceSheetState extends ConsumerState<MapOccurrenceSheet> {
                         const Icon(
                           Icons.person_outline,
                           size: 16,
-                          color: SoloForteColors.textTertiary,
+                          color: PremiumTokens.textTertiaryLight,
                         ),
                         const SizedBox(width: 8),
                         Text(
                           'Responsável: ${_draft.tecnico}',
                           style: const TextStyle(
-                            color: SoloForteColors.textSecondary,
+                            color: PremiumTokens.textSecondaryLight,
                           ),
                         ),
                       ],
@@ -1014,13 +1023,13 @@ class _MapOccurrenceSheetState extends ConsumerState<MapOccurrenceSheet> {
                         const Icon(
                           Icons.location_on_outlined,
                           size: 16,
-                          color: SoloForteColors.textTertiary,
+                          color: PremiumTokens.textTertiaryLight,
                         ),
                         const SizedBox(width: 8),
                         Text(
                           'Coords: ${_draft.latitude.toStringAsFixed(6)}, ${_draft.longitude.toStringAsFixed(6)}',
                           style: const TextStyle(
-                            color: SoloForteColors.textSecondary,
+                            color: PremiumTokens.textSecondaryLight,
                           ),
                         ),
                       ],
@@ -1037,7 +1046,7 @@ class _MapOccurrenceSheetState extends ConsumerState<MapOccurrenceSheet> {
                   child: ElevatedButton(
                     onPressed: _submit,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: SoloForteColors.greenIOS,
+                      backgroundColor: PremiumTokens.brandGreen,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
                       ),

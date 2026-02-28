@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../theme/soloforte_theme.dart';
+import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
+
 import 'package:google_fonts/google_fonts.dart';
 
 class GradientButton extends StatelessWidget {
@@ -30,31 +31,32 @@ class GradientButton extends StatelessWidget {
 
     // Cores baseadas no estado
     final Color backgroundColor = isEnabled
-        ? SoloForteColors.primary
-        : SoloForteColors.surfaceLight; // Disabled
+        ? PremiumTokens.brandGreen
+        : PremiumTokens.backgroundLight; // Disabled
 
     final Color textColor = isEnabled
         ? Colors
               .white // Contraste no verde
-        : SoloForteColors.textTertiary;
+        : PremiumTokens.textTertiaryLight;
 
     final List<BoxShadow> effectiveShadow = isEnabled
-        ? (boxShadow ?? SoloShadows.shadowButton)
+        ? (boxShadow ?? [BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2))])
         : [];
 
     return Container(
       height: height,
       width: width,
       decoration: BoxDecoration(
-        color: backgroundColor,
-        borderRadius: BorderRadius.circular(SoloRadius.md), // 16px
+        gradient: isEnabled ? PremiumTokens.brandGradient : null,
+        color: isEnabled ? null : backgroundColor,
+        borderRadius: BorderRadius.circular(10.0), // 16px
         boxShadow: effectiveShadow,
       ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           onTap: isEnabled ? onPressed : null,
-          borderRadius: BorderRadius.circular(SoloRadius.md),
+          borderRadius: BorderRadius.circular(10.0),
           splashColor: Colors.white.withOpacity(0.2),
           highlightColor: Colors.white.withOpacity(0.1),
           child: Center(
@@ -70,8 +72,8 @@ class GradientButton extends StatelessWidget {
                 : Text(
                     text,
                     style: GoogleFonts.inter(
-                      fontSize: SoloFontSizes.base,
-                      fontWeight: SoloFontWeights.semibold,
+                      fontSize: 14.0,
+                      fontWeight: FontWeight.w500,
                       color: textColor,
                       letterSpacing: 0.3,
                     ),

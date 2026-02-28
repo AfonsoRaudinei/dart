@@ -82,7 +82,11 @@ class SyncOrchestrator extends ChangeNotifier {
         try {
           await module.sync();
         } catch (e) {
-          AppLogger.warning('Sync Error in ${module.name}', tag: 'SyncOrchestrator', error: e);
+          AppLogger.warning(
+            'Sync Error in ${module.name}',
+            tag: 'SyncOrchestrator',
+            error: e,
+          );
           _lastError = 'Erro em ${module.name}: $e';
         }
         completed++;

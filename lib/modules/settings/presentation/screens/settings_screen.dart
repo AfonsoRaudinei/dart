@@ -1,8 +1,11 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
-import '../../../../ui/theme/soloforte_theme.dart';
+import '../../../../ui/theme/premium/design_tokens.dart';
+import 'package:soloforte_app/modules/map/design/sf_icons.dart';
+import 'dart:ui' as ui;
 import '../../../../core/session/session_controller.dart';
 import '../providers/settings_providers.dart';
 import '../../domain/settings_models.dart';
@@ -12,158 +15,142 @@ class SettingsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Current theme colors for consistency with global theme if needed,
-    // but we use SoloForteTheme styles logic or context.
-    // The scaffold background is set by main.dart theme, so we can rely on Theme.of(context)
-    final theme = Theme.of(context);
     final userProfile = ref.watch(profileProvider);
     final currentThemeMode = ref.watch(themeProvider);
 
-    return Material(
-      color: theme.scaffoldBackgroundColor,
-      child: Stack(
-        children: [
-          Positioned.fill(
-            child: Center(
-              child: Opacity(
-                opacity: 0.1,
-                child: Image.asset(
-                  'assets/images/soloforte_logo.png',
-                  width: 300,
+    return Scaffold(
+      backgroundColor: PremiumTokens.backgroundLight,
+      body: CustomScrollView(
+        slivers: [
+          SliverAppBar(
+            pinned: true,
+            expandedHeight: 120.0,
+            backgroundColor: PremiumTokens.backgroundLight.withValues(
+              alpha: 0.8,
+            ),
+            surfaceTintColor: Colors.transparent,
+            flexibleSpace: FlexibleSpaceBar(
+              titlePadding: const EdgeInsets.only(left: 16, bottom: 16),
+              title: Text(
+                'Configurações',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: -0.5,
+                  color: PremiumTokens.textPrimaryLight,
+                ),
+              ),
+              background: ClipRect(
+                child: BackdropFilter(
+                  filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                  child: Container(color: Colors.transparent),
                 ),
               ),
             ),
           ),
-          SafeArea(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Header Customizado
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                  child: Row(
-                    children: [
-                      Text(
-                        'Configurações',
-                        style: const TextStyle(
-                          fontSize: 32,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: -0.5,
-                          color: Colors.black,
-                        ),
-                      ),
-                    ],
-                  ),
+
+          SliverList(
+            delegate: SliverChildListDelegate([
+              const SizedBox(height: 16),
+              // Perfil
+              _buildSectionHeader('PERFIL'),
+              _buildSection(context, [
+                _buildProfileTile(context, ref, userProfile),
+                _buildSwitchTile(
+                  context,
+                  title: 'Usar como ícone do app',
+                  value: userProfile.useAsAppIcon,
+                  onChanged: (val) => ref
+                      .read(profileProvider.notifier)
+                      .toggleUseAsAppIcon(val),
                 ),
-                // Scrollable Content
-                Expanded(
-                  child: ListView(
-                    padding: EdgeInsets.zero,
-                    children: [
-                      // Perfil
-                      _buildSectionHeader('PERFIL'),
-                      _buildSection(context, [
-                        _buildProfileTile(context, ref, userProfile),
-                        _buildSwitchTile(
-                          context,
-                          title: 'Usar como ícone do app',
-                          value: userProfile.useAsAppIcon,
-                          onChanged: (val) => ref
-                              .read(profileProvider.notifier)
-                              .toggleUseAsAppIcon(val),
-                        ),
-                      ]),
+              ]),
 
-                      // Aparência
-                      _buildSectionHeader('APARÊNCIA'),
-                      _buildSection(context, [
-                        _buildThemeSelector(context, ref, currentThemeMode),
-                      ]),
+              // Aparência
+              _buildSectionHeader('APARÊNCIA'),
+              _buildSection(context, [
+                _buildThemeSelector(context, ref, currentThemeMode),
+              ]),
 
-                      // Dados Offline
-                      _buildSectionHeader('DADOS OFFLINE'),
-                      _buildSection(context, [
-                        _buildSwitchTile(
-                          context,
-                          title: 'Modo Offline',
-                          subtitle:
-                              'Baixar mapas e dados para uso sem internet.',
-                          value: false, // Placeholder
-                          onChanged: (val) {},
-                          icon: Icons.offline_pin_outlined,
-                        ),
-                        // Storage Usage
-                        _buildStorageUsageTile(context, ref),
-                        _buildActionTile(
-                          context,
-                          title: 'Limpar cache',
-                          icon: Icons.cleaning_services_outlined,
-                          onTap: () async {
-                            // Placeholder action
-                          },
-                        ),
-                        _buildActionTile(
-                          context,
-                          title: 'Limpar dados locais',
-                          icon: Icons.delete_outline,
-                          isDestructive: true,
-                          onTap: () => _showClearConfirmation(context),
-                        ),
-                      ]),
-
-                      // Preferências
-                      _buildSectionHeader('PREFERÊNCIAS'),
-                      _buildSection(context, [
-                        _buildSwitchTile(
-                          context,
-                          title: 'Notificações',
-                          value: true,
-                          onChanged: (val) {},
-                          icon: Icons.notifications_none,
-                        ),
-                        _buildTile(
-                          context,
-                          title: 'Relatórios & Exportação',
-                          icon: Icons.bar_chart,
-                          onTap: () {},
-                        ),
-                        _buildTile(
-                          context,
-                          title: 'Termos de Serviço',
-                          icon: Icons.description_outlined,
-                          onTap: () {},
-                        ),
-                      ]),
-
-                      // Sessão
-                      _buildSectionHeader('SESSÃO'),
-                      _buildSection(context, [
-                        _buildActionTile(
-                          context,
-                          title: 'Sair do aplicativo',
-                          icon: Icons.logout,
-                          isDestructive: true,
-                          onTap: () {
-                            ref
-                                .read(sessionControllerProvider.notifier)
-                                .logout();
-                          },
-                        ),
-                      ]),
-
-                      const SizedBox(height: 40),
-                      Center(
-                        child: Text(
-                          'SoloForte v1.0.0',
-                          style: SoloTextStyles.label,
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                    ],
-                  ),
+              // Dados Offline
+              _buildSectionHeader('DADOS OFFLINE'),
+              _buildSection(context, [
+                _buildSwitchTile(
+                  context,
+                  title: 'Modo Offline',
+                  subtitle: 'Baixar mapas e dados para uso sem internet.',
+                  value: false, // Placeholder
+                  onChanged: (val) {},
+                  icon: SFIcons.layers,
                 ),
-              ],
-            ),
+                // Storage Usage
+                _buildStorageUsageTile(context, ref),
+                _buildActionTile(
+                  context,
+                  title: 'Limpar cache',
+                  icon: SFIcons.settings,
+                  onTap: () async {
+                    // Placeholder action
+                  },
+                ),
+                _buildActionTile(
+                  context,
+                  title: 'Limpar dados locais',
+                  icon: SFIcons.delete,
+                  isDestructive: true,
+                  onTap: () => _showClearConfirmation(context),
+                ),
+              ]),
+
+              // Preferências
+              _buildSectionHeader('PREFERÊNCIAS'),
+              _buildSection(context, [
+                _buildSwitchTile(
+                  context,
+                  title: 'Notificações',
+                  value: true,
+                  onChanged: (val) {},
+                  icon: SFIcons.info,
+                ),
+                _buildTile(
+                  context,
+                  title: 'Relatórios & Exportação',
+                  icon: SFIcons.openInNew,
+                  onTap: () {},
+                ),
+                _buildTile(
+                  context,
+                  title: 'Termos de Serviço',
+                  icon: SFIcons.info,
+                  onTap: () {},
+                ),
+              ]),
+
+              // Sessão
+              _buildSectionHeader('SESSÃO'),
+              _buildSection(context, [
+                _buildActionTile(
+                  context,
+                  title: 'Sair do aplicativo',
+                  icon: SFIcons.arrowLeft,
+                  isDestructive: true,
+                  onTap: () {
+                    ref.read(sessionControllerProvider.notifier).logout();
+                  },
+                ),
+              ]),
+
+              const SizedBox(height: 40),
+              Center(
+                child: Text(
+                  'SoloForte v1.0.0',
+                  style:
+                      (Theme.of(context).textTheme.labelMedium ??
+                              const TextStyle())
+                          .copyWith(color: PremiumTokens.textSecondaryLight),
+                ),
+              ),
+              const SizedBox(height: 20),
+            ]),
           ),
         ],
       ),
@@ -173,7 +160,13 @@ class SettingsScreen extends ConsumerWidget {
   Widget _buildSectionHeader(String title) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
-      child: Text(title, style: SoloTextStyles.label),
+      child: Builder(
+        builder: (ctx) => Text(
+          title,
+          style: (Theme.of(ctx).textTheme.labelMedium ?? const TextStyle())
+              .copyWith(color: PremiumTokens.textSecondaryLight),
+        ),
+      ),
     );
   }
 
@@ -259,13 +252,22 @@ class SettingsScreen extends ConsumerWidget {
               children: [
                 Text(
                   'Sua Foto',
-                  style: SoloTextStyles.body.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: textColor,
-                    fontSize: 17,
-                  ),
+                  style:
+                      (Theme.of(context).textTheme.bodyMedium ??
+                              const TextStyle())
+                          .copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: textColor,
+                            fontSize: 17,
+                          ),
                 ),
-                Text('Toque para alterar', style: SoloTextStyles.label),
+                Text(
+                  'Toque para alterar',
+                  style:
+                      (Theme.of(context).textTheme.labelMedium ??
+                              const TextStyle())
+                          .copyWith(color: PremiumTokens.textSecondaryLight),
+                ),
               ],
             ),
           ),
@@ -342,10 +344,7 @@ class SettingsScreen extends ConsumerWidget {
                     color: t['color'] as Color,
                     shape: BoxShape.circle,
                     border: isSelected
-                        ? Border.all(
-                            color: Theme.of(context).primaryColor,
-                            width: 3,
-                          )
+                        ? Border.all(color: PremiumTokens.brandGreen, width: 3)
                         : Border.all(color: Colors.grey.withValues(alpha: 0.3)),
                     boxShadow: isSelected
                         ? [
@@ -367,11 +366,16 @@ class SettingsScreen extends ConsumerWidget {
                 Text(
                   t['label'] as String,
                   style: isSelected
-                      ? SoloTextStyles.label.copyWith(
-                          color: Theme.of(context).colorScheme.onSurface,
-                          fontWeight: FontWeight.bold,
-                        )
-                      : SoloTextStyles.label,
+                      ? (Theme.of(context).textTheme.labelMedium ??
+                                const TextStyle())
+                            .copyWith(color: PremiumTokens.textSecondaryLight)
+                            .copyWith(
+                              color: Theme.of(context).colorScheme.onSurface,
+                              fontWeight: FontWeight.bold,
+                            )
+                      : (Theme.of(context).textTheme.labelMedium ??
+                                const TextStyle())
+                            .copyWith(color: PremiumTokens.textSecondaryLight),
                 ),
               ],
             ),
@@ -390,9 +394,9 @@ class SettingsScreen extends ConsumerWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            _buildStatItem('Mapas', data['mapas'] ?? '0'),
-            _buildStatItem('Dados', data['dados'] ?? '0'),
-            _buildStatItem('Cache', data['cache'] ?? '0'),
+            _buildStatItem(context, 'Mapas', data['mapas'] ?? '0'),
+            _buildStatItem(context, 'Dados', data['dados'] ?? '0'),
+            _buildStatItem(context, 'Cache', data['cache'] ?? '0'),
           ],
         ),
       ),
@@ -404,11 +408,19 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildStatItem(String label, String value) {
+  Widget _buildStatItem(BuildContext context, String label, String value) {
     return Column(
       children: [
-        Text(value, style: SoloTextStyles.headingMedium.copyWith(fontSize: 16)),
-        Text(label, style: SoloTextStyles.label),
+        Text(
+          value,
+          style: (Theme.of(context).textTheme.titleMedium ?? const TextStyle())
+              .copyWith(fontSize: 16),
+        ),
+        Text(
+          label,
+          style: (Theme.of(context).textTheme.labelMedium ?? const TextStyle())
+              .copyWith(color: PremiumTokens.textSecondaryLight),
+        ),
       ],
     );
   }
@@ -425,31 +437,34 @@ class SettingsScreen extends ConsumerWidget {
 
     return SwitchListTile(
       value: value,
-      onChanged: onChanged,
+      onChanged: (val) {
+        HapticFeedback.lightImpact();
+        onChanged(val);
+      },
       title: Text(
         title,
-        style: SoloTextStyles.body.copyWith(
-          color: isDark ? Colors.white : const Color(0xFF1D1D1F),
-        ),
+        style: (Theme.of(context).textTheme.bodyMedium ?? const TextStyle())
+            .copyWith(color: isDark ? Colors.white : const Color(0xFF1D1D1F)),
       ),
       subtitle: subtitle != null
-          ? Text(subtitle, style: SoloTextStyles.label)
+          ? Text(
+              subtitle,
+              style:
+                  (Theme.of(context).textTheme.labelMedium ?? const TextStyle())
+                      .copyWith(color: PremiumTokens.textSecondaryLight),
+            )
           : null,
       secondary: icon != null
           ? Container(
               padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(
-                color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
+                color: PremiumTokens.brandGreen.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(6),
               ),
-              child: Icon(
-                icon,
-                color: Theme.of(context).primaryColor,
-                size: 20,
-              ),
+              child: Icon(icon, color: PremiumTokens.brandGreen, size: 20),
             )
           : null,
-      activeTrackColor: Theme.of(context).primaryColor,
+      activeTrackColor: PremiumTokens.brandGreen,
     );
   }
 
@@ -465,19 +480,24 @@ class SettingsScreen extends ConsumerWidget {
       leading: Container(
         padding: const EdgeInsets.all(6),
         decoration: BoxDecoration(
-          color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
+          color: PremiumTokens.brandGreen.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(6),
         ),
-        child: Icon(icon, color: Theme.of(context).primaryColor, size: 20),
+        child: Icon(icon, color: PremiumTokens.brandGreen, size: 20),
       ),
       title: Text(
         title,
-        style: SoloTextStyles.body.copyWith(
-          color: isDark ? Colors.white : const Color(0xFF1D1D1F),
-        ),
+        style: (Theme.of(context).textTheme.bodyMedium ?? const TextStyle())
+            .copyWith(color: isDark ? Colors.white : const Color(0xFF1D1D1F)),
       ),
-      trailing: const Icon(Icons.chevron_right, color: Color(0xFFC7C7CC)),
-      onTap: onTap,
+      trailing: const Icon(
+        SFIcons.chevronRight,
+        color: PremiumTokens.textTertiaryLight,
+      ),
+      onTap: () {
+        HapticFeedback.lightImpact();
+        onTap();
+      },
       dense: true,
     );
   }
@@ -491,7 +511,7 @@ class SettingsScreen extends ConsumerWidget {
   }) {
     final color = isDestructive
         ? const Color(0xFFFF3B30)
-        : Theme.of(context).primaryColor;
+        : PremiumTokens.brandGreen;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return ListTile(
@@ -505,13 +525,21 @@ class SettingsScreen extends ConsumerWidget {
       ),
       title: Text(
         title,
-        style: SoloTextStyles.body.copyWith(
-          color: isDestructive
-              ? color
-              : (isDark ? Colors.white : const Color(0xFF1D1D1F)),
-        ),
+        style: (Theme.of(context).textTheme.bodyMedium ?? const TextStyle())
+            .copyWith(
+              color: isDestructive
+                  ? color
+                  : (isDark ? Colors.white : const Color(0xFF1D1D1F)),
+            ),
       ),
-      onTap: onTap,
+      onTap: () {
+        if (isDestructive) {
+          HapticFeedback.mediumImpact();
+        } else {
+          HapticFeedback.lightImpact();
+        }
+        onTap();
+      },
       dense: true,
     );
   }

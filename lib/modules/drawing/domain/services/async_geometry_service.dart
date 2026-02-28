@@ -4,14 +4,14 @@ import '../models/drawing_models.dart';
 import 'geometry_service.dart';
 
 /// Serviço de geometria otimizado para operações pesadas.
-/// 
+///
 /// Usa `compute()` para executar cálculos em isolate separado quando:
 /// - Número de vértices > complexityThreshold (2000)
 /// - Operações de simplificação/validação intensivas
-/// 
+///
 /// Para geometrias simples (menos de 2000 vértices), usa GeometryService direto
 /// para evitar overhead de serialização.
-/// 
+///
 /// Benefícios:
 /// - UI responsiva durante cálculos pesados
 /// - Não bloqueia thread principal
@@ -20,7 +20,7 @@ class AsyncGeometryService {
   AsyncGeometryService._();
 
   /// Threshold de complexidade (número de vértices) para usar isolate.
-  /// 
+  ///
   /// Valores típicos:
   /// - Polígono simples: 10-100 vértices
   /// - Pivô com alta precisão: 360 vértices
@@ -32,7 +32,7 @@ class AsyncGeometryService {
   // ===========================================================================
 
   /// Calcula área de forma assíncrona se geometria for complexa.
-  /// 
+  ///
   /// Retorna `Future<double>` em hectares.
   static Future<double> calculateAreaAsync(DrawingGeometry? geometry) async {
     if (geometry == null) return 0.0;
@@ -83,7 +83,7 @@ class AsyncGeometryService {
   // ===========================================================================
 
   /// Valida polígono de forma assíncrona se complexo.
-  /// 
+  ///
   /// ⚠️ Validação de auto-interseção é O(n²), logo muito cara para n>1000.
   static Future<ValidationResult> validatePolygonAsync(
     DrawingPolygon polygon,
@@ -111,7 +111,7 @@ class AsyncGeometryService {
   }
 
   /// Simplifica polígono de forma assíncrona.
-  /// 
+  ///
   /// Sempre usa isolate pois simplificação (RDP) é O(n log n).
   static Future<DrawingPolygon> simplifyPolygonAsync(
     DrawingPolygon polygon, {
@@ -128,7 +128,7 @@ class AsyncGeometryService {
   // ===========================================================================
 
   /// Verifica se ponto está dentro do polígono (assíncrono se complexo).
-  /// 
+  ///
   /// Ray Casting é O(n), razoavelmente rápido até ~10k vértices.
   static Future<bool> isPointInPolygonAsync(
     LatLng point,

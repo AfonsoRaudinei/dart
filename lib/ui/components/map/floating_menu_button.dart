@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../modules/map/design/sf_icons.dart';
 import 'package:flutter/services.dart';
-import '../../theme/soloforte_theme.dart';
+import '../../theme/premium/design_tokens.dart';
 
 /// Botão de menu flutuante isolado — Canto inferior direito
 /// Verde SoloForte (Primary), circular, com ícone de menu
@@ -42,7 +42,7 @@ class _FloatingMenuButtonState extends State<FloatingMenuButton>
   @override
   Widget build(BuildContext context) {
     // Usando tokens oficiais
-    final primaryColor = SoloForteColors.primary;
+    final primaryColor = PremiumTokens.brandGreen;
 
     return Positioned(
       bottom: MediaQuery.of(context).padding.bottom + 24, // 24px do bottom safe
@@ -63,7 +63,7 @@ class _FloatingMenuButtonState extends State<FloatingMenuButton>
             decoration: BoxDecoration(
               color: primaryColor,
               shape: BoxShape.circle,
-              boxShadow: SoloShadows.shadowButton, // Sombra padrão
+              boxShadow: PremiumTokens.tightShadow, // Sombra padrão
             ),
             child: const Icon(SFIcons.menu, size: 24, color: Colors.white),
           ),

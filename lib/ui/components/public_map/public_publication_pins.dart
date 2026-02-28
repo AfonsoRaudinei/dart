@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 import 'package:flutter_map/flutter_map.dart';
 import '../../../core/domain/publicacao.dart';
-import '../../theme/soloforte_theme.dart';
 
 /// Gerador de pins para publicações no mapa público.
 ///
@@ -26,10 +26,7 @@ class PublicPublicationPins {
           builder: (context, value, child) {
             return Opacity(
               opacity: value,
-              child: Transform.scale(
-                scale: value,
-                child: child,
-              ),
+              child: Transform.scale(scale: value, child: child),
             );
           },
           child: GestureDetector(
@@ -72,7 +69,7 @@ class _PublicationPin extends StatelessWidget {
           width: 50,
           height: 50,
           decoration: BoxDecoration(
-            color: SoloForteColors.white,
+            color: Colors.white,
             shape: BoxShape.circle,
             border: Border.all(
               color: _getTypeColor(publication.type),
@@ -116,12 +113,12 @@ class _PublicationPin extends StatelessWidget {
             decoration: BoxDecoration(
               color: _getTypeColor(publication.type),
               shape: BoxShape.circle,
-              border: Border.all(color: SoloForteColors.white, width: 2),
+              border: Border.all(color: Colors.white, width: 2),
             ),
             child: Icon(
               _getTypeIcon(publication.type),
               size: 10,
-              color: SoloForteColors.white,
+              color: Colors.white,
             ),
           ),
         ),
@@ -131,19 +128,19 @@ class _PublicationPin extends StatelessWidget {
 
   Widget _buildPlaceholder() {
     return Container(
-      color: SoloForteColors.grayLight,
-      child: Icon(Icons.image, color: SoloForteColors.textSecondary, size: 24),
+      color: PremiumTokens.surfaceLight,
+      child: Icon(Icons.image, color: PremiumTokens.textSecondaryLight, size: 24),
     );
   }
 
   Color _getTypeColor(PublicacaoType type) {
     switch (type) {
       case PublicacaoType.institucional:
-        return SoloForteColors.brand;
+        return PremiumTokens.brandGreen;
       case PublicacaoType.tecnico:
         return const Color(0xFF9C27B0); // Roxo
       case PublicacaoType.resultado:
-        return SoloForteColors.greenIOS;
+        return PremiumTokens.brandGreen;
       case PublicacaoType.comparativo:
         return const Color(0xFFFF9800); // Laranja
       case PublicacaoType.caseSucesso:

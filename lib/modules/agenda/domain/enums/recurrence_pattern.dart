@@ -1,10 +1,10 @@
 /// Padrão de recorrência para eventos
 enum RecurrencePattern {
-  daily,      // Diário
-  weekly,     // Semanal
-  biweekly,   // Quinzenal
-  monthly,    // Mensal
-  yearly;     // Anual
+  daily, // Diário
+  weekly, // Semanal
+  biweekly, // Quinzenal
+  monthly, // Mensal
+  yearly; // Anual
 
   String get label {
     switch (this) {

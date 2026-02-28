@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../modules/map/design/sf_icons.dart';
 import 'package:flutter/services.dart';
-import '../../../theme/soloforte_theme.dart';
 
 /// Tab 3 — GESTÃO (Administrativo: Clientes, Performance, Relatórios)
 class ManagementTabContent extends StatelessWidget {
@@ -16,7 +15,7 @@ class ManagementTabContent extends StatelessWidget {
         children: [
           Text(
             'Gestão',
-            style: SoloTextStyles.headingMedium.copyWith(fontSize: 18),
+            style: Theme.of(context).textTheme.titleMedium!.copyWith(fontWeight: FontWeight.w600).copyWith(fontSize: 18),
           ),
           const SizedBox(height: 16),
           _ManagementTile(

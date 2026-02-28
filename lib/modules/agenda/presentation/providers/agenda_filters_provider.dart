@@ -19,7 +19,10 @@ class AgendaFilters {
   });
 
   bool get hasActiveFilters =>
-      types.isNotEmpty || statuses.isNotEmpty || clienteId != null || fazendaId != null;
+      types.isNotEmpty ||
+      statuses.isNotEmpty ||
+      clienteId != null ||
+      fazendaId != null;
 
   AgendaFilters copyWith({
     Set<EventType>? types,
@@ -53,11 +56,13 @@ class AgendaFilters {
 
   factory AgendaFilters.fromJson(Map<String, dynamic> json) {
     return AgendaFilters(
-      types: (json['types'] as List<dynamic>?)
+      types:
+          (json['types'] as List<dynamic>?)
               ?.map((t) => EventType.values.byName(t as String))
               .toSet() ??
           {},
-      statuses: (json['statuses'] as List<dynamic>?)
+      statuses:
+          (json['statuses'] as List<dynamic>?)
               ?.map((s) => EventStatus.values.byName(s as String))
               .toSet() ??
           {},
@@ -87,7 +92,11 @@ class AgendaFiltersNotifier extends StateNotifier<AgendaFilters> {
         // TODO: Implement proper JSON parsing
       }
     } catch (e) {
-      AppLogger.warning('Falha ao carregar filtros da agenda — usando padrão', tag: 'AgendaFilters', error: e);
+      AppLogger.warning(
+        'Falha ao carregar filtros da agenda — usando padrão',
+        tag: 'AgendaFilters',
+        error: e,
+      );
     }
   }
 
@@ -97,7 +106,11 @@ class AgendaFiltersNotifier extends StateNotifier<AgendaFilters> {
       // TODO: Serialize and save
       await _prefs.setString(_prefsKey, '{}');
     } catch (e) {
-      AppLogger.warning('Falha ao salvar filtros da agenda', tag: 'AgendaFilters', error: e);
+      AppLogger.warning(
+        'Falha ao salvar filtros da agenda',
+        tag: 'AgendaFilters',
+        error: e,
+      );
     }
   }
 
@@ -153,5 +166,5 @@ class AgendaFiltersNotifier extends StateNotifier<AgendaFilters> {
 /// Provider de filtros
 final agendaFiltersProvider =
     StateNotifierProvider<AgendaFiltersNotifier, AgendaFilters>(
-  (ref) => AgendaFiltersNotifier(ref.read(preferencesServiceProvider)),
-);
+      (ref) => AgendaFiltersNotifier(ref.read(preferencesServiceProvider)),
+    );

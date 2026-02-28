@@ -1,11 +1,13 @@
-import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
-import '../../../../modules/map/design/sf_icons.dart';
 import 'package:flutter/services.dart';
+import '../../../../modules/map/design/sf_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../theme/soloforte_theme.dart';
+import '../../theme/premium/design_tokens.dart';
+import '../premium/premium_glass_panel.dart';
 import 'package:latlong2/latlong.dart';
 import '../../../../modules/consultoria/occurrences/presentation/controllers/occurrence_controller.dart';
+import '../../../../modules/agenda/presentation/providers/agenda_provider.dart';
+import '../../../../modules/agenda/domain/enums/event_status.dart';
 import 'map_sheets.dart';
 import '../../../modules/drawing/presentation/widgets/drawing_sheet.dart';
 import '../../../modules/drawing/presentation/widgets/drawing_disabled_widget.dart';
@@ -61,7 +63,10 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
   @override
   void initState() {
     super.initState();
-    AppLogger.debug('MapBottomSheet INIT | type=${widget.state.type}', tag: 'MapSheet');
+    AppLogger.debug(
+      'MapBottomSheet INIT | type=${widget.state.type}',
+      tag: 'MapSheet',
+    );
 
     // 🔧 FIX: Apenas inicializar estados de UI (animação)
     _currentDetent = SheetDetent.compact;
@@ -300,27 +305,87 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
         padding: const EdgeInsets.all(24),
         child: Column(
           children: [
-            const Icon(
+            Icon(
               SFIcons.checkCircle,
               size: 64,
-              color: SoloForteColors.greenIOS,
+              color: PremiumTokens.brandGreen,
             ),
             const SizedBox(height: 16),
-            Text('Visita em Andamento', style: SoloTextStyles.headingMedium),
+            Text(
+              'Visita em Andamento',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
             const SizedBox(height: 32),
             ElevatedButton(
-              onPressed: () {
-                ref.read(visitControllerProvider.notifier).endSession();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Visita encerrada com sucesso.'),
-                  ),
-                );
-                // 🔹 FECHAMENTO REAL: Encerrar visita fecha o sheet (ETAPA 5)
-                widget.onClose();
+              onPressed: () async {
+                // ADR-010 Opção B: encerrar via fluxo da agenda (completeEvent)
+                // para que VisitCompletionObserver gere o RelatorioTecnico.
+                final agendaState = ref.read(agendaProvider);
+
+                // 1. Encontra a sessão ativa (sem endAtReal)
+                final activeSession = agendaState.sessions
+                    .where((s) => s.endAtReal == null)
+                    .firstOrNull;
+
+                if (activeSession == null) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Nenhuma visita ativa encontrada.'),
+                      ),
+                    );
+                  }
+                  return;
+                }
+
+                // 2. Encontra o evento vinculado à sessão
+                final linkedEvent = agendaState.events
+                    .where((e) => e.visitSessionId == activeSession.id)
+                    .firstOrNull;
+
+                if (linkedEvent == null) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Evento vinculado não encontrado.'),
+                      ),
+                    );
+                  }
+                  return;
+                }
+
+                try {
+                  // 3. Se ainda está emAndamento, transicionar para finalizando primeiro
+                  if (linkedEvent.status == EventStatus.emAndamento) {
+                    await ref
+                        .read(agendaProvider.notifier)
+                        .finalizeEvent(linkedEvent.id);
+                  }
+
+                  // 4. Concluir o evento → fecha VisitSession → dispara VisitCompletionObserver
+                  // → gera RelatorioTecnico (via GenerateRelatorioUseCase)
+                  await ref
+                      .read(agendaProvider.notifier)
+                      .completeEvent(linkedEvent.id);
+
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Visita encerrada com sucesso.'),
+                      ),
+                    );
+                    widget.onClose();
+                  }
+                } catch (e) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Erro ao encerrar visita: $e')),
+                    );
+                  }
+                }
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
+                backgroundColor: PremiumTokens.alertError,
                 padding: const EdgeInsets.symmetric(
                   horizontal: 32,
                   vertical: 16,
@@ -351,7 +416,7 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Visita iniciada. Bom trabalho!'),
-              backgroundColor: SoloForteColors.greenDark,
+              backgroundColor: PremiumTokens.brandGreenDark,
             ),
           );
         }
@@ -370,7 +435,10 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
         mapBounds: null,
         onClose: () => widget.onClose(),
         onOccurrenceTap: (occurrence) {
-          AppLogger.debug('Ocorrência tocada: ${occurrence.id}', tag: 'MapSheet');
+          AppLogger.debug(
+            'Ocorrência tocada: ${occurrence.id}',
+            tag: 'MapSheet',
+          );
         },
         onRequestNewOccurrence: () {
           // 🆕 Armar modo de ocorrência e fechar sheet
@@ -416,7 +484,7 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Ocorrência registrada com sucesso!'),
-              backgroundColor: SoloForteColors.greenIOS,
+              backgroundColor: PremiumTokens.brandGreen,
             ),
           );
 
@@ -451,7 +519,10 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
 
   @override
   Widget build(BuildContext context) {
-    AppLogger.debug('MapBottomSheet BUILD | type=${widget.state.type}', tag: 'MapSheet');
+    AppLogger.debug(
+      'MapBottomSheet BUILD | type=${widget.state.type}',
+      tag: 'MapSheet',
+    );
     return GestureDetector(
       onVerticalDragStart: _handleDragStart,
       onVerticalDragUpdate: _handleVerticalDrag,
@@ -461,89 +532,78 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
         builder: (context, child) {
           return SizedBox(
             height: _heightAnimation.value,
-            child: ClipRRect(
-              borderRadius: BorderRadius.vertical(
-                top: Radius.circular(SoloRadius.lg), // 24px
+            child: PremiumGlassPanel(
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(24.0),
               ),
-              child: BackdropFilter(
-                filter: ui.ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Theme.of(
-                      context,
-                    ).scaffoldBackgroundColor.withOpacity(0.92), // Adaptativo
-                    borderRadius: BorderRadius.vertical(
-                      top: Radius.circular(SoloRadius.lg), // 24px
+              child: Container(
+                decoration: BoxDecoration(
+                  // Adaptativo ou remover e confiar apenas no PremiumGlassPanel (que usa glassColor puro)
+                  // Mas o bottom sheet pode querer o fundo sólido de sheet do iOS:
+                  color: Theme.of(
+                    context,
+                  ).scaffoldBackgroundColor.withOpacity(0.92),
+                  border: Border(
+                    top: BorderSide(
+                      color: Theme.of(context).dividerColor.withOpacity(0.1),
+                      width: 0.5,
                     ),
-                    border: Border(
-                      top: BorderSide(
-                        color: Theme.of(context).dividerColor.withOpacity(0.1),
-                        width: 0.5,
-                      ),
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.12),
-                        offset: const Offset(0, -4),
-                        blurRadius: 14,
-                      ),
-                    ],
                   ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // Handle (alça) - área de drag expandida
-                      GestureDetector(
-                        onTap: _handleHandleTap,
-                        child: Container(
-                          padding: const EdgeInsets.only(
-                            top: 14,
-                            bottom: 20,
-                          ), // Hit area + margin
-                          child: Center(
-                            child: Container(
-                              width: 36, // Mais largo
-                              height: 4,
-                              decoration: BoxDecoration(
-                                color: Theme.of(
-                                  context,
-                                ).dividerColor.withOpacity(0.2), // Dinâmico
-                                borderRadius: BorderRadius.circular(2),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Handle (alça) - área de drag expandida
+                    GestureDetector(
+                      onTap: _handleHandleTap,
+                      child: Container(
+                        padding: const EdgeInsets.only(
+                          top: 14,
+                          bottom: 20,
+                        ), // Hit area + margin
+                        child: Center(
+                          child: Container(
+                            width: 36, // Mais largo
+                            height: 4,
+                            decoration: BoxDecoration(
+                              color: Theme.of(
+                                context,
+                              ).dividerColor.withOpacity(0.2), // Dinâmico
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    // Conteúdo da tab selecionada com cross-fade
+                    if (_currentDetent != SheetDetent.compact)
+                      Expanded(
+                        child: AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 200),
+                          switchInCurve: Curves.easeOut,
+                          switchOutCurve: Curves.easeIn,
+                          transitionBuilder: (child, animation) {
+                            return FadeTransition(
+                              opacity: animation,
+                              child: SlideTransition(
+                                position: Tween<Offset>(
+                                  begin: const Offset(0.05, 0),
+                                  end: Offset.zero,
+                                ).animate(animation),
+                                child: child,
                               ),
-                            ),
+                            );
+                          },
+                          child: Container(
+                            key: ValueKey(widget.state.type),
+                            child: _buildTabContent(),
                           ),
                         ),
                       ),
 
-                      // Conteúdo da tab selecionada com cross-fade
-                      if (_currentDetent != SheetDetent.compact)
-                        Expanded(
-                          child: AnimatedSwitcher(
-                            duration: const Duration(milliseconds: 200),
-                            switchInCurve: Curves.easeOut,
-                            switchOutCurve: Curves.easeIn,
-                            transitionBuilder: (child, animation) {
-                              return FadeTransition(
-                                opacity: animation,
-                                child: SlideTransition(
-                                  position: Tween<Offset>(
-                                    begin: const Offset(0.05, 0),
-                                    end: Offset.zero,
-                                  ).animate(animation),
-                                  child: child,
-                                ),
-                              );
-                            },
-                            child: Container(
-                              key: ValueKey(widget.state.type),
-                              child: _buildTabContent(),
-                            ),
-                          ),
-                        ),
-
-                      // Navegação agora no FloatingDockWidget externo
-                    ],
-                  ),
+                    // Navegação agora no FloatingDockWidget externo
+                  ],
                 ),
               ),
             ),

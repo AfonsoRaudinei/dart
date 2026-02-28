@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 import '../../../../modules/map/design/sf_icons.dart';
 import 'package:flutter/services.dart';
-import '../../../theme/soloforte_theme.dart';
 
 /// Tab 2 — OPERAÇÕES (Campo: Visitas, Ordens, Ocorrências)
 class OperationsTabContent extends StatelessWidget {
@@ -16,7 +16,7 @@ class OperationsTabContent extends StatelessWidget {
         children: [
           Text(
             'Operações de Campo',
-            style: SoloTextStyles.headingMedium.copyWith(fontSize: 18),
+            style: Theme.of(context).textTheme.titleMedium!.copyWith(fontWeight: FontWeight.w600).copyWith(fontSize: 18),
           ),
           const SizedBox(height: 16),
           _OperationTile(
@@ -83,10 +83,10 @@ class _OperationTile extends StatelessWidget {
                 width: 44,
                 height: 44,
                 decoration: BoxDecoration(
-                  color: SoloForteColors.greenIOS.withValues(alpha: 0.1),
+                  color: PremiumTokens.brandGreen.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Icon(icon, color: SoloForteColors.greenIOS, size: 24),
+                child: Icon(icon, color: PremiumTokens.brandGreen, size: 24),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -118,7 +118,7 @@ class _OperationTile extends StatelessWidget {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: SoloForteColors.greenIOS,
+                    color: PremiumTokens.brandGreen,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(

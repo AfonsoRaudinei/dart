@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../../../../ui/theme/soloforte_theme.dart';
+import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 import 'photo_tile.dart';
 import 'camera_button.dart';
 
@@ -28,7 +28,7 @@ class PhotoGrid extends StatelessWidget {
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w600,
-            color: SoloForteColors.textSecondary,
+            color: PremiumTokens.textSecondaryLight,
           ),
         ),
         const SizedBox(height: 8),

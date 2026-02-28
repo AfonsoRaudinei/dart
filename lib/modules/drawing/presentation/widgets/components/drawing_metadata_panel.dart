@@ -6,14 +6,14 @@ import '../../../../consultoria/clients/domain/agronomic_models.dart';
 import '../../../domain/models/drawing_models.dart';
 
 /// Widget responsável pelo formulário de metadados de uma feature de desenho.
-/// 
+///
 /// Campos:
 /// - Nome da área
 /// - Descrição
 /// - Cliente
 /// - Fazenda
 /// - Tipo (Talhão, Pasto, Reserva, etc)
-/// 
+///
 /// ⚠️ Este widget NÃO salva diretamente - emite callbacks para o parent.
 class DrawingMetadataPanel extends ConsumerStatefulWidget {
   final TextEditingController nomeController;
@@ -67,10 +67,7 @@ class _DrawingMetadataPanelState extends ConsumerState<DrawingMetadataPanel> {
             children: [
               const Text(
                 'Informações da Área',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                ),
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
               ),
               IconButton(
                 icon: const Icon(Icons.close),
@@ -118,10 +115,12 @@ class _DrawingMetadataPanelState extends ConsumerState<DrawingMetadataPanel> {
                   prefixIcon: Icon(Icons.person),
                 ),
                 items: clients
-                    .map((client) => DropdownMenuItem(
-                          value: client,
-                          child: Text(client.name),
-                        ))
+                    .map(
+                      (client) => DropdownMenuItem(
+                        value: client,
+                        child: Text(client.name),
+                      ),
+                    )
                     .toList(),
                 onChanged: widget.onClientChanged,
               );
@@ -141,10 +140,10 @@ class _DrawingMetadataPanelState extends ConsumerState<DrawingMetadataPanel> {
                 prefixIcon: Icon(Icons.landscape),
               ),
               items: widget.selectedClient!.farms
-                  .map((farm) => DropdownMenuItem(
-                        value: farm,
-                        child: Text(farm.name),
-                      ))
+                  .map(
+                    (farm) =>
+                        DropdownMenuItem(value: farm, child: Text(farm.name)),
+                  )
                   .toList(),
               onChanged: widget.onFarmChanged,
             ),
@@ -159,10 +158,12 @@ class _DrawingMetadataPanelState extends ConsumerState<DrawingMetadataPanel> {
               prefixIcon: Icon(Icons.category),
             ),
             items: DrawingType.values
-                .map((type) => DropdownMenuItem(
-                      value: type,
-                      child: Text(_getTypeLabel(type)),
-                    ))
+                .map(
+                  (type) => DropdownMenuItem(
+                    value: type,
+                    child: Text(_getTypeLabel(type)),
+                  ),
+                )
                 .toList(),
             onChanged: widget.onTypeChanged,
           ),

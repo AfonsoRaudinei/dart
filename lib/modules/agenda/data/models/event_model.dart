@@ -50,7 +50,9 @@ class EventModel extends Event {
       fazendaId: json['fazendaId'] as String?,
       talhaoId: json['talhaoId'] as String?,
       titulo: json['titulo'] as String,
-      dataInicioPlanejada: DateTime.parse(json['dataInicioPlanejada'] as String),
+      dataInicioPlanejada: DateTime.parse(
+        json['dataInicioPlanejada'] as String,
+      ),
       dataFimPlanejada: DateTime.parse(json['dataFimPlanejada'] as String),
       status: EventStatus.values.byName(json['status'] as String),
       visitSessionId: json['visitSessionId'] as String?,

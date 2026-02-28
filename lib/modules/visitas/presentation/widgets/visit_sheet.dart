@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:soloforte_app/modules/consultoria/clients/domain/client.dart';
 import 'package:soloforte_app/modules/consultoria/clients/domain/agronomic_models.dart';
 import 'package:soloforte_app/modules/consultoria/clients/presentation/providers/clients_providers.dart';
-import 'package:soloforte_app/ui/theme/soloforte_theme.dart';
 
 class VisitSheet extends ConsumerStatefulWidget {
   final Function(String clientId, String areaId, String activityType) onConfirm;
@@ -55,7 +55,7 @@ class _VisitSheetState extends ConsumerState<VisitSheet> {
           const SizedBox(height: 24),
           Text(
             'Iniciar Visita',
-            style: SoloTextStyles.headingMedium,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 24),
@@ -145,7 +145,7 @@ class _VisitSheetState extends ConsumerState<VisitSheet> {
                   }
                 : null,
             style: ElevatedButton.styleFrom(
-              backgroundColor: SoloForteColors.greenIOS,
+              backgroundColor: PremiumTokens.brandGreen,
               padding: const EdgeInsets.symmetric(vertical: 16),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),

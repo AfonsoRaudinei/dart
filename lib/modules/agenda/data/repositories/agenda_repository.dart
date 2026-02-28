@@ -64,10 +64,7 @@ class AgendaRepository {
   }
 
   /// Busca eventos por range de datas
-  Future<List<Event>> getEventsByDateRange(
-    DateTime start,
-    DateTime end,
-  ) async {
+  Future<List<Event>> getEventsByDateRange(DateTime start, DateTime end) async {
     final db = await _dbHelper.database;
     final results = await db.query(
       'agenda_events',

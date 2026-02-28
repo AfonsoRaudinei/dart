@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 import 'package:intl/intl.dart';
 import '../../../core/domain/publicacao.dart';
-import '../../theme/soloforte_theme.dart';
 
 /// Preview simplificado de publicação para mapa público.
 ///
@@ -32,7 +32,7 @@ class _PublicPublicationPreviewSheet extends StatelessWidget {
         maxHeight: MediaQuery.of(context).size.height * 0.75,
       ),
       decoration: const BoxDecoration(
-        color: SoloForteColors.white,
+        color: Colors.white,
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       child: Column(
@@ -44,7 +44,7 @@ class _PublicPublicationPreviewSheet extends StatelessWidget {
             width: 40,
             height: 4,
             decoration: BoxDecoration(
-              color: SoloForteColors.borderLight,
+              color: PremiumTokens.hairlineLight,
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -52,51 +52,51 @@ class _PublicPublicationPreviewSheet extends StatelessWidget {
           // Conteúdo
           Flexible(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.all(SoloSpacing.xl),
+              padding: const EdgeInsets.all(24.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Imagem de capa
                   if (publication.media.isNotEmpty) _buildCoverImage(context),
 
-                  const SizedBox(height: SoloSpacing.lg),
+                  const SizedBox(height: 20.0),
 
                   // Badge de tipo
                   _buildTypeBadge(),
 
-                  const SizedBox(height: SoloSpacing.sm),
+                  const SizedBox(height: 12.0),
 
                   // Título
                   Text(
                     publication.title ?? 'Sem título',
-                    style: SoloTextStyles.headingLarge.copyWith(fontSize: 24),
+                    style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold).copyWith(fontSize: 24),
                   ),
 
-                  const SizedBox(height: SoloSpacing.sm),
+                  const SizedBox(height: 12.0),
 
                   // Informações do cliente/área
                   if (publication.clientName != null ||
                       publication.areaName != null)
                     _buildClientInfo(),
 
-                  const SizedBox(height: SoloSpacing.md),
+                  const SizedBox(height: 16.0),
 
                   // Descrição
                   if (publication.description != null)
                     Text(
                       publication.description!,
-                      style: SoloTextStyles.body.copyWith(
-                        color: SoloForteColors.textSecondary,
+                      style: const TextStyle(fontSize: 14).copyWith(
+                        color: PremiumTokens.textSecondaryLight,
                         height: 1.5,
                       ),
                     ),
 
-                  const SizedBox(height: SoloSpacing.lg),
+                  const SizedBox(height: 20.0),
 
                   // Data de publicação
                   _buildPublicationDate(),
 
-                  const SizedBox(height: SoloSpacing.lg),
+                  const SizedBox(height: 20.0),
 
                   // Galeria de imagens (se houver mais de uma)
                   if (publication.media.length > 1) _buildGallery(context),
@@ -111,7 +111,7 @@ class _PublicPublicationPreviewSheet extends StatelessWidget {
 
   Widget _buildCoverImage(BuildContext context) {
     return ClipRRect(
-      borderRadius: SoloRadius.radiusLg,
+      borderRadius: BorderRadius.circular(16),
       child: AspectRatio(
         aspectRatio: 16 / 9,
         child: Image.network(
@@ -119,23 +119,23 @@ class _PublicPublicationPreviewSheet extends StatelessWidget {
           fit: BoxFit.cover,
           errorBuilder: (context, error, stackTrace) {
             return Container(
-              color: SoloForteColors.grayLight,
+              color: PremiumTokens.surfaceLight,
               child: const Icon(
                 Icons.image,
                 size: 64,
-                color: SoloForteColors.textSecondary,
+                color: PremiumTokens.textSecondaryLight,
               ),
             );
           },
           loadingBuilder: (context, child, loadingProgress) {
             if (loadingProgress == null) return child;
             return Container(
-              color: SoloForteColors.grayLight,
+              color: PremiumTokens.surfaceLight,
               child: const Center(
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
                   valueColor: AlwaysStoppedAnimation<Color>(
-                    SoloForteColors.greenIOS,
+                    PremiumTokens.brandGreen,
                   ),
                 ),
               ),
@@ -149,18 +149,18 @@ class _PublicPublicationPreviewSheet extends StatelessWidget {
   Widget _buildTypeBadge() {
     return Container(
       padding: const EdgeInsets.symmetric(
-        horizontal: SoloSpacing.sm,
+        horizontal: 12.0,
         vertical: 4,
       ),
       decoration: BoxDecoration(
         color: _getTypeColor(publication.type).withValues(alpha: 0.1),
-        borderRadius: SoloRadius.radiusSm,
+        borderRadius: BorderRadius.circular(8),
       ),
       child: Text(
         _getTypeLabel(publication.type),
-        style: SoloTextStyles.label.copyWith(
+        style: TextStyle(fontSize: 12, color: PremiumTokens.textSecondaryLight).copyWith(
           color: _getTypeColor(publication.type),
-          fontWeight: SoloFontWeights.semibold,
+          fontWeight: FontWeight.w500,
         ),
       ),
     );
@@ -172,7 +172,7 @@ class _PublicPublicationPreviewSheet extends StatelessWidget {
         const Icon(
           Icons.location_on,
           size: 16,
-          color: SoloForteColors.textSecondary,
+          color: PremiumTokens.textSecondaryLight,
         ),
         const SizedBox(width: 4),
         Expanded(
@@ -181,8 +181,8 @@ class _PublicPublicationPreviewSheet extends StatelessWidget {
               if (publication.clientName != null) publication.clientName,
               if (publication.areaName != null) publication.areaName,
             ].join(' • '),
-            style: SoloTextStyles.body.copyWith(
-              color: SoloForteColors.textSecondary,
+            style: const TextStyle(fontSize: 14).copyWith(
+              color: PremiumTokens.textSecondaryLight,
               fontSize: 14,
             ),
           ),
@@ -198,13 +198,13 @@ class _PublicPublicationPreviewSheet extends StatelessWidget {
         const Icon(
           Icons.schedule,
           size: 16,
-          color: SoloForteColors.textSecondary,
+          color: PremiumTokens.textSecondaryLight,
         ),
         const SizedBox(width: 4),
         Text(
           'Publicado em ${formatter.format(publication.createdAt)}',
-          style: SoloTextStyles.label.copyWith(
-            color: SoloForteColors.textSecondary,
+          style: TextStyle(fontSize: 12, color: PremiumTokens.textSecondaryLight).copyWith(
+            color: PremiumTokens.textSecondaryLight,
           ),
         ),
       ],
@@ -217,19 +217,19 @@ class _PublicPublicationPreviewSheet extends StatelessWidget {
       children: [
         Text(
           'Galeria (${publication.media.length} fotos)',
-          style: SoloTextStyles.headingMedium,
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         ),
-        const SizedBox(height: SoloSpacing.sm),
+        const SizedBox(height: 12.0),
         SizedBox(
           height: 80,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             itemCount: publication.media.length,
-            separatorBuilder: (_, __) => const SizedBox(width: SoloSpacing.sm),
+            separatorBuilder: (_, __) => const SizedBox(width: 12.0),
             itemBuilder: (context, index) {
               final media = publication.media[index];
               return ClipRRect(
-                borderRadius: SoloRadius.radiusMd,
+                borderRadius: BorderRadius.circular(12),
                 child: AspectRatio(
                   aspectRatio: 1,
                   child: Image.network(
@@ -237,10 +237,10 @@ class _PublicPublicationPreviewSheet extends StatelessWidget {
                     fit: BoxFit.cover,
                     errorBuilder: (context, error, stackTrace) {
                       return Container(
-                        color: SoloForteColors.grayLight,
+                        color: PremiumTokens.surfaceLight,
                         child: const Icon(
                           Icons.image,
-                          color: SoloForteColors.textSecondary,
+                          color: PremiumTokens.textSecondaryLight,
                         ),
                       );
                     },
@@ -257,11 +257,11 @@ class _PublicPublicationPreviewSheet extends StatelessWidget {
   Color _getTypeColor(PublicacaoType type) {
     switch (type) {
       case PublicacaoType.institucional:
-        return SoloForteColors.brand;
+        return PremiumTokens.brandGreen;
       case PublicacaoType.tecnico:
         return const Color(0xFF9C27B0);
       case PublicacaoType.resultado:
-        return SoloForteColors.greenIOS;
+        return PremiumTokens.brandGreen;
       case PublicacaoType.comparativo:
         return const Color(0xFFFF9800);
       case PublicacaoType.caseSucesso:

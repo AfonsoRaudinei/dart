@@ -80,3 +80,7 @@ scripts/*.local.sh
 
 # Arquivos de defines locais (dart-define)
 *.define.local
+
+# Variáveis de ambiente locais (nunca commitar)
+.env.local
+*.env

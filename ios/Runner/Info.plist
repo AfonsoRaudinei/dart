@@ -70,5 +70,13 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>O SoloForte precisa acessar suas fotos para registrar imagens das visitas técnicas.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>O SoloForte precisa da câmera para fotografar as condições do campo durante as visitas.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>O SoloForte salva fotos das visitas técnicas na sua biblioteca.</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 </dict>
 </plist>

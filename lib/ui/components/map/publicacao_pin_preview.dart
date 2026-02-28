@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 import '../../../../modules/map/design/sf_icons.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../../core/domain/publicacao.dart';
-import '../../theme/soloforte_theme.dart';
 
 // ════════════════════════════════════════════════════════════════════
 // PREVIEW INDIVIDUAL DE PIN DE PUBLICAÇÃO (iOS Maps Style)
@@ -58,10 +58,10 @@ class _PublicacaoPreviewSheet extends StatelessWidget {
       builder: (context, scrollController) {
         return Container(
           decoration: const BoxDecoration(
-            color: SoloForteColors.white,
+            color: Colors.white,
             borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(SoloRadius.lg),
-              topRight: Radius.circular(SoloRadius.lg),
+              topLeft: Radius.circular(16.0),
+              topRight: Radius.circular(16.0),
             ),
             boxShadow: [
               BoxShadow(
@@ -82,7 +82,7 @@ class _PublicacaoPreviewSheet extends StatelessWidget {
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: SoloForteColors.grayLight,
+                    color: PremiumTokens.surfaceLight,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -123,11 +123,11 @@ class _CoverSection extends StatelessWidget {
       height: 160,
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: SoloForteColors.grayLight,
-        borderRadius: BorderRadius.circular(SoloRadius.md),
+        color: PremiumTokens.surfaceLight,
+        borderRadius: BorderRadius.circular(10.0),
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(SoloRadius.md),
+        borderRadius: BorderRadius.circular(10.0),
         child: hasCover
             ? Image.network(
                 cover.path,
@@ -142,7 +142,7 @@ class _CoverSection extends StatelessWidget {
 
   Widget _placeholder() {
     return Center(
-      child: Icon(SFIcons.image, size: 48, color: SoloForteColors.textTertiary),
+      child: Icon(SFIcons.image, size: 48, color: PremiumTokens.textTertiaryLight),
     );
   }
 }
@@ -170,8 +170,8 @@ class _HeaderSection extends StatelessWidget {
               _getTypeLabel(),
               style: TextStyle(
                 color: _getTypeColor(),
-                fontSize: SoloFontSizes.xs,
-                fontWeight: SoloFontWeights.semibold,
+                fontSize: 10.0,
+                fontWeight: FontWeight.w500,
               ),
             ),
           ),
@@ -179,7 +179,7 @@ class _HeaderSection extends StatelessWidget {
           // Título
           Text(
             publicacao.title ?? 'Publicação sem título',
-            style: SoloTextStyles.headingMedium,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
@@ -236,8 +236,8 @@ class _InfoSection extends StatelessWidget {
               publicacao.description!.isNotEmpty) ...[
             Text(
               publicacao.description!,
-              style: SoloTextStyles.body.copyWith(
-                color: SoloForteColors.textSecondary,
+              style: const TextStyle(fontSize: 14).copyWith(
+                color: PremiumTokens.textSecondaryLight,
               ),
               maxLines: 3,
               overflow: TextOverflow.ellipsis,
@@ -253,13 +253,13 @@ class _InfoSection extends StatelessWidget {
                 Icon(
                   SFIcons.personOutline,
                   size: 14,
-                  color: SoloForteColors.textTertiary,
+                  color: PremiumTokens.textTertiaryLight,
                 ),
                 const SizedBox(width: 4),
                 Flexible(
                   child: Text(
                     publicacao.clientName!,
-                    style: SoloTextStyles.label,
+                    style: TextStyle(fontSize: 12, color: PremiumTokens.textSecondaryLight),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -271,13 +271,13 @@ class _InfoSection extends StatelessWidget {
                 Icon(
                   SFIcons.place,
                   size: 14,
-                  color: SoloForteColors.textTertiary,
+                  color: PremiumTokens.textTertiaryLight,
                 ),
                 const SizedBox(width: 4),
                 Flexible(
                   child: Text(
                     publicacao.areaName!,
-                    style: SoloTextStyles.label,
+                    style: TextStyle(fontSize: 12, color: PremiumTokens.textSecondaryLight),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -293,23 +293,23 @@ class _InfoSection extends StatelessWidget {
               Icon(
                 SFIcons.calendar,
                 size: 14,
-                color: SoloForteColors.textTertiary,
+                color: PremiumTokens.textTertiaryLight,
               ),
               const SizedBox(width: 4),
               Text(
                 DateFormat('dd/MM/yyyy').format(publicacao.createdAt),
-                style: SoloTextStyles.label,
+                style: TextStyle(fontSize: 12, color: PremiumTokens.textSecondaryLight),
               ),
               const SizedBox(width: 16),
               Icon(
                 SFIcons.photoLibrary,
                 size: 14,
-                color: SoloForteColors.textTertiary,
+                color: PremiumTokens.textTertiaryLight,
               ),
               const SizedBox(width: 4),
               Text(
                 '${publicacao.media.length} ${publicacao.media.length == 1 ? 'foto' : 'fotos'}',
-                style: SoloTextStyles.label,
+                style: TextStyle(fontSize: 12, color: PremiumTokens.textSecondaryLight),
               ),
             ],
           ),
@@ -342,15 +342,15 @@ class _CTASection extends StatelessWidget {
           icon: const Icon(SFIcons.openInNew, size: 18),
           label: const Text('Ver detalhes'),
           style: ElevatedButton.styleFrom(
-            backgroundColor: SoloForteColors.greenIOS,
+            backgroundColor: PremiumTokens.brandGreen,
             foregroundColor: Colors.white,
             padding: const EdgeInsets.symmetric(vertical: 14),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(SoloRadius.md),
+              borderRadius: BorderRadius.circular(10.0),
             ),
             textStyle: const TextStyle(
-              fontSize: SoloFontSizes.sm,
-              fontWeight: SoloFontWeights.semibold,
+              fontSize: 12.0,
+              fontWeight: FontWeight.w500,
             ),
           ),
         ),

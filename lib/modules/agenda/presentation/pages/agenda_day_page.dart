@@ -9,15 +9,14 @@ import '../widgets/create_event_dialog.dart';
 class AgendaDayPage extends ConsumerWidget {
   final DateTime selectedDate;
 
-  const AgendaDayPage({
-    super.key,
-    required this.selectedDate,
-  });
+  const AgendaDayPage({super.key, required this.selectedDate});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final agendaState = ref.watch(agendaProvider);
-    final events = ref.read(agendaProvider.notifier).getEventsByDay(selectedDate);
+    final events = ref
+        .read(agendaProvider.notifier)
+        .getEventsByDay(selectedDate);
 
     // Ordena por horário
     final sortedEvents = [...events]
@@ -33,7 +32,10 @@ class AgendaDayPage extends ConsumerWidget {
               padding: const EdgeInsets.only(right: 16),
               child: Center(
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.orange,
                     borderRadius: BorderRadius.circular(12),
@@ -54,8 +56,8 @@ class AgendaDayPage extends ConsumerWidget {
       body: agendaState.isLoading
           ? const Center(child: CircularProgressIndicator())
           : sortedEvents.isEmpty
-              ? _buildEmptyState(context)
-              : _buildEventList(sortedEvents),
+          ? _buildEmptyState(context)
+          : _buildEventList(sortedEvents),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showCreateEventDialog(context),
         child: const Icon(Icons.add),
@@ -70,11 +72,7 @@ class AgendaDayPage extends ConsumerWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.event_available,
-            size: 64,
-            color: theme.disabledColor,
-          ),
+          Icon(Icons.event_available, size: 64, color: theme.disabledColor),
           const SizedBox(height: 16),
           Text(
             'Nenhum evento agendado',
@@ -113,9 +111,7 @@ class AgendaDayPage extends ConsumerWidget {
   void _showCreateEventDialog(BuildContext context) {
     showDialog(
       context: context,
-      builder: (context) => CreateEventDialog(
-        initialDate: selectedDate,
-      ),
+      builder: (context) => CreateEventDialog(initialDate: selectedDate),
     );
   }
 

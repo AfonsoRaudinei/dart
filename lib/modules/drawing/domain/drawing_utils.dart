@@ -22,15 +22,15 @@ class DrawingUtils {
   static String generateId() => _uuid.v4();
 
   /// ⚡ REFATORADO: Calcula área geodésica usando GeodesicUtils
-  /// 
+  ///
   /// Usa algoritmo de Shoelace esférico (WGS84) via latlong2.
   /// Precisão: ±2-3% para polígonos agrícolas.
-  /// 
+  ///
   /// [ring] coordenadas no formato [[lng, lat], ...]
   /// Retorna área em hectares
   static double calculateAreaHa(List<List<double>> ring) {
     if (ring.length < 3) return 0.0;
-    
+
     // Converter para LatLng e delegar para GeodesicUtils
     final points = GeodesicUtils.fromCoordinates(ring);
     return GeodesicUtils.calculateAreaHectares(points);
@@ -61,7 +61,7 @@ class DrawingUtils {
   }
 
   /// ⚡ REFATORADO: Calcula perímetro geodésico usando GeodesicUtils
-  /// 
+  ///
   /// Usa algoritmo de Vincenty (latlong2) para distâncias precisas.
   static double calculatePerimeterKm(DrawingGeometry? geometry) {
     if (geometry == null) return 0.0;
@@ -108,7 +108,7 @@ class DrawingUtils {
     }
 
     if (ring == null || ring.length < 2) return [];
-    
+
     final points = GeodesicUtils.fromCoordinates(ring);
     return GeodesicUtils.calculateSegmentDistances(points);
   }
@@ -244,7 +244,11 @@ class DrawingUtils {
         return _parseKmzContent(bytes);
       }
     } catch (e) {
-      AppLogger.warning('Erro ao parsear arquivo KML/KMZ', tag: 'DrawingUtils', error: e);
+      AppLogger.warning(
+        'Erro ao parsear arquivo KML/KMZ',
+        tag: 'DrawingUtils',
+        error: e,
+      );
     }
     return null;
   }

@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/router/app_routes.dart';
-import '../../../ui/theme/soloforte_theme.dart';
+
 import '../services/auth_service.dart';
 
 class RecoverPasswordPage extends ConsumerStatefulWidget {
@@ -49,7 +50,7 @@ class _RecoverPasswordPageState extends ConsumerState<RecoverPasswordPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: SoloForteColors.backgroundLight,
+      backgroundColor: PremiumTokens.backgroundLight,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
@@ -63,14 +64,14 @@ class _RecoverPasswordPageState extends ConsumerState<RecoverPasswordPage> {
                   icon: const Icon(
                     Icons.arrow_back_ios,
                     size: 16,
-                    color: SoloForteColors.primary,
+                    color: PremiumTokens.brandGreen,
                   ),
                   label: const Text(
                     'VOLTAR',
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
-                      color: SoloForteColors.primary,
+                      color: PremiumTokens.brandGreen,
                       letterSpacing: 0.5,
                     ),
                   ),
@@ -93,16 +94,15 @@ class _RecoverPasswordPageState extends ConsumerState<RecoverPasswordPage> {
           const SizedBox(height: 24),
           Text(
             'Esqueceu sua senha?',
-            style: SoloTextStyles.headingMedium,
+            style: Theme.of(context).textTheme.titleMedium,
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 8),
-          const Text(
+          Text(
             'Digite seu e-mail e enviaremos um link para redefinir sua senha.',
             textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 14,
-              color: SoloForteColors.textSecondary,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: PremiumTokens.textSecondaryLight,
               height: 1.5,
             ),
           ),
@@ -113,7 +113,7 @@ class _RecoverPasswordPageState extends ConsumerState<RecoverPasswordPage> {
               labelText: 'E-mail',
               prefixIcon: Icon(
                 Icons.email_outlined,
-                color: SoloForteColors.primary,
+                color: PremiumTokens.brandGreen,
                 size: 20,
               ),
             ),
@@ -130,10 +130,10 @@ class _RecoverPasswordPageState extends ConsumerState<RecoverPasswordPage> {
             child: ElevatedButton(
               onPressed: _isLoading ? null : _handleRecover,
               style: ElevatedButton.styleFrom(
-                backgroundColor: SoloForteColors.primary,
-                disabledBackgroundColor: SoloForteColors.surfaceLight,
+                backgroundColor: PremiumTokens.brandGreen,
+                disabledBackgroundColor: PremiumTokens.backgroundLight,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(SoloRadius.md),
+                  borderRadius: BorderRadius.circular(10.0),
                 ),
                 elevation: 0,
               ),
@@ -170,21 +170,20 @@ class _RecoverPasswordPageState extends ConsumerState<RecoverPasswordPage> {
         const Icon(
           Icons.check_circle_outline,
           size: 80,
-          color: SoloForteColors.success,
+          color: Color(0xFF34C759),
         ),
         const SizedBox(height: 24),
         Text(
           'E-mail enviado!',
-          style: SoloTextStyles.headingMedium,
+          style: Theme.of(context).textTheme.titleMedium,
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 16),
         Text(
           'Se o e-mail ${_emailController.text} estiver cadastrado, você receberá um link em alguns instantes.',
           textAlign: TextAlign.center,
-          style: const TextStyle(
-            fontSize: 14,
-            color: SoloForteColors.textSecondary,
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            color: PremiumTokens.textSecondaryLight,
             height: 1.5,
           ),
         ),
@@ -194,9 +193,9 @@ class _RecoverPasswordPageState extends ConsumerState<RecoverPasswordPage> {
           child: ElevatedButton(
             onPressed: () => context.go(AppRoutes.login),
             style: ElevatedButton.styleFrom(
-              backgroundColor: SoloForteColors.primary,
+              backgroundColor: PremiumTokens.brandGreen,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(SoloRadius.md),
+                borderRadius: BorderRadius.circular(10.0),
               ),
               elevation: 0,
             ),

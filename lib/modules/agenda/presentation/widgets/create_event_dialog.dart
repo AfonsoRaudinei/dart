@@ -9,10 +9,7 @@ import '../providers/agenda_provider.dart';
 class CreateEventDialog extends ConsumerStatefulWidget {
   final DateTime? initialDate;
 
-  const CreateEventDialog({
-    super.key,
-    this.initialDate,
-  });
+  const CreateEventDialog({super.key, this.initialDate});
 
   @override
   ConsumerState<CreateEventDialog> createState() => _CreateEventDialogState();
@@ -109,7 +106,9 @@ class _CreateEventDialogState extends ConsumerState<CreateEventDialog> {
                   final date = await showDatePicker(
                     context: context,
                     initialDate: _selectedDate ?? DateTime.now(),
-                    firstDate: DateTime.now().subtract(const Duration(days: 365)),
+                    firstDate: DateTime.now().subtract(
+                      const Duration(days: 365),
+                    ),
                     lastDate: DateTime.now().add(const Duration(days: 365)),
                   );
                   if (date != null) {
@@ -158,10 +157,7 @@ class _CreateEventDialogState extends ConsumerState<CreateEventDialog> {
           onPressed: () => Navigator.pop(context),
           child: const Text('Cancelar'),
         ),
-        ElevatedButton(
-          onPressed: _createEvent,
-          child: const Text('Criar'),
-        ),
+        ElevatedButton(onPressed: _createEvent, child: const Text('Criar')),
       ],
     );
   }
@@ -169,9 +165,9 @@ class _CreateEventDialogState extends ConsumerState<CreateEventDialog> {
   Future<void> _createEvent() async {
     if (!_formKey.currentState!.validate()) return;
     if (_selectedDate == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Selecione uma data')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Selecione uma data')));
       return;
     }
 
@@ -192,7 +188,9 @@ class _CreateEventDialogState extends ConsumerState<CreateEventDialog> {
         _endTime.minute,
       );
 
-      await ref.read(agendaProvider.notifier).createEvent(
+      await ref
+          .read(agendaProvider.notifier)
+          .createEvent(
             tipo: _selectedType,
             clienteId: 'cliente-demo', // TODO: selecionar cliente real
             titulo: _tituloController.text.trim(),
@@ -208,9 +206,9 @@ class _CreateEventDialogState extends ConsumerState<CreateEventDialog> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erro: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Erro: $e')));
       }
     }
   }

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/router/app_routes.dart';
-import '../../theme/soloforte_theme.dart';
 
 /// Botão de acesso ao SoloForte exibido na tela de mapa público.
 ///
@@ -22,13 +22,10 @@ class AccessSoloForteButton extends StatelessWidget {
       label: 'Acessar SoloForte - Fazer login ou criar conta',
       button: true,
       child: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: SoloSpacing.lg,
-          vertical: SoloSpacing.md,
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
         decoration: BoxDecoration(
-          color: SoloForteColors.white,
-          borderRadius: SoloRadius.radiusLg,
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.15),
@@ -42,11 +39,11 @@ class AccessSoloForteButton extends StatelessWidget {
           color: Colors.transparent,
           child: InkWell(
             onTap: () => context.go(AppRoutes.login),
-            borderRadius: SoloRadius.radiusLg,
+            borderRadius: BorderRadius.circular(16),
             child: Padding(
               padding: const EdgeInsets.symmetric(
-                horizontal: SoloSpacing.md,
-                vertical: SoloSpacing.sm,
+                horizontal: 16.0,
+                vertical: 12.0,
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -57,7 +54,7 @@ class AccessSoloForteButton extends StatelessWidget {
                     height: 52,
                     padding: const EdgeInsets.all(4),
                     decoration: BoxDecoration(
-                      color: SoloForteColors.white,
+                      color: Colors.white,
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
@@ -77,7 +74,7 @@ class AccessSoloForteButton extends StatelessWidget {
                         // Fallback se a imagem não carregar
                         return Container(
                           decoration: BoxDecoration(
-                            color: SoloForteColors.greenIOS,
+                            color: PremiumTokens.brandGreen,
                             shape: BoxShape.circle,
                           ),
                           child: const Icon(
@@ -89,22 +86,19 @@ class AccessSoloForteButton extends StatelessWidget {
                       },
                     ),
                   ),
-                  const SizedBox(width: SoloSpacing.lg),
-                  // Texto
+                  const SizedBox(width: 20.0),
                   Text(
                     'Acessar SoloForte',
-                    style: SoloTextStyles.headingMedium.copyWith(
-                      fontSize: 17,
-                      fontWeight: SoloFontWeights.semibold,
-                      color: SoloForteColors.textPrimary,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: PremiumTokens.textPrimaryLight,
                     ),
                   ),
-                  const SizedBox(width: SoloSpacing.xs),
+                  const SizedBox(width: 8.0),
                   // Ícone de seta
                   Icon(
                     Icons.arrow_forward_ios,
                     size: 16,
-                    color: SoloForteColors.textSecondary,
+                    color: PremiumTokens.textSecondaryLight,
                   ),
                 ],
               ),

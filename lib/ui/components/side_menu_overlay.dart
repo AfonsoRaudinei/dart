@@ -15,9 +15,10 @@ REGRAS:
 */
 
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:soloforte_app/ui/theme/soloforte_theme.dart';
+
 import 'package:soloforte_app/core/router/app_routes.dart';
 import 'package:soloforte_app/core/state/side_menu_state.dart';
 
@@ -76,7 +77,7 @@ class SideMenuOverlay extends ConsumerWidget {
             child: Container(
               width: 320,
               decoration: BoxDecoration(
-                color: SoloForteColors.white,
+                color: Colors.white,
                 borderRadius: const BorderRadius.only(
                   topLeft: Radius.circular(30),
                   bottomLeft: Radius.circular(30),
@@ -105,19 +106,19 @@ class SideMenuOverlay extends ConsumerWidget {
                                 width: 48,
                                 height: 48,
                                 decoration: BoxDecoration(
-                                  color: SoloForteColors.greenIOS.withValues(
+                                  color: PremiumTokens.brandGreen.withValues(
                                     alpha: 0.1,
                                   ),
                                   shape: BoxShape.circle,
                                   border: Border.all(
-                                    color: SoloForteColors.greenIOS,
+                                    color: PremiumTokens.brandGreen,
                                     width: 1.5,
                                   ),
                                 ),
                                 child: const Center(
                                   child: Icon(
                                     Icons.person_outline_rounded,
-                                    color: SoloForteColors.greenIOS,
+                                    color: PremiumTokens.brandGreen,
                                     size: 24,
                                   ),
                                 ),
@@ -128,13 +129,13 @@ class SideMenuOverlay extends ConsumerWidget {
                                 children: [
                                   Text(
                                     'Consultor',
-                                    style: SoloTextStyles.label.copyWith(
-                                      color: SoloForteColors.textSecondary,
+                                    style: Theme.of(context).textTheme.labelSmall!.copyWith(color: PremiumTokens.textSecondaryLight).copyWith(
+                                      color: PremiumTokens.textSecondaryLight,
                                     ),
                                   ),
                                   Text(
                                     'João Silva',
-                                    style: SoloTextStyles.headingMedium
+                                    style: Theme.of(context).textTheme.titleMedium!.copyWith(fontWeight: FontWeight.w600)
                                         .copyWith(fontSize: 18),
                                   ),
                                 ],
@@ -146,7 +147,7 @@ class SideMenuOverlay extends ConsumerWidget {
                     ),
                     const Divider(
                       height: 1,
-                      color: SoloForteColors.borderLight,
+                      color: PremiumTokens.hairlineLight,
                     ),
                     const SizedBox(height: 16),
 
@@ -196,7 +197,7 @@ class SideMenuOverlay extends ConsumerWidget {
                           ),
                           const Padding(
                             padding: EdgeInsets.symmetric(vertical: 16),
-                            child: Divider(color: SoloForteColors.borderLight),
+                            child: Divider(color: PremiumTokens.hairlineLight),
                           ),
                           _MenuItem(
                             icon: Icons.settings_outlined,
@@ -228,8 +229,8 @@ class SideMenuOverlay extends ConsumerWidget {
                       child: Text(
                         'SoloForte v1.0.0',
                         textAlign: TextAlign.center,
-                        style: SoloTextStyles.label.copyWith(
-                          color: SoloForteColors.textTertiary,
+                        style: Theme.of(context).textTheme.labelSmall!.copyWith(color: PremiumTokens.textSecondaryLight).copyWith(
+                          color: PremiumTokens.textTertiaryLight,
                         ),
                       ),
                     ),
@@ -271,8 +272,8 @@ class _MenuItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = isDestructive
-        ? SoloForteColors.error
-        : SoloForteColors.textPrimary;
+        ? const Color(0xFFFF3B30)
+        : PremiumTokens.textPrimaryLight;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
@@ -282,11 +283,11 @@ class _MenuItem extends StatelessWidget {
           onTap: onTap,
           borderRadius: BorderRadius.circular(12),
           splashColor: isDestructive
-              ? SoloForteColors.error.withValues(alpha: 0.1)
-              : SoloForteColors.greenIOS.withValues(alpha: 0.1),
+              ? const Color(0xFFFF3B30).withValues(alpha: 0.1)
+              : PremiumTokens.brandGreen.withValues(alpha: 0.1),
           highlightColor: isDestructive
-              ? SoloForteColors.error.withValues(alpha: 0.05)
-              : SoloForteColors.greenIOS.withValues(alpha: 0.05),
+              ? const Color(0xFFFF3B30).withValues(alpha: 0.05)
+              : PremiumTokens.brandGreen.withValues(alpha: 0.05),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Row(
@@ -295,15 +296,15 @@ class _MenuItem extends StatelessWidget {
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
                     color: isDestructive
-                        ? SoloForteColors.bgError
-                        : SoloForteColors.grayLight,
+                        ? const Color(0xFFFFEBEB)
+                        : PremiumTokens.surfaceLight,
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Icon(
                     icon,
                     color: isDestructive
-                        ? SoloForteColors.error
-                        : SoloForteColors.greenIOS,
+                        ? const Color(0xFFFF3B30)
+                        : PremiumTokens.brandGreen,
                     size: 20,
                   ),
                 ),
@@ -314,7 +315,7 @@ class _MenuItem extends StatelessWidget {
                     children: [
                       Text(
                         label,
-                        style: SoloTextStyles.body.copyWith(
+                        style: Theme.of(context).textTheme.bodyMedium!.copyWith(
                           fontWeight: FontWeight.w600,
                           color: color,
                           fontSize: 15,
@@ -324,8 +325,8 @@ class _MenuItem extends StatelessWidget {
                         const SizedBox(height: 2),
                         Text(
                           subtitle!,
-                          style: SoloTextStyles.label.copyWith(
-                            color: SoloForteColors.textSecondary,
+                          style: Theme.of(context).textTheme.labelSmall!.copyWith(color: PremiumTokens.textSecondaryLight).copyWith(
+                            color: PremiumTokens.textSecondaryLight,
                             fontSize: 12,
                           ),
                         ),
@@ -335,7 +336,7 @@ class _MenuItem extends StatelessWidget {
                 ),
                 Icon(
                   Icons.chevron_right_rounded,
-                  color: SoloForteColors.textTertiary,
+                  color: PremiumTokens.textTertiaryLight,
                   size: 20,
                 ),
               ],

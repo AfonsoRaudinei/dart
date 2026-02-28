@@ -47,7 +47,10 @@ class DatabaseHelper {
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
     if (kDebugMode) {
-      AppLogger.debug('Database Upgrade: v$oldVersion → v$newVersion', tag: 'DB');
+      AppLogger.debug(
+        'Database Upgrade: v$oldVersion → v$newVersion',
+        tag: 'DB',
+      );
     }
     await _runMigrations(db, oldVersion, newVersion);
   }
@@ -150,21 +153,30 @@ class DatabaseHelper {
         'ALTER TABLE clients ADD COLUMN sync_status INTEGER DEFAULT 1',
       );
     } catch (e) {
-      AppLogger.debug('V2: sync_status em clients já existe — $e', tag: 'DB.Migration');
+      AppLogger.debug(
+        'V2: sync_status em clients já existe — $e',
+        tag: 'DB.Migration',
+      );
     }
     try {
       await db.execute(
         'ALTER TABLE farms ADD COLUMN sync_status INTEGER DEFAULT 1',
       );
     } catch (e) {
-      AppLogger.debug('V2: sync_status em farms já existe — $e', tag: 'DB.Migration');
+      AppLogger.debug(
+        'V2: sync_status em farms já existe — $e',
+        tag: 'DB.Migration',
+      );
     }
     try {
       await db.execute(
         'ALTER TABLE fields ADD COLUMN sync_status INTEGER DEFAULT 1',
       );
     } catch (e) {
-      AppLogger.debug('V2: sync_status em fields já existe — $e', tag: 'DB.Migration');
+      AppLogger.debug(
+        'V2: sync_status em fields já existe — $e',
+        tag: 'DB.Migration',
+      );
     }
 
     await db.execute(
@@ -262,17 +274,26 @@ class DatabaseHelper {
     try {
       await db.execute('ALTER TABLE occurrences ADD COLUMN updated_at TEXT');
     } catch (e) {
-      AppLogger.debug('V6: updated_at em occurrences já existe — $e', tag: 'DB.Migration');
+      AppLogger.debug(
+        'V6: updated_at em occurrences já existe — $e',
+        tag: 'DB.Migration',
+      );
     }
     try {
       await db.execute('ALTER TABLE occurrences ADD COLUMN category TEXT');
     } catch (e) {
-      AppLogger.debug('V6: category em occurrences já existe — $e', tag: 'DB.Migration');
+      AppLogger.debug(
+        'V6: category em occurrences já existe — $e',
+        tag: 'DB.Migration',
+      );
     }
     try {
       await db.execute('ALTER TABLE occurrences ADD COLUMN status TEXT');
     } catch (e) {
-      AppLogger.debug('V6: status em occurrences já existe — $e', tag: 'DB.Migration');
+      AppLogger.debug(
+        'V6: status em occurrences já existe — $e',
+        tag: 'DB.Migration',
+      );
     }
     await db.execute(
       "UPDATE occurrences SET status = 'draft' WHERE status IS NULL",
@@ -283,7 +304,10 @@ class DatabaseHelper {
     try {
       await db.execute('ALTER TABLE occurrences ADD COLUMN geometry TEXT');
     } catch (e) {
-      AppLogger.debug('V7: geometry em occurrences já existe — $e', tag: 'DB.Migration');
+      AppLogger.debug(
+        'V7: geometry em occurrences já existe — $e',
+        tag: 'DB.Migration',
+      );
     }
   }
 
@@ -323,12 +347,18 @@ class DatabaseHelper {
     try {
       await db.execute('ALTER TABLE drawings ADD COLUMN cliente_id TEXT');
     } catch (e) {
-      AppLogger.debug('V9: cliente_id em drawings já existe — $e', tag: 'DB.Migration');
+      AppLogger.debug(
+        'V9: cliente_id em drawings já existe — $e',
+        tag: 'DB.Migration',
+      );
     }
     try {
       await db.execute('ALTER TABLE drawings ADD COLUMN fazenda_id TEXT');
     } catch (e) {
-      AppLogger.debug('V9: fazenda_id em drawings já existe — $e', tag: 'DB.Migration');
+      AppLogger.debug(
+        'V9: fazenda_id em drawings já existe — $e',
+        tag: 'DB.Migration',
+      );
     }
     await db.execute(
       'CREATE INDEX IF NOT EXISTS idx_drawings_cliente_id ON drawings(cliente_id)',
@@ -405,7 +435,10 @@ class DatabaseHelper {
         [table],
       );
       if (res.isEmpty) {
-        AppLogger.error('ERRO CRÍTICO: Tabela "$table" não encontrada após boot.', tag: 'DB');
+        AppLogger.error(
+          'ERRO CRÍTICO: Tabela "$table" não encontrada após boot.',
+          tag: 'DB',
+        );
       } else {
         AppLogger.debug('Database: Tabela "$table" validada.', tag: 'DB');
       }

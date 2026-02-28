@@ -42,7 +42,11 @@ class ActiveLayer extends _$ActiveLayer {
         }
       }
     } catch (e) {
-      AppLogger.warning('Falha ao restaurar layer persistida — usando padrão', tag: 'MapState', error: e);
+      AppLogger.warning(
+        'Falha ao restaurar layer persistida — usando padrão',
+        tag: 'MapState',
+        error: e,
+      );
     }
   }
 

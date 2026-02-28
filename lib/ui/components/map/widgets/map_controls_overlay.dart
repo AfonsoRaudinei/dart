@@ -1,13 +1,14 @@
-import 'dart:ui' as ui;
+// Removed dart:ui
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
+import 'package:flutter/services.dart';
 import 'package:latlong2/latlong.dart';
 import '../../../../../../modules/map/design/sf_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../modules/dashboard/controllers/location_controller.dart';
 import '../../../../modules/dashboard/domain/location_state.dart';
-import '../../../theme/soloforte_theme.dart';
-// unused imports removed
 
+import '../../premium/premium_glass_panel.dart';
 import '../../../../modules/drawing/domain/drawing_state.dart';
 import '../../../../core/utils/app_logger.dart';
 import './editing_controls_overlay.dart';
@@ -80,94 +81,67 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
         Positioned(
           top: 60, // Mantendo posição original do header
           left: 20,
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(16),
-            child: BackdropFilter(
-              filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
-                ),
-                decoration: BoxDecoration(
-                  color: SoloForteColors.white.withValues(alpha: 0.90),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.2),
-                    width: 1.5,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.05),
-                      offset: const Offset(0, 4),
-                      blurRadius: 16,
-                    ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+          child: PremiumGlassPanel(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          width: 8,
-                          height: 8,
-                          decoration: BoxDecoration(
-                            color: SoloForteColors.greenIOS,
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: SoloForteColors.greenIOS.withValues(
-                                  alpha: 0.4,
-                                ),
-                                blurRadius: 6,
-                                spreadRadius: 2,
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          'SoloForte Privado',
-                          style: SoloTextStyles.headingMedium.copyWith(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: -0.5,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Padding(
-                      padding: const EdgeInsets.only(left: 16),
-                      child: Row(
-                        children: [
-                          Icon(
-                            locationState == LocationState.available
-                                ? SFIcons.nearMe
-                                : SFIcons.locationDisabled,
-                            size: 12,
-                            color: locationState == LocationState.available
-                                ? SoloForteColors.textSecondary
-                                : SoloForteColors.error,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            _getGPSStatusText(locationState),
-                            style: SoloTextStyles.label.copyWith(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w500,
-                              color: SoloForteColors.textSecondary,
+                    Container(
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: PremiumTokens.brandGreen,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: PremiumTokens.brandGreen.withValues(
+                              alpha: 0.4,
                             ),
+                            blurRadius: 6,
+                            spreadRadius: 2,
                           ),
                         ],
                       ),
                     ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'SoloForte Privado',
+                      style: Theme.of(
+                        context,
+                      ).textTheme.titleMedium?.copyWith(fontSize: 14),
+                    ),
                   ],
                 ),
-              ),
+                const SizedBox(height: 4),
+                Padding(
+                  padding: const EdgeInsets.only(left: 16),
+                  child: Row(
+                    children: [
+                      Icon(
+                        locationState == LocationState.available
+                            ? SFIcons.nearMe
+                            : SFIcons.locationDisabled,
+                        size: 12,
+                        color: locationState == LocationState.available
+                            ? PremiumTokens.textSecondaryLight
+                            : PremiumTokens.alertError,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        _getGPSStatusText(locationState),
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          fontSize: 10,
+                          color: PremiumTokens.textSecondaryLight,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
         ),
@@ -178,28 +152,27 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
           right: 16, // Layout pedido: 16
           child: GestureDetector(
             onTap: () {
-              AppLogger.debug("MapOverlay: Clique em 'Centralizar Usuário'", tag: 'MapControls');
+              HapticFeedback.selectionClick();
+              AppLogger.debug(
+                "MapOverlay: Clique em 'Centralizar Usuário'",
+                tag: 'MapControls',
+              );
               widget.onCenterUser();
             },
             behavior: HitTestBehavior.opaque,
-            child: Container(
-              width: 52,
-              height: 52,
-              decoration: BoxDecoration(
-                color: SoloForteColors.white.withValues(alpha: 0.95),
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.1),
-                    offset: const Offset(0, 4),
-                    blurRadius: 12,
-                  ),
-                ],
-              ),
-              child: Icon(
-                SFIcons.myLocation,
-                size: 24,
-                color: Colors.black.withValues(alpha: 0.85),
+            child: PremiumGlassPanel(
+              borderRadius: BorderRadius.circular(99.0),
+              child: Container(
+                width: 52,
+                height: 52,
+                alignment: Alignment.center,
+                child: Icon(
+                  SFIcons.myLocation,
+                  size: 24,
+                  color: locationState == LocationState.available
+                      ? PremiumTokens.brandGreen
+                      : PremiumTokens.textPrimaryLight,
+                ),
               ),
             ),
           ),
@@ -258,7 +231,7 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
               children: [
                 FloatingActionButton(
                   heroTag: 'complete_drawing_overlay',
-                  backgroundColor: SoloForteColors.greenIOS,
+                  backgroundColor: PremiumTokens.brandGreen,
                   onPressed: widget.onFinishDrawing,
                   child: const Icon(SFIcons.check, color: Colors.white),
                 ),
@@ -306,27 +279,26 @@ class _MapActionButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
+      onTap: () {
+        HapticFeedback.selectionClick();
+        onTap();
+      },
       behavior: HitTestBehavior.opaque,
-      child: Container(
-        width: 48,
-        height: 48,
-        decoration: BoxDecoration(
-          color: isActive ? SoloForteColors.greenIOS : SoloForteColors.white,
-          shape: BoxShape.circle,
-          boxShadow: [
-            BoxShadow(
-              color: isActive
-                  ? SoloForteColors.greenIOS.withValues(alpha: 0.4)
-                  : Colors.black.withValues(alpha: 0.1),
-              blurRadius: 8,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Icon(
-          icon,
-          color: isActive ? Colors.white : SoloForteColors.textPrimary,
+      child: PremiumGlassPanel(
+        borderRadius: BorderRadius.circular(99.0), // Totalmente Redondo
+        isDark:
+            isActive, // Quando ativo, usa glass Escuro/Verde (faremos custom se precisar, mas isDark ou mudar container interno ajuda)
+        child: Container(
+          width: 48,
+          height: 48,
+          decoration: BoxDecoration(
+            color: isActive ? PremiumTokens.brandGreen : Colors.transparent,
+            shape: BoxShape.circle,
+          ),
+          child: Icon(
+            icon,
+            color: isActive ? Colors.white : PremiumTokens.textPrimaryLight,
+          ),
         ),
       ),
     );

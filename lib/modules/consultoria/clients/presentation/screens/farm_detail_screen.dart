@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:soloforte_app/ui/theme/soloforte_theme.dart';
+
 import 'package:soloforte_app/modules/consultoria/farms/data/repositories/farm_repository.dart';
 import 'package:soloforte_app/modules/consultoria/clients/presentation/providers/field_providers.dart';
 
@@ -131,12 +132,12 @@ class FarmDetailScreen extends ConsumerWidget {
                               },
                               icon: const Icon(
                                 Icons.add,
-                                color: SoloForteColors.greenIOS,
+                                color: PremiumTokens.brandGreen,
                               ),
                               label: const Text(
                                 'Novo',
                                 style: TextStyle(
-                                  color: SoloForteColors.greenIOS,
+                                  color: PremiumTokens.brandGreen,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),

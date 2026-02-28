@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:soloforte_app/ui/theme/soloforte_theme.dart';
+import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
+
 import 'drawing_models.dart';
 
 /// Define os estados puramente visuais que um talhão/desenho pode assumir no mapa.
@@ -44,8 +45,8 @@ class FieldStyle {
 
   /// Estilo padrão para talhões consolidados (Verde SoloForte)
   static const standard = FieldStyle(
-    fillColor: SoloForteColors.greenIOS,
-    borderColor: SoloForteColors.greenDark,
+    fillColor: PremiumTokens.brandGreen,
+    borderColor: Color(0xFF248A3D),
     fillOpacity: 0.2, // Mais sutil para não poluir
   );
 

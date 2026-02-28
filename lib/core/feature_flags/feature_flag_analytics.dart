@@ -33,9 +33,15 @@ class FeatureFlagAnalytics {
 
     // Por enquanto, apenas log
     if (wasEnabled) {
-      AppLogger.debug('[Analytics] Feature $featureKey HABILITADA para $userId ($userRole)', tag: 'FeatureAnalytics');
+      AppLogger.debug(
+        '[Analytics] Feature $featureKey HABILITADA para $userId ($userRole)',
+        tag: 'FeatureAnalytics',
+      );
     } else {
-      AppLogger.debug('[Analytics] Feature $featureKey BLOQUEADA para $userId - $blockReason', tag: 'FeatureAnalytics');
+      AppLogger.debug(
+        '[Analytics] Feature $featureKey BLOQUEADA para $userId - $blockReason',
+        tag: 'FeatureAnalytics',
+      );
     }
   }
 
@@ -58,7 +64,10 @@ class FeatureFlagAnalytics {
     //   },
     // );
 
-    AppLogger.debug('[Analytics] Feature $featureKey - Ação: $action por $userId', tag: 'FeatureAnalytics');
+    AppLogger.debug(
+      '[Analytics] Feature $featureKey - Ação: $action por $userId',
+      tag: 'FeatureAnalytics',
+    );
   }
 
   /// Registra erro relacionado a feature flag.
@@ -78,7 +87,10 @@ class FeatureFlagAnalytics {
     //   },
     // );
 
-    AppLogger.warning('[Analytics] Erro Feature Flag $featureKey: $errorMessage', tag: 'FeatureAnalytics');
+    AppLogger.warning(
+      '[Analytics] Erro Feature Flag $featureKey: $errorMessage',
+      tag: 'FeatureAnalytics',
+    );
   }
 
   /// Registra métricas de performance de feature.
@@ -102,7 +114,10 @@ class FeatureFlagAnalytics {
     //   },
     // );
 
-    AppLogger.debug('[Analytics] Performance $featureKey - $metric: $value${unit ?? 'ms'}', tag: 'FeatureAnalytics');
+    AppLogger.debug(
+      '[Analytics] Performance $featureKey - $metric: $value${unit ?? 'ms'}',
+      tag: 'FeatureAnalytics',
+    );
   }
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -177,10 +192,7 @@ class FeatureFlagAnalytics {
       featureKey: 'drawing_v1',
       userId: userId,
       action: 'drawing_cancelled',
-      metadata: {
-        'tool_type': toolType,
-        'point_count': pointCount,
-      },
+      metadata: {'tool_type': toolType, 'point_count': pointCount},
     );
   }
 

@@ -10,10 +10,6 @@ class FeedbackStats {
   });
 
   factory FeedbackStats.empty() {
-    return const FeedbackStats(
-      bugCount: 0,
-      suggestionCount: 0,
-      praiseCount: 0,
-    );
+    return const FeedbackStats(bugCount: 0, suggestionCount: 0, praiseCount: 0);
   }
 }

@@ -2,20 +2,17 @@ import 'package:flutter/material.dart';
 import '../../controllers/drawing_controller.dart';
 
 /// Widget flutuante que exibe dicas contextuais durante o desenho.
-/// 
+///
 /// Aparece no topo da tela mostrando:
 /// - Instrução atual (ex: "Toque no mapa para iniciar")
 /// - Métricas em tempo real (área, perímetro)
 /// - Estado de validação (erros, avisos)
-/// 
+///
 /// ⚠️ Este widget deve ser usado em um Overlay para flutuar sobre o mapa.
 class DrawingHintOverlay extends StatelessWidget {
   final DrawingController controller;
 
-  const DrawingHintOverlay({
-    super.key,
-    required this.controller,
-  });
+  const DrawingHintOverlay({super.key, required this.controller});
 
   @override
   Widget build(BuildContext context) {
@@ -79,7 +76,8 @@ class DrawingHintOverlay extends StatelessWidget {
                             child: _MetricChip(
                               icon: Icons.crop_square,
                               label: 'Área',
-                              value: '${controller.liveAreaHa.toStringAsFixed(2)} ha',
+                              value:
+                                  '${controller.liveAreaHa.toStringAsFixed(2)} ha',
                             ),
                           ),
                           const SizedBox(width: 8),
@@ -87,7 +85,8 @@ class DrawingHintOverlay extends StatelessWidget {
                             child: _MetricChip(
                               icon: Icons.straighten,
                               label: 'Perímetro',
-                              value: '${controller.livePerimeterKm.toStringAsFixed(2)} km',
+                              value:
+                                  '${controller.livePerimeterKm.toStringAsFixed(2)} km',
                             ),
                           ),
                         ],

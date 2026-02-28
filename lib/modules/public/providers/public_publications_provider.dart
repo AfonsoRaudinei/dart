@@ -18,4 +18,3 @@ Future<List<Publicacao>> publicPublications(Ref ref) async {
   //     .eq('status', 'published');
   return [];
 }
-

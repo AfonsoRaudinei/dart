@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 import '../../../../../../modules/map/design/sf_icons.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_map_marker_cluster/flutter_map_marker_cluster.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 import '../../../../core/state/map_state.dart';
-import '../../../theme/soloforte_theme.dart';
+
 import '../../../../core/utils/map_logger.dart';
 
 /// Widget que observa apenas showMarkersProvider e publicacoesDataProvider.
@@ -39,7 +40,7 @@ class MapMarkersWidget extends ConsumerWidget {
             height: 40,
             child: const Icon(
               SFIcons.locationOn,
-              color: SoloForteColors.greenIOS,
+              color: PremiumTokens.brandGreen,
               size: 40,
             ),
           ),
@@ -60,7 +61,7 @@ class MapMarkersWidget extends ConsumerWidget {
           return Container(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(20),
-              color: SoloForteColors.greenIOS,
+              color: PremiumTokens.brandGreen,
             ),
             child: Center(
               child: Text(

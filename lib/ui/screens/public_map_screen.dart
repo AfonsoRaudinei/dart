@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 
-import 'package:soloforte_app/ui/theme/soloforte_theme.dart';
 import '../components/public_map/access_button.dart';
 import '../components/public_map/location_button.dart';
 import '../components/public_map/zoom_controls.dart';
@@ -14,6 +15,10 @@ import '../components/public_map/loading_overlay.dart';
 import '../../modules/public/providers/public_location_provider.dart';
 import '../../modules/public/providers/map_style_provider.dart';
 import '../../modules/public/providers/public_publications_provider.dart';
+import '../../modules/marketing/presentation/providers/marketing_pin_providers.dart';
+import '../../modules/marketing/domain/enums/plano_marketing.dart';
+import '../../modules/marketing/presentation/widgets/marketing_pin_marker.dart';
+import '../../modules/marketing/presentation/widgets/marketing_pin_sheet.dart';
 import '../../core/config/map_config.dart';
 
 class PublicMapScreen extends ConsumerStatefulWidget {
@@ -40,10 +45,7 @@ class _PublicMapScreenState extends ConsumerState<PublicMapScreen> {
     if (locationState.status == PublicLocationStatus.available &&
         locationState.position != null) {
       // Animação suave ao centralizar
-      _mapController.move(
-        locationState.position!,
-        _userLocationZoom,
-      );
+      _mapController.move(locationState.position!, _userLocationZoom);
     }
   }
 
@@ -95,6 +97,31 @@ class _PublicMapScreenState extends ConsumerState<PublicMapScreen> {
                 error: (error, _) => const SizedBox.shrink(),
               ),
 
+              // Pinos de Marketing (Apenas Ouro na tela deslogada)
+              if (ref.watch(marketingPinsProvider).hasValue)
+                MarkerLayer(
+                  markers: ref
+                      .watch(marketingPinsProvider)
+                      .value!
+                      .where((pin) => pin.plano == PlanoMarketing.ouro)
+                      .map((pin) {
+                        return Marker(
+                          point: LatLng(pin.lat, pin.lng),
+                          width: 100,
+                          height: 100,
+                          alignment: Alignment.topCenter,
+                          child: MarketingPinMarker(
+                            pin: pin,
+                            onTap: () {
+                              HapticFeedback.lightImpact();
+                              MarketingPinSheet.show(context, pin);
+                            },
+                          ),
+                        );
+                      })
+                      .toList(),
+                ),
+
               // Ponto azul da localização do usuário - iOS style
               if (locationState.status == PublicLocationStatus.available &&
                   locationState.position != null)
@@ -106,7 +133,9 @@ class _PublicMapScreenState extends ConsumerState<PublicMapScreen> {
                       radius: 35,
                       useRadiusInMeter: true,
                       color: const Color(0xFF007AFF).withValues(alpha: 0.12),
-                      borderColor: const Color(0xFF007AFF).withValues(alpha: 0.2),
+                      borderColor: const Color(
+                        0xFF007AFF,
+                      ).withValues(alpha: 0.2),
                       borderStrokeWidth: 1,
                     ),
                     // Círculo interno (ponto azul sólido)
@@ -115,7 +144,7 @@ class _PublicMapScreenState extends ConsumerState<PublicMapScreen> {
                       radius: 10,
                       useRadiusInMeter: false,
                       color: const Color(0xFF007AFF),
-                      borderColor: SoloForteColors.white,
+                      borderColor: Colors.white,
                       borderStrokeWidth: 3,
                     ),
                   ],
@@ -130,24 +159,39 @@ class _PublicMapScreenState extends ConsumerState<PublicMapScreen> {
             child: Semantics(
               label: 'Mapa Público - Explore publicações da comunidade',
               child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
-                color: SoloForteColors.white.withValues(alpha: 0.9),
-                borderRadius: SoloRadius.radiusMd,
-                boxShadow: [SoloShadows.shadowSm],
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.9),
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    const BoxShadow(
+                      color: Colors.black12,
+                      blurRadius: 4,
+                      offset: Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.public,
+                      size: 20,
+                      color: PremiumTokens.brandGreen,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Mapa Público',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                  ],
+                ),
               ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.public, size: 20, color: SoloForteColors.greenIOS),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Mapa Público',
-                    style: SoloTextStyles.headingMedium.copyWith(fontSize: 16),
-                  ),
-                ],
-              ),
-            ),            ),          ),
+            ),
+          ),
 
           // Botão de localização no topo direito
           Positioned(
@@ -180,13 +224,13 @@ class _PublicMapScreenState extends ConsumerState<PublicMapScreen> {
             PublicMapErrorOverlay(
               message: 'Não foi possível obter sua localização',
               icon: Icons.location_off_outlined,
-              onRetry: () =>
-                  ref.read(publicLocationNotifierProvider.notifier).requestLocation(),
+              onRetry: () => ref
+                  .read(publicLocationNotifierProvider.notifier)
+                  .requestLocation(),
             ),
 
           // Loading overlay para publicações
-          if (publicationsAsync.isLoading)
-            const PublicationsLoadingOverlay(),
+          if (publicationsAsync.isLoading) const PublicationsLoadingOverlay(),
 
           // Botão "Acessar SoloForte" centralizado na parte inferior
           Positioned(

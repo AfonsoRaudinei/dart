@@ -1,17 +1,17 @@
 import 'package:latlong2/latlong.dart';
 
 /// Sistema de clustering para markers de mapa.
-/// 
+///
 /// Agrupa markers próximos quando zoom < threshold para melhorar performance.
 /// Usa algoritmo K-means simplificado ou Grid-based clustering.
-/// 
+///
 /// Exemplo:
 /// ```dart
 /// final clusterer = MarkerClusterer(
 ///   minZoom: 12.0,
 ///   maxDistance: 60, // pixels
 /// );
-/// 
+///
 /// final clusters = clusterer.cluster(markers, zoom, bounds);
 /// ```
 class MarkerClusterer<T> {
@@ -39,10 +39,7 @@ class MarkerClusterer<T> {
     // Zoom alto: mostrar todos os markers individuais
     if (zoom >= minZoom) {
       return items
-          .map((item) => Cluster<T>(
-                position: item.position,
-                items: [item],
-              ))
+          .map((item) => Cluster<T>(position: item.position, items: [item]))
           .toList();
     }
 
@@ -56,7 +53,7 @@ class MarkerClusterer<T> {
   }
 
   /// Clustering baseado em grid.
-  /// 
+  ///
   /// Divide mapa em células e agrupa markers na mesma célula.
   List<Cluster<T>> _gridCluster(List<ClusterItem<T>> items) {
     final Map<String, List<ClusterItem<T>>> grid = {};
@@ -73,15 +70,12 @@ class MarkerClusterer<T> {
       // Calcular centróide da célula
       final avgLat =
           cellItems.map((i) => i.position.latitude).reduce((a, b) => a + b) /
-              cellItems.length;
+          cellItems.length;
       final avgLng =
           cellItems.map((i) => i.position.longitude).reduce((a, b) => a + b) /
-              cellItems.length;
+          cellItems.length;
 
-      return Cluster<T>(
-        position: LatLng(avgLat, avgLng),
-        items: cellItems,
-      );
+      return Cluster<T>(position: LatLng(avgLat, avgLng), items: cellItems);
     }).toList();
   }
 }
@@ -91,10 +85,7 @@ class ClusterItem<T> {
   final LatLng position;
   final T data;
 
-  ClusterItem({
-    required this.position,
-    required this.data,
-  });
+  ClusterItem({required this.position, required this.data});
 }
 
 /// Cluster de markers.
@@ -105,10 +96,7 @@ class Cluster<T> {
   /// Items agrupados no cluster.
   final List<ClusterItem<T>> items;
 
-  Cluster({
-    required this.position,
-    required this.items,
-  });
+  Cluster({required this.position, required this.items});
 
   /// Número de items no cluster.
   int get count => items.length;
@@ -122,10 +110,7 @@ class MapBounds {
   final LatLng southwest;
   final LatLng northeast;
 
-  MapBounds({
-    required this.southwest,
-    required this.northeast,
-  });
+  MapBounds({required this.southwest, required this.northeast});
 
   /// Verifica se ponto está dentro dos bounds.
   bool contains(LatLng point) {

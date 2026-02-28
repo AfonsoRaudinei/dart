@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import '../../../domain/models/drawing_models.dart';
 
 /// Widget responsável por exibir ações contextuais para features de desenho.
-/// 
+///
 /// Ações disponíveis:
 /// - Editar geometria
 /// - Editar metadados
@@ -11,7 +11,7 @@ import '../../../domain/models/drawing_models.dart';
 /// - Diferença (subtrair área)
 /// - Interseção
 /// - Excluir
-/// 
+///
 /// ⚠️ Este widget é STATELESS e delega ações ao controller.
 class DrawingActionsBar extends StatelessWidget {
   final DrawingFeature selectedFeature;
@@ -246,11 +246,7 @@ class _ActionButton extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           child: Row(
             children: [
-              Icon(
-                icon,
-                color: color,
-                size: 24,
-              ),
+              Icon(icon, color: color, size: 24),
               const SizedBox(width: 16),
               Expanded(
                 child: Column(

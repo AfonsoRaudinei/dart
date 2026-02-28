@@ -1,6 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:soloforte_app/ui/theme/soloforte_theme.dart';
+import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 
 class EditingControlsOverlay extends StatelessWidget {
   final VoidCallback onSave;
@@ -68,7 +68,7 @@ class EditingControlsOverlay extends StatelessWidget {
                     style: TextStyle(color: Colors.white),
                   ),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: SoloForteColors.greenIOS,
+                    backgroundColor: PremiumTokens.brandGreen,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),

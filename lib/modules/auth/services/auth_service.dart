@@ -1,5 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:flutter/foundation.dart';
 import '../../../core/network/network_policy.dart';
 import '../models/register_dto.dart';
 
@@ -35,20 +36,25 @@ class AuthService extends _$AuthService {
             '$userId.${DateTime.now().millisecondsSinceEpoch}.$fileExt';
         final filePath = 'avatars/$fileName';
 
-        await NetworkPolicy.withTimeout(
-          () => _client.storage
-              .from('users')
-              .upload(
-                filePath,
-                dto.photo!,
-                fileOptions: const FileOptions(
-                  cacheControl: '3600',
-                  upsert: true,
+        try {
+          await NetworkPolicy.withTimeout(
+            () => _client.storage
+                .from('users')
+                .upload(
+                  filePath,
+                  dto.photo!,
+                  fileOptions: const FileOptions(
+                    cacheControl: '3600',
+                    upsert: true,
+                  ),
                 ),
-              ),
-        );
+          );
 
-        photoUrl = _client.storage.from('users').getPublicUrl(filePath);
+          photoUrl = _client.storage.from('users').getPublicUrl(filePath);
+        } catch (e) {
+          debugPrint('⚠️ [AuthService] Erro no upload de avatar: $e');
+          photoUrl = null;
+        }
       }
 
       // 3. Salvar na tabela public.users

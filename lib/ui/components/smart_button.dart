@@ -30,9 +30,10 @@ REGRA DE OURO:
 ════════════════════════════════════════════════════════════════════
 */
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:soloforte_app/ui/theme/soloforte_theme.dart';
+
 import 'package:soloforte_app/core/router/app_routes.dart';
 import 'package:soloforte_app/core/state/side_menu_state.dart';
 
@@ -52,8 +53,8 @@ class SmartButton extends ConsumerWidget {
     final RouteLevel level = AppRoutes.getLevel(uri);
 
     // Tokens oficiais
-    final primaryColor = SoloForteColors.primary;
-    final buttonPadding = SoloSpacing.paddingButton;
+    final primaryColor = PremiumTokens.brandGreen;
+    final buttonPadding = const EdgeInsets.symmetric(horizontal: 20, vertical: 14);
     final safeElevation = 2.0; // Sombra mínima conforme design
 
     // ═══════════════════════════════════════════════════════════════
@@ -70,11 +71,11 @@ class SmartButton extends ConsumerWidget {
           backgroundColor: primaryColor,
           elevation: safeElevation,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(SoloRadius.circle),
+            borderRadius: BorderRadius.circular(100.0),
           ),
           label: Text(
             'Acessar SoloForte',
-            style: SoloTextStyles.body.copyWith(
+            style: const TextStyle(fontSize: 14).copyWith(
               fontWeight: FontWeight.bold,
               color: Colors.white,
             ),

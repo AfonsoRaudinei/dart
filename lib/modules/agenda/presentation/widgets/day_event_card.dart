@@ -12,11 +12,7 @@ class DayEventCard extends ConsumerWidget {
   final Event event;
   final VoidCallback? onTap;
 
-  const DayEventCard({
-    super.key,
-    required this.event,
-    this.onTap,
-  });
+  const DayEventCard({super.key, required this.event, this.onTap});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -76,9 +72,7 @@ class DayEventCard extends ConsumerWidget {
         elevation: 1,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
-          side: BorderSide(
-            color: theme.dividerColor.withValues(alpha: 0.2),
-          ),
+          side: BorderSide(color: theme.dividerColor.withValues(alpha: 0.2)),
         ),
         child: InkWell(
           onTap: () {
@@ -111,14 +105,18 @@ class DayEventCard extends ConsumerWidget {
                       Text(
                         '${_formatTime(event.dataInicioPlanejada)} - ${_formatTime(event.dataFimPlanejada)}',
                         style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.7),
+                          color: theme.textTheme.bodySmall?.color?.withValues(
+                            alpha: 0.7,
+                          ),
                         ),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         event.tipo.label,
                         style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.6),
+                          color: theme.textTheme.bodySmall?.color?.withValues(
+                            alpha: 0.6,
+                          ),
                         ),
                       ),
                     ],
@@ -149,15 +147,17 @@ class DayEventCard extends ConsumerWidget {
         return ElevatedButton(
           onPressed: () async {
             try {
-              await ref.read(agendaProvider.notifier).startEvent(
+              await ref
+                  .read(agendaProvider.notifier)
+                  .startEvent(
                     event.id,
                     'user-current', // TODO: pegar usuário real
                   );
             } catch (e) {
               if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Erro: $e')),
-                );
+                ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(SnackBar(content: Text('Erro: $e')));
               }
             }
           },
@@ -177,9 +177,9 @@ class DayEventCard extends ConsumerWidget {
               await ref.read(agendaProvider.notifier).finalizeEvent(event.id);
             } catch (e) {
               if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Erro: $e')),
-                );
+                ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(SnackBar(content: Text('Erro: $e')));
               }
             }
           },
@@ -199,9 +199,9 @@ class DayEventCard extends ConsumerWidget {
               await ref.read(agendaProvider.notifier).completeEvent(event.id);
             } catch (e) {
               if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Erro: $e')),
-                );
+                ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(SnackBar(content: Text('Erro: $e')));
               }
             }
           },

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:soloforte_app/ui/theme/soloforte_theme.dart';
+
 import '../../domain/occurrence.dart';
 import '../../presentation/controllers/occurrence_controller.dart';
 import '../../../../visitas/presentation/controllers/visit_controller.dart';
@@ -44,10 +46,10 @@ class _OccurrenceListSheetState extends ConsumerState<OccurrenceListSheet> {
       children: [
         Container(
           decoration: BoxDecoration(
-            color: SoloForteColors.white,
+            color: Colors.white,
             borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(SoloRadius.lg),
-              topRight: Radius.circular(SoloRadius.lg),
+              topLeft: Radius.circular(16.0),
+              topRight: Radius.circular(16.0),
             ),
             boxShadow: [
               BoxShadow(
@@ -57,186 +59,194 @@ class _OccurrenceListSheetState extends ConsumerState<OccurrenceListSheet> {
               ),
             ],
           ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Drag handle
-          Container(
-            margin: const EdgeInsets.only(top: 12),
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: SoloForteColors.grayLight,
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-          const SizedBox(height: 16),
-          // Header
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    'Ocorrências',
-                    style: SoloTextStyles.headingMedium,
-                  ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Drag handle
+              Container(
+                margin: const EdgeInsets.only(top: 12),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: PremiumTokens.surfaceLight,
+                  borderRadius: BorderRadius.circular(2),
                 ),
-                IconButton(
-                  icon: const Icon(
-                    Icons.close,
-                    color: SoloForteColors.textSecondary,
-                  ),
-                  onPressed: widget.onClose ?? () => Navigator.pop(context),
-                ),
-              ],
-            ),
-          ),
-          const Divider(height: 1, color: SoloForteColors.borderLight),
-          // Filtros
-          OccurrenceFilterSelector(
-            filters: _filters,
-            activeVisitId: activeVisitId,
-            onChanged: (newFilters) {
-              setState(() => _filters = newFilters);
-            },
-          ),
-          const Divider(height: 1, color: SoloForteColors.borderLight),
-          // Lista
-          Flexible(
-            child: occurrencesAsync.when(
-              data: (allOccurrences) {
-                final inViewport = widget.mapBounds != null
-                    ? allOccurrences.where((occ) {
-                        final coords = occ.getCoordinates();
-                        if (coords == null) return false;
-                        final point = LatLng(coords['lat']!, coords['long']!);
-                        return widget.mapBounds!.contains(point);
-                      }).toList()
-                    : allOccurrences;
-
-                // Aplicar filtros
-                final filtered = inViewport
-                    .where(
-                      (occ) =>
-                          _filters.matches(occ, activeVisitId: activeVisitId),
-                    )
-                    .toList();
-
-                // Ordenar: visita ativa primeiro, depois mais recentes
-                filtered.sort((a, b) {
-                  // Primeiro: ocorrências da visita ativa
-                  if (activeVisitId != null) {
-                    final aInVisit = a.visitSessionId == activeVisitId;
-                    final bInVisit = b.visitSessionId == activeVisitId;
-                    if (aInVisit && !bInVisit) return -1;
-                    if (!aInVisit && bInVisit) return 1;
-                  }
-                  // Depois: mais recentes primeiro
-                  return b.createdAt.compareTo(a.createdAt);
-                });
-
-                if (filtered.isEmpty) {
-                  return Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(40),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.warning_amber_rounded,
-                            size: 48,
-                            color: SoloForteColors.textTertiary,
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            _filters.hasAnyFilter
-                                ? 'Nenhuma ocorrência com os filtros ativos'
-                                : 'Nenhuma ocorrência nesta área',
-                            style: SoloTextStyles.body.copyWith(
-                              color: SoloForteColors.textSecondary,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                          if (_filters.hasAnyFilter) ...[
-                            const SizedBox(height: 12),
-                            TextButton(
-                              onPressed: () {
-                                setState(() => _filters = _filters.clear());
-                              },
-                              child: const Text('Limpar filtros'),
-                            ),
-                          ],
-                        ],
+              ),
+              const SizedBox(height: 16),
+              // Header
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Ocorrências',
+                        style: Theme.of(context).textTheme.titleMedium!.copyWith(fontWeight: FontWeight.w600),
                       ),
                     ),
-                  );
-                }
+                    IconButton(
+                      icon: const Icon(
+                        Icons.close,
+                        color: PremiumTokens.textSecondaryLight,
+                      ),
+                      onPressed: widget.onClose ?? () => Navigator.pop(context),
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(height: 1, color: PremiumTokens.hairlineLight),
+              // Filtros
+              OccurrenceFilterSelector(
+                filters: _filters,
+                activeVisitId: activeVisitId,
+                onChanged: (newFilters) {
+                  setState(() => _filters = newFilters);
+                },
+              ),
+              const Divider(height: 1, color: PremiumTokens.hairlineLight),
+              // Lista
+              Flexible(
+                child: occurrencesAsync.when(
+                  data: (allOccurrences) {
+                    final inViewport = widget.mapBounds != null
+                        ? allOccurrences.where((occ) {
+                            final coords = occ.getCoordinates();
+                            if (coords == null) return false;
+                            final point = LatLng(
+                              coords['lat']!,
+                              coords['long']!,
+                            );
+                            return widget.mapBounds!.contains(point);
+                          }).toList()
+                        : allOccurrences;
 
-                return ListView.separated(
-                  shrinkWrap: true,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 16,
-                  ),
-                  itemCount: filtered.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 12),
-                  itemBuilder: (context, index) {
-                    final occ = filtered[index];
-                    final isSelected = _selectedOccurrence?.id == occ.id;
-                    return _OccurrenceListItem(
-                      occurrence: occ,
-                      isSelected: isSelected,
-                      activeVisitId: activeVisitId,
-                      onTap: () {
-                        if (isSelected) {
-                          // Segundo tap: notificar para abrir editor
-                          widget.onOccurrenceTap?.call(occ);
-                        } else {
-                          // Primeiro tap: marcar como selecionado
-                          setState(() => _selectedOccurrence = occ);
-                          // Notificar para centralizar no mapa
-                          widget.onOccurrenceTap?.call(occ);
-                        }
+                    // Aplicar filtros
+                    final filtered = inViewport
+                        .where(
+                          (occ) => _filters.matches(
+                            occ,
+                            activeVisitId: activeVisitId,
+                          ),
+                        )
+                        .toList();
+
+                    // Ordenar: visita ativa primeiro, depois mais recentes
+                    filtered.sort((a, b) {
+                      // Primeiro: ocorrências da visita ativa
+                      if (activeVisitId != null) {
+                        final aInVisit = a.visitSessionId == activeVisitId;
+                        final bInVisit = b.visitSessionId == activeVisitId;
+                        if (aInVisit && !bInVisit) return -1;
+                        if (!aInVisit && bInVisit) return 1;
+                      }
+                      // Depois: mais recentes primeiro
+                      return b.createdAt.compareTo(a.createdAt);
+                    });
+
+                    if (filtered.isEmpty) {
+                      return Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(40),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.warning_amber_rounded,
+                                size: 48,
+                                color: PremiumTokens.textTertiaryLight,
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                _filters.hasAnyFilter
+                                    ? 'Nenhuma ocorrência com os filtros ativos'
+                                    : 'Nenhuma ocorrência nesta área',
+                                style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                                  color: PremiumTokens.textSecondaryLight,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                              if (_filters.hasAnyFilter) ...[
+                                const SizedBox(height: 12),
+                                TextButton(
+                                  onPressed: () {
+                                    setState(() => _filters = _filters.clear());
+                                  },
+                                  child: const Text('Limpar filtros'),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      );
+                    }
+
+                    return ListView.separated(
+                      shrinkWrap: true,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 16,
+                      ),
+                      itemCount: filtered.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 12),
+                      itemBuilder: (context, index) {
+                        final occ = filtered[index];
+                        final isSelected = _selectedOccurrence?.id == occ.id;
+                        return _OccurrenceListItem(
+                          occurrence: occ,
+                          isSelected: isSelected,
+                          activeVisitId: activeVisitId,
+                          onTap: () {
+                            if (isSelected) {
+                              // Segundo tap: notificar para abrir editor
+                              widget.onOccurrenceTap?.call(occ);
+                            } else {
+                              // Primeiro tap: marcar como selecionado
+                              setState(() => _selectedOccurrence = occ);
+                              // Notificar para centralizar no mapa
+                              widget.onOccurrenceTap?.call(occ);
+                            }
+                          },
+                        );
                       },
                     );
                   },
-                );
-              },
-              loading: () => const Center(
-                child: Padding(
-                  padding: EdgeInsets.all(40),
-                  child: CircularProgressIndicator(
-                    color: SoloForteColors.greenIOS,
+                  loading: () => const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(40),
+                      child: CircularProgressIndicator(
+                        color: PremiumTokens.brandGreen,
+                      ),
+                    ),
+                  ),
+                  error: (err, stack) => Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(40),
+                      child: Text(
+                        'Erro ao carregar ocorrências',
+                        style: TextStyle(color: const Color(0xFFFF3B30)),
+                      ),
+                    ),
                   ),
                 ),
               ),
-              error: (err, stack) => Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(40),
-                  child: Text(
-                    'Erro ao carregar ocorrências',
-                    style: TextStyle(color: SoloForteColors.error),
-                  ),
-                ),
-              ),
-            ),
+            ],
           ),
-        ],
-      ),
-    ),
+        ),
         // 🆕 Botão flutuante para adicionar nova ocorrência
         if (widget.onRequestNewOccurrence != null)
           Positioned(
             bottom: 20,
             right: 20,
             child: FloatingActionButton.extended(
-              onPressed: widget.onRequestNewOccurrence,
-              backgroundColor: SoloForteColors.greenIOS,
+              onPressed: () { HapticFeedback.mediumImpact(); widget.onRequestNewOccurrence?.call(); },
+              backgroundColor: PremiumTokens.brandGreen,
               icon: const Icon(Icons.add, color: Colors.white),
               label: const Text(
                 'Nova Ocorrência',
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
           ),
@@ -287,15 +297,15 @@ class _OccurrenceListItem extends StatelessWidget {
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: isSelected
-              ? SoloForteColors.greenIOS.withValues(alpha: 0.1)
-              : SoloForteColors.grayLight,
+              ? PremiumTokens.brandGreen.withValues(alpha: 0.1)
+              : PremiumTokens.surfaceLight,
           border: Border.all(
             color: isSelected
-                ? SoloForteColors.greenIOS
-                : SoloForteColors.borderLight,
+                ? PremiumTokens.brandGreen
+                : PremiumTokens.hairlineLight,
             width: isSelected ? 2 : 1,
           ),
-          borderRadius: BorderRadius.circular(SoloRadius.md),
+          borderRadius: BorderRadius.circular(10.0),
         ),
         child: Row(
           children: [
@@ -325,7 +335,7 @@ class _OccurrenceListItem extends StatelessWidget {
                       Expanded(
                         child: Text(
                           category.label,
-                          style: SoloTextStyles.headingMedium.copyWith(
+                          style: Theme.of(context).textTheme.titleMedium!.copyWith(fontWeight: FontWeight.w600).copyWith(
                             fontSize: 14,
                             color: color,
                           ),
@@ -357,7 +367,7 @@ class _OccurrenceListItem extends StatelessWidget {
                     occurrence.description.length > 60
                         ? '${occurrence.description.substring(0, 60)}...'
                         : occurrence.description,
-                    style: SoloTextStyles.body.copyWith(fontSize: 12),
+                    style: Theme.of(context).textTheme.bodyMedium!.copyWith(fontSize: 12),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -371,7 +381,7 @@ class _OccurrenceListItem extends StatelessWidget {
                             vertical: 2,
                           ),
                           decoration: BoxDecoration(
-                            color: SoloForteColors.greenIOS.withValues(
+                            color: PremiumTokens.brandGreen.withValues(
                               alpha: 0.1,
                             ),
                             borderRadius: BorderRadius.circular(3),
@@ -382,13 +392,13 @@ class _OccurrenceListItem extends StatelessWidget {
                               Icon(
                                 Icons.check_circle,
                                 size: 10,
-                                color: SoloForteColors.greenIOS,
+                                color: PremiumTokens.brandGreen,
                               ),
                               const SizedBox(width: 2),
                               Text(
                                 'Em Visita',
                                 style: TextStyle(
-                                  color: SoloForteColors.greenIOS,
+                                  color: PremiumTokens.brandGreen,
                                   fontSize: 9,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -399,7 +409,7 @@ class _OccurrenceListItem extends StatelessWidget {
                       const Spacer(),
                       Text(
                         _formatDate(occurrence.createdAt),
-                        style: SoloTextStyles.label,
+                        style: Theme.of(context).textTheme.labelSmall!.copyWith(color: PremiumTokens.textSecondaryLight),
                       ),
                     ],
                   ),
@@ -409,7 +419,7 @@ class _OccurrenceListItem extends StatelessWidget {
             const SizedBox(width: 8),
             Icon(
               isSelected ? Icons.open_in_new : Icons.chevron_right,
-              color: SoloForteColors.textSecondary,
+              color: PremiumTokens.textSecondaryLight,
               size: 20,
             ),
           ],

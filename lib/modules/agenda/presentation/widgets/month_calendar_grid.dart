@@ -48,18 +48,12 @@ class MonthCalendarGrid extends StatelessWidget {
             final day = index - startWeekday + 1;
             final date = DateTime(month.year, month.month, day);
             final events = eventsByDay[day] ?? [];
-            final isToday = date.year == today.year &&
+            final isToday =
+                date.year == today.year &&
                 date.month == today.month &&
                 date.day == today.day;
 
-            return _buildDayCell(
-              context,
-              theme,
-              day,
-              date,
-              events,
-              isToday,
-            );
+            return _buildDayCell(context, theme, day, date, events, isToday);
           },
         ),
       ],

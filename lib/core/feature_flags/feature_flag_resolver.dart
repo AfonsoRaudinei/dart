@@ -8,11 +8,7 @@ class FeatureFlagUser {
   final String? role;
   final String? appVersion;
 
-  const FeatureFlagUser({
-    required this.userId,
-    this.role,
-    this.appVersion,
-  });
+  const FeatureFlagUser({required this.userId, this.role, this.appVersion});
 }
 
 /// Resolvedor puro e determinístico de Feature Flags.
@@ -85,7 +81,8 @@ class FeatureFlagResolver {
     final digest = sha256.convert(bytes);
 
     // Pegar primeiros 4 bytes como inteiro (suficiente para distribuição)
-    final hashInt = (digest.bytes[0] << 24) |
+    final hashInt =
+        (digest.bytes[0] << 24) |
         (digest.bytes[1] << 16) |
         (digest.bytes[2] << 8) |
         digest.bytes[3];
@@ -127,8 +124,10 @@ class FeatureFlagResolver {
 
   /// Método de conveniência para verificar feature "drawing_v1".
   bool isDrawingEnabled(FeatureFlag flag, FeatureFlagUser user) {
-    assert(flag.key == 'drawing_v1',
-        'Use isDrawingEnabled apenas para drawing_v1');
+    assert(
+      flag.key == 'drawing_v1',
+      'Use isDrawingEnabled apenas para drawing_v1',
+    );
     return isFeatureEnabled(flag, user);
   }
 }

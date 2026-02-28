@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../../../../ui/theme/soloforte_theme.dart';
+import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 
 class CameraActionButton extends StatelessWidget {
   final VoidCallback onTap;
@@ -14,10 +14,10 @@ class CameraActionButton extends StatelessWidget {
         width: 80,
         height: 80,
         decoration: BoxDecoration(
-          color: SoloForteColors.grayLight,
+          color: PremiumTokens.surfaceLight,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: SoloForteColors.greenIOS.withValues(alpha: 0.3),
+            color: PremiumTokens.brandGreen.withValues(alpha: 0.3),
             width: 1,
             style: BorderStyle.solid,
           ),
@@ -27,7 +27,7 @@ class CameraActionButton extends StatelessWidget {
           children: [
             Icon(
               Icons.camera_alt_outlined,
-              color: SoloForteColors.greenIOS,
+              color: PremiumTokens.brandGreen,
               size: 28,
             ),
             SizedBox(height: 4),
@@ -35,7 +35,7 @@ class CameraActionButton extends StatelessWidget {
               'Foto',
               style: TextStyle(
                 fontSize: 10,
-                color: SoloForteColors.textSecondary,
+                color: PremiumTokens.textSecondaryLight,
                 fontWeight: FontWeight.w600,
               ),
             ),

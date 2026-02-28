@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 import 'package:flutter_map/flutter_map.dart';
-import '../../theme/soloforte_theme.dart';
 
 /// Controles de zoom manual (+/-) para o mapa público.
 ///
@@ -48,36 +48,40 @@ class ZoomControls extends StatelessWidget {
       label: 'Controles de zoom do mapa',
       child: Container(
         decoration: BoxDecoration(
-        color: SoloForteColors.white,
-        borderRadius: BorderRadius.circular(8),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.15),
-            offset: const Offset(0, 2),
-            blurRadius: 8,
-            spreadRadius: 0,
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Botão Zoom In (+)
-          Semantics(
-            label: 'Aumentar zoom',
-            button: true,
-            child: _ZoomButton(icon: Icons.add, onTap: _zoomIn, isTop: true),
-          ),
-          // Divider
-          Container(height: 1, color: SoloForteColors.borderLight),
-          // Botão Zoom Out (-)
-          Semantics(
-            label: 'Diminuir zoom',
-            button: true,
-            child: _ZoomButton(icon: Icons.remove, onTap: _zoomOut, isTop: false),
-          ),
-        ],
-      ),
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(8),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.15),
+              offset: const Offset(0, 2),
+              blurRadius: 8,
+              spreadRadius: 0,
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Botão Zoom In (+)
+            Semantics(
+              label: 'Aumentar zoom',
+              button: true,
+              child: _ZoomButton(icon: Icons.add, onTap: _zoomIn, isTop: true),
+            ),
+            // Divider
+            Container(height: 1, color: PremiumTokens.hairlineLight),
+            // Botão Zoom Out (-)
+            Semantics(
+              label: 'Diminuir zoom',
+              button: true,
+              child: _ZoomButton(
+                icon: Icons.remove,
+                onTap: _zoomOut,
+                isTop: false,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -108,7 +112,7 @@ class _ZoomButton extends StatelessWidget {
             top: isTop ? const Radius.circular(8) : Radius.zero,
             bottom: !isTop ? const Radius.circular(8) : Radius.zero,
           ),
-          child: Icon(icon, color: SoloForteColors.textPrimary, size: 24),
+          child: Icon(icon, color: PremiumTokens.textPrimaryLight, size: 24),
         ),
       ),
     );

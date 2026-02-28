@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:soloforte_app/ui/theme/soloforte_theme.dart';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/state/map_state.dart';
@@ -10,6 +11,9 @@ import '../../core/state/map_ui_providers.dart';
 import '../../core/utils/app_logger.dart';
 import '../../core/utils/map_logger.dart';
 import '../../core/utils/debouncer.dart';
+import '../../modules/marketing/presentation/providers/marketing_pin_providers.dart';
+import '../../modules/marketing/presentation/widgets/marketing_pin_marker.dart';
+import '../../modules/marketing/presentation/widgets/marketing_pin_sheet.dart';
 import '../../modules/consultoria/clients/presentation/providers/field_providers.dart';
 import '../../modules/consultoria/services/talhao_map_adapter.dart';
 import '../../modules/drawing/presentation/widgets/drawing_layers.dart';
@@ -259,10 +263,10 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
       ),
       'ArmOccurrenceMode: Opening occurrence sheet',
     );
-    
+
     // Armar o modo para quando clicar no mapa
     setState(() => _armedMode = ArmedMode.occurrences);
-    
+
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Toque no mapa para registrar a ocorrência'),
@@ -295,7 +299,7 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('Ocorrência: ${occurrence.description}'),
-        backgroundColor: SoloForteColors.greenIOS,
+        backgroundColor: PremiumTokens.brandGreen,
         duration: const Duration(seconds: 2),
       ),
     );
@@ -476,7 +480,7 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text('Talhão: ${field.name}'),
-                      backgroundColor: SoloForteColors.greenIOS,
+                      backgroundColor: PremiumTokens.brandGreen,
                       duration: const Duration(seconds: 1),
                     ),
                   );
@@ -543,6 +547,26 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
               IsolatedOccurrenceMarkersLayer(
                 onOccurrenceTap: _handleOccurrencePinTap,
               ),
+
+              // Markers de Marketing
+              if (ref.watch(marketingPinsProvider).hasValue)
+                MarkerLayer(
+                  markers: ref.watch(marketingPinsProvider).value!.map((pin) {
+                    return Marker(
+                      point: LatLng(pin.lat, pin.lng),
+                      width: 100, // Espaço para não clipar o badge
+                      height: 100,
+                      alignment: Alignment.topCenter,
+                      child: MarketingPinMarker(
+                        pin: pin,
+                        onTap: () {
+                          HapticFeedback.lightImpact();
+                          MarketingPinSheet.show(context, pin);
+                        },
+                      ),
+                    );
+                  }).toList(),
+                ),
 
               // 🎯 ÚNICA LAYER QUE REBUILDA: Localização GPS
               const IsolatedUserLocationLayer(),

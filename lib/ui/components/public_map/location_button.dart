@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../modules/public/providers/public_location_provider.dart';
-import '../../theme/soloforte_theme.dart';
 
 /// Botão flutuante de localização para o mapa público.
 ///
@@ -26,7 +26,7 @@ class LocationButton extends ConsumerWidget {
         width: 48,
         height: 48,
         decoration: BoxDecoration(
-          color: SoloForteColors.white,
+          color: Colors.white,
           borderRadius: BorderRadius.circular(24),
           boxShadow: [
             BoxShadow(
@@ -38,24 +38,24 @@ class LocationButton extends ConsumerWidget {
           ],
         ),
         child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () async {
-            await ref
-                .read(publicLocationNotifierProvider.notifier)
-                .requestLocation();
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () async {
+              await ref
+                  .read(publicLocationNotifierProvider.notifier)
+                  .requestLocation();
 
-            // Callback após obter localização - verifica o estado ATUALIZADO
-            final updatedState = ref.read(publicLocationNotifierProvider);
-            if (updatedState.status == PublicLocationStatus.available &&
-                onLocationObtained != null) {
-              onLocationObtained!();
-            }
-          },
-          borderRadius: BorderRadius.circular(24),
-          child: _buildIcon(locationState.status),
+              // Callback após obter localização - verifica o estado ATUALIZADO
+              final updatedState = ref.read(publicLocationNotifierProvider);
+              if (updatedState.status == PublicLocationStatus.available &&
+                  onLocationObtained != null) {
+                onLocationObtained!();
+              }
+            },
+            borderRadius: BorderRadius.circular(24),
+            child: _buildIcon(locationState.status),
+          ),
         ),
-      ),
       ),
     );
   }
@@ -85,7 +85,7 @@ class LocationButton extends ConsumerWidget {
             child: CircularProgressIndicator(
               strokeWidth: 2,
               valueColor: AlwaysStoppedAnimation<Color>(
-                SoloForteColors.greenIOS,
+                PremiumTokens.brandGreen,
               ),
             ),
           ),
@@ -94,7 +94,7 @@ class LocationButton extends ConsumerWidget {
       case PublicLocationStatus.available:
         return const Icon(
           Icons.my_location,
-          color: SoloForteColors.greenIOS,
+          color: PremiumTokens.brandGreen,
           size: 24,
         );
 
@@ -103,14 +103,14 @@ class LocationButton extends ConsumerWidget {
       case PublicLocationStatus.error:
         return const Icon(
           Icons.location_off,
-          color: SoloForteColors.error,
+          color: Color(0xFFFF3B30),
           size: 24,
         );
 
       case PublicLocationStatus.initial:
         return Icon(
           Icons.location_searching,
-          color: SoloForteColors.textSecondary,
+          color: PremiumTokens.textSecondaryLight,
           size: 24,
         );
     }

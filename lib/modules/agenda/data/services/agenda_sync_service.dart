@@ -55,7 +55,8 @@ class AgendaSyncService {
             'fazenda_id': event.fazendaId,
             'talhao_id': event.talhaoId,
             'titulo': event.titulo,
-            'data_inicio_planejada': event.dataInicioPlanejada.toIso8601String(),
+            'data_inicio_planejada': event.dataInicioPlanejada
+                .toIso8601String(),
             'data_fim_planejada': event.dataFimPlanejada.toIso8601String(),
             'status': event.status.name,
             'visit_session_id': event.visitSessionId,
@@ -67,7 +68,11 @@ class AgendaSyncService {
 
         await _repository.markEventAsSynced(event.id);
       } catch (e) {
-        AppLogger.warning('Falha ao sincronizar evento ${event.id}', tag: 'AgendaSync', error: e);
+        AppLogger.warning(
+          'Falha ao sincronizar evento ${event.id}',
+          tag: 'AgendaSync',
+          error: e,
+        );
         continue; // Best effort - continua para o próximo
       }
     }
@@ -101,7 +106,11 @@ class AgendaSyncService {
         final updatedSession = session.copyWith(syncStatus: 'synced');
         await _repository.updateSession(updatedSession);
       } catch (e) {
-        AppLogger.warning('Falha ao sincronizar sessão ${session.id}', tag: 'AgendaSync', error: e);
+        AppLogger.warning(
+          'Falha ao sincronizar sessão ${session.id}',
+          tag: 'AgendaSync',
+          error: e,
+        );
         continue;
       }
     }
@@ -198,8 +207,9 @@ class AgendaSyncService {
       id: map['id'],
       eventoId: map['evento_id'],
       startAtReal: DateTime.parse(map['start_at_real']),
-      endAtReal:
-          map['end_at_real'] != null ? DateTime.parse(map['end_at_real']) : null,
+      endAtReal: map['end_at_real'] != null
+          ? DateTime.parse(map['end_at_real'])
+          : null,
       duracaoMin: map['duracao_min'],
       notasFinais: map['notas_finais'],
       checklistSnapshot: map['checklist_snapshot'],

@@ -6,6 +6,9 @@ import '../../../clients/presentation/providers/clients_providers.dart';
 import '../../domain/report_model.dart';
 import '../providers/reports_providers.dart';
 import '../../../../../core/router/app_routes.dart';
+import '../../../../../ui/theme/premium/design_tokens.dart';
+import 'package:soloforte_app/modules/map/design/sf_icons.dart';
+import 'dart:ui' as ui;
 
 class RelatoriosScreen extends ConsumerWidget {
   const RelatoriosScreen({super.key});
@@ -16,86 +19,104 @@ class RelatoriosScreen extends ConsumerWidget {
     final filter = ref.watch(reportFilterProvider);
 
     return Scaffold(
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Header Customizado
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Row(
+      backgroundColor: PremiumTokens.backgroundLight,
+      body: CustomScrollView(
+        slivers: [
+          SliverAppBar(
+            pinned: true,
+            expandedHeight: 120.0,
+            backgroundColor: PremiumTokens.backgroundLight.withValues(alpha: 0.8),
+            surfaceTintColor: Colors.transparent,
+            flexibleSpace: FlexibleSpaceBar(
+              titlePadding: const EdgeInsets.only(left: 16, bottom: 16),
+              title: Text(
+                'Relatórios',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: -0.5,
+                      color: PremiumTokens.textPrimaryLight,
+                    ),
+              ),
+              background: ClipRect(
+                child: BackdropFilter(
+                  filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                  child: Container(color: Colors.transparent),
+                ),
+              ),
+            ),
+            actions: [
+              IconButton(
+                icon: Icon(SFIcons.add, color: PremiumTokens.brandGreen, size: 28),
+                onPressed: () {
+                  context.go(AppRoutes.reportNew);
+                },
+              ),
+              const SizedBox(width: 8),
+            ],
+            bottom: PreferredSize(
+              preferredSize: const Size.fromHeight(60),
+              child: Column(
                 children: [
-                  const Expanded(
-                    child: Text(
-                      'Relatórios',
-                      style: TextStyle(
-                        fontSize: 32,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: -0.5,
-                        color: Colors.black,
-                      ),
+                   Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    child: Row(
+                      children: [
+                        _FilterChip(
+                          label: 'Meus',
+                          selected: filter == 'Meus',
+                          onSelected: (selected) {
+                            if (selected) {
+                              ref.read(reportFilterProvider.notifier).state = 'Meus';
+                            }
+                          },
+                        ),
+                        const SizedBox(width: 8),
+                        _FilterChip(
+                          label: 'Compartilhados',
+                          selected: filter == 'Compartilhados',
+                          onSelected: (selected) {
+                            if (selected) {
+                              ref.read(reportFilterProvider.notifier).state = 'Compartilhados';
+                            }
+                          },
+                        ),
+                      ],
                     ),
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.add, size: 30),
-                    onPressed: () {
-                      context.go(AppRoutes.reportNew);
-                    },
-                  ),
+                  const SizedBox(height: 12),
+                  const Divider(height: 1, color: PremiumTokens.hairlineLight),
                 ],
               ),
             ),
-            // Filters
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: Row(
-                children: [
-                  _FilterChip(
-                    label: 'Meus',
-                    selected: filter == 'Meus',
-                    onSelected: (selected) {
-                      if (selected) {
-                        ref.read(reportFilterProvider.notifier).state = 'Meus';
-                      }
-                    },
-                  ),
-                  const SizedBox(width: 8),
-                  _FilterChip(
-                    label: 'Compartilhados',
-                    selected: filter == 'Compartilhados',
-                    onSelected: (selected) {
-                      if (selected) {
-                        ref.read(reportFilterProvider.notifier).state =
-                            'Compartilhados';
-                      }
-                    },
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-            // List
-            Expanded(
-              child: reportsAsync.when(
-                data: (reports) {
-                  if (reports.isEmpty) {
-                    return const Center(
-                      child: Text('Nenhum relatório encontrado.'),
-                    );
-                  }
-                  return ListView.builder(
-                    itemCount: reports.length,
-                    itemBuilder: (context, index) {
+          ),
+          
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+            sliver: reportsAsync.when(
+              data: (reports) {
+                if (reports.isEmpty) {
+                  return const SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: Center(
+                      child: Text('Nenhum relatório encontrado.', style: TextStyle(color: PremiumTokens.textSecondaryLight)),
+                    ),
+                  );
+                }
+                return SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
                       final report = reports[index];
                       return _ReportCard(report: report);
                     },
-                  );
-                },
-                loading: () => const Center(child: CircularProgressIndicator()),
-                error: (err, stack) => Center(child: Text('Erro: $err')),
-              ),
+                    childCount: reports.length,
+                  ),
+                );
+              },
+              loading: () => const SliverFillRemaining(child: Center(child: CircularProgressIndicator(color: PremiumTokens.brandGreen))),
+              error: (err, stack) => SliverFillRemaining(child: Center(child: Text('Erro: $err'))),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -114,13 +135,27 @@ class _FilterChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return FilterChip(
-      label: Text(label),
-      selected: selected,
-      onSelected: onSelected,
-        selectedColor:
-          Theme.of(context).primaryColor.withValues(alpha: 0.2),
-      checkmarkColor: Theme.of(context).primaryColor,
+    return GestureDetector(
+      onTap: () => onSelected(true),
+      child: Container(
+        alignment: Alignment.center,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: selected ? PremiumTokens.brandGreen : PremiumTokens.surfaceLight,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: selected ? PremiumTokens.brandGreen : PremiumTokens.hairlineLight,
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: selected ? Colors.white : PremiumTokens.textPrimaryLight,
+            fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
+            fontSize: 14,
+          ),
+        ),
+      ),
     );
   }
 }
@@ -136,15 +171,17 @@ class _ReportCard extends ConsumerWidget {
     final clientAsync = ref.watch(clientDetailProvider(report.clientId));
     final dateFormat = DateFormat('dd/MM/yyyy');
 
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: InkWell(
-        onTap: () {
-          context.go(AppRoutes.reportDetail(report.id));
-        },
-        borderRadius: BorderRadius.circular(12),
+    return GestureDetector(
+      onTap: () {
+        context.go(AppRoutes.reportDetail(report.id));
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        decoration: BoxDecoration(
+          color: PremiumTokens.surfaceLight,
+          borderRadius: BorderRadius.circular(PremiumTokens.borderRadiusMd),
+          boxShadow: PremiumTokens.tightShadow,
+        ),
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(

@@ -47,7 +47,7 @@ class AgendaNotifier extends StateNotifier<AgendaState> {
   final AgendaNotificationService _notificationService;
 
   AgendaNotifier(this._repository, this._notificationService)
-      : super(const AgendaState()) {
+    : super(const AgendaState()) {
     _loadFromDatabase();
     _initializeNotifications();
   }
@@ -62,11 +62,11 @@ class AgendaNotifier extends StateNotifier<AgendaState> {
   /// Carrega eventos e sessões do banco de dados
   Future<void> _loadFromDatabase() async {
     state = state.copyWith(isLoading: true);
-    
+
     try {
       final events = await _repository.getAllEvents();
       final sessions = await _repository.getAllSessions();
-      
+
       state = state.copyWith(
         events: events,
         sessions: sessions,
@@ -104,7 +104,7 @@ class AgendaNotifier extends StateNotifier<AgendaState> {
     if (dateError != null) {
       throw ArgumentError(dateError);
     }
-    
+
     final titleError = EventRules.validateTitulo(titulo);
     if (titleError != null) {
       throw ArgumentError(titleError);
@@ -152,7 +152,9 @@ class AgendaNotifier extends StateNotifier<AgendaState> {
     );
 
     if (!EventRules.canTransitionTo(event.status, EventStatus.emAndamento)) {
-      throw StateError('Evento não pode ser iniciado no status ${event.status.label}');
+      throw StateError(
+        'Evento não pode ser iniciado no status ${event.status.label}',
+      );
     }
 
     final now = DateTime.now();
@@ -181,9 +183,7 @@ class AgendaNotifier extends StateNotifier<AgendaState> {
 
     // Atualiza estado
     _updateEvent(updatedEvent);
-    state = state.copyWith(
-      sessions: [...state.sessions, session],
-    );
+    state = state.copyWith(sessions: [...state.sessions, session]);
 
     return session;
   }
@@ -196,9 +196,11 @@ class AgendaNotifier extends StateNotifier<AgendaState> {
     );
 
     if (!EventRules.canTransitionTo(event.status, EventStatus.finalizando)) {
-      throw StateError('Evento não pode ser finalizado no status ${event.status.label}');
+      throw StateError(
+        'Evento não pode ser finalizado no status ${event.status.label}',
+      );
     }
-    
+
     final updatedEvent = event.copyWith(
       status: EventStatus.finalizando,
       updatedAt: DateTime.now(),
@@ -207,22 +209,21 @@ class AgendaNotifier extends StateNotifier<AgendaState> {
 
     await _repository.updateEvent(updatedEvent);
     _updateEvent(updatedEvent);
-    
+
     return updatedEvent;
   }
 
   /// Completa um evento (FINALIZANDO → CONCLUIDO)
-  Future<Event> completeEvent(
-    String eventId, {
-    String? notasFinais,
-  }) async {
+  Future<Event> completeEvent(String eventId, {String? notasFinais}) async {
     final event = state.events.firstWhere(
       (e) => e.id == eventId,
       orElse: () => throw ArgumentError('Evento não encontrado'),
     );
 
     if (!EventRules.canTransitionTo(event.status, EventStatus.concluido)) {
-      throw StateError('Evento não pode ser concluído no status ${event.status.label}');
+      throw StateError(
+        'Evento não pode ser concluído no status ${event.status.label}',
+      );
     }
 
     final now = DateTime.now();
@@ -254,7 +255,7 @@ class AgendaNotifier extends StateNotifier<AgendaState> {
 
     await _repository.updateEvent(updatedEvent);
     _updateEvent(updatedEvent);
-    
+
     return updatedEvent;
   }
 
@@ -266,7 +267,9 @@ class AgendaNotifier extends StateNotifier<AgendaState> {
     );
 
     if (!EventRules.canCancel(event.status)) {
-      throw StateError('Evento não pode ser cancelado no status ${event.status.label}');
+      throw StateError(
+        'Evento não pode ser cancelado no status ${event.status.label}',
+      );
     }
 
     final now = DateTime.now();
@@ -302,7 +305,7 @@ class AgendaNotifier extends StateNotifier<AgendaState> {
 
     await _repository.updateEvent(updatedEvent);
     _updateEvent(updatedEvent);
-    
+
     return updatedEvent;
   }
 
@@ -371,12 +374,14 @@ class AgendaNotifier extends StateNotifier<AgendaState> {
 }
 
 /// Provider do repositório
-final agendaRepositoryProvider =
-    Provider<AgendaRepository>((ref) => AgendaRepository());
+final agendaRepositoryProvider = Provider<AgendaRepository>(
+  (ref) => AgendaRepository(),
+);
 
 /// Provider do serviço de notificações
-final agendaNotificationServiceProvider =
-    Provider<AgendaNotificationService>((ref) => AgendaNotificationService());
+final agendaNotificationServiceProvider = Provider<AgendaNotificationService>(
+  (ref) => AgendaNotificationService(),
+);
 
 /// Provider global da Agenda
 final agendaProvider = StateNotifierProvider<AgendaNotifier, AgendaState>(

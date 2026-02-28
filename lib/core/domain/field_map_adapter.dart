@@ -27,7 +27,11 @@ class FieldMapAdapter {
               .cast<List<LatLng>>();
         }
       } catch (e) {
-        AppLogger.warning('Erro ao parsear geometry do Talhão', tag: 'FieldMapAdapter', error: e);
+        AppLogger.warning(
+          'Erro ao parsear geometry do Talhão',
+          tag: 'FieldMapAdapter',
+          error: e,
+        );
       }
     }
 
@@ -39,7 +43,7 @@ class FieldMapAdapter {
       type: FieldMapSource.consultoria,
       syncStatus:
           FieldSyncStatus.synced, // Assumindo synced pois vem do backend
-        fillColor: isSelected
+      fillColor: isSelected
           ? Colors.green.withValues(alpha: 0.4)
           : Colors.green.withValues(alpha: 0.15),
       strokeColor: isSelected ? Colors.white : Colors.green[800]!,
@@ -92,7 +96,7 @@ class FieldMapAdapter {
       geometryRings: rings,
       type: FieldMapSource.drawing,
       syncStatus: status,
-        fillColor: isSelected
+      fillColor: isSelected
           ? baseColor.withValues(alpha: 0.4)
           : baseColor.withValues(alpha: 0.15),
       strokeColor: isSelected ? Colors.white : baseColor,

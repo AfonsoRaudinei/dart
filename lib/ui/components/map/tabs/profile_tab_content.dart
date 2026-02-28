@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/router/app_routes.dart';
@@ -6,7 +7,6 @@ import '../../../../core/session/session_controller.dart';
 import '../../../../core/session/session_models.dart';
 import '../../../../modules/map/design/sf_icons.dart';
 import 'package:flutter/services.dart';
-import '../../../theme/soloforte_theme.dart';
 
 /// Tab 4 — PERFIL
 /// Exibe dados reais do usuário autenticado via Supabase.
@@ -23,9 +23,10 @@ class ProfileTabContent extends ConsumerWidget {
     if (session is SessionAuthenticated) {
       final user = session.user;
       displayName =
-          (user.userMetadata?['full_name'] as String?)?.trim().isNotEmpty == true
-              ? user.userMetadata!['full_name'] as String
-              : user.email ?? 'Usuário';
+          (user.userMetadata?['full_name'] as String?)?.trim().isNotEmpty ==
+              true
+          ? user.userMetadata!['full_name'] as String
+          : user.email ?? 'Usuário';
 
       final role = user.userMetadata?['role'] as String?;
       displayRole = switch (role) {
@@ -45,13 +46,13 @@ class ProfileTabContent extends ConsumerWidget {
             children: [
               CircleAvatar(
                 radius: 32,
-                backgroundColor: SoloForteColors.greenIOS.withValues(
+                backgroundColor: PremiumTokens.brandGreen.withValues(
                   alpha: 0.2,
                 ),
                 child: const Icon(
                   SFIcons.person,
                   size: 36,
-                  color: SoloForteColors.greenIOS,
+                  color: PremiumTokens.brandGreen,
                 ),
               ),
               const SizedBox(width: 16),
@@ -61,7 +62,7 @@ class ProfileTabContent extends ConsumerWidget {
                   children: [
                     Text(
                       displayName,
-                      style: SoloTextStyles.headingMedium.copyWith(
+                      style: Theme.of(context).textTheme.titleMedium!.copyWith(fontWeight: FontWeight.w600).copyWith(
                         fontSize: 18,
                       ),
                     ),
@@ -93,16 +94,8 @@ class ProfileTabContent extends ConsumerWidget {
             title: 'Minha Conta',
             onTap: () {},
           ),
-          _ProfileTile(
-            icon: SFIcons.help,
-            title: 'Suporte',
-            onTap: () {},
-          ),
-          _ProfileTile(
-            icon: SFIcons.info,
-            title: 'Sobre',
-            onTap: () {},
-          ),
+          _ProfileTile(icon: SFIcons.help, title: 'Suporte', onTap: () {}),
+          _ProfileTile(icon: SFIcons.info, title: 'Sobre', onTap: () {}),
           const SizedBox(height: 16),
           const Divider(height: 1),
           const SizedBox(height: 16),

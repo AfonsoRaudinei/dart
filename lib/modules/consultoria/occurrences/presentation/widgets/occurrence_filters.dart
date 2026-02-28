@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:soloforte_app/ui/theme/soloforte_theme.dart';
+import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
+
 import '../../domain/occurrence.dart';
 
 /// Filtros minimalistas para ocorrências
@@ -75,8 +76,8 @@ class OccurrenceFilterSelector extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: SoloForteColors.grayLight.withValues(alpha: 0.5),
-        border: Border(bottom: BorderSide(color: SoloForteColors.borderLight)),
+        color: PremiumTokens.surfaceLight.withValues(alpha: 0.5),
+        border: Border(bottom: BorderSide(color: PremiumTokens.hairlineLight)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -86,7 +87,7 @@ class OccurrenceFilterSelector extends StatelessWidget {
             children: [
               Text(
                 'Filtros',
-                style: SoloTextStyles.label.copyWith(
+                style: Theme.of(context).textTheme.labelSmall!.copyWith(color: PremiumTokens.textSecondaryLight).copyWith(
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -97,7 +98,7 @@ class OccurrenceFilterSelector extends StatelessWidget {
                   child: Text(
                     'Limpar',
                     style: TextStyle(
-                      color: SoloForteColors.greenIOS,
+                      color: PremiumTokens.brandGreen,
                       fontSize: 12,
                     ),
                   ),
@@ -124,12 +125,12 @@ class OccurrenceFilterSelector extends StatelessWidget {
                         fontSize: 11,
                         color: isSelected
                             ? Colors.white
-                            : SoloForteColors.textSecondary,
+                            : PremiumTokens.textSecondaryLight,
                       ),
                     ),
                   ],
                 ),
-                selectedColor: SoloForteColors.greenIOS,
+                selectedColor: PremiumTokens.brandGreen,
                 backgroundColor: Colors.white,
                 checkmarkColor: Colors.white,
                 onSelected: (selected) {
@@ -170,7 +171,7 @@ class OccurrenceFilterSelector extends StatelessWidget {
               FilterChip(
                 selected: filters.statuses.contains('confirmed'),
                 label: const Text('Confirmada', style: TextStyle(fontSize: 11)),
-                selectedColor: SoloForteColors.greenIOS,
+                selectedColor: PremiumTokens.brandGreen,
                 backgroundColor: Colors.white,
                 checkmarkColor: Colors.white,
                 onSelected: (selected) {
@@ -193,7 +194,7 @@ class OccurrenceFilterSelector extends StatelessWidget {
                 'Somente desta visita',
                 style: TextStyle(fontSize: 11),
               ),
-              selectedColor: SoloForteColors.brand,
+              selectedColor: PremiumTokens.brandGreen,
               backgroundColor: Colors.white,
               checkmarkColor: Colors.white,
               onSelected: (selected) {

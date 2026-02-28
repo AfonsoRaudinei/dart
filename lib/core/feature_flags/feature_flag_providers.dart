@@ -15,10 +15,7 @@ final featureFlagServiceProvider = Provider<FeatureFlagService>((ref) {
   final backend = ref.watch(featureFlagBackendProvider);
   final prefs = ref.read(preferencesServiceProvider);
 
-  return FeatureFlagService(
-    fetchFromBackend: backend.fetchFlags,
-    prefs: prefs,
-  );
+  return FeatureFlagService(fetchFromBackend: backend.fetchFlags, prefs: prefs);
 });
 
 /// Provider para FeatureFlagResolver (stateless)
@@ -33,28 +30,29 @@ final drawingFlagProvider = FutureProvider<FeatureFlag>((ref) async {
 });
 
 /// Provider para verificar se Drawing está habilitado para usuário atual
-/// 
+///
 /// Parâmetros necessários via family:
 /// - userId: ID do usuário
 /// - role: Papel do usuário ('consultor' | 'produtor')
-final isDrawingEnabledProvider = FutureProvider.family<bool, FeatureFlagUser>(
-  (ref, user) async {
-    final flag = await ref.watch(drawingFlagProvider.future);
-    final resolver = ref.watch(featureFlagResolverProvider);
-    
-    return resolver.isDrawingEnabled(flag, user);
-  },
-);
+final isDrawingEnabledProvider = FutureProvider.family<bool, FeatureFlagUser>((
+  ref,
+  user,
+) async {
+  final flag = await ref.watch(drawingFlagProvider.future);
+  final resolver = ref.watch(featureFlagResolverProvider);
+
+  return resolver.isDrawingEnabled(flag, user);
+});
 
 /// Provider para iniciar background updates do FeatureFlagService
-/// 
+///
 /// Deve ser iniciado no main() ou na raiz do app.
 final featureFlagBackgroundUpdatesProvider = Provider<void>((ref) {
   final service = ref.watch(featureFlagServiceProvider);
-  
+
   // Iniciar background updates
   service.startBackgroundUpdates();
-  
+
   // Cleanup quando provider for disposed
   ref.onDispose(() {
     service.stopBackgroundUpdates();

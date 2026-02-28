@@ -50,7 +50,11 @@ class SyncService {
 
       AppLogger.debug('Sync completo', tag: 'SyncService');
     } catch (e) {
-      AppLogger.warning('Sync falhou (será retentado)', tag: 'SyncService', error: e);
+      AppLogger.warning(
+        'Sync falhou (será retentado)',
+        tag: 'SyncService',
+        error: e,
+      );
     } finally {
       _isSyncing = false;
     }
@@ -72,7 +76,11 @@ class SyncService {
       final occurrenceSync = OccurrenceSyncService(supabase);
       await occurrenceSync.syncOccurrences();
     } catch (e) {
-      AppLogger.warning('Sync Ocorrências falhou', tag: 'SyncService', error: e);
+      AppLogger.warning(
+        'Sync Ocorrências falhou',
+        tag: 'SyncService',
+        error: e,
+      );
     }
   }
 

@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart'; // For calls/whatsapp
 import 'package:soloforte_app/core/router/app_routes.dart';
-import 'package:soloforte_app/ui/theme/soloforte_theme.dart';
+
 import '../providers/clients_providers.dart';
 
 class ClientDetailScreen extends ConsumerWidget {
@@ -181,12 +182,12 @@ class ClientDetailScreen extends ConsumerWidget {
                               },
                               icon: const Icon(
                                 Icons.add,
-                                color: SoloForteColors.greenIOS,
+                                color: PremiumTokens.brandGreen,
                               ),
                               label: const Text(
                                 'Nova',
                                 style: TextStyle(
-                                  color: SoloForteColors.greenIOS,
+                                  color: PremiumTokens.brandGreen,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),

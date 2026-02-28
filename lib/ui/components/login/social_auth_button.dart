@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../theme/soloforte_theme.dart';
+import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 
 class SocialAuthButton extends StatelessWidget {
   final String text;
@@ -22,27 +22,27 @@ class SocialAuthButton extends StatelessWidget {
     return OutlinedButton(
       onPressed: onPressed,
       style: OutlinedButton.styleFrom(
-        foregroundColor: SoloForteColors.textPrimary,
+        foregroundColor: PremiumTokens.textPrimaryLight,
         minimumSize: const Size.fromHeight(48),
         side: BorderSide(
-          color: borderColor ?? SoloForteColors.border,
+          color: borderColor ?? PremiumTokens.hairlineLight,
           width: 1,
         ),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        shape: RoundedRectangleBorder(borderRadius: SoloRadius.radiusMd),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         backgroundColor: Colors.white,
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, color: iconColor ?? SoloForteColors.textPrimary, size: 20),
+          Icon(icon, color: iconColor ?? PremiumTokens.textPrimaryLight, size: 20),
           const SizedBox(width: 12),
           Text(
             text,
             style: const TextStyle(
               fontSize: 14.0,
               fontWeight: FontWeight.w500,
-              color: SoloForteColors.textPrimary,
+              color: PremiumTokens.textPrimaryLight,
             ),
           ),
         ],

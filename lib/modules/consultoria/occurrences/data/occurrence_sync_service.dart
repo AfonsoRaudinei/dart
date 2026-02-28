@@ -153,7 +153,10 @@ class OccurrenceSyncService {
             }
           }
         } catch (e) {
-          AppLogger.debug('Falha ao parsear geometry no sync — $e', tag: 'OccurrenceSync');
+          AppLogger.debug(
+            'Falha ao parsear geometry no sync — $e',
+            tag: 'OccurrenceSync',
+          );
         }
       } else {
         final geometry = remote['geometry'] as Map<String, dynamic>;

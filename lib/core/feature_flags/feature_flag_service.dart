@@ -28,8 +28,8 @@ class FeatureFlagService {
   FeatureFlagService({
     required Future<Map<String, dynamic>> Function() fetchFromBackend,
     required PreferencesService prefs,
-  })  : _fetchFromBackend = fetchFromBackend,
-        _prefs = prefs;
+  }) : _fetchFromBackend = fetchFromBackend,
+       _prefs = prefs;
 
   /// Inicia atualização automática em background.
   void startBackgroundUpdates() {
@@ -143,7 +143,11 @@ class FeatureFlagService {
       await _prefs.setString(cacheKey, flagJson);
       await _prefs.setInt(timestampKey, timestamp);
     } catch (e) {
-      AppLogger.warning('Falha ao persistir cache de feature flag "$key" — não crítico', tag: 'FeatureFlags', error: e);
+      AppLogger.warning(
+        'Falha ao persistir cache de feature flag "$key" — não crítico',
+        tag: 'FeatureFlags',
+        error: e,
+      );
     }
   }
 
@@ -158,7 +162,11 @@ class FeatureFlagService {
         await _cacheFlag(entry.key, entry.value);
       }
     } catch (e) {
-      AppLogger.warning('Falha ao atualizar cache em background', tag: 'FeatureFlags', error: e);
+      AppLogger.warning(
+        'Falha ao atualizar cache em background',
+        tag: 'FeatureFlags',
+        error: e,
+      );
     }
   }
 
@@ -183,7 +191,11 @@ class FeatureFlagService {
         result[flag.key] = flag;
       }
     } catch (e) {
-      AppLogger.warning('Falha ao parsear resposta de feature flags — retornando vazio', tag: 'FeatureFlags', error: e);
+      AppLogger.warning(
+        'Falha ao parsear resposta de feature flags — retornando vazio',
+        tag: 'FeatureFlags',
+        error: e,
+      );
     }
 
     return result;
@@ -200,7 +212,11 @@ class FeatureFlagService {
         }
       }
     } catch (e) {
-      AppLogger.warning('Falha ao limpar cache de feature flags', tag: 'FeatureFlags', error: e);
+      AppLogger.warning(
+        'Falha ao limpar cache de feature flags',
+        tag: 'FeatureFlags',
+        error: e,
+      );
     }
   }
 

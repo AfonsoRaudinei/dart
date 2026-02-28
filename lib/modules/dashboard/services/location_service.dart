@@ -3,13 +3,13 @@ import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 
 /// 🌍 SERVIÇO DE LOCALIZAÇÃO GPS - STREAM REAL
-/// 
+///
 /// Responsabilidades:
 /// - Criar stream do sistema via Geolocator.getPositionStream()
 /// - Configurar precisão e filtros
 /// - Gerenciar lifecycle do stream
 /// - Não conter lógica de UI
-/// 
+///
 /// Performance:
 /// - distanceFilter: 5m (ideal para agro)
 /// - accuracy: high (quando necessário)
@@ -18,17 +18,17 @@ class LocationService {
   static LocationService? _instance;
   StreamController<LatLng>? _controller;
   StreamSubscription<Position>? _subscription;
-  
+
   // Singleton pattern para evitar múltiplos streams
   factory LocationService() {
     _instance ??= LocationService._();
     return _instance!;
   }
-  
+
   LocationService._();
 
   /// Stream de localização GPS (reativo)
-  /// 
+  ///
   /// Configuração otimizada para campo:
   /// - Atualiza apenas quando movimento > 5m
   /// - Precisão alta para desenho de talhão
@@ -36,12 +36,10 @@ class LocationService {
   Stream<LatLng> get locationStream {
     // Criar stream apenas uma vez
     if (_controller == null || _controller!.isClosed) {
-      _controller = StreamController<LatLng>.broadcast(
-        onCancel: _onCancel,
-      );
+      _controller = StreamController<LatLng>.broadcast(onCancel: _onCancel);
       _startListening();
     }
-    
+
     return _controller!.stream;
   }
 
@@ -53,23 +51,22 @@ class LocationService {
       // timeLimit não usado (stream contínuo)
     );
 
-    _subscription = Geolocator.getPositionStream(
-      locationSettings: locationSettings,
-    ).listen(
-      (Position position) {
-        // Converter Position para LatLng e emitir
-        if (_controller != null && !_controller!.isClosed) {
-          _controller!.add(LatLng(position.latitude, position.longitude));
-        }
-      },
-      onError: (error) {
-        // Emitir erro no stream (widget pode tratar)
-        if (_controller != null && !_controller!.isClosed) {
-          _controller!.addError(error);
-        }
-      },
-      cancelOnError: false, // Continuar ouvindo mesmo após erro
-    );
+    _subscription =
+        Geolocator.getPositionStream(locationSettings: locationSettings).listen(
+          (Position position) {
+            // Converter Position para LatLng e emitir
+            if (_controller != null && !_controller!.isClosed) {
+              _controller!.add(LatLng(position.latitude, position.longitude));
+            }
+          },
+          onError: (error) {
+            // Emitir erro no stream (widget pode tratar)
+            if (_controller != null && !_controller!.isClosed) {
+              _controller!.addError(error);
+            }
+          },
+          cancelOnError: false, // Continuar ouvindo mesmo após erro
+        );
   }
 
   void _onCancel() {
@@ -85,12 +82,12 @@ class LocationService {
 
     // 2. Verificar permissão
     LocationPermission permission = await Geolocator.checkPermission();
-    
+
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
       if (permission == LocationPermission.denied) return false;
     }
-    
+
     if (permission == LocationPermission.deniedForever) return false;
 
     return true;

@@ -1,0 +1,30 @@
+name: Enforcement Arquitetural
+
+# Dispara em Pull Request para qualquer branch protegida
+# e em push direto para main e release/* (fallback de segurança)
+on:
+  pull_request:
+    branches:
+      - main
+      - "release/**"
+      - develop
+  push:
+    branches:
+      - main
+      - "release/**"
+
+jobs:
+  architecture:
+    name: Verificação de Fronteiras Arquiteturais
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout do repositório
+        uses: actions/checkout@v4
+
+      - name: Tornar script executável
+        run: chmod +x tool/arch_check.sh
+
+      - name: Executar enforcement arquitetural
+        run: ./tool/arch_check.sh
+        # Exit 0 → aprovado | Exit 1 → PR bloqueado

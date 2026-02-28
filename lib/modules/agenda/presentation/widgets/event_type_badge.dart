@@ -6,11 +6,7 @@ class EventTypeBadge extends StatelessWidget {
   final EventType type;
   final double size;
 
-  const EventTypeBadge({
-    super.key,
-    required this.type,
-    this.size = 32,
-  });
+  const EventTypeBadge({super.key, required this.type, this.size = 32});
 
   @override
   Widget build(BuildContext context) {
@@ -22,19 +18,10 @@ class EventTypeBadge extends StatelessWidget {
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: color.withValues(alpha: 0.3),
-          width: 1.5,
-        ),
+        border: Border.all(color: color.withValues(alpha: 0.3), width: 1.5),
       ),
       alignment: Alignment.center,
-      child: Text(
-        type.icon,
-        style: TextStyle(
-          fontSize: size * 0.5,
-          height: 1,
-        ),
-      ),
+      child: Text(type.icon, style: TextStyle(fontSize: size * 0.5, height: 1)),
     );
   }
 

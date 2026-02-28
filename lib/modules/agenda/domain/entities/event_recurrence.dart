@@ -19,13 +19,13 @@ class EventRecurrence {
     switch (pattern) {
       case RecurrencePattern.daily:
         return currentDate.add(Duration(days: interval));
-      
+
       case RecurrencePattern.weekly:
         return currentDate.add(Duration(days: 7 * interval));
-      
+
       case RecurrencePattern.biweekly:
         return currentDate.add(Duration(days: 14 * interval));
-      
+
       case RecurrencePattern.monthly:
         return DateTime(
           currentDate.year,
@@ -34,7 +34,7 @@ class EventRecurrence {
           currentDate.hour,
           currentDate.minute,
         );
-      
+
       case RecurrencePattern.yearly:
         return DateTime(
           currentDate.year + interval,
@@ -51,11 +51,11 @@ class EventRecurrence {
     if (endDate != null && currentDate.isAfter(endDate!)) {
       return false;
     }
-    
+
     if (occurrences != null && count >= occurrences!) {
       return false;
     }
-    
+
     return true;
   }
 

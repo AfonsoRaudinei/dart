@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:soloforte_app/ui/theme/soloforte_theme.dart';
+import '../../../theme/premium/design_tokens.dart';
 import 'media/photo_grid.dart';
 
 // ════════════════════════════════════════════════════════════════════
@@ -38,17 +38,17 @@ class PanelSlider extends StatelessWidget {
               '${value.toInt()}${suffix ?? ''}',
               style: const TextStyle(
                 fontWeight: FontWeight.bold,
-                color: SoloForteColors.textSecondary,
+                color: PremiumTokens.textSecondaryLight,
               ),
             ),
           ],
         ),
         SliderTheme(
           data: SliderThemeData(
-            activeTrackColor: SoloForteColors.greenIOS,
-            inactiveTrackColor: SoloForteColors.greenIOS.withValues(alpha: 0.2),
+            activeTrackColor: PremiumTokens.brandGreen,
+            inactiveTrackColor: PremiumTokens.brandGreen.withValues(alpha: 0.2),
             thumbColor: Colors.white,
-            overlayColor: SoloForteColors.greenIOS.withValues(alpha: 0.1),
+            overlayColor: PremiumTokens.brandGreen.withValues(alpha: 0.1),
             trackHeight: 4,
             thumbShape: const RoundSliderThumbShape(
               enabledThumbRadius: 8,
@@ -89,7 +89,7 @@ class PanelTextField extends StatelessWidget {
       decoration: InputDecoration(
         hintText: hint,
         filled: true,
-        fillColor: SoloForteColors.grayLight,
+        fillColor: PremiumTokens.backgroundLight,
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 12,
           vertical: 12,
@@ -291,7 +291,7 @@ class FisiologicoPanel extends StatelessWidget {
           initialValue: data['tipo'] as String?,
           decoration: InputDecoration(
             filled: true,
-            fillColor: SoloForteColors.grayLight,
+            fillColor: PremiumTokens.backgroundLight,
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 12,
               vertical: 8,
@@ -382,9 +382,9 @@ class NutricaoPanel extends StatelessWidget {
                 return Container(
                   padding: const EdgeInsets.all(4),
                   decoration: BoxDecoration(
-                    color: SoloForteColors.grayLight,
+                    color: PremiumTokens.backgroundLight,
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: SoloForteColors.border),
+                    border: Border.all(color: PremiumTokens.hairlineLight),
                   ),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -469,7 +469,7 @@ class CategoryDetailPanel extends StatelessWidget {
     switch (categoryId) {
       case 'doenca':
         title = 'Doenças';
-        headerColor = SoloForteColors.warning;
+        headerColor = PremiumTokens.alertWarning;
         content = DoencaPanel(
           data: data,
           onUpdate: onUpdate,
@@ -550,7 +550,7 @@ class CategoryDetailPanel extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: SoloForteColors.border.withValues(alpha: 0.5),
+          color: PremiumTokens.hairlineLight.withValues(alpha: 0.5),
         ),
         boxShadow: [
           BoxShadow(
@@ -599,7 +599,7 @@ class CategoryDetailPanel extends StatelessWidget {
                     child: Icon(
                       Icons.close,
                       size: 18,
-                      color: SoloForteColors.textTertiary,
+                      color: PremiumTokens.textTertiaryLight,
                     ),
                   ),
                 ),

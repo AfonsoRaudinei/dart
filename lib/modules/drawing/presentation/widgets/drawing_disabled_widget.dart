@@ -31,11 +31,7 @@ class DrawingDisabledWidget extends StatelessWidget {
           ),
 
           // Ícone
-          Icon(
-            Icons.construction,
-            size: 64,
-            color: Colors.grey[400],
-          ),
+          Icon(Icons.construction, size: 64, color: Colors.grey[400]),
 
           const SizedBox(height: 16),
 
@@ -43,9 +39,9 @@ class DrawingDisabledWidget extends StatelessWidget {
           Text(
             'Funcionalidade Indisponível',
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: Colors.grey[700],
-                ),
+              fontWeight: FontWeight.bold,
+              color: Colors.grey[700],
+            ),
           ),
 
           const SizedBox(height: 8),
@@ -55,9 +51,9 @@ class DrawingDisabledWidget extends StatelessWidget {
             'O módulo de desenho está temporariamente desabilitado.\n'
             'Entre em contato com o suporte se precisar desta funcionalidade.',
             textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Colors.grey[600],
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
           ),
 
           const SizedBox(height: 24),

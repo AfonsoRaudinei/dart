@@ -183,7 +183,10 @@ class Occurrence {
           }
         }
       } catch (e) {
-        AppLogger.debug('Falha ao parsear geometry da ocorrência — $e', tag: 'Occurrence');
+        AppLogger.debug(
+          'Falha ao parsear geometry da ocorrência — $e',
+          tag: 'Occurrence',
+        );
       }
     }
 

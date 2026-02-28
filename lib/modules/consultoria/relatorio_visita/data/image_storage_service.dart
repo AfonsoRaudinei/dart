@@ -28,7 +28,11 @@ class ImageStorageService {
       final savedFile = await _saveToAppDirectory(File(pickedFile.path));
       return savedFile.path;
     } catch (e) {
-      AppLogger.warning('Erro ao capturar/salvar imagem', tag: 'ImageStorage', error: e);
+      AppLogger.warning(
+        'Erro ao capturar/salvar imagem',
+        tag: 'ImageStorage',
+        error: e,
+      );
       return null;
     }
   }
@@ -57,7 +61,11 @@ class ImageStorageService {
         AppLogger.debug('Imagem deletada: $path', tag: 'ImageStorage');
       }
     } catch (e) {
-      AppLogger.warning('Erro ao deletar imagem', tag: 'ImageStorage', error: e);
+      AppLogger.warning(
+        'Erro ao deletar imagem',
+        tag: 'ImageStorage',
+        error: e,
+      );
     }
   }
 }

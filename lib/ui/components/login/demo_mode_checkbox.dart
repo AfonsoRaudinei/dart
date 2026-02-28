@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../theme/soloforte_theme.dart';
+import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 
 class DemoModeCheckbox extends StatelessWidget {
   final bool value;
@@ -15,7 +15,7 @@ class DemoModeCheckbox extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: () => onChanged(!value),
-      borderRadius: SoloRadius.radiusMd,
+      borderRadius: BorderRadius.circular(12),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 8.0),
         child: Row(
@@ -27,12 +27,12 @@ class DemoModeCheckbox extends StatelessWidget {
               child: Checkbox(
                 value: value,
                 onChanged: onChanged,
-                activeColor: SoloForteColors.success,
+                activeColor: const Color(0xFF34C759),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(4),
                 ),
                 side: const BorderSide(
-                  color: SoloForteColors.border,
+                  color: PremiumTokens.hairlineLight,
                   width: 1.5,
                 ),
               ),
@@ -43,7 +43,7 @@ class DemoModeCheckbox extends StatelessWidget {
               style: TextStyle(
                 fontSize: 14.0,
                 fontWeight: FontWeight.w500,
-                color: SoloForteColors.textPrimary,
+                color: PremiumTokens.textPrimaryLight,
               ),
             ),
           ],

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../theme/soloforte_theme.dart';
+import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 
 /// Overlay de erro para o mapa público.
 ///
@@ -27,9 +27,9 @@ class PublicMapErrorOverlay extends StatelessWidget {
         elevation: 4,
         borderRadius: BorderRadius.circular(12),
         child: Container(
-          padding: const EdgeInsets.all(SoloSpacing.md),
+          padding: const EdgeInsets.all(16.0),
           decoration: BoxDecoration(
-            color: SoloForteColors.white,
+            color: Colors.white,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: const Color(0xFFFF5252).withValues(alpha: 0.3),
@@ -46,13 +46,9 @@ class PublicMapErrorOverlay extends StatelessWidget {
                   color: const Color(0xFFFF5252).withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(
-                  icon,
-                  color: const Color(0xFFFF5252),
-                  size: 20,
-                ),
+                child: Icon(icon, color: const Color(0xFFFF5252), size: 20),
               ),
-              const SizedBox(width: SoloSpacing.md),
+              const SizedBox(width: 16.0),
               // Mensagem
               Expanded(
                 child: Column(
@@ -61,17 +57,17 @@ class PublicMapErrorOverlay extends StatelessWidget {
                   children: [
                     Text(
                       'Ops!',
-                      style: SoloTextStyles.headingMedium.copyWith(
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600).copyWith(
                         fontSize: 14,
-                        fontWeight: SoloFontWeights.semibold,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       message,
-                      style: SoloTextStyles.body.copyWith(
+                      style: const TextStyle(fontSize: 14).copyWith(
                         fontSize: 13,
-                        color: SoloForteColors.textSecondary,
+                        color: PremiumTokens.textSecondaryLight,
                       ),
                     ),
                   ],
@@ -79,24 +75,24 @@ class PublicMapErrorOverlay extends StatelessWidget {
               ),
               // Botão Retry
               if (onRetry != null) ...[
-                const SizedBox(width: SoloSpacing.sm),
+                const SizedBox(width: 12.0),
                 Semantics(
                   label: 'Tentar novamente',
                   button: true,
                   child: Material(
-                    color: SoloForteColors.brand,
+                    color: PremiumTokens.brandGreen,
                     borderRadius: BorderRadius.circular(8),
                     child: InkWell(
                       onTap: onRetry,
                       borderRadius: BorderRadius.circular(8),
                       child: Padding(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: SoloSpacing.md,
-                          vertical: SoloSpacing.sm,
+                          horizontal: 16.0,
+                          vertical: 12.0,
                         ),
                         child: Icon(
                           Icons.refresh,
-                          color: SoloForteColors.white,
+                          color: Colors.white,
                           size: 18,
                         ),
                       ),
@@ -129,29 +125,27 @@ class LocationPermissionDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       title: Row(
         children: [
           Container(
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: SoloForteColors.brand.withValues(alpha: 0.1),
+              color: PremiumTokens.brandGreen.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             child: Icon(
               Icons.location_on,
-              color: SoloForteColors.brand,
+              color: PremiumTokens.brandGreen,
               size: 20,
             ),
           ),
-          const SizedBox(width: SoloSpacing.md),
+          const SizedBox(width: 16.0),
           Expanded(
             child: Text(
               'Localização',
-              style: SoloTextStyles.headingMedium.copyWith(fontSize: 18),
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600).copyWith(fontSize: 18),
             ),
           ),
         ],
@@ -162,16 +156,16 @@ class LocationPermissionDialog extends StatelessWidget {
         children: [
           Text(
             'Para centralizar o mapa na sua localização, precisamos de permissão para acessar o GPS.',
-            style: SoloTextStyles.body.copyWith(
-              color: SoloForteColors.textSecondary,
+            style: const TextStyle(fontSize: 14).copyWith(
+              color: PremiumTokens.textSecondaryLight,
               height: 1.5,
             ),
           ),
-          const SizedBox(height: SoloSpacing.md),
+          const SizedBox(height: 16.0),
           Container(
-            padding: const EdgeInsets.all(SoloSpacing.md),
+            padding: const EdgeInsets.all(16.0),
             decoration: BoxDecoration(
-              color: SoloForteColors.grayLight,
+              color: PremiumTokens.surfaceLight,
               borderRadius: BorderRadius.circular(8),
             ),
             child: Row(
@@ -179,15 +173,15 @@ class LocationPermissionDialog extends StatelessWidget {
                 Icon(
                   Icons.info_outline,
                   size: 16,
-                  color: SoloForteColors.textSecondary,
+                  color: PremiumTokens.textSecondaryLight,
                 ),
-                const SizedBox(width: SoloSpacing.sm),
+                const SizedBox(width: 12.0),
                 Expanded(
                   child: Text(
                     'Suas informações de localização são usadas apenas para melhorar sua experiência no app.',
-                    style: SoloTextStyles.body.copyWith(
+                    style: const TextStyle(fontSize: 14).copyWith(
                       fontSize: 12,
-                      color: SoloForteColors.textSecondary,
+                      color: PremiumTokens.textSecondaryLight,
                     ),
                   ),
                 ),
@@ -201,16 +195,16 @@ class LocationPermissionDialog extends StatelessWidget {
           onPressed: () => Navigator.of(context).pop(false),
           child: Text(
             'Não agora',
-            style: SoloTextStyles.body.copyWith(
-              color: SoloForteColors.textSecondary,
+            style: const TextStyle(fontSize: 14).copyWith(
+              color: PremiumTokens.textSecondaryLight,
             ),
           ),
         ),
         ElevatedButton(
           onPressed: () => Navigator.of(context).pop(true),
           style: ElevatedButton.styleFrom(
-            backgroundColor: SoloForteColors.brand,
-            foregroundColor: SoloForteColors.white,
+            backgroundColor: PremiumTokens.brandGreen,
+            foregroundColor: Colors.white,
             elevation: 0,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(8),

@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'dart:math' as math; // For Point
 import '../../presentation/controllers/drawing_controller.dart';
 import '../../domain/models/drawing_models.dart';
 import '../../domain/drawing_state.dart';
-import 'package:soloforte_app/ui/theme/soloforte_theme.dart';
 
 class DrawingEditLayer extends StatefulWidget {
   final DrawingController controller;
@@ -207,7 +207,7 @@ class _VertexHandle extends StatelessWidget {
         width: isDragging ? 32 : 24,
         height: isDragging ? 32 : 24,
         decoration: BoxDecoration(
-          color: isDragging ? SoloForteColors.primary : Colors.white,
+          color: isDragging ? PremiumTokens.brandGreen : Colors.white,
           shape: BoxShape.circle,
           border: Border.all(
             color: isDragging ? Colors.white : Colors.black26,
@@ -216,7 +216,7 @@ class _VertexHandle extends StatelessWidget {
           boxShadow: [
             BoxShadow(
               color: isDragging
-                  ? SoloForteColors.primary.withOpacity(0.4)
+                  ? PremiumTokens.brandGreen.withOpacity(0.4)
                   : Colors.black.withOpacity(0.3),
               blurRadius: isDragging ? 10 : 4,
               offset: Offset(0, isDragging ? 4 : 2),

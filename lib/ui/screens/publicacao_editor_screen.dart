@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/domain/publicacao.dart';
-import '../theme/soloforte_theme.dart';
 
 // ════════════════════════════════════════════════════════════════════
 // TELA DE EDIÇÃO DE PUBLICAÇÃO (ADR-007)
@@ -10,18 +10,13 @@ import '../theme/soloforte_theme.dart';
 class PublicacaoEditorScreen extends StatefulWidget {
   final String publicacaoId;
 
-  const PublicacaoEditorScreen({
-    super.key,
-    required this.publicacaoId,
-  });
+  const PublicacaoEditorScreen({super.key, required this.publicacaoId});
 
   @override
-  State<PublicacaoEditorScreen> createState() =>
-      _PublicacaoEditorScreenState();
+  State<PublicacaoEditorScreen> createState() => _PublicacaoEditorScreenState();
 }
 
-class _PublicacaoEditorScreenState
-    extends State<PublicacaoEditorScreen> {
+class _PublicacaoEditorScreenState extends State<PublicacaoEditorScreen> {
   late TextEditingController _titleController;
   late TextEditingController _descriptionController;
 
@@ -53,7 +48,7 @@ class _PublicacaoEditorScreenState
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Publicação salva com sucesso!'),
-        backgroundColor: SoloForteColors.greenIOS,
+        backgroundColor: PremiumTokens.brandGreen,
       ),
     );
 
@@ -65,9 +60,7 @@ class _PublicacaoEditorScreenState
     if (_isLoading) {
       return const Scaffold(
         body: Center(
-          child: CircularProgressIndicator(
-            color: SoloForteColors.greenIOS,
-          ),
+          child: CircularProgressIndicator(color: PremiumTokens.brandGreen),
         ),
       );
     }
@@ -75,8 +68,8 @@ class _PublicacaoEditorScreenState
     return Scaffold(
       appBar: AppBar(
         title: const Text('Editar Publicação'),
-        backgroundColor: SoloForteColors.white,
-        foregroundColor: SoloForteColors.textPrimary,
+        backgroundColor: Colors.white,
+        foregroundColor: PremiumTokens.textPrimaryLight,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
@@ -90,15 +83,15 @@ class _PublicacaoEditorScreenState
             child: const Text(
               'Salvar',
               style: TextStyle(
-                color: SoloForteColors.greenIOS,
-                fontWeight: SoloFontWeights.semibold,
+                color: PremiumTokens.brandGreen,
+                fontWeight: FontWeight.w500,
               ),
             ),
           ),
         ],
       ),
       body: SingleChildScrollView(
-        padding: SoloSpacing.paddingCard,
+        padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -106,22 +99,21 @@ class _PublicacaoEditorScreenState
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: SoloForteColors.grayLight,
-                borderRadius:
-                    BorderRadius.circular(SoloRadius.sm),
+                color: PremiumTokens.surfaceLight,
+                borderRadius: BorderRadius.circular(6.0),
               ),
               child: Row(
                 children: [
                   const Icon(
                     Icons.info_outline,
                     size: 16,
-                    color: SoloForteColors.textTertiary,
+                    color: PremiumTokens.textTertiaryLight,
                   ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       'ID: ${widget.publicacaoId}',
-                      style: SoloTextStyles.label.copyWith(
+                      style: TextStyle(fontSize: 12, color: PremiumTokens.textSecondaryLight).copyWith(
                         fontFamily: 'monospace',
                       ),
                     ),
@@ -133,27 +125,22 @@ class _PublicacaoEditorScreenState
             const SizedBox(height: 20),
 
             // Título
-            Text(
-              'Título',
-              style: SoloTextStyles.label,
-            ),
+            Text('Título', style: TextStyle(fontSize: 12, color: PremiumTokens.textSecondaryLight)),
             const SizedBox(height: 8),
             TextField(
               controller: _titleController,
               decoration: InputDecoration(
                 hintText: 'Título da publicação',
                 border: OutlineInputBorder(
-                  borderRadius:
-                      BorderRadius.circular(SoloRadius.md),
+                  borderRadius: BorderRadius.circular(10.0),
                   borderSide: const BorderSide(
-                    color: SoloForteColors.borderLight,
+                    color: PremiumTokens.hairlineLight,
                   ),
                 ),
                 focusedBorder: OutlineInputBorder(
-                  borderRadius:
-                      BorderRadius.circular(SoloRadius.md),
+                  borderRadius: BorderRadius.circular(10.0),
                   borderSide: const BorderSide(
-                    color: SoloForteColors.greenIOS,
+                    color: PremiumTokens.brandGreen,
                     width: 2,
                   ),
                 ),
@@ -163,10 +150,7 @@ class _PublicacaoEditorScreenState
             const SizedBox(height: 20),
 
             // Descrição
-            Text(
-              'Descrição',
-              style: SoloTextStyles.label,
-            ),
+            Text('Descrição', style: TextStyle(fontSize: 12, color: PremiumTokens.textSecondaryLight)),
             const SizedBox(height: 8),
             TextField(
               controller: _descriptionController,
@@ -174,17 +158,15 @@ class _PublicacaoEditorScreenState
               decoration: InputDecoration(
                 hintText: 'Descrição da publicação',
                 border: OutlineInputBorder(
-                  borderRadius:
-                      BorderRadius.circular(SoloRadius.md),
+                  borderRadius: BorderRadius.circular(10.0),
                   borderSide: const BorderSide(
-                    color: SoloForteColors.borderLight,
+                    color: PremiumTokens.hairlineLight,
                   ),
                 ),
                 focusedBorder: OutlineInputBorder(
-                  borderRadius:
-                      BorderRadius.circular(SoloRadius.md),
+                  borderRadius: BorderRadius.circular(10.0),
                   borderSide: const BorderSide(
-                    color: SoloForteColors.greenIOS,
+                    color: PremiumTokens.brandGreen,
                     width: 2,
                   ),
                 ),
@@ -194,20 +176,14 @@ class _PublicacaoEditorScreenState
             const SizedBox(height: 20),
 
             // Fotos
-            Text(
-              'Fotos',
-              style: SoloTextStyles.label,
-            ),
+            Text('Fotos', style: TextStyle(fontSize: 12, color: PremiumTokens.textSecondaryLight)),
             const SizedBox(height: 8),
             Container(
               height: 120,
               decoration: BoxDecoration(
-                color: SoloForteColors.grayLight,
-                borderRadius:
-                    BorderRadius.circular(SoloRadius.md),
-                border: Border.all(
-                  color: SoloForteColors.borderLight,
-                ),
+                color: PremiumTokens.surfaceLight,
+                borderRadius: BorderRadius.circular(10.0),
+                border: Border.all(color: PremiumTokens.hairlineLight),
               ),
               child: Center(
                 child: Column(
@@ -216,15 +192,13 @@ class _PublicacaoEditorScreenState
                     Icon(
                       Icons.add_photo_alternate_outlined,
                       size: 32,
-                      color:
-                          SoloForteColors.textTertiary,
+                      color: PremiumTokens.textTertiaryLight,
                     ),
                     const SizedBox(height: 8),
                     Text(
                       'Adicionar fotos',
-                      style: SoloTextStyles.label.copyWith(
-                        color:
-                            SoloForteColors.textTertiary,
+                      style: TextStyle(fontSize: 12, color: PremiumTokens.textSecondaryLight).copyWith(
+                        color: PremiumTokens.textTertiaryLight,
                       ),
                     ),
                   ],

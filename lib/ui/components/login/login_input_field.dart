@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../theme/soloforte_theme.dart';
+import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 
 class LoginInputField extends StatefulWidget {
   final TextEditingController controller;
@@ -54,9 +54,9 @@ class _LoginInputFieldState extends State<LoginInputField> {
     // Coleta do tema atual
     final theme = Theme.of(context);
     final errorColor = theme.colorScheme.error;
-    final primaryColor = SoloForteColors.primary; // Verde
-    final secondaryColor = SoloForteColors.textSecondary;
-    final tertiaryColor = SoloForteColors.textTertiary;
+    final primaryColor = PremiumTokens.brandGreen; // Verde
+    final secondaryColor = PremiumTokens.textSecondaryLight;
+    final tertiaryColor = PremiumTokens.textTertiaryLight;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -66,10 +66,10 @@ class _LoginInputFieldState extends State<LoginInputField> {
           widget.label,
           style: theme.textTheme.labelSmall?.copyWith(
             color: _hasError ? errorColor : secondaryColor,
-            fontWeight: SoloFontWeights.medium,
+            fontWeight: FontWeight.w500,
           ),
         ),
-        const SizedBox(height: 8), // Spacing: 8px (SoloSpacing.xs)
+        const SizedBox(height: 8), // Spacing: 8px (8.0)
         // Campo de Texto
         TextFormField(
           controller: widget.controller,

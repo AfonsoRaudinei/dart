@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:soloforte_app/core/router/app_routes.dart';
-import 'package:soloforte_app/ui/theme/soloforte_theme.dart';
+
 import '../../domain/entities/feedback_type.dart';
 import '../controllers/feedback_controller.dart';
 import '../widgets/feedback_stats_card.dart';
@@ -72,11 +72,11 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
                     const SizedBox(height: 24),
 
                     // Header
-                    Text('Feedback', style: SoloTextStyles.headingLarge),
+                    Text('Feedback', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 8),
                     Text(
                       'Ajude-nos a melhorar o SoloForte',
-                      style: SoloTextStyles.body,
+                      style: Theme.of(context).textTheme.bodyMedium!,
                     ),
                     const SizedBox(height: 32),
 
@@ -97,22 +97,22 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
                             label: 'Bug',
                             count: stats.bugCount,
                             icon: Icons.bug_report_outlined,
-                            color: SoloForteColors.textError,
-                            backgroundColor: SoloForteColors.bgError,
+                            color: const Color(0xFFDC2626),
+                            backgroundColor: const Color(0xFFFFEBEB),
                           ),
                           FeedbackStatsCard(
                             label: 'Sugestão',
                             count: stats.suggestionCount,
                             icon: Icons.lightbulb_outline,
-                            color: SoloForteColors.textWarning,
-                            backgroundColor: SoloForteColors.bgWarning,
+                            color: const Color(0xFF92400E),
+                            backgroundColor: const Color(0xFFFFF3CD),
                           ),
                           FeedbackStatsCard(
                             label: 'Elogios',
                             count: stats.praiseCount,
                             icon: Icons.favorite_border,
-                            color: SoloForteColors.textSuccess,
-                            backgroundColor: SoloForteColors.bgSuccess,
+                            color: const Color(0xFF065F46),
+                            backgroundColor: const Color(0xFFD1FAE5),
                           ),
                         ],
                       ),
@@ -218,7 +218,7 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
                                     ? null
                                     : _submit,
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: SoloForteColors.blueSamsung,
+                                  backgroundColor: const Color(0xFF0F62FE),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12),
                                   ),
@@ -251,7 +251,7 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
                                 child: Text(
                                   formState.errorMessage!,
                                   style: const TextStyle(
-                                    color: SoloForteColors.error,
+                                    color: Color(0xFFFF3B30),
                                   ),
                                 ),
                               ),
@@ -285,15 +285,15 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
             switch (type) {
               case FeedbackType.bug:
                 icon = Icons.bug_report_outlined;
-                color = SoloForteColors.textError;
+                color = const Color(0xFFDC2626);
                 break;
               case FeedbackType.suggestion:
                 icon = Icons.lightbulb_outline;
-                color = SoloForteColors.textWarning;
+                color = const Color(0xFF92400E);
                 break;
               case FeedbackType.praise:
                 icon = Icons.favorite_border;
-                color = SoloForteColors.textSuccess;
+                color = const Color(0xFF065F46);
                 break;
             }
 
@@ -329,12 +329,12 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: SoloForteColors.bgSuccess,
+                color: const Color(0xFFD1FAE5),
                 shape: BoxShape.circle,
               ),
               child: const Icon(
                 Icons.check,
-                color: SoloForteColors.success,
+                color: Color(0xFF34C759),
                 size: 48,
               ),
             ),
@@ -373,7 +373,7 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
                   ref.read(feedbackControllerProvider.notifier).reset();
                 },
                 style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: SoloForteColors.blueSamsung),
+                  side: const BorderSide(color: Color(0xFF0F62FE)),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),

@@ -9,10 +9,7 @@ import '../../domain/entities/event_recurrence.dart';
 class RecurrenceDialog extends ConsumerStatefulWidget {
   final EventRecurrence? initialRecurrence;
 
-  const RecurrenceDialog({
-    super.key,
-    this.initialRecurrence,
-  });
+  const RecurrenceDialog({super.key, this.initialRecurrence});
 
   @override
   ConsumerState<RecurrenceDialog> createState() => _RecurrenceDialogState();
@@ -49,16 +46,16 @@ class _RecurrenceDialogState extends ConsumerState<RecurrenceDialog> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Padrão de recorrência
-            Text(
-              'Repetir',
-              style: theme.textTheme.titleSmall,
-            ),
+            Text('Repetir', style: theme.textTheme.titleSmall),
             const SizedBox(height: 8),
             DropdownButtonFormField<RecurrencePattern>(
               value: _pattern,
               decoration: const InputDecoration(
                 border: OutlineInputBorder(),
-                contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                contentPadding: EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
               ),
               items: RecurrencePattern.values.map((pattern) {
                 return DropdownMenuItem(
@@ -75,10 +72,7 @@ class _RecurrenceDialogState extends ConsumerState<RecurrenceDialog> {
             const SizedBox(height: 16),
 
             // Intervalo
-            Text(
-              'A cada',
-              style: theme.textTheme.titleSmall,
-            ),
+            Text('A cada', style: theme.textTheme.titleSmall),
             const SizedBox(height: 8),
             Row(
               children: [
@@ -89,7 +83,10 @@ class _RecurrenceDialogState extends ConsumerState<RecurrenceDialog> {
                     keyboardType: TextInputType.number,
                     decoration: const InputDecoration(
                       border: OutlineInputBorder(),
-                      contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      contentPadding: EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
                     ),
                     onChanged: (value) {
                       final parsed = int.tryParse(value);
@@ -109,10 +106,7 @@ class _RecurrenceDialogState extends ConsumerState<RecurrenceDialog> {
             const SizedBox(height: 8),
 
             // Finalização
-            Text(
-              'Termina',
-              style: theme.textTheme.titleSmall,
-            ),
+            Text('Termina', style: theme.textTheme.titleSmall),
             const SizedBox(height: 8),
 
             // Opção: Nunca
@@ -123,8 +117,8 @@ class _RecurrenceDialogState extends ConsumerState<RecurrenceDialog> {
                 groupValue: _useEndDate
                     ? 'endDate'
                     : _useOccurrences
-                        ? 'occurrences'
-                        : 'never',
+                    ? 'occurrences'
+                    : 'never',
                 onChanged: (_) {
                   setState(() {
                     _useEndDate = false;
@@ -149,8 +143,8 @@ class _RecurrenceDialogState extends ConsumerState<RecurrenceDialog> {
                 groupValue: _useEndDate
                     ? 'endDate'
                     : _useOccurrences
-                        ? 'occurrences'
-                        : 'never',
+                    ? 'occurrences'
+                    : 'never',
                 onChanged: (_) {
                   setState(() {
                     _useEndDate = true;
@@ -176,8 +170,8 @@ class _RecurrenceDialogState extends ConsumerState<RecurrenceDialog> {
                   label: Text(
                     _endDate != null
                         ? '${_endDate!.day.toString().padLeft(2, '0')}/'
-                            '${_endDate!.month.toString().padLeft(2, '0')}/'
-                            '${_endDate!.year}'
+                              '${_endDate!.month.toString().padLeft(2, '0')}/'
+                              '${_endDate!.year}'
                         : 'Selecionar',
                   ),
                   onPressed: () async {
@@ -185,7 +179,9 @@ class _RecurrenceDialogState extends ConsumerState<RecurrenceDialog> {
                       context: context,
                       initialDate: _endDate ?? DateTime.now(),
                       firstDate: DateTime.now(),
-                      lastDate: DateTime.now().add(const Duration(days: 365 * 5)),
+                      lastDate: DateTime.now().add(
+                        const Duration(days: 365 * 5),
+                      ),
                     );
                     if (date != null) {
                       setState(() => _endDate = date);
@@ -202,8 +198,8 @@ class _RecurrenceDialogState extends ConsumerState<RecurrenceDialog> {
                 groupValue: _useEndDate
                     ? 'endDate'
                     : _useOccurrences
-                        ? 'occurrences'
-                        : 'never',
+                    ? 'occurrences'
+                    : 'never',
                 onChanged: (_) {
                   setState(() {
                     _useEndDate = false;
@@ -233,7 +229,10 @@ class _RecurrenceDialogState extends ConsumerState<RecurrenceDialog> {
                         keyboardType: TextInputType.number,
                         decoration: const InputDecoration(
                           border: OutlineInputBorder(),
-                          contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
                         ),
                         onChanged: (value) {
                           final parsed = int.tryParse(value);

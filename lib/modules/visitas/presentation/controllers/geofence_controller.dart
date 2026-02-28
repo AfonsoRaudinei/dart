@@ -75,7 +75,11 @@ class GeofenceController {
         }
       }
     } catch (e) {
-      AppLogger.warning('Falha ao obter posição para geofence', tag: 'Geofence', error: e);
+      AppLogger.warning(
+        'Falha ao obter posição para geofence',
+        tag: 'Geofence',
+        error: e,
+      );
       return;
     }
 

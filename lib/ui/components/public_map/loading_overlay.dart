@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../theme/soloforte_theme.dart';
+import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 
 /// Skeleton loader para pins de publicações no mapa público.
 ///
@@ -18,9 +18,9 @@ class PublicationsLoadingOverlay extends StatelessWidget {
         elevation: 2,
         borderRadius: BorderRadius.circular(12),
         child: Container(
-          padding: const EdgeInsets.all(SoloSpacing.md),
+          padding: const EdgeInsets.all(16.0),
           decoration: BoxDecoration(
-            color: SoloForteColors.white,
+            color: Colors.white,
             borderRadius: BorderRadius.circular(12),
           ),
           child: Row(
@@ -32,15 +32,15 @@ class PublicationsLoadingOverlay extends StatelessWidget {
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
                   valueColor: AlwaysStoppedAnimation<Color>(
-                    SoloForteColors.brand,
+                    PremiumTokens.brandGreen,
                   ),
                 ),
               ),
-              const SizedBox(width: SoloSpacing.md),
+              const SizedBox(width: 16.0),
               Text(
                 'Carregando publicações...',
-                style: SoloTextStyles.body.copyWith(
-                  color: SoloForteColors.textSecondary,
+                style: const TextStyle(fontSize: 14).copyWith(
+                  color: PremiumTokens.textSecondaryLight,
                   fontSize: 13,
                 ),
               ),
@@ -75,9 +75,10 @@ class _PinSkeletonState extends State<PinSkeleton>
       vsync: this,
     )..repeat(reverse: true);
 
-    _animation = Tween<double>(begin: 0.3, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
+    _animation = Tween<double>(
+      begin: 0.3,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
   }
 
   @override
@@ -94,12 +95,9 @@ class _PinSkeletonState extends State<PinSkeleton>
         width: 50,
         height: 50,
         decoration: BoxDecoration(
-          color: SoloForteColors.grayLight,
+          color: PremiumTokens.surfaceLight,
           shape: BoxShape.circle,
-          border: Border.all(
-            color: SoloForteColors.borderLight,
-            width: 3,
-          ),
+          border: Border.all(color: PremiumTokens.hairlineLight, width: 3),
         ),
       ),
     );

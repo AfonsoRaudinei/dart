@@ -25,7 +25,11 @@ class DraftStorageService {
       if (jsonString == null) return null;
       return VisitaModel.fromJson(jsonDecode(jsonString));
     } catch (e) {
-      AppLogger.warning('Erro ao carregar draft', tag: 'DraftStorage', error: e);
+      AppLogger.warning(
+        'Erro ao carregar draft',
+        tag: 'DraftStorage',
+        error: e,
+      );
       return null;
     }
   }

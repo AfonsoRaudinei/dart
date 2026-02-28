@@ -72,10 +72,7 @@ class EventRules {
   }
 
   /// Valida se as datas do evento são válidas
-  static String? validateEventDates(
-    DateTime dataInicio,
-    DateTime dataFim,
-  ) {
+  static String? validateEventDates(DateTime dataInicio, DateTime dataFim) {
     if (dataFim.isBefore(dataInicio)) {
       return 'Data de fim deve ser posterior à data de início';
     }

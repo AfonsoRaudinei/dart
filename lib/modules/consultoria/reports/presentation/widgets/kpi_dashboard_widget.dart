@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:soloforte_app/ui/theme/soloforte_theme.dart';
+
 import '../controllers/kpi_controller.dart';
 import '../../domain/kpi_metrics.dart';
 
@@ -23,7 +24,7 @@ class KpiDashboardWidget extends ConsumerWidget {
       error: (e, s) => Center(
         child: Padding(
           padding: const EdgeInsets.all(20.0),
-          child: Text('Erro ao carregar KPIs: $e', style: SoloTextStyles.label),
+          child: Text('Erro ao carregar KPIs: $e', style: Theme.of(context).textTheme.labelSmall!.copyWith(color: PremiumTokens.textSecondaryLight)),
         ),
       ),
     );
@@ -32,19 +33,19 @@ class KpiDashboardWidget extends ConsumerWidget {
   Widget _buildKpiContent(BuildContext context, KpiMetrics metrics) {
     if (metrics.totalVisits == 0) {
       return Container(
-        padding: SoloSpacing.paddingCard,
+        padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
             const Icon(
               Icons.analytics_outlined,
-              color: SoloForteColors.textTertiary,
+              color: PremiumTokens.textTertiaryLight,
               size: 48,
             ),
             const SizedBox(height: 8),
             Text(
               'Sem dados de produtividade ainda.',
-              style: SoloTextStyles.body.copyWith(
-                color: SoloForteColors.textSecondary,
+              style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                color: PremiumTokens.textSecondaryLight,
               ),
             ),
           ],
@@ -53,11 +54,11 @@ class KpiDashboardWidget extends ConsumerWidget {
     }
 
     return SingleChildScrollView(
-      padding: SoloSpacing.paddingCard,
+      padding: const EdgeInsets.all(16.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Produtividade Geral', style: SoloTextStyles.headingMedium),
+          Text('Produtividade Geral', style: Theme.of(context).textTheme.titleMedium!.copyWith(fontWeight: FontWeight.w600)),
           const SizedBox(height: 16),
           Row(
             children: [
@@ -66,7 +67,7 @@ class KpiDashboardWidget extends ConsumerWidget {
                   label: 'Visitas',
                   value: metrics.totalVisits.toString(),
                   icon: Icons.check_circle_outline,
-                  color: SoloForteColors.brand,
+                  color: PremiumTokens.brandGreen,
                 ),
               ),
               const SizedBox(width: 12),
@@ -75,7 +76,7 @@ class KpiDashboardWidget extends ConsumerWidget {
                   label: 'Horas em Campo',
                   value: metrics.totalHoursInField.toStringAsFixed(1),
                   icon: Icons.timer_outlined,
-                  color: SoloForteColors.greenIOS,
+                  color: PremiumTokens.brandGreen,
                 ),
               ),
             ],
@@ -104,7 +105,7 @@ class KpiDashboardWidget extends ConsumerWidget {
           ),
           const SizedBox(height: 24),
 
-          Text('Eficiência', style: SoloTextStyles.headingMedium),
+          Text('Eficiência', style: Theme.of(context).textTheme.titleMedium!.copyWith(fontWeight: FontWeight.w600)),
           const SizedBox(height: 16),
           _KpiRow(
             label: 'Clientes Únicos',
@@ -117,8 +118,8 @@ class KpiDashboardWidget extends ConsumerWidget {
             value: '${metrics.percentageLongVisits.toStringAsFixed(1)}%',
             icon: Icons.warning_amber_rounded,
             valueColor: metrics.percentageLongVisits > 20
-                ? SoloForteColors.error
-                : SoloForteColors.textPrimary,
+                ? const Color(0xFFFF3B30)
+                : PremiumTokens.textPrimaryLight,
           ),
           if (metrics.mostVisitedClientId != null) ...[
             const Divider(),
@@ -131,7 +132,7 @@ class KpiDashboardWidget extends ConsumerWidget {
           ],
 
           const SizedBox(height: 24),
-          Text('Atividades', style: SoloTextStyles.headingMedium),
+          Text('Atividades', style: Theme.of(context).textTheme.titleMedium!.copyWith(fontWeight: FontWeight.w600)),
           const SizedBox(height: 16),
           ...metrics.visitsByActivityType.entries.map(
             (e) => Padding(
@@ -139,19 +140,19 @@ class KpiDashboardWidget extends ConsumerWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(e.key, style: SoloTextStyles.body),
+                  Text(e.key, style: Theme.of(context).textTheme.bodyMedium!),
                   Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 8,
                       vertical: 2,
                     ),
                     decoration: BoxDecoration(
-                      color: SoloForteColors.grayLight,
+                      color: PremiumTokens.surfaceLight,
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
                       e.value.toString(),
-                      style: SoloTextStyles.body.copyWith(
+                      style: Theme.of(context).textTheme.bodyMedium!.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -185,9 +186,9 @@ class _KpiCard extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: SoloRadius.radiusMd,
-        boxShadow: SoloShadows.shadowCard,
-        border: Border.all(color: SoloForteColors.borderLight),
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0, 2))],
+        border: Border.all(color: PremiumTokens.hairlineLight),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -196,10 +197,10 @@ class _KpiCard extends StatelessWidget {
           const SizedBox(height: 12),
           Text(
             value,
-            style: SoloTextStyles.headingMedium.copyWith(fontSize: 24),
+            style: Theme.of(context).textTheme.titleMedium!.copyWith(fontWeight: FontWeight.w600).copyWith(fontSize: 24),
           ),
           const SizedBox(height: 4),
-          Text(label, style: SoloTextStyles.label),
+          Text(label, style: Theme.of(context).textTheme.labelSmall!.copyWith(color: PremiumTokens.textSecondaryLight)),
         ],
       ),
     );
@@ -225,15 +226,15 @@ class _KpiRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Row(
         children: [
-          Icon(icon, color: SoloForteColors.textSecondary, size: 20),
+          Icon(icon, color: PremiumTokens.textSecondaryLight, size: 20),
           const SizedBox(width: 12),
-          Text(label, style: SoloTextStyles.body),
+          Text(label, style: Theme.of(context).textTheme.bodyMedium!),
           const Spacer(),
           Text(
             value,
-            style: SoloTextStyles.headingMedium.copyWith(
+            style: Theme.of(context).textTheme.titleMedium!.copyWith(fontWeight: FontWeight.w600).copyWith(
               fontSize: 16,
-              color: valueColor ?? SoloForteColors.textPrimary,
+              color: valueColor ?? PremiumTokens.textPrimaryLight,
             ),
           ),
         ],

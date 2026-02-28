@@ -91,7 +91,11 @@ class SettingsRepository {
         }
       }
     } catch (e) {
-      AppLogger.warning('Erro ao calcular espaço usado em disco', tag: 'Settings', error: e);
+      AppLogger.warning(
+        'Erro ao calcular espaço usado em disco',
+        tag: 'Settings',
+        error: e,
+      );
     }
     return total;
   }

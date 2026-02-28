@@ -40,7 +40,9 @@ class AgronomicSyncService {
       data.remove('sync_status');
 
       try {
-        await NetworkPolicy.withTimeout(() => _supabase.from('clients').upsert(data));
+        await NetworkPolicy.withTimeout(
+          () => _supabase.from('clients').upsert(data),
+        );
 
         // Mark as synced
         await db.update(
@@ -51,7 +53,11 @@ class AgronomicSyncService {
         );
       } catch (e) {
         // Keep dirty.
-        AppLogger.warning('Erro ao sincronizar client ${row["id"]}', tag: 'AgronomicSync', error: e);
+        AppLogger.warning(
+          'Erro ao sincronizar client ${row["id"]}',
+          tag: 'AgronomicSync',
+          error: e,
+        );
       }
     }
   }
@@ -69,7 +75,9 @@ class AgronomicSyncService {
       data.remove('sync_status');
 
       try {
-        await NetworkPolicy.withTimeout(() => _supabase.from('farms').upsert(data));
+        await NetworkPolicy.withTimeout(
+          () => _supabase.from('farms').upsert(data),
+        );
         await db.update(
           'farms',
           {'sync_status': statusSynced},
@@ -77,7 +85,11 @@ class AgronomicSyncService {
           whereArgs: [row['id']],
         );
       } catch (e) {
-        AppLogger.warning('Erro ao sincronizar farm ${row["id"]}', tag: 'AgronomicSync', error: e);
+        AppLogger.warning(
+          'Erro ao sincronizar farm ${row["id"]}',
+          tag: 'AgronomicSync',
+          error: e,
+        );
       }
     }
   }
@@ -95,7 +107,9 @@ class AgronomicSyncService {
       data.remove('sync_status');
 
       try {
-        await NetworkPolicy.withTimeout(() => _supabase.from('fields').upsert(data));
+        await NetworkPolicy.withTimeout(
+          () => _supabase.from('fields').upsert(data),
+        );
         await db.update(
           'fields',
           {'sync_status': statusSynced},
@@ -103,7 +117,11 @@ class AgronomicSyncService {
           whereArgs: [row['id']],
         );
       } catch (e) {
-        AppLogger.warning('Erro ao sincronizar field ${row["id"]}', tag: 'AgronomicSync', error: e);
+        AppLogger.warning(
+          'Erro ao sincronizar field ${row["id"]}',
+          tag: 'AgronomicSync',
+          error: e,
+        );
       }
     }
   }
