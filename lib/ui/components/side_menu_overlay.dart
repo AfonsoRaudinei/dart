@@ -228,10 +228,12 @@ class SideMenuOverlay extends ConsumerWidget {
                               final planoAsync = ref.watch(planoAtivoProvider);
                               return planoAsync.when(
                                 data: (plano) {
-                                  if (plano == null)
+                                  if (plano == null) {
                                     return const SizedBox.shrink();
-                                  if (plano.plano == PlanoTipo.ouro)
+                                  }
+                                  if (plano.plano == PlanoTipo.ouro) {
                                     return const SizedBox.shrink();
+                                  }
                                   return _MenuItem(
                                     icon: Icons.group_add_outlined,
                                     label: 'Indicações',
@@ -433,8 +435,9 @@ class _MenuPlanoBadgeItem extends ConsumerWidget {
       data: (plano) {
         if (plano == null) return 'Sem plano · Publicar cases';
         if (plano.expirado) return 'Plano expirado · Renovar';
-        if (plano.expiraEmBreve)
+        if (plano.expiraEmBreve) {
           return '⚠️ Expira em ${plano.diasRestantes} dia(s)';
+        }
         return '${plano.plano.label} · ${plano.diasRestantes} dias restantes';
       },
       loading: () => 'Carregando...',
