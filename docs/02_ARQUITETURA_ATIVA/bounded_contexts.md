@@ -21,9 +21,9 @@
 │  │  Agenda  │  │  Map   │  │  Drawing  │  │  Consultoria    │  │
 │  └──────────┘  └────────┘  └───────────┘  └─────────────────┘  │
 │                   │ ↘ ↙ ↙ ↙                                     │
-│           ┌──────────────┐   ┌──────────┐   ┌──────────────┐   │
-│           │   Operacao   │   │ Settings │   │    Auth      │   │
-│           └──────────────┘   └──────────┘   └──────────────┘   │
+│           ┌──────────────┐   ┌──────────┐   ┌──────────────┐   ┌──────────────┐  │
+│           │   Operacao   │   │ Settings │   │    Auth      │   │   Planos     │  │
+│           └──────────────┘   └──────────┘   └──────────────┘   └──────────────┘  │
 └─────────────────────────────────────────────────────────────────┘
 
 ¹ app_router.dart — única exceção autorizada (ADR implícito, seção 3)
@@ -90,6 +90,17 @@
 
 ---
 
+### `planos/`
+**Natureza:** Módulo de monetização  
+**Responsabilidade:** Gestão de planos pagos, pagamentos via Mercado Pago e sistema de indicações com upgrade automático  
+**Dependências permitidas:** Supabase (remoto) — sem dependências de outros módulos  
+**Regra:** NÃO depende de nenhum módulo de domínio (`consultoria`, `operacao`, `drawing`, `agenda`, `marketing`)  
+**Regra:** `marketing/` pode depender de `planos/` para verificar plano ativo  
+**Regra:** `map/` pode depender de `planos/` para exibir badge no SideMenu  
+**Nota:** Publicação de cases é fluxo online-only — fonte da verdade é Supabase, não SQLite  
+
+---
+
 ## Tabela de Acoplamentos Autorizados
 
 | De | Para | Status |
@@ -100,6 +111,9 @@
 | `consultoria` | `drawing` | ❌ PROIBIDO |
 | `operacao` | `consultoria` | ✅ PERMITIDO (dependência semântica válida) |
 | `map` | `agenda` / `drawing` / `consultoria` / `operacao` | ✅ PERMITIDO |
+| `planos/`    | qualquer módulo de domínio                          | ❌ PROIBIDO                              |
+| `marketing/` | `planos/`                                           | ✅ PERMITIDO — verificação de plano      |
+| `map/`       | `planos/`                                           | ✅ PERMITIDO — badge SideMenu            |
 
 ---
 
@@ -109,6 +123,8 @@
 - Alterar fronteiras de acoplamento desta tabela
 - Remover interface de domínio existente
 - Criar dependência circular entre módulos
+- Permitir que `planos/` importe módulos de domínio (proibido sem ADR)
+- Remover a dependência `marketing/ → planos/` sem ADR
 
 Qualquer alteração exige: atualização desta tabela + ADR em `02_ARQUITETURA_ATIVA/` + atualização da baseline.
 

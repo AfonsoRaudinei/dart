@@ -26,10 +26,12 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<!-- Localização em background (apenas se necessário para rastreamento de visita) -->
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>SoloForte precisa acessar sua localização para registrar atividades de campo mesmo em segundo plano.</string>
+	<string>O SoloForte usa localização em background para registrar automaticamente os pontos visitados durante a inspeção de campo, mesmo com o app minimizado.</string>
+	<!-- Localização em uso -->
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>SoloForte precisa acessar sua localização para exibir sua posição no mapa e habilitar funções de campo.</string>
+	<string>O SoloForte usa sua localização para posicionar ocorrências, talhões e rotas de visita no mapa da propriedade.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
@@ -70,12 +72,15 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<!-- Galeria (leitura) -->
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>O SoloForte precisa acessar suas fotos para registrar imagens das visitas técnicas.</string>
+	<string>O SoloForte acessa suas fotos para anexar registros de campo e laudos técnicos aos relatórios de visita.</string>
+	<!-- Câmera -->
 	<key>NSCameraUsageDescription</key>
-	<string>O SoloForte precisa da câmera para fotografar as condições do campo durante as visitas.</string>
+	<string>O SoloForte usa a câmera para registrar fotos de campo, documentar ocorrências e comparativos Antes/Depois das culturas.</string>
+	<!-- Galeria (escrita) -->
 	<key>NSPhotoLibraryAddUsageDescription</key>
-	<string>O SoloForte salva fotos das visitas técnicas na sua biblioteca.</string>
+	<string>O SoloForte salva fotos de campo diretamente na sua galeria para facilitar o compartilhamento de relatórios.</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 </dict>

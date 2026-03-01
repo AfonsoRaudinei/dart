@@ -19,6 +19,8 @@ class MapControlsOverlay extends ConsumerStatefulWidget {
   final VoidCallback onCenterUser;
   final VoidCallback onToggleDrawMode;
   final VoidCallback? onToggleOccurrenceMode;
+  final VoidCallback? onToggleMarketingMode;
+  final bool isMarketingMode;
   final Function(int, String) onTabSelected;
   final bool isDrawMode;
   final bool isOccurrenceMode;
@@ -36,6 +38,8 @@ class MapControlsOverlay extends ConsumerStatefulWidget {
     required this.onCenterUser,
     required this.onToggleDrawMode,
     this.onToggleOccurrenceMode,
+    this.onToggleMarketingMode,
+    this.isMarketingMode = false,
     required this.isDrawMode,
     this.isOccurrenceMode = false,
     required this.currentCenter,
@@ -209,6 +213,16 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
                   } else {
                     // Fallback antigo: abre a tab direto
                     widget.onTabSelected(2, 'Button_Occurrences');
+                  }
+                },
+              ),
+              const SizedBox(height: 12),
+              _MapActionButton(
+                icon: Icons.campaign_rounded,
+                isActive: widget.isMarketingMode,
+                onTap: () {
+                  if (widget.onToggleMarketingMode != null) {
+                    widget.onToggleMarketingMode!();
                   }
                 },
               ),

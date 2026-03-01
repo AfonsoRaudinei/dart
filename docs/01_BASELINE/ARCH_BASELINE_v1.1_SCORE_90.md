@@ -10,7 +10,9 @@
 | **Projeto** | SoloForte App |
 | **Tecnologia** | Flutter (Dart) |
 | **Arquitetura** | Modular, Clean Architecture, Map-First |
-| **Versão arquitetural** | v1.1 |
+| **Versão arquitetural** | v1.2 |
+| **Última atualização** | 28/02/2026 |
+| **Módulos registrados** | core, map, drawing, agenda, operacao, consultoria, settings, auth, marketing, planos |
 | **Score estrutural estimado** | 90–91/100 |
 | **Data de congelamento** | 22 de fevereiro de 2026 |
 | **Branch** | `release/v1.1` |
@@ -35,6 +37,7 @@
 | Erros `flutter analyze` | 0 |
 | Enforcement CI ativo | SIM |
 | Arquivos >900 linhas | 4 legados (WARN controlado) |
+| `planos/` | Implementado \| ADR-012 \| v1.2 \| Supabase online-only |
 
 ---
 
@@ -100,6 +103,15 @@ Conteúdo técnico e ocorrências. Não depende de `Drawing`.
 
 ### Settings / Auth
 Módulos satélite sem dependências cruzadas.
+
+### `planos/`
+**Natureza:** Módulo de monetização — folha na árvore de dependências  
+**Responsabilidade:** Planos pagos (Bronze/Prata/Ouro), pagamentos via Mercado Pago (PIX + Cartão), sistema de indicações com upgrade automático e controle de visibilidade de marketing cases no mapa  
+**Stack:** Supabase (fonte da verdade remota) + Edge Functions Deno/TS  
+**Acoplamentos de entrada:** `marketing/` (verifica plano), `map/` (badge SideMenu)  
+**Acoplamentos de saída:** nenhum — não depende de outros módulos  
+**ADR:** ADR-012-MODULO-PLANOS  
+**Status:** IMPLEMENTADO — v1.2  
 
 ---
 
@@ -190,6 +202,8 @@ Módulos satélite sem dependências cruzadas.
 | Decomposição de God Object concluída | `DrawingController`: 1.344 → 827 linhas + 5 serviços |
 | Zero regressão estrutural após enforcement | `arch_check.sh` → APROVADO em todos os commits |
 | Zero erros `flutter analyze` | Verificado nesta baseline |
+| `planos/` é folha — não depende de módulos de domínio | ✅ |
+| Edge Functions Mercado Pago deployadas em supabase/functions/ | ✅ |
 
 ---
 
@@ -218,6 +232,14 @@ O projeto SoloForte atinge nesta baseline:
 
 Este documento define o **ponto de referência estrutural oficial** do sistema.
 Qualquer evolução arquitetural deve referenciar esta baseline e justificar o delta.
+
+---
+
+## 12. Registro de ADRs Ativos
+
+| ADR | Nome | Descrição | Status |
+|---|---|---|---|
+| ADR-013 | RELATORIOS-DOMAIN | Submódulo relatorios/ dentro de consultoria/ | ATIVO |
 
 ---
 

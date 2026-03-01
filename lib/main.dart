@@ -7,6 +7,7 @@ import 'core/config/app_config.dart';
 import 'core/infra/preferences_service.dart';
 import 'core/router/app_router.dart';
 import 'core/services/sync_orchestrator.dart';
+import 'app/sync_registration.dart';
 import 'modules/map/presentation/providers/visit_completion_observer.dart';
 import 'modules/settings/data/settings_repository.dart';
 import 'modules/settings/presentation/providers/settings_providers.dart';
@@ -100,7 +101,8 @@ class _SoloForteAppState extends ConsumerState<SoloForteApp> {
     // keepAlive: true garante que o listener persiste durante toda a sessão.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        ref.read(syncOrchestratorProvider);
+        final orchestrator = ref.read(syncOrchestratorProvider);
+        registerSyncModules(orchestrator);
         ref.read(
           visitCompletionObserverProvider,
         ); // ADR-010: ativa listener agenda → relatorio

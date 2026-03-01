@@ -39,7 +39,7 @@ class AuthService extends _$AuthService {
         try {
           await NetworkPolicy.withTimeout(
             () => _client.storage
-                .from('users')
+                .from('avatars')
                 .upload(
                   filePath,
                   dto.photo!,
@@ -50,7 +50,7 @@ class AuthService extends _$AuthService {
                 ),
           );
 
-          photoUrl = _client.storage.from('users').getPublicUrl(filePath);
+          photoUrl = _client.storage.from('avatars').getPublicUrl(filePath);
         } catch (e) {
           debugPrint('⚠️ [AuthService] Erro no upload de avatar: $e');
           photoUrl = null;
@@ -60,7 +60,7 @@ class AuthService extends _$AuthService {
       // 3. Salvar na tabela public.users
       // Nota: Assume-se que a tabela public.users existe conforme solicitado
       await NetworkPolicy.withTimeout(
-        () => _client.from('users').upsert({
+        () => _client.from('perfis').upsert({
           'id': userId,
           'name': dto.name,
           'phone': dto.phone,

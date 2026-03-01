@@ -8,6 +8,7 @@ class MapCanvas extends StatelessWidget {
   final MapController mapController;
   final VoidCallback onMapReady;
   final Function(TapPosition, LatLng) onTap;
+  final Function(TapPosition, LatLng)? onLongPress;
   final Function(MapCamera, bool) onPositionChanged;
   final List<Widget> children;
   final InteractionOptions? interactionOptions;
@@ -17,6 +18,7 @@ class MapCanvas extends StatelessWidget {
     required this.mapController,
     required this.onMapReady,
     required this.onTap,
+    this.onLongPress,
     required this.onPositionChanged,
     required this.children,
     this.interactionOptions,
@@ -33,6 +35,7 @@ class MapCanvas extends StatelessWidget {
         minZoom: 4.0,
         maxZoom: 19.0,
         onTap: onTap,
+        onLongPress: onLongPress,
         onPositionChanged: onPositionChanged,
         interactionOptions:
             interactionOptions ??

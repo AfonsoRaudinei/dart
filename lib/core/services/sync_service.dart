@@ -2,9 +2,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:soloforte_app/core/services/connectivity_service.dart';
 import 'package:soloforte_app/core/utils/app_logger.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:soloforte_app/modules/consultoria/occurrences/data/occurrence_sync_service.dart';
-import 'package:soloforte_app/modules/visitas/data/repositories/visit_sync_service.dart';
+import 'package:soloforte_app/core/services/sync_orchestrator.dart';
 
 class SyncService {
   final Ref _ref;
@@ -45,8 +43,9 @@ class SyncService {
     _isSyncing = true;
 
     try {
-      await _syncVisits();
-      await _syncOccurrences();
+      await _ref
+          .read(syncOrchestratorProvider)
+          .triggerSync(SyncPriority.immediate);
 
       AppLogger.debug('Sync completo', tag: 'SyncService');
     } catch (e) {
@@ -57,30 +56,6 @@ class SyncService {
       );
     } finally {
       _isSyncing = false;
-    }
-  }
-
-  Future<void> _syncVisits() async {
-    try {
-      final supabase = Supabase.instance.client;
-      final visitSync = VisitSyncService(supabase);
-      await visitSync.syncVisits();
-    } catch (e) {
-      AppLogger.warning('Sync Visitas falhou', tag: 'SyncService', error: e);
-    }
-  }
-
-  Future<void> _syncOccurrences() async {
-    try {
-      final supabase = Supabase.instance.client;
-      final occurrenceSync = OccurrenceSyncService(supabase);
-      await occurrenceSync.syncOccurrences();
-    } catch (e) {
-      AppLogger.warning(
-        'Sync Ocorrências falhou',
-        tag: 'SyncService',
-        error: e,
-      );
     }
   }
 

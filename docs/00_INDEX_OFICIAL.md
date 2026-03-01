@@ -59,6 +59,8 @@ Toda decisão estrutural deve ser comparada contra este documento.
 | `02_ARQUITETURA_ATIVA/arquitetura-persistencia.md` | Camada de persistência |
 | `02_ARQUITETURA_ATIVA/arquitetura-ocorrencias.md` | Módulo de ocorrências |
 | `02_ARQUITETURA_ATIVA/ADR-008-RIVERPOD-NORMALIZATION.md` | ADR: normalização Riverpod |
+| `02_ARQUITETURA_ATIVA/ADR-011-MARKETING-CASES.md` | ADR: integração do módulo marketing ao mapa |
+| `02_ARQUITETURA_ATIVA/ADR-013-RELATORIOS-DOMAIN.md` | ADR: novo submódulo de relatórios na consultoria |
 
 ### 3.3 Enforcement (Regras Automatizadas)
 | Arquivo | Descrição |

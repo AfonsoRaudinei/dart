@@ -16,12 +16,18 @@ import '../../../modules/settings/presentation/screens/settings_screen.dart';
 import '../../../modules/consultoria/clients/presentation/screens/client_list_screen.dart';
 import '../../../modules/consultoria/clients/presentation/screens/client_form_screen.dart';
 import '../../../modules/consultoria/clients/presentation/screens/client_detail_screen.dart';
-import '../../../modules/consultoria/reports/presentation/screens/report_list_screen.dart';
+import '../../../modules/consultoria/relatorios/presentation/relatorios_page.dart';
 import '../../../modules/consultoria/reports/presentation/screens/report_form_screen.dart';
 import '../../../modules/consultoria/reports/presentation/screens/report_detail_screen.dart';
 import '../../../modules/consultoria/clients/presentation/screens/farm_detail_screen.dart';
 import '../../../modules/consultoria/clients/presentation/screens/field_detail_screen.dart';
 import '../../../modules/feedback/presentation/screens/feedback_screen.dart';
+// ADR-012 — Módulo planos/
+import '../../../modules/planos/presentation/screens/planos_screen.dart';
+import '../../../modules/planos/presentation/screens/pagamento_screen.dart';
+import '../../../modules/planos/presentation/screens/confirmacao_screen.dart';
+import '../../../modules/planos/presentation/screens/meu_plano_screen.dart';
+import '../../../modules/planos/presentation/screens/indicacoes_screen.dart';
 
 import 'app_routes.dart';
 
@@ -176,6 +182,38 @@ GoRouter router(Ref ref) {
           GoRoute(
             path: AppRoutes.feedback,
             builder: (_, __) => const FeedbackScreen(),
+          ),
+          // ════════════════════════════════════════════════════════════════
+          // MÓDULO PLANOS — ADR-012
+          // ════════════════════════════════════════════════════════════════
+          GoRoute(
+            path: AppRoutes.planos,
+            builder: (_, __) => const PlanosScreen(),
+          ),
+          GoRoute(
+            path: AppRoutes.meuPlano,
+            builder: (_, __) => const MeuPlanoScreen(),
+          ),
+          GoRoute(
+            path: AppRoutes.planosPagamento,
+            builder: (_, state) {
+              final extra = state.extra as Map<String, dynamic>?;
+              final plano = extra?['plano'] as String? ?? 'bronze';
+              return PagamentoScreen(plano: plano);
+            },
+          ),
+          GoRoute(
+            path: AppRoutes.planosConfirmacao,
+            builder: (_, state) {
+              final extra = state.extra as Map<String, dynamic>?;
+              final plano = extra?['plano'] as String? ?? 'bronze';
+              final checkoutUrl = extra?['checkoutUrl'] as String?;
+              return ConfirmacaoScreen(plano: plano, checkoutUrl: checkoutUrl);
+            },
+          ),
+          GoRoute(
+            path: AppRoutes.planosIndicacoes,
+            builder: (_, __) => const IndicacoesScreen(),
           ),
         ],
       ),

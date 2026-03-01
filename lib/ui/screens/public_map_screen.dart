@@ -15,10 +15,10 @@ import '../components/public_map/loading_overlay.dart';
 import '../../modules/public/providers/public_location_provider.dart';
 import '../../modules/public/providers/map_style_provider.dart';
 import '../../modules/public/providers/public_publications_provider.dart';
-import '../../modules/marketing/presentation/providers/marketing_pin_providers.dart';
+import '../../modules/marketing/presentation/providers/marketing_providers.dart';
 import '../../modules/marketing/domain/enums/plano_marketing.dart';
-import '../../modules/marketing/presentation/widgets/marketing_pin_marker.dart';
-import '../../modules/marketing/presentation/widgets/marketing_pin_sheet.dart';
+import '../../modules/marketing/presentation/widgets/marketing_case_marker.dart';
+import '../../modules/marketing/presentation/widgets/marketing_case_sheet.dart';
 import '../../core/config/map_config.dart';
 
 class PublicMapScreen extends ConsumerStatefulWidget {
@@ -98,23 +98,25 @@ class _PublicMapScreenState extends ConsumerState<PublicMapScreen> {
               ),
 
               // Pinos de Marketing (Apenas Ouro na tela deslogada)
-              if (ref.watch(marketingPinsProvider).hasValue)
+              if (ref.watch(marketingCasesProvider).hasValue)
                 MarkerLayer(
                   markers: ref
-                      .watch(marketingPinsProvider)
+                      .watch(marketingCasesProvider)
                       .value!
-                      .where((pin) => pin.plano == PlanoMarketing.ouro)
-                      .map((pin) {
+                      .where(
+                        (mCase) => mCase.visibilidade == PlanoMarketing.ouro,
+                      )
+                      .map((mCase) {
                         return Marker(
-                          point: LatLng(pin.lat, pin.lng),
+                          point: LatLng(mCase.lat, mCase.lng),
                           width: 100,
                           height: 100,
-                          alignment: Alignment.topCenter,
-                          child: MarketingPinMarker(
-                            pin: pin,
+                          alignment: Alignment.center,
+                          child: MarketingCaseMarker(
+                            marketingCase: mCase,
                             onTap: () {
                               HapticFeedback.lightImpact();
-                              MarketingPinSheet.show(context, pin);
+                              MarketingCaseSheet.show(context, mCase);
                             },
                           ),
                         );

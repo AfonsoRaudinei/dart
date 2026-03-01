@@ -11,9 +11,9 @@ import '../../core/state/map_ui_providers.dart';
 import '../../core/utils/app_logger.dart';
 import '../../core/utils/map_logger.dart';
 import '../../core/utils/debouncer.dart';
-import '../../modules/marketing/presentation/providers/marketing_pin_providers.dart';
-import '../../modules/marketing/presentation/widgets/marketing_pin_marker.dart';
-import '../../modules/marketing/presentation/widgets/marketing_pin_sheet.dart';
+import '../../modules/marketing/presentation/providers/marketing_providers.dart';
+import '../../modules/marketing/presentation/widgets/marketing_case_marker.dart';
+import '../../modules/marketing/presentation/widgets/marketing_case_sheet.dart';
 import '../../modules/consultoria/clients/presentation/providers/field_providers.dart';
 import '../../modules/consultoria/services/talhao_map_adapter.dart';
 import '../../modules/drawing/presentation/widgets/drawing_layers.dart';
@@ -25,6 +25,7 @@ import '../../modules/dashboard/domain/location_state.dart';
 import '../../modules/dashboard/services/location_service.dart';
 import '../../modules/visitas/presentation/controllers/geofence_controller.dart';
 import '../../modules/consultoria/occurrences/domain/occurrence.dart' as occ;
+import '../../modules/marketing/presentation/screens/novo_case_sheet.dart';
 import '../components/map/map_bottom_sheet.dart';
 import '../components/map/widgets/map_canvas.dart';
 import '../components/map/widgets/map_layers.dart';
@@ -33,7 +34,10 @@ import '../components/map/widgets/map_controls_overlay.dart';
 import '../components/map/widgets/isolated_marker_layers.dart';
 import '../../modules/drawing/presentation/widgets/drawing_edit_layer.dart';
 import '../../core/domain/map_models.dart';
-import '../components/map/map_sheet_state.dart'; // 🛡 REFATORAÇÃO: Modelo compartilhado
+import '../components/map/map_sheet_state.dart';
+// ADR-012 — planos/
+import '../../modules/planos/presentation/providers/plano_providers.dart';
+import 'widgets/plano_block_sheet.dart';
 
 class PrivateMapScreen extends ConsumerStatefulWidget {
   const PrivateMapScreen({super.key});
@@ -43,7 +47,7 @@ class PrivateMapScreen extends ConsumerStatefulWidget {
 }
 
 // Enum para rastrear o modo armado
-enum ArmedMode { none, occurrences }
+enum ArmedMode { none, occurrences, marketing }
 
 class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
   final MapController _mapController = MapController();
@@ -54,7 +58,7 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
   bool _isMapReady = false; // 🔒 Guard: MapController só pode ser usado se true
   ArmedMode _armedMode = ArmedMode.none; // Estado do modo armado
 
-  LatLng? _pendingOccurrenceLocation; // Se != null, abre sheet em modo Create
+  LatLng? _pendingOccurrenceLocation; // Se != null, abre sheet de ocorrência
 
   @override
   void initState() {
@@ -292,6 +296,140 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
     });
   }
 
+  void _armMarketingMode() {
+    setState(() => _armedMode = ArmedMode.marketing);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Toque no mapa para localizar o case de marketing'),
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
+
+  void _handleMapLongPress(TapPosition tapPos, LatLng latLng) {
+    if (!mounted) return;
+
+    // ADR-012: Verificar plano antes de abrir o NovoCaseSheet
+    final plano = ref.read(planoAtivoProvider).valueOrNull;
+    final cases = ref.read(marketingCasesProvider).valueOrNull ?? [];
+    final casesAtivos = cases
+        .where((c) => c.ativo && c.deletadoEm == null)
+        .length;
+
+    if (plano == null || plano.expirado) {
+      // Sem plano ativo → bottom sheet de bloqueio
+      PlanoBlockSheet.show(context, motivo: 'sem_plano');
+      return;
+    }
+
+    if (casesAtivos >= plano.limiteCases) {
+      // Limite atingido
+      PlanoBlockSheet.show(
+        context,
+        motivo: 'limite_atingido',
+        planoLabel: plano.plano.label,
+      );
+      return;
+    }
+
+    // Abre NovoCaseSheet como Modal
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => Container(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.85,
+        ),
+        decoration: BoxDecoration(
+          color: Theme.of(context).scaffoldBackgroundColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Center(
+              child: Container(
+                margin: const EdgeInsets.symmetric(vertical: 8),
+                width: 36,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).dividerColor.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            Flexible(
+              child: NovoCaseSheet(
+                lat: latLng.latitude,
+                lng: latLng.longitude,
+                onClose: () => Navigator.of(context).pop(),
+                onPublicar: (newCase) async {
+                  Navigator.of(context).pop(); // Fechar o sheet
+
+                  final saved = await ref
+                      .read(marketingCasesProvider.notifier)
+                      .publishCase(newCase);
+
+                  if (!mounted) return;
+                  if (saved != null) {
+                    HapticFeedback.heavyImpact();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: const Row(
+                          children: [
+                            Icon(
+                              Icons.check_circle,
+                              color: Colors.white,
+                              size: 18,
+                            ),
+                            SizedBox(width: 8),
+                            Text('Case publicado com sucesso! 📈'),
+                          ],
+                        ),
+                        backgroundColor: const Color(0xFF34C759),
+                        behavior: SnackBarBehavior.floating,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    );
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: const Row(
+                          children: [
+                            Icon(
+                              Icons.cloud_off,
+                              color: Colors.white,
+                              size: 18,
+                            ),
+                            SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Sem conexão — case salvo localmente e será sincronizado.',
+                              ),
+                            ),
+                          ],
+                        ),
+                        backgroundColor: Colors.orange.shade700,
+                        behavior: SnackBarBehavior.floating,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        duration: const Duration(seconds: 4),
+                      ),
+                    );
+                  }
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _handleOccurrencePinTap(occ.Occurrence occurrence) {
     HapticFeedback.lightImpact();
     // Implement what happens when an occurrence pin is tapped
@@ -422,7 +560,15 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
               }
             },
             onTap: (tapPos, point) {
-              // 🎯 Prioridade 1: Verificar modo armado de ocorrências
+              // 🎯 Prioridade 1a: Modo armado marketing
+              if (_armedMode == ArmedMode.marketing) {
+                setState(() => _armedMode = ArmedMode.none);
+                ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                _handleMapLongPress(tapPos, point);
+                return;
+              }
+
+              // 🎯 Prioridade 1b: Verificar modo armado de ocorrências
               if (_armedMode == ArmedMode.occurrences) {
                 final lat = point.latitude;
                 final lng = point.longitude;
@@ -496,6 +642,7 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
                 }
               }
             },
+            onLongPress: _handleMapLongPress,
             onPositionChanged: (pos, hasGesture) {
               if (hasGesture) {
                 _mapEventDebouncer.run(() {
@@ -549,23 +696,35 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
               ),
 
               // Markers de Marketing
-              if (ref.watch(marketingPinsProvider).hasValue)
+              if (ref.watch(marketingCasesProvider).hasValue)
                 MarkerLayer(
-                  markers: ref.watch(marketingPinsProvider).value!.map((pin) {
-                    return Marker(
-                      point: LatLng(pin.lat, pin.lng),
-                      width: 100, // Espaço para não clipar o badge
-                      height: 100,
-                      alignment: Alignment.topCenter,
-                      child: MarketingPinMarker(
-                        pin: pin,
-                        onTap: () {
-                          HapticFeedback.lightImpact();
-                          MarketingPinSheet.show(context, pin);
-                        },
-                      ),
-                    );
-                  }).toList(),
+                  markers:
+                      (ref
+                              .watch(marketingCasesProvider)
+                              .value!
+                              .where((c) => c.ativo && c.deletadoEm == null)
+                              .toList()
+                            ..sort(
+                              (a, b) => b.visibilidade.index.compareTo(
+                                a.visibilidade.index,
+                              ),
+                            ))
+                          .map((mCase) {
+                            return Marker(
+                              point: LatLng(mCase.lat, mCase.lng),
+                              width: 100,
+                              height: 100,
+                              alignment: Alignment.center,
+                              child: MarketingCaseMarker(
+                                marketingCase: mCase,
+                                onTap: () {
+                                  HapticFeedback.lightImpact();
+                                  MarketingCaseSheet.show(context, mCase);
+                                },
+                              ),
+                            );
+                          })
+                          .toList(),
                 ),
 
               // 🎯 ÚNICA LAYER QUE REBUILDA: Localização GPS
@@ -587,6 +746,15 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
                 _armOccurrenceMode();
               }
             },
+            onToggleMarketingMode: () {
+              if (_armedMode == ArmedMode.marketing) {
+                setState(() => _armedMode = ArmedMode.none);
+                ScaffoldMessenger.of(context).hideCurrentSnackBar();
+              } else {
+                _armMarketingMode();
+              }
+            },
+            isMarketingMode: _armedMode == ArmedMode.marketing,
             isDrawMode: sheetState?.type == MapSheetType.draw,
             isOccurrenceMode: _armedMode == ArmedMode.occurrences,
             drawingState: drawingState,

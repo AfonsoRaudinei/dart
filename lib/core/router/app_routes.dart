@@ -28,6 +28,10 @@ class AppRoutes {
   static const String reports = '/consultoria/relatorios';
   static const String clients = '/consultoria/clientes';
 
+  // Módulo planos/ — ADR-012
+  static const String planos = '/planos';
+  static const String meuPlano = '/planos/meu-plano';
+
   // Privadas — L2+ (Níveis Profundos que usam pop)
   static const String reportNew = '/consultoria/relatorios/novo';
   static String reportDetail(String id) => '/consultoria/relatorios/$id';
@@ -40,6 +44,11 @@ class AppRoutes {
 
   static String fieldDetail(String clientId, String farmId, String fieldId) =>
       '/consultoria/clientes/$clientId/fazendas/$farmId/talhoes/$fieldId';
+
+  // Planos L2+ — ADR-012
+  static const String planosPagamento = '/planos/pagamento';
+  static const String planosConfirmacao = '/planos/confirmacao';
+  static const String planosIndicacoes = '/planos/indicacoes';
 
   // ════════════════════════════════════════════════════════════════════
   // CLASSIFICAÇÃO DETERMINÍSTICA DE NÍVEL DE ROTA
@@ -62,6 +71,8 @@ class AppRoutes {
     feedback,
     reports,
     clients,
+    planos, // ADR-012
+    meuPlano, // ADR-012
   };
 
   /// Classifica o nível de uma rota de forma DETERMINÍSTICA.

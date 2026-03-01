@@ -21,6 +21,11 @@ import 'package:go_router/go_router.dart';
 
 import 'package:soloforte_app/core/router/app_routes.dart';
 import 'package:soloforte_app/core/state/side_menu_state.dart';
+// ADR-012 — planos/
+import 'package:soloforte_app/modules/planos/presentation/providers/plano_providers.dart';
+import 'package:soloforte_app/modules/planos/domain/entities/user_plan.dart';
+import 'package:soloforte_app/modules/planos/domain/enums/plano_tipo.dart';
+// ignore_for_file: unused_import
 
 class SideMenuOverlay extends ConsumerWidget {
   const SideMenuOverlay({super.key});
@@ -129,13 +134,24 @@ class SideMenuOverlay extends ConsumerWidget {
                                 children: [
                                   Text(
                                     'Consultor',
-                                    style: Theme.of(context).textTheme.labelSmall!.copyWith(color: PremiumTokens.textSecondaryLight).copyWith(
-                                      color: PremiumTokens.textSecondaryLight,
-                                    ),
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .labelSmall!
+                                        .copyWith(
+                                          color:
+                                              PremiumTokens.textSecondaryLight,
+                                        )
+                                        .copyWith(
+                                          color:
+                                              PremiumTokens.textSecondaryLight,
+                                        ),
                                   ),
                                   Text(
                                     'João Silva',
-                                    style: Theme.of(context).textTheme.titleMedium!.copyWith(fontWeight: FontWeight.w600)
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleMedium!
+                                        .copyWith(fontWeight: FontWeight.w600)
                                         .copyWith(fontSize: 18),
                                   ),
                                 ],
@@ -195,6 +211,43 @@ class SideMenuOverlay extends ConsumerWidget {
                               AppRoutes.feedback,
                             ),
                           ),
+                          // ADR-012 — Módulo planos/
+                          const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 8),
+                            child: Divider(color: PremiumTokens.hairlineLight),
+                          ),
+                          _MenuPlanoBadgeItem(
+                            onTap: () => _closeAndNavigate(
+                              context,
+                              ref,
+                              AppRoutes.meuPlano,
+                            ),
+                          ),
+                          Consumer(
+                            builder: (context, ref, _) {
+                              final planoAsync = ref.watch(planoAtivoProvider);
+                              return planoAsync.when(
+                                data: (plano) {
+                                  if (plano == null)
+                                    return const SizedBox.shrink();
+                                  if (plano.plano == PlanoTipo.ouro)
+                                    return const SizedBox.shrink();
+                                  return _MenuItem(
+                                    icon: Icons.group_add_outlined,
+                                    label: 'Indicações',
+                                    subtitle: buildIndicacaoSubtitle(plano),
+                                    onTap: () => _closeAndNavigate(
+                                      context,
+                                      ref,
+                                      AppRoutes.planosIndicacoes,
+                                    ),
+                                  );
+                                },
+                                loading: () => const SizedBox.shrink(),
+                                error: (_, __) => const SizedBox.shrink(),
+                              );
+                            },
+                          ),
                           const Padding(
                             padding: EdgeInsets.symmetric(vertical: 16),
                             child: Divider(color: PremiumTokens.hairlineLight),
@@ -229,9 +282,9 @@ class SideMenuOverlay extends ConsumerWidget {
                       child: Text(
                         'SoloForte v1.0.0',
                         textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.labelSmall!.copyWith(color: PremiumTokens.textSecondaryLight).copyWith(
-                          color: PremiumTokens.textTertiaryLight,
-                        ),
+                        style: Theme.of(context).textTheme.labelSmall!
+                            .copyWith(color: PremiumTokens.textSecondaryLight)
+                            .copyWith(color: PremiumTokens.textTertiaryLight),
                       ),
                     ),
                   ],
@@ -325,10 +378,12 @@ class _MenuItem extends StatelessWidget {
                         const SizedBox(height: 2),
                         Text(
                           subtitle!,
-                          style: Theme.of(context).textTheme.labelSmall!.copyWith(color: PremiumTokens.textSecondaryLight).copyWith(
-                            color: PremiumTokens.textSecondaryLight,
-                            fontSize: 12,
-                          ),
+                          style: Theme.of(context).textTheme.labelSmall!
+                              .copyWith(color: PremiumTokens.textSecondaryLight)
+                              .copyWith(
+                                color: PremiumTokens.textSecondaryLight,
+                                fontSize: 12,
+                              ),
                         ),
                       ],
                     ],
@@ -344,6 +399,53 @@ class _MenuItem extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// ADR-012 — Funções e widgets auxiliares para planos/
+// ─────────────────────────────────────────────────────────────
+
+/// Subtítulo do item 'Indicações' no menu: '3/5 para Prata'
+String buildIndicacaoSubtitle(UserPlan plano) {
+  switch (plano.plano) {
+    case PlanoTipo.bronze:
+      return '? /5 para Prata'; // indicacoesValidadas vem do ReferralCode
+    case PlanoTipo.prata:
+      return '? /10 para Ouro';
+    case PlanoTipo.ouro:
+      return '';
+  }
+}
+
+/// Item 'Meu Plano' no SideMenu — badge dinâmico via planoAtivoProvider.
+class _MenuPlanoBadgeItem extends ConsumerWidget {
+  final VoidCallback onTap;
+
+  const _MenuPlanoBadgeItem({required this.onTap});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final planoAsync = ref.watch(planoAtivoProvider);
+
+    final subtitle = planoAsync.when(
+      data: (plano) {
+        if (plano == null) return 'Sem plano · Publicar cases';
+        if (plano.expirado) return 'Plano expirado · Renovar';
+        if (plano.expiraEmBreve)
+          return '⚠️ Expira em ${plano.diasRestantes} dia(s)';
+        return '${plano.plano.label} · ${plano.diasRestantes} dias restantes';
+      },
+      loading: () => 'Carregando...',
+      error: (_, __) => 'Erro ao carregar plano',
+    );
+
+    return _MenuItem(
+      icon: Icons.workspace_premium_rounded,
+      label: 'Meu Plano',
+      subtitle: subtitle,
+      onTap: onTap,
     );
   }
 }
