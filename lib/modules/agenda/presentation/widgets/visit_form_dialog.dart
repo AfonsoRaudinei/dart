@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/entities/event.dart';
+import '../../domain/entities/visit.dart';
 import '../../domain/enums/event_type.dart';
 import '../providers/agenda_provider.dart';
+import 'client_selector_dropdown.dart';
 import 'distance_warning_dialog.dart';
 
 /// Dialog para criar nova visita com horário e prioridade
@@ -28,6 +30,7 @@ class _VisitFormDialogState extends ConsumerState<VisitFormDialog> {
 
   bool _isLoading = false;
   String? _errorMessage;
+  String? _selectedClienteId;
 
   @override
   void dispose() {
@@ -83,6 +86,13 @@ class _VisitFormDialogState extends ConsumerState<VisitFormDialog> {
 
   Future<void> _submitForm() async {
     if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
+    if (_selectedClienteId == null) {
+      setState(() {
+        _errorMessage = 'Selecione um cliente para continuar';
+      });
       return;
     }
 
@@ -151,7 +161,7 @@ class _VisitFormDialogState extends ConsumerState<VisitFormDialog> {
           .read(agendaProvider.notifier)
           .createEvent(
             tipo: _tipo,
-            clienteId: 'temp-client-id', // TODO: selecionar cliente
+            clienteId: _selectedClienteId!,
             titulo: _tituloController.text,
             dataInicioPlanejada: dataInicio,
             dataFimPlanejada: dataFim,
@@ -196,6 +206,13 @@ class _VisitFormDialogState extends ConsumerState<VisitFormDialog> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              // Cliente
+              ClientSelectorDropdown(
+                selectedClientId: _selectedClienteId,
+                onChanged: (id) => setState(() => _selectedClienteId = id),
+              ),
+              const SizedBox(height: 16),
+
               // Título
               TextFormField(
                 controller: _tituloController,

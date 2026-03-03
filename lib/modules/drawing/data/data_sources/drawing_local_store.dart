@@ -81,6 +81,8 @@ class DrawingLocalStore {
       'area_ha': f.properties.areaHa,
       'autor_id': f.properties.autorId,
       'autor_tipo': f.properties.autorTipo.toJson(),
+      'cliente_id': f.properties.clienteId,
+      'fazenda_id': f.properties.fazendaId,
       'sync_status': f.properties.syncStatus.toJson(),
       'versao': f.properties.versao,
       'subtipo': f.properties.subtipo,
@@ -114,8 +116,8 @@ class DrawingLocalStore {
       subtipo: row['subtipo'],
       raioMetros: row['raio_metros'],
       versaoAnteriorId: row['versao_anterior_id'],
-      // Missing fields in DB but present in model:
-      // operacaoId, fazendaId -> Add columns if necessary or assume null
+      clienteId: row['cliente_id'] as String?,
+      fazendaId: row['fazenda_id'] as String?,
     );
 
     return DrawingFeature(

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/enums/event_type.dart';
 import '../providers/agenda_provider.dart';
+import 'client_selector_dropdown.dart';
 
 /// Dialog para criação rápida de evento
 class CreateEventDialog extends ConsumerStatefulWidget {
@@ -23,6 +24,7 @@ class _CreateEventDialogState extends ConsumerState<CreateEventDialog> {
   DateTime? _selectedDate;
   TimeOfDay _startTime = TimeOfDay.now();
   TimeOfDay _endTime = TimeOfDay(hour: TimeOfDay.now().hour + 1, minute: 0);
+  String? _selectedClientId;
 
   @override
   void initState() {
@@ -90,6 +92,13 @@ class _CreateEventDialogState extends ConsumerState<CreateEventDialog> {
                     setState(() => _selectedType = value);
                   }
                 },
+              ),
+              const SizedBox(height: 16),
+
+              // Cliente
+              ClientSelectorDropdown(
+                selectedClientId: _selectedClientId,
+                onChanged: (id) => setState(() => _selectedClientId = id),
               ),
               const SizedBox(height: 16),
 
@@ -170,6 +179,12 @@ class _CreateEventDialogState extends ConsumerState<CreateEventDialog> {
       ).showSnackBar(const SnackBar(content: Text('Selecione uma data')));
       return;
     }
+    if (_selectedClientId == null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Selecione um cliente')));
+      return;
+    }
 
     try {
       final startDateTime = DateTime(
@@ -192,7 +207,7 @@ class _CreateEventDialogState extends ConsumerState<CreateEventDialog> {
           .read(agendaProvider.notifier)
           .createEvent(
             tipo: _selectedType,
-            clienteId: 'cliente-demo', // TODO: selecionar cliente real
+            clienteId: _selectedClientId!,
             titulo: _tituloController.text.trim(),
             dataInicioPlanejada: startDateTime,
             dataFimPlanejada: endDateTime,
