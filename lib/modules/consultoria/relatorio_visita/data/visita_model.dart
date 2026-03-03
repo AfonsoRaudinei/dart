@@ -18,6 +18,10 @@ class VisitaModel {
   Map<String, List<String>> fotos; // categoryId -> [local_paths]
   final DateTime createdAt;
 
+  /// FK para o cadastro real de clientes (WS-6 / ADR-017).
+  /// Nullable para retrocompatibilidade com registros legados.
+  final String? clienteId;
+
   VisitaModel({
     String? id,
     this.produtor = '',
@@ -35,6 +39,7 @@ class VisitaModel {
     Map<String, Map<String, dynamic>>? detalhes,
     Map<String, List<String>>? fotos,
     DateTime? createdAt,
+    this.clienteId,
   }) : id = id ?? const Uuid().v4(),
        detalhes = detalhes ?? {},
        fotos = fotos ?? {},
@@ -65,6 +70,7 @@ class VisitaModel {
       'detalhes': detalhes,
       'fotos': fotos,
       'createdAt': createdAt.toIso8601String(),
+      'clienteId': clienteId,
     };
   }
 
@@ -96,6 +102,7 @@ class VisitaModel {
           ) ??
           {},
       createdAt: DateTime.parse(json['createdAt']),
+      clienteId: json['clienteId'] as String?,
     );
   }
 
@@ -111,6 +118,7 @@ class VisitaModel {
     String? observacoes,
     String? tecnico,
     Map<String, Map<String, dynamic>>? detalhes,
+    String? clienteId,
   }) {
     return VisitaModel(
       id: id,
@@ -128,6 +136,7 @@ class VisitaModel {
       observacoes: observacoes ?? this.observacoes,
       tecnico: tecnico ?? this.tecnico,
       detalhes: detalhes ?? this.detalhes,
+      clienteId: clienteId ?? this.clienteId,
     );
   }
 }

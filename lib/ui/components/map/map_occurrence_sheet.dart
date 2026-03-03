@@ -461,6 +461,11 @@ class MapOccurrenceSheet extends ConsumerStatefulWidget {
   final VoidCallback? onCancel;
   final ScrollController? scrollController;
 
+  /// Opcional: ID do cliente vindo do Hub (WS-6 / ADR-016).
+  /// Quando presente, `produtor` é auto-preenchido com [clienteNome].
+  final String? clienteId;
+  final String? clienteNome;
+
   const MapOccurrenceSheet({
     super.key,
     required this.latitude,
@@ -468,6 +473,8 @@ class MapOccurrenceSheet extends ConsumerStatefulWidget {
     required this.onConfirm,
     this.onCancel,
     this.scrollController,
+    this.clienteId,
+    this.clienteNome,
   });
 
   @override
@@ -476,7 +483,6 @@ class MapOccurrenceSheet extends ConsumerStatefulWidget {
 
 class _MapOccurrenceSheetState extends ConsumerState<MapOccurrenceSheet> {
   late VisitaModel _draft;
-  late DraftStorageService _draftService;
   final _dateFormat = DateFormat('dd/MM/yyyy');
   final _areaController = TextEditingController();
   final _cultivarController = TextEditingController();
@@ -493,9 +499,11 @@ class _MapOccurrenceSheetState extends ConsumerState<MapOccurrenceSheet> {
       dataVisita: DateTime.now(),
       latitude: widget.latitude,
       longitude: widget.longitude,
-      produtor: '',
+      // Se vier do Hub do Cliente, auto-preenche produtor (WS-6)
+      produtor: widget.clienteNome ?? '',
       propriedade: '',
       tecnico: userName,
+      clienteId: widget.clienteId,
     );
 
     _loadDraft();
@@ -511,7 +519,8 @@ class _MapOccurrenceSheetState extends ConsumerState<MapOccurrenceSheet> {
   }
 
   Future<void> _loadDraft() async {
-    final savedDraft = await _draftService.loadDraft();
+    final draftService = ref.read(draftStorageServiceProvider);
+    final savedDraft = await draftService.loadDraft();
     if (savedDraft != null) {
       // Check if coordinates match (approximate check for "same location")
       const double tolerance = 0.0001; // ~11 meters
@@ -544,7 +553,8 @@ class _MapOccurrenceSheetState extends ConsumerState<MapOccurrenceSheet> {
   void _scheduleAutoSave() {
     if (_autoSaveTimer?.isActive ?? false) _autoSaveTimer!.cancel();
     _autoSaveTimer = Timer(const Duration(milliseconds: 400), () {
-      _draftService.saveDraft(_draft);
+      final draftService = ref.read(draftStorageServiceProvider);
+      draftService.saveDraft(_draft);
     });
   }
 
@@ -565,11 +575,16 @@ class _MapOccurrenceSheetState extends ConsumerState<MapOccurrenceSheet> {
   }
 
   void _submit() async {
+    // Garantir que clienteId vindo do widget está no draft
+    if (widget.clienteId != null && _draft.clienteId == null) {
+      _draft = _draft.copyWith(clienteId: widget.clienteId);
+    }
     // 1. Save to SQLite
     await VisitaDatabaseService.instance.save(_draft);
 
     // 2. Clear Local Draft
-    await _draftService.clearDraft();
+    final draftService = ref.read(draftStorageServiceProvider);
+    await draftService.clearDraft();
     _autoSaveTimer?.cancel();
 
     AppLogger.debug(
@@ -606,7 +621,8 @@ class _MapOccurrenceSheetState extends ConsumerState<MapOccurrenceSheet> {
           TextButton(
             onPressed: () {
               Navigator.pop(ctx);
-              _draftService.clearDraft();
+              final draftService = ref.read(draftStorageServiceProvider);
+              draftService.clearDraft();
               widget.onCancel?.call();
             },
             child: const Text(
