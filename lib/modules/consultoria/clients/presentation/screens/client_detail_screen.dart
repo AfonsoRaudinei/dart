@@ -343,9 +343,12 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen> {
                   child: Text(
                     client.name,
                     textAlign: TextAlign.center,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
+                      fontSize: 17,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: -0.4,
                     ),
                   ),
                 ),
@@ -589,7 +592,10 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen> {
                 const Text(
                   'Editar Cliente',
                   style: TextStyle(
-                      fontSize: 18, fontWeight: FontWeight.bold),
+                    fontSize: 17,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: -0.4,
+                  ),
                 ),
                 const Spacer(),
                 TextButton(
@@ -817,11 +823,15 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen> {
 
   Widget _sectionTitle(String t) => Padding(
         padding: const EdgeInsets.only(bottom: 12),
-        child: Text(t,
-            style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87)),
+        child: Text(
+          t,
+          style: const TextStyle(
+            fontSize: 17,
+            fontWeight: FontWeight.w600,
+            letterSpacing: -0.4,
+            color: Colors.black87,
+          ),
+        ),
       );
 
   Widget _infoRow(String label, String value) => Padding(
@@ -919,7 +929,7 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen> {
 
 // ── Sub-widgets ────────────────────────────────────────────────────
 
-class _ActionButton extends StatelessWidget {
+class _ActionButton extends StatefulWidget {
   final IconData icon;
   final String label;
   final VoidCallback onTap;
@@ -931,29 +941,63 @@ class _ActionButton extends StatelessWidget {
   });
 
   @override
+  State<_ActionButton> createState() => _ActionButtonState();
+}
+
+class _ActionButtonState extends State<_ActionButton> {
+  bool _pressed = false;
+
+  @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.black,
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.2),
-                  blurRadius: 8,
-                  offset: const Offset(0, 4),
+      onTap: () {
+        HapticFeedback.lightImpact();
+        widget.onTap();
+      },
+      onTapDown: (_) => setState(() => _pressed = true),
+      onTapUp: (_) => setState(() => _pressed = false),
+      onTapCancel: () => setState(() => _pressed = false),
+      child: AnimatedScale(
+        scale: _pressed ? 0.97 : 1.0,
+        duration: const Duration(milliseconds: 80),
+        curve: Curves.easeOut,
+        child: AnimatedOpacity(
+          opacity: _pressed ? 0.6 : 1.0,
+          duration: const Duration(milliseconds: 80),
+          child: Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.all(Radius.circular(16)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Color.fromRGBO(0, 0, 0, 0.08),
+                      offset: Offset(0, 10),
+                      blurRadius: 32,
+                    ),
+                  ],
                 ),
-              ],
-            ),
-            child: Icon(icon, color: Colors.white, size: 24),
+                child: Icon(
+                  widget.icon,
+                  color: PremiumTokens.brandGreen,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                widget.label,
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                  letterSpacing: 0.07,
+                  color: Colors.black87,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 8),
-          Text(label, style: const TextStyle(fontWeight: FontWeight.w500)),
-        ],
+        ),
       ),
     );
   }
@@ -972,21 +1016,41 @@ class _FarmItem extends StatelessWidget {
       onTap: onTap,
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          border: Border.all(color: Colors.grey[200]!),
-          borderRadius: BorderRadius.circular(12),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: const BoxDecoration(
           color: Colors.white,
+          borderRadius: BorderRadius.all(Radius.circular(16)),
+          boxShadow: [
+            BoxShadow(
+              color: Color.fromRGBO(0, 0, 0, 0.08),
+              offset: Offset(0, 10),
+              blurRadius: 32,
+            ),
+          ],
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(name, style: const TextStyle(fontWeight: FontWeight.w600)),
+            Text(
+              name,
+              style: const TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 15,
+                letterSpacing: -0.3,
+              ),
+            ),
             Row(
               children: [
-                Text(area, style: TextStyle(color: Colors.grey[600])),
-                const SizedBox(width: 8),
-                const Icon(Icons.chevron_right, color: Colors.grey),
+                Text(
+                  area,
+                  style: const TextStyle(
+                    color: Color(0xFF8E8E93),
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                const Icon(Icons.chevron_right,
+                    color: Color(0xFFC7C7CC), size: 20),
               ],
             ),
           ],
@@ -1049,12 +1113,37 @@ class _ClientStatsPanel extends ConsumerWidget {
           // Próximos eventos
           if (stats.proximosEventos.isNotEmpty) ...[
             _sectionTitle(context, 'Próximos Eventos'),
-            const SizedBox(height: 8),
-            ...stats.proximosEventos.map(
-              (e) => _EventoItem(
-                titulo: e['titulo'] as String? ?? 'Evento',
-                data: _formatDate(e['data_inicio_planejada'] as String?),
-                tipo: e['tipo'] as String? ?? '',
+            const SizedBox(height: 10),
+            Container(
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.all(Radius.circular(12)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Color.fromRGBO(0, 0, 0, 0.08),
+                    offset: Offset(0, 10),
+                    blurRadius: 32,
+                  ),
+                ],
+              ),
+              child: Column(
+                children: [
+                  for (var i = 0; i < stats.proximosEventos.length; i++) ...[
+                    _EventoItem(
+                      titulo: stats.proximosEventos[i]['titulo'] as String? ?? 'Evento',
+                      data: _formatDate(stats.proximosEventos[i]['data_inicio_planejada'] as String?),
+                      tipo: stats.proximosEventos[i]['tipo'] as String? ?? '',
+                    ),
+                    if (i < stats.proximosEventos.length - 1)
+                      const Divider(
+                        height: 1,
+                        thickness: 0.5,
+                        color: Color(0xFFE5E5EA),
+                        indent: 44,
+                        endIndent: 0,
+                      ),
+                  ],
+                ],
               ),
             ),
             const SizedBox(height: 16),
@@ -1063,11 +1152,36 @@ class _ClientStatsPanel extends ConsumerWidget {
           // Últimas visitas
           if (stats.ultimasVisitas.isNotEmpty) ...[
             _sectionTitle(context, 'Últimas Visitas'),
-            const SizedBox(height: 8),
-            ...stats.ultimasVisitas.map(
-              (v) => _VisitaItem(
-                data: _formatDate(v['start_at_real'] as String?),
-                duracao: v['duracao_min'] as int?,
+            const SizedBox(height: 10),
+            Container(
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.all(Radius.circular(12)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Color.fromRGBO(0, 0, 0, 0.08),
+                    offset: Offset(0, 10),
+                    blurRadius: 32,
+                  ),
+                ],
+              ),
+              child: Column(
+                children: [
+                  for (var i = 0; i < stats.ultimasVisitas.length; i++) ...[
+                    _VisitaItem(
+                      data: _formatDate(stats.ultimasVisitas[i]['start_at_real'] as String?),
+                      duracao: stats.ultimasVisitas[i]['duracao_min'] as int?,
+                    ),
+                    if (i < stats.ultimasVisitas.length - 1)
+                      const Divider(
+                        height: 1,
+                        thickness: 0.5,
+                        color: Color(0xFFE5E5EA),
+                        indent: 44,
+                        endIndent: 0,
+                      ),
+                  ],
+                ],
               ),
             ),
             const SizedBox(height: 16),
@@ -1077,10 +1191,17 @@ class _ClientStatsPanel extends ConsumerWidget {
     );
   }
 
-  Widget _sectionTitle(BuildContext context, String t) => Text(
-        t,
-        style: const TextStyle(
-            fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87),
+  Widget _sectionTitle(BuildContext context, String t) => Padding(
+        padding: const EdgeInsets.only(bottom: 4),
+        child: Text(
+          t,
+          style: const TextStyle(
+            fontSize: 17,
+            fontWeight: FontWeight.w600,
+            letterSpacing: -0.4,
+            color: Colors.black87,
+          ),
+        ),
       );
 
   String _formatDate(String? iso) {
@@ -1108,10 +1229,17 @@ class _StatTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: PremiumTokens.brandGreen.withValues(alpha: 0.07),
-          borderRadius: BorderRadius.circular(12),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.all(Radius.circular(16)),
+          boxShadow: [
+            BoxShadow(
+              color: Color.fromRGBO(0, 0, 0, 0.08),
+              offset: Offset(0, 10),
+              blurRadius: 32,
+            ),
+          ],
         ),
         child: Column(
           children: [
@@ -1120,11 +1248,22 @@ class _StatTile extends StatelessWidget {
             Text(
               value,
               style: const TextStyle(
-                  fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black87),
+                fontSize: 22,
+                fontWeight: FontWeight.w700,
+                color: Colors.black87,
+                letterSpacing: -0.5,
+              ),
             ),
             const SizedBox(height: 2),
-            Text(label,
-                style: const TextStyle(fontSize: 11, color: Colors.black54)),
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
+                letterSpacing: 0.07,
+                color: Color(0xFF8E8E93),
+              ),
+            ),
           ],
         ),
       ),
@@ -1141,30 +1280,47 @@ class _EventoItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(6),
-            decoration: BoxDecoration(
-              color: PremiumTokens.brandGreen.withValues(alpha: 0.10),
+            decoration: const BoxDecoration(
+              color: Color(0xFFE8F8ED),
               shape: BoxShape.circle,
             ),
-            child: Icon(Icons.event, size: 14, color: PremiumTokens.brandGreen),
+            child: const Icon(
+              Icons.event,
+              size: 14,
+              color: PremiumTokens.brandGreen,
+            ),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(titulo,
-                    style: const TextStyle(
-                        fontSize: 13, fontWeight: FontWeight.w500),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis),
-                Text('$data${tipo.isNotEmpty ? ' · $tipo' : ''}',
-                    style:
-                        const TextStyle(fontSize: 11, color: Colors.black45)),
+                Text(
+                  titulo,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    letterSpacing: -0.2,
+                    color: Colors.black87,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  '$data${tipo.isNotEmpty ? ' · $tipo' : ''}',
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                    letterSpacing: 0.07,
+                    color: Color(0xFF8E8E93),
+                  ),
+                ),
               ],
             ),
           ),
@@ -1182,23 +1338,42 @@ class _VisitaItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(6),
-            decoration: BoxDecoration(
-              color: Colors.blue.withValues(alpha: 0.08),
+            decoration: const BoxDecoration(
+              color: Color(0xFFE8F0FB),
               shape: BoxShape.circle,
             ),
-            child: Icon(Icons.directions_walk, size: 14, color: Colors.blueGrey),
+            child: const Icon(
+              Icons.directions_walk,
+              size: 14,
+              color: Color(0xFF3478F6),
+            ),
           ),
-          const SizedBox(width: 10),
-          Text(data, style: const TextStyle(fontSize: 13)),
+          const SizedBox(width: 12),
+          Text(
+            data,
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              letterSpacing: -0.2,
+              color: Colors.black87,
+            ),
+          ),
           if (duracao != null) ...[
             const SizedBox(width: 8),
-            Text('· ${duracao}min',
-                style: const TextStyle(fontSize: 11, color: Colors.black45)),
+            Text(
+              '· ${duracao}min',
+              style: const TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
+                letterSpacing: 0.07,
+                color: Color(0xFF8E8E93),
+              ),
+            ),
           ],
         ],
       ),
@@ -1214,13 +1389,13 @@ class _StatsLoadingSkeleton extends StatelessWidget {
     return Row(
       children: List.generate(
         3,
-        (_) => Expanded(
+        (i) => Expanded(
           child: Container(
-            margin: const EdgeInsets.only(right: 8),
-            height: 72,
-            decoration: BoxDecoration(
-              color: Colors.grey[100],
-              borderRadius: BorderRadius.circular(12),
+            margin: EdgeInsets.only(right: i < 2 ? 12 : 0),
+            height: 80,
+            decoration: const BoxDecoration(
+              color: Color(0xFFF2F2F7),
+              borderRadius: BorderRadius.all(Radius.circular(16)),
             ),
           ),
         ),
