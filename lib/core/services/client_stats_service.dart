@@ -93,19 +93,28 @@ class ClientStatsService {
       );
 
       final ultimasVisitas = await txn.rawQuery(
-        'SELECT id, created_at '
+        'SELECT id, start_at_real, duracao_min '
         'FROM visit_sessions '
         'WHERE producer_id = ? '
-        'ORDER BY created_at DESC LIMIT 3',
+        'ORDER BY start_at_real DESC LIMIT 3',
         [clienteId],
       );
+
+      final totalRelatorios =
+          Sqflite.firstIntValue(
+            await txn.rawQuery(
+              'SELECT COUNT(*) FROM relatorios WHERE client_id = ?',
+              [clienteId],
+            ),
+          ) ??
+          0;
 
       return ClientStats(
         totalVisitas: totalVisitas,
         totalOcorrencias: totalOcorrencias,
         totalDesenhos: totalDesenhos,
         totalEventos: totalEventos,
-        totalRelatorios: 0, // WS-5 (ADR-017)
+        totalRelatorios: totalRelatorios,
         proximosEventos: proximosEventos,
         ultimasVisitas: ultimasVisitas,
       );
