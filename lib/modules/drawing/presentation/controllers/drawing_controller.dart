@@ -7,17 +7,15 @@ import '../../domain/models/drawing_models.dart';
 import '../../domain/drawing_utils.dart';
 import '../../domain/drawing_state.dart';
 import '../../data/repositories/drawing_repository.dart';
-// 🆕 Client Module Integration
-import '../../../consultoria/clients/data/clients_repository.dart';
-import '../../../consultoria/clients/domain/client.dart';
-import '../../../consultoria/clients/domain/agronomic_models.dart';
+// 🆕 Client Module Integration (via contrato local — ADR-015)
+import '../../domain/repositories/i_clients_repository.dart';
 import '../../../../core/utils/app_logger.dart';
 
 /// Controller for the Drawing Mode state.
 /// This manages the current list of features (active drawings) and the current interaction state.
 class DrawingController extends ChangeNotifier {
   final DrawingRepository _repository;
-  final ClientsRepository? _clientsRepository; // 🆕 Injected
+  final IClientsRepository? _clientsRepository; // Injetado via IClientsRepository (ADR-015)
   final DrawingStateMachine _stateMachine = DrawingStateMachine();
 
   // 🆕 Client Data State
@@ -27,9 +25,23 @@ class DrawingController extends ChangeNotifier {
   List<Client> get clients => List.unmodifiable(_clients);
   List<Farm> get farms => List.unmodifiable(_farms);
 
+  // 🗺️ Pré-seleção de cliente via query param Map-First (/map?modo=desenho&clienteId=X)
+  String? _preSelectedClientId;
+  String? get preSelectedClientId => _preSelectedClientId;
+
+  /// Pré-seleciona um cliente para o contexto de desenho.
+  /// Chamado pelo PrivateMapScreen ao receber query param clienteId.
+  /// NÃO cria nova lógica de desenho — apenas conecta o estado.
+  void setClienteAtivo(String clientId) {
+    if (_isDisposed) return;
+    _preSelectedClientId = clientId;
+    loadFarms(clientId); // precarregar fazendas
+    notifyListeners();
+  }
+
   DrawingController({
     DrawingRepository? repository,
-    ClientsRepository? clientsRepository, // 🆕
+    IClientsRepository? clientsRepository,
   }) : _repository = repository ?? DrawingRepository(),
        _clientsRepository = clientsRepository {
     loadFeatures();

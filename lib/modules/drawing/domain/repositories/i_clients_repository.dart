@@ -1,5 +1,9 @@
+// Import para uso interno + export como barrel autorizado do módulo drawing.
+// Qualquer arquivo em drawing/ que precisar de Client/Farm importa este arquivo.
 import '../../../consultoria/clients/domain/client.dart';
 import '../../../consultoria/clients/domain/agronomic_models.dart';
+export '../../../consultoria/clients/domain/client.dart';
+export '../../../consultoria/clients/domain/agronomic_models.dart';
 
 /// Contrato mínimo de acesso a clientes e fazendas,
 /// definido no módulo que consome (drawing), seguindo DIP.
