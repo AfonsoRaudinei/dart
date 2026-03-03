@@ -35,6 +35,9 @@ class VisitSession extends Equatable {
   /// Status de sincronização offline
   final String syncStatus;
 
+  /// ID do cliente/produtor associado à visita (alias de producer_id — ADR-017)
+  final String? clienteId;
+
   const VisitSession({
     required this.id,
     required this.eventoId,
@@ -46,6 +49,7 @@ class VisitSession extends Equatable {
     required this.createdBy,
     required this.createdAt,
     this.syncStatus = 'pending',
+    this.clienteId,
   });
 
   /// Verifica se a sessão está em andamento
@@ -77,6 +81,7 @@ class VisitSession extends Equatable {
     String? createdBy,
     DateTime? createdAt,
     String? syncStatus,
+    String? clienteId,
   }) {
     return VisitSession(
       id: id ?? this.id,
@@ -89,6 +94,7 @@ class VisitSession extends Equatable {
       createdBy: createdBy ?? this.createdBy,
       createdAt: createdAt ?? this.createdAt,
       syncStatus: syncStatus ?? this.syncStatus,
+      clienteId: clienteId ?? this.clienteId,
     );
   }
 
@@ -104,5 +110,6 @@ class VisitSession extends Equatable {
     createdBy,
     createdAt,
     syncStatus,
+    clienteId,
   ];
 }

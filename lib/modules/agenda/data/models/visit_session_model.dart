@@ -13,6 +13,7 @@ class VisitSessionModel extends VisitSession {
     required super.createdBy,
     required super.createdAt,
     super.syncStatus,
+    super.clienteId,
   });
 
   /// Cria VisitSessionModel a partir de uma entidade VisitSession
@@ -28,6 +29,7 @@ class VisitSessionModel extends VisitSession {
       createdBy: session.createdBy,
       createdAt: session.createdAt,
       syncStatus: session.syncStatus,
+      clienteId: session.clienteId,
     );
   }
 
@@ -46,6 +48,7 @@ class VisitSessionModel extends VisitSession {
       createdBy: json['createdBy'] as String,
       createdAt: DateTime.parse(json['createdAt'] as String),
       syncStatus: json['syncStatus'] as String? ?? 'pending',
+      clienteId: json['producer_id'] as String?,
     );
   }
 
@@ -62,6 +65,7 @@ class VisitSessionModel extends VisitSession {
       'createdBy': createdBy,
       'createdAt': createdAt.toIso8601String(),
       'syncStatus': syncStatus,
+      'producer_id': clienteId,
     };
   }
 
@@ -78,6 +82,7 @@ class VisitSessionModel extends VisitSession {
       createdBy: createdBy,
       createdAt: createdAt,
       syncStatus: syncStatus,
+      clienteId: clienteId,
     );
   }
 }

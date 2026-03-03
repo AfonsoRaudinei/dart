@@ -23,7 +23,7 @@ class DatabaseHelper {
 
     final db = await openDatabase(
       path,
-      version: 10,
+      version: 16,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -93,6 +93,24 @@ class DatabaseHelper {
           break;
         case 10:
           await _migrateToV10(db);
+          break;
+        case 11:
+          await _migrateToV11(db);
+          break;
+        case 12:
+          await _migrateToV12(db);
+          break;
+        case 13:
+          await _migrateToV13(db);
+          break;
+        case 14:
+          await _migrateToV14(db);
+          break;
+        case 15:
+          await _migrateToV15(db);
+          break;
+        case 16:
+          await _migrateToV16(db);
           break;
       }
     }
@@ -421,8 +439,119 @@ class DatabaseHelper {
     );
   }
 
+  // ── V11, V12, V13: reservadas para próximas features ──────────────────
+  Future<void> _migrateToV11(Database db) async {
+    // Reservada — sem alterações nesta versão
+    AppLogger.debug('V11: reservada (no-op)', tag: 'DB.Migration');
+  }
+
+  Future<void> _migrateToV12(Database db) async {
+    // Reservada — sem alterações nesta versão
+    AppLogger.debug('V12: reservada (no-op)', tag: 'DB.Migration');
+  }
+
+  Future<void> _migrateToV13(Database db) async {
+    // Reservada — sem alterações nesta versão
+    AppLogger.debug('V13: reservada (no-op)', tag: 'DB.Migration');
+  }
+
+  /// V14 — Schema agronômico de ocorrências (ADR-014)
+  ///
+  /// Adiciona 11 colunas opcionais à tabela [occurrences].
+  /// Usa try/catch por coluna: idempotente em caso de re-execução.
+  Future<void> _migrateToV14(Database db) async {
+    final columns = <String, String>{
+      'cultivar': 'TEXT',
+      'data_plantio': 'TEXT',
+      'estadio_fenologico': 'TEXT',
+      'tipo_ocorrencia': 'TEXT',
+      'amostra_solo': 'INTEGER DEFAULT 0',
+      'recomendacoes': 'TEXT',
+      'metricas_json': 'TEXT',
+      'nutrientes_json': 'TEXT',
+      'categorias_json': 'TEXT',
+      'notas_categorias_json': 'TEXT',
+      'fotos_categorias_json': 'TEXT',
+    };
+    for (final entry in columns.entries) {
+      try {
+        await db.execute(
+          'ALTER TABLE occurrences ADD COLUMN ${entry.key} ${entry.value}',
+        );
+        AppLogger.debug(
+          'V14: coluna ${entry.key} adicionada',
+          tag: 'DB.Migration',
+        );
+      } catch (e) {
+        AppLogger.debug(
+          'V14: ${entry.key} já existe — $e',
+          tag: 'DB.Migration',
+        );
+      }
+    }
+  }
+
   // ════════════════════════════════════════════════════════════════════
-  // INTEGRIDADE E OBSERVAÇÃO
+
+  /// V15 — Expansão da tabela clients com campos pessoais, agronômicos e foto.
+  /// Cria tabela client_culturas (sub-entidade).
+  /// Idempotente: cada ALTER TABLE é envolvido em try/catch individual.
+  Future<void> _migrateToV15(Database db) async {
+    final Map<String, String> newClientColumns = {
+      'cidade': 'TEXT',
+      'uf': 'TEXT',
+      'foto_path': 'TEXT',
+      'observacoes': 'TEXT',
+      'data_nascimento': 'TEXT',
+      'cpf_cnpj': 'TEXT',
+      'area_total': 'REAL',
+      'tipo_propriedade': 'TEXT',
+      'sistema_irrigacao': 'TEXT',
+      'solo_tipo': 'TEXT',
+      'regiao_agricola': 'TEXT',
+      'safra_atual': 'TEXT',
+      'usa_assistencia_tecnica': 'INTEGER',
+      'tecnico_responsavel': 'TEXT',
+      'ativo': 'INTEGER NOT NULL DEFAULT 1',
+    };
+
+    for (final entry in newClientColumns.entries) {
+      try {
+        await db.execute(
+          'ALTER TABLE clients ADD COLUMN ${entry.key} ${entry.value}',
+        );
+        AppLogger.debug(
+          'V15: coluna ${entry.key} adicionada em clients',
+          tag: 'DB.Migration',
+        );
+      } catch (_) {
+        AppLogger.debug(
+          'V15: ${entry.key} já existe em clients — ignorado',
+          tag: 'DB.Migration',
+        );
+      }
+    }
+
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS client_culturas (
+        id           TEXT PRIMARY KEY,
+        client_id    TEXT NOT NULL,
+        cultura      TEXT NOT NULL,
+        area_ha      REAL NOT NULL,
+        variedade    TEXT,
+        safra        TEXT,
+        observacao   TEXT,
+        created_at   TEXT NOT NULL,
+        updated_at   TEXT NOT NULL,
+        FOREIGN KEY (client_id) REFERENCES clients(id) ON DELETE CASCADE
+      )
+    ''');
+
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_client_culturas_client ON client_culturas(client_id)',
+    );
+  }
+
   // ════════════════════════════════════════════════════════════════════
 
   Future<void> _validateSchema(Database db) async {
@@ -442,6 +571,25 @@ class DatabaseHelper {
       } else {
         AppLogger.debug('Database: Tabela "$table" validada.', tag: 'DB');
       }
+    }
+  }
+
+  /// V16 — Adiciona producer_id em agenda_visit_sessions (WS-3 / ADR-017)
+  /// Idempotente: envolve ALTER TABLE em try/catch.
+  Future<void> _migrateToV16(Database db) async {
+    try {
+      await db.execute(
+        'ALTER TABLE agenda_visit_sessions ADD COLUMN producer_id TEXT',
+      );
+      AppLogger.debug(
+        'V16: producer_id adicionado em agenda_visit_sessions',
+        tag: 'DB.Migration',
+      );
+    } catch (_) {
+      AppLogger.debug(
+        'V16: producer_id já existe em agenda_visit_sessions — ignorado',
+        tag: 'DB.Migration',
+      );
     }
   }
 

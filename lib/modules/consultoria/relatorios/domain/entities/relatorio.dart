@@ -2,6 +2,7 @@ enum SyncStatus { local_only, pending_sync, synced, sync_error, deleted_local }
 
 class Relatorio {
   final String id;
+  final String? clientId; // ADR-017: nullable, retrocompatível
   final String titulo;
   final String descricao;
   final DateTime createdAt;
@@ -15,6 +16,7 @@ class Relatorio {
 
   Relatorio({
     required this.id,
+    this.clientId,
     required this.titulo,
     required this.descricao,
     required this.createdAt,
@@ -29,6 +31,7 @@ class Relatorio {
   Map<String, dynamic> toMap() {
     return {
       'id': id,
+      'client_id': clientId,
       'titulo': titulo,
       'descricao': descricao,
       'created_at': createdAt.toUtc().toIso8601String(),
@@ -44,6 +47,7 @@ class Relatorio {
   factory Relatorio.fromMap(Map<String, dynamic> map) {
     return Relatorio(
       id: map['id'],
+      clientId: map['client_id'] as String?,
       titulo: map['titulo'],
       descricao: map['descricao'],
       createdAt: DateTime.parse(map['created_at']).toUtc(),
@@ -64,6 +68,7 @@ class Relatorio {
 
   Relatorio copyWith({
     String? id,
+    String? clientId,
     String? titulo,
     String? descricao,
     DateTime? createdAt,
@@ -76,6 +81,7 @@ class Relatorio {
   }) {
     return Relatorio(
       id: id ?? this.id,
+      clientId: clientId ?? this.clientId,
       titulo: titulo ?? this.titulo,
       descricao: descricao ?? this.descricao,
       createdAt: createdAt ?? this.createdAt,

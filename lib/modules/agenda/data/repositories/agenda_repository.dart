@@ -253,6 +253,7 @@ class AgendaRepository {
       'created_by': session.createdBy,
       'created_at': session.createdAt.toIso8601String(),
       'sync_status': session.syncStatus,
+      'producer_id': session.clienteId,
     };
   }
 
@@ -268,6 +269,7 @@ class AgendaRepository {
       'createdBy': map['created_by'],
       'createdAt': map['created_at'],
       'syncStatus': map['sync_status'],
+      'producer_id': map['producer_id'],
     }).toEntity();
   }
 }

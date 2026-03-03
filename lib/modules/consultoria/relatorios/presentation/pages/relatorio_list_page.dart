@@ -9,7 +9,9 @@ import '../../../../../core/router/app_routes.dart';
 
 import '../../models/relatorio_status.dart';
 import '../../models/relatorio_tecnico.dart';
+import '../../providers/relatorio_providers.dart';
 import '../providers/relatorio_query_providers.dart';
+import '../../../../../core/constants/layout_constants.dart';
 
 /// Tela de Listagem de Relatórios Técnicos — ADR-009
 ///
@@ -35,17 +37,21 @@ class _RelatorioListPageState extends ConsumerState<RelatorioListPage> {
   @override
   Widget build(BuildContext context) {
     final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
+    final clienteId =
+        GoRouterState.of(context).uri.queryParameters['clienteId'];
 
-    final reportsAsync = ref.watch(
-      relatoriosByAgronomistProvider(userId, status: _activeFilter),
-    );
+    final reportsAsync = clienteId != null
+        ? ref.watch(relatoriosListProvider(clientId: clienteId))
+        : ref.watch(
+            relatoriosByAgronomistProvider(userId, status: _activeFilter),
+          );
 
     return SafeArea(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildHeader(),
-          _buildFilterRow(),
+          _buildFilterRow(clienteId: clienteId),
           const SizedBox(height: 8.0),
           Expanded(child: _buildBody(reportsAsync)),
         ],
@@ -69,7 +75,47 @@ class _RelatorioListPageState extends ConsumerState<RelatorioListPage> {
 
   // ── Filtros ───────────────────────────────────────────────────────────
 
-  Widget _buildFilterRow() {
+  Widget _buildFilterRow({String? clienteId}) {
+    // Quando filtrado por cliente, exibe badge de contexto (chips de status desativados)
+    if (clienteId != null) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: PremiumTokens.brandGreen.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(100),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.person_outline,
+                      size: 13, color: PremiumTokens.brandGreen),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Filtrado por cliente',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: PremiumTokens.brandGreen,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            GestureDetector(
+              onTap: () => context.go(AppRoutes.reports),
+              child: Icon(Icons.close, size: 16,
+                  color: PremiumTokens.textSecondaryLight),
+            ),
+          ],
+        ),
+      );
+    }
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
       child: Wrap(
@@ -113,7 +159,7 @@ class _RelatorioListPageState extends ConsumerState<RelatorioListPage> {
               padding: const EdgeInsets.only(
                 left: 16.0,
                 right: 16.0,
-                bottom: 80, // espaço para SmartButton global
+                bottom: kFabSafeArea,
               ),
               itemCount: relatorios.length,
               itemBuilder: (_, i) => _RelatorioCard(

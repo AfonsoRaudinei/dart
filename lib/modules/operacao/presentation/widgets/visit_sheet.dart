@@ -1,9 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:soloforte_app/core/contracts/i_client_lookup.dart';
+import 'package:soloforte_app/core/contracts/i_client_lookup_provider.dart';
+// Farm/Talhao vêm de consultoria — operacao→consultoria é PERMITIDO pelas enforcement-rules
 import 'package:soloforte_app/modules/consultoria/clients/domain/client.dart';
 import 'package:soloforte_app/modules/consultoria/clients/domain/agronomic_models.dart';
-import 'package:soloforte_app/modules/consultoria/clients/presentation/providers/clients_providers.dart';
+import 'package:soloforte_app/modules/consultoria/clients/presentation/providers/clients_providers.dart'
+    show clientDetailProvider;
+
+/// Provider de clientes ativos via IClientLookup — sem acoplamento a consultoria/
+final _clientesAtivosProvider = FutureProvider.autoDispose<List<ClientSummary>>(
+  (ref) => ref.watch(clientLookupProvider).listAtivos(),
+);
 
 class VisitSheet extends ConsumerStatefulWidget {
   final Function(String clientId, String areaId, String activityType) onConfirm;
@@ -15,7 +24,7 @@ class VisitSheet extends ConsumerStatefulWidget {
 }
 
 class _VisitSheetState extends ConsumerState<VisitSheet> {
-  Client? _selectedClient;
+  ClientSummary? _selectedClientSummary;
   Farm? _selectedFarm;
   Talhao? _selectedTalhao;
   String _selectedActivity = 'Monitoramento';
@@ -30,7 +39,12 @@ class _VisitSheetState extends ConsumerState<VisitSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final clientsAsync = ref.watch(clientsListProvider);
+    // Lista de clientes via IClientLookup (core/contracts/ — sem acoplar consultoria)
+    final clientesAsync = ref.watch(_clientesAtivosProvider);
+    // Farms do cliente selecionado via clientDetailProvider (operacao→consultoria é PERMITIDO)
+    final farmsAsync = _selectedClientSummary != null
+        ? ref.watch(clientDetailProvider(_selectedClientSummary!.id))
+        : const AsyncData<Client?>(null);
 
     return Container(
       decoration: const BoxDecoration(
@@ -61,19 +75,19 @@ class _VisitSheetState extends ConsumerState<VisitSheet> {
           const SizedBox(height: 24),
 
           // 1. Produtor
-          _buildDropdown<Client>(
+          _buildDropdown<ClientSummary>(
             label: 'Produtor',
-            value: _selectedClient,
-            items: clientsAsync.valueOrNull ?? [],
+            value: _selectedClientSummary,
+            items: clientesAsync.valueOrNull ?? [],
             itemLabel: (c) => c.name,
             onChanged: (c) {
               setState(() {
-                _selectedClient = c;
+                _selectedClientSummary = c;
                 _selectedFarm = null;
                 _selectedTalhao = null;
               });
             },
-            isLoading: clientsAsync.isLoading,
+            isLoading: clientesAsync.isLoading,
           ),
           const SizedBox(height: 16),
 
@@ -81,9 +95,9 @@ class _VisitSheetState extends ConsumerState<VisitSheet> {
           _buildDropdown<Farm>(
             label: 'Fazenda',
             value: _selectedFarm,
-            items: _selectedClient?.farms ?? [],
+            items: farmsAsync.valueOrNull?.farms ?? [],
             itemLabel: (f) => f.name,
-            enabled: _selectedClient != null,
+            enabled: _selectedClientSummary != null,
             onChanged: (f) {
               setState(() {
                 _selectedFarm = f;
@@ -134,10 +148,10 @@ class _VisitSheetState extends ConsumerState<VisitSheet> {
 
           // Confirm Button
           ElevatedButton(
-            onPressed: (_selectedClient != null && _selectedTalhao != null)
+            onPressed: (_selectedClientSummary != null && _selectedTalhao != null)
                 ? () {
                     widget.onConfirm(
-                      _selectedClient!.id,
+                      _selectedClientSummary!.id,
                       _selectedTalhao!.id,
                       _selectedActivity,
                     );
