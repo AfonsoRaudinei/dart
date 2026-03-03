@@ -4,7 +4,6 @@
 enum MapSheetType {
   draw, // Desenho
   layers, // Camadas
-  publications, // Publicações
   occurrences, // Ocorrências
   checkIn, // Check-in
 }
@@ -12,13 +11,23 @@ enum MapSheetType {
 class MapSheetState {
   final MapSheetType type;
   final bool isCreatingOccurrence;
+  final String? preSelectedClienteId; // P5: pré-seleção de cliente em modo=visita
 
-  const MapSheetState({required this.type, this.isCreatingOccurrence = false});
+  const MapSheetState({
+    required this.type,
+    this.isCreatingOccurrence = false,
+    this.preSelectedClienteId,
+  });
 
-  MapSheetState copyWith({MapSheetType? type, bool? isCreatingOccurrence}) {
+  MapSheetState copyWith({
+    MapSheetType? type,
+    bool? isCreatingOccurrence,
+    String? preSelectedClienteId,
+  }) {
     return MapSheetState(
       type: type ?? this.type,
       isCreatingOccurrence: isCreatingOccurrence ?? this.isCreatingOccurrence,
+      preSelectedClienteId: preSelectedClienteId ?? this.preSelectedClienteId,
     );
   }
 }

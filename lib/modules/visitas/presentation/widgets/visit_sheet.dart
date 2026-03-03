@@ -7,8 +7,15 @@ import 'package:soloforte_app/modules/consultoria/clients/presentation/providers
 
 class VisitSheet extends ConsumerStatefulWidget {
   final Function(String clientId, String areaId, String activityType) onConfirm;
+  /// ID do cliente pré-selecionado via query param modo=visita (P5).
+  /// Quando informado, o dropdown de Produtor já inicia selecionado.
+  final String? preSelectedClienteId;
 
-  const VisitSheet({super.key, required this.onConfirm});
+  const VisitSheet({
+    super.key,
+    required this.onConfirm,
+    this.preSelectedClienteId,
+  });
 
   @override
   ConsumerState<VisitSheet> createState() => _VisitSheetState();
@@ -31,6 +38,21 @@ class _VisitSheetState extends ConsumerState<VisitSheet> {
   @override
   Widget build(BuildContext context) {
     final clientsAsync = ref.watch(clientsListProvider);
+
+    // P5: Pré-selecionar cliente quando aberto via /map?modo=visita&clienteId=X
+    if (widget.preSelectedClienteId != null && _selectedClient == null) {
+      final clients = clientsAsync.valueOrNull;
+      if (clients != null) {
+        final match = clients
+            .where((c) => c.id == widget.preSelectedClienteId)
+            .firstOrNull;
+        if (match != null) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) setState(() => _selectedClient = match);
+          });
+        }
+      }
+    }
 
     return Container(
       decoration: const BoxDecoration(
