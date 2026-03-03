@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../consultoria/clients/presentation/providers/clients_providers.dart';
-import '../../../../consultoria/clients/domain/client.dart';
-import '../../../../consultoria/clients/domain/agronomic_models.dart';
+import '../../../domain/repositories/i_clients_repository.dart';
+import '../../../infra/clients/i_clients_repository_provider.dart';
 import '../../../domain/models/drawing_models.dart';
 
 /// Widget responsável pelo formulário de metadados de uma feature de desenho.
@@ -49,7 +48,7 @@ class DrawingMetadataPanel extends ConsumerStatefulWidget {
 class _DrawingMetadataPanelState extends ConsumerState<DrawingMetadataPanel> {
   @override
   Widget build(BuildContext context) {
-    final clientsAsync = ref.watch(clientsListProvider);
+    final clientsAsync = ref.watch(drawingClientsListProvider);
 
     return Container(
       padding: const EdgeInsets.all(16),

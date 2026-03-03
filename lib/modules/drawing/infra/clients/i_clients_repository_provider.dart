@@ -14,3 +14,13 @@ import '../../../consultoria/clients/data/clients_repository.dart';
 final drawingClientsRepositoryProvider = Provider<IClientsRepository>((ref) {
   return ClientsRepositoryAdapter(ClientsRepository());
 });
+
+/// Lista de clientes para uso interno do módulo drawing (ex: DrawingMetadataPanel).
+///
+/// Substitui o uso direto de [clientsListProvider] de consultoria/.
+/// Widgets de drawing DEVEM assistir este provider, nunca o de consultoria.
+final drawingClientsListProvider =
+    FutureProvider.autoDispose<List<Client>>((ref) async {
+  final repo = ref.watch(drawingClientsRepositoryProvider);
+  return repo.getClients();
+});

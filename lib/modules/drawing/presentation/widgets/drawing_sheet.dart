@@ -5,8 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../controllers/drawing_controller.dart';
 import '../../domain/models/drawing_models.dart';
 import '../../domain/drawing_state.dart';
-import '../../../consultoria/clients/domain/client.dart'; // 🆕 Re-import
-import '../../../consultoria/clients/domain/agronomic_models.dart'; // 🆕 Re-import
+import '../../domain/repositories/i_clients_repository.dart';
 import 'components/drawing_tool_selector.dart';
 import 'components/drawing_actions_bar.dart';
 import '../../../../core/utils/app_logger.dart';
@@ -45,6 +44,7 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
     super.initState();
     // Rebuild overlay when controller notifies (state changes)
     widget.controller.addListener(_updateTooltip);
+    widget.controller.addListener(_syncPreSelectedClient);
     // Initial show? No, wait for layout or first build.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _showTooltip();
@@ -53,6 +53,8 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
       if (_isConsultant) {
         widget.controller.loadClients();
       }
+      // Aplicar pré-seleção de cliente (Map-First via query param)
+      _syncPreSelectedClient();
     });
 
     // Suggest logical name
@@ -62,10 +64,27 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
   @override
   void dispose() {
     widget.controller.removeListener(_updateTooltip);
+    widget.controller.removeListener(_syncPreSelectedClient);
     _removeTooltip();
     _nomeController.dispose();
     _descricaoController.dispose();
     super.dispose();
+  }
+
+  /// Aplica pré-seleção de cliente proveniente de query param Map-First.
+  /// É chamado como listener e no initState (via postFrameCallback).
+  void _syncPreSelectedClient() {
+    final preId = widget.controller.preSelectedClientId;
+    if (preId == null) return;
+    if (_selectedClient?.id == preId) return; // já selecionado
+    if (widget.controller.clients.isEmpty) return; // ainda carregando
+
+    final match = widget.controller.clients
+        .where((c) => c.id == preId)
+        .toList();
+    if (match.isNotEmpty && mounted) {
+      setState(() => _selectedClient = match.first);
+    }
   }
 
   void _onToolSelected(String key) {
