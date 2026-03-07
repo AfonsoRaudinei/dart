@@ -38,6 +38,7 @@ class MapControlsOverlay extends ConsumerStatefulWidget {
   final VoidCallback? onUndoDrawing; // Undo no modo drawing
   final bool canUndo;
   final bool canRedo;
+  final bool hasSelfIntersection;
 
   const MapControlsOverlay({
     super.key,
@@ -62,6 +63,7 @@ class MapControlsOverlay extends ConsumerStatefulWidget {
     this.onUndoDrawing,
     this.canUndo = false,
     this.canRedo = false,
+    this.hasSelfIntersection = false,
   });
 
   @override
@@ -181,8 +183,10 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
               children: [
                 FloatingActionButton(
                   heroTag: 'complete_drawing_overlay',
-                  backgroundColor: PremiumTokens.brandGreen,
-                  onPressed: widget.onFinishDrawing,
+                  backgroundColor: widget.hasSelfIntersection 
+                      ? Colors.grey 
+                      : PremiumTokens.brandGreen,
+                  onPressed: widget.hasSelfIntersection ? null : widget.onFinishDrawing,
                   child: const Icon(SFIcons.check, color: Colors.white),
                 ),
                 const SizedBox(height: 12),

@@ -6,8 +6,6 @@ import '../../theme/premium/design_tokens.dart';
 import '../premium/premium_glass_panel.dart';
 import 'package:latlong2/latlong.dart';
 import '../../../../modules/consultoria/occurrences/presentation/controllers/occurrence_controller.dart';
-import '../../../../modules/agenda/presentation/providers/agenda_provider.dart';
-import '../../../../modules/agenda/domain/enums/event_status.dart';
 import 'map_sheets.dart';
 import '../../../modules/drawing/presentation/widgets/drawing_sheet.dart';
 import '../../../modules/drawing/presentation/widgets/drawing_disabled_widget.dart';
@@ -306,70 +304,29 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
             const SizedBox(height: 32),
             ElevatedButton(
               onPressed: () async {
-                  HapticFeedback.mediumImpact(); // ✅ iOS Premium
-                final agendaState = ref.read(agendaProvider);
+                HapticFeedback.mediumImpact(); // ✅ iOS Premium
+                await ref.read(visitControllerProvider.notifier).endSession();
 
-                // 1. Encontra a sessão ativa (sem endAtReal)
-                final activeSession = agendaState.sessions
-                    .where((s) => s.endAtReal == null)
-                    .firstOrNull;
+                if (!mounted) return;
 
-                if (activeSession == null) {
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Nenhuma visita ativa encontrada.'),
+                final visitState = ref.read(visitControllerProvider);
+                if (visitState.hasError) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        'Erro ao encerrar visita: ${visitState.error}',
                       ),
-                    );
-                  }
+                    ),
+                  );
                   return;
                 }
 
-                // 2. Encontra o evento vinculado à sessão
-                final linkedEvent = agendaState.events
-                    .where((e) => e.visitSessionId == activeSession.id)
-                    .firstOrNull;
-
-                if (linkedEvent == null) {
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Evento vinculado não encontrado.'),
-                      ),
-                    );
-                  }
-                  return;
-                }
-
-                try {
-                  // 3. Se ainda está emAndamento, transicionar para finalizando primeiro
-                  if (linkedEvent.status == EventStatus.emAndamento) {
-                    await ref
-                        .read(agendaProvider.notifier)
-                        .finalizeEvent(linkedEvent.id);
-                  }
-
-                  // 4. Concluir o evento → fecha VisitSession → dispara VisitCompletionObserver
-                  // → gera RelatorioTecnico (via GenerateRelatorioUseCase)
-                  await ref
-                      .read(agendaProvider.notifier)
-                      .completeEvent(linkedEvent.id);
-
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Visita encerrada com sucesso.'),
-                      ),
-                    );
-                    widget.onClose();
-                  }
-                } catch (e) {
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Erro ao encerrar visita: $e')),
-                    );
-                  }
-                }
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Visita encerrada com sucesso.'),
+                  ),
+                );
+                widget.onClose();
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: PremiumTokens.alertError,
@@ -565,8 +522,12 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
                             width: 36, // ✅ iOS Premium: 36px
                             height: 5, // ✅ iOS Premium: 5px
                             decoration: BoxDecoration(
-                              color: const Color(0xFFC5C5C7), // ✅ iOS Premium: #C5C5C7
-                              borderRadius: BorderRadius.circular(10), // ✅ iOS Premium: squircle radius
+                              color: const Color(
+                                0xFFC5C5C7,
+                              ), // ✅ iOS Premium: #C5C5C7
+                              borderRadius: BorderRadius.circular(
+                                10,
+                              ), // ✅ iOS Premium: squircle radius
                             ),
                           ),
                         ),
