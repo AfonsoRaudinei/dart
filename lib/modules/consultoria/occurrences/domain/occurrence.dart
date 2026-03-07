@@ -83,6 +83,19 @@ class Occurrence {
   final String? category;
   final String? status;
 
+  // ── Campos agronômicos (Schema v14) ─────────────────────────────────
+  final String? cultivar;
+  final String? dataPlantio;        // ISO "yyyy-MM-dd"
+  final String? estadioFenologico;  // código ex.: "V4", "R5.1"
+  final String? tipoOcorrencia;     // "sazonal" | "permanente"
+  final bool amostraSolo;
+  final String? recomendacoes;
+  final String? metricasJson;        // {cat: {metric: valor}}
+  final String? nutrientesJson;      // lista de símbolos selecionados
+  final String? categoriasJson;      // lista de categorias ativas
+  final String? notasCategoriasJson; // {cat: texto}
+  final String? fotosCategoriasJson; // {cat: [paths]}
+
   Occurrence({
     required this.id,
     this.visitSessionId,
@@ -97,6 +110,18 @@ class Occurrence {
     this.syncStatus = 'local',
     this.category,
     this.status = 'draft',
+    // v14 agronômico
+    this.cultivar,
+    this.dataPlantio,
+    this.estadioFenologico,
+    this.tipoOcorrencia,
+    this.amostraSolo = false,
+    this.recomendacoes,
+    this.metricasJson,
+    this.nutrientesJson,
+    this.categoriasJson,
+    this.notasCategoriasJson,
+    this.fotosCategoriasJson,
   }) : updatedAt = updatedAt ?? DateTime.now();
 
   factory Occurrence.fromMap(Map<String, dynamic> map) {
@@ -116,6 +141,18 @@ class Occurrence {
       syncStatus: map['sync_status'] ?? 'local',
       category: map['category'],
       status: map['status'] ?? 'draft',
+      // v14 agronômico
+      cultivar: map['cultivar'],
+      dataPlantio: map['data_plantio'],
+      estadioFenologico: map['estadio_fenologico'],
+      tipoOcorrencia: map['tipo_ocorrencia'],
+      amostraSolo: (map['amostra_solo'] as int? ?? 0) == 1,
+      recomendacoes: map['recomendacoes'],
+      metricasJson: map['metricas_json'],
+      nutrientesJson: map['nutrientes_json'],
+      categoriasJson: map['categorias_json'],
+      notasCategoriasJson: map['notas_categorias_json'],
+      fotosCategoriasJson: map['fotos_categorias_json'],
     );
   }
 
@@ -134,6 +171,18 @@ class Occurrence {
       'sync_status': syncStatus,
       'category': category,
       'status': status,
+      // v14 agronômico
+      'cultivar': cultivar,
+      'data_plantio': dataPlantio,
+      'estadio_fenologico': estadioFenologico,
+      'tipo_ocorrencia': tipoOcorrencia,
+      'amostra_solo': amostraSolo ? 1 : 0,
+      'recomendacoes': recomendacoes,
+      'metricas_json': metricasJson,
+      'nutrientes_json': nutrientesJson,
+      'categorias_json': categoriasJson,
+      'notas_categorias_json': notasCategoriasJson,
+      'fotos_categorias_json': fotosCategoriasJson,
     };
   }
 
@@ -151,6 +200,18 @@ class Occurrence {
     String? syncStatus,
     String? category,
     String? status,
+    // v14 agronômico
+    String? cultivar,
+    String? dataPlantio,
+    String? estadioFenologico,
+    String? tipoOcorrencia,
+    bool? amostraSolo,
+    String? recomendacoes,
+    String? metricasJson,
+    String? nutrientesJson,
+    String? categoriasJson,
+    String? notasCategoriasJson,
+    String? fotosCategoriasJson,
   }) {
     return Occurrence(
       id: id ?? this.id,
@@ -166,6 +227,18 @@ class Occurrence {
       syncStatus: syncStatus ?? this.syncStatus,
       category: category ?? this.category,
       status: status ?? this.status,
+      // v14 agronômico
+      cultivar: cultivar ?? this.cultivar,
+      dataPlantio: dataPlantio ?? this.dataPlantio,
+      estadioFenologico: estadioFenologico ?? this.estadioFenologico,
+      tipoOcorrencia: tipoOcorrencia ?? this.tipoOcorrencia,
+      amostraSolo: amostraSolo ?? this.amostraSolo,
+      recomendacoes: recomendacoes ?? this.recomendacoes,
+      metricasJson: metricasJson ?? this.metricasJson,
+      nutrientesJson: nutrientesJson ?? this.nutrientesJson,
+      categoriasJson: categoriasJson ?? this.categoriasJson,
+      notasCategoriasJson: notasCategoriasJson ?? this.notasCategoriasJson,
+      fotosCategoriasJson: fotosCategoriasJson ?? this.fotosCategoriasJson,
     );
   }
 

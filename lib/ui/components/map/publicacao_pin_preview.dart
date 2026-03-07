@@ -141,7 +141,7 @@ class _CoverSection extends StatelessWidget {
   }
 
   Widget _placeholder() {
-    return Center(
+    return const Center(
       child: Icon(SFIcons.image, size: 48, color: PremiumTokens.textTertiaryLight),
     );
   }
@@ -250,7 +250,7 @@ class _InfoSection extends StatelessWidget {
             children: [
               // Cliente
               if (publicacao.clientName != null) ...[
-                Icon(
+                const Icon(
                   SFIcons.personOutline,
                   size: 14,
                   color: PremiumTokens.textTertiaryLight,
@@ -259,7 +259,7 @@ class _InfoSection extends StatelessWidget {
                 Flexible(
                   child: Text(
                     publicacao.clientName!,
-                    style: TextStyle(fontSize: 12, color: PremiumTokens.textSecondaryLight),
+                    style: const TextStyle(fontSize: 12, color: PremiumTokens.textSecondaryLight),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -268,7 +268,7 @@ class _InfoSection extends StatelessWidget {
               ],
               // Área
               if (publicacao.areaName != null) ...[
-                Icon(
+                const Icon(
                   SFIcons.place,
                   size: 14,
                   color: PremiumTokens.textTertiaryLight,
@@ -277,7 +277,7 @@ class _InfoSection extends StatelessWidget {
                 Flexible(
                   child: Text(
                     publicacao.areaName!,
-                    style: TextStyle(fontSize: 12, color: PremiumTokens.textSecondaryLight),
+                    style: const TextStyle(fontSize: 12, color: PremiumTokens.textSecondaryLight),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -290,7 +290,7 @@ class _InfoSection extends StatelessWidget {
           // Data + Mídias
           Row(
             children: [
-              Icon(
+              const Icon(
                 SFIcons.calendar,
                 size: 14,
                 color: PremiumTokens.textTertiaryLight,
@@ -298,10 +298,10 @@ class _InfoSection extends StatelessWidget {
               const SizedBox(width: 4),
               Text(
                 DateFormat('dd/MM/yyyy').format(publicacao.createdAt),
-                style: TextStyle(fontSize: 12, color: PremiumTokens.textSecondaryLight),
+                style: const TextStyle(fontSize: 12, color: PremiumTokens.textSecondaryLight),
               ),
               const SizedBox(width: 16),
-              Icon(
+              const Icon(
                 SFIcons.photoLibrary,
                 size: 14,
                 color: PremiumTokens.textTertiaryLight,
@@ -309,7 +309,7 @@ class _InfoSection extends StatelessWidget {
               const SizedBox(width: 4),
               Text(
                 '${publicacao.media.length} ${publicacao.media.length == 1 ? 'foto' : 'fotos'}',
-                style: TextStyle(fontSize: 12, color: PremiumTokens.textSecondaryLight),
+                style: const TextStyle(fontSize: 12, color: PremiumTokens.textSecondaryLight),
               ),
             ],
           ),

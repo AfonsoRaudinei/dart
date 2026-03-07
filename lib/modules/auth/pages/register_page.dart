@@ -127,8 +127,11 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Conta criada com sucesso! Verifique seu email.'),
+            content: Text(
+              'Conta criada com sucesso! Verifique seu email para ativar.',
+            ),
             backgroundColor: Color(0xFF34C759),
+            duration: Duration(seconds: 5),
           ),
         );
         context.go(AppRoutes.login);
@@ -136,13 +139,18 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     } catch (e) {
       // 4. Error Handling & State Reset
       if (mounted) {
-        // Extract message usually from Supabase Exception
         String msg = e.toString().replaceAll('Exception: ', '');
-        if (msg.contains('User already registered')) {
-          msg = 'Email já cadastrado';
+        if (msg.contains('User already registered') ||
+            msg.contains('já cadastrado')) {
+          msg = 'Este email já está cadastrado.';
+        } else if (msg.contains('Auth session missing') ||
+            msg.contains('AuthSessionMissingException')) {
+          msg = 'Erro de autenticação. Tente novamente.';
+        } else if (msg.contains('Erro de autenticação')) {
+          msg = 'Erro de autenticação. Verifique seus dados e tente novamente.';
         }
 
-        _showError('Erro ao criar conta: $msg');
+        _showError(msg);
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -423,7 +431,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text(
+                    const Text(
                       'Já tem conta? ',
                       style: TextStyle(color: PremiumTokens.textSecondaryLight),
                     ),

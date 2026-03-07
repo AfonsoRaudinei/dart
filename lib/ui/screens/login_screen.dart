@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/session/session_controller.dart';
 import '../../core/router/app_routes.dart';
 import '../../modules/marketing/presentation/widgets/ouro_map_background.dart';
@@ -91,34 +92,59 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
             .read(sessionControllerProvider.notifier)
             .login('demo@soloforte.com', 'demo1234');
       } else {
-        // Login normal
+        // Login normal — email normalizado para lowercase
         await ref
             .read(sessionControllerProvider.notifier)
-            .login(_emailCtrl.text.trim(), _passCtrl.text);
+            .login(
+              _emailCtrl.text.trim().toLowerCase(),
+              _passCtrl.text,
+            );
       }
-
+      // SnackBar de sucesso omitido: GoRouter redirect → /map é imediato,
+      // SnackBar seria descartado antes de ser visível.
+    } on AuthException catch (e) {
+      // Traduzir mensagens do Supabase Auth para português
       if (mounted) {
-        _showSuccessMessage('Login realizado com sucesso!');
+        _showErrorMessage(_translateAuthError(e.message));
       }
     } catch (e) {
       if (mounted) {
-        _showErrorMessage(e.toString().replaceAll('Exception: ', ''));
+        _showErrorMessage(
+          e.toString().replaceAll('Exception: ', ''),
+        );
       }
     } finally {
       if (mounted) setState(() => _loading = false);
     }
   }
 
-  void _showSuccessMessage(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: const Color(0xFF34C759),
-        behavior: SnackBarBehavior.floating,
-        duration: const Duration(seconds: 2),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      ),
-    );
+  /// Traduz mensagens de erro do Supabase Auth para PT-BR.
+  /// Evita exibir mensagens técnicas em inglês para o usuário.
+  String _translateAuthError(String message) {
+    final lower = message.toLowerCase();
+    if (lower.contains('invalid login credentials')) {
+      return 'Email ou senha incorretos.';
+    }
+    if (lower.contains('email not confirmed')) {
+      return 'Email não confirmado. Verifique sua caixa de entrada.';
+    }
+    if (lower.contains('user not found')) {
+      return 'Usuário não encontrado.';
+    }
+    if (lower.contains('too many requests') ||
+        lower.contains('rate limit')) {
+      return 'Muitas tentativas. Aguarde alguns minutos.';
+    }
+    if (lower.contains('network') ||
+        lower.contains('socket') ||
+        lower.contains('timeout')) {
+      return 'Erro de conexão. Verifique sua internet.';
+    }
+    if (lower.contains('user already registered')) {
+      return 'Email já cadastrado.';
+    }
+    // Fallback: mensagem original se não reconhecida
+    return message;
   }
 
   void _showErrorMessage(String message) {
@@ -172,6 +198,40 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
 
           // ── Layer 3: Badge "Pins Ouro" pulsante (teaser) ────
           Positioned(top: 60, right: 20, child: _OuroPinsTeaser()),
+
+          // ── Botão Voltar → /public-map (glass iOS) ────
+          Positioned(
+            top: MediaQuery.of(context).padding.top + 12,
+            left: 16,
+            child: RepaintBoundary(
+              child: GestureDetector(
+                onTap: () => context.go('/public-map'),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.25),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.4),
+                          width: 0.8,
+                        ),
+                      ),
+                      child: Icon(
+                        Icons.arrow_back_ios_new_rounded,
+                        size: 18,
+                        color: Colors.black.withValues(alpha: 0.75),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
 
           // ── Layer 4: Formulário em caixa glass ─────────────
           Positioned(

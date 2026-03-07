@@ -1,8 +1,10 @@
 class VisitSession {
   final String id;
   final String producerId;
-  final String areaId;
-  final String activityType;
+  // Nullable: pode ser null quando check-in é feito apenas com produtor.
+  // No SQLite (area_id TEXT NOT NULL) é persistido como '' quando null.
+  final String? areaId;
+  final String? activityType;
   final DateTime startTime;
   final DateTime? endTime;
   final double initialLat;
@@ -15,8 +17,8 @@ class VisitSession {
   VisitSession({
     required this.id,
     required this.producerId,
-    required this.areaId,
-    required this.activityType,
+    this.areaId,
+    this.activityType,
     required this.startTime,
     this.endTime,
     required this.initialLat,
@@ -31,8 +33,8 @@ class VisitSession {
     return VisitSession(
       id: map['id'],
       producerId: map['producer_id'],
-      areaId: map['area_id'],
-      activityType: map['activity_type'],
+      areaId: map['area_id'] as String?,
+      activityType: map['activity_type'] as String?,
       startTime: DateTime.parse(map['start_time']),
       endTime: map['end_time'] != null ? DateTime.parse(map['end_time']) : null,
       initialLat: map['initial_lat'],

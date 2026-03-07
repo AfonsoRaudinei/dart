@@ -24,7 +24,7 @@ final reportRepositoryProvider =
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef ReportRepositoryRef = AutoDisposeProviderRef<IReportRepository>;
-String _$relatoriosListHash() => r'16b4ae5415189339502555ed3185225df25252b3';
+String _$relatoriosListHash() => r'59cb5a0e84208e7418df3412c626a318d68a7668';
 
 /// See also [relatoriosList].
 @ProviderFor(relatoriosList)
@@ -43,7 +43,7 @@ final relatoriosListProvider =
 // ignore: unused_element
 typedef RelatoriosListRef = AutoDisposeFutureProviderRef<List<Relatorio>>;
 String _$relatoriosFilteredHash() =>
-    r'd400be2f89e10973a6c3bd89a637a2e1a4dbfaf8';
+    r'7925c30b1ce3b9282f35c606dc3f5f42dbd35669';
 
 /// See also [relatoriosFiltered].
 @ProviderFor(relatoriosFiltered)

@@ -71,8 +71,8 @@ class VisitController extends StateNotifier<AsyncValue<VisitSession?>> {
 
   Future<void> startSession(
     String producerId,
-    String areaId,
-    String activityType,
+    String? areaId,
+    String? activityType,
     double lat,
     double long, {
     String? agendaEventId,
@@ -115,6 +115,18 @@ class VisitController extends StateNotifier<AsyncValue<VisitSession?>> {
       }
 
       state = AsyncValue.data(newSession);
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+    }
+  }
+
+  /// Atualiza o talhão da visita ativa sem encerrar a sessão.
+  Future<void> updateArea(String newAreaId) async {
+    final currentSession = state.valueOrNull;
+    if (currentSession == null) return;
+    try {
+      await _repository.updateArea(currentSession.id, newAreaId);
+      state = AsyncValue.data(currentSession.copyWith(areaId: newAreaId));
     } catch (e, st) {
       state = AsyncValue.error(e, st);
     }

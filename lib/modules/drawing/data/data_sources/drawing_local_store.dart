@@ -91,6 +91,13 @@ class DrawingLocalStore {
       'updated_at': f.properties.updatedAt.toIso8601String(),
       'versao_anterior_id': f.properties.versaoAnteriorId,
       'ativo': f.properties.ativo ? 1 : 0,
+      // 🌱 Sprint 6
+      'cultura': f.properties.cultura,
+      'safra': f.properties.safra,
+      'soil_sampling_scheme': f.properties.soilSamplingScheme,
+      'rec_by_nutrient': f.properties.recByNutrient != null
+          ? jsonEncode(f.properties.recByNutrient)
+          : null,
     };
   }
 
@@ -118,6 +125,17 @@ class DrawingLocalStore {
       versaoAnteriorId: row['versao_anterior_id'],
       clienteId: row['cliente_id'] as String?,
       fazendaId: row['fazenda_id'] as String?,
+      // 🌱 Sprint 6
+      cultura: row['cultura'] as String?,
+      safra: row['safra'] as String?,
+      soilSamplingScheme: row['soil_sampling_scheme'] as String?,
+      recByNutrient: row['rec_by_nutrient'] != null
+          ? Map<String, double>.from(
+              (jsonDecode(row['rec_by_nutrient'] as String) as Map).map(
+                (k, v) => MapEntry(k.toString(), (v as num).toDouble()),
+              ),
+            )
+          : null,
     );
 
     return DrawingFeature(

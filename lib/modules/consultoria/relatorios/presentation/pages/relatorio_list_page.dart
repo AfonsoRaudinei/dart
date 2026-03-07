@@ -62,14 +62,14 @@ class _RelatorioListPageState extends ConsumerState<RelatorioListPage> {
   // ── Header ────────────────────────────────────────────────────────────
 
   Widget _buildHeader() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(
+    return const Padding(
+      padding: EdgeInsets.fromLTRB(
         16.0,
         16.0,
         16.0,
         8.0,
       ),
-      child: Text('Relatórios', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+      child: Text('Relatórios', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
     );
   }
 
@@ -88,12 +88,12 @@ class _RelatorioListPageState extends ConsumerState<RelatorioListPage> {
                 color: PremiumTokens.brandGreen.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(100),
               ),
-              child: Row(
+              child: const Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(Icons.person_outline,
                       size: 13, color: PremiumTokens.brandGreen),
-                  const SizedBox(width: 4),
+                  SizedBox(width: 4),
                   Text(
                     'Filtrado por cliente',
                     style: TextStyle(
@@ -108,7 +108,7 @@ class _RelatorioListPageState extends ConsumerState<RelatorioListPage> {
             const SizedBox(width: 8),
             GestureDetector(
               onTap: () => context.go(AppRoutes.reports),
-              child: Icon(Icons.close, size: 16,
+              child: const Icon(Icons.close, size: 16,
                   color: PremiumTokens.textSecondaryLight),
             ),
           ],
@@ -337,10 +337,10 @@ class _OfflineBadge extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
+          const Icon(
             Icons.cloud_off_rounded,
             size: 10,
-            color: const Color(0xFF92400E),
+            color: Color(0xFF92400E),
           ),
           const SizedBox(width: 3),
           Text(
@@ -376,7 +376,7 @@ class _EmptyState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
+            const Icon(
               Icons.description_outlined,
               size: 56,
               color: PremiumTokens.textTertiaryLight,
@@ -409,7 +409,7 @@ class _ErrorState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.error_outline, size: 48, color: const Color(0xFFFF3B30)),
+            const Icon(Icons.error_outline, size: 48, color: Color(0xFFFF3B30)),
             const SizedBox(height: 16.0),
             Text(
               message,

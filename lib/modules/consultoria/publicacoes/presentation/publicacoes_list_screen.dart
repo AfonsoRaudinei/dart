@@ -10,6 +10,7 @@ import 'dart:ui' as ui;
 import '../models/publicacao_tecnica.dart';
 import '../models/publicacao_tema.dart';
 import '../providers/publicacao_providers.dart';
+import '../../../../core/constants/layout_constants.dart';
 
 /// Tela de Listagem de Publicações Públicas — PASSO 4
 ///
@@ -58,7 +59,7 @@ class _PublicacoesListScreenState extends ConsumerState<PublicacoesListScreen> {
             ),
             actions: [
               IconButton(
-                icon: Icon(SFIcons.add, color: PremiumTokens.brandGreen, size: 28),
+                icon: const Icon(SFIcons.add, color: PremiumTokens.brandGreen, size: 28),
                 onPressed: () => context.go('/consultoria/publicacoes/nova'),
               ),
               const SizedBox(width: 8),
@@ -74,7 +75,7 @@ class _PublicacoesListScreenState extends ConsumerState<PublicacoesListScreen> {
             ),
           ),
           SliverPadding(
-            padding: const EdgeInsets.only(bottom: 100),
+            padding: const EdgeInsets.only(bottom: kFabSafeArea),
             sliver: _buildListSliver(),
           ),
         ],

@@ -129,7 +129,7 @@ class _PublicationPin extends StatelessWidget {
   Widget _buildPlaceholder() {
     return Container(
       color: PremiumTokens.surfaceLight,
-      child: Icon(Icons.image, color: PremiumTokens.textSecondaryLight, size: 24),
+      child: const Icon(Icons.image, color: PremiumTokens.textSecondaryLight, size: 24),
     );
   }
 

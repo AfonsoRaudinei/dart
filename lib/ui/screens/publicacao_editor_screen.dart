@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 import 'package:go_router/go_router.dart';
-import '../../../core/domain/publicacao.dart';
+import 'package:soloforte_app/core/constants/layout_constants.dart';
 
 // ════════════════════════════════════════════════════════════════════
 // TELA DE EDIÇÃO DE PUBLICAÇÃO (ADR-007)
@@ -21,8 +21,6 @@ class _PublicacaoEditorScreenState extends State<PublicacaoEditorScreen> {
   late TextEditingController _descriptionController;
 
   bool _isLoading = true;
-
-  Publicacao? _publicacao;
 
   @override
   void initState() {
@@ -71,12 +69,7 @@ class _PublicacaoEditorScreenState extends State<PublicacaoEditorScreen> {
         backgroundColor: Colors.white,
         foregroundColor: PremiumTokens.textPrimaryLight,
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () {
-            context.go('/map');
-          },
-        ),
+        automaticallyImplyLeading: false,
         actions: [
           TextButton(
             onPressed: _handleSave,
@@ -113,7 +106,7 @@ class _PublicacaoEditorScreenState extends State<PublicacaoEditorScreen> {
                   Expanded(
                     child: Text(
                       'ID: ${widget.publicacaoId}',
-                      style: TextStyle(fontSize: 12, color: PremiumTokens.textSecondaryLight).copyWith(
+                      style: const TextStyle(fontSize: 12, color: PremiumTokens.textSecondaryLight).copyWith(
                         fontFamily: 'monospace',
                       ),
                     ),
@@ -125,7 +118,7 @@ class _PublicacaoEditorScreenState extends State<PublicacaoEditorScreen> {
             const SizedBox(height: 20),
 
             // Título
-            Text('Título', style: TextStyle(fontSize: 12, color: PremiumTokens.textSecondaryLight)),
+            const Text('Título', style: TextStyle(fontSize: 12, color: PremiumTokens.textSecondaryLight)),
             const SizedBox(height: 8),
             TextField(
               controller: _titleController,
@@ -150,7 +143,7 @@ class _PublicacaoEditorScreenState extends State<PublicacaoEditorScreen> {
             const SizedBox(height: 20),
 
             // Descrição
-            Text('Descrição', style: TextStyle(fontSize: 12, color: PremiumTokens.textSecondaryLight)),
+            const Text('Descrição', style: TextStyle(fontSize: 12, color: PremiumTokens.textSecondaryLight)),
             const SizedBox(height: 8),
             TextField(
               controller: _descriptionController,
@@ -176,7 +169,7 @@ class _PublicacaoEditorScreenState extends State<PublicacaoEditorScreen> {
             const SizedBox(height: 20),
 
             // Fotos
-            Text('Fotos', style: TextStyle(fontSize: 12, color: PremiumTokens.textSecondaryLight)),
+            const Text('Fotos', style: TextStyle(fontSize: 12, color: PremiumTokens.textSecondaryLight)),
             const SizedBox(height: 8),
             Container(
               height: 120,
@@ -189,7 +182,7 @@ class _PublicacaoEditorScreenState extends State<PublicacaoEditorScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(
+                    const Icon(
                       Icons.add_photo_alternate_outlined,
                       size: 32,
                       color: PremiumTokens.textTertiaryLight,
@@ -197,7 +190,7 @@ class _PublicacaoEditorScreenState extends State<PublicacaoEditorScreen> {
                     const SizedBox(height: 8),
                     Text(
                       'Adicionar fotos',
-                      style: TextStyle(fontSize: 12, color: PremiumTokens.textSecondaryLight).copyWith(
+                      style: const TextStyle(fontSize: 12, color: PremiumTokens.textSecondaryLight).copyWith(
                         color: PremiumTokens.textTertiaryLight,
                       ),
                     ),
@@ -205,6 +198,7 @@ class _PublicacaoEditorScreenState extends State<PublicacaoEditorScreen> {
                 ),
               ),
             ),
+            const SizedBox(height: kFabSafeArea),
           ],
         ),
       ),

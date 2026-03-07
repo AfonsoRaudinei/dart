@@ -574,7 +574,7 @@ class _NovoCaseSheetState extends State<NovoCaseSheet> {
               borderRadius: BorderRadius.circular(12),
               color: PremiumTokens.brandGreen.withValues(alpha: 0.05),
             ),
-            child: Row(
+            child: const Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(
@@ -582,7 +582,7 @@ class _NovoCaseSheetState extends State<NovoCaseSheet> {
                   color: PremiumTokens.brandGreen,
                   size: 18,
                 ),
-                const SizedBox(width: 8),
+                SizedBox(width: 8),
                 Text(
                   '+ Adicionar Avaliação',
                   style: TextStyle(
@@ -752,7 +752,7 @@ class _NovoCaseSheetState extends State<NovoCaseSheet> {
       style: Theme.of(context).textTheme.bodyMedium,
       decoration: InputDecoration(
         hintText: hint,
-        hintStyle: TextStyle(
+        hintStyle: const TextStyle(
           color: PremiumTokens.textSecondaryLight,
           fontSize: 14,
         ),
@@ -826,7 +826,7 @@ class _FDivider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Divider(
+    return const Divider(
       height: 0.5,
       thickness: 0.5,
       color: PremiumTokens.hairlineLight,

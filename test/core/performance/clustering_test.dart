@@ -7,9 +7,9 @@ void main() {
     test('returns individual markers at high zoom', () {
       final clusterer = MarkerClusterer<String>(minZoom: 14.0);
       final items = [
-        ClusterItem(position: LatLng(0, 0), data: 'A'),
-        ClusterItem(position: LatLng(0.01, 0.01), data: 'B'),
-        ClusterItem(position: LatLng(0.02, 0.02), data: 'C'),
+        ClusterItem(position: const LatLng(0, 0), data: 'A'),
+        ClusterItem(position: const LatLng(0.01, 0.01), data: 'B'),
+        ClusterItem(position: const LatLng(0.02, 0.02), data: 'C'),
       ];
 
       final clusters = clusterer.cluster(items, 15.0, null);
@@ -24,9 +24,9 @@ void main() {
         gridSize: 0.1, // Large grid cells
       );
       final items = [
-        ClusterItem(position: LatLng(0, 0), data: 'A'),
-        ClusterItem(position: LatLng(0.01, 0.01), data: 'B'),
-        ClusterItem(position: LatLng(0.02, 0.02), data: 'C'),
+        ClusterItem(position: const LatLng(0, 0), data: 'A'),
+        ClusterItem(position: const LatLng(0.01, 0.01), data: 'B'),
+        ClusterItem(position: const LatLng(0.02, 0.02), data: 'C'),
       ];
 
       final clusters = clusterer.cluster(items, 10.0, null);
@@ -39,14 +39,14 @@ void main() {
     test('filters markers outside bounds', () {
       final clusterer = MarkerClusterer<String>(minZoom: 14.0);
       final items = [
-        ClusterItem(position: LatLng(0, 0), data: 'A'),
-        ClusterItem(position: LatLng(10, 10), data: 'B'), // Far away
-        ClusterItem(position: LatLng(0.01, 0.01), data: 'C'),
+        ClusterItem(position: const LatLng(0, 0), data: 'A'),
+        ClusterItem(position: const LatLng(10, 10), data: 'B'), // Far away
+        ClusterItem(position: const LatLng(0.01, 0.01), data: 'C'),
       ];
 
       final bounds = MapBounds(
-        southwest: LatLng(-1, -1),
-        northeast: LatLng(1, 1),
+        southwest: const LatLng(-1, -1),
+        northeast: const LatLng(1, 1),
       );
 
       final clusters = clusterer.cluster(items, 10.0, bounds);
@@ -65,8 +65,8 @@ void main() {
         gridSize: 0.1, // Grid que agrupa ambos os pontos
       );
       final items = [
-        ClusterItem(position: LatLng(0, 0), data: 'A'),
-        ClusterItem(position: LatLng(0.02, 0.02), data: 'B'),
+        ClusterItem(position: const LatLng(0, 0), data: 'A'),
+        ClusterItem(position: const LatLng(0.02, 0.02), data: 'B'),
       ];
 
       final clusters = clusterer.cluster(items, 10.0, null);
@@ -89,7 +89,7 @@ void main() {
     test('handles single item', () {
       final clusterer = MarkerClusterer<String>(minZoom: 14.0);
       final items = [
-        ClusterItem(position: LatLng(0, 0), data: 'A'),
+        ClusterItem(position: const LatLng(0, 0), data: 'A'),
       ];
 
       final clusters = clusterer.cluster(items, 10.0, null);
@@ -102,7 +102,7 @@ void main() {
   group('ClusterItem', () {
     test('stores position and data', () {
       final item = ClusterItem<String>(
-        position: LatLng(1.5, 2.5),
+        position: const LatLng(1.5, 2.5),
         data: 'test',
       );
 
@@ -115,13 +115,13 @@ void main() {
   group('Cluster', () {
     test('count returns number of items', () {
       final items = [
-        ClusterItem(position: LatLng(0, 0), data: 'A'),
-        ClusterItem(position: LatLng(1, 1), data: 'B'),
-        ClusterItem(position: LatLng(2, 2), data: 'C'),
+        ClusterItem(position: const LatLng(0, 0), data: 'A'),
+        ClusterItem(position: const LatLng(1, 1), data: 'B'),
+        ClusterItem(position: const LatLng(2, 2), data: 'C'),
       ];
 
       final cluster = Cluster<String>(
-        position: LatLng(1, 1),
+        position: const LatLng(1, 1),
         items: items,
       );
 
@@ -130,12 +130,12 @@ void main() {
 
     test('isCluster returns true for multiple items', () {
       final items = [
-        ClusterItem(position: LatLng(0, 0), data: 'A'),
-        ClusterItem(position: LatLng(1, 1), data: 'B'),
+        ClusterItem(position: const LatLng(0, 0), data: 'A'),
+        ClusterItem(position: const LatLng(1, 1), data: 'B'),
       ];
 
       final cluster = Cluster<String>(
-        position: LatLng(0.5, 0.5),
+        position: const LatLng(0.5, 0.5),
         items: items,
       );
 
@@ -144,11 +144,11 @@ void main() {
 
     test('isCluster returns false for single item', () {
       final items = [
-        ClusterItem(position: LatLng(0, 0), data: 'A'),
+        ClusterItem(position: const LatLng(0, 0), data: 'A'),
       ];
 
       final cluster = Cluster<String>(
-        position: LatLng(0, 0),
+        position: const LatLng(0, 0),
         items: items,
       );
 
@@ -159,30 +159,30 @@ void main() {
   group('MapBounds', () {
     test('contains returns true for point inside bounds', () {
       final bounds = MapBounds(
-        southwest: LatLng(0, 0),
-        northeast: LatLng(10, 10),
+        southwest: const LatLng(0, 0),
+        northeast: const LatLng(10, 10),
       );
 
-      expect(bounds.contains(LatLng(5, 5)), true);
-      expect(bounds.contains(LatLng(0, 0)), true); // Edge
-      expect(bounds.contains(LatLng(10, 10)), true); // Edge
+      expect(bounds.contains(const LatLng(5, 5)), true);
+      expect(bounds.contains(const LatLng(0, 0)), true); // Edge
+      expect(bounds.contains(const LatLng(10, 10)), true); // Edge
     });
 
     test('contains returns false for point outside bounds', () {
       final bounds = MapBounds(
-        southwest: LatLng(0, 0),
-        northeast: LatLng(10, 10),
+        southwest: const LatLng(0, 0),
+        northeast: const LatLng(10, 10),
       );
 
-      expect(bounds.contains(LatLng(-1, 5)), false); // Too far south
-      expect(bounds.contains(LatLng(5, -1)), false); // Too far west
-      expect(bounds.contains(LatLng(11, 5)), false); // Too far north
-      expect(bounds.contains(LatLng(5, 11)), false); // Too far east
+      expect(bounds.contains(const LatLng(-1, 5)), false); // Too far south
+      expect(bounds.contains(const LatLng(5, -1)), false); // Too far west
+      expect(bounds.contains(const LatLng(11, 5)), false); // Too far north
+      expect(bounds.contains(const LatLng(5, 11)), false); // Too far east
     });
 
     test('fromCenter creates correct bounds', () {
       final bounds = MapBounds.fromCenter(
-        center: LatLng(0, 0),
+        center: const LatLng(0, 0),
         radiusKm: 111.0, // ~1 degree
       );
 

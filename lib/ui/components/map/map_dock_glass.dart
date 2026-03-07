@@ -18,7 +18,7 @@ import '../premium/premium_glass_panel.dart';
 /// - Renderizado em Positioned(bottom: 0, height: dockSafeHeight)
 /// - SafeArea(top: false, bottom: true) preserva insets do sistema
 /// - Espaço útil: kDockHeight (50px)
-/// - FloatingMenuButton está no PrivateAppShell (não aqui)
+/// - SmartButton está no AppShell (não aqui)
 /// - BottomSheets permanecem em bottom: dockSafeHeight (blindagem intacta)
 /// - Blur somente no container glass, não na zona inteira
 class MapDockGlass extends StatelessWidget {

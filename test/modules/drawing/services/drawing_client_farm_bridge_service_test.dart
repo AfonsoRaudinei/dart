@@ -1,6 +1,4 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:soloforte_app/modules/consultoria/clients/domain/agronomic_models.dart';
-import 'package:soloforte_app/modules/consultoria/clients/domain/client.dart';
 import 'package:soloforte_app/modules/drawing/domain/repositories/i_clients_repository.dart';
 import 'package:soloforte_app/modules/drawing/domain/services/drawing_client_farm_bridge_service.dart';
 
@@ -73,7 +71,7 @@ void main() {
     });
 
     test('loadClients retorna lista vazia quando repositório é null', () async {
-      final service = DrawingClientFarmBridgeService(null);
+      final service = const DrawingClientFarmBridgeService(null);
       final result = await service.loadClients();
       expect(result, isEmpty);
     });
@@ -89,7 +87,7 @@ void main() {
     });
 
     test('loadFarms retorna lista vazia quando repositório é null', () async {
-      final service = DrawingClientFarmBridgeService(null);
+      final service = const DrawingClientFarmBridgeService(null);
       final result = await service.loadFarms('qualquer');
       expect(result, isEmpty);
     });
@@ -108,7 +106,7 @@ void main() {
     });
 
     test('createFarm nao lança exceção quando repositório é null', () async {
-      final service = DrawingClientFarmBridgeService(null);
+      final service = const DrawingClientFarmBridgeService(null);
       // Não deve lançar
       await expectLater(
         service.createFarm('X', 'y', 'z', 'w'),

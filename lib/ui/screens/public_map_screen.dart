@@ -1,13 +1,12 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 
 import '../components/public_map/access_button.dart';
-import '../components/public_map/location_button.dart';
-import '../components/public_map/zoom_controls.dart';
 import '../components/public_map/public_publication_pins.dart';
 import '../components/public_map/public_publication_preview.dart';
 import '../components/public_map/error_overlay.dart';
@@ -34,12 +33,47 @@ class _PublicMapScreenState extends ConsumerState<PublicMapScreen> {
   static const double _userLocationZoom = 16.0;
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _requestLocationPermission();
+    });
+  }
+
+  Future<void> _requestLocationPermission() async {
+    final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) return;
+
+    LocationPermission permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      await Geolocator.requestPermission();
+    }
+    // deniedForever ou granted: silenciar, sem UI extra
+  }
+
+  void _zoomIn() {
+    final currentZoom = _mapController.camera.zoom;
+    if (currentZoom < 18.0) {
+      final newZoom = (currentZoom + 1).clamp(3.0, 18.0);
+      _mapController.move(_mapController.camera.center, newZoom);
+    }
+  }
+
+  void _zoomOut() {
+    final currentZoom = _mapController.camera.zoom;
+    if (currentZoom > 3.0) {
+      final newZoom = (currentZoom - 1).clamp(3.0, 18.0);
+      _mapController.move(_mapController.camera.center, newZoom);
+    }
+  }
+
+  @override
   void dispose() {
     _mapController.dispose();
     super.dispose();
   }
 
-  void _centerOnUserLocation() {
+  void _onLocationTap() {
     final locationState = ref.read(publicLocationNotifierProvider);
 
     if (locationState.status == PublicLocationStatus.available &&
@@ -154,62 +188,84 @@ class _PublicMapScreenState extends ConsumerState<PublicMapScreen> {
             ],
           ),
 
-          // Badge "Mapa Público" no topo esquerdo
+          // Logo SoloForte flutuante no topo esquerdo
           Positioned(
-            top: 60,
-            left: 20,
-            child: Semantics(
-              label: 'Mapa Público - Explore publicações da comunidade',
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.9),
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    const BoxShadow(
-                      color: Colors.black12,
-                      blurRadius: 4,
-                      offset: Offset(0, 2),
+            top: MediaQuery.of(context).padding.top + 12,
+            left: 16,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                child: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.55),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.7),
+                      width: 0.8,
                     ),
-                  ],
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.public,
-                      size: 20,
-                      color: PremiumTokens.brandGreen,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Mapa Público',
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                  ],
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.08),
+                        blurRadius: 12,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                  child: Image.asset(
+                    'assets/images/logo.png',
+                    width: 36,
+                    height: 36,
+                    fit: BoxFit.contain,
+                  ),
                 ),
               ),
             ),
           ),
 
-          // Botão de localização no topo direito
+          // Pill vertical: zoom + localização
           Positioned(
-            top: 60,
-            right: 20,
-            child: LocationButton(onLocationObtained: _centerOnUserLocation),
-          ),
-
-          // Controles de zoom no canto inferior direito
-          Positioned(
-            bottom: 120,
-            right: 20,
-            child: ZoomControls(
-              mapController: _mapController,
-              minZoom: 3.0,
-              maxZoom: 18.0,
+            top: MediaQuery.of(context).padding.top + 16,
+            right: 16,
+            child: RepaintBoundary(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(30),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                  child: Container(
+                    width: 52,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.72),
+                      borderRadius: BorderRadius.circular(30),
+                      border: Border.all(
+                        color: Colors.white.withOpacity(0.6),
+                        width: 0.8,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.10),
+                          blurRadius: 16,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _PillButton(icon: Icons.add, onTap: _zoomIn),
+                        const _PillDivider(),
+                        _PillButton(icon: Icons.remove, onTap: _zoomOut),
+                        const _PillDivider(),
+                        _PillButton(
+                          icon: Icons.my_location_rounded,
+                          onTap: _onLocationTap,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
             ),
           ),
 
@@ -235,14 +291,52 @@ class _PublicMapScreenState extends ConsumerState<PublicMapScreen> {
           if (publicationsAsync.isLoading) const PublicationsLoadingOverlay(),
 
           // Botão "Acessar SoloForte" centralizado na parte inferior
-          Positioned(
+          const Positioned(
             left: 0,
             right: 0,
             bottom: 40,
-            child: Center(child: const AccessSoloForteButton()),
+            child: Center(child: AccessSoloForteButton()),
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Botão individual dentro do pill
+class _PillButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+  const _PillButton({required this.icon, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: SizedBox(
+        width: 52,
+        height: 50,
+        child: Icon(
+          icon,
+          size: 22,
+          color: Colors.black.withOpacity(0.70),
+        ),
+      ),
+    );
+  }
+}
+
+/// Divisor entre botões do pill
+class _PillDivider extends StatelessWidget {
+  const _PillDivider();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 0.5,
+      margin: const EdgeInsets.symmetric(horizontal: 10),
+      color: Colors.black.withOpacity(0.12),
     );
   }
 }

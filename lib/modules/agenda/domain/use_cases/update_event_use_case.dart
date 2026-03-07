@@ -62,18 +62,26 @@ class UpdateEventUseCase {
 
     // Valida conflito de horário
     if (newStartTime != null && newEndTime != null) {
-      final conflicting = EventRules.findTimeConflict(
-        currentEvents: currentEvents,
-        date: newDataInicio,
+      // Cria evento temporário com os novos valores para verificação
+      final tempEvent = currentEvent.copyWith(
+        dataInicioPlanejada: newDataInicio,
+        dataFimPlanejada: newDataFim,
         startTime: newStartTime,
         endTime: newEndTime,
-        excludeEventId: currentEvent.id,
+        priority: priority ?? currentEvent.priority,
+        latitude: latitude ?? currentEvent.latitude,
+        longitude: longitude ?? currentEvent.longitude,
       );
-      if (conflicting != null) {
-        throw StateError(
-          'Conflito de horário detectado com a visita "${conflicting.titulo}" '
-          'agendada para ${conflicting.formattedTimeRange}',
-        );
+
+      // Verifica conflito com outros eventos (excluindo o próprio)
+      for (final existing in currentEvents) {
+        if (existing.id == currentEvent.id) continue;
+        if (existing.status.isFinished) continue;
+        if (tempEvent.hasTimeConflictWith(existing)) {
+          throw StateError(
+            'Conflito de horário detectado com a visita "${existing.titulo}"',
+          );
+        }
       }
     }
 

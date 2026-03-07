@@ -6,6 +6,7 @@ import '../../data/repositories/i_marketing_case_repository.dart';
 import '../../data/repositories/marketing_case_repository_impl.dart';
 import '../../data/services/marketing_sync_service.dart';
 import '../../domain/entities/marketing_case.dart';
+import '../../domain/enums/marketing_case_status.dart';
 
 // ── Repositório ────────────────────────────────────────────────
 final marketingCaseRepositoryProvider = Provider<IMarketingCaseRepository>((
@@ -78,6 +79,42 @@ class MarketingCasesNotifier
     }
   }
 
+  /// Salva o case como rascunho (apenas local, não sincroniza)
+  Future<MarketingCase> saveAsDraft(MarketingCase newCase) async {
+    try {
+      final draftCase = await _repository.saveAsDraft(newCase);
+
+      // Adiciona à lista local se necessário (para futuras consultas)
+      final currentCases = state.valueOrNull ?? [];
+      final exists = currentCases.any((c) => c.id == draftCase.id);
+
+      if (!exists) {
+        state = AsyncData([...currentCases, draftCase]);
+      }
+
+      return draftCase;
+    } catch (e, st) {
+      debugPrint('Erro ao salvar rascunho: $e\n$st');
+      rethrow;
+    }
+  }
+
+  /// Publica um rascunho existente (muda status de draft para published)
+  Future<MarketingCase?> publishDraft(MarketingCase draft) async {
+    if (draft.status != MarketingCaseStatus.draft) {
+      throw Exception('Apenas rascunhos podem ser publicados via publishDraft');
+    }
+
+    // Atualiza o status para published e tenta enviar ao Supabase
+    final publishedCase = MarketingCase.fromJson({
+      ...draft.toJson(),
+      'status': MarketingCaseStatus.published.toValue(),
+      'atualizado_em': DateTime.now().toIso8601String(),
+    });
+
+    return publishCase(publishedCase);
+  }
+
   /// Re-tenta o upload em lote de todos os cases que estão marcados como pending_sync
   Future<void> retryPendingCases() async {
     final currentCases = state.valueOrNull ?? [];
@@ -135,3 +172,24 @@ final marketingCasesProvider =
       notifier.load();
       return notifier;
     });
+
+// ── Provider de rascunhos ──────────────────────────────────────
+/// Retorna apenas os cases com status=draft
+final draftCasesProvider = Provider.autoDispose<List<MarketingCase>>((ref) {
+  final allCases = ref.watch(marketingCasesProvider).valueOrNull ?? [];
+  return allCases.where((c) => c.status == MarketingCaseStatus.draft).toList();
+});
+
+// ── Provider de cases publicados ───────────────────────────────
+/// Retorna apenas os cases com status=published (para o mapa)
+final publishedCasesProvider = Provider.autoDispose<List<MarketingCase>>((ref) {
+  final allCases = ref.watch(marketingCasesProvider).valueOrNull ?? [];
+  return allCases
+      .where(
+        (c) =>
+            c.status == MarketingCaseStatus.published &&
+            c.ativo &&
+            c.deletadoEm == null,
+      )
+      .toList();
+});

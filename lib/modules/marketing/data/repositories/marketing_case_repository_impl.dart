@@ -3,6 +3,7 @@ import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../domain/entities/marketing_case.dart';
+import '../../domain/enums/marketing_case_status.dart';
 import 'i_marketing_case_repository.dart';
 
 class MarketingCaseRepositoryImpl implements IMarketingCaseRepository {
@@ -162,5 +163,21 @@ class MarketingCaseRepositoryImpl implements IMarketingCaseRepository {
     await saveSingleToCache(syncedCase);
 
     return syncedCase;
+  }
+
+  @override
+  Future<MarketingCase> saveAsDraft(MarketingCase marketingCase) async {
+    // Rascunho: salva apenas localmente, com status=draft e syncStatus=local_only
+    final draftCase = MarketingCase.fromJson({
+      ...marketingCase.toJson(),
+      'status': MarketingCaseStatus.draft.toValue(),
+      'sync_status': 'local_only',
+      'atualizado_em': DateTime.now().toIso8601String(),
+    });
+
+    // Persiste no cache local
+    await saveSingleToCache(draftCase);
+
+    return draftCase;
   }
 }

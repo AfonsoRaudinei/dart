@@ -8,6 +8,7 @@ import '../../../../core/router/app_routes.dart';
 import '../models/publicacao_tema.dart';
 import '../providers/publicacao_providers.dart';
 import '../use_cases/create_publicacao_use_case.dart';
+import '../../../../core/constants/layout_constants.dart';
 
 /// Tela de Criação de Publicação Técnica — PASSO 4
 ///
@@ -55,7 +56,7 @@ class _PublicacaoFormScreenState extends ConsumerState<PublicacaoFormScreen> {
             _buildHeader(),
             _buildForm(),
             _buildPublishButton(),
-            const SliverToBoxAdapter(child: SizedBox(height: 100)),
+            const SliverToBoxAdapter(child: SizedBox(height: kFabSafeArea)),
           ],
         ),
       ),
@@ -329,6 +330,7 @@ class _PublicacaoFormScreenState extends ConsumerState<PublicacaoFormScreen> {
       );
 
       await ref.read(createPublicacaoProvider(input).future);
+      if (!mounted) return; // ← Guard obrigatório antes de usar ref
       ref.invalidate(publicacoesListProvider);
 
       if (mounted) {

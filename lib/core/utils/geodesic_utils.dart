@@ -54,7 +54,7 @@ class GeodesicUtils {
   }) {
     if (ring.length < 2) return 0.0;
 
-    final distance = Distance();
+    final distance = const Distance();
     double total = 0.0;
 
     // Calcular distância entre pontos consecutivos
@@ -78,7 +78,7 @@ class GeodesicUtils {
   static List<double> calculateSegmentDistances(List<LatLng> ring) {
     if (ring.length < 2) return [];
 
-    final distance = Distance();
+    final distance = const Distance();
     final segments = <double>[];
 
     for (int i = 0; i < ring.length - 1; i++) {

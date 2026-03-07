@@ -37,11 +37,24 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:soloforte_app/core/router/app_routes.dart';
 import 'package:soloforte_app/core/state/side_menu_state.dart';
 
-class SmartButton extends ConsumerWidget {
+/// SmartButton — FAB global (ConsumerStatefulWidget)
+///
+/// Usa ConsumerStatefulWidget para ter acesso a [mounted].
+/// Isso evita "Bad state: Cannot use ref after the widget was disposed"
+/// quando callbacks de onPressed são invocados durante transições de rota.
+///
+/// REGRA: ref.read() é feito no build (síncrono e seguro).
+/// Os callbacks NUNCA capturam [ref] — capturam apenas o notifier já lido.
+class SmartButton extends ConsumerStatefulWidget {
   const SmartButton({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SmartButton> createState() => _SmartButtonState();
+}
+
+class _SmartButtonState extends ConsumerState<SmartButton> {
+  @override
+  Widget build(BuildContext context) {
     // ═══════════════════════════════════════════════════════════════
     // 1. OBTER ROTA ATUAL (reativo via GoRouterState InheritedWidget)
     // ═══════════════════════════════════════════════════════════════
@@ -52,13 +65,20 @@ class SmartButton extends ConsumerWidget {
     // ═══════════════════════════════════════════════════════════════
     final RouteLevel level = AppRoutes.getLevel(uri);
 
+    // ═══════════════════════════════════════════════════════════════
+    // 3. LER PROVIDERS NO BUILD (síncrono, seguro)
+    // Nunca capturar `ref` em closures — capturar apenas o notifier.
+    // ═══════════════════════════════════════════════════════════════
+    final sideMenuNotifier = level == RouteLevel.l0
+        ? ref.read(sideMenuOpenProvider.notifier)
+        : null;
+
     // Tokens oficiais
     final primaryColor = PremiumTokens.brandGreen;
-    final buttonPadding = const EdgeInsets.symmetric(horizontal: 20, vertical: 14);
     final safeElevation = 2.0; // Sombra mínima conforme design
 
     // ═══════════════════════════════════════════════════════════════
-    // 3. RENDERIZAR BASEADO NO NÍVEL
+    // 4. RENDERIZAR BASEADO NO NÍVEL
     // ═══════════════════════════════════════════════════════════════
     switch (level) {
       case RouteLevel.public:
@@ -67,7 +87,10 @@ class SmartButton extends ConsumerWidget {
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         return FloatingActionButton.extended(
           heroTag: 'smart_button_cta',
-          onPressed: () => context.go(AppRoutes.login),
+          onPressed: () {
+            if (!mounted) return;
+            context.go(AppRoutes.login);
+          },
           backgroundColor: primaryColor,
           elevation: safeElevation,
           shape: RoundedRectangleBorder(
@@ -91,8 +114,10 @@ class SmartButton extends ConsumerWidget {
         return FloatingActionButton(
           heroTag: 'smart_button_menu',
           onPressed: () {
-            // Abrir menu via provider (overlay)
-            ref.read(sideMenuOpenProvider.notifier).state = true;
+            // Guard: widget pode ter sido disposed durante transição de rota
+            if (!mounted) return;
+            // Abrir menu via notifier já capturado no build (sem ref)
+            sideMenuNotifier?.state = true;
           },
           backgroundColor: primaryColor,
           elevation: safeElevation,
@@ -106,11 +131,14 @@ class SmartButton extends ConsumerWidget {
         // L1/L2+: FORA DO MAPA — ← Retorna ao mapa via go()
         // CONTRATO MAP-FIRST: Navegação declarativa obrigatória
         // ❌ SEM pop() — ❌ SEM canPop() — ❌ SEM stack
+        // ❌ SEM await — ❌ SEM ref no callback
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         return FloatingActionButton(
           heroTag: 'smart_button_back',
           onPressed: () {
-            // Retorno EXPLÍCITO e DECLARATIVO para o mapa
+            // Guard: widget pode ter sido disposed durante transição de rota
+            if (!mounted) return;
+            // Retorno EXPLÍCITO, SÍNCRONO e DECLARATIVO para o mapa
             context.go(AppRoutes.map);
           },
           backgroundColor: primaryColor,

@@ -1,10 +1,13 @@
 import '../domain/client.dart';
 import '../domain/agronomic_models.dart';
+import '../domain/client_cultura.dart';
 import 'package:sqflite/sqflite.dart';
 import '../../../../core/database/database_helper.dart';
 
 class ClientsRepository {
   Future<Database> get _db async => await DatabaseHelper.instance.database;
+
+  // ── Clientes ──────────────────────────────────────────────────────
 
   Future<List<Client>> getClients() async {
     final db = await _db;
@@ -13,7 +16,7 @@ class ClientsRepository {
       where: 'deleted_at IS NULL',
       orderBy: 'nome ASC',
     );
-    return maps.map((e) => _fromMap(e)).toList();
+    return maps.map((e) => Client.fromMap(e)).toList();
   }
 
   Future<Client?> getClientById(String id) async {
@@ -24,7 +27,7 @@ class ClientsRepository {
       whereArgs: [id],
     );
     if (maps.isNotEmpty) {
-      final client = _fromMap(maps.first);
+      final client = Client.fromMap(maps.first);
 
       final farmMaps = await db.query(
         'farms',
@@ -51,20 +54,38 @@ class ClientsRepository {
     return null;
   }
 
-  Future<void> saveClient(Client client) async {
+  /// Salva (insert) um novo cliente com suas culturas em transação única.
+  Future<void> saveClient(
+    Client client, {
+    List<ClientCultura> culturas = const [],
+  }) async {
     final db = await _db;
+    await db.transaction((txn) async {
+      await txn.insert(
+        'clients',
+        client.toMap(),
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+      await _deleteCulturas(txn, client.id);
+      await _saveCulturas(txn, culturas);
+    });
+  }
 
-    final data = _toMap(client);
-
-    final count = await db.update(
-      'clients',
-      data,
-      where: 'id = ?',
-      whereArgs: [client.id],
-    );
-    if (count == 0) {
-      await db.insert('clients', data);
-    }
+  /// Atualiza um cliente existente com suas culturas em transação única.
+  Future<void> updateClient(
+    Client client, {
+    List<ClientCultura> culturas = const [],
+  }) async {
+    final db = await _db;
+    await db.transaction((txn) async {
+      await txn.insert(
+        'clients',
+        client.toMap(),
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+      await _deleteCulturas(txn, client.id);
+      await _saveCulturas(txn, culturas);
+    });
   }
 
   Future<void> deleteClient(String id) async {
@@ -73,40 +94,51 @@ class ClientsRepository {
       'clients',
       {
         'deleted_at': DateTime.now().toIso8601String(),
-        'sync_status': 1, // Mark dirty
+        'updated_at': DateTime.now().toIso8601String(),
+        'sync_status': 1,
       },
       where: 'id = ?',
       whereArgs: [id],
     );
   }
 
-  Client _fromMap(Map<String, Object?> map) {
-    return Client(
-      id: map['id'] as String,
-      name: map['nome'] as String,
-      phone: (map['telefone'] as String?) ?? '',
-      email: map['email'] as String?,
-      city: '',
-      state: '',
-      active: map['deleted_at'] == null,
-      createdAt: DateTime.parse(map['created_at'] as String),
-      farms: [],
+  // ── Culturas ──────────────────────────────────────────────────────
+
+  Future<List<ClientCultura>> getCulturas(String clientId) async {
+    final db = await _db;
+    final rows = await db.query(
+      'client_culturas',
+      where: 'client_id = ?',
+      whereArgs: [clientId],
+    );
+    return rows.map(ClientCultura.fromMap).toList();
+  }
+
+  Future<void> _saveCulturas(
+    DatabaseExecutor txn,
+    List<ClientCultura> culturas,
+  ) async {
+    for (final c in culturas) {
+      await txn.insert(
+        'client_culturas',
+        c.toMap(),
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+    }
+  }
+
+  Future<void> _deleteCulturas(
+    DatabaseExecutor txn,
+    String clientId,
+  ) async {
+    await txn.delete(
+      'client_culturas',
+      where: 'client_id = ?',
+      whereArgs: [clientId],
     );
   }
 
-  Map<String, dynamic> _toMap(Client client) {
-    return {
-      'id': client.id,
-      'nome': client.name,
-      'documento': null,
-      'telefone': client.phone,
-      'email': client.email,
-      'created_at': client.createdAt.toIso8601String(),
-      'updated_at': DateTime.now().toIso8601String(),
-      'deleted_at': client.active ? null : DateTime.now().toIso8601String(),
-      'sync_status': 1, // Dirty
-    };
-  }
+  // ── Fazendas ──────────────────────────────────────────────────────
 
   Future<List<Farm>> getFarms(String clientId) async {
     final db = await _db;
@@ -140,14 +172,12 @@ class ClientsRepository {
       'municipio': farm.city,
       'uf': farm.state,
       'area_total': farm.totalAreaHa,
-      'created_at': DateTime.now()
-          .toIso8601String(), // Ideally keep original if exists
+      'created_at': DateTime.now().toIso8601String(),
       'updated_at': DateTime.now().toIso8601String(),
-      'sync_status': 1, // pending sync
+      'sync_status': 1,
       'deleted_at': null,
     };
 
-    // Upsert logic
     final count = await db.update(
       'farms',
       data,

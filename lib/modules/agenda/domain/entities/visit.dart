@@ -301,3 +301,37 @@ extension VisitStatusExtension on VisitStatus {
     }
   }
 }
+
+/// Prioridade de visita
+enum VisitPriority {
+  baixa,
+  normal,
+  alta;
+
+  Color get color {
+    switch (this) {
+      case VisitPriority.baixa:
+        return const Color(0xFF9CA3AF); // Cinza
+      case VisitPriority.normal:
+        return const Color(0xFF3B82F6); // Azul
+      case VisitPriority.alta:
+        return const Color(0xFFEF4444); // Vermelho
+    }
+  }
+
+  String toValue() {
+    switch (this) {
+      case VisitPriority.baixa: return 'baixa';
+      case VisitPriority.normal: return 'normal';
+      case VisitPriority.alta: return 'alta';
+    }
+  }
+
+  static VisitPriority fromString(String value) {
+    switch (value) {
+      case 'baixa': return VisitPriority.baixa;
+      case 'alta': return VisitPriority.alta;
+      default: return VisitPriority.normal;
+    }
+  }
+}

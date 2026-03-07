@@ -5,6 +5,7 @@ import '../../domain/entities/event.dart';
 import '../providers/agenda_provider.dart';
 import '../providers/agenda_filters_provider.dart';
 import '../widgets/month_calendar_grid.dart';
+import '../../../../core/constants/layout_constants.dart';
 
 /// View de Calendário Mensal (view padrão anterior)
 class AgendaCalendarioView extends ConsumerStatefulWidget {
@@ -64,7 +65,7 @@ class _AgendaCalendarioViewState extends ConsumerState<AgendaCalendarioView> {
                         _buildMonthSummary(filteredEvents, theme),
                       if (agendaState.conflicts.isNotEmpty)
                         _buildConflictWarning(agendaState.conflicts.length),
-                      const SizedBox(height: 80), // Espaço para FAB
+                      const SizedBox(height: kFabSafeArea), // Espaço para FAB
                     ],
                   ),
                 ),

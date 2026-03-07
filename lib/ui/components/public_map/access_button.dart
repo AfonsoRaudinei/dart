@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/router/app_routes.dart';
 
@@ -9,9 +8,9 @@ import '../../../core/router/app_routes.dart';
 /// não autenticados acessem a tela de login.
 ///
 /// **Design:**
-/// - Ícone do app à esquerda
-/// - Texto "Acessar SoloForte" centralizado
-/// - Fundo branco com sombra suave
+/// - Texto "Acessar SoloForte" com S e F destacados
+/// - Chevron verde à direita
+/// - Fundo branco com sombra dupla pronunciada
 /// - Ação: Navega para `/login`
 class AccessSoloForteButton extends StatelessWidget {
   const AccessSoloForteButton({super.key});
@@ -22,83 +21,85 @@ class AccessSoloForteButton extends StatelessWidget {
       label: 'Acessar SoloForte - Fazer login ou criar conta',
       button: true,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.15),
-              offset: const Offset(0, 4),
-              blurRadius: 12,
-              spreadRadius: 0,
+              color: Colors.black.withValues(alpha: 0.14),
+              blurRadius: 24,
+              offset: const Offset(0, 8),
+            ),
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.06),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
             ),
           ],
         ),
         child: Material(
           color: Colors.transparent,
+          borderRadius: BorderRadius.circular(20),
           child: InkWell(
             onTap: () => context.go(AppRoutes.login),
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(20),
             child: Padding(
               padding: const EdgeInsets.symmetric(
-                horizontal: 16.0,
-                vertical: 12.0,
+                horizontal: 20.0,
+                vertical: 16.0,
               ),
               child: Row(
-                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  // Ícone do App - Maior e mais clean
-                  Container(
-                    width: 52,
-                    height: 52,
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.08),
-                          offset: const Offset(0, 2),
-                          blurRadius: 8,
+                  // Texto principal com S e F destacados
+                  RichText(
+                    text: TextSpan(
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.black87,
+                        letterSpacing: 0.1,
+                      ),
+                      children: [
+                        const TextSpan(
+                          text: 'Acessar ',
+                          style: TextStyle(fontWeight: FontWeight.w400),
                         ),
+                        TextSpan(
+                          text: 'S',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w800,
+                            color: Theme.of(context).primaryColor,
+                            fontSize: 19,
+                          ),
+                        ),
+                        const TextSpan(text: 'olo'),
+                        TextSpan(
+                          text: 'F',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w800,
+                            color: Theme.of(context).primaryColor,
+                            fontSize: 19,
+                          ),
+                        ),
+                        const TextSpan(text: 'orte'),
                       ],
                     ),
-                    child: Image.asset(
-                      'assets/images/app_icon.png',
-                      width: 44,
-                      height: 44,
-                      fit: BoxFit.contain,
-                      filterQuality: FilterQuality.high,
-                      errorBuilder: (context, error, stackTrace) {
-                        // Fallback se a imagem não carregar
-                        return Container(
-                          decoration: BoxDecoration(
-                            color: PremiumTokens.brandGreen,
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.agriculture,
-                            color: Colors.white,
-                            size: 28,
-                          ),
-                        );
-                      },
-                    ),
                   ),
-                  const SizedBox(width: 20.0),
-                  Text(
-                    'Acessar SoloForte',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: PremiumTokens.textPrimaryLight,
+                  // Chevron com fundo verde
+                  Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).primaryColor,
+                      borderRadius: BorderRadius.circular(10),
                     ),
-                  ),
-                  const SizedBox(width: 8.0),
-                  // Ícone de seta
-                  Icon(
-                    Icons.arrow_forward_ios,
-                    size: 16,
-                    color: PremiumTokens.textSecondaryLight,
+                    child: const Icon(
+                      Icons.arrow_forward_ios_rounded,
+                      color: Colors.white,
+                      size: 14,
+                    ),
                   ),
                 ],
               ),

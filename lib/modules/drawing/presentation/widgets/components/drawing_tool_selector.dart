@@ -55,6 +55,13 @@ class DrawingToolSelector extends StatelessWidget {
           isSelected: false, // Import is an action, not a state
           onTap: () => onToolSelected('import'),
         ),
+        const SizedBox(height: 8),
+        _ToolButton(
+          icon: Icons.my_location_rounded,
+          label: 'GPS (caminhar)',
+          isSelected: selectedToolKey == 'gps',
+          onTap: () => onToolSelected('gps'),
+        ),
       ],
     );
   }

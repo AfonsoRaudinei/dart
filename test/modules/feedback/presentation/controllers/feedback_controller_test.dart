@@ -45,7 +45,7 @@ void main() {
   });
 
   test('feedbackStatsProvider should load stats', () async {
-    final stats = FeedbackStats(
+    final stats = const FeedbackStats(
       bugCount: 1,
       suggestionCount: 1,
       praiseCount: 1,

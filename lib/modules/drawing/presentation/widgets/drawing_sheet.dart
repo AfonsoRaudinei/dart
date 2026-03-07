@@ -6,6 +6,7 @@ import '../controllers/drawing_controller.dart';
 import '../../domain/models/drawing_models.dart';
 import '../../domain/drawing_state.dart';
 import '../../domain/repositories/i_clients_repository.dart';
+import '../providers/drawing_client_provider.dart';
 import 'components/drawing_tool_selector.dart';
 import 'components/drawing_actions_bar.dart';
 import '../../../../core/utils/app_logger.dart';
@@ -42,19 +43,18 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
   @override
   void initState() {
     super.initState();
-    // Rebuild overlay when controller notifies (state changes)
+    // Rebuild overlay quando controller muda de estado de desenho
     widget.controller.addListener(_updateTooltip);
-    widget.controller.addListener(_syncPreSelectedClient);
     // Initial show? No, wait for layout or first build.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _showTooltip();
 
-      // Auto-load clients if consultant
+      // Auto-load clients via DrawingClientNotifier (ADR-019)
       if (_isConsultant) {
-        widget.controller.loadClients();
+        ref.read(drawingClientProvider.notifier).loadClients();
       }
-      // Aplicar pré-seleção de cliente (Map-First via query param)
-      _syncPreSelectedClient();
+      // Sincronizar pré-seleção inicial
+      _syncPreSelectedClient(ref.read(drawingClientProvider));
     });
 
     // Suggest logical name
@@ -64,7 +64,6 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
   @override
   void dispose() {
     widget.controller.removeListener(_updateTooltip);
-    widget.controller.removeListener(_syncPreSelectedClient);
     _removeTooltip();
     _nomeController.dispose();
     _descricaoController.dispose();
@@ -72,16 +71,14 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
   }
 
   /// Aplica pré-seleção de cliente proveniente de query param Map-First.
-  /// É chamado como listener e no initState (via postFrameCallback).
-  void _syncPreSelectedClient() {
-    final preId = widget.controller.preSelectedClientId;
+  /// Chamado via ref.listen e no postFrameCallback inicial.
+  void _syncPreSelectedClient(DrawingClientState clientState) {
+    final preId = clientState.preSelectedClientId;
     if (preId == null) return;
     if (_selectedClient?.id == preId) return; // já selecionado
-    if (widget.controller.clients.isEmpty) return; // ainda carregando
+    if (clientState.clients.isEmpty) return; // ainda carregando
 
-    final match = widget.controller.clients
-        .where((c) => c.id == preId)
-        .toList();
+    final match = clientState.clients.where((c) => c.id == preId).toList();
     if (match.isNotEmpty && mounted) {
       setState(() => _selectedClient = match.first);
     }
@@ -153,17 +150,14 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
 
   @override
   Widget build(BuildContext context) {
+    // ADR-019: escuta mudancas de clientes para pre-selecao Map-First
+    ref.listen<DrawingClientState>(drawingClientProvider, (_, next) {
+      _syncPreSelectedClient(next);
+    });
+
     return Container(
       decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black12,
-            blurRadius: 10,
-            offset: Offset(0, -2),
-          ),
-        ],
+        color: Colors.transparent, // ✅ iOS Premium: Permite o glassmorphism do MapBottomSheet vazar
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -236,18 +230,18 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.grey[50],
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey[300]!),
+        color: Colors.white, // ✅ iOS Premium: Superfícies elevadas (Cards) são brancas
+        borderRadius: BorderRadius.circular(PremiumTokens.borderRadiusSm), // ✅ iOS Premium: Inset com 12px
+        border: Border.all(color: Colors.grey[200]!, width: PremiumTokens.hairlineThickness),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
+          const Row(
             children: [
-              const Icon(Icons.square_foot, size: 16, color: Colors.blueGrey),
-              const SizedBox(width: 6),
-              const Text(
+              Icon(Icons.square_foot, size: 16, color: Colors.blueGrey),
+              SizedBox(width: 6),
+              Text(
                 'MÉTRICAS',
                 style: TextStyle(
                   fontSize: 12,
@@ -269,52 +263,6 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
               ),
             ],
           ),
-          if (segments.isNotEmpty && segments.length >= 3) ...[
-            const SizedBox(height: 8),
-            const Divider(height: 12),
-            const Text(
-              'Segmentos:',
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: Colors.grey,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Container(
-              constraints: const BoxConstraints(maxHeight: 80),
-              child: SingleChildScrollView(
-                child: Column(
-                  children: List.generate(segments.length, (index) {
-                    final pStart = index + 1;
-                    final pEnd = (index + 1) >= segments.length ? 1 : index + 2;
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 2),
-                      child: Row(
-                        children: [
-                          Text(
-                            'P$pStart → P$pEnd:',
-                            style: const TextStyle(
-                              fontSize: 11,
-                              color: Colors.grey,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            '${f.format(segments[index])} km',
-                            style: const TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  }),
-                ),
-              ),
-            ),
-          ],
         ],
       ),
     );
@@ -501,11 +449,14 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
               const SizedBox(width: 12),
               Expanded(
                 child: ElevatedButton(
-                  onPressed: () { HapticFeedback.mediumImpact(); onConfirm(); },
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
+                  onPressed: () {
+                    HapticFeedback.mediumImpact();
+                    onConfirm();
+                  },
+                  style: ElevatedButton.styleFrom(backgroundColor: PremiumTokens.brandGreen), // ✅ iOS Premium
                   child: const Text(
                     'Confirmar',
-                    style: TextStyle(color: Colors.white),
+                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
                   ),
                 ),
               ),
@@ -553,13 +504,16 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
               const SizedBox(width: 12),
               Expanded(
                 child: ElevatedButton(
-                  onPressed: widget.controller.confirmImport,
+                  onPressed: () {
+                    HapticFeedback.mediumImpact();
+                    widget.controller.confirmImport();
+                  },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green, // Keep import green
+                    backgroundColor: PremiumTokens.brandGreen, // Keep import green
                   ),
                   child: const Text(
                     'Confirmar',
-                    style: TextStyle(color: Colors.white),
+                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
                   ),
                 ),
               ),
@@ -664,11 +618,14 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
               const SizedBox(width: 12),
               Expanded(
                 child: ElevatedButton(
-                  onPressed: widget.controller.saveEdit,
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
+                  onPressed: () {
+                    HapticFeedback.mediumImpact();
+                    widget.controller.saveEdit();
+                  },
+                  style: ElevatedButton.styleFrom(backgroundColor: PremiumTokens.brandGreen),
                   child: const Text(
                     'Salvar Edição',
-                    style: TextStyle(color: Colors.white),
+                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
                   ),
                 ),
               ),
@@ -731,44 +688,42 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
             ),
             const SizedBox(height: 24),
 
-            // 1. Selecionar Cliente (Apenas Consultor)
-            if (_isConsultant) ...[
-              const Text(
-                '👤 Cliente',
-                style: TextStyle(
-                  fontWeight: FontWeight.w600,
-                  color: Colors.black54,
+            // 1. Selecionar Cliente
+            const Text(
+              '👤 Cliente',
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                color: Colors.black54,
+              ),
+            ),
+            const SizedBox(height: 8),
+            DropdownButtonFormField<Client>(
+              initialValue: _selectedClient,
+              decoration: InputDecoration(
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
                 ),
               ),
-              const SizedBox(height: 8),
-              DropdownButtonFormField<Client>(
-                initialValue: _selectedClient,
-                decoration: InputDecoration(
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                hint: const Text('Selecione o cliente...'),
-                items: widget.controller.clients.map((c) {
-                  return DropdownMenuItem(value: c, child: Text(c.name));
-                }).toList(),
-                onChanged: (client) {
-                  setState(() {
-                    _selectedClient = client;
-                    _selectedFarm = null; // Reset farm
-                  });
-                  if (client != null) {
-                    widget.controller.loadFarms(client.id);
-                  }
-                },
-                validator: (v) => v == null ? 'Selecione um cliente' : null,
-              ),
-              const SizedBox(height: 16),
-            ],
+              hint: const Text('Selecione o cliente...'),
+              items: ref.watch(drawingClientProvider).clients.map((c) {
+                return DropdownMenuItem(value: c, child: Text(c.name));
+              }).toList(),
+              onChanged: (client) {
+                setState(() {
+                  _selectedClient = client;
+                  _selectedFarm = null; // Reset farm
+                });
+                if (client != null) {
+                  ref.read(drawingClientProvider.notifier).loadFarms(client.id);
+                }
+              },
+              validator: (v) => v == null ? 'Selecione um cliente' : null,
+            ),
+            const SizedBox(height: 16),
 
             // 2. Selecionar Fazenda
             const Text(
@@ -793,7 +748,7 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
               ),
               hint: const Text('Selecione a fazenda...'),
               items: [
-                ...widget.controller.farms.map(
+                ...ref.watch(drawingClientProvider).farms.map(
                   (f) => DropdownMenuItem(value: f, child: Text(f.name)),
                 ),
                 const DropdownMenuItem(
@@ -816,7 +771,7 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
               ],
               onChanged: (getValue) {
                 if (getValue == 'NEW_FARM') {
-                  if (_selectedClient == null && _isConsultant) {
+                  if (_selectedClient == null) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
                         content: Text('Selecione o Cliente primeiro'),
@@ -880,22 +835,34 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
                         _ColorOption(
                           color: PremiumTokens.brandGreen,
                           selected: _selectedColor,
-                          onTap: (c) { HapticFeedback.selectionClick(); setState(() => _selectedColor = c); },
+                          onTap: (c) {
+                            HapticFeedback.selectionClick();
+                            setState(() => _selectedColor = c);
+                          },
                         ),
                         _ColorOption(
                           color: Colors.blue,
                           selected: _selectedColor,
-                          onTap: (c) { HapticFeedback.selectionClick(); setState(() => _selectedColor = c); },
+                          onTap: (c) {
+                            HapticFeedback.selectionClick();
+                            setState(() => _selectedColor = c);
+                          },
                         ),
                         _ColorOption(
                           color: Colors.amber,
                           selected: _selectedColor,
-                          onTap: (c) { HapticFeedback.selectionClick(); setState(() => _selectedColor = c); },
+                          onTap: (c) {
+                            HapticFeedback.selectionClick();
+                            setState(() => _selectedColor = c);
+                          },
                         ),
                         _ColorOption(
                           color: Colors.redAccent,
                           selected: _selectedColor,
-                          onTap: (c) { HapticFeedback.selectionClick(); setState(() => _selectedColor = c); },
+                          onTap: (c) {
+                            HapticFeedback.selectionClick();
+                            setState(() => _selectedColor = c);
+                          },
                         ),
                       ],
                     ),
@@ -927,9 +894,8 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
                 Expanded(
                   child: ElevatedButton(
                     onPressed: () {
-                      if (!_formKey.currentState!.validate()) return;
-
-                      final geometry = widget.controller.liveGeometry;
+                        HapticFeedback.mediumImpact(); // ✅ iOS Premium: feedback tátil ao salvar
+                        final geometry = widget.controller.liveGeometry;
                       if (geometry == null) return;
 
                       // 🚀 SALVAR com IDs
@@ -1010,7 +976,7 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
               final clientId =
                   _selectedClient?.id ??
                   'SELF'; // TODO: Handle Producer ID properly
-              await widget.controller.createFarm(
+              await ref.read(drawingClientProvider.notifier).createFarm(
                 nameController.text,
                 clientId,
                 cityController.text,
@@ -1050,15 +1016,7 @@ class _SheetHeader extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        const SizedBox(height: 8),
-        Container(
-          width: 36,
-          height: 4,
-          decoration: BoxDecoration(
-            color: Colors.grey[300],
-            borderRadius: BorderRadius.circular(2),
-          ),
-        ),
+        // A pílula de drag já é renderizada pelo parente externo (MapBottomSheet)
         Padding(
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
           child: Row(
@@ -1067,9 +1025,9 @@ class _SheetHeader extends StatelessWidget {
               const Text(
                 'Ferramentas de Desenho',
                 style: TextStyle(
-                  fontSize: 18,
+                  fontSize: 17, // ✅ iOS Premium: 17px SemiBold pra Header Modal
                   fontWeight: FontWeight.w600,
-                  letterSpacing: -0.5,
+                  letterSpacing: -0.4, // ✅ iOS Premium: -0.4px 
                   color: Colors.black87,
                 ),
               ),

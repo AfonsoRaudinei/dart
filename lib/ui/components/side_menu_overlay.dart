@@ -391,7 +391,7 @@ class _MenuItem extends StatelessWidget {
                     ],
                   ),
                 ),
-                Icon(
+                const Icon(
                   Icons.chevron_right_rounded,
                   color: PremiumTokens.textTertiaryLight,
                   size: 20,

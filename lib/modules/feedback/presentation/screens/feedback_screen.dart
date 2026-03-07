@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:soloforte_app/core/router/app_routes.dart';
+import 'package:soloforte_app/core/constants/layout_constants.dart';
 
 import '../../domain/entities/feedback_type.dart';
 import '../controllers/feedback_controller.dart';
@@ -62,17 +63,8 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Back Button
-                    IconButton(
-                      icon: const Icon(Icons.arrow_back, color: Colors.black),
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                      onPressed: () => context.go(AppRoutes.map),
-                    ),
-                    const SizedBox(height: 24),
-
                     // Header
-                    Text('Feedback', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                    const Text('Feedback', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 8),
                     Text(
                       'Ajude-nos a melhorar o SoloForte',
@@ -259,6 +251,7 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
                         ),
                       ),
                     ),
+                    const SizedBox(height: kFabSafeArea),
                   ],
                 ),
               ),
@@ -328,8 +321,8 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
           children: [
             Container(
               padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: const Color(0xFFD1FAE5),
+              decoration: const BoxDecoration(
+                color: Color(0xFFD1FAE5),
                 shape: BoxShape.circle,
               ),
               child: const Icon(

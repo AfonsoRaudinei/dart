@@ -70,7 +70,7 @@ void main() {
 
     test('Rollout 5% deve bloquear maioria dos usuários', () {
       // Arrange
-      final flag = FeatureFlag(
+      final flag = const FeatureFlag(
         key: 'drawing_v1',
         enabled: true,
         rolloutPercentage: 5,
@@ -98,7 +98,7 @@ void main() {
 
     test('Kill switch instant rollback deve bloquear todos', () {
       // Arrange — Inicialmente em 100% rollout
-      final flagBeforeKillSwitch = FeatureFlag(
+      final flagBeforeKillSwitch = const FeatureFlag(
         key: 'drawing_v1',
         enabled: true,
         rolloutPercentage: 100,
@@ -111,7 +111,7 @@ void main() {
       expect(resolver.isDrawingEnabled(flagBeforeKillSwitch, user), true);
 
       // Act — Kill switch ativado
-      final flagAfterKillSwitch = FeatureFlag(
+      final flagAfterKillSwitch = const FeatureFlag(
         key: 'drawing_v1',
         enabled: false, // 🔴 Kill switch
         rolloutPercentage: 100,
@@ -126,7 +126,7 @@ void main() {
 
     test('Papel não autorizado deve ser bloqueado', () {
       // Arrange
-      final flag = FeatureFlag(
+      final flag = const FeatureFlag(
         key: 'drawing_v1',
         enabled: true,
         rolloutPercentage: 100,
@@ -148,7 +148,7 @@ void main() {
 
     test('Papel autorizado deve ser permitido', () {
       // Arrange
-      final flag = FeatureFlag(
+      final flag = const FeatureFlag(
         key: 'drawing_v1',
         enabled: true,
         rolloutPercentage: 100,

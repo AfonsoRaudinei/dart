@@ -77,7 +77,7 @@ class OccurrenceFilterSelector extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         color: PremiumTokens.surfaceLight.withValues(alpha: 0.5),
-        border: Border(bottom: BorderSide(color: PremiumTokens.hairlineLight)),
+        border: const Border(bottom: BorderSide(color: PremiumTokens.hairlineLight)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -95,7 +95,7 @@ class OccurrenceFilterSelector extends StatelessWidget {
               if (filters.hasAnyFilter)
                 TextButton(
                   onPressed: () => onChanged(filters.clear()),
-                  child: Text(
+                  child: const Text(
                     'Limpar',
                     style: TextStyle(
                       color: PremiumTokens.brandGreen,

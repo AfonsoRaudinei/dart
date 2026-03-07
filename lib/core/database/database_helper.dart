@@ -23,7 +23,7 @@ class DatabaseHelper {
 
     final db = await openDatabase(
       path,
-      version: 16,
+      version: 18,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -111,6 +111,12 @@ class DatabaseHelper {
           break;
         case 16:
           await _migrateToV16(db);
+          break;
+        case 17:
+          await _migrateToV17(db);
+          break;
+        case 18:
+          await _migrateToV18(db);
           break;
       }
     }
@@ -591,6 +597,100 @@ class DatabaseHelper {
         tag: 'DB.Migration',
       );
     }
+  }
+
+  /// V17 — Campos agronômicos em drawings (Sprint 6)
+  ///
+  /// Adiciona: cultura, safra, soil_sampling_scheme, rec_by_nutrient.
+  /// Idempotente: cada ALTER TABLE é envolvido em try/catch individual.
+  Future<void> _migrateToV17(Database db) async {
+    final columns = <String, String>{
+      'cultura': 'TEXT',
+      'safra': 'TEXT',
+      'soil_sampling_scheme': 'TEXT',
+      'rec_by_nutrient': 'TEXT', // JSON Map<String, double>
+    };
+    for (final entry in columns.entries) {
+      try {
+        await db.execute(
+          'ALTER TABLE drawings ADD COLUMN ${entry.key} ${entry.value}',
+        );
+        AppLogger.debug(
+          'V17: coluna ${entry.key} adicionada em drawings',
+          tag: 'DB.Migration',
+        );
+      } catch (e) {
+        AppLogger.debug(
+          'V17: ${entry.key} já existe em drawings — $e',
+          tag: 'DB.Migration',
+        );
+      }
+    }
+  }
+
+  /// V18 — Remove NOT NULL de area_id e activity_type em visit_sessions
+  ///
+  /// Contexto: check-in agora exige apenas producer_id. Fazenda/Talhão/Atividade
+  /// passaram a ser opcionais na criação da sessão (podem ser preenchidos depois).
+  ///
+  /// SQLite não suporta ALTER COLUMN — reconstrução de tabela via:
+  /// 1. Criar visit_sessions_v18 com colunas nullable
+  /// 2. Copiar todos os dados existentes
+  /// 3. Drop visit_sessions original
+  /// 4. Renomear visit_sessions_v18
+  /// 5. Recriar índice
+  ///
+  /// Idempotente: IF NOT EXISTS + DROP IF EXISTS garantem segurança em re-execução.
+  Future<void> _migrateToV18(Database db) async {
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS visit_sessions_v18 (
+        id TEXT PRIMARY KEY,
+        producer_id TEXT NOT NULL,
+        area_id TEXT,
+        activity_type TEXT,
+        start_time TEXT NOT NULL,
+        end_time TEXT,
+        initial_lat REAL,
+        initial_long REAL,
+        status TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        sync_status INTEGER DEFAULT 1
+      )
+    ''');
+
+    // Copia dados existentes. Linhas com area_id='' (workaround anterior)
+    // são convertidas para NULL para consistência semântica.
+    await db.execute('''
+      INSERT INTO visit_sessions_v18
+        SELECT
+          id,
+          producer_id,
+          NULLIF(area_id, ''),
+          NULLIF(activity_type, ''),
+          start_time,
+          end_time,
+          initial_lat,
+          initial_long,
+          status,
+          created_at,
+          updated_at,
+          sync_status
+        FROM visit_sessions
+    ''');
+
+    await db.execute('DROP TABLE IF EXISTS visit_sessions');
+    await db.execute(
+      'ALTER TABLE visit_sessions_v18 RENAME TO visit_sessions',
+    );
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_visit_sessions_status ON visit_sessions(status)',
+    );
+
+    AppLogger.debug(
+      'V18: visit_sessions reconstruída — area_id e activity_type agora nullable',
+      tag: 'DB.Migration',
+    );
   }
 
   Future<void> close() async {

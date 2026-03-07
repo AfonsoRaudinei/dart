@@ -14,13 +14,12 @@ import '../../core/utils/app_logger.dart';
 import '../../core/utils/map_logger.dart';
 import '../../core/utils/debouncer.dart';
 import '../../modules/marketing/presentation/providers/marketing_providers.dart';
-import '../../modules/marketing/presentation/widgets/marketing_case_marker.dart';
-import '../../modules/marketing/presentation/widgets/marketing_case_sheet.dart';
 import '../../modules/consultoria/clients/presentation/providers/field_providers.dart';
 import '../../modules/consultoria/services/talhao_map_adapter.dart';
 import '../../modules/drawing/presentation/widgets/drawing_layers.dart';
 import '../../modules/drawing/presentation/providers/drawing_provider.dart';
 import '../../modules/drawing/domain/drawing_state.dart';
+import '../../modules/drawing/domain/drawing_utils.dart';
 import '../../modules/drawing/presentation/widgets/drawing_state_indicator.dart';
 import '../../modules/dashboard/providers/location_providers.dart';
 import '../../modules/dashboard/domain/location_state.dart';
@@ -32,10 +31,12 @@ import '../../modules/marketing/presentation/widgets/draft_saved_sheet.dart';
 import '../components/map/map_bottom_sheet.dart';
 import '../components/map/widgets/map_canvas.dart';
 import '../components/map/widgets/map_layers.dart';
+import '../../core/config/map_config.dart';
 import '../components/map/widgets/map_markers.dart';
 import '../components/map/widgets/map_controls_overlay.dart';
 import '../components/map/widgets/isolated_marker_layers.dart';
 import '../../modules/drawing/presentation/widgets/drawing_edit_layer.dart';
+import '../../modules/drawing/presentation/widgets/gps_tracking_overlay.dart';
 import '../../core/domain/map_models.dart';
 import '../components/map/map_sheet_state.dart';
 // ADR-012 — planos/
@@ -45,12 +46,15 @@ import 'widgets/plano_block_sheet.dart';
 import '../components/map/map_sheets.dart';
 import '../../modules/consultoria/occurrences/presentation/widgets/occurrence_list_sheet.dart';
 import '../../modules/consultoria/occurrences/presentation/widgets/occurrence_creation_sheet.dart';
+import '../../modules/consultoria/occurrences/presentation/widgets/occurrence_detail_sheet.dart';
 import '../../modules/consultoria/occurrences/presentation/controllers/occurrence_controller.dart';
 import '../../modules/visitas/presentation/widgets/visit_sheet.dart';
 import '../../modules/visitas/presentation/controllers/visit_controller.dart';
 import '../../modules/agenda/presentation/providers/agenda_provider.dart';
 import '../../modules/agenda/domain/enums/event_status.dart';
 import '../../modules/map/design/sf_icons.dart';
+
+part 'private_map_sheets.dart';
 
 class PrivateMapScreen extends ConsumerStatefulWidget {
   const PrivateMapScreen({super.key});
@@ -73,6 +77,11 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
 
   LatLng? _pendingOccurrenceLocation; // Se != null, abre sheet de ocorrência
 
+  // 🔧 LIFECYCLE: Referência cacheada do DrawingController.
+  // Capturada no build() para uso seguro no dispose() SEM ref.read().
+  // ref é invalidado em deactivate() (antes de dispose()) — ADR-008.
+  dynamic _drawingController;
+
   // 🔧 MODAL: Controle de modais ativos
   bool _isModalOpen = false;
   int _modalGeneration = 0;
@@ -82,6 +91,11 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
     super.initState();
     // Inicializar GPS ao carregar a tela
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      // 🛡 LIFECYCLE GUARD: Se o widget foi disposed durante a transição
+      // de rota (duplo evento onAuthStateChange do Supabase), o ref já
+      // está invalidado. Sem este guard → BadState crash na inicialização.
+      if (!mounted) return;
+
       ref.read(locationStateProvider.notifier).init();
       ref.read(geofenceControllerProvider); // Start Geofence Monitoring
 
@@ -90,6 +104,8 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
       // Cobre edge case de perfil eternamente vazio após email confirmation.
       ref.read(authServiceProvider.notifier).ensureProfileComplete().catchError(
         (e) {
+          // 🛡 LIFECYCLE GUARD: callback async pode executar após dispose
+          if (!mounted) return;
           AppLogger.debug(
             'Profile bootstrap silencioso falhou (não-crítico): $e',
             tag: 'MapBootstrap',
@@ -110,15 +126,38 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
             'MAP-FIRST: recebido modo=desenho clienteId=$clienteIdParam',
             tag: 'PrivateMap',
           );
-          // Pré-seleciona cliente no DrawingController existente
+          // Pré-seleciona cliente via DrawingClientNotifier (ADR-019)
           ref
-              .read(drawingControllerProvider)
+              .read(drawingClientProvider.notifier)
               .setClienteAtivo(clienteIdParam);
           // Abre o painel de desenho (mecanismo já existente)
           _setSheetState(
             const MapSheetState(type: MapSheetType.draw),
             'query_param_modo_desenho',
           );
+        }
+
+        // 🆕 SPRINT 3: modo=importar — abre painel e dispara seletor de arquivo
+        if (modoParam == 'importar') {
+          AppLogger.debug(
+            'MAP-FIRST: recebido modo=importar clienteId=$clienteIdParam',
+            tag: 'PrivateMap',
+          );
+          if (clienteIdParam != null) {
+            ref
+                .read(drawingClientProvider.notifier)
+                .setClienteAtivo(clienteIdParam);
+          }
+          _setSheetState(
+            const MapSheetState(type: MapSheetType.draw),
+            'query_param_modo_importar',
+          );
+          // Aguarda o sheet estar montado antes de abrir a UI de import
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              ref.read(drawingControllerProvider).startImportMode();
+            }
+          });
         }
 
         // P5: modo=visita — abre checkIn sheet com cliente pré-selecionado
@@ -144,7 +183,11 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
     // 🔧 LIFECYCLE EXPLÍCITO: Reset do DrawingController ao sair da tela
     // Provider SEM autoDispose → controle manual obrigatório
     // cancelOperation() limpa: estado, geometria, pontos, preview e volta para idle
-    ref.read(drawingControllerProvider).cancelOperation();
+    //
+    // 🛡 ADR-008: ref é invalidado em deactivate() (antes de dispose()).
+    // Usar referência cacheada em _drawingController, capturada no build().
+    // NUNCA usar ref.read() aqui — causa BadState crash.
+    _drawingController?.cancelOperation();
 
     _mapEventDebouncer.dispose();
     super.dispose();
@@ -178,7 +221,11 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
   // 🛡 HARDENING DEFINITIVO: Máquina de Decisão de Viewport
   // Determinístico. Idempotente. Sem race loops.
   void _applyInitialViewport() async {
-    // 🔒 Gate 0: Se já aplicado ou abortado, TERMINAR IMEDIATAMENTE.
+    // � LIFECYCLE GUARD: método async pode executar após dispose.
+    // Se o widget foi descartado durante transição de rota, ref está inválido.
+    if (!mounted) return;
+
+    // �🔒 Gate 0: Se já aplicado ou abortado, TERMINAR IMEDIATAMENTE.
     final vp = ref.read(viewportStateProvider);
     if (vp == InitialViewportState.applied ||
         vp == InitialViewportState.aborted) {
@@ -334,63 +381,18 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
   }
 
   void _armOccurrenceMode() {
-    // � BUGFIX: Abrir formulário de criação diretamente
-    _openOccurrenceCreationSheet();
-  }
-
-  void _openOccurrenceCreationSheet() async {
-    // Obter posição atual ou usar centro do mapa
-    final locationService = LocationService();
-    final position = await locationService.getCurrentPosition();
-
-    // 🛡 HARDENING: Guard após await — widget pode ter sido desmontado
-    if (!mounted) return;
-
-    final lat = position?.latitude ?? _mapController.camera.center.latitude;
-    final lng = position?.longitude ?? _mapController.camera.center.longitude;
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => OccurrenceCreationSheet(
-        latitude: lat,
-        longitude: lng,
-        onCancel: () => Navigator.of(context).pop(),
-        onConfirm: (data) {
-          ref.read(occurrenceControllerProvider).createOccurrence(
-            type: data.type,
-            description: data.description,
-            photoPath: data.photoPath,
-            lat: lat,
-            long: lng,
-            category: data.category,
-            status: 'draft',
-            cultivar: data.cultivar,
-            dataPlantio: data.dataPlantio,
-            estadioFenologico: data.estadioFenologico,
-            tipoOcorrencia: data.tipoOcorrencia,
-            amostraSolo: data.amostraSolo,
-            recomendacoes: data.recomendacoes,
-            metricasJson: data.metricasJson,
-            nutrientesJson: data.nutrientesJson,
-            categoriasJson: data.categoriasJson,
-            notasCategoriasJson: data.notasCategoriasJson,
-            fotosCategoriasJson: data.fotosCategoriasJson,
-          );
-
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Ocorrência registrada com sucesso!'),
-              backgroundColor: PremiumTokens.brandGreen,
-            ),
-          );
-
-          Navigator.of(context).pop();
-        },
+    // FIX 1: Entrar em modo seleção — usuário toca no mapa para capturar LatLng
+    setState(() => _armedMode = ArmedMode.occurrences);
+    HapticFeedback.lightImpact();
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Toque no mapa para marcar o ponto da ocorrência'),
+        duration: Duration(seconds: 10),
+        behavior: SnackBarBehavior.floating,
       ),
     );
   }
+
 
   void _openOccurrenceSheet(double lat, double lng) async {
     // 🛡 CONSOLIDATION: Redirect to MapBottomSheet
@@ -419,219 +421,20 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
     );
   }
 
-  void _handleMapLongPress(TapPosition tapPos, LatLng latLng) {
-    if (!mounted) return;
-
-    // Abre NovoCaseSheet sempre — verificação de plano ocorre no onPublicar
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => Container(
-        constraints: BoxConstraints(
-          maxHeight: MediaQuery.of(context).size.height * 0.85,
-        ),
-        decoration: BoxDecoration(
-          color: Theme.of(context).scaffoldBackgroundColor,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Center(
-              child: Container(
-                margin: const EdgeInsets.symmetric(vertical: 8),
-                width: 36,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Theme.of(context).dividerColor.withValues(alpha: 0.3),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            Flexible(
-              child: NovoCaseSheet(
-                lat: latLng.latitude,
-                lng: latLng.longitude,
-                onClose: () => Navigator.of(context).pop(),
-                onPublicar: (newCase) async {
-                  // Verifica plano APÓS preenchimento do formulário
-                  final plano = ref.read(planoAtivoProvider).valueOrNull;
-
-                  if (plano == null || plano.expirado) {
-                    // Sem plano → salva como rascunho
-                    try {
-                      await ref
-                          .read(marketingCasesProvider.notifier)
-                          .saveAsDraft(newCase);
-
-                      if (!mounted) return;
-
-                      // Fecha o NovoCaseSheet
-                      Navigator.of(context).pop();
-
-                      // Exibe DraftSavedSheet e captura decisão do usuário.
-                      // O modal fecha por conta própria (Navigator.pop interno).
-                      // A navegação ocorre AQUI, no contexto do PrivateMapScreen.
-                      final goToPlanos = await DraftSavedSheet.show(context);
-
-                      if (!mounted) return;
-                      if (goToPlanos == true) {
-                        context.go('/planos');
-                      }
-                    } catch (e) {
-                      if (!mounted) return;
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Erro ao salvar rascunho: $e'),
-                          backgroundColor: Colors.red,
-                        ),
-                      );
-                    }
-                    return;
-                  }
-
-                  // Com plano → verifica limite de cases publicados
-                  final cases =
-                      ref.read(marketingCasesProvider).valueOrNull ?? [];
-                  final casesPublicados = cases
-                      .where(
-                        (c) =>
-                            c.status.toValue() == 'published' &&
-                            c.ativo &&
-                            c.deletadoEm == null,
-                      )
-                      .length;
-
-                  if (casesPublicados >= plano.limiteCases) {
-                    // Limite atingido
-                    if (!mounted) return;
-                    Navigator.of(context).pop(); // Fecha NovoCaseSheet
-                    PlanoBlockSheet.show(
-                      context,
-                      motivo: 'limite_atingido',
-                      planoLabel: plano.plano.label,
-                    );
-                    return;
-                  }
-
-                  // Publica normalmente
-                  Navigator.of(context).pop(); // Fecha o sheet
-
-                  final saved = await ref
-                      .read(marketingCasesProvider.notifier)
-                      .publishCase(newCase);
-
-                  if (!mounted) return;
-                  if (saved != null) {
-                    HapticFeedback.heavyImpact();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: const Row(
-                          children: [
-                            Icon(
-                              Icons.check_circle,
-                              color: Colors.white,
-                              size: 18,
-                            ),
-                            SizedBox(width: 8),
-                            Text('Case publicado com sucesso! 📈'),
-                          ],
-                        ),
-                        backgroundColor: const Color(0xFF34C759),
-                        behavior: SnackBarBehavior.floating,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                    );
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: const Row(
-                          children: [
-                            Icon(
-                              Icons.cloud_off,
-                              color: Colors.white,
-                              size: 18,
-                            ),
-                            SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                'Sem conexão — case salvo localmente e será sincronizado.',
-                              ),
-                            ),
-                          ],
-                        ),
-                        backgroundColor: Colors.orange.shade700,
-                        behavior: SnackBarBehavior.floating,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        duration: const Duration(seconds: 4),
-                      ),
-                    );
-                  }
-                },
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
   void _handleOccurrencePinTap(occ.Occurrence occurrence) {
-    HapticFeedback.lightImpact();
-    // Implement what happens when an occurrence pin is tapped
-    // For example, show a detailed sheet or dialog for the occurrence
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Ocorrência: ${occurrence.description}'),
-        backgroundColor: PremiumTokens.brandGreen,
-        duration: const Duration(seconds: 2),
-      ),
-    );
-  }
-
-  // 🔧 Helper to finish drawing
-  Future<void> _finishDrawing() async {
-    final controller = ref.read(drawingControllerProvider);
-
-    // 🔒 GUARD: Evitar re-entrância ou chamadas duplicadas (Fix Duplication)
-    // Só processar se estiver no estado de desenho
-    if (controller.currentState != DrawingState.drawing) {
-      return;
-    }
-
-    // Verificar se há pontos suficientes
-    if (controller.liveGeometry == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Adicione pelo menos 3 pontos para criar um polígono'),
-          duration: Duration(seconds: 2),
-        ),
-      );
-      return;
-    }
-
-    // 🔧 CHANGE STATE: Mudar para modo de revisão
-    // Isso prepara o controller para exibir o formulário correto no sheet
-    controller.completeDrawing();
-
-    // 🔒 VALIDATION: Garantir que a transição ocorreu com sucesso
-    // Se a máquina de estados rejeitou (ex: validação falhou), não processar
-    if (controller.currentState != DrawingState.reviewing) {
-      return;
-    }
-
-    // 🔧 FIX: O DrawingSheet no MapBottomSheet já está observando o estado
-    // Transição para reviewing é suficiente — sem sincronizaçao local necessária
+    if (!mounted) return;
+    OccurrenceDetailSheet.show(context, occurrence);
   }
 
   @override
   Widget build(BuildContext context) {
     final stopwatch = Stopwatch()..start();
+
+    // 🛡 LIFECYCLE: Cachear referência do DrawingController para uso
+    // seguro no dispose() — ref é invalidado antes de dispose() ser chamado.
+    _drawingController = ref.read(drawingControllerProvider);
+
     // Apenas providers necessários para lógica de tap e polígonos
     final mapFields = ref.watch(mapFieldsProvider);
     final selectedTalhaoId = ref.watch(selectedTalhaoIdProvider);
@@ -644,6 +447,13 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
     final drawingTool = ref.watch(
       drawingControllerProvider.select((c) => c.currentTool),
     );
+    // Sprint 2: Undo/Redo — observar canUndo/canRedo granularmente
+    final canUndo = ref.watch(
+      drawingControllerProvider.select((c) => c.canUndo),
+    );
+    final canRedo = ref.watch(
+      drawingControllerProvider.select((c) => c.canRedo),
+    );
     final sheetState = ref.watch(mapSheetStateProvider);
 
     // Watch drawing state changes to switch layers
@@ -651,6 +461,9 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
       prev,
       next,
     ) {
+      // 🛡 LIFECYCLE GUARD: listener pode disparar após dispose do widget
+      if (!mounted) return;
+
       if (next == DrawingState.drawing || next == DrawingState.editing) {
         // Auto-switch to Satellite
         final currentLayer = ref.read(activeLayerProvider);
@@ -664,11 +477,49 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
           );
         }
       }
+
+      // 🆕 SPRINT 5: GPS Tracking → ativar satélite + centralizar no usuário
+      if (next == DrawingState.gpsTracking) {
+        final currentLayer = ref.read(activeLayerProvider);
+        if (currentLayer != LayerType.satellite) {
+          ref.read(activeLayerProvider.notifier).setLayer(LayerType.satellite);
+        }
+        // Centralizar mapa na posição atual do usuário para referência
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          _centerOnUser();
+        });
+      }
+
+      // 🆕 SPRINT 3: Zoom automático após import KML/KMZ
+      // Quando a geometria importada entra em preview, move a câmera para ela
+      if (next == DrawingState.importPreview && _isMapReady) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          final geo = ref.read(drawingControllerProvider).liveGeometry;
+          final bounds = DrawingUtils.getBoundsLatLng(geo);
+          if (bounds != null) {
+            try {
+              _mapController.fitCamera(
+                CameraFit.bounds(
+                  bounds: bounds,
+                  padding: const EdgeInsets.all(60),
+                ),
+              );
+            } catch (_) {
+              // Guard: mapa pode estar em transição — ignora silenciosamente
+            }
+          }
+        });
+      }
     });
 
     // 🔒 LISTENERS PARA FOCO INICIAL (Idempotentes)
     // Observar carregamento dos fields (para Produtores)
     ref.listen(mapFieldsProvider, (prev, next) {
+      // 🛡 LIFECYCLE GUARD: listener pode disparar após dispose do widget
+      if (!mounted) return;
+
       final vp = ref.read(viewportStateProvider);
       if (vp != InitialViewportState.applied &&
           vp != InitialViewportState.aborted &&
@@ -679,6 +530,9 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
 
     // Observar disponibilidade de GPS (para Outros)
     ref.listen(locationStateProvider, (prev, next) {
+      // 🛡 LIFECYCLE GUARD: listener pode disparar após dispose do widget
+      if (!mounted) return;
+
       final vp = ref.read(viewportStateProvider);
       if (vp != InitialViewportState.applied &&
           vp != InitialViewportState.aborted &&
@@ -846,50 +700,28 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
                 onOccurrenceTap: _handleOccurrencePinTap,
               ),
 
-              // Markers de Marketing (apenas cases publicados)
-              if (ref.watch(marketingCasesProvider).hasValue)
-                MarkerLayer(
-                  markers:
-                      (ref
-                              .watch(marketingCasesProvider)
-                              .value!
-                              .where(
-                                (c) =>
-                                    c.status.toValue() == 'published' &&
-                                    c.ativo &&
-                                    c.deletadoEm == null,
-                              )
-                              .toList()
-                            ..sort(
-                              (a, b) => b.visibilidade.index.compareTo(
-                                a.visibilidade.index,
-                              ),
-                            ))
-                          .map((mCase) {
-                            return Marker(
-                              point: LatLng(mCase.lat, mCase.lng),
-                              width: 100,
-                              height: 100,
-                              alignment: Alignment.center,
-                              child: MarketingCaseMarker(
-                                marketingCase: mCase,
-                                onTap: () {
-                                  HapticFeedback.lightImpact();
-                                  MarketingCaseSheet.show(context, mCase);
-                                },
-                              ),
-                            );
-                          })
-                          .toList(),
-                ),
+              // Markers de Marketing (isolados — Sprint 8 Performance)
+              const IsolatedMarketingMarkersLayer(),
 
               // 🎯 ÚNICA LAYER QUE REBUILDA: Localização GPS
               const IsolatedUserLocationLayer(),
+
+              // ⚖️ ATRIBUIÇÃO LEGAL: © Google — exibida somente no layer satellite
+              // Obrigatória pelos Termos de Serviço do Google Maps Platform
+              if (ref.watch(activeLayerProvider) == LayerType.satellite)
+                const RichAttributionWidget(
+                  attributions: [
+                    TextSourceAttribution(
+                      MapConfig.googleAttribution,
+                    ),
+                  ],
+                ),
             ],
           ),
 
-          // Controles do mapa (Consumer isolado)
-          MapControlsOverlay(
+          // Controles do mapa (Consumer isolado + RepaintBoundary Sprint 8)
+          RepaintBoundary(
+            child: MapControlsOverlay(
             onCenterUser: _centerOnUser,
             onToggleDrawMode: _toggleDrawMode,
             onToggleOccurrenceMode: () {
@@ -914,9 +746,11 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
             isMarketingMode: _armedMode == ArmedMode.marketing,
             isDrawMode: sheetState?.type == MapSheetType.draw,
             isOccurrenceMode: _armedMode == ArmedMode.occurrences,
-            isCheckInActive:
-                ref.watch(visitControllerProvider).valueOrNull?.status ==
-                'active',
+            isCheckInActive: ref.watch(
+              visitControllerProvider.select(
+                (v) => v.valueOrNull?.status == 'active',
+              ),
+            ),
             drawingState: drawingState,
             onFinishDrawing: _finishDrawing,
             onCancelDrawing: () {
@@ -932,6 +766,11 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
             onCancelEdit: () =>
                 ref.read(drawingControllerProvider).cancelEdit(),
             onUndoEdit: () => ref.read(drawingControllerProvider).undoEdit(),
+            onRedoEdit: () => ref.read(drawingControllerProvider).redoEdit(),
+            onUndoDrawing:
+                () => ref.read(drawingControllerProvider).undoDrawingPoint(),
+            canUndo: canUndo,
+            canRedo: canRedo,
             currentCenter: _isMapReady
                 ? _mapController.camera.center
                 : const LatLng(0, 0),
@@ -970,9 +809,23 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
                 _pendingOccurrenceLocation = null;
               });
             },
+            ),
           ),
 
-          // 🛡 CONSOLIDATION: DrawingSheet permanece no Stack (draw type)
+          // � GPS TRACKING OVERLAY (Sprint 5)
+          // Exibido apenas quando o usuário está rastreando o perímetro com GPS.
+          // Não é um FAB nem nova rota — é um overlay no Stack existente.
+          if (drawingState == DrawingState.gpsTracking)
+            RepaintBoundary(
+              child: ListenableBuilder(
+                listenable: ref.read(drawingControllerProvider),
+                builder: (context, _) => GpsTrackingOverlay(
+                  controller: ref.read(drawingControllerProvider),
+                ),
+              ),
+            ),
+
+          // �🛡 CONSOLIDATION: DrawingSheet permanece no Stack (draw type)
           // Tipos publications/occurrences/checkIn/layers usam showModalBottomSheet
           if (sheetState != null && sheetState.type == MapSheetType.draw)
             Positioned(
@@ -992,274 +845,54 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
                 onLocationRequested: _centerOnUser,
               ),
             ),
-        ],
-      ),
-    );
-  }
 
-  // 🔧 MODAL: Abre os tipos publications/occurrences/checkIn/layers como modal nativo
-  void _openSheetAsModal(BuildContext context, MapSheetState state) {
-    if (_isModalOpen) return;
-    if (!mounted) return;
-    setState(() => _isModalOpen = true);
-    final gen = ++_modalGeneration;
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      barrierColor: Colors.black.withValues(alpha: 0.15),
-      enableDrag: true,
-      isDismissible: true,
-      builder: (modalContext) => DraggableScrollableSheet(
-        initialChildSize: 0.5,
-        minChildSize: 0.3,
-        maxChildSize: 0.9,
-        expand: false,
-        snap: true,
-        snapSizes: const [0.5, 0.9],
-        builder: (_, scrollController) => Container(
-          decoration: BoxDecoration(
-            color: Theme.of(context).scaffoldBackgroundColor,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-          ),
-          child: Column(
-            children: [
-              Center(
-                child: Container(
-                  margin: const EdgeInsets.symmetric(vertical: 8),
-                  width: 36,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Theme.of(
-                      context,
-                    ).dividerColor.withValues(alpha: 0.3),
-                    borderRadius: BorderRadius.circular(2),
+          // FIX 1 — Indicador visual efêmero: modo seleção de ponto para ocorrência
+          if (_armedMode == ArmedMode.occurrences)
+            Positioned(
+              top: MediaQuery.of(context).padding.top + 8,
+              left: 0,
+              right: 0,
+              child: IgnorePointer(
+                child: Center(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.black87,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.3),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.location_pin,
+                          color: Colors.orangeAccent,
+                          size: 16,
+                        ),
+                        SizedBox(width: 8),
+                        Text(
+                          'Toque no mapa para marcar o ponto',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
-              Expanded(child: _buildSheetContent(state, scrollController)),
-            ],
-          ),
-        ),
-      ),
-    ).whenComplete(() {
-      if (mounted && gen == _modalGeneration) {
-        setState(() => _isModalOpen = false);
-        final currentState = ref.read(mapSheetStateProvider);
-        if (currentState?.type == state.type) {
-          _setSheetState(null, 'Modal: whenComplete dismiss');
-        }
-      }
-    });
-  }
-
-  // 🔧 MODAL: Conteúdo específico por tipo (recebe scrollController do DraggableScrollableSheet)
-  Widget _buildSheetContent(
-    MapSheetState state,
-    ScrollController scrollController,
-  ) {
-    switch (state.type) {
-      case MapSheetType.layers:
-        return SingleChildScrollView(
-          controller: scrollController,
-          physics: const BouncingScrollPhysics(),
-          child: LayersSheet(onClose: () => Navigator.of(context).pop()),
-        );
-      case MapSheetType.occurrences:
-        if (state.isCreatingOccurrence && _pendingOccurrenceLocation != null) {
-          final lat = _pendingOccurrenceLocation!.latitude;
-          final lng = _pendingOccurrenceLocation!.longitude;
-          // 🐛 BUGFIX: Usar OccurrenceCreationSheet (formulário correto, schema v14)
-          return OccurrenceCreationSheet(
-            latitude: lat,
-            longitude: lng,
-            scrollController: scrollController,
-            onCancel: () => Navigator.of(context).pop(),
-            onConfirm: (data) {
-              ref.read(occurrenceControllerProvider).createOccurrence(
-                type: data.type,
-                description: data.description,
-                photoPath: data.photoPath,
-                lat: lat,
-                long: lng,
-                category: data.category,
-                status: 'draft',
-                cultivar: data.cultivar,
-                dataPlantio: data.dataPlantio,
-                estadioFenologico: data.estadioFenologico,
-                tipoOcorrencia: data.tipoOcorrencia,
-                amostraSolo: data.amostraSolo,
-                recomendacoes: data.recomendacoes,
-                metricasJson: data.metricasJson,
-                nutrientesJson: data.nutrientesJson,
-                categoriasJson: data.categoriasJson,
-                notasCategoriasJson: data.notasCategoriasJson,
-                fotosCategoriasJson: data.fotosCategoriasJson,
-              );
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Ocorrência registrada com sucesso!'),
-                  backgroundColor: PremiumTokens.brandGreen,
-                ),
-              );
-              Navigator.of(context).pop();
-            },
-          );
-        }
-        // R1: showHandle + showDecoration false evitam duplicação visual com o modal
-        // R2: scrollController conectado ao DraggableScrollableSheet para drag-to-dismiss
-        return OccurrenceListSheet(
-          scrollController: scrollController,
-          showHandle: false,
-          showDecoration: false,
-          mapBounds: null,
-          onClose: () => Navigator.of(context).pop(),
-          onOccurrenceTap: (occurrence) {
-            AppLogger.debug(
-              'Ocorrência tocada: ${occurrence.id}',
-              tag: 'MapSheet',
-            );
-          },
-          onRequestNewOccurrence: () {
-            // 🐛 BUGFIX: Fechar lista e abrir formulário de criação diretamente
-            Navigator.of(context).pop();
-            _openOccurrenceCreationSheet();
-          },
-        );
-      case MapSheetType.checkIn:
-        return Consumer(
-          builder: (ctx, widgetRef, _) {
-            final visitState = widgetRef.watch(visitControllerProvider);
-            final isActive = visitState.value?.status == 'active';
-            if (isActive) {
-              return _buildActiveVisitContent(widgetRef);
-            }
-            return VisitSheet(
-              preSelectedClienteId: state.preSelectedClienteId,
-              onConfirm: (clientId, areaId, activity) {
-                widgetRef
-                    .read(visitControllerProvider.notifier)
-                    .startSession(clientId, areaId, activity, 0.0, 0.0);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Visita iniciada. Bom trabalho!'),
-                    backgroundColor: PremiumTokens.brandGreenDark,
-                  ),
-                );
-                Navigator.of(context).pop();
-              },
-            );
-          },
-        );
-      case MapSheetType.draw:
-        // Nunca deve chegar aqui — draw permanece no Stack
-        return const SizedBox.shrink();
-    }
-  }
-
-  // 🔧 MODAL: UI de visita ativa no checkIn sheet
-  Widget _buildActiveVisitContent(WidgetRef widgetRef) {
-    return Padding(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(SFIcons.checkCircle, size: 64, color: PremiumTokens.brandGreen),
-          const SizedBox(height: 16),
-          Text(
-            'Visita em Andamento',
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-          const SizedBox(height: 32),
-          ElevatedButton(
-            onPressed: () async {
-              final agendaState = widgetRef.read(agendaProvider);
-              final activeSession = agendaState.sessions
-                  .where((s) => s.endAtReal == null)
-                  .firstOrNull;
-              if (activeSession == null) {
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Nenhuma visita ativa encontrada.'),
-                    ),
-                  );
-                }
-                return;
-              }
-              final linkedEvent = agendaState.events
-                  .where((e) => e.visitSessionId == activeSession.id)
-                  .firstOrNull;
-              if (linkedEvent == null) {
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Evento vinculado não encontrado.'),
-                    ),
-                  );
-                }
-                return;
-              }
-              try {
-                if (linkedEvent.status == EventStatus.emAndamento) {
-                  await widgetRef
-                      .read(agendaProvider.notifier)
-                      .finalizeEvent(linkedEvent.id);
-                }
-                await widgetRef
-                    .read(agendaProvider.notifier)
-                    .completeEvent(linkedEvent.id);
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Visita encerrada com sucesso.'),
-                    ),
-                  );
-                  Navigator.of(context).pop();
-                }
-              } catch (e) {
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Erro ao encerrar visita: $e')),
-                  );
-                }
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: PremiumTokens.alertError,
-              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
             ),
-            child: const Text('Encerrar Visita'),
-          ),
         ],
       ),
     );
-  }
-
-  void _toggleDrawMode() {
-    HapticFeedback.mediumImpact();
-    final controller = ref.read(drawingControllerProvider);
-
-    if (controller.currentState == DrawingState.idle) {
-      // 🔧 FIX: Usar MapBottomSheet unificado ao invés de modal separado
-      _setSheetState(
-        const MapSheetState(type: MapSheetType.draw),
-        'ToggleDrawMode: Opening draw sheet',
-      );
-    } else {
-      // 🎯 Se já está em algum modo (drawing, armed), cancela a operação
-      controller.cancelOperation();
-      // Fechar o sheet também
-      _setSheetState(null, 'ToggleDrawMode: Cancel and close');
-
-      ScaffoldMessenger.of(context).hideCurrentSnackBar();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Desenho cancelado'),
-          duration: Duration(seconds: 2),
-        ),
-      );
-    }
   }
 }

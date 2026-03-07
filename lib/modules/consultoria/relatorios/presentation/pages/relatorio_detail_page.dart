@@ -11,6 +11,7 @@ import '../../models/relatorio_tecnico.dart';
 import '../../models/visit_session_snapshot.dart';
 import '../../use_cases/publish_relatorio_use_case.dart';
 import '../providers/relatorio_query_providers.dart';
+import '../../../../../core/constants/layout_constants.dart';
 
 /// Tela de Detalhe do Relatório Técnico — ADR-009
 ///
@@ -68,9 +69,9 @@ class _RelatorioDetailPageState extends ConsumerState<RelatorioDetailPage> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Relatório publicado com sucesso!'),
-            backgroundColor: const Color(0xFF34C759),
+          const SnackBar(
+            content: Text('Relatório publicado com sucesso!'),
+            backgroundColor: Color(0xFF34C759),
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -105,10 +106,10 @@ class _RelatorioDetailPageState extends ConsumerState<RelatorioDetailPage> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(
+                const Icon(
                   Icons.error_outline,
                   size: 48,
-                  color: const Color(0xFFFF3B30),
+                  color: Color(0xFFFF3B30),
                 ),
                 const SizedBox(height: 16.0),
                 Text(
@@ -140,7 +141,7 @@ class _RelatorioDetailPageState extends ConsumerState<RelatorioDetailPage> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(
+                    const Icon(
                       Icons.description_outlined,
                       size: 56,
                       color: PremiumTokens.textTertiaryLight,
@@ -328,7 +329,7 @@ class _RelatorioDetailPageState extends ConsumerState<RelatorioDetailPage> {
           ),
 
         // Espaço para SmartButton global
-        const SliverToBoxAdapter(child: SizedBox(height: 80)),
+        const SliverToBoxAdapter(child: SizedBox(height: kFabSafeArea)),
       ],
     );
   }
@@ -430,7 +431,7 @@ class _FotoGrid extends StatelessWidget {
           fit: BoxFit.cover,
           errorBuilder: (_, __, ___) => Container(
             color: PremiumTokens.backgroundLight,
-            child: Icon(
+            child: const Icon(
               Icons.broken_image_outlined,
               color: PremiumTokens.textTertiaryLight,
             ),
@@ -496,10 +497,10 @@ class _OfflineBadge extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
+          const Icon(
             Icons.cloud_off_rounded,
             size: 11,
-            color: const Color(0xFF92400E),
+            color: Color(0xFF92400E),
           ),
           const SizedBox(width: 4),
           Text(

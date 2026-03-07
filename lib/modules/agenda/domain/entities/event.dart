@@ -1,6 +1,8 @@
 import 'package:equatable/equatable.dart';
+import 'package:flutter/material.dart';
 import '../enums/event_status.dart';
 import '../enums/event_type.dart';
+import 'visit.dart';
 
 /// Entidade representando um Evento na Agenda
 ///
@@ -49,6 +51,17 @@ class Event extends Equatable {
   /// Status de sincronização offline
   final String syncStatus;
 
+  // Campos opcionais de horário (usado pelo VisitExtension)
+  final TimeOfDay? startTime;
+  final TimeOfDay? endTime;
+
+  // Campos opcionais de prioridade
+  final VisitPriority priority;
+
+  // Campos opcionais de localização
+  final double? latitude;
+  final double? longitude;
+
   const Event({
     required this.id,
     required this.tipo,
@@ -64,6 +77,11 @@ class Event extends Equatable {
     required this.createdAt,
     required this.updatedAt,
     this.syncStatus = 'pending',
+    this.startTime,
+    this.endTime,
+    this.priority = VisitPriority.normal,
+    this.latitude,
+    this.longitude,
   });
 
   /// Duração planejada em minutos
@@ -111,6 +129,11 @@ class Event extends Equatable {
     DateTime? createdAt,
     DateTime? updatedAt,
     String? syncStatus,
+    TimeOfDay? startTime,
+    TimeOfDay? endTime,
+    VisitPriority? priority,
+    double? latitude,
+    double? longitude,
   }) {
     return Event(
       id: id ?? this.id,
@@ -127,6 +150,11 @@ class Event extends Equatable {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       syncStatus: syncStatus ?? this.syncStatus,
+      startTime: startTime ?? this.startTime,
+      endTime: endTime ?? this.endTime,
+      priority: priority ?? this.priority,
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
     );
   }
 
@@ -146,5 +174,10 @@ class Event extends Equatable {
     createdAt,
     updatedAt,
     syncStatus,
+    startTime,
+    endTime,
+    priority,
+    latitude,
+    longitude,
   ];
 }

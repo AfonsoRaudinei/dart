@@ -18,7 +18,7 @@ import '../../../core/feature_flags/feature_flag_providers.dart';
 import '../../../core/feature_flags/feature_flag_resolver.dart';
 import '../../../core/feature_flags/feature_flag_analytics.dart';
 import '../../../../modules/consultoria/occurrences/presentation/widgets/occurrence_list_sheet.dart';
-import 'map_occurrence_sheet.dart';
+import '../../../../modules/consultoria/occurrences/presentation/widgets/occurrence_creation_sheet.dart';
 import 'map_sheet_state.dart'; // 🛡 REFATORAÇÃO: Modelo compartilhado
 import '../../../core/utils/app_logger.dart';
 
@@ -29,7 +29,6 @@ enum SheetDetent { closed, compact, medium, expanded }
 class MapBottomSheet extends ConsumerStatefulWidget {
   final DrawingController drawingController;
   final VoidCallback onLocationRequested;
-  final VoidCallback onOccurrenceArmed;
   final VoidCallback onClose;
   final MapSheetState state; // 🛡 REFATORAÇÃO: Estado explícito do pai
   final Function(MapSheetState)
@@ -40,7 +39,6 @@ class MapBottomSheet extends ConsumerStatefulWidget {
     super.key,
     required this.drawingController,
     required this.onLocationRequested,
-    required this.onOccurrenceArmed,
     required this.onClose,
     required this.state,
     required this.onStateChange,
@@ -237,8 +235,6 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
         return _buildDraw();
       case MapSheetType.layers:
         return _buildLayers();
-      case MapSheetType.publications:
-        return _buildPublications();
       case MapSheetType.occurrences:
         return widget.state.isCreatingOccurrence
             ? _buildOccurrenceForm()
@@ -279,14 +275,6 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
     );
   }
 
-  Widget _buildPublications() {
-    return SingleChildScrollView(
-      controller: _scrollController,
-      physics: const BouncingScrollPhysics(),
-      child: PublicacoesSheet(onClose: widget.onClose),
-    );
-  }
-
   Widget _buildCheckIn() {
     return SingleChildScrollView(
       controller: _scrollController,
@@ -305,7 +293,7 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
         padding: const EdgeInsets.all(24),
         child: Column(
           children: [
-            Icon(
+            const Icon(
               SFIcons.checkCircle,
               size: 64,
               color: PremiumTokens.brandGreen,
@@ -318,8 +306,7 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
             const SizedBox(height: 32),
             ElevatedButton(
               onPressed: () async {
-                // ADR-010 Opção B: encerrar via fluxo da agenda (completeEvent)
-                // para que VisitCompletionObserver gere o RelatorioTecnico.
+                  HapticFeedback.mediumImpact(); // ✅ iOS Premium
                 final agendaState = ref.read(agendaProvider);
 
                 // 1. Encontra a sessão ativa (sem endAtReal)
@@ -391,7 +378,10 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
                   vertical: 16,
                 ),
               ),
-              child: const Text('Encerrar Visita'),
+              child: const Text(
+                'Encerrar Visita',
+                style: TextStyle(fontWeight: FontWeight.w600), // ✅ iOS Premium
+              ),
             ),
           ],
         ),
@@ -440,58 +430,67 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
             tag: 'MapSheet',
           );
         },
-        onRequestNewOccurrence: () {
-          // 🆕 Armar modo de ocorrência e fechar sheet
-          widget.onOccurrenceArmed();
-          // Não fecha o sheet, apenas instrui o usuário
-        },
+        // 🐛 BUGFIX: Botão removido - criação via ícone no mapa
+        onRequestNewOccurrence: null,
       ),
     );
   }
 
+  // 🐛 BUGFIX: Substituído MapOccurrenceSheet (Relatório de Visita) por
+  // OccurrenceCreationSheet — formulário correto de criação de ocorrência.
   Widget _buildOccurrenceForm() {
     final lat = widget.creationLocation?.latitude ?? 0;
     final lng = widget.creationLocation?.longitude ?? 0;
 
-    return SingleChildScrollView(
-      controller: _scrollController,
-      physics: const BouncingScrollPhysics(),
-      child: MapOccurrenceSheet(
-        latitude: lat,
-        longitude: lng,
-        scrollController: ScrollController(),
-        onCancel: () {
-          // 🛡 REFATORAÇÃO: Voltar para lista
-          widget.onStateChange(
-            const MapSheetState(
-              type: MapSheetType.occurrences,
-              isCreatingOccurrence: false,
-            ),
-          );
-        },
-        onConfirm: (category, urgency, description) {
-          ref
-              .read(occurrenceControllerProvider)
-              .createOccurrence(
-                type: urgency,
-                description: description,
-                lat: lat,
-                long: lng,
-                category: category,
-                status: 'draft',
-              );
+    return OccurrenceCreationSheet(
+      latitude: lat,
+      longitude: lng,
+      scrollController: _scrollController,
+      onCancel: () {
+        // Voltar para lista de ocorrências
+        widget.onStateChange(
+          const MapSheetState(
+            type: MapSheetType.occurrences,
+            isCreatingOccurrence: false,
+          ),
+        );
+      },
+      onConfirm: (data) {
+        // visit_session_id herdado automaticamente pelo OccurrenceController
+        // caso haja sessão de visita ativa.
+        ref
+            .read(occurrenceControllerProvider)
+            .createOccurrence(
+              type: data.type,
+              description: data.description,
+              photoPath: data.photoPath,
+              lat: lat,
+              long: lng,
+              category: data.category,
+              status: 'draft',
+              cultivar: data.cultivar,
+              dataPlantio: data.dataPlantio,
+              estadioFenologico: data.estadioFenologico,
+              tipoOcorrencia: data.tipoOcorrencia,
+              amostraSolo: data.amostraSolo,
+              recomendacoes: data.recomendacoes,
+              metricasJson: data.metricasJson,
+              nutrientesJson: data.nutrientesJson,
+              categoriasJson: data.categoriasJson,
+              notasCategoriasJson: data.notasCategoriasJson,
+              fotosCategoriasJson: data.fotosCategoriasJson,
+            );
 
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Ocorrência registrada com sucesso!'),
-              backgroundColor: PremiumTokens.brandGreen,
-            ),
-          );
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Ocorrência registrada com sucesso!'),
+            backgroundColor: PremiumTokens.brandGreen,
+          ),
+        );
 
-          // Fechar o sheet após salvar
-          widget.onClose();
-        },
-      ),
+        // Fechar o sheet após salvar
+        widget.onClose();
+      },
     );
   }
 
@@ -563,13 +562,11 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
                         ), // Hit area + margin
                         child: Center(
                           child: Container(
-                            width: 36, // Mais largo
-                            height: 4,
+                            width: 36, // ✅ iOS Premium: 36px
+                            height: 5, // ✅ iOS Premium: 5px
                             decoration: BoxDecoration(
-                              color: Theme.of(
-                                context,
-                              ).dividerColor.withOpacity(0.2), // Dinâmico
-                              borderRadius: BorderRadius.circular(2),
+                              color: const Color(0xFFC5C5C7), // ✅ iOS Premium: #C5C5C7
+                              borderRadius: BorderRadius.circular(10), // ✅ iOS Premium: squircle radius
                             ),
                           ),
                         ),

@@ -86,6 +86,10 @@ class DrawingStateIndicator extends StatelessWidget {
         return Colors.indigo.shade600;
       case DrawingState.booleanOperation:
         return Colors.amber.shade700;
+      case DrawingState.gpsTracking:
+        return const Color(0xFF30D158); // Verde GPS
+      case DrawingState.selected:
+        return Colors.teal.shade600; // Teal = seleção ativa
     }
   }
 
@@ -106,6 +110,10 @@ class DrawingStateIndicator extends StatelessWidget {
         return Icons.visibility;
       case DrawingState.booleanOperation:
         return Icons.merge_type;
+      case DrawingState.gpsTracking:
+        return Icons.my_location_rounded;
+      case DrawingState.selected:
+        return Icons.crop_free; // Bounding box / seleção
     }
   }
 
@@ -144,6 +152,10 @@ class DrawingStateIndicator extends StatelessWidget {
         return 'Visualizando importação';
       case DrawingState.booleanOperation:
         return 'Operação booleana em andamento';
+      case DrawingState.gpsTracking:
+        return 'Rastreando perímetro via GPS...';
+      case DrawingState.selected:
+        return 'Feature selecionada';
     }
   }
 }
@@ -168,7 +180,7 @@ class DrawingStateOverlay extends StatelessWidget {
         child,
         // Indicador no topo
         Positioned(
-          top: 16,
+          top: MediaQuery.of(context).padding.top + 8,
           left: 0,
           right: 0,
           child: Center(

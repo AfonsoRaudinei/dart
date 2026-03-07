@@ -30,6 +30,20 @@ class VisitRepository {
     );
   }
 
+  Future<void> updateArea(String sessionId, String newAreaId) async {
+    final db = await _databaseHelper.database;
+    await db.update(
+      'visit_sessions',
+      {
+        'area_id': newAreaId,
+        'updated_at': DateTime.now().toIso8601String(),
+        'sync_status': 1,
+      },
+      where: 'id = ?',
+      whereArgs: [sessionId],
+    );
+  }
+
   Future<void> endSession(String sessionId, DateTime endTime) async {
     final db = await _databaseHelper.database;
     await db.update(

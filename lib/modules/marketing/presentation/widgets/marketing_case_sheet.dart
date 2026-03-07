@@ -691,7 +691,7 @@ class MarketingCaseSheet extends StatelessWidget {
           Container(
             width: 44,
             height: 44,
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               gradient: PremiumTokens.brandGradient,
               shape: BoxShape.circle,
             ),

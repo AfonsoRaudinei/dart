@@ -9,6 +9,7 @@ import '../models/relatorio_status.dart';
 import '../models/relatorio_tecnico.dart';
 import '../providers/relatorio_providers.dart';
 import '../use_cases/publish_relatorio_use_case.dart';
+import '../../../../core/constants/layout_constants.dart';
 
 /// Tela de Listagem de Relatórios Técnicos — PASSO 3
 ///
@@ -150,7 +151,7 @@ class _RelatoriosListScreenState extends ConsumerState<RelatoriosListScreen>
         }
 
         return ListView.builder(
-          padding: const EdgeInsets.fromLTRB(24, 0, 24, 100),
+          padding: const EdgeInsets.fromLTRB(24, 0, 24, kFabSafeArea),
           itemCount: relatorios.length,
           itemBuilder: (context, index) {
             return _RelatorioCard(
@@ -408,6 +409,7 @@ class _ActionsSheet extends ConsumerWidget {
               Navigator.pop(context);
               try {
                 await ref.read(publishRelatorioProvider(id).future);
+                if (!context.mounted) return; // ← Guard obrigatório antes de usar ref
                 ref.invalidate(relatoriosListProvider);
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(

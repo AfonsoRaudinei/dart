@@ -5,6 +5,7 @@ import '../providers/clients_providers.dart';
 import '../../../../../core/router/app_routes.dart';
 import '../../../../../ui/theme/premium/design_tokens.dart';
 import '../../../../map/design/sf_icons.dart';
+import '../widgets/client_avatar_widget.dart';
 import 'dart:ui' as ui;
 
 class ClientListScreen extends ConsumerWidget {
@@ -45,7 +46,7 @@ class ClientListScreen extends ConsumerWidget {
             ),
             actions: [
               IconButton(
-                onPressed: () => context.push(AppRoutes.clientNew),
+                onPressed: () => context.go(AppRoutes.clientNew),
                 icon: const Icon(
                   SFIcons.add,
                   color: PremiumTokens.brandGreen,
@@ -162,34 +163,83 @@ class ClientListScreen extends ConsumerWidget {
                 return SliverList(
                   delegate: SliverChildBuilderDelegate((context, index) {
                     final client = clients[index];
-                    return GestureDetector(
-                      onTap: () =>
-                          context.push(AppRoutes.clientDetail(client.id)),
-                      child: Container(
+                    return Dismissible(
+                      key: ValueKey(client.id),
+                      direction: DismissDirection.endToStart,
+                      background: Container(
                         margin: const EdgeInsets.only(bottom: 12),
-                        padding: const EdgeInsets.all(16),
+                        alignment: Alignment.centerRight,
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
                         decoration: BoxDecoration(
-                          color: PremiumTokens.surfaceLight,
+                          color: Colors.red[400],
                           borderRadius: BorderRadius.circular(
                             PremiumTokens.borderRadiusMd,
                           ),
-                          boxShadow: PremiumTokens.tightShadow,
                         ),
-                        child: Row(
-                          children: [
-                            CircleAvatar(
-                              radius: 24,
-                              backgroundColor: PremiumTokens.backgroundLight,
-                              foregroundImage: client.photoPath != null
-                                  ? NetworkImage(client.photoPath!)
-                                  : null,
-                              child: Text(
-                                client.name.substring(0, 1).toUpperCase(),
-                                style: const TextStyle(
-                                  color: PremiumTokens.textPrimaryLight,
-                                  fontWeight: FontWeight.bold,
+                        child: const Icon(
+                          Icons.delete_outline,
+                          color: Colors.white,
+                          size: 28,
+                        ),
+                      ),
+                      confirmDismiss: (_) async {
+                        return await showDialog<bool>(
+                          context: context,
+                          builder: (ctx) => AlertDialog(
+                            title: const Text('Excluir cliente'),
+                            content: Text(
+                              'Deseja excluir "${client.name}"?\nEsta ação não pode ser desfeita.',
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () =>
+                                    Navigator.of(ctx).pop(false),
+                                child: const Text('Cancelar'),
+                              ),
+                              TextButton(
+                                onPressed: () =>
+                                    Navigator.of(ctx).pop(true),
+                                child: const Text(
+                                  'Excluir',
+                                  style: TextStyle(color: Colors.red),
                                 ),
                               ),
+                            ],
+                          ),
+                        ) ??
+                            false;
+                      },
+                      onDismissed: (_) {
+                        ref
+                            .read(clientsControllerProvider)
+                            .deleteClient(client.id);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content:
+                                Text('"${client.name}" excluído'),
+                            duration: const Duration(seconds: 3),
+                          ),
+                        );
+                      },
+                      child: GestureDetector(
+                        onTap: () =>
+                            context.go(AppRoutes.clientDetail(client.id)),
+                        child: Container(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: PremiumTokens.surfaceLight,
+                            borderRadius: BorderRadius.circular(
+                              PremiumTokens.borderRadiusMd,
+                            ),
+                            boxShadow: PremiumTokens.tightShadow,
+                          ),
+                          child: Row(
+                          children: [
+                            ClientAvatarWidget(
+                              fotoPath: client.photoPath,
+                              nome: client.name,
+                              radius: 24,
                             ),
                             const SizedBox(width: 16),
                             Expanded(
@@ -232,6 +282,7 @@ class ClientListScreen extends ConsumerWidget {
                             ),
                           ],
                         ),
+                      ),
                       ),
                     );
                   }, childCount: clients.length),

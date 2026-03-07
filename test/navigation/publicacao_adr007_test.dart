@@ -173,7 +173,7 @@ void main() {
         routes: [
           GoRoute(
             path: '/map',
-            builder: (_, __) => _CTATestScreen(publicacaoId: 'test-001'),
+            builder: (_, __) => const _CTATestScreen(publicacaoId: 'test-001'),
             routes: [
               GoRoute(
                 path: 'publicacao/edit',

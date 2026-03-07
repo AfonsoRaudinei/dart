@@ -46,7 +46,7 @@ class RelatoriosScreen extends ConsumerWidget {
             ),
             actions: [
               IconButton(
-                icon: Icon(SFIcons.add, color: PremiumTokens.brandGreen, size: 28),
+                icon: const Icon(SFIcons.add, color: PremiumTokens.brandGreen, size: 28),
                 onPressed: () {
                   context.go(AppRoutes.reportNew);
                 },

@@ -552,7 +552,7 @@ class CategoryDetailPanel extends StatelessWidget {
         border: Border.all(
           color: PremiumTokens.hairlineLight.withValues(alpha: 0.5),
         ),
-        boxShadow: [
+        boxShadow: const [
           BoxShadow(
             color: Color.fromRGBO(0, 0, 0, 0.03),
             blurRadius: 8,

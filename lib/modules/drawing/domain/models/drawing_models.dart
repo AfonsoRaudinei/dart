@@ -182,6 +182,12 @@ class DrawingProperties {
   // Versioning
   final String? versaoAnteriorId;
 
+  // 🌱 Sprint 6: Campos agronômicos
+  final String? cultura;             // ex: soja, milho, café
+  final String? safra;               // ex: 2025/2026
+  final String? soilSamplingScheme;  // grade | zona | dirigido
+  final Map<String, double>? recByNutrient; // N, P, K, S, Ca, Mg …
+
   DrawingProperties({
     required this.nome,
     required this.tipo,
@@ -203,6 +209,10 @@ class DrawingProperties {
     this.grupo, // 🆕
     this.cor, // 🆕
     this.versaoAnteriorId,
+    this.cultura,
+    this.safra,
+    this.soilSamplingScheme,
+    this.recByNutrient,
   });
 
   Map<String, dynamic> toJson() => {
@@ -226,6 +236,11 @@ class DrawingProperties {
     'grupo': grupo, // 🆕
     'cor': cor, // 🆕
     'versao_anterior_id': versaoAnteriorId,
+    // 🌱 Sprint 6
+    'cultura': cultura,
+    'safra': safra,
+    'soil_sampling_scheme': soilSamplingScheme,
+    'rec_by_nutrient': recByNutrient,
   };
 
   factory DrawingProperties.fromJson(Map<String, dynamic> json) {
@@ -252,6 +267,17 @@ class DrawingProperties {
       grupo: json['grupo'], // 🆕
       cor: json['cor'], // 🆕
       versaoAnteriorId: json['versao_anterior_id'],
+      // 🌱 Sprint 6
+      cultura: json['cultura'] as String?,
+      safra: json['safra'] as String?,
+      soilSamplingScheme: json['soil_sampling_scheme'] as String?,
+      recByNutrient: json['rec_by_nutrient'] != null
+          ? Map<String, double>.from(
+              (json['rec_by_nutrient'] as Map).map(
+                (k, v) => MapEntry(k.toString(), (v as num).toDouble()),
+              ),
+            )
+          : null,
     );
   }
 
@@ -276,6 +302,10 @@ class DrawingProperties {
     String? grupo, // 🆕
     int? cor, // 🆕
     String? versaoAnteriorId,
+    String? cultura,
+    String? safra,
+    String? soilSamplingScheme,
+    Map<String, double>? recByNutrient,
   }) {
     return DrawingProperties(
       nome: nome ?? this.nome,
@@ -298,6 +328,10 @@ class DrawingProperties {
       grupo: grupo ?? this.grupo, // 🆕
       cor: cor ?? this.cor, // 🆕
       versaoAnteriorId: versaoAnteriorId ?? this.versaoAnteriorId,
+      cultura: cultura ?? this.cultura,
+      safra: safra ?? this.safra,
+      soilSamplingScheme: soilSamplingScheme ?? this.soilSamplingScheme,
+      recByNutrient: recByNutrient ?? this.recByNutrient,
     );
   }
 }

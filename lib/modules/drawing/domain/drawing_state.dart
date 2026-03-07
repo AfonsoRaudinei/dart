@@ -48,6 +48,14 @@ enum DrawingState {
   /// Operações booleanas (união, diferença, interseção)
   booleanOperation,
 
+  /// Rastreamento GPS em tempo real (usuário caminha o perímetro)
+  gpsTracking,
+
+  /// Feature existente selecionada no mapa — aguardando ação do usuário.
+  /// Transições: idle→selected (seleção), selected→editing (editar),
+  /// selected→idle (desselecionar), editing→selected (após salvar/cancelar).
+  selected,
+
   // REMOVIDO: measuring (estado órfão nunca usado)
   // Se precisar de medição no futuro, usar reviewing + flag
 }
@@ -93,7 +101,12 @@ class DrawingStateMachine {
     DrawingState.idle: [
       DrawingState.armed,
       DrawingState.importPreview,
+      // ✅ INTENCIONAL: editar feature existente selecionada no mapa não
+      // passa por armed/drawing — o usuário não desenha, apenas edita vértices.
       DrawingState.editing,
+      DrawingState.gpsTracking,
+      // ✅ Feature selecionada no mapa (toque em área existente)
+      DrawingState.selected,
     ],
     DrawingState.armed: [DrawingState.drawing, DrawingState.idle],
     DrawingState.drawing: [DrawingState.reviewing, DrawingState.idle],
@@ -102,10 +115,18 @@ class DrawingStateMachine {
       DrawingState.idle,
       DrawingState.booleanOperation,
     ],
-    DrawingState.editing: [DrawingState.reviewing, DrawingState.idle],
+    DrawingState.editing: [
+      DrawingState.reviewing,
+      DrawingState.idle,
+      // ✅ Após salvar/cancelar edição, volta para selected se feature ainda selecionada
+      DrawingState.selected,
+    ],
     // REMOVIDO: DrawingState.measuring (estado órfão)
     DrawingState.importPreview: [DrawingState.idle, DrawingState.reviewing],
     DrawingState.booleanOperation: [DrawingState.reviewing, DrawingState.idle],
+    DrawingState.gpsTracking: [DrawingState.reviewing, DrawingState.idle],
+    // ✅ selected: feature selecionada no mapa aguardando ação
+    DrawingState.selected: [DrawingState.editing, DrawingState.idle],
   };
 
   /// Verifica se pode transicionar para um novo estado
@@ -223,6 +244,30 @@ class DrawingStateMachine {
     return transitionTo(DrawingState.reviewing);
   }
 
+  /// Inicia modo GPS tracking (usuário caminha o perímetro).
+  /// Retorna `true` se transição foi bem-sucedida.
+  bool startGpsTracking() {
+    return transitionTo(DrawingState.gpsTracking);
+  }
+
+  /// Finaliza rastreamento GPS e vai para revisão.
+  /// Retorna `true` se transição foi bem-sucedida.
+  bool finalizeGpsTracking() {
+    return transitionTo(DrawingState.reviewing);
+  }
+
+  /// Entra no estado selected (feature selecionada no mapa).
+  /// Retorna `true` se transição foi bem-sucedida.
+  bool startSelected() {
+    return transitionTo(DrawingState.selected);
+  }
+
+  /// Sai do estado selected (após salvar/cancelar edição ou desselecionar).
+  /// Retorna `true` se transição foi bem-sucedida.
+  bool exitSelected() {
+    return transitionTo(DrawingState.idle);
+  }
+
   /// Inicia operação booleana.
   /// Retorna `true` se transição foi bem-sucedida.
   bool startBooleanOperation(BooleanOperationType opType) {
@@ -262,6 +307,10 @@ class DrawingStateMachine {
         return 'Visualizando importação';
       case DrawingState.booleanOperation:
         return _getBooleanOpMessage();
+      case DrawingState.gpsTracking:
+        return 'Rastreando perimetro via GPS...';
+      case DrawingState.selected:
+        return 'Feature selecionada — toque em Editar para modificar';
     }
   }
 

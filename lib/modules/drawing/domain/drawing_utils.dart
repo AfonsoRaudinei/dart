@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:math' as math;
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter_map/flutter_map.dart' show LatLngBounds;
 import 'package:xml/xml.dart';
 import 'package:archive/archive.dart';
 import 'package:latlong2/latlong.dart';
@@ -498,6 +499,26 @@ class DrawingUtils {
       }
     }
     return false;
+  }
+
+  /// Retorna [LatLngBounds] da geometria — usado para zoom de câmera após import.
+  ///
+  /// Retorna null se a geometria for nula, vazia ou degenerada (ponto único).
+  /// Coordenadas internas: [[lng, lat], ...] (GeoJSON order).
+  static LatLngBounds? getBoundsLatLng(DrawingGeometry? geometry) {
+    if (geometry == null) return null;
+    final b = _getBoundsGeometry(geometry);
+    // _getBounds retorna _Bounds(0,0,0,0) para ring vazio
+    if (b.minX == 0 && b.maxX == 0 && b.minY == 0 && b.maxY == 0) return null;
+    // Geometria degenerada: ponto único não é uma bbox válida para fitCamera
+    if ((b.maxX - b.minX).abs() < 1e-8 && (b.maxY - b.minY).abs() < 1e-8) {
+      return null;
+    }
+    // _Bounds: minX/maxX = longitude, minY/maxY = latitude
+    return LatLngBounds(
+      LatLng(b.minY, b.minX), // southWest: (minLat, minLng)
+      LatLng(b.maxY, b.maxX), // northEast: (maxLat, maxLng)
+    );
   }
 
   static _Bounds _getBoundsGeometry(DrawingGeometry g) {

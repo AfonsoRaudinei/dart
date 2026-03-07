@@ -7,6 +7,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:soloforte_app/core/constants/layout_constants.dart';
+
 import '../providers/plano_providers.dart';
 import '../../domain/entities/user_plan.dart';
 import '../../domain/enums/plano_tipo.dart';
@@ -42,31 +44,12 @@ class MeuPlanoScreen extends ConsumerWidget {
   }
 
   Widget _buildHeader(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+    return const Padding(
+      padding: EdgeInsets.fromLTRB(20, 16, 20, 8),
       child: Row(
         children: [
-          GestureDetector(
-            onTap: () {
-              HapticFeedback.lightImpact();
-              context.go('/map');
-            },
-            child: Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: const Color(0xFF1C1C1E),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: const Icon(
-                Icons.arrow_back_ios_new,
-                color: Color(0xFF32D74B),
-                size: 18,
-              ),
-            ),
-          ),
-          const SizedBox(width: 16),
-          const Text(
+          SizedBox(width: 40),
+          Text(
             'Meu Plano',
             style: TextStyle(
               fontFamily: 'Inter',
@@ -241,6 +224,7 @@ class _PlanoAtivoContent extends StatelessWidget {
               ),
             ),
           ),
+        const SizedBox(height: kFabSafeArea),
       ],
     );
   }
@@ -314,6 +298,7 @@ class _SemPlanoContent extends StatelessWidget {
               ),
             ),
           ),
+          const SizedBox(height: kFabSafeArea),
         ],
       ),
     );

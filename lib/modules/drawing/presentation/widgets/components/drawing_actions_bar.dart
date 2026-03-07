@@ -21,6 +21,10 @@ class DrawingActionsBar extends StatelessWidget {
   final VoidCallback? onDifference;
   final VoidCallback? onIntersection;
   final VoidCallback? onDelete;
+  /// Exporta este talhão como GeoJSON.
+  final VoidCallback? onExport;
+  /// Exporta todos os talhões como FeatureCollection GeoJSON.
+  final VoidCallback? onExportAll;
 
   const DrawingActionsBar({
     super.key,
@@ -31,6 +35,8 @@ class DrawingActionsBar extends StatelessWidget {
     this.onDifference,
     this.onIntersection,
     this.onDelete,
+    this.onExport,
+    this.onExportAll,
   });
 
   @override
@@ -164,6 +170,43 @@ class DrawingActionsBar extends StatelessWidget {
                 onIntersection!();
               }
               Navigator.of(context).pop();
+            },
+          ),
+          const SizedBox(height: 16),
+          const Divider(height: 1),
+          const SizedBox(height: 16),
+
+          // Exportar GeoJSON
+          const Text(
+            'Exportar',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Colors.black54,
+            ),
+          ),
+          const SizedBox(height: 12),
+          _ActionButton(
+            icon: Icons.file_download_outlined,
+            label: 'Exportar este talhão',
+            description: 'Compartilhar como arquivo .geojson',
+            onTap: () {
+              HapticFeedback.lightImpact();
+              if (onExport != null) {
+                onExport!();
+              }
+            },
+          ),
+          const SizedBox(height: 12),
+          _ActionButton(
+            icon: Icons.folder_zip_outlined,
+            label: 'Exportar todos os talhões',
+            description: 'FeatureCollection com todos os talhões',
+            onTap: () {
+              HapticFeedback.lightImpact();
+              if (onExportAll != null) {
+                onExportAll!();
+              }
             },
           ),
           const SizedBox(height: 16),

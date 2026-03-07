@@ -2,6 +2,23 @@ import 'package:flutter/material.dart';
 import '../../domain/entities/visit.dart';
 import '../providers/agenda_provider.dart';
 
+/// Classe de dados para aviso de distância
+class DistanceWarning {
+  final String message;
+  final double distanceKm;
+  final String fromTitle;
+  final String toTitle;
+  final int intervalMinutes;
+
+  const DistanceWarning({
+    required this.message,
+    required this.distanceKm,
+    required this.fromTitle,
+    required this.toTitle,
+    required this.intervalMinutes,
+  });
+}
+
 /// Dialog de aviso de distância excessiva entre visitas
 ///
 /// Não bloqueia o salvamento, apenas informa o usuário sobre

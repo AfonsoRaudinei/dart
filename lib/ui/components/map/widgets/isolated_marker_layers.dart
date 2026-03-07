@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../../../../../modules/map/design/sf_icons.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:latlong2/latlong.dart';
 import '../../../../core/state/map_state.dart';
 import '../../../../core/domain/publicacao.dart';
 import '../../../../modules/consultoria/occurrences/domain/occurrence.dart';
 import '../../../../modules/dashboard/providers/location_providers.dart';
+import '../../../../modules/marketing/presentation/providers/marketing_providers.dart';
+import '../../../../modules/marketing/presentation/widgets/marketing_case_marker.dart';
+import '../../../../modules/marketing/presentation/widgets/marketing_case_sheet.dart';
 import '../providers/marker_providers.dart';
 
 /// 🔒 WIDGET 100% ISOLADO: Markers de Publicações
@@ -86,6 +91,63 @@ class IsolatedLocalPublicationMarkersLayer extends ConsumerWidget {
     }
 
     return MarkerLayer(markers: markers);
+  }
+}
+
+/// 🔒 WIDGET 100% ISOLADO: Markers de Marketing Cases
+///
+/// Sprint 8 — Performance: elimina duplo ref.watch(marketingCasesProvider)
+/// no build() do PrivateMapScreen (~420 linhas).
+///
+/// Otimizações:
+/// ✅ Observa SOMENTE marketingCasesProvider.select (published + ativo)
+/// ✅ Não rebuilda o mapa inteiro quando cases mudam
+/// ✅ Filtra e ordena dentro do widget isolado
+/// ✅ Rebuild apenas se a lista filtrada mudar
+class IsolatedMarketingMarkersLayer extends ConsumerWidget {
+  const IsolatedMarketingMarkersLayer({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final cases = ref.watch(
+      marketingCasesProvider.select((async) {
+        if (!async.hasValue) return <dynamic>[];
+        return async.value!
+            .where(
+              (c) =>
+                  c.status.toValue() == 'published' &&
+                  c.ativo &&
+                  c.deletadoEm == null,
+            )
+            .toList()
+          ..sort(
+            (a, b) => b.visibilidade.index.compareTo(a.visibilidade.index),
+          );
+      }),
+    );
+
+    if (cases.isEmpty) return const SizedBox.shrink();
+
+    return MarkerLayer(
+      markers: cases
+          .map(
+            (mCase) => Marker(
+              key: ValueKey('mkt_${mCase.id}'),
+              point: LatLng(mCase.lat, mCase.lng),
+              width: 100,
+              height: 100,
+              alignment: Alignment.center,
+              child: MarketingCaseMarker(
+                marketingCase: mCase,
+                onTap: () {
+                  HapticFeedback.lightImpact();
+                  MarketingCaseSheet.show(context, mCase);
+                },
+              ),
+            ),
+          )
+          .toList(growable: false),
+    );
   }
 }
 

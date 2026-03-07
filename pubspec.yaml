@@ -59,6 +59,7 @@ dependencies:
   xml: ^6.6.1
   archive: ^4.0.7
   crypto: ^3.0.7
+  share_plus: ^10.0.3
 
 dev_dependencies:
   flutter_test:

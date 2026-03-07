@@ -12,6 +12,7 @@ import '../../premium/premium_glass_panel.dart';
 import '../../../../modules/drawing/domain/drawing_state.dart';
 import '../../../../core/utils/app_logger.dart';
 import './editing_controls_overlay.dart';
+import '../../../../modules/map/presentation/widgets/visit_active_card.dart';
 
 /// Overlay de controles do mapa (header, botões, check-in).
 /// Observa apenas locationStateProvider para status do GPS.
@@ -24,6 +25,7 @@ class MapControlsOverlay extends ConsumerStatefulWidget {
   final Function(int, String) onTabSelected;
   final bool isDrawMode;
   final bool isOccurrenceMode;
+  final bool isCheckInActive;
   final LatLng currentCenter;
   final double currentZoom;
   final DrawingState drawingState;
@@ -32,6 +34,10 @@ class MapControlsOverlay extends ConsumerStatefulWidget {
   final VoidCallback onSaveEdit;
   final VoidCallback onCancelEdit;
   final VoidCallback onUndoEdit;
+  final VoidCallback? onRedoEdit;
+  final VoidCallback? onUndoDrawing; // Undo no modo drawing
+  final bool canUndo;
+  final bool canRedo;
 
   const MapControlsOverlay({
     super.key,
@@ -42,6 +48,7 @@ class MapControlsOverlay extends ConsumerStatefulWidget {
     this.isMarketingMode = false,
     required this.isDrawMode,
     this.isOccurrenceMode = false,
+    this.isCheckInActive = false,
     required this.currentCenter,
     required this.currentZoom,
     required this.onTabSelected,
@@ -51,6 +58,10 @@ class MapControlsOverlay extends ConsumerStatefulWidget {
     required this.onSaveEdit,
     required this.onCancelEdit,
     required this.onUndoEdit,
+    this.onRedoEdit,
+    this.onUndoDrawing,
+    this.canUndo = false,
+    this.canRedo = false,
   });
 
   @override
@@ -58,19 +69,6 @@ class MapControlsOverlay extends ConsumerStatefulWidget {
 }
 
 class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
-  String _getGPSStatusText(LocationState state) {
-    switch (state) {
-      case LocationState.available:
-        return 'GPS OK';
-      case LocationState.permissionDenied:
-        return 'GPS: Sem permissão';
-      case LocationState.serviceDisabled:
-        return 'GPS: Desligado';
-      case LocationState.checking:
-        return 'GPS: Verificando...';
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     // ⚡ Otimização: Observar apenas o LocationState (não toda a posição)
@@ -81,73 +79,11 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
 
     return Stack(
       children: [
-        // 1. Header with Data Trust (Top Left)
+        // 1. Card de Visita Ativa (Top Left) — visível apenas com sessão ativa
         Positioned(
-          top: 60, // Mantendo posição original do header
-          left: 20,
-          child: PremiumGlassPanel(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 8,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        color: PremiumTokens.brandGreen,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: PremiumTokens.brandGreen.withValues(
-                              alpha: 0.4,
-                            ),
-                            blurRadius: 6,
-                            spreadRadius: 2,
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'SoloForte Privado',
-                      style: Theme.of(
-                        context,
-                      ).textTheme.titleMedium?.copyWith(fontSize: 14),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Padding(
-                  padding: const EdgeInsets.only(left: 16),
-                  child: Row(
-                    children: [
-                      Icon(
-                        locationState == LocationState.available
-                            ? SFIcons.nearMe
-                            : SFIcons.locationDisabled,
-                        size: 12,
-                        color: locationState == LocationState.available
-                            ? PremiumTokens.textSecondaryLight
-                            : PremiumTokens.alertError,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        _getGPSStatusText(locationState),
-                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          fontSize: 10,
-                          color: PremiumTokens.textSecondaryLight,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
+          top: safeTop + 8,
+          left: 12,
+          child: const VisitActiveCard(),
         ),
 
         // 2. Botão de Localização (isolado, canto superior direito)
@@ -207,11 +143,10 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
                 icon: SFIcons.warning,
                 isActive: widget.isOccurrenceMode,
                 onTap: () {
-                  // Se tivermos callback de toggle, usamos ele (prioridade para armado)
+                  // 🐛 BUGFIX: onToggleOccurrenceMode → _armOccurrenceMode → _openOccurrenceCreationSheet
                   if (widget.onToggleOccurrenceMode != null) {
                     widget.onToggleOccurrenceMode!();
                   } else {
-                    // Fallback antigo: abre a tab direto
                     widget.onTabSelected(2, 'Button_Occurrences');
                   }
                 },
@@ -228,8 +163,9 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
               ),
               const SizedBox(height: 12),
               _MapActionButton(
-                icon: SFIcons.articleOutlined,
-                onTap: () => widget.onTabSelected(1, 'Button_Publications'),
+                icon: SFIcons.checkCircle,
+                isActive: widget.isCheckInActive,
+                onTap: () => widget.onTabSelected(3, 'Button_CheckIn'),
               ),
             ],
           ),
@@ -248,6 +184,18 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
                   backgroundColor: PremiumTokens.brandGreen,
                   onPressed: widget.onFinishDrawing,
                   child: const Icon(SFIcons.check, color: Colors.white),
+                ),
+                const SizedBox(height: 12),
+                // Undo último ponto de desenho
+                Opacity(
+                  opacity: widget.canUndo ? 1.0 : 0.4,
+                  child: FloatingActionButton(
+                    heroTag: 'undo_drawing_overlay',
+                    backgroundColor: Colors.white,
+                    mini: true,
+                    onPressed: widget.canUndo ? widget.onUndoDrawing : null,
+                    child: const Icon(Icons.undo_rounded, color: Colors.black87),
+                  ),
                 ),
                 const SizedBox(height: 12),
                 FloatingActionButton(
@@ -271,6 +219,9 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
                 onSave: widget.onSaveEdit,
                 onCancel: widget.onCancelEdit,
                 onUndo: widget.onUndoEdit,
+                onRedo: widget.onRedoEdit,
+                canUndo: widget.canUndo,
+                canRedo: widget.canRedo,
               ),
             ),
           ),

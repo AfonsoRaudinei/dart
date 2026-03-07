@@ -158,7 +158,7 @@ class _PublicPublicationPreviewSheet extends StatelessWidget {
       ),
       child: Text(
         _getTypeLabel(publication.type),
-        style: TextStyle(fontSize: 12, color: PremiumTokens.textSecondaryLight).copyWith(
+        style: const TextStyle(fontSize: 12, color: PremiumTokens.textSecondaryLight).copyWith(
           color: _getTypeColor(publication.type),
           fontWeight: FontWeight.w500,
         ),
@@ -203,7 +203,7 @@ class _PublicPublicationPreviewSheet extends StatelessWidget {
         const SizedBox(width: 4),
         Text(
           'Publicado em ${formatter.format(publication.createdAt)}',
-          style: TextStyle(fontSize: 12, color: PremiumTokens.textSecondaryLight).copyWith(
+          style: const TextStyle(fontSize: 12, color: PremiumTokens.textSecondaryLight).copyWith(
             color: PremiumTokens.textSecondaryLight,
           ),
         ),

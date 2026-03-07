@@ -9,6 +9,7 @@ import '../models/relatorio_status.dart';
 import '../models/relatorio_tecnico.dart';
 import '../providers/relatorio_providers.dart';
 import '../use_cases/publish_relatorio_use_case.dart';
+import '../../../../core/constants/layout_constants.dart';
 
 /// Tela de Detalhe do Relatório Técnico — PASSO 3
 ///
@@ -123,7 +124,7 @@ class _RelatorioDetailScreenState extends ConsumerState<RelatorioDetailScreen> {
                 if (relatorio.talhoes.isNotEmpty) _buildTalhoesCard(relatorio),
                 if (relatorio.status == RelatorioStatus.pendente_revisao)
                   _buildPublishButton(relatorio),
-                const SliverToBoxAdapter(child: SizedBox(height: 100)),
+                const SliverToBoxAdapter(child: SizedBox(height: kFabSafeArea)),
               ],
             );
           },
@@ -420,6 +421,7 @@ class _RelatorioDetailScreenState extends ConsumerState<RelatorioDetailScreen> {
       );
 
       await repository.update(updated);
+      if (!mounted) return; // ← Guard obrigatório antes de usar ref
       ref.invalidate(relatorioDetailProvider(id: widget.relatorioId));
 
       setState(() => _isDirty = false);
@@ -475,6 +477,7 @@ class _RelatorioDetailScreenState extends ConsumerState<RelatorioDetailScreen> {
 
     try {
       await ref.read(publishRelatorioProvider(relatorio.id).future);
+      if (!mounted) return; // ← Guard obrigatório antes de usar ref
       ref.invalidate(relatorioDetailProvider(id: widget.relatorioId));
 
       if (mounted) {

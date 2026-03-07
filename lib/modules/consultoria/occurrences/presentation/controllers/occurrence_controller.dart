@@ -30,6 +30,18 @@ class OccurrenceController {
     double? long,
     String? category,
     String? status,
+    // v14 — campos agronômicos
+    String? cultivar,
+    String? dataPlantio,
+    String? estadioFenologico,
+    String? tipoOcorrencia,
+    bool amostraSolo = false,
+    String? recomendacoes,
+    String? metricasJson,
+    String? nutrientesJson,
+    String? categoriasJson,
+    String? notasCategoriasJson,
+    String? fotosCategoriasJson,
   }) async {
     final visitState = ref.read(visitControllerProvider);
     final String? sessionId = (visitState.value?.status == 'active')
@@ -56,6 +68,18 @@ class OccurrenceController {
       createdAt: DateTime.now(),
       category: category,
       status: status ?? 'draft',
+      // v14 agronômico
+      cultivar: cultivar,
+      dataPlantio: dataPlantio,
+      estadioFenologico: estadioFenologico,
+      tipoOcorrencia: tipoOcorrencia,
+      amostraSolo: amostraSolo,
+      recomendacoes: recomendacoes,
+      metricasJson: metricasJson,
+      nutrientesJson: nutrientesJson,
+      categoriasJson: categoriasJson,
+      notasCategoriasJson: notasCategoriasJson,
+      fotosCategoriasJson: fotosCategoriasJson,
     );
 
     await _repository.saveOccurrence(occurrence);

@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:soloforte_app/core/constants/layout_constants.dart';
 import '../../domain/enums/plano_tipo.dart';
 
 class PlanosScreen extends StatelessWidget {
@@ -25,14 +26,15 @@ class PlanosScreen extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 children: [
                   const SizedBox(height: 8),
-                  _PlanCard(plano: PlanoTipo.bronze),
+                  const _PlanCard(plano: PlanoTipo.bronze),
                   const SizedBox(height: 12),
-                  _PlanCard(plano: PlanoTipo.prata),
+                  const _PlanCard(plano: PlanoTipo.prata),
                   const SizedBox(height: 12),
-                  _PlanCard(plano: PlanoTipo.ouro),
+                  const _PlanCard(plano: PlanoTipo.ouro),
                   const SizedBox(height: 32),
                   _buildIndication(context),
                   const SizedBox(height: 32),
+                  const SizedBox(height: kFabSafeArea),
                 ],
               ),
             ),
@@ -43,31 +45,12 @@ class PlanosScreen extends StatelessWidget {
   }
 
   Widget _buildHeader(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+    return const Padding(
+      padding: EdgeInsets.fromLTRB(20, 16, 20, 8),
       child: Row(
         children: [
-          GestureDetector(
-            onTap: () {
-              HapticFeedback.lightImpact();
-              context.go('/map');
-            },
-            child: Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: const Color(0xFF1C1C1E),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: const Icon(
-                Icons.arrow_back_ios_new,
-                color: Color(0xFF32D74B),
-                size: 18,
-              ),
-            ),
-          ),
-          const SizedBox(width: 16),
-          const Expanded(
+          SizedBox(width: 40),
+          Expanded(
             child: Text(
               'Planos SoloForte',
               style: TextStyle(

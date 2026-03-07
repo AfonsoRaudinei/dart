@@ -63,9 +63,9 @@ class _RoiBlocoWidgetState extends State<RoiBlocoWidget> {
           // ── Header ────────────────────────────────────────────
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               color: _roiGreen,
-              borderRadius: const BorderRadius.vertical(
+              borderRadius: BorderRadius.vertical(
                 top: Radius.circular(14),
               ),
             ),

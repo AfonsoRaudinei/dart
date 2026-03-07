@@ -134,7 +134,7 @@ class AgendaIndicadoresView extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: 8),
-          Icon(Icons.trending_up, color: const Color(0xFF4ADE80), size: 32),
+          const Icon(Icons.trending_up, color: Color(0xFF4ADE80), size: 32),
         ],
       ),
     );

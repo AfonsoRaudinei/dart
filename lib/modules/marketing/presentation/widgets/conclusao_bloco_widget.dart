@@ -32,9 +32,9 @@ class ConclusaoBlocoWidget extends StatelessWidget {
           // ── Header ────────────────────────────────────────────
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               color: _blueConc,
-              borderRadius: const BorderRadius.vertical(
+              borderRadius: BorderRadius.vertical(
                 top: Radius.circular(14),
               ),
             ),
@@ -98,7 +98,7 @@ class ConclusaoBlocoWidget extends StatelessWidget {
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10),
-                  borderSide: BorderSide(color: _blueConc, width: 1.5),
+                  borderSide: const BorderSide(color: _blueConc, width: 1.5),
                 ),
                 contentPadding: const EdgeInsets.all(12),
               ),

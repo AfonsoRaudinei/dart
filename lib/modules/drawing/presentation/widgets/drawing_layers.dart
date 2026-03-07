@@ -102,7 +102,7 @@ class _DrawingLayerWidgetState extends State<DrawingLayerWidget> {
                 borderColor: style.borderColor,
                 borderStrokeWidth: style.borderWidth,
                 pattern: style.isDashed
-                    ? StrokePattern.dashed(segments: [10, 5])
+                    ? StrokePattern.dashed(segments: const [10, 5])
                     : const StrokePattern.solid(),
                 label: feature.properties.nome,
                 labelStyle: const TextStyle(

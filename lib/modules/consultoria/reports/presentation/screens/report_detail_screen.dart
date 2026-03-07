@@ -10,6 +10,7 @@ import 'package:printing/printing.dart';
 import '../../../clients/presentation/providers/clients_providers.dart';
 import '../../domain/report_model.dart';
 import '../providers/reports_providers.dart';
+import '../../../../../core/constants/layout_constants.dart';
 
 class ReportDetailScreen extends ConsumerWidget {
   final String reportId;
@@ -132,10 +133,10 @@ class ReportDetailScreen extends ConsumerWidget {
                       // Header Customizado
                       Row(
                         children: [
-                          Expanded(
+                          const Expanded(
                             child: Text(
                               'Detalhes',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 32,
                                 fontWeight: FontWeight.bold,
                                 letterSpacing: -0.5,
@@ -249,7 +250,7 @@ class ReportDetailScreen extends ConsumerWidget {
                         'Criado em: ${dateFormat.format(report.createdAt)}',
                         style: const TextStyle(color: Colors.grey),
                       ),
-                      const SizedBox(height: 80), // Space for FAB
+                      const SizedBox(height: kFabSafeArea), // Space for FAB
                     ],
                   ),
                 );

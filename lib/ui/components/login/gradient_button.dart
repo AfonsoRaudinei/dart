@@ -40,7 +40,7 @@ class GradientButton extends StatelessWidget {
         : PremiumTokens.textTertiaryLight;
 
     final List<BoxShadow> effectiveShadow = isEnabled
-        ? (boxShadow ?? [BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2))])
+        ? (boxShadow ?? [const BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2))])
         : [];
 
     return Container(

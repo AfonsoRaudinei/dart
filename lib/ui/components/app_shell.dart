@@ -76,11 +76,14 @@ class AppShell extends ConsumerWidget {
           // - Clicável com menu aberto
           // - Não bloqueado por backdrop
           // NÃO usar const — precisa rebuild a cada mudança de rota
+          // bottom: MediaQuery.padding.bottom + 16 respeita SafeArea
+          // dinâmica de cada dispositivo (iPhone gesture bar = 34px,
+          // Android sem barra = 0px), garantindo posição correta em todos.
           if (isAuth)
-            const Positioned(
-              bottom: 40,
-              right: 20,
-              child: _SmartButtonWrapper(),
+            Positioned(
+              bottom: MediaQuery.of(context).padding.bottom + 16,
+              right: 16,
+              child: const _SmartButtonWrapper(),
             ),
         ],
       ),

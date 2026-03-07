@@ -21,6 +21,11 @@ class SyncOrchestrator extends ChangeNotifier {
   bool _isSyncing = false;
   Timer? _periodicTimer;
 
+  // 🛡 LIFECYCLE: Flag para evitar notifyListeners() após dispose().
+  // Future.delayed(3s) no finally de triggerSync() pode executar
+  // depois que o ChangeNotifier foi descartado, causando StateError.
+  bool _isDisposed = false;
+
   // Monitoring
   double _progress = 0;
   String? _lastError;
@@ -93,16 +98,21 @@ class SyncOrchestrator extends ChangeNotifier {
 
       // Reset progress after a delay
       Future.delayed(const Duration(seconds: 3), () {
-        if (!_isSyncing) {
-          _progress = 0;
-          notifyListeners();
-        }
+        // 🛡 LIFECYCLE GUARD: ChangeNotifier pode ter sido descartado
+        // antes do delay completar. Chamar notifyListeners() após
+        // dispose() lanca StateError.
+        if (_isDisposed || _isSyncing) return;
+        _progress = 0;
+        notifyListeners();
       });
     }
   }
 
   @override
   void dispose() {
+    // 🛡 Marcar como disposed ANTES de cancelar o timer
+    // para que qualquer callback pendente seja descartado.
+    _isDisposed = true;
     _periodicTimer?.cancel();
     super.dispose();
   }

@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../models/publicacao_tecnica.dart';
 import '../models/publicacao_tema.dart';
 import '../providers/publicacao_providers.dart';
+import '../../../../core/constants/layout_constants.dart';
 
 /// Tela de Detalhe da Publicação Técnica — PASSO 4
 ///
@@ -65,7 +66,7 @@ class PublicacaoDetailScreen extends ConsumerWidget {
                 if (publicacao.fazendaRef != null ||
                     publicacao.talhaoRef != null)
                   _buildReferenceCard(publicacao),
-                const SliverToBoxAdapter(child: SizedBox(height: 100)),
+                const SliverToBoxAdapter(child: SizedBox(height: kFabSafeArea)),
               ],
             );
           },
@@ -159,11 +160,11 @@ class PublicacaoDetailScreen extends ConsumerWidget {
           border: Border.all(color: const Color(0xFFBAE6FD)),
           borderRadius: BorderRadius.circular(10),
         ),
-        child: Row(
+        child: const Row(
           children: [
-            const Icon(Icons.link, color: Color(0xFF0369A1), size: 20),
-            const SizedBox(width: 8),
-            const Expanded(
+            Icon(Icons.link, color: Color(0xFF0369A1), size: 20),
+            SizedBox(width: 8),
+            Expanded(
               child: Text(
                 'Referência de campo vinculada',
                 style: TextStyle(

@@ -1,6 +1,4 @@
 import '../../domain/repositories/i_clients_repository.dart';
-import '../../../consultoria/clients/domain/client.dart';
-import '../../../consultoria/clients/domain/agronomic_models.dart';
 import '../../../consultoria/clients/data/clients_repository.dart';
 
 /// Adapter que conecta [ClientsRepository] (módulo consultoria) à interface

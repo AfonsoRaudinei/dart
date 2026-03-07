@@ -1,5 +1,3 @@
-import '../../../consultoria/clients/domain/client.dart';
-import '../../../consultoria/clients/domain/agronomic_models.dart';
 import '../repositories/i_clients_repository.dart';
 
 /// Serviço bridge entre o módulo drawing e dados de Cliente/Fazenda.

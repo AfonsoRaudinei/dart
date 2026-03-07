@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'core/config/app_config.dart';
@@ -30,6 +31,11 @@ Future<void> main() async {
       // Falha imediata e explícita se variáveis de ambiente não forem fornecidas.
       // Ver: lib/core/config/app_config.dart para instruções de uso.
       AppConfig.validate();
+
+      // Inicializa locale pt_BR para DateFormat (intl).
+      // Sem isto, DateFormat('dd/MM/yyyy', 'pt_BR') e formatos com
+      // nomes de meses em português lançam MissingLocaleDataException.
+      await initializeDateFormatting('pt_BR', null);
 
       // Timeout de 15s: Supabase v2 tenta recuperar sessão na rede durante
       // initialize(). Sem timeout, o iOS watchdog mata o processo (~20s)

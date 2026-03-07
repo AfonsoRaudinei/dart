@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../controllers/drawing_controller.dart';
+import '../../../domain/drawing_state.dart';
 
 /// Widget flutuante que exibe dicas contextuais durante o desenho.
 ///
@@ -19,6 +20,11 @@ class DrawingHintOverlay extends StatelessWidget {
     return ListenableBuilder(
       listenable: controller,
       builder: (context, _) {
+        // Ocultar card flutuante durante a fase de revisão/confirmação
+        if (controller.currentState == DrawingState.reviewing) {
+          return const SizedBox.shrink();
+        }
+
         // Só mostra se houver geometria ativa ou instrução importante
         final hasLiveGeometry = controller.liveGeometry != null;
         final hasError = controller.errorMessage != null;

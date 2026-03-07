@@ -1,120 +1,115 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
-import 'package:file_picker/file_picker.dart';
 import 'package:latlong2/latlong.dart';
 import '../../domain/models/drawing_models.dart';
 import '../../domain/drawing_utils.dart';
 import '../../domain/drawing_state.dart';
+import '../../domain/drawing_history.dart';
 import '../../data/repositories/drawing_repository.dart';
-// 🆕 Client Module Integration (via contrato local — ADR-015)
-import '../../domain/repositories/i_clients_repository.dart';
+// ─── Services puros (Sprint 1 — delegação de lógica de negócio) ───────────────
+import '../../domain/services/drawing_feature_crud_service.dart';
+import '../../domain/services/drawing_vertex_edit_service.dart';
+import '../../domain/services/drawing_boolean_ops_service.dart';
+import '../../domain/services/drawing_import_service.dart';
+import '../../domain/services/gps_tracking_service.dart';
+import '../../infra/file_picker/file_picker_adapter.dart';
+// ─────────────────────────────────────────────────────────────────────────────
+import 'package:geolocator/geolocator.dart';
 import '../../../../core/utils/app_logger.dart';
 
-/// Controller for the Drawing Mode state.
-/// This manages the current list of features (active drawings) and the current interaction state.
+/// Controller de orquestração do módulo Drawing.
+///
+/// Responsabilidades únicas (após refatoração Sprint 1):
+/// - Gerenciar estado de interação (DrawingStateMachine + DrawingInteraction)
+/// - Orquestrar chamadas para os services puros
+/// - Notificar UI via ChangeNotifier
+/// - Persistir via DrawingRepository
+///
+/// Lógica de negócio DELEGADA para:
+/// - DrawingFeatureCrudService   → CRUD e versionamento
+/// - DrawingVertexEditService    → edição de vértices
+/// - DrawingBooleanOpsService    → operações booleanas
+/// - DrawingImportService        → importação KML/KMZ
 class DrawingController extends ChangeNotifier {
   final DrawingRepository _repository;
-  final IClientsRepository? _clientsRepository; // Injetado via IClientsRepository (ADR-015)
   final DrawingStateMachine _stateMachine = DrawingStateMachine();
 
-  // 🆕 Client Data State
-  List<Client> _clients = [];
-  List<Farm> _farms = [];
-
-  List<Client> get clients => List.unmodifiable(_clients);
-  List<Farm> get farms => List.unmodifiable(_farms);
-
-  // 🗺️ Pré-seleção de cliente via query param Map-First (/map?modo=desenho&clienteId=X)
-  String? _preSelectedClientId;
-  String? get preSelectedClientId => _preSelectedClientId;
-
-  /// Pré-seleciona um cliente para o contexto de desenho.
-  /// Chamado pelo PrivateMapScreen ao receber query param clienteId.
-  /// NÃO cria nova lógica de desenho — apenas conecta o estado.
-  void setClienteAtivo(String clientId) {
-    if (_isDisposed) return;
-    _preSelectedClientId = clientId;
-    loadFarms(clientId); // precarregar fazendas
-    notifyListeners();
-  }
+  // Services puros — injectáveis para testes
+  final DrawingFeatureCrudService _crudService;
+  final DrawingVertexEditService _vertexService;
+  final DrawingBooleanOpsService _booleanOpsService;
+  final DrawingImportService _importService;
+  final GpsTrackingService _gpsTrackingService;
 
   DrawingController({
     DrawingRepository? repository,
-    IClientsRepository? clientsRepository,
+    DrawingFeatureCrudService? crudService,
+    DrawingVertexEditService? vertexService,
+    DrawingBooleanOpsService? booleanOpsService,
+    DrawingImportService? importService,
+    GpsTrackingService? gpsTrackingService,
   }) : _repository = repository ?? DrawingRepository(),
-       _clientsRepository = clientsRepository {
+       _crudService = crudService ?? const DrawingFeatureCrudService(),
+       _vertexService = vertexService ?? const DrawingVertexEditService(),
+       _booleanOpsService = booleanOpsService ?? const DrawingBooleanOpsService(),
+       _importService = importService ?? const DrawingImportService(FilePickerAdapter()),
+       _gpsTrackingService = gpsTrackingService ?? const GpsTrackingService() {
     loadFeatures();
-    loadClients(); // 🆕 Start loading clients
-  }
-
-  // 🆕 Carregar Clientes para o Dropdown
-  Future<void> loadClients() async {
-    if (_clientsRepository == null) return;
-    try {
-      _clients = await _clientsRepository.getClients();
-      notifyListeners();
-    } catch (e) {
-      AppLogger.warning(
-        'Erro ao carregar clientes',
-        tag: 'DrawingController',
-        error: e,
-      );
-    }
-  }
-
-  // 🆕 Carregar Fazendas de um Cliente
-  Future<void> loadFarms(String clientId) async {
-    if (_clientsRepository == null) return;
-    try {
-      _farms = []; // Clear previous
-      notifyListeners();
-
-      _farms = await _clientsRepository.getFarms(clientId);
-      notifyListeners();
-    } catch (e) {
-      AppLogger.warning(
-        'Erro ao carregar fazendas',
-        tag: 'DrawingController',
-        error: e,
-      );
-    }
-  }
-
-  // 🆕 Criar nova fazenda
-  Future<void> createFarm(
-    String name,
-    String clientId,
-    String city,
-    String state,
-  ) async {
-    if (_clientsRepository == null) return;
-    try {
-      final newFarm = Farm(
-        id: DateTime.now().millisecondsSinceEpoch.toString(), // Temp ID
-        name: name,
-        city: city,
-        state: state,
-        totalAreaHa: 0.0,
-        fields: [],
-      );
-      await _clientsRepository.saveFarm(newFarm, clientId);
-      await loadFarms(clientId); // Reload
-    } catch (e) {
-      AppLogger.warning(
-        'Erro ao criar fazenda',
-        tag: 'DrawingController',
-        error: e,
-      );
-    }
   }
 
   bool _isDisposed = false;
+
+  // ─── Debug Invariant ─────────────────────────────────────────────────────
+  /// Verifica que SM state e _interactionMode não estão dessincronizados.
+  ///
+  /// Apenas chamado via [assert()] — executa somente em modo debug.
+  /// Mapeia os pares SM↔interaction que DEVEM ser consistentes:
+  ///   • editing       → DrawingInteraction.editing
+  ///   • importPreview → DrawingInteraction.importPreview
+  /// Os demais estados permitem DrawingInteraction.normal ou variações
+  /// (e.g. unionSelection durante booleanOperation) que não exigem paridade.
+  bool _stateVectorsAreConsistent() {
+    if (_stateMachine.currentState == DrawingState.editing &&
+        _interactionMode != DrawingInteraction.editing) {
+      return false;
+    }
+    if (_stateMachine.currentState == DrawingState.importPreview &&
+        _interactionMode != DrawingInteraction.importPreview) {
+      return false;
+    }
+    return true;
+  }
+  // ─────────────────────────────────────────────────────────────────────────
+
+
+  // ─── GPS Tracking State (Sprint 5) ──────────────────────────────────────
+  List<LatLng> _gpsVertices = [];
+  double _gpsLastAccuracyM = 0.0;
+  bool _gpsIsPaused = false;
+  bool _gpsOriginReview = false; // true quando reviewing veio de GPS
+  StreamSubscription<Position>? _gpsSub;
+  // ─────────────────────────────────────────────────────────────────────────
+
+  /// Vértices GPS aceitos durante rastreamento ativo.
+  List<LatLng> get gpsVertices => List.unmodifiable(_gpsVertices);
+
+  /// Última precisão GPS recebida (metros).
+  double get gpsLastAccuracyM => _gpsLastAccuracyM;
+
+  /// Indica se o rastreamento GPS está pausado.
+  bool get gpsIsPaused => _gpsIsPaused;
+
+  /// Qualidade atual do sinal GPS para o overlay.
+  GpsQuality get gpsAccuracyQuality =>
+      _gpsTrackingService.classifyAccuracy(_gpsLastAccuracyM);
 
   @override
   void dispose() {
     if (_isDisposed) return; // 🔧 FIX-DRAW-FLOW-02: Permitir múltiplos dispose
     _isDisposed = true;
+    _gpsSub?.cancel();
+    _gpsSub = null;
     _validationDebounce?.cancel();
     super.dispose();
   }
@@ -212,6 +207,14 @@ class DrawingController extends ChangeNotifier {
   // Legacy getters (deprecated - use currentState)
   DrawingInteraction get interactionMode => _interactionMode;
 
+  /// Origem da importação pendente.
+  /// Não-null APENAS quando estamos em [DrawingState.reviewing] vindo de import.
+  /// Usado pelo formulário para pré-preencher nome e preservar origem correta.
+  DrawingOrigin? get pendingImportOrigin =>
+      _stateMachine.currentState == DrawingState.reviewing
+          ? _currentImportOrigin
+          : null;
+
   // New state machine getters
   DrawingState get currentState => _stateMachine.currentState;
   DrawingTool get currentTool => _stateMachine.currentTool;
@@ -223,6 +226,17 @@ class DrawingController extends ChangeNotifier {
 
   // Retorna a geometria sendo desenhada ou o preview de importação
   DrawingGeometry? get liveGeometry {
+    // GPS Tracking — exibe polígono parcial em tempo real
+    if (_stateMachine.currentState == DrawingState.gpsTracking &&
+        _gpsVertices.length >= 2) {
+      final ring = _gpsVertices
+          .map((p) => <double>[p.longitude, p.latitude])
+          .toList();
+      // Fecha visualmente o anel para o usuário ver o polígono se formando
+      ring.add(List<double>.from(ring.first));
+      return DrawingPolygon(coordinates: [ring]);
+    }
+
     final isEditing =
         _interactionMode == DrawingInteraction.editing ||
         _stateMachine.currentState == DrawingState.editing;
@@ -235,6 +249,13 @@ class DrawingController extends ChangeNotifier {
         _stateMachine.currentState == DrawingState.importPreview ||
         _stateMachine.currentState == DrawingState.booleanOperation;
     if (isPreviewing) {
+      return _previewGeometry;
+    }
+
+    // 🆕 SPRINT 3: Reviewing vindo de import — preserva previewGeometry
+    // O formulário reviewing usa liveGeometry para exibir área/perímetro
+    if (_stateMachine.currentState == DrawingState.reviewing &&
+        (_currentImportOrigin != null || _gpsOriginReview)) {
       return _previewGeometry;
     }
 
@@ -307,7 +328,20 @@ class DrawingController extends ChangeNotifier {
 
   // Editing State
   DrawingGeometry? _editGeometry;
-  final List<DrawingGeometry> _undoStack = [];
+  final DrawingHistory _history = DrawingHistory();
+
+  // ─── Getters de Undo/Redo (Sprint 2) ──────────────────────────────────
+  /// `true` quando há vértices de desenho que podem ser desfeitos.
+  bool get canUndo {
+    if (_stateMachine.currentState == DrawingState.drawing) {
+      return _currentPoints.length > 1;
+    }
+    return _history.canUndo;
+  }
+
+  /// `true` quando há estados futuros que podem ser refeitos (só em editing).
+  bool get canRedo => _history.canRedo;
+  // ──────────────────────────────────────────────────────────────────────
 
   // Metrics Getters
   /// Retorna a área em hectares da geometria sendo desenhada.
@@ -461,23 +495,8 @@ class DrawingController extends ChangeNotifier {
 
   /// Adiciona uma nova feature ao mapa após validação.
   ///
-  /// Valida a geometria antes de adicionar. Se inválida, define [_errorMessage]
-  /// e retorna sem adicionar.
-  ///
-  /// Calcula automaticamente a área em hectares e cria um novo [DrawingFeature]
-  /// com status 'rascunho' e sync_status 'local_only'.
-  ///
-  /// Parâmetros:
-  /// - [geometry]: Geometria a ser adicionada (Polygon ou MultiPolygon)
-  /// - [nome]: Nome descritivo da área
-  /// - [tipo]: Tipo de desenho (talhao, zona_manejo, etc)
-  /// - [origem]: Origem do desenho (manual, importação, sistema)
-  /// - [autorId]: ID do usuário que criou
-  /// - [autorTipo]: Tipo do autor (consultor, cliente, sistema)
-  /// - [subtipo]: Subtipo opcional (ex: 'pivo' para pivôs)
-  /// - [raioMetros]: Raio em metros (para pivôs circulares)
-  /// - [clienteId]: ID do cliente associado
-  /// - [fazendaId]: ID da fazenda associada
+  /// Delega construção para [DrawingFeatureCrudService.buildFeature].
+  /// Valida topologia antes de persistir.
   void addFeature({
     required DrawingGeometry geometry,
     required String nome,
@@ -489,11 +508,9 @@ class DrawingController extends ChangeNotifier {
     double? raioMetros,
     String? clienteId,
     String? fazendaId,
-    // 🆕 Novos parâmetros opcionais
     String? grupo,
     int? cor,
   }) {
-    // Validate before adding
     geometry = DrawingUtils.normalizeGeometry(geometry);
     validateGeometry(geometry);
     if (!_validationResult.isValid) {
@@ -502,45 +519,32 @@ class DrawingController extends ChangeNotifier {
       return;
     }
 
-    // ⚡ Usar método unificado para calcular área
-    final areaHa = DrawingUtils.calculateGeometryArea(geometry);
-
-    final newFeature = DrawingFeature(
-      id: DrawingUtils.generateId(),
+    final newFeature = _crudService.buildFeature(
       geometry: geometry,
-      properties: DrawingProperties(
-        nome: nome,
-        tipo: tipo,
-        origem: origem,
-        status: DrawingStatus.rascunho,
-        autorId: autorId,
-        autorTipo: autorTipo,
-        clienteId: clienteId,
-        fazendaId: fazendaId,
-        areaHa: areaHa,
-        versao: 1,
-        ativo: true,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-        subtipo: subtipo,
-        raioMetros: raioMetros,
-        syncStatus: SyncStatus.local_only,
-        // 🆕 Repassar novos campos
-        grupo: grupo,
-        cor: cor,
-      ),
+      nome: nome,
+      tipo: tipo,
+      origem: origem,
+      autorId: autorId,
+      autorTipo: autorTipo,
+      subtipo: subtipo,
+      raioMetros: raioMetros,
+      clienteId: clienteId,
+      fazendaId: fazendaId,
+      grupo: grupo,
+      cor: cor,
     );
 
     _features.add(newFeature);
-    _repository.saveFeature(newFeature); // Persist
+    _repository.saveFeature(newFeature);
     _selectedFeature = newFeature;
     _isDirty = true;
-    _stateMachine.confirm(); // State machine reset
+    _stateMachine.confirm();
     _interactionMode = DrawingInteraction.normal;
     notifyListeners();
   }
 
   /// Updates an existing feature (Attributes or Geometry).
+  /// Delega para [DrawingFeatureCrudService.buildUpdate].
   /// TRIGGERS VERSIONING if geometry changed.
   void updateFeature(
     String id, {
@@ -554,50 +558,62 @@ class DrawingController extends ChangeNotifier {
     if (index == -1) return;
 
     final oldFeature = _features[index];
-    DrawingFeature updatedFeature;
 
-    // If geometry changes, we MUST version.
-    if (newGeometry != null && editorId != null && editorType != null) {
-      // 1. Calculate new area
-      // ⚡ Usar método unificado
-      final newArea = DrawingUtils.calculateGeometryArea(newGeometry);
+    final (:updated, :deactivated) = _crudService.buildUpdate(
+      oldFeature,
+      nome: nome,
+      status: status,
+      newGeometry: newGeometry,
+      editorId: editorId,
+      editorType: editorType,
+    );
 
-      // 2. Create V+1
-      updatedFeature = oldFeature.createNewVersion(
-        newId: DrawingUtils.generateId(),
-        newName: nome ?? oldFeature.properties.nome,
-        newGeometry: newGeometry,
-        newAreaHa: newArea,
-        authorId: editorId,
-        authorType: editorType,
-      );
-
-      // Deactivate old
-      final deactivatedOld = DrawingFeature(
-        id: oldFeature.id,
-        geometry: oldFeature.geometry,
-        properties: oldFeature.properties.copyWith(ativo: false),
-      );
-      _repository.saveFeature(deactivatedOld);
-    } else {
-      // Attribute only update (in place update, same ID)
-      updatedFeature = DrawingFeature(
-        id: oldFeature.id,
-        geometry: oldFeature.geometry,
-        properties: oldFeature.properties.copyWith(
-          nome: nome,
-          status: status,
-          updatedAt: DateTime.now(),
-          syncStatus: SyncStatus.pending_sync, // Mark for sync
-        ),
-      );
+    if (deactivated != null) {
+      _repository.saveFeature(deactivated);
     }
 
-    // Update local list (Replace old with new)
-    _features[index] = updatedFeature;
-    _repository.saveFeature(updatedFeature); // Persist new/updated
+    _features[index] = updated;
+    _repository.saveFeature(updated);
+    _selectedFeature = updated;
+    _isDirty = true;
+    notifyListeners();
+  }
 
-    _selectedFeature = updatedFeature;
+  // ---------------------------------------------------------------------------
+  // SPRINT 6: Atualiza campos agronômicos sem criar nova versão de geometria.
+  // ---------------------------------------------------------------------------
+
+  /// Atualiza campos descritivos (nome, cultura, safra, amostragem, nutrientes)
+  /// sem tocar na geometria — não gera nova versão no histórico de vértices.
+  void updateMetadata(
+    String id, {
+    String? nome,
+    String? cultura,
+    String? safra,
+    String? soilSamplingScheme,
+    Map<String, double>? recByNutrient,
+  }) {
+    final index = _features.indexWhere((f) => f.id == id);
+    if (index == -1) return;
+
+    final old = _features[index];
+    final updated = DrawingFeature(
+      id: old.id,
+      geometry: old.geometry,
+      properties: old.properties.copyWith(
+        nome: nome,
+        cultura: cultura,
+        safra: safra,
+        soilSamplingScheme: soilSamplingScheme,
+        recByNutrient: recByNutrient,
+        updatedAt: DateTime.now(),
+        syncStatus: SyncStatus.local_only,
+      ),
+    );
+
+    _features[index] = updated;
+    _selectedFeature = updated;
+    _repository.saveFeature(updated);
     _isDirty = true;
     notifyListeners();
   }
@@ -610,12 +626,20 @@ class DrawingController extends ChangeNotifier {
 
     if (feature == null) {
       _selectedFeature = null;
+      // Se SM estiver em selected, voltar ao idle
+      if (_stateMachine.currentState == DrawingState.selected) {
+        _stateMachine.exitSelected();
+      }
     } else {
       _selectedFeature = _features.firstWhere(
         (f) => f.id == feature.id,
         orElse: () =>
             feature, // Use the provided feature instance if not found in list
       );
+      // Transicionar para selected se estiver em idle
+      if (_stateMachine.currentState == DrawingState.idle) {
+        _stateMachine.startSelected();
+      }
     }
     notifyListeners();
   }
@@ -666,6 +690,10 @@ class DrawingController extends ChangeNotifier {
       case 'circle':
         tool = DrawingTool.circle;
         break;
+      case 'gps':
+        // GPS Tracking é tratado separadamente — não mapeia para DrawingTool
+        startGpsTracking();
+        return;
       default:
         tool = DrawingTool.none;
     }
@@ -754,16 +782,164 @@ class DrawingController extends ChangeNotifier {
   void cancelOperation() {
     if (_isDisposed) return;
 
+    _cancelGpsTracking(); // Cancela GPS se ativo antes de limpar estado
     _interactionMode = DrawingInteraction.normal;
     _pendingFeatureA = null;
     _pendingFeatureB = null;
     _previewGeometry = null;
     _manualSketch = null;
     _currentImportOrigin = null;
+    _gpsOriginReview = false;
     _errorMessage = null;
     _currentPoints.clear(); // 🔧 FIX-DRAW-FLOW-02: Limpar pontos ao cancelar
     _stateMachine.cancel(); // Use state machine cancel
     notifyListeners();
+  }
+
+  // ===========================================================================
+  // GPS TRACKING (Sprint 5)
+  // ===========================================================================
+
+  /// Inicia o modo de rastreamento GPS.
+  ///
+  /// Solicita permissão se necessário, ativa o stream de posições via
+  /// [Geolocator.getPositionStream] com alta precisão e delega filtragem
+  /// para [GpsTrackingService].
+  Future<void> startGpsTracking() async {
+    if (_isDisposed) return;
+
+    // Verificar e solicitar permissão
+    LocationPermission permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+    }
+    if (permission == LocationPermission.deniedForever ||
+        permission == LocationPermission.denied) {
+      _errorMessage = 'Permissão de localização negada';
+      notifyListeners();
+      return;
+    }
+
+    // Cancelar stream anterior se existir
+    await _gpsSub?.cancel();
+    _gpsSub = null;
+
+    // Limpar estado anterior
+    _gpsVertices = [];
+    _gpsLastAccuracyM = 0.0;
+    _gpsIsPaused = false;
+
+    // Transicionar para gpsTracking (idle → gpsTracking)
+    final ok = _stateMachine.startGpsTracking();
+    if (!ok) {
+      AppLogger.debug('GPS: falha ao transicionar para gpsTracking',
+          tag: 'DrawingController');
+      return;
+    }
+
+    // Iniciar stream GPS com alta precisão
+    const settings = LocationSettings(
+      accuracy: LocationAccuracy.best,
+      distanceFilter: 2, // Receber atualizações a cada 2m
+    );
+
+    _gpsSub = Geolocator.getPositionStream(locationSettings: settings).listen(
+      (Position pos) {
+        if (_isDisposed) return;
+        if (_gpsIsPaused) return;
+        if (_stateMachine.currentState != DrawingState.gpsTracking) {
+          _gpsSub?.cancel();
+          return;
+        }
+
+        final result = _gpsTrackingService.processPosition(
+          vertices: _gpsVertices,
+          newPoint: LatLng(pos.latitude, pos.longitude),
+          accuracyM: pos.accuracy,
+        );
+
+        _gpsLastAccuracyM = result.lastAccuracyM ?? _gpsLastAccuracyM;
+
+        if (result.accepted) {
+          _gpsVertices = result.vertices;
+          notifyListeners();
+        } else {
+          // Atualizar accuracy mesmo ao descartar ponto (para o overlay)
+          notifyListeners();
+        }
+      },
+      onError: (Object error) {
+        AppLogger.warning('GPS stream error: $error', tag: 'DrawingController');
+        _errorMessage = 'Erro no GPS: verifique o sinal';
+        if (!_isDisposed) notifyListeners();
+      },
+      cancelOnError: false,
+    );
+
+    notifyListeners();
+  }
+
+  /// Pausa o rastreamento GPS sem descartar vértices.
+  void pauseGpsTracking() {
+    if (_isDisposed) return;
+    _gpsIsPaused = true;
+    notifyListeners();
+  }
+
+  /// Retoma o rastreamento GPS pausado.
+  void resumeGpsTracking() {
+    if (_isDisposed) return;
+    _gpsIsPaused = false;
+    notifyListeners();
+  }
+
+  /// Remove o último vértice GPS aceito (desfazer no campo).
+  void undoLastGpsVertex() {
+    if (_isDisposed) return;
+    _gpsVertices = _gpsTrackingService.undoLastVertex(_gpsVertices);
+    notifyListeners();
+  }
+
+  /// Finaliza o rastreamento GPS, constrói o polígono e transiciona para
+  /// [DrawingState.reviewing] para o usuário preencher o formulário.
+  void finalizeGpsTracking() {
+    if (_isDisposed) return;
+
+    final polygon = _gpsTrackingService.finalize(_gpsVertices);
+    if (polygon == null) {
+      _errorMessage =
+          'Mínimo de $kGpsMinVertices pontos necessários para finalizar';
+      notifyListeners();
+      return;
+    }
+
+    _gpsSub?.cancel();
+    _gpsSub = null;
+
+    // Promover para reviewing via preview geometry (mesmo fluxo do import)
+    _previewGeometry = polygon;
+    _currentImportOrigin = null; // GPS não é import
+    _gpsOriginReview = true; // Sinaliza que reviewing veio do GPS
+
+    final ok = _stateMachine.finalizeGpsTracking();
+    if (!ok) {
+      AppLogger.debug('GPS: falha ao transicionar para reviewing',
+          tag: 'DrawingController');
+    }
+
+    _gpsVertices = [];
+    _gpsIsPaused = false;
+    notifyListeners();
+  }
+
+  /// Cancela o rastreamento GPS sem salvar.
+  void _cancelGpsTracking() {
+    if (_stateMachine.currentState != DrawingState.gpsTracking) return;
+    _gpsSub?.cancel();
+    _gpsSub = null;
+    _gpsVertices = [];
+    _gpsIsPaused = false;
+    // Não chamar _stateMachine.cancel() aqui — cancelOperation() fará isso
   }
 
   /// Called by the Map Widget to update the current manual drawing sketch
@@ -829,24 +1005,47 @@ class DrawingController extends ChangeNotifier {
   void startEditMode() {
     if (_selectedFeature == null) return;
 
-    // Create working copy
-    _editGeometry = _cloneGeometry(_selectedFeature!.geometry);
-    _undoStack.clear();
-    // Push initial state
-    _undoStack.add(_cloneGeometry(_editGeometry!));
+    // Delega deep copy ao DrawingVertexEditService
+    _editGeometry = _vertexService.cloneGeometry(_selectedFeature!.geometry);
+    _history.clear();
+    _history.push(_geomToVertices(_editGeometry!));
 
+    // 🔧 FASE1-FIX-01: Garantir que os dois vetores só avançam juntos.
+    // Se a SM rejeitar a transição, não setar interactionMode.
+    final ok = _stateMachine.startEditing();
+    if (!ok) {
+      if (kDebugMode) {
+        AppLogger.debug(
+          'startEditMode: SM rejeitou startEditing() — interactionMode não alterado',
+          tag: 'DrawingController',
+        );
+      }
+      return;
+    }
     _interactionMode = DrawingInteraction.editing;
-    _stateMachine.startEditing();
+    assert(
+      _stateVectorsAreConsistent(),
+      'DrawingController.startEditMode: vetores de estado dessincronizados — '
+      'SM=\${_stateMachine.currentState.name} interaction=\${_interactionMode.name}',
+    );
     notifyListeners();
   }
 
   void cancelEdit() {
     _editGeometry = null;
-    _undoStack.clear();
-    // Revert to selected state (normal or selected)
-    // Actually keep selection but exit edit mode
+    _history.clear();
     _interactionMode = DrawingInteraction.normal;
-    _stateMachine.cancel();
+    // 🔧 FASE3: Se feature ainda selecionada, volta para selected em vez de idle
+    if (_selectedFeature != null) {
+      _stateMachine.tryTransitionTo(DrawingState.selected);
+    } else {
+      _stateMachine.cancel();
+    }
+    assert(
+      _stateVectorsAreConsistent(),
+      'DrawingController.cancelEdit: vetores de estado dessincronizados — '
+      'SM=\${_stateMachine.currentState.name} interaction=\${_interactionMode.name}',
+    );
     notifyListeners();
   }
 
@@ -873,11 +1072,67 @@ class DrawingController extends ChangeNotifier {
   }
 
   void undoEdit() {
-    if (_undoStack.length > 1) {
-      _undoStack.removeLast(); // Remove current tip
-      _editGeometry = _cloneGeometry(_undoStack.last);
+    final prev = _history.undo();
+    if (prev != null) {
+      _editGeometry = _verticesToGeom(prev, _editGeometry);
       notifyListeners();
     }
+  }
+
+  /// Refaz a última operação desfeita no modo de edição de vértices.
+  void redoEdit() {
+    final next = _history.redo();
+    if (next != null) {
+      _editGeometry = _verticesToGeom(next, _editGeometry);
+      notifyListeners();
+    }
+  }
+
+  /// Desfaz o último vértice adicionado no modo de desenho livre.
+  void undoDrawingPoint() {
+    if (_isDisposed) return;
+    if (_currentPoints.isEmpty) return;
+    _currentPoints.removeLast();
+    // Se não há mais pontos, voltar para armed
+    if (_currentPoints.isEmpty &&
+        _stateMachine.currentState == DrawingState.drawing) {
+      // 🔧 FASE1-FIX-02: Verificar retorno — falha aqui é inesperada mas não deve crashar.
+      final didRevert = _stateMachine.tryTransitionTo(DrawingState.armed);
+      if (!didRevert && kDebugMode) {
+        AppLogger.debug(
+          'undoDrawingPoint: falha ao regredir drawing → armed',
+          tag: 'DrawingController',
+        );
+      }
+    }
+    notifyListeners();
+  }
+
+  // ─── Helpers de conversão geometria ↔ vértices ────────────────────────────────
+  List<LatLng> _geomToVertices(DrawingGeometry geom) {
+    if (geom is DrawingPolygon && geom.coordinates.isNotEmpty) {
+      return geom.coordinates.first
+          .map((p) => LatLng(p[1], p[0]))
+          .toList();
+    }
+    return [];
+  }
+
+  DrawingGeometry _verticesToGeom(
+      List<LatLng> vertices, DrawingGeometry? reference) {
+    final ring = vertices
+        .map((p) => <double>[p.longitude, p.latitude])
+        .toList();
+    // Se o último ponto não fecha o anel, fechar
+    if (ring.isNotEmpty) {
+      final first = ring.first;
+      final last = ring.last;
+      if ((first[0] - last[0]).abs() > 1e-9 ||
+          (first[1] - last[1]).abs() > 1e-9) {
+        ring.add(List<double>.from(first));
+      }
+    }
+    return DrawingPolygon(coordinates: [ring]);
   }
 
   /// Attempts to find a feature at the given coordinate.
@@ -937,44 +1192,19 @@ class DrawingController extends ChangeNotifier {
   }
 
   /// Moves a single vertex to a new position.
-  /// Handles maintaining polygon closure automatically.
+  /// Delega para [DrawingVertexEditService.moveVertex].
   void moveVertex(int ringIndex, int pointIndex, LatLng newPos) {
     if (_editGeometry is! DrawingPolygon) return;
 
-    final poly = _editGeometry as DrawingPolygon;
-    if (ringIndex >= poly.coordinates.length) return;
-
-    final ring = poly.coordinates[ringIndex];
-    if (pointIndex >= ring.length) return;
-
-    // Create deep copy for mutation
-    final newRing = List<List<double>>.from(
-      ring.map((p) => List<double>.from(p)),
+    final updated = _vertexService.moveVertex(
+      _editGeometry as DrawingPolygon,
+      ringIndex,
+      pointIndex,
+      newPos,
     );
+    if (updated == null) return;
 
-    // Check closure
-    final isClosed =
-        newRing.isNotEmpty &&
-        (newRing.first[0] == newRing.last[0] &&
-            newRing.first[1] == newRing.last[1]);
-
-    // Update point
-    newRing[pointIndex] = [newPos.longitude, newPos.latitude];
-
-    // Maintain closure
-    if (isClosed) {
-      if (pointIndex == 0) {
-        newRing[newRing.length - 1] = [newPos.longitude, newPos.latitude];
-      } else if (pointIndex == newRing.length - 1) {
-        newRing[0] = [newPos.longitude, newPos.latitude];
-      }
-    }
-
-    final newCoords = List<List<List<double>>>.from(poly.coordinates);
-    newCoords[ringIndex] = newRing;
-
-    _editGeometry = DrawingPolygon(coordinates: newCoords);
-
+    _editGeometry = updated;
     _throttledValidate();
     notifyListeners();
   }
@@ -984,8 +1214,7 @@ class DrawingController extends ChangeNotifier {
     _isDraggingVertex = true;
     _draggedVertexIndex = index;
     if (_editGeometry != null) {
-      _undoStack.add(_cloneGeometry(_editGeometry!));
-      if (_undoStack.length > 20) _undoStack.removeAt(0);
+      _history.push(_geomToVertices(_editGeometry!));
     }
     notifyListeners();
   }
@@ -1010,124 +1239,52 @@ class DrawingController extends ChangeNotifier {
   }
 
   /// Inserts a new vertex after the specified segment index.
-  /// Index i means insert between i and i+1.
+  /// Delega para [DrawingVertexEditService.insertVertex].
   void insertVertex(int ringIndex, int segmentIndex, LatLng point) {
     if (_editGeometry is! DrawingPolygon) return;
 
-    final poly = _editGeometry as DrawingPolygon;
-    if (ringIndex >= poly.coordinates.length) return;
+    onDragStart(); // salva estado para undo
 
-    // Save state for undo
-    onDragStart();
+    final updated = _vertexService.insertVertex(
+      _editGeometry as DrawingPolygon,
+      ringIndex,
+      segmentIndex,
+      point,
+    );
+    if (updated == null) return;
 
-    final newRing = List<List<double>>.from(poly.coordinates[ringIndex]);
-
-    // Insert safely
-    if (segmentIndex >= 0 && segmentIndex < newRing.length - 1) {
-      newRing.insert(segmentIndex + 1, [point.longitude, point.latitude]);
-    } else {
-      // Append if somehow at end, but usually we insert in segments
-      newRing.add([point.longitude, point.latitude]);
-    }
-
-    final newCoords = List<List<List<double>>>.from(poly.coordinates);
-    newCoords[ringIndex] = newRing;
-
-    _editGeometry = DrawingPolygon(coordinates: newCoords);
+    _editGeometry = updated;
     validateGeometry(_editGeometry);
     notifyListeners();
   }
 
   /// Removes a vertex at the specified index.
+  /// Delega para [DrawingVertexEditService.removeVertex].
   void removeVertex(int ringIndex, int pointIndex) {
     if (_editGeometry is! DrawingPolygon) return;
 
-    final poly = _editGeometry as DrawingPolygon;
-    if (ringIndex >= poly.coordinates.length) return;
+    final result = _vertexService.removeVertex(
+      _editGeometry as DrawingPolygon,
+      ringIndex,
+      pointIndex,
+    );
 
-    final ring = poly.coordinates[ringIndex];
-
-    // Validation: Don't allow breaking the polygon
-    // Closed polygon needs at least 4 points (A-B-C-A) to form a triangle.
-    if (ring.length <= 4) {
-      _errorMessage = "A área precisa ter pelo menos 3 pontos.";
+    if (result.error != null) {
+      _errorMessage = result.error;
       notifyListeners();
       return;
     }
 
-    // Save state for undo
-    onDragStart();
+    if (result.geometry == null) return;
 
-    final newRing = List<List<double>>.from(ring);
-
-    // Identify if we are removing a closure point
-    final isClosed =
-        newRing.first[0] == newRing.last[0] &&
-        newRing.first[1] == newRing.last[1];
-
-    newRing.removeAt(pointIndex);
-
-    // Restore closure if needed
-    if (isClosed) {
-      if (pointIndex == 0) {
-        // We removed Head. The old Tail is still there, but it matched old Head.
-        // New Head is the old second point.
-        // Tail must match New Head.
-        newRing.last = [newRing.first[0], newRing.first[1]];
-      } else if (pointIndex == ring.length - 1) {
-        // We removed Tail.
-        // New Tail is old second-to-last.
-        // It must match Head.
-        // Effectively, removing tail just exposes previous point.
-        // We must force it to match Head.
-        newRing.add([newRing.first[0], newRing.first[1]]);
-      }
-    }
-
-    // Robust Closure Check
-    if (newRing.isNotEmpty) {
-      if (newRing.first[0] != newRing.last[0] ||
-          newRing.first[1] != newRing.last[1]) {
-        // It's broken.
-        if (pointIndex == 0 || pointIndex == ring.length - 1) {
-          if (newRing.first[0] != newRing.last[0] ||
-              newRing.first[1] != newRing.last[1]) {
-            newRing.add([newRing.first[0], newRing.first[1]]);
-          }
-        }
-      }
-    }
-
-    final newCoords = List<List<List<double>>>.from(poly.coordinates);
-    newCoords[ringIndex] = newRing;
-
-    _editGeometry = DrawingPolygon(coordinates: newCoords);
+    onDragStart(); // salva estado para undo
+    _editGeometry = result.geometry;
     validateGeometry(_editGeometry);
     notifyListeners();
   }
 
-  DrawingGeometry _cloneGeometry(DrawingGeometry g) {
-    if (g is DrawingPolygon) {
-      return DrawingPolygon(
-        coordinates: g.coordinates
-            .map((ring) => ring.map((p) => [p[0], p[1]]).toList())
-            .toList(),
-      );
-    } else if (g is DrawingMultiPolygon) {
-      return DrawingMultiPolygon(
-        coordinates: g.coordinates
-            .map(
-              (polygon) => polygon
-                  .map((ring) => ring.map((p) => [p[0], p[1]]).toList())
-                  .toList(),
-            )
-            .toList(),
-      );
-    }
-    return g;
-  }
-
-  // 🆕 GRUPOS (MOCK)
+  // ===========================================================================
+  // GRUPOS
   // No futuro, isso viria de um repository dedicado
   final List<String> _groups = [
     'Soja 2025/26',
@@ -1190,50 +1347,32 @@ class DrawingController extends ChangeNotifier {
   // ===========================================================================
 
   void startImportMode() {
-    // Reset selection if any
     _selectedFeature = null;
     _interactionMode = DrawingInteraction.importing;
     _errorMessage = null;
     notifyListeners();
   }
 
+  /// Abre file picker e processa KML/KMZ.
+  /// Delega para [DrawingImportService.pickAndParse].
   Future<void> pickImportFile(bool isKmz) async {
     _errorMessage = null;
-    try {
-      final type = isKmz ? 'kmz' : 'kml';
-      FilePickerResult? result = await FilePicker.platform.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: [type],
-      );
 
-      if (result != null && result.files.isNotEmpty) {
-        final file = result.files.first;
-        final geometry = await DrawingUtils.parseFile(file);
+    final result = await _importService.pickAndParse(isKmz);
 
-        if (geometry != null) {
-          // Simplify on import
-          var processed = DrawingUtils.simplifyGeometry(geometry);
-          processed = DrawingUtils.normalizeGeometry(processed);
-
-          _previewGeometry = processed;
-          validateGeometry(_previewGeometry);
-          _interactionMode = DrawingInteraction.importPreview;
-          _currentImportOrigin = isKmz
-              ? DrawingOrigin.importacao_kmz
-              : DrawingOrigin.importacao_kml;
-          _stateMachine.startImportPreview();
-        } else {
-          _interactionMode = DrawingInteraction.normal;
-          _errorMessage = "O arquivo não contém geometria válida (Polygon).";
-        }
-      } else {
-        // User cancelled
-        _interactionMode = DrawingInteraction.normal;
-      }
-    } catch (e) {
+    if (result.cancelled) {
       _interactionMode = DrawingInteraction.normal;
-      _errorMessage = "Erro ao ler arquivo: $e";
+    } else if (result.error != null) {
+      _interactionMode = DrawingInteraction.normal;
+      _errorMessage = result.error;
+    } else {
+      _previewGeometry = result.geometry;
+      validateGeometry(_previewGeometry);
+      _interactionMode = DrawingInteraction.importPreview;
+      _currentImportOrigin = result.origin;
+      _stateMachine.startImportPreview();
     }
+
     notifyListeners();
   }
 
@@ -1289,34 +1428,14 @@ class DrawingController extends ChangeNotifier {
   void _calculateBooleanOp() {
     if (_pendingFeatureA == null || _pendingFeatureB == null) return;
 
-    DrawingGeometry? result;
-
-    switch (_interactionMode) {
-      case DrawingInteraction.unionSelection:
-        result = DrawingUtils.unionGeometries(
-          _pendingFeatureA!.geometry,
-          _pendingFeatureB!.geometry,
-        );
-        break;
-      case DrawingInteraction.differenceSelection:
-        result = DrawingUtils.difference(
-          _pendingFeatureA!.geometry,
-          _pendingFeatureB!.geometry,
-        );
-        break;
-      case DrawingInteraction.intersectionSelection:
-        result = DrawingUtils.intersection(
-          _pendingFeatureA!.geometry,
-          _pendingFeatureB!.geometry,
-        );
-        break;
-      default:
-        break;
-    }
+    // Delega ao DrawingBooleanOpsService
+    final result = _booleanOpsService.calculate(
+      _pendingFeatureA!,
+      _pendingFeatureB!,
+      _interactionMode,
+    );
 
     if (result != null) {
-      // Simplify logic for preview
-      result = DrawingUtils.simplifyGeometry(result);
       _previewGeometry = result;
       validateGeometry(_previewGeometry);
       _errorMessage = null;
@@ -1336,9 +1455,8 @@ class DrawingController extends ChangeNotifier {
       return;
     }
 
-    // Final Normalization
-    DrawingGeometry finalGeo = DrawingUtils.simplifyGeometry(_previewGeometry!);
-    finalGeo = DrawingUtils.normalizeGeometry(finalGeo);
+    // Delega finalização (simplify + normalize) ao service
+    final finalGeo = _booleanOpsService.finalizeResult(_previewGeometry!);
 
     if (_selectedFeature != null) {
       updateFeature(
@@ -1351,6 +1469,10 @@ class DrawingController extends ChangeNotifier {
     cancelOperation();
   }
 
+  /// ✅ SPRINT 3 FIX: Confirma import e transiciona para [DrawingState.reviewing].
+  ///
+  /// Antes chamava [addFeature] direto (sem nome, sem cliente, sem fazenda).
+  /// Agora vai para o formulário de revisão onde o usuário preenche os dados.
   void confirmImport() {
     if (_previewGeometry == null || _currentImportOrigin == null) return;
 
@@ -1361,21 +1483,12 @@ class DrawingController extends ChangeNotifier {
       return;
     }
 
-    // Final Normalization
-    DrawingGeometry finalGeo = DrawingUtils.simplifyGeometry(_previewGeometry!);
-    finalGeo = DrawingUtils.normalizeGeometry(finalGeo);
+    // Finaliza geometria (simplify + normalize) e guarda para o form de revisão
+    _previewGeometry = _booleanOpsService.finalizeResult(_previewGeometry!);
 
-    addFeature(
-      geometry: finalGeo,
-      nome:
-          "Importação ${_currentImportOrigin == DrawingOrigin.importacao_kmz ? 'KMZ' : 'KML'}",
-      tipo: DrawingType.outro,
-      origem: _currentImportOrigin!,
-      autorId: "sistema", // Placeholder
-      autorTipo: AuthorType.sistema,
-    );
-
-    cancelOperation();
+    // Transiciona para reviewing — o formulário exibe nome, cliente, fazenda
+    _stateMachine.confirmImport(); // importPreview → reviewing
+    notifyListeners();
   }
 
   // Helper for snapping

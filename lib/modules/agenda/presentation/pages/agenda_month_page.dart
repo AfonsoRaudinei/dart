@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:soloforte_app/core/constants/layout_constants.dart';
 import '../../domain/entities/event.dart';
 import '../providers/agenda_provider.dart';
 import '../providers/agenda_filters_provider.dart';
 import '../widgets/month_calendar_grid.dart';
-import '../widgets/create_event_dialog.dart';
 import '../widgets/agenda_filters_sheet.dart';
 
 class AgendaMonthPage extends ConsumerStatefulWidget {
@@ -42,6 +42,7 @@ class _AgendaMonthPageState extends ConsumerState<AgendaMonthPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Agenda'),
+        automaticallyImplyLeading: false,
         actions: [
           if (filters.hasActiveFilters)
             Padding(
@@ -105,7 +106,7 @@ class _AgendaMonthPageState extends ConsumerState<AgendaMonthPage> {
                     month: _currentMonth,
                     eventsByDay: eventsByDay,
                     onDayTap: (day) {
-                      context.push('/agenda/day?date=${day.toIso8601String()}');
+                      context.go('/agenda/day?date=${day.toIso8601String()}');
                     },
                   ),
                   const SizedBox(height: 24),
@@ -113,22 +114,10 @@ class _AgendaMonthPageState extends ConsumerState<AgendaMonthPage> {
                     _buildMonthSummary(filteredEvents, theme),
                   if (agendaState.conflicts.isNotEmpty)
                     _buildConflictWarning(agendaState.conflicts.length),
+                  const SizedBox(height: kFabSafeArea),
                 ],
               ),
             ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () async {
-          final created = await showDialog<bool>(
-            context: context,
-            builder: (context) => const CreateEventDialog(),
-          );
-          if (created == true) {
-            ref.read(agendaProvider.notifier).reload();
-          }
-        },
-        tooltip: 'Novo Evento',
-        child: const Icon(Icons.add),
-      ),
     );
   }
 

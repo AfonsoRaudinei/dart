@@ -121,8 +121,8 @@ class _ReportFormScreenState extends ConsumerState<ReportFormScreen> {
         child: Column(
           children: [
             // Header
-            Padding(
-              padding: const EdgeInsets.symmetric(
+            const Padding(
+              padding: EdgeInsets.symmetric(
                 horizontal: 16.0,
                 vertical: 8.0,
               ),
@@ -132,14 +132,14 @@ class _ReportFormScreenState extends ConsumerState<ReportFormScreen> {
                     child: Text(
                       'Novo Relatório',
                       textAlign: TextAlign.center,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
                         color: Colors.black,
                       ),
                     ),
                   ),
-                  const SizedBox(width: 48),
+                  SizedBox(width: 48),
                 ],
               ),
             ),

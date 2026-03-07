@@ -67,9 +67,9 @@ class _VisitSheetState extends ConsumerState<VisitSheet> {
             ),
           ),
           const SizedBox(height: 24),
-          Text(
+          const Text(
             'Iniciar Visita',
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 24),

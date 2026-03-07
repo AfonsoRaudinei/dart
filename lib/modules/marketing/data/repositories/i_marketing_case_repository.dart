@@ -16,6 +16,9 @@ abstract class IMarketingCaseRepository {
   /// Envia um case novo ao Supabase. Retorna o case com syncStatus='synced'.
   Future<MarketingCase> saveCase(MarketingCase marketingCase);
 
+  /// Salva um case como rascunho (apenas local, não sincroniza).
+  Future<MarketingCase> saveAsDraft(MarketingCase marketingCase);
+
   /// Obtem detalhes de um case a partir do cache local.
   Future<MarketingCase> getById(String id);
 }

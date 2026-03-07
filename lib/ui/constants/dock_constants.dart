@@ -7,7 +7,7 @@ Constante global da zona inferior protegida (Dock).
 Valor fixo único, nunca recalculado, nunca redefinido por tela.
 
 Representa a altura útil do dock (botão 44px + margem 6px = 50px).
-SafeArea é tratada separadamente pelo PrivateAppShell.
+SafeArea é tratada separadamente pelo AppShell.
 
 REGRA ABSOLUTA:
 - Qualquer componente que posicione algo na base da tela DEVE

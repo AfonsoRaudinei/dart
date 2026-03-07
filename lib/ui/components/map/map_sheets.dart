@@ -26,7 +26,7 @@ class BaseMapSheet extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: PremiumTokens.surfaceLight,
-        borderRadius: BorderRadius.only(
+        borderRadius: const BorderRadius.only(
           topLeft: Radius.circular(24.0),
           topRight: Radius.circular(24.0),
         ),
@@ -209,7 +209,7 @@ class _LayerCardPreview extends StatelessWidget {
               ),
             ),
             child: isSelected
-                ? Center(
+                ? const Center(
                     child: Icon(
                       SFIcons.checkCircle,
                       color: PremiumTokens.brandGreen,
@@ -279,7 +279,7 @@ class PublicacoesSheet extends ConsumerWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(
+                const Icon(
                   SFIcons.warningOutlined,
                   size: 48,
                   color: PremiumTokens.alertError,
@@ -307,7 +307,7 @@ class PublicacoesSheet extends ConsumerWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
+            const Icon(
               SFIcons.article,
               size: 64,
               color: PremiumTokens.textTertiaryLight,
@@ -416,9 +416,9 @@ class _PublicacaoCard extends StatelessWidget {
 
     return Container(
       height: 180,
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         color: PremiumTokens.backgroundLight,
-        borderRadius: const BorderRadius.only(
+        borderRadius: BorderRadius.only(
           topLeft: Radius.circular(16),
           topRight: Radius.circular(16),
         ),
@@ -481,7 +481,7 @@ class _PublicacaoCard extends StatelessWidget {
     return Row(
       children: [
         if (pub.clientName != null) ...[
-          Icon(
+          const Icon(
             SFIcons.person,
             size: 14,
             color: PremiumTokens.textTertiaryLight,
@@ -498,15 +498,15 @@ class _PublicacaoCard extends StatelessWidget {
           ),
         ],
         if (pub.clientName != null && pub.areaName != null)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 8),
             child: Text(
               '•',
               style: TextStyle(color: PremiumTokens.textTertiaryLight),
             ),
           ),
         if (pub.areaName != null) ...[
-          Icon(
+          const Icon(
             SFIcons.locationOn,
             size: 14,
             color: PremiumTokens.textTertiaryLight,
@@ -529,34 +529,34 @@ class _PublicacaoCard extends StatelessWidget {
   _TypeInfo _getTypeInfo(PublicacaoType type) {
     switch (type) {
       case PublicacaoType.institucional:
-        return _TypeInfo(
+        return const _TypeInfo(
           label: 'Institucional',
           icon: SFIcons.business,
           color: PremiumTokens.brandGreen,
         );
       case PublicacaoType.tecnico:
-        return _TypeInfo(
+        return const _TypeInfo(
           label: 'Técnico',
           icon: SFIcons.science,
-          color: const Color(0xFF3B82F6), // Blue
+          color: Color(0xFF3B82F6), // Blue
         );
       case PublicacaoType.resultado:
-        return _TypeInfo(
+        return const _TypeInfo(
           label: 'Resultado',
           icon: SFIcons.barChart,
           color: PremiumTokens.brandGreen,
         );
       case PublicacaoType.comparativo:
-        return _TypeInfo(
+        return const _TypeInfo(
           label: 'Comparativo',
           icon: SFIcons.compareArrows,
-          color: const Color(0xFFF59E0B), // Orange
+          color: Color(0xFFF59E0B), // Orange
         );
       case PublicacaoType.caseSucesso:
-        return _TypeInfo(
+        return const _TypeInfo(
           label: 'Case de Sucesso',
           icon: SFIcons.star,
-          color: const Color(0xFFA855F7), // Purple
+          color: Color(0xFFA855F7), // Purple
         );
     }
   }

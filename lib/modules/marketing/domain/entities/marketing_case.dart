@@ -1,6 +1,7 @@
 import '../enums/case_tipo.dart';
 import '../enums/plano_marketing.dart';
 import '../enums/produtividade_unidade.dart';
+import '../enums/marketing_case_status.dart';
 import 'avaliacao_bloco.dart';
 import 'roi_bloco.dart';
 
@@ -40,6 +41,7 @@ class MarketingCase {
 
   // Sync e Status
   final bool ativo;
+  final MarketingCaseStatus status;
   final DateTime criadoEm;
   final DateTime atualizadoEm;
   final String syncStatus;
@@ -71,6 +73,7 @@ class MarketingCase {
     this.roi,
     this.conclusao,
     this.ativo = true,
+    this.status = MarketingCaseStatus.published,
     required this.criadoEm,
     required this.atualizadoEm,
     this.syncStatus = 'local_only',
@@ -112,6 +115,9 @@ class MarketingCase {
       roi: (json['roi_investimento'] != null) ? RoiBloco.fromJson(json) : null,
       conclusao: json['conclusao'] as String?,
       ativo: json['ativo'] as bool? ?? true,
+      status: json['status'] != null
+          ? MarketingCaseStatus.fromString(json['status'] as String)
+          : MarketingCaseStatus.published,
       criadoEm: DateTime.parse(json['criado_em'] as String),
       atualizadoEm: DateTime.parse(json['atualizado_em'] as String),
       syncStatus: json['sync_status'] as String? ?? 'local_only',
@@ -148,6 +154,7 @@ class MarketingCase {
       if (roi != null) ...roi!.toJson(),
       'conclusao': conclusao,
       'ativo': ativo,
+      'status': status.toValue(),
       'criado_em': criadoEm.toIso8601String(),
       'atualizado_em': atualizadoEm.toIso8601String(),
       'sync_status': syncStatus,

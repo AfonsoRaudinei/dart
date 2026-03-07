@@ -17,7 +17,7 @@ void main() {
       final results = <bool>[];
       for (var i = 0; i < 100; i++) {
         final user = const FeatureFlagUser(userId: testUserId);
-        final flag = FeatureFlag(
+        final flag = const FeatureFlag(
           key: 'test',
           enabled: true,
           rolloutPercentage: 50,
@@ -87,7 +87,7 @@ void main() {
       final results = <bool>[];
       for (final userId in userIds) {
         final user = FeatureFlagUser(userId: userId);
-        final flag = FeatureFlag(
+        final flag = const FeatureFlag(
           key: 'test',
           enabled: true,
           rolloutPercentage: 50,
@@ -203,7 +203,7 @@ void main() {
 
       // Primeira "sessão"
       final resolver1 = const FeatureFlagResolver();
-      final flag1 = FeatureFlag(
+      final flag1 = const FeatureFlag(
         key: 'test',
         enabled: true,
         rolloutPercentage: 50,
@@ -214,7 +214,7 @@ void main() {
 
       // Segunda "sessão" (novo resolver)
       final resolver2 = const FeatureFlagResolver();
-      final flag2 = FeatureFlag(
+      final flag2 = const FeatureFlag(
         key: 'test',
         enabled: true,
         rolloutPercentage: 50,

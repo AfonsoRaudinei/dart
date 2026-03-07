@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/clients_repository.dart';
 import '../../domain/client.dart';
+import '../../domain/client_cultura.dart';
 
 // Repository
 final clientsRepositoryProvider = Provider<ClientsRepository>((ref) {
@@ -49,17 +50,48 @@ final clientDetailProvider = FutureProvider.family.autoDispose<Client?, String>(
   },
 );
 
+// Culturas de um cliente
+final clientCulturasProvider =
+    FutureProvider.family.autoDispose<List<ClientCultura>, String>(
+  (ref, clientId) async {
+    final repo = ref.watch(clientsRepositoryProvider);
+    return repo.getCulturas(clientId);
+  },
+);
+
 // Controller for Actions
 class ClientsController {
   final Ref ref;
   ClientsController(this.ref);
 
-  Future<void> saveClient(Client client) async {
+  Future<void> saveClient(
+    Client client, {
+    List<ClientCultura> culturas = const [],
+  }) async {
     final repo = ref.read(clientsRepositoryProvider);
-    await repo.saveClient(client);
-    // Invalidate to refresh lists
+    await repo.saveClient(client, culturas: culturas);
     ref.invalidate(clientsListProvider);
     ref.invalidate(clientDetailProvider(client.id));
+    ref.invalidate(clientCulturasProvider(client.id));
+  }
+
+  Future<void> updateClient(
+    Client client, {
+    List<ClientCultura> culturas = const [],
+  }) async {
+    final repo = ref.read(clientsRepositoryProvider);
+    await repo.updateClient(client, culturas: culturas);
+    ref.invalidate(clientsListProvider);
+    ref.invalidate(clientDetailProvider(client.id));
+    ref.invalidate(clientCulturasProvider(client.id));
+  }
+
+  Future<void> deleteClient(String id) async {
+    final repo = ref.read(clientsRepositoryProvider);
+    await repo.deleteClient(id);
+    ref.invalidate(clientsListProvider);
+    ref.invalidate(clientDetailProvider(id));
+    ref.invalidate(clientCulturasProvider(id));
   }
 }
 

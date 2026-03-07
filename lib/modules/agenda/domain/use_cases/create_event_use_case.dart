@@ -53,17 +53,34 @@ class CreateEventUseCase {
 
     // Valida conflito de horário se startTime e endTime forem fornecidos
     if (startTime != null && endTime != null) {
-      final conflicting = EventRules.findTimeConflict(
-        currentEvents: currentEvents,
-        date: dataInicioPlanejada,
+      // Cria evento temporário com os horários para verificação de conflito
+      final tempEvent = Event(
+        id: 'temp',
+        tipo: tipo,
+        clienteId: clienteId,
+        fazendaId: fazendaId,
+        talhaoId: talhaoId,
+        titulo: titulo,
+        dataInicioPlanejada: dataInicioPlanejada,
+        dataFimPlanejada: dataFimPlanejada,
+        status: EventStatus.agendado,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
         startTime: startTime,
         endTime: endTime,
+        priority: priority,
+        latitude: latitude,
+        longitude: longitude,
       );
-      if (conflicting != null) {
-        throw StateError(
-          'Conflito de horário detectado com a visita "${conflicting.titulo}" '
-          'agendada para ${conflicting.formattedTimeRange}',
-        );
+
+      // Verifica conflito com eventos existentes
+      for (final existing in currentEvents) {
+        if (existing.status.isFinished) continue;
+        if (tempEvent.hasTimeConflictWith(existing)) {
+          throw StateError(
+            'Conflito de horário detectado com a visita "${existing.titulo}"',
+          );
+        }
       }
     }
 

@@ -1,17 +1,26 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 
 class EditingControlsOverlay extends StatelessWidget {
   final VoidCallback onSave;
   final VoidCallback onCancel;
   final VoidCallback onUndo;
+  final VoidCallback? onRedo;
+
+  /// Controla habilitação visual dos botões Undo/Redo.
+  final bool canUndo;
+  final bool canRedo;
 
   const EditingControlsOverlay({
     super.key,
     required this.onSave,
     required this.onCancel,
     required this.onUndo,
+    this.onRedo,
+    this.canUndo = true,
+    this.canRedo = false,
   });
 
   @override
@@ -39,11 +48,35 @@ class EditingControlsOverlay extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                IconButton(
-                  onPressed: onUndo,
-                  icon: const Icon(Icons.undo),
-                  tooltip: 'Desfazer',
-                  color: Colors.black87,
+                // ── Undo ─────────────────────────────────────────────
+                Opacity(
+                  opacity: canUndo ? 1.0 : 0.35,
+                  child: IconButton(
+                    onPressed: canUndo
+                        ? () {
+                            HapticFeedback.lightImpact();
+                            onUndo();
+                          }
+                        : null,
+                    icon: const Icon(Icons.undo_rounded),
+                    tooltip: 'Desfazer',
+                    color: Colors.black87,
+                  ),
+                ),
+                // ── Redo ─────────────────────────────────────────────
+                Opacity(
+                  opacity: canRedo ? 1.0 : 0.35,
+                  child: IconButton(
+                    onPressed: canRedo && onRedo != null
+                        ? () {
+                            HapticFeedback.lightImpact();
+                            onRedo!();
+                          }
+                        : null,
+                    icon: const Icon(Icons.redo_rounded),
+                    tooltip: 'Refazer',
+                    color: Colors.black87,
+                  ),
                 ),
                 Container(
                   height: 24,
@@ -52,7 +85,10 @@ class EditingControlsOverlay extends StatelessWidget {
                   margin: const EdgeInsets.symmetric(horizontal: 8),
                 ),
                 TextButton.icon(
-                  onPressed: onCancel,
+                  onPressed: () {
+                    HapticFeedback.lightImpact();
+                    onCancel();
+                  },
                   icon: const Icon(Icons.close, size: 20),
                   label: const Text('Cancelar'),
                   style: TextButton.styleFrom(
@@ -61,7 +97,10 @@ class EditingControlsOverlay extends StatelessWidget {
                 ),
                 const SizedBox(width: 8),
                 ElevatedButton.icon(
-                  onPressed: onSave,
+                  onPressed: () {
+                    HapticFeedback.mediumImpact();
+                    onSave();
+                  },
                   icon: const Icon(Icons.check, size: 20, color: Colors.white),
                   label: const Text(
                     'Salvar',

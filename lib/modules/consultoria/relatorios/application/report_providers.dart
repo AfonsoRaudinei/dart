@@ -12,7 +12,10 @@ IReportRepository reportRepository(ReportRepositoryRef ref) {
 
 @riverpod
 Future<List<Relatorio>> relatoriosList(RelatoriosListRef ref) async {
-  return ref.watch(reportRepositoryProvider).getAll();
+  // ref.read() obrigatório dentro de async — ref.watch() dentro de Future
+  // pode causar cancelamento prematuro pelo autoDispose durante animação
+  // de navegação, deixando a tela em estado loading permanente (tela cinza).
+  return ref.read(reportRepositoryProvider).getAll();
 }
 
 class RelatorioFilter {
@@ -36,7 +39,9 @@ class RelatorioFilterNotifier extends _$RelatorioFilterNotifier {
 
 @riverpod
 Future<List<Relatorio>> relatoriosFiltered(RelatoriosFilteredRef ref) async {
-  final list = await ref.watch(relatoriosListProvider.future);
+  // ref.read() para o Future — evita race condition com autoDispose
+  // ref.watch() no notifier de filtro é seguro (síncrono, não-async)
+  final list = await ref.read(relatoriosListProvider.future);
   final filter = ref.watch(relatorioFilterNotifierProvider);
 
   if (filter.search.isEmpty) return list;

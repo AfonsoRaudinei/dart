@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:soloforte_app/core/constants/layout_constants.dart';
+import 'package:soloforte_app/core/router/app_routes.dart';
 import '../../domain/entities/event.dart';
 import '../../domain/enums/event_status.dart';
 import '../providers/agenda_provider.dart';
@@ -20,7 +22,10 @@ class AgendaEventDetailPage extends ConsumerWidget {
 
     if (event == null) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Evento não encontrado')),
+        appBar: AppBar(
+          title: const Text('Evento não encontrado'),
+          automaticallyImplyLeading: false,
+        ),
         body: const Center(child: Text('Evento não encontrado')),
       );
     }
@@ -28,6 +33,7 @@ class AgendaEventDetailPage extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Detalhes do Evento'),
+        automaticallyImplyLeading: false,
         actions: [
           if (!event.status.isFinished)
             IconButton(
@@ -98,6 +104,7 @@ class AgendaEventDetailPage extends ConsumerWidget {
 
             // Ações
             if (!event.status.isFinished) _buildActions(context, ref, event),
+            const SizedBox(height: kFabSafeArea),
           ],
         ),
       ),
@@ -314,7 +321,7 @@ class AgendaEventDetailPage extends ConsumerWidget {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Evento concluído!')),
                   );
-                  context.pop();
+                  context.go(AppRoutes.agenda);
                 }
               } catch (e) {
                 if (context.mounted) {
@@ -361,7 +368,7 @@ class AgendaEventDetailPage extends ConsumerWidget {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Evento cancelado!')),
                   );
-                  context.pop();
+                  context.go(AppRoutes.agenda);
                 }
               } catch (e) {
                 if (context.mounted) {

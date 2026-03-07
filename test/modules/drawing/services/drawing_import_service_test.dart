@@ -88,7 +88,7 @@ const _kmlComPoligono = '''<?xml version="1.0" encoding="UTF-8"?>
 void main() {
   group('DrawingImportService.pickAndParse', () {
     test('retorna cancelled=true quando picker retorna null', () async {
-      final service = DrawingImportService(const _CancelledPicker());
+      final service = const DrawingImportService(_CancelledPicker());
       final result = await service.pickAndParse(false);
 
       expect(result.cancelled, isTrue);
@@ -118,7 +118,7 @@ void main() {
     });
 
     test('retorna error (nao lanca excecao) quando picker falha', () async {
-      final service = DrawingImportService(const _ThrowingPicker());
+      final service = const DrawingImportService(_ThrowingPicker());
       final result = await service.pickAndParse(false);
 
       expect(result.error, isNotNull);

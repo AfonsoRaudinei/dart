@@ -41,6 +41,7 @@ fi
 
 echo "✅ SUPABASE_URL: $SUPABASE_URL"
 echo "✅ SUPABASE_ANON_KEY: [configurada]"
+echo "✅ STADIA_API_KEY: [configurada]"
 echo ""
 echo "🔨 Iniciando build IPA para TestFlight..."
 
@@ -48,6 +49,7 @@ flutter build ipa \
   --release \
   --dart-define=SUPABASE_URL="$SUPABASE_URL" \
   --dart-define=SUPABASE_ANON_KEY="$SUPABASE_ANON_KEY" \
+  --dart-define=STADIA_API_KEY=5b0c0038-b833-4e1d-adfa-756241cab907 \
   --dart-define=ENV=production
 
 echo ""

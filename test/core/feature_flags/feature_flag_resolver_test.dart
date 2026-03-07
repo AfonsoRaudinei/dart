@@ -22,7 +22,7 @@ void main() {
       });
 
       test('Desativa mesmo com rollout 100%', () {
-        final flag = FeatureFlag(
+        final flag = const FeatureFlag(
           key: 'test',
           enabled: false,
           rolloutPercentage: 100,
@@ -36,7 +36,7 @@ void main() {
 
     group('🎭 Filtro por Papel', () {
       test('Permite usuário com papel autorizado', () {
-        final flag = FeatureFlag(
+        final flag = const FeatureFlag(
           key: 'test',
           enabled: true,
           rolloutPercentage: 100,
@@ -52,7 +52,7 @@ void main() {
       });
 
       test('Bloqueia usuário com papel não autorizado', () {
-        final flag = FeatureFlag(
+        final flag = const FeatureFlag(
           key: 'test',
           enabled: true,
           rolloutPercentage: 100,
@@ -68,7 +68,7 @@ void main() {
       });
 
       test('Permite se allowedRoles é null (sem restrição)', () {
-        final flag = FeatureFlag(
+        final flag = const FeatureFlag(
           key: 'test',
           enabled: true,
           rolloutPercentage: 100,
@@ -84,7 +84,7 @@ void main() {
       });
 
       test('Permite se allowedRoles é vazio (sem restrição)', () {
-        final flag = FeatureFlag(
+        final flag = const FeatureFlag(
           key: 'test',
           enabled: true,
           rolloutPercentage: 100,
@@ -102,7 +102,7 @@ void main() {
 
     group('📊 Rollout Percentual — Determinismo', () {
       test('0% rollout bloqueia todos os usuários', () {
-        final flag = FeatureFlag(
+        final flag = const FeatureFlag(
           key: 'test',
           enabled: true,
           rolloutPercentage: 0,
@@ -126,7 +126,7 @@ void main() {
       });
 
       test('Mesmo userId sempre recebe mesma decisão (determinismo)', () {
-        final flag = FeatureFlag(
+        final flag = const FeatureFlag(
           key: 'test',
           enabled: true,
           rolloutPercentage: 50,
@@ -145,7 +145,7 @@ void main() {
       });
 
       test('Distribuição aproximada de 50% rollout', () {
-        final flag = FeatureFlag(
+        final flag = const FeatureFlag(
           key: 'test',
           enabled: true,
           rolloutPercentage: 50,
@@ -167,7 +167,7 @@ void main() {
       });
 
       test('Diferentes userId recebem decisões variadas no rollout', () {
-        final flag = FeatureFlag(
+        final flag = const FeatureFlag(
           key: 'test',
           enabled: true,
           rolloutPercentage: 50,
@@ -190,7 +190,7 @@ void main() {
 
     group('📱 Versão Mínima do App', () {
       test('Permite se versão atual >= versão mínima (iguais)', () {
-        final flag = FeatureFlag(
+        final flag = const FeatureFlag(
           key: 'test',
           enabled: true,
           rolloutPercentage: 100,
@@ -206,7 +206,7 @@ void main() {
       });
 
       test('Permite se versão atual > versão mínima (major)', () {
-        final flag = FeatureFlag(
+        final flag = const FeatureFlag(
           key: 'test',
           enabled: true,
           rolloutPercentage: 100,
@@ -222,7 +222,7 @@ void main() {
       });
 
       test('Permite se versão atual > versão mínima (minor)', () {
-        final flag = FeatureFlag(
+        final flag = const FeatureFlag(
           key: 'test',
           enabled: true,
           rolloutPercentage: 100,
@@ -238,7 +238,7 @@ void main() {
       });
 
       test('Bloqueia se versão atual < versão mínima', () {
-        final flag = FeatureFlag(
+        final flag = const FeatureFlag(
           key: 'test',
           enabled: true,
           rolloutPercentage: 100,
@@ -254,7 +254,7 @@ void main() {
       });
 
       test('Permite se minAppVersion é null (sem restrição)', () {
-        final flag = FeatureFlag(
+        final flag = const FeatureFlag(
           key: 'test',
           enabled: true,
           rolloutPercentage: 100,
@@ -270,7 +270,7 @@ void main() {
       });
 
       test('Permite se user.appVersion é null', () {
-        final flag = FeatureFlag(
+        final flag = const FeatureFlag(
           key: 'test',
           enabled: true,
           rolloutPercentage: 100,
@@ -287,7 +287,7 @@ void main() {
       });
 
       test('Bloqueia se formato de versão inválido', () {
-        final flag = FeatureFlag(
+        final flag = const FeatureFlag(
           key: 'test',
           enabled: true,
           rolloutPercentage: 100,
@@ -324,7 +324,7 @@ void main() {
 
     group('🔗 Cenários Combinados', () {
       test('Fase 1 — Interno: consultor + 5% rollout', () {
-        final flag = FeatureFlag(
+        final flag = const FeatureFlag(
           key: 'drawing_v1',
           enabled: true,
           rolloutPercentage: 5,
@@ -344,7 +344,7 @@ void main() {
       });
 
       test('Fase 4 — Total: 100% sem restrições', () {
-        final flag = FeatureFlag(
+        final flag = const FeatureFlag(
           key: 'drawing_v1',
           enabled: true,
           rolloutPercentage: 100,
@@ -366,7 +366,7 @@ void main() {
       });
 
       test('Kill switch instant rollback: enabled = false', () {
-        final flag = FeatureFlag(
+        final flag = const FeatureFlag(
           key: 'drawing_v1',
           enabled: false, // 🔴 Kill switch ativado
           rolloutPercentage: 100,

@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher_string.dart';
+import 'package:soloforte_app/core/constants/layout_constants.dart';
 
 import '../providers/plano_providers.dart';
 
@@ -61,7 +62,10 @@ class _ConfirmacaoScreenState extends ConsumerState<ConfirmacaoScreen>
       if (!mounted) return;
       ref.invalidate(planoAtivoProvider);
       ref.read(planoAtivoProvider.future).then((plano) {
-        if (plano != null && mounted) {
+        // 🛡 LIFECYCLE GUARD: callback .then() executa de forma assíncrona
+        // e pode chegar após o widget ter sido descartado.
+        if (!mounted) return;
+        if (plano != null) {
           setState(() => _confirmado = true);
           _controller.forward();
           HapticFeedback.heavyImpact();
@@ -124,8 +128,8 @@ class _ConfirmacaoScreenState extends ConsumerState<ConfirmacaoScreen>
           ),
         ),
         const SizedBox(height: 40),
-        GestureDetector(
-          onTap: () {
+        TextButton(
+          onPressed: () {
             HapticFeedback.lightImpact();
             context.go('/map');
           },
@@ -139,6 +143,7 @@ class _ConfirmacaoScreenState extends ConsumerState<ConfirmacaoScreen>
             ),
           ),
         ),
+        const SizedBox(height: kFabSafeArea),
       ],
     );
   }
@@ -182,6 +187,36 @@ class _ConfirmacaoScreenState extends ConsumerState<ConfirmacaoScreen>
               color: Color(0xFF8E8E93),
             ),
           ),
+          const SizedBox(height: 40),
+          SizedBox(
+            width: double.infinity,
+            height: 52,
+            child: GestureDetector(
+              onTap: () {
+                HapticFeedback.mediumImpact();
+                context.go('/planos/meu-plano');
+              },
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: const Color(0xFF32D74B),
+                  borderRadius: BorderRadius.circular(50),
+                ),
+                child: const Center(
+                  child: Text(
+                    'Ir para Meu Plano',
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black,
+                      letterSpacing: -0.4,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: kFabSafeArea),
         ],
       ),
     );

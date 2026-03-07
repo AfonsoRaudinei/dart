@@ -141,18 +141,64 @@ class _PublicationPin extends StatelessWidget {
 }
 
 /// Widget Pin de Ocorrência (leve e stateless)
+///
+/// Ícone: reflete a categoria da ocorrência.
+/// Cor: reflete a urgência (campo `type`).
 class _OccurrencePin extends StatelessWidget {
   final Occurrence occurrence;
 
   const _OccurrencePin({required this.occurrence});
 
+  // ── Cor por urgência (campo `type`) ─────────────────────────────────────
+  static Color _colorForUrgency(String? type) {
+    switch ((type ?? '').toLowerCase()) {
+      case 'alta':
+        return const Color(0xFFFF3B30); // iOS Red
+      case 'baixa':
+        return const Color(0xFF8E8E93); // iOS Gray
+      default: // 'média' ou outro
+        return Colors.orange;
+    }
+  }
+
+  // ── Ícone por categoria (campo `category`) ──────────────────────────────
+  // ❌ SFIcons.warning proibido para marcadores de ocorrência
+  static IconData _iconForCategory(String? category) {
+    switch ((category ?? '').toLowerCase()) {
+      case 'doenca':
+      case 'doença':
+        return SFIcons.coronavirus;
+      case 'insetos':
+      case 'pragas':
+        return SFIcons.bugReport;
+      case 'daninhas':
+      case 'ervas_daninhas':
+      case 'ervas daninhas':
+        return SFIcons.grass;
+      case 'nutricional':
+      case 'nutrientes':
+        return SFIcons.science;
+      case 'agua':
+      case 'água':
+        return SFIcons.waterDrop;
+      case 'amostra_solo':
+      case 'amostra solo':
+        return Icons.biotech_outlined;
+      default:
+        return SFIcons.locationOn; // genérico — nunca warning
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final color = _colorForUrgency(occurrence.type);
+    final icon = _iconForCategory(occurrence.category);
+
     return Container(
       width: 40,
       height: 40,
       decoration: BoxDecoration(
-        color: Colors.orange,
+        color: color,
         shape: BoxShape.circle,
         border: Border.all(color: Colors.white, width: 2),
         boxShadow: [
@@ -163,7 +209,7 @@ class _OccurrencePin extends StatelessWidget {
           ),
         ],
       ),
-      child: const Icon(SFIcons.warning, color: Colors.white, size: 20),
+      child: Icon(icon, color: Colors.white, size: 20),
     );
   }
 }

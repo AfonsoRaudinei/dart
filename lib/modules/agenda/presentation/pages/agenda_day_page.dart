@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/entities/event.dart';
 import '../providers/agenda_provider.dart';
 import '../widgets/day_event_card.dart';
-import '../widgets/create_event_dialog.dart';
+import '../../../../core/constants/layout_constants.dart';
 
 /// Página de visualização dos eventos de um dia específico
 class AgendaDayPage extends ConsumerWidget {
@@ -25,6 +25,7 @@ class AgendaDayPage extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(_formatDate(selectedDate)),
+        automaticallyImplyLeading: false,
         actions: [
           // Indicador de eventos ativos
           if (sortedEvents.any((e) => e.status.isActive))
@@ -58,10 +59,6 @@ class AgendaDayPage extends ConsumerWidget {
           : sortedEvents.isEmpty
           ? _buildEmptyState(context)
           : _buildEventList(sortedEvents),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _showCreateEventDialog(context),
-        child: const Icon(Icons.add),
-      ),
     );
   }
 
@@ -94,7 +91,7 @@ class AgendaDayPage extends ConsumerWidget {
 
   Widget _buildEventList(List<Event> events) {
     return ListView.builder(
-      padding: const EdgeInsets.only(top: 8, bottom: 80),
+      padding: const EdgeInsets.only(top: 8, bottom: kFabSafeArea),
       itemCount: events.length,
       itemBuilder: (context, index) {
         final event = events[index];
@@ -105,13 +102,6 @@ class AgendaDayPage extends ConsumerWidget {
           },
         );
       },
-    );
-  }
-
-  void _showCreateEventDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => CreateEventDialog(initialDate: selectedDate),
     );
   }
 

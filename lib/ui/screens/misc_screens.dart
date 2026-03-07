@@ -13,7 +13,7 @@ class SettingsScreen extends ConsumerWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text('Configurações', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+          const Text('Configurações', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
           const SizedBox(height: 20),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -37,9 +37,9 @@ class RelatoriosScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         // Removido const
-        title: Text(
+        title: const Text(
           'Relatórios & Performance',
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         ),
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -69,14 +69,14 @@ class AgendaScreen extends StatelessWidget {
                   ),
                   const SizedBox(width: 12),
                   // Removido const/style fixo
-                  Text('Agenda', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                  const Text('Agenda', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
                 ],
               ),
             ),
-            Expanded(
+            const Expanded(
               child: Center(
                 // Removido const/style fixo
-                child: Text('Agenda', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                child: Text('Agenda', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
               ),
             ),
           ],
@@ -91,6 +91,6 @@ class ClientesScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Removido const
-    return Center(child: Text('Clientes', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)));
+    return const Center(child: Text('Clientes', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)));
   }
 }

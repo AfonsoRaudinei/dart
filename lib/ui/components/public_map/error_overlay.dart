@@ -85,8 +85,8 @@ class PublicMapErrorOverlay extends StatelessWidget {
                     child: InkWell(
                       onTap: onRetry,
                       borderRadius: BorderRadius.circular(8),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
+                      child: const Padding(
+                        padding: EdgeInsets.symmetric(
                           horizontal: 16.0,
                           vertical: 12.0,
                         ),
@@ -135,7 +135,7 @@ class LocationPermissionDialog extends StatelessWidget {
               color: PremiumTokens.brandGreen.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
-            child: Icon(
+            child: const Icon(
               Icons.location_on,
               color: PremiumTokens.brandGreen,
               size: 20,
@@ -170,7 +170,7 @@ class LocationPermissionDialog extends StatelessWidget {
             ),
             child: Row(
               children: [
-                Icon(
+                const Icon(
                   Icons.info_outline,
                   size: 16,
                   color: PremiumTokens.textSecondaryLight,

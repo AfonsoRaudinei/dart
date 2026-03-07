@@ -108,7 +108,7 @@ class LocationButton extends ConsumerWidget {
         );
 
       case PublicLocationStatus.initial:
-        return Icon(
+        return const Icon(
           Icons.location_searching,
           color: PremiumTokens.textSecondaryLight,
           size: 24,

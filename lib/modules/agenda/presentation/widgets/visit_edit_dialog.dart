@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/entities/event.dart';
+import '../../domain/entities/visit.dart';
 import '../providers/agenda_provider.dart';
 import 'distance_warning_dialog.dart';
 
