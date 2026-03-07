@@ -561,6 +561,33 @@ class DrawingUtils {
     return true;
   }
 
+  static Set<int> findSelfIntersectingSegments(DrawingPolygon poly) {
+    final intersectingIndices = <int>{};
+    if (poly.coordinates.isEmpty) return intersectingIndices;
+    
+    final ring = poly.coordinates.first;
+    final n = ring.length - 1;
+    if (n < 3) return intersectingIndices;
+
+    for (int i = 0; i < n; i++) {
+      for (int j = i + 1; j < n; j++) {
+        if (j == i + 1) continue;
+        if (i == 0 && j == n - 1) continue;
+
+        final p1 = ring[i];
+        final p2 = ring[i + 1];
+        final q1 = ring[j];
+        final q2 = ring[j + 1];
+
+        if (_segmentsIntersect(p1, p2, q1, q2)) {
+          intersectingIndices.add(i);
+          intersectingIndices.add(j);
+        }
+      }
+    }
+    return intersectingIndices;
+  }
+
   static bool _hasSelfIntersection(DrawingPolygon poly) {
     // Check strict self-intersection of the outer ring
     if (poly.coordinates.isEmpty) return false;

@@ -320,6 +320,7 @@ class DrawingController extends ChangeNotifier {
     }
 
     _currentPoints.add(point);
+    _updateRealTimeIntersection();
     notifyListeners();
   }
 
@@ -459,6 +460,23 @@ class DrawingController extends ChangeNotifier {
   DrawingValidationResult _validationResult =
       const DrawingValidationResult.valid();
   DrawingValidationResult get validationResult => _validationResult;
+
+  bool _hasSelfIntersection = false;
+  bool get hasSelfIntersection => _hasSelfIntersection;
+
+  Set<int> _intersectingSegmentIndices = {};
+  Set<int> get intersectingSegmentIndices => _intersectingSegmentIndices;
+
+  void _updateRealTimeIntersection() {
+    DrawingGeometry? geom = liveGeometry;
+    if (geom is DrawingPolygon) {
+      _intersectingSegmentIndices = DrawingUtils.findSelfIntersectingSegments(geom);
+      _hasSelfIntersection = _intersectingSegmentIndices.isNotEmpty;
+    } else {
+      _intersectingSegmentIndices = {};
+      _hasSelfIntersection = false;
+    }
+  }
 
   void validateGeometry(DrawingGeometry? g, {bool forceFull = false}) {
     if (g == null) {
@@ -1205,6 +1223,7 @@ class DrawingController extends ChangeNotifier {
     if (updated == null) return;
 
     _editGeometry = updated;
+    _updateRealTimeIntersection();
     _throttledValidate();
     notifyListeners();
   }
@@ -1254,6 +1273,7 @@ class DrawingController extends ChangeNotifier {
     if (updated == null) return;
 
     _editGeometry = updated;
+    _updateRealTimeIntersection();
     validateGeometry(_editGeometry);
     notifyListeners();
   }
@@ -1279,6 +1299,7 @@ class DrawingController extends ChangeNotifier {
 
     onDragStart(); // salva estado para undo
     _editGeometry = result.geometry;
+    _updateRealTimeIntersection();
     validateGeometry(_editGeometry);
     notifyListeners();
   }
@@ -1306,6 +1327,11 @@ class DrawingController extends ChangeNotifier {
 
   /// Completa o desenho manual e entra em modo de revisão
   void completeDrawing() {
+    if (_hasSelfIntersection) {
+      _errorMessage = "Por favor, corrija as linhas que estão se cruzando antes de revisar.";
+      notifyListeners();
+      return;
+    }
     if (_stateMachine.currentState == DrawingState.drawing) {
       final success = _stateMachine.completeDrawing();
       if (success) {

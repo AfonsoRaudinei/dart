@@ -28,10 +28,12 @@ class DrawingLayerWidget extends StatefulWidget {
 class _DrawingLayerWidgetState extends State<DrawingLayerWidget> {
   // ⚡ CACHE: Evita reconstruir polígonos quando features não mudaram
   List<Polygon>? _cachedPolygons;
+  List<Polyline>? _cachedPolylines;
   List<Marker>? _cachedMarkers;
   List<DrawingFeature>? _lastFeatures;
   String? _lastSelectedId;
   DrawingGeometry? _lastLiveGeo;
+  Set<int>? _lastIntersectingIndices;
 
   @override
   Widget build(BuildContext context) {
@@ -41,19 +43,23 @@ class _DrawingLayerWidgetState extends State<DrawingLayerWidget> {
         final features = widget.controller.features;
         final selectedId = widget.controller.selectedFeature?.id;
         final liveGeo = widget.controller.liveGeometry;
+        final intersectingIndices = widget.controller.intersectingSegmentIndices;
 
         // ⚡ CACHE CHECK: Só reconstrói se algo mudou
         final needsRebuild =
             _lastFeatures != features ||
             _lastSelectedId != selectedId ||
-            _lastLiveGeo != liveGeo;
+            _lastLiveGeo != liveGeo ||
+            _lastIntersectingIndices != intersectingIndices;
 
         if (!needsRebuild &&
             _cachedPolygons != null &&
+            _cachedPolylines != null &&
             _cachedMarkers != null) {
           return Stack(
             children: [
               PolygonLayer(polygons: _cachedPolygons!),
+              PolylineLayer(polylines: _cachedPolylines!),
               if (_cachedMarkers!.isNotEmpty)
                 MarkerLayer(markers: _cachedMarkers!),
             ],
@@ -64,8 +70,10 @@ class _DrawingLayerWidgetState extends State<DrawingLayerWidget> {
         _lastFeatures = features;
         _lastSelectedId = selectedId;
         _lastLiveGeo = liveGeo;
+        _lastIntersectingIndices = Set.from(intersectingIndices);
 
         final polygons = <Polygon>[];
+        final polylines = <Polyline>[];
         final markers = <Marker>[];
 
         // 1. Renderiza features salvas
@@ -137,6 +145,18 @@ class _DrawingLayerWidgetState extends State<DrawingLayerWidget> {
             final point = outerRing[i];
             final isStart = i == 0;
             final size = isStart ? 18.0 : 14.0;
+            
+            // Desenhar linha de erro para segmentos que cruzam
+            if (intersectingIndices.contains(i)) {
+              final nextPoint = outerRing[i < outerRing.length - 1 ? i + 1 : 0];
+              polylines.add(
+                Polyline(
+                  points: [point, nextPoint],
+                  color: Colors.red,
+                  strokeWidth: 4,
+                )
+              );
+            }
 
             markers.add(
               Marker(
@@ -144,13 +164,15 @@ class _DrawingLayerWidgetState extends State<DrawingLayerWidget> {
                 width: size,
                 height: size,
                 child: GestureDetector(
-                  onTap: isStart ? widget.onDrawingComplete : null,
+                  onTap: (isStart && !widget.controller.hasSelfIntersection) 
+                      ? widget.onDrawingComplete 
+                      : null,
                   child: Container(
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: isStart && widget.controller.hasSelfIntersection ? Colors.red.withValues(alpha: 0.5) : Colors.white,
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: isStart ? Colors.green : Colors.black26,
+                        color: isStart ? (widget.controller.hasSelfIntersection ? Colors.red : Colors.green) : Colors.black26,
                         width: isStart ? 2 : 1,
                       ),
                       boxShadow: [
@@ -171,11 +193,13 @@ class _DrawingLayerWidgetState extends State<DrawingLayerWidget> {
 
         // ⚡ Salvar cache
         _cachedPolygons = polygons;
+        _cachedPolylines = polylines;
         _cachedMarkers = markers;
 
         return Stack(
           children: [
             PolygonLayer(polygons: polygons),
+            PolylineLayer(polylines: polylines),
             if (markers.isNotEmpty) MarkerLayer(markers: markers),
           ],
         );

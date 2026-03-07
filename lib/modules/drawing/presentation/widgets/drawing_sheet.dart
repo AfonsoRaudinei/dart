@@ -618,7 +618,7 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
               const SizedBox(width: 12),
               Expanded(
                 child: ElevatedButton(
-                  onPressed: () {
+                  onPressed: widget.controller.hasSelfIntersection ? null : () {
                     HapticFeedback.mediumImpact();
                     widget.controller.saveEdit();
                   },
