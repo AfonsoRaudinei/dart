@@ -133,7 +133,13 @@ class VisitController extends StateNotifier<AsyncValue<VisitSession?>> {
   }
 
   Future<void> endSession() async {
-    final currentSession = state.value;
+    // Bug fix: state.valueOrNull pode ser null se state for AsyncLoading/AsyncError
+    // (ex: após restart do app). Fallback para SQLite garante que a sessão ativa
+    // seja encontrada mesmo com estado em memória desatualizado.
+    VisitSession? currentSession = state.valueOrNull;
+    if (currentSession == null) {
+      currentSession = await _repository.getActiveSession();
+    }
     if (currentSession == null) return;
 
     state = const AsyncValue.loading();

@@ -198,7 +198,10 @@ class _VisitSheetState extends ConsumerState<VisitSheet> {
                           _selectedTalhao?.id,   // null quando não selecionado
                           _selectedActivity,     // sempre tem default 'Monitoramento'
                         );
-                        Navigator.pop(context); // Close sheet
+                        // NOTA: Navigator.pop removido daqui.
+                        // O parent (private_map_sheets.dart) é o único responsável
+                        // por fechar o modal após confirmar, evitando double-pop
+                        // que causava tela preta ao fechar o mapa junto.
                       }
                     : null,
                 style: ElevatedButton.styleFrom(

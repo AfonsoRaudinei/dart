@@ -373,46 +373,20 @@ extension _PrivateMapSheets on _PrivateMapScreenState {
           const SizedBox(height: 32),
           ElevatedButton(
             onPressed: () async {
-              final agendaState = widgetRef.read(agendaProvider);
-              final activeSession = agendaState.sessions
-                  .where((s) => s.endAtReal == null)
-                  .firstOrNull;
-              if (activeSession == null) {
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Nenhuma visita ativa encontrada.'),
-                    ),
-                  );
-                }
-                return;
-              }
-              final linkedEvent = agendaState.events
-                  .where((e) => e.visitSessionId == activeSession.id)
-                  .firstOrNull;
-              if (linkedEvent == null) {
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Evento vinculado não encontrado.'),
-                    ),
-                  );
-                }
-                return;
-              }
+              // ✅ FIX Causa A: ler sessão da mesma fonte que o card.
+              // visitControllerProvider.endSession() acessa state.value
+              // (SQLite offline-first) — sem depender de agendaProvider.
+              // Após encerrar: state = null → card desaparece reativamente.
               try {
-                if (linkedEvent.status == EventStatus.emAndamento) {
-                  await widgetRef
-                      .read(agendaProvider.notifier)
-                      .finalizeEvent(linkedEvent.id);
-                }
                 await widgetRef
-                    .read(agendaProvider.notifier)
-                    .completeEvent(linkedEvent.id);
+                    .read(visitControllerProvider.notifier)
+                    .endSession();
                 if (mounted) {
+                  HapticFeedback.mediumImpact();
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
                       content: Text('Visita encerrada com sucesso.'),
+                      backgroundColor: PremiumTokens.brandGreenDark,
                     ),
                   );
                   Navigator.of(context).pop();
