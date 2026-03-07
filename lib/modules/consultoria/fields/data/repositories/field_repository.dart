@@ -88,6 +88,9 @@ class FieldRepository {
       geometry: map['bordadura_geo'] != null
           ? jsonDecode(map['bordadura_geo'] as String)
           : null,
+      syncStatus: map['sync_status'] as int?,
+      perimeter: null, // Property not supported in DB schema
+      thumbnailPath: null, // Property not supported in DB schema
     );
   }
 

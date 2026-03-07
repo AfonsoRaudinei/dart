@@ -23,5 +23,11 @@ final mapFieldsProvider = FutureProvider.autoDispose<List<Talhao>>((ref) async {
   return repo.getFieldsByFarmId(farmId);
 });
 
+// Fields by Farm ID (Family)
+final farmFieldsProvider = FutureProvider.family.autoDispose<List<Talhao>, String>((ref, farmId) async {
+  final repo = ref.read(fieldRepositoryProvider);
+  return repo.getFieldsByFarmId(farmId);
+});
+
 // Selected Talhao ID on Map
 final selectedTalhaoIdProvider = StateProvider<String?>((ref) => null);

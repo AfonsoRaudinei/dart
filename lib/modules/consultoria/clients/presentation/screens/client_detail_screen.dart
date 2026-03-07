@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:soloforte_app/core/constants/layout_constants.dart';
 import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
@@ -7,6 +8,8 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:soloforte_app/core/router/app_routes.dart';
 
 import '../providers/clients_providers.dart';
+import '../providers/field_providers.dart';
+import '../../domain/agronomic_models.dart';
 import '../../domain/client.dart';
 import '../../domain/client_cultura.dart';
 import '../widgets/client_avatar_widget.dart';
@@ -86,9 +89,11 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen> {
   // ── MODO LEITURA ──────────────────────────────────────────────────
 
   Widget _buildModoLeitura(Client client, List<ClientCultura> culturas) {
-    return Column(
+    return Stack(
       children: [
-        SafeArea(
+        Column(
+          children: [
+            SafeArea(
           bottom: false,
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
@@ -301,14 +306,7 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen> {
                     ),
                   )
                 else
-                  ...client.farms.map(
-                    (farm) => ClientFarmItem(
-                      name: farm.name,
-                      area: '${farm.totalAreaHa} ha',
-                      onTap: () => context
-                          .go(AppRoutes.farmDetail(client.id, farm.id)),
-                    ),
-                  ),
+                  ...client.farms.map((farm) => _ClientFarmWithTalhoes(client: client, farm: farm)),
 
                 // Observações
                 if (client.observation != null &&
@@ -323,7 +321,45 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen> {
             ),
           ),
         ),
+          ],
+        ),
+        Positioned(
+          top: MediaQuery.of(context).padding.top + 8,
+          left: 12,
+          child: _buildBotaoVoltar(context),
+        ),
       ],
+    );
+  }
+
+  Widget _buildBotaoVoltar(BuildContext context) {
+    return GestureDetector(
+      onTap: () => context.go(AppRoutes.clients),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: Colors.white.withAlpha(230),
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withAlpha(20),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: const Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.arrow_back_ios, size: 16),
+            SizedBox(width: 4),
+            Text(
+              'Clientes',
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -368,4 +404,109 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen> {
     if (await canLaunchUrl(uri)) await launchUrl(uri);
   }
 }
+
+class _ClientFarmWithTalhoes extends ConsumerWidget {
+  final Client client;
+  final Farm farm;
+
+  const _ClientFarmWithTalhoes({required this.client, required this.farm});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final fieldsAsync = ref.watch(farmFieldsProvider(farm.id));
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ClientFarmItem(
+          name: farm.name,
+          area: '${farm.totalAreaHa} ha',
+          onTap: () => context.go(AppRoutes.farmDetail(client.id, farm.id)),
+        ),
+        fieldsAsync.when(
+          data: (fields) {
+            if (fields.isEmpty) return const SizedBox.shrink();
+            return Padding(
+              padding: const EdgeInsets.only(left: 16, bottom: 12),
+              child: Column(
+                children: fields.map((field) {
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.grey.shade200),
+                    ),
+                    child: Row(
+                      children: [
+                        // Thumbnail do polígono
+                        Container(
+                          width: 48,
+                          height: 48,
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade100,
+                            borderRadius: BorderRadius.circular(8),
+                            image: field.thumbnailPath != null
+                                ? DecorationImage(
+                                    image: FileImage(File(field.thumbnailPath!)),
+                                    fit: BoxFit.cover,
+                                  )
+                                : null,
+                          ),
+                          child: field.thumbnailPath == null
+                              ? Icon(Icons.terrain, color: Colors.grey.shade400)
+                              : null,
+                        ),
+                        const SizedBox(width: 12),
+                        // Dados principais
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                field.name,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                'Área: ${field.areaHa.toStringAsFixed(2)} ha • Perímetro: ${field.perimeter != null ? field.perimeter!.toStringAsFixed(2) : "0.00"} km',
+                                style: TextStyle(
+                                  color: Colors.grey.shade600,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        // Sync Status
+                        if (field.syncStatus != 0)
+                          const Padding(
+                            padding: EdgeInsets.only(left: 8.0),
+                            child: Tooltip(
+                              message: 'Sincronização Pendente',
+                              child: Icon(Icons.cloud_off, color: Colors.orange, size: 20),
+                            ),
+                          ),
+                      ],
+                    ),
+                  );
+                }).toList(),
+              ),
+            );
+          },
+          loading: () => const Padding(
+            padding: EdgeInsets.only(bottom: 12.0),
+            child: Center(child: CircularProgressIndicator()),
+          ),
+          error: (err, stack) => const SizedBox.shrink(),
+        ),
+      ],
+    );
+  }
+}
+
 
