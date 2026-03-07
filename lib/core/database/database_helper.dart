@@ -23,7 +23,7 @@ class DatabaseHelper {
 
     final db = await openDatabase(
       path,
-      version: 18,
+      version: 19,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -117,6 +117,9 @@ class DatabaseHelper {
           break;
         case 18:
           await _migrateToV18(db);
+          break;
+        case 19:
+          await _migrateToV19(db);
           break;
       }
     }
@@ -696,5 +699,34 @@ class DatabaseHelper {
   Future<void> close() async {
     final db = await instance.database;
     db.close();
+  }
+
+  // ════════════════════════════════════════════════════════════════════
+
+  /// V19 — Cache local de imagens NDVI (módulo ndvi/).
+  ///
+  /// Cria tabela [ndvi_cache] para armazenar a última imagem NDVI por talhão
+  /// (area_id + date), com validade de 24h.
+  /// Idempotente: CREATE TABLE IF NOT EXISTS.
+  Future<void> _migrateToV19(Database db) async {
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS ndvi_cache (
+        id           TEXT PRIMARY KEY,
+        area_id      TEXT NOT NULL,
+        date         TEXT NOT NULL,
+        source       TEXT NOT NULL,
+        image_path   TEXT NOT NULL,
+        cloud_coverage REAL,
+        available_dates TEXT NOT NULL,
+        cached_at    TEXT NOT NULL,
+        UNIQUE(area_id, date)
+      )
+    ''');
+
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_ndvi_cache_area ON ndvi_cache(area_id)',
+    );
+
+    AppLogger.debug('V19: tabela ndvi_cache criada', tag: 'DB.Migration');
   }
 }
