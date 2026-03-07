@@ -61,3 +61,59 @@ Todo prompt técnico para agentes deve conter:
 > "Seguir rigorosamente `docs/arquitetura-navegacao.md`. Se houver conflito, o documento prevalece."
 
 Sem isso, o prompt é inválido.
+
+---
+
+## REGRA: Plataformas Autorizadas — Mobile Only
+
+**Status:** ATIVO — OBRIGATÓRIO  
+**Origem:** Decisão arquitetural Mar/2026  
+
+### SoloForte é um projeto exclusivamente mobile (Android + iOS).
+
+#### ✅ Pastas autorizadas para criação/edição de arquivos:
+
+| Pasta | Finalidade |
+|---|---|
+| `lib/` | Código Dart do aplicativo |
+| `test/` | Testes automatizados |
+| `assets/` | Recursos estáticos (imagens, fontes, json) |
+| `android/` | Código nativo Android (apenas quando necessário) |
+| `ios/` | Código nativo iOS (apenas quando necessário) |
+| `macos/` | Apenas se relacionado ao ambiente de build iOS/macOS |
+| `docs/` | Documentação arquitetural (ADRs, baselines) |
+| `prompt/` | Prompts gerados para execução pelo agente |
+| `tool/` | Scripts de CI/enforcement (`arch_check.sh`, etc.) |
+| `supabase/` | Edge Functions e migrations de backend |
+| `scripts/` | Scripts de build e automação |
+| `.github/` | Workflows de CI/CD |
+
+#### ❌ Pastas PROIBIDAS — o agente NUNCA deve criar arquivos aqui:
+
+| Pasta | Motivo |
+|---|---|
+| `web/` | Plataforma não utilizada — projeto mobile only |
+| `linux/` | Plataforma não utilizada — projeto mobile only |
+| `windows/` | Plataforma não utilizada — projeto mobile only |
+
+#### ❌ Arquivos PROIBIDOS na raiz do projeto:
+
+| Tipo | Exemplos proibidos |
+|---|---|
+| Arquivos `.dart` soltos | `test_debug.dart`, `update_*.dart` |
+| Arquivos `.log` | `flutter_01.log`, `drawing_tests.log` |
+| Scripts não documentados | `run_update.sh` sem ADR referenciado |
+
+#### Regra de ouro:
+
+> Se o arquivo não pertence a nenhuma pasta autorizada acima,  
+> **o agente não deve criá-lo sem aprovação explícita.**
+
+#### Consequência de violação:
+
+Qualquer arquivo criado fora das pastas autorizadas deve ser:
+1. Deletado imediatamente
+2. Registrado como violação no PR
+3. Referenciado nesta regra no review
+
+---
