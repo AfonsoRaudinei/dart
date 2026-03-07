@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import '../../../../core/config/map_config.dart';
 
 /// Widget base do FlutterMap.
 /// Não observa providers — recebe tudo por parâmetros.
@@ -33,7 +34,7 @@ class MapCanvas extends StatelessWidget {
         initialCenter: const LatLng(-23.5505, -46.6333),
         initialZoom: 14.0,
         minZoom: 4.0,
-        maxZoom: 19.0,
+        maxZoom: MapConfig.maxZoom,
         onTap: onTap,
         onLongPress: onLongPress,
         onPositionChanged: onPositionChanged,
