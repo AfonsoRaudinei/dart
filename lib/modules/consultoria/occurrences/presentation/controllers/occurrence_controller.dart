@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:convert';
+import 'package:soloforte_app/core/contracts/i_visit_session_lookup_provider.dart';
 import '../../domain/occurrence.dart';
 import '../../data/occurrence_repository.dart';
-import '../../../../../modules/visitas/presentation/controllers/visit_controller.dart';
 import 'package:uuid/uuid.dart';
 
 final occurrenceRepositoryProvider = Provider<OccurrenceRepository>((ref) {
@@ -43,9 +43,10 @@ class OccurrenceController {
     String? notasCategoriasJson,
     String? fotosCategoriasJson,
   }) async {
-    final visitState = ref.read(visitControllerProvider);
-    final String? sessionId = (visitState.value?.status == 'active')
-        ? visitState.value!.id
+    final visitLookup = ref.read(visitSessionLookupProvider);
+    final activeSession = await visitLookup.getActiveSession();
+    final String? sessionId = activeSession?.isActive == true
+        ? activeSession!.id
         : null;
 
     String? geometry;

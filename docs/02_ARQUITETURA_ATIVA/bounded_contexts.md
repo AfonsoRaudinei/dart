@@ -39,6 +39,12 @@
 **Regra:** NÃO conhece nenhum módulo de domínio  
 **Exceção autorizada:** `app_router.dart` — ponto de composição de rotas (único arquivo de `core/` autorizado a importar `modules/`)  
 
+### `core/contracts/`
+**Natureza:** Zona neutra de contratos inter-módulos  
+**Responsabilidade:** DTOs e interfaces de fronteira para evitar import cross-module em presentation  
+**Regra:** NÃO importa `modules/`  
+**Contratos ativos:** `IClientLookup` (ADR-015), `IVisitSessionLookup` (ADR-019)  
+
 ---
 
 ### `map`
@@ -109,8 +115,11 @@
 | `drawing` | `consultoria` | ❌ PROIBIDO |
 | `agenda` | `consultoria` | ❌ PROIBIDO |
 | `consultoria` | `drawing` | ❌ PROIBIDO |
+| `consultoria` | `visitas` (presentation) | ❌ PROIBIDO |
 | `operacao` | `consultoria` | ✅ PERMITIDO (dependência semântica válida) |
 | `map` | `agenda` / `drawing` / `consultoria` / `operacao` | ✅ PERMITIDO |
+| `consultoria` | `core/contracts` | ✅ PERMITIDO |
+| `visitas` | `core/contracts` | ✅ PERMITIDO |
 | `planos/`    | qualquer módulo de domínio                          | ❌ PROIBIDO                              |
 | `marketing/` | `planos/`                                           | ✅ PERMITIDO — verificação de plano      |
 | `map/`       | `planos/`                                           | ✅ PERMITIDO — badge SideMenu            |

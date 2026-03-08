@@ -4,10 +4,9 @@ import '../../data/repositories/visit_repository.dart';
 import '../../../consultoria/occurrences/data/occurrence_repository.dart';
 import '../../../consultoria/reports/data/sqlite_report_repository.dart';
 import '../../../consultoria/reports/domain/report_model.dart';
-import '../../../consultoria/occurrences/presentation/controllers/occurrence_controller.dart';
-import '../../../consultoria/agenda/data/repositories/agenda_repository.dart';
-import '../../../consultoria/agenda/presentation/controllers/agenda_controller.dart';
-import '../../../consultoria/agenda/domain/models/agenda_event.dart';
+import '../../../agenda/data/repositories/agenda_repository.dart';
+import '../../../agenda/domain/enums/event_status.dart';
+import '../../../agenda/presentation/providers/agenda_provider.dart';
 import 'package:uuid/uuid.dart';
 
 final visitRepositoryProvider = Provider<VisitRepository>((ref) {
@@ -18,11 +17,15 @@ final sqliteReportRepositoryProvider = Provider<SQLiteReportRepository>((ref) {
   return SQLiteReportRepository();
 });
 
+final visitOccurrenceRepositoryProvider = Provider<OccurrenceRepository>((ref) {
+  return OccurrenceRepository();
+});
+
 final visitControllerProvider =
     StateNotifierProvider<VisitController, AsyncValue<VisitSession?>>((ref) {
       return VisitController(
         ref.watch(visitRepositoryProvider),
-        ref.watch(occurrenceRepositoryProvider),
+        ref.watch(visitOccurrenceRepositoryProvider),
         ref.watch(sqliteReportRepositoryProvider),
         ref.watch(agendaRepositoryProvider),
       );
@@ -103,12 +106,12 @@ class VisitController extends StateNotifier<AsyncValue<VisitSession?>> {
 
       // Agenda Linkage
       if (agendaEventId != null) {
-        final event = await _agendaRepository.getEvent(agendaEventId);
+        final event = await _agendaRepository.getEventById(agendaEventId);
         if (event != null) {
           await _agendaRepository.saveEvent(
             event.copyWith(
               visitSessionId: newSession.id,
-              status: AgendaStatus.in_progress,
+              status: EventStatus.emAndamento,
             ),
           );
         }
@@ -191,7 +194,7 @@ ${occurrences.map((o) => '- [${o.type}] ${o.description}').join('\n')}
       );
       if (linkedEvent != null) {
         await _agendaRepository.saveEvent(
-          linkedEvent.copyWith(status: AgendaStatus.realized, realizedAt: now),
+          linkedEvent.copyWith(status: EventStatus.concluido),
         );
       }
 
