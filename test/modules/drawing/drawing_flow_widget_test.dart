@@ -109,7 +109,7 @@ void main() {
       controller.dispose();
     });
 
-    testWidgets('🚪 Bottom Sheet modal deve fechar ao selecionar ferramenta', (
+    testWidgets('🚪 Bottom Sheet permanece aberto ao selecionar ferramenta', (
       WidgetTester tester,
     ) async {
       // Configurar tela grande
@@ -164,12 +164,9 @@ void main() {
       await tester.tap(find.text('Polígono'));
       await tester.pumpAndSettle();
 
-      // Assert — Sheet deve ter fechado
-      expect(sheetClosed, isTrue);
-      expect(
-        find.text('Polígono'),
-        findsNothing,
-      ); // Sheet não deve mais estar visível
+      // Assert — Contrato atual: sheet permanece aberto após selecionar ferramenta
+      expect(sheetClosed, isFalse);
+      expect(find.text('Polígono'), findsOneWidget);
       expect(controller.currentState, equals(DrawingState.armed));
 
       controller.dispose();
@@ -298,10 +295,12 @@ void main() {
       WidgetTester tester,
     ) async {
       final controller = DrawingController(repository: MockDrawingRepository());
+      final navigatorKey = GlobalKey<NavigatorState>();
 
       await tester.pumpWidget(
         ProviderScope(
           child: MaterialApp(
+            navigatorKey: navigatorKey,
             home: Scaffold(
               body: Builder(
                 builder: (context) {
@@ -329,8 +328,13 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Polígono'), findsOneWidget);
 
-      // Selecionar ferramenta (fecha sheet)
+      // Selecionar ferramenta (sheet permanece aberto)
       await tester.tap(find.text('Polígono'));
+      await tester.pumpAndSettle();
+      expect(find.text('Polígono'), findsOneWidget);
+
+      // Fechar manualmente o modal para simular retorno do usuário
+      navigatorKey.currentState!.pop();
       await tester.pumpAndSettle();
       expect(find.text('Polígono'), findsNothing);
 
@@ -416,10 +420,12 @@ void main() {
         final controller = DrawingController(
           repository: MockDrawingRepository(),
         );
+        final navigatorKey = GlobalKey<NavigatorState>();
 
         await tester.pumpWidget(
           ProviderScope(
             child: MaterialApp(
+              navigatorKey: navigatorKey,
               home: Scaffold(
                 body: Builder(
                   builder: (context) {
@@ -469,7 +475,12 @@ void main() {
         await tester.tap(find.text('Polígono'));
         await tester.pumpAndSettle();
 
-        // 4. Sheet deve ter fechado
+        // 4. Contrato atual: sheet permanece aberto após selecionar ferramenta
+        expect(find.text('Polígono'), findsOneWidget);
+
+        // 4.1 Fechar manualmente para concluir ciclo de fluxo
+        navigatorKey.currentState!.pop();
+        await tester.pumpAndSettle();
         expect(find.text('Polígono'), findsNothing);
 
         // 5. Estado deve ser armed

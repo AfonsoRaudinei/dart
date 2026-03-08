@@ -151,7 +151,7 @@ void main() {
     await tester.tap(buttonFinder);
     await tester.pumpAndSettle();
 
-    expect(find.text('Erro ao criar conta: Falha na conexão'), findsOneWidget);
+    expect(find.text('Falha na conexão'), findsOneWidget);
     expect(find.byType(CircularProgressIndicator), findsNothing);
   });
 

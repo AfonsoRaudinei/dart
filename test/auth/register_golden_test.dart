@@ -5,7 +5,6 @@ import 'package:golden_toolkit/golden_toolkit.dart';
 import 'package:soloforte_app/modules/auth/models/register_dto.dart';
 import 'package:soloforte_app/modules/auth/pages/register_page.dart';
 import 'package:soloforte_app/modules/auth/services/auth_service.dart';
-import 'package:soloforte_app/ui/theme/soloforte_theme.dart';
 
 // Fake AuthService for controlling state
 class FakeAuthService extends AuthService {
@@ -38,7 +37,7 @@ void main() {
     return ProviderScope(
       overrides: [authServiceProvider.overrideWith(() => fakeAuthService)],
       child: MaterialApp(
-        theme: SoloForteTheme.lightTheme,
+        theme: ThemeData(useMaterial3: true),
         home: const RegisterPage(),
         onGenerateRoute: (settings) {
           return null;

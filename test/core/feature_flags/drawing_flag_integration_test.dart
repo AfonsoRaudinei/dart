@@ -34,7 +34,8 @@ void main() {
   group('🚦 Drawing Flag Integration', () {
     late FeatureFlagResolver resolver;
 
-    setUp(() {
+    setUp(() async {
+      SharedPreferences.setMockInitialValues({});
       resolver = const FeatureFlagResolver();
     });
 
@@ -230,6 +231,10 @@ void main() {
   });
 
   group('🔧 FeatureFlagService Integration', () {
+    setUp(() async {
+      SharedPreferences.setMockInitialValues({});
+    });
+
     test('Service deve retornar flag do backend simulado', () async {
       // Arrange — Mock backend response
       Future<Map<String, dynamic>> mockBackend() async {

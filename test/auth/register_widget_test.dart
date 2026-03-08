@@ -31,27 +31,36 @@ void main() {
     });
 
     testWidgets('Should toggle password visibility', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(390, 844));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
       await tester.pumpWidget(
         const ProviderScope(child: MaterialApp(home: RegisterPage())),
       );
 
       // Default obscure text
-      final passwordField = find.widgetWithText(TextFormField, 'Senha');
-      final textField = find.descendant(
+      final passwordField = find.byKey(const Key('register_password_field'));
+      await tester.ensureVisible(passwordField);
+      await tester.pumpAndSettle();
+      final passwordEditable = find.descendant(
         of: passwordField,
-        matching: find.byType(TextField),
+        matching: find.byType(EditableText),
       );
-      expect(tester.widget<TextField>(textField).obscureText, isTrue);
+      expect(tester.widget<EditableText>(passwordEditable).obscureText, isTrue);
 
       // Click toggle button
       final toggleButton = find.descendant(
         of: passwordField,
         matching: find.byType(IconButton),
       );
+      await tester.ensureVisible(toggleButton);
       await tester.tap(toggleButton);
       await tester.pump();
 
-      expect(tester.widget<TextField>(textField).obscureText, isFalse);
+      expect(
+        tester.widget<EditableText>(passwordEditable).obscureText,
+        isFalse,
+      );
     });
 
     testWidgets('Should indicate weak password', (tester) async {
