@@ -43,7 +43,7 @@
 **Natureza:** Zona neutra de contratos inter-módulos  
 **Responsabilidade:** DTOs e interfaces de fronteira para evitar import cross-module em presentation  
 **Regra:** NÃO importa `modules/`  
-**Contratos ativos:** `IClientLookup` (ADR-015), `IVisitSessionLookup` (ADR-019)  
+**Contratos ativos:** `IClientLookup` (ADR-015), `IVisitSessionLookup` (ADR-020), `IVisitClientLookup` (ADR-020)  
 
 ---
 
@@ -116,6 +116,7 @@
 | `agenda` | `consultoria` | ❌ PROIBIDO |
 | `consultoria` | `drawing` | ❌ PROIBIDO |
 | `consultoria` | `visitas` (presentation) | ❌ PROIBIDO |
+| `visitas` | `consultoria` (presentation) | ❌ PROIBIDO |
 | `operacao` | `consultoria` | ✅ PERMITIDO (dependência semântica válida) |
 | `map` | `agenda` / `drawing` / `consultoria` / `operacao` | ✅ PERMITIDO |
 | `consultoria` | `core/contracts` | ✅ PERMITIDO |

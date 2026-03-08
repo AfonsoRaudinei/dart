@@ -147,6 +147,16 @@ check_lateral \
   "consultoria/ não importa operacao/ (usa VisitSessionSnapshot — ADR-009)"
 
 check_lateral \
+  "lib/modules/consultoria/" \
+  "modules/visitas/" \
+  "consultoria/ não importa visitas/ (usa contratos em core/contracts — ADR-020)"
+
+check_lateral \
+  "lib/modules/visitas/" \
+  "modules/consultoria/" \
+  "visitas/ não importa consultoria/ (usa contratos em core/contracts — ADR-020)"
+
+check_lateral \
   "lib/modules/marketing/" \
   "\(modules/consultoria/\|modules/operacao/\|modules/agenda/\|modules/drawing/\)" \
   "marketing/ não importa módulos core de negócio (consultoria, operacao, agenda, drawing)"

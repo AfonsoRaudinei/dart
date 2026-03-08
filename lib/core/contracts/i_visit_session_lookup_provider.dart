@@ -6,6 +6,6 @@ import 'i_visit_session_lookup.dart';
 final visitSessionLookupProvider = Provider<IVisitSessionLookup>((ref) {
   throw UnimplementedError(
     'visitSessionLookupProvider: registrar VisitSessionLookupAdapter no '
-    'ProviderScope (veja main.dart e ADR-019)',
+    'ProviderScope (veja main.dart e ADR-020)',
   );
 });

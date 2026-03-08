@@ -1,13 +1,29 @@
 import 'package:flutter/material.dart';
 import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:soloforte_app/modules/consultoria/clients/domain/client.dart';
-import 'package:soloforte_app/modules/consultoria/clients/domain/agronomic_models.dart';
-import 'package:soloforte_app/modules/consultoria/clients/presentation/providers/clients_providers.dart';
+import 'package:soloforte_app/core/contracts/i_visit_client_lookup.dart';
+import 'package:soloforte_app/core/contracts/i_visit_client_lookup_provider.dart';
+
+final _visitClientsProvider =
+    FutureProvider.autoDispose<List<VisitClientSummary>>(
+      (ref) => ref.watch(visitClientLookupProvider).listActiveClients(),
+    );
+
+final _visitFarmsProvider = FutureProvider.family
+    .autoDispose<List<VisitFarmSummary>, String>((ref, clientId) {
+      return ref.watch(visitClientLookupProvider).listFarmsByClient(clientId);
+    });
+
+final _visitFieldsProvider = FutureProvider.family
+    .autoDispose<List<VisitFieldSummary>, String>((ref, farmId) {
+      return ref.watch(visitClientLookupProvider).listFieldsByFarm(farmId);
+    });
 
 class VisitSheet extends ConsumerStatefulWidget {
   // Bug 2: areaId e activityType são opcionais — apenas produtor é obrigatório.
-  final Function(String clientId, String? areaId, String? activityType) onConfirm;
+  final Function(String clientId, String? areaId, String? activityType)
+  onConfirm;
+
   /// ID do cliente pré-selecionado via query param modo=visita (P5).
   /// Quando informado, o dropdown de Produtor já inicia selecionado.
   final String? preSelectedClienteId;
@@ -26,9 +42,9 @@ class VisitSheet extends ConsumerStatefulWidget {
 }
 
 class _VisitSheetState extends ConsumerState<VisitSheet> {
-  Client? _selectedClient;
-  Farm? _selectedFarm;
-  Talhao? _selectedTalhao;
+  VisitClientSummary? _selectedClient;
+  VisitFarmSummary? _selectedFarm;
+  VisitFieldSummary? _selectedTalhao;
   String _selectedActivity = 'Monitoramento';
 
   final List<String> _activities = [
@@ -41,7 +57,13 @@ class _VisitSheetState extends ConsumerState<VisitSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final clientsAsync = ref.watch(clientsListProvider);
+    final clientsAsync = ref.watch(_visitClientsProvider);
+    final farmsAsync = _selectedClient != null
+        ? ref.watch(_visitFarmsProvider(_selectedClient!.id))
+        : const AsyncData<List<VisitFarmSummary>>([]);
+    final fieldsAsync = _selectedFarm != null
+        ? ref.watch(_visitFieldsProvider(_selectedFarm!.id))
+        : const AsyncData<List<VisitFieldSummary>>([]);
 
     // P5: Pré-selecionar cliente quando aberto via /map?modo=visita&clienteId=X
     if (widget.preSelectedClienteId != null && _selectedClient == null) {
@@ -100,7 +122,7 @@ class _VisitSheetState extends ConsumerState<VisitSheet> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   // 1. Produtor
-                  _buildDropdown<Client>(
+                  _buildDropdown<VisitClientSummary>(
                     label: 'Produtor',
                     value: _selectedClient,
                     items: clientsAsync.valueOrNull ?? [],
@@ -117,10 +139,10 @@ class _VisitSheetState extends ConsumerState<VisitSheet> {
                   const SizedBox(height: 16),
 
                   // 2. Fazenda
-                  _buildDropdown<Farm>(
+                  _buildDropdown<VisitFarmSummary>(
                     label: 'Fazenda',
                     value: _selectedFarm,
-                    items: _selectedClient?.farms ?? [],
+                    items: farmsAsync.valueOrNull ?? [],
                     itemLabel: (f) => f.name,
                     enabled: _selectedClient != null,
                     onChanged: (f) {
@@ -130,20 +152,22 @@ class _VisitSheetState extends ConsumerState<VisitSheet> {
                       });
                     },
                     emptyMessage: 'Nenhuma fazenda encontrada',
+                    isLoading: farmsAsync.isLoading,
                   ),
                   const SizedBox(height: 16),
 
                   // 3. Talhão (Área)
-                  _buildDropdown<Talhao>(
+                  _buildDropdown<VisitFieldSummary>(
                     label: 'Área / Talhão',
                     value: _selectedTalhao,
-                    items: _selectedFarm?.fields ?? [],
+                    items: fieldsAsync.valueOrNull ?? [],
                     itemLabel: (t) => t.name,
                     enabled: _selectedFarm != null,
                     onChanged: (t) {
                       setState(() => _selectedTalhao = t);
                     },
                     emptyMessage: 'Nenhum talhão encontrado',
+                    isLoading: fieldsAsync.isLoading,
                   ),
                   const SizedBox(height: 16),
 
@@ -162,7 +186,9 @@ class _VisitSheetState extends ConsumerState<VisitSheet> {
                     ),
                     items: _activities.map((String value) {
                       return DropdownMenuItem<String>(
-                          value: value, child: Text(value));
+                        value: value,
+                        child: Text(value),
+                      );
                     }).toList(),
                     onChanged: (newValue) {
                       setState(() {
@@ -195,8 +221,8 @@ class _VisitSheetState extends ConsumerState<VisitSheet> {
                     ? () {
                         widget.onConfirm(
                           _selectedClient!.id,
-                          _selectedTalhao?.id,   // null quando não selecionado
-                          _selectedActivity,     // sempre tem default 'Monitoramento'
+                          _selectedTalhao?.id, // null quando não selecionado
+                          _selectedActivity, // sempre tem default 'Monitoramento'
                         );
                         // NOTA: Navigator.pop removido daqui.
                         // O parent (private_map_sheets.dart) é o único responsável

@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'core/config/app_config.dart';
 import 'core/contracts/i_client_lookup_provider.dart';
+import 'core/contracts/i_visit_client_lookup_provider.dart';
 import 'core/contracts/i_visit_session_lookup_provider.dart';
 import 'core/infra/preferences_service.dart';
 import 'core/router/app_router.dart';
@@ -13,6 +14,8 @@ import 'core/services/sync_orchestrator.dart';
 import 'app/sync_registration.dart';
 import 'modules/consultoria/clients/data/clients_repository.dart';
 import 'modules/consultoria/clients/infra/client_lookup_adapter.dart';
+import 'modules/consultoria/clients/infra/visit_client_lookup_adapter.dart';
+import 'modules/consultoria/fields/data/repositories/field_repository.dart';
 import 'modules/visitas/data/repositories/visit_repository.dart';
 import 'modules/visitas/infra/visit_session_lookup_adapter.dart';
 import 'modules/map/presentation/providers/visit_completion_observer.dart';
@@ -69,7 +72,11 @@ Future<void> main() async {
             clientLookupProvider.overrideWithValue(
               ClientLookupAdapter(ClientsRepository()),
             ),
-            // ADR-019: implementação concreta de IVisitSessionLookup
+            // ADR-020: implementação concreta de IVisitClientLookup
+            visitClientLookupProvider.overrideWithValue(
+              VisitClientLookupAdapter(ClientsRepository(), FieldRepository()),
+            ),
+            // ADR-020: implementação concreta de IVisitSessionLookup
             visitSessionLookupProvider.overrideWithValue(
               VisitSessionLookupAdapter(VisitRepository()),
             ),
