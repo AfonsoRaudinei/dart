@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'core/config/app_config.dart';
 import 'core/contracts/i_client_lookup_provider.dart';
+import 'core/contracts/i_farm_lookup_provider.dart';
 import 'core/contracts/i_visit_client_lookup_provider.dart';
 import 'core/contracts/i_visit_session_lookup_provider.dart';
 import 'core/infra/preferences_service.dart';
@@ -14,6 +15,7 @@ import 'core/services/sync_orchestrator.dart';
 import 'app/sync_registration.dart';
 import 'modules/consultoria/clients/data/clients_repository.dart';
 import 'modules/consultoria/clients/infra/client_lookup_adapter.dart';
+import 'modules/consultoria/clients/infra/farm_lookup_adapter.dart';
 import 'modules/consultoria/clients/infra/visit_client_lookup_adapter.dart';
 import 'modules/consultoria/fields/data/repositories/field_repository.dart';
 import 'modules/visitas/data/repositories/visit_repository.dart';
@@ -60,6 +62,7 @@ Future<void> main() async {
       // PreferencesService é o único ponto de acesso — sem getInstance() no app.
       final prefs = await SharedPreferences.getInstance();
       final preferencesService = PreferencesService(prefs);
+      final clientsRepository = ClientsRepository();
 
       runApp(
         ProviderScope(
@@ -70,11 +73,15 @@ Future<void> main() async {
             ),
             // ADR-015: implementação concreta de IClientLookup
             clientLookupProvider.overrideWithValue(
-              ClientLookupAdapter(ClientsRepository()),
+              ClientLookupAdapter(clientsRepository),
+            ),
+            // Contrato de fazendas para módulos desacoplados (drawing/).
+            iFarmLookupProvider.overrideWithValue(
+              FarmLookupAdapter(clientsRepository),
             ),
             // ADR-020: implementação concreta de IVisitClientLookup
             visitClientLookupProvider.overrideWithValue(
-              VisitClientLookupAdapter(ClientsRepository(), FieldRepository()),
+              VisitClientLookupAdapter(clientsRepository, FieldRepository()),
             ),
             // ADR-020: implementação concreta de IVisitSessionLookup
             visitSessionLookupProvider.overrideWithValue(
