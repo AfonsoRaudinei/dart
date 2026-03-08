@@ -60,6 +60,10 @@ class FakeAgendaRepository implements IAgendaRepository {
   Future<Event?> getEventById(String id) async => _events[id];
 
   @override
+  Future<Event?> getEventBySessionId(String sessionId) async =>
+      _events.values.where((e) => e.visitSessionId == sessionId).firstOrNull;
+
+  @override
   Future<List<Event>> getAllEvents() async => _events.values.toList();
 
   @override

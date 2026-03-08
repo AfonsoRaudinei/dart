@@ -17,6 +17,10 @@ abstract class IAgendaRepository {
 
   Future<Event?> getEventById(String id);
 
+  /// Busca um evento pelo ID da sessão de visita vinculada.
+  /// Retorna null se não encontrado — nunca lança exception.
+  Future<Event?> getEventBySessionId(String sessionId);
+
   Future<List<Event>> getAllEvents();
 
   Future<List<Event>> getEventsByDateRange(DateTime start, DateTime end);

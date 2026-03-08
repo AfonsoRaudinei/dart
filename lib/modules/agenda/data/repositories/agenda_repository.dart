@@ -52,6 +52,20 @@ class AgendaRepository {
     return _eventFromMap(results.first);
   }
 
+  /// Busca um evento pelo visit_session_id vinculado
+  @override
+  Future<Event?> getEventBySessionId(String sessionId) async {
+    final db = await _dbHelper.database;
+    final results = await db.query(
+      'agenda_events',
+      where: 'visit_session_id = ?',
+      whereArgs: [sessionId],
+      limit: 1,
+    );
+    if (results.isEmpty) return null;
+    return _eventFromMap(results.first);
+  }
+
   /// Busca todos os eventos
   Future<List<Event>> getAllEvents() async {
     final db = await _dbHelper.database;
