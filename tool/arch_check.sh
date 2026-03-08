@@ -119,20 +119,63 @@ check_lateral() {
   fi
 }
 
+# Função auxiliar para verificar acoplamento lateral via imports relativos.
+check_lateral_relative() {
+  local FROM_DIR="$1"
+  local TO_SEGMENT="$2"
+  local LABEL="$3"
+
+  if [ ! -d "$FROM_DIR" ]; then
+    info "$LABEL — diretório origem não existe (sem violação)"
+    return
+  fi
+
+  local RESULT
+  RESULT=$(grep -rnE "import.*['\"][^'\"]*\\.\\./[^'\"]*${TO_SEGMENT}/" "$FROM_DIR" --include="*.dart" \
+    | grep -v "^\s*//" \
+    || true)
+
+  if [ -n "$RESULT" ]; then
+    fail "$LABEL:"
+    echo ""
+    echo "$RESULT" | while IFS= read -r line; do
+      echo -e "      ${RED}→${NC} $line"
+    done
+    echo ""
+  else
+    pass "$LABEL"
+  fi
+}
+
 check_lateral \
   "lib/modules/drawing/" \
   "modules/consultoria/" \
   "drawing/ não importa consultoria/"
+
+check_lateral_relative \
+  "lib/modules/drawing/" \
+  "consultoria" \
+  "drawing/ não importa consultoria/ via caminho relativo"
 
 check_lateral \
   "lib/modules/agenda/" \
   "modules/consultoria/" \
   "agenda/ não importa consultoria/"
 
+check_lateral_relative \
+  "lib/modules/agenda/" \
+  "consultoria" \
+  "agenda/ não importa consultoria/ via caminho relativo"
+
 check_lateral \
   "lib/modules/consultoria/" \
   "modules/drawing/" \
   "consultoria/ não importa drawing/"
+
+check_lateral_relative \
+  "lib/modules/consultoria/" \
+  "drawing" \
+  "consultoria/ não importa drawing/ via caminho relativo"
 
 # =============================================================================
 # REGRA 2 (ADR-009) — consultoria/ não pode importar diretamente de operacao/
