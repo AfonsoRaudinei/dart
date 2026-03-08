@@ -20,6 +20,7 @@ class GeofenceController {
   final NotificationService _notificationService = NotificationService();
   Timer? _checkTimer;
   Timer? _durationTimer; // Timer for 4h alert
+  bool _isDisposed = false;
 
   GeofenceController(this._ref) {
     _init();
@@ -43,12 +44,22 @@ class GeofenceController {
     });
   }
 
-  void dispose() {
+  void _cancelAllTimers() {
     _checkTimer?.cancel();
+    _checkTimer = null;
     _durationTimer?.cancel();
+    _durationTimer = null;
+  }
+
+  void dispose() {
+    if (_isDisposed) return;
+    _isDisposed = true;
+    _cancelAllTimers();
   }
 
   Future<void> _checkGeofence() async {
+    if (_isDisposed) return;
+
     final visitState = _ref.read(visitControllerProvider);
     final fieldsAsync = _ref.read(mapFieldsProvider);
 
@@ -186,6 +197,8 @@ class GeofenceController {
   }
 
   Future<void> _checkDuration() async {
+    if (_isDisposed) return;
+
     final visitState = _ref.read(visitControllerProvider);
     final activeSession = visitState.value;
 
@@ -205,7 +218,11 @@ class GeofenceController {
   }
 }
 
-// Provider to keep it alive
-final geofenceControllerProvider = Provider<GeofenceController>((ref) {
-  return GeofenceController(ref);
+// AutoDispose com teardown explícito dos timers para evitar vazamento fora da tela.
+final geofenceControllerProvider = Provider.autoDispose<GeofenceController>((
+  ref,
+) {
+  final controller = GeofenceController(ref);
+  ref.onDispose(controller.dispose);
+  return controller;
 });

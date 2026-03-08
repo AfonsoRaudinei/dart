@@ -97,7 +97,6 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
       if (!mounted) return;
 
       ref.read(locationStateProvider.notifier).init();
-      ref.read(geofenceControllerProvider); // Start Geofence Monitoring
 
       // Bootstrap silencioso: garantir perfil completo.
       // Fire-and-forget — sem await, sem loading, sem rebuild.
@@ -434,6 +433,9 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
     // 🛡 LIFECYCLE: Cachear referência do DrawingController para uso
     // seguro no dispose() — ref é invalidado antes de dispose() ser chamado.
     _drawingController = ref.read(drawingControllerProvider);
+
+    // Mantém GeofenceController ativo somente durante o ciclo de vida desta tela.
+    ref.watch(geofenceControllerProvider);
 
     // Apenas providers necessários para lógica de tap e polígonos
     final mapFields = ref.watch(mapFieldsProvider);
