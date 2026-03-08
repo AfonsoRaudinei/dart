@@ -64,15 +64,16 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
       tag: 'MapSheet',
     );
 
-    // 🔧 FIX: Apenas inicializar estados de UI (animação)
-    _currentDetent = SheetDetent.compact;
+    // Draw abre já expandido (equivalente ao initialChildSize do modal)
+    // para evitar estado "colado" no rodapé no primeiro frame.
+    _currentDetent = SheetDetent.medium;
 
     _heightController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 300),
     );
 
-    final initialHeight = 90.0; // Sempre começa compacto
+    final initialHeight = 350.0;
     _heightAnimation = AlwaysStoppedAnimation(initialHeight);
   }
 
@@ -197,6 +198,9 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
     final screenHeight = mediaQuery.size.height;
     final safeAreaBottom = mediaQuery.padding.bottom;
     final keyboardHeight = mediaQuery.viewInsets.bottom;
+    final availableHeight = screenHeight - keyboardHeight - safeAreaBottom;
+    final expandedHeight = (screenHeight * 0.75).clamp(350.0, availableHeight);
+    final mediumHeight = (screenHeight * 0.52).clamp(320.0, expandedHeight - 24);
 
     switch (detent) {
       case SheetDetent.closed:
@@ -204,26 +208,14 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
       case SheetDetent.compact:
         return 90;
       case SheetDetent.medium:
-        return 350;
+        return mediumHeight;
       case SheetDetent.expanded:
-        // 75% da tela - safe area - teclado
-        final maxHeight = screenHeight * 0.75;
-        final availableHeight = screenHeight - keyboardHeight - safeAreaBottom;
-        return maxHeight.clamp(350, availableHeight);
+        return expandedHeight;
     }
   }
 
   double _getSheetHeight() {
-    switch (_currentDetent) {
-      case SheetDetent.closed:
-        return 0;
-      case SheetDetent.compact:
-        return 90; // Só tab bar (iOS style)
-      case SheetDetent.medium:
-        return 350; // Tab bar + conteúdo médio
-      case SheetDetent.expanded:
-        return MediaQuery.of(context).size.height * 0.75; // 75% da tela
-    }
+    return _getDetentHeight(_currentDetent);
   }
 
   Widget _buildTabContent() {

@@ -182,6 +182,8 @@ extension _PrivateMapSheets on _PrivateMapScreenState {
   // ── _openSheetAsModal ─────────────────────────────────────────────────────
 
   // 🔧 MODAL: Abre os tipos publications/occurrences/checkIn/layers como modal nativo
+  // Observação: o fluxo de Drawing NÃO usa showModalBottomSheet.
+  // Drawing é renderizado via MapBottomSheet no Stack (MapSheetType.draw).
   void _openSheetAsModal(BuildContext context, MapSheetState state) {
     if (_isModalOpen) return;
     if (!mounted) return;
@@ -447,26 +449,34 @@ extension _PrivateMapSheets on _PrivateMapScreenState {
   void _toggleDrawMode() {
     HapticFeedback.mediumImpact();
     final controller = ref.read(drawingControllerProvider);
+    // Reuso intencional do mapSheetStateProvider como estado de abertura
+    // do DrawingSheet (toggle do ícone de desenho no mapa).
+    // Não há drawingSheetOpenProvider separado.
+    final currentSheet = ref.read(mapSheetStateProvider);
 
-    if (controller.currentState == DrawingState.idle) {
-      // 🔧 FIX: Usar MapBottomSheet unificado ao invés de modal separado
-      _setSheetState(
-        const MapSheetState(type: MapSheetType.draw),
-        'ToggleDrawMode: Opening draw sheet',
-      );
-    } else {
-      // 🎯 Se já está em algum modo (drawing, armed), cancela a operação
+    // Toggle explícito: se draw já está aberto, fecha.
+    if (currentSheet?.type == MapSheetType.draw) {
+      final wasDrawing = controller.currentState != DrawingState.idle;
+      // Mantém comportamento anterior: cancelar operação ativa ao fechar.
       controller.cancelOperation();
-      // Fechar o sheet também
-      _setSheetState(null, 'ToggleDrawMode: Cancel and close');
+      _setSheetState(null, 'ToggleDrawMode: Closing draw sheet');
 
-      ScaffoldMessenger.of(context).hideCurrentSnackBar();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Desenho cancelado'),
-          duration: Duration(seconds: 2),
-        ),
-      );
+      if (wasDrawing) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Desenho cancelado'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+      return;
     }
+
+    // Abrir draw quando estiver fechado.
+    _setSheetState(
+      const MapSheetState(type: MapSheetType.draw),
+      'ToggleDrawMode: Opening draw sheet',
+    );
   }
 }

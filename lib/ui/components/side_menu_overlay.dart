@@ -1,21 +1,5 @@
-/*
-════════════════════════════════════════════════════════════════════
-SIDE MENU OVERLAY — MENU LATERAL COMO OVERLAY
-════════════════════════════════════════════════════════════════════
-
-Implementação do SideMenu como overlay controlado manualmente.
-NÃO depende de Scaffold Drawer/EndDrawer.
-
-REGRAS:
-- Abre/fecha via estado global (sideMenuOpenProvider)
-- Sempre fica abaixo do SmartButton no z-index
-- Animação suave de entrada/saída
-- Tap fora fecha o menu
-════════════════════════════════════════════════════════════════════
-*/
-
 import 'package:flutter/material.dart';
-import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
+import 'dart:math' as math;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -32,20 +16,17 @@ class SideMenuOverlay extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Watch with specialized provider if available, or just use boolean
-    // Assuming sideMenuOpenProvider is a StateProvider<bool> based on context
-    // If it's not imported or defined, we might need to fix imports.
-    // Based on previous file content, it was imported from 'package:soloforte_app/core/state/side_menu_state.dart'
-
     final isOpen = ref.watch(sideMenuOpenProvider);
 
-    // Early return with empty container to avoid layout issues
     if (!isOpen) return const SizedBox.shrink();
+
+    final drawerWidth = math.min(
+      MediaQuery.of(context).size.width * 0.80,
+      320.0,
+    );
 
     return Stack(
       children: [
-        // Backdrop with Fade Transition
-        // We can use a simplified approach since we are inside a provider rebuild
         Positioned.fill(
           child: GestureDetector(
             onTap: () {
@@ -63,8 +44,6 @@ class SideMenuOverlay extends ConsumerWidget {
             ),
           ),
         ),
-
-        // Menu Content
         Positioned(
           top: 0,
           bottom: 0,
@@ -75,174 +54,82 @@ class SideMenuOverlay extends ConsumerWidget {
             curve: Curves.easeOutCubic,
             builder: (context, value, child) {
               return Transform.translate(
-                offset: Offset((1 - value) * 320, 0), // Slide from right
+                offset: Offset((1 - value) * drawerWidth, 0),
                 child: child,
               );
             },
-            child: Container(
-              width: 320,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(30),
-                  bottomLeft: Radius.circular(30),
+            child: Drawer(
+              width: drawerWidth,
+              backgroundColor: Theme.of(context).colorScheme.surface,
+              shape: const RoundedRectangleBorder(
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(16),
+                  bottomLeft: Radius.circular(16),
                 ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.15),
-                    blurRadius: 30,
-                    offset: const Offset(-8, 0),
-                  ),
-                ],
               ),
-              child: SafeArea(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // Header Section
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
+              child: Column(
+                children: [
+                  _buildHeader(context),
+                  Expanded(
+                    child: SingleChildScrollView(
                       child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          Row(
-                            children: [
-                              Container(
-                                width: 48,
-                                height: 48,
-                                decoration: BoxDecoration(
-                                  color: PremiumTokens.brandGreen.withValues(
-                                    alpha: 0.1,
-                                  ),
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                    color: PremiumTokens.brandGreen,
-                                    width: 1.5,
-                                  ),
-                                ),
-                                child: const Center(
-                                  child: Icon(
-                                    Icons.person_outline_rounded,
-                                    color: PremiumTokens.brandGreen,
-                                    size: 24,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 16),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Consultor',
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .labelSmall!
-                                        .copyWith(
-                                          color:
-                                              PremiumTokens.textSecondaryLight,
-                                        )
-                                        .copyWith(
-                                          color:
-                                              PremiumTokens.textSecondaryLight,
-                                        ),
-                                  ),
-                                  Text(
-                                    'João Silva',
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .titleMedium!
-                                        .copyWith(fontWeight: FontWeight.w600)
-                                        .copyWith(fontSize: 18),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                    const Divider(
-                      height: 1,
-                      color: PremiumTokens.hairlineLight,
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Menu Items
-                    Expanded(
-                      child: ListView(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        children: [
-                          _MenuItem(
-                            icon: Icons.calendar_today_rounded,
+                          _buildSectionLabel(context, "PRINCIPAL"),
+                          const _MenuItem(
+                            icon: Icons.calendar_today_outlined,
                             label: 'Agenda',
                             subtitle: 'Próximas visitas',
-                            onTap: () => _closeAndNavigate(
-                              context,
-                              ref,
-                              AppRoutes.agenda,
-                            ),
+                            route: AppRoutes.agenda,
                           ),
-                          _MenuItem(
+                          const _MenuItem(
                             icon: Icons.people_outline_rounded,
                             label: 'Clientes',
                             subtitle: 'Gerenciar carteira',
-                            onTap: () => _closeAndNavigate(
-                              context,
-                              ref,
-                              AppRoutes.clients,
-                            ),
+                            route: AppRoutes.clients,
                           ),
-                          _MenuItem(
+                          const _MenuItem(
                             icon: Icons.analytics_outlined,
                             label: 'Relatórios',
                             subtitle: 'Análises e KPIs',
-                            onTap: () => _closeAndNavigate(
-                              context,
-                              ref,
-                              AppRoutes.reports,
-                            ),
+                            route: AppRoutes.reports,
                           ),
-                          _MenuItem(
+                          const _MenuItem(
                             icon: Icons.chat_bubble_outline_rounded,
                             label: 'Feedback',
-                            onTap: () => _closeAndNavigate(
-                              context,
-                              ref,
-                              AppRoutes.feedback,
-                            ),
+                            route: AppRoutes.feedback,
                           ),
-                          // ADR-012 — Módulo planos/
-                          const Padding(
-                            padding: EdgeInsets.symmetric(vertical: 8),
-                            child: Divider(color: PremiumTokens.hairlineLight),
+
+                          _buildSectionLabel(context, "FERRAMENTAS"),
+                          _buildStubItem(
+                            context,
+                            'Clima',
+                            Icons.wb_sunny_outlined,
+                            ref,
                           ),
-                          _MenuPlanoBadgeItem(
-                            onTap: () => _closeAndNavigate(
-                              context,
-                              ref,
-                              AppRoutes.meuPlano,
-                            ),
+                          _buildStubItem(
+                            context,
+                            'Calculadora',
+                            Icons.calculate_outlined,
+                            ref,
                           ),
+
+                          _buildSectionLabel(context, "CONTA"),
+                          const _MenuPlanoBadgeItem(),
                           Consumer(
                             builder: (context, ref, _) {
                               final planoAsync = ref.watch(planoAtivoProvider);
                               return planoAsync.when(
                                 data: (plano) {
-                                  if (plano == null) {
-                                    return const SizedBox.shrink();
-                                  }
-                                  if (plano.plano == PlanoTipo.ouro) {
+                                  if (plano == null ||
+                                      plano.plano == PlanoTipo.ouro) {
                                     return const SizedBox.shrink();
                                   }
                                   return _MenuItem(
                                     icon: Icons.group_add_outlined,
                                     label: 'Indicações',
                                     subtitle: buildIndicacaoSubtitle(plano),
-                                    onTap: () => _closeAndNavigate(
-                                      context,
-                                      ref,
-                                      AppRoutes.planosIndicacoes,
-                                    ),
+                                    route: AppRoutes.planosIndicacoes,
                                   );
                                 },
                                 loading: () => const SizedBox.shrink(),
@@ -250,47 +137,17 @@ class SideMenuOverlay extends ConsumerWidget {
                               );
                             },
                           ),
-                          const Padding(
-                            padding: EdgeInsets.symmetric(vertical: 16),
-                            child: Divider(color: PremiumTokens.hairlineLight),
-                          ),
-                          _MenuItem(
+                          const _MenuItem(
                             icon: Icons.settings_outlined,
                             label: 'Configurações',
-                            onTap: () => _closeAndNavigate(
-                              context,
-                              ref,
-                              AppRoutes.settings,
-                            ),
-                          ),
-                          _MenuItem(
-                            icon: Icons.logout_rounded,
-                            label: 'Sair',
-                            isDestructive: true,
-                            onTap: () {
-                              ref.read(sideMenuOpenProvider.notifier).state =
-                                  false;
-                              // Implement logout logic here later
-                              context.go(AppRoutes.login);
-                            },
+                            route: AppRoutes.settings,
                           ),
                         ],
                       ),
                     ),
-
-                    // Footer
-                    Padding(
-                      padding: const EdgeInsets.all(24.0),
-                      child: Text(
-                        'SoloForte v1.0.0',
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.labelSmall!
-                            .copyWith(color: PremiumTokens.textSecondaryLight)
-                            .copyWith(color: PremiumTokens.textTertiaryLight),
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                  _buildFooter(context),
+                ],
               ),
             ),
           ),
@@ -299,108 +156,138 @@ class SideMenuOverlay extends ConsumerWidget {
     );
   }
 
-  void _closeAndNavigate(BuildContext context, WidgetRef ref, String route) {
-    ref.read(sideMenuOpenProvider.notifier).state = false;
-    Future.delayed(const Duration(milliseconds: 250), () {
-      if (context.mounted) {
-        context.go(route);
-      }
-    });
+  Widget _buildHeader(BuildContext context) {
+    return Container(
+      color: Theme.of(context).colorScheme.primary,
+      padding: EdgeInsets.only(
+        top: MediaQuery.of(context).padding.top + 16,
+        left: 20,
+        right: 20,
+        bottom: 24,
+      ),
+      child: Row(
+        children: [
+          CircleAvatar(
+            backgroundColor: Theme.of(
+              context,
+            ).colorScheme.onPrimary.withValues(alpha: 0.2),
+            child: Text(
+              "J",
+              style: TextStyle(color: Theme.of(context).colorScheme.onPrimary),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                "Consultor",
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onPrimary,
+                ),
+              ),
+              Text(
+                "João Silva",
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.onPrimary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSectionLabel(BuildContext context, String label) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+      child: Text(
+        label,
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+          color: Theme.of(context).colorScheme.outline,
+          letterSpacing: 1.2,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStubItem(
+    BuildContext context,
+    String label,
+    IconData icon,
+    WidgetRef ref,
+  ) {
+    return Opacity(
+      opacity: 0.45,
+      child: ListTile(
+        leading: Icon(icon),
+        title: Text(label),
+        subtitle: const Text("Em breve"),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: () {
+          ref.read(sideMenuOpenProvider.notifier).state = false;
+        },
+      ),
+    );
+  }
+
+  Widget _buildFooter(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Text(
+        "SoloForte v1.0.0",
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+          color: Theme.of(context).colorScheme.outlineVariant,
+        ),
+        textAlign: TextAlign.center,
+      ),
+    );
   }
 }
 
-class _MenuItem extends StatelessWidget {
+class _MenuItem extends ConsumerWidget {
   final IconData icon;
   final String label;
   final String? subtitle;
-  final VoidCallback onTap;
-  final bool isDestructive;
+  final String route;
 
   const _MenuItem({
     required this.icon,
     required this.label,
     this.subtitle,
-    required this.onTap,
-    this.isDestructive = false,
+    required this.route,
   });
 
-  @override
-  Widget build(BuildContext context) {
-    final color = isDestructive
-        ? const Color(0xFFFF3B30)
-        : PremiumTokens.textPrimaryLight;
+  void _closeAndNavigate(BuildContext context, WidgetRef ref) {
+    // Captura o router ANTES de fechar o menu.
+    // Quando sideMenuOpenProvider → false, o SideMenuOverlay retorna
+    // SizedBox.shrink() e desmonta este widget imediatamente.
+    // Com Future.delayed + context.mounted, context.mounted == false
+    // após o desmonte e context.go() nunca executa.
+    // Solução: capturar GoRouter.of(context) enquanto o context ainda
+    // está válido, depois disparar no próximo frame via postFrameCallback.
+    final router = GoRouter.of(context);
+    ref.read(sideMenuOpenProvider.notifier).state = false;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      router.go(route);
+    });
+  }
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(12),
-          splashColor: isDestructive
-              ? const Color(0xFFFF3B30).withValues(alpha: 0.1)
-              : PremiumTokens.brandGreen.withValues(alpha: 0.1),
-          highlightColor: isDestructive
-              ? const Color(0xFFFF3B30).withValues(alpha: 0.05)
-              : PremiumTokens.brandGreen.withValues(alpha: 0.05),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: isDestructive
-                        ? const Color(0xFFFFEBEB)
-                        : PremiumTokens.surfaceLight,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Icon(
-                    icon,
-                    color: isDestructive
-                        ? const Color(0xFFFF3B30)
-                        : PremiumTokens.brandGreen,
-                    size: 20,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        label,
-                        style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: color,
-                          fontSize: 15,
-                        ),
-                      ),
-                      if (subtitle != null) ...[
-                        const SizedBox(height: 2),
-                        Text(
-                          subtitle!,
-                          style: Theme.of(context).textTheme.labelSmall!
-                              .copyWith(color: PremiumTokens.textSecondaryLight)
-                              .copyWith(
-                                color: PremiumTokens.textSecondaryLight,
-                                fontSize: 12,
-                              ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-                const Icon(
-                  Icons.chevron_right_rounded,
-                  color: PremiumTokens.textTertiaryLight,
-                  size: 20,
-                ),
-              ],
-            ),
-          ),
-        ),
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return ListTile(
+      leading: Icon(icon, color: Theme.of(context).colorScheme.primary),
+      title: Text(label),
+      subtitle: subtitle != null
+          ? Text(subtitle!, style: Theme.of(context).textTheme.bodySmall)
+          : null,
+      trailing: Icon(
+        Icons.chevron_right,
+        color: Theme.of(context).colorScheme.outline,
       ),
+      onTap: () => _closeAndNavigate(context, ref),
     );
   }
 }
@@ -409,11 +296,10 @@ class _MenuItem extends StatelessWidget {
 // ADR-012 — Funções e widgets auxiliares para planos/
 // ─────────────────────────────────────────────────────────────
 
-/// Subtítulo do item 'Indicações' no menu: '3/5 para Prata'
 String buildIndicacaoSubtitle(UserPlan plano) {
   switch (plano.plano) {
     case PlanoTipo.bronze:
-      return '? /5 para Prata'; // indicacoesValidadas vem do ReferralCode
+      return '? /5 para Prata';
     case PlanoTipo.prata:
       return '? /10 para Ouro';
     case PlanoTipo.ouro:
@@ -421,34 +307,87 @@ String buildIndicacaoSubtitle(UserPlan plano) {
   }
 }
 
-/// Item 'Meu Plano' no SideMenu — badge dinâmico via planoAtivoProvider.
+/// Item "Meu Plano" no SideMenu com estados diferenciados:
+/// - loading: texto "Carregando..."
+/// - null: "Sem plano · Assinar" (usuário free — não é erro)
+/// - plano ativo: label + dias restantes
+/// - erro de rede: "Sem conexão" com ícone wifi_off + retry ao tocar
+/// - erro genérico: "Não foi possível carregar" + retry ao tocar
 class _MenuPlanoBadgeItem extends ConsumerWidget {
-  final VoidCallback onTap;
-
-  const _MenuPlanoBadgeItem({required this.onTap});
+  const _MenuPlanoBadgeItem();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final planoAsync = ref.watch(planoAtivoProvider);
 
-    final subtitle = planoAsync.when(
-      data: (plano) {
-        if (plano == null) return 'Sem plano · Publicar cases';
-        if (plano.expirado) return 'Plano expirado · Renovar';
-        if (plano.expiraEmBreve) {
-          return '⚠️ Expira em ${plano.diasRestantes} dia(s)';
-        }
-        return '${plano.plano.label} · ${plano.diasRestantes} dias restantes';
-      },
-      loading: () => 'Carregando...',
-      error: (_, __) => 'Erro ao carregar plano',
+    return planoAsync.when(
+      loading: () => _buildLoading(context),
+      data: (plano) => _buildData(context, plano),
+      error: (e, _) => _buildError(context, ref, e),
     );
+  }
+
+  Widget _buildLoading(BuildContext context) {
+    return ListTile(
+      leading: Icon(
+        Icons.workspace_premium_rounded,
+        color: Theme.of(context).colorScheme.outline,
+      ),
+      title: const Text('Meu Plano'),
+      subtitle: Text(
+        'Carregando...',
+        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+          color: Theme.of(context).colorScheme.outline,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildData(BuildContext context, UserPlan? plano) {
+    final String subtitle;
+    if (plano == null) {
+      subtitle = 'Sem plano · Assinar';
+    } else if (plano.expirado) {
+      subtitle = 'Plano expirado · Renovar';
+    } else if (plano.expiraEmBreve) {
+      subtitle = '⚠️ Expira em ${plano.diasRestantes} dia(s)';
+    } else {
+      subtitle = '${plano.plano.label} · ${plano.diasRestantes} dias restantes';
+    }
 
     return _MenuItem(
       icon: Icons.workspace_premium_rounded,
       label: 'Meu Plano',
       subtitle: subtitle,
-      onTap: onTap,
+      route: AppRoutes.meuPlano,
+    );
+  }
+
+  Widget _buildError(BuildContext context, WidgetRef ref, Object e) {
+    // Verificação de erro de rede sem dart:io (web-safe)
+    final eStr = e.toString().toLowerCase();
+    final isNetwork =
+        eStr.contains('socketexception') ||
+        eStr.contains('failed host lookup') ||
+        eStr.contains('network is unreachable') ||
+        eStr.contains('connection refused') ||
+        eStr.contains('no address associated') ||
+        eStr.contains('networkrequestfailed');
+
+    return ListTile(
+      leading: Icon(
+        isNetwork ? Icons.wifi_off_outlined : Icons.error_outline,
+        color: Theme.of(context).colorScheme.error,
+      ),
+      title: const Text('Meu Plano'),
+      subtitle: Text(
+        isNetwork ? 'Sem conexão' : 'Não foi possível carregar',
+        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+          color: Theme.of(context).colorScheme.error,
+        ),
+      ),
+      trailing: Icon(Icons.refresh, color: Theme.of(context).colorScheme.error),
+      onTap: () => ref.invalidate(planoAtivoProvider), // retry
     );
   }
 }

@@ -24,6 +24,10 @@ enum InitialViewportState {
 ///
 /// null = sheet fechado.
 /// autoDispose garante reset ao sair da tela, evitando estado residual.
+/// Controla também a abertura/fechamento do DrawingSheet
+/// (toggle do ícone de desenho no mapa).
+/// Documentado em: PROMPT_04 / verificação pós-execução.
+/// Reuso intencional no lugar de um drawingSheetOpenProvider dedicado.
 final mapSheetStateProvider = StateProvider.autoDispose<MapSheetState?>(
   (ref) => null,
 );
