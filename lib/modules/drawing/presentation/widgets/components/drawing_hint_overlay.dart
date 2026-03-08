@@ -35,15 +35,14 @@ class DrawingHintOverlay extends StatelessWidget {
         }
 
         return Positioned(
-          top: MediaQuery.of(context).padding.top + 16,
+          top: MediaQuery.of(context).viewPadding.top + 16,
           left: 16,
           right: 16,
-          child: SafeArea(
-            child: Material(
-              elevation: 8,
-              borderRadius: BorderRadius.circular(16),
-              color: Colors.white,
-              child: Container(
+          child: Material(
+            elevation: 8,
+            borderRadius: BorderRadius.circular(16),
+            color: Colors.white,
+            child: Container(
                 padding: const EdgeInsets.all(16),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -118,7 +117,6 @@ class DrawingHintOverlay extends StatelessWidget {
                     ],
                   ],
                 ),
-              ),
             ),
           ),
         );

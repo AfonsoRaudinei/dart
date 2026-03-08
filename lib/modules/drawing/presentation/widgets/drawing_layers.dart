@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import '../../domain/drawing_state.dart';
 import '../../domain/models/drawing_models.dart';
 import '../../domain/models/drawing_visual_style.dart';
 import '../controllers/drawing_controller.dart';
@@ -43,7 +44,8 @@ class _DrawingLayerWidgetState extends State<DrawingLayerWidget> {
         final features = widget.controller.features;
         final selectedId = widget.controller.selectedFeature?.id;
         final liveGeo = widget.controller.liveGeometry;
-        final intersectingIndices = widget.controller.intersectingSegmentIndices;
+        final intersectingIndices =
+            widget.controller.intersectingSegmentIndices;
 
         // ⚡ CACHE CHECK: Só reconstrói se algo mudou
         final needsRebuild =
@@ -124,70 +126,92 @@ class _DrawingLayerWidgetState extends State<DrawingLayerWidget> {
           }
         }
 
-        // 2. Renderiza sketch manual (desenho em progresso)
+        // 2. Renderiza sketch em progresso (manual ou GPS Walk)
         if (liveGeo is DrawingPolygon && liveGeo.coordinates.isNotEmpty) {
           final outerRing = liveGeo.coordinates.first
               .map((c) => LatLng(c[1], c[0]))
               .toList();
 
+          // GPS Walk usa estilo vermelho; desenho manual usa branco
+          final isGpsWalk =
+              widget.controller.currentState == DrawingState.gpsTracking;
+          final isImportPreview =
+              widget.controller.currentState == DrawingState.importPreview ||
+              widget.controller.interactionMode ==
+                  DrawingInteraction.importPreview;
+
           polygons.add(
             Polygon(
               points: outerRing,
-              color: Colors.white.withValues(alpha: 0.2), // Mais claro
-              borderColor: Colors.white, // Alto contraste
-              borderStrokeWidth: 3, // Mais visível
-              pattern: const StrokePattern.dotted(), // Estilo "em construção"
+              color: isGpsWalk
+                  ? Colors.red.withValues(alpha: 0.18)
+                  : Colors.white.withValues(alpha: 0.2),
+              borderColor: isGpsWalk ? Colors.red : Colors.white,
+              borderStrokeWidth: isGpsWalk ? 2.0 : 3,
+              pattern: isGpsWalk
+                  ? const StrokePattern.solid()
+                  : const StrokePattern.dotted(),
             ),
           );
 
-          // Renderizar vértices durante o desenho (feedback visual imediato)
-          for (int i = 0; i < outerRing.length; i++) {
-            final point = outerRing[i];
-            final isStart = i == 0;
-            final size = isStart ? 18.0 : 14.0;
-            
-            // Desenhar linha de erro para segmentos que cruzam
-            if (intersectingIndices.contains(i)) {
-              final nextPoint = outerRing[i < outerRing.length - 1 ? i + 1 : 0];
-              polylines.add(
-                Polyline(
-                  points: [point, nextPoint],
-                  color: Colors.red,
-                  strokeWidth: 4,
-                )
-              );
-            }
+          // Renderizar vértices apenas no desenho manual/GPS.
+          // Em importPreview exibimos somente o polígono para evitar "pontos soltos".
+          if (!isImportPreview) {
+            for (int i = 0; i < outerRing.length; i++) {
+              final point = outerRing[i];
+              final isStart = i == 0;
+              final size = isStart ? 18.0 : 14.0;
 
-            markers.add(
-              Marker(
-                point: point,
-                width: size,
-                height: size,
-                child: GestureDetector(
-                  onTap: (isStart && !widget.controller.hasSelfIntersection) 
-                      ? widget.onDrawingComplete 
-                      : null,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: isStart && widget.controller.hasSelfIntersection ? Colors.red.withValues(alpha: 0.5) : Colors.white,
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: isStart ? (widget.controller.hasSelfIntersection ? Colors.red : Colors.green) : Colors.black26,
-                        width: isStart ? 2 : 1,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.3),
-                          blurRadius: 2,
-                          offset: const Offset(0, 1),
+              // Desenhar linha de erro para segmentos que cruzam
+              if (intersectingIndices.contains(i)) {
+                final nextPoint =
+                    outerRing[i < outerRing.length - 1 ? i + 1 : 0];
+                polylines.add(
+                  Polyline(
+                    points: [point, nextPoint],
+                    color: Colors.red,
+                    strokeWidth: 4,
+                  ),
+                );
+              }
+
+              markers.add(
+                Marker(
+                  point: point,
+                  width: size,
+                  height: size,
+                  child: GestureDetector(
+                    onTap: (isStart && !widget.controller.hasSelfIntersection)
+                        ? widget.onDrawingComplete
+                        : null,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: isStart && widget.controller.hasSelfIntersection
+                            ? Colors.red.withValues(alpha: 0.5)
+                            : Colors.white,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: isStart
+                              ? (widget.controller.hasSelfIntersection
+                                    ? Colors.red
+                                    : Colors.green)
+                              : Colors.black26,
+                          width: isStart ? 2 : 1,
                         ),
-                      ],
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.3),
+                            blurRadius: 2,
+                            offset: const Offset(0, 1),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
+                  alignment: Alignment.center,
                 ),
-                alignment: Alignment.center,
-              ),
-            );
+              );
+            }
           }
         }
 

@@ -4,15 +4,20 @@ import 'package:intl/intl.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../controllers/drawing_controller.dart';
 import '../../domain/models/drawing_models.dart';
+import '../../domain/models/gps_walk_session.dart';
 import '../../domain/drawing_state.dart';
 import '../../domain/repositories/i_clients_repository.dart';
 import '../providers/drawing_client_provider.dart';
+import '../providers/gps_walk_providers.dart';
 import 'components/drawing_tool_selector.dart';
 import 'components/drawing_actions_bar.dart';
-import '../../../../core/utils/app_logger.dart';
-import 'components/drawing_hint_overlay.dart';
 import '../../../../ui/theme/premium/design_tokens.dart';
+import 'gps_walk_controls_overlay.dart';
 
+// Responsabilidade: container/shell do sheet de desenho
+// (layout, estado e ciclo de vida; não concentra os itens de ferramenta).
+// Os itens de ferramenta ficam em:
+// lib/modules/drawing/presentation/widgets/components/drawing_tool_selector.dart
 class DrawingSheet extends ConsumerStatefulWidget {
   final DrawingController controller;
 
@@ -25,7 +30,6 @@ class DrawingSheet extends ConsumerStatefulWidget {
 class _DrawingSheetState extends ConsumerState<DrawingSheet> {
   // Local state for visual selection only, as per ticket RT-DRAW-02
   String? _selectedToolKey;
-  OverlayEntry? _tooltipOverlay;
 
   // 🆕 ESTADO LOCAL PARA REVISÃO COMPLETA
   final _formKey = GlobalKey<FormState>();
@@ -43,12 +47,7 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
   @override
   void initState() {
     super.initState();
-    // Rebuild overlay quando controller muda de estado de desenho
-    widget.controller.addListener(_updateTooltip);
-    // Initial show? No, wait for layout or first build.
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _showTooltip();
-
       // Auto-load clients via DrawingClientNotifier (ADR-019)
       if (_isConsultant) {
         ref.read(drawingClientProvider.notifier).loadClients();
@@ -63,8 +62,6 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
 
   @override
   void dispose() {
-    widget.controller.removeListener(_updateTooltip);
-    _removeTooltip();
     _nomeController.dispose();
     _descricaoController.dispose();
     super.dispose();
@@ -93,6 +90,23 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
       return;
     }
 
+    // GPS Walk Mode — tratamento especial via GpsWalkController (não via selectTool)
+    if (key == 'gps') {
+      final bool isActive = _selectedToolKey == 'gps';
+      if (isActive) {
+        // Toggle OFF: cancela sessão GPS Walk ativa
+        ref.read(gpsWalkProvider.notifier).cancel();
+        setState(() => _selectedToolKey = null);
+      } else {
+        // Toggle ON: ativa GPS Walk em estado idle (NÃO inicia GPS stream ainda)
+        setState(() => _selectedToolKey = 'gps');
+        ref.read(gpsWalkProvider.notifier).activate();
+        // Registra listener para sincronizar métricas quando gpsVertices muda
+        _setupGpsVerticesListener();
+      }
+      return;
+    }
+
     // Toggle: se já está selecionado, desativa
     final bool shouldActivate = _selectedToolKey != key;
 
@@ -105,42 +119,18 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
       widget.controller.selectTool(key);
       // 🔧 FIX-DRAW-FLOW-01: Ativar modo de desenho sem fechar bottom sheet
       // O MapBottomSheet permanece aberto para o usuário ver ferramentas ativas
-      _removeTooltip();
     } else {
       widget.controller.selectTool('none'); // Desativa ferramenta
     }
   }
 
-  void _showTooltip() {
-    if (_tooltipOverlay != null) return;
-
-    final overlay = Overlay.of(context);
-    // 🆕 REFATORADO: Usar DrawingHintOverlay component
-    _tooltipOverlay = OverlayEntry(
-      builder: (context) => DrawingHintOverlay(controller: widget.controller),
-    );
-
-    overlay.insert(_tooltipOverlay!);
-  }
-
-  void _updateTooltip() {
-    // Determine if tooltip should be visible logic?
-    // Always visible if drawing mode active?
-    // Actually the widget builder will re-read controller state if it listens?
-    // _TooltipWidget needs to listen to controller too or be rebuilt.
-    // Since it's in Overlay, it's outside this tree scope partially.
-    // It should receive the controller.
-    _tooltipOverlay?.markNeedsBuild();
-  }
-
-  void _removeTooltip() {
-    try {
-      _tooltipOverlay?.remove();
-    } catch (e) {
-      AppLogger.debug('Erro ao remover tooltip: $e', tag: 'DrawingSheet');
-    } finally {
-      _tooltipOverlay = null;
-    }
+  /// Registra listener para sincronizar pontos GPS → GpsWalkController.
+  ///
+  /// Chamado uma vez ao ativar GPS Walk. O listener atualiza métricas
+  /// no GpsWalkController sempre que novos vértices GPS são coletados.
+  void _setupGpsVerticesListener() {
+    // A sincronização ocorre no build() via ListenableBuilder.
+    // Este método existe apenas para compatibilidade semântica.
   }
 
   /*
@@ -155,9 +145,20 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
       _syncPreSelectedClient(next);
     });
 
+    // ── GPS Walk: resetar seleção quando sessão é cancelada/finalizada ───────
+    ref.listen<GpsWalkSession?>(gpsWalkProvider, (prev, next) {
+      if (prev != null && next == null && _selectedToolKey == 'gps') {
+        setState(() => _selectedToolKey = null);
+      }
+    });
+
+    // NOTA ARQUITETURAL: O handle (pílula de drag) é renderizado pelo
+    // componente pai (lib/ui/screens/private_map_sheets.dart / MapBottomSheet).
+    // Este widget não inclui handle próprio.
     return Container(
       decoration: const BoxDecoration(
-        color: Colors.transparent, // ✅ iOS Premium: Permite o glassmorphism do MapBottomSheet vazar
+        color: Colors
+            .transparent, // ✅ iOS Premium: Permite o glassmorphism do MapBottomSheet vazar
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -170,6 +171,20 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
           ListenableBuilder(
             listenable: widget.controller,
             builder: (context, _) {
+              // ── GPS Walk: sincronizar métricas a cada novo vértice GPS ────
+              final gpsSession = ref.watch(gpsWalkProvider);
+              if (gpsSession != null) {
+                // Sincroniza pontos do DrawingController → GpsWalkNotifier
+                final pts = widget.controller.gpsVertices;
+                if (pts.length != gpsSession.points.length) {
+                  // Schedule post-frame para não chamar durante build
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    ref.read(gpsWalkProvider.notifier).syncFromController(pts);
+                  });
+                }
+                return const GpsWalkControlsOverlay();
+              }
+
               final content = Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -218,9 +233,13 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
   }
 
   Widget _buildMetricsPanel(BuildContext context) {
+    // BUG 3: Ocultar durante revisão — as métricas já aparecem em _buildReviewingMode
+    if (widget.controller.currentState == DrawingState.reviewing) {
+      return const SizedBox.shrink();
+    }
+
     final area = widget.controller.liveAreaHa;
     final perimeter = widget.controller.livePerimeterKm;
-    final segments = widget.controller.liveSegmentsKm;
 
     if (area <= 0 && perimeter <= 0) return const SizedBox.shrink();
 
@@ -230,9 +249,15 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white, // ✅ iOS Premium: Superfícies elevadas (Cards) são brancas
-        borderRadius: BorderRadius.circular(PremiumTokens.borderRadiusSm), // ✅ iOS Premium: Inset com 12px
-        border: Border.all(color: Colors.grey[200]!, width: PremiumTokens.hairlineThickness),
+        color: Colors
+            .white, // ✅ iOS Premium: Superfícies elevadas (Cards) são brancas
+        borderRadius: BorderRadius.circular(
+          PremiumTokens.borderRadiusSm,
+        ), // ✅ iOS Premium: Inset com 12px
+        border: Border.all(
+          color: Colors.grey[200]!,
+          width: PremiumTokens.hairlineThickness,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -295,7 +320,7 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
     final pendingCount = widget.controller.pendingSyncCount;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       child: Column(
         children: [
           DrawingToolSelector(
@@ -453,10 +478,15 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
                     HapticFeedback.mediumImpact();
                     onConfirm();
                   },
-                  style: ElevatedButton.styleFrom(backgroundColor: PremiumTokens.brandGreen), // ✅ iOS Premium
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: PremiumTokens.brandGreen,
+                  ), // ✅ iOS Premium
                   child: const Text(
                     'Confirmar',
-                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ),
@@ -509,11 +539,15 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
                     widget.controller.confirmImport();
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: PremiumTokens.brandGreen, // Keep import green
+                    backgroundColor:
+                        PremiumTokens.brandGreen, // Keep import green
                   ),
                   child: const Text(
                     'Confirmar',
-                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ),
@@ -548,7 +582,7 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
         widget.controller.deleteFeature(feature.id);
 
         // 3. Fechar o sheet
-        Navigator.of(context).pop();
+        Navigator.of(context, rootNavigator: false).pop();
 
         // 4. Mostrar feedback com Undo
         ScaffoldMessenger.of(context).showSnackBar(
@@ -618,14 +652,21 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
               const SizedBox(width: 12),
               Expanded(
                 child: ElevatedButton(
-                  onPressed: widget.controller.hasSelfIntersection ? null : () {
-                    HapticFeedback.mediumImpact();
-                    widget.controller.saveEdit();
-                  },
-                  style: ElevatedButton.styleFrom(backgroundColor: PremiumTokens.brandGreen),
+                  onPressed: widget.controller.hasSelfIntersection
+                      ? null
+                      : () {
+                          HapticFeedback.mediumImpact();
+                          widget.controller.saveEdit();
+                        },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: PremiumTokens.brandGreen,
+                  ),
                   child: const Text(
                     'Salvar Edição',
-                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ),
@@ -748,9 +789,12 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
               ),
               hint: const Text('Selecione a fazenda...'),
               items: [
-                ...ref.watch(drawingClientProvider).farms.map(
-                  (f) => DropdownMenuItem(value: f, child: Text(f.name)),
-                ),
+                ...ref
+                    .watch(drawingClientProvider)
+                    .farms
+                    .map(
+                      (f) => DropdownMenuItem(value: f, child: Text(f.name)),
+                    ),
                 const DropdownMenuItem(
                   value: 'NEW_FARM',
                   child: Row(
@@ -894,8 +938,8 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
                 Expanded(
                   child: ElevatedButton(
                     onPressed: () {
-                        HapticFeedback.mediumImpact(); // ✅ iOS Premium: feedback tátil ao salvar
-                        final geometry = widget.controller.liveGeometry;
+                      HapticFeedback.mediumImpact(); // ✅ iOS Premium: feedback tátil ao salvar
+                      final geometry = widget.controller.liveGeometry;
                       if (geometry == null) return;
 
                       // 🚀 SALVAR com IDs
@@ -903,7 +947,9 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
                         geometry: geometry,
                         nome: _nomeController.text.trim(),
                         tipo: DrawingType.talhao,
-                        origem: DrawingOrigin.desenho_manual,
+                        origem:
+                            widget.controller.pendingImportOrigin ??
+                            DrawingOrigin.desenho_manual,
                         autorId: 'current_user',
                         autorTipo: _isConsultant
                             ? AuthorType.consultor
@@ -966,7 +1012,8 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () =>
+                Navigator.of(context, rootNavigator: false).pop(),
             child: const Text('Cancelar'),
           ),
           ElevatedButton(
@@ -976,13 +1023,17 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
               final clientId =
                   _selectedClient?.id ??
                   'SELF'; // TODO: Handle Producer ID properly
-              await ref.read(drawingClientProvider.notifier).createFarm(
-                nameController.text,
-                clientId,
-                cityController.text,
-                stateController.text,
-              );
-              if (context.mounted) Navigator.pop(context);
+              await ref
+                  .read(drawingClientProvider.notifier)
+                  .createFarm(
+                    nameController.text,
+                    clientId,
+                    cityController.text,
+                    stateController.text,
+                  );
+              if (context.mounted) {
+                Navigator.of(context, rootNavigator: false).pop();
+              }
 
               // Auto-select the newly created farm (Assume it's the last one or find by name)
               // Simple approach: reload farms handled by controller, then user selects.
@@ -1018,32 +1069,21 @@ class _SheetHeader extends StatelessWidget {
       children: [
         // A pílula de drag já é renderizada pelo parente externo (MapBottomSheet)
         Padding(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Ferramentas de Desenho',
-                style: TextStyle(
-                  fontSize: 17, // ✅ iOS Premium: 17px SemiBold pra Header Modal
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: -0.4, // ✅ iOS Premium: -0.4px 
-                  color: Colors.black87,
-                ),
+          padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+          child: const Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              'Ferramentas de Desenho',
+              style: TextStyle(
+                fontSize: 17, // ✅ iOS Premium: 17px SemiBold pra Header Modal
+                fontWeight: FontWeight.w600,
+                letterSpacing: -0.4, // ✅ iOS Premium: -0.4px
+                color: Colors.black87,
               ),
-              IconButton(
-                icon: const Icon(Icons.close, color: Colors.black54),
-                onPressed: () => Navigator.of(context).pop(),
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
-                iconSize: 24,
-                tooltip: 'Fechar',
-              ),
-            ],
+            ),
           ),
         ),
         const Divider(height: 1),
-        const SizedBox(height: 12),
       ],
     );
   }

@@ -3,6 +3,9 @@ import 'package:flutter/services.dart';
 
 /// Widget responsável por exibir e gerenciar a seleção de ferramentas de desenho.
 ///
+/// Responsabilidade: seleção de ferramenta de desenho
+/// (Polígono, Livre, Pivô, KML, GPS Caminhar, Gravar Rota).
+///
 /// Ferramentas disponíveis:
 /// - Polígono (desenho livre)
 /// - Livre (freehand)
@@ -62,6 +65,9 @@ class DrawingToolSelector extends StatelessWidget {
           isSelected: selectedToolKey == 'gps',
           onTap: () => onToolSelected('gps'),
         ),
+        const SizedBox(height: 8),
+        // TODO(drawing): implementar GravarRotaController em prompt futuro
+        _GravarRotaButton(),
       ],
     );
   }
@@ -122,6 +128,62 @@ class _ToolButton extends StatelessWidget {
               const Spacer(),
               if (isSelected)
                 const Icon(Icons.check, color: Colors.green, size: 18),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Botão stub para "Gravar Rota" — sem funcionalidade, apenas visual.
+/// Diferenciado com ícone vermelho REC (referência Wikiloc).
+/// TODO(drawing): conectar a GravarRotaController quando implementado.
+class _GravarRotaButton extends StatelessWidget {
+  const _GravarRotaButton();
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () {
+          // TODO(drawing): implementar GravarRotaController em prompt futuro
+          // Por ora: fecha o sheet sem ação
+          Navigator.of(context, rootNavigator: false).pop();
+        },
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: Colors.transparent,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.grey.withValues(alpha: 0.2)),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: Colors.red.shade50,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: const Icon(
+                  Icons.fiber_manual_record,
+                  color: Colors.red,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              const Text(
+                'Gravar Rota',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.normal,
+                  color: Colors.black87,
+                ),
+              ),
             ],
           ),
         ),

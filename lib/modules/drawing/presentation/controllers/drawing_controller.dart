@@ -14,8 +14,10 @@ import '../../domain/services/drawing_boolean_ops_service.dart';
 import '../../domain/services/drawing_import_service.dart';
 import '../../domain/services/gps_tracking_service.dart';
 import '../../infra/file_picker/file_picker_adapter.dart';
+import 'drawing_boolean_ops_orchestrator.dart';
+import 'drawing_gps_orchestrator.dart';
+import 'drawing_import_orchestrator.dart';
 // ─────────────────────────────────────────────────────────────────────────────
-import 'package:geolocator/geolocator.dart';
 import '../../../../core/utils/app_logger.dart';
 
 /// Controller de orquestração do módulo Drawing.
@@ -41,6 +43,9 @@ class DrawingController extends ChangeNotifier {
   final DrawingBooleanOpsService _booleanOpsService;
   final DrawingImportService _importService;
   final GpsTrackingService _gpsTrackingService;
+  late final DrawingBooleanOpsOrchestrator _booleanOpsOrchestrator;
+  late final DrawingImportOrchestrator _importOrchestrator;
+  late final DrawingGpsOrchestrator _gpsOrchestrator;
 
   DrawingController({
     DrawingRepository? repository,
@@ -52,9 +57,62 @@ class DrawingController extends ChangeNotifier {
   }) : _repository = repository ?? DrawingRepository(),
        _crudService = crudService ?? const DrawingFeatureCrudService(),
        _vertexService = vertexService ?? const DrawingVertexEditService(),
-       _booleanOpsService = booleanOpsService ?? const DrawingBooleanOpsService(),
-       _importService = importService ?? const DrawingImportService(FilePickerAdapter()),
+       _booleanOpsService =
+           booleanOpsService ?? const DrawingBooleanOpsService(),
+       _importService =
+           importService ?? const DrawingImportService(FilePickerAdapter()),
        _gpsTrackingService = gpsTrackingService ?? const GpsTrackingService() {
+    _importOrchestrator = DrawingImportOrchestrator(
+      importService: _importService,
+      setSelectedFeature: (feature) => _selectedFeature = feature,
+      setInteractionMode: (interaction) => _interactionMode = interaction,
+      setErrorMessage: (message) => _errorMessage = message,
+      getPreviewGeometry: () => _previewGeometry,
+      setPreviewGeometry: (geometry) => _previewGeometry = geometry,
+      validateGeometry: validateGeometry,
+      getValidationResult: () => _validationResult,
+      finalizeGeometry: _booleanOpsService.finalizeResult,
+      startImportPreviewState: _stateMachine.startImportPreview,
+      confirmImportState: _stateMachine.confirmImport,
+      notifyHost: notifyListeners,
+    );
+
+    _booleanOpsOrchestrator = DrawingBooleanOpsOrchestrator(
+      booleanOpsService: _booleanOpsService,
+      getSelectedFeature: () => _selectedFeature,
+      getInteractionMode: () => _interactionMode,
+      setInteractionMode: (interaction) => _interactionMode = interaction,
+      getPreviewGeometry: () => _previewGeometry,
+      setPreviewGeometry: (geometry) => _previewGeometry = geometry,
+      setErrorMessage: (message) => _errorMessage = message,
+      validateGeometry: validateGeometry,
+      getValidationResult: () => _validationResult,
+      startBooleanOperationState: _stateMachine.startBooleanOperation,
+      selectFeature: selectFeature,
+      applyResultToSelectedFeature: (geometry) {
+        if (_selectedFeature == null) return;
+        updateFeature(
+          _selectedFeature!.id,
+          newGeometry: geometry,
+          editorId: 'sistema',
+          editorType: AuthorType.sistema,
+        );
+      },
+      cancelOperation: cancelOperation,
+      notifyHost: notifyListeners,
+    );
+
+    _gpsOrchestrator = DrawingGpsOrchestrator(
+      gpsTrackingService: _gpsTrackingService,
+      isDisposed: () => _isDisposed,
+      currentState: () => _stateMachine.currentState,
+      startGpsTrackingState: _stateMachine.startGpsTracking,
+      finalizeGpsTrackingState: _stateMachine.finalizeGpsTracking,
+      setErrorMessage: (message) => _errorMessage = message,
+      setPreviewGeometry: (geometry) => _previewGeometry = geometry,
+      setImportOrigin: _importOrchestrator.setPendingImportOrigin,
+      notifyHost: notifyListeners,
+    );
     loadFeatures();
   }
 
@@ -65,10 +123,9 @@ class DrawingController extends ChangeNotifier {
   ///
   /// Apenas chamado via [assert()] — executa somente em modo debug.
   /// Mapeia os pares SM↔interaction que DEVEM ser consistentes:
-  ///   • editing       → DrawingInteraction.editing
-  ///   • importPreview → DrawingInteraction.importPreview
-  /// Os demais estados permitem DrawingInteraction.normal ou variações
-  /// (e.g. unionSelection durante booleanOperation) que não exigem paridade.
+  ///   • editing          → DrawingInteraction.editing
+  ///   • importPreview    → DrawingInteraction.importPreview
+  ///   • booleanOperation → unionSelection | differenceSelection | intersectionSelection
   bool _stateVectorsAreConsistent() {
     if (_stateMachine.currentState == DrawingState.editing &&
         _interactionMode != DrawingInteraction.editing) {
@@ -78,38 +135,34 @@ class DrawingController extends ChangeNotifier {
         _interactionMode != DrawingInteraction.importPreview) {
       return false;
     }
+    // 🔧 FIX-AUDIT: booleanOperation exige um dos 3 modos de seleção booleana
+    if (_stateMachine.currentState == DrawingState.booleanOperation &&
+        _interactionMode != DrawingInteraction.unionSelection &&
+        _interactionMode != DrawingInteraction.differenceSelection &&
+        _interactionMode != DrawingInteraction.intersectionSelection) {
+      return false;
+    }
     return true;
   }
   // ─────────────────────────────────────────────────────────────────────────
 
-
-  // ─── GPS Tracking State (Sprint 5) ──────────────────────────────────────
-  List<LatLng> _gpsVertices = [];
-  double _gpsLastAccuracyM = 0.0;
-  bool _gpsIsPaused = false;
-  bool _gpsOriginReview = false; // true quando reviewing veio de GPS
-  StreamSubscription<Position>? _gpsSub;
-  // ─────────────────────────────────────────────────────────────────────────
-
   /// Vértices GPS aceitos durante rastreamento ativo.
-  List<LatLng> get gpsVertices => List.unmodifiable(_gpsVertices);
+  List<LatLng> get gpsVertices => _gpsOrchestrator.gpsVertices;
 
   /// Última precisão GPS recebida (metros).
-  double get gpsLastAccuracyM => _gpsLastAccuracyM;
+  double get gpsLastAccuracyM => _gpsOrchestrator.gpsLastAccuracyM;
 
   /// Indica se o rastreamento GPS está pausado.
-  bool get gpsIsPaused => _gpsIsPaused;
+  bool get gpsIsPaused => _gpsOrchestrator.gpsIsPaused;
 
   /// Qualidade atual do sinal GPS para o overlay.
-  GpsQuality get gpsAccuracyQuality =>
-      _gpsTrackingService.classifyAccuracy(_gpsLastAccuracyM);
+  GpsQuality get gpsAccuracyQuality => _gpsOrchestrator.gpsAccuracyQuality;
 
   @override
   void dispose() {
     if (_isDisposed) return; // 🔧 FIX-DRAW-FLOW-02: Permitir múltiplos dispose
     _isDisposed = true;
-    _gpsSub?.cancel();
-    _gpsSub = null;
+    _gpsOrchestrator.dispose();
     _validationDebounce?.cancel();
     super.dispose();
   }
@@ -177,8 +230,6 @@ class DrawingController extends ChangeNotifier {
   // Interaction state
   DrawingFeature? _selectedFeature;
   DrawingInteraction _interactionMode = DrawingInteraction.normal;
-  DrawingFeature? _pendingFeatureA; // Primary feature for ops
-  DrawingFeature? _pendingFeatureB; // Secondary feature for union
   DrawingGeometry? _previewGeometry; // Result preview
   bool _isDirty = false;
   bool _isSnapping = false; // RT-DRAW-09 Feedback state
@@ -192,7 +243,8 @@ class DrawingController extends ChangeNotifier {
   static const int _complexityThreshold = 2000;
   static const int _validationDebounceMs = 300;
 
-  List<DrawingFeature> get features => List.unmodifiable(_features);
+  List<DrawingFeature> get features =>
+      List.unmodifiable(_features.where((f) => f.properties.ativo));
   DrawingFeature? get selectedFeature => _selectedFeature;
   bool get isHighComplexity => _isHighComplexity;
 
@@ -212,24 +264,26 @@ class DrawingController extends ChangeNotifier {
   /// Usado pelo formulário para pré-preencher nome e preservar origem correta.
   DrawingOrigin? get pendingImportOrigin =>
       _stateMachine.currentState == DrawingState.reviewing
-          ? _currentImportOrigin
-          : null;
+      ? _importOrchestrator.pendingImportOrigin
+      : null;
 
   // New state machine getters
   DrawingState get currentState => _stateMachine.currentState;
   DrawingTool get currentTool => _stateMachine.currentTool;
   BooleanOperationType get booleanOperation => _stateMachine.booleanOperation;
 
-  DrawingFeature? get pendingFeatureA => _pendingFeatureA;
-  DrawingFeature? get pendingFeatureB => _pendingFeatureB;
+  DrawingFeature? get pendingFeatureA =>
+      _booleanOpsOrchestrator.pendingFeatureA;
+  DrawingFeature? get pendingFeatureB =>
+      _booleanOpsOrchestrator.pendingFeatureB;
   DrawingGeometry? get previewGeometry => _previewGeometry;
 
   // Retorna a geometria sendo desenhada ou o preview de importação
   DrawingGeometry? get liveGeometry {
     // GPS Tracking — exibe polígono parcial em tempo real
     if (_stateMachine.currentState == DrawingState.gpsTracking &&
-        _gpsVertices.length >= 2) {
-      final ring = _gpsVertices
+        _gpsOrchestrator.gpsVertices.length >= 2) {
+      final ring = _gpsOrchestrator.gpsVertices
           .map((p) => <double>[p.longitude, p.latitude])
           .toList();
       // Fecha visualmente o anel para o usuário ver o polígono se formando
@@ -255,7 +309,7 @@ class DrawingController extends ChangeNotifier {
     // 🆕 SPRINT 3: Reviewing vindo de import — preserva previewGeometry
     // O formulário reviewing usa liveGeometry para exibir área/perímetro
     if (_stateMachine.currentState == DrawingState.reviewing &&
-        (_currentImportOrigin != null || _gpsOriginReview)) {
+        (pendingImportOrigin != null || _gpsOrchestrator.gpsOriginReview)) {
       return _previewGeometry;
     }
 
@@ -374,7 +428,7 @@ class DrawingController extends ChangeNotifier {
       case DrawingInteraction.importPreview:
         return "Confira a área e confirme ou cancele";
       case DrawingInteraction.unionSelection:
-        if (_pendingFeatureB == null) {
+        if (pendingFeatureB == null) {
           return "Seleção de União: Toque na segunda área";
         }
         return "Confirme a união das áreas";
@@ -384,7 +438,7 @@ class DrawingController extends ChangeNotifier {
         }
         return "Confirme a subtração";
       case DrawingInteraction.intersectionSelection:
-        if (_pendingFeatureB == null) {
+        if (pendingFeatureB == null) {
           return "Seleção de Interseção: Toque na segunda área";
         }
         return "Confirme a interseção";
@@ -440,8 +494,7 @@ class DrawingController extends ChangeNotifier {
 
   bool get isDirty => _isDirty;
 
-  // Import State
-  DrawingOrigin? _currentImportOrigin;
+  // Error State
   String? _errorMessage;
   String? get errorMessage => _errorMessage;
 
@@ -470,7 +523,9 @@ class DrawingController extends ChangeNotifier {
   void _updateRealTimeIntersection() {
     DrawingGeometry? geom = liveGeometry;
     if (geom is DrawingPolygon) {
-      _intersectingSegmentIndices = DrawingUtils.findSelfIntersectingSegments(geom);
+      _intersectingSegmentIndices = DrawingUtils.findSelfIntersectingSegments(
+        geom,
+      );
       _hasSelfIntersection = _intersectingSegmentIndices.isNotEmpty;
     } else {
       _intersectingSegmentIndices = {};
@@ -557,6 +612,10 @@ class DrawingController extends ChangeNotifier {
     _selectedFeature = newFeature;
     _isDirty = true;
     _stateMachine.confirm();
+    _importOrchestrator.clearPendingImportOrigin();
+    _currentPoints.clear(); // 🔧 FIX-AUDIT: Evita vazamento de pontos para próximo desenho
+    _manualSketch = null;
+    _previewGeometry = null;
     _interactionMode = DrawingInteraction.normal;
     notifyListeners();
   }
@@ -663,8 +722,29 @@ class DrawingController extends ChangeNotifier {
   }
 
   void deleteFeature(String id) {
-    _features.removeWhere((f) => f.id == id);
-    _repository.deleteFeature(id); // Persist deletion
+    final index = _features.indexWhere((f) => f.id == id);
+    if (index == -1) return;
+
+    final feature = _features[index];
+
+    // 🔧 FIX-AUDIT: Se já sincronizado, manter na lista como deleted_local
+    // para que o sync posterior propague a exclusão ao servidor.
+    if (feature.properties.syncStatus == SyncStatus.synced ||
+        feature.properties.syncStatus == SyncStatus.pending_sync) {
+      _features[index] = DrawingFeature(
+        id: feature.id,
+        geometry: feature.geometry,
+        properties: feature.properties.copyWith(
+          ativo: false,
+          syncStatus: SyncStatus.local_only,
+          updatedAt: DateTime.now(),
+        ),
+      );
+    } else {
+      _features.removeAt(index);
+    }
+
+    _repository.deleteFeature(id); // Persist soft delete
 
     if (_selectedFeature?.id == id) {
       _selectedFeature = null;
@@ -800,14 +880,14 @@ class DrawingController extends ChangeNotifier {
   void cancelOperation() {
     if (_isDisposed) return;
 
-    _cancelGpsTracking(); // Cancela GPS se ativo antes de limpar estado
+    _gpsOrchestrator
+        .cancelTracking(); // Cancela GPS se ativo antes de limpar estado
     _interactionMode = DrawingInteraction.normal;
-    _pendingFeatureA = null;
-    _pendingFeatureB = null;
+    _booleanOpsOrchestrator.clear();
     _previewGeometry = null;
     _manualSketch = null;
-    _currentImportOrigin = null;
-    _gpsOriginReview = false;
+    _importOrchestrator.clearPendingImportOrigin();
+    _gpsOrchestrator.clearReviewOrigin();
     _errorMessage = null;
     _currentPoints.clear(); // 🔧 FIX-DRAW-FLOW-02: Limpar pontos ao cancelar
     _stateMachine.cancel(); // Use state machine cancel
@@ -818,147 +898,18 @@ class DrawingController extends ChangeNotifier {
   // GPS TRACKING (Sprint 5)
   // ===========================================================================
 
-  /// Inicia o modo de rastreamento GPS.
-  ///
-  /// Solicita permissão se necessário, ativa o stream de posições via
-  /// [Geolocator.getPositionStream] com alta precisão e delega filtragem
-  /// para [GpsTrackingService].
-  Future<void> startGpsTracking() async {
-    if (_isDisposed) return;
+  Future<void> startGpsTracking() => _gpsOrchestrator.startGpsTracking();
 
-    // Verificar e solicitar permissão
-    LocationPermission permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-    }
-    if (permission == LocationPermission.deniedForever ||
-        permission == LocationPermission.denied) {
-      _errorMessage = 'Permissão de localização negada';
-      notifyListeners();
-      return;
-    }
+  void pauseGpsTracking() => _gpsOrchestrator.pauseGpsTracking();
 
-    // Cancelar stream anterior se existir
-    await _gpsSub?.cancel();
-    _gpsSub = null;
+  void resumeGpsTracking() => _gpsOrchestrator.resumeGpsTracking();
 
-    // Limpar estado anterior
-    _gpsVertices = [];
-    _gpsLastAccuracyM = 0.0;
-    _gpsIsPaused = false;
+  void undoLastGpsVertex() => _gpsOrchestrator.undoLastGpsVertex();
 
-    // Transicionar para gpsTracking (idle → gpsTracking)
-    final ok = _stateMachine.startGpsTracking();
-    if (!ok) {
-      AppLogger.debug('GPS: falha ao transicionar para gpsTracking',
-          tag: 'DrawingController');
-      return;
-    }
+  void finalizeGpsTracking() => _gpsOrchestrator.finalizeGpsTracking();
 
-    // Iniciar stream GPS com alta precisão
-    const settings = LocationSettings(
-      accuracy: LocationAccuracy.best,
-      distanceFilter: 2, // Receber atualizações a cada 2m
-    );
-
-    _gpsSub = Geolocator.getPositionStream(locationSettings: settings).listen(
-      (Position pos) {
-        if (_isDisposed) return;
-        if (_gpsIsPaused) return;
-        if (_stateMachine.currentState != DrawingState.gpsTracking) {
-          _gpsSub?.cancel();
-          return;
-        }
-
-        final result = _gpsTrackingService.processPosition(
-          vertices: _gpsVertices,
-          newPoint: LatLng(pos.latitude, pos.longitude),
-          accuracyM: pos.accuracy,
-        );
-
-        _gpsLastAccuracyM = result.lastAccuracyM ?? _gpsLastAccuracyM;
-
-        if (result.accepted) {
-          _gpsVertices = result.vertices;
-          notifyListeners();
-        } else {
-          // Atualizar accuracy mesmo ao descartar ponto (para o overlay)
-          notifyListeners();
-        }
-      },
-      onError: (Object error) {
-        AppLogger.warning('GPS stream error: $error', tag: 'DrawingController');
-        _errorMessage = 'Erro no GPS: verifique o sinal';
-        if (!_isDisposed) notifyListeners();
-      },
-      cancelOnError: false,
-    );
-
-    notifyListeners();
-  }
-
-  /// Pausa o rastreamento GPS sem descartar vértices.
-  void pauseGpsTracking() {
-    if (_isDisposed) return;
-    _gpsIsPaused = true;
-    notifyListeners();
-  }
-
-  /// Retoma o rastreamento GPS pausado.
-  void resumeGpsTracking() {
-    if (_isDisposed) return;
-    _gpsIsPaused = false;
-    notifyListeners();
-  }
-
-  /// Remove o último vértice GPS aceito (desfazer no campo).
-  void undoLastGpsVertex() {
-    if (_isDisposed) return;
-    _gpsVertices = _gpsTrackingService.undoLastVertex(_gpsVertices);
-    notifyListeners();
-  }
-
-  /// Finaliza o rastreamento GPS, constrói o polígono e transiciona para
-  /// [DrawingState.reviewing] para o usuário preencher o formulário.
-  void finalizeGpsTracking() {
-    if (_isDisposed) return;
-
-    final polygon = _gpsTrackingService.finalize(_gpsVertices);
-    if (polygon == null) {
-      _errorMessage =
-          'Mínimo de $kGpsMinVertices pontos necessários para finalizar';
-      notifyListeners();
-      return;
-    }
-
-    _gpsSub?.cancel();
-    _gpsSub = null;
-
-    // Promover para reviewing via preview geometry (mesmo fluxo do import)
-    _previewGeometry = polygon;
-    _currentImportOrigin = null; // GPS não é import
-    _gpsOriginReview = true; // Sinaliza que reviewing veio do GPS
-
-    final ok = _stateMachine.finalizeGpsTracking();
-    if (!ok) {
-      AppLogger.debug('GPS: falha ao transicionar para reviewing',
-          tag: 'DrawingController');
-    }
-
-    _gpsVertices = [];
-    _gpsIsPaused = false;
-    notifyListeners();
-  }
-
-  /// Cancela o rastreamento GPS sem salvar.
-  void _cancelGpsTracking() {
-    if (_stateMachine.currentState != DrawingState.gpsTracking) return;
-    _gpsSub?.cancel();
-    _gpsSub = null;
-    _gpsVertices = [];
-    _gpsIsPaused = false;
-    // Não chamar _stateMachine.cancel() aqui — cancelOperation() fará isso
-  }
+  void addManualGpsPoint(LatLng point) =>
+      _gpsOrchestrator.addManualGpsPoint(point);
 
   /// Called by the Map Widget to update the current manual drawing sketch
   void updateManualSketch(DrawingGeometry? geometry) {
@@ -1129,15 +1080,15 @@ class DrawingController extends ChangeNotifier {
   // ─── Helpers de conversão geometria ↔ vértices ────────────────────────────────
   List<LatLng> _geomToVertices(DrawingGeometry geom) {
     if (geom is DrawingPolygon && geom.coordinates.isNotEmpty) {
-      return geom.coordinates.first
-          .map((p) => LatLng(p[1], p[0]))
-          .toList();
+      return geom.coordinates.first.map((p) => LatLng(p[1], p[0])).toList();
     }
     return [];
   }
 
   DrawingGeometry _verticesToGeom(
-      List<LatLng> vertices, DrawingGeometry? reference) {
+    List<LatLng> vertices,
+    DrawingGeometry? reference,
+  ) {
     final ring = vertices
         .map((p) => <double>[p.longitude, p.latitude])
         .toList();
@@ -1228,6 +1179,39 @@ class DrawingController extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Persiste a nova posição do vértice ao finalizar o arraste.
+  ///
+  /// Fluxo esperado:
+  /// - Durante o drag, a UI mantém estado local (sem persistir)
+  /// - Ao soltar, este método aplica o ponto final no _editGeometry
+  /// - Atualiza validações/interseções e persiste na feature selecionada
+  void updateVertexPosition(int ringIndex, int pointIndex, LatLng newPos) {
+    if (_editGeometry is! DrawingPolygon) return;
+
+    final updated = _vertexService.moveVertex(
+      _editGeometry as DrawingPolygon,
+      ringIndex,
+      pointIndex,
+      newPos,
+    );
+    if (updated == null) return;
+
+    _editGeometry = updated;
+    _updateRealTimeIntersection();
+    validateGeometry(_editGeometry);
+
+    if (_selectedFeature != null) {
+      updateFeature(
+        _selectedFeature!.id,
+        newGeometry: _editGeometry,
+        editorId: "sistema",
+        editorType: AuthorType.sistema,
+      );
+    }
+
+    notifyListeners();
+  }
+
   /// Call this when starting a drag operation to save state for Undo
   void onDragStart([int? index]) {
     _isDraggingVertex = true;
@@ -1239,13 +1223,14 @@ class DrawingController extends ChangeNotifier {
   }
 
   /// Call this when ending a drag operation.
-  /// Triggers persistence as per Requirement 4.
-  void onDragEnd() {
+  /// [persist] mantém compatibilidade com fluxo legado:
+  /// - true: persiste _editGeometry ao fim do arraste
+  /// - false: apenas encerra estado de drag (quando já persistido externamente)
+  void onDragEnd({bool persist = true}) {
     _isDraggingVertex = false;
     _draggedVertexIndex = null;
 
-    // RT-DRAW-DRAG: Immediate persistence if editing existing feature
-    if (_editGeometry != null && _selectedFeature != null) {
+    if (persist && _editGeometry != null && _selectedFeature != null) {
       updateFeature(
         _selectedFeature!.id,
         newGeometry: _editGeometry,
@@ -1328,14 +1313,16 @@ class DrawingController extends ChangeNotifier {
   /// Completa o desenho manual e entra em modo de revisão
   void completeDrawing() {
     if (_hasSelfIntersection) {
-      _errorMessage = "Por favor, corrija as linhas que estão se cruzando antes de revisar.";
+      _errorMessage =
+          "Por favor, corrija as linhas que estão se cruzando antes de revisar.";
       notifyListeners();
       return;
     }
     if (_stateMachine.currentState == DrawingState.drawing) {
       final success = _stateMachine.completeDrawing();
       if (success) {
-        validateGeometry(_manualSketch);
+        // 🔧 FIX-AUDIT: Usar liveGeometry (fonte real dos pontos) em vez de _manualSketch
+        validateGeometry(liveGeometry);
         notifyListeners();
       }
     }
@@ -1372,150 +1359,28 @@ class DrawingController extends ChangeNotifier {
   // IMPORT FLOW
   // ===========================================================================
 
-  void startImportMode() {
-    _selectedFeature = null;
-    _interactionMode = DrawingInteraction.importing;
-    _errorMessage = null;
-    notifyListeners();
-  }
+  void startImportMode() => _importOrchestrator.startImportMode();
 
-  /// Abre file picker e processa KML/KMZ.
-  /// Delega para [DrawingImportService.pickAndParse].
-  Future<void> pickImportFile(bool isKmz) async {
-    _errorMessage = null;
-
-    final result = await _importService.pickAndParse(isKmz);
-
-    if (result.cancelled) {
-      _interactionMode = DrawingInteraction.normal;
-    } else if (result.error != null) {
-      _interactionMode = DrawingInteraction.normal;
-      _errorMessage = result.error;
-    } else {
-      _previewGeometry = result.geometry;
-      validateGeometry(_previewGeometry);
-      _interactionMode = DrawingInteraction.importPreview;
-      _currentImportOrigin = result.origin;
-      _stateMachine.startImportPreview();
-    }
-
-    notifyListeners();
-  }
+  Future<void> pickImportFile(bool isKmz) =>
+      _importOrchestrator.pickImportFile(isKmz);
 
   // ===========================================================================
   // BOOLEAN OPERATIONS FLOW (RT-DRAW-07)
   // ===========================================================================
 
-  void startUnionMode() {
-    if (_selectedFeature == null) return;
-    _pendingFeatureA = _selectedFeature;
-    _pendingFeatureB = null;
-    _previewGeometry = null;
-    _interactionMode = DrawingInteraction.unionSelection;
-    _stateMachine.startBooleanOperation(BooleanOperationType.union);
-    notifyListeners();
-  }
+  void startUnionMode() => _booleanOpsOrchestrator.startUnionMode();
 
-  void startDifferenceMode() {
-    if (_selectedFeature == null) return;
-    _pendingFeatureA = _selectedFeature;
-    _pendingFeatureB = null;
-    _previewGeometry = null;
-    _interactionMode = DrawingInteraction.differenceSelection;
-    _stateMachine.startBooleanOperation(BooleanOperationType.difference);
-    notifyListeners();
-  }
+  void startDifferenceMode() => _booleanOpsOrchestrator.startDifferenceMode();
 
-  void startIntersectionMode() {
-    if (_selectedFeature == null) return;
-    _pendingFeatureA = _selectedFeature;
-    _pendingFeatureB = null;
-    _previewGeometry = null;
-    _interactionMode = DrawingInteraction.intersectionSelection;
-    _stateMachine.startBooleanOperation(BooleanOperationType.intersection);
-    notifyListeners();
-  }
+  void startIntersectionMode() =>
+      _booleanOpsOrchestrator.startIntersectionMode();
 
-  void onFeatureTapped(DrawingFeature feature) {
-    if (_interactionMode == DrawingInteraction.normal ||
-        _interactionMode == DrawingInteraction.editing) {
-      selectFeature(feature);
-      return;
-    }
+  void onFeatureTapped(DrawingFeature feature) =>
+      _booleanOpsOrchestrator.onFeatureTapped(feature);
 
-    if (_pendingFeatureA == null) return;
-    if (feature.id == _pendingFeatureA!.id) return;
+  void confirmBooleanOp() => _booleanOpsOrchestrator.confirmBooleanOp();
 
-    _pendingFeatureB = feature;
-    _calculateBooleanOp();
-    notifyListeners();
-  }
-
-  void _calculateBooleanOp() {
-    if (_pendingFeatureA == null || _pendingFeatureB == null) return;
-
-    // Delega ao DrawingBooleanOpsService
-    final result = _booleanOpsService.calculate(
-      _pendingFeatureA!,
-      _pendingFeatureB!,
-      _interactionMode,
-    );
-
-    if (result != null) {
-      _previewGeometry = result;
-      validateGeometry(_previewGeometry);
-      _errorMessage = null;
-    } else {
-      _previewGeometry = null;
-      _errorMessage = "Operação inválida ou complexa demais para esta versão.";
-    }
-  }
-
-  void confirmBooleanOp() {
-    if (_previewGeometry == null) return;
-
-    validateGeometry(_previewGeometry);
-    if (!_validationResult.isValid) {
-      _errorMessage = _validationResult.message;
-      notifyListeners();
-      return;
-    }
-
-    // Delega finalização (simplify + normalize) ao service
-    final finalGeo = _booleanOpsService.finalizeResult(_previewGeometry!);
-
-    if (_selectedFeature != null) {
-      updateFeature(
-        _selectedFeature!.id,
-        newGeometry: finalGeo,
-        editorId: "sistema",
-        editorType: AuthorType.sistema,
-      );
-    }
-    cancelOperation();
-  }
-
-  /// ✅ SPRINT 3 FIX: Confirma import e transiciona para [DrawingState.reviewing].
-  ///
-  /// Antes chamava [addFeature] direto (sem nome, sem cliente, sem fazenda).
-  /// Agora vai para o formulário de revisão onde o usuário preenche os dados.
-  void confirmImport() {
-    if (_previewGeometry == null || _currentImportOrigin == null) return;
-
-    validateGeometry(_previewGeometry);
-    if (!_validationResult.isValid) {
-      _errorMessage = _validationResult.message;
-      notifyListeners();
-      return;
-    }
-
-    // Finaliza geometria (simplify + normalize) e guarda para o form de revisão
-    _previewGeometry = _booleanOpsService.finalizeResult(_previewGeometry!);
-
-    // Transiciona para reviewing — o formulário exibe nome, cliente, fazenda
-    _stateMachine.confirmImport(); // importPreview → reviewing
-    notifyListeners();
-  }
+  void confirmImport() => _importOrchestrator.confirmImport();
 
   // Helper for snapping
   List<double> _snapIfClose(List<double> p) {
