@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'dart:math' as math;
 import 'package:file_picker/file_picker.dart';
@@ -10,6 +11,16 @@ import 'package:uuid/uuid.dart';
 import 'models/drawing_models.dart';
 import '../../../core/utils/app_logger.dart';
 import '../../../core/utils/geodesic_utils.dart';
+
+/// Exceção semântica para erros de importação KML/KMZ.
+class DrawingImportException implements Exception {
+  final String message;
+
+  const DrawingImportException(this.message);
+
+  @override
+  String toString() => message;
+}
 
 class DrawingUtils {
   static const Uuid _uuid = Uuid();
@@ -234,16 +245,9 @@ class DrawingUtils {
 
   static Future<DrawingGeometry?> parseFile(PlatformFile file) async {
     try {
-      if (file.path == null) return null;
-      final ioFile = File(file.path!);
-
-      if (file.extension == 'kml') {
-        final content = await ioFile.readAsString();
-        return _parseKmlContent(content);
-      } else if (file.extension == 'kmz') {
-        final bytes = await ioFile.readAsBytes();
-        return _parseKmzContent(bytes);
-      }
+      return await parseFileOrThrow(file);
+    } on DrawingImportException catch (e) {
+      AppLogger.warning(e.message, tag: 'DrawingUtils');
     } catch (e) {
       AppLogger.warning(
         'Erro ao parsear arquivo KML/KMZ',
@@ -254,60 +258,121 @@ class DrawingUtils {
     return null;
   }
 
-  static DrawingGeometry? _parseKmlContent(String content) {
+  /// Parser com erros explícitos para KML/KMZ.
+  ///
+  /// Mantém contrato interno de coordenadas em ordem GeoJSON: `[lng, lat]`.
+  static Future<DrawingGeometry> parseFileOrThrow(PlatformFile file) async {
+    final extension = _resolveExtension(file);
+    if (extension != 'kml' && extension != 'kmz') {
+      throw const DrawingImportException(
+        'Formato inválido. Selecione um arquivo .kml ou .kmz.',
+      );
+    }
+
+    if (file.path == null || file.path!.isEmpty) {
+      throw const DrawingImportException(
+        'Arquivo inválido: caminho não disponível para leitura.',
+      );
+    }
+
+    final ioFile = File(file.path!);
+    final bytes = await ioFile.readAsBytes();
+
+    if (extension == 'kml') {
+      final content = _decodeText(bytes);
+      return _parseKmlContentOrThrow(content);
+    }
+
+    final kmlContent = _extractKmlFromKmzOrThrow(bytes);
+    return _parseKmlContentOrThrow(kmlContent);
+  }
+
+  static String _resolveExtension(PlatformFile file) {
+    final fromField = file.extension?.trim();
+    if (fromField != null && fromField.isNotEmpty) {
+      return fromField.toLowerCase();
+    }
+
+    final dot = file.name.lastIndexOf('.');
+    if (dot == -1 || dot == file.name.length - 1) return '';
+    return file.name.substring(dot + 1).toLowerCase();
+  }
+
+  static DrawingGeometry _parseKmlContentOrThrow(String content) {
     try {
-      final document = XmlDocument.parse(content);
+      final xmlText = content.replaceFirst(RegExp(r'^\uFEFF'), '').trim();
+      if (xmlText.isEmpty) {
+        throw const DrawingImportException('Arquivo KML vazio.');
+      }
 
-      // Try to find Polygon first
-      final polygons = document.findAllElements('Polygon');
-      if (polygons.isNotEmpty) {
-        // Collect all polygons (if multiple, treat as MultiPolygon or just take first?
-        // Ticket says "Polygon / MultiPolygon".
-        // If KML has multiple Polygons not in MultiGeometry, we usually merge them into MultiPolygon for the contract.
-        // Let's simplified: If 1, return Polygon. If >1, return MultiPolygon.
+      final document = XmlDocument.parse(xmlText);
+      final polygons = document.descendants
+          .whereType<XmlElement>()
+          .where((e) => e.name.local.toLowerCase() == 'polygon')
+          .toList();
 
-        final extracted = <List<List<List<double>>>>[];
+      if (polygons.isEmpty) {
+        throw const DrawingImportException(
+          'Nenhuma geometria Polygon encontrada no arquivo KML.',
+        );
+      }
 
-        for (var poly in polygons) {
-          final coords = _extractPolygonCoords(poly);
-          if (coords != null) {
-            extracted.add(coords);
-          }
-        }
-
-        if (extracted.isEmpty) return null;
-        if (extracted.length == 1) {
-          return DrawingPolygon(coordinates: extracted.first);
-        } else {
-          return DrawingMultiPolygon(coordinates: extracted);
+      final extracted = <List<List<List<double>>>>[];
+      for (final poly in polygons) {
+        final coords = _extractPolygonCoords(poly);
+        if (coords != null) {
+          extracted.add(coords);
         }
       }
 
-      // If no Polygon, check MultiGeometry
-      // Actually findAllElements('Polygon') traverses deep, so if they are inside MultiGeometry, we already caught them.
-      // So the logic above handles MultiGeometry implicitly by flattening.
+      if (extracted.isEmpty) {
+        throw const DrawingImportException(
+          'Nenhuma coordenada válida foi encontrada nos polígonos do KML.',
+        );
+      }
 
-      return null;
-    } catch (_) {
-      return null;
+      if (extracted.length == 1) {
+        return DrawingPolygon(coordinates: extracted.first);
+      }
+      return DrawingMultiPolygon(coordinates: extracted);
+    } on DrawingImportException {
+      rethrow;
+    } catch (e) {
+      throw DrawingImportException('Falha ao parsear KML: $e');
     }
   }
 
-  static DrawingGeometry? _parseKmzContent(List<int> bytes) {
+  static String _extractKmlFromKmzOrThrow(List<int> bytes) {
     try {
       final archive = ZipDecoder().decodeBytes(bytes);
-      // Find doc.kml or any .kml
-      final kmlFile = archive.files.firstWhere(
-        (f) => f.name.endsWith('.kml'),
-        orElse: () => archive.files.first, // Fallback? Unsafe.
+
+      final kmlCandidates = archive.files.where((f) {
+        final name = f.name.toLowerCase();
+        return !name.endsWith('/') && name.endsWith('.kml');
+      }).toList();
+
+      if (kmlCandidates.isEmpty) {
+        throw const DrawingImportException(
+          'Nenhum arquivo .kml encontrado dentro do .kmz.',
+        );
+      }
+
+      final kmlFile = kmlCandidates.firstWhere(
+        (f) => f.name.toLowerCase().endsWith('doc.kml'),
+        orElse: () => kmlCandidates.first,
       );
 
-      if (!kmlFile.name.endsWith('.kml')) return null;
-
-      final content = String.fromCharCodes(kmlFile.content as List<int>);
-      return _parseKmlContent(content);
-    } catch (_) {
-      return null;
+      final content = _decodeText(_contentToBytes(kmlFile.content));
+      if (content.trim().isEmpty) {
+        throw const DrawingImportException(
+          'Arquivo .kml dentro do .kmz está vazio.',
+        );
+      }
+      return content;
+    } on DrawingImportException {
+      rethrow;
+    } catch (e) {
+      throw DrawingImportException('Falha ao descompactar KMZ: $e');
     }
   }
 
@@ -319,14 +384,13 @@ class DrawingUtils {
     try {
       final coordinatesList = <List<List<double>>>[];
 
-      // 1. Outer
-      final outer = poly
-          .findElements('outerBoundaryIs')
-          .firstOrNull
-          ?.findElements('LinearRing')
-          .firstOrNull
-          ?.findElements('coordinates')
-          .firstOrNull;
+      // 1) Outer ring preferencial (namespace-safe).
+      final outerBoundary = _firstElementByLocalName(poly, 'outerBoundaryIs');
+      XmlElement? outer;
+      if (outerBoundary != null) {
+        outer = _firstElementByLocalName(outerBoundary, 'coordinates');
+      }
+      outer ??= _firstElementByLocalName(poly, 'coordinates');
 
       if (outer == null) return null;
 
@@ -335,13 +399,9 @@ class DrawingUtils {
       coordinatesList.add(outerCoords);
 
       // 2. Inner (Holes)
-      final inners = poly.findElements('innerBoundaryIs');
-      for (var inner in inners) {
-        final ring = inner
-            .findElements('LinearRing')
-            .firstOrNull
-            ?.findElements('coordinates')
-            .firstOrNull;
+      final inners = _findElementsByLocalName(poly, 'innerBoundaryIs');
+      for (final inner in inners) {
+        final ring = _firstElementByLocalName(inner, 'coordinates');
         if (ring != null) {
           final holeCoords = _parseKmlCoordinates(ring.innerText);
           if (holeCoords.isNotEmpty) {
@@ -354,6 +414,25 @@ class DrawingUtils {
     } catch (_) {
       return null;
     }
+  }
+
+  static List<XmlElement> _findElementsByLocalName(
+    XmlNode node,
+    String localName,
+  ) {
+    final normalized = localName.toLowerCase();
+    return node.descendants
+        .whereType<XmlElement>()
+        .where((e) => e.name.local.toLowerCase() == normalized)
+        .toList();
+  }
+
+  static XmlElement? _firstElementByLocalName(XmlNode node, String localName) {
+    final normalized = localName.toLowerCase();
+    for (final element in node.descendants.whereType<XmlElement>()) {
+      if (element.name.local.toLowerCase() == normalized) return element;
+    }
+    return null;
   }
 
   // ===========================================================================
@@ -564,7 +643,7 @@ class DrawingUtils {
   static Set<int> findSelfIntersectingSegments(DrawingPolygon poly) {
     final intersectingIndices = <int>{};
     if (poly.coordinates.isEmpty) return intersectingIndices;
-    
+
     final ring = poly.coordinates.first;
     final n = ring.length - 1;
     if (n < 3) return intersectingIndices;
@@ -768,21 +847,51 @@ class DrawingUtils {
     // Format: lon,lat,alt lon,lat,alt ...
     // Separator can be space or newline
     final result = <List<double>>[];
-    final clean = text.trim();
+    final clean = text
+        .replaceAll('\uFEFF', '')
+        .replaceAll('\u2212', '-')
+        .replaceAll('\u2013', '-')
+        .replaceAll('\u2014', '-')
+        .trim();
     if (clean.isEmpty) return result;
 
     final tokens = clean.split(RegExp(r'\s+'));
-    for (var token in tokens) {
+    for (final token in tokens) {
+      if (token.trim().isEmpty) continue;
       final parts = token.split(',');
       if (parts.length >= 2) {
-        final lng = double.tryParse(parts[0]);
-        final lat = double.tryParse(parts[1]);
+        final lng = _parseCoordinateComponent(parts[0]);
+        final lat = _parseCoordinateComponent(parts[1]);
         if (lng != null && lat != null) {
           result.add([lng, lat]);
         }
       }
     }
     return result;
+  }
+
+  static double? _parseCoordinateComponent(String raw) {
+    final normalized = raw
+        .trim()
+        .replaceAll('\u2212', '-')
+        .replaceAll('\u2013', '-')
+        .replaceAll('\u2014', '-');
+    if (normalized.isEmpty) return null;
+    return double.tryParse(normalized);
+  }
+
+  static List<int> _contentToBytes(dynamic content) {
+    if (content is List<int>) return content;
+    if (content is Iterable<int>) return List<int>.from(content);
+    if (content is String) return utf8.encode(content);
+    throw const DrawingImportException(
+      'Não foi possível ler o conteúdo do KML dentro do KMZ.',
+    );
+  }
+
+  static String _decodeText(List<int> bytes) {
+    final utf8Decoded = utf8.decode(bytes, allowMalformed: true);
+    return utf8Decoded.replaceFirst(RegExp(r'^\uFEFF'), '');
   }
   // ===========================================================================
   // NORMALIZATION & OPTIMIZATION (RT-DRAW-09)

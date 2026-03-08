@@ -42,13 +42,7 @@ class DrawingImportService {
         return const ImportResult(cancelled: true);
       }
 
-      final geometry = await DrawingUtils.parseFile(file);
-
-      if (geometry == null) {
-        return const ImportResult(
-          error: 'O arquivo não contém geometria válida (Polygon).',
-        );
-      }
+      final geometry = await DrawingUtils.parseFileOrThrow(file);
 
       var processed = DrawingUtils.simplifyGeometry(geometry);
       processed = DrawingUtils.normalizeGeometry(processed);
@@ -58,6 +52,8 @@ class DrawingImportService {
           : DrawingOrigin.importacao_kml;
 
       return ImportResult(geometry: processed, origin: origin);
+    } on DrawingImportException catch (e) {
+      return ImportResult(error: e.message);
     } catch (e) {
       return ImportResult(error: 'Erro ao ler arquivo: $e');
     }
