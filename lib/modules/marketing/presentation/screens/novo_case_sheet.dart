@@ -127,6 +127,9 @@ class _NovoCaseSheetState extends State<NovoCaseSheet> {
   }
 
   void _handlePublicar() {
+    // 🔧 FIX: Fechar teclado antes da validação (Bug A)
+    FocusScope.of(context).unfocus();
+    
     if (!_formKey.currentState!.validate()) return;
 
     // Validações de foto obrigatória

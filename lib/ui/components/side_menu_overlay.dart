@@ -101,11 +101,10 @@ class SideMenuOverlay extends ConsumerWidget {
                           ),
 
                           _buildSectionLabel(context, "FERRAMENTAS"),
-                          _buildStubItem(
-                            context,
-                            'Clima',
-                            Icons.wb_sunny_outlined,
-                            ref,
+                          const _MenuItem(
+                            icon: Icons.wb_sunny_outlined,
+                            label: 'Clima',
+                            route: AppRoutes.clima,
                           ),
                           _buildStubItem(
                             context,

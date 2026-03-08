@@ -1361,8 +1361,8 @@ class DrawingController extends ChangeNotifier {
 
   void startImportMode() => _importOrchestrator.startImportMode();
 
-  Future<void> pickImportFile(bool isKmz) =>
-      _importOrchestrator.pickImportFile(isKmz);
+  Future<void> pickImportFile() =>
+      _importOrchestrator.pickImportFile();
 
   // ===========================================================================
   // BOOLEAN OPERATIONS FLOW (RT-DRAW-07)
@@ -1381,6 +1381,7 @@ class DrawingController extends ChangeNotifier {
   void confirmBooleanOp() => _booleanOpsOrchestrator.confirmBooleanOp();
 
   void confirmImport() => _importOrchestrator.confirmImport();
+  void confirmImportForced() => _importOrchestrator.confirmImportForced();
 
   // Helper for snapping
   List<double> _snapIfClose(List<double> p) {

@@ -40,7 +40,7 @@ final referralServiceProvider = Provider<ReferralService>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef ReferralServiceRef = ProviderRef<ReferralService>;
-String _$planoAtivoHash() => r'08b49ddbfbab60e93fb43f372b1ced1c21b11d4f';
+String _$planoAtivoHash() => r'6e6eb2a6d9244cdffee94aab90e34ea384d269aa';
 
 /// Plano ativo do usuário autenticado.
 ///
@@ -48,6 +48,9 @@ String _$planoAtivoHash() => r'08b49ddbfbab60e93fb43f372b1ced1c21b11d4f';
 /// marketing/ e map/ possam consultá-lo sem re-fetch.
 ///
 /// Retorna null se o usuário não possui plano ativo.
+///
+/// Observa [sessionControllerProvider] para reagir automaticamente ao
+/// logout: quando a sessão vira [SessionPublic], retorna null sem erro.
 ///
 /// Copied from [planoAtivo].
 @ProviderFor(planoAtivo)

@@ -23,7 +23,7 @@ class DatabaseHelper {
 
     final db = await openDatabase(
       path,
-      version: 19,
+      version: 20,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -120,6 +120,9 @@ class DatabaseHelper {
           break;
         case 19:
           await _migrateToV19(db);
+          break;
+        case 20:
+          await _migrateToV20(db);
           break;
       }
     }
@@ -694,6 +697,60 @@ class DatabaseHelper {
       'V18: visit_sessions reconstruída — area_id e activity_type agora nullable',
       tag: 'DB.Migration',
     );
+  }
+
+  // ════════════════════════════════════════════════════════════════
+
+  /// V20 — Cache local de dados climáticos (módulo clima/).
+  ///
+  /// Cria 3 tabelas com TTL de 15 minutos (gerenciado pelo ClimaLocalDatasource):
+  ///   - [clima_atual_cache]   → condição atual por coordenada
+  ///   - [clima_horaria_cache] → previsão horária (payload JSON)
+  ///   - [clima_diaria_cache]  → previsão semanal (payload JSON)
+  /// Idempotente: CREATE TABLE IF NOT EXISTS.
+  Future<void> _migrateToV20(Database db) async {
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS clima_atual_cache (
+        cache_key        TEXT PRIMARY KEY,
+        temperatura      REAL NOT NULL,
+        sensacao_termica REAL NOT NULL,
+        condicao         TEXT NOT NULL,
+        condicao_codigo  TEXT NOT NULL,
+        vento_velocidade REAL NOT NULL,
+        vento_direcao    TEXT NOT NULL,
+        umidade          INTEGER NOT NULL,
+        precipitacao     REAL NOT NULL,
+        pressao          REAL NOT NULL,
+        visibilidade     REAL NOT NULL,
+        cobertura_nuvens INTEGER NOT NULL,
+        indice_uv        INTEGER NOT NULL,
+        nascer_sol       TEXT NOT NULL,
+        por_sol          TEXT NOT NULL,
+        latitude         REAL NOT NULL,
+        longitude        REAL NOT NULL,
+        cidade           TEXT NOT NULL,
+        atualizado_em    TEXT NOT NULL,
+        cached_at        TEXT NOT NULL
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS clima_horaria_cache (
+        cache_key TEXT PRIMARY KEY,
+        payload   TEXT NOT NULL,
+        cached_at TEXT NOT NULL
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS clima_diaria_cache (
+        cache_key TEXT PRIMARY KEY,
+        payload   TEXT NOT NULL,
+        cached_at TEXT NOT NULL
+      )
+    ''');
+
+    AppLogger.debug('V20: tabelas de cache clima criadas', tag: 'DB.Migration');
   }
 
   Future<void> close() async {

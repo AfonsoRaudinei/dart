@@ -27,27 +27,31 @@ class DrawingImportService {
 
   const DrawingImportService(this._filePicker);
 
-  /// Abre o seletor de arquivo, parseia KML/KMZ e retorna a geometria processada.
+  /// Abre o seletor de arquivo (KML ou KMZ), parseia e retorna a geometria processada.
+  ///
+  /// O tipo é inferido automaticamente pela extensão do arquivo selecionado.
   ///
   /// Casos de retorno:
   /// - `cancelled = true` → usuário cancelou, sem ação necessária
   /// - `error != null` → arquivo inválido ou erro de leitura
   /// - `isSuccess == true` → geometria pronta para preview
-  Future<ImportResult> pickAndParse(bool isKmz) async {
+  Future<ImportResult> pickAndParse() async {
     try {
-      final type = isKmz ? 'kmz' : 'kml';
-      final file = await _filePicker.pickSingleFile(allowedExtensions: [type]);
+      final file = await _filePicker.pickSingleFile(
+        allowedExtensions: ['kml', 'kmz'],
+      );
 
       if (file == null) {
         return const ImportResult(cancelled: true);
       }
 
+      final ext = file.name.split('.').last.toLowerCase();
       final geometry = await DrawingUtils.parseFileOrThrow(file);
 
       var processed = DrawingUtils.simplifyGeometry(geometry);
       processed = DrawingUtils.normalizeGeometry(processed);
 
-      final origin = isKmz
+      final origin = ext == 'kmz'
           ? DrawingOrigin.importacao_kmz
           : DrawingOrigin.importacao_kml;
 

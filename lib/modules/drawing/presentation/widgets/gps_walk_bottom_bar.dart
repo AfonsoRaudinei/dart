@@ -123,7 +123,7 @@ class GpsWalkBottomBar extends ConsumerWidget {
 
             if (status == GpsWalkStatus.idle) ...[
               const SizedBox(width: 8),
-              _IconActionButton(
+              const _IconActionButton(
                 icon: Icons.add_location_alt_rounded,
                 label: 'Add ponto',
                 enabled: false,

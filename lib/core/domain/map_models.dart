@@ -1,6 +1,6 @@
 import 'package:latlong2/latlong.dart';
 
-enum LayerType { standard, satellite, terrain }
+enum LayerType { standard, satellite, relevo }
 
 enum SyncStatus { pending, synced, error }
 

@@ -83,7 +83,7 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
 
   void _onToolSelected(String key) {
     if (key == 'import') {
-      widget.controller.startImportMode();
+      widget.controller.pickImportFile();
       setState(() {
         _selectedToolKey = null; // No visual toggle for import, it changes mode
       });
@@ -359,28 +359,15 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
           ),
           const SizedBox(height: 8),
           const Text(
-            'Selecione o formato do arquivo para importar:',
+            'Selecione o arquivo KML ou KMZ para importar:',
             style: TextStyle(color: Colors.grey),
           ),
           const SizedBox(height: 24),
-          Row(
-            children: [
-              Expanded(
-                child: _FormatButton(
-                  label: 'KML',
-                  icon: Icons.code,
-                  onTap: () => widget.controller.pickImportFile(false),
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: _FormatButton(
-                  label: 'KMZ',
-                  icon: Icons.folder_zip,
-                  onTap: () => widget.controller.pickImportFile(true),
-                ),
-              ),
-            ],
+          _FormatButton(
+            label: 'Importar Arquivo',
+            sublabel: 'KML ou KMZ',
+            icon: Icons.upload_file_rounded,
+            onTap: () => widget.controller.pickImportFile(),
           ),
           const SizedBox(height: 16),
           TextButton(
@@ -534,9 +521,49 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
               const SizedBox(width: 12),
               Expanded(
                 child: ElevatedButton(
-                  onPressed: () {
+                  onPressed: () async {
                     HapticFeedback.mediumImpact();
-                    widget.controller.confirmImport();
+                    final validation = widget.controller.validationResult;
+                    if (!validation.isValid &&
+                        (validation.message?.contains('sobreposição') == true)) {
+                      final confirmar = await showDialog<bool>(
+                        context: context,
+                        builder: (_) => AlertDialog(
+                          title: const Text('Sobreposição detectada'),
+                          content: const Text(
+                            'A geometria importada sobrepõe uma área existente. '
+                            'Deseja importar assim mesmo?',
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.of(
+                                context,
+                                rootNavigator: false,
+                              ).pop(false),
+                              child: const Text('Cancelar'),
+                            ),
+                            ElevatedButton(
+                              onPressed: () => Navigator.of(
+                                context,
+                                rootNavigator: false,
+                              ).pop(true),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: PremiumTokens.brandGreen,
+                              ),
+                              child: const Text(
+                                'Importar assim mesmo',
+                                style: TextStyle(color: Colors.white),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                      if (confirmar == true && context.mounted) {
+                        widget.controller.confirmImportForced();
+                      }
+                    } else {
+                      widget.controller.confirmImport();
+                    }
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor:
@@ -1063,14 +1090,14 @@ class _SheetHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
+    return const Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         // A pílula de drag já é renderizada pelo parente externo (MapBottomSheet)
         Padding(
-          padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
-          child: const Align(
+          padding: EdgeInsets.fromLTRB(20, 0, 20, 8),
+          child: Align(
             alignment: Alignment.centerLeft,
             child: Text(
               'Ferramentas de Desenho',
@@ -1083,7 +1110,7 @@ class _SheetHeader extends StatelessWidget {
             ),
           ),
         ),
-        const Divider(height: 1),
+        Divider(height: 1),
       ],
     );
   }
@@ -1111,12 +1138,14 @@ class _MetricItem extends StatelessWidget {
 
 class _FormatButton extends StatelessWidget {
   final String label;
+  final String? sublabel;
   final IconData icon;
   final VoidCallback onTap;
   const _FormatButton({
     required this.label,
     required this.icon,
     required this.onTap,
+    this.sublabel,
   });
   @override
   Widget build(BuildContext context) {
@@ -1135,6 +1164,13 @@ class _FormatButton extends StatelessWidget {
             Icon(icon, size: 32, color: Theme.of(context).primaryColor),
             const SizedBox(height: 8),
             Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
+            if (sublabel != null) ...[
+              const SizedBox(height: 4),
+              Text(
+                sublabel!,
+                style: const TextStyle(fontSize: 12, color: Colors.grey),
+              ),
+            ],
           ],
         ),
       ),

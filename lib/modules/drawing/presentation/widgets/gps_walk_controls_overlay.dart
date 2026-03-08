@@ -80,74 +80,68 @@ class _GpsWalkControlsOverlayState
     if (session == null) return const SizedBox.shrink();
 
     return RepaintBoundary(
-      child: ClipRRect(
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
-          child: Container(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
-            decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.60),
-              borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(28)),
-              border: Border(
-                top: BorderSide(
-                  color: Colors.white.withValues(alpha: 0.12),
-                  width: 0.8,
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+        decoration: BoxDecoration(
+          color: Colors.black.withValues(alpha: 0.60),
+          borderRadius:
+              const BorderRadius.vertical(top: Radius.circular(28)),
+          border: Border(
+            top: BorderSide(
+              color: Colors.white.withValues(alpha: 0.12),
+              width: 0.8,
+            ),
+          ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // ── Drag pill ──────────────────────────────────────
+            Center(
+              child: Container(
+                width: 36,
+                height: 5,
+                margin: const EdgeInsets.only(bottom: 14),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFC5C5C7),
+                  borderRadius: BorderRadius.circular(10),
                 ),
               ),
             ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
+
+            // ── Header ────────────────────────────────────────
+            Row(
               children: [
-                // ── Drag pill ──────────────────────────────────────
-                Center(
-                  child: Container(
-                    width: 36,
-                    height: 5,
-                    margin: const EdgeInsets.only(bottom: 14),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFC5C5C7),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
+                const Icon(
+                  Icons.directions_walk_rounded,
+                  color: Colors.white,
+                  size: 18,
+                ),
+                const SizedBox(width: 8),
+                const Text(
+                  'GPS — Caminhar o perímetro',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: -0.3,
                   ),
                 ),
-
-                // ── Header ────────────────────────────────────────
-                Row(
-                  children: [
-                    const Icon(
-                      Icons.directions_walk_rounded,
-                      color: Colors.white,
-                      size: 18,
-                    ),
-                    const SizedBox(width: 8),
-                    const Text(
-                      'GPS — Caminhar o perímetro',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: -0.3,
-                      ),
-                    ),
-                    const Spacer(),
-                    _GpsQualityIndicator(),
-                  ],
-                ),
-
-                const SizedBox(height: 14),
-
-                // ── Métricas ─────────────────────────────────────
-                const GpsWalkMetricsBar(),
-
-                const SizedBox(height: 16),
-
-                // ── Ações ─────────────────────────────────────────
-                const GpsWalkBottomBar(),
+                const Spacer(),
+                _GpsQualityIndicator(),
               ],
             ),
-          ),
+
+            const SizedBox(height: 14),
+
+            // ── Métricas ─────────────────────────────────────
+            const GpsWalkMetricsBar(),
+
+            const SizedBox(height: 16),
+
+            // ── Ações ─────────────────────────────────────────
+            const GpsWalkBottomBar(),
+          ],
         ),
       ),
     );

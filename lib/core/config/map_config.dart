@@ -52,6 +52,14 @@ class MapConfig {
   /// Subdomínios do Google Maps Tile Server (load balancing)
   static const List<String> googleSatelliteSubdomains = ['0', '1', '2', '3'];
 
+  /// MapTiler Landscape — Estilo relevo com curvas topográficas
+  /// Cobertura global com visualização de terreno e elevação
+  /// Requer API key via --dart-define=MAPTILER_API_KEY=<key>
+  /// Free tier: 100k requests/mês — https://www.maptiler.com/cloud/
+  /// maxZoom: 18 (mesmo do Google Satellite)
+  static String mapTilerLandscapeUrl(String apiKey) =>
+      'https://api.maptiler.com/maps/landscape/{z}/{x}/{y}.png?key=$apiKey';
+
   /// OpenStreetMap - Fallback padrão
   /// Sempre disponível, sem limites
   static const String openStreetMap =
@@ -128,6 +136,10 @@ class MapConfig {
 
   /// Atribuição do Google Maps (obrigatória pelos Termos de Serviço)
   static const String googleAttribution = '© Google';
+
+  /// Atribuição do MapTiler (obrigatória pelos Termos de Serviço)
+  static const String mapTilerAttribution =
+      '© MapTiler © OpenStreetMap contributors';
 }
 
 /// Enum para facilitar seleção de estilos

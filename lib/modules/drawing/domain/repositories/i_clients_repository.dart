@@ -35,14 +35,14 @@ class Farm extends FarmSummary {
   final List<Object> fields;
 
   const Farm({
-    required String id,
-    String clientId = '',
-    required String name,
+    required super.id,
+    super.clientId = '',
+    required super.name,
     required this.city,
     required this.state,
     double totalAreaHa = 0.0,
     this.fields = const [],
-  }) : super(id: id, clientId: clientId, name: name, areaHa: totalAreaHa);
+  }) : super(areaHa: totalAreaHa);
 
   double get totalAreaHa => areaHa ?? 0.0;
 }

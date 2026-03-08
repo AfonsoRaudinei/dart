@@ -140,9 +140,7 @@ class VisitController extends StateNotifier<AsyncValue<VisitSession?>> {
     // (ex: após restart do app). Fallback para SQLite garante que a sessão ativa
     // seja encontrada mesmo com estado em memória desatualizado.
     VisitSession? currentSession = state.valueOrNull;
-    if (currentSession == null) {
-      currentSession = await _repository.getActiveSession();
-    }
+    currentSession ??= await _repository.getActiveSession();
     if (currentSession == null) return;
 
     state = const AsyncValue.loading();

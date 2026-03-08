@@ -328,7 +328,7 @@ class MapRepository {
         isVisible: true,
       ),
       MapLayer(id: 'sat', name: 'Satélite', type: LayerType.satellite),
-      MapLayer(id: 'ter', name: 'Relevo', type: LayerType.terrain),
+      MapLayer(id: 'ter', name: 'Relevo', type: LayerType.relevo),
     ];
   }
 }

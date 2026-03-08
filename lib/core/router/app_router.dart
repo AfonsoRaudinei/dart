@@ -22,6 +22,7 @@ import '../../../modules/consultoria/reports/presentation/screens/report_detail_
 import '../../../modules/consultoria/clients/presentation/screens/farm_detail_screen.dart';
 import '../../../modules/consultoria/clients/presentation/screens/field_detail_screen.dart';
 import '../../../modules/feedback/presentation/screens/feedback_screen.dart';
+import '../../ui/screens/clima_screen.dart';
 // ADR-012 — Módulo planos/
 import '../../../modules/planos/presentation/screens/planos_screen.dart';
 import '../../../modules/planos/presentation/screens/pagamento_screen.dart';
@@ -182,6 +183,10 @@ GoRouter router(Ref ref) {
           GoRoute(
             path: AppRoutes.feedback,
             builder: (_, __) => const FeedbackScreen(),
+          ),
+          GoRoute(
+            path: AppRoutes.clima,
+            builder: (_, __) => const ClimaScreen(),
           ),
           // ════════════════════════════════════════════════════════════════
           // MÓDULO PLANOS — ADR-012

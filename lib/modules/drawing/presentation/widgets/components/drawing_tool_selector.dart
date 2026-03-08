@@ -67,7 +67,7 @@ class DrawingToolSelector extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         // TODO(drawing): implementar GravarRotaController em prompt futuro
-        _GravarRotaButton(),
+        const _GravarRotaButton(),
       ],
     );
   }

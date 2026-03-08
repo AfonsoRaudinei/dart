@@ -55,11 +55,15 @@ class _FotoPickerWidgetState extends State<FotoPickerWidget> {
       );
 
       if (mounted) {
+        // 🔧 FIX: Atualizar estado interno primeiro, depois notificar pai (Bug B)
+        // Isso garante que quando o pai reconstruir o widget, o loading já está false
+        setState(() => _loading = false);
+        
         if (url != null) {
           HapticFeedback.mediumImpact();
+          // Notificar o pai após o setState para evitar race condition de rebuild
           widget.onChanged(url);
         }
-        setState(() => _loading = false);
       }
     } catch (_) {
       if (mounted) setState(() => _loading = false);

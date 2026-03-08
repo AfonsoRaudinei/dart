@@ -50,8 +50,6 @@ import '../../modules/consultoria/occurrences/presentation/widgets/occurrence_de
 import '../../modules/consultoria/occurrences/presentation/controllers/occurrence_controller.dart';
 import '../../modules/visitas/presentation/widgets/visit_sheet.dart';
 import '../../modules/visitas/presentation/controllers/visit_controller.dart';
-import '../../modules/agenda/presentation/providers/agenda_provider.dart';
-import '../../modules/agenda/domain/enums/event_status.dart';
 import '../../modules/map/design/sf_icons.dart';
 
 part 'private_map_sheets.dart';

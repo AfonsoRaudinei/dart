@@ -127,10 +127,11 @@ class LayersSheet extends ConsumerWidget {
               Expanded(
                 child: _LayerCardPreview(
                   label: 'Relevo',
-                  isSelected: currentLayer == LayerType.terrain,
+                  isSelected: currentLayer == LayerType.relevo,
                   color: Colors.brown.shade200,
-                  isDisabled: true,
-                  onTap: null,
+                  onTap: () => ref
+                      .read(activeLayerProvider.notifier)
+                      .setLayer(LayerType.relevo),
                 ),
               ),
             ],

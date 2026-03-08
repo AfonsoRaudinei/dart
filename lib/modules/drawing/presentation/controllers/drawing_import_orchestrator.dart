@@ -62,10 +62,11 @@ class DrawingImportOrchestrator {
     _notifyHost();
   }
 
-  Future<void> pickImportFile(bool isKmz) async {
+  Future<void> pickImportFile() async {
+    _setSelectedFeature(null);
     _setErrorMessage(null);
 
-    final result = await _importService.pickAndParse(isKmz);
+    final result = await _importService.pickAndParse();
     if (result.cancelled) {
       _setInteractionMode(DrawingInteraction.normal);
     } else if (result.error != null) {
@@ -94,6 +95,20 @@ class DrawingImportOrchestrator {
       return;
     }
 
+    _setPreviewGeometry(_finalizeGeometry(preview));
+    _confirmImportState();
+    _currentImportOrigin = null;
+    _notifyHost();
+  }
+
+  /// Confirma a importação ignorando alertas de sobreposição.
+  ///
+  /// Chamado quando o usuário reconhece a sobreposição e opta por prosseguir.
+  void confirmImportForced() {
+    final preview = _getPreviewGeometry();
+    if (preview == null || _currentImportOrigin == null) return;
+
+    _setErrorMessage(null);
     _setPreviewGeometry(_finalizeGeometry(preview));
     _confirmImportState();
     _currentImportOrigin = null;

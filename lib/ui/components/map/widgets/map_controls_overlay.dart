@@ -7,6 +7,8 @@ import '../../../../../../modules/map/design/sf_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../modules/dashboard/controllers/location_controller.dart';
 import '../../../../modules/dashboard/domain/location_state.dart';
+import '../../../../modules/map/presentation/providers/map_location_mode_provider.dart';
+import '../../../../core/providers/connectivity_provider.dart';
 
 import '../../premium/premium_glass_panel.dart';
 import '../../../../modules/drawing/domain/drawing_state.dart';
@@ -73,9 +75,6 @@ class MapControlsOverlay extends ConsumerStatefulWidget {
 class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
   @override
   Widget build(BuildContext context) {
-    // ⚡ Otimização: Observar apenas o LocationState (não toda a posição)
-    final locationState = ref.watch(locationStateProvider);
-
     // Use SafeArea top padding to ensure elements are below the status bar/notch
     final safeTop = MediaQuery.of(context).padding.top;
 
@@ -88,44 +87,26 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
           child: const VisitActiveCard(),
         ),
 
-        // 2. Botão de Localização (isolado, canto superior direito)
+        // 2. Botão de Localização + Indicador de Conectividade (canto superior direito)
         Positioned(
-          top: safeTop + 16, // Abaixo do SafeArea
-          right: 16, // Layout pedido: 16
-          child: GestureDetector(
-            onTap: () {
-              HapticFeedback.selectionClick();
-              AppLogger.debug(
-                "MapOverlay: Clique em 'Centralizar Usuário'",
-                tag: 'MapControls',
-              );
-              widget.onCenterUser();
-            },
-            behavior: HitTestBehavior.opaque,
-            child: PremiumGlassPanel(
-              borderRadius: BorderRadius.circular(99.0),
-              child: Container(
-                width: 52,
-                height: 52,
-                alignment: Alignment.center,
-                child: Icon(
-                  SFIcons.myLocation,
-                  size: 24,
-                  color: locationState == LocationState.available
-                      ? PremiumTokens.brandGreen
-                      : PremiumTokens.textPrimaryLight,
-                ),
-              ),
-            ),
+          top: safeTop + 12, // Respeita safe area (Dynamic Island / notch)
+          right: 12,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Indicador de Conectividade
+              _ConnectivityDot(),
+              const SizedBox(width: 6),
+              // Botão de Localização com 3 estados
+              _LocationButton(onCenterUser: widget.onCenterUser),
+            ],
           ),
         ),
 
         // 3. Ações verticais do mapa (direita)
         Positioned(
-          top:
-              safeTop +
-              120, // Ajustado para não colidir com o botão de localização
-          right: 16, // Layout pedido: 16
+          top: safeTop + 80, // Ajustado para não colidir com o botão de localização menor
+          right: 16,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -271,5 +252,115 @@ class _MapActionButton extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+/// Indicador visual de conectividade (círculo verde/vermelho)
+class _ConnectivityDot extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isOnline = ref.watch(isOnlineProvider).valueOrNull ?? true;
+    
+    return Container(
+      width: 10,
+      height: 10,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: isOnline 
+            ? const Color(0xFF34C759) // Verde iOS
+            : const Color(0xFFFF3B30), // Vermelho iOS
+        boxShadow: [
+          BoxShadow(
+            color: (isOnline 
+                ? const Color(0xFF34C759) 
+                : const Color(0xFFFF3B30)
+            ).withValues(alpha: 0.4),
+            blurRadius: 4,
+            spreadRadius: 1,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Botão de localização com 3 estados (idle / following / northLocked)
+class _LocationButton extends ConsumerWidget {
+  final VoidCallback onCenterUser;
+
+  const _LocationButton({required this.onCenterUser});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final locationMode = ref.watch(mapLocationModeProvider);
+    final locationState = ref.watch(locationStateProvider);
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Material(
+      shape: const CircleBorder(),
+      elevation: 2,
+      color: Colors.white,
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: () {
+          HapticFeedback.selectionClick();
+          
+          // Ciclo de estados: idle → following → northLocked → idle
+          final nextMode = switch (locationMode) {
+            MapLocationMode.idle => MapLocationMode.following,
+            MapLocationMode.following => MapLocationMode.northLocked,
+            MapLocationMode.northLocked => MapLocationMode.idle,
+          };
+          
+          ref.read(mapLocationModeProvider.notifier).state = nextMode;
+          
+          // Centralizar usuário quando entra em following
+          if (nextMode == MapLocationMode.following || 
+              nextMode == MapLocationMode.northLocked) {
+            onCenterUser();
+          }
+          
+          AppLogger.debug(
+            "MapOverlay: Modo de localização mudou para $nextMode",
+            tag: 'MapControls',
+          );
+        },
+        child: SizedBox(
+          width: 36,
+          height: 36,
+          child: Icon(
+            _iconForMode(locationMode),
+            size: 18,
+            color: _colorForMode(locationMode, locationState, colorScheme),
+          ),
+        ),
+      ),
+    );
+  }
+
+  IconData _iconForMode(MapLocationMode mode) {
+    return switch (mode) {
+      MapLocationMode.idle => Icons.navigation_outlined,
+      MapLocationMode.following => Icons.navigation,
+      MapLocationMode.northLocked => Icons.explore,
+    };
+  }
+
+  Color _colorForMode(
+    MapLocationMode mode,
+    LocationState locationState,
+    ColorScheme colorScheme,
+  ) {
+    // Se GPS indisponível, sempre preto
+    if (locationState != LocationState.available) {
+      return Colors.black87;
+    }
+
+    // Estados ativos (following / northLocked) usam cor primary
+    return switch (mode) {
+      MapLocationMode.idle => Colors.black87,
+      MapLocationMode.following => colorScheme.primary,
+      MapLocationMode.northLocked => colorScheme.primary,
+    };
   }
 }

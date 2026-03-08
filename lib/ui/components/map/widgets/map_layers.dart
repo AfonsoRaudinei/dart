@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/state/map_state.dart';
 import '../../../../core/domain/map_models.dart';
 import '../../../../core/config/map_config.dart';
+import '../../../../core/config/map_secrets.dart';
 
 /// Widget que observa apenas activeLayerProvider e renderiza o TileLayer.
 /// Rebuild isolado quando a camada muda.
@@ -19,7 +20,9 @@ class MapLayersWidget extends ConsumerWidget {
   ///
   /// [LayerType.satellite] → Google Maps Satellite Híbrido (lyrs=y)
   ///   Imagem de alta resolução + labels de cidades/rodovias — ideal para campo
-  /// [LayerType.terrain]  → OpenTopoMap (topográfico com curvas de nível)
+  ///
+  /// [LayerType.relevo] → MapTiler Landscape
+  ///   Mapa topográfico com curvas de nível e visualização de elevação
   String _getLayerUrl(LayerType type) {
     switch (type) {
       case LayerType.satellite:
@@ -28,8 +31,12 @@ class MapLayersWidget extends ConsumerWidget {
         // Cobertura superior no Brasil rural, zoom até 20+.
         // Subdomínios 0-3 em MapConfig.googleSatelliteSubdomains.
         return MapConfig.googleSatelliteUrl;
-      case LayerType.terrain:
-        return 'https://b.tile.opentopomap.org/{z}/{x}/{y}.png';
+      case LayerType.relevo:
+        // 🗻 RELEVO: MapTiler Landscape
+        // Estilo topográfico com curvas de nível e sombreamento de relevo.
+        // Requer API key via --dart-define=MAPTILER_API_KEY=<key>
+        // Free tier: 100k requests/mês
+        return MapConfig.mapTilerLandscapeUrl(kMapTilerApiKey);
       case LayerType.standard:
         // 🎨 ESTILO PADRÃO (Apple Maps / iOS Replica): Carto Voyager
         // Possui cores pastéis claras, águas azul-marinho puras e vegetação sutil,
@@ -44,8 +51,9 @@ class MapLayersWidget extends ConsumerWidget {
         return MapConfig.googleSatelliteSubdomains;
       case LayerType.standard:
         return MapConfig.cartoSubdomains;
-      case LayerType.terrain:
-        return const ['a', 'b', 'c'];
+      case LayerType.relevo:
+        // MapTiler não usa subdomínios — retorna lista vazia
+        return const [];
     }
   }
 

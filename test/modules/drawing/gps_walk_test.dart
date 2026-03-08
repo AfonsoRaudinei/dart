@@ -19,10 +19,10 @@ const _lng = -47.0;
 const _d = 0.001; // 0,001° ≈ 111 m
 
 final _square = [
-  LatLng(_lat, _lng),
-  LatLng(_lat + _d, _lng),
-  LatLng(_lat + _d, _lng + _d),
-  LatLng(_lat, _lng + _d),
+  const LatLng(_lat, _lng),
+  const LatLng(_lat + _d, _lng),
+  const LatLng(_lat + _d, _lng + _d),
+  const LatLng(_lat, _lng + _d),
 ];
 
 void main() {
@@ -33,7 +33,7 @@ void main() {
     test('calculatePerimeterMeters — retorna 0 com < 2 pontos', () {
       expect(GeoCalculatorService.calculatePerimeterMeters([]), equals(0.0));
       expect(
-        GeoCalculatorService.calculatePerimeterMeters([LatLng(0, 0)]),
+        GeoCalculatorService.calculatePerimeterMeters([const LatLng(0, 0)]),
         equals(0.0),
       );
     });
@@ -41,12 +41,12 @@ void main() {
     test('calculateAreaSquareMeters — retorna 0 com < 3 pontos', () {
       expect(GeoCalculatorService.calculateAreaSquareMeters([]), equals(0.0));
       expect(
-        GeoCalculatorService.calculateAreaSquareMeters([LatLng(0, 0)]),
+        GeoCalculatorService.calculateAreaSquareMeters([const LatLng(0, 0)]),
         equals(0.0),
       );
       expect(
         GeoCalculatorService.calculateAreaSquareMeters(
-          [LatLng(0, 0), LatLng(1, 0)],
+          [const LatLng(0, 0), const LatLng(1, 0)],
         ),
         equals(0.0),
       );
@@ -79,9 +79,9 @@ void main() {
     test('perímetro cresce com mais pontos no mesmo anel', () {
       // Triângulo
       final triangle = [
-        LatLng(_lat, _lng),
-        LatLng(_lat + _d, _lng),
-        LatLng(_lat + _d / 2, _lng + _d),
+        const LatLng(_lat, _lng),
+        const LatLng(_lat + _d, _lng),
+        const LatLng(_lat + _d / 2, _lng + _d),
       ];
       final periTriangle =
           GeoCalculatorService.calculatePerimeterMeters(triangle);
@@ -91,7 +91,7 @@ void main() {
     });
 
     test('polígono degenerado (todos pontos iguais) → área ≈ 0', () {
-      final same = List.filled(4, LatLng(_lat, _lng));
+      final same = List.filled(4, const LatLng(_lat, _lng));
       final area = GeoCalculatorService.calculateAreaSquareMeters(same);
       expect(area, closeTo(0.0, 0.01));
     });
@@ -112,15 +112,15 @@ void main() {
 
     test('canFinish — false com < 3 pontos', () {
       expect(GpsWalkSession.initial().canFinish, isFalse);
-      final s1 = GpsWalkSession.initial().copyWith(points: [LatLng(0, 0)]);
+      final s1 = GpsWalkSession.initial().copyWith(points: [const LatLng(0, 0)]);
       expect(s1.canFinish, isFalse);
-      final s2 = s1.copyWith(points: [LatLng(0, 0), LatLng(1, 0)]);
+      final s2 = s1.copyWith(points: [const LatLng(0, 0), const LatLng(1, 0)]);
       expect(s2.canFinish, isFalse);
     });
 
     test('canFinish — true com 3+ pontos', () {
       final s = GpsWalkSession.initial().copyWith(
-        points: [LatLng(0, 0), LatLng(1, 0), LatLng(0, 1)],
+        points: [const LatLng(0, 0), const LatLng(1, 0), const LatLng(0, 1)],
       );
       expect(s.canFinish, isTrue);
     });
@@ -240,12 +240,12 @@ void main() {
       // Sincronizar 2 pontos — ainda insuficiente
       container
           .read(gpsWalkProvider.notifier)
-          .syncFromController([LatLng(0, 0), LatLng(1, 1)]);
+          .syncFromController([const LatLng(0, 0), const LatLng(1, 1)]);
       expect(container.read(gpsWalkProvider)!.canFinish, isFalse);
       // Sincronizar 3 pontos — suficiente para concluir
       container
           .read(gpsWalkProvider.notifier)
-          .syncFromController([LatLng(0, 0), LatLng(1, 1), LatLng(1, 0)]);
+          .syncFromController([const LatLng(0, 0), const LatLng(1, 1), const LatLng(1, 0)]);
       expect(container.read(gpsWalkProvider)!.canFinish, isTrue);
     });
   });

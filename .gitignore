@@ -84,3 +84,6 @@ scripts/*.local.sh
 # Variáveis de ambiente locais (nunca commitar)
 .env.local
 *.env
+
+# Secrets de API do mapa (nunca commitar chaves reais)
+lib/core/config/map_secrets.dart
