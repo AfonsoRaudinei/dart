@@ -19,8 +19,6 @@ analyzer:
     - lib/**/examples/**
     - lib/modules/agenda/presentation/widgets/agenda_segmented_control.dart
     - lib/modules/agenda/presentation/widgets/distance_warning_dialog.dart
-    - lib/modules/agenda/presentation/widgets/visit_edit_dialog.dart
-    - lib/modules/agenda/presentation/widgets/visit_form_dialog.dart
     - test/auth/register_golden_test.dart
 
 linter:
