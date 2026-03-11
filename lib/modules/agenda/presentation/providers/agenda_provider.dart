@@ -1,12 +1,90 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 import '../../domain/entities/event.dart';
+import '../../domain/entities/visit.dart';
 import '../../domain/entities/visit_session.dart';
 import '../../domain/enums/event_status.dart';
 import '../../domain/enums/event_type.dart';
+import '../../domain/repositories/i_agenda_repository.dart';
+import '../../domain/services/i_agenda_notification_service.dart';
+import '../../domain/use_cases/create_event_use_case.dart';
+import '../../domain/use_cases/update_event_use_case.dart';
 import '../../domain/rules/event_rules.dart';
 import '../../data/repositories/agenda_repository.dart';
 import '../../data/services/agenda_notification_service.dart';
+
+class _AgendaRepositoryAdapter implements IAgendaRepository {
+  final AgendaRepository _repository;
+
+  _AgendaRepositoryAdapter(this._repository);
+
+  @override
+  Future<void> deleteEvent(String id) => _repository.deleteEvent(id);
+
+  @override
+  Future<List<Event>> getAllEvents() => _repository.getAllEvents();
+
+  @override
+  Future<List<VisitSession>> getAllSessions() => _repository.getAllSessions();
+
+  @override
+  Future<List<Event>> getEventsByDateRange(DateTime start, DateTime end) =>
+      _repository.getEventsByDateRange(start, end);
+
+  @override
+  Future<List<Event>> getEventsByDay(DateTime day) => _repository.getEventsByDay(day);
+
+  @override
+  Future<Event?> getEventById(String id) => _repository.getEventById(id);
+
+  @override
+  Future<Event?> getEventBySessionId(String sessionId) =>
+      _repository.getEventBySessionId(sessionId);
+
+  @override
+  Future<List<VisitSession>> getActiveSessions() => _repository.getActiveSessions();
+
+  @override
+  Future<List<Event>> getPendingSyncEvents() => _repository.getPendingSyncEvents();
+
+  @override
+  Future<VisitSession?> getSessionById(String id) => _repository.getSessionById(id);
+
+  @override
+  Future<List<VisitSession>> getSessionsByEventId(String eventId) =>
+      _repository.getSessionsByEventId(eventId);
+
+  @override
+  Future<void> markEventAsSynced(String id) => _repository.markEventAsSynced(id);
+
+  @override
+  Future<void> saveEvent(Event event) => _repository.saveEvent(event);
+
+  @override
+  Future<void> saveSession(VisitSession session) => _repository.saveSession(session);
+
+  @override
+  Future<void> updateEvent(Event event) => _repository.updateEvent(event);
+
+  @override
+  Future<void> updateSession(VisitSession session) =>
+      _repository.updateSession(session);
+}
+
+class _AgendaNotificationServiceAdapter implements IAgendaNotificationService {
+  final AgendaNotificationService _service;
+
+  _AgendaNotificationServiceAdapter(this._service);
+
+  @override
+  Future<void> cancelEventNotifications(String eventId) =>
+      _service.cancelEventNotifications(eventId);
+
+  @override
+  Future<void> scheduleEventNotifications(Event event) =>
+      _service.scheduleEventNotifications(event);
+}
 
 /// Estado da Agenda
 class AgendaState {
@@ -45,14 +123,13 @@ class AgendaState {
 class AgendaNotifier extends StateNotifier<AgendaState> {
   final AgendaRepository _repository;
   final AgendaNotificationService _notificationService;
+  final _uuid = const Uuid();
 
   AgendaNotifier(this._repository, this._notificationService)
     : super(const AgendaState()) {
     _loadFromDatabase();
     _initializeNotifications();
   }
-
-  final _uuid = const Uuid();
 
   /// Inicializa serviço de notificações
   Future<void> _initializeNotifications() async {
@@ -95,24 +172,16 @@ class AgendaNotifier extends StateNotifier<AgendaState> {
     required DateTime dataInicioPlanejada,
     required DateTime dataFimPlanejada,
     String? currentUserId,
+    TimeOfDay? startTime,
+    TimeOfDay? endTime,
+    VisitPriority? priority,
+    double? latitude,
+    double? longitude,
   }) async {
-    // Validações
-    final dateError = EventRules.validateEventDates(
-      dataInicioPlanejada,
-      dataFimPlanejada,
-    );
-    if (dateError != null) {
-      throw ArgumentError(dateError);
-    }
-
-    final titleError = EventRules.validateTitulo(titulo);
-    if (titleError != null) {
-      throw ArgumentError(titleError);
-    }
-
-    final now = DateTime.now();
-    final newEvent = Event(
-      id: _uuid.v4(),
+    final result = await CreateEventUseCase(
+      _AgendaRepositoryAdapter(_repository),
+      _AgendaNotificationServiceAdapter(_notificationService),
+    ).execute(
       tipo: tipo,
       clienteId: clienteId,
       fazendaId: fazendaId,
@@ -120,28 +189,59 @@ class AgendaNotifier extends StateNotifier<AgendaState> {
       titulo: titulo,
       dataInicioPlanejada: dataInicioPlanejada,
       dataFimPlanejada: dataFimPlanejada,
-      status: EventStatus.agendado,
-      createdAt: now,
-      updatedAt: now,
-      syncStatus: 'pending',
+      currentUserId: currentUserId,
+      startTime: startTime,
+      endTime: endTime,
+      priority: priority ?? VisitPriority.normal,
+      latitude: latitude,
+      longitude: longitude,
+      currentEvents: state.events,
     );
-
-    // Detecta conflitos
-    final conflicts = EventRules.detectConflicts(newEvent, state.events);
-
-    // Salva no banco de dados
-    await _repository.saveEvent(newEvent);
-
-    // Agenda notificações
-    await _notificationService.scheduleEventNotifications(newEvent);
 
     // Adiciona o evento
     state = state.copyWith(
-      events: [...state.events, newEvent],
-      conflicts: conflicts,
+      events: [...state.events, result.event],
+      conflicts: result.conflicts,
     );
 
-    return newEvent;
+    return result.event;
+  }
+
+  /// Atualiza um evento existente
+  Future<Event> updateEvent({
+    required String eventId,
+    String? titulo,
+    DateTime? dataInicioPlanejada,
+    DateTime? dataFimPlanejada,
+    TimeOfDay? startTime,
+    TimeOfDay? endTime,
+    VisitPriority? priority,
+    double? latitude,
+    double? longitude,
+  }) async {
+    final currentEvent = state.events.firstWhere(
+      (event) => event.id == eventId,
+      orElse: () => throw ArgumentError('Evento não encontrado'),
+    );
+
+    final updatedEvent = await UpdateEventUseCase(
+      _AgendaRepositoryAdapter(_repository),
+      _AgendaNotificationServiceAdapter(_notificationService),
+    ).execute(
+      currentEvent: currentEvent,
+      titulo: titulo,
+      dataInicioPlanejada: dataInicioPlanejada,
+      dataFimPlanejada: dataFimPlanejada,
+      startTime: startTime,
+      endTime: endTime,
+      priority: priority,
+      latitude: latitude,
+      longitude: longitude,
+      currentEvents: state.events,
+    );
+
+    _updateEvent(updatedEvent);
+    return updatedEvent;
   }
 
   /// Inicia um evento (AGENDADO → EM_ANDAMENTO)
