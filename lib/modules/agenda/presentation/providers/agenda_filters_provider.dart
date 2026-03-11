@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/infra/preferences_service.dart';
 import '../../../../core/utils/app_logger.dart';
+import '../../domain/enums/agenda_view.dart';
 import '../../domain/enums/event_type.dart';
 import '../../domain/enums/event_status.dart';
 
@@ -168,3 +169,9 @@ final agendaFiltersProvider =
     StateNotifierProvider<AgendaFiltersNotifier, AgendaFilters>(
       (ref) => AgendaFiltersNotifier(ref.read(preferencesServiceProvider)),
     );
+
+final agendaViewProvider = StateProvider<AgendaView>(
+  (ref) => AgendaView.calendario,
+);
+
+final agendaHasUnsavedChangesProvider = StateProvider<bool>((ref) => false);
