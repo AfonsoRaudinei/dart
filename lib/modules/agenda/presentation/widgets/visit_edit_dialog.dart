@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/entities/event.dart';
 import '../../domain/entities/visit.dart';
 import '../providers/agenda_provider.dart';
-import 'distance_warning_dialog.dart';
 
 /// Dialog para editar visita existente com validação de conflitos
 class VisitEditDialog extends ConsumerStatefulWidget {
@@ -128,33 +127,6 @@ class _VisitEditDialogState extends ConsumerState<VisitEditDialog> {
     });
 
     try {
-      // Verifica aviso de distância (não bloqueante)
-      final distanceWarning = ref
-          .read(agendaProvider.notifier)
-          .checkDistanceWarning(
-            date: _selectedDate,
-            startTime: _startTime,
-            endTime: _endTime,
-            latitude: _latitude,
-            longitude: _longitude,
-            excludeEventId: widget.event.id,
-          );
-
-      // Se há aviso de distância, mostra dialog
-      if (distanceWarning != null && mounted) {
-        final shouldContinue = await DistanceWarningDialog.show(
-          context,
-          distanceWarning,
-        );
-
-        if (!shouldContinue) {
-          setState(() {
-            _isLoading = false;
-          });
-          return; // Usuário escolheu revisar
-        }
-      }
-
       final dataInicio = DateTime(
         _selectedDate.year,
         _selectedDate.month,

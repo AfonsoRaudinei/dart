@@ -8,6 +8,7 @@ import '../../domain/enums/event_status.dart';
 import '../providers/agenda_provider.dart';
 import '../widgets/status_badge.dart';
 import '../widgets/event_type_badge.dart';
+import '../widgets/visit_edit_dialog.dart';
 
 /// Página de detalhes expandida de um evento
 class AgendaEventDetailPage extends ConsumerWidget {
@@ -391,10 +392,10 @@ class AgendaEventDetailPage extends ConsumerWidget {
   }
 
   void _showEditDialog(BuildContext context, WidgetRef ref, Event event) {
-    // TODO: Implementar edição completa
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Edição em desenvolvimento')));
+    showDialog<void>(
+      context: context,
+      builder: (_) => VisitEditDialog(event: event),
+    );
   }
 
   String _formatDate(DateTime date) {
