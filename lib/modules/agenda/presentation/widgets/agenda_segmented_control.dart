@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/enums/agenda_view.dart';
-import '../providers/agenda_provider.dart';
+import '../providers/agenda_filters_provider.dart';
 import 'unsaved_changes_dialog.dart';
 
 /// Segmented control estilo iOS para navegação entre views da agenda
@@ -94,7 +94,7 @@ class AgendaSegmentedControl extends ConsumerWidget {
 
     // Se não tem alterações ou não precisa confirmação, troca direto
     if (!hasUnsavedChanges || !needsConfirmation) {
-      await ref.read(agendaViewProvider.notifier).setView(newView);
+      ref.read(agendaViewProvider.notifier).state = newView;
       return;
     }
 
@@ -112,7 +112,7 @@ class AgendaSegmentedControl extends ConsumerWidget {
     // Se confirmou, troca a view e limpa o flag
     if (canSwitch) {
       ref.read(agendaHasUnsavedChangesProvider.notifier).state = false;
-      await ref.read(agendaViewProvider.notifier).setView(newView);
+      ref.read(agendaViewProvider.notifier).state = newView;
     }
   }
 }

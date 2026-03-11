@@ -5,6 +5,7 @@ import 'package:soloforte_app/core/constants/layout_constants.dart';
 import '../../domain/entities/event.dart';
 import '../providers/agenda_provider.dart';
 import '../providers/agenda_filters_provider.dart';
+import '../widgets/agenda_segmented_control.dart';
 import '../widgets/month_calendar_grid.dart';
 import '../widgets/agenda_filters_sheet.dart';
 
@@ -43,6 +44,10 @@ class _AgendaMonthPageState extends ConsumerState<AgendaMonthPage> {
       appBar: AppBar(
         title: const Text('Agenda'),
         automaticallyImplyLeading: false,
+        bottom: const PreferredSize(
+          preferredSize: Size.fromHeight(64),
+          child: AgendaSegmentedControl(),
+        ),
         actions: [
           if (filters.hasActiveFilters)
             Padding(
