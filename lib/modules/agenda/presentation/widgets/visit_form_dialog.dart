@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../domain/entities/event.dart';
+import 'package:geolocator/geolocator.dart';
 import '../../domain/entities/visit.dart';
 import '../../domain/enums/event_type.dart';
 import '../providers/agenda_provider.dart';
@@ -33,9 +33,32 @@ class _VisitFormDialogState extends ConsumerState<VisitFormDialog> {
   String? _selectedClienteId;
 
   @override
+  void initState() {
+    super.initState();
+    _capturarLocalizacao();
+  }
+
+  @override
   void dispose() {
     _tituloController.dispose();
     super.dispose();
+  }
+
+  Future<void> _capturarLocalizacao() async {
+    try {
+      final position = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+        ),
+      );
+      if (!mounted) return;
+      setState(() {
+        _latitude = position.latitude;
+        _longitude = position.longitude;
+      });
+    } catch (_) {
+      // Falha silenciosa: coordenadas permanecem null.
+    }
   }
 
   Future<void> _selectDate() async {
@@ -115,32 +138,8 @@ class _VisitFormDialogState extends ConsumerState<VisitFormDialog> {
     });
 
     try {
-      // Verifica aviso de distância (não bloqueante)
-      final distanceWarning = ref
-          .read(agendaProvider.notifier)
-          .checkDistanceWarning(
-            date: _selectedDate,
-            startTime: _startTime,
-            endTime: _endTime,
-            latitude: _latitude,
-            longitude: _longitude,
-          );
-
-      // Se há aviso de distância, mostra dialog
-      if (distanceWarning != null && mounted) {
-        final shouldContinue = await DistanceWarningDialog.show(
-          context,
-          distanceWarning,
-        );
-
-        if (!shouldContinue) {
-          setState(() {
-            _isLoading = false;
-          });
-          return; // Usuário escolheu revisar
-        }
-      }
-
+      final messenger = ScaffoldMessenger.of(context);
+      final navigator = Navigator.of(context);
       final dataInicio = DateTime(
         _selectedDate.year,
         _selectedDate.month,
@@ -173,8 +172,21 @@ class _VisitFormDialogState extends ConsumerState<VisitFormDialog> {
           );
 
       if (mounted) {
-        Navigator.of(context).pop(true);
-        ScaffoldMessenger.of(context).showSnackBar(
+        final warning = ref
+            .read(agendaProvider.notifier)
+            .checkDistanceWarning(
+              dataInicioPlanejada: dataInicio,
+              latitude: _latitude,
+              longitude: _longitude,
+              startTime: _startTime,
+            );
+
+        if (warning != null) {
+          await DistanceWarningDialog.show(context, warning);
+        }
+
+        navigator.pop(true);
+        messenger.showSnackBar(
           const SnackBar(
             content: Text('Visita criada com sucesso!'),
             backgroundColor: Colors.green,

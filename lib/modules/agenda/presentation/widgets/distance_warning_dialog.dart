@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../domain/entities/event.dart';
 import '../../domain/entities/visit.dart';
-import '../providers/agenda_provider.dart';
 
 /// Classe de dados para aviso de distância
 class DistanceWarning {
@@ -9,6 +9,7 @@ class DistanceWarning {
   final String fromTitle;
   final String toTitle;
   final int intervalMinutes;
+  final Event? conflictingEvent;
 
   const DistanceWarning({
     required this.message,
@@ -16,6 +17,7 @@ class DistanceWarning {
     required this.fromTitle,
     required this.toTitle,
     required this.intervalMinutes,
+    this.conflictingEvent,
   });
 }
 
@@ -122,7 +124,7 @@ class DistanceWarningDialog extends StatelessWidget {
                     const SizedBox(width: 6),
                     Expanded(
                       child: Text(
-                        warning.conflictingEvent.titulo,
+                        warning.conflictingEvent?.titulo ?? warning.toTitle,
                         style: theme.textTheme.bodyMedium?.copyWith(
                           fontWeight: FontWeight.w600,
                         ),
@@ -133,7 +135,7 @@ class DistanceWarningDialog extends StatelessWidget {
 
                 const SizedBox(height: 6),
 
-                if (warning.conflictingEvent.hasScheduledTime)
+                if (warning.conflictingEvent?.hasScheduledTime ?? false)
                   Row(
                     children: [
                       Icon(
@@ -145,11 +147,51 @@ class DistanceWarningDialog extends StatelessWidget {
                       ),
                       const SizedBox(width: 6),
                       Text(
-                        warning.conflictingEvent.formattedTimeRange,
+                        warning.conflictingEvent!.formattedTimeRange,
                         style: theme.textTheme.bodySmall,
                       ),
                     ],
                   ),
+
+                const SizedBox(height: 6),
+
+                Row(
+                  children: [
+                    Icon(
+                      Icons.route,
+                      size: 16,
+                      color: theme.textTheme.bodySmall?.color?.withValues(
+                        alpha: 0.6,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        '${warning.fromTitle} -> ${warning.toTitle}',
+                        style: theme.textTheme.bodySmall,
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 6),
+
+                Row(
+                  children: [
+                    Icon(
+                      Icons.social_distance,
+                      size: 16,
+                      color: theme.textTheme.bodySmall?.color?.withValues(
+                        alpha: 0.6,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      '${warning.distanceKm.toStringAsFixed(1)} km em ${warning.intervalMinutes} min',
+                      style: theme.textTheme.bodySmall,
+                    ),
+                  ],
+                ),
               ],
             ),
           ),

@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
@@ -13,6 +15,7 @@ import '../../domain/use_cases/update_event_use_case.dart';
 import '../../domain/rules/event_rules.dart';
 import '../../data/repositories/agenda_repository.dart';
 import '../../data/services/agenda_notification_service.dart';
+import '../widgets/distance_warning_dialog.dart';
 
 class _AgendaRepositoryAdapter implements IAgendaRepository {
   final AgendaRepository _repository;
@@ -33,7 +36,8 @@ class _AgendaRepositoryAdapter implements IAgendaRepository {
       _repository.getEventsByDateRange(start, end);
 
   @override
-  Future<List<Event>> getEventsByDay(DateTime day) => _repository.getEventsByDay(day);
+  Future<List<Event>> getEventsByDay(DateTime day) =>
+      _repository.getEventsByDay(day);
 
   @override
   Future<Event?> getEventById(String id) => _repository.getEventById(id);
@@ -43,26 +47,31 @@ class _AgendaRepositoryAdapter implements IAgendaRepository {
       _repository.getEventBySessionId(sessionId);
 
   @override
-  Future<List<VisitSession>> getActiveSessions() => _repository.getActiveSessions();
+  Future<List<VisitSession>> getActiveSessions() =>
+      _repository.getActiveSessions();
 
   @override
-  Future<List<Event>> getPendingSyncEvents() => _repository.getPendingSyncEvents();
+  Future<List<Event>> getPendingSyncEvents() =>
+      _repository.getPendingSyncEvents();
 
   @override
-  Future<VisitSession?> getSessionById(String id) => _repository.getSessionById(id);
+  Future<VisitSession?> getSessionById(String id) =>
+      _repository.getSessionById(id);
 
   @override
   Future<List<VisitSession>> getSessionsByEventId(String eventId) =>
       _repository.getSessionsByEventId(eventId);
 
   @override
-  Future<void> markEventAsSynced(String id) => _repository.markEventAsSynced(id);
+  Future<void> markEventAsSynced(String id) =>
+      _repository.markEventAsSynced(id);
 
   @override
   Future<void> saveEvent(Event event) => _repository.saveEvent(event);
 
   @override
-  Future<void> saveSession(VisitSession session) => _repository.saveSession(session);
+  Future<void> saveSession(VisitSession session) =>
+      _repository.saveSession(session);
 
   @override
   Future<void> updateEvent(Event event) => _repository.updateEvent(event);
@@ -178,25 +187,26 @@ class AgendaNotifier extends StateNotifier<AgendaState> {
     double? latitude,
     double? longitude,
   }) async {
-    final result = await CreateEventUseCase(
-      _AgendaRepositoryAdapter(_repository),
-      _AgendaNotificationServiceAdapter(_notificationService),
-    ).execute(
-      tipo: tipo,
-      clienteId: clienteId,
-      fazendaId: fazendaId,
-      talhaoId: talhaoId,
-      titulo: titulo,
-      dataInicioPlanejada: dataInicioPlanejada,
-      dataFimPlanejada: dataFimPlanejada,
-      currentUserId: currentUserId,
-      startTime: startTime,
-      endTime: endTime,
-      priority: priority ?? VisitPriority.normal,
-      latitude: latitude,
-      longitude: longitude,
-      currentEvents: state.events,
-    );
+    final result =
+        await CreateEventUseCase(
+          _AgendaRepositoryAdapter(_repository),
+          _AgendaNotificationServiceAdapter(_notificationService),
+        ).execute(
+          tipo: tipo,
+          clienteId: clienteId,
+          fazendaId: fazendaId,
+          talhaoId: talhaoId,
+          titulo: titulo,
+          dataInicioPlanejada: dataInicioPlanejada,
+          dataFimPlanejada: dataFimPlanejada,
+          currentUserId: currentUserId,
+          startTime: startTime,
+          endTime: endTime,
+          priority: priority ?? VisitPriority.normal,
+          latitude: latitude,
+          longitude: longitude,
+          currentEvents: state.events,
+        );
 
     // Adiciona o evento
     state = state.copyWith(
@@ -224,24 +234,132 @@ class AgendaNotifier extends StateNotifier<AgendaState> {
       orElse: () => throw ArgumentError('Evento não encontrado'),
     );
 
-    final updatedEvent = await UpdateEventUseCase(
-      _AgendaRepositoryAdapter(_repository),
-      _AgendaNotificationServiceAdapter(_notificationService),
-    ).execute(
-      currentEvent: currentEvent,
-      titulo: titulo,
-      dataInicioPlanejada: dataInicioPlanejada,
-      dataFimPlanejada: dataFimPlanejada,
-      startTime: startTime,
-      endTime: endTime,
-      priority: priority,
-      latitude: latitude,
-      longitude: longitude,
-      currentEvents: state.events,
-    );
+    final updatedEvent =
+        await UpdateEventUseCase(
+          _AgendaRepositoryAdapter(_repository),
+          _AgendaNotificationServiceAdapter(_notificationService),
+        ).execute(
+          currentEvent: currentEvent,
+          titulo: titulo,
+          dataInicioPlanejada: dataInicioPlanejada,
+          dataFimPlanejada: dataFimPlanejada,
+          startTime: startTime,
+          endTime: endTime,
+          priority: priority,
+          latitude: latitude,
+          longitude: longitude,
+          currentEvents: state.events,
+        );
 
     _updateEvent(updatedEvent);
     return updatedEvent;
+  }
+
+  DistanceWarning? checkDistanceWarning({
+    required DateTime dataInicioPlanejada,
+    double? latitude,
+    double? longitude,
+    TimeOfDay? startTime,
+    String? excludeEventId,
+  }) {
+    const double thresholdKm = 50.0;
+    const int thresholdMinutes = 60;
+
+    if (latitude == null || longitude == null || startTime == null) {
+      return null;
+    }
+
+    final currentEvent = _resolveDistanceWarningEvent(
+      dataInicioPlanejada: dataInicioPlanejada,
+      latitude: latitude,
+      longitude: longitude,
+      startTime: startTime,
+      eventId: excludeEventId,
+    );
+
+    final targetStart = DateTime(
+      dataInicioPlanejada.year,
+      dataInicioPlanejada.month,
+      dataInicioPlanejada.day,
+      startTime.hour,
+      startTime.minute,
+    );
+
+    final sameDayEvents =
+        state.events
+            .where(
+              (event) => DateUtils.isSameDay(
+                event.dataInicioPlanejada,
+                dataInicioPlanejada,
+              ),
+            )
+            .where((event) => event.id != excludeEventId)
+            .where((event) => event.id != currentEvent?.id)
+            .toList()
+          ..sort(
+            (a, b) => a.dataInicioPlanejada.compareTo(b.dataInicioPlanejada),
+          );
+
+    final previousCandidates =
+        sameDayEvents
+            .where((event) => event.latitude != null && event.longitude != null)
+            .where((event) => event.startTime != null)
+            .where((event) => !event.dataFimPlanejada.isAfter(targetStart))
+            .toList()
+          ..sort((a, b) => b.dataFimPlanejada.compareTo(a.dataFimPlanejada));
+
+    if (previousCandidates.isNotEmpty) {
+      final previousEvent = previousCandidates.first;
+      final gapMinutes = targetStart
+          .difference(previousEvent.dataFimPlanejada)
+          .inMinutes;
+      final distanceKm = _haversineKm(
+        previousEvent.latitude!,
+        previousEvent.longitude!,
+        latitude,
+        longitude,
+      );
+
+      if (distanceKm > thresholdKm && gapMinutes < thresholdMinutes) {
+        return DistanceWarning(
+          message:
+              'A visita anterior termina em pouco tempo para um deslocamento de ${distanceKm.toStringAsFixed(1)} km.',
+          distanceKm: distanceKm,
+          fromTitle: previousEvent.titulo,
+          toTitle: currentEvent?.titulo ?? 'Visita atual',
+          intervalMinutes: gapMinutes,
+          conflictingEvent: previousEvent,
+        );
+      }
+    }
+
+    if (currentEvent?.latitude != null && currentEvent?.longitude != null) {
+      final minutesUntilStart = targetStart
+          .difference(DateTime.now())
+          .inMinutes;
+      final distanceKm = _haversineKm(
+        latitude,
+        longitude,
+        currentEvent!.latitude!,
+        currentEvent.longitude!,
+      );
+
+      if (distanceKm > thresholdKm &&
+          minutesUntilStart >= 0 &&
+          minutesUntilStart < thresholdMinutes) {
+        return DistanceWarning(
+          message:
+              'O deslocamento estimado ate esta visita e alto para o tempo restante antes do inicio.',
+          distanceKm: distanceKm,
+          fromTitle: 'Posicao atual',
+          toTitle: currentEvent.titulo,
+          intervalMinutes: minutesUntilStart,
+          conflictingEvent: currentEvent,
+        );
+      }
+    }
+
+    return null;
   }
 
   /// Inicia um evento (AGENDADO → EM_ANDAMENTO)
@@ -471,6 +589,67 @@ class AgendaNotifier extends StateNotifier<AgendaState> {
   void clearConflicts() {
     state = state.copyWith(conflicts: []);
   }
+
+  Event? _resolveDistanceWarningEvent({
+    required DateTime dataInicioPlanejada,
+    required double latitude,
+    required double longitude,
+    required TimeOfDay startTime,
+    String? eventId,
+  }) {
+    if (eventId != null) {
+      return getEventById(eventId);
+    }
+
+    final matches =
+        state.events
+            .where(
+              (event) => DateUtils.isSameDay(
+                event.dataInicioPlanejada,
+                dataInicioPlanejada,
+              ),
+            )
+            .where((event) => event.startTime == startTime)
+            .where(
+              (event) =>
+                  event.latitude == latitude && event.longitude == longitude,
+            )
+            .toList()
+          ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+
+    if (matches.isNotEmpty) {
+      return matches.first;
+    }
+
+    final fallbackMatches =
+        state.events
+            .where(
+              (event) => DateUtils.isSameDay(
+                event.dataInicioPlanejada,
+                dataInicioPlanejada,
+              ),
+            )
+            .where((event) => event.startTime == startTime)
+            .toList()
+          ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+
+    return fallbackMatches.isNotEmpty ? fallbackMatches.first : null;
+  }
+
+  double _haversineKm(double lat1, double lon1, double lat2, double lon2) {
+    const radiusKm = 6371.0;
+    final dLat = _toRadians(lat2 - lat1);
+    final dLon = _toRadians(lon2 - lon1);
+    final a =
+        math.sin(dLat / 2) * math.sin(dLat / 2) +
+        math.cos(_toRadians(lat1)) *
+            math.cos(_toRadians(lat2)) *
+            math.sin(dLon / 2) *
+            math.sin(dLon / 2);
+    return radiusKm * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a));
+  }
+
+  double _toRadians(double degrees) => degrees * math.pi / 180;
 }
 
 /// Provider do repositório

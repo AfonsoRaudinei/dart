@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/entities/event.dart';
 import '../../domain/entities/visit.dart';
 import '../providers/agenda_provider.dart';
+import 'distance_warning_dialog.dart';
 
 /// Dialog para editar visita existente com validação de conflitos
 class VisitEditDialog extends ConsumerStatefulWidget {
@@ -127,6 +128,8 @@ class _VisitEditDialogState extends ConsumerState<VisitEditDialog> {
     });
 
     try {
+      final messenger = ScaffoldMessenger.of(context);
+      final navigator = Navigator.of(context);
       final dataInicio = DateTime(
         _selectedDate.year,
         _selectedDate.month,
@@ -158,8 +161,22 @@ class _VisitEditDialogState extends ConsumerState<VisitEditDialog> {
           );
 
       if (mounted) {
-        Navigator.of(context).pop(true);
-        ScaffoldMessenger.of(context).showSnackBar(
+        final warning = ref
+            .read(agendaProvider.notifier)
+            .checkDistanceWarning(
+              dataInicioPlanejada: dataInicio,
+              latitude: _latitude,
+              longitude: _longitude,
+              startTime: _startTime,
+              excludeEventId: widget.event.id,
+            );
+
+        if (warning != null) {
+          await DistanceWarningDialog.show(context, warning);
+        }
+
+        navigator.pop(true);
+        messenger.showSnackBar(
           const SnackBar(
             content: Text('Visita atualizada com sucesso!'),
             backgroundColor: Colors.green,
