@@ -17,8 +17,6 @@ analyzer:
     - "**/*.g.dart"
     - "**/*.freezed.dart"
     - lib/**/examples/**
-    - lib/modules/agenda/presentation/widgets/agenda_segmented_control.dart
-    - lib/modules/agenda/presentation/widgets/distance_warning_dialog.dart
     - test/auth/register_golden_test.dart
 
 linter:
