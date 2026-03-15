@@ -4,17 +4,22 @@ import 'package:flutter/services.dart';
 /// Widget responsável por exibir e gerenciar a seleção de ferramentas de desenho.
 ///
 /// Responsabilidade: seleção de ferramenta de desenho
-/// (Polígono, Livre, Pivô, KML, GPS Caminhar, Gravar Rota).
+/// (Polígono, Livre, Pivô, KML, GPS Caminhar).
 ///
 /// Ferramentas disponíveis:
 /// - Polígono (desenho livre)
 /// - Livre (freehand)
 /// - Pivô (círculo de irrigação)
 /// - Importar (KML/KMZ)
+/// - GPS (caminhar)
 ///
 /// ⚠️ Este widget é STATELESS e não gerencia estado próprio.
 /// O estado visual de seleção é gerenciado pelo parent.
 class DrawingToolSelector extends StatelessWidget {
+  static const _sheetSurface = Color(0xFF2C2C2E);
+  static const _sheetBorder = Color(0xFF3A3A3C);
+  static const _accentGreen = Color(0xFF4CAF50);
+
   final String? selectedToolKey;
   final ValueChanged<String> onToolSelected;
 
@@ -32,42 +37,50 @@ class DrawingToolSelector extends StatelessWidget {
       children: [
         // Ferramentas
         _ToolButton(
-          icon: Icons.crop_square,
+          icon: Icons.pentagon_outlined,
           label: 'Polígono',
           isSelected: selectedToolKey == 'polygon',
           onTap: () => onToolSelected('polygon'),
+          backgroundColor: _sheetSurface,
+          borderColor: _sheetBorder,
+          accentColor: _accentGreen,
         ),
-        const SizedBox(height: 8),
         _ToolButton(
           icon: Icons.gesture,
           label: 'Livre',
           isSelected: selectedToolKey == 'freehand',
           onTap: () => onToolSelected('freehand'),
+          backgroundColor: _sheetSurface,
+          borderColor: _sheetBorder,
+          accentColor: _accentGreen,
         ),
-        const SizedBox(height: 8),
         _ToolButton(
           icon: Icons.circle_outlined,
           label: 'Pivô',
           isSelected: selectedToolKey == 'pivot',
           onTap: () => onToolSelected('pivot'),
+          backgroundColor: _sheetSurface,
+          borderColor: _sheetBorder,
+          accentColor: _accentGreen,
         ),
-        const SizedBox(height: 8),
         _ToolButton(
           icon: Icons.upload_file,
           label: 'Importar (KML)',
           isSelected: false, // Import is an action, not a state
           onTap: () => onToolSelected('import'),
+          backgroundColor: _sheetSurface,
+          borderColor: _sheetBorder,
+          accentColor: _accentGreen,
         ),
-        const SizedBox(height: 8),
         _ToolButton(
-          icon: Icons.my_location_rounded,
+          icon: Icons.directions_walk,
           label: 'GPS (caminhar)',
           isSelected: selectedToolKey == 'gps',
           onTap: () => onToolSelected('gps'),
+          backgroundColor: _sheetSurface,
+          borderColor: _sheetBorder,
+          accentColor: _accentGreen,
         ),
-        const SizedBox(height: 8),
-        // TODO(drawing): implementar GravarRotaController em prompt futuro
-        const _GravarRotaButton(),
       ],
     );
   }
@@ -79,114 +92,44 @@ class _ToolButton extends StatelessWidget {
   final String label;
   final bool isSelected;
   final VoidCallback onTap;
+  final Color backgroundColor;
+  final Color borderColor;
+  final Color accentColor;
 
   const _ToolButton({
     required this.icon,
     required this.label,
     required this.isSelected,
     required this.onTap,
+    required this.backgroundColor,
+    required this.borderColor,
+    required this.accentColor,
   });
 
   @override
   Widget build(BuildContext context) {
-    // 🎨 Design Minimalista (Solicitação do Usuário)
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isSelected ? accentColor : borderColor,
+          width: isSelected ? 1.0 : 0.5,
+        ),
+      ),
+      child: ListTile(
         onTap: () {
           HapticFeedback.lightImpact();
           onTap();
         },
-        borderRadius: BorderRadius.circular(8),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          decoration: BoxDecoration(
-            color: isSelected
-                ? Colors.green.withOpacity(0.1)
-                : Colors.transparent,
-            borderRadius: BorderRadius.circular(8),
-            border: isSelected
-                ? Border.all(color: Colors.green.withOpacity(0.5))
-                : Border.all(color: Colors.grey.withOpacity(0.2)),
-          ),
-          child: Row(
-            children: [
-              Icon(
-                icon,
-                color: isSelected ? Colors.green[700] : Colors.black87,
-                size: 20,
-              ),
-              const SizedBox(width: 12),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                  color: isSelected ? Colors.green[800] : Colors.black87,
-                ),
-              ),
-              const Spacer(),
-              if (isSelected)
-                const Icon(Icons.check, color: Colors.green, size: 18),
-            ],
-          ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        leading: Icon(icon, color: accentColor, size: 22),
+        title: Text(
+          label,
+          style: const TextStyle(color: Colors.white, fontSize: 15),
         ),
-      ),
-    );
-  }
-}
-
-/// Botão stub para "Gravar Rota" — sem funcionalidade, apenas visual.
-/// Diferenciado com ícone vermelho REC (referência Wikiloc).
-/// TODO(drawing): conectar a GravarRotaController quando implementado.
-class _GravarRotaButton extends StatelessWidget {
-  const _GravarRotaButton();
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: () {
-          // TODO(drawing): implementar GravarRotaController em prompt futuro
-          // Por ora: fecha o sheet sem ação
-          Navigator.of(context, rootNavigator: false).pop();
-        },
-        borderRadius: BorderRadius.circular(8),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          decoration: BoxDecoration(
-            color: Colors.transparent,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.grey.withValues(alpha: 0.2)),
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 32,
-                height: 32,
-                decoration: BoxDecoration(
-                  color: Colors.red.shade50,
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: const Icon(
-                  Icons.fiber_manual_record,
-                  color: Colors.red,
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 12),
-              const Text(
-                'Gravar Rota',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.normal,
-                  color: Colors.black87,
-                ),
-              ),
-            ],
-          ),
-        ),
+        trailing: const Icon(Icons.chevron_right, color: Colors.white24, size: 18),
       ),
     );
   }

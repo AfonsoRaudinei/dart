@@ -9,6 +9,7 @@ import '../../domain/drawing_state.dart';
 import '../../domain/repositories/i_clients_repository.dart';
 import '../providers/drawing_client_provider.dart';
 import '../providers/gps_walk_providers.dart';
+import '../../../../core/constants/layout_constants.dart';
 import 'components/drawing_tool_selector.dart';
 import 'components/drawing_actions_bar.dart';
 import '../../../../ui/theme/premium/design_tokens.dart';
@@ -157,8 +158,8 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
     // Este widget não inclui handle próprio.
     return Container(
       decoration: const BoxDecoration(
-        color: Colors
-            .transparent, // ✅ iOS Premium: Permite o glassmorphism do MapBottomSheet vazar
+        color: Color(0xFF1C1C1E),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -226,7 +227,7 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
           ),
 
           // Safe Area bottom padding
-          SizedBox(height: MediaQuery.of(context).padding.bottom + 12),
+          const SizedBox(height: kFabSafeArea),
         ],
       ),
     );
@@ -1092,25 +1093,38 @@ class _SheetHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return const Column(
       mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // A pílula de drag já é renderizada pelo parente externo (MapBottomSheet)
+        Center(
+          child: Padding(
+            padding: EdgeInsets.only(top: 12),
+            child: SizedBox(
+              width: 40,
+              height: 4,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: Colors.white24,
+                  borderRadius: BorderRadius.all(Radius.circular(2)),
+                ),
+              ),
+            ),
+          ),
+        ),
         Padding(
-          padding: EdgeInsets.fromLTRB(20, 0, 20, 8),
+          padding: EdgeInsets.fromLTRB(20, 16, 20, 8),
           child: Align(
             alignment: Alignment.centerLeft,
             child: Text(
               'Ferramentas de Desenho',
               style: TextStyle(
-                fontSize: 17, // ✅ iOS Premium: 17px SemiBold pra Header Modal
+                fontSize: 18,
                 fontWeight: FontWeight.w600,
-                letterSpacing: -0.4, // ✅ iOS Premium: -0.4px
-                color: Colors.black87,
+                color: Colors.white,
               ),
             ),
           ),
         ),
-        Divider(height: 1),
+        Divider(height: 1, color: Colors.white10),
       ],
     );
   }
