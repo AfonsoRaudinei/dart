@@ -1,4 +1,5 @@
 import 'package:go_router/go_router.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'router_notifier.dart';
@@ -145,6 +146,12 @@ GoRouter router(Ref ref) {
                     AgendaEventDetailPage(eventId: state.pathParameters['id']!),
               ),
             ],
+          ),
+          GoRoute(
+            path: AppRoutes.carteira,
+            builder: (_, __) => const Scaffold(
+              body: Center(child: Text('Carteira - em breve')),
+            ),
           ),
 
           GoRoute(
