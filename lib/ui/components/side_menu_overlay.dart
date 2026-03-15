@@ -106,11 +106,11 @@ class SideMenuOverlay extends ConsumerWidget {
                             label: 'Clima',
                             route: AppRoutes.clima,
                           ),
-                          _buildStubItem(
-                            context,
-                            'Calculadora',
-                            Icons.calculate_outlined,
-                            ref,
+                          const _MenuItem(
+                            icon: Icons.account_balance_wallet_outlined,
+                            label: 'Carteira',
+                            subtitle: 'Acompanhamento de mercado',
+                            route: AppRoutes.carteira,
                           ),
 
                           _buildSectionLabel(context, "CONTA"),
@@ -208,26 +208,6 @@ class SideMenuOverlay extends ConsumerWidget {
           color: Theme.of(context).colorScheme.outline,
           letterSpacing: 1.2,
         ),
-      ),
-    );
-  }
-
-  Widget _buildStubItem(
-    BuildContext context,
-    String label,
-    IconData icon,
-    WidgetRef ref,
-  ) {
-    return Opacity(
-      opacity: 0.45,
-      child: ListTile(
-        leading: Icon(icon),
-        title: Text(label),
-        subtitle: const Text("Em breve"),
-        trailing: const Icon(Icons.chevron_right),
-        onTap: () {
-          ref.read(sideMenuOpenProvider.notifier).state = false;
-        },
       ),
     );
   }
