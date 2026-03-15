@@ -23,7 +23,7 @@ class DatabaseHelper {
 
     final db = await openDatabase(
       path,
-      version: 20,
+      version: 22,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -124,6 +124,12 @@ class DatabaseHelper {
         case 20:
           await _migrateToV20(db);
           break;
+        case 21:
+          await _migrateToV21(db);
+          break;
+        case 22:
+          await _migrateToV22(db);
+          break;
       }
     }
   }
@@ -136,6 +142,7 @@ class DatabaseHelper {
     await db.execute('''
       CREATE TABLE IF NOT EXISTS clients (
         id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL DEFAULT '',
         nome TEXT NOT NULL,
         documento TEXT,
         telefone TEXT,
@@ -148,6 +155,7 @@ class DatabaseHelper {
     await db.execute('''
       CREATE TABLE IF NOT EXISTS farms (
         id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL DEFAULT '',
         cliente_id TEXT NOT NULL,
         nome TEXT NOT NULL,
         area_total REAL,
@@ -162,6 +170,7 @@ class DatabaseHelper {
     await db.execute('''
       CREATE TABLE IF NOT EXISTS fields (
         id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL DEFAULT '',
         fazenda_id TEXT NOT NULL,
         codigo TEXT,
         nome TEXT NOT NULL,
@@ -227,6 +236,7 @@ class DatabaseHelper {
     await db.execute('''
       CREATE TABLE IF NOT EXISTS visit_sessions (
         id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL DEFAULT '',
         producer_id TEXT NOT NULL,
         area_id TEXT NOT NULL,
         activity_type TEXT NOT NULL,
@@ -249,6 +259,7 @@ class DatabaseHelper {
     await db.execute('''
       CREATE TABLE IF NOT EXISTS occurrences (
         id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL DEFAULT '',
         visit_session_id TEXT,
         type TEXT NOT NULL,
         description TEXT,
@@ -271,6 +282,7 @@ class DatabaseHelper {
     await db.execute('''
       CREATE TABLE IF NOT EXISTS visit_reports (
         id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL DEFAULT '',
         visit_session_id TEXT NOT NULL UNIQUE,
         content TEXT NOT NULL,
         created_at TEXT NOT NULL,
@@ -285,6 +297,7 @@ class DatabaseHelper {
     await db.execute('''
       CREATE TABLE IF NOT EXISTS agenda_events (
         id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL DEFAULT '',
         producer_id TEXT NOT NULL,
         area_id TEXT NOT NULL,
         activity_type TEXT NOT NULL,
@@ -345,6 +358,7 @@ class DatabaseHelper {
     await db.execute('''
       CREATE TABLE IF NOT EXISTS drawings (
         id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL DEFAULT '',
         nome TEXT NOT NULL,
         tipo TEXT NOT NULL,
         origem TEXT NOT NULL,
@@ -405,6 +419,7 @@ class DatabaseHelper {
     await db.execute('''
       CREATE TABLE IF NOT EXISTS agenda_events (
         id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL DEFAULT '',
         tipo TEXT NOT NULL,
         cliente_id TEXT NOT NULL,
         fazenda_id TEXT,
@@ -424,6 +439,7 @@ class DatabaseHelper {
     await db.execute('''
       CREATE TABLE IF NOT EXISTS agenda_visit_sessions (
         id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL DEFAULT '',
         evento_id TEXT NOT NULL,
         start_at_real TEXT NOT NULL,
         end_at_real TEXT,
@@ -547,6 +563,7 @@ class DatabaseHelper {
     await db.execute('''
       CREATE TABLE IF NOT EXISTS client_culturas (
         id           TEXT PRIMARY KEY,
+        user_id      TEXT NOT NULL DEFAULT '',
         client_id    TEXT NOT NULL,
         cultura      TEXT NOT NULL,
         area_ha      REAL NOT NULL,
@@ -651,6 +668,7 @@ class DatabaseHelper {
     await db.execute('''
       CREATE TABLE IF NOT EXISTS visit_sessions_v18 (
         id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL DEFAULT '',
         producer_id TEXT NOT NULL,
         area_id TEXT,
         activity_type TEXT,
@@ -668,7 +686,20 @@ class DatabaseHelper {
     // Copia dados existentes. Linhas com area_id='' (workaround anterior)
     // são convertidas para NULL para consistência semântica.
     await db.execute('''
-      INSERT INTO visit_sessions_v18
+      INSERT INTO visit_sessions_v18 (
+        id,
+        producer_id,
+        area_id,
+        activity_type,
+        start_time,
+        end_time,
+        initial_lat,
+        initial_long,
+        status,
+        created_at,
+        updated_at,
+        sync_status
+      )
         SELECT
           id,
           producer_id,
@@ -686,9 +717,7 @@ class DatabaseHelper {
     ''');
 
     await db.execute('DROP TABLE IF EXISTS visit_sessions');
-    await db.execute(
-      'ALTER TABLE visit_sessions_v18 RENAME TO visit_sessions',
-    );
+    await db.execute('ALTER TABLE visit_sessions_v18 RENAME TO visit_sessions');
     await db.execute(
       'CREATE INDEX IF NOT EXISTS idx_visit_sessions_status ON visit_sessions(status)',
     );
@@ -712,6 +741,7 @@ class DatabaseHelper {
     await db.execute('''
       CREATE TABLE IF NOT EXISTS clima_atual_cache (
         cache_key        TEXT PRIMARY KEY,
+        user_id          TEXT NOT NULL DEFAULT '',
         temperatura      REAL NOT NULL,
         sensacao_termica REAL NOT NULL,
         condicao         TEXT NOT NULL,
@@ -737,6 +767,7 @@ class DatabaseHelper {
     await db.execute('''
       CREATE TABLE IF NOT EXISTS clima_horaria_cache (
         cache_key TEXT PRIMARY KEY,
+        user_id   TEXT NOT NULL DEFAULT '',
         payload   TEXT NOT NULL,
         cached_at TEXT NOT NULL
       )
@@ -745,6 +776,7 @@ class DatabaseHelper {
     await db.execute('''
       CREATE TABLE IF NOT EXISTS clima_diaria_cache (
         cache_key TEXT PRIMARY KEY,
+        user_id   TEXT NOT NULL DEFAULT '',
         payload   TEXT NOT NULL,
         cached_at TEXT NOT NULL
       )
@@ -769,6 +801,7 @@ class DatabaseHelper {
     await db.execute('''
       CREATE TABLE IF NOT EXISTS ndvi_cache (
         id           TEXT PRIMARY KEY,
+        user_id      TEXT NOT NULL DEFAULT '',
         area_id      TEXT NOT NULL,
         date         TEXT NOT NULL,
         source       TEXT NOT NULL,
@@ -785,5 +818,122 @@ class DatabaseHelper {
     );
 
     AppLogger.debug('V19: tabela ndvi_cache criada', tag: 'DB.Migration');
+  }
+
+  /// V21 — Isolamento local por usuário autenticado.
+  ///
+  /// Adiciona a coluna `user_id` em todas as tabelas locais persistidas.
+  /// Idempotente: cada ALTER TABLE é envolvido em try/catch individual.
+  Future<void> _migrateToV21(Database db) async {
+    const tables = [
+      'clients',
+      'farms',
+      'fields',
+      'visit_sessions',
+      'occurrences',
+      'visit_reports',
+      'agenda_events',
+      'agenda_visit_sessions',
+      'drawings',
+      'client_culturas',
+      'clima_atual_cache',
+      'clima_horaria_cache',
+      'clima_diaria_cache',
+      'ndvi_cache',
+      'publicacoes_tecnicas',
+      'relatorios',
+      'relatorios_v2',
+    ];
+
+    for (final table in tables) {
+      try {
+        await db.execute(
+          "ALTER TABLE $table ADD COLUMN user_id TEXT NOT NULL DEFAULT ''",
+        );
+        AppLogger.debug(
+          'V21: user_id adicionado em $table',
+          tag: 'DB.Migration',
+        );
+      } catch (_) {
+        AppLogger.debug(
+          'V21: user_id já existe em $table ou tabela ausente — ignorado',
+          tag: 'DB.Migration',
+        );
+      }
+    }
+  }
+
+  /// V22 — Módulo carteira (categorias e percentual por cliente).
+  ///
+  /// Cria tabelas locais do bounded context carteira/.
+  /// Idempotente: CREATE TABLE/INDEX IF NOT EXISTS.
+  Future<void> _migrateToV22(Database db) async {
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS carteira_categorias (
+        id          TEXT PRIMARY KEY,
+        user_id     TEXT NOT NULL DEFAULT '',
+        nome        TEXT NOT NULL,
+        cor         TEXT NOT NULL DEFAULT '#4ADE80',
+        ativo       INTEGER NOT NULL DEFAULT 1,
+        ordem       INTEGER NOT NULL DEFAULT 0,
+        created_at  TEXT NOT NULL,
+        updated_at  TEXT NOT NULL
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS carteira_cliente_categorias (
+        id                  TEXT PRIMARY KEY,
+        user_id             TEXT NOT NULL DEFAULT '',
+        cliente_id          TEXT NOT NULL,
+        categoria_id        TEXT NOT NULL,
+        percentual_fechado  INTEGER NOT NULL DEFAULT 0,
+        observacao          TEXT,
+        updated_at          TEXT NOT NULL,
+        FOREIGN KEY (categoria_id) REFERENCES carteira_categorias(id)
+      )
+    ''');
+
+    await db.execute('''
+      CREATE INDEX IF NOT EXISTS idx_carteira_cliente_user
+        ON carteira_cliente_categorias(user_id, cliente_id)
+    ''');
+
+    await db.execute('''
+      CREATE INDEX IF NOT EXISTS idx_carteira_cat_user
+        ON carteira_categorias(user_id, ativo)
+    ''');
+
+    AppLogger.debug(
+      'V22: tabelas do módulo carteira criadas',
+      tag: 'DB.Migration',
+    );
+  }
+
+  /// Remove registros locais não sincronizados do usuário no logout.
+  Future<void> clearUserLocalData(String userId) async {
+    if (userId.isEmpty) return;
+
+    final db = await database;
+
+    const tablesWithSync = [
+      'occurrences',
+      'drawings',
+      'publicacoes_tecnicas',
+      'relatorios',
+      'relatorios_v2',
+    ];
+
+    for (final table in tablesWithSync) {
+      try {
+        await db.delete(
+          table,
+          where: "user_id = ? AND sync_status IN ('local_only', 'local')",
+          whereArgs: [userId],
+        );
+      } catch (_) {
+        // Tabela ausente ou sem coluna esperada — ignorar no logout.
+      }
+    }
   }
 }
