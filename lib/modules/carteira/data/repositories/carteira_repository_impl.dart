@@ -14,9 +14,9 @@ class CarteiraRepositoryImpl implements ICarteiraRepository {
   static const Uuid _uuid = Uuid();
 
   static const List<({String nome, String cor})> _categoriasIniciais = [
-    (nome: 'Nutricao / Fertilidade', cor: '#4ADE80'),
+    (nome: 'Nutrição / Fertilidade', cor: '#4ADE80'),
     (nome: 'Sementes de Soja', cor: '#FBBF24'),
-    (nome: 'Defensivos / Quimico', cor: '#F87171'),
+    (nome: 'Defensivos / Químico', cor: '#F87171'),
     (nome: 'Biotecnologia', cor: '#60A5FA'),
     (nome: 'Sementes de Milho', cor: '#A78BFA'),
     (nome: 'Outros', cor: '#9CA3AF'),
