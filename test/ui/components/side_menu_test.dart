@@ -44,6 +44,10 @@ void main() {
         expect(AppRoutes.getLevel('/feedback'), RouteLevel.l1);
       });
 
+      test('Carteira é L1', () {
+        expect(AppRoutes.getLevel('/carteira'), RouteLevel.l1);
+      });
+
       test('Clientes é L1', () {
         expect(AppRoutes.getLevel('/consultoria/clientes'), RouteLevel.l1);
       });
@@ -94,6 +98,13 @@ void main() {
       test('Novo relatório é L2+', () {
         expect(
           AppRoutes.getLevel('/consultoria/relatorios/novo'),
+          RouteLevel.l2Plus,
+        );
+      });
+
+      test('Detalhe de carteira por cliente é L2+', () {
+        expect(
+          AppRoutes.getLevel('/carteira/cliente/abc-123'),
           RouteLevel.l2Plus,
         );
       });
@@ -154,6 +165,10 @@ void main() {
           AppRoutes.canOpenSideMenu('/consultoria/clientes/abc-123'),
           false,
         );
+      });
+
+      test('Não pode abrir SideMenu em detalhe da carteira', () {
+        expect(AppRoutes.canOpenSideMenu('/carteira/cliente/abc-123'), false);
       });
 
       test('Não pode abrir SideMenu no mapa público', () {
