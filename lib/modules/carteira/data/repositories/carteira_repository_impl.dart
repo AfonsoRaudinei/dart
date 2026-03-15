@@ -1,0 +1,195 @@
+import 'package:sqflite/sqflite.dart';
+import 'package:uuid/uuid.dart';
+
+import 'package:soloforte_app/core/database/database_helper.dart';
+import 'package:soloforte_app/modules/carteira/domain/entities/categoria_global.dart';
+import 'package:soloforte_app/modules/carteira/domain/entities/cliente_categoria.dart';
+import 'package:soloforte_app/modules/carteira/domain/repositories/i_carteira_repository.dart';
+
+class CarteiraRepositoryImpl implements ICarteiraRepository {
+  CarteiraRepositoryImpl({DatabaseHelper? dbHelper})
+    : _dbHelper = dbHelper ?? DatabaseHelper.instance;
+
+  final DatabaseHelper _dbHelper;
+  static const Uuid _uuid = Uuid();
+
+  static const List<({String nome, String cor})> _categoriasIniciais = [
+    (nome: 'Nutricao / Fertilidade', cor: '#4ADE80'),
+    (nome: 'Sementes de Soja', cor: '#FBBF24'),
+    (nome: 'Defensivos / Quimico', cor: '#F87171'),
+    (nome: 'Biotecnologia', cor: '#60A5FA'),
+    (nome: 'Sementes de Milho', cor: '#A78BFA'),
+    (nome: 'Outros', cor: '#9CA3AF'),
+  ];
+
+  @override
+  Future<List<CategoriaGlobal>> getCategorias(String userId) async {
+    final db = await _dbHelper.database;
+    final rows = await db.query(
+      'carteira_categorias',
+      where: 'user_id = ? AND ativo = 1',
+      whereArgs: [userId],
+      orderBy: 'ordem ASC',
+    );
+    return rows.map(_categoriaFromMap).toList(growable: false);
+  }
+
+  @override
+  Future<void> saveCategoria(CategoriaGlobal categoria) async {
+    final db = await _dbHelper.database;
+    await db.insert(
+      'carteira_categorias',
+      _categoriaToMap(categoria),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  @override
+  Future<void> updateCategoria(CategoriaGlobal categoria) async {
+    final db = await _dbHelper.database;
+    await db.update(
+      'carteira_categorias',
+      _categoriaToMap(categoria),
+      where: 'id = ?',
+      whereArgs: [categoria.id],
+    );
+  }
+
+  @override
+  Future<void> desativarCategoria(String id) async {
+    final db = await _dbHelper.database;
+    await db.update(
+      'carteira_categorias',
+      {'ativo': 0, 'updated_at': DateTime.now().toIso8601String()},
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
+  @override
+  Future<List<ClienteCategoria>> getCategoriasDoCliente(
+    String userId,
+    String clienteId,
+  ) async {
+    final db = await _dbHelper.database;
+    final rows = await db.query(
+      'carteira_cliente_categorias',
+      where: 'user_id = ? AND cliente_id = ?',
+      whereArgs: [userId, clienteId],
+      orderBy: 'updated_at DESC',
+    );
+    return rows.map(_clienteCategoriaFromMap).toList(growable: false);
+  }
+
+  @override
+  Future<List<ClienteCategoria>> getTodosRegistros(String userId) async {
+    final db = await _dbHelper.database;
+    final rows = await db.query(
+      'carteira_cliente_categorias',
+      where: 'user_id = ?',
+      whereArgs: [userId],
+      orderBy: 'updated_at DESC',
+    );
+    return rows.map(_clienteCategoriaFromMap).toList(growable: false);
+  }
+
+  @override
+  Future<void> upsertClienteCategoria(ClienteCategoria registro) async {
+    if (registro.percentualFechado < 0 || registro.percentualFechado > 100) {
+      throw ArgumentError.value(
+        registro.percentualFechado,
+        'percentualFechado',
+        'percentualFechado deve estar entre 0 e 100',
+      );
+    }
+
+    final db = await _dbHelper.database;
+    await db.insert(
+      'carteira_cliente_categorias',
+      _clienteCategoriaToMap(registro),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  @override
+  Future<void> seedCategoriasIniciais(String userId) async {
+    final db = await _dbHelper.database;
+    final existing = Sqflite.firstIntValue(
+      await db.rawQuery(
+        'SELECT COUNT(1) FROM carteira_categorias WHERE user_id = ?',
+        [userId],
+      ),
+    );
+
+    if ((existing ?? 0) > 0) {
+      return;
+    }
+
+    final now = DateTime.now().toIso8601String();
+    final batch = db.batch();
+    for (var i = 0; i < _categoriasIniciais.length; i++) {
+      final categoria = _categoriasIniciais[i];
+      batch.insert('carteira_categorias', {
+        'id': _uuid.v4(),
+        'user_id': userId,
+        'nome': categoria.nome,
+        'cor': categoria.cor,
+        'ativo': 1,
+        'ordem': i,
+        'created_at': now,
+        'updated_at': now,
+      }, conflictAlgorithm: ConflictAlgorithm.replace);
+    }
+    await batch.commit(noResult: true);
+  }
+
+  Map<String, Object?> _categoriaToMap(CategoriaGlobal categoria) {
+    return {
+      'id': categoria.id,
+      'user_id': categoria.userId,
+      'nome': categoria.nome,
+      'cor': categoria.cor,
+      'ativo': categoria.ativo ? 1 : 0,
+      'ordem': categoria.ordem,
+      'created_at': categoria.createdAt.toIso8601String(),
+      'updated_at': categoria.updatedAt.toIso8601String(),
+    };
+  }
+
+  CategoriaGlobal _categoriaFromMap(Map<String, Object?> map) {
+    return CategoriaGlobal(
+      id: (map['id'] ?? '') as String,
+      userId: (map['user_id'] ?? '') as String,
+      nome: (map['nome'] ?? '') as String,
+      cor: (map['cor'] ?? '#4ADE80') as String,
+      ativo: ((map['ativo'] ?? 1) as int) == 1,
+      ordem: (map['ordem'] ?? 0) as int,
+      createdAt: DateTime.parse((map['created_at'] ?? '') as String),
+      updatedAt: DateTime.parse((map['updated_at'] ?? '') as String),
+    );
+  }
+
+  Map<String, Object?> _clienteCategoriaToMap(ClienteCategoria registro) {
+    return {
+      'id': registro.id,
+      'user_id': registro.userId,
+      'cliente_id': registro.clienteId,
+      'categoria_id': registro.categoriaId,
+      'percentual_fechado': registro.percentualFechado,
+      'observacao': registro.observacao,
+      'updated_at': registro.updatedAt.toIso8601String(),
+    };
+  }
+
+  ClienteCategoria _clienteCategoriaFromMap(Map<String, Object?> map) {
+    return ClienteCategoria(
+      id: (map['id'] ?? '') as String,
+      userId: (map['user_id'] ?? '') as String,
+      clienteId: (map['cliente_id'] ?? '') as String,
+      categoriaId: (map['categoria_id'] ?? '') as String,
+      percentualFechado: (map['percentual_fechado'] ?? 0) as int,
+      observacao: map['observacao'] as String?,
+      updatedAt: DateTime.parse((map['updated_at'] ?? '') as String),
+    );
+  }
+}
