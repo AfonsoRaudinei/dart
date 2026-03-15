@@ -51,6 +51,8 @@ class AppRoutes {
   static const String planosPagamento = '/planos/pagamento';
   static const String planosConfirmacao = '/planos/confirmacao';
   static const String planosIndicacoes = '/planos/indicacoes';
+  static String carteiraCliente(String clienteId) =>
+      '/carteira/cliente/$clienteId';
 
   // ════════════════════════════════════════════════════════════════════
   // CLASSIFICAÇÃO DETERMINÍSTICA DE NÍVEL DE ROTA

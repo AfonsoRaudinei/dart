@@ -1,5 +1,4 @@
 import 'package:go_router/go_router.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'router_notifier.dart';
@@ -12,6 +11,8 @@ import '../../modules/auth/pages/recover_password_page.dart';
 import '../../modules/agenda/presentation/pages/agenda_month_page.dart';
 import '../../modules/agenda/presentation/pages/agenda_day_page.dart';
 import '../../modules/agenda/presentation/pages/agenda_event_detail_page.dart';
+import '../../modules/carteira/presentation/screens/carteira_cliente_screen.dart';
+import '../../modules/carteira/presentation/screens/carteira_screen.dart';
 import '../../ui/screens/publicacao_editor_screen.dart';
 import '../../../modules/settings/presentation/screens/settings_screen.dart';
 import '../../../modules/consultoria/clients/presentation/screens/client_list_screen.dart';
@@ -149,9 +150,15 @@ GoRouter router(Ref ref) {
           ),
           GoRoute(
             path: AppRoutes.carteira,
-            builder: (_, __) => const Scaffold(
-              body: Center(child: Text('Carteira - em breve')),
-            ),
+            builder: (_, __) => const CarteiraScreen(),
+            routes: [
+              GoRoute(
+                path: 'cliente/:clienteId',
+                builder: (_, state) => CarteiraClienteScreen(
+                  clienteId: state.pathParameters['clienteId']!,
+                ),
+              ),
+            ],
           ),
 
           GoRoute(
