@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 import '../../../../modules/map/design/sf_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/config/map_config.dart';
 import '../../theme/premium/design_tokens.dart';
+import '../../../core/constants/layout_constants.dart';
 import '../../../core/domain/map_models.dart';
 import '../../../core/domain/publicacao.dart';
 import '../../../core/state/map_state.dart';
@@ -83,6 +87,11 @@ class BaseMapSheet extends StatelessWidget {
 }
 
 class LayersSheet extends ConsumerWidget {
+  static const _sheetBg = Color(0xFF1C1C1E);
+  static const _surface = Color(0xFF2C2C2E);
+  static const _border = Color(0xFF3A3A3C);
+  static const _accent = Color(0xFF4CAF50);
+
   final VoidCallback? onClose; // 🔧 FIX: Callback de fechamento externo
 
   const LayersSheet({super.key, this.onClose});
@@ -92,81 +101,125 @@ class LayersSheet extends ConsumerWidget {
     final currentLayer = ref.watch(activeLayerProvider);
     final showMarkers = ref.watch(showMarkersProvider);
 
-    return BaseMapSheet(
-      title: 'Camadas',
-      onClose: onClose, // 🔧 FIX: Passar callback para BaseMapSheet
-      child: ListView(
-        shrinkWrap: true,
-        padding: const EdgeInsets.all(20),
+    return Container(
+      decoration: const BoxDecoration(
+        color: _sheetBg,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Grid de Camadas com Preview Visual
-          Row(
-            children: [
-              Expanded(
-                child: _LayerCardPreview(
-                  label: 'Padrão',
-                  isSelected: currentLayer == LayerType.standard,
-                  color: Colors.orange.shade100,
-                  onTap: () => ref
-                      .read(activeLayerProvider.notifier)
-                      .setLayer(LayerType.standard),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _LayerCardPreview(
-                  label: 'Satélite',
-                  isSelected: currentLayer == LayerType.satellite,
-                  color: Colors.green.shade200,
-                  onTap: () => ref
-                      .read(activeLayerProvider.notifier)
-                      .setLayer(LayerType.satellite),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _LayerCardPreview(
-                  label: 'Relevo',
-                  isSelected: currentLayer == LayerType.relevo,
-                  color: Colors.brown.shade200,
-                  onTap: () => ref
-                      .read(activeLayerProvider.notifier)
-                      .setLayer(LayerType.relevo),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 32),
-          // Seção de Sobreposições
-          Text(
-            'Sobreposições',
-            style:
-                (Theme.of(context).textTheme.labelMedium ?? const TextStyle())
-                    .copyWith(
-                      color: PremiumTokens.textSecondaryLight,
-                      fontSize: 12,
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 12, 12),
+            child: Row(
+              children: [
+                const Expanded(
+                  child: Text(
+                    'Camadas',
+                    style: TextStyle(
+                      fontSize: 20,
                       fontWeight: FontWeight.w600,
+                      color: Colors.white,
                     ),
-          ),
-          const SizedBox(height: 12),
-          Container(
-            decoration: BoxDecoration(
-              color: PremiumTokens.backgroundLight,
-              borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                TextButton(
+                  onPressed:
+                      onClose ??
+                      () => Navigator.of(context, rootNavigator: false).pop(),
+                  child: const Text(
+                    'Cancelar',
+                    style: TextStyle(
+                      color: _accent,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
             ),
-            child: SwitchListTile(
-              title: Text(
-                'Mostrar Pinos',
-                style:
-                    (Theme.of(context).textTheme.bodyMedium ??
-                    const TextStyle()),
-              ),
-              value: showMarkers,
-              activeTrackColor: PremiumTokens.brandGreen,
-              onChanged: (v) {
-                HapticFeedback.lightImpact();
-                ref.read(showMarkersProvider.notifier).toggle();
-              },
+          ),
+          Divider(height: 1, color: Colors.white.withValues(alpha: 0.08)),
+          Flexible(
+            child: ListView(
+              shrinkWrap: true,
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    _MapPreviewTile(
+                      tileUrl: MapConfig.stadiaStamenTerrain,
+                      label: 'Padrão',
+                      isSelected: currentLayer == LayerType.standard,
+                      subdomains: null,
+                      onTap: () => ref
+                          .read(activeLayerProvider.notifier)
+                          .setLayer(LayerType.standard),
+                    ),
+                    _MapPreviewTile(
+                      tileUrl: MapConfig.googleSatelliteUrl,
+                      label: 'Satélite',
+                      isSelected: currentLayer == LayerType.satellite,
+                      subdomains: MapConfig.googleSatelliteSubdomains,
+                      onTap: () => ref
+                          .read(activeLayerProvider.notifier)
+                          .setLayer(LayerType.satellite),
+                    ),
+                    _SolidPreviewTile(
+                      label: 'Relevo',
+                      isSelected: currentLayer == LayerType.relevo,
+                      color: const Color(0xFF8D6E63),
+                      onTap: () => ref
+                          .read(activeLayerProvider.notifier)
+                          .setLayer(LayerType.relevo),
+                    ),
+                  ],
+                ),
+                const Padding(
+                  padding: EdgeInsets.only(left: 20, top: 20, bottom: 8),
+                  child: Text(
+                    'Sobreposições',
+                    style: TextStyle(
+                      color: Colors.white54,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+                Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 16),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: _surface,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: _border, width: 0.5),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Mostrar Pinos',
+                        style: TextStyle(color: Colors.white, fontSize: 15),
+                      ),
+                      Switch(
+                        value: showMarkers,
+                        activeThumbColor: _accent,
+                        activeTrackColor: _accent.withValues(alpha: 0.3),
+                        onChanged: (v) {
+                          HapticFeedback.lightImpact();
+                          ref.read(showMarkersProvider.notifier).toggle();
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: kFabSafeArea),
+              ],
             ),
           ),
         ],
@@ -175,64 +228,152 @@ class LayersSheet extends ConsumerWidget {
   }
 }
 
-// Novo widget: Card de preview de camada
-class _LayerCardPreview extends StatelessWidget {
+class _MapPreviewTile extends StatelessWidget {
+  static const _accent = Color(0xFF4CAF50);
+
+  final String tileUrl;
   final String label;
   final bool isSelected;
-  final bool isDisabled;
-  final Color color;
-  final VoidCallback? onTap;
+  final List<String>? subdomains;
+  final VoidCallback onTap;
 
-  const _LayerCardPreview({
+  const _MapPreviewTile({
+    required this.tileUrl,
     required this.label,
     required this.isSelected,
-    required this.color,
-    this.isDisabled = false,
-    this.onTap,
+    required this.subdomains,
+    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: isDisabled ? null : onTap,
+      onTap: onTap,
       child: Column(
         children: [
           Container(
-            height: 80,
+            width: 96,
+            height: 72,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: isSelected ? _accent : Colors.transparent,
+                width: 2.5,
+              ),
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(10),
+              child: Stack(
+                children: [
+                  IgnorePointer(
+                    child: FlutterMap(
+                      options: const MapOptions(
+                        initialCenter: LatLng(-10.69, -48.39),
+                        initialZoom: 13.0,
+                        interactionOptions: InteractionOptions(
+                          flags: InteractiveFlag.none,
+                        ),
+                      ),
+                      children: [
+                        TileLayer(
+                          urlTemplate: tileUrl,
+                          subdomains: subdomains ?? const <String>[],
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (isSelected)
+                    const Positioned(
+                      top: 4,
+                      right: 4,
+                      child: _LayerSelectedBadge(),
+                    ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            label,
+            style: TextStyle(
+              color: isSelected ? Colors.white : Colors.white60,
+              fontSize: 12,
+              fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SolidPreviewTile extends StatelessWidget {
+  static const _accent = Color(0xFF4CAF50);
+
+  final String label;
+  final bool isSelected;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _SolidPreviewTile({
+    required this.label,
+    required this.isSelected,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        children: [
+          Container(
+            width: 96,
+            height: 72,
             decoration: BoxDecoration(
               color: color,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: isSelected
-                    ? PremiumTokens.brandGreen
-                    : Colors.grey.shade300,
-                width: isSelected ? 3 : 1,
+                color: isSelected ? _accent : Colors.transparent,
+                width: 2.5,
               ),
             ),
-            child: isSelected
-                ? const Center(
-                    child: Icon(
-                      SFIcons.checkCircle,
-                      color: PremiumTokens.brandGreen,
-                      size: 32,
-                    ),
-                  )
-                : null,
+            child: Stack(
+              children: [
+                if (isSelected)
+                  const Positioned(
+                    top: 4,
+                    right: 4,
+                    child: _LayerSelectedBadge(),
+                  ),
+              ],
+            ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
           Text(
             label,
-            style: (Theme.of(context).textTheme.bodyMedium ?? const TextStyle())
-                .copyWith(
-                  fontSize: 13,
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                  color: isDisabled
-                      ? PremiumTokens.textTertiaryLight
-                      : PremiumTokens.textPrimaryLight,
-                ),
+            style: TextStyle(
+              color: isSelected ? Colors.white : Colors.white60,
+              fontSize: 12,
+              fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+            ),
           ),
         ],
       ),
+    );
+  }
+}
+
+class _LayerSelectedBadge extends StatelessWidget {
+  const _LayerSelectedBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(2),
+      decoration: const BoxDecoration(color: Color(0xFF4CAF50), shape: BoxShape.circle),
+      child: const Icon(Icons.check, color: Colors.white, size: 12),
     );
   }
 }
