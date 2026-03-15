@@ -1,6 +1,8 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
-import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:soloforte_app/core/constants/layout_constants.dart';
 import 'package:soloforte_app/core/contracts/i_visit_client_lookup.dart';
 import 'package:soloforte_app/core/contracts/i_visit_client_lookup_provider.dart';
 
@@ -42,6 +44,12 @@ class VisitSheet extends ConsumerStatefulWidget {
 }
 
 class _VisitSheetState extends ConsumerState<VisitSheet> {
+  static const _sheetBg = Color(0xFF1C1C1E);
+  static const _surface = Color(0xFF2C2C2E);
+  static const _border = Color(0xFF3A3A3C);
+  static const _accentGreen = Color(0xFF4CAF50);
+  static const _buttonActive = Color(0xFF2E7D32);
+
   VisitClientSummary? _selectedClient;
   VisitFarmSummary? _selectedFarm;
   VisitFieldSummary? _selectedTalhao;
@@ -65,6 +73,8 @@ class _VisitSheetState extends ConsumerState<VisitSheet> {
         ? ref.watch(_visitFieldsProvider(_selectedFarm!.id))
         : const AsyncData<List<VisitFieldSummary>>([]);
 
+    final isConfirmEnabled = _selectedClient != null;
+
     // P5: Pré-selecionar cliente quando aberto via /map?modo=visita&clienteId=X
     if (widget.preSelectedClienteId != null && _selectedClient == null) {
       final clients = clientsAsync.valueOrNull;
@@ -82,8 +92,8 @@ class _VisitSheetState extends ConsumerState<VisitSheet> {
 
     return Container(
       decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        color: _sheetBg,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -91,11 +101,11 @@ class _VisitSheetState extends ConsumerState<VisitSheet> {
           // ── Handle bar ──
           Center(
             child: Container(
-              margin: const EdgeInsets.only(top: 12, bottom: 4),
+              margin: const EdgeInsets.only(top: 12),
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.grey[300],
+                color: Colors.white24,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -103,11 +113,15 @@ class _VisitSheetState extends ConsumerState<VisitSheet> {
 
           // ── Título ──
           const Padding(
-            padding: EdgeInsets.symmetric(vertical: 16),
+            padding: EdgeInsets.fromLTRB(20, 16, 20, 0),
             child: Text(
               'Iniciar Visita',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
+              ),
+              textAlign: TextAlign.left,
             ),
           ),
 
@@ -117,7 +131,7 @@ class _VisitSheetState extends ConsumerState<VisitSheet> {
           Expanded(
             child: SingleChildScrollView(
               controller: widget.scrollController,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -136,7 +150,7 @@ class _VisitSheetState extends ConsumerState<VisitSheet> {
                     },
                     isLoading: clientsAsync.isLoading,
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
 
                   // 2. Fazenda
                   _buildDropdown<VisitFarmSummary>(
@@ -154,7 +168,7 @@ class _VisitSheetState extends ConsumerState<VisitSheet> {
                     emptyMessage: 'Nenhuma fazenda encontrada',
                     isLoading: farmsAsync.isLoading,
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
 
                   // 3. Talhão (Área)
                   _buildDropdown<VisitFieldSummary>(
@@ -169,34 +183,21 @@ class _VisitSheetState extends ConsumerState<VisitSheet> {
                     emptyMessage: 'Nenhum talhão encontrado',
                     isLoading: fieldsAsync.isLoading,
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
 
                   // 4. Atividade
-                  DropdownButtonFormField<String>(
-                    initialValue: _selectedActivity,
-                    decoration: InputDecoration(
-                      labelText: 'Atividade',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
-                      ),
-                    ),
-                    items: _activities.map((String value) {
-                      return DropdownMenuItem<String>(
-                        value: value,
-                        child: Text(value),
-                      );
-                    }).toList(),
+                  _buildDropdown<String>(
+                    label: 'Atividade',
+                    value: _selectedActivity,
+                    items: _activities,
+                    itemLabel: (value) => value,
                     onChanged: (newValue) {
                       setState(() {
                         _selectedActivity = newValue!;
                       });
                     },
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: kFabSafeArea),
                 ],
               ),
             ),
@@ -205,10 +206,10 @@ class _VisitSheetState extends ConsumerState<VisitSheet> {
           // ── Botão FIXO no rodapé — FORA DO SCROLL ──
           Padding(
             padding: EdgeInsets.fromLTRB(
-              16,
+              20,
               8,
-              16,
-              16 + MediaQuery.of(context).padding.bottom, // safe area
+              20,
+              math.max(20, MediaQuery.of(context).padding.bottom + 20),
             ),
             child: SizedBox(
               width: double.infinity,
@@ -217,7 +218,7 @@ class _VisitSheetState extends ConsumerState<VisitSheet> {
                 // Bug 2: apenas produtor é obrigatório.
                 // Fazenda, Talhão e Atividade são opcionais — podem ser
                 // preenchidos ou atualizados após o check-in.
-                onPressed: _selectedClient != null
+                onPressed: isConfirmEnabled
                     ? () {
                         widget.onConfirm(
                           _selectedClient!.id,
@@ -231,20 +232,20 @@ class _VisitSheetState extends ConsumerState<VisitSheet> {
                       }
                     : null,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: PremiumTokens.brandGreen,
-                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  backgroundColor: _buttonActive,
+                  disabledBackgroundColor: _surface,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(50),
+                    borderRadius: BorderRadius.circular(14),
                   ),
-                  disabledBackgroundColor: Colors.grey[300],
                 ),
-                child: const Text(
+                child: Text(
                   'CONFIRMAR CHEGADA',
                   style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
+                    color: isConfirmEnabled ? Colors.white : Colors.white24,
+                    fontWeight: FontWeight.w700,
                     fontSize: 16,
-                    letterSpacing: -0.4,
+                    letterSpacing: 1.2,
                   ),
                 ),
               ),
@@ -265,33 +266,88 @@ class _VisitSheetState extends ConsumerState<VisitSheet> {
     bool isLoading = false,
     String emptyMessage = 'Vazio',
   }) {
-    return DropdownButtonFormField<T>(
-      initialValue: value,
-      decoration: InputDecoration(
-        labelText: label,
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 12,
+    final baseField = SizedBox(
+      height: 56,
+      child: DropdownButtonFormField<T>(
+        initialValue: value,
+        icon: const Icon(Icons.keyboard_arrow_down, color: Colors.white54),
+        style: const TextStyle(color: Colors.white, fontSize: 16),
+        dropdownColor: _surface,
+        borderRadius: BorderRadius.circular(12),
+        isExpanded: true,
+        decoration: InputDecoration(
+          filled: true,
+          fillColor: _surface,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: _border, width: 1),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: _border, width: 1),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: _accentGreen, width: 1),
+          ),
+          disabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: _border, width: 1),
+          ),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 14,
+          ),
+        ),
+        items: items.isEmpty
+            ? null
+            : items.map((T item) {
+                return DropdownMenuItem<T>(
+                  value: item,
+                  child: Text(
+                    itemLabel(item),
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(color: Colors.white, fontSize: 16),
+                  ),
+                );
+              }).toList(),
+        onChanged: enabled ? onChanged : null,
+        hint: isLoading
+            ? const Text(
+                'Carregando...',
+                style: TextStyle(color: Colors.white38, fontSize: 16),
+              )
+            : (!enabled
+                  ? const Text(
+                      'Selecione o anterior primeiro',
+                      style: TextStyle(color: Colors.white38, fontSize: 16),
+                    )
+                  : (items.isEmpty
+                        ? Text(
+                            emptyMessage,
+                            style: const TextStyle(
+                              color: Colors.white38,
+                              fontSize: 16,
+                            ),
+                          )
+                        : null)),
+        disabledHint: Text(
+          items.isEmpty && enabled ? emptyMessage : 'Selecione...',
+          style: const TextStyle(color: Colors.white38, fontSize: 16),
         ),
       ),
-      items: items.isEmpty
-          ? null
-          : items.map((T item) {
-              return DropdownMenuItem<T>(
-                value: item,
-                child: Text(itemLabel(item), overflow: TextOverflow.ellipsis),
-              );
-            }).toList(),
-      onChanged: enabled ? onChanged : null,
-      hint: isLoading
-          ? const Text('Carregando...')
-          : (!enabled
-                ? const Text('Selecione o anterior primeiro')
-                : (items.isEmpty ? Text(emptyMessage) : null)),
-      disabledHint: Text(
-        items.isEmpty && enabled ? emptyMessage : 'Selecione...',
-      ),
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(color: Colors.white54, fontSize: 12),
+        ),
+        const SizedBox(height: 6),
+        if (!enabled) Opacity(opacity: 0.45, child: baseField) else baseField,
+      ],
     );
   }
 }
