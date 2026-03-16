@@ -155,6 +155,7 @@ class _AgendaPlanejamentoViewState
               itemBuilder: (context, index) {
                 return DayEventCard(
                   event: events[index],
+                  enablePlanningSwipeActions: true,
                   onTap: () {
                     // Navegar para detalhes
                   },
