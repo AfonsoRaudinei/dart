@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 
+import 'package:soloforte_app/core/constants/layout_constants.dart';
 import 'package:soloforte_app/core/router/app_routes.dart';
 import 'package:soloforte_app/modules/carteira/domain/entities/categoria_global.dart';
 import 'package:soloforte_app/modules/carteira/presentation/providers/carteira_providers.dart';
@@ -253,55 +254,62 @@ class _CategoriasTab extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final categoriasAsync = ref.watch(categoriasGlobaisProvider(userId));
 
-    return Scaffold(
-      body: categoriasAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (_, __) =>
-            const Center(child: Text('Erro ao carregar categorias.')),
-        data: (categorias) {
-          if (categorias.isEmpty) {
-            return const Center(child: Text('Nenhuma categoria ativa.'));
-          }
+    return Stack(
+      children: [
+        categoriasAsync.when(
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (_, __) =>
+              const Center(child: Text('Erro ao carregar categorias.')),
+          data: (categorias) {
+            if (categorias.isEmpty) {
+              return const Center(child: Text('Nenhuma categoria ativa.'));
+            }
 
-          return ListView.builder(
-            padding: const EdgeInsets.only(top: 8, bottom: 24),
-            itemCount: categorias.length,
-            itemBuilder: (context, index) {
-              final categoria = categorias[index];
-              return ListTile(
-                leading: CircleAvatar(
-                  radius: 10,
-                  backgroundColor: _parseColor(categoria.cor),
-                ),
-                title: Text(categoria.nome),
-                subtitle: Text(categoria.cor),
-                trailing: Wrap(
-                  spacing: 4,
-                  children: [
-                    IconButton(
-                      tooltip: 'Editar',
-                      icon: const Icon(Icons.edit_outlined),
-                      onPressed: () =>
-                          _editarCategoria(context, ref, categoria),
-                    ),
-                    IconButton(
-                      tooltip: 'Desativar',
-                      icon: const Icon(Icons.block_outlined),
-                      onPressed: () =>
-                          _desativarCategoria(context, ref, categoria),
-                    ),
-                  ],
-                ),
-              );
-            },
-          );
-        },
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _criarCategoria(context, ref),
-        icon: const Icon(Icons.add),
-        label: const Text('Categoria'),
-      ),
+            return ListView.builder(
+              padding: const EdgeInsets.only(top: 8, bottom: kFabSafeArea + 88),
+              itemCount: categorias.length,
+              itemBuilder: (context, index) {
+                final categoria = categorias[index];
+                return ListTile(
+                  leading: CircleAvatar(
+                    radius: 10,
+                    backgroundColor: _parseColor(categoria.cor),
+                  ),
+                  title: Text(categoria.nome),
+                  trailing: Wrap(
+                    spacing: 4,
+                    children: [
+                      IconButton(
+                        tooltip: 'Editar',
+                        icon: const Icon(Icons.edit_outlined),
+                        onPressed: () =>
+                            _editarCategoria(context, ref, categoria),
+                      ),
+                      IconButton(
+                        tooltip: 'Desativar',
+                        icon: const Icon(Icons.block_outlined),
+                        onPressed: () =>
+                            _desativarCategoria(context, ref, categoria),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            );
+          },
+        ),
+        Positioned(
+          right: 16,
+          bottom: kFabSafeArea + 16,
+          child: FloatingActionButton.extended(
+            onPressed: () => _criarCategoria(context, ref),
+            icon: const Icon(Icons.add),
+            label: const Text('Categoria'),
+            backgroundColor: const Color(0xFF4ADE80),
+            foregroundColor: Colors.white,
+          ),
+        ),
+      ],
     );
   }
 }
