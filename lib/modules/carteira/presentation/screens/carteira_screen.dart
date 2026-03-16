@@ -179,6 +179,9 @@ class _CategoriasTab extends ConsumerWidget {
       cor: result.corHex,
       ativo: true,
       ordem: categorias.length,
+      valorReal: result.valorReal,
+      valorDolar: result.valorDolar,
+      sacasPorHa: result.sacasPorHa,
       createdAt: now,
       updatedAt: now,
     );
@@ -198,6 +201,9 @@ class _CategoriasTab extends ConsumerWidget {
         title: 'Editar categoria',
         initialNome: categoria.nome,
         initialCorHex: categoria.cor,
+        initialValorReal: categoria.valorReal,
+        initialValorDolar: categoria.valorDolar,
+        initialSacasPorHa: categoria.sacasPorHa,
       ),
     );
     if (result == null) return;
@@ -205,15 +211,12 @@ class _CategoriasTab extends ConsumerWidget {
     await ref
         .read(carteiraRepositoryProvider)
         .updateCategoria(
-          CategoriaGlobal(
-            id: categoria.id,
-            userId: categoria.userId,
+          categoria.copyWith(
             nome: result.nome,
             cor: result.corHex,
-            ativo: categoria.ativo,
-            ordem: categoria.ordem,
-            createdAt: categoria.createdAt,
-            updatedAt: DateTime.now(),
+            valorReal: result.valorReal,
+            valorDolar: result.valorDolar,
+            sacasPorHa: result.sacasPorHa,
           ),
         );
 
@@ -275,7 +278,29 @@ class _CategoriasTab extends ConsumerWidget {
                     radius: 10,
                     backgroundColor: _parseColor(categoria.cor),
                   ),
-                  title: Text(categoria.nome),
+                  title: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(categoria.nome),
+                      if (categoria.custoSacasHa != null ||
+                          categoria.custoSacasHaUsd != null)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 2),
+                          child: Text(
+                            [
+                              if (categoria.custoSacasHa != null)
+                                'R\$ ${categoria.custoSacasHa!.toStringAsFixed(3)} sc/ha',
+                              if (categoria.custoSacasHaUsd != null)
+                                'US\$ ${categoria.custoSacasHaUsd!.toStringAsFixed(3)} sc/ha',
+                            ].join('  ·  '),
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Theme.of(context).hintColor,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
                   trailing: Wrap(
                     spacing: 4,
                     children: [
