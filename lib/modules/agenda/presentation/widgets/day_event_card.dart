@@ -6,20 +6,113 @@ import '../../domain/enums/event_status.dart';
 import '../providers/agenda_provider.dart';
 import 'event_type_badge.dart';
 import 'status_badge.dart';
+import 'visit_edit_dialog.dart';
 
 /// Card de evento para visualização no dia
 class DayEventCard extends ConsumerWidget {
   final Event event;
   final VoidCallback? onTap;
+  final bool enablePlanningSwipeActions;
 
-  const DayEventCard({super.key, required this.event, this.onTap});
+  const DayEventCard({
+    super.key,
+    required this.event,
+    this.onTap,
+    this.enablePlanningSwipeActions = false,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
 
+    final card = Card(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      elevation: 1,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: theme.dividerColor.withValues(alpha: 0.2)),
+      ),
+      child: InkWell(
+        onTap: () {
+          // Navegar para detalhes do evento
+          context.push('/agenda/event/${event.id}');
+        },
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: [
+              // Ícone tipo
+              EventTypeBadge(type: event.tipo, size: 48),
+              const SizedBox(width: 12),
+
+              // Info principal
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      event.titulo,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${_formatTime(event.dataInicioPlanejada)} - ${_formatTime(event.dataFimPlanejada)}',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.textTheme.bodySmall?.color?.withValues(
+                          alpha: 0.7,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      event.tipo.label,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.textTheme.bodySmall?.color?.withValues(
+                          alpha: 0.6,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Status + Ações
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  StatusBadge(status: event.status, compact: true),
+                  const SizedBox(height: 8),
+                  _buildActionButton(context, ref),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    if (enablePlanningSwipeActions) {
+      return Dismissible(
+        key: ValueKey(event.id),
+        direction: DismissDirection.endToStart,
+        confirmDismiss: (direction) async {
+          await _showSwipeActions(context, ref, event);
+          return false; // nao remove visualmente; apenas aciona as opcoes
+        },
+        secondaryBackground: _buildSwipeBackground(),
+        child: card,
+      );
+    }
+
+    // Comportamento existente (outras telas): swipe direita conclui, swipe esquerda cancela.
     return Dismissible(
-      key: Key(event.id),
+      key: ValueKey(event.id),
       direction: DismissDirection.horizontal,
       confirmDismiss: (direction) async {
         if (direction == DismissDirection.startToEnd) {
@@ -67,78 +160,160 @@ class DayEventCard extends ConsumerWidget {
         padding: const EdgeInsets.only(right: 20),
         child: const Icon(Icons.close, color: Colors.white, size: 32),
       ),
-      child: Card(
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-        elevation: 1,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-          side: BorderSide(color: theme.dividerColor.withValues(alpha: 0.2)),
-        ),
-        child: InkWell(
-          onTap: () {
-            // Navegar para detalhes do evento
-            context.push('/agenda/event/${event.id}');
-          },
-          borderRadius: BorderRadius.circular(12),
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: Row(
+      child: card,
+    );
+  }
+
+  Widget _buildSwipeBackground() {
+    return Container(
+      alignment: Alignment.centerRight,
+      padding: const EdgeInsets.only(right: 16),
+      decoration: BoxDecoration(
+        color: Colors.red.shade50,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          Container(
+            margin: const EdgeInsets.only(right: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: const Color(0xFF3B82F6),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                // Ícone tipo
-                EventTypeBadge(type: event.tipo, size: 48),
-                const SizedBox(width: 12),
-
-                // Info principal
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        event.titulo,
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '${_formatTime(event.dataInicioPlanejada)} - ${_formatTime(event.dataFimPlanejada)}',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.textTheme.bodySmall?.color?.withValues(
-                            alpha: 0.7,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        event.tipo.label,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.textTheme.bodySmall?.color?.withValues(
-                            alpha: 0.6,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Status + Ações
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    StatusBadge(status: event.status, compact: true),
-                    const SizedBox(height: 8),
-                    _buildActionButton(context, ref),
-                  ],
+                Icon(Icons.edit_outlined, color: Colors.white, size: 20),
+                SizedBox(height: 2),
+                Text(
+                  'Editar',
+                  style: TextStyle(color: Colors.white, fontSize: 11),
                 ),
               ],
             ),
           ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: const Color(0xFFEF4444),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.delete_outline, color: Colors.white, size: 20),
+                SizedBox(height: 2),
+                Text(
+                  'Excluir',
+                  style: TextStyle(color: Colors.white, fontSize: 11),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _showSwipeActions(
+    BuildContext context,
+    WidgetRef ref,
+    Event event,
+  ) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        margin: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Theme.of(ctx).cardColor,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              margin: const EdgeInsets.only(top: 8),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text(
+                event.titulo,
+                style: Theme.of(
+                  ctx,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+              ),
+            ),
+            const Divider(height: 1),
+            ListTile(
+              leading: const Icon(
+                Icons.edit_outlined,
+                color: Color(0xFF3B82F6),
+              ),
+              title: const Text('Editar evento'),
+              onTap: () {
+                Navigator.of(ctx).pop();
+                VisitEditDialog.show(context, event);
+              },
+            ),
+            ListTile(
+              leading: const Icon(
+                Icons.delete_outline,
+                color: Color(0xFFEF4444),
+              ),
+              title: const Text(
+                'Excluir evento',
+                style: TextStyle(color: Color(0xFFEF4444)),
+              ),
+              onTap: () async {
+                Navigator.of(ctx).pop();
+                await _confirmarExclusao(context, ref, event);
+              },
+            ),
+            const SizedBox(height: 8),
+          ],
         ),
       ),
     );
+  }
+
+  Future<void> _confirmarExclusao(
+    BuildContext context,
+    WidgetRef ref,
+    Event event,
+  ) async {
+    final confirmar = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Excluir evento?'),
+        content: Text('Remover "${event.titulo}"?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: const Color(0xFFEF4444),
+            ),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Excluir'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmar == true && context.mounted) {
+      await ref.read(agendaProvider.notifier).cancelEvent(event.id);
+    }
   }
 
   Widget _buildActionButton(BuildContext context, WidgetRef ref) {
