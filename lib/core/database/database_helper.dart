@@ -23,7 +23,7 @@ class DatabaseHelper {
 
     final db = await openDatabase(
       path,
-      version: 22,
+      version: 23,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -129,6 +129,9 @@ class DatabaseHelper {
           break;
         case 22:
           await _migrateToV22(db);
+          break;
+        case 23:
+          await _migrateToV23(db);
           break;
       }
     }
@@ -876,6 +879,9 @@ class DatabaseHelper {
         cor         TEXT NOT NULL DEFAULT '#4ADE80',
         ativo       INTEGER NOT NULL DEFAULT 1,
         ordem       INTEGER NOT NULL DEFAULT 0,
+        valor_real  REAL,
+        valor_dolar REAL,
+        sacas_por_ha REAL,
         created_at  TEXT NOT NULL,
         updated_at  TEXT NOT NULL
       )
@@ -908,6 +914,30 @@ class DatabaseHelper {
       'V22: tabelas do módulo carteira criadas',
       tag: 'DB.Migration',
     );
+  }
+
+  /// V23 — Carteira: valores opcionais por categoria.
+  ///
+  /// Adiciona colunas opcionais em `carteira_categorias`.
+  /// Idempotente: cada ALTER TABLE é envolvido em try/catch individual.
+  Future<void> _migrateToV23(Database db) async {
+    const statements = <String>[
+      'ALTER TABLE carteira_categorias ADD COLUMN valor_real REAL',
+      'ALTER TABLE carteira_categorias ADD COLUMN valor_dolar REAL',
+      'ALTER TABLE carteira_categorias ADD COLUMN sacas_por_ha REAL',
+    ];
+
+    for (final sql in statements) {
+      try {
+        await db.execute(sql);
+        AppLogger.debug('V23: executado "$sql"', tag: 'DB.Migration');
+      } catch (_) {
+        AppLogger.debug(
+          'V23: coluna já existe ou tabela ausente — ignorado',
+          tag: 'DB.Migration',
+        );
+      }
+    }
   }
 
   /// Remove registros locais não sincronizados do usuário no logout.
