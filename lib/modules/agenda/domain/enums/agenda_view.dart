@@ -6,9 +6,6 @@ enum AgendaView {
   /// View de planejamento semanal (modelo da skill)
   planejamento,
 
-  /// View de gestão de clientes
-  clientes,
-
   /// View de indicadores e métricas
   indicadores,
 }
@@ -20,8 +17,6 @@ extension AgendaViewExtension on AgendaView {
         return 'Calendário';
       case AgendaView.planejamento:
         return 'Planejamento';
-      case AgendaView.clientes:
-        return 'Clientes';
       case AgendaView.indicadores:
         return 'Indicadores';
     }
@@ -33,8 +28,6 @@ extension AgendaViewExtension on AgendaView {
         return '📅';
       case AgendaView.planejamento:
         return '📋';
-      case AgendaView.clientes:
-        return '👥';
       case AgendaView.indicadores:
         return '📊';
     }

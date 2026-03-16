@@ -3,8 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:soloforte_app/core/constants/layout_constants.dart';
 import '../../domain/entities/event.dart';
+import '../../domain/enums/agenda_view.dart';
 import '../providers/agenda_provider.dart';
 import '../providers/agenda_filters_provider.dart';
+import '../views/agenda_planejamento_view.dart';
+import '../views/agenda_indicadores_view.dart';
 import '../widgets/agenda_segmented_control.dart';
 import '../widgets/month_calendar_grid.dart';
 import '../widgets/agenda_filters_sheet.dart';
@@ -30,6 +33,7 @@ class _AgendaMonthPageState extends ConsumerState<AgendaMonthPage> {
     final agendaState = ref.watch(agendaProvider);
     final filters = ref.watch(agendaFiltersProvider);
     final theme = Theme.of(context);
+    final currentView = ref.watch(agendaViewProvider);
 
     final firstDay = DateTime(_currentMonth.year, _currentMonth.month, 1);
     final lastDay = DateTime(_currentMonth.year, _currentMonth.month + 1, 0);
@@ -99,30 +103,36 @@ class _AgendaMonthPageState extends ConsumerState<AgendaMonthPage> {
           ),
         ],
       ),
-      body: agendaState.isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  _buildMonthNavigation(theme),
-                  const SizedBox(height: 16),
-                  MonthCalendarGrid(
-                    month: _currentMonth,
-                    eventsByDay: eventsByDay,
-                    onDayTap: (day) {
-                      context.go('/agenda/day?date=${day.toIso8601String()}');
-                    },
-                  ),
-                  const SizedBox(height: 24),
-                  if (filteredEvents.isNotEmpty)
-                    _buildMonthSummary(filteredEvents, theme),
-                  if (agendaState.conflicts.isNotEmpty)
-                    _buildConflictWarning(agendaState.conflicts.length),
-                  const SizedBox(height: kFabSafeArea),
-                ],
-              ),
-            ),
+      body: currentView == AgendaView.calendario
+          ? (agendaState.isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : SingleChildScrollView(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      children: [
+                        _buildMonthNavigation(theme),
+                        const SizedBox(height: 16),
+                        MonthCalendarGrid(
+                          month: _currentMonth,
+                          eventsByDay: eventsByDay,
+                          onDayTap: (day) {
+                            context.go(
+                              '/agenda/day?date=${day.toIso8601String()}',
+                            );
+                          },
+                        ),
+                        const SizedBox(height: 24),
+                        if (filteredEvents.isNotEmpty)
+                          _buildMonthSummary(filteredEvents, theme),
+                        if (agendaState.conflicts.isNotEmpty)
+                          _buildConflictWarning(agendaState.conflicts.length),
+                        const SizedBox(height: kFabSafeArea),
+                      ],
+                    ),
+                  ))
+          : currentView == AgendaView.planejamento
+          ? const AgendaPlanejamentoView()
+          : const AgendaIndicadoresView(),
     );
   }
 

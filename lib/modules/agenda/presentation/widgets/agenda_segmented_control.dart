@@ -52,7 +52,7 @@ class AgendaSegmentedControl extends ConsumerWidget {
                   child: Text(
                     view.label,
                     style: TextStyle(
-                      fontSize: 13,
+                      fontSize: 11,
                       fontWeight: isSelected
                           ? FontWeight.w600
                           : FontWeight.w400,
@@ -64,6 +64,9 @@ class AgendaSegmentedControl extends ConsumerWidget {
                                 ? const Color(0xFF9CA3AF)
                                 : const Color(0xFF6B7280)),
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
                   ),
                 ),
               ),
@@ -88,9 +91,7 @@ class AgendaSegmentedControl extends ConsumerWidget {
     final hasUnsavedChanges = ref.read(agendaHasUnsavedChangesProvider);
 
     // Views que precisam de confirmação se houver alterações
-    final needsConfirmation =
-        currentView == AgendaView.planejamento ||
-        currentView == AgendaView.clientes;
+    final needsConfirmation = currentView == AgendaView.planejamento;
 
     // Se não tem alterações ou não precisa confirmação, troca direto
     if (!hasUnsavedChanges || !needsConfirmation) {
