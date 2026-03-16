@@ -163,8 +163,10 @@ class _CategoriasTab extends ConsumerWidget {
   }
 
   Future<void> _criarCategoria(BuildContext context, WidgetRef ref) async {
-    final result = await showDialog<CategoriaFormResult>(
+    final result = await showModalBottomSheet<CategoriaFormResult>(
       context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
       builder: (_) => const CategoriaFormDialog(),
     );
     if (result == null) return;
@@ -195,8 +197,10 @@ class _CategoriasTab extends ConsumerWidget {
     WidgetRef ref,
     CategoriaGlobal categoria,
   ) async {
-    final result = await showDialog<CategoriaFormResult>(
+    final result = await showModalBottomSheet<CategoriaFormResult>(
       context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
       builder: (_) => CategoriaFormDialog(
         title: 'Editar categoria',
         initialNome: categoria.nome,

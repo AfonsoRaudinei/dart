@@ -155,176 +155,243 @@ class _CategoriaFormDialogState extends State<CategoriaFormDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text(widget.title),
-      content: Form(
-        key: _formKey,
+    return Padding(
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+      ),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            TextFormField(
-              controller: _nomeController,
-              decoration: const InputDecoration(labelText: 'Nome'),
-              validator: (value) {
-                final text = value?.trim() ?? '';
-                if (text.isEmpty) return 'Informe o nome da categoria';
-                return null;
-              },
-            ),
-            const SizedBox(height: 16),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                'Cor',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).hintColor,
-                ),
+            Container(
+              margin: const EdgeInsets.only(top: 12, bottom: 8),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(2),
               ),
             ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 10,
-              runSpacing: 10,
-              children: _palette.map((color) {
-                final isSelected =
-                    _selectedColor.toARGB32() == color.toARGB32();
-                return GestureDetector(
-                  onTap: () => setState(() => _selectedColor = color),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 150),
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: color,
-                      shape: BoxShape.circle,
-                      border: isSelected
-                          ? Border.all(
-                              color: Theme.of(context).colorScheme.onSurface,
-                              width: 3,
-                            )
-                          : Border.all(color: Colors.transparent, width: 3),
-                      boxShadow: isSelected
-                          ? [
-                              BoxShadow(
-                                color: color.withValues(alpha: 0.5),
-                                blurRadius: 8,
-                                spreadRadius: 1,
+            Flexible(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(24, 8, 24, 0),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        widget.title,
+                        style: const TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      TextFormField(
+                        controller: _nomeController,
+                        decoration: const InputDecoration(labelText: 'Nome'),
+                        validator: (value) {
+                          final text = value?.trim() ?? '';
+                          if (text.isEmpty) {
+                            return 'Informe o nome da categoria';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          'Cor',
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(color: Theme.of(context).hintColor),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 10,
+                        runSpacing: 10,
+                        children: _palette.map((color) {
+                          final isSelected =
+                              _selectedColor.toARGB32() == color.toARGB32();
+                          return GestureDetector(
+                            onTap: () => setState(() => _selectedColor = color),
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 150),
+                              width: 36,
+                              height: 36,
+                              decoration: BoxDecoration(
+                                color: color,
+                                shape: BoxShape.circle,
+                                border: isSelected
+                                    ? Border.all(
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.onSurface,
+                                        width: 3,
+                                      )
+                                    : Border.all(
+                                        color: Colors.transparent,
+                                        width: 3,
+                                      ),
+                                boxShadow: isSelected
+                                    ? [
+                                        BoxShadow(
+                                          color: color.withValues(alpha: 0.5),
+                                          blurRadius: 8,
+                                          spreadRadius: 1,
+                                        ),
+                                      ]
+                                    : null,
                               ),
-                            ]
-                          : null,
-                    ),
-                    child: isSelected
-                        ? const Icon(Icons.check, color: Colors.white, size: 18)
-                        : null,
+                              child: isSelected
+                                  ? const Icon(
+                                      Icons.check,
+                                      color: Colors.white,
+                                      size: 18,
+                                    )
+                                  : null,
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                      const Divider(height: 32),
+                      Text(
+                        'Referência de mercado (opcional)',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextFormField(
+                              controller: _valorRealController,
+                              decoration: const InputDecoration(
+                                labelText: 'R\$/grão',
+                                prefixText: 'R\$ ',
+                                border: OutlineInputBorder(),
+                              ),
+                              keyboardType:
+                                  const TextInputType.numberWithOptions(
+                                    decimal: true,
+                                  ),
+                              validator: (value) {
+                                if (value == null || value.trim().isEmpty) {
+                                  return null;
+                                }
+                                if (_parseNullableDouble(value) == null) {
+                                  return 'Valor inválido';
+                                }
+                                return null;
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: TextFormField(
+                              controller: _valorDolarController,
+                              decoration: const InputDecoration(
+                                labelText: 'US\$/grão',
+                                prefixText: 'US\$ ',
+                                border: OutlineInputBorder(),
+                              ),
+                              keyboardType:
+                                  const TextInputType.numberWithOptions(
+                                    decimal: true,
+                                  ),
+                              validator: (value) {
+                                if (value == null || value.trim().isEmpty) {
+                                  return null;
+                                }
+                                if (_parseNullableDouble(value) == null) {
+                                  return 'Valor inválido';
+                                }
+                                return null;
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: _sacasPorHaController,
+                        decoration: const InputDecoration(
+                          labelText: 'Sacas / ha',
+                          suffixText: 'sc/ha',
+                          border: OutlineInputBorder(),
+                        ),
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return null;
+                          }
+                          final parsed = _parseNullableDouble(value);
+                          if (parsed == null) return 'Valor inválido';
+                          if (parsed <= 0) return 'Deve ser maior que zero';
+                          return null;
+                        },
+                      ),
+                      _buildCalculoPreview(),
+                      const SizedBox(height: 24),
+                    ],
                   ),
-                );
-              }).toList(),
-            ),
-            const SizedBox(height: 20),
-            const Divider(),
-            const SizedBox(height: 8),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                'Referência de mercado (opcional)',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).hintColor,
-                  fontWeight: FontWeight.w600,
                 ),
               ),
             ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: TextFormField(
-                    controller: _valorRealController,
-                    decoration: const InputDecoration(
-                      labelText: 'R\$/grão',
-                      prefixText: 'R\$ ',
-                      border: OutlineInputBorder(),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: const Text('Cancelar'),
                     ),
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true,
-                    ),
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) return null;
-                      if (_parseNullableDouble(value) == null) {
-                        return 'Valor inválido';
-                      }
-                      return null;
-                    },
                   ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: TextFormField(
-                    controller: _valorDolarController,
-                    decoration: const InputDecoration(
-                      labelText: 'US\$/grão',
-                      prefixText: 'US\$ ',
-                      border: OutlineInputBorder(),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: FilledButton(
+                      onPressed: () {
+                        if (!(_formKey.currentState?.validate() ?? false)) {
+                          return;
+                        }
+                        Navigator.of(context).pop(
+                          CategoriaFormResult(
+                            nome: _nomeController.text.trim(),
+                            corHex: _colorToHex(_selectedColor),
+                            valorReal: _parseNullableDouble(
+                              _valorRealController.text,
+                            ),
+                            valorDolar: _parseNullableDouble(
+                              _valorDolarController.text,
+                            ),
+                            sacasPorHa: _parseNullableDouble(
+                              _sacasPorHaController.text,
+                            ),
+                          ),
+                        );
+                      },
+                      child: const Text('Salvar'),
                     ),
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true,
-                    ),
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) return null;
-                      if (_parseNullableDouble(value) == null) {
-                        return 'Valor inválido';
-                      }
-                      return null;
-                    },
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _sacasPorHaController,
-              decoration: const InputDecoration(
-                labelText: 'Produtividade (sacas/ha)',
-                suffixText: 'sc/ha',
-                border: OutlineInputBorder(),
+                ],
               ),
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
-              ),
-              validator: (value) {
-                if (value == null || value.trim().isEmpty) return null;
-                final parsed = _parseNullableDouble(value);
-                if (parsed == null) return 'Valor inválido';
-                if (parsed <= 0) return 'Deve ser maior que zero';
-                return null;
-              },
             ),
-            _buildCalculoPreview(),
           ],
         ),
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancelar'),
-        ),
-        FilledButton(
-          onPressed: () {
-            if (!(_formKey.currentState?.validate() ?? false)) {
-              return;
-            }
-            Navigator.of(context).pop(
-              CategoriaFormResult(
-                nome: _nomeController.text.trim(),
-                corHex: _colorToHex(_selectedColor),
-                valorReal: _parseNullableDouble(_valorRealController.text),
-                valorDolar: _parseNullableDouble(_valorDolarController.text),
-                sacasPorHa: _parseNullableDouble(_sacasPorHaController.text),
-              ),
-            );
-          },
-          child: const Text('Salvar'),
-        ),
-      ],
     );
   }
 }
