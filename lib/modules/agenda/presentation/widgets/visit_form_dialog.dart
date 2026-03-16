@@ -9,7 +9,9 @@ import 'distance_warning_dialog.dart';
 
 /// Dialog para criar nova visita com horário e prioridade
 class VisitFormDialog extends ConsumerStatefulWidget {
-  const VisitFormDialog({super.key});
+  const VisitFormDialog({super.key, this.initialDate});
+
+  final DateTime? initialDate;
 
   @override
   ConsumerState<VisitFormDialog> createState() => _VisitFormDialogState();
@@ -19,7 +21,7 @@ class _VisitFormDialogState extends ConsumerState<VisitFormDialog> {
   final _formKey = GlobalKey<FormState>();
   final _tituloController = TextEditingController();
 
-  DateTime _selectedDate = DateTime.now();
+  late DateTime _selectedDate;
   TimeOfDay? _startTime;
   TimeOfDay? _endTime;
   VisitPriority _priority = VisitPriority.normal;
@@ -35,6 +37,7 @@ class _VisitFormDialogState extends ConsumerState<VisitFormDialog> {
   @override
   void initState() {
     super.initState();
+    _selectedDate = widget.initialDate ?? DateTime.now();
     _capturarLocalizacao();
   }
 
