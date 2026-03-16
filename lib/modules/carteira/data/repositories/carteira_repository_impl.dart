@@ -151,6 +151,9 @@ class CarteiraRepositoryImpl implements ICarteiraRepository {
       'cor': categoria.cor,
       'ativo': categoria.ativo ? 1 : 0,
       'ordem': categoria.ordem,
+      'valor_real': categoria.valorReal,
+      'valor_dolar': categoria.valorDolar,
+      'sacas_por_ha': categoria.sacasPorHa,
       'created_at': categoria.createdAt.toIso8601String(),
       'updated_at': categoria.updatedAt.toIso8601String(),
     };
@@ -164,6 +167,9 @@ class CarteiraRepositoryImpl implements ICarteiraRepository {
       cor: (map['cor'] ?? '#4ADE80') as String,
       ativo: ((map['ativo'] ?? 1) as int) == 1,
       ordem: (map['ordem'] ?? 0) as int,
+      valorReal: (map['valor_real'] as num?)?.toDouble(),
+      valorDolar: (map['valor_dolar'] as num?)?.toDouble(),
+      sacasPorHa: (map['sacas_por_ha'] as num?)?.toDouble(),
       createdAt: DateTime.parse((map['created_at'] ?? '') as String),
       updatedAt: DateTime.parse((map['updated_at'] ?? '') as String),
     );
