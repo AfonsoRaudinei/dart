@@ -11,6 +11,7 @@ import '../views/agenda_indicadores_view.dart';
 import '../widgets/agenda_segmented_control.dart';
 import '../widgets/month_calendar_grid.dart';
 import '../widgets/agenda_filters_sheet.dart';
+import '../widgets/visit_form_dialog.dart';
 
 class AgendaMonthPage extends ConsumerStatefulWidget {
   const AgendaMonthPage({super.key});
@@ -44,7 +45,17 @@ class _AgendaMonthPageState extends ConsumerState<AgendaMonthPage> {
     final filteredEvents = _applyFilters(monthEvents, filters);
     final eventsByDay = _groupEventsByDay(filteredEvents);
 
-    return Scaffold(
+    final today = DateTime.now();
+    final proximosEventos =
+        ref
+            .read(agendaProvider.notifier)
+            .getEventsByDateRange(today, today.add(const Duration(days: 60)))
+          ..sort(
+            (a, b) => a.dataInicioPlanejada.compareTo(b.dataInicioPlanejada),
+          );
+    final proximosCinco = proximosEventos.take(5).toList();
+
+    final scaffold = Scaffold(
       appBar: AppBar(
         title: const Text('Agenda'),
         automaticallyImplyLeading: false,
@@ -116,17 +127,34 @@ class _AgendaMonthPageState extends ConsumerState<AgendaMonthPage> {
                           month: _currentMonth,
                           eventsByDay: eventsByDay,
                           onDayTap: (day) {
-                            context.go(
-                              '/agenda/day?date=${day.toIso8601String()}',
+                            showDialog<void>(
+                              context: context,
+                              builder: (_) => VisitFormDialog(initialDate: day),
                             );
                           },
                         ),
+                        if (proximosCinco.isNotEmpty) ...[
+                          const SizedBox(height: 24),
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              'Próximos eventos',
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          ...proximosCinco.map(
+                            (event) => _buildProximoEventoCard(event, theme),
+                          ),
+                        ],
                         const SizedBox(height: 24),
                         if (filteredEvents.isNotEmpty)
                           _buildMonthSummary(filteredEvents, theme),
                         if (agendaState.conflicts.isNotEmpty)
                           _buildConflictWarning(agendaState.conflicts.length),
-                        const SizedBox(height: kFabSafeArea),
+                        const SizedBox(height: kFabSafeArea + 88),
                       ],
                     ),
                   ))
@@ -134,6 +162,119 @@ class _AgendaMonthPageState extends ConsumerState<AgendaMonthPage> {
           ? const AgendaPlanejamentoView()
           : const AgendaIndicadoresView(),
     );
+
+    return Stack(
+      children: [
+        scaffold,
+        if (currentView == AgendaView.calendario)
+          Positioned(
+            bottom: kFabSafeArea + 16,
+            right: 80,
+            child: FloatingActionButton.extended(
+              heroTag: 'agenda_novo_evento_fab',
+              onPressed: () {
+                showDialog<void>(
+                  context: context,
+                  builder: (_) => VisitFormDialog(initialDate: DateTime.now()),
+                );
+              },
+              icon: const Icon(Icons.add, color: Colors.white),
+              label: const Text(
+                'Novo evento',
+                style: TextStyle(color: Colors.white),
+              ),
+              backgroundColor: const Color(0xFF4ADE80),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildProximoEventoCard(Event event, ThemeData theme) {
+    final dataFormatada = _formatEventDate(event.dataInicioPlanejada);
+    final horaFormatada = _formatEventTime(event.dataInicioPlanejada);
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: theme.cardColor,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: theme.brightness == Brightness.dark
+              ? const Color(0xFF2A3136)
+              : const Color(0xFFE5E7EB),
+        ),
+      ),
+      child: InkWell(
+        onTap: () {
+          context.go(
+            '/agenda/day?date=${event.dataInicioPlanejada.toIso8601String()}',
+          );
+        },
+        borderRadius: BorderRadius.circular(12),
+        child: Row(
+          children: [
+            Container(
+              width: 4,
+              height: 48,
+              decoration: BoxDecoration(
+                color: theme.primaryColor,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    event.titulo,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    '$dataFormatada · $horaFormatada',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.hintColor,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(Icons.chevron_right, color: theme.hintColor, size: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _formatEventDate(DateTime date) {
+    const months = [
+      'jan',
+      'fev',
+      'mar',
+      'abr',
+      'mai',
+      'jun',
+      'jul',
+      'ago',
+      'set',
+      'out',
+      'nov',
+      'dez',
+    ];
+    return '${date.day} ${months[date.month - 1]}';
+  }
+
+  String _formatEventTime(DateTime date) {
+    final h = date.hour.toString().padLeft(2, '0');
+    final m = date.minute.toString().padLeft(2, '0');
+    return '$h:$m';
   }
 
   Widget _buildMonthNavigation(ThemeData theme) {
