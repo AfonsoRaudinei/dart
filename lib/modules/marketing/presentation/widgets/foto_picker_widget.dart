@@ -41,6 +41,8 @@ class FotoPickerWidget extends StatefulWidget {
 }
 
 class _FotoPickerWidgetState extends State<FotoPickerWidget> {
+  static const Color _bgDark = Color(0xFF2C2C2E);
+  static const Color _borderDark = Color(0xFF3A3A3C);
   bool _loading = false;
 
   Future<void> _pick() async {
@@ -111,10 +113,10 @@ class _FotoPickerWidgetState extends State<FotoPickerWidget> {
                 ? Colors.red.shade300
                 : hasPhoto
                 ? Colors.transparent
-                : Colors.grey.shade300,
+                : _borderDark,
             width: isEmpty ? 1.5 : 1,
           ),
-          color: hasPhoto ? null : Colors.grey.shade50,
+          color: hasPhoto ? null : _bgDark,
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(13),
@@ -262,23 +264,23 @@ class _FotoPickerWidgetState extends State<FotoPickerWidget> {
       children: [
         Icon(
           Icons.add_photo_alternate_outlined,
-          size: 36,
-          color: isError ? Colors.red.shade400 : Colors.grey.shade400,
+          size: 28,
+          color: isError ? Colors.red.shade400 : Colors.white38,
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 6),
         Text(
           widget.label,
           style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w600,
-            color: isError ? Colors.red.shade400 : Colors.grey.shade600,
+            color: isError ? Colors.red.shade400 : Colors.white,
           ),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 4),
-        Text(
+        const Text(
           'Toque para selecionar',
-          style: TextStyle(fontSize: 11, color: Colors.grey.shade400),
+          style: TextStyle(fontSize: 11, color: Colors.white38),
         ),
         if (isError) ...[
           const SizedBox(height: 4),

@@ -21,6 +21,8 @@ class RoiBlocoWidget extends StatefulWidget {
 
 class _RoiBlocoWidgetState extends State<RoiBlocoWidget> {
   static const Color _roiGreen = Color(0xFF34C759);
+  static const Color _fieldDark = Color(0xFF2C2C2E);
+  static const Color _fieldBorder = Color(0xFF3A3A3C);
 
   double? get _roiCalculado {
     final inv = double.tryParse(
@@ -189,9 +191,9 @@ class _RoiBlocoWidgetState extends State<RoiBlocoWidget> {
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: _fieldDark,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: _roiGreen.withValues(alpha: 0.25)),
+        border: Border.all(color: _fieldBorder, width: 0.5),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       child: Row(
@@ -206,10 +208,14 @@ class _RoiBlocoWidgetState extends State<RoiBlocoWidget> {
               keyboardType: const TextInputType.numberWithOptions(
                 decimal: true,
               ),
-              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
               decoration: InputDecoration(
                 hintText: label,
-                hintStyle: TextStyle(fontSize: 12, color: Colors.grey.shade400),
+                hintStyle: const TextStyle(fontSize: 12, color: Colors.white38),
                 border: InputBorder.none,
                 isDense: true,
                 contentPadding: const EdgeInsets.symmetric(vertical: 8),

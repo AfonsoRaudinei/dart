@@ -66,6 +66,11 @@ class _AvaliacaoBlocoWidgetState extends State<AvaliacaoBlocoWidget>
   late AnimationController _animController;
   late Animation<double> _expandAnim;
 
+  static const Color _bgDark = Color(0xFF1C1C1E);
+  static const Color _fieldDark = Color(0xFF2C2C2E);
+  static const Color _borderDark = Color(0xFF3A3A3C);
+  static const Color _focusGreen = Color(0xFF4CAF50);
+
   static const List<String> _culturas = [
     'Soja',
     'Milho',
@@ -112,8 +117,8 @@ class _AvaliacaoBlocoWidgetState extends State<AvaliacaoBlocoWidget>
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade300),
-        color: Theme.of(context).cardColor,
+        border: Border.all(color: _borderDark, width: 0.5),
+        color: _bgDark,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -257,9 +262,9 @@ class _AvaliacaoBlocoWidgetState extends State<AvaliacaoBlocoWidget>
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.grey.shade50,
+        color: _bgDark,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: _borderDark, width: 0.5),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -267,20 +272,36 @@ class _AvaliacaoBlocoWidgetState extends State<AvaliacaoBlocoWidget>
           // Label editável
           TextField(
             controller: lado.labelCtrl,
-            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w700,
+              fontSize: 13,
+            ),
             onChanged: (_) {
               widget.onChanged();
               setState(() {}); // Atualiza header
             },
             decoration: InputDecoration(
               hintText: label,
-              hintStyle: const TextStyle(fontSize: 12),
-              border: InputBorder.none,
+              hintStyle: const TextStyle(fontSize: 12, color: Colors.white38),
+              filled: true,
+              fillColor: _fieldDark,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: BorderSide.none,
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(color: _focusGreen, width: 1.5),
+              ),
               isDense: true,
-              contentPadding: const EdgeInsets.only(bottom: 4),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 10,
+                vertical: 8,
+              ),
             ),
           ),
-          const Divider(height: 12),
+          Divider(color: Colors.white.withValues(alpha: 0.08), height: 12),
 
           // Foto
           FotoPickerWidget(
@@ -299,8 +320,9 @@ class _AvaliacaoBlocoWidgetState extends State<AvaliacaoBlocoWidget>
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10),
             decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey.shade300),
-              borderRadius: BorderRadius.circular(8),
+              color: _fieldDark,
+              border: Border.all(color: _borderDark, width: 0.5),
+              borderRadius: BorderRadius.circular(10),
             ),
             child: DropdownButtonHideUnderline(
               child: DropdownButton<String>(
@@ -310,18 +332,28 @@ class _AvaliacaoBlocoWidgetState extends State<AvaliacaoBlocoWidget>
                   widget.onChanged();
                 },
                 isExpanded: true,
-                hint: const Text('Cultura', style: TextStyle(fontSize: 12)),
-                style: const TextStyle(fontSize: 12, color: Colors.black87),
-                dropdownColor: Colors.white,
+                hint: const Text(
+                  'Cultura',
+                  style: TextStyle(fontSize: 12, color: Colors.white54),
+                ),
+                style: const TextStyle(fontSize: 12, color: Colors.white),
+                dropdownColor: _fieldDark,
+                iconEnabledColor: Colors.white54,
                 items: [
                   const DropdownMenuItem<String>(
                     value: null,
-                    child: Text('— Cultura —', style: TextStyle(fontSize: 12)),
+                    child: Text(
+                      '— Cultura —',
+                      style: TextStyle(fontSize: 12, color: Colors.white54),
+                    ),
                   ),
                   ..._culturas.map(
                     (c) => DropdownMenuItem(
                       value: c.toLowerCase(),
-                      child: Text(c, style: const TextStyle(fontSize: 12)),
+                      child: Text(
+                        c,
+                        style: const TextStyle(fontSize: 12, color: Colors.white),
+                      ),
                     ),
                   ),
                 ],
@@ -334,25 +366,23 @@ class _AvaliacaoBlocoWidgetState extends State<AvaliacaoBlocoWidget>
           TextField(
             controller: lado.obsCtrl,
             maxLines: 2,
-            style: const TextStyle(fontSize: 12),
+            style: const TextStyle(color: Colors.white, fontSize: 12),
             decoration: InputDecoration(
               hintText: 'Observações...',
-              hintStyle: TextStyle(fontSize: 11, color: Colors.grey.shade400),
+              hintStyle: const TextStyle(fontSize: 11, color: Colors.white38),
               filled: true,
-              fillColor: Colors.white,
+              fillColor: _fieldDark,
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide(color: Colors.grey.shade200),
+                borderRadius: BorderRadius.circular(10),
+                borderSide: BorderSide.none,
               ),
               enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide(color: Colors.grey.shade200),
+                borderRadius: BorderRadius.circular(10),
+                borderSide: BorderSide.none,
               ),
               focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide(
-                  color: _headerColor.withValues(alpha: 0.5),
-                ),
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(color: _focusGreen, width: 1.5),
               ),
               contentPadding: const EdgeInsets.all(8),
               isDense: true,
