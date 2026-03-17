@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../../../../../../modules/map/design/sf_icons.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
@@ -172,6 +171,53 @@ class IsolatedMarketingMarkersLayer extends ConsumerWidget {
 class IsolatedUserLocationLayer extends ConsumerWidget {
   const IsolatedUserLocationLayer({super.key});
 
+  Widget _buildLocationMarker({required double accuracy}) {
+    const baseBlue = Color(0xFF2196F3);
+    final ringSize = (48 + (accuracy / 12)).clamp(48, 64).toDouble();
+
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        Container(
+          width: ringSize,
+          height: ringSize,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: baseBlue.withValues(alpha: 0.15),
+            border: Border.all(
+              color: baseBlue.withValues(alpha: 0.25),
+              width: 1,
+            ),
+          ),
+        ),
+        Container(
+          width: 20,
+          height: 20,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: Colors.white,
+            boxShadow: [
+              BoxShadow(
+                color: baseBlue.withValues(alpha: 0.4),
+                blurRadius: 8,
+                spreadRadius: 2,
+              ),
+            ],
+          ),
+        ),
+        Container(
+          width: 14,
+          height: 14,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: baseBlue,
+            border: Border.all(color: Colors.white, width: 2),
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // 🎯 OBSERVA SOMENTE locationStreamProvider (stream reativo)
@@ -185,18 +231,9 @@ class IsolatedUserLocationLayer extends ConsumerWidget {
             Marker(
               key: const ValueKey('user_location'),
               point: userPosition,
-              width: 60,
-              height: 60,
-              child: Container(
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.blue.withValues(alpha: 0.3),
-                  border: Border.all(color: Colors.blue, width: 3),
-                ),
-                child: const Center(
-                  child: Icon(SFIcons.myLocation, color: Colors.blue, size: 24),
-                ),
-              ),
+              width: 64,
+              height: 64,
+              child: _buildLocationMarker(accuracy: 12),
             ),
           ],
         );
