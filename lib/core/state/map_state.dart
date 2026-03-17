@@ -25,7 +25,7 @@ class ActiveLayer extends _$ActiveLayer {
   @override
   LayerType build() {
     _loadPersistedLayer();
-    return LayerType.standard;
+    return LayerType.satellite;
   }
 
   Future<void> _loadPersistedLayer() async {
@@ -35,7 +35,7 @@ class ActiveLayer extends _$ActiveLayer {
       if (saved != null) {
         final verify = LayerType.values.firstWhere(
           (e) => e.toString() == saved,
-          orElse: () => LayerType.standard,
+          orElse: () => LayerType.satellite,
         );
         if (verify != state) {
           state = verify;
