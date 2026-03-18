@@ -231,6 +231,9 @@ class DrawingController extends ChangeNotifier {
   DrawingFeature? _selectedFeature;
   DrawingInteraction _interactionMode = DrawingInteraction.normal;
   DrawingGeometry? _previewGeometry; // Result preview
+  DrawingGeometry? _reviewGeometrySnapshot;
+  double _reviewAreaHa = 0.0;
+  double _reviewPerimeterKm = 0.0;
   bool _isDirty = false;
   bool _isSnapping = false; // RT-DRAW-09 Feedback state
   final List<LatLng> _currentPoints = []; // Pontos do desenho atual
@@ -277,6 +280,15 @@ class DrawingController extends ChangeNotifier {
   DrawingFeature? get pendingFeatureB =>
       _booleanOpsOrchestrator.pendingFeatureB;
   DrawingGeometry? get previewGeometry => _previewGeometry;
+  String? get intersectionWarningMessage => _intersectionWarningMessage;
+  double get reviewAreaHa =>
+      _stateMachine.currentState == DrawingState.reviewing
+      ? _reviewAreaHa
+      : liveAreaHa;
+  double get reviewPerimeterKm =>
+      _stateMachine.currentState == DrawingState.reviewing
+      ? _reviewPerimeterKm
+      : livePerimeterKm;
 
   // Retorna a geometria sendo desenhada ou o preview de importação
   DrawingGeometry? get liveGeometry {
@@ -306,11 +318,9 @@ class DrawingController extends ChangeNotifier {
       return _previewGeometry;
     }
 
-    // 🆕 SPRINT 3: Reviewing vindo de import — preserva previewGeometry
-    // O formulário reviewing usa liveGeometry para exibir área/perímetro
-    if (_stateMachine.currentState == DrawingState.reviewing &&
-        (pendingImportOrigin != null || _gpsOrchestrator.gpsOriginReview)) {
-      return _previewGeometry;
+    if (_stateMachine.currentState == DrawingState.reviewing) {
+      if (_previewGeometry != null) return _previewGeometry;
+      if (_reviewGeometrySnapshot != null) return _reviewGeometrySnapshot;
     }
 
     if (_currentPoints.isNotEmpty) {
@@ -516,6 +526,7 @@ class DrawingController extends ChangeNotifier {
 
   bool _hasSelfIntersection = false;
   bool get hasSelfIntersection => _hasSelfIntersection;
+  String? _intersectionWarningMessage;
 
   Set<int> _intersectingSegmentIndices = {};
   Set<int> get intersectingSegmentIndices => _intersectingSegmentIndices;
@@ -531,6 +542,22 @@ class DrawingController extends ChangeNotifier {
       _intersectingSegmentIndices = {};
       _hasSelfIntersection = false;
     }
+  }
+
+  void _captureReviewMetrics(DrawingGeometry? geometry) {
+    if (geometry == null) {
+      _reviewAreaHa = 0.0;
+      _reviewPerimeterKm = 0.0;
+      return;
+    }
+    _reviewAreaHa = DrawingUtils.calculateGeometryArea(geometry);
+    _reviewPerimeterKm = DrawingUtils.calculatePerimeterKm(geometry);
+  }
+
+  bool _isSelfIntersectionMessage(String? message) {
+    final text = (message ?? '').toLowerCase();
+    return text.contains('auto-interse') ||
+        (text.contains('linhas') && text.contains('cruz'));
   }
 
   void validateGeometry(DrawingGeometry? g, {bool forceFull = false}) {
@@ -587,9 +614,14 @@ class DrawingController extends ChangeNotifier {
     geometry = DrawingUtils.normalizeGeometry(geometry);
     validateGeometry(geometry);
     if (!_validationResult.isValid) {
-      _errorMessage = _validationResult.message;
-      notifyListeners();
-      return;
+      if (_isSelfIntersectionMessage(_validationResult.message)) {
+        _intersectionWarningMessage =
+            'Linhas se cruzam. Salve e edite os vértices depois.';
+      } else {
+        _errorMessage = _validationResult.message;
+        notifyListeners();
+        return;
+      }
     }
 
     final newFeature = _crudService.buildFeature(
@@ -613,7 +645,12 @@ class DrawingController extends ChangeNotifier {
     _isDirty = true;
     _stateMachine.confirm();
     _importOrchestrator.clearPendingImportOrigin();
-    _currentPoints.clear(); // 🔧 FIX-AUDIT: Evita vazamento de pontos para próximo desenho
+    _intersectionWarningMessage = null;
+    _reviewAreaHa = 0.0;
+    _reviewPerimeterKm = 0.0;
+    _reviewGeometrySnapshot = null;
+    _currentPoints
+        .clear(); // 🔧 FIX-AUDIT: Evita vazamento de pontos para próximo desenho
     _manualSketch = null;
     _previewGeometry = null;
     _interactionMode = DrawingInteraction.normal;
@@ -835,6 +872,10 @@ class DrawingController extends ChangeNotifier {
       // Limpar pontos de desenho anterior
       _currentPoints.clear();
       _manualSketch = null;
+      _reviewGeometrySnapshot = null;
+      _intersectionWarningMessage = null;
+      _reviewAreaHa = 0.0;
+      _reviewPerimeterKm = 0.0;
       _selectedFeature = null;
 
       // 🔧 FIX-DRAW-REDSCREEN: startDrawing agora retorna bool, não lança
@@ -865,6 +906,10 @@ class DrawingController extends ChangeNotifier {
       _stateMachine.cancel();
       _currentPoints.clear();
       _manualSketch = null;
+      _reviewGeometrySnapshot = null;
+      _intersectionWarningMessage = null;
+      _reviewAreaHa = 0.0;
+      _reviewPerimeterKm = 0.0;
 
       if (kDebugMode) {
         AppLogger.debug('Modo desenho desativado', tag: 'DrawingController');
@@ -885,10 +930,14 @@ class DrawingController extends ChangeNotifier {
     _interactionMode = DrawingInteraction.normal;
     _booleanOpsOrchestrator.clear();
     _previewGeometry = null;
+    _reviewGeometrySnapshot = null;
+    _reviewAreaHa = 0.0;
+    _reviewPerimeterKm = 0.0;
     _manualSketch = null;
     _importOrchestrator.clearPendingImportOrigin();
     _gpsOrchestrator.clearReviewOrigin();
     _errorMessage = null;
+    _intersectionWarningMessage = null;
     _currentPoints.clear(); // 🔧 FIX-DRAW-FLOW-02: Limpar pontos ao cancelar
     _stateMachine.cancel(); // Use state machine cancel
     notifyListeners();
@@ -1023,9 +1072,14 @@ class DrawingController extends ChangeNotifier {
     if (_editGeometry != null) {
       validateGeometry(_editGeometry, forceFull: true);
       if (!_validationResult.isValid) {
-        _errorMessage = _validationResult.message;
-        notifyListeners();
-        return;
+        if (_isSelfIntersectionMessage(_validationResult.message)) {
+          _intersectionWarningMessage =
+              'Linhas se cruzam. Salve e ajuste os vértices depois.';
+        } else {
+          _errorMessage = _validationResult.message;
+          notifyListeners();
+          return;
+        }
       }
     }
 
@@ -1312,17 +1366,22 @@ class DrawingController extends ChangeNotifier {
 
   /// Completa o desenho manual e entra em modo de revisão
   void completeDrawing() {
-    if (_hasSelfIntersection) {
-      _errorMessage =
-          "Por favor, corrija as linhas que estão se cruzando antes de revisar.";
-      notifyListeners();
-      return;
-    }
+    final geometrySnapshot = liveGeometry;
     if (_stateMachine.currentState == DrawingState.drawing) {
       final success = _stateMachine.completeDrawing();
       if (success) {
+        _reviewGeometrySnapshot = geometrySnapshot;
+        _captureReviewMetrics(geometrySnapshot);
         // 🔧 FIX-AUDIT: Usar liveGeometry (fonte real dos pontos) em vez de _manualSketch
         validateGeometry(liveGeometry);
+        if (_hasSelfIntersection ||
+            _isSelfIntersectionMessage(_validationResult.message)) {
+          _intersectionWarningMessage =
+              'Linhas se cruzam. Salve e edite os vértices depois.';
+          _errorMessage = null;
+        } else {
+          _intersectionWarningMessage = null;
+        }
         notifyListeners();
       }
     }
@@ -1361,8 +1420,7 @@ class DrawingController extends ChangeNotifier {
 
   void startImportMode() => _importOrchestrator.startImportMode();
 
-  Future<void> pickImportFile() =>
-      _importOrchestrator.pickImportFile();
+  Future<void> pickImportFile() => _importOrchestrator.pickImportFile();
 
   // ===========================================================================
   // BOOLEAN OPERATIONS FLOW (RT-DRAW-07)
@@ -1380,8 +1438,23 @@ class DrawingController extends ChangeNotifier {
 
   void confirmBooleanOp() => _booleanOpsOrchestrator.confirmBooleanOp();
 
-  void confirmImport() => _importOrchestrator.confirmImport();
-  void confirmImportForced() => _importOrchestrator.confirmImportForced();
+  void confirmImport() {
+    _importOrchestrator.confirmImport();
+    if (_stateMachine.currentState == DrawingState.reviewing) {
+      _captureReviewMetrics(liveGeometry);
+      if (_isSelfIntersectionMessage(_validationResult.message)) {
+        _intersectionWarningMessage =
+            'Linhas se cruzam. Salve e edite os vértices depois.';
+      }
+    }
+  }
+
+  void confirmImportForced() {
+    _importOrchestrator.confirmImportForced();
+    if (_stateMachine.currentState == DrawingState.reviewing) {
+      _captureReviewMetrics(liveGeometry);
+    }
+  }
 
   // Helper for snapping
   List<double> _snapIfClose(List<double> p) {
