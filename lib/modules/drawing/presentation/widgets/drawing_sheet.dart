@@ -141,6 +141,10 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+    final safeBottom = MediaQuery.of(context).padding.bottom;
+
     // ADR-019: escuta mudancas de clientes para pre-selecao Map-First
     ref.listen<DrawingClientState>(drawingClientProvider, (_, next) {
       _syncPreSelectedClient(next);
@@ -156,79 +160,88 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
     // NOTA ARQUITETURAL: O handle (pílula de drag) é renderizado pelo
     // componente pai (lib/ui/screens/private_map_sheets.dart / MapBottomSheet).
     // Este widget não inclui handle próprio.
-    return Container(
-      decoration: const BoxDecoration(
-        color: Color(0xFF1C1C1E),
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // 4. Cabeçalho Fixo (Fonte Única)
-          const _SheetHeader(),
+    return AnimatedPadding(
+      duration: const Duration(milliseconds: 150),
+      curve: Curves.easeOut,
+      padding: EdgeInsets.only(bottom: bottomInset),
+      child: Container(
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // 4. Cabeçalho Fixo (Fonte Única)
+            const _SheetHeader(),
 
-          // Conteúdo Dinâmico
-          ListenableBuilder(
-            listenable: widget.controller,
-            builder: (context, _) {
-              // ── GPS Walk: sincronizar métricas a cada novo vértice GPS ────
-              final gpsSession = ref.watch(gpsWalkProvider);
-              if (gpsSession != null) {
-                // Sincroniza pontos do DrawingController → GpsWalkNotifier
-                final pts = widget.controller.gpsVertices;
-                if (pts.length != gpsSession.points.length) {
-                  // Schedule post-frame para não chamar durante build
-                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                    ref.read(gpsWalkProvider.notifier).syncFromController(pts);
-                  });
+            // Conteúdo Dinâmico
+            ListenableBuilder(
+              listenable: widget.controller,
+              builder: (context, _) {
+                // ── GPS Walk: sincronizar métricas a cada novo vértice GPS ────
+                final gpsSession = ref.watch(gpsWalkProvider);
+                if (gpsSession != null) {
+                  // Sincroniza pontos do DrawingController → GpsWalkNotifier
+                  final pts = widget.controller.gpsVertices;
+                  if (pts.length != gpsSession.points.length) {
+                    // Schedule post-frame para não chamar durante build
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      ref
+                          .read(gpsWalkProvider.notifier)
+                          .syncFromController(pts);
+                    });
+                  }
+                  return const GpsWalkControlsOverlay();
                 }
-                return const GpsWalkControlsOverlay();
-              }
 
-              final content = Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Always calculate and show metrics if available
-                  _buildMetricsPanel(context),
+                final content = Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Always calculate and show metrics if available
+                    _buildMetricsPanel(context),
 
-                  if (widget.controller.errorMessage != null)
-                    _buildErrorState(context)
-                  // 🆕 Modo de revisão: Formulário após desenhar
-                  else if (widget.controller.currentState ==
-                      DrawingState.reviewing)
-                    _buildReviewingMode(context)
-                  else if (widget.controller.interactionMode ==
-                      DrawingInteraction.importing)
-                    _buildImportingMode(context)
-                  else if (widget.controller.interactionMode ==
-                      DrawingInteraction.importPreview)
-                    _buildImportPreviewMode(context)
-                  else if (widget.controller.interactionMode ==
-                      DrawingInteraction.unionSelection)
-                    _buildUnionMode(context)
-                  else if (widget.controller.interactionMode ==
-                      DrawingInteraction.differenceSelection)
-                    _buildDifferenceMode(context) // Replaces cut
-                  else if (widget.controller.interactionMode ==
-                      DrawingInteraction.intersectionSelection)
-                    _buildIntersectionMode(context)
-                  else if (widget.controller.interactionMode ==
-                      DrawingInteraction.editing)
-                    _buildEditingMode(context)
-                  else if (widget.controller.selectedFeature != null)
-                    _buildSelectedMode(context)
-                  else
-                    _buildToolsGrid(context),
-                ],
-              );
-              return content;
-            },
-          ),
-
-          // Safe Area bottom padding
-          const SizedBox(height: kFabSafeArea),
-        ],
+                    if (widget.controller.errorMessage != null)
+                      _buildErrorState(context)
+                    // 🆕 Modo de revisão: Formulário após desenhar
+                    else if (widget.controller.currentState ==
+                        DrawingState.reviewing)
+                      _buildReviewingMode(context)
+                    else if (widget.controller.interactionMode ==
+                        DrawingInteraction.importing)
+                      _buildImportingMode(context)
+                    else if (widget.controller.interactionMode ==
+                        DrawingInteraction.importPreview)
+                      _buildImportPreviewMode(context)
+                    else if (widget.controller.interactionMode ==
+                        DrawingInteraction.unionSelection)
+                      _buildUnionMode(context)
+                    else if (widget.controller.interactionMode ==
+                        DrawingInteraction.differenceSelection)
+                      _buildDifferenceMode(context) // Replaces cut
+                    else if (widget.controller.interactionMode ==
+                        DrawingInteraction.intersectionSelection)
+                      _buildIntersectionMode(context)
+                    else if (widget.controller.interactionMode ==
+                        DrawingInteraction.editing)
+                      _buildEditingMode(context)
+                    else if (widget.controller.selectedFeature != null)
+                      _buildSelectedMode(context)
+                    else
+                      _buildToolsGrid(context),
+                  ],
+                );
+                return Padding(
+                  padding: EdgeInsets.only(
+                    bottom: kFabSafeArea + safeBottom + 40,
+                  ),
+                  child: content,
+                );
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -239,8 +252,8 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
       return const SizedBox.shrink();
     }
 
-    final area = widget.controller.liveAreaHa;
-    final perimeter = widget.controller.livePerimeterKm;
+    final area = widget.controller.reviewAreaHa;
+    final perimeter = widget.controller.reviewPerimeterKm;
 
     if (area <= 0 && perimeter <= 0) return const SizedBox.shrink();
 
@@ -526,7 +539,8 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
                     HapticFeedback.mediumImpact();
                     final validation = widget.controller.validationResult;
                     if (!validation.isValid &&
-                        (validation.message?.contains('sobreposição') == true)) {
+                        (validation.message?.contains('sobreposição') ==
+                            true)) {
                       final confirmar = await showDialog<bool>(
                         context: context,
                         builder: (_) => AlertDialog(
@@ -641,6 +655,11 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
             style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
           ),
           const Divider(),
+          if (widget.controller.hasSelfIntersection ||
+              widget.controller.intersectionWarningMessage != null) ...[
+            _buildSelfIntersectionWarning(),
+            const SizedBox(height: 12),
+          ],
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 8),
             child: Text(
@@ -680,12 +699,10 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
               const SizedBox(width: 12),
               Expanded(
                 child: ElevatedButton(
-                  onPressed: widget.controller.hasSelfIntersection
-                      ? null
-                      : () {
-                          HapticFeedback.mediumImpact();
-                          widget.controller.saveEdit();
-                        },
+                  onPressed: () {
+                    HapticFeedback.mediumImpact();
+                    widget.controller.saveEdit();
+                  },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: PremiumTokens.brandGreen,
                   ),
@@ -729,6 +746,11 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
+            if (widget.controller.hasSelfIntersection ||
+                widget.controller.intersectionWarningMessage != null) ...[
+              _buildSelfIntersectionWarning(),
+              const SizedBox(height: 12),
+            ],
 
             // 📊 Métricas
             Container(
@@ -1005,8 +1027,39 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
                 ),
               ],
             ),
+            SizedBox(height: MediaQuery.of(context).padding.bottom + 16),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildSelfIntersectionWarning() {
+    final message =
+        widget.controller.intersectionWarningMessage ??
+        'Linhas se cruzam. Salve e edite os vértices depois.';
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.orange.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Colors.orange.withValues(alpha: 0.35)),
+      ),
+      child: Row(
+        children: [
+          const Icon(
+            Icons.warning_amber_rounded,
+            color: Colors.orange,
+            size: 18,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              message,
+              style: const TextStyle(color: Colors.orange, fontSize: 13),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -1040,8 +1093,7 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
         ),
         actions: [
           TextButton(
-            onPressed: () =>
-                Navigator.of(context, rootNavigator: false).pop(),
+            onPressed: () => Navigator.of(context, rootNavigator: false).pop(),
             child: const Text('Cancelar'),
           ),
           ElevatedButton(
@@ -1091,40 +1143,37 @@ class _SheetHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Column(
+    final scheme = Theme.of(context).colorScheme;
+    return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Center(
           child: Padding(
-            padding: EdgeInsets.only(top: 12),
+            padding: const EdgeInsets.only(top: 12),
             child: SizedBox(
               width: 40,
               height: 4,
               child: DecoratedBox(
                 decoration: BoxDecoration(
-                  color: Colors.white24,
-                  borderRadius: BorderRadius.all(Radius.circular(2)),
+                  color: scheme.outlineVariant,
+                  borderRadius: const BorderRadius.all(Radius.circular(2)),
                 ),
               ),
             ),
           ),
         ),
-        Padding(
+        const Padding(
           padding: EdgeInsets.fromLTRB(20, 16, 20, 8),
           child: Align(
             alignment: Alignment.centerLeft,
             child: Text(
               'Ferramentas de Desenho',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                color: Colors.white,
-              ),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
             ),
           ),
         ),
-        Divider(height: 1, color: Colors.white10),
+        Divider(height: 1, color: scheme.outlineVariant.withValues(alpha: 0.5)),
       ],
     );
   }
