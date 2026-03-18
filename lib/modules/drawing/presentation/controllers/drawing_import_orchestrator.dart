@@ -44,6 +44,12 @@ class DrawingImportOrchestrator {
   final void Function() _confirmImportState;
   final void Function() _notifyHost;
 
+  bool _isSelfIntersectionMessage(String? message) {
+    final text = (message ?? '').toLowerCase();
+    return text.contains('auto-interse') ||
+        (text.contains('linhas') && text.contains('cruz'));
+  }
+
   DrawingOrigin? _currentImportOrigin;
   DrawingOrigin? get pendingImportOrigin => _currentImportOrigin;
 
@@ -90,14 +96,17 @@ class DrawingImportOrchestrator {
     _validateGeometry(preview);
     final validation = _getValidationResult();
     if (!validation.isValid) {
-      _setErrorMessage(validation.message);
-      _notifyHost();
-      return;
+      if (!_isSelfIntersectionMessage(validation.message)) {
+        _setErrorMessage(validation.message);
+        _notifyHost();
+        return;
+      }
     }
 
+    _setErrorMessage(null);
     _setPreviewGeometry(_finalizeGeometry(preview));
+    _setInteractionMode(DrawingInteraction.normal);
     _confirmImportState();
-    _currentImportOrigin = null;
     _notifyHost();
   }
 
@@ -110,8 +119,8 @@ class DrawingImportOrchestrator {
 
     _setErrorMessage(null);
     _setPreviewGeometry(_finalizeGeometry(preview));
+    _setInteractionMode(DrawingInteraction.normal);
     _confirmImportState();
-    _currentImportOrigin = null;
     _notifyHost();
   }
 }
