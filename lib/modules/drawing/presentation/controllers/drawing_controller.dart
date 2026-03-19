@@ -36,6 +36,8 @@ import '../../../../core/utils/app_logger.dart';
 class DrawingController extends ChangeNotifier {
   final DrawingRepository _repository;
   final DrawingStateMachine _stateMachine = DrawingStateMachine();
+  late final Future<void> Function(String clienteId, double totalAreaHa)
+  _onClientAreaUpdate;
 
   // Services puros — injectáveis para testes
   final DrawingFeatureCrudService _crudService;
@@ -54,6 +56,8 @@ class DrawingController extends ChangeNotifier {
     DrawingBooleanOpsService? booleanOpsService,
     DrawingImportService? importService,
     GpsTrackingService? gpsTrackingService,
+    Future<void> Function(String clienteId, double totalAreaHa)?
+    onClientAreaUpdate,
   }) : _repository = repository ?? DrawingRepository(),
        _crudService = crudService ?? const DrawingFeatureCrudService(),
        _vertexService = vertexService ?? const DrawingVertexEditService(),
@@ -62,6 +66,11 @@ class DrawingController extends ChangeNotifier {
        _importService =
            importService ?? const DrawingImportService(FilePickerAdapter()),
        _gpsTrackingService = gpsTrackingService ?? const GpsTrackingService() {
+    _onClientAreaUpdate =
+        onClientAreaUpdate ??
+        ((clienteId, totalAreaHa) =>
+            _repository.updateClientAreaTotal(clienteId, totalAreaHa));
+
     _importOrchestrator = DrawingImportOrchestrator(
       importService: _importService,
       setSelectedFeature: (feature) => _selectedFeature = feature,
@@ -597,7 +606,7 @@ class DrawingController extends ChangeNotifier {
   ///
   /// Delega construção para [DrawingFeatureCrudService.buildFeature].
   /// Valida topologia antes de persistir.
-  void addFeature({
+  Future<void> addFeature({
     required DrawingGeometry geometry,
     required String nome,
     required DrawingType tipo,
@@ -610,7 +619,7 @@ class DrawingController extends ChangeNotifier {
     String? fazendaId,
     String? grupo,
     int? cor,
-  }) {
+  }) async {
     geometry = DrawingUtils.normalizeGeometry(geometry);
     validateGeometry(geometry);
     if (!_validationResult.isValid) {
@@ -624,13 +633,16 @@ class DrawingController extends ChangeNotifier {
       }
     }
 
-    final newFeature = _crudService.buildFeature(
+    final newFeature = await _crudService.saveFeature(
       geometry: geometry,
       nome: nome,
       tipo: tipo,
       origem: origem,
       autorId: autorId,
       autorTipo: autorTipo,
+      persistFeature: _repository.saveFeature,
+      getTotalAreaByClienteId: _repository.getTotalAreaByClienteId,
+      onClientAreaUpdate: _onClientAreaUpdate,
       subtipo: subtipo,
       raioMetros: raioMetros,
       clienteId: clienteId,
@@ -640,7 +652,6 @@ class DrawingController extends ChangeNotifier {
     );
 
     _features.add(newFeature);
-    _repository.saveFeature(newFeature);
     _selectedFeature = newFeature;
     _isDirty = true;
     _stateMachine.confirm();
@@ -781,13 +792,20 @@ class DrawingController extends ChangeNotifier {
       _features.removeAt(index);
     }
 
-    _repository.deleteFeature(id); // Persist soft delete
+    _deleteFeatureAndUpdateClientArea(id, feature.properties.clienteId);
 
     if (_selectedFeature?.id == id) {
       _selectedFeature = null;
     }
     _isDirty = true;
     notifyListeners();
+  }
+
+  void _deleteFeatureAndUpdateClientArea(String id, String? clienteId) async {
+    await _repository.deleteFeature(id);
+    if (clienteId == null || clienteId.isEmpty) return;
+    final totalAreaHa = await _repository.getTotalAreaByClienteId(clienteId);
+    await _onClientAreaUpdate(clienteId, totalAreaHa);
   }
 
   /// Restaura uma feature excluída (Undo action)

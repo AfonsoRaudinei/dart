@@ -26,6 +26,14 @@ class DrawingRepository {
     await _localStore.delete(id);
   }
 
+  Future<double> getTotalAreaByClienteId(String clienteId) async {
+    return _localStore.getTotalAreaByClienteId(clienteId);
+  }
+
+  Future<void> updateClientAreaTotal(String clientId, double areaTotal) async {
+    await _localStore.updateClientAreaTotal(clientId, areaTotal);
+  }
+
   Future<List<DrawingFeature>> getAllFeatures() async {
     return await _localStore.getAll();
   }

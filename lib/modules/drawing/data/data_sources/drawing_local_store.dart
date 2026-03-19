@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:sqflite/sqflite.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/database/database_helper.dart';
 import '../../domain/models/drawing_models.dart';
 
@@ -7,41 +8,48 @@ class DrawingLocalStore {
   final DatabaseHelper _dbHelper = DatabaseHelper.instance;
 
   Future<void> insert(DrawingFeature feature) async {
+    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
+    if (userId.isEmpty) return;
     final db = await _dbHelper.database;
-    await db.insert(
-      'drawings',
-      _toRow(feature),
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
+    await db.insert('drawings', {
+      ..._toRow(feature),
+      'user_id': userId,
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
   Future<void> update(DrawingFeature feature) async {
+    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
+    if (userId.isEmpty) return;
     final db = await _dbHelper.database;
     await db.update(
       'drawings',
-      _toRow(feature),
-      where: 'id = ?',
-      whereArgs: [feature.id],
+      {..._toRow(feature), 'user_id': userId},
+      where: 'id = ? AND user_id = ?',
+      whereArgs: [feature.id, userId],
     );
   }
 
   Future<void> delete(String id) async {
+    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
+    if (userId.isEmpty) return;
     final db = await _dbHelper.database;
     // Soft delete
     await db.update(
       'drawings',
       {'deleted_at': DateTime.now().toIso8601String(), 'ativo': 0},
-      where: 'id = ?',
-      whereArgs: [id],
+      where: 'id = ? AND user_id = ?',
+      whereArgs: [id, userId],
     );
   }
 
   Future<DrawingFeature?> getById(String id) async {
+    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
+    if (userId.isEmpty) return null;
     final db = await _dbHelper.database;
     final List<Map<String, dynamic>> maps = await db.query(
       'drawings',
-      where: 'id = ? AND deleted_at IS NULL',
-      whereArgs: [id],
+      where: 'id = ? AND user_id = ? AND deleted_at IS NULL',
+      whereArgs: [id, userId],
     );
 
     if (maps.isNotEmpty) {
@@ -51,10 +59,13 @@ class DrawingLocalStore {
   }
 
   Future<List<DrawingFeature>> getAll() async {
+    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
+    if (userId.isEmpty) return [];
     final db = await _dbHelper.database;
     final List<Map<String, dynamic>> maps = await db.query(
       'drawings',
-      where: 'deleted_at IS NULL AND ativo = 1',
+      where: 'user_id = ? AND deleted_at IS NULL AND ativo = 1',
+      whereArgs: [userId],
       orderBy: 'updated_at DESC',
     );
 
@@ -62,12 +73,48 @@ class DrawingLocalStore {
   }
 
   Future<List<DrawingFeature>> getPendingSync() async {
+    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
+    if (userId.isEmpty) return [];
     final db = await _dbHelper.database;
     final List<Map<String, dynamic>> maps = await db.query(
       'drawings',
-      where: "sync_status != 'synced'",
+      where: "user_id = ? AND sync_status != 'synced'",
+      whereArgs: [userId],
     );
     return maps.map((e) => _fromRow(e)).toList();
+  }
+
+  /// Retorna a soma de area_ha de todos os drawings vinculados a [clienteId].
+  /// Drawings com area_ha NULL são ignorados na soma.
+  /// Retorna 0.0 se não houver nenhum drawing vinculado.
+  Future<double> getTotalAreaByClienteId(String clienteId) async {
+    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
+    if (userId.isEmpty) return 0.0;
+    final db = await _dbHelper.database;
+    final result = await db.rawQuery(
+      'SELECT COALESCE(SUM(area_ha), 0.0) AS total '
+      'FROM drawings '
+      'WHERE user_id = ? AND cliente_id = ? AND deleted_at IS NULL',
+      [userId, clienteId],
+    );
+    return (result.first['total'] as num?)?.toDouble() ?? 0.0;
+  }
+
+  /// Atualiza SOMENTE area_total do cliente no banco local.
+  Future<void> updateClientAreaTotal(String clientId, double areaTotal) async {
+    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
+    if (userId.isEmpty) return;
+    final db = await _dbHelper.database;
+    await db.update(
+      'clients',
+      {
+        'area_total': areaTotal,
+        'updated_at': DateTime.now().toIso8601String(),
+        'sync_status': 1,
+      },
+      where: 'id = ? AND user_id = ?',
+      whereArgs: [clientId, userId],
+    );
   }
 
   Map<String, dynamic> _toRow(DrawingFeature f) {

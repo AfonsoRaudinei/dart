@@ -8,6 +8,54 @@ import '../drawing_utils.dart';
 class DrawingFeatureCrudService {
   const DrawingFeatureCrudService();
 
+  /// Constrói e persiste uma [DrawingFeature], com callback opcional para
+  /// atualizar `area_total` do cliente após o save.
+  Future<DrawingFeature> saveFeature({
+    required DrawingGeometry geometry,
+    required String nome,
+    required DrawingType tipo,
+    required DrawingOrigin origem,
+    required String autorId,
+    required AuthorType autorTipo,
+    required Future<void> Function(DrawingFeature feature) persistFeature,
+    Future<double> Function(String clienteId)? getTotalAreaByClienteId,
+    Future<void> Function(String clienteId, double totalAreaHa)?
+    onClientAreaUpdate,
+    String? subtipo,
+    double? raioMetros,
+    String? clienteId,
+    String? fazendaId,
+    String? grupo,
+    int? cor,
+  }) async {
+    final feature = buildFeature(
+      geometry: geometry,
+      nome: nome,
+      tipo: tipo,
+      origem: origem,
+      autorId: autorId,
+      autorTipo: autorTipo,
+      subtipo: subtipo,
+      raioMetros: raioMetros,
+      clienteId: clienteId,
+      fazendaId: fazendaId,
+      grupo: grupo,
+      cor: cor,
+    );
+
+    await persistFeature(feature);
+
+    if (clienteId != null &&
+        clienteId.isNotEmpty &&
+        getTotalAreaByClienteId != null &&
+        onClientAreaUpdate != null) {
+      final total = await getTotalAreaByClienteId(clienteId);
+      await onClientAreaUpdate(clienteId, total);
+    }
+
+    return feature;
+  }
+
   /// Constrói uma nova [DrawingFeature] com ID gerado, área calculada
   /// e status inicial `rascunho` / `local_only`.
   DrawingFeature buildFeature({
