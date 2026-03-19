@@ -6,12 +6,14 @@ class ClientSummary {
   final String name;
   final String? photoPath;
   final bool active;
+  final double areaTotal;
 
   const ClientSummary({
     required this.id,
     required this.name,
     this.photoPath,
     required this.active,
+    this.areaTotal = 0.0,
   });
 }
 

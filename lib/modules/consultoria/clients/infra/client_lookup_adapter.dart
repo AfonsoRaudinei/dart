@@ -21,6 +21,7 @@ class ClientLookupAdapter implements IClientLookup {
             name: c.name,
             photoPath: c.photoPath,
             active: c.active,
+            areaTotal: c.areaTotal ?? 0.0,
           ),
         )
         .toList();
@@ -35,6 +36,7 @@ class ClientLookupAdapter implements IClientLookup {
       name: client.name,
       photoPath: client.photoPath,
       active: client.active,
+      areaTotal: client.areaTotal ?? 0.0,
     );
   }
 }

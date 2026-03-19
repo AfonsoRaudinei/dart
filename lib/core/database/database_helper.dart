@@ -23,7 +23,7 @@ class DatabaseHelper {
 
     final db = await openDatabase(
       path,
-      version: 23,
+      version: 24,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -132,6 +132,9 @@ class DatabaseHelper {
           break;
         case 23:
           await _migrateToV23(db);
+          break;
+        case 24:
+          await _migrateToV24(db);
           break;
       }
     }
@@ -938,6 +941,105 @@ class DatabaseHelper {
         );
       }
     }
+  }
+
+  /// V24 — ADR-022: Sistema de Metas, Safra e Lançamentos.
+  /// Cria tabelas: carteira_config, carteira_safras,
+  ///               carteira_metas, carteira_lancamentos.
+  /// Adiciona colunas em carteira_categorias: unidade, valor_referencia.
+  Future<void> _migrateToV24(Database db) async {
+    // Config global do usuário (valor do grão)
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS carteira_config (
+        user_id    TEXT PRIMARY KEY,
+        valor_grao REAL NOT NULL DEFAULT 0.0,
+        updated_at TEXT NOT NULL
+      )
+    ''');
+
+    // Safras
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS carteira_safras (
+        id          TEXT PRIMARY KEY,
+        user_id     TEXT NOT NULL DEFAULT '',
+        nome        TEXT NOT NULL,
+        data_inicio TEXT NOT NULL,
+        data_fim    TEXT NOT NULL,
+        ativa       INTEGER NOT NULL DEFAULT 1,
+        created_at  TEXT NOT NULL,
+        updated_at  TEXT NOT NULL
+      )
+    ''');
+    await db.execute('''
+      CREATE INDEX IF NOT EXISTS idx_carteira_safras_user
+        ON carteira_safras(user_id, ativa)
+    ''');
+
+    // Metas por categoria × safra
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS carteira_metas (
+        id           TEXT PRIMARY KEY,
+        user_id      TEXT NOT NULL DEFAULT '',
+        safra_id     TEXT NOT NULL,
+        categoria_id TEXT NOT NULL,
+        quantidade   REAL NOT NULL DEFAULT 0.0,
+        created_at   TEXT NOT NULL,
+        updated_at   TEXT NOT NULL,
+        UNIQUE(user_id, safra_id, categoria_id)
+      )
+    ''');
+
+    // Lançamentos de realizado
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS carteira_lancamentos (
+        id               TEXT PRIMARY KEY,
+        user_id          TEXT NOT NULL DEFAULT '',
+        safra_id         TEXT NOT NULL,
+        categoria_id     TEXT NOT NULL,
+        cliente_id       TEXT NOT NULL,
+        quantidade       REAL NOT NULL,
+        observacao       TEXT,
+        data_lancamento  TEXT NOT NULL,
+        created_at       TEXT NOT NULL
+      )
+    ''');
+    await db.execute('''
+      CREATE INDEX IF NOT EXISTS idx_carteira_lancamentos_safra_cat
+        ON carteira_lancamentos(user_id, safra_id, categoria_id)
+    ''');
+    await db.execute('''
+      CREATE INDEX IF NOT EXISTS idx_carteira_lancamentos_cliente
+        ON carteira_lancamentos(user_id, cliente_id, safra_id)
+    ''');
+
+    // Adicionar unidade em carteira_categorias (idempotente)
+    try {
+      await db.execute(
+        'ALTER TABLE carteira_categorias '
+        'ADD COLUMN unidade TEXT NOT NULL DEFAULT "realPorHa"',
+      );
+    } catch (_) {}
+
+    // Adicionar valor_referencia em carteira_categorias (idempotente)
+    try {
+      await db.execute(
+        'ALTER TABLE carteira_categorias '
+        'ADD COLUMN valor_referencia REAL',
+      );
+    } catch (_) {}
+
+    // Migrar dados existentes: valor_real → valor_referencia
+    await db.execute('''
+      UPDATE carteira_categorias
+      SET valor_referencia = valor_real
+      WHERE valor_referencia IS NULL AND valor_real IS NOT NULL
+    ''');
+
+    AppLogger.debug(
+      'V24: carteira_config, carteira_safras, carteira_metas, '
+      'carteira_lancamentos criadas. carteira_categorias atualizada.',
+      tag: 'DB',
+    );
   }
 
   /// Remove registros locais não sincronizados do usuário no logout.
