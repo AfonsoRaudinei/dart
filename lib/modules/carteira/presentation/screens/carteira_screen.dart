@@ -9,6 +9,7 @@ import 'package:soloforte_app/core/router/app_routes.dart';
 import 'package:soloforte_app/modules/carteira/domain/entities/categoria_global.dart';
 import 'package:soloforte_app/modules/carteira/domain/enums/unidade_categoria.dart';
 import 'package:soloforte_app/modules/carteira/presentation/providers/carteira_providers.dart';
+import 'package:soloforte_app/modules/carteira/presentation/widgets/carteira_metas_tab.dart';
 import 'package:soloforte_app/modules/carteira/presentation/widgets/categoria_form_dialog.dart';
 import 'package:soloforte_app/modules/carteira/presentation/widgets/cliente_carteira_card.dart';
 
@@ -55,7 +56,7 @@ class _CarteiraScreenState extends ConsumerState<CarteiraScreen> {
     }
 
     return DefaultTabController(
-      length: 2,
+      length: 3,
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Carteira'),
@@ -63,6 +64,7 @@ class _CarteiraScreenState extends ConsumerState<CarteiraScreen> {
             tabs: [
               Tab(text: 'Clientes'),
               Tab(text: 'Categorias'),
+              Tab(text: 'Metas'),
             ],
           ),
         ),
@@ -70,6 +72,7 @@ class _CarteiraScreenState extends ConsumerState<CarteiraScreen> {
           children: [
             _ClientesTab(userId: userId),
             _CategoriasTab(userId: userId),
+            const CarteiraMetasTab(),
           ],
         ),
       ),
