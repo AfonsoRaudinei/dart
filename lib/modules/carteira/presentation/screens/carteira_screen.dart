@@ -7,6 +7,7 @@ import 'package:uuid/uuid.dart';
 import 'package:soloforte_app/core/constants/layout_constants.dart';
 import 'package:soloforte_app/core/router/app_routes.dart';
 import 'package:soloforte_app/modules/carteira/domain/entities/categoria_global.dart';
+import 'package:soloforte_app/modules/carteira/domain/enums/unidade_categoria.dart';
 import 'package:soloforte_app/modules/carteira/presentation/providers/carteira_providers.dart';
 import 'package:soloforte_app/modules/carteira/presentation/widgets/categoria_form_dialog.dart';
 import 'package:soloforte_app/modules/carteira/presentation/widgets/cliente_carteira_card.dart';
@@ -181,9 +182,8 @@ class _CategoriasTab extends ConsumerWidget {
       cor: result.corHex,
       ativo: true,
       ordem: categorias.length,
-      valorReal: result.valorReal,
-      valorDolar: result.valorDolar,
-      sacasPorHa: result.sacasPorHa,
+      unidade: UnidadeCategoria.realPorHa,
+      valorReferencia: result.valorReal,
       createdAt: now,
       updatedAt: now,
     );
@@ -205,9 +205,7 @@ class _CategoriasTab extends ConsumerWidget {
         title: 'Editar categoria',
         initialNome: categoria.nome,
         initialCorHex: categoria.cor,
-        initialValorReal: categoria.valorReal,
-        initialValorDolar: categoria.valorDolar,
-        initialSacasPorHa: categoria.sacasPorHa,
+        initialValorReal: categoria.valorReferencia ?? categoria.valorReal,
       ),
     );
     if (result == null) return;
@@ -218,9 +216,8 @@ class _CategoriasTab extends ConsumerWidget {
           categoria.copyWith(
             nome: result.nome,
             cor: result.corHex,
-            valorReal: result.valorReal,
-            valorDolar: result.valorDolar,
-            sacasPorHa: result.sacasPorHa,
+            unidade: categoria.unidade,
+            valorReferencia: result.valorReal,
           ),
         );
 
@@ -260,6 +257,8 @@ class _CategoriasTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final categoriasAsync = ref.watch(categoriasGlobaisProvider(userId));
+    // ignore: no_leading_underscores_for_local_identifiers
+    final _valorGraoTemp = 0.0; // TODO(ADR-022-P3): substituir por provider
 
     return Stack(
       children: [
@@ -277,6 +276,7 @@ class _CategoriasTab extends ConsumerWidget {
               itemCount: categorias.length,
               itemBuilder: (context, index) {
                 final categoria = categorias[index];
+                final custoSacasHa = categoria.custoSacasHa(_valorGraoTemp);
                 return ListTile(
                   leading: CircleAvatar(
                     radius: 10,
@@ -286,17 +286,11 @@ class _CategoriasTab extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(categoria.nome),
-                      if (categoria.custoSacasHa != null ||
-                          categoria.custoSacasHaUsd != null)
+                      if (custoSacasHa != null)
                         Padding(
                           padding: const EdgeInsets.only(top: 2),
                           child: Text(
-                            [
-                              if (categoria.custoSacasHa != null)
-                                'R\$ ${categoria.custoSacasHa!.toStringAsFixed(3)} sc/ha',
-                              if (categoria.custoSacasHaUsd != null)
-                                'US\$ ${categoria.custoSacasHaUsd!.toStringAsFixed(3)} sc/ha',
-                            ].join('  ·  '),
+                            'R\$ ${custoSacasHa.toStringAsFixed(3)} sc/ha',
                             style: TextStyle(
                               fontSize: 11,
                               color: Theme.of(context).hintColor,
