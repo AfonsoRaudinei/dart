@@ -6,7 +6,7 @@ import 'package:uuid/uuid.dart';
 import 'package:soloforte_app/modules/carteira/domain/entities/categoria_global.dart';
 import 'package:soloforte_app/modules/carteira/domain/entities/cliente_categoria.dart';
 import 'package:soloforte_app/modules/carteira/presentation/providers/carteira_providers.dart';
-import 'package:soloforte_app/modules/carteira/presentation/widgets/categoria_progress_bar.dart';
+import 'package:soloforte_app/modules/carteira/presentation/widgets/lancamento_form_dialog.dart';
 
 class CarteiraClienteScreen extends ConsumerWidget {
   const CarteiraClienteScreen({super.key, required this.clienteId});
@@ -15,13 +15,6 @@ class CarteiraClienteScreen extends ConsumerWidget {
   static const Uuid _uuid = Uuid();
 
   String get _userId => Supabase.instance.client.auth.currentUser?.id ?? '';
-
-  Color _parseColor(String hex) {
-    final normalized = hex.replaceFirst('#', '');
-    final value = int.tryParse(normalized, radix: 16);
-    if (value == null || normalized.length != 6) return const Color(0xFF9CA3AF);
-    return Color(0xFF000000 | value);
-  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -63,6 +56,7 @@ class CarteiraClienteScreen extends ConsumerWidget {
               final registrosByCategoria = <String, ClienteCategoria>{
                 for (final r in registros) r.categoriaId: r,
               };
+              final clienteNome = clienteAsync.valueOrNull?.name ?? 'Cliente';
 
               return ListView.builder(
                 padding: const EdgeInsets.only(top: 8, bottom: 24),
@@ -70,12 +64,12 @@ class CarteiraClienteScreen extends ConsumerWidget {
                 itemBuilder: (context, index) {
                   final categoria = categorias[index];
                   final registro = registrosByCategoria[categoria.id];
-                  return CategoriaProgressBar(
-                    nome: categoria.nome,
-                    cor: _parseColor(categoria.cor),
-                    percentual: registro?.percentualFechado ?? 0,
-                    observacao: registro?.observacao,
-                    onTap: () => _editRegistro(
+                  return _CategoriaClienteItem(
+                    categoria: categoria,
+                    clienteId: clienteId,
+                    clienteNome: clienteNome,
+                    registroLegado: registro,
+                    onEditLegado: () => _editRegistro(
                       context,
                       ref,
                       userId: userId,
@@ -122,6 +116,238 @@ class CarteiraClienteScreen extends ConsumerWidget {
       categoriasClienteProvider((userId: userId, clienteId: clienteId)),
     );
     ref.invalidate(todosRegistrosProvider(userId));
+  }
+}
+
+class _CategoriaClienteItem extends ConsumerStatefulWidget {
+  const _CategoriaClienteItem({
+    required this.categoria,
+    required this.clienteId,
+    required this.clienteNome,
+    required this.registroLegado,
+    required this.onEditLegado,
+  });
+
+  final CategoriaGlobal categoria;
+  final String clienteId;
+  final String clienteNome;
+  final ClienteCategoria? registroLegado;
+  final VoidCallback onEditLegado;
+
+  @override
+  ConsumerState<_CategoriaClienteItem> createState() =>
+      _CategoriaClienteItemState();
+}
+
+class _CategoriaClienteItemState extends ConsumerState<_CategoriaClienteItem> {
+  bool _historicoExpandido = false;
+
+  Color _parseCor(String hex) {
+    try {
+      final h = hex.replaceAll('#', '');
+      return Color(int.parse('FF$h', radix: 16));
+    } catch (_) {
+      return Colors.grey;
+    }
+  }
+
+  Future<void> _abrirLancamento() async {
+    await showDialog<bool>(
+      context: context,
+      builder: (_) => LancamentoFormDialog(
+        categoria: widget.categoria,
+        clienteId: widget.clienteId,
+        clienteNome: widget.clienteNome,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cor = _parseCor(widget.categoria.cor);
+    final unidade = widget.categoria.unidade.label;
+
+    final metaAsync = ref.watch(metaCategoriaProvider(widget.categoria.id));
+    final realizadoAsync = ref.watch(
+      realizadoClienteCategoriaProvider((
+        clienteId: widget.clienteId,
+        categoriaId: widget.categoria.id,
+      )),
+    );
+    final lancamentosAsync = ref.watch(
+      lancamentosSafraProvider((
+        categoriaId: widget.categoria.id,
+        clienteId: widget.clienteId,
+      )),
+    );
+
+    final meta = metaAsync.valueOrNull;
+    final realizado = realizadoAsync.valueOrNull ?? 0.0;
+    final pct = (meta != null && meta.quantidade > 0)
+        ? (realizado / meta.quantidade * 100.0).clamp(0.0, 100.0)
+        : 0.0;
+    final totalHistorico = lancamentosAsync.valueOrNull?.length ?? 0;
+
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onLongPress: widget.onEditLegado,
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 10,
+                    height: 10,
+                    decoration: BoxDecoration(
+                      color: cor,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      widget.categoria.nome,
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                  TextButton.icon(
+                    onPressed: _abrirLancamento,
+                    icon: const Icon(Icons.add, size: 14),
+                    label: const Text('Lançamento'),
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      visualDensity: VisualDensity.compact,
+                    ),
+                  ),
+                ],
+              ),
+              if (meta != null) ...[
+                const SizedBox(height: 4),
+                Text(
+                  'Meta: ${meta.quantidade % 1 == 0 ? meta.quantidade.toInt() : meta.quantidade.toStringAsFixed(1)} $unidade  ·  Realizado: ${realizado % 1 == 0 ? realizado.toInt() : realizado.toStringAsFixed(1)}',
+                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                ),
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    Expanded(
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(4),
+                        child: LinearProgressIndicator(
+                          value: pct / 100.0,
+                          backgroundColor: Colors.grey[200],
+                          color: cor,
+                          minHeight: 6,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      '${pct.toStringAsFixed(0)}%',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ] else
+                Padding(
+                  padding: const EdgeInsets.only(top: 2),
+                  child: Text(
+                    'Sem meta definida',
+                    style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                  ),
+                ),
+              if (widget.registroLegado != null) ...[
+                const SizedBox(height: 4),
+                Text(
+                  'Legado: ${widget.registroLegado!.percentualFechado}% fechado'
+                  '${(widget.registroLegado!.observacao ?? '').trim().isNotEmpty ? ' · ${widget.registroLegado!.observacao}' : ''}',
+                  style: TextStyle(fontSize: 11, color: Colors.grey[500]),
+                ),
+              ],
+              const SizedBox(height: 4),
+              InkWell(
+                onTap: () =>
+                    setState(() => _historicoExpandido = !_historicoExpandido),
+                child: Row(
+                  children: [
+                    Icon(
+                      _historicoExpandido
+                          ? Icons.keyboard_arrow_up
+                          : Icons.keyboard_arrow_down,
+                      size: 16,
+                      color: Colors.grey[500],
+                    ),
+                    Text(
+                      'Histórico ($totalHistorico)',
+                      style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                    ),
+                  ],
+                ),
+              ),
+              if (_historicoExpandido)
+                lancamentosAsync.when(
+                  loading: () => const Padding(
+                    padding: EdgeInsets.only(top: 4),
+                    child: LinearProgressIndicator(),
+                  ),
+                  error: (_, __) => const SizedBox.shrink(),
+                  data: (lancamentos) {
+                    if (lancamentos.isEmpty) {
+                      return Padding(
+                        padding: const EdgeInsets.only(left: 18, top: 4),
+                        child: Text(
+                          'Nenhum lançamento registrado',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey[400],
+                          ),
+                        ),
+                      );
+                    }
+
+                    return Padding(
+                      padding: const EdgeInsets.only(left: 18, top: 4),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: lancamentos.map((l) {
+                          final d = l.dataLancamento;
+                          final fmt =
+                              '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}';
+                          final qtd = l.quantidade % 1 == 0
+                              ? l.quantidade.toInt().toString()
+                              : l.quantidade.toStringAsFixed(1);
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 2),
+                            child: Text(
+                              '$fmt · $qtd $unidade'
+                              '${l.observacao != null ? ' · ${l.observacao}' : ''}',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    );
+                  },
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 
