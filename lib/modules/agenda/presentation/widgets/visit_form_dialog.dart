@@ -6,6 +6,7 @@ import '../../domain/enums/event_type.dart';
 import '../providers/agenda_provider.dart';
 import 'client_selector_dropdown.dart';
 import 'distance_warning_dialog.dart';
+import 'oportunidades_cliente_section.dart';
 
 /// Dialog para criar nova visita com horário e prioridade
 class VisitFormDialog extends ConsumerStatefulWidget {
@@ -225,6 +226,14 @@ class _VisitFormDialogState extends ConsumerState<VisitFormDialog> {
               ClientSelectorDropdown(
                 selectedClientId: _selectedClienteId,
                 onChanged: (id) => setState(() => _selectedClienteId = id),
+              ),
+              OportunidadesClienteSection(
+                clienteId: _selectedClienteId,
+                onTituloSelecionado: (titulo) {
+                  setState(() {
+                    _tituloController.text = titulo;
+                  });
+                },
               ),
               const SizedBox(height: 16),
 
