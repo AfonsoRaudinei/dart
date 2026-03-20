@@ -266,23 +266,27 @@ class _VisitFormDialogState extends ConsumerState<VisitFormDialog> {
               ),
               const Divider(),
 
-              // Horário de início
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                title: const Text('Horário de início'),
-                subtitle: Text(_startTime?.format(context) ?? 'Não definido'),
-                trailing: const Icon(Icons.access_time),
-                onTap: _selectStartTime,
-              ),
-              const Divider(),
-
-              // Horário de término
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                title: const Text('Horário de término'),
-                subtitle: Text(_endTime?.format(context) ?? 'Não definido'),
-                trailing: const Icon(Icons.access_time),
-                onTap: _selectEndTime,
+              // Horários
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildTimeField(
+                      label: 'Início',
+                      value: _startTime?.format(context) ?? 'Não definido',
+                      icon: Icons.schedule_outlined,
+                      onTap: _selectStartTime,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildTimeField(
+                      label: 'Término',
+                      value: _endTime?.format(context) ?? 'Não definido',
+                      icon: Icons.schedule_outlined,
+                      onTap: _selectEndTime,
+                    ),
+                  ),
+                ],
               ),
               const Divider(),
 
@@ -293,36 +297,44 @@ class _VisitFormDialogState extends ConsumerState<VisitFormDialog> {
                 style: TextStyle(fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 8),
-              SegmentedButton<VisitPriority>(
-                segments: [
-                  ButtonSegment(
-                    value: VisitPriority.baixa,
-                    label: Text(VisitPriority.baixa.label),
-                    icon: Icon(
-                      Icons.low_priority,
-                      color: VisitPriority.baixa.color,
-                    ),
+              Row(
+                children: [
+                  _PriorityChip(
+                    label: 'Baixa',
+                    icon: Icons.low_priority_outlined,
+                    isSelected: _priority == VisitPriority.baixa,
+                    selectedColor: Colors.grey.shade600,
+                    onTap: () {
+                      setState(() {
+                        _priority = VisitPriority.baixa;
+                      });
+                    },
                   ),
-                  ButtonSegment(
-                    value: VisitPriority.normal,
-                    label: Text(VisitPriority.normal.label),
-                    icon: Icon(Icons.circle, color: VisitPriority.normal.color),
+                  const SizedBox(width: 8),
+                  _PriorityChip(
+                    label: 'Normal',
+                    icon: Icons.check_circle_outline,
+                    isSelected: _priority == VisitPriority.normal,
+                    selectedColor: const Color(0xFF4ADE80),
+                    onTap: () {
+                      setState(() {
+                        _priority = VisitPriority.normal;
+                      });
+                    },
                   ),
-                  ButtonSegment(
-                    value: VisitPriority.alta,
-                    label: Text(VisitPriority.alta.label),
-                    icon: Icon(
-                      Icons.priority_high,
-                      color: VisitPriority.alta.color,
-                    ),
+                  const SizedBox(width: 8),
+                  _PriorityChip(
+                    label: 'Alta',
+                    icon: Icons.priority_high_outlined,
+                    isSelected: _priority == VisitPriority.alta,
+                    selectedColor: Colors.red.shade400,
+                    onTap: () {
+                      setState(() {
+                        _priority = VisitPriority.alta;
+                      });
+                    },
                   ),
                 ],
-                selected: {_priority},
-                onSelectionChanged: (Set<VisitPriority> selected) {
-                  setState(() {
-                    _priority = selected.first;
-                  });
-                },
               ),
               const SizedBox(height: 16),
 
@@ -396,6 +408,46 @@ class _VisitFormDialogState extends ConsumerState<VisitFormDialog> {
     );
   }
 
+  Widget _buildTimeField({
+    required String label,
+    required String value,
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        child: Row(
+          children: [
+            Icon(icon, size: 20, color: Colors.black54),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: const TextStyle(fontSize: 13, color: Colors.black54),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    value,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   String _formatDate(DateTime date) {
     final months = [
       'Jan',
@@ -412,5 +464,63 @@ class _VisitFormDialogState extends ConsumerState<VisitFormDialog> {
       'Dez',
     ];
     return '${date.day} ${months[date.month - 1]} ${date.year}';
+  }
+}
+
+class _PriorityChip extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final bool isSelected;
+  final Color selectedColor;
+  final VoidCallback onTap;
+
+  const _PriorityChip({
+    required this.label,
+    required this.icon,
+    required this.isSelected,
+    required this.selectedColor,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? selectedColor.withValues(alpha: 0.15)
+                : Colors.transparent,
+            border: Border.all(
+              color: isSelected ? selectedColor : Colors.grey.shade300,
+              width: isSelected ? 1.5 : 1.0,
+            ),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                icon,
+                size: 16,
+                color: isSelected ? selectedColor : Colors.grey.shade500,
+              ),
+              const SizedBox(width: 4),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                  color: isSelected ? selectedColor : Colors.grey.shade600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
