@@ -257,8 +257,7 @@ class _CategoriasTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final categoriasAsync = ref.watch(categoriasGlobaisProvider(userId));
-    // ignore: no_leading_underscores_for_local_identifiers
-    final _valorGraoTemp = 0.0; // TODO(ADR-022-P3): substituir por provider
+    final valorGrao = ref.watch(valorGraoProvider).valueOrNull ?? 0.0;
 
     return Stack(
       children: [
@@ -276,7 +275,7 @@ class _CategoriasTab extends ConsumerWidget {
               itemCount: categorias.length,
               itemBuilder: (context, index) {
                 final categoria = categorias[index];
-                final custoSacasHa = categoria.custoSacasHa(_valorGraoTemp);
+                final custoSacasHa = categoria.custoSacasHa(valorGrao);
                 return ListTile(
                   leading: CircleAvatar(
                     radius: 10,
