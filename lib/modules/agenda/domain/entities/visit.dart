@@ -308,6 +308,17 @@ enum VisitPriority {
   normal,
   alta;
 
+  String get label {
+    switch (this) {
+      case VisitPriority.baixa:
+        return 'Baixa';
+      case VisitPriority.normal:
+        return 'Normal';
+      case VisitPriority.alta:
+        return 'Alta';
+    }
+  }
+
   Color get color {
     switch (this) {
       case VisitPriority.baixa:
@@ -321,17 +332,23 @@ enum VisitPriority {
 
   String toValue() {
     switch (this) {
-      case VisitPriority.baixa: return 'baixa';
-      case VisitPriority.normal: return 'normal';
-      case VisitPriority.alta: return 'alta';
+      case VisitPriority.baixa:
+        return 'baixa';
+      case VisitPriority.normal:
+        return 'normal';
+      case VisitPriority.alta:
+        return 'alta';
     }
   }
 
   static VisitPriority fromString(String value) {
     switch (value) {
-      case 'baixa': return VisitPriority.baixa;
-      case 'alta': return VisitPriority.alta;
-      default: return VisitPriority.normal;
+      case 'baixa':
+        return VisitPriority.baixa;
+      case 'alta':
+        return VisitPriority.alta;
+      default:
+        return VisitPriority.normal;
     }
   }
 }
