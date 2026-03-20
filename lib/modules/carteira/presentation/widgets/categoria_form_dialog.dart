@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
 
+import '../../domain/enums/unidade_categoria.dart';
+
 class CategoriaFormResult {
   const CategoriaFormResult({
     required this.nome,
     required this.corHex,
+    required this.unidade,
+    this.valorReferencia,
+    // Campos legados mantidos para compatibilidade dos call sites atuais.
     this.valorReal,
     this.valorDolar,
     this.sacasPorHa,
@@ -11,6 +16,8 @@ class CategoriaFormResult {
 
   final String nome;
   final String corHex;
+  final UnidadeCategoria unidade;
+  final double? valorReferencia;
   final double? valorReal;
   final double? valorDolar;
   final double? sacasPorHa;
@@ -24,6 +31,8 @@ class CategoriaFormDialog extends StatefulWidget {
     this.initialValorReal,
     this.initialValorDolar,
     this.initialSacasPorHa,
+    this.initialUnidade,
+    this.initialValorReferencia,
     this.title = 'Nova categoria',
   });
 
@@ -32,6 +41,8 @@ class CategoriaFormDialog extends StatefulWidget {
   final double? initialValorReal;
   final double? initialValorDolar;
   final double? initialSacasPorHa;
+  final UnidadeCategoria? initialUnidade;
+  final double? initialValorReferencia;
   final String title;
 
   @override
@@ -40,10 +51,10 @@ class CategoriaFormDialog extends StatefulWidget {
 
 class _CategoriaFormDialogState extends State<CategoriaFormDialog> {
   late final TextEditingController _nomeController;
-  late final TextEditingController _valorRealController;
-  late final TextEditingController _valorDolarController;
-  late final TextEditingController _sacasPorHaController;
+  late final TextEditingController _valorReferenciaController;
   late Color _selectedColor;
+  UnidadeCategoria _unidade = UnidadeCategoria.realPorHa;
+
   final _formKey = GlobalKey<FormState>();
   static const List<Color> _palette = [
     Color(0xFF4ADE80),
@@ -65,27 +76,19 @@ class _CategoriaFormDialogState extends State<CategoriaFormDialog> {
     super.initState();
     _nomeController = TextEditingController(text: widget.initialNome ?? '');
     _selectedColor = _hexToColor(widget.initialCorHex ?? '#4ADE80');
-    _valorRealController = TextEditingController(
-      text: widget.initialValorReal?.toString() ?? '',
+    _unidade = widget.initialUnidade ?? UnidadeCategoria.realPorHa;
+    _valorReferenciaController = TextEditingController(
+      text:
+          (widget.initialValorReferencia ?? widget.initialValorReal)
+              ?.toString() ??
+          '',
     );
-    _valorDolarController = TextEditingController(
-      text: widget.initialValorDolar?.toString() ?? '',
-    );
-    _sacasPorHaController = TextEditingController(
-      text: widget.initialSacasPorHa?.toString() ?? '',
-    );
-
-    _valorRealController.addListener(() => setState(() {}));
-    _valorDolarController.addListener(() => setState(() {}));
-    _sacasPorHaController.addListener(() => setState(() {}));
   }
 
   @override
   void dispose() {
     _nomeController.dispose();
-    _valorRealController.dispose();
-    _valorDolarController.dispose();
-    _sacasPorHaController.dispose();
+    _valorReferenciaController.dispose();
     super.dispose();
   }
 
@@ -106,51 +109,6 @@ class _CategoriaFormDialogState extends State<CategoriaFormDialog> {
     final text = raw.trim();
     if (text.isEmpty) return null;
     return double.tryParse(text.replaceAll(',', '.'));
-  }
-
-  Widget _buildCalculoPreview() {
-    final real = _parseNullableDouble(_valorRealController.text);
-    final dolar = _parseNullableDouble(_valorDolarController.text);
-    final sacas = _parseNullableDouble(_sacasPorHaController.text);
-
-    if (sacas == null || sacas == 0) return const SizedBox.shrink();
-    if (real == null && dolar == null) return const SizedBox.shrink();
-
-    return Container(
-      margin: const EdgeInsets.only(top: 12),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: const Color(0xFF4ADE80).withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: const Color(0xFF4ADE80).withValues(alpha: 0.3),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Custo por hectare',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF16A34A),
-            ),
-          ),
-          const SizedBox(height: 4),
-          if (real != null)
-            Text(
-              'R\$ ${(real / sacas).toStringAsFixed(3)} sc/ha',
-              style: const TextStyle(fontSize: 13, color: Color(0xFF16A34A)),
-            ),
-          if (dolar != null)
-            Text(
-              'US\$ ${(dolar / sacas).toStringAsFixed(3)} sc/ha',
-              style: const TextStyle(fontSize: 13, color: Color(0xFF16A34A)),
-            ),
-        ],
-      ),
-    );
   }
 
   @override
@@ -261,89 +219,45 @@ class _CategoriaFormDialogState extends State<CategoriaFormDialog> {
                           );
                         }).toList(),
                       ),
-                      const Divider(height: 32),
-                      Text(
-                        'Referência de mercado (opcional)',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.grey.shade600,
+                      const SizedBox(height: 16),
+                      const Divider(height: 1),
+                      const SizedBox(height: 16),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          'Tipo de produto',
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(color: Colors.grey[600]),
                         ),
                       ),
-                      const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: TextFormField(
-                              controller: _valorRealController,
-                              decoration: const InputDecoration(
-                                labelText: 'R\$/grão',
-                                prefixText: 'R\$ ',
-                                border: OutlineInputBorder(),
-                              ),
-                              keyboardType:
-                                  const TextInputType.numberWithOptions(
-                                    decimal: true,
-                                  ),
-                              validator: (value) {
-                                if (value == null || value.trim().isEmpty) {
-                                  return null;
-                                }
-                                if (_parseNullableDouble(value) == null) {
-                                  return 'Valor inválido';
-                                }
-                                return null;
-                              },
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: TextFormField(
-                              controller: _valorDolarController,
-                              decoration: const InputDecoration(
-                                labelText: 'US\$/grão',
-                                prefixText: 'US\$ ',
-                                border: OutlineInputBorder(),
-                              ),
-                              keyboardType:
-                                  const TextInputType.numberWithOptions(
-                                    decimal: true,
-                                  ),
-                              validator: (value) {
-                                if (value == null || value.trim().isEmpty) {
-                                  return null;
-                                }
-                                if (_parseNullableDouble(value) == null) {
-                                  return 'Valor inválido';
-                                }
-                                return null;
-                              },
-                            ),
-                          ),
-                        ],
+                      const SizedBox(height: 8),
+                      _UnidadeSelector(
+                        selected: _unidade,
+                        onChanged: (u) => setState(() => _unidade = u),
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 16),
                       TextFormField(
-                        controller: _sacasPorHaController,
-                        decoration: const InputDecoration(
-                          labelText: 'Sacas / ha',
-                          suffixText: 'sc/ha',
-                          border: OutlineInputBorder(),
-                        ),
+                        controller: _valorReferenciaController,
                         keyboardType: const TextInputType.numberWithOptions(
                           decimal: true,
+                        ),
+                        decoration: InputDecoration(
+                          labelText: 'Custo / Referência (opcional)',
+                          suffixText: _unidade.label,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                         ),
                         validator: (value) {
                           if (value == null || value.trim().isEmpty) {
                             return null;
                           }
-                          final parsed = _parseNullableDouble(value);
-                          if (parsed == null) return 'Valor inválido';
-                          if (parsed <= 0) return 'Deve ser maior que zero';
+                          if (_parseNullableDouble(value) == null) {
+                            return 'Valor inválido';
+                          }
                           return null;
                         },
                       ),
-                      _buildCalculoPreview(),
                       const SizedBox(height: 24),
                     ],
                   ),
@@ -367,19 +281,19 @@ class _CategoriaFormDialogState extends State<CategoriaFormDialog> {
                         if (!(_formKey.currentState?.validate() ?? false)) {
                           return;
                         }
+                        final valorRef = _parseNullableDouble(
+                          _valorReferenciaController.text,
+                        );
                         Navigator.of(context).pop(
                           CategoriaFormResult(
                             nome: _nomeController.text.trim(),
                             corHex: _colorToHex(_selectedColor),
-                            valorReal: _parseNullableDouble(
-                              _valorRealController.text,
-                            ),
-                            valorDolar: _parseNullableDouble(
-                              _valorDolarController.text,
-                            ),
-                            sacasPorHa: _parseNullableDouble(
-                              _sacasPorHaController.text,
-                            ),
+                            unidade: _unidade,
+                            valorReferencia: valorRef,
+                            // Compat: call sites atuais ainda usam valorReal.
+                            valorReal: valorRef,
+                            valorDolar: widget.initialValorDolar,
+                            sacasPorHa: widget.initialSacasPorHa,
                           ),
                         );
                       },
@@ -392,6 +306,51 @@ class _CategoriaFormDialogState extends State<CategoriaFormDialog> {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _UnidadeSelector extends StatelessWidget {
+  final UnidadeCategoria selected;
+  final ValueChanged<UnidadeCategoria> onChanged;
+
+  const _UnidadeSelector({required this.selected, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    final unidades = UnidadeCategoria.values;
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: unidades.map((u) {
+        final isSelected = u == selected;
+        final color = Theme.of(context).colorScheme.primary;
+        return GestureDetector(
+          onTap: () => onChanged(u),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 150),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            decoration: BoxDecoration(
+              color: isSelected
+                  ? color.withValues(alpha: 0.12)
+                  : Colors.transparent,
+              border: Border.all(
+                color: isSelected ? color : Colors.grey.shade300,
+                width: isSelected ? 1.5 : 1.0,
+              ),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text(
+              u.label,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                color: isSelected ? color : Colors.grey.shade600,
+              ),
+            ),
+          ),
+        );
+      }).toList(),
     );
   }
 }
