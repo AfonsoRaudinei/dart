@@ -3,6 +3,31 @@
 /// O histórico de lançamentos constitui o "realizado" de cada categoria.
 /// Progresso = SUM(lançamentos) / meta.quantidade × 100
 /// ADR-022 — SoloForte
+enum TipoFechamento {
+  vendido,
+  perdido;
+
+  String get dbValue {
+    switch (this) {
+      case TipoFechamento.vendido:
+        return 'vendido';
+      case TipoFechamento.perdido:
+        return 'perdido';
+    }
+  }
+
+  static TipoFechamento? fromDb(String? value) {
+    switch (value) {
+      case 'vendido':
+        return TipoFechamento.vendido;
+      case 'perdido':
+        return TipoFechamento.perdido;
+      default:
+        return null;
+    }
+  }
+}
+
 class CarteiraLancamento {
   final String id;
   final String userId;
@@ -11,6 +36,9 @@ class CarteiraLancamento {
   final String clienteId;
   final double quantidade;
   final String? observacao;
+  final TipoFechamento? tipoFechamento;
+  final String? nomeConcorrente;
+  final String? motivoFechamento;
   final DateTime dataLancamento;
   final DateTime createdAt;
 
@@ -22,6 +50,9 @@ class CarteiraLancamento {
     required this.clienteId,
     required this.quantidade,
     this.observacao,
+    this.tipoFechamento,
+    this.nomeConcorrente,
+    this.motivoFechamento,
     required this.dataLancamento,
     required this.createdAt,
   });
@@ -35,6 +66,9 @@ class CarteiraLancamento {
       clienteId: map['cliente_id'] as String,
       quantidade: (map['quantidade'] as num).toDouble(),
       observacao: map['observacao'] as String?,
+      tipoFechamento: TipoFechamento.fromDb(map['tipo_fechamento'] as String?),
+      nomeConcorrente: map['nome_concorrente'] as String?,
+      motivoFechamento: map['motivo_fechamento'] as String?,
       dataLancamento: DateTime.parse(map['data_lancamento'] as String),
       createdAt: DateTime.parse(map['created_at'] as String),
     );
@@ -49,6 +83,9 @@ class CarteiraLancamento {
       'cliente_id': clienteId,
       'quantidade': quantidade,
       'observacao': observacao,
+      'tipo_fechamento': tipoFechamento?.dbValue,
+      'nome_concorrente': nomeConcorrente,
+      'motivo_fechamento': motivoFechamento,
       'data_lancamento': dataLancamento.toIso8601String(),
       'created_at': createdAt.toIso8601String(),
     };
