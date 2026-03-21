@@ -31,7 +31,10 @@ class LancamentoFormDialog extends ConsumerStatefulWidget {
 class _LancamentoFormDialogState extends ConsumerState<LancamentoFormDialog> {
   final _quantidadeController = TextEditingController();
   final _observacaoController = TextEditingController();
+  final _nomeConcorrenteController = TextEditingController();
+  final _motivoFechamentoController = TextEditingController();
   DateTime _dataLancamento = DateTime.now();
+  TipoFechamento? _tipoFechamento;
   bool _salvando = false;
 
   String get _userId => Supabase.instance.client.auth.currentUser?.id ?? '';
@@ -40,6 +43,8 @@ class _LancamentoFormDialogState extends ConsumerState<LancamentoFormDialog> {
   void dispose() {
     _quantidadeController.dispose();
     _observacaoController.dispose();
+    _nomeConcorrenteController.dispose();
+    _motivoFechamentoController.dispose();
     super.dispose();
   }
 
@@ -85,6 +90,9 @@ class _LancamentoFormDialogState extends ConsumerState<LancamentoFormDialog> {
     setState(() => _salvando = true);
     try {
       final repo = ref.read(carteiraRepositoryProvider);
+      final nomeConcorrente = _nomeConcorrenteController.text.trim();
+      final motivoFechamento = _motivoFechamentoController.text.trim();
+      final isPerdido = _tipoFechamento == TipoFechamento.perdido;
       final lancamento = CarteiraLancamento(
         id: const Uuid().v4(),
         userId: _userId,
@@ -95,6 +103,13 @@ class _LancamentoFormDialogState extends ConsumerState<LancamentoFormDialog> {
         observacao: _observacaoController.text.trim().isEmpty
             ? null
             : _observacaoController.text.trim(),
+        tipoFechamento: _tipoFechamento,
+        nomeConcorrente: isPerdido && nomeConcorrente.isNotEmpty
+            ? nomeConcorrente
+            : null,
+        motivoFechamento: isPerdido && motivoFechamento.isNotEmpty
+            ? motivoFechamento
+            : null,
         dataLancamento: _dataLancamento,
         createdAt: DateTime.now(),
       );
@@ -193,6 +208,66 @@ class _LancamentoFormDialogState extends ConsumerState<LancamentoFormDialog> {
             ),
           ),
           const SizedBox(height: 12),
+          InputDecorator(
+            decoration: const InputDecoration(
+              labelText: 'Tipo de fechamento',
+              border: OutlineInputBorder(),
+            ),
+            child: SegmentedButton<TipoFechamento>(
+              emptySelectionAllowed: true,
+              showSelectedIcon: false,
+              segments: const [
+                ButtonSegment(
+                  value: TipoFechamento.vendido,
+                  label: Text('Vendido'),
+                ),
+                ButtonSegment(
+                  value: TipoFechamento.perdido,
+                  label: Text('Perdido para concorrente'),
+                ),
+              ],
+              selected: _tipoFechamento == null
+                  ? <TipoFechamento>{}
+                  : <TipoFechamento>{_tipoFechamento!},
+              onSelectionChanged: (selected) {
+                setState(() {
+                  _tipoFechamento = selected.isEmpty ? null : selected.first;
+                  if (_tipoFechamento != TipoFechamento.perdido) {
+                    _nomeConcorrenteController.clear();
+                    _motivoFechamentoController.clear();
+                  }
+                });
+              },
+            ),
+          ),
+          const SizedBox(height: 12),
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 180),
+            child: _tipoFechamento == TipoFechamento.perdido
+                ? Column(
+                    key: const ValueKey('concorrente_fields'),
+                    children: [
+                      TextField(
+                        controller: _nomeConcorrenteController,
+                        decoration: const InputDecoration(
+                          labelText: 'Nome do concorrente (opcional)',
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: _motivoFechamentoController,
+                        maxLines: 2,
+                        decoration: const InputDecoration(
+                          labelText: 'Motivo (opcional)',
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                    ],
+                  )
+                : const SizedBox.shrink(key: ValueKey('no_concorrente_fields')),
+          ),
           TextField(
             controller: _observacaoController,
             maxLines: 2,
