@@ -39,6 +39,7 @@ class CarteiraLancamento {
   final TipoFechamento? tipoFechamento;
   final String? nomeConcorrente;
   final String? motivoFechamento;
+  final DateTime? dataFechamento;
   final DateTime dataLancamento;
   final DateTime createdAt;
 
@@ -53,6 +54,7 @@ class CarteiraLancamento {
     this.tipoFechamento,
     this.nomeConcorrente,
     this.motivoFechamento,
+    this.dataFechamento,
     required this.dataLancamento,
     required this.createdAt,
   });
@@ -69,6 +71,9 @@ class CarteiraLancamento {
       tipoFechamento: TipoFechamento.fromDb(map['tipo_fechamento'] as String?),
       nomeConcorrente: map['nome_concorrente'] as String?,
       motivoFechamento: map['motivo_fechamento'] as String?,
+      dataFechamento: map['data_fechamento'] != null
+          ? DateTime.tryParse(map['data_fechamento'] as String)
+          : null,
       dataLancamento: DateTime.parse(map['data_lancamento'] as String),
       createdAt: DateTime.parse(map['created_at'] as String),
     );
@@ -86,8 +91,41 @@ class CarteiraLancamento {
       'tipo_fechamento': tipoFechamento?.dbValue,
       'nome_concorrente': nomeConcorrente,
       'motivo_fechamento': motivoFechamento,
+      'data_fechamento': dataFechamento?.toIso8601String(),
       'data_lancamento': dataLancamento.toIso8601String(),
       'created_at': createdAt.toIso8601String(),
     };
+  }
+
+  CarteiraLancamento copyWith({
+    String? id,
+    String? userId,
+    String? safraId,
+    String? categoriaId,
+    String? clienteId,
+    double? quantidade,
+    String? observacao,
+    TipoFechamento? tipoFechamento,
+    String? nomeConcorrente,
+    String? motivoFechamento,
+    DateTime? dataFechamento,
+    DateTime? dataLancamento,
+    DateTime? createdAt,
+  }) {
+    return CarteiraLancamento(
+      id: id ?? this.id,
+      userId: userId ?? this.userId,
+      safraId: safraId ?? this.safraId,
+      categoriaId: categoriaId ?? this.categoriaId,
+      clienteId: clienteId ?? this.clienteId,
+      quantidade: quantidade ?? this.quantidade,
+      observacao: observacao ?? this.observacao,
+      tipoFechamento: tipoFechamento ?? this.tipoFechamento,
+      nomeConcorrente: nomeConcorrente ?? this.nomeConcorrente,
+      motivoFechamento: motivoFechamento ?? this.motivoFechamento,
+      dataFechamento: dataFechamento ?? this.dataFechamento,
+      dataLancamento: dataLancamento ?? this.dataLancamento,
+      createdAt: createdAt ?? this.createdAt,
+    );
   }
 }
