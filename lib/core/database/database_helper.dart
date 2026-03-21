@@ -23,7 +23,7 @@ class DatabaseHelper {
 
     final db = await openDatabase(
       path,
-      version: 25,
+      version: 26,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -138,6 +138,9 @@ class DatabaseHelper {
           break;
         case 25:
           await _migrateToV25(db);
+          break;
+        case 26:
+          await _migrateToV26(db);
           break;
       }
     }
@@ -1070,6 +1073,29 @@ class DatabaseHelper {
           tag: 'DB.Migration',
         );
       }
+    }
+  }
+
+  /// V26 — Carteira: data de fechamento opcional em lançamentos.
+  ///
+  /// Adiciona coluna opcional em `carteira_lancamentos`:
+  /// - data_fechamento
+  ///
+  /// Idempotente: ALTER TABLE envolvido em try/catch.
+  Future<void> _migrateToV26(Database db) async {
+    try {
+      await db.execute(
+        'ALTER TABLE carteira_lancamentos ADD COLUMN data_fechamento TEXT',
+      );
+      AppLogger.debug(
+        'V26: executado "ALTER TABLE carteira_lancamentos ADD COLUMN data_fechamento TEXT"',
+        tag: 'DB.Migration',
+      );
+    } catch (_) {
+      AppLogger.debug(
+        'V26: coluna já existe ou tabela ausente — ignorado',
+        tag: 'DB.Migration',
+      );
     }
   }
 
