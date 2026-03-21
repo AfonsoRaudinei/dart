@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 
@@ -34,6 +35,7 @@ class _LancamentoFormDialogState extends ConsumerState<LancamentoFormDialog> {
   final _nomeConcorrenteController = TextEditingController();
   final _motivoFechamentoController = TextEditingController();
   DateTime _dataLancamento = DateTime.now();
+  DateTime? _dataFechamento;
   TipoFechamento? _tipoFechamento;
   bool _salvando = false;
 
@@ -57,6 +59,18 @@ class _LancamentoFormDialogState extends ConsumerState<LancamentoFormDialog> {
     );
     if (picked != null) {
       setState(() => _dataLancamento = picked);
+    }
+  }
+
+  Future<void> _pickDataFechamento() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _dataFechamento ?? DateTime.now(),
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now(),
+    );
+    if (picked != null) {
+      setState(() => _dataFechamento = picked);
     }
   }
 
@@ -92,7 +106,7 @@ class _LancamentoFormDialogState extends ConsumerState<LancamentoFormDialog> {
       final repo = ref.read(carteiraRepositoryProvider);
       final nomeConcorrente = _nomeConcorrenteController.text.trim();
       final motivoFechamento = _motivoFechamentoController.text.trim();
-      final isPerdido = _tipoFechamento == TipoFechamento.perdido;
+      final hasTipoFechamento = _tipoFechamento != null;
       final lancamento = CarteiraLancamento(
         id: const Uuid().v4(),
         userId: _userId,
@@ -104,12 +118,13 @@ class _LancamentoFormDialogState extends ConsumerState<LancamentoFormDialog> {
             ? null
             : _observacaoController.text.trim(),
         tipoFechamento: _tipoFechamento,
-        nomeConcorrente: isPerdido && nomeConcorrente.isNotEmpty
+        nomeConcorrente: hasTipoFechamento && nomeConcorrente.isNotEmpty
             ? nomeConcorrente
             : null,
-        motivoFechamento: isPerdido && motivoFechamento.isNotEmpty
+        motivoFechamento: hasTipoFechamento && motivoFechamento.isNotEmpty
             ? motivoFechamento
             : null,
+        dataFechamento: hasTipoFechamento ? _dataFechamento : null,
         dataLancamento: _dataLancamento,
         createdAt: DateTime.now(),
       );
@@ -232,9 +247,10 @@ class _LancamentoFormDialogState extends ConsumerState<LancamentoFormDialog> {
               onSelectionChanged: (selected) {
                 setState(() {
                   _tipoFechamento = selected.isEmpty ? null : selected.first;
-                  if (_tipoFechamento != TipoFechamento.perdido) {
+                  if (_tipoFechamento == null) {
                     _nomeConcorrenteController.clear();
                     _motivoFechamentoController.clear();
+                    _dataFechamento = null;
                   }
                 });
               },
@@ -243,10 +259,56 @@ class _LancamentoFormDialogState extends ConsumerState<LancamentoFormDialog> {
           const SizedBox(height: 12),
           AnimatedSwitcher(
             duration: const Duration(milliseconds: 180),
-            child: _tipoFechamento == TipoFechamento.perdido
+            child: _tipoFechamento != null
                 ? Column(
-                    key: const ValueKey('concorrente_fields'),
+                    key: const ValueKey('fechamento_fields'),
                     children: [
+                      InkWell(
+                        onTap: _pickDataFechamento,
+                        borderRadius: BorderRadius.circular(8),
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 14,
+                          ),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.grey.shade400),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  _dataFechamento == null
+                                      ? 'Data do fechamento (opcional)'
+                                      : DateFormat(
+                                          'dd/MM/yyyy',
+                                        ).format(_dataFechamento!),
+                                  style: const TextStyle(fontSize: 15),
+                                ),
+                              ),
+                              if (_dataFechamento != null) ...[
+                                InkWell(
+                                  onTap: () {
+                                    setState(() => _dataFechamento = null);
+                                  },
+                                  child: const Padding(
+                                    padding: EdgeInsets.all(4),
+                                    child: Icon(Icons.close, size: 18),
+                                  ),
+                                ),
+                                const SizedBox(width: 4),
+                              ],
+                              const Icon(
+                                Icons.calendar_today_outlined,
+                                size: 18,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
                       TextField(
                         controller: _nomeConcorrenteController,
                         decoration: const InputDecoration(
