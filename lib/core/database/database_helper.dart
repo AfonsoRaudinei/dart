@@ -23,7 +23,7 @@ class DatabaseHelper {
 
     final db = await openDatabase(
       path,
-      version: 24,
+      version: 25,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -135,6 +135,9 @@ class DatabaseHelper {
           break;
         case 24:
           await _migrateToV24(db);
+          break;
+        case 25:
+          await _migrateToV25(db);
           break;
       }
     }
@@ -1040,6 +1043,34 @@ class DatabaseHelper {
       'carteira_lancamentos criadas. carteira_categorias atualizada.',
       tag: 'DB',
     );
+  }
+
+  /// V25 — Carteira: tipo de fechamento em lançamentos.
+  ///
+  /// Adiciona colunas opcionais em `carteira_lancamentos`:
+  /// - tipo_fechamento
+  /// - nome_concorrente
+  /// - motivo_fechamento
+  ///
+  /// Idempotente: cada ALTER TABLE é envolvido em try/catch individual.
+  Future<void> _migrateToV25(Database db) async {
+    const statements = <String>[
+      'ALTER TABLE carteira_lancamentos ADD COLUMN tipo_fechamento TEXT',
+      'ALTER TABLE carteira_lancamentos ADD COLUMN nome_concorrente TEXT',
+      'ALTER TABLE carteira_lancamentos ADD COLUMN motivo_fechamento TEXT',
+    ];
+
+    for (final sql in statements) {
+      try {
+        await db.execute(sql);
+        AppLogger.debug('V25: executado "$sql"', tag: 'DB.Migration');
+      } catch (_) {
+        AppLogger.debug(
+          'V25: coluna já existe ou tabela ausente — ignorado',
+          tag: 'DB.Migration',
+        );
+      }
+    }
   }
 
   /// Remove registros locais não sincronizados do usuário no logout.
