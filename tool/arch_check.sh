@@ -226,6 +226,7 @@ LEGACY_EXCEPTIONS=(
   "modules/drawing/presentation/widgets/drawing_sheet.dart"            # 1177 — decomposição planejada
   "ui/components/map/map_occurrence_sheet.dart"                        # 1064 — decomposição planejada
   "modules/drawing/domain/drawing_utils.dart"                          # 1010 — utilitário puro, candidato a split
+  "core/database/database_helper.dart"                                 # 1128 — legado pré-baseline v1.1, decomposição planejada
 )
 
 SIZE_VIOLATIONS=0
