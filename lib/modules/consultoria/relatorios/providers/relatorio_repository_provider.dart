@@ -1,5 +1,6 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../../../../core/session/session_controller.dart';
 import '../repositories/i_relatorio_repository.dart';
 import '../repositories/relatorio_repository_impl.dart';
 
@@ -21,3 +22,12 @@ part 'relatorio_repository_provider.g.dart';
 IRelatorioRepository relatorioRepository(RelatorioRepositoryRef ref) {
   return RelatorioRepositoryImpl();
 }
+
+// ignore: unused_element
+final _relatorioLogoutInvalidationRegistration = () {
+  SessionController.registerLogoutInvalidation(
+    key: 'relatorioRepositoryProvider',
+    invalidate: (ref) => ref.invalidate(relatorioRepositoryProvider),
+  );
+  return true;
+}();

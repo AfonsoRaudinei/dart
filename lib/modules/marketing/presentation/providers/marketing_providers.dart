@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/services/connectivity_service.dart';
+import '../../../../core/session/session_controller.dart';
 import '../../data/repositories/i_marketing_case_repository.dart';
 import '../../data/repositories/marketing_case_repository_impl.dart';
 import '../../data/services/marketing_sync_service.dart';
@@ -172,6 +173,15 @@ final marketingCasesProvider =
       notifier.load();
       return notifier;
     });
+
+// ignore: unused_element
+final _marketingLogoutInvalidationRegistration = () {
+  SessionController.registerLogoutInvalidation(
+    key: 'marketingCasesProvider',
+    invalidate: (ref) => ref.invalidate(marketingCasesProvider),
+  );
+  return true;
+}();
 
 // ── Provider de rascunhos ──────────────────────────────────────
 /// Retorna apenas os cases com status=draft

@@ -66,6 +66,15 @@ Future<UserPlan?> planoAtivo(PlanoAtivoRef ref) async {
   }
 }
 
+// ignore: unused_element
+final _planoLogoutInvalidationRegistration = () {
+  SessionController.registerLogoutInvalidation(
+    key: 'planoAtivoProvider',
+    invalidate: (ref) => ref.invalidate(planoAtivoProvider),
+  );
+  return true;
+}();
+
 // ─────────────────────────────────────────────────────────────
 // REFERRALS — autoDispose (usado só nas telas de planos/)
 // ─────────────────────────────────────────────────────────────

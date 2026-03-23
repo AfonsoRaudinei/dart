@@ -1,13 +1,31 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/network/network_policy.dart';
+import '../database/database_helper.dart';
 import 'session_models.dart';
 
 part 'session_controller.g.dart';
 
+typedef SessionLogoutInvalidation = void Function(Ref ref);
+
 @Riverpod(keepAlive: true)
 class SessionController extends _$SessionController {
+  static final Map<String, SessionLogoutInvalidation> _logoutInvalidations =
+      <String, SessionLogoutInvalidation>{};
+
+  /// Registro global de invalidações a executar no logout.
+  ///
+  /// Deve ser chamado por providers keepAlive com dados específicos de usuário.
+  static void registerLogoutInvalidation({
+    required String key,
+    required SessionLogoutInvalidation invalidate,
+  }) {
+    _logoutInvalidations[key] = invalidate;
+  }
+
   StreamSubscription<AuthState>? _authSubscription;
 
   @override
@@ -124,7 +142,33 @@ class SessionController extends _$SessionController {
 
   /// Logout real via Supabase Auth.
   Future<void> logout() async {
+    try {
+      await _clearLocalUserData();
+    } catch (e, st) {
+      debugPrint('[SessionController] clearLocalUserData falhou: $e\n$st');
+    }
+
+    _invalidateUserScopedProviders();
+
     await Supabase.instance.client.auth.signOut();
     // O stream onAuthStateChange seta state = SessionPublic() automaticamente.
+  }
+
+  void _invalidateUserScopedProviders() {
+    for (final entry in _logoutInvalidations.entries) {
+      try {
+        entry.value(ref);
+      } catch (e, st) {
+        debugPrint(
+          '[SessionController] invalidate(${entry.key}) falhou: $e\n$st',
+        );
+      }
+    }
+  }
+
+  Future<void> _clearLocalUserData() async {
+    final userId = Supabase.instance.client.auth.currentUser?.id;
+    if (userId == null || userId.isEmpty) return;
+    await DatabaseHelper.instance.clearUserLocalData(userId);
   }
 }

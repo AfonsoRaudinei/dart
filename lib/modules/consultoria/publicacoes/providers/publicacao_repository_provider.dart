@@ -1,5 +1,6 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../../../../core/session/session_controller.dart';
 import '../repositories/i_publicacao_repository.dart';
 import '../repositories/publicacao_repository_impl.dart';
 
@@ -21,3 +22,12 @@ part 'publicacao_repository_provider.g.dart';
 IPublicacaoRepository publicacaoRepository(PublicacaoRepositoryRef ref) {
   return PublicacaoRepositoryImpl();
 }
+
+// ignore: unused_element
+final _publicacaoLogoutInvalidationRegistration = () {
+  SessionController.registerLogoutInvalidation(
+    key: 'publicacaoRepositoryProvider',
+    invalidate: (ref) => ref.invalidate(publicacaoRepositoryProvider),
+  );
+  return true;
+}();
