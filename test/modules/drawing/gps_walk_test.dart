@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:soloforte_app/modules/drawing/domain/models/gps_walk_session.dart';
 import 'package:soloforte_app/modules/drawing/domain/services/geo_calculator_service.dart';
-import 'package:soloforte_app/modules/drawing/presentation/controllers/gps_walk_controller.dart';
 import 'package:soloforte_app/modules/drawing/presentation/providers/gps_walk_providers.dart';
 
 // ─── Helpers de geometria conhecida ───────────────────────────────────────────
