@@ -1,4 +1,5 @@
 import 'package:sqflite/sqflite.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/database/database_helper.dart';
 import '../../domain/models/visit_session.dart';
 import '../../domain/models/visit_stats.dart';
@@ -8,10 +9,11 @@ class VisitRepository {
 
   Future<VisitSession?> getActiveSession() async {
     final db = await _databaseHelper.database;
+    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
     final List<Map<String, dynamic>> maps = await db.query(
       'visit_sessions',
-      where: 'status = ?',
-      whereArgs: ['active'],
+      where: 'status = ? AND user_id = ?',
+      whereArgs: ['active', userId],
       limit: 1,
     );
 
@@ -73,6 +75,8 @@ class VisitRepository {
       59,
     ).toIso8601String();
 
+    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
+
     // 1. Finished visits today
     // Calc duration in seconds: strftime('%s', end) - strftime('%s', start)
     final finishedResult = await db.rawQuery(
@@ -81,17 +85,18 @@ class VisitRepository {
         COUNT(*) as count,
         SUM(strftime('%s', end_time) - strftime('%s', start_time)) as total_seconds
       FROM visit_sessions
-      WHERE status = 'finished' 
+      WHERE status = 'finished'
+        AND user_id = ?
         AND start_time BETWEEN ? AND ?
     ''',
-      [todayStart, todayEnd],
+      [userId, todayStart, todayEnd],
     );
 
     final finishedCount = Sqflite.firstIntValue(finishedResult) ?? 0;
     final finishedSeconds =
         (finishedResult.first['total_seconds'] as int?) ?? 0;
 
-    // 2. Active visit
+    // 2. Active visit (já filtrado por user_id internamente)
     final activeSession = await getActiveSession();
     int activeDuration = 0;
     if (activeSession != null) {
@@ -117,16 +122,19 @@ class VisitRepository {
         .subtract(const Duration(seconds: 1))
         .toIso8601String();
 
+    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
+
     final result = await db.rawQuery(
       '''
       SELECT 
         COUNT(*) as count,
         SUM(strftime('%s', end_time) - strftime('%s', start_time)) as total_seconds
       FROM visit_sessions
-      WHERE status = 'finished' 
+      WHERE status = 'finished'
+        AND user_id = ?
         AND start_time BETWEEN ? AND ?
     ''',
-      [startStr, endStr],
+      [userId, startStr, endStr],
     );
 
     final count = Sqflite.firstIntValue(result) ?? 0;
@@ -137,10 +145,10 @@ class VisitRepository {
       '''
       SELECT producer_id, COUNT(*) as count
       FROM visit_sessions
-      WHERE status = 'finished' AND start_time BETWEEN ? AND ?
+      WHERE status = 'finished' AND user_id = ? AND start_time BETWEEN ? AND ?
       GROUP BY producer_id
     ''',
-      [startStr, endStr],
+      [userId, startStr, endStr],
     );
 
     final byProducer = {
@@ -153,10 +161,10 @@ class VisitRepository {
       '''
       SELECT activity_type, COUNT(*) as count
       FROM visit_sessions
-      WHERE status = 'finished' AND start_time BETWEEN ? AND ?
+      WHERE status = 'finished' AND user_id = ? AND start_time BETWEEN ? AND ?
       GROUP BY activity_type
     ''',
-      [startStr, endStr],
+      [userId, startStr, endStr],
     );
 
     final byActivity = {
@@ -189,8 +197,10 @@ class VisitRepository {
         .subtract(const Duration(seconds: 1))
         .toIso8601String();
 
-    String whereClause = 'status = ? AND start_time BETWEEN ? AND ?';
-    List<dynamic> args = ['finished', startStr, endStr];
+    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
+
+    String whereClause = 'status = ? AND user_id = ? AND start_time BETWEEN ? AND ?';
+    List<dynamic> args = ['finished', userId, startStr, endStr];
 
     if (producerId != null) {
       whereClause += ' AND producer_id = ?';

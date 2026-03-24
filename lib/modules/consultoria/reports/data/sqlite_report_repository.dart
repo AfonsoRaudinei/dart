@@ -2,6 +2,7 @@ import '../domain/report_model.dart';
 import '../domain/kpi_metrics.dart';
 import '../../../../core/database/database_helper.dart';
 import 'package:sqflite/sqflite.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'dart:convert';
 
 class SQLiteReportRepository {
@@ -9,9 +10,11 @@ class SQLiteReportRepository {
 
   Future<void> saveReport(Report report, String sessionId) async {
     final db = await _databaseHelper.database;
+    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
     await db.insert('visit_reports', {
       'id': report.id,
       'visit_session_id': sessionId,
+      'user_id': userId,
       'content': jsonEncode({
         'title': report.title,
         'type': report.type.index,
@@ -33,13 +36,14 @@ class SQLiteReportRepository {
     String? producerId,
   }) async {
     final db = await _databaseHelper.database;
+    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
     String sql = '''
       SELECT r.*, s.producer_id, s.start_time 
       FROM visit_reports r
       JOIN visit_sessions s ON r.visit_session_id = s.id
-      WHERE 1=1
+      WHERE s.user_id = ?
     ''';
-    List<dynamic> args = [];
+    List<dynamic> args = [userId];
 
     if (producerId != null) {
       sql += ' AND s.producer_id = ?';
@@ -79,10 +83,11 @@ class SQLiteReportRepository {
 
   Future<KpiMetrics> getKpiMetrics({DateTime? start, DateTime? end}) async {
     final db = await _databaseHelper.database;
+    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
 
     // Base SQL filter
-    String whereClause = "WHERE s.status = 'finished'";
-    List<dynamic> args = [];
+    String whereClause = "WHERE s.status = 'finished' AND s.user_id = ?";
+    List<dynamic> args = [userId];
 
     // Only check params if they exist (nullable)
     if (start != null && end != null) {
