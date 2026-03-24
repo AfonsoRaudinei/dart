@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:sqflite/sqflite.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../core/database/database_helper.dart';
 import '../data/publicacao_table.dart';
@@ -50,10 +51,13 @@ class PublicacaoRepositoryImpl implements IPublicacaoRepository {
   @override
   Future<PublicacaoTecnica?> getById(String id) async {
     final db = await _dbHelper.database;
+    final authorId = Supabase.instance.client.auth.currentUser?.id ?? '';
     final rows = await db.query(
       PublicacaoTable.tableName,
-      where: '${PublicacaoTable.colId} = ?',
-      whereArgs: [id],
+      where:
+          '${PublicacaoTable.colId} = ?'
+          ' AND ${PublicacaoTable.colAuthorId} = ?',
+      whereArgs: [id, authorId],
       limit: 1,
     );
     if (rows.isEmpty) return null;
@@ -63,9 +67,13 @@ class PublicacaoRepositoryImpl implements IPublicacaoRepository {
   @override
   Future<List<PublicacaoTecnica>> getAll() async {
     final db = await _dbHelper.database;
+    final authorId = Supabase.instance.client.auth.currentUser?.id ?? '';
     final rows = await db.query(
       PublicacaoTable.tableName,
-      where: '${PublicacaoTable.colDeletedAt} IS NULL',
+      where:
+          '${PublicacaoTable.colAuthorId} = ?'
+          ' AND ${PublicacaoTable.colDeletedAt} IS NULL',
+      whereArgs: [authorId],
       orderBy: '${PublicacaoTable.colCreatedAt} DESC',
     );
     return rows.map(_fromMap).toList();
@@ -118,6 +126,7 @@ class PublicacaoRepositoryImpl implements IPublicacaoRepository {
   @override
   Future<List<PublicacaoTecnica>> getPendingSync() async {
     final db = await _dbHelper.database;
+    final authorId = Supabase.instance.client.auth.currentUser?.id ?? '';
     final statuses = [
       PublicacaoSyncStatus.local_only.name,
       PublicacaoSyncStatus.pending_sync.name,
@@ -126,8 +135,10 @@ class PublicacaoRepositoryImpl implements IPublicacaoRepository {
     final placeholders = statuses.map((_) => '?').join(', ');
     final rows = await db.query(
       PublicacaoTable.tableName,
-      where: '${PublicacaoTable.colSyncStatus} IN ($placeholders)',
-      whereArgs: statuses,
+      where:
+          '${PublicacaoTable.colSyncStatus} IN ($placeholders)'
+          ' AND ${PublicacaoTable.colAuthorId} = ?',
+      whereArgs: [...statuses, authorId],
     );
     return rows.map(_fromMap).toList();
   }
