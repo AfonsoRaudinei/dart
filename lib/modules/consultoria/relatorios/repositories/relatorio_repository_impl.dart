@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:sqflite/sqflite.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../core/database/database_helper.dart';
 import '../data/relatorio_table.dart';
@@ -51,10 +52,13 @@ class RelatorioRepositoryImpl implements IRelatorioRepository {
   @override
   Future<RelatorioTecnico?> getById(String id) async {
     final db = await _dbHelper.database;
+    final agronomistId = Supabase.instance.client.auth.currentUser?.id ?? '';
     final rows = await db.query(
       RelatorioTable.tableName,
-      where: '${RelatorioTable.colId} = ?',
-      whereArgs: [id],
+      where:
+          '${RelatorioTable.colId} = ?'
+          ' AND ${RelatorioTable.colAgronomistId} = ?',
+      whereArgs: [id, agronomistId],
       limit: 1,
     );
     if (rows.isEmpty) return null;
@@ -64,9 +68,13 @@ class RelatorioRepositoryImpl implements IRelatorioRepository {
   @override
   Future<List<RelatorioTecnico>> getAll() async {
     final db = await _dbHelper.database;
+    final agronomistId = Supabase.instance.client.auth.currentUser?.id ?? '';
     final rows = await db.query(
       RelatorioTable.tableName,
-      where: '${RelatorioTable.colDeletedAt} IS NULL',
+      where:
+          '${RelatorioTable.colAgronomistId} = ?'
+          ' AND ${RelatorioTable.colDeletedAt} IS NULL',
+      whereArgs: [agronomistId],
       orderBy: '${RelatorioTable.colCreatedAt} DESC',
     );
     return rows.map(_fromMap).toList();
@@ -75,12 +83,14 @@ class RelatorioRepositoryImpl implements IRelatorioRepository {
   @override
   Future<List<RelatorioTecnico>> getByClientId(String clientId) async {
     final db = await _dbHelper.database;
+    final agronomistId = Supabase.instance.client.auth.currentUser?.id ?? '';
     final rows = await db.query(
       RelatorioTable.tableName,
       where:
           '${RelatorioTable.colClientId} = ?'
+          ' AND ${RelatorioTable.colAgronomistId} = ?'
           ' AND ${RelatorioTable.colDeletedAt} IS NULL',
-      whereArgs: [clientId],
+      whereArgs: [clientId, agronomistId],
       orderBy: '${RelatorioTable.colCreatedAt} DESC',
     );
     return rows.map(_fromMap).toList();
@@ -103,12 +113,14 @@ class RelatorioRepositoryImpl implements IRelatorioRepository {
   @override
   Future<List<RelatorioTecnico>> getByStatus(RelatorioStatus status) async {
     final db = await _dbHelper.database;
+    final agronomistId = Supabase.instance.client.auth.currentUser?.id ?? '';
     final rows = await db.query(
       RelatorioTable.tableName,
       where:
           '${RelatorioTable.colStatus} = ?'
+          ' AND ${RelatorioTable.colAgronomistId} = ?'
           ' AND ${RelatorioTable.colDeletedAt} IS NULL',
-      whereArgs: [status.toJson()],
+      whereArgs: [status.toJson(), agronomistId],
       orderBy: '${RelatorioTable.colCreatedAt} DESC',
     );
     return rows.map(_fromMap).toList();
@@ -119,6 +131,7 @@ class RelatorioRepositoryImpl implements IRelatorioRepository {
   @override
   Future<List<RelatorioTecnico>> getPendingSync() async {
     final db = await _dbHelper.database;
+    final agronomistId = Supabase.instance.client.auth.currentUser?.id ?? '';
     final statuses = [
       RelatorioSyncStatus.local_only.name,
       RelatorioSyncStatus.pending_sync.name,
@@ -127,8 +140,10 @@ class RelatorioRepositoryImpl implements IRelatorioRepository {
     final placeholders = statuses.map((_) => '?').join(', ');
     final rows = await db.query(
       RelatorioTable.tableName,
-      where: '${RelatorioTable.colSyncStatus} IN ($placeholders)',
-      whereArgs: statuses,
+      where:
+          '${RelatorioTable.colSyncStatus} IN ($placeholders)'
+          ' AND ${RelatorioTable.colAgronomistId} = ?',
+      whereArgs: [...statuses, agronomistId],
     );
     return rows.map(_fromMap).toList();
   }
