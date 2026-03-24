@@ -1125,4 +1125,53 @@ class DatabaseHelper {
       }
     }
   }
+
+  /// Repara registros órfãos criados sem user_id.
+  ///
+  /// Atualiza apenas linhas com `user_id` vazio ou nulo para o usuário atual.
+  /// Idempotente e tolerante a tabelas ausentes.
+  Future<void> repairOrphanUserIds(String userId) async {
+    if (userId.isEmpty) return;
+
+    final db = await database;
+
+    const tablesWithUserId = <String>[
+      'clients',
+      'farms',
+      'fields',
+      'visit_sessions',
+      'occurrences',
+      'visit_reports',
+      'agenda_events',
+      'agenda_visit_sessions',
+      'drawings',
+      'client_culturas',
+      'clima_atual_cache',
+      'clima_horaria_cache',
+      'clima_diaria_cache',
+      'ndvi_cache',
+      'publicacoes_tecnicas',
+      'relatorios',
+      'relatorios_v2',
+      'carteira_categorias',
+      'carteira_cliente_categorias',
+      'carteira_safras',
+      'carteira_metas',
+      'carteira_lancamentos',
+    ];
+
+    for (final table in tablesWithUserId) {
+      try {
+        final count = await db.rawUpdate(
+          "UPDATE $table SET user_id = ? WHERE user_id = '' OR user_id IS NULL",
+          [userId],
+        );
+        if (count > 0) {
+          debugPrint('[DB] repairOrphanUserIds: $count linhas em $table');
+        }
+      } catch (e) {
+        debugPrint('[DB] repairOrphanUserIds erro em $table: $e');
+      }
+    }
+  }
 }

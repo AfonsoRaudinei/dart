@@ -82,6 +82,15 @@ class SessionController extends _$SessionController {
     );
     // O stream onAuthStateChange atualiza o state automaticamente.
 
+    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
+    if (userId.isNotEmpty) {
+      try {
+        await DatabaseHelper.instance.repairOrphanUserIds(userId);
+      } catch (e, st) {
+        debugPrint('[SessionController] repairOrphanUserIds falhou: $e\n$st');
+      }
+    }
+
     // Garantir que perfil criado pelo trigger está completo.
     // Se o cadastro foi feito com email confirmation, o perfil está vazio.
     // Esta chamada preenche os dados do user_metadata.
