@@ -8,9 +8,14 @@ import 'package:latlong2/latlong.dart';
 
 import '../../domain/occurrence.dart';
 import '../../presentation/controllers/occurrence_controller.dart';
-import '../../../../visitas/presentation/controllers/visit_controller.dart';
+import 'package:soloforte_app/core/contracts/i_visit_session_lookup.dart';
+import 'package:soloforte_app/core/contracts/i_visit_session_lookup_provider.dart';
 import './occurrence_filters.dart';
 import './occurrence_fenologia_data.dart';
+
+final _activeVisitSessionProvider = FutureProvider.autoDispose<VisitSessionSummary?>(
+  (ref) => ref.watch(visitSessionLookupProvider).getActiveSession(),
+);
 
 /// Bottom Sheet com lista de ocorrências filtrada por viewport
 class OccurrenceListSheet extends ConsumerStatefulWidget {
@@ -46,8 +51,8 @@ class _OccurrenceListSheetState extends ConsumerState<OccurrenceListSheet> {
   @override
   Widget build(BuildContext context) {
     final occurrencesAsync = ref.watch(occurrencesListProvider);
-    final visitState = ref.watch(visitControllerProvider);
-    final activeVisitId = visitState.value?.status == 'active'
+    final visitState = ref.watch(_activeVisitSessionProvider);
+    final activeVisitId = visitState.value?.isActive == true
         ? visitState.value!.id
         : null;
 
