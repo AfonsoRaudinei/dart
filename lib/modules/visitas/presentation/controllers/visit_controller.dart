@@ -4,7 +4,7 @@ import '../../data/repositories/visit_repository.dart';
 import '../../../consultoria/occurrences/data/occurrence_repository.dart';
 import '../../../consultoria/reports/data/sqlite_report_repository.dart';
 import '../../../consultoria/reports/domain/report_model.dart';
-import '../../../agenda/data/repositories/agenda_repository.dart';
+import '../../../agenda/domain/repositories/i_agenda_repository.dart';
 import '../../../agenda/domain/enums/event_status.dart';
 import '../../../agenda/presentation/providers/agenda_provider.dart';
 import 'package:uuid/uuid.dart';
@@ -27,7 +27,7 @@ final visitControllerProvider =
         ref.watch(visitRepositoryProvider),
         ref.watch(visitOccurrenceRepositoryProvider),
         ref.watch(sqliteReportRepositoryProvider),
-        ref.watch(agendaRepositoryProvider),
+        ref.watch(agendaRepositoryProvider) as IAgendaRepository,
       );
     });
 
@@ -35,7 +35,7 @@ class VisitController extends StateNotifier<AsyncValue<VisitSession?>> {
   final VisitRepository _repository;
   final OccurrenceRepository _occurrenceRepository;
   final SQLiteReportRepository _reportRepository;
-  final AgendaRepository _agendaRepository;
+  final IAgendaRepository _agendaRepository;
 
   VisitController(
     this._repository,
