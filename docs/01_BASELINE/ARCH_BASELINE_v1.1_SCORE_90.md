@@ -25,19 +25,18 @@
 
 | Métrica | Valor |
 |---|---|
-| Arquivos Dart em `lib/` | 233 |
-| Providers | 82 |
-| TODOs em produção | 36 |
-| Interfaces formais (DIP) | ≥ 5 |
-| Use cases Agenda | 6 |
-| Testes Agenda | 74 |
-| Testes Drawing | 36 |
+| Arquivos Dart em `lib/` | **436** |
+| Providers keepAlive | **21** |
+| TODOs em produção | **45** |
+| Interfaces formais (DIP) | **26** |
+| Testes verdes | **612** (2 falhas pré-existentes em drawing — não relacionadas à Sessão 3) |
 | Violação `core → modules` | 0 |
 | Módulos zumbi | 0 |
-| Erros `flutter analyze` | 0 |
+| Erros `flutter analyze` | **0** |
 | Enforcement CI ativo | SIM |
-| Arquivos >900 linhas | 4 legados (WARN controlado) |
-| `planos/` | Implementado \| ADR-012 \| v1.2 \| Supabase online-only |
+| Arquivos >900 linhas | **5** legados (WARN controlado — inclui `database_helper.dart`) |
+| Schema DB | `soloforte.db` v26 (banco único) |
+| ADRs confirmados no código | 12 (ADR-007 a ADR-022) |
 
 ---
 
@@ -101,6 +100,25 @@ Execução de visitas. Pode depender de `Agenda`.
 ### Consultoria
 Conteúdo técnico e ocorrências. Não depende de `Drawing`.
 
+### `ndvi/`
+Módulo NDVI — análise espectral de satélite.
+- `NdviPanelWidget` — 444 linhas, consome provider real, 0 TODOs internos
+- Sem ADR formal ainda
+- **Status:** ✅ IMPLEMENTADO (confirmado auditoria 23/03/2026)
+
+### `drawing/` — GPS Walk
+Gravação de rota por GPS integrada ao módulo drawing.
+- `gps_walk_session.dart`, `gps_walk_controller.dart` (184 linhas)
+- `gps_walk_providers.dart`, `gps_walk_metrics_bar.dart`
+- `gps_walk_bottom_bar.dart`, `gps_walk_controls_overlay.dart`
+- Sem ADR formal ainda
+- **Status:** ✅ IMPLEMENTADO (confirmado auditoria 23/03/2026)
+
+### `marketing/`
+Casos de marketing com visualização no mapa.
+- PASSO 6: long press → `NovoCaseSheet` (em `private_map_screen.dart` + `private_map_sheets.dart`) ✅
+- PASSO 7: pins no mapa via `isolated_marker_layers.dart` + `marketingCasesProvider` ✅
+
 ### Settings / Auth
 Módulos satélite sem dependências cruzadas.
 
@@ -128,6 +146,13 @@ Módulos satélite sem dependências cruzadas.
 | Nenhuma violação de dependência lateral | ✅ |
 | Nenhuma dependência circular detectada | ✅ |
 | Zero erros de compilação | ✅ |
+| repairOrphanUserIds implementado | ✅ |
+| Logout seguro (clear→invalidate→signOut) | ✅ |
+| .baseline_marker criado | ✅ |
+| Isolamento user_id em 6 repositórios | ✅ |
+| GPS Walk implementado | ✅ |
+| NDVI Panel implementado | ✅ |
+| Marketing PASSO 6+7 implementados | ✅ |
 
 ---
 
@@ -183,11 +208,12 @@ Módulos satélite sem dependências cruzadas.
 
 | Risco | Severidade | Mitigação atual |
 |---|---|---|
-| 4 arquivos legados >900 linhas | Média | Monitorados em `WARN` pelo `arch_check.sh` |
+| 5 arquivos legados >900 linhas | Média | Monitorados em `WARN` pelo `arch_check.sh` |
 | Coverage global sem gate automático | Média | Testes por módulo crítico (Drawing + Agenda) |
 | Complexidade ciclomática sem CI | Baixa | Revisão manual por PR |
 | Acoplamento aferido manualmente | Baixa | `arch_check.sh` cobre fronteiras principais |
-| 36 TODOs em produção | Baixa | Nenhum em caminho crítico |
+| 45 TODOs em produção | Baixa | Nenhum em caminho crítico confirmado |
+| 2 falhas em testes drawing (pré-existentes) | Média | Isoladas — não afetam consultoria/core |
 
 ---
 
@@ -239,8 +265,49 @@ Qualquer evolução arquitetural deve referenciar esta baseline e justificar o d
 
 | ADR | Nome | Descrição | Status |
 |---|---|---|---|
+| ADR-007 | — | Referenciado no código | ATIVO |
+| ADR-008 | RIVERPOD-PROVIDERS | Padrão de providers Riverpod | ATIVO |
+| ADR-009 | RELATORIOS-OFFLINE-FIRST | Relatorios offline-first (SQLite) | ATIVO |
+| ADR-010 | — | Referenciado no código | ATIVO |
+| ADR-012 | MODULO-PLANOS | Monetização (Bronze/Prata/Ouro) + Mercado Pago | ATIVO |
 | ADR-013 | RELATORIOS-DOMAIN | Submódulo relatorios/ dentro de consultoria/ | ATIVO |
+| ADR-014 | — | Referenciado no código | ATIVO |
+| ADR-015 | CLIENT-STATS-SERVICE | Agregação de stats do Hub do Cliente | ATIVO |
+| ADR-016 | — | Referenciado no código | ATIVO |
+| ADR-017 | — | Referenciado no código | ATIVO |
+| ADR-019 | IVISIT-CLIENT-LOOKUP | Contrato visitas/consultoria via DIP | ATIVO |
+| ADR-020 | CONSULTORIA-VISITAS-DECOUPLING | Acoplamento consultoria↔visitas removido | ATIVO |
+| ADR-022 | — | Referenciado no código | ATIVO |
 
 ---
 
-*Gerado em: 22/02/2026 | Branch: `release/v1.1` | Commit: `0eb0975` | Score: 90/100*
+## 13. Issues Conhecidos (Pós-Auditoria Mar/2026)
+
+### P1 — Alta Prioridade
+
+| Issue | Localização | Ação |
+|---|---|---|
+| Sub-rota `publicacao/edit` dentro de `/map` — viola Map-First | `app_router.dart:102` | Remover GoRoute, converter para overlay |
+| `visit_controller.dart` usa `AgendaRepository` concreto — ADR-018 regredido | `visitas/controllers/visit_controller.dart:38` | Migrar para `IAgendaRepository` |
+| `occurrence_list_sheet.dart` importa `visitas/` diretamente — bounded context violado | `occurrence_list_sheet.dart:11` | Usar contrato em `core/contracts/` |
+
+### P2 — Média Prioridade
+
+| Issue | Localização | Ação |
+|---|---|---|
+| `relatorios/`: sem coluna `user_id` — usa `agronomist_id` como isolamento funcional | `relatorio_table.dart` | ADR futuro + migração de schema |
+| `ArmedMode` vs `MapContext`: divergência entre código e contrato documentado | `private_map_screen.dart:65` | Alinhar nome via ADR ou atualizar contrato |
+| 3 FABs no `map_controls_overlay` — viola contrato FAB único | `map_controls_overlay.dart` | Refatorar para SmartButton único |
+| 2 falhas pré-existentes nos testes do módulo drawing | `drawing_intersection_realtime_test`, `drawing_import_service_test` | Investigar e corrigir |
+
+### P3 — Baixa Prioridade / Backlog
+
+| Issue | Nota |
+|---|---|
+| `DrawingRemoteStore` ainda stub — sync remoto de desenhos não funcional | Depende de infraestrutura de sync |
+| 65 issues `flutter analyze` — todos `info`/`deprecated_member_use` | Nenhum é erro; pré-existentes |
+| 45 TODOs em produção | Nenhum em caminho crítico |
+
+---
+
+*Atualizado em: 24/03/2026 | Branch: `release/v1.1` | Commit de referência: `51c5c99` | Score: 90/100*
