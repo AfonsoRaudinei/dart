@@ -162,32 +162,52 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                FloatingActionButton(
-                  heroTag: 'complete_drawing_overlay',
-                  backgroundColor: widget.hasSelfIntersection 
+                Material(
+                  elevation: 4,
+                  shape: const CircleBorder(),
+                  color: widget.hasSelfIntersection 
                       ? Colors.grey 
                       : PremiumTokens.brandGreen,
-                  onPressed: widget.hasSelfIntersection ? null : widget.onFinishDrawing,
-                  child: const Icon(SFIcons.check, color: Colors.white),
+                  child: InkWell(
+                    customBorder: const CircleBorder(),
+                    onTap: widget.hasSelfIntersection ? null : widget.onFinishDrawing,
+                    child: const Padding(
+                      padding: EdgeInsets.all(16),
+                      child: Icon(SFIcons.check, color: Colors.white, size: 24),
+                    ),
+                  ),
                 ),
                 const SizedBox(height: 12),
                 // Undo último ponto de desenho
                 Opacity(
                   opacity: widget.canUndo ? 1.0 : 0.4,
-                  child: FloatingActionButton(
-                    heroTag: 'undo_drawing_overlay',
-                    backgroundColor: Colors.white,
-                    mini: true,
-                    onPressed: widget.canUndo ? widget.onUndoDrawing : null,
-                    child: const Icon(Icons.undo_rounded, color: Colors.black87),
+                  child: Material(
+                    elevation: 4,
+                    shape: const CircleBorder(),
+                    color: Colors.white,
+                    child: InkWell(
+                      customBorder: const CircleBorder(),
+                      onTap: widget.canUndo ? widget.onUndoDrawing : null,
+                      child: const Padding(
+                        padding: EdgeInsets.all(12),
+                        child: Icon(Icons.undo_rounded, color: Colors.black87, size: 24),
+                      ),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 12),
-                FloatingActionButton(
-                  heroTag: 'cancel_drawing_overlay',
-                  backgroundColor: Colors.redAccent,
-                  onPressed: widget.onCancelDrawing,
-                  child: const Icon(SFIcons.close, color: Colors.white),
+                Material(
+                  elevation: 4,
+                  shape: const CircleBorder(),
+                  color: Colors.redAccent,
+                  child: InkWell(
+                    customBorder: const CircleBorder(),
+                    onTap: widget.onCancelDrawing,
+                    child: const Padding(
+                      padding: EdgeInsets.all(16),
+                      child: Icon(SFIcons.close, color: Colors.white, size: 24),
+                    ),
+                  ),
                 ),
               ],
             ),
