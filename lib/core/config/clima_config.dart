@@ -6,8 +6,8 @@
 /// # Desenvolvimento:
 /// ```bash
 /// flutter run \
-///   --dart-define=OPENWEATHER_API_KEY=4c98c55160593d539900c9733174c194 \
-///   --dart-define=EMBRAPA_CLIMA_API_KEY=84c469f0-7e4e-3929-9d38-514c77b4ac9d
+///   --dart-define=OPENWEATHER_API_KEY=<sua_chave_openweather> \
+///   --dart-define=EMBRAPA_CLIMA_API_KEY=<sua_chave_embrapa>
 /// ```
 abstract final class ClimaConfig {
   // ═══════════════════════════════════════════════════════════════════
