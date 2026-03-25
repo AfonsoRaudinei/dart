@@ -336,8 +336,8 @@ class _CTASection extends StatelessWidget {
             // ⚠️ pop() local do sheet — encerra APENAS o preview (estado local).
             // NÃO é navegação entre rotas. Permitido por ADR-007.
             Navigator.of(context).pop();
-            // Navegar via CTA explícito para rota existente sob /map
-            context.go('/map/publicacao/edit?id=${publicacao.id}');
+            // Navegar via CTA explícito para rota top-level /publicacoes/edit (ADR-007)
+            context.go('/publicacoes/edit?id=${publicacao.id}');
           },
           icon: const Icon(SFIcons.openInNew, size: 18),
           label: const Text('Ver detalhes'),

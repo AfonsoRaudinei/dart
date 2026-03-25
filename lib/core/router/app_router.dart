@@ -88,24 +88,9 @@ GoRouter router(Ref ref) {
             path: AppRoutes.recoverPassword,
             builder: (_, __) => const RecoverPasswordPage(),
           ),
-          // ════════════════════════════════════════════════════════════════
-          // ROTA CANÔNICA: /map (MAP-FIRST)
-          // ════════════════════════════════════════════════════════════════
           GoRoute(
             path: AppRoutes.map,
             builder: (_, __) => const PrivateMapScreen(),
-            routes: [
-              // Sub-rota de edição de Publicação (ADR-007)
-              // Permanece L0 (AppRoutes.getLevel detecta /map/*)
-              // Acesso exclusivo via CTA do preview contextual
-              GoRoute(
-                path: 'publicacao/edit',
-                builder: (_, state) {
-                  final id = state.uri.queryParameters['id'] ?? '';
-                  return PublicacaoEditorScreen(publicacaoId: id);
-                },
-              ),
-            ],
           ),
 
           GoRoute(
@@ -233,6 +218,17 @@ GoRouter router(Ref ref) {
           GoRoute(
             path: AppRoutes.planosIndicacoes,
             builder: (_, __) => const IndicacoesScreen(),
+          ),
+          // ════════════════════════════════════════════════════════════════
+          // PUBLICAÇÕES — ADR-007
+          // Rota top-level fora do namespace /map (contrato Map-First)
+          // ════════════════════════════════════════════════════════════════
+          GoRoute(
+            path: '/publicacoes/edit',
+            builder: (_, state) {
+              final id = state.uri.queryParameters['id'] ?? '';
+              return PublicacaoEditorScreen(publicacaoId: id);
+            },
           ),
         ],
       ),
