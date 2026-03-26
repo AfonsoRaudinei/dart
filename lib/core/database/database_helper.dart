@@ -23,7 +23,7 @@ class DatabaseHelper {
 
     final db = await openDatabase(
       path,
-      version: 26,
+      version: 27,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -141,6 +141,9 @@ class DatabaseHelper {
           break;
         case 26:
           await _migrateToV26(db);
+          break;
+        case 27:
+          await _migrateToV27(db);
           break;
       }
     }
@@ -1096,6 +1099,48 @@ class DatabaseHelper {
         'V26: coluna já existe ou tabela ausente — ignorado',
         tag: 'DB.Migration',
       );
+    }
+  }
+
+  /// V27 — NDVI: recria ndvi_cache com novo schema.
+  ///
+  /// A tabela antiga (V19) usava area_id, date, image_path, available_dates.
+  /// O novo schema usa field_id, image_date, ndvi_min, ndvi_max, ndvi_mean,
+  /// sync_status — alinhado com o contrato NdviImage.
+  ///
+  /// Estratégia: DROP + CREATE (dados são cache efêmero, regeneráveis).
+  /// Idempotente: CREATE TABLE IF NOT EXISTS garante segurança em re-execução.
+  Future<void> _migrateToV27(Database db) async {
+    try {
+      await db.execute('DROP TABLE IF EXISTS ndvi_cache');
+      AppLogger.debug('V27: ndvi_cache antiga removida', tag: 'DB.Migration');
+    } catch (_) {
+      AppLogger.debug('V27: drop ndvi_cache — ignorado', tag: 'DB.Migration');
+    }
+    try {
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS ndvi_cache (
+          id           TEXT PRIMARY KEY,
+          user_id      TEXT NOT NULL DEFAULT '',
+          field_id     TEXT NOT NULL,
+          image_date   TEXT NOT NULL,
+          ndvi_min     REAL NOT NULL DEFAULT 0.0,
+          ndvi_max     REAL NOT NULL DEFAULT 0.0,
+          ndvi_mean    REAL NOT NULL DEFAULT 0.0,
+          image_url    TEXT,
+          local_path   TEXT,
+          source       TEXT NOT NULL,
+          fetched_at   TEXT NOT NULL,
+          sync_status  INTEGER NOT NULL DEFAULT 0,
+          UNIQUE(field_id, image_date)
+        )
+      ''');
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_ndvi_cache_field ON ndvi_cache(field_id)',
+      );
+      AppLogger.debug('V27: ndvi_cache recriada com novo schema', tag: 'DB.Migration');
+    } catch (_) {
+      AppLogger.debug('V27: criação ndvi_cache — ignorado', tag: 'DB.Migration');
     }
   }
 

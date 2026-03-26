@@ -1,90 +1,93 @@
-import 'dart:convert';
 import 'package:soloforte_app/modules/ndvi/domain/entities/ndvi_image.dart';
 
-/// Model de dados — mapeia JSON da Edge Function e rows do SQLite.
 class NdviImageModel {
-  final String areaId;
-  final String date;        // YYYY-MM-DD
-  final String? imageBase64;
-  final String? imagePath;  // path local — preenche após cache
+  final String id;
+  final String fieldId;
+  final String imageDate;
+  final double ndviMin;
+  final double ndviMax;
+  final double ndviMean;
+  final String? imageUrl;
+  final String? localPath;
   final String source;
-  final double? cloudCoverage;
-  final List<String> availableDates;
-  final String cachedAt;
+  final String fetchedAt;
+  final int syncStatus;
 
   const NdviImageModel({
-    required this.areaId,
-    required this.date,
-    this.imageBase64,
-    this.imagePath,
+    required this.id,
+    required this.fieldId,
+    required this.imageDate,
+    required this.ndviMin,
+    required this.ndviMax,
+    required this.ndviMean,
     required this.source,
-    this.cloudCoverage,
-    required this.availableDates,
-    required this.cachedAt,
+    required this.fetchedAt,
+    required this.syncStatus,
+    this.imageUrl,
+    this.localPath,
   });
 
-  // ── De JSON da Edge Function ──────────────────────────────────────────────
-
-  factory NdviImageModel.fromEdgeJson(Map<String, dynamic> json) {
-    final rawDates = json['available_dates'] as List<dynamic>? ?? [];
+  factory NdviImageModel.fromMap(Map<String, dynamic> map) {
     return NdviImageModel(
-      areaId: json['area_id'] as String,
-      date: json['date'] as String,
-      imageBase64: json['image_base64'] as String?,
-      imagePath: null,
-      source: json['source'] as String? ?? 'sentinel',
-      cloudCoverage: (json['cloud_coverage'] as num?)?.toDouble(),
-      availableDates: rawDates.cast<String>(),
-      cachedAt: DateTime.now().toIso8601String(),
+      id: map['id'] as String,
+      fieldId: map['field_id'] as String,
+      imageDate: map['image_date'] as String,
+      ndviMin: (map['ndvi_min'] as num?)?.toDouble() ?? 0.0,
+      ndviMax: (map['ndvi_max'] as num?)?.toDouble() ?? 0.0,
+      ndviMean: (map['ndvi_mean'] as num?)?.toDouble() ?? 0.0,
+      imageUrl: map['image_url'] as String?,
+      localPath: map['local_path'] as String?,
+      source: map['source'] as String,
+      fetchedAt: map['fetched_at'] as String,
+      syncStatus: map['sync_status'] as int? ?? 0,
     );
   }
 
-  // ── De row SQLite ─────────────────────────────────────────────────────────
-
-  factory NdviImageModel.fromSqliteRow(Map<String, Object?> row) {
-    final rawDates = row['available_dates'] as String? ?? '[]';
-    final List<dynamic> decoded = jsonDecode(rawDates);
-    return NdviImageModel(
-      areaId: row['area_id'] as String,
-      date: row['date'] as String,
-      imageBase64: null,
-      imagePath: row['image_path'] as String?,
-      source: row['source'] as String,
-      cloudCoverage: (row['cloud_coverage'] as num?)?.toDouble(),
-      availableDates: decoded.cast<String>(),
-      cachedAt: row['cached_at'] as String,
-    );
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'field_id': fieldId,
+      'image_date': imageDate,
+      'ndvi_min': ndviMin,
+      'ndvi_max': ndviMax,
+      'ndvi_mean': ndviMean,
+      'image_url': imageUrl,
+      'local_path': localPath,
+      'source': source,
+      'fetched_at': fetchedAt,
+      'sync_status': syncStatus,
+    };
   }
-
-  // ── Para row SQLite ───────────────────────────────────────────────────────
-
-  Map<String, Object?> toSqliteRow(String id) => {
-        'id': id,
-        'area_id': areaId,
-        'date': date,
-        'source': source,
-        'image_path': imagePath ?? '',
-        'cloud_coverage': cloudCoverage,
-        'available_dates': jsonEncode(availableDates),
-        'cached_at': cachedAt,
-      };
-
-  // ── Para entidade de domínio ──────────────────────────────────────────────
 
   NdviImage toEntity() {
-    final parsedDate = DateTime.tryParse(date) ?? DateTime.now();
-    final parsedDates = availableDates
-        .map((d) => DateTime.tryParse(d) ?? parsedDate)
-        .toList();
     return NdviImage(
-      areaId: areaId,
-      date: parsedDate,
-      imageBase64: imageBase64,
-      imageCachePath: imagePath,
+      id: id,
+      fieldId: fieldId,
+      imageDate: DateTime.parse(imageDate),
+      ndviMin: ndviMin,
+      ndviMax: ndviMax,
+      ndviMean: ndviMean,
+      imageUrl: imageUrl,
+      localPath: localPath,
       source: source,
-      cloudCoverage: cloudCoverage,
-      availableDates: parsedDates,
-      cachedAt: DateTime.tryParse(cachedAt) ?? DateTime.now(),
+      fetchedAt: DateTime.parse(fetchedAt),
+      syncStatus: syncStatus,
+    );
+  }
+
+  factory NdviImageModel.fromEntity(NdviImage entity) {
+    return NdviImageModel(
+      id: entity.id,
+      fieldId: entity.fieldId,
+      imageDate: entity.imageDate.toIso8601String(),
+      ndviMin: entity.ndviMin,
+      ndviMax: entity.ndviMax,
+      ndviMean: entity.ndviMean,
+      imageUrl: entity.imageUrl,
+      localPath: entity.localPath,
+      source: entity.source,
+      fetchedAt: entity.fetchedAt.toIso8601String(),
+      syncStatus: entity.syncStatus,
     );
   }
 }

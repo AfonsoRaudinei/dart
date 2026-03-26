@@ -5,7 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:soloforte_app/modules/consultoria/clients/domain/agronomic_models.dart';
 import 'package:soloforte_app/modules/consultoria/clients/domain/client.dart';
 import 'package:soloforte_app/modules/consultoria/clients/presentation/providers/clients_providers.dart';
-import 'package:soloforte_app/modules/ndvi/presentation/widgets/ndvi_panel_widget.dart';
+import 'package:soloforte_app/modules/ndvi/presentation/widgets/ndvi_talhao_sheet.dart';
 import 'package:soloforte_app/modules/visitas/presentation/controllers/visit_controller.dart';
 import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 
@@ -134,18 +134,27 @@ class VisitActiveCard extends ConsumerWidget {
                         ),
                 ),
 
-                // ── Painel NDVI: exibido apenas quando há talhão ativo ──
-                if (session.areaId != null && currentFarm != null)
-                  NdviPanelWidget(
-                    initialAreaId: session.areaId!,
-                    talhaoOptions: currentFarm.fields.isEmpty
-                        ? [(
-                            id: session.areaId!,
-                            nome: currentTalhao?.name ?? session.areaId!,
-                          )]
-                        : currentFarm.fields
-                            .map((t) => (id: t.id, nome: t.name))
-                            .toList(),
+                // ── Botão NDVI (condicional) ──
+                if (session.areaId != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: OutlinedButton.icon(
+                      onPressed: () => showModalBottomSheet(
+                        context: context,
+                        isScrollControlled: true,
+                        backgroundColor: Theme.of(context).colorScheme.surface,
+                        shape: const RoundedRectangleBorder(
+                          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+                        ),
+                        builder: (_) => NdviTalhaoSheet(
+                          fieldId: session.areaId!,
+                          fieldName: currentTalhao?.name ?? session.areaId!,
+                          areaHa: currentTalhao?.areaHa,
+                        ),
+                      ),
+                      icon: const Icon(Icons.satellite_alt_outlined, size: 16),
+                      label: const Text('NDVI'),
+                    ),
                   ),
               ],
             ),
