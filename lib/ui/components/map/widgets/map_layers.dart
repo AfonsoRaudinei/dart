@@ -38,10 +38,10 @@ class MapLayersWidget extends ConsumerWidget {
         // Free tier: 100k requests/mês
         return MapConfig.mapTilerLandscapeUrl(kMapTilerApiKey);
       case LayerType.standard:
-        // 🎨 ESTILO PADRÃO (Apple Maps / iOS Replica): Carto Voyager
-        // Possui cores pastéis claras, águas azul-marinho puras e vegetação sutil,
-        // exatamente como o sistema nativo da Apple na visualização "Explorar".
-        return MapConfig.cartoVoyager;
+        // 🎨 ESTILO PADRÃO: Stadia Stamen Terrain (com API key injetada via --dart-define)
+        // Vegetação verde, água azul, estradas limpas — funciona em produção iOS/TestFlight.
+        // API key appended automaticamente por MapConfig.stadiaStamenTerrainUrl.
+        return MapConfig.stadiaStamenTerrainUrl;
     }
   }
 

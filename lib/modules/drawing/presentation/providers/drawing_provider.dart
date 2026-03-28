@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/repositories/drawing_repository.dart';
+import '../../data/data_sources/drawing_local_store.dart';
 import '../controllers/drawing_controller.dart';
 import '../../domain/models/drawing_models.dart';
 import '../../domain/services/drawing_feature_crud_service.dart';
@@ -11,8 +12,13 @@ import '../../infra/file_picker/file_picker_adapter.dart';
 // ADR-019 — DrawingClientNotifier extraído do DrawingController
 export 'drawing_client_provider.dart';
 
+final drawingLocalStoreProvider = Provider<DrawingLocalStore>((ref) {
+  return DrawingLocalStore();
+});
+
 final drawingRepositoryProvider = Provider<DrawingRepository>((ref) {
-  return DrawingRepository();
+  final store = ref.watch(drawingLocalStoreProvider);
+  return DrawingRepository(localStore: store);
 });
 
 // ─── Services puros (Sprint 1) ─────────────────────────────────────────────

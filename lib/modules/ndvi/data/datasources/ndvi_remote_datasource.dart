@@ -14,7 +14,7 @@ class NdviRemoteDatasource {
   }) async {
     try {
       final body = <String, dynamic>{
-        'field_id': fieldId,
+        'area_id': fieldId,
         'bbox': bbox,
         'source': source,
       };

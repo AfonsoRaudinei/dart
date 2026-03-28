@@ -12,10 +12,13 @@ class FieldSummary {
   final String farmId;
   final double? areaHa;
 
+  final List<double>? bbox; // [minLon, minLat, maxLon, maxLat]
+
   const FieldSummary({
     required this.id,
     required this.name,
     required this.farmId,
     this.areaHa,
+    this.bbox,
   });
 }
