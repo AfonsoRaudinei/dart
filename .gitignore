@@ -87,3 +87,5 @@ scripts/*.local.sh
 
 # Secrets de API do mapa (nunca commitar chaves reais)
 lib/core/config/map_secrets.dart
+API
+anon
