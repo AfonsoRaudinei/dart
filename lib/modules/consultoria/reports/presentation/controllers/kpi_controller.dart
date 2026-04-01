@@ -1,7 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/kpi_metrics.dart';
-import '../../../../visitas/presentation/controllers/visit_controller.dart'
-    show sqliteReportRepositoryProvider;
+import '../../data/sqlite_report_repository.dart';
+
+// Provider local — SQLiteReportRepository vive em consultoria/, não em visitas/.
+// Movido de visit_controller.dart para cá em ADR-024 PROMPT 06.
+final sqliteReportRepositoryProvider = Provider<SQLiteReportRepository>((ref) {
+  return SQLiteReportRepository();
+});
 
 // Params class for KPI filtering
 class KpiFilter {

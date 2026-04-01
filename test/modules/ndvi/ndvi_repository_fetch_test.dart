@@ -55,6 +55,9 @@ class FakeFieldLookup implements IFieldLookup {
 
   @override
   Future<List<FieldSummary>> listByFarmId(String farmId) async => [];
+
+  @override
+  Future<List<FieldSummary>> listAll() async => [];
 }
 
 void main() {

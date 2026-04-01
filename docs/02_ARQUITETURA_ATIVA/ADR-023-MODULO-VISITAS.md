@@ -165,8 +165,8 @@ este ponto cego.
 |---|---|---|---|
 | DT-023-1 | `VisitSessionSummary` com apenas 2 campos — insuficiente | Alto | ✅ RESOLVIDO — PROMPT 03 |
 | DT-023-2 | `IVisitSessionLookup` sem `findById()` | Médio | ✅ RESOLVIDO — PROMPT 03 |
-| DT-023-3 | `visit_controller.dart` importa 3 arquivos de `consultoria/` diretamente | Alto | ⏳ PENDENTE → ADR-024 (exceção CI autorizada) |
-| DT-023-4 | `geofence_controller.dart` importa 3 arquivos de `consultoria/` diretamente | Alto | ⏳ PENDENTE → ADR-024 (exceção CI autorizada) |
+| DT-023-3 | `visit_controller.dart` importa 3 arquivos de `consultoria/` diretamente | Alto | ✅ RESOLVIDO — ADR-024 PROMPT 06 |
+| DT-023-4 | `geofence_controller.dart` importa 3 arquivos de `consultoria/` diretamente | Alto | ✅ RESOLVIDO — ADR-024 PROMPT 06 |
 | DT-023-5 | `map/` e `ui/` importam `visitas/` diretamente (sem contratos) | Médio | PROMPT 04 |
 | DT-023-6 | `arch_check.sh` sem cobertura da camada de dados | Alto | ✅ RESOLVIDO — PROMPT 05 |
 | DT-023-7 | `VisitSession` não é `@immutable` / `final class` | Baixo | ADR futuro |
@@ -191,5 +191,6 @@ este ponto cego.
 - Nenhuma fronteira nova foi criada
 - Contratos de outros módulos não foram alterados
 
-> **Nota (PROMPT 05):** `tool/arch_check.sh` foi alterado para adicionar REGRA-VISITAS-1/2/3.
-> DT-023-3 e DT-023-4 permanecem como dívidas ativas com exceção CI autorizada — aguardam ADR-024.
+> **Nota (ADR-024 PROMPT 06):** DT-023-3 e DT-023-4 resolvidas. `visit_controller.dart` e
+> `geofence_controller.dart` migrados para contratos neutros em `core/contracts/`.
+> Exceções CI removidas de `arch_check.sh`. Dívidas abertas: DT-023-5/7/8 (ver acima).

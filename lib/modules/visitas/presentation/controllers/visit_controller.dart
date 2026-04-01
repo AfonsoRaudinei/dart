@@ -1,47 +1,41 @@
+// lib/modules/visitas/presentation/controllers/visit_controller.dart
+// ADR-024: imports de consultoria/ e agenda/ removidos — substituídos por contratos neutros.
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/models/visit_session.dart';
 import '../../data/repositories/visit_repository.dart';
-import '../../../consultoria/occurrences/data/occurrence_repository.dart';
-import '../../../consultoria/reports/data/sqlite_report_repository.dart';
-import '../../../consultoria/reports/domain/report_model.dart';
-import '../../../agenda/domain/repositories/i_agenda_repository.dart';
-import '../../../agenda/domain/enums/event_status.dart';
-import '../../../agenda/presentation/providers/agenda_provider.dart';
+import 'package:soloforte_app/core/contracts/i_occurrence_read.dart';
+import 'package:soloforte_app/core/contracts/i_occurrence_read_provider.dart';
+import 'package:soloforte_app/core/contracts/i_visit_report_repository.dart';
+import 'package:soloforte_app/core/contracts/i_visit_report_provider.dart';
+import 'package:soloforte_app/core/contracts/i_agenda_session_bridge.dart';
+import 'package:soloforte_app/core/contracts/i_agenda_session_bridge_provider.dart';
 import 'package:uuid/uuid.dart';
 
 final visitRepositoryProvider = Provider<VisitRepository>((ref) {
   return VisitRepository();
 });
 
-final sqliteReportRepositoryProvider = Provider<SQLiteReportRepository>((ref) {
-  return SQLiteReportRepository();
-});
-
-final visitOccurrenceRepositoryProvider = Provider<OccurrenceRepository>((ref) {
-  return OccurrenceRepository();
-});
-
 final visitControllerProvider =
     StateNotifierProvider<VisitController, AsyncValue<VisitSession?>>((ref) {
       return VisitController(
         ref.watch(visitRepositoryProvider),
-        ref.watch(visitOccurrenceRepositoryProvider),
-        ref.watch(sqliteReportRepositoryProvider),
-        ref.watch(agendaRepositoryProvider) as IAgendaRepository,
+        ref.watch(occurrenceReadProvider),     // IOccurrenceRead — ADR-024
+        ref.watch(visitReportProvider),        // IVisitReportRepository — ADR-024
+        ref.watch(agendaSessionBridgeProvider), // IAgendaSessionBridge — ADR-024
       );
     });
 
 class VisitController extends StateNotifier<AsyncValue<VisitSession?>> {
   final VisitRepository _repository;
-  final OccurrenceRepository _occurrenceRepository;
-  final SQLiteReportRepository _reportRepository;
-  final IAgendaRepository _agendaRepository;
+  final IOccurrenceRead _occurrenceLookup;       // ADR-024
+  final IVisitReportRepository _reportRepository; // ADR-024
+  final IAgendaSessionBridge _agendaBridge;        // ADR-024
 
   VisitController(
     this._repository,
-    this._occurrenceRepository,
+    this._occurrenceLookup,
     this._reportRepository,
-    this._agendaRepository,
+    this._agendaBridge,
   ) : super(const AsyncValue.loading()) {
     checkActiveSession();
   }
@@ -104,17 +98,12 @@ class VisitController extends StateNotifier<AsyncValue<VisitSession?>> {
 
       await _repository.saveSession(newSession);
 
-      // Agenda Linkage
+      // Agenda Linkage — via contrato neutro IAgendaSessionBridge (ADR-024)
       if (agendaEventId != null) {
-        final event = await _agendaRepository.getEventById(agendaEventId);
-        if (event != null) {
-          await _agendaRepository.saveEvent(
-            event.copyWith(
-              visitSessionId: newSession.id,
-              status: EventStatus.emAndamento,
-            ),
-          );
-        }
+        await _agendaBridge.linkSessionToEvent(
+          agendaEventId: agendaEventId,
+          sessionId: newSession.id,
+        );
       }
 
       state = AsyncValue.data(newSession);
@@ -147,8 +136,8 @@ class VisitController extends StateNotifier<AsyncValue<VisitSession?>> {
     try {
       final now = DateTime.now();
 
-      // 1. Fetch Occurrences linked to session
-      final occurrences = await _occurrenceRepository.getOccurrencesBySession(
+      // 1. Fetch Occurrences — via contrato neutro IOccurrenceRead (ADR-024)
+      final occurrences = await _occurrenceLookup.getBySessionId(
         currentSession.id,
       );
 
@@ -170,10 +159,10 @@ Resumo de Ocorrências:
 ${occurrences.map((o) => '- [${o.type}] ${o.description}').join('\n')}
 ''';
 
-      final report = Report(
+      // 3. Save Report — via contrato neutro IVisitReportRepository (ADR-024)
+      final report = VisitReportData(
         id: const Uuid().v4(),
         title: 'Visita Técnica - ${currentSession.activityType}',
-        type: ReportType.semanal, // Defaulting to simple report type for now
         clientId: currentSession.producerId,
         startDate: currentSession.startTime,
         endDate: now,
@@ -182,19 +171,10 @@ ${occurrences.map((o) => '- [${o.type}] ${o.description}').join('\n')}
         author: 'Consultor (Auto)', // Should get current user
         observations: 'Gerado automaticamente ao encerrar sessão.',
       );
+      await _reportRepository.saveVisitReport(report, currentSession.id);
 
-      // 3. Save Report
-      await _reportRepository.saveReport(report, currentSession.id);
-
-      // 4. Update Agenda Event
-      final linkedEvent = await _agendaRepository.getEventBySessionId(
-        currentSession.id,
-      );
-      if (linkedEvent != null) {
-        await _agendaRepository.saveEvent(
-          linkedEvent.copyWith(status: EventStatus.concluido),
-        );
-      }
+      // 4. Update Agenda Event — via contrato neutro IAgendaSessionBridge (ADR-024)
+      await _agendaBridge.markEventAsDone(currentSession.id);
 
       // 5. End Session
       await _repository.endSession(currentSession.id, now);

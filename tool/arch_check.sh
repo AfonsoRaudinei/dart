@@ -210,19 +210,12 @@ check_lateral \
 # Fundamento: visitas/ é bounded context isolado. Acesso a dados externos
 #             deve ocorrer exclusivamente via contratos em core/contracts/.
 #
-# EXCEÇÕES AUTORIZADAS (dívidas técnicas ativas — ADR-023 seção 9):
-#   visit_controller.dart   → DT-023-3 — aguardando ADR-024 (IOccurrenceRepository, IReportRepository)
-#   geofence_controller.dart → DT-023-4 — aguardando ADR-024 (IFieldLookup expansão + geometry)
-#
-# Quando ADR-024 resolver as dívidas, remover as linhas grep -v correspondentes.
-# O commit de remoção é o comprovante de que a dívida foi paga.
+# EXCEÇÕES AUTORIZADAS: nenhuma — DT-023-3 e DT-023-4 resolvidas em ADR-024 PROMPT 06.
 # =============================================================================
 
 # ── REGRA-VISITAS-1: visitas/ não importa consultoria/ ────────────────────────
 REGRA_VISITAS_1=$(grep -rn "import.*modules/consultoria" \
   lib/modules/visitas/ --include="*.dart" \
-  | grep -v "visit_controller\.dart" \
-  | grep -v "geofence_controller\.dart" \
   | grep -v "^\s*//" \
   || true)
 
@@ -234,7 +227,7 @@ if [ -n "$REGRA_VISITAS_1" ]; then
   done
   echo ""
 else
-  pass "visitas/ não importa consultoria/ (exceção: DT-023-3, DT-023-4 — ADR-023)"
+  pass "visitas/ não importa consultoria/ (ADR-023 — DT-023-3 e DT-023-4 resolvidas)"
 fi
 
 # ── REGRA-VISITAS-2: visitas/ não importa drawing/ ────────────────────────────
@@ -255,11 +248,8 @@ else
 fi
 
 # ── REGRA-VISITAS-3: visitas/ não importa presentation layer de agenda/ ───────
-# Exceção: visit_controller.dart possui DT-023-3 (agenda/presentation/providers)
-# aguardando ADR-024.
 REGRA_VISITAS_3=$(grep -rn "import.*modules/agenda.*presentation" \
   lib/modules/visitas/ --include="*.dart" \
-  | grep -v "visit_controller\.dart" \
   | grep -v "^\s*//" \
   || true)
 
@@ -271,7 +261,7 @@ if [ -n "$REGRA_VISITAS_3" ]; then
   done
   echo ""
 else
-  pass "visitas/ não importa presentation de agenda/ (exceção: DT-023-3 — ADR-023)"
+  pass "visitas/ não importa presentation de agenda/ (ADR-023 — DT-023-3 resolvida)"
 fi
 
 echo ""

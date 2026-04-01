@@ -25,6 +25,13 @@ class FieldLookupAdapter implements IFieldLookup {
         .toList();
   }
 
+  @override
+  Future<List<FieldSummary>> listAll() async {
+    // drawing/ não tem listAll impl — geofence usa FieldLookupGeofenceAdapter
+    // ADR-024
+    return const [];
+  }
+
   FieldSummary _toSummary(DrawingFeature feature) {
     return FieldSummary(
       id: feature.id,
@@ -32,6 +39,9 @@ class FieldLookupAdapter implements IFieldLookup {
       farmId: feature.properties.fazendaId ?? '',
       areaHa: feature.properties.areaHa,
       bbox: _calculateBbox(feature),
+      // drawing/ usa seu próprio modelo de geometria (DrawingPolygon/MultiPolygon)
+      // não serializa para GeoJSON — geofence usa adapter próprio em consultoria/
+      geometry: null,
     );
   }
 

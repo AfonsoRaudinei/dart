@@ -9,6 +9,10 @@ import 'core/contracts/i_client_lookup_provider.dart';
 import 'core/contracts/i_farm_lookup_provider.dart';
 import 'core/contracts/i_visit_client_lookup_provider.dart';
 import 'core/contracts/i_visit_session_lookup_provider.dart';
+import 'core/contracts/i_occurrence_read_provider.dart';
+import 'core/contracts/i_visit_report_provider.dart';
+import 'core/contracts/i_agenda_session_bridge_provider.dart';
+import 'core/contracts/i_field_lookup_geofence_provider.dart';
 import 'core/infra/preferences_service.dart';
 import 'core/router/app_router.dart';
 import 'core/services/sync_orchestrator.dart';
@@ -18,6 +22,13 @@ import 'modules/consultoria/clients/infra/client_lookup_adapter.dart';
 import 'modules/consultoria/clients/infra/farm_lookup_adapter.dart';
 import 'modules/consultoria/clients/infra/visit_client_lookup_adapter.dart';
 import 'modules/consultoria/fields/data/repositories/field_repository.dart';
+import 'modules/consultoria/fields/infra/field_lookup_geofence_adapter.dart';
+import 'modules/consultoria/occurrences/data/occurrence_repository.dart';
+import 'modules/consultoria/occurrences/infra/occurrence_read_adapter.dart';
+import 'modules/consultoria/reports/data/sqlite_report_repository.dart';
+import 'modules/consultoria/reports/infra/visit_report_adapter.dart';
+import 'modules/agenda/data/repositories/agenda_repository.dart';
+import 'modules/agenda/infra/agenda_session_bridge_adapter.dart';
 import 'modules/visitas/data/repositories/visit_repository.dart';
 import 'modules/visitas/infra/visit_session_lookup_adapter.dart';
 import 'modules/map/presentation/providers/visit_completion_observer.dart';
@@ -26,95 +37,95 @@ import 'modules/settings/presentation/providers/settings_providers.dart';
 import 'ui/theme/premium/premium_app_theme.dart';
 
 Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-
-  // Garante que erros no framework Flutter sejam visíveis em vez de tela preta.
-  FlutterError.onError = FlutterError.presentError;
-
-  // runZonedGuarded captura erros antes e depois do runApp.
-  // Sem isso, um StateError em AppConfig.validate() mata o processo
-  // silenciosamente e o iOS exibe tela preta sem nenhuma mensagem.
+  // ✅ ensureInitialized() dentro do runZonedGuarded resolve zone mismatch.
+  // runZonedGuarded é iniciado ANTES do ensureInitialized para que
+  // ambos estejam na mesma zona.
   await runZonedGuarded(
     () async {
-      // Falha imediata e explícita se variáveis de ambiente não forem fornecidas.
-      // Ver: lib/core/config/app_config.dart para instruções de uso.
-      AppConfig.validate();
+      // 🔒 Binding inicializado dentro da zona — resolve zone mismatch
+      WidgetsFlutterBinding.ensureInitialized();
 
-      // Inicializa locale pt_BR para DateFormat (intl).
-      // Sem isto, DateFormat('dd/MM/yyyy', 'pt_BR') e formatos com
-      // nomes de meses em português lançam MissingLocaleDataException.
-      await initializeDateFormatting('pt_BR', null);
+      // 🛡 Erros do framework Flutter exibidos em vez de tela preta
+      FlutterError.onError = FlutterError.presentError;
 
-      // Timeout de 15s: Supabase v2 tenta recuperar sessão na rede durante
-      // initialize(). Sem timeout, o iOS watchdog mata o processo (~20s)
-      // antes de runApp() ser chamado, causando tela preta.
-      await Supabase.initialize(
-        url: AppConfig.supabaseUrl,
-        anonKey: AppConfig.supabaseAnonKey,
-      ).timeout(
-        const Duration(seconds: 15),
-        onTimeout: () => throw TimeoutException(
-          '[Supabase] initialize() excedeu 15s. Verifique a URL e a chave.',
-        ),
-      );
+      try {
+        // 1. Validação fail-fast de variáveis de ambiente
+        AppConfig.validate();
 
-      // SharedPreferences inicializado uma única vez e injetado via Riverpod.
-      // PreferencesService é o único ponto de acesso — sem getInstance() no app.
-      final prefs = await SharedPreferences.getInstance();
-      final preferencesService = PreferencesService(prefs);
-      final clientsRepository = ClientsRepository();
+        // 2. Locale pt_BR para DateFormat
+        await initializeDateFormatting('pt_BR', null);
 
-      runApp(
-        ProviderScope(
-          overrides: [
-            preferencesServiceProvider.overrideWithValue(preferencesService),
-            settingsRepositoryProvider.overrideWithValue(
-              SettingsRepository(prefs),
-            ),
-            // ADR-015: implementação concreta de IClientLookup
-            clientLookupProvider.overrideWithValue(
-              ClientLookupAdapter(clientsRepository),
-            ),
-            // Contrato de fazendas para módulos desacoplados (drawing/).
-            iFarmLookupProvider.overrideWithValue(
-              FarmLookupAdapter(clientsRepository),
-            ),
-            // ADR-020: implementação concreta de IVisitClientLookup
-            visitClientLookupProvider.overrideWithValue(
-              VisitClientLookupAdapter(clientsRepository, FieldRepository()),
-            ),
-            // ADR-020: implementação concreta de IVisitSessionLookup
-            visitSessionLookupProvider.overrideWithValue(
-              VisitSessionLookupAdapter(VisitRepository()),
-            ),
-          ],
-          child: const SoloForteApp(),
-        ),
-      );
+        // 3. Supabase com timeout explícito
+        await Supabase.initialize(
+          url: AppConfig.supabaseUrl,
+          anonKey: AppConfig.supabaseAnonKey,
+        ).timeout(
+          const Duration(seconds: 15),
+          onTimeout: () => throw TimeoutException(
+            'Supabase demorou mais de 15s para inicializar. '
+            'Verifique sua conexão.',
+          ),
+        );
+
+        // 4. SharedPreferences
+        final prefs = await SharedPreferences.getInstance();
+        final preferencesService = PreferencesService(prefs);
+        final clientsRepository = ClientsRepository();
+
+        // 5. App principal
+        runApp(
+          ProviderScope(
+            overrides: [
+              preferencesServiceProvider.overrideWithValue(preferencesService),
+              settingsRepositoryProvider.overrideWithValue(
+                SettingsRepository(prefs),
+              ),
+              // ADR-015: implementação concreta de IClientLookup
+              clientLookupProvider.overrideWithValue(
+                ClientLookupAdapter(clientsRepository),
+              ),
+              // Contrato de fazendas para módulos desacoplados (drawing/).
+              iFarmLookupProvider.overrideWithValue(
+                FarmLookupAdapter(clientsRepository),
+              ),
+              // ADR-020: implementação concreta de IVisitClientLookup
+              visitClientLookupProvider.overrideWithValue(
+                VisitClientLookupAdapter(clientsRepository, FieldRepository()),
+              ),
+              // ADR-020: implementação concreta de IVisitSessionLookup
+              visitSessionLookupProvider.overrideWithValue(
+                VisitSessionLookupAdapter(VisitRepository()),
+              ),
+              // ADR-024: implementação concreta de IOccurrenceRead
+              occurrenceReadProvider.overrideWithValue(
+                OccurrenceReadAdapter(OccurrenceRepository()),
+              ),
+              // ADR-024: implementação concreta de IVisitReportRepository
+              visitReportProvider.overrideWithValue(
+                VisitReportAdapter(SQLiteReportRepository()),
+              ),
+              // ADR-024: implementação concreta de IAgendaSessionBridge
+              agendaSessionBridgeProvider.overrideWithValue(
+                AgendaSessionBridgeAdapter(AgendaRepository()),
+              ),
+              // ADR-024: IFieldLookup para geofence_controller (consultoria/fields)
+              iFieldLookupGeofenceProvider.overrideWithValue(
+                FieldLookupGeofenceAdapter(FieldRepository()),
+              ),
+            ],
+            child: const SoloForteApp(),
+          ),
+        );
+      } catch (error) {
+        // 🛡 Qualquer falha no boot → tela de erro amigável
+        // Nunca tela preta, nunca processo silencioso
+        runApp(_BootErrorApp(error: error));
+      }
     },
     (error, stack) {
-      // Fallback visual: qualquer erro antes ou durante o boot é exibido
-      // em vez de deixar o app preso na tela preta.
-      runApp(
-        MaterialApp(
-          debugShowCheckedModeBanner: false,
-          home: Scaffold(
-            backgroundColor: Colors.black,
-            body: SafeArea(
-              child: Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Text(
-                    'Erro de inicialização:\n\n$error',
-                    style: const TextStyle(color: Colors.white, fontSize: 14),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-      );
+      // 🛡 Erros assíncronos não capturados após o boot
+      debugPrint('⚠️ [main] Erro não capturado: $error\n$stack');
+      runApp(_BootErrorApp(error: error));
     },
   );
 }
@@ -170,6 +181,93 @@ class _SoloForteAppState extends ConsumerState<SoloForteApp> {
         }
         return child;
       },
+    );
+  }
+}
+
+/// Widget de fallback exibido quando o boot falha.
+/// Garante que o usuário veja uma mensagem clara em vez de tela preta.
+class _BootErrorApp extends StatelessWidget {
+  final Object error;
+  const _BootErrorApp({required this.error});
+
+  String get _friendlyMessage {
+    final msg = error.toString();
+    final lower = msg.toLowerCase();
+
+    if (lower.contains('supabase_url') ||
+        lower.contains('supabase_anon_key')) {
+      return 'Configuração incompleta.\nContate o suporte: suporte@soloforte.com';
+    }
+    if (lower.contains('timeout') || lower.contains('15s')) {
+      return 'Servidor demorou para responder.\nVerifique sua conexão e tente novamente.';
+    }
+    if (lower.contains('network') ||
+        lower.contains('socket') ||
+        lower.contains('host lookup')) {
+      return 'Sem conexão com a internet.\nVerifique seu Wi-Fi ou dados móveis.';
+    }
+    if (lower.contains('certificate') || lower.contains('ssl')) {
+      return 'Erro de segurança na conexão.\nContate o suporte: suporte@soloforte.com';
+    }
+    // Produção: mensagem genérica — não expor detalhes técnicos
+    const isProduction = bool.fromEnvironment('dart.vm.product');
+    if (isProduction) {
+      return 'Não foi possível inicializar o aplicativo.\nContate o suporte: suporte@soloforte.com';
+    }
+    // Debug: exibe o erro completo para o desenvolvedor
+    return 'Erro de inicialização:\n\n$error';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: Scaffold(
+        backgroundColor: Colors.black,
+        body: SafeArea(
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(32),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(
+                    Icons.cloud_off_outlined,
+                    color: Colors.white54,
+                    size: 64,
+                  ),
+                  const SizedBox(height: 24),
+                  Text(
+                    _friendlyMessage,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 15,
+                      height: 1.6,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 40),
+                  TextButton(
+                    onPressed: () {
+                      // Hot restart não funciona em produção — orienta o usuário
+                      // a fechar e reabrir o app manualmente
+                    },
+                    child: const Text(
+                      'Feche e reabra o aplicativo',
+                      style: TextStyle(
+                        color: Color(0xFF34C759),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
