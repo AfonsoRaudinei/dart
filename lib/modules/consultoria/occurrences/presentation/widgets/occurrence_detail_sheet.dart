@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
-import '../../../../../../modules/map/design/sf_icons.dart';
+import '../../../../../../core/design/sf_icons.dart';
 import '../../../../../../ui/theme/premium/design_tokens.dart';
 import '../../domain/occurrence.dart';
 

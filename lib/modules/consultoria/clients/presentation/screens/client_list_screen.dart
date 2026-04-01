@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../providers/clients_providers.dart';
 import '../../../../../core/router/app_routes.dart';
 import '../../../../../ui/theme/premium/design_tokens.dart';
-import '../../../../map/design/sf_icons.dart';
+import 'package:soloforte_app/core/design/sf_icons.dart';
 import '../widgets/client_avatar_widget.dart';
 import 'dart:ui' as ui;
 

@@ -1,6 +1,6 @@
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
-import '../../../../modules/map/design/sf_icons.dart';
+import '../../../../core/design/sf_icons.dart';
 import 'package:flutter_map/flutter_map.dart';
 import '../../../core/domain/publicacao.dart';
 

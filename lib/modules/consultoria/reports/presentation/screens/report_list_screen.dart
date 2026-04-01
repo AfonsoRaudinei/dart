@@ -7,7 +7,7 @@ import '../../domain/report_model.dart';
 import '../providers/reports_providers.dart';
 import '../../../../../core/router/app_routes.dart';
 import '../../../../../ui/theme/premium/design_tokens.dart';
-import 'package:soloforte_app/modules/map/design/sf_icons.dart';
+import 'package:soloforte_app/core/design/sf_icons.dart';
 import 'dart:ui' as ui;
 
 class RelatoriosScreen extends ConsumerWidget {

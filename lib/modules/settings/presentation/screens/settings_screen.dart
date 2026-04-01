@@ -4,7 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../../ui/theme/premium/design_tokens.dart';
-import 'package:soloforte_app/modules/map/design/sf_icons.dart';
+import 'package:soloforte_app/core/design/sf_icons.dart';
 import 'dart:ui' as ui;
 import '../../../../core/session/session_controller.dart';
 import '../providers/settings_providers.dart';

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../../modules/map/design/sf_icons.dart';
+import '../../../../core/design/sf_icons.dart';
 
 /// Tab Bar estrutural de domínios - Somente ícones (padrão iOS)
 /// 4 tabs: Mapa, Operações, Gestão, Perfil

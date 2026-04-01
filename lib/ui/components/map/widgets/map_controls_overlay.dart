@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 import 'package:flutter/services.dart';
 import 'package:latlong2/latlong.dart';
-import '../../../../../../modules/map/design/sf_icons.dart';
+import '../../../../../../core/design/sf_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../modules/dashboard/controllers/location_controller.dart';
 import '../../../../modules/dashboard/domain/location_state.dart';

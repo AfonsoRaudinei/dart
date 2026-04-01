@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../../../../modules/map/design/sf_icons.dart';
+import '../../../../core/design/sf_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../theme/premium/design_tokens.dart';
 import '../premium/premium_glass_panel.dart';

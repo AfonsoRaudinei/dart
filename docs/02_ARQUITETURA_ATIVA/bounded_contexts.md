@@ -50,8 +50,12 @@
 ### `map`
 **Natureza:** Projeção agregadora  
 **Responsabilidade:** Orquestração visual do mapa e integração de domínios no contexto espacial  
-**Dependências permitidas:** `Agenda`, `Operacao`, `Drawing`, `Consultoria`  
-**Regra:** Pode depender de outros módulos, mas não pode ser dependência de outros módulos  
+**Dependências permitidas:** `Agenda`, `Operacao`, `Drawing`, `Consultoria`, `Visitas` (via contratos), `Planos`  
+**ADR:** ADR-025  
+**Enforcement:** REGRA-MAP-1 em `arch_check.sh`  
+**Regra:** Pode depender de outros módulos, mas **ninguém depende de `map/`**  
+**Exceções temporárias (DT-025-4 — Fase 3 pending):** `app_router.dart`, `main.dart`, `ui/components/map/`, `ui/screens/`  
+**Dívidas ativas:** DT-025-2, DT-025-3, DT-025-4, DT-025-5, DT-025-6, DT-025-7, DT-025-8 — ver ADR-025  
 
 ---
 
@@ -136,7 +140,8 @@ são dívida técnica registrada em ADR-023 seção 9 (DT-023-3, DT-023-4)
 | `agenda/` | `visitas/` | ✅ PERMITIDO (StartEventUseCase) |
 | `operacao/` | `visitas/` | ✅ PERMITIDO |
 | `map/` | `visitas/` via contratos | ✅ PERMITIDO |
-| `map/` | `visitas/` direto | ⚠️ A MIGRAR — DT-023-5 |
+| `map/` | `visitas/` direto | ⚠️ A MIGRAR — DT-025-3 (ex-DT-023-5) |
+| módulos externos | `map/` | ❌ PROIBIDO — REGRA-MAP-1 (ADR-025) |
 | `consultoria/` | `visitas/` via contratos | ✅ PERMITIDO |
 | `visitas/` | `consultoria/` | ❌ PROIBIDO — DT-023-3, DT-023-4 ativas |
 | `visitas/` | `drawing/` | ❌ PROIBIDO |

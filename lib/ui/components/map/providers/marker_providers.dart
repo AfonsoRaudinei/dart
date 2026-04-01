@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../../modules/map/design/sf_icons.dart';
+import '../../../../core/design/sf_icons.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';

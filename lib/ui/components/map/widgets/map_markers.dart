@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
-import '../../../../../../modules/map/design/sf_icons.dart';
+import '../../../../../../core/design/sf_icons.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_map_marker_cluster/flutter_map_marker_cluster.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

@@ -267,6 +267,46 @@ fi
 echo ""
 
 # =============================================================================
+# REGRA-MAP-1 (ADR-025) — ninguém importa modules/map/ externamente
+# map/ é agregador — pode depender de tudo, ninguém depende dele
+# EXCEÇÕES AUTORIZADAS:
+#   - lib/core/router/app_router.dart (composição de rotas)
+#   - lib/main.dart (bootstrap visit_completion_observer — ADR-010)
+#   - lib/ui/components/map/ (camada de apresentação do mapa — DT-025-4)
+#   - lib/ui/screens/ (camada de apresentação do mapa — DT-025-4)
+# Quando Fase 3 (consolidação) for executada, remover as 4 exceções.
+# =============================================================================
+echo -e "── ${CYAN}REGRA-MAP-1${NC}: nenhum módulo externo importa map/ (ADR-025) ─────"
+echo ""
+
+MAP_IMPORTS_EXTERNOS=$(grep -rn "import.*modules/map" lib/ \
+  --include="*.dart" \
+  | grep -v "lib/modules/map/" \
+  | grep -v "lib/core/router/app_router" \
+  | grep -v "lib/main\.dart" \
+  | grep -v "lib/ui/components/map/" \
+  | grep -v "lib/ui/screens/" \
+  | grep -v "^\s*//" \
+  | wc -l | tr -d ' ')
+
+if [ "$MAP_IMPORTS_EXTERNOS" -gt "0" ]; then
+  fail "REGRA-MAP-1: módulo externo importa map/ diretamente (ADR-025):"
+  echo ""
+  grep -rn "import.*modules/map" lib/ --include="*.dart" \
+    | grep -v "lib/modules/map/" \
+    | grep -v "lib/core/router/app_router" \
+    | grep -v "lib/main\.dart" \
+    | grep -v "lib/ui/components/map/" \
+    | grep -v "lib/ui/screens/" \
+    | grep -v "^\s*//"
+  echo ""
+else
+  pass "nenhum módulo externo importa map/ (ADR-025 — DT-025-4 pending Fase 3)"
+fi
+
+echo ""
+
+# =============================================================================
 # REGRA 3 — Arquivos novos não podem ultrapassar 900 linhas
 #
 # Fundamento: arquivos > 900 linhas indicam God Objects que violam SRP.

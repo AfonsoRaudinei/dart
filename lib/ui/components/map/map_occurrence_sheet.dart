@@ -5,7 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../theme/premium/design_tokens.dart';
-import '../../../../modules/map/design/sf_icons.dart';
+import '../../../../core/design/sf_icons.dart';
 import '../../../../modules/consultoria/relatorio_visita/data/draft_storage_service.dart';
 import '../../../../modules/consultoria/relatorio_visita/data/image_storage_service.dart';
 import 'widgets/visit_panels.dart';

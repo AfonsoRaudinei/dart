@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
-import '../../../../modules/map/design/sf_icons.dart';
+import '../../../../core/design/sf_icons.dart';
 import 'package:flutter/services.dart';
 
 /// Tab 2 — OPERAÇÕES (Campo: Visitas, Ordens, Ocorrências)

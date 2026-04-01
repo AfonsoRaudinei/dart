@@ -5,7 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/router/app_routes.dart';
 import '../../../../core/session/session_controller.dart';
 import '../../../../core/session/session_models.dart';
-import '../../../../modules/map/design/sf_icons.dart';
+import '../../../../core/design/sf_icons.dart';
 import 'package:flutter/services.dart';
 
 /// Tab 4 — PERFIL

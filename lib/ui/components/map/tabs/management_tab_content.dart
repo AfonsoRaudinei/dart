@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../../modules/map/design/sf_icons.dart';
+import '../../../../core/design/sf_icons.dart';
 import 'package:flutter/services.dart';
 
 /// Tab 3 — GESTÃO (Administrativo: Clientes, Performance, Relatórios)

@@ -66,6 +66,7 @@ Toda decisão estrutural deve ser comparada contra este documento.
 | `02_ARQUITETURA_ATIVA/ADR-022-NDVI-MODULE.md` | ADR: módulo NDVI |
 | `02_ARQUITETURA_ATIVA/ADR-023-MODULO-VISITAS.md` | ADR: bounded context formal de visitas/ — dívidas técnicas DT-023-1..8 |
 | `02_ARQUITETURA_ATIVA/ADR-024-VISITAS-BLINDAGEM-COMPLETA.md` | ADR: resolução DT-023-3 e DT-023-4 — blindagem completa de visitas/ — ciclo fechado |
+| `02_ARQUITETURA_ATIVA/ADR-025-MODULO-MAP.md` | ADR: bounded context formal de map/ — 8 dívidas DT-025-1..8 (DT-025-1 resolvida) |
 
 ### 3.3 Enforcement (Regras Automatizadas)
 | Arquivo | Descrição |
@@ -101,6 +102,7 @@ Se algum passo for ignorado → **alteração estrutural inválida**.
 Regras implementadas automaticamente:
 - REGRA 1: `core/` não importa `modules/` (exceto `app_router.dart`)
 - REGRA 2: acoplamentos laterais proibidos entre módulos
+- REGRA-MAP-1: nenhum módulo externo importa `modules/map/` (ADR-025)
 - REGRA 3: novos arquivos não ultrapassam 900 linhas
 
 ---
