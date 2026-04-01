@@ -20,6 +20,13 @@ class FakeVisitSessionLookup implements IVisitSessionLookup {
 
   @override
   Future<VisitSessionSummary?> getActiveSession() async => session;
+
+  @override
+  Future<VisitSessionSummary?> findById(String sessionId) async {
+    final active = await getActiveSession();
+    if (active != null && active.id == sessionId) return active;
+    return null;
+  }
 }
 
 void main() {
@@ -48,9 +55,11 @@ void main() {
   test(
     'createOccurrence vincula visitSessionId quando sessão ativa existe',
     () async {
-      fakeVisitLookup.session = const VisitSessionSummary(
+      fakeVisitLookup.session = VisitSessionSummary(
         id: 'visit-active-1',
+        producerId: 'producer-test-1',
         status: 'active',
+        startTime: DateTime(2025, 1, 1, 8, 0),
       );
 
       final controller = container.read(occurrenceControllerProvider);

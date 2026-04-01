@@ -82,6 +82,18 @@
 
 ---
 
+### `visitas/`
+**Natureza:** Execução de sessão de visita técnica em campo  
+**Responsabilidade:** Ciclo check-in → check-out, geofencing, estatísticas, sync  
+**Entidade central:** `VisitSession`  
+**ADR:** ADR-023  
+**Contratos em core/contracts/:** `IVisitSessionLookup`, `IVisitClientLookup`  
+**Regra:** NÃO depende de `consultoria/` nem de `drawing/`  
+**Ponto cego CI:** violações internas em `visit_controller` e `geofence_controller`
+são dívida técnica registrada em ADR-023 seção 9 (DT-023-3, DT-023-4)  
+
+---
+
 ### `consultoria`
 **Natureza:** Conteúdo técnico e ocorrências  
 **Responsabilidade:** Registro e gestão de ocorrências agronômicas  
@@ -121,6 +133,13 @@
 | `map` | `agenda` / `drawing` / `consultoria` / `operacao` | ✅ PERMITIDO |
 | `consultoria` | `core/contracts` | ✅ PERMITIDO |
 | `visitas` | `core/contracts` | ✅ PERMITIDO |
+| `agenda/` | `visitas/` | ✅ PERMITIDO (StartEventUseCase) |
+| `operacao/` | `visitas/` | ✅ PERMITIDO |
+| `map/` | `visitas/` via contratos | ✅ PERMITIDO |
+| `map/` | `visitas/` direto | ⚠️ A MIGRAR — DT-023-5 |
+| `consultoria/` | `visitas/` via contratos | ✅ PERMITIDO |
+| `visitas/` | `consultoria/` | ❌ PROIBIDO — DT-023-3, DT-023-4 ativas |
+| `visitas/` | `drawing/` | ❌ PROIBIDO |
 | `planos/`    | qualquer módulo de domínio                          | ❌ PROIBIDO                              |
 | `marketing/` | `planos/`                                           | ✅ PERMITIDO — verificação de plano      |
 | `map/`       | `planos/`                                           | ✅ PERMITIDO — badge SideMenu            |

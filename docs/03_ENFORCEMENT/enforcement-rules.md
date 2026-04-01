@@ -47,16 +47,38 @@ grep -rn "import.*modules/" lib/core/ --include="*.dart" \
 | `agenda → consultoria` | ❌ PROIBIDO | Domínios independentes |
 | `consultoria → drawing` | ❌ PROIBIDO | Domínios independentes |
 | `operacao → consultoria` | ✅ PERMITIDO | Dependência semântica válida |
+| `visitas → consultoria` | ❌ PROIBIDO | ADR-023 — acesso via `core/contracts/` |
+| `visitas → drawing` | ❌ PROIBIDO | ADR-023 — domínios independentes |
+| `visitas → agenda/presentation` | ❌ PROIBIDO | ADR-023 — acesso via `core/contracts/` |
 
 **Solução para `drawing × consultoria`:**  
 `ClientsRepositoryAdapter` em `drawing/infra/` serve como única ponte autorizada, sem violar direções proibidas.
+
+**Solução para `visitas × consultoria/drawing/agenda`:**  
+Contratos em `core/contracts/` (ex: `IVisitSessionLookup`) são a única ponte autorizada.  
+Dívidas ativas DT-023-3 e DT-023-4 têm exceção temporária — serão removidas no ADR-024.
 
 **Verificação automática:**
 ```bash
 grep -rn "import.*modules/consultoria" lib/modules/drawing/ --include="*.dart"
 grep -rn "import.*modules/consultoria" lib/modules/agenda/ --include="*.dart"
 grep -rn "import.*modules/drawing" lib/modules/consultoria/ --include="*.dart"
+# REGRA-VISITAS-1 (ADR-023) — exceções DT-023-3, DT-023-4 autorizadas:
+grep -rn "import.*modules/consultoria" lib/modules/visitas/ --include="*.dart" \
+  | grep -v "visit_controller\.dart" | grep -v "geofence_controller\.dart"
+# REGRA-VISITAS-2 (ADR-023):
+grep -rn "import.*modules/drawing" lib/modules/visitas/ --include="*.dart"
+# REGRA-VISITAS-3 (ADR-023) — exceção DT-023-3 autorizada:
+grep -rn "import.*modules/agenda.*presentation" lib/modules/visitas/ --include="*.dart" \
+  | grep -v "visit_controller\.dart"
 ```
+
+**Exceções autorizadas (dívidas técnicas ativas — ADR-023 §9):**
+
+| Arquivo | Dívida | Aguarda |
+|---|---|---|
+| `visit_controller.dart` | DT-023-3 | ADR-024 (`IOccurrenceRepository`, `IReportRepository`) |
+| `geofence_controller.dart` | DT-023-4 | ADR-024 (expansão `IFieldLookup` + geometry) |
 
 ---
 

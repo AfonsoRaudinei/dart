@@ -23,6 +23,22 @@ class VisitRepository {
     return null;
   }
 
+  /// Busca sessão de visita por ID. Retorna null se não encontrada.
+  /// Adicionado em ADR-023 — DT-023-2 (suporte a IVisitSessionLookup.findById)
+  Future<VisitSession?> getById(String sessionId) async {
+    final db = await _databaseHelper.database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'visit_sessions',
+      where: 'id = ?',
+      whereArgs: [sessionId],
+      limit: 1,
+    );
+    if (maps.isNotEmpty) {
+      return VisitSession.fromMap(maps.first);
+    }
+    return null;
+  }
+
   Future<void> saveSession(VisitSession session) async {
     final db = await _databaseHelper.database;
     await db.insert(

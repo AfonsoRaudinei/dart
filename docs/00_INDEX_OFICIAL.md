@@ -62,6 +62,9 @@ Toda decisão estrutural deve ser comparada contra este documento.
 | `02_ARQUITETURA_ATIVA/ADR-011-MARKETING-CASES.md` | ADR: integração do módulo marketing ao mapa |
 | `02_ARQUITETURA_ATIVA/ADR-012-MODULO-PLANOS.md` | ADR: sistema de planos, pagamentos e indicações |
 | `02_ARQUITETURA_ATIVA/ADR-013-RELATORIOS-DOMAIN.md` | ADR: novo submódulo de relatórios na consultoria |
+| `02_ARQUITETURA_ATIVA/ADR-020-VISITAS-CONSULTORIA-CONTRACT.md` | ADR: contratos entre visitas e consultoria via core/contracts |
+| `02_ARQUITETURA_ATIVA/ADR-022-NDVI-MODULE.md` | ADR: módulo NDVI |
+| `02_ARQUITETURA_ATIVA/ADR-023-MODULO-VISITAS.md` | ADR: bounded context formal de visitas/ — dívidas técnicas DT-023-1..8 |
 
 ### 3.3 Enforcement (Regras Automatizadas)
 | Arquivo | Descrição |

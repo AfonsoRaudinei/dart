@@ -204,6 +204,76 @@ check_lateral \
   "\(modules/consultoria/\|modules/operacao/\|modules/agenda/\|modules/drawing/\)" \
   "marketing/ não importa módulos core de negócio (consultoria, operacao, agenda, drawing)"
 
+# =============================================================================
+# REGRA 2 (ADR-023) — visitas/ não pode importar consultoria/ nem drawing/
+#
+# Fundamento: visitas/ é bounded context isolado. Acesso a dados externos
+#             deve ocorrer exclusivamente via contratos em core/contracts/.
+#
+# EXCEÇÕES AUTORIZADAS (dívidas técnicas ativas — ADR-023 seção 9):
+#   visit_controller.dart   → DT-023-3 — aguardando ADR-024 (IOccurrenceRepository, IReportRepository)
+#   geofence_controller.dart → DT-023-4 — aguardando ADR-024 (IFieldLookup expansão + geometry)
+#
+# Quando ADR-024 resolver as dívidas, remover as linhas grep -v correspondentes.
+# O commit de remoção é o comprovante de que a dívida foi paga.
+# =============================================================================
+
+# ── REGRA-VISITAS-1: visitas/ não importa consultoria/ ────────────────────────
+REGRA_VISITAS_1=$(grep -rn "import.*modules/consultoria" \
+  lib/modules/visitas/ --include="*.dart" \
+  | grep -v "visit_controller\.dart" \
+  | grep -v "geofence_controller\.dart" \
+  | grep -v "^\s*//" \
+  || true)
+
+if [ -n "$REGRA_VISITAS_1" ]; then
+  fail "REGRA-VISITAS-1: visitas/ importa consultoria/ diretamente (ADR-023):"
+  echo ""
+  echo "$REGRA_VISITAS_1" | while IFS= read -r line; do
+    echo -e "      ${RED}→${NC} $line"
+  done
+  echo ""
+else
+  pass "visitas/ não importa consultoria/ (exceção: DT-023-3, DT-023-4 — ADR-023)"
+fi
+
+# ── REGRA-VISITAS-2: visitas/ não importa drawing/ ────────────────────────────
+REGRA_VISITAS_2=$(grep -rn "import.*modules/drawing" \
+  lib/modules/visitas/ --include="*.dart" \
+  | grep -v "^\s*//" \
+  || true)
+
+if [ -n "$REGRA_VISITAS_2" ]; then
+  fail "REGRA-VISITAS-2: visitas/ importa drawing/ diretamente (ADR-023):"
+  echo ""
+  echo "$REGRA_VISITAS_2" | while IFS= read -r line; do
+    echo -e "      ${RED}→${NC} $line"
+  done
+  echo ""
+else
+  pass "visitas/ não importa drawing/ (ADR-023)"
+fi
+
+# ── REGRA-VISITAS-3: visitas/ não importa presentation layer de agenda/ ───────
+# Exceção: visit_controller.dart possui DT-023-3 (agenda/presentation/providers)
+# aguardando ADR-024.
+REGRA_VISITAS_3=$(grep -rn "import.*modules/agenda.*presentation" \
+  lib/modules/visitas/ --include="*.dart" \
+  | grep -v "visit_controller\.dart" \
+  | grep -v "^\s*//" \
+  || true)
+
+if [ -n "$REGRA_VISITAS_3" ]; then
+  fail "REGRA-VISITAS-3: visitas/ importa presentation de agenda/ diretamente (ADR-023):"
+  echo ""
+  echo "$REGRA_VISITAS_3" | while IFS= read -r line; do
+    echo -e "      ${RED}→${NC} $line"
+  done
+  echo ""
+else
+  pass "visitas/ não importa presentation de agenda/ (exceção: DT-023-3 — ADR-023)"
+fi
+
 echo ""
 
 # =============================================================================
