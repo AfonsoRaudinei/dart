@@ -65,6 +65,7 @@ Toda decisão estrutural deve ser comparada contra este documento.
 | `02_ARQUITETURA_ATIVA/ADR-020-VISITAS-CONSULTORIA-CONTRACT.md` | ADR: contratos entre visitas e consultoria via core/contracts |
 | `02_ARQUITETURA_ATIVA/ADR-022-NDVI-MODULE.md` | ADR: módulo NDVI |
 | `02_ARQUITETURA_ATIVA/ADR-023-MODULO-VISITAS.md` | ADR: bounded context formal de visitas/ — dívidas técnicas DT-023-1..8 |
+| `02_ARQUITETURA_ATIVA/ADR-024-VISITAS-BLINDAGEM-COMPLETA.md` | ADR: resolução DT-023-3 e DT-023-4 — blindagem completa de visitas/ — ciclo fechado |
 
 ### 3.3 Enforcement (Regras Automatizadas)
 | Arquivo | Descrição |
