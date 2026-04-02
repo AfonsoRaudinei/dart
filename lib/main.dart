@@ -13,6 +13,9 @@ import 'core/contracts/i_occurrence_read_provider.dart';
 import 'core/contracts/i_visit_report_provider.dart';
 import 'core/contracts/i_agenda_session_bridge_provider.dart';
 import 'core/contracts/i_field_lookup_geofence_provider.dart';
+import 'core/contracts/i_agenda_observable.dart';
+import 'core/contracts/i_agenda_observable_provider.dart';
+import 'core/contracts/i_report_writer_provider.dart';
 import 'core/infra/preferences_service.dart';
 import 'core/router/app_router.dart';
 import 'core/services/sync_orchestrator.dart';
@@ -29,6 +32,8 @@ import 'modules/consultoria/reports/data/sqlite_report_repository.dart';
 import 'modules/consultoria/reports/infra/visit_report_adapter.dart';
 import 'modules/agenda/data/repositories/agenda_repository.dart';
 import 'modules/agenda/infra/agenda_session_bridge_adapter.dart';
+import 'modules/agenda/presentation/providers/agenda_provider.dart';
+import 'modules/consultoria/relatorios/infra/report_writer_adapter.dart';
 import 'modules/visitas/data/repositories/visit_repository.dart';
 import 'modules/visitas/infra/visit_session_lookup_adapter.dart';
 import 'modules/map/presentation/providers/visit_completion_observer.dart';
@@ -111,6 +116,37 @@ Future<void> main() async {
               // ADR-024: IFieldLookup para geofence_controller (consultoria/fields)
               iFieldLookupGeofenceProvider.overrideWithValue(
                 FieldLookupGeofenceAdapter(FieldRepository()),
+              ),
+              // ADR-025: AgendaObservableState neutro para visit_completion_observer
+              agendaObservableProvider.overrideWith((ref) {
+                final agendaState = ref.watch(agendaProvider);
+                return AgendaObservableState(
+                  sessions: agendaState.sessions
+                      .map(
+                        (s) => AgendaSessionData(
+                          id: s.id,
+                          startAtReal: s.startAtReal,
+                          endAtReal: s.endAtReal,
+                          createdBy: s.createdBy,
+                        ),
+                      )
+                      .toList(),
+                  events: agendaState.events
+                      .map(
+                        (e) => AgendaEventData(
+                          id: e.id,
+                          clienteId: e.clienteId,
+                          visitSessionId: e.visitSessionId,
+                          fazendaId: e.fazendaId,
+                          talhaoId: e.talhaoId,
+                        ),
+                      )
+                      .toList(),
+                );
+              }),
+              // ADR-025: IReportWriter para visit_completion_observer (DT-025-7)
+              reportWriterProvider.overrideWith(
+                (ref) => ReportWriterAdapter(ref),
               ),
             ],
             child: const SoloForteApp(),

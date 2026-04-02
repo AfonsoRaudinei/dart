@@ -8,12 +8,17 @@
 
 /// DTO mínimo de ocorrência para consumo por módulos externos.
 /// NÃO é espelho completo de Occurrence — apenas os campos necessários
-/// para compor o relatório de visita (type + description).
+/// para compor o relatório de visita.
+/// ADR-024 + ADR-025 (expansão: lat, lng, fotoPath, registradaEm)
 class OccurrenceSummary {
   const OccurrenceSummary({
     required this.id,
     required this.type,
     required this.description,
+    this.lat,
+    this.lng,
+    this.fotoPath,
+    this.registradaEm,
   });
 
   final String id;
@@ -23,6 +28,18 @@ class OccurrenceSummary {
 
   /// Descrição livre registrada pelo técnico no campo.
   final String description;
+
+  /// Latitude do ponto de ocorrência (opcional).
+  final double? lat;
+
+  /// Longitude do ponto de ocorrência (opcional).
+  final double? lng;
+
+  /// Path local da foto vinculada (opcional).
+  final String? fotoPath;
+
+  /// Data/hora em que a ocorrência foi registrada (UTC).
+  final DateTime? registradaEm;
 }
 
 /// Contrato de leitura de ocorrências vinculadas a uma sessão de visita.

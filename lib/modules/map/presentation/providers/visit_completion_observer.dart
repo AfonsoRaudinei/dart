@@ -1,70 +1,56 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../../../core/contracts/i_agenda_observable.dart';
+import '../../../../core/contracts/i_agenda_observable_provider.dart';
+import '../../../../core/contracts/i_occurrence_read.dart';
+import '../../../../core/contracts/i_occurrence_read_provider.dart';
+import '../../../../core/contracts/i_report_writer.dart';
+import '../../../../core/contracts/i_report_writer_provider.dart';
 import '../../../../core/utils/app_logger.dart';
-import '../../../agenda/domain/entities/event.dart';
-import '../../../agenda/domain/entities/visit_session.dart';
-import '../../../agenda/presentation/providers/agenda_provider.dart';
-import '../../../consultoria/occurrences/data/occurrence_repository.dart';
-import '../../../consultoria/occurrences/presentation/controllers/occurrence_controller.dart';
-import '../../../consultoria/relatorios/models/visit_session_snapshot.dart';
-import '../../../consultoria/relatorios/use_cases/generate_relatorio_use_case.dart';
 
 part 'visit_completion_observer.g.dart';
 
 /// Orquestrador: VisitSession finalizada → RelatórioTécnico gerado — ADR-009
 ///
-/// Observa o [agendaProvider] e, quando uma [VisitSession] transiciona de
-/// ativa (endAtReal == null) para concluída (endAtReal != null), constrói
-/// um [VisitSessionSnapshot] e dispara o [generateRelatarioProvider] de
-/// forma assíncrona (fire-and-forget — sem bloquear a UI).
+/// Observa o [agendaObservableProvider] e, quando uma [AgendaSessionData]
+/// transiciona de ativa (endAtReal == null) para concluída (endAtReal != null),
+/// constrói um [VisitReportInput] e dispara [reportWriterProvider.generateReport]
+/// de forma assíncrona (fire-and-forget — sem bloquear a UI).
 ///
-/// **Bounded context:**
-///   - `agenda/` → fonte dos dados de sessão e evento
-///   - `consultoria/` → destino (geração do relatório via use case)
-///   - `map/` → orquestrador (este arquivo); não importa `operacao/`
+/// **Bounded context (ADR-025):**
+///   - `core/contracts/` → fonte dos contratos neutros (IAgendaObservable,
+///     IOccurrenceRead, IReportWriter)
+///   - `map/` → orquestrador (este arquivo)
+///   - SEM imports diretos de `agenda/`, `consultoria/` ou `visitas/`
 ///
 /// **Mapeamento de campos (declarado explicitamente conforme ADR-009):**
 ///
-/// | Fonte (Event / VisitSession)  | VisitSessionSnapshot.campo | Observação                        |
-/// |-------------------------------|----------------------------|-----------------------------------|
-/// | session.id                    | sessionId                  | direto                            |
-/// | event.clienteId               | clientId                   | direto                            |
-/// | event.fazendaId               | farmName                   | fallback se null¹                 |
-/// | session.createdBy             | agronomistId               | direto                            |
-/// | session.startAtReal           | startedAt                  | direto                            |
-/// | session.endAtReal!            | finishedAt                 | não-null garantido                |
-/// | OccurrenceRepository          | ocorrencias                | query por session.id²             |
-/// | event.talhaoId                | talhoes                    | ID disponível, nome via TODO³     |
-/// | (ausente)                     | fotos                      | [] — campo futuro⁴               |
-/// | (ausente)                     | monitoramentos             | [] — campo futuro⁴               |
+/// | Fonte (AgendaEventData / AgendaSessionData) | VisitReportInput.campo | Observação               |
+/// |--------------------------------------------|------------------------|--------------------------|
+/// | session.id                                 | sessionId              | direto                   |
+/// | event.clienteId                            | clientId               | direto                   |
+/// | event.fazendaId                            | farmName               | proxy DT-025-8¹          |
+/// | session.createdBy                          | agronomistId           | direto                   |
+/// | session.startAtReal                        | startedAt              | direto                   |
+/// | session.endAtReal!                         | finishedAt             | não-null garantido       |
+/// | IOccurrenceRead                            | occurrences            | query por session.id²    |
+/// | event.talhaoId                             | talhaoId               | ID disponível, nome TODO |
 ///
-/// ¹ `Event.fazendaId` existe mas `farmName` (string legível) requer lookup
-///   no repositório de fazendas. Usado como fallback enquanto o lookup não
-///   está implementado. TODO marcado no código.
+/// ¹ DT-025-8: `event.fazendaId` como farmName. Proxy ADR-010 enquanto
+///   lookup de nome da fazenda não está implementado.
 ///
-/// ² `OccurrenceRepository.getOccurrencesBySession(session.id)` já existe
-///   em `consultoria/occurrences/data/occurrence_repository.dart`.
-///   Cada `Occurrence` é mapeada para `OcorrenciaSnapshot`.
+/// ² `IOccurrenceRead.getBySessionId(session.id)` via `occurrenceReadProvider`.
 ///
-/// ³ `event.talhaoId` fornece o ID do talhão visitado. O nome completo
-///   requer lookup via repositório de clientes/talhões. TODO marcado.
-///
-/// ⁴ Fotos e monitoramentos serão populados quando o módulo `operacao/`
-///   expuser esses dados por sessão (iteração futura).
-///
-/// **Ativação:** este observer deve ser lido/assistido no boot do app para
-/// que o listener seja registrado. Ver `main.dart`:
-/// ```dart
-/// ref.read(visitCompletionObserverProvider); // ADR-010
-/// ```
+/// **Ativação:** lido no boot do app para registrar o listener.
+/// Ver `main.dart`: `ref.read(visitCompletionObserverProvider); // ADR-010`
 @Riverpod(keepAlive: true)
 class VisitCompletionObserver extends _$VisitCompletionObserver {
   static const String _tag = 'VisitCompletionObserver';
 
   @override
   void build() {
-    ref.listen<AgendaState>(
-      agendaProvider,
+    ref.listen<AgendaObservableState>(
+      agendaObservableProvider,
       (previous, next) => _onAgendaStateChanged(previous, next),
       fireImmediately: false,
     );
@@ -72,14 +58,17 @@ class VisitCompletionObserver extends _$VisitCompletionObserver {
 
   // ── Detecção de transição ─────────────────────────────────────────────
 
-  /// Chamado a cada mudança no [agendaProvider].
+  /// Chamado a cada mudança no [agendaObservableProvider].
   ///
   /// Detecta sessões que acabaram de ser concluídas comparando o estado
   /// anterior com o novo. Só dispara para transições reais
-  /// (endAtReal era null → passou a não-null), o que evita:
+  /// (endAtReal era null → passou a não-null), evitando:
   ///   - reprocessamento ao reiniciar o app
   ///   - duplicação por múltiplas reconstruções
-  void _onAgendaStateChanged(AgendaState? previous, AgendaState next) {
+  void _onAgendaStateChanged(
+    AgendaObservableState? previous,
+    AgendaObservableState next,
+  ) {
     final previousSessions = previous?.sessions ?? const [];
 
     for (final session in next.sessions) {
@@ -112,19 +101,14 @@ class VisitCompletionObserver extends _$VisitCompletionObserver {
 
   // ── Disparo do use case ───────────────────────────────────────────────
 
-  /// Busca dados enriquecidos, constrói o [VisitSessionSnapshot] e dispara
-  /// [generateRelatarioProvider].
+  /// Constrói [VisitReportInput] e dispara [IReportWriter.generateReport].
   ///
-  /// A operação é fire-and-forget: erros são logados mas NÃO propagados
-  /// para não bloquear o fluxo de conclusão da visita.
-  ///
-  /// Assíncrono para permitir a query de ocorrências antes de montar o
-  /// snapshot — sem bloquear o listener síncrono de [_onAgendaStateChanged].
+  /// Fire-and-forget: erros são logados mas NÃO propagados para não
+  /// bloquear o fluxo de conclusão da visita.
   void _dispatchReportGeneration({
-    required Event event,
-    required VisitSession session,
+    required AgendaEventData event,
+    required AgendaSessionData session,
   }) {
-    // Fire-and-forget: executa de forma assíncrona sem bloquear a UI
     _buildAndDispatch(event: event, session: session).catchError((
       Object error,
       StackTrace stackTrace,
@@ -138,10 +122,10 @@ class VisitCompletionObserver extends _$VisitCompletionObserver {
     });
   }
 
-  /// Constrói o snapshot com dados reais e dispara o use case.
+  /// Busca ocorrências, monta [VisitReportInput] e chama [IReportWriter].
   Future<void> _buildAndDispatch({
-    required Event event,
-    required VisitSession session,
+    required AgendaEventData event,
+    required AgendaSessionData session,
   }) async {
     AppLogger.debug(
       'Buscando dados enriquecidos para sessão ${session.id} '
@@ -149,97 +133,52 @@ class VisitCompletionObserver extends _$VisitCompletionObserver {
       tag: _tag,
     );
 
-    final snapshot = await _buildSnapshot(event: event, session: session);
+    final input = await _buildReportInput(event: event, session: session);
 
     AppLogger.debug(
       'Gerando relatório para sessão ${session.id} — '
-      '${snapshot.ocorrencias.length} ocorrência(s), '
-      '${snapshot.talhoes.length} talhão(ões).',
+      '${input.occurrences.length} ocorrência(s).',
       tag: _tag,
     );
 
-    await ref
-        .read(generateRelatorioProvider(snapshot).future)
-        .then(
-          (relatorio) => AppLogger.debug(
-            'Relatório ${relatorio.id} gerado com sucesso '
-            '(status: ${relatorio.status.name}).',
-            tag: _tag,
-          ),
-        );
+    final reportId = await ref.read(reportWriterProvider).generateReport(input);
+
+    AppLogger.debug(
+      'Relatório $reportId gerado com sucesso (sessão ${session.id}).',
+      tag: _tag,
+    );
   }
 
-  // ── Construção do snapshot ────────────────────────────────────────────
+  // ── Construção do VisitReportInput ────────────────────────────────────
 
-  /// Mapeia [Event] + [VisitSession] para [VisitSessionSnapshot] com dados reais.
+  /// Mapeia [AgendaEventData] + [AgendaSessionData] para [VisitReportInput].
   ///
-  /// Busca ocorrências via [OccurrenceRepository] antes de montar o DTO.
-  /// Ver tabela de mapeamento no docstring da classe para justificativas.
-  Future<VisitSessionSnapshot> _buildSnapshot({
-    required Event event,
-    required VisitSession session,
+  /// Busca ocorrências via [IOccurrenceRead] (ADR-024) antes de montar o DTO.
+  Future<VisitReportInput> _buildReportInput({
+    required AgendaEventData event,
+    required AgendaSessionData session,
   }) async {
-    // ── Correção A: farmName ──────────────────────────────────────────
-    // TODO: substituir por lookup real via repositório de fazendas quando
-    // o repositório de clientes/fazendas expuser um método getFarmById().
-    // event.fazendaId está disponível para a query futura.
+    // ── DT-025-8: farmName proxy ──────────────────────────────────────
+    // event.fazendaId como proxy enquanto lookup de nome não existe.
+    // Substituir por IFarmLookup quando ADR-010 for implementado.
     final farmName = event.fazendaId ?? 'Fazenda não identificada';
 
-    // ── Correção B: ocorrencias ───────────────────────────────────────
-    // Busca ocorrências reais vinculadas à sessão via OccurrenceRepository.
-    final occurrenceRepo = ref.read(occurrenceRepositoryProvider);
-    final rawOccurrences = await occurrenceRepo.getOccurrencesBySession(
-      session.id,
-    );
+    // ── Ocorrências via IOccurrenceRead (ADR-024) ─────────────────────
+    final occurrences = await ref
+        .read(occurrenceReadProvider)
+        .getBySessionId(session.id);
 
-    // Mapeia Occurrence → OcorrenciaSnapshot (sem alterar contrato do DTO)
-    final ocorrencias = rawOccurrences
-        .map(
-          (o) => OcorrenciaSnapshot(
-            id: o.id,
-            tipo:
-                o.category ??
-                o.type, // category é mais semântico quando disponível
-            descricao: o.description,
-            lat: o.lat,
-            lng: o.long,
-            fotoPath: o.photoPath,
-            registradaEm: o.createdAt,
-          ),
-        )
-        .toList();
-
-    // ── Correção C: talhoes ───────────────────────────────────────────
-    // event.talhaoId fornece o ID do talhão visitado nesta sessão.
-    // TODO: buscar nome e área reais via repositório de talhões
-    // quando o método getTalhaoById() estiver disponível.
-    // event.talhaoId pode ser usado como chave da query futura.
-    final talhoes = event.talhaoId != null
-        ? [
-            TalhaoVisitado(
-              talhaoId: event.talhaoId!,
-              nomeTalhao:
-                  event.talhaoId!, // TODO: substituir por nome real via lookup
-            ),
-          ]
-        : <TalhaoVisitado>[];
-
-    return VisitSessionSnapshot(
-      // ── Campos com mapeamento direto ─────────────────────────────────
+    return VisitReportInput(
       sessionId: session.id,
       clientId: event.clienteId,
+      farmName: farmName,
       agronomistId: session.createdBy,
       startedAt: session.startAtReal,
-      finishedAt: session.endAtReal!, // endAtReal != null garantido aqui
-      // ── Campos corrigidos (Correções A, B, C) ────────────────────────
-      farmName: farmName,
-      ocorrencias: ocorrencias,
-      talhoes: talhoes,
-
-      // ── Campos pendentes de iteração futura ──────────────────────────
-      fotos:
-          const [], // TODO: implementar quando módulo de fotos estiver disponível
-      monitoramentos: const [],
+      finishedAt: session.endAtReal!, // endAtReal != null garantido
+      occurrences: occurrences,
+      talhaoId: event.talhaoId,
+      // TODO: buscar nome via IFieldLookup quando disponível
+      talhaoName: event.talhaoId,
     );
   }
 }

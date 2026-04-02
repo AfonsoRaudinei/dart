@@ -23,8 +23,12 @@ class OccurrenceReadAdapter implements IOccurrenceRead {
         .map(
           (o) => OccurrenceSummary(
             id: o.id,
-            type: o.type,
+            type: o.category ?? o.type,
             description: o.description,
+            lat: o.lat,
+            lng: o.long,
+            fotoPath: o.photoPath,
+            registradaEm: o.createdAt,
           ),
         )
         .toList();

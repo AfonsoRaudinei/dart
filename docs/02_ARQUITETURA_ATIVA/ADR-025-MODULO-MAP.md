@@ -80,13 +80,13 @@ Auditoria PROMPT 01 identificou quatro problemas estruturais principais:
 | ID | Descrição | Localização | Causa | Fase | Status |
 |---|---|---|---|---|---|
 | DT-025-1 | `SFIcons` alojado em `map/design/` — 20 importadores externos | `modules/map/design/sf_icons.dart` | Design token de `core/` em módulo de domínio | PROMPT 02 | ✅ RESOLVIDO |
-| DT-025-2 | `visit_completion_observer.dart` — 7 imports ilegais (`consultoria/` + `agenda/`) | `map/presentation/providers/` | Sem contratos formais no momento da criação | PROMPT 03 | ⏳ Pendente |
+| DT-025-2 | `visit_completion_observer.dart` — 7 imports ilegais (`consultoria/` + `agenda/`) | `map/presentation/providers/` | Sem contratos formais no momento da criação | PROMPT 03 | ✅ RESOLVIDO |
 | DT-025-3 | `map/` importa `visitas/` diretamente (herança DT-023-5) | `map/presentation/providers/` | DT-023-5 não resolvida em ADR-023/024 | PROMPT 03 | ⏳ Pendente |
 | DT-025-4 | `ui/components/map/` e `ui/screens/` como exceções REGRA-MAP-1 | `lib/ui/` | Camada de apresentação sem bounded context formal | Fase 3 | ⏳ Pendente |
 | DT-025-5 | `private_map_screen.dart` — 898 linhas (God Object) | `lib/ui/screens/` | Crescimento orgânico sem enforcement | PROMPT 04 | ⏳ Pendente |
 | DT-025-6 | Ausência de testes unitários em `map/` | `lib/modules/map/` | Módulo nunca teve suite de testes | ADR futuro | ⏳ Pendente |
-| DT-025-7 | `visit_completion_observer.dart` sem contrato neutro `IReportWriter` | `map/presentation/providers/` | Contrato não existe — precisa ser criado | PROMPT 03 | ⏳ Pendente |
-| DT-025-8 | `farmName: event.fazendaId` — proxy ADR-010 (sem entidade `Farm`) | `visit_completion_observer.dart` | ADR-010 não implementado — `fazendaId` como proxy aceitável | PROMPT 03 | ⏳ Pendente |
+| DT-025-7 | `visit_completion_observer.dart` sem contrato neutro `IReportWriter` | `map/presentation/providers/` | Contrato não existia | PROMPT 03 | ✅ RESOLVIDO |
+| DT-025-8 | `farmName: event.fazendaId` — proxy ADR-010 (sem entidade `Farm`) | `visit_completion_observer.dart` | ADR-010 não implementado — `fazendaId` como proxy aceitável | PROMPT 03 | ✅ DOCUMENTADO |
 
 ---
 
@@ -128,30 +128,53 @@ Adicionada a `tool/arch_check.sh` neste ADR (PROMPT 02):
 
 ---
 
-## 9. Resultado dos Gates de Qualidade (PROMPT 02)
+## 9. Resultado dos Gates de Qualidade (PROMPT 02 + PROMPT 03)
 
 | Gate | Resultado |
 |---|---|
-| `flutter analyze lib/` | 0 `error •` (após move sf_icons + atualização dos 20 importadores) |
+| `flutter analyze lib/` | 0 `error •` (após move sf_icons + migração observer) |
 | `bash tool/arch_check.sh` | ✅ EXIT 0 — REGRA-MAP-1 passa com 0 violações |
 | Importadores antigos (`map/design/sf_icons`) | 0 ocorrências confirmado via grep |
+| `visit_completion_observer.dart` imports ilegais | 0 (7 → 0, todos via `core/contracts/`) |
 
 ---
 
-## 10. Próximo ciclo — PROMPT 03
+## 10. Artefatos Criados (PROMPT 03)
 
-**Alvo:** `lib/modules/map/presentation/providers/visit_completion_observer.dart`
+### Contratos neutros — `lib/core/contracts/`
 
-Migrar 7 imports ilegais para contratos em `core/contracts/`:
+| Arquivo | Contrato / DTO | ADR |
+|---|---|---|
+| `i_agenda_observable.dart` | `AgendaSessionData`, `AgendaEventData`, `AgendaObservableState` | ADR-025 |
+| `i_agenda_observable_provider.dart` | Provider neutro `agendaObservableProvider` | ADR-025 |
+| `i_report_writer.dart` | `VisitReportInput`, `IReportWriter` | ADR-025 |
+| `i_report_writer_provider.dart` | Provider neutro `reportWriterProvider` | ADR-025 |
 
-| Import atual | Contrato alvo |
+### Adapters — módulos de origem
+
+| Arquivo | Localização | Implementa |
+|---|---|---|
+| `report_writer_adapter.dart` | `consultoria/relatorios/infra/` | `IReportWriter` |
+
+### Expansão de contrato ADR-024
+
+| Arquivo | Mudança |
 |---|---|
-| `agenda/domain/entities/event.dart` | Via `IAgendaSessionBridge` |
-| `agenda/domain/entities/visit_session.dart` | `VisitSessionSummary` |
-| `agenda/presentation/providers/agenda_provider.dart` | `iAgendaSessionBridgeProvider` |
-| `consultoria/occurrences/data/occurrence_repository.dart` | `IOccurrenceRead` |
-| `consultoria/occurrences/presentation/controllers/occurrence_controller.dart` | `IOccurrenceRead` |
-| `consultoria/relatorios/models/visit_session_snapshot.dart` | DTO local construído inline |
-| `consultoria/relatorios/use_cases/generate_relatorio_use_case.dart` | Novo contrato `IReportWriter` (a criar) |
+| `i_occurrence_read.dart` | `OccurrenceSummary` + lat, lng, fotoPath, registradaEm |
+| `occurrence_read_adapter.dart` | Mapeia campos adicionais de `Occurrence` |
 
-**DT-025-8:** `farmName: event.fazendaId ?? 'Fazenda não identificada'` — proxy ADR-010 documentado e aceito.
+### Registro em `main.dart`
+
+```dart
+agendaObservableProvider.overrideWith((ref) { /* mapeia AgendaState → AgendaObservableState */ }),
+reportWriterProvider.overrideWith((ref) => ReportWriterAdapter(ref)),
+```
+
+## 11. Próximo ciclo — PROMPT 04
+
+**Alvo:** `lib/ui/screens/private_map_screen.dart`
+
+- Inserir comentário de governança (DT-025-5)
+- Verificar DT-025-3: `visit_active_card.dart` ainda importa `visitas/presentation/`
+- Atualizar ADR-025 para FECHADO se DT-025-3 for resolvida
+- Commit final PROMPT 04
