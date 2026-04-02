@@ -2,7 +2,7 @@
 
 **Data:** 02/04/2026
 **Branch:** release/v1.1
-**Status:** ABERTO — ciclo multi-prompt em execução
+**Status:** FECHADO — ciclo multi-prompt completo: PASSOs 02, 03, 04 executados
 **Autor:** Engenheiro Sênior SoloForte
 **Tipo:** BOUNDED CONTEXT FORMAL — declaração de responsabilidades, fronteiras e inventário de dívidas
 **Altera fronteira entre módulos?** SIM — formaliza fronteiras implícitas do módulo `map/`
@@ -83,7 +83,7 @@ Auditoria PROMPT 01 identificou quatro problemas estruturais principais:
 | DT-025-2 | `visit_completion_observer.dart` — 7 imports ilegais (`consultoria/` + `agenda/`) | `map/presentation/providers/` | Sem contratos formais no momento da criação | PROMPT 03 | ✅ RESOLVIDO |
 | DT-025-3 | `map/` importa `visitas/` diretamente (herança DT-023-5) | `map/presentation/providers/` | DT-023-5 não resolvida em ADR-023/024 | PROMPT 03 | ⏳ Pendente |
 | DT-025-4 | `ui/components/map/` e `ui/screens/` como exceções REGRA-MAP-1 | `lib/ui/` | Camada de apresentação sem bounded context formal | Fase 3 | ⏳ Pendente |
-| DT-025-5 | `private_map_screen.dart` — 898 linhas (God Object) | `lib/ui/screens/` | Crescimento orgânico sem enforcement | PROMPT 04 | ⏳ Pendente |
+| DT-025-5 | `private_map_screen.dart` — 898 linhas (God Object) | `lib/ui/screens/` | Crescimento orgânico sem enforcement | PROMPT 04 | ✅ DOCUMENTADO |
 | DT-025-6 | Ausência de testes unitários em `map/` | `lib/modules/map/` | Módulo nunca teve suite de testes | ADR futuro | ⏳ Pendente |
 | DT-025-7 | `visit_completion_observer.dart` sem contrato neutro `IReportWriter` | `map/presentation/providers/` | Contrato não existia | PROMPT 03 | ✅ RESOLVIDO |
 | DT-025-8 | `farmName: event.fazendaId` — proxy ADR-010 (sem entidade `Farm`) | `visit_completion_observer.dart` | ADR-010 não implementado — `fazendaId` como proxy aceitável | PROMPT 03 | ✅ DOCUMENTADO |

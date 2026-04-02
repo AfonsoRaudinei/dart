@@ -54,6 +54,12 @@ import '../../core/design/sf_icons.dart';
 
 part 'private_map_sheets.dart';
 
+// ════════════════════════════════════════════════════════════════
+// GOVERNANCE ADR-025 — DT-025-5
+// Este arquivo está em ~900 linhas. PROIBIDO adicionar código inline.
+// Toda nova funcionalidade DEVE ser extraída para widget separado em
+// lib/ui/components/map/ e apenas referenciada aqui. Ver ADR-025 §6.
+// ════════════════════════════════════════════════════════════════
 class PrivateMapScreen extends ConsumerStatefulWidget {
   const PrivateMapScreen({super.key});
 

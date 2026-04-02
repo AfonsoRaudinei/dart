@@ -327,6 +327,7 @@ LEGACY_EXCEPTIONS=(
   "ui/components/map/map_occurrence_sheet.dart"                        # 1064 — decomposição planejada
   "modules/drawing/domain/drawing_utils.dart"                          # 1010 — utilitário puro, candidato a split
   "core/database/database_helper.dart"                                 # 1128 — legado pré-baseline v1.1, decomposição planejada
+  "ui/screens/private_map_screen.dart"                                 # 900+ — DT-025-5: God Object com comentário de governança ADR-025
 )
 
 SIZE_VIOLATIONS=0
