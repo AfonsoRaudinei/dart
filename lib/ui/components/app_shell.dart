@@ -149,10 +149,11 @@ class _AppShellState extends ConsumerState<AppShell> {
     switch (type) {
       case 'recovery':
         // Reset de senha — estabelecer sessão e navegar para tela de nova senha.
+        // gotrue 2.18.0: setSession(refreshToken) — apenas o refreshToken.
         // O onAuthStateChange também dispara passwordRecovery, mas manter
         // ambos garante cobertura em cold start e foreground.
         Supabase.instance.client.auth
-            .setSession(accessToken, refreshToken)
+            .setSession(refreshToken)
             .then((_) {
           debugPrint('[DeepLink] Recovery: sessão estabelecida');
           if (mounted) {
@@ -176,7 +177,7 @@ class _AppShellState extends ConsumerState<AppShell> {
         // Estabelecer sessão, fazer signOut limpo e navegar para login.
         // signOut garante que ensureProfileComplete rode no próximo login.
         Supabase.instance.client.auth
-            .setSession(accessToken, refreshToken)
+            .setSession(refreshToken)
             .then((_) {
           debugPrint('[DeepLink] Signup confirmado — fazendo signOut limpo');
           return Supabase.instance.client.auth.signOut();
