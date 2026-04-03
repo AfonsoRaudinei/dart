@@ -34,17 +34,43 @@ class _RecoverPasswordPageState extends ConsumerState<RecoverPasswordPage> {
     try {
       await ref
           .read(authServiceProvider.notifier)
-          .recoverPassword(_emailController.text.trim());
+          .recoverPassword(_emailController.text.trim().toLowerCase());
       setState(() => _sent = true);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Erro ao enviar link: $e')));
+        final msg = _translateRecoverError(e.toString());
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(msg),
+            backgroundColor: const Color(0xFFFF3B30),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        );
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  String _translateRecoverError(String raw) {
+    final lower = raw.toLowerCase();
+    if (lower.contains('network') ||
+        lower.contains('socket') ||
+        lower.contains('host lookup') ||
+        lower.contains('timeout') ||
+        lower.contains('failed host')) {
+      return 'Erro de conexão. Verifique sua internet e tente novamente.';
+    }
+    if (lower.contains('rate limit') || lower.contains('too many')) {
+      return 'Muitas tentativas. Aguarde alguns minutos.';
+    }
+    if (lower.contains('invalid email') || lower.contains('e-mail inválido')) {
+      return 'E-mail inválido. Verifique e tente novamente.';
+    }
+    return 'Não foi possível enviar o link. Tente novamente.';
   }
 
   @override
@@ -120,7 +146,8 @@ class _RecoverPasswordPageState extends ConsumerState<RecoverPasswordPage> {
             keyboardType: TextInputType.emailAddress,
             validator: (value) {
               if (value == null || value.isEmpty) return 'Informe seu e-mail';
-              if (!value.contains('@')) return 'E-mail inválido';
+              final emailRegex = RegExp(r'^[\w\-\.]+@([\w\-]+\.)+[\w\-]{2,4}$');
+              if (!emailRegex.hasMatch(value.trim())) return 'E-mail inválido';
               return null;
             },
           ),
@@ -180,7 +207,7 @@ class _RecoverPasswordPageState extends ConsumerState<RecoverPasswordPage> {
         ),
         const SizedBox(height: 16),
         Text(
-          'Se o e-mail ${_emailController.text} estiver cadastrado, você receberá um link em alguns instantes.',
+          'Se este e-mail estiver cadastrado, você receberá um link de redefinição em alguns instantes.\n\nVerifique também sua pasta de spam.',
           textAlign: TextAlign.center,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
             color: PremiumTokens.textSecondaryLight,
