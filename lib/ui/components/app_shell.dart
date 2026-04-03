@@ -24,6 +24,9 @@ REGRAS:
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:app_links/app_links.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../core/router/app_routes.dart';
 import '../../core/session/session_controller.dart';
 import '../../core/session/session_models.dart';
 import 'side_menu_overlay.dart';
@@ -45,12 +48,67 @@ class _SmartButtonWrapper extends StatelessWidget {
   }
 }
 
-class AppShell extends ConsumerWidget {
+class AppShell extends ConsumerStatefulWidget {
   final Widget child;
   const AppShell({required this.child, super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<AppShell> createState() => _AppShellState();
+}
+
+class _AppShellState extends ConsumerState<AppShell> {
+  late final AppLinks _appLinks;
+
+  @override
+  void initState() {
+    super.initState();
+    _initDeepLinks();
+  }
+
+  void _initDeepLinks() {
+    _appLinks = AppLinks();
+
+    // Link recebido com app aberto (foreground)
+    _appLinks.uriLinkStream.listen((uri) {
+      _handleDeepLink(uri);
+    });
+
+    // Link recebido que abriu o app (cold start)
+    _appLinks.getInitialLink().then((uri) {
+      if (uri != null) _handleDeepLink(uri);
+    });
+  }
+
+  void _handleDeepLink(Uri uri) {
+    // Supabase envia: soloforte://reset-password#access_token=...&type=recovery
+    // O fragment (#) vira query params após o redirect do Supabase
+    final fragment = uri.fragment;
+    if (fragment.isEmpty) return;
+
+    final params = Uri.splitQueryString(fragment);
+    final type = params['type'];
+    final accessToken = params['access_token'];
+    final refreshToken = params['refresh_token'];
+
+    if (type == 'recovery' &&
+        accessToken != null &&
+        refreshToken != null) {
+      // Estabelecer sessão com os tokens do link
+      Supabase.instance.client.auth
+          .setSession(accessToken)
+          .then((_) {
+        // Navegar para tela de reset após sessão estabelecida
+        if (mounted) {
+          context.go(AppRoutes.resetPassword);
+        }
+      }).catchError((e) {
+        debugPrint('⚠️ [DeepLink] Erro ao estabelecer sessão: $e');
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     // ═══════════════════════════════════════════════════════════════
     // 1. VERIFICAR AUTENTICAÇÃO
     // ═══════════════════════════════════════════════════════════════
@@ -64,7 +122,7 @@ class AppShell extends ConsumerWidget {
       body: Stack(
         children: [
           // Camada 1: Conteúdo da tela (child)
-          child,
+          widget.child,
 
           // Camada 2: SideMenu Overlay (apenas se autenticado)
           // Backdrop do menu NÃO bloqueia botão (z-index inferior)
