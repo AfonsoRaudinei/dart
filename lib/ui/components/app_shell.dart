@@ -95,7 +95,7 @@ class _AppShellState extends ConsumerState<AppShell> {
         refreshToken != null) {
       // Estabelecer sessão com os tokens do link
       Supabase.instance.client.auth
-          .setSession(accessToken)
+          .setSession(accessToken, refreshToken)
           .then((_) {
         // Navegar para tela de reset após sessão estabelecida
         if (mounted) {
