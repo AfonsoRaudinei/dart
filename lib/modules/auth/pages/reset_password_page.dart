@@ -60,6 +60,8 @@ class _ResetPasswordPageState extends ConsumerState<ResetPasswordPage> {
       await Supabase.instance.client.auth.updateUser(
         UserAttributes(password: _passwordController.text),
       );
+      // P2.3: limpar sessão de recovery para evitar redirect loop pelo router guard
+      await Supabase.instance.client.auth.signOut();
       if (mounted) setState(() => _success = true);
     } on AuthException catch (e) {
       if (mounted) _showError(_translateError(e.message));
