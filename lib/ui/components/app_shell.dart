@@ -104,9 +104,14 @@ class _AppShellState extends ConsumerState<AppShell> {
     _appLinks = AppLinks();
 
     // Link recebido com app aberto (foreground)
-    _appLinks.uriLinkStream.listen((uri) {
-      _handleDeepLink(uri);
-    });
+    _appLinks.uriLinkStream.listen(
+      (uri) {
+        _handleDeepLink(uri);
+      },
+      onError: (e) {
+        debugPrint('⚠️ [DeepLink] Erro no stream: $e');
+      },
+    );
 
     // Link recebido que abriu o app (cold start)
     _appLinks.getInitialLink().then((uri) {
