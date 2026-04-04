@@ -13,9 +13,6 @@ import '../widgets/profile_avatar_picker.dart';
 class RegisterPage extends ConsumerStatefulWidget {
   const RegisterPage({super.key});
 
-  // For testing rebuilds
-  static int buildCount = 0;
-
   @override
   ConsumerState<RegisterPage> createState() => _RegisterPageState();
 }
@@ -178,8 +175,6 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
 
   @override
   Widget build(BuildContext context) {
-    RegisterPage.buildCount++;
-
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
