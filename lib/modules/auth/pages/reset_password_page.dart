@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/router/app_routes.dart';
+import '../../../core/session/session_controller.dart';
+import '../../../core/session/session_models.dart';
 import '../../../ui/theme/premium/design_tokens.dart';
 import '../utils/auth_validators.dart';
 
@@ -33,6 +35,19 @@ class _ResetPasswordPageState extends ConsumerState<ResetPasswordPage> {
   }
 
   Future<void> _handleReset() async {
+    // Guard: verificar se há sessão ativa (estabelecida pelo deep link de recovery)
+    final session = ref.read(sessionControllerProvider);
+    if (session is! SessionAuthenticated) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Sessão de recuperação inválida. Solicite um novo link.'),
+        ),
+      );
+      context.go(AppRoutes.recoverPassword);
+      return;
+    }
+
     if (!_formKey.currentState!.validate()) return;
     if (_passwordController.text != _confirmController.text) {
       _showError('As senhas não coincidem.');
@@ -130,6 +145,7 @@ class _ResetPasswordPageState extends ConsumerState<ResetPasswordPage> {
             TextFormField(
               controller: _passwordController,
               obscureText: _obscurePassword,
+              autofillHints: const [AutofillHints.newPassword],
               decoration: InputDecoration(
                 labelText: 'Nova Senha',
                 prefixIcon: const Icon(Icons.lock_outline),
@@ -150,6 +166,7 @@ class _ResetPasswordPageState extends ConsumerState<ResetPasswordPage> {
             TextFormField(
               controller: _confirmController,
               obscureText: _obscureConfirm,
+              autofillHints: const [AutofillHints.newPassword],
               decoration: InputDecoration(
                 labelText: 'Confirmar Nova Senha',
                 prefixIcon: const Icon(Icons.lock_clock_outlined),
