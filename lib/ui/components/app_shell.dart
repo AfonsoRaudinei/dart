@@ -123,7 +123,7 @@ class _AppShellState extends ConsumerState<AppShell> {
   //   signup   → confirmação de cadastro → login com SnackBar
   // ─────────────────────────────────────────────────────────────────
   void _handleDeepLink(Uri uri) {
-    debugPrint('[DeepLink] URI recebida: $uri');
+    debugPrint('[DeepLink] URI recebida — host: ${uri.host}, type: ${uri.path}');
 
     // Fallback: tentar fragment primeiro, depois query params
     final rawParams =
