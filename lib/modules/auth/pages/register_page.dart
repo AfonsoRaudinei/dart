@@ -136,7 +136,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
         // sessão já ativa via signUp — não chamar login() novamente
         // SessionController detecta via onAuthStateChange automaticamente
         if (!mounted) return;
-        context.go(AppRoutes.map);
+        context.go(AppRoutes.login);
       }
     } catch (e) {
       // 4. Error Handling & State Reset
@@ -315,6 +315,8 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                       TextFormField(
                         key: const Key('register_password_field'),
                         controller: _passwordController,
+                        obscureText: _obscurePassword,
+                        autofillHints: const [AutofillHints.newPassword],
                         decoration: InputDecoration(
                           labelText: 'Senha',
                           prefixIcon: const Icon(Icons.lock_outline),
@@ -330,7 +332,6 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                             ),
                           ),
                         ),
-                        obscureText: _obscurePassword,
                         validator: AuthValidators.validatePassword,
                         textInputAction: TextInputAction.next,
                       ),
@@ -381,6 +382,8 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                       TextFormField(
                         key: const Key('register_confirm_password_field'),
                         controller: _confirmPasswordController,
+                        obscureText: _obscureConfirmPassword,
+                        autofillHints: const [AutofillHints.newPassword],
                         decoration: InputDecoration(
                           labelText: 'Confirmar Senha',
                           prefixIcon: const Icon(Icons.lock_clock_outlined),
@@ -397,7 +400,6 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                             ),
                           ),
                         ),
-                        obscureText: _obscureConfirmPassword,
                         validator: (value) {
                           if (value == null || value.isEmpty) {
                             return 'Confirme sua senha';
@@ -511,7 +513,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
           ),
           const SizedBox(height: 40),
           ElevatedButton(
-            onPressed: () => context.go(AppRoutes.map),
+            onPressed: () => context.go(AppRoutes.login),
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF34C759),
               padding: const EdgeInsets.symmetric(vertical: 16),
