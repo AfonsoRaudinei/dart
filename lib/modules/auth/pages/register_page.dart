@@ -124,13 +124,19 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
         photo: _photo,
       );
 
-      await ref.read(authServiceProvider.notifier).register(dto);
-
-      if (mounted) {
+      final response = await ref.read(authServiceProvider.notifier).register(dto);
+      if (response.session == null) {
+        // email-confirm ativo — mostrar tela de confirmação
+        if (!mounted) return;
         setState(() {
           _registered = true;
           _registeredEmail = dto.email;
         });
+      } else {
+        // sessão já ativa via signUp — não chamar login() novamente
+        // SessionController detecta via onAuthStateChange automaticamente
+        if (!mounted) return;
+        context.go(AppRoutes.map);
       }
     } catch (e) {
       // 4. Error Handling & State Reset
@@ -505,7 +511,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
           ),
           const SizedBox(height: 40),
           ElevatedButton(
-            onPressed: () => context.go(AppRoutes.login),
+            onPressed: () => context.go(AppRoutes.map),
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF34C759),
               padding: const EdgeInsets.symmetric(vertical: 16),
