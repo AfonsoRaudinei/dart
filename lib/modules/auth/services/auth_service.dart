@@ -13,60 +13,64 @@ class AuthService extends _$AuthService {
 
   SupabaseClient get _client => Supabase.instance.client;
 
-  /// Cadastro de novo usuário.
-  ///
-  /// Fluxo:
-  /// 1. signUp() cria registro em auth.users
-  /// 2. Trigger `on_auth_user_created` cria perfil vazio automaticamente
-  /// 3. Se sessão existir (email confirmation desativada), atualiza perfil
-  /// 4. Se sessão não existir (email confirmation ativa), retorna sucesso
-  ///    e perfil será atualizado no primeiro login
-  Future<void> register(RegisterDto dto) async {
+  Future<AuthResponse> login(String email, String password) async {
     try {
-      // 1. Criar usuário no Auth do Supabase
-      //    O trigger on_auth_user_created cria perfil vazio automaticamente.
-      //    Não há INSERT manual em perfis — SECURITY DEFINER no trigger.
-      final AuthResponse res = await NetworkPolicy.withTimeout(
-        () => _client.auth.signUp(
-          email: dto.email,
-          password: dto.password,
-          data: {'full_name': dto.name, 'role': dto.role},
-        ),
+      final result = await _client.auth.signInWithPassword(
+        email: email,
+        password: password,
       );
-
-      final user = res.user;
-      if (user == null) throw Exception('Falha ao criar usuário');
-
-      // 2. Verificar se sessão foi criada
-      //    Com email confirmation ativa: session == null (esperado)
-      //    Com email confirmation desativada: session != null
-      final session = res.session;
-
-      if (session == null) {
-        // Email confirmation ativa — perfil vazio já criado pelo trigger.
-        // Dados completos (nome, telefone, role) serão preenchidos
-        // no primeiro login via ensureProfileComplete().
-        debugPrint(
-          '📧 [AuthService] Cadastro OK. Confirmação de email pendente.',
-        );
-        return;
-      }
-
-      // 3. Sessão existe — atualizar perfil com dados completos agora
-      await _completeProfile(
-        userId: user.id,
-        dto: dto,
-      );
+      return result;
     } on AuthException catch (e) {
-      debugPrint('⚠️ [AuthService] AuthException: ${e.message}');
-      if (e.message.contains('User already registered')) {
-        throw Exception('Email já cadastrado.');
-      }
-      throw Exception(
-        'Erro de autenticação. Verifique seus dados e tente novamente.',
-      );
+      throw Exception(_traduzirErro(e.message));
     } catch (e) {
-      rethrow;
+      throw Exception('Não foi possível completar a operação. Verifique sua conexão.');
+    }
+  }
+
+  Future<AuthResponse> register(RegisterDto dto) async {
+    try {
+      final result = await _client.auth.signUp(
+        email: dto.email,
+        password: dto.password,
+      );
+      return result;
+    } on AuthException catch (e) {
+      throw Exception(_traduzirErro(e.message));
+    } catch (e) {
+      throw Exception('Não foi possível completar a operação. Verifique sua conexão.');
+    }
+  }
+
+  Future<void> recoverPassword(String email) async {
+    try {
+      await _client.auth.resetPasswordForEmail(email);
+    } on AuthException catch (e) {
+      throw Exception(_traduzirErro(e.message));
+    } catch (e) {
+      throw Exception('Não foi possível completar a operação. Verifique sua conexão.');
+    }
+  }
+
+  Future<UserResponse> updatePassword(String newPassword) async {
+    try {
+      final result = await _client.auth.updateUser(
+        UserAttributes(password: newPassword),
+      );
+      return result;
+    } on AuthException catch (e) {
+      throw Exception(_traduzirErro(e.message));
+    } catch (e) {
+      throw Exception('Não foi possível completar a operação. Verifique sua conexão.');
+    }
+  }
+
+  Future<void> logout() async {
+    try {
+      await _client.auth.signOut();
+    } on AuthException catch (e) {
+      throw Exception(_traduzirErro(e.message));
+    } catch (e) {
+      throw Exception('Não foi possível completar a operação. Verifique sua conexão.');
     }
   }
 
@@ -187,13 +191,32 @@ class AuthService extends _$AuthService {
     }
   }
 
-  Future<void> recoverPassword(String email) async {
-    try {
-      await NetworkPolicy.withTimeout(
-        () => _client.auth.resetPasswordForEmail(email),
-      );
-    } catch (e) {
-      rethrow;
+  // --- auxiliar ---
+
+  String _traduzirErro(String message) {
+    final lower = message.toLowerCase();
+    if (lower.contains('invalid login credentials') ||
+        lower.contains('invalid email or password')) {
+      return 'Email ou senha incorretos.';
     }
+    if (lower.contains('user already registered') ||
+        lower.contains('already been registered')) {
+      return 'Este email já está cadastrado.';
+    }
+    if (lower.contains('email not confirmed')) {
+      return 'Email não confirmado. Verifique sua caixa de entrada.';
+    }
+    if (lower.contains('password should be at least')) {
+      return 'A senha deve ter pelo menos 8 caracteres.';
+    }
+    if (lower.contains('rate limit')) {
+      return 'Muitas tentativas. Aguarde alguns minutos e tente novamente.';
+    }
+    if (lower.contains('network') ||
+        lower.contains('socket') ||
+        lower.contains('connection')) {
+      return 'Sem conexão com a internet. Verifique sua rede.';
+    }
+    return 'Erro de autenticação. Tente novamente.';
   }
 }
