@@ -4,6 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/network/network_policy.dart';
+import '../../core/state/map_state.dart';
+import '../../modules/consultoria/publicacoes/providers/publicacao_repository_provider.dart';
+import '../../modules/consultoria/relatorios/providers/relatorio_repository_provider.dart';
+import '../../modules/map/presentation/providers/visit_completion_observer.dart';
+import '../../modules/planos/presentation/providers/plano_providers.dart';
 import '../database/database_helper.dart';
 import 'session_models.dart';
 
@@ -164,6 +169,7 @@ class SessionController extends _$SessionController {
   }
 
   void _invalidateUserScopedProviders() {
+    // Invalidar via mecanismo de registro (providers que se auto-registraram)
     for (final entry in _logoutInvalidations.entries) {
       try {
         entry.value(ref);
@@ -171,6 +177,27 @@ class SessionController extends _$SessionController {
         debugPrint(
           '[SessionController] invalidate(${entry.key}) falhou: $e\n$st',
         );
+      }
+    }
+
+    // P1.A — invalidar providers keepAlive com dados de usuário
+    final List<ProviderOrFamily> userScopedProviders = [
+      planoAtivoProvider,
+      planoRepositoryProvider,
+      relatorioRepositoryProvider,
+      publicacaoRepositoryProvider,
+      visitCompletionObserverProvider,
+      activeLayerProvider,
+      showMarkersProvider,
+      publicationsDataProvider,
+      publicacoesDataProvider,
+    ];
+
+    for (final provider in userScopedProviders) {
+      try {
+        ref.invalidate(provider);
+      } catch (e, st) {
+        debugPrint('[SessionController] invalidate($provider) falhou: $e\n$st');
       }
     }
   }
