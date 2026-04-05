@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/session/session_controller.dart';
 import '../../core/router/app_routes.dart';
+import '../../modules/auth/utils/auth_validators.dart';
 import '../../modules/marketing/presentation/widgets/ouro_map_background.dart';
 import '../components/login/login_input_field.dart';
 import '../components/login/gradient_button.dart';
@@ -21,6 +21,16 @@ class LoginScreen extends ConsumerStatefulWidget {
 
 class _LoginScreenState extends ConsumerState<LoginScreen>
     with SingleTickerProviderStateMixin {
+  // ⚠️ Demo mode — remover antes do release público
+  static const _demoEmail = String.fromEnvironment(
+    'DEMO_EMAIL',
+    defaultValue: 'demo@soloforte.com',
+  );
+  static const _demoPassword = String.fromEnvironment(
+    'DEMO_PASSWORD',
+    defaultValue: 'demo1234',
+  );
+
   final _formKey = GlobalKey<FormState>();
   final _emailCtrl = TextEditingController();
   final _passCtrl = TextEditingController();
@@ -28,7 +38,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   final _passFocusNode = FocusNode();
 
   bool _loading = false;
-  bool _rememberMe = false;
   bool _isDemoMode = false;
 
   late AnimationController _animationController;
@@ -57,17 +66,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     super.dispose();
   }
 
-  String? _validateEmail(String? value) {
-    if (value == null || value.isEmpty) {
-      return 'Email é obrigatório';
-    }
-    final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
-    if (!emailRegex.hasMatch(value)) {
-      return 'Email inválido';
-    }
-    return null;
-  }
-
   String? _validatePassword(String? value) {
     if (value == null || value.isEmpty) {
       return 'Senha é obrigatória';
@@ -87,25 +85,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
 
     try {
       if (_isDemoMode) {
-        // Modo Demo - credenciais fixas
         await ref
             .read(sessionControllerProvider.notifier)
-            .login('demo@soloforte.com', 'demo1234');
+            .login(_demoEmail, _demoPassword);
       } else {
-        // Login normal — email normalizado para lowercase
         await ref
             .read(sessionControllerProvider.notifier)
             .login(
               _emailCtrl.text.trim().toLowerCase(),
               _passCtrl.text,
             );
-      }
-      // SnackBar de sucesso omitido: GoRouter redirect → /map é imediato,
-      // SnackBar seria descartado antes de ser visível.
-    } on AuthException catch (e) {
-      // Traduzir mensagens do Supabase Auth para português
-      if (mounted) {
-        _showErrorMessage(_translateAuthError(e.message));
       }
     } catch (e) {
       if (mounted) {
@@ -116,35 +105,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     } finally {
       if (mounted) setState(() => _loading = false);
     }
-  }
-
-  /// Traduz mensagens de erro do Supabase Auth para PT-BR.
-  /// Evita exibir mensagens técnicas em inglês para o usuário.
-  String _translateAuthError(String message) {
-    final lower = message.toLowerCase();
-    if (lower.contains('invalid login credentials')) {
-      return 'Email ou senha incorretos.';
-    }
-    if (lower.contains('email not confirmed')) {
-      return 'Email não confirmado. Verifique sua caixa de entrada.';
-    }
-    if (lower.contains('user not found')) {
-      return 'Usuário não encontrado.';
-    }
-    if (lower.contains('too many requests') ||
-        lower.contains('rate limit')) {
-      return 'Muitas tentativas. Aguarde alguns minutos.';
-    }
-    if (lower.contains('network') ||
-        lower.contains('socket') ||
-        lower.contains('timeout')) {
-      return 'Erro de conexão. Verifique sua internet.';
-    }
-    if (lower.contains('user already registered')) {
-      return 'Email já cadastrado.';
-    }
-    // Fallback: mensagem original se não reconhecida
-    return message;
   }
 
   void _showErrorMessage(String message) {
@@ -160,7 +120,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   }
 
   void _handleSocialAuth(String provider) {
-    _showErrorMessage('$provider Login em breve! Configure o OAuth primeiro.');
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Login com $provider estará disponível em breve.'),
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 2),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+    );
   }
 
   void _handleForgotPassword() {
@@ -370,7 +337,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                               icon: Icons.email_outlined,
                               keyboardType: TextInputType.emailAddress,
                               textInputAction: TextInputAction.next,
-                              validator: _validateEmail,
+                              validator: AuthValidators.validateEmail,
                               onSubmitted: (_) => _passFocusNode.requestFocus(),
                             ),
                             const SizedBox(height: 12),
@@ -389,45 +356,23 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                             ),
                             const SizedBox(height: 12),
 
-                            // Lembrar-me + Esqueceu a senha
-                            Row(
-                              children: [
-                                SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: Checkbox(
-                                    value: _rememberMe,
-                                    onChanged: (value) => setState(
-                                      () => _rememberMe = value ?? false,
-                                    ),
-                                    activeColor: PremiumTokens.brandGreen,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(4),
-                                    ),
+                            // Esqueceu a senha (sem Lembrar-me)
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: TextButton(
+                                onPressed: _handleForgotPassword,
+                                style: TextButton.styleFrom(
+                                  padding: EdgeInsets.zero,
+                                ),
+                                child: const Text(
+                                  'Esqueceu a senha?',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: PremiumTokens.brandGreen,
+                                    fontWeight: FontWeight.w600,
                                   ),
                                 ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  'Lembrar-me',
-                                  style: Theme.of(context).textTheme.bodySmall
-                                      ?.copyWith(color: Colors.grey.shade600),
-                                ),
-                                const Spacer(),
-                                TextButton(
-                                  onPressed: _handleForgotPassword,
-                                  style: TextButton.styleFrom(
-                                    padding: EdgeInsets.zero,
-                                  ),
-                                  child: const Text(
-                                    'Esqueceu a senha?',
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      color: PremiumTokens.brandGreen,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ),
-                              ],
+                              ),
                             ),
                             const SizedBox(height: 20),
 
@@ -519,8 +464,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                                   setState(() {
                                     _isDemoMode = value ?? false;
                                     if (_isDemoMode) {
-                                      _emailCtrl.text = 'demo@soloforte.com';
-                                      _passCtrl.text = 'demo1234';
+                                      _emailCtrl.text = _demoEmail;
+                                      _passCtrl.text = _demoPassword;
                                     } else {
                                       _emailCtrl.clear();
                                       _passCtrl.clear();

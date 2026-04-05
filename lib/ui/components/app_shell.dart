@@ -116,6 +116,8 @@ class _AppShellState extends ConsumerState<AppShell> {
     // Link recebido que abriu o app (cold start)
     _appLinks.getInitialLink().then((uri) {
       if (uri != null) _handleDeepLink(uri);
+    }).catchError((e) {
+      debugPrint('⚠️ [DeepLink] Erro no getInitialLink: $e');
     });
   }
 

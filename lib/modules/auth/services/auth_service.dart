@@ -32,7 +32,23 @@ class AuthService extends _$AuthService {
       final result = await _client.auth.signUp(
         email: dto.email,
         password: dto.password,
+        data: {
+          'full_name': dto.name,
+          'role': dto.role,
+        },
       );
+
+      // Se sessão ativa (email-confirm desativado), completar perfil agora
+      final userId = result.user?.id;
+      if (result.session != null && userId != null) {
+        try {
+          await _completeProfile(userId: userId, dto: dto);
+        } catch (e) {
+          debugPrint('⚠️ [AuthService] _completeProfile falhou: $e');
+          // Não bloquear cadastro por falha no perfil
+        }
+      }
+
       return result;
     } on AuthException catch (e) {
       throw Exception(_traduzirErro(e.message));
@@ -43,7 +59,10 @@ class AuthService extends _$AuthService {
 
   Future<void> recoverPassword(String email) async {
     try {
-      await _client.auth.resetPasswordForEmail(email);
+      await _client.auth.resetPasswordForEmail(
+        email,
+        redirectTo: 'com.soloforte.soloforteApp://reset-password',
+      );
     } on AuthException catch (e) {
       throw Exception(_traduzirErro(e.message));
     } catch (e) {
