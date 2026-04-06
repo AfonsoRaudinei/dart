@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 
 /// Bottom sheet exibido após salvar um rascunho sem plano ativo.
 /// Retorna [true] se o usuário quer ver os planos, [false] ou null para fechar.
@@ -8,9 +9,9 @@ class DraftSavedSheet extends StatelessWidget {
   /// Exibe o sheet e retorna `true` se o usuário tocou em "Ver planos".
   /// A navegação fica a cargo do chamador após o modal fechar.
   static Future<bool?> show(BuildContext context) {
-    return showModalBottomSheet<bool>(
+    return showSoloForteSheet<bool>(
       context: context,
-      backgroundColor: Colors.transparent,
+      showDragHandle: false,
       builder: (_) => const DraftSavedSheet(),
     );
   }

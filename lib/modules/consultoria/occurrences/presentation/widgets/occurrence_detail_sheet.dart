@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../../../../../../core/design/sf_icons.dart';
 import '../../../../../../ui/theme/premium/design_tokens.dart';
 import '../../domain/occurrence.dart';
+import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 
 /// Sheet de detalhe de uma ocorrência existente.
 ///
@@ -20,10 +21,10 @@ class OccurrenceDetailSheet extends StatelessWidget {
 
   static Future<void> show(BuildContext context, Occurrence occurrence) {
     HapticFeedback.lightImpact();
-    return showModalBottomSheet(
+    return showSoloForteSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      showDragHandle: false,
       builder: (_) => OccurrenceDetailSheet(occurrence: occurrence),
     );
   }

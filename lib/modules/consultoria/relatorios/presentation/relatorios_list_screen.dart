@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 
 import '../../../../core/router/app_routes.dart';
 import '../models/relatorio_status.dart';
@@ -174,12 +175,9 @@ class _RelatoriosListScreenState extends ConsumerState<RelatoriosListScreen>
   }
 
   void _showActionsSheet(BuildContext context, RelatorioTecnico relatorio) {
-    showModalBottomSheet(
+    showSoloForteSheet(
       context: context,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
+      showDragHandle: false,
       builder: (context) => _ActionsSheet(relatorio: relatorio),
     );
   }

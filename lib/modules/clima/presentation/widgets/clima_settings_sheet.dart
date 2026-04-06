@@ -4,15 +4,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:soloforte_app/modules/clima/presentation/providers/clima_providers.dart';
 import 'package:soloforte_app/modules/clima/presentation/widgets/clima_tokens.dart';
+import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 
 // ─── Função de exibição ───────────────────────────────────────────────────────
 
 /// Abre o painel de configurações do módulo Clima via modal bottom sheet.
 void showClimaSettings(BuildContext context) {
-  showModalBottomSheet<void>(
+  showSoloForteSheet<void>(
     context: context,
-    backgroundColor: Colors.transparent,
     isScrollControlled: true,
+    showDragHandle: false,
     builder: (_) => const ClimaSettingsSheet(),
   );
 }

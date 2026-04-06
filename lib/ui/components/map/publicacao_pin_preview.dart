@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../../core/domain/publicacao.dart';
+import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 
 // ════════════════════════════════════════════════════════════════════
 // PREVIEW INDIVIDUAL DE PIN DE PUBLICAÇÃO (iOS Maps Style)
@@ -32,10 +33,10 @@ import '../../../core/domain/publicacao.dart';
 /// Navegação para edição ocorre SOMENTE via CTA explícito.
 void showPublicacaoPreview(BuildContext context, Publicacao publicacao) {
   HapticFeedback.lightImpact();
-  showModalBottomSheet(
+  showSoloForteSheet(
     context: context,
     isScrollControlled: true,
-    backgroundColor: Colors.transparent,
+    showDragHandle: false,
     // Mapa fica visível atrás — sem barreira opaca
     barrierColor: Colors.black.withValues(alpha: 0.15),
     builder: (_) => _PublicacaoPreviewSheet(publicacao: publicacao),

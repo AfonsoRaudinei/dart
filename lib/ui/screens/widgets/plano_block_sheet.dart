@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
+import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 
 class PlanoBlockSheet extends StatelessWidget {
   final String motivo;
@@ -14,12 +15,9 @@ class PlanoBlockSheet extends StatelessWidget {
     String? planoLabel,
   }) {
     HapticFeedback.heavyImpact();
-    showModalBottomSheet(
+    showSoloForteSheet(
       context: context,
-      backgroundColor: const Color(0xFF1C1C1E),
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
+      showDragHandle: false,
       builder: (ctx) => PlanoBlockSheet(motivo: motivo, planoLabel: planoLabel),
     );
   }

@@ -23,6 +23,7 @@ Future<T?> showSoloForteSheet<T>({
   bool enableDrag = true,
   bool showDragHandle = true,
   double? maxHeightFraction,
+  Color? barrierColor,
 }) {
   return showModalBottomSheet<T>(
     context: context,
@@ -33,6 +34,7 @@ Future<T?> showSoloForteSheet<T>({
     useSafeArea: true,
     clipBehavior: Clip.antiAliasWithSaveLayer,
     backgroundColor: SoloForteSheetTokens.sheetBackground,
+    barrierColor: barrierColor,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(
         top: Radius.circular(SoloForteSheetTokens.borderRadius),

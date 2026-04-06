@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 
 class ProfileAvatarPicker extends StatefulWidget {
   final File? initialImage;
@@ -45,8 +46,9 @@ class _ProfileAvatarPickerState extends State<ProfileAvatarPicker> {
   }
 
   void _showPickerOptions(BuildContext context) {
-    showModalBottomSheet(
+    showSoloForteSheet(
       context: context,
+      showDragHandle: false,
       builder: (BuildContext bc) {
         return SafeArea(
           child: Wrap(

@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../../ui/theme/premium/design_tokens.dart';
 import 'package:soloforte_app/core/design/sf_icons.dart';
+import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 import 'dart:ui' as ui;
 import '../../../../core/session/session_controller.dart';
 import '../providers/settings_providers.dart';
@@ -277,9 +278,9 @@ class SettingsScreen extends ConsumerWidget {
   }
 
   Future<void> _showImagePicker(BuildContext context, WidgetRef ref) async {
-    showModalBottomSheet(
+    showSoloForteSheet(
       context: context,
-      backgroundColor: Colors.transparent,
+      showDragHandle: false,
       builder: (_) => Container(
         decoration: BoxDecoration(
           color: Theme.of(context).cardColor,

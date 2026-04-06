@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 import 'package:intl/intl.dart';
 import '../../../core/domain/publicacao.dart';
+import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 
 /// Preview simplificado de publicação para mapa público.
 ///
@@ -11,10 +12,10 @@ void showPublicPublicationPreview(
   BuildContext context,
   Publicacao publication,
 ) {
-  showModalBottomSheet(
+  showSoloForteSheet(
     context: context,
     isScrollControlled: true,
-    backgroundColor: Colors.transparent,
+    showDragHandle: false,
     builder: (context) =>
         _PublicPublicationPreviewSheet(publication: publication),
   );

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 import '../../../../ui/theme/premium/design_tokens.dart';
 import '../../domain/entities/marketing_case.dart';
 import '../../domain/enums/case_tipo.dart';
@@ -15,10 +16,10 @@ class MarketingCaseSheet extends StatelessWidget {
   /// Exibe o sheet como modal drag‑to‑dismiss
   static void show(BuildContext context, MarketingCase marketingCase) {
     HapticFeedback.lightImpact();
-    showModalBottomSheet(
+    showSoloForteSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      showDragHandle: false,
       builder: (_) => MarketingCaseSheet(marketingCase: marketingCase),
     );
   }
