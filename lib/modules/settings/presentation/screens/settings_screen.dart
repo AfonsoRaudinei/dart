@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../../ui/theme/premium/design_tokens.dart';
 import 'package:soloforte_app/core/design/sf_icons.dart';
 import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
@@ -122,7 +123,13 @@ class SettingsScreen extends ConsumerWidget {
                   context,
                   title: 'Termos de Serviço',
                   icon: SFIcons.info,
-                  onTap: () {},
+                  onTap: () => _openUrl('https://soloforte.com/termos'),
+                ),
+                _buildTile(
+                  context,
+                  title: 'Política de Privacidade',
+                  icon: SFIcons.info,
+                  onTap: () => _openUrl('https://soloforte.com/privacidade'),
                 ),
               ]),
 
@@ -137,6 +144,13 @@ class SettingsScreen extends ConsumerWidget {
                   onTap: () {
                     ref.read(sessionControllerProvider.notifier).logout();
                   },
+                ),
+                _buildActionTile(
+                  context,
+                  title: 'Excluir minha conta',
+                  icon: SFIcons.delete,
+                  isDestructive: true,
+                  onTap: () => _showDeleteAccountConfirmation(context, ref),
                 ),
               ]),
 
@@ -543,6 +557,77 @@ class SettingsScreen extends ConsumerWidget {
       },
       dense: true,
     );
+  }
+
+  Future<void> _openUrl(String url) async {
+    final uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
+
+  void _showDeleteAccountConfirmation(BuildContext context, WidgetRef ref) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Excluir Conta'),
+        content: const Text(
+          'Esta ação é permanente e irreversível.\n\n'
+          'Todos os seus dados serão removidos:\n'
+          '• Perfil e configurações\n'
+          '• Fazendas, talhões e visitas\n'
+          '• Ocorrências e relatórios\n'
+          '• Publicações e planos\n\n'
+          'Deseja realmente excluir sua conta?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(dialogContext);
+              _executeDeleteAccount(context, ref);
+            },
+            child: const Text(
+              'Excluir Permanentemente',
+              style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _executeDeleteAccount(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
+    // Mostrar loading
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
+    );
+
+    try {
+      await ref.read(sessionControllerProvider.notifier).deleteAccount();
+      // Dialog de loading será descartado automaticamente ao navegar para login
+    } catch (e) {
+      // Fechar loading
+      if (context.mounted) Navigator.of(context).pop();
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Erro ao excluir conta: ${e.toString().replaceAll('Exception: ', '')}',
+            ),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   void _showClearConfirmation(BuildContext context) {

@@ -193,6 +193,56 @@ class SessionController extends _$SessionController {
     // O stream onAuthStateChange seta state = SessionPublic() automaticamente.
   }
 
+  /// Exclusão permanente da conta do usuário.
+  ///
+  /// Fluxo:
+  /// 1. Chama Edge Function `delete-user` que remove dados em todas as tabelas
+  /// 2. Limpa dados locais (SQLite, cache)
+  /// 3. Invalida providers keepAlive
+  /// 4. Faz signOut
+  ///
+  /// Apple Guidelines 5.1.1(v): obrigatório para apps com criação de conta.
+  Future<void> deleteAccount() async {
+    final client = Supabase.instance.client;
+    final userId = client.auth.currentUser?.id;
+
+    if (userId == null || userId.isEmpty) {
+      throw Exception('Nenhum usuário autenticado.');
+    }
+
+    // 1. Chamar Edge Function que deleta dados do servidor
+    final response = await client.functions.invoke(
+      'delete-user',
+      body: {'user_id': userId},
+    );
+
+    if (response.status != 200) {
+      final errorMsg = response.data is Map
+          ? (response.data as Map)['error'] ?? 'Erro desconhecido'
+          : 'Erro ao excluir conta';
+      throw Exception('Falha ao excluir conta: $errorMsg');
+    }
+
+    // 2. Limpar dados locais
+    try {
+      await _clearLocalUserData();
+    } catch (e, st) {
+      debugPrint('[SessionController] clearLocalUserData falhou: $e\n$st');
+    }
+
+    // 3. Invalidar providers
+    _invalidateUserScopedProviders();
+
+    // 4. SignOut (sessão já invalidada no servidor)
+    try {
+      await client.auth.signOut();
+    } catch (_) {
+      // Conta já deletada — signOut pode falhar, ok
+    }
+
+    state = const SessionPublic();
+  }
+
   void _invalidateUserScopedProviders() {
     // Invalidar via mecanismo de registro (providers que se auto-registraram)
     for (final entry in _logoutInvalidations.entries) {
