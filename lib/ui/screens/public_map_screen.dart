@@ -19,6 +19,7 @@ import '../../modules/marketing/domain/enums/plano_marketing.dart';
 import '../../modules/marketing/presentation/widgets/marketing_case_marker.dart';
 import '../../modules/marketing/presentation/widgets/marketing_case_sheet.dart';
 import '../../core/config/map_config.dart';
+import '../../core/permissions/permission_provider.dart';
 
 class PublicMapScreen extends ConsumerStatefulWidget {
   const PublicMapScreen({super.key});
@@ -41,14 +42,29 @@ class _PublicMapScreenState extends ConsumerState<PublicMapScreen> {
   }
 
   Future<void> _requestLocationPermission() async {
-    final serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) return;
-
-    LocationPermission permission = await Geolocator.checkPermission();
+    final permission = await ref.read(locationPermissionProvider.future);
     if (permission == LocationPermission.denied) {
-      await Geolocator.requestPermission();
+      final newPermission = await Geolocator.requestPermission();
+      _handlePermissionResult(newPermission);
+    } else {
+      _handlePermissionResult(permission);
     }
-    // deniedForever ou granted: silenciar, sem UI extra
+  }
+
+  Future<void> _handlePermissionResult(LocationPermission permission) async {
+    if (permission == LocationPermission.whileInUse || permission == LocationPermission.always) {
+      await ref.read(publicLocationNotifierProvider.notifier).requestLocation();
+      _onLocationTap();
+    } else if (permission == LocationPermission.deniedForever) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Permissão de localização negada permanentemente. Ative nas configurações do dispositivo.'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
   }
 
   void _zoomIn() {
@@ -73,13 +89,26 @@ class _PublicMapScreenState extends ConsumerState<PublicMapScreen> {
     super.dispose();
   }
 
-  void _onLocationTap() {
+  void _onLocationTap() async {
+    final permission = await ref.read(locationPermissionProvider.future);
+    if (permission == LocationPermission.denied) {
+      final newPermission = await Geolocator.requestPermission();
+      _handlePermissionResult(newPermission);
+      return;
+    }
+
     final locationState = ref.read(publicLocationNotifierProvider);
 
     if (locationState.status == PublicLocationStatus.available &&
         locationState.position != null) {
       // Animação suave ao centralizar
       _mapController.move(locationState.position!, _userLocationZoom);
+    } else {
+      await ref.read(publicLocationNotifierProvider.notifier).requestLocation();
+      final updatedState = ref.read(publicLocationNotifierProvider);
+      if (updatedState.status == PublicLocationStatus.available && updatedState.position != null) {
+        _mapController.move(updatedState.position!, _userLocationZoom);
+      }
     }
   }
 
@@ -188,40 +217,11 @@ class _PublicMapScreenState extends ConsumerState<PublicMapScreen> {
             ],
           ),
 
-          // Logo SoloForte flutuante no topo esquerdo
+          // Marca d'água SoloForte no topo esquerdo
           Positioned(
-            top: MediaQuery.of(context).padding.top + 12,
-            left: 16,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(16),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-                child: Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.55),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: Colors.white.withOpacity(0.7),
-                      width: 0.8,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.08),
-                        blurRadius: 12,
-                        offset: const Offset(0, 3),
-                      ),
-                    ],
-                  ),
-                  child: Image.asset(
-                    'assets/images/logo.png',
-                    width: 36,
-                    height: 36,
-                    fit: BoxFit.contain,
-                  ),
-                ),
-              ),
-            ),
+            top: MediaQuery.of(context).padding.top + 16,
+            left: 20,
+            child: const _SoloForteWatermark(),
           ),
 
           // Pill vertical: zoom + localização
@@ -236,15 +236,15 @@ class _PublicMapScreenState extends ConsumerState<PublicMapScreen> {
                   child: Container(
                     width: 52,
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.72),
+                      color: Colors.white.withValues(alpha: 0.72),
                       borderRadius: BorderRadius.circular(30),
                       border: Border.all(
-                        color: Colors.white.withOpacity(0.6),
+                        color: Colors.white.withValues(alpha: 0.6),
                         width: 0.8,
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.10),
+                          color: Colors.black.withValues(alpha: 0.10),
                           blurRadius: 16,
                           offset: const Offset(0, 4),
                         ),
@@ -303,6 +303,46 @@ class _PublicMapScreenState extends ConsumerState<PublicMapScreen> {
   }
 }
 
+/// Marca d'água de sistema, flutuante sobre o mapa.
+class _SoloForteWatermark extends StatelessWidget {
+  const _SoloForteWatermark();
+
+  @override
+  Widget build(BuildContext context) {
+    return Opacity(
+      opacity: 0.72,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          const Icon(
+            Icons.eco_outlined,
+            color: Colors.white,
+            size: 18,
+          ),
+          const SizedBox(width: 6),
+          Text(
+            'SoloForte',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.3,
+              shadows: [
+                Shadow(
+                  color: Colors.black.withValues(alpha: 0.35),
+                  blurRadius: 8,
+                  offset: const Offset(0, 1),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 /// Botão individual dentro do pill
 class _PillButton extends StatelessWidget {
   final IconData icon;
@@ -320,7 +360,7 @@ class _PillButton extends StatelessWidget {
         child: Icon(
           icon,
           size: 22,
-          color: Colors.black.withOpacity(0.70),
+          color: Colors.black.withValues(alpha: 0.70),
         ),
       ),
     );
@@ -336,7 +376,7 @@ class _PillDivider extends StatelessWidget {
     return Container(
       height: 0.5,
       margin: const EdgeInsets.symmetric(horizontal: 10),
-      color: Colors.black.withOpacity(0.12),
+      color: Colors.black.withValues(alpha: 0.12),
     );
   }
 }

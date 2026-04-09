@@ -143,7 +143,7 @@ class SettingsScreen extends ConsumerWidget {
               const SizedBox(height: 40),
               Center(
                 child: Text(
-                  'SoloForte v1.0.0',
+                  'SoloForte v1.1.0',
                   style:
                       (Theme.of(context).textTheme.labelMedium ??
                               const TextStyle())

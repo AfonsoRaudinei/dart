@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:soloforte_app/modules/auth/models/register_dto.dart';
 import 'package:soloforte_app/modules/auth/pages/register_page.dart';
 import 'package:soloforte_app/modules/auth/services/auth_service.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 // Fake AuthService
 class FakeAuthService extends AuthService {
@@ -12,26 +13,34 @@ class FakeAuthService extends AuthService {
   int callCount = 0;
 
   @override
-  Future<void> register(RegisterDto dto) async {
+  Future<AuthResponse> register(RegisterDto dto) async {
     callCount++;
     if (shouldThrow) throw Exception('Erro');
     if (delay > Duration.zero) await Future.delayed(delay);
+    return AuthResponse();
   }
 }
 
 void main() {
   late FakeAuthService fakeAuthService;
+  int buildCount = 0;
 
   setUp(() {
     fakeAuthService = FakeAuthService();
-    // Reset build count before each test
-    RegisterPage.buildCount = 0;
+    buildCount = 0;
   });
 
   Widget createWidget() {
     return ProviderScope(
       overrides: [authServiceProvider.overrideWith(() => fakeAuthService)],
-      child: const MaterialApp(home: RegisterPage()),
+      child: MaterialApp(
+        home: Builder(
+          builder: (context) {
+            buildCount++;
+            return const RegisterPage();
+          },
+        ),
+      ),
     );
   }
 
@@ -47,7 +56,7 @@ void main() {
     );
     await tester.pump();
 
-    final afterTypingBuilds = RegisterPage.buildCount;
+    final afterTypingBuilds = buildCount;
 
     // Changing text in TextFormField inherently causes internal state update if listening,
     // but RegisterPage itself handles validation logic.
@@ -81,7 +90,7 @@ void main() {
     // If logic is optimal, validity is already TRUE. So NO rebuilds should happen.
     // If logic is slow, it rebuilds 5 times.
 
-    final finalBuilds = RegisterPage.buildCount;
+    final finalBuilds = buildCount;
     final diff = finalBuilds - afterTypingBuilds;
 
     expect(
@@ -111,7 +120,7 @@ void main() {
       );
       await tester.pump();
 
-      final baseline = RegisterPage.buildCount;
+      final baseline = buildCount;
 
       // Type password char by char
       final passwordField = find.byKey(const Key('register_password_field'));
@@ -128,7 +137,7 @@ void main() {
       await tester.enterText(passwordField, '12');
       await tester.pump();
 
-      final builds = RegisterPage.buildCount - baseline;
+      final builds = buildCount - baseline;
 
       // If current implementation is naive, builds == 2.
       // If optimized, builds should be 0 (if strength didn't change category).

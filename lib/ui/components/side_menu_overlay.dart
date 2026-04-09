@@ -239,14 +239,10 @@ class _MenuItem extends ConsumerWidget {
     required this.route,
   });
 
-  void _closeAndNavigate(BuildContext context, WidgetRef ref) {
-    // Captura o router ANTES de fechar o menu.
-    // Quando sideMenuOpenProvider → false, o SideMenuOverlay retorna
-    // SizedBox.shrink() e desmonta este widget imediatamente.
-    // Com Future.delayed + context.mounted, context.mounted == false
-    // após o desmonte e context.go() nunca executa.
-    // Solução: capturar GoRouter.of(context) enquanto o context ainda
-    // está válido, depois disparar no próximo frame via postFrameCallback.
+  void _closeAndNavigate(BuildContext context, WidgetRef ref, String route) {
+    // Captura o construtor do router ANTES de fechar o menu.
+    // Quando sideMenuOpenProvider → false, o SideMenuOverlay desaparece
+    // e desmonta este widget imediatamente, tornando context.mounted false.
     final router = GoRouter.of(context);
     ref.read(sideMenuOpenProvider.notifier).state = false;
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -266,7 +262,7 @@ class _MenuItem extends ConsumerWidget {
         Icons.chevron_right,
         color: Theme.of(context).colorScheme.outline,
       ),
-      onTap: () => _closeAndNavigate(context, ref),
+      onTap: () => _closeAndNavigate(context, ref, route),
     );
   }
 }
@@ -323,11 +319,15 @@ class _MenuPlanoBadgeItem extends ConsumerWidget {
   }
 
   Widget _buildData(BuildContext context, UserPlan? plano) {
-    final String subtitle;
+    String subtitle;
+    String targetRoute = AppRoutes.meuPlano;
+
     if (plano == null) {
       subtitle = 'Sem plano · Assinar';
+      targetRoute = AppRoutes.planos;
     } else if (plano.expirado) {
       subtitle = 'Plano expirado · Renovar';
+      targetRoute = AppRoutes.planos;
     } else if (plano.expiraEmBreve) {
       subtitle = '⚠️ Expira em ${plano.diasRestantes} dia(s)';
     } else {
@@ -338,7 +338,7 @@ class _MenuPlanoBadgeItem extends ConsumerWidget {
       icon: Icons.workspace_premium_rounded,
       label: 'Meu Plano',
       subtitle: subtitle,
-      route: AppRoutes.meuPlano,
+      route: targetRoute,
     );
   }
 

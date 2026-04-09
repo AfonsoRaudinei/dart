@@ -38,7 +38,7 @@ class _RecoverPasswordPageState extends ConsumerState<RecoverPasswordPage> {
       setState(() => _sent = true);
     } catch (e) {
       if (mounted) {
-        final msg = _translateRecoverError(e.toString());
+        final msg = e.toString().replaceAll('Exception: ', '');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(msg),
@@ -53,24 +53,6 @@ class _RecoverPasswordPageState extends ConsumerState<RecoverPasswordPage> {
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
-  }
-
-  String _translateRecoverError(String raw) {
-    final lower = raw.toLowerCase();
-    if (lower.contains('network') ||
-        lower.contains('socket') ||
-        lower.contains('host lookup') ||
-        lower.contains('timeout') ||
-        lower.contains('failed host')) {
-      return 'Erro de conexão. Verifique sua internet e tente novamente.';
-    }
-    if (lower.contains('rate limit') || lower.contains('too many')) {
-      return 'Muitas tentativas. Aguarde alguns minutos.';
-    }
-    if (lower.contains('invalid email') || lower.contains('e-mail inválido')) {
-      return 'E-mail inválido. Verifique e tente novamente.';
-    }
-    return 'Não foi possível enviar o link. Tente novamente.';
   }
 
   @override

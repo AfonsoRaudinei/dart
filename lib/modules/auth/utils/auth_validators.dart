@@ -14,22 +14,51 @@ class AuthValidators {
 
   static String? validateEmail(String? value) {
     if (value == null || value.isEmpty) return 'Email é obrigatório';
-    final emailRegex = RegExp(r'^[a-zA-Z0-9.]+@[a-zA-Z0-9]+\.[a-zA-Z]+');
-    if (!emailRegex.hasMatch(value)) return 'Email inválido';
+    final emailRegex = RegExp(
+      r'^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$',
+    );
+    if (!emailRegex.hasMatch(value.trim())) return 'Email inválido';
     return null;
   }
 
   static String? validatePhone(String? value) {
     if (value == null || value.isEmpty) return 'Telefone é obrigatório';
 
+    // Rejeitar letras
+    if (value.contains(RegExp(r'[a-zA-Z]'))) {
+      return 'Telefone deve conter apenas números';
+    }
+
     // Remove caracteres não numéricos
     final digits = value.replaceAll(RegExp(r'[^0-9]'), '');
 
     if (digits.length < 10) return 'Mínimo de 10 dígitos (DDD + Número)';
+    if (digits.length > 11) return 'Máximo de 11 dígitos';
 
-    // Não aceitar letras (já feito pelo inputType, mas reforçando)
-    if (value.contains(RegExp(r'[a-zA-Z]'))) {
-      return 'Telefone deve conter apenas números';
+    // DDDs válidos do Brasil: 11–99 (excluindo faixas inexistentes)
+    final ddd = int.tryParse(digits.substring(0, 2)) ?? 0;
+    const dddsValidos = {
+      11, 12, 13, 14, 15, 16, 17, 18, 19, // SP
+      21, 22, 24, // RJ
+      27, 28, // ES
+      31, 32, 33, 34, 35, 37, 38, // MG
+      41, 42, 43, 44, 45, 46, // PR
+      47, 48, 49, // SC
+      51, 53, 54, 55, // RS
+      61, // DF
+      62, 64, // GO
+      63, // TO
+      65, 66, // MT
+      67, // MS
+      68, // AC
+      69, // RO
+      71, 73, 74, 75, 77, // BA
+      79, // SE
+      81, 82, 83, 84, 85, 86, 87, 88, 89, // NE
+      91, 92, 93, 94, 95, 96, 97, 98, 99, // N
+    };
+    if (!dddsValidos.contains(ddd)) {
+      return 'DDD inválido';
     }
 
     return null;
@@ -37,6 +66,7 @@ class AuthValidators {
 
   static String? validatePassword(String? value) {
     if (value == null || value.isEmpty) return 'Senha é obrigatória';
+    if (value.contains(' ')) return 'Senha não pode conter espaços';
     if (value.length < 8) return 'Mínimo de 8 caracteres';
 
     final hasUpperCase = RegExp(r'[A-Z]').hasMatch(value);
@@ -59,7 +89,7 @@ class AuthValidators {
     if (RegExp(r'[A-Z]').hasMatch(value)) score++;
     if (RegExp(r'[a-z]').hasMatch(value)) score++;
     if (RegExp(r'[0-9]').hasMatch(value)) score++;
-    if (RegExp(r'[!@#\$&*~]').hasMatch(value)) score++;
+    if (RegExp(r'[^a-zA-Z0-9\s]').hasMatch(value)) score++;
 
     // Penalizar sequências óbvias
     final weakSequences = ['123456', 'password', 'qwerty', '000000', 'senha'];

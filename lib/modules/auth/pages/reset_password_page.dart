@@ -35,13 +35,15 @@ class _ResetPasswordPageState extends ConsumerState<ResetPasswordPage> {
   }
 
   Future<void> _handleReset() async {
-    // Guard: verificar se há sessão ativa (estabelecida pelo deep link de recovery)
+    // Guard: sessão de recovery precisa — P3.2
     final session = ref.read(sessionControllerProvider);
-    if (session is! SessionAuthenticated) {
+    if (session is! SessionPasswordRecovery) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Sessão de recuperação inválida. Solicite um novo link.'),
+          content: Text(
+            'Sessão de recuperação inválida. Solicite um novo link.',
+          ),
         ),
       );
       context.go(AppRoutes.recoverPassword);

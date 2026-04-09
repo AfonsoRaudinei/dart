@@ -23,7 +23,7 @@ final mapRepositoryProvider = Provider<MapRepository>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef MapRepositoryRef = ProviderRef<MapRepository>;
-String _$activeLayerHash() => r'550a00f8ba0c38e4c7a758ab8dfefc5716186626';
+String _$activeLayerHash() => r'c45e24f26361ca39381aaeaf589c0dbf7bf0e39b';
 
 /// See also [ActiveLayer].
 @ProviderFor(ActiveLayer)

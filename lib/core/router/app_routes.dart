@@ -12,6 +12,7 @@ class AppRoutes {
   static const String login = '/login';
   static const String register = '/register';
   static const String recoverPassword = '/recover-password';
+  static const String resetPassword = '/reset-password';
 
   // ════════════════════════════════════════════════════════════════════
   // DECISÃO ARQUITETURAL: MAP-FIRST (09/02/2026)
@@ -64,6 +65,7 @@ class AppRoutes {
     login,
     register,
     recoverPassword,
+    resetPassword,
     '/', // Landing page redirect
   };
 

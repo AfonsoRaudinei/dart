@@ -112,7 +112,7 @@ void main() {
   group('DrawingImportService.pickAndParse', () {
     test('retorna cancelled=true quando picker retorna null', () async {
       final service = const DrawingImportService(_CancelledPicker());
-      final result = await service.pickAndParse(false);
+      final result = await service.pickAndParse();
 
       expect(result.cancelled, isTrue);
       expect(result.geometry, isNull);
@@ -122,7 +122,7 @@ void main() {
     test('retorna error quando arquivo nao contem geometria', () async {
       final file = await _tempKml(_kmlSemPoligono);
       final service = DrawingImportService(_FilePicker(file));
-      final result = await service.pickAndParse(false);
+      final result = await service.pickAndParse();
 
       expect(result.cancelled, isFalse);
       expect(result.geometry, isNull);
@@ -134,7 +134,7 @@ void main() {
     test('retorna geometria quando KML válido com ordem [lng,lat]', () async {
       final file = await _tempKml(_kmlComPoligono);
       final service = DrawingImportService(_FilePicker(file));
-      final result = await service.pickAndParse(false);
+      final result = await service.pickAndParse();
 
       expect(result.cancelled, isFalse);
       expect(result.error, isNull);
@@ -151,7 +151,7 @@ void main() {
     test('aceita KML com BOM UTF-8', () async {
       final file = await _tempKml(_kmlComBOM);
       final service = DrawingImportService(_FilePicker(file));
-      final result = await service.pickAndParse(false);
+      final result = await service.pickAndParse();
 
       expect(result.error, isNull);
       expect(result.isSuccess, isTrue);
@@ -161,7 +161,7 @@ void main() {
     test('retorna geometria quando KMZ válido', () async {
       final file = await _tempKmz(_kmlComPoligono);
       final service = DrawingImportService(_FilePicker(file));
-      final result = await service.pickAndParse(true);
+      final result = await service.pickAndParse();
 
       expect(result.cancelled, isFalse);
       expect(result.error, isNull);
@@ -184,7 +184,7 @@ void main() {
         path: file.path,
       );
       final service = DrawingImportService(_FilePicker(picked));
-      final result = await service.pickAndParse(true);
+      final result = await service.pickAndParse();
 
       expect(result.geometry, isNull);
       expect(result.error, isNotNull);
@@ -195,7 +195,7 @@ void main() {
     test('aceita extensão em maiúsculas (KML)', () async {
       final file = await _tempKml(_kmlComPoligono, fileName: 'TESTE.KML');
       final service = DrawingImportService(_FilePicker(file));
-      final result = await service.pickAndParse(false);
+      final result = await service.pickAndParse();
 
       expect(result.error, isNull);
       expect(result.isSuccess, isTrue);
@@ -203,7 +203,7 @@ void main() {
 
     test('retorna error (nao lanca excecao) quando picker falha', () async {
       final service = const DrawingImportService(_ThrowingPicker());
-      final result = await service.pickAndParse(false);
+      final result = await service.pickAndParse();
 
       expect(result.error, isNotNull);
       expect(result.cancelled, isFalse);

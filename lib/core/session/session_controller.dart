@@ -59,6 +59,15 @@ class SessionController extends _$SessionController {
     _authSubscription?.cancel();
     _authSubscription = Supabase.instance.client.auth.onAuthStateChange.listen(
       (data) {
+        // P3.2 — estado preciso para recovery
+        if (data.event == AuthChangeEvent.passwordRecovery) {
+          final user = data.session?.user;
+          if (user != null) {
+            state = SessionPasswordRecovery(user);
+          }
+          return;
+        }
+
         final user = data.session?.user;
         if (user != null) {
           state = SessionAuthenticated(user);
@@ -67,8 +76,6 @@ class SessionController extends _$SessionController {
         }
       },
       onError: (error) {
-        // Em caso de erro no stream, mantém estado público seguro.
-        // Erro pode ocorrer se Supabase estiver com credenciais inválidas.
         state = const SessionPublic();
       },
     );
@@ -79,12 +86,22 @@ class SessionController extends _$SessionController {
   /// Após login, garante que o perfil está completo (trigger cria vazio,
   /// esta chamada preenche nome/role do user_metadata).
   Future<void> login(String email, String password) async {
-    await NetworkPolicy.withTimeout(
-      () => Supabase.instance.client.auth.signInWithPassword(
-        email: email,
-        password: password,
-      ),
-    );
+    try {
+      await NetworkPolicy.withTimeout(
+        () => Supabase.instance.client.auth.signInWithPassword(
+          email: email,
+          password: password,
+        ),
+      );
+    } on AuthException catch (e) {
+      throw Exception(_traduzirErro(e.message));
+    } on TimeoutException {
+      throw Exception(
+        'Tempo esgotado. Verifique sua conexão e tente novamente.',
+      );
+    } catch (e) {
+      throw Exception('Não foi possível fazer login. Verifique sua conexão.');
+    }
     // O stream onAuthStateChange atualiza o state automaticamente.
 
     final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
@@ -146,11 +163,19 @@ class SessionController extends _$SessionController {
 
   /// Cadastro real via Supabase Auth.
   Future<void> signup(String name, String email, String password) async {
-    await Supabase.instance.client.auth.signUp(
-      email: email,
-      password: password,
-      data: {'full_name': name},
-    );
+    try {
+      await Supabase.instance.client.auth.signUp(
+        email: email,
+        password: password,
+        data: {'full_name': name, 'role': 'produtor'},
+      );
+    } on AuthException catch (e) {
+      throw Exception(_traduzirErro(e.message));
+    } catch (e) {
+      throw Exception(
+        'Não foi possível criar a conta. Verifique sua conexão.',
+      );
+    }
     // O stream onAuthStateChange atualiza o state automaticamente.
   }
 
@@ -206,5 +231,32 @@ class SessionController extends _$SessionController {
     final userId = Supabase.instance.client.auth.currentUser?.id;
     if (userId == null || userId.isEmpty) return;
     await DatabaseHelper.instance.clearUserLocalData(userId);
+  }
+
+  String _traduzirErro(String message) {
+    final lower = message.toLowerCase();
+    if (lower.contains('invalid login credentials') ||
+        lower.contains('invalid email or password')) {
+      return 'Email ou senha incorretos.';
+    }
+    if (lower.contains('user already registered') ||
+        lower.contains('already been registered')) {
+      return 'Este email já está cadastrado.';
+    }
+    if (lower.contains('email not confirmed')) {
+      return 'Email não confirmado. Verifique sua caixa de entrada.';
+    }
+    if (lower.contains('password should be at least')) {
+      return 'A senha deve ter pelo menos 8 caracteres.';
+    }
+    if (lower.contains('rate limit')) {
+      return 'Muitas tentativas. Aguarde alguns minutos e tente novamente.';
+    }
+    if (lower.contains('network') ||
+        lower.contains('socket') ||
+        lower.contains('connection')) {
+      return 'Sem conexão com a internet. Verifique sua rede.';
+    }
+    return 'Erro de autenticação. Tente novamente.';
   }
 }

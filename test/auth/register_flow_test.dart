@@ -5,6 +5,7 @@ import 'package:soloforte_app/core/router/app_routes.dart';
 import 'package:soloforte_app/modules/auth/models/register_dto.dart';
 import 'package:soloforte_app/modules/auth/pages/register_page.dart';
 import 'package:soloforte_app/modules/auth/services/auth_service.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 // Fake AuthService
 class FakeAuthService extends AuthService {
@@ -13,7 +14,7 @@ class FakeAuthService extends AuthService {
   int callCount = 0;
 
   @override
-  Future<void> register(RegisterDto dto) async {
+  Future<AuthResponse> register(RegisterDto dto) async {
     callCount++;
     if (shouldThrow) {
       throw Exception('Falha na conexão');
@@ -22,6 +23,7 @@ class FakeAuthService extends AuthService {
     if (delay > Duration.zero) {
       await Future.delayed(delay);
     }
+    return AuthResponse();
   }
 }
 

@@ -24,7 +24,6 @@ import '../../modules/drawing/presentation/widgets/drawing_state_indicator.dart'
 import '../../modules/dashboard/providers/location_providers.dart';
 import '../../modules/dashboard/domain/location_state.dart';
 import '../../modules/dashboard/services/location_service.dart';
-import '../../modules/visitas/presentation/controllers/geofence_controller.dart';
 import '../../modules/consultoria/occurrences/domain/occurrence.dart' as occ;
 import '../../modules/marketing/presentation/screens/novo_case_sheet.dart';
 import '../../modules/marketing/presentation/widgets/draft_saved_sheet.dart';
@@ -48,9 +47,12 @@ import '../../modules/consultoria/occurrences/presentation/widgets/occurrence_li
 import '../../modules/consultoria/occurrences/presentation/widgets/occurrence_creation_sheet.dart';
 import '../../modules/consultoria/occurrences/presentation/widgets/occurrence_detail_sheet.dart';
 import '../../modules/consultoria/occurrences/presentation/controllers/occurrence_controller.dart';
-import '../../modules/visitas/presentation/widgets/visit_sheet.dart';
+import '../../modules/map/presentation/widgets/visit_sheet.dart';
 import '../../modules/visitas/presentation/controllers/visit_controller.dart';
 import '../../core/design/sf_icons.dart';
+import '../../core/contracts/i_field_lookup_geofence_provider.dart';
+import '../../core/permissions/permission_provider.dart';
+import 'package:geolocator/geolocator.dart';
 
 part 'private_map_sheets.dart';
 
@@ -101,6 +103,7 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
       if (!mounted) return;
 
       ref.read(locationStateProvider.notifier).init();
+      _requestLocationPermission();
 
       // Bootstrap silencioso: garantir perfil completo.
       // Fire-and-forget — sem await, sem loading, sem rebuild.
@@ -332,6 +335,31 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
     }
   }
 
+  Future<void> _requestLocationPermission() async {
+    final permission = await ref.read(locationPermissionProvider.future);
+    if (permission == LocationPermission.denied) {
+      final newPermission = await Geolocator.requestPermission();
+      _handlePermissionResult(newPermission);
+    } else {
+      _handlePermissionResult(permission);
+    }
+  }
+
+  Future<void> _handlePermissionResult(LocationPermission permission) async {
+    if (permission == LocationPermission.whileInUse || permission == LocationPermission.always) {
+      _centerOnUser();
+    } else if (permission == LocationPermission.deniedForever) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Permissão de localização negada permanentemente. Ative nas configurações do dispositivo.'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
   void _showGPSRequiredMessage() {
     final state = ref.read(locationStateProvider);
     String message;
@@ -365,11 +393,22 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
     // 🔒 Guard: Verificar se o mapa está pronto
     if (!_isMapReady) return;
 
+    final permission = await ref.read(locationPermissionProvider.future);
+    if (permission == LocationPermission.denied) {
+      final newPermission = await Geolocator.requestPermission();
+      _handlePermissionResult(newPermission);
+      return;
+    }
+
     // 🚫 Bloqueio: GPS obrigatório para centralizar
     final locationState = ref.read(locationStateProvider);
     if (locationState != LocationState.available) {
-      _showGPSRequiredMessage();
-      return;
+      await ref.read(locationStateProvider.notifier).init();
+      final retryState = ref.read(locationStateProvider);
+      if (retryState != LocationState.available) {
+        _showGPSRequiredMessage();
+        return;
+      }
     }
 
     HapticFeedback.lightImpact();
@@ -439,7 +478,7 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
     _drawingController = ref.read(drawingControllerProvider);
 
     // Mantém GeofenceController ativo somente durante o ciclo de vida desta tela.
-    ref.watch(geofenceControllerProvider);
+    ref.watch(iFieldLookupGeofenceProvider);
 
     // Apenas providers necessários para lógica de tap e polígonos
     final mapFields = ref.watch(mapFieldsProvider);

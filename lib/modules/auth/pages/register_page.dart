@@ -136,26 +136,8 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
         context.go(AppRoutes.login);
       }
     } catch (e) {
-      // 4. Error Handling & State Reset
       if (mounted) {
-        String msg = e.toString().replaceAll('Exception: ', '');
-        final lower = msg.toLowerCase();
-        if (lower.contains('user already registered') ||
-            lower.contains('já cadastrado') ||
-            lower.contains('already registered')) {
-          msg = 'Este e-mail já está cadastrado. Tente fazer login.';
-        } else if (lower.contains('auth session missing') ||
-            lower.contains('authsessionmissingexception')) {
-          msg = 'Cadastro realizado. Verifique seu e-mail para confirmar.';
-        } else if (lower.contains('network') ||
-            lower.contains('socket') ||
-            lower.contains('host lookup') ||
-            lower.contains('timeout')) {
-          msg = 'Erro de conexão. Verifique sua internet e tente novamente.';
-        } else if (lower.contains('weak password')) {
-          msg = 'Senha muito fraca. Use letras, números e símbolos.';
-        }
-
+        final msg = e.toString().replaceAll('Exception: ', '');
         _showError(msg);
       }
     } finally {

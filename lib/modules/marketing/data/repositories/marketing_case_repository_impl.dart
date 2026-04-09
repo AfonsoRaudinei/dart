@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -34,26 +35,42 @@ class MarketingCaseRepositoryImpl implements IMarketingCaseRepository {
 
   @override
   Future<List<MarketingCase>> fetchMarketingCases() async {
-    // A query carrega o case e aninha seus blocos de avaliação
-    final response = await _supabase
-        .from('marketing_cases')
-        .select('''
-          *,
-          marketing_avaliacoes (*)
-        ''')
-        .eq('ativo', true)
-        .isFilter('deletado_em', null);
+    try {
+      // A query carrega o case e aninha seus blocos de avaliação
+      final response = await _supabase
+          .from('marketing_cases')
+          .select('''
+            *,
+            marketing_avaliacoes (*)
+          ''')
+          .eq('ativo', true)
+          .isFilter('deletado_em', null);
 
-    final cases = (response as List).map((json) {
-      // O join vem como 'marketing_avaliacoes', passamos para 'avaliacoes'
-      // que é a chave esperada pelo fromJson na memoria/entidade de Dominio
-      if (json['marketing_avaliacoes'] != null) {
-        json['avaliacoes'] = json['marketing_avaliacoes'];
-      }
-      return MarketingCase.fromJson(json);
-    }).toList();
+      final cases = (response as List).map((json) {
+        // O join vem como 'marketing_avaliacoes', passamos para 'avaliacoes'
+        // que é a chave esperada pelo fromJson na entidade de Domínio
+        if (json['marketing_avaliacoes'] != null) {
+          json['avaliacoes'] = json['marketing_avaliacoes'];
+        }
+        return MarketingCase.fromJson(json);
+      }).toList();
 
-    return cases;
+      // Atualiza cache local após fetch remoto bem-sucedido
+      await saveToCache(cases);
+      return cases;
+    } on PostgrestException catch (e) {
+      // Coluna ausente ou erro de schema → serve cache local
+      debugPrint(
+        '⚠️ [MarketingRepo] Erro remoto, servindo cache: ${e.message}',
+      );
+      return getLocalCases();
+    } catch (e) {
+      // Erro de rede ou timeout → serve cache local
+      debugPrint(
+        '⚠️ [MarketingRepo] Erro inesperado, servindo cache: $e',
+      );
+      return getLocalCases();
+    }
   }
 
   @override
@@ -129,7 +146,12 @@ class MarketingCaseRepositoryImpl implements IMarketingCaseRepository {
         .select()
         .single();
 
-    final savedCase = MarketingCase.fromJson(response);
+    // Garantir que ativo está presente na resposta (pode ser null em schemas antigos)
+    final responseWithDefaults = {
+      'ativo': true,
+      ...response,
+    };
+    final savedCase = MarketingCase.fromJson(responseWithDefaults);
 
     // 3. Salva cada avaliação na tabela filha
     if (marketingCase.avaliacoes.isNotEmpty) {

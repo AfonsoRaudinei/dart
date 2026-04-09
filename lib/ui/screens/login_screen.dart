@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'dart:ui';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -40,6 +42,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   bool _loading = false;
   bool _isDemoMode = false;
 
+  // ── Rate limiting ──────────────────────────────────────────
+  static const int _kMaxAttempts = 3;
+  static const int _kCooldownSeconds = 30;
+  int _failedAttempts = 0;
+  Timer? _cooldownTimer;
+  int _remainingCooldown = 0;
+
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
 
@@ -58,6 +67,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
 
   @override
   void dispose() {
+    _cooldownTimer?.cancel();
     _emailCtrl.dispose();
     _passCtrl.dispose();
     _emailFocusNode.dispose();
@@ -76,15 +86,33 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     return null;
   }
 
+  void _startCooldown() {
+    setState(() => _remainingCooldown = _kCooldownSeconds);
+    _cooldownTimer?.cancel();
+    _cooldownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      setState(() {
+        _remainingCooldown--;
+        if (_remainingCooldown <= 0) {
+          _remainingCooldown = 0;
+          _failedAttempts = 0;
+          timer.cancel();
+        }
+      });
+    });
+  }
+
   Future<void> _handleLogin() async {
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
+    if (_remainingCooldown > 0) return;
+    if (!_formKey.currentState!.validate()) return;
 
     setState(() => _loading = true);
 
     try {
-      if (_isDemoMode) {
+      if (kDebugMode && _isDemoMode) {
         await ref
             .read(sessionControllerProvider.notifier)
             .login(_demoEmail, _demoPassword);
@@ -96,7 +124,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
               _passCtrl.text,
             );
       }
+      _failedAttempts = 0;
     } catch (e) {
+      _failedAttempts++;
+      if (_failedAttempts >= _kMaxAttempts) {
+        _startCooldown();
+      }
       if (mounted) {
         _showErrorMessage(
           e.toString().replaceAll('Exception: ', ''),
@@ -378,8 +411,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
 
                             // Botão Entrar
                             GradientButton(
-                              text: 'ENTRAR',
-                              onPressed: _loading ? null : _handleLogin,
+                              text: _remainingCooldown > 0
+                                  ? 'AGUARDE ${_remainingCooldown}s'
+                                  : 'ENTRAR',
+                              onPressed: _loading || _remainingCooldown > 0
+                                  ? null
+                                  : _handleLogin,
                               isLoading: _loading,
                               height: 50,
                             ),
@@ -456,24 +493,25 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                             ),
                             const SizedBox(height: 16),
 
-                            // Modo Demo
-                            Center(
-                              child: DemoModeCheckbox(
-                                value: _isDemoMode,
-                                onChanged: (value) {
-                                  setState(() {
-                                    _isDemoMode = value ?? false;
-                                    if (_isDemoMode) {
-                                      _emailCtrl.text = _demoEmail;
-                                      _passCtrl.text = _demoPassword;
-                                    } else {
-                                      _emailCtrl.clear();
-                                      _passCtrl.clear();
-                                    }
-                                  });
-                                },
+                            // Modo Demo — visível apenas em debug builds
+                            if (kDebugMode)
+                              Center(
+                                child: DemoModeCheckbox(
+                                  value: _isDemoMode,
+                                  onChanged: (value) {
+                                    setState(() {
+                                      _isDemoMode = value ?? false;
+                                      if (_isDemoMode) {
+                                        _emailCtrl.text = _demoEmail;
+                                        _passCtrl.text = _demoPassword;
+                                      } else {
+                                        _emailCtrl.clear();
+                                        _passCtrl.clear();
+                                      }
+                                    });
+                                  },
+                                ),
                               ),
-                            ),
                             const SizedBox(height: 8),
                           ],
                         ),

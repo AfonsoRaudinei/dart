@@ -10,7 +10,7 @@ import 'map_sheets.dart';
 import '../../../modules/drawing/presentation/widgets/drawing_sheet.dart';
 import '../../../modules/drawing/presentation/widgets/drawing_disabled_widget.dart';
 import '../../../modules/drawing/presentation/controllers/drawing_controller.dart';
-import '../../../modules/visitas/presentation/widgets/visit_sheet.dart';
+import '../../../modules/map/presentation/widgets/visit_sheet.dart';
 import '../../../modules/visitas/presentation/controllers/visit_controller.dart';
 import '../../../core/feature_flags/feature_flag_providers.dart';
 import '../../../core/feature_flags/feature_flag_resolver.dart';
@@ -19,6 +19,14 @@ import '../../../../modules/consultoria/occurrences/presentation/widgets/occurre
 import '../../../../modules/consultoria/occurrences/presentation/widgets/occurrence_creation_sheet.dart';
 import 'map_sheet_state.dart'; // 🛡 REFATORAÇÃO: Modelo compartilhado
 import '../../../core/utils/app_logger.dart';
+import '../../../../core/contracts/i_visit_session_lookup.dart';
+import '../../../../core/contracts/i_visit_session_lookup_provider.dart';
+
+/// Provider local para sessão ativa — substitui visitControllerProvider para leituras
+final _activeVisitProvider = FutureProvider<VisitSessionSummary?>((ref) async {
+  final lookup = ref.watch(visitSessionLookupProvider);
+  return lookup.getActiveSession();
+});
 
 /// Bottom Sheet estilo iOS "Buscar" com 3 detents
 /// Compacto → Médio → Expandido
@@ -274,8 +282,8 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
   }
 
   Widget _buildCheckInContent() {
-    final visitState = ref.watch(visitControllerProvider);
-    final isActive = visitState.value?.status == 'active';
+    final activeVisitAsync = ref.watch(_activeVisitProvider);
+    final isActive = activeVisitAsync.valueOrNull?.isActive ?? false;
 
     if (isActive) {
       // Já está em visita - mostrar status

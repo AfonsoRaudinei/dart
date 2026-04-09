@@ -89,3 +89,6 @@ scripts/*.local.sh
 lib/core/config/map_secrets.dart
 API
 anon
+.env.local.json
+analyze_output.txt
+edit_private_map.dart

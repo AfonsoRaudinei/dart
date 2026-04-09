@@ -26,9 +26,6 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
-	<!-- Localização em background (apenas se necessário para rastreamento de visita) -->
-	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>O SoloForte usa localização em background para registrar automaticamente os pontos visitados durante a inspeção de campo, mesmo com o app minimizado.</string>
 	<!-- Localização em uso -->
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>O SoloForte usa sua localização para posicionar ocorrências, talhões e rotas de visita no mapa da propriedade.</string>
@@ -83,5 +80,18 @@
 	<string>O SoloForte salva fotos de campo diretamente na sua galeria para facilitar o compartilhamento de relatórios.</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>com.soloforte.soloforteApp</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>soloforte</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

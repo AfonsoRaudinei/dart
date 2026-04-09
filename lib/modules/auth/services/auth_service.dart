@@ -61,7 +61,7 @@ class AuthService extends _$AuthService {
     try {
       await _client.auth.resetPasswordForEmail(
         email,
-        redirectTo: 'com.soloforte.soloforteApp://reset-password',
+        redirectTo: 'soloforte://reset-password',
       );
     } on AuthException catch (e) {
       throw Exception(_traduzirErro(e.message));

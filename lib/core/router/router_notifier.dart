@@ -56,8 +56,11 @@ class RouterNotifier extends ChangeNotifier {
   bool _isDisposed = false;
 
   /// Retorna true se o usuário está autenticado no momento.
-  bool get isAuthenticated =>
-      _ref.read(sessionControllerProvider) is SessionAuthenticated;
+  /// Inclui [SessionPasswordRecovery] — sessão de recovery é autenticada.
+  bool get isAuthenticated {
+    final session = _ref.read(sessionControllerProvider);
+    return session is SessionAuthenticated || session is SessionPasswordRecovery;
+  }
 
   @override
   void dispose() {

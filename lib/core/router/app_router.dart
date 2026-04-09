@@ -2,12 +2,15 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'router_notifier.dart';
+import '../../core/session/session_controller.dart';
+import '../../core/session/session_models.dart';
 import '../../ui/components/app_shell.dart';
 import '../../ui/screens/public_map_screen.dart';
 import '../../ui/screens/private_map_screen.dart';
 import '../../ui/screens/login_screen.dart';
 import '../../modules/auth/pages/register_page.dart';
 import '../../modules/auth/pages/recover_password_page.dart';
+import '../../modules/auth/pages/reset_password_page.dart';
 import '../../modules/agenda/presentation/pages/agenda_month_page.dart';
 import '../../modules/agenda/presentation/pages/agenda_day_page.dart';
 import '../../modules/agenda/presentation/pages/agenda_event_detail_page.dart';
@@ -48,21 +51,30 @@ GoRouter router(Ref ref) {
     initialLocation: AppRoutes.publicMap,
     refreshListenable: notifier,
     redirect: (context, state) {
+      final session = ref.read(sessionControllerProvider);
       final isAuth = notifier.isAuthenticated;
+      final isRecovery = session is SessionPasswordRecovery;
 
       final path = state.uri.path;
       final isPublicRoute =
           path == AppRoutes.publicMap ||
           path == AppRoutes.login ||
           path == AppRoutes.register ||
-          path == AppRoutes.recoverPassword;
+          path == AppRoutes.recoverPassword ||
+          path == AppRoutes.resetPassword;
 
+      // Sem sessão: redirecionar rotas privadas para mapa público
       if (!isAuth && !isPublicRoute) {
         return AppRoutes.publicMap;
       }
 
-      // If auth, redirect login/register/public-map to map
-      if (isAuth && isPublicRoute) {
+      // Recovery: forçar /reset-password em qualquer outra rota
+      if (isRecovery && path != AppRoutes.resetPassword) {
+        return AppRoutes.resetPassword;
+      }
+
+      // Autenticado normal: redirecionar rotas públicas para map
+      if (isAuth && !isRecovery && isPublicRoute) {
         return AppRoutes.map;
       }
 
@@ -87,6 +99,10 @@ GoRouter router(Ref ref) {
           GoRoute(
             path: AppRoutes.recoverPassword,
             builder: (_, __) => const RecoverPasswordPage(),
+          ),
+          GoRoute(
+            path: AppRoutes.resetPassword,
+            builder: (_, __) => const ResetPasswordPage(),
           ),
           GoRoute(
             path: AppRoutes.map,

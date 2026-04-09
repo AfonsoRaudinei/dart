@@ -87,6 +87,7 @@ Auditoria PROMPT 01 identificou quatro problemas estruturais principais:
 | DT-025-6 | Ausência de testes unitários em `map/` | `lib/modules/map/` | Módulo nunca teve suite de testes | ADR futuro | ⏳ Pendente |
 | DT-025-7 | `visit_completion_observer.dart` sem contrato neutro `IReportWriter` | `map/presentation/providers/` | Contrato não existia | PROMPT 03 | ✅ RESOLVIDO |
 | DT-025-8 | `farmName: event.fazendaId` — proxy ADR-010 (sem entidade `Farm`) | `visit_completion_observer.dart` | ADR-010 não implementado — `fazendaId` como proxy aceitável | PROMPT 03 | ✅ DOCUMENTADO |
+| DT-025-9 | `map_bottom_sheet.dart` chama `endSession()` via import direto de `visit_controller.dart` | `ui/components/map/map_bottom_sheet.dart` | Operação de escrita sem contrato neutro | ADR-026 | 🆕 Registrada |
 
 ---
 
