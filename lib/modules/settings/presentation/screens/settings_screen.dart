@@ -123,13 +123,13 @@ class SettingsScreen extends ConsumerWidget {
                   context,
                   title: 'Termos de Serviço',
                   icon: SFIcons.info,
-                  onTap: () => _openUrl('https://soloforte.com/termos'),
+                  onTap: () => _openUrl('https://afonsoraudinei.github.io/SoloForte-Termos-de-Uso/'),
                 ),
                 _buildTile(
                   context,
                   title: 'Política de Privacidade',
                   icon: SFIcons.info,
-                  onTap: () => _openUrl('https://soloforte.com/privacidade'),
+                  onTap: () => _openUrl('https://afonsoraudinei.github.io/SoloForte-Pol-tica-de-Privacidade/'),
                 ),
               ]),
 
