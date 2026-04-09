@@ -65,30 +65,36 @@ serve(async (req) => {
     console.log(`[delete-user] Iniciando exclusão para user_id: ${userId}`)
 
     // 4. Deletar dados em todas as tabelas (ordem: dependentes primeiro)
-    // Tabelas do SoloForte com coluna user_id ou equivalente
+    // Nomes reais conforme soloforte_db_setup.sql (schema v13)
     const tablesToClean = [
-      // Marketing
+      // Marketing (avaliacoes depende de marketing_cases via FK cascade)
+      { table: 'marketing_avaliacoes', column: 'user_id' },
       { table: 'marketing_cases', column: 'user_id' },
-      { table: 'marketing_case_images', column: 'user_id' },
-      // Visitas e ocorrências
-      { table: 'ocorrencias', column: 'user_id' },
-      { table: 'visitas', column: 'user_id' },
-      { table: 'visit_sessions', column: 'created_by' },
-      // Consultoria
-      { table: 'relatorios', column: 'user_id' },
-      { table: 'talhoes', column: 'user_id' },
-      { table: 'fazendas', column: 'user_id' },
-      { table: 'clientes', column: 'user_id' },
+      // Ocorrências
+      { table: 'occurrences', column: 'user_id' },
+      // Visitas / sessões
+      { table: 'visit_sessions', column: 'user_id' },
+      { table: 'agenda_visit_sessions', column: 'user_id' },
+      { table: 'agenda_events', column: 'user_id' },
+      // Consultoria (fields→farms→clients, deletar nessa ordem)
+      { table: 'fields', column: 'user_id' },
+      { table: 'farms', column: 'user_id' },
+      { table: 'clients', column: 'user_id' },
       // Planos e pagamentos
       { table: 'user_plans', column: 'user_id' },
-      // Agenda
-      { table: 'agenda_events', column: 'user_id' },
-      { table: 'agenda_sessions', column: 'created_by' },
+      // Indicações
+      { table: 'referrals', column: 'referrer_id' },
+      { table: 'referral_codes', column: 'user_id' },
       // Feedback
-      { table: 'feedbacks', column: 'user_id' },
+      { table: 'feedback', column: 'user_id' },
       // Perfil (por último)
       { table: 'perfis', column: 'id' },
     ]
+
+    // Referrals onde o usuário foi indicado (referred_id)
+    try {
+      await supabaseAdmin.from('referrals').delete().eq('referred_id', userId)
+    } catch (_) { /* ignora se não existir */ }
 
     for (const { table, column } of tablesToClean) {
       try {

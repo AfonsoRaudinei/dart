@@ -174,9 +174,9 @@ void main() {
       // Attempt to finalize
       controller.completeDrawing();
 
-      // State MUST NOT be reviewing because incomplete geometries are rejected!
-      expect(controller.currentState, DrawingState.drawing, reason: 'Deve permanecer desenhando e bloqueado devido à interseção no preflight');
-      expect(controller.errorMessage, isNotNull, reason: 'Deve exibir mensagem exigindo correção');
+      // State goes to reviewing but with intersection warning
+      expect(controller.currentState, DrawingState.reviewing, reason: 'Vai para reviewing com warning de interseção (salve e edite depois)');
+      expect(controller.hasSelfIntersection, true, reason: 'Deve manter flag de interseção ativa');
     });
   });
 }

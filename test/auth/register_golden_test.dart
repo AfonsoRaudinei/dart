@@ -5,6 +5,7 @@ import 'package:golden_toolkit/golden_toolkit.dart';
 import 'package:soloforte_app/modules/auth/models/register_dto.dart';
 import 'package:soloforte_app/modules/auth/pages/register_page.dart';
 import 'package:soloforte_app/modules/auth/services/auth_service.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 // Fake AuthService for controlling state
 class FakeAuthService extends AuthService {
@@ -12,13 +13,14 @@ class FakeAuthService extends AuthService {
   Duration delay = Duration.zero;
 
   @override
-  Future<void> register(RegisterDto dto) async {
+  Future<AuthResponse> register(RegisterDto dto) async {
     if (shouldThrow) {
       throw Exception('Email já cadastrado');
     }
     if (delay > Duration.zero) {
       await Future.delayed(delay);
     }
+    return AuthResponse();
   }
 }
 
