@@ -27,6 +27,10 @@
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<!-- Localização em uso -->
+	<!-- Soloforte Location Always Usage -->
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>O SoloForte usa sua localização para posicionar ocorrências e talhões no mapa, mesmo quando o aplicativo estiver em segundo plano para garantir o rastreio da vistoria.</string>
+
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>O SoloForte usa sua localização para posicionar ocorrências, talhões e rotas de visita no mapa da propriedade.</string>
 	<key>UIApplicationSceneManifest</key>
