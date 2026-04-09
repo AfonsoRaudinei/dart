@@ -45,12 +45,22 @@ class MapConfig {
   /// lyrs=s = satellite puro (sem labels)
   /// Cobertura superior no Brasil rural, zoom até 20+
   /// Subdomínios 0-3 = load balancing automático entre servidores Google
-  /// ⚠️ Para produção em escala: ativar billing no Google Cloud Console
+  /// ⚠️ OBSOLETO: Endpoint não oficial — viola Google ToS e pode causar
+  /// rejeição na App Store. Mantido apenas como referência.
+  @Deprecated('Usar mapTilerSatelliteUrl — endpoint Google não oficial viola ToS')
   static const String googleSatelliteUrl =
       'https://mt{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}';
 
   /// Subdomínios do Google Maps Tile Server (load balancing)
+  @Deprecated('Usar MapTiler Satellite')
   static const List<String> googleSatelliteSubdomains = ['0', '1', '2', '3'];
+
+  /// MapTiler Satellite — Imagem satelital com labels
+  /// Cobertura global de alta resolução
+  /// Requer API key via --dart-define=MAPTILER_API_KEY=<key>
+  /// Free tier: 100k requests/mês — https://www.maptiler.com/cloud/
+  static String mapTilerSatelliteUrl(String apiKey) =>
+      'https://api.maptiler.com/maps/hybrid/{z}/{x}/{y}.jpg?key=$apiKey';
 
   /// MapTiler Landscape — Estilo relevo com curvas topográficas
   /// Cobertura global com visualização de terreno e elevação

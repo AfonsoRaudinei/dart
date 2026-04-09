@@ -158,11 +158,10 @@ class LayersSheet extends ConsumerWidget {
                           .read(activeLayerProvider.notifier)
                           .setLayer(LayerType.standard),
                     ),
-                    _MapPreviewTile(
-                      tileUrl: MapConfig.googleSatelliteUrl,
+                    _SolidPreviewTile(
                       label: 'Satélite',
                       isSelected: currentLayer == LayerType.satellite,
-                      subdomains: MapConfig.googleSatelliteSubdomains,
+                      color: const Color(0xFF2E4A3A),
                       onTap: () => ref
                           .read(activeLayerProvider.notifier)
                           .setLayer(LayerType.satellite),

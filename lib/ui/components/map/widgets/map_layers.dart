@@ -26,11 +26,11 @@ class MapLayersWidget extends ConsumerWidget {
   String _getLayerUrl(LayerType type) {
     switch (type) {
       case LayerType.satellite:
-        // 🛰️ SATÉLITE: Google Maps Hybrid (lyrs=y)
-        // Migrado de ESRI World Imagery para Google Maps Satellite.
-        // Cobertura superior no Brasil rural, zoom até 20+.
-        // Subdomínios 0-3 em MapConfig.googleSatelliteSubdomains.
-        return MapConfig.googleSatelliteUrl;
+        // 🛰️ SATÉLITE: MapTiler Hybrid (satellite + labels)
+        // Migrado de Google Maps (endpoint não oficial, viola ToS)
+        // para MapTiler Satellite — cobertura global, API key obrigatória.
+        // Free tier: 100k requests/mês
+        return MapConfig.mapTilerSatelliteUrl(kMapTilerApiKey);
       case LayerType.relevo:
         // 🗻 RELEVO: MapTiler Landscape
         // Estilo topográfico com curvas de nível e sombreamento de relevo.
@@ -48,7 +48,8 @@ class MapLayersWidget extends ConsumerWidget {
   List<String> _getSubdomains(LayerType type) {
     switch (type) {
       case LayerType.satellite:
-        return MapConfig.googleSatelliteSubdomains;
+        // MapTiler não usa subdomínios — retorna lista vazia
+        return const [];
       case LayerType.standard:
         return MapConfig.cartoSubdomains;
       case LayerType.relevo:
