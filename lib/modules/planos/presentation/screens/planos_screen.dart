@@ -6,15 +6,123 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'package:soloforte_app/core/constants/layout_constants.dart';
 import '../../domain/enums/plano_tipo.dart';
+import '../providers/plano_providers.dart';
 
 class PlanosScreen extends StatelessWidget {
   const PlanosScreen({super.key});
 
+  Future<void> _abrirSite() async {
+    final uri = Uri.parse('https://soloforte.com/planos');
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    if (defaultTargetPlatform == TargetPlatform.iOS) {
+      return Scaffold(
+        backgroundColor: const Color(0xFF000000),
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          title: const Text(
+            'Planos SoloForte',
+            style: TextStyle(
+              fontFamily: 'Inter',
+              fontWeight: FontWeight.w700,
+              color: Colors.white,
+            ),
+          ),
+          centerTitle: true,
+        ),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.open_in_browser, size: 64, color: Color(0xFF32D74B)),
+                const SizedBox(height: 24),
+                const Text(
+                  'Gerencie seu plano em',
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 18,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'soloforte.com/planos',
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF32D74B),
+                  ),
+                ),
+                const SizedBox(height: 32),
+                const Text(
+                  'Acesse pelo navegador para assinar ou renovar seu plano.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 15,
+                    color: Color(0xFF8E8E93),
+                  ),
+                ),
+                const SizedBox(height: 40),
+                FilledButton.icon(
+                  icon: const Icon(Icons.open_in_browser),
+                  label: const Text('Abrir soloforte.com'),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: const Color(0xFF32D74B),
+                    foregroundColor: Colors.black,
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                    textStyle: const TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  onPressed: _abrirSite,
+                ),
+                const SizedBox(height: 16),
+                Consumer(
+                  builder: (context, ref, _) {
+                    final planoAsync = ref.watch(planoAtivoProvider);
+                    final plano = planoAsync.valueOrNull;
+                    if (plano != null && plano.ativo) {
+                      final planoNome = plano.plano.name[0].toUpperCase() + plano.plano.name.substring(1);
+                      final dias = plano.expiraEm.difference(DateTime.now()).inDays;
+                      return Text(
+                        'Plano atual: $planoNome · ${dias > 0 ? '$dias dias restantes' : 'Expira hoje'}',
+                        style: const TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 14,
+                          color: Color(0xFF8E8E93),
+                          fontWeight: FontWeight.w500,
+                        ),
+                      );
+                    }
+                    return const SizedBox.shrink();
+                  },
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: const Color(0xFF000000),
       body: SafeArea(

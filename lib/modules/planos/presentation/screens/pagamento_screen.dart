@@ -5,6 +5,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -25,6 +26,16 @@ class _PagamentoScreenState extends ConsumerState<PagamentoScreen> {
   String _metodo = 'pix'; // 'pix' | 'cartao'
   bool _loading = false;
   String? _erro;
+
+  @override
+  void initState() {
+    super.initState();
+    if (defaultTargetPlatform == TargetPlatform.iOS) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) context.go('/planos');
+      });
+    }
+  }
 
   String get _planoLabel {
     switch (widget.plano) {
