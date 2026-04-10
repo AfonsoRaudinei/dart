@@ -46,9 +46,14 @@ class SessionController extends _$SessionController {
       }
     } catch (_) {
       // Se Supabase não inicializou ou tem credenciais inválidas,
-      // retorna estado público seguro.
+      // retorna estado de inicialização seguro.
     }
-    return const SessionPublic();
+    // 🛡 gotrue 2.18.0: a sessão pode ser restaurada de forma assíncrona.
+    // Retornar SessionUnknown em vez de SessionPublic garante que a janela
+    // de bootstrap não seja confundida com "usuário deslogado" pelo router.
+    // O onAuthStateChange atualizará para SessionAuthenticated ou SessionPublic
+    // assim que a restauração do storage local for concluída.
+    return const SessionUnknown();
   }
 
   void _startListening() {

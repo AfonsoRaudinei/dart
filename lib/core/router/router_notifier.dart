@@ -32,6 +32,13 @@ class RouterNotifier extends ChangeNotifier {
     _ref.listen<SessionState>(
       sessionControllerProvider,
       (previous, next) {
+        // 🛡 BOOTSTRAP: marca inicialização concluída na primeira
+        // mudança real de estado. Ocorre quando onAuthStateChange emite
+        // após restaurar (ou não encontrar) sessão no storage local.
+        // gotrue 2.18.0: pode haver janela onde currentSession == null
+        // mesmo com sessão válida armazenada — este flag elimina a corrida.
+        _isInitializing = false;
+
         // 🛡 DEBOUNCE: cancela notificação anterior e agenda nova.
         // Colapsa eventos duplicados do Supabase (cache + rede) em
         // um único notifyListeners(), evitando create/dispose duplo
@@ -41,6 +48,9 @@ class RouterNotifier extends ChangeNotifier {
           if (!_isDisposed) notifyListeners();
         });
       },
+      // fireImmediately: false — aguarda mudança real de estado.
+      // O estado inicial SessionUnknown é inerte para o redirect até que
+      // onAuthStateChange confirme ou descarte a sessão do storage local.
       fireImmediately: false,
     );
   }
@@ -54,6 +64,18 @@ class RouterNotifier extends ChangeNotifier {
 
   Timer? _debounce;
   bool _isDisposed = false;
+
+  /// Flag de bootstrap: `true` até o primeiro evento real do
+  /// [onAuthStateChange]. Enquanto `true`, a sessão ainda pode estar
+  /// sendo restaurada do storage local (gotrue 2.18.0).
+  ///
+  /// Exposto para que outros componentes possam aguardar o término
+  /// do bootstrap antes de tomar decisões baseadas em autenticação.
+  bool _isInitializing = true;
+
+  /// `true` enquanto o bootstrap de autenticação ainda não concluiu.
+  /// Torna-se `false` na primeira emissão do [onAuthStateChange].
+  bool get isInitializing => _isInitializing;
 
   /// Retorna true se o usuário está autenticado no momento.
   /// Inclui [SessionPasswordRecovery] — sessão de recovery é autenticada.
