@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
+import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
 
 import '../../../../core/router/app_routes.dart';
 import '../models/relatorio_status.dart';
@@ -48,7 +49,7 @@ class _RelatoriosListScreenState extends ConsumerState<RelatoriosListScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF2F4F7),
+      backgroundColor: SoloForteSheetTokens.sheetBackground,
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -95,7 +96,7 @@ class _RelatoriosListScreenState extends ConsumerState<RelatoriosListScreen>
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: SoloForteSheetTokens.inputBackground,
           borderRadius: BorderRadius.circular(8),
           boxShadow: [
             BoxShadow(
@@ -201,7 +202,7 @@ class _RelatorioCard extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: SoloForteSheetTokens.inputBackground,
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
