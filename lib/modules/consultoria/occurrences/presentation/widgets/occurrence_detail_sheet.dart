@@ -90,9 +90,9 @@ class OccurrenceDetailSheet extends StatelessWidget {
       case 'alta':
         return PremiumTokens.alertError;
       case 'baixa':
-        return Colors.grey.shade500;
+        return const Color(0xFF8E8E93);
       default: // "média" ou qualquer outro valor
-        return Colors.orange;
+        return const Color(0xFFF59E0B);
     }
   }
 
