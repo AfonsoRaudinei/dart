@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
 import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 
 class ProfileAvatarPicker extends StatefulWidget {
@@ -83,14 +84,14 @@ class _ProfileAvatarPickerState extends State<ProfileAvatarPicker> {
         children: [
           CircleAvatar(
             radius: 50,
-            backgroundColor: Colors.grey[200],
+            backgroundColor: SoloForteSheetTokens.inputBackground,
             backgroundImage: _image != null
                 ? FileImage(_image!)
                 : (widget.placeholderUrl != null
-                      ? NetworkImage(widget.placeholderUrl!) as ImageProvider
-                      : null),
+                    ? NetworkImage(widget.placeholderUrl!)
+                    : null),
             child: _image == null && widget.placeholderUrl == null
-                ? const Icon(Icons.person, size: 50, color: Colors.grey)
+                ? const Icon(Icons.person, size: 50, color: SoloForteSheetTokens.inputHint)
                 : null,
           ),
           Positioned(
