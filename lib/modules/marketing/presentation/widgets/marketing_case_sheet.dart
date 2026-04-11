@@ -5,6 +5,7 @@ import '../../../../ui/theme/premium/design_tokens.dart';
 import '../../domain/entities/marketing_case.dart';
 import '../../domain/enums/case_tipo.dart';
 import '../../domain/enums/plano_marketing.dart';
+import '../../../../core/ui/sheets/sheet_tokens.dart';
 
 /// Bottom Sheet de visualização detalhada de um Case de Marketing
 /// Aberto ao tocar num pin no mapa (Passo 8)
@@ -67,9 +68,9 @@ class MarketingCaseSheet extends StatelessWidget {
       snapSizes: const [0.5, 0.7, 0.95],
       builder: (context, scrollController) {
         return Container(
-          decoration: BoxDecoration(
-            color: Theme.of(context).scaffoldBackgroundColor,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          decoration: const BoxDecoration(
+            color: SoloForteSheetTokens.sheetBackground,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -683,7 +684,7 @@ class MarketingCaseSheet extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
+        color: SoloForteSheetTokens.inputBackground,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: PremiumTokens.hairlineLight),
       ),
