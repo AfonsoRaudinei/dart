@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:soloforte_app/modules/clima/presentation/providers/clima_providers.dart';
 import 'package:soloforte_app/modules/clima/presentation/widgets/clima_tokens.dart';
 import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
+import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
 
 // ─── Função de exibição ───────────────────────────────────────────────────────
 
@@ -31,7 +32,7 @@ class ClimaSettingsSheet extends ConsumerWidget {
     return Container(
       padding: EdgeInsets.fromLTRB(20, 8, 20, 24 + bottomPad),
       decoration: const BoxDecoration(
-        color: Colors.white,
+        color: SoloForteSheetTokens.sheetBackground,
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       child: Column(
