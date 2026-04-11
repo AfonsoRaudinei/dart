@@ -4,6 +4,7 @@ import '../../../../core/design/sf_icons.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
 import '../../../core/domain/publicacao.dart';
 import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 
@@ -59,11 +60,8 @@ class _PublicacaoPreviewSheet extends StatelessWidget {
       builder: (context, scrollController) {
         return Container(
           decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(16.0),
-              topRight: Radius.circular(16.0),
-            ),
+            color: SoloForteSheetTokens.sheetBackground,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(16.0)),
             boxShadow: [
               BoxShadow(
                 color: Color(0x26000000),
