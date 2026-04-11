@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 import 'package:intl/intl.dart';
+import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
 import '../../../core/domain/publicacao.dart';
 import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 
@@ -33,7 +34,7 @@ class _PublicPublicationPreviewSheet extends StatelessWidget {
         maxHeight: MediaQuery.of(context).size.height * 0.75,
       ),
       decoration: const BoxDecoration(
-        color: Colors.white,
+        color: SoloForteSheetTokens.sheetBackground,
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       child: Column(
