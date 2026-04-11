@@ -14,6 +14,7 @@ import 'components/drawing_tool_selector.dart';
 import 'components/drawing_actions_bar.dart';
 import '../../../../ui/theme/premium/design_tokens.dart';
 import 'gps_walk_controls_overlay.dart';
+import '../../../../core/ui/sheets/sheet_tokens.dart';
 
 // Responsabilidade: container/shell do sheet de desenho
 // (layout, estado e ciclo de vida; não concentra os itens de ferramenta).
@@ -29,7 +30,6 @@ class DrawingSheet extends ConsumerStatefulWidget {
 }
 
 class _DrawingSheetState extends ConsumerState<DrawingSheet> {
-  // Local state for visual selection only, as per ticket RT-DRAW-02
   String? _selectedToolKey;
 
   // 🆕 ESTADO LOCAL PARA REVISÃO COMPLETA
@@ -141,7 +141,7 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    // final theme = Theme.of(context);
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
     final safeBottom = MediaQuery.of(context).padding.bottom;
 
@@ -165,9 +165,9 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
       curve: Curves.easeOut,
       padding: EdgeInsets.only(bottom: bottomInset),
       child: Container(
-        decoration: BoxDecoration(
-          color: theme.colorScheme.surface,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        decoration: const BoxDecoration(
+          color: SoloForteSheetTokens.sheetBackground,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -263,8 +263,8 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors
-            .white, // ✅ iOS Premium: Superfícies elevadas (Cards) são brancas
+        color: SoloForteSheetTokens
+            .sheetBackground, // ✅ iOS Premium: Superfícies elevadas (Cards) são brancas
         borderRadius: BorderRadius.circular(
           PremiumTokens.borderRadiusSm,
         ), // ✅ iOS Premium: Inset com 12px
@@ -1148,16 +1148,16 @@ class _SheetHeader extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Center(
+        const Center(
           child: Padding(
-            padding: const EdgeInsets.only(top: 12),
+            padding: EdgeInsets.only(top: 12),
             child: SizedBox(
               width: 40,
               height: 4,
               child: DecoratedBox(
                 decoration: BoxDecoration(
-                  color: scheme.outlineVariant,
-                  borderRadius: const BorderRadius.all(Radius.circular(2)),
+                  color: Color(0xFF8E8E93),
+                  borderRadius: BorderRadius.all(Radius.circular(2)),
                 ),
               ),
             ),
@@ -1169,7 +1169,7 @@ class _SheetHeader extends StatelessWidget {
             alignment: Alignment.centerLeft,
             child: Text(
               'Ferramentas de Desenho',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+              style: TextStyle(color: SoloForteSheetTokens.titleColor, fontSize: 18, fontWeight: FontWeight.w600),
             ),
           ),
         ),

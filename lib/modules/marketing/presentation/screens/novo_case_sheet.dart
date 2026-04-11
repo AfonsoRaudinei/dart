@@ -15,6 +15,7 @@ import '../widgets/roi_bloco_widget.dart';
 import '../widgets/conclusao_bloco_widget.dart';
 import '../widgets/foto_picker_widget.dart';
 import '../widgets/case_selectors_widget.dart';
+import '../../../../core/ui/sheets/sheet_tokens.dart';
 
 class NovoCaseSheet extends StatefulWidget {
   final double lat;
@@ -732,7 +733,7 @@ class _NovoCaseSheetState extends State<NovoCaseSheet> {
     return Text(
       label.toUpperCase(),
       style: Theme.of(context).textTheme.labelSmall?.copyWith(
-        color: PremiumTokens.textSecondaryLight,
+        color: SoloForteSheetTokens.sectionLabel,
         letterSpacing: 0.8,
         fontWeight: FontWeight.w600,
       ),
@@ -773,7 +774,7 @@ class _NovoCaseSheetState extends State<NovoCaseSheet> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
+        color: SoloForteSheetTokens.inputBackground,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: PremiumTokens.hairlineLight),
       ),
@@ -793,7 +794,7 @@ class _NovoCaseSheetState extends State<NovoCaseSheet> {
           );
         }).toList(),
         style: Theme.of(context).textTheme.bodyMedium,
-        dropdownColor: Theme.of(context).cardColor,
+        dropdownColor: SoloForteSheetTokens.inputBackground,
       ),
     );
   }
