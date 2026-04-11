@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 
+import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
+
 /// Bottom sheet exibido após salvar um rascunho sem plano ativo.
 /// Retorna [true] se o usuário quer ver os planos, [false] ou null para fechar.
 class DraftSavedSheet extends StatelessWidget {
@@ -19,9 +21,9 @@ class DraftSavedSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: BoxDecoration(
-        color: Theme.of(context).scaffoldBackgroundColor,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      decoration: const BoxDecoration(
+        color: SoloForteSheetTokens.sheetBackground,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       padding: const EdgeInsets.all(24),
       child: Column(
