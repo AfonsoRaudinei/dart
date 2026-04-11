@@ -269,7 +269,7 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
           PremiumTokens.borderRadiusSm,
         ), // ✅ iOS Premium: Inset com 12px
         border: Border.all(
-          color: Colors.grey[200]!,
+          color: SoloForteSheetTokens.inputBackground,
           width: PremiumTokens.hairlineThickness,
         ),
       ),
@@ -317,7 +317,7 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
           Text(
             widget.controller.errorMessage!,
             textAlign: TextAlign.center,
-            style: const TextStyle(color: Colors.black87),
+            style: const TextStyle(color: SoloForteSheetTokens.sectionLabel),
           ),
           const SizedBox(height: 16),
           ElevatedButton(
@@ -369,12 +369,12 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
         children: [
           const Text(
             'Importar Arquivo',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+            style: TextStyle(color: SoloForteSheetTokens.sectionLabel, fontSize: 16, fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 8),
           const Text(
             'Selecione o arquivo KML ou KMZ para importar:',
-            style: TextStyle(color: Colors.grey),
+            style: TextStyle(color: SoloForteSheetTokens.inputHint),
           ),
           const SizedBox(height: 24),
           _FormatButton(
@@ -440,7 +440,7 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
         children: [
           Text(
             title,
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+            style: const TextStyle(color: SoloForteSheetTokens.sectionLabel, fontSize: 16, fontWeight: FontWeight.w600),
           ),
           const Divider(),
           Padding(
@@ -448,7 +448,7 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
             child: Text(
               instructions,
               textAlign: TextAlign.center,
-              style: const TextStyle(color: Colors.grey),
+              style: const TextStyle(color: SoloForteSheetTokens.inputHint),
             ),
           ),
           if (widget.controller.errorMessage != null)
@@ -515,7 +515,7 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
             child: Text(
               'A geometria foi carregada no mapa como visualização.\nConfirme para adicionar ao desenho.',
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.black87),
+              style: TextStyle(color: SoloForteSheetTokens.sectionLabel),
             ),
           ),
           Row(
@@ -665,7 +665,7 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
             child: Text(
               'Arraste os pontos para modificar a área.',
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey),
+              style: TextStyle(color: SoloForteSheetTokens.inputHint),
             ),
           ),
           Row(
