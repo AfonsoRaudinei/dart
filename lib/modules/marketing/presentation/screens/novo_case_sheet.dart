@@ -474,7 +474,7 @@ class _NovoCaseSheetState extends State<NovoCaseSheet> {
                     style: TextStyle(
                       fontWeight: FontWeight.w600,
                       fontSize: 12,
-                      color: Colors.grey,
+                      color: SoloForteSheetTokens.inputHint,
                     ),
                   ),
                   const SizedBox(height: 6),
