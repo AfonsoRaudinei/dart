@@ -732,10 +732,10 @@ class _NovoCaseSheetState extends State<NovoCaseSheet> {
   Widget _buildSectionLabel(String label) {
     return Text(
       label.toUpperCase(),
-      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+      style: const TextStyle(
         color: SoloForteSheetTokens.sectionLabel,
-        letterSpacing: 0.8,
-        fontWeight: FontWeight.w600,
+        fontWeight: SoloForteSheetTokens.sectionWeight,
+        fontSize: SoloForteSheetTokens.sectionFontSize,
       ),
     );
   }
@@ -753,13 +753,12 @@ class _NovoCaseSheetState extends State<NovoCaseSheet> {
       keyboardType: keyboardType,
       maxLines: maxLines,
       onChanged: onChanged,
-      style: Theme.of(context).textTheme.bodyMedium,
+      style: const TextStyle(color: SoloForteSheetTokens.inputText),
       decoration: InputDecoration(
         hintText: hint,
-        hintStyle: const TextStyle(
-          color: PremiumTokens.textSecondaryLight,
-          fontSize: 14,
-        ),
+        hintStyle: const TextStyle(color: SoloForteSheetTokens.inputHint, fontSize: 14),
+        filled: true,
+        fillColor: SoloForteSheetTokens.inputBackground,
         border: InputBorder.none,
         contentPadding: const EdgeInsets.symmetric(vertical: 12),
         isDense: true,
