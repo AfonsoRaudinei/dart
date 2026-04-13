@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../domain/models/drawing_models.dart';
-
+import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
 /// Widget responsável por exibir ações contextuais para features de desenho.
 ///
 /// Ações disponíveis:
@@ -44,7 +44,7 @@ class DrawingActionsBar extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: const BoxDecoration(
-        color: Colors.white,
+        color: SoloForteSheetTokens.sheetBackground,
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
       child: Column(
@@ -81,9 +81,9 @@ class DrawingActionsBar extends StatelessWidget {
                     ),
                     Text(
                       '${selectedFeature.properties.areaHa.toStringAsFixed(2)} ha',
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 14,
-                        color: Colors.black.withValues(alpha: 0.6),
+                        color: SoloForteSheetTokens.inputHint,
                       ),
                     ),
                   ],
@@ -130,7 +130,7 @@ class DrawingActionsBar extends StatelessWidget {
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
-              color: Colors.black54,
+              color: SoloForteSheetTokens.inputHint,
             ),
           ),
           const SizedBox(height: 12),
@@ -182,7 +182,7 @@ class DrawingActionsBar extends StatelessWidget {
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
-              color: Colors.black54,
+              color: SoloForteSheetTokens.inputHint,
             ),
           ),
           const SizedBox(height: 12),
@@ -277,10 +277,10 @@ class _ActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = isDestructive ? Colors.red : Colors.black87;
+    final color = isDestructive ? Colors.red : SoloForteSheetTokens.sectionLabel;
 
     return Material(
-      color: Colors.grey.withValues(alpha: 0.05),
+      color: SoloForteSheetTokens.inputBackground,
       borderRadius: BorderRadius.circular(12),
       child: InkWell(
         onTap: onTap,
@@ -306,17 +306,17 @@ class _ActionButton extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       description,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 14,
-                        color: Colors.black.withValues(alpha: 0.6),
+                        color: SoloForteSheetTokens.inputHint,
                       ),
                     ),
                   ],
                 ),
               ),
-              Icon(
+              const Icon(
                 Icons.chevron_right,
-                color: Colors.black.withValues(alpha: 0.3),
+                color: SoloForteSheetTokens.divider,
               ),
             ],
           ),
