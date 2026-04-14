@@ -32,7 +32,7 @@ extension _PrivateMapSheets on _PrivateMapScreenState {
           maxHeight: MediaQuery.of(context).size.height * 0.85,
         ),
         decoration: BoxDecoration(
-          color: Theme.of(context).scaffoldBackgroundColor,
+          color: SoloForteSheetTokens.sheetBackground,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
         ),
         child: Column(
@@ -79,6 +79,7 @@ extension _PrivateMapSheets on _PrivateMapScreenState {
                       }
                     } catch (e) {
                       if (!mounted) return;
+                      Navigator.of(context).pop(); // Fecha sheet mesmo em erro
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text('Erro ao salvar rascunho: $e'),

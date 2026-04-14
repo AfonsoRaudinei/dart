@@ -264,7 +264,11 @@ class _NovoCaseSheetState extends State<NovoCaseSheet> {
       syncStatus: 'local_only',
     );
 
-    widget.onPublicar(newCase);
+    try {
+      widget.onPublicar(newCase);
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   void _showError(String msg) {

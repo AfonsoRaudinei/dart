@@ -130,6 +130,14 @@ class MarketingCaseRepositoryImpl implements IMarketingCaseRepository {
 
   @override
   Future<MarketingCase> saveCase(MarketingCase marketingCase) async {
+    // 0. Persistir localmente como pending_sync ANTES de ir ao Supabase
+    //    Garante que o case nao seja perdido se o app morrer durante o upload
+    final pendingCase = MarketingCase.fromJson({
+      ...marketingCase.toJson(),
+      'sync_status': 'pending_sync',
+    });
+    await saveSingleToCache(pendingCase);
+
     // 1. Dados do case principal (exclui avaliacoes — tabela separada)
     final caseJson = marketingCase.toJson()
       ..remove('avaliacoes'); // Não existe na tabela principal
