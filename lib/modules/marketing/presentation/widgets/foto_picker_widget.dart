@@ -67,8 +67,15 @@ class _FotoPickerWidgetState extends State<FotoPickerWidget> {
           widget.onChanged(url);
         }
       }
-    } catch (_) {
-      if (mounted) setState(() => _loading = false);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _loading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Não foi possível enviar a foto. Tente novamente.'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
