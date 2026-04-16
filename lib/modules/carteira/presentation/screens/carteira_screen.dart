@@ -12,42 +12,15 @@ import 'package:soloforte_app/modules/carteira/presentation/providers/carteira_p
 import 'package:soloforte_app/modules/carteira/presentation/widgets/carteira_metas_tab.dart';
 import 'package:soloforte_app/modules/carteira/presentation/widgets/categoria_form_dialog.dart';
 import 'package:soloforte_app/modules/carteira/presentation/widgets/cliente_carteira_card.dart';
+import 'package:soloforte_app/modules/carteira/presentation/screens/oportunidades_detalhe_screen.dart';
+import 'package:soloforte_app/core/contracts/i_client_lookup.dart';
 
-class CarteiraScreen extends ConsumerStatefulWidget {
+class CarteiraScreen extends ConsumerWidget {
   const CarteiraScreen({super.key});
 
   @override
-  ConsumerState<CarteiraScreen> createState() => _CarteiraScreenState();
-}
-
-class _CarteiraScreenState extends ConsumerState<CarteiraScreen> {
-  static const Uuid _uuid = Uuid();
-
-  String get _userId => Supabase.instance.client.auth.currentUser?.id ?? '';
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _seedCategorias();
-    });
-  }
-
-  Future<void> _seedCategorias() async {
-    final userId = _userId;
-    if (userId.isEmpty) return;
-
-    final repo = ref.read(carteiraRepositoryProvider);
-    await repo.seedCategoriasIniciais(userId);
-
-    if (!mounted) return;
-    ref.invalidate(categoriasGlobaisProvider(userId));
-    ref.invalidate(todosRegistrosProvider(userId));
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final userId = _userId;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
 
     if (userId.isEmpty) {
       return const Scaffold(
@@ -56,7 +29,7 @@ class _CarteiraScreenState extends ConsumerState<CarteiraScreen> {
     }
 
     return DefaultTabController(
-      length: 3,
+      length: 4,
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Carteira'),
@@ -65,6 +38,7 @@ class _CarteiraScreenState extends ConsumerState<CarteiraScreen> {
               Tab(text: 'Clientes'),
               Tab(text: 'Categorias'),
               Tab(text: 'Metas'),
+              Tab(text: 'Oportunidades'),
             ],
           ),
         ),
@@ -73,6 +47,7 @@ class _CarteiraScreenState extends ConsumerState<CarteiraScreen> {
             _ClientesTab(userId: userId),
             _CategoriasTab(userId: userId),
             const CarteiraMetasTab(),
+            _OportunidadesTab(userId: userId),
           ],
         ),
       ),
@@ -179,7 +154,7 @@ class _CategoriasTab extends ConsumerWidget {
     final now = DateTime.now();
 
     final nova = CategoriaGlobal(
-      id: _CarteiraScreenState._uuid.v4(),
+      id: const Uuid().v4(),
       userId: userId,
       nome: result.nome,
       cor: result.corHex,
@@ -335,6 +310,109 @@ class _CategoriasTab extends ConsumerWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// Aba Oportunidades
+// ─────────────────────────────────────────────────────────────
+
+class _OportunidadesTab extends ConsumerWidget {
+  const _OportunidadesTab({required this.userId});
+
+  final String userId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final clientesAsync = ref.watch(carteiraClientesProvider);
+
+    return clientesAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (_, __) =>
+          const Center(child: Text('Erro ao carregar clientes.')),
+      data: (clientes) {
+        if (clientes.isEmpty) {
+          return const Center(
+            child: Text('Nenhuma oportunidade em aberto 🎯'),
+          );
+        }
+        return _OportunidadesClientesList(
+          clientes: clientes,
+          userId: userId,
+        );
+      },
+    );
+  }
+}
+
+class _OportunidadesClientesList extends ConsumerWidget {
+  const _OportunidadesClientesList({
+    required this.clientes,
+    required this.userId,
+  });
+
+  final List<ClientSummary> clientes;
+  final String userId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final porCliente = <ClientSummary, List<OportunidadeCliente>>{};
+
+    for (final cliente in clientes) {
+      final lista =
+          ref.watch(oportunidadesClienteProvider(cliente.id)).valueOrNull ??
+              [];
+      if (lista.isNotEmpty) porCliente[cliente] = lista;
+    }
+
+    final algumCarregando = clientes.any(
+      (c) => ref.watch(oportunidadesClienteProvider(c.id)).isLoading,
+    );
+
+    if (porCliente.isEmpty) {
+      if (algumCarregando) {
+        return const Center(child: CircularProgressIndicator());
+      }
+      return const Center(
+        child: Text('Nenhuma oportunidade em aberto 🎯'),
+      );
+    }
+
+    final sorted = porCliente.entries.toList()
+      ..sort((a, b) => b.value.length.compareTo(a.value.length));
+
+    return ListView.builder(
+      padding: const EdgeInsets.only(top: 8, bottom: 24),
+      itemCount: sorted.length,
+      itemBuilder: (context, index) {
+        final entry = sorted[index];
+        final cliente = entry.key;
+        final oportunidades = entry.value;
+
+        return Card(
+          margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          child: ListTile(
+            title: Text(
+              cliente.name,
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+            subtitle: Text(
+              '${oportunidades.length} '
+              '${oportunidades.length == 1 ? 'categoria em aberto' : 'categorias em aberto'}',
+            ),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => OportunidadesDetalheScreen(
+                  clienteId: cliente.id,
+                  clienteNome: cliente.name,
+                ),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }
