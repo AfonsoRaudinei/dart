@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/painting.dart';
 import '../../../../core/utils/app_logger.dart';
 
 enum SyncStatus {
@@ -60,6 +61,27 @@ enum OccurrenceCategory {
   }
 }
 
+extension OccurrenceCategoryColor on OccurrenceCategory {
+  Color get markerColor {
+    if (this == OccurrenceCategory.doenca) {
+      return const Color(0xFFE53935);
+    }
+    if (this == OccurrenceCategory.insetos) {
+      return const Color(0xFFF59E0B);
+    }
+    if (this == OccurrenceCategory.daninhas) {
+      return const Color(0xFF7CB342);
+    }
+    if (this == OccurrenceCategory.nutricional) {
+      return const Color(0xFF1E88E5);
+    }
+    if (this == OccurrenceCategory.agua) {
+      return const Color(0xFF00ACC1);
+    }
+    return const Color(0xFF616161);
+  }
+}
+
 enum OccurrenceStatus {
   draft('Rascunho'),
   confirmed('Confirmada');
@@ -71,6 +93,7 @@ enum OccurrenceStatus {
 class Occurrence {
   final String id;
   final String? visitSessionId;
+  final String? clientId;
   final String type;
   final String description;
   final String? photoPath;
@@ -85,20 +108,21 @@ class Occurrence {
 
   // ── Campos agronômicos (Schema v14) ─────────────────────────────────
   final String? cultivar;
-  final String? dataPlantio;        // ISO "yyyy-MM-dd"
-  final String? estadioFenologico;  // código ex.: "V4", "R5.1"
-  final String? tipoOcorrencia;     // "sazonal" | "permanente"
+  final String? dataPlantio; // ISO "yyyy-MM-dd"
+  final String? estadioFenologico; // código ex.: "V4", "R5.1"
+  final String? tipoOcorrencia; // "sazonal" | "permanente"
   final bool amostraSolo;
   final String? recomendacoes;
-  final String? metricasJson;        // {cat: {metric: valor}}
-  final String? nutrientesJson;      // lista de símbolos selecionados
-  final String? categoriasJson;      // lista de categorias ativas
+  final String? metricasJson; // {cat: {metric: valor}}
+  final String? nutrientesJson; // lista de símbolos selecionados
+  final String? categoriasJson; // lista de categorias ativas
   final String? notasCategoriasJson; // {cat: texto}
   final String? fotosCategoriasJson; // {cat: [paths]}
 
   Occurrence({
     required this.id,
     this.visitSessionId,
+    this.clientId,
     required this.type,
     required this.description,
     this.photoPath,
@@ -128,6 +152,7 @@ class Occurrence {
     return Occurrence(
       id: map['id'],
       visitSessionId: map['visit_session_id'],
+      clientId: map['client_id'] as String?,
       type: map['type'],
       description: map['description'],
       photoPath: map['photo_path'],
@@ -160,6 +185,7 @@ class Occurrence {
     return {
       'id': id,
       'visit_session_id': visitSessionId,
+      'client_id': clientId,
       'type': type,
       'description': description,
       'photo_path': photoPath,
@@ -189,6 +215,8 @@ class Occurrence {
   Occurrence copyWith({
     String? id,
     String? visitSessionId,
+    String? clientId,
+    bool clearClientId = false,
     String? type,
     String? description,
     String? photoPath,
@@ -216,6 +244,7 @@ class Occurrence {
     return Occurrence(
       id: id ?? this.id,
       visitSessionId: visitSessionId ?? this.visitSessionId,
+      clientId: clearClientId ? null : (clientId ?? this.clientId),
       type: type ?? this.type,
       description: description ?? this.description,
       photoPath: photoPath ?? this.photoPath,
