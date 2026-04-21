@@ -23,7 +23,7 @@ class DatabaseHelper {
 
     final db = await openDatabase(
       path,
-      version: 27,
+      version: 28,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -144,6 +144,9 @@ class DatabaseHelper {
           break;
         case 27:
           await _migrateToV27(db);
+          break;
+        case 28:
+          await _migrateToV28(db);
           break;
       }
     }
@@ -1141,6 +1144,19 @@ class DatabaseHelper {
       AppLogger.debug('V27: ndvi_cache recriada com novo schema', tag: 'DB.Migration');
     } catch (_) {
       AppLogger.debug('V27: criação ndvi_cache — ignorado', tag: 'DB.Migration');
+    }
+  }
+
+  /// V28 — Occurrences: vínculo opcional com cliente (ADR-014/ADR-015).
+  ///
+  /// Adiciona coluna nullable `client_id` em `occurrences`.
+  /// Idempotente: ALTER TABLE envolvido em try/catch.
+  Future<void> _migrateToV28(Database db) async {
+    try {
+      await db.execute('ALTER TABLE occurrences ADD COLUMN client_id TEXT');
+      AppLogger.debug('V28: client_id adicionado em occurrences', tag: 'DB.Migration');
+    } catch (_) {
+      AppLogger.debug('V28: client_id já existe em occurrences — ignorado', tag: 'DB.Migration');
     }
   }
 
