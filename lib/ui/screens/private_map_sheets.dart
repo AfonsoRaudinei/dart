@@ -31,9 +31,9 @@ extension _PrivateMapSheets on _PrivateMapScreenState {
         constraints: BoxConstraints(
           maxHeight: MediaQuery.of(context).size.height * 0.85,
         ),
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           color: SoloForteSheetTokens.sheetBackground,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -188,7 +188,7 @@ extension _PrivateMapSheets on _PrivateMapScreenState {
   void _openSheetAsModal(BuildContext context, MapSheetState state) {
     if (_isModalOpen) return;
     if (!mounted) return;
-    setState(() => _isModalOpen = true);
+    _setModalOpen(true);
     final gen = ++_modalGeneration;
 
     // Bug 1: checkIn precisa de mais altura inicial e máxima para exibir
@@ -237,7 +237,7 @@ extension _PrivateMapSheets on _PrivateMapScreenState {
       ),
     ).whenComplete(() {
       if (mounted && gen == _modalGeneration) {
-        setState(() => _isModalOpen = false);
+        _setModalOpen(false);
         final currentState = ref.read(mapSheetStateProvider);
         if (currentState?.type == state.type) {
           _setSheetState(null, 'Modal: whenComplete dismiss');
@@ -273,6 +273,7 @@ extension _PrivateMapSheets on _PrivateMapScreenState {
               ref.read(occurrenceControllerProvider).createOccurrence(
                 type: data.type,
                 description: data.description,
+                clientId: data.clientId,
                 photoPath: data.photoPath,
                 lat: lat,
                 long: lng,

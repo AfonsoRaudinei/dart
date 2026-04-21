@@ -420,6 +420,7 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
             .createOccurrence(
               type: data.type,
               description: data.description,
+              clientId: data.clientId,
               photoPath: data.photoPath,
               lat: lat,
               long: lng,
