@@ -25,6 +25,7 @@ class OccurrenceController {
   Future<void> createOccurrence({
     required String type,
     required String description,
+    String? clientId,
     String? photoPath,
     double? lat,
     double? long,
@@ -60,6 +61,7 @@ class OccurrenceController {
     final occurrence = Occurrence(
       id: const Uuid().v4(),
       visitSessionId: sessionId,
+      clientId: clientId,
       type: type,
       description: description,
       photoPath: photoPath,
