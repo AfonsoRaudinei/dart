@@ -40,6 +40,7 @@ class OccurrenceSyncService {
             'id': occurrence.id,
             'user_id': userId,
             'visit_session_id': occurrence.visitSessionId,
+            'client_id': occurrence.clientId,
             'geometry': payload['geometry'],
             'sync_status': 'synced',
             'updated_at': occurrence.updatedAt.toIso8601String(),
@@ -175,6 +176,7 @@ class OccurrenceSyncService {
     return {
       'id': remote['id'],
       'visit_session_id': remote['visit_session_id'],
+      'client_id': remote['client_id'],
       'type': 'Info',
       'description': '',
       'photo_path': null,
