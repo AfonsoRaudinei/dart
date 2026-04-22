@@ -1,6 +1,7 @@
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:soloforte_app/core/permissions/location_permission_gate.dart';
 
 part 'public_location_provider.g.dart';
 
@@ -67,7 +68,7 @@ class PublicLocationNotifier extends _$PublicLocationNotifier {
 
       if (permission == LocationPermission.denied) {
         // Solicitar permissão
-        permission = await Geolocator.requestPermission();
+        permission = await LocationPermissionGate.request();
 
         if (permission == LocationPermission.denied) {
           state = state.copyWith(

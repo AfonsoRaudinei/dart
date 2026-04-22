@@ -2,10 +2,26 @@
 # Script de execução SoloForte — Web (Chrome)
 # Use este script para rodar no navegador Google Chrome.
 
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+ENV_FILE="$SCRIPT_DIR/.env.local"
+
+if [ -f "$ENV_FILE" ]; then
+  set -a
+  source "$ENV_FILE"
+  set +a
+fi
+
+GOOGLE_WEATHER_API_KEY="${GOOGLE_WEATHER_API_KEY:-}"
+SUPABASE_URL="${SUPABASE_URL:-}"
+SUPABASE_ANON_KEY="${SUPABASE_ANON_KEY:-}"
+STADIA_API_KEY="${STADIA_API_KEY:-}"
+ENV="${ENV:-development}"
+
 flutter run \
   -d chrome \
-  --dart-define=SUPABASE_URL=https://pyoejhhkjlrjijiviryq.supabase.co \
-  --dart-define=SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB5b2VqaGhramxyamlqaXZpcnlxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQxNTI1MDQsImV4cCI6MjA2OTcyODUwNH0.2P5wKq7b6viMa9kutLOZADsqAvSZx6X8fbLZMlooG1U \
-  --dart-define=STADIA_API_KEY=5b0c0038-b833-4e1d-adfa-756241cab907 \
-  --dart-define=ENV=development \
+  --dart-define=GOOGLE_WEATHER_API_KEY="$GOOGLE_WEATHER_API_KEY" \
+  --dart-define=SUPABASE_URL="$SUPABASE_URL" \
+  --dart-define=SUPABASE_ANON_KEY="$SUPABASE_ANON_KEY" \
+  --dart-define=STADIA_API_KEY="$STADIA_API_KEY" \
+  --dart-define=ENV="$ENV" \
   --web-renderer html

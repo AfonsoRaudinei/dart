@@ -22,6 +22,10 @@ class VisitaModel {
   /// Nullable para retrocompatibilidade com registros legados.
   final String? clienteId;
 
+  /// ID do usuário autenticado (Supabase) — garante isolamento offline.
+  /// Default '' para retrocompatibilidade com registros legados (pre-V3).
+  final String userId;
+
   VisitaModel({
     String? id,
     this.produtor = '',
@@ -40,6 +44,7 @@ class VisitaModel {
     Map<String, List<String>>? fotos,
     DateTime? createdAt,
     this.clienteId,
+    this.userId = '',
   }) : id = id ?? const Uuid().v4(),
        detalhes = detalhes ?? {},
        fotos = fotos ?? {},
@@ -71,6 +76,7 @@ class VisitaModel {
       'fotos': fotos,
       'createdAt': createdAt.toIso8601String(),
       'clienteId': clienteId,
+      'userId': userId,
     };
   }
 
@@ -103,6 +109,7 @@ class VisitaModel {
           {},
       createdAt: DateTime.parse(json['createdAt']),
       clienteId: json['clienteId'] as String?,
+      userId: json['userId'] as String? ?? '',
     );
   }
 
@@ -119,6 +126,7 @@ class VisitaModel {
     String? tecnico,
     Map<String, Map<String, dynamic>>? detalhes,
     String? clienteId,
+    String? userId,
   }) {
     return VisitaModel(
       id: id,
@@ -137,6 +145,7 @@ class VisitaModel {
       tecnico: tecnico ?? this.tecnico,
       detalhes: detalhes ?? this.detalhes,
       clienteId: clienteId ?? this.clienteId,
+      userId: userId ?? this.userId,
     );
   }
 }

@@ -22,26 +22,15 @@ class ClientListScreen extends ConsumerWidget {
         slivers: [
           SliverAppBar(
             pinned: true,
-            expandedHeight: 120.0,
+            expandedHeight: 176.0,
             backgroundColor: PremiumTokens.backgroundLight.withValues(
               alpha: 0.8,
             ),
             surfaceTintColor: Colors.transparent,
-            flexibleSpace: FlexibleSpaceBar(
-              titlePadding: const EdgeInsets.only(left: 16, bottom: 16),
-              title: Text(
-                'Clientes',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: -0.5,
-                  color: PremiumTokens.textPrimaryLight,
-                ),
-              ),
-              background: ClipRect(
-                child: BackdropFilter(
-                  filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                  child: Container(color: Colors.transparent),
-                ),
+            flexibleSpace: ClipRect(
+              child: BackdropFilter(
+                filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                child: Container(color: Colors.transparent),
               ),
             ),
             actions: [
@@ -56,9 +45,24 @@ class ClientListScreen extends ConsumerWidget {
               const SizedBox(width: 8),
             ],
             bottom: PreferredSize(
-              preferredSize: const Size.fromHeight(120),
+              preferredSize: const Size.fromHeight(176),
               child: Column(
                 children: [
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        'Clientes',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: -0.5,
+                          color: PremiumTokens.textPrimaryLight,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
                   // Search Bar
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16.0),

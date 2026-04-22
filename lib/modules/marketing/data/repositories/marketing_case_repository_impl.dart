@@ -36,29 +36,27 @@ class MarketingCaseRepositoryImpl implements IMarketingCaseRepository {
   @override
   Future<List<MarketingCase>> fetchMarketingCases() async {
     try {
-      // A query carrega o case e aninha seus blocos de avaliação
-      final response = await _supabase
-          .from('marketing_cases')
-          .select('''
-            *,
-            marketing_avaliacoes (*)
-          ''')
-          .eq('ativo', true)
-          .isFilter('deletado_em', null);
-
-      final cases = (response as List).map((json) {
-        // O join vem como 'marketing_avaliacoes', passamos para 'avaliacoes'
-        // que é a chave esperada pelo fromJson na entidade de Domínio
-        if (json['marketing_avaliacoes'] != null) {
-          json['avaliacoes'] = json['marketing_avaliacoes'];
-        }
-        return MarketingCase.fromJson(json);
-      }).toList();
+      final cases = await _fetchRemoteCases();
 
       // Atualiza cache local após fetch remoto bem-sucedido
       await saveToCache(cases);
       return cases;
     } on PostgrestException catch (e) {
+      // Schema legado: tenta combinações compatíveis sem filtros opcionais.
+      if (e.message.contains('marketing_cases.ativo') ||
+          e.message.contains('marketing_cases.deletado_em')) {
+        try {
+          final fallbackCases = await _fetchRemoteCasesCompatible();
+          await saveToCache(fallbackCases);
+          return fallbackCases;
+        } on PostgrestException catch (fallbackError) {
+          debugPrint(
+            '⚠️ [MarketingRepo] Erro remoto (fallback), servindo cache: ${fallbackError.message}',
+          );
+          return getLocalCases();
+        }
+      }
+
       // Coluna ausente ou erro de schema → serve cache local
       debugPrint(
         '⚠️ [MarketingRepo] Erro remoto, servindo cache: ${e.message}',
@@ -71,6 +69,54 @@ class MarketingCaseRepositoryImpl implements IMarketingCaseRepository {
       );
       return getLocalCases();
     }
+  }
+
+  Future<List<MarketingCase>> _fetchRemoteCases({
+    bool filterActive = true,
+    bool filterDeleted = true,
+  }) async {
+    var query = _supabase.from('marketing_cases').select('''
+            *,
+            marketing_avaliacoes (*)
+          ''');
+
+    if (filterDeleted) {
+      query = query.isFilter('deletado_em', null);
+    }
+
+    final response = filterActive ? await query.eq('ativo', true) : await query;
+
+    return (response as List).map((json) {
+      // O join vem como 'marketing_avaliacoes', passamos para 'avaliacoes'
+      // que é a chave esperada pelo fromJson na entidade de Domínio
+      if (json['marketing_avaliacoes'] != null) {
+        json['avaliacoes'] = json['marketing_avaliacoes'];
+      }
+      return MarketingCase.fromJson(json);
+    }).toList();
+  }
+
+  Future<List<MarketingCase>> _fetchRemoteCasesCompatible() async {
+    final strategies = <({bool filterActive, bool filterDeleted})>[
+      (filterActive: false, filterDeleted: true),
+      (filterActive: true, filterDeleted: false),
+      (filterActive: false, filterDeleted: false),
+    ];
+
+    PostgrestException? lastError;
+    for (final s in strategies) {
+      try {
+        return await _fetchRemoteCases(
+          filterActive: s.filterActive,
+          filterDeleted: s.filterDeleted,
+        );
+      } on PostgrestException catch (e) {
+        lastError = e;
+      }
+    }
+
+    if (lastError != null) throw lastError;
+    throw const PostgrestException(message: 'Falha ao buscar marketing_cases');
   }
 
   @override

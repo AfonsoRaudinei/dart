@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 
+import 'package:soloforte_app/core/permissions/location_permission_gate.dart';
 import '../../../../core/utils/app_logger.dart';
 import '../../domain/drawing_state.dart';
 import '../../domain/models/drawing_models.dart';
@@ -62,7 +63,7 @@ class DrawingGpsOrchestrator extends ChangeNotifier {
 
     LocationPermission permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
+      permission = await LocationPermissionGate.request();
     }
     if (permission == LocationPermission.deniedForever ||
         permission == LocationPermission.denied) {

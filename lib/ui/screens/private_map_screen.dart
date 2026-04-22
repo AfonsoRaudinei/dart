@@ -51,6 +51,7 @@ import '../../modules/map/presentation/widgets/visit_sheet.dart';
 import '../../modules/visitas/presentation/controllers/visit_controller.dart';
 import '../../core/design/sf_icons.dart';
 import '../../core/contracts/i_field_lookup_geofence_provider.dart';
+import '../../core/permissions/location_permission_gate.dart';
 import '../../core/permissions/permission_provider.dart';
 import 'package:geolocator/geolocator.dart';
 import '../../core/ui/sheets/sheet_tokens.dart';
@@ -225,6 +226,11 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
     });
   }
 
+  void _setModalOpen(bool value) {
+    if (!mounted) return;
+    setState(() => _isModalOpen = value);
+  }
+
   // 🛡 HARDENING DEFINITIVO: Máquina de Decisão de Viewport
   // Determinístico. Idempotente. Sem race loops.
   void _applyInitialViewport() async {
@@ -339,7 +345,7 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
   Future<void> _requestLocationPermission() async {
     final permission = await ref.read(locationPermissionProvider.future);
     if (permission == LocationPermission.denied) {
-      final newPermission = await Geolocator.requestPermission();
+      final newPermission = await LocationPermissionGate.request();
       _handlePermissionResult(newPermission);
     } else {
       _handlePermissionResult(permission);
@@ -396,7 +402,7 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
 
     final permission = await ref.read(locationPermissionProvider.future);
     if (permission == LocationPermission.denied) {
-      final newPermission = await Geolocator.requestPermission();
+      final newPermission = await LocationPermissionGate.request();
       _handlePermissionResult(newPermission);
       return;
     }

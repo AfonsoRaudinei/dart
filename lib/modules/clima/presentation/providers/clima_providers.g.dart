@@ -6,7 +6,7 @@ part of 'clima_providers.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$climaRepositoryHash() => r'b831be35535276c5c38d6156cd5568f65d29e814';
+String _$climaRepositoryHash() => r'11a30e1c8ef1154554319e3464cae17c497af103';
 
 /// See also [climaRepository].
 @ProviderFor(climaRepository)
@@ -23,7 +23,7 @@ final climaRepositoryProvider = AutoDisposeProvider<IClimaRepository>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef ClimaRepositoryRef = AutoDisposeProviderRef<IClimaRepository>;
-String _$climaLocationHash() => r'980aad2c512b44b36b92e7a2a695b5137f737984';
+String _$climaLocationHash() => r'ff14ae584c6db5719d766d0bb86606f769cad52f';
 
 /// Obtém coordenadas via GPS. Retorna Brasília como fallback.
 ///

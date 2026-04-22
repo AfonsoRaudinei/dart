@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:sqflite/sqflite.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/database/database_helper.dart';
 import '../domain/entities/relatorio.dart';
 import '../domain/repositories/i_report_repository.dart';
@@ -32,9 +33,11 @@ class ReportRepositoryImpl implements IReportRepository {
   Future<List<Relatorio>> getAll() async {
     await _ensureTable();
     final db = await _db;
+    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
     final List<Map<String, dynamic>> maps = await db.query(
       _tableName,
-      where: 'deleted_at IS NULL',
+      where: 'deleted_at IS NULL AND created_by = ?',
+      whereArgs: [userId],
     );
     return maps.map((map) => Relatorio.fromMap(map)).toList();
   }
@@ -43,10 +46,11 @@ class ReportRepositoryImpl implements IReportRepository {
   Future<Relatorio?> getById(String id) async {
     await _ensureTable();
     final db = await _db;
+    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
     final List<Map<String, dynamic>> maps = await db.query(
       _tableName,
-      where: 'id = ? AND deleted_at IS NULL',
-      whereArgs: [id],
+      where: 'id = ? AND created_by = ? AND deleted_at IS NULL',
+      whereArgs: [id, userId],
     );
     if (maps.isEmpty) return null;
     return Relatorio.fromMap(maps.first);
@@ -56,9 +60,13 @@ class ReportRepositoryImpl implements IReportRepository {
   Future<void> save(Relatorio relatorio) async {
     await _ensureTable();
     final db = await _db;
+    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
+    final relatorioToSave = relatorio.createdBy.isEmpty
+        ? relatorio.copyWith(createdBy: userId)
+        : relatorio;
     await db.insert(
       _tableName,
-      relatorio.toMap(),
+      relatorioToSave.toMap(),
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
     await _notifyWatchers();
@@ -68,6 +76,7 @@ class ReportRepositoryImpl implements IReportRepository {
   Future<void> softDelete(String id) async {
     await _ensureTable();
     final db = await _db;
+    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
     final relatorio = await getById(id);
     if (relatorio == null) return;
 
@@ -79,8 +88,8 @@ class ReportRepositoryImpl implements IReportRepository {
     await db.update(
       _tableName,
       deletedRelatorio.toMap(),
-      where: 'id = ?',
-      whereArgs: [id],
+      where: 'id = ? AND created_by = ?',
+      whereArgs: [id, userId],
     );
     await _notifyWatchers();
   }

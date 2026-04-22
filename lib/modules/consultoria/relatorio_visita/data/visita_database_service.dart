@@ -1,6 +1,7 @@
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'dart:convert';
 import '../../../../core/utils/app_logger.dart';
 import 'visita_model.dart';
@@ -23,7 +24,7 @@ class VisitaDatabaseService {
 
     return await openDatabase(
       path,
-      version: 2, // WS-6: V2 adiciona cliente_id
+      version: 3, // V3: adiciona user_id para isolamento offline (FIX-C1B)
       onCreate: _createDB,
       onUpgrade: _onUpgrade,
     );
@@ -41,6 +42,7 @@ class VisitaDatabaseService {
         estagio TEXT,
         tecnico TEXT,
         cliente_id TEXT,
+        user_id TEXT NOT NULL DEFAULT '',
         json_data TEXT NOT NULL,
         created_at TEXT NOT NULL
       )
@@ -49,6 +51,7 @@ class VisitaDatabaseService {
   }
 
   /// V2 — Adiciona `cliente_id` em `visitas` (WS-6).
+  /// V3 — Adiciona `user_id` em `visitas` (FIX-C1B — isolamento offline).
   /// Idempotente: ALTER TABLE em try/catch.
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
     if (oldVersion < 2) {
@@ -61,6 +64,22 @@ class VisitaDatabaseService {
       } catch (_) {
         AppLogger.debug(
           'V2: cliente_id já existe em visitas — ignorado',
+          tag: 'VisitaDB',
+        );
+      }
+    }
+    if (oldVersion < 3) {
+      try {
+        await db.execute(
+          "ALTER TABLE visitas ADD COLUMN user_id TEXT NOT NULL DEFAULT ''",
+        );
+        AppLogger.debug(
+          'V3: user_id adicionado em visitas',
+          tag: 'VisitaDB',
+        );
+      } catch (_) {
+        AppLogger.debug(
+          'V3: user_id já existe em visitas — ignorado',
           tag: 'VisitaDB',
         );
       }
@@ -82,6 +101,7 @@ class VisitaDatabaseService {
         'estagio': visita.estagioCodigo,
         'tecnico': visita.tecnico,
         'cliente_id': visita.clienteId,
+        'user_id': visita.userId,
         'json_data': jsonEncode(visita.toJson()),
         'created_at': visita.createdAt.toIso8601String(),
       },
@@ -93,7 +113,13 @@ class VisitaDatabaseService {
 
   Future<List<VisitaModel>> readAllVisitas() async {
     final db = await instance.database;
-    final result = await db.query('visitas', orderBy: 'created_at DESC');
+    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
+    final result = await db.query(
+      'visitas',
+      where: 'user_id = ?',
+      whereArgs: [userId],
+      orderBy: 'created_at DESC',
+    );
     return result
         .map((row) => VisitaModel.fromJson(jsonDecode(row['json_data'] as String)))
         .toList();
@@ -102,10 +128,11 @@ class VisitaDatabaseService {
   /// Retorna visitas vinculadas a um cliente específico (Hub do Cliente — WS-6).
   Future<List<VisitaModel>> getByClientId(String clienteId) async {
     final db = await instance.database;
+    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
     final result = await db.query(
       'visitas',
-      where: 'cliente_id = ?',
-      whereArgs: [clienteId],
+      where: 'cliente_id = ? AND user_id = ?',
+      whereArgs: [clienteId, userId],
       orderBy: 'created_at DESC',
     );
     return result
@@ -114,8 +141,13 @@ class VisitaDatabaseService {
   }
 
   Future<void> delete(String id) async {
+    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
     final db = await instance.database;
-    await db.delete('visitas', where: 'id = ?', whereArgs: [id]);
+    await db.delete(
+      'visitas',
+      where: 'id = ? AND user_id = ?',
+      whereArgs: [id, userId],
+    );
     AppLogger.debug('Visita deletada (ID: $id)', tag: 'VisitaDB');
   }
 

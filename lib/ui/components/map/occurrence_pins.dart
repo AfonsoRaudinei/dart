@@ -44,18 +44,7 @@ class _OccurrencePin extends StatelessWidget {
 
   Color _getCategoryColor() {
     final category = OccurrenceCategory.fromString(occurrence.category);
-    switch (category) {
-      case OccurrenceCategory.doenca:
-        return Colors.blue.shade700;
-      case OccurrenceCategory.insetos:
-        return Colors.red.shade700;
-      case OccurrenceCategory.daninhas:
-        return Colors.orange.shade700;
-      case OccurrenceCategory.nutricional:
-        return Colors.grey.shade600;
-      case OccurrenceCategory.agua:
-        return Colors.cyan.shade700;
-    }
+    return category.markerColor;
   }
 
   IconData _getCategoryIcon() {

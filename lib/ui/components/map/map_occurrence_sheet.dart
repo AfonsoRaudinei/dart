@@ -579,6 +579,11 @@ class _MapOccurrenceSheetState extends ConsumerState<MapOccurrenceSheet> {
     if (widget.clienteId != null && _draft.clienteId == null) {
       _draft = _draft.copyWith(clienteId: widget.clienteId);
     }
+    // Injetar userId para isolamento offline (FIX-C1B)
+    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
+    if (_draft.userId.isEmpty) {
+      _draft = _draft.copyWith(userId: userId);
+    }
     // 1. Save to SQLite
     await VisitaDatabaseService.instance.save(_draft);
 

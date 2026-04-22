@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:soloforte_app/core/permissions/location_permission_gate.dart';
 import '../domain/location_state.dart';
 
 /// Provider do estado de localização
@@ -36,7 +37,7 @@ class LocationController {
 
     if (permission == LocationPermission.denied) {
       // Tentar solicitar permissão
-      permission = await Geolocator.requestPermission();
+      permission = await LocationPermissionGate.request();
 
       if (permission == LocationPermission.denied) {
         ref.read(locationStateProvider.notifier).state =

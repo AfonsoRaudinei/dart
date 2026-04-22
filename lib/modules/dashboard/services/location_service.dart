@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:soloforte_app/core/permissions/location_permission_gate.dart';
 
 /// 🌍 SERVIÇO DE LOCALIZAÇÃO GPS - STREAM REAL
 ///
@@ -84,7 +85,7 @@ class LocationService {
     LocationPermission permission = await Geolocator.checkPermission();
 
     if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
+      permission = await LocationPermissionGate.request();
       if (permission == LocationPermission.denied) return false;
     }
 

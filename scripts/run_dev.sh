@@ -17,9 +17,11 @@
 # Variáveis de ambiente — substitua pelos valores reais no arquivo .local.sh
 SUPABASE_URL="https://seu-projeto.supabase.co"
 SUPABASE_ANON_KEY="sua-chave-anonima-aqui"
+GOOGLE_WEATHER_API_KEY="sua-chave-google-weather-aqui"
 ENV="development"
 
 flutter run \
+  --dart-define=GOOGLE_WEATHER_API_KEY="$GOOGLE_WEATHER_API_KEY" \
   --dart-define=SUPABASE_URL="$SUPABASE_URL" \
   --dart-define=SUPABASE_ANON_KEY="$SUPABASE_ANON_KEY" \
   --dart-define=ENV="$ENV"

@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:soloforte_app/core/permissions/location_permission_gate.dart';
 
 import '../../../../core/utils/app_logger.dart';
 import '../../domain/models/gps_walk_session.dart';
@@ -112,7 +113,7 @@ class GpsWalkNotifier extends AutoDisposeNotifier<GpsWalkSession?> {
     try {
       LocationPermission perm = await Geolocator.checkPermission();
       if (perm == LocationPermission.denied) {
-        perm = await Geolocator.requestPermission();
+        perm = await LocationPermissionGate.request();
       }
       if (perm == LocationPermission.denied ||
           perm == LocationPermission.deniedForever) {

@@ -20,6 +20,7 @@ import '../../modules/marketing/presentation/widgets/marketing_case_marker.dart'
 import '../../modules/marketing/presentation/widgets/marketing_case_sheet.dart';
 import '../../core/config/map_config.dart';
 import '../../core/permissions/permission_provider.dart';
+import '../../core/permissions/location_permission_gate.dart';
 
 class PublicMapScreen extends ConsumerStatefulWidget {
   const PublicMapScreen({super.key});
@@ -44,7 +45,7 @@ class _PublicMapScreenState extends ConsumerState<PublicMapScreen> {
   Future<void> _requestLocationPermission() async {
     final permission = await ref.read(locationPermissionProvider.future);
     if (permission == LocationPermission.denied) {
-      final newPermission = await Geolocator.requestPermission();
+      final newPermission = await LocationPermissionGate.request();
       _handlePermissionResult(newPermission);
     } else {
       _handlePermissionResult(permission);
@@ -92,7 +93,7 @@ class _PublicMapScreenState extends ConsumerState<PublicMapScreen> {
   void _onLocationTap() async {
     final permission = await ref.read(locationPermissionProvider.future);
     if (permission == LocationPermission.denied) {
-      final newPermission = await Geolocator.requestPermission();
+      final newPermission = await LocationPermissionGate.request();
       _handlePermissionResult(newPermission);
       return;
     }

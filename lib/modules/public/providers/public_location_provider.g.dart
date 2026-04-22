@@ -7,7 +7,7 @@ part of 'public_location_provider.dart';
 // **************************************************************************
 
 String _$publicLocationNotifierHash() =>
-    r'026d8a6b7006efeb254667877948df9e6be0e193';
+    r'1e78e442615cecc627d1d72df7522f9c67faa12e';
 
 /// Provider de localização pública (isolado do mapa privado)
 ///
