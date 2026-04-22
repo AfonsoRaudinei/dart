@@ -3,6 +3,10 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:soloforte_app/core/contracts/i_client_lookup.dart';
 import 'package:soloforte_app/core/contracts/i_client_lookup_provider.dart';
+import 'package:soloforte_app/core/contracts/i_opportunity_lookup.dart';
+import 'package:soloforte_app/core/contracts/opportunity_summary.dart';
+import 'package:soloforte_app/core/database/database_helper.dart';
+import 'package:soloforte_app/modules/carteira/data/opportunity_lookup_impl.dart';
 import 'package:soloforte_app/modules/carteira/data/repositories/carteira_repository_impl.dart';
 import 'package:soloforte_app/modules/carteira/domain/entities/carteira_lancamento.dart';
 import 'package:soloforte_app/modules/carteira/domain/entities/carteira_meta.dart';
@@ -14,6 +18,21 @@ import 'package:soloforte_app/modules/carteira/domain/repositories/i_carteira_re
 final carteiraRepositoryProvider = Provider<ICarteiraRepository>((ref) {
   return CarteiraRepositoryImpl();
 });
+
+/// ADR-029 — instância de [IOpportunityLookup] para o módulo carteira.
+final opportunityLookupProvider = Provider<IOpportunityLookup>((ref) {
+  return OpportunityLookupImpl(
+    repository: ref.watch(carteiraRepositoryProvider),
+    db: DatabaseHelper.instance,
+  );
+});
+
+/// ADR-029 — oportunidades abertas (via [OpportunitySummary]) de um cliente.
+final clientOpportunitiesProvider = FutureProvider.autoDispose
+    .family<List<OpportunitySummary>, String>((ref, clientId) async {
+      final lookup = ref.watch(opportunityLookupProvider);
+      return lookup.getOpenOpportunities(clientId);
+    });
 
 final categoriasGlobaisProvider = FutureProvider.autoDispose
     .family<List<CategoriaGlobal>, String>((ref, userId) async {

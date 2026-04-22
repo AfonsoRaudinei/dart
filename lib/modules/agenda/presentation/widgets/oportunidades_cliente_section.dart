@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:soloforte_app/core/contracts/opportunity_summary.dart';
 import 'package:soloforte_app/modules/carteira/presentation/providers/carteira_providers.dart';
 
-/// Seção expansível que exibe oportunidades abertas de um cliente
-/// na safra ativa. Usada no formulário de Nova Visita.
+/// Seção expansível que exibe oportunidades abertas de um cliente.
+/// Usada no formulário de Nova Visita (agenda/).
 ///
 /// - Invisível se [clienteId] for null ou vazio
-/// - Invisível se não houver safra ativa ou metas definidas
-/// - Invisível se todas as categorias estiverem 100% fechadas
+/// - Invisível se não houver oportunidades abertas
+/// - Loading: LinearProgressIndicator compacto (height: 2)
 /// - Tap em oportunidade → dialog de confirmação → [onTituloSelecionado]
+///
+/// ADR-029 — IOpportunityLookup
 class OportunidadesClienteSection extends ConsumerStatefulWidget {
   /// ID do cliente selecionado no form. Null = oculta a seção.
   final String? clienteId;
@@ -42,11 +45,11 @@ class _OportunidadesClienteSectionState
     }
 
     final oportunidadesAsync = ref.watch(
-      oportunidadesClienteProvider(clienteId),
+      clientOpportunitiesProvider(clienteId),
     );
 
     return oportunidadesAsync.when(
-      loading: () => const SizedBox.shrink(),
+      loading: () => const LinearProgressIndicator(minHeight: 2),
       error: (_, __) => const SizedBox.shrink(),
       data: (oportunidades) {
         if (oportunidades.isEmpty) return const SizedBox.shrink();
@@ -86,7 +89,7 @@ class _OportunidadesClienteSectionState
               ...oportunidades.map(
                 (op) => _OportunidadeItem(
                   oportunidade: op,
-                  onTap: () => _confirmarTitulo(context, op.categoria.nome),
+                  onTap: () => _confirmarTitulo(context, op.categoryName),
                 ),
               ),
               const SizedBox(height: 8),
@@ -125,20 +128,17 @@ class _OportunidadesClienteSectionState
 }
 
 class _OportunidadeItem extends StatelessWidget {
-  final OportunidadeCliente oportunidade;
+  final OpportunitySummary oportunidade;
   final VoidCallback onTap;
 
   const _OportunidadeItem({required this.oportunidade, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    final cor = _parseCor(oportunidade.categoria.cor);
-    final pct = oportunidade.progressoPct;
-    final referencia = oportunidade.categoria.valorReferencia;
-    final labelValor = _buildLabelValor(
-      referencia,
-      oportunidade.categoria.unidade.label,
-    );
+    final cor = Color(oportunidade.categoryColor);
+    final pct = oportunidade.closedPercent;
+    final unit = oportunidade.unit;
+    final labelValor = _buildLabelValor(oportunidade.referenceValuePerHa, unit);
 
     return InkWell(
       onTap: onTap,
@@ -162,7 +162,8 @@ class _OportunidadeItem extends StatelessWidget {
                     children: [
                       Expanded(
                         child: Text(
-                          oportunidade.categoria.nome,
+                          '${oportunidade.categoryName}  '
+                          'R\$ ${oportunidade.totalOpportunityValue.toStringAsFixed(0)}',
                           style: Theme.of(context).textTheme.bodyMedium,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -207,18 +208,9 @@ class _OportunidadeItem extends StatelessWidget {
     );
   }
 
-  Color _parseCor(String hex) {
-    try {
-      final h = hex.replaceAll('#', '');
-      return Color(int.parse('FF$h', radix: 16));
-    } catch (_) {
-      return Colors.grey;
-    }
-  }
-
-  String? _buildLabelValor(double? valor, String unidadeLabel) {
-    if (valor == null) return null;
-    if (unidadeLabel == 'R\$/ha') {
+  String? _buildLabelValor(double valor, String unit) {
+    if (valor <= 0) return null;
+    if (unit == 'R\$/ha') {
       final n = valor % 1 == 0
           ? valor.toInt().toString()
           : valor.toStringAsFixed(1);
@@ -227,6 +219,6 @@ class _OportunidadeItem extends StatelessWidget {
     final n = valor % 1 == 0
         ? valor.toInt().toString()
         : valor.toStringAsFixed(1);
-    return '$n $unidadeLabel';
+    return '$n $unit';
   }
 }
