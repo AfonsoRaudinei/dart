@@ -18,6 +18,7 @@ class SettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final userProfile = ref.watch(profileProvider);
+    final accountProfileAsync = ref.watch(accountProfileProvider);
     final currentThemeMode = ref.watch(themeProvider);
 
     return Scaffold(
@@ -65,6 +66,12 @@ class SettingsScreen extends ConsumerWidget {
                       .read(profileProvider.notifier)
                       .toggleUseAsAppIcon(val),
                 ),
+              ]),
+
+              // Dados cadastrais
+              _buildSectionHeader('DADOS CADASTRAIS'),
+              _buildSection(context, [
+                _buildAccountProfileTile(context, accountProfileAsync),
               ]),
 
               // Aparência
@@ -397,6 +404,74 @@ class SettingsScreen extends ConsumerWidget {
           );
         }).toList(),
       ),
+    );
+  }
+
+  Widget _buildAccountProfileTile(
+    BuildContext context,
+    AsyncValue<AccountProfileData> accountProfileAsync,
+  ) {
+    return accountProfileAsync.when(
+      loading: () => const Padding(
+        padding: EdgeInsets.all(16),
+        child: LinearProgressIndicator(minHeight: 2),
+      ),
+      error: (_, __) => Padding(
+        padding: const EdgeInsets.all(16),
+        child: Text(
+          'Não foi possível carregar os dados cadastrais.',
+          style:
+              (Theme.of(context).textTheme.labelMedium ?? const TextStyle())
+                  .copyWith(color: PremiumTokens.textSecondaryLight),
+        ),
+      ),
+      data: (data) => Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildInfoRow(context, 'Nome', data.name),
+            const SizedBox(height: 10),
+            _buildInfoRow(context, 'E-mail', data.email),
+            const SizedBox(height: 10),
+            _buildInfoRow(context, 'Telefone', data.phone),
+            const SizedBox(height: 10),
+            _buildInfoRow(context, 'Perfil', data.role),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInfoRow(BuildContext context, String label, String value) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: 82,
+          child: Text(
+            label,
+            style:
+                (Theme.of(context).textTheme.labelMedium ?? const TextStyle())
+                    .copyWith(
+                      color: PremiumTokens.textSecondaryLight,
+                      fontWeight: FontWeight.w600,
+                    ),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(
+            value,
+            style: (Theme.of(context).textTheme.bodyMedium ?? const TextStyle())
+                .copyWith(
+                  color: isDark ? Colors.white : const Color(0xFF1D1D1F),
+                ),
+          ),
+        ),
+      ],
     );
   }
 
