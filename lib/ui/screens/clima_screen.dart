@@ -103,9 +103,32 @@ class _CurrentView extends ConsumerWidget {
           child: climaAsync.when(
             data: (ClimaAtual clima) => Column(
               children: [
-                ClimaLocationRow(
-                  cidade: clima.cidade,
-                  atualizadoEm: clima.atualizadoEm,
+                Row(
+                  children: [
+                    Expanded(
+                      child: ClimaLocationRow(
+                        cidade: clima.cidade,
+                        atualizadoEm: clima.atualizadoEm,
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(
+                        Icons.share_outlined,
+                        color: Color(0xFF4ADE80),
+                      ),
+                      tooltip: 'Compartilhar no WhatsApp',
+                      onPressed: () => showModalBottomSheet(
+                        context: context,
+                        isScrollControlled: true,
+                        backgroundColor: const Color(0xFF1C1C1E),
+                        shape: const RoundedRectangleBorder(
+                          borderRadius:
+                              BorderRadius.vertical(top: Radius.circular(16)),
+                        ),
+                        builder: (_) => ClimaWhatsAppSheet(clima: clima),
+                      ),
+                    ),
+                  ],
                 ),
                 ClimaCurrentWeatherCard(clima: clima, unidade: unidade),
                 ClimaDetailsCard(clima: clima),
