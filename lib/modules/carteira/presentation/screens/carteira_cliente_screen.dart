@@ -68,6 +68,7 @@ class CarteiraClienteScreen extends ConsumerWidget {
                     categoria: categoria,
                     clienteId: clienteId,
                     clienteNome: clienteNome,
+                    clientAreaHa: clienteAsync.valueOrNull?.areaTotal ?? 0.0,
                     registroLegado: registro,
                     onEditLegado: () => _editRegistro(
                       context,
@@ -124,6 +125,7 @@ class _CategoriaClienteItem extends ConsumerStatefulWidget {
     required this.categoria,
     required this.clienteId,
     required this.clienteNome,
+    required this.clientAreaHa,
     required this.registroLegado,
     required this.onEditLegado,
   });
@@ -131,6 +133,7 @@ class _CategoriaClienteItem extends ConsumerStatefulWidget {
   final CategoriaGlobal categoria;
   final String clienteId;
   final String clienteNome;
+  final double clientAreaHa;
   final ClienteCategoria? registroLegado;
   final VoidCallback onEditLegado;
 
@@ -158,6 +161,7 @@ class _CategoriaClienteItemState extends ConsumerState<_CategoriaClienteItem> {
         categoria: widget.categoria,
         clienteId: widget.clienteId,
         clienteNome: widget.clienteNome,
+        clientAreaHa: widget.clientAreaHa,
       ),
     );
   }

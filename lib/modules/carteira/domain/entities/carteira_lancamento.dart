@@ -35,6 +35,7 @@ class CarteiraLancamento {
   final String categoriaId;
   final String clienteId;
   final double quantidade;
+  final double closedPercent; // 0.0 a 100.0
   final String? observacao;
   final TipoFechamento? tipoFechamento;
   final String? nomeConcorrente;
@@ -50,6 +51,7 @@ class CarteiraLancamento {
     required this.categoriaId,
     required this.clienteId,
     required this.quantidade,
+    this.closedPercent = 0.0,
     this.observacao,
     this.tipoFechamento,
     this.nomeConcorrente,
@@ -67,6 +69,7 @@ class CarteiraLancamento {
       categoriaId: map['categoria_id'] as String,
       clienteId: map['cliente_id'] as String,
       quantidade: (map['quantidade'] as num).toDouble(),
+      closedPercent: (map['closed_percent'] as num?)?.toDouble() ?? 0.0,
       observacao: map['observacao'] as String?,
       tipoFechamento: TipoFechamento.fromDb(map['tipo_fechamento'] as String?),
       nomeConcorrente: map['nome_concorrente'] as String?,
@@ -87,6 +90,7 @@ class CarteiraLancamento {
       'categoria_id': categoriaId,
       'cliente_id': clienteId,
       'quantidade': quantidade,
+      'closed_percent': closedPercent,
       'observacao': observacao,
       'tipo_fechamento': tipoFechamento?.dbValue,
       'nome_concorrente': nomeConcorrente,
@@ -104,6 +108,7 @@ class CarteiraLancamento {
     String? categoriaId,
     String? clienteId,
     double? quantidade,
+    double? closedPercent,
     String? observacao,
     TipoFechamento? tipoFechamento,
     String? nomeConcorrente,
@@ -119,6 +124,7 @@ class CarteiraLancamento {
       categoriaId: categoriaId ?? this.categoriaId,
       clienteId: clienteId ?? this.clienteId,
       quantidade: quantidade ?? this.quantidade,
+      closedPercent: closedPercent ?? this.closedPercent,
       observacao: observacao ?? this.observacao,
       tipoFechamento: tipoFechamento ?? this.tipoFechamento,
       nomeConcorrente: nomeConcorrente ?? this.nomeConcorrente,

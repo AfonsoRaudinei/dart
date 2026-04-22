@@ -16,12 +16,14 @@ class LancamentoFormDialog extends ConsumerStatefulWidget {
   final CategoriaGlobal categoria;
   final String clienteId;
   final String clienteNome;
+  final double clientAreaHa;
 
   const LancamentoFormDialog({
     super.key,
     required this.categoria,
     required this.clienteId,
     required this.clienteNome,
+    required this.clientAreaHa,
   });
 
   @override
@@ -30,7 +32,7 @@ class LancamentoFormDialog extends ConsumerStatefulWidget {
 }
 
 class _LancamentoFormDialogState extends ConsumerState<LancamentoFormDialog> {
-  final _quantidadeController = TextEditingController();
+  final _percentController = TextEditingController();
   final _observacaoController = TextEditingController();
   final _nomeConcorrenteController = TextEditingController();
   final _motivoFechamentoController = TextEditingController();
@@ -43,7 +45,7 @@ class _LancamentoFormDialogState extends ConsumerState<LancamentoFormDialog> {
 
   @override
   void dispose() {
-    _quantidadeController.dispose();
+    _percentController.dispose();
     _observacaoController.dispose();
     _nomeConcorrenteController.dispose();
     _motivoFechamentoController.dispose();
@@ -75,12 +77,12 @@ class _LancamentoFormDialogState extends ConsumerState<LancamentoFormDialog> {
   }
 
   Future<void> _salvar() async {
-    final quantidade = double.tryParse(
-      _quantidadeController.text.replaceAll(',', '.'),
+    final percent = double.tryParse(
+      _percentController.text.replaceAll(',', '.'),
     );
-    if (quantidade == null || quantidade <= 0) {
+    if (percent == null || percent < 0.0 || percent > 100.0) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Informe uma quantidade válida')),
+        const SnackBar(content: Text('Informe um percentual válido (0 a 100)')),
       );
       return;
     }
@@ -113,7 +115,8 @@ class _LancamentoFormDialogState extends ConsumerState<LancamentoFormDialog> {
         safraId: safra.id,
         categoriaId: widget.categoria.id,
         clienteId: widget.clienteId,
-        quantidade: quantidade,
+        quantidade: 0.0,
+        closedPercent: percent,
         observacao: _observacaoController.text.trim().isEmpty
             ? null
             : _observacaoController.text.trim(),
@@ -164,7 +167,6 @@ class _LancamentoFormDialogState extends ConsumerState<LancamentoFormDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final unidade = widget.categoria.unidade.label;
     final cor = _parseCor(widget.categoria.cor);
     final fmt =
         '${_dataLancamento.day.toString().padLeft(2, '0')}/'
@@ -189,20 +191,66 @@ class _LancamentoFormDialogState extends ConsumerState<LancamentoFormDialog> {
           ),
         ],
       ),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          TextField(
-            controller: _quantidadeController,
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            autofocus: true,
-            decoration: InputDecoration(
-              labelText: 'Quantidade vendida',
-              suffixText: unidade,
-              border: const OutlineInputBorder(),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: _percentController,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              autofocus: true,
+              onChanged: (_) => setState(() {}),
+              decoration: const InputDecoration(
+                labelText: 'Percentual fechado',
+                suffixText: '%',
+                border: OutlineInputBorder(),
+              ),
             ),
-          ),
-          const SizedBox(height: 12),
+            Builder(builder: (context) {
+              final raw = double.tryParse(
+                _percentController.text.replaceAll(',', '.'),
+              );
+              final validPercent = raw != null && raw >= 0.0 && raw <= 100.0;
+              if (!validPercent) return const SizedBox.shrink();
+              final valorRef = widget.categoria.valorReferencia ?? 0.0;
+              final unidadeLabel = widget.categoria.unidade.label;
+              final areaHa = widget.clientAreaHa;
+              final closedValuePerHa = valorRef * raw / 100;
+              final residualValuePerHa = valorRef - closedValuePerHa;
+              final residualPercent = 100.0 - raw;
+              final totalOportunidade = residualValuePerHa * areaHa;
+              return Container(
+                margin: const EdgeInsets.only(top: 10),
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.green.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.green.shade200),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Fechado: ${closedValuePerHa.toStringAsFixed(2)} $unidadeLabel/ha',
+                      style: const TextStyle(fontSize: 13),
+                    ),
+                    Text(
+                      'Residual: ${residualValuePerHa.toStringAsFixed(2)} $unidadeLabel/ha '
+                      '(${residualPercent.toStringAsFixed(1)}%)',
+                      style: const TextStyle(fontSize: 13),
+                    ),
+                    Text(
+                      'Oportunidade total: R\$ ${totalOportunidade.toStringAsFixed(2)}',
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }),
+            const SizedBox(height: 12),
           InkWell(
             onTap: _pickData,
             borderRadius: BorderRadius.circular(8),
@@ -339,6 +387,7 @@ class _LancamentoFormDialogState extends ConsumerState<LancamentoFormDialog> {
             ),
           ),
         ],
+      ),
       ),
       actions: [
         TextButton(

@@ -23,7 +23,7 @@ class DatabaseHelper {
 
     final db = await openDatabase(
       path,
-      version: 28,
+      version: 29,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -147,6 +147,9 @@ class DatabaseHelper {
           break;
         case 28:
           await _migrateToV28(db);
+          break;
+        case 29:
+          await _migrateToV29(db);
           break;
       }
     }
@@ -1157,6 +1160,25 @@ class DatabaseHelper {
       AppLogger.debug('V28: client_id adicionado em occurrences', tag: 'DB.Migration');
     } catch (_) {
       AppLogger.debug('V28: client_id já existe em occurrences — ignorado', tag: 'DB.Migration');
+    }
+  }
+
+  /// V29 — Carteira: adiciona closed_percent em carteira_lancamentos.
+  Future<void> _migrateToV29(Database db) async {
+    try {
+      await db.execute('''
+        ALTER TABLE carteira_lancamentos
+        ADD COLUMN closed_percent REAL NOT NULL DEFAULT 0.0
+      ''');
+      AppLogger.debug(
+        'V29: closed_percent adicionado em carteira_lancamentos',
+        tag: 'DB.Migration',
+      );
+    } catch (_) {
+      AppLogger.debug(
+        'V29: closed_percent já existe em carteira_lancamentos — ignorado',
+        tag: 'DB.Migration',
+      );
     }
   }
 
