@@ -11,6 +11,20 @@
 /// ```
 abstract final class ClimaConfig {
   // ═══════════════════════════════════════════════════════════════════
+  // GOOGLE MAPS PLATFORM WEATHER API (PRINCIPAL)
+  // ═══════════════════════════════════════════════════════════════════
+
+  /// Chave da API Weather do Google Maps Platform.
+  /// Injetada via --dart-define=GOOGLE_WEATHER_API_KEY=...
+  static const String googleWeatherApiKey = String.fromEnvironment(
+    'GOOGLE_WEATHER_API_KEY',
+    defaultValue: '',
+  );
+
+  /// Base URL da API Weather do Google.
+  static const String googleWeatherBaseUrl = 'https://weather.googleapis.com';
+
+  // ═══════════════════════════════════════════════════════════════════
   // OPENWEATHERMAP
   // ═══════════════════════════════════════════════════════════════════
 

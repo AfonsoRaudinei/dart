@@ -5,6 +5,8 @@ import 'feature_flag_resolver.dart';
 import 'feature_flag_service.dart';
 import 'feature_flag_backend_adapter.dart';
 
+const String agendaAiFeatureKey = 'agenda_ai_v1';
+
 /// Provider para FeatureFlagBackendAdapter
 final featureFlagBackendProvider = Provider<FeatureFlagBackendAdapter>((ref) {
   return FeatureFlagBackendAdapter();
@@ -29,6 +31,12 @@ final drawingFlagProvider = FutureProvider<FeatureFlag>((ref) async {
   return service.getDrawingFlag();
 });
 
+/// Provider para a flag agenda_ai_v1 (reativo)
+final agendaAiFlagProvider = FutureProvider<FeatureFlag>((ref) async {
+  final service = ref.watch(featureFlagServiceProvider);
+  return service.getFlag(agendaAiFeatureKey);
+});
+
 /// Provider para verificar se Drawing está habilitado para usuário atual
 ///
 /// Parâmetros necessários via family:
@@ -42,6 +50,18 @@ final isDrawingEnabledProvider = FutureProvider.family<bool, FeatureFlagUser>((
   final resolver = ref.watch(featureFlagResolverProvider);
 
   return resolver.isDrawingEnabled(flag, user);
+});
+
+/// Provider para verificar se IA da Agenda está habilitada para usuário atual
+final isAgendaAiEnabledProvider = FutureProvider.family<bool, FeatureFlagUser>(
+(
+  ref,
+  user,
+) async {
+  final flag = await ref.watch(agendaAiFlagProvider.future);
+  final resolver = ref.watch(featureFlagResolverProvider);
+
+  return resolver.isFeatureEnabled(flag, user);
 });
 
 /// Provider para iniciar background updates do FeatureFlagService

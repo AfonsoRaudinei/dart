@@ -208,4 +208,86 @@ class FeatureFlagAnalytics {
       errorMessage: '$errorType on $toolType',
     );
   }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // MÉTRICAS ESPECÍFICAS DO ASSISTENTE IA (AGENDA + CARTEIRA)
+  // ─────────────────────────────────────────────────────────────────────────
+
+  static void trackAgendaAiAccess({
+    required String userId,
+    required String? userRole,
+    required bool wasEnabled,
+  }) {
+    trackFeatureAccess(
+      featureKey: 'agenda_ai_v1',
+      userId: userId,
+      userRole: userRole,
+      wasEnabled: wasEnabled,
+      blockReason: wasEnabled ? null : 'Feature flag disabled',
+    );
+  }
+
+  static void trackAgendaAiOpened({required String userId}) {
+    trackFeatureUsage(
+      featureKey: 'agenda_ai_v1',
+      userId: userId,
+      action: 'sheet_opened',
+    );
+  }
+
+  static void trackAgendaAiRecommendationLoaded({
+    required String userId,
+    required int recommendationCount,
+    required int durationMs,
+  }) {
+    trackFeatureUsage(
+      featureKey: 'agenda_ai_v1',
+      userId: userId,
+      action: 'recommendation_loaded',
+      metadata: {
+        'recommendation_count': recommendationCount,
+        'duration_ms': durationMs,
+      },
+    );
+  }
+
+  static void trackAgendaAiChatAsked({
+    required String userId,
+    required int messageLength,
+  }) {
+    trackFeatureUsage(
+      featureKey: 'agenda_ai_v1',
+      userId: userId,
+      action: 'chat_question_sent',
+      metadata: {
+        'message_length': messageLength,
+      },
+    );
+  }
+
+  static void trackAgendaAiVisitCreated({
+    required String userId,
+    required bool success,
+    required String? clientId,
+  }) {
+    trackFeatureUsage(
+      featureKey: 'agenda_ai_v1',
+      userId: userId,
+      action: success ? 'visit_create_success' : 'visit_create_failure',
+      metadata: {
+        'client_id': clientId,
+      },
+    );
+  }
+
+  static void trackAgendaAiError({
+    required String errorType,
+    required String errorMessage,
+  }) {
+    trackFeatureFlagError(
+      featureKey: 'agenda_ai_v1',
+      errorType: errorType,
+      errorMessage: errorMessage,
+    );
+  }
 }

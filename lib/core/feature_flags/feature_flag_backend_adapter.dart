@@ -53,6 +53,14 @@ class FeatureFlagBackendAdapter {
           'version': 1,
           'min_app_version': null,
         },
+        {
+          'key': 'agenda_ai_v1',
+          'enabled': true,
+          'rollout_percentage': 100,
+          'allowed_roles': ['consultor', 'produtor'],
+          'version': 1,
+          'min_app_version': null,
+        },
       ],
     };
   }

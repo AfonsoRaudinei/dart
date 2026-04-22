@@ -161,7 +161,8 @@ Future<void> main() async {
     (error, stack) {
       // 🛡 Erros assíncronos não capturados após o boot
       debugPrint('⚠️ [main] Erro não capturado: $error\n$stack');
-      runApp(_BootErrorApp(error: error));
+      // Não chamar runApp aqui (zona diferente pode disparar "Zone mismatch").
+      // O app já está renderizado; apenas registramos o erro global.
     },
   );
 }
