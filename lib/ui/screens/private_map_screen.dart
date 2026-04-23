@@ -51,14 +51,12 @@ import '../../modules/map/presentation/widgets/visit_sheet.dart';
 import '../../modules/visitas/presentation/controllers/visit_controller.dart';
 import '../../core/design/sf_icons.dart';
 import '../../core/contracts/i_field_lookup_geofence_provider.dart';
-import '../../core/permissions/location_permission_gate.dart';
-import '../../core/permissions/permission_provider.dart';
-import 'package:geolocator/geolocator.dart';
 import '../../core/ui/sheets/sheet_tokens.dart';
 import 'map/providers/map_armed_mode_provider.dart';
 import 'map/widgets/armed_mode_banner.dart';
 import 'map/layers/talhao_polygon_layer.dart';
 import 'map/widgets/drawing_map_behavior_listener.dart';
+import 'map/handlers/map_location_handler.dart';
 
 part 'private_map_sheets.dart';
 
@@ -343,90 +341,21 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
   }
 
   Future<void> _requestLocationPermission() async {
-    final permission = await ref.read(locationPermissionProvider.future);
-    if (permission == LocationPermission.denied) {
-      final newPermission = await LocationPermissionGate.request();
-      _handlePermissionResult(newPermission);
-    } else {
-      _handlePermissionResult(permission);
-    }
-  }
-
-  Future<void> _handlePermissionResult(LocationPermission permission) async {
-    if (permission == LocationPermission.whileInUse || permission == LocationPermission.always) {
-      _centerOnUser();
-    } else if (permission == LocationPermission.deniedForever) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Permissão de localização negada permanentemente. Ative nas configurações do dispositivo.'),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
-    }
-  }
-
-  void _showGPSRequiredMessage() {
-    final state = ref.read(locationStateProvider);
-    String message;
-
-    switch (state) {
-      case LocationState.permissionDenied:
-        message =
-            'GPS indisponível: permissão negada. Habilite nas configurações do app.';
-        break;
-      case LocationState.serviceDisabled:
-        message =
-            'GPS desligado. Ative o GPS nas configurações do dispositivo.';
-        break;
-      case LocationState.checking:
-        message = 'Aguardando verificação do GPS...';
-        break;
-      default:
-        message = 'GPS indisponível. Funções geográficas bloqueadas.';
-    }
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.orange.shade700,
-        duration: const Duration(seconds: 3),
-      ),
+    await MapLocationHandler.requestPermission(
+      ref: ref,
+      context: context,
+      mapController: _mapController,
+      isMapReady: _isMapReady,
     );
   }
 
   void _centerOnUser() async {
-    // 🔒 Guard: Verificar se o mapa está pronto
-    if (!_isMapReady) return;
-
-    final permission = await ref.read(locationPermissionProvider.future);
-    if (permission == LocationPermission.denied) {
-      final newPermission = await LocationPermissionGate.request();
-      _handlePermissionResult(newPermission);
-      return;
-    }
-
-    // 🚫 Bloqueio: GPS obrigatório para centralizar
-    final locationState = ref.read(locationStateProvider);
-    if (locationState != LocationState.available) {
-      await ref.read(locationStateProvider.notifier).init();
-      final retryState = ref.read(locationStateProvider);
-      if (retryState != LocationState.available) {
-        _showGPSRequiredMessage();
-        return;
-      }
-    }
-
-    HapticFeedback.lightImpact();
-
-    // Centralizar na posição atual (obtida do stream)
-    final locationService = LocationService();
-    final position = await locationService.getCurrentPosition();
-
-    if (position != null && _isMapReady && mounted) {
-      _mapController.move(position, 16.0);
-    }
+    await MapLocationHandler.centerOnUser(
+      ref: ref,
+      context: context,
+      mapController: _mapController,
+      isMapReady: _isMapReady,
+    );
   }
 
   void _armOccurrenceMode() {
