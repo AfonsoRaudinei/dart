@@ -57,6 +57,7 @@ import '../../core/permissions/permission_provider.dart';
 import 'package:geolocator/geolocator.dart';
 import '../../core/ui/sheets/sheet_tokens.dart';
 import 'map/providers/map_armed_mode_provider.dart';
+import 'map/widgets/armed_mode_banner.dart';
 
 part 'private_map_sheets.dart';
 
@@ -904,50 +905,8 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
             ),
 
           // FIX 1 — Indicador visual efêmero: modo seleção de ponto para ocorrência
-          if (ref.watch(armedModeProvider) == ArmedMode.occurrences)
-            Positioned(
-              top: MediaQuery.of(context).padding.top + 8,
-              left: 0,
-              right: 0,
-              child: IgnorePointer(
-                child: Center(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: Colors.black87,
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.3),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: const Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.location_pin,
-                          color: Colors.orangeAccent,
-                          size: 16,
-                        ),
-                        SizedBox(width: 8),
-                        Text(
-                          'Toque no mapa para marcar o ponto',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
+          // ADR-030 F2: extraído para ArmedModeBanner
+          const ArmedModeBanner(),
         ],
       ),
     );
