@@ -143,7 +143,6 @@ class DrawingActionsBar extends StatelessWidget {
               if (onUnion != null) {
                 onUnion!();
               }
-              Navigator.of(context).pop();
             },
           ),
           const SizedBox(height: 12),
@@ -156,7 +155,6 @@ class DrawingActionsBar extends StatelessWidget {
               if (onDifference != null) {
                 onDifference!();
               }
-              Navigator.of(context).pop();
             },
           ),
           const SizedBox(height: 12),
@@ -169,7 +167,6 @@ class DrawingActionsBar extends StatelessWidget {
               if (onIntersection != null) {
                 onIntersection!();
               }
-              Navigator.of(context).pop();
             },
           ),
           const SizedBox(height: 16),
