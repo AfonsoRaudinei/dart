@@ -19,7 +19,6 @@ import '../../modules/consultoria/services/talhao_map_adapter.dart';
 import '../../modules/drawing/presentation/widgets/drawing_layers.dart';
 import '../../modules/drawing/presentation/providers/drawing_provider.dart';
 import '../../modules/drawing/domain/drawing_state.dart';
-import '../../modules/drawing/domain/drawing_utils.dart';
 import '../../modules/drawing/presentation/widgets/drawing_state_indicator.dart';
 import '../../modules/dashboard/providers/location_providers.dart';
 import '../../modules/dashboard/domain/location_state.dart';
@@ -59,6 +58,7 @@ import '../../core/ui/sheets/sheet_tokens.dart';
 import 'map/providers/map_armed_mode_provider.dart';
 import 'map/widgets/armed_mode_banner.dart';
 import 'map/layers/talhao_polygon_layer.dart';
+import 'map/widgets/drawing_map_behavior_listener.dart';
 
 part 'private_map_sheets.dart';
 
@@ -508,64 +508,6 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
     );
     final sheetState = ref.watch(mapSheetStateProvider);
 
-    // Watch drawing state changes to switch layers
-    ref.listen(drawingControllerProvider.select((s) => s.currentState), (
-      prev,
-      next,
-    ) {
-      // 🛡 LIFECYCLE GUARD: listener pode disparar após dispose do widget
-      if (!mounted) return;
-
-      if (next == DrawingState.drawing || next == DrawingState.editing) {
-        // Auto-switch to Satellite
-        final currentLayer = ref.read(activeLayerProvider);
-        if (currentLayer != LayerType.satellite) {
-          ref.read(activeLayerProvider.notifier).setLayer(LayerType.satellite);
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Modo Satélite ativado para melhor visualização'),
-              duration: Duration(seconds: 2),
-            ),
-          );
-        }
-      }
-
-      // 🆕 SPRINT 5: GPS Tracking → ativar satélite + centralizar no usuário
-      if (next == DrawingState.gpsTracking) {
-        final currentLayer = ref.read(activeLayerProvider);
-        if (currentLayer != LayerType.satellite) {
-          ref.read(activeLayerProvider.notifier).setLayer(LayerType.satellite);
-        }
-        // Centralizar mapa na posição atual do usuário para referência
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (!mounted) return;
-          _centerOnUser();
-        });
-      }
-
-      // 🆕 SPRINT 3: Zoom automático após import KML/KMZ
-      // Quando a geometria importada entra em preview, move a câmera para ela
-      if (next == DrawingState.importPreview && _isMapReady) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (!mounted) return;
-          final geo = ref.read(drawingControllerProvider).liveGeometry;
-          final bounds = DrawingUtils.getBoundsLatLng(geo);
-          if (bounds != null) {
-            try {
-              _mapController.fitCamera(
-                CameraFit.bounds(
-                  bounds: bounds,
-                  padding: const EdgeInsets.all(60),
-                ),
-              );
-            } catch (_) {
-              // Guard: mapa pode estar em transição — ignora silenciosamente
-            }
-          }
-        });
-      }
-    });
-
     // 🔒 LISTENERS PARA FOCO INICIAL (Idempotentes)
     // Observar carregamento dos fields (para Produtores)
     ref.listen(mapFieldsProvider, (prev, next) {
@@ -867,6 +809,12 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
           // � GPS TRACKING OVERLAY (Sprint 5)
           // Exibido apenas quando o usuário está rastreando o perímetro com GPS.
           // Não é um FAB nem nova rota — é um overlay no Stack existente.
+          // ADR-030 F4: DrawingMapBehaviorListener — side effects de drawing no mapa
+          DrawingMapBehaviorListener(
+            mapController: _mapController,
+            isMapReady: _isMapReady,
+            onCenterOnUser: _centerOnUser,
+          ),
           if (drawingState == DrawingState.gpsTracking)
             RepaintBoundary(
               child: ListenableBuilder(
