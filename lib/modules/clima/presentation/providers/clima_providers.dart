@@ -1,8 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:soloforte_app/core/permissions/location_permission_gate.dart';
 
 import 'package:soloforte_app/modules/clima/data/datasources/clima_local_datasource.dart';
+import 'package:soloforte_app/modules/clima/data/datasources/google_weather_remote_datasource.dart';
 import 'package:soloforte_app/modules/clima/data/datasources/openweather_remote_datasource.dart';
 import 'package:soloforte_app/modules/clima/data/repositories/clima_repository_impl.dart';
 import 'package:soloforte_app/modules/clima/domain/entities/alerta_meteorologico.dart';
@@ -35,7 +37,9 @@ final climaUnidadeProvider =
 @riverpod
 IClimaRepository climaRepository(Ref ref) {
   return ClimaRepositoryImpl(
-    remote: OpenWeatherRemoteDatasource(),
+    remote: GoogleWeatherRemoteDatasource(
+      fallback: OpenWeatherRemoteDatasource(),
+    ),
     local: ClimaLocalDatasource(),
   );
 }
@@ -50,7 +54,7 @@ Future<ClimaLatLon> climaLocation(Ref ref) async {
 
   var permission = await Geolocator.checkPermission();
   if (permission == LocationPermission.denied) {
-    permission = await Geolocator.requestPermission();
+    permission = await LocationPermissionGate.request();
     if (permission == LocationPermission.denied) return _kDefaultLocation;
   }
   if (permission == LocationPermission.deniedForever) return _kDefaultLocation;
@@ -58,7 +62,7 @@ Future<ClimaLatLon> climaLocation(Ref ref) async {
   try {
     final pos = await Geolocator.getCurrentPosition(
       locationSettings: const LocationSettings(
-        accuracy: LocationAccuracy.low,
+        accuracy: LocationAccuracy.medium,
         timeLimit: Duration(seconds: 8),
       ),
     );

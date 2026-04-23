@@ -38,3 +38,16 @@ final mapSheetStateProvider = StateProvider.autoDispose<MapSheetState?>(
 final viewportStateProvider = StateProvider.autoDispose<InitialViewportState>(
   (ref) => InitialViewportState.idle,
 );
+
+/// Toggle do overlay de radar de precipitação (RainViewer — ADR-028).
+///
+/// false = radar oculto (padrão).
+/// true  = radar visível sobre o mapa base.
+/// autoDispose garante reset ao sair da tela.
+// TODO(DT-028): showRadarProvider (StateProvider<bool>) é proxy temporário.
+// Condição de remoção: quando MapContext.clima for implementado no enum MapContext
+// (pendente decomposição de private_map_screen.dart — ~955 linhas).
+// Ver: docs/DT-028-SHOW-RADAR-PROVIDER.md
+final showRadarProvider = StateProvider.autoDispose<bool>(
+  (ref) => false,
+);

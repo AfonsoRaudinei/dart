@@ -41,6 +41,9 @@ class MapControlsOverlay extends ConsumerStatefulWidget {
   final bool canUndo;
   final bool canRedo;
   final bool hasSelfIntersection;
+  // ADR-028 — Radar de Precipitação
+  final bool isRadarActive;
+  final VoidCallback? onToggleRadar;
 
   const MapControlsOverlay({
     super.key,
@@ -66,6 +69,8 @@ class MapControlsOverlay extends ConsumerStatefulWidget {
     this.canUndo = false,
     this.canRedo = false,
     this.hasSelfIntersection = false,
+    this.isRadarActive = false,
+    this.onToggleRadar,
   });
 
   @override
@@ -149,6 +154,16 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
                 icon: SFIcons.checkCircle,
                 isActive: widget.isCheckInActive,
                 onTap: () => widget.onTabSelected(3, 'Button_CheckIn'),
+              ),
+              const SizedBox(height: 12),
+              // ADR-028 — Toggle radar de chuva
+              _MapActionButton(
+                icon: Icons.water_drop_outlined,
+                isActive: widget.isRadarActive,
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  widget.onToggleRadar?.call();
+                },
               ),
             ],
           ),

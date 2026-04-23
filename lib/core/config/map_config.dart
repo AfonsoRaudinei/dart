@@ -150,6 +150,25 @@ class MapConfig {
   /// Atribuição do MapTiler (obrigatória pelos Termos de Serviço)
   static const String mapTilerAttribution =
       '© MapTiler © OpenStreetMap contributors';
+
+  // ═══════════════════════════════════════════════════════════
+  // RAINVIEWER — Radar de Precipitação (ADR-028)
+  // ═══════════════════════════════════════════════════════════
+
+  /// URL do manifesto JSON da RainViewer (lista de timestamps disponíveis).
+  /// Retorna: radar.past[].{time, path}
+  /// Sem autenticação — gratuito para tiles básicos.
+  static const String rainViewerApiUrl =
+      'https://api.rainviewer.com/public/weather-maps.json';
+
+  /// Base dos tiles de radar RainViewer.
+  /// Template completo: '$rainViewerTileBase{path}/512/{z}/{x}/{y}/2/1_1.png'
+  /// {path} = valor de radar.past.last.path do manifesto JSON.
+  static const String rainViewerTileBase = 'https://tilecache.rainviewer.com';
+
+  /// Opacidade do overlay de radar (0.0–1.0).
+  /// 0.6 = equilíbrio entre visibilidade e mapa base legível.
+  static const double radarOverlayOpacity = 0.6;
 }
 
 /// Enum para facilitar seleção de estilos

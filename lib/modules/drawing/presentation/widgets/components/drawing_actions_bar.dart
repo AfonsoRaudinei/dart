@@ -245,7 +245,6 @@ class DrawingActionsBar extends StatelessWidget {
               if (onDelete != null) {
                 onDelete!();
               }
-              Navigator.of(context).pop(); // Fechar bottom sheet
             },
             style: TextButton.styleFrom(foregroundColor: Colors.red),
             child: const Text('Excluir'),
