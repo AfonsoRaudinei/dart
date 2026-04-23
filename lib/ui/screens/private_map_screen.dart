@@ -30,6 +30,7 @@ import '../../modules/marketing/presentation/widgets/draft_saved_sheet.dart';
 import '../components/map/map_bottom_sheet.dart';
 import '../components/map/widgets/map_canvas.dart';
 import '../components/map/widgets/map_layers.dart';
+import '../components/map/widgets/radar_layer_widget.dart';
 import '../../core/config/map_config.dart';
 import '../components/map/widgets/map_markers.dart';
 import '../components/map/widgets/map_controls_overlay.dart';
@@ -55,6 +56,7 @@ import '../../core/permissions/location_permission_gate.dart';
 import '../../core/permissions/permission_provider.dart';
 import 'package:geolocator/geolocator.dart';
 import '../../core/ui/sheets/sheet_tokens.dart';
+import 'map/providers/map_armed_mode_provider.dart';
 
 part 'private_map_sheets.dart';
 
@@ -71,9 +73,6 @@ class PrivateMapScreen extends ConsumerStatefulWidget {
   ConsumerState<PrivateMapScreen> createState() => _PrivateMapScreenState();
 }
 
-// Enum para rastrear o modo armado
-enum ArmedMode { none, occurrences, marketing }
-
 class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
   final MapController _mapController = MapController();
   final _mapEventDebouncer = Debouncer(
@@ -81,7 +80,6 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
   );
 
   bool _isMapReady = false; // 🔒 Guard: MapController só pode ser usado se true
-  ArmedMode _armedMode = ArmedMode.none; // Estado do modo armado
 
   LatLng? _pendingOccurrenceLocation; // Se != null, abre sheet de ocorrência
 
@@ -431,7 +429,7 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
 
   void _armOccurrenceMode() {
     // FIX 1: Entrar em modo seleção — usuário toca no mapa para capturar LatLng
-    setState(() => _armedMode = ArmedMode.occurrences);
+    ref.read(armedModeProvider.notifier).state = ArmedMode.occurrences;
     HapticFeedback.lightImpact();
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
@@ -461,7 +459,7 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
   }
 
   void _armMarketingMode() {
-    setState(() => _armedMode = ArmedMode.marketing);
+    ref.read(armedModeProvider.notifier).state = ArmedMode.marketing;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Toque no mapa para localizar o case de marketing'),
@@ -618,20 +616,20 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
             },
             onTap: (tapPos, point) {
               // 🎯 Prioridade 1a: Modo armado marketing
-              if (_armedMode == ArmedMode.marketing) {
-                setState(() => _armedMode = ArmedMode.none);
+              if (ref.read(armedModeProvider) == ArmedMode.marketing) {
+                ref.read(armedModeProvider.notifier).state = ArmedMode.none;
                 ScaffoldMessenger.of(context).hideCurrentSnackBar();
                 _handleMapLongPress(tapPos, point);
                 return;
               }
 
               // 🎯 Prioridade 1b: Verificar modo armado de ocorrências
-              if (_armedMode == ArmedMode.occurrences) {
+              if (ref.read(armedModeProvider) == ArmedMode.occurrences) {
                 final lat = point.latitude;
                 final lng = point.longitude;
 
                 // Desarmar imediatamente para evitar múltiplos taps
-                setState(() => _armedMode = ArmedMode.none);
+                ref.read(armedModeProvider.notifier).state = ArmedMode.none;
                 ScaffoldMessenger.of(context).hideCurrentSnackBar();
 
                 // Abrir sheet de criação de ocorrência com coordenadas
@@ -715,6 +713,9 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
               // Layer base de tiles
               const MapLayersWidget(),
 
+              // ADR-028 — Overlay de radar de precipitação (RainViewer)
+              const RadarLayerWidget(),
+
               // Polígonos de talhões
               if (mapFields.hasValue)
                 PolygonLayer(
@@ -777,9 +778,9 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
             onCenterUser: _centerOnUser,
             onToggleDrawMode: _toggleDrawMode,
             onToggleOccurrenceMode: () {
-              if (_armedMode == ArmedMode.occurrences) {
+              if (ref.read(armedModeProvider) == ArmedMode.occurrences) {
                 // Desarmar e fechar o sheet/modal
-                setState(() => _armedMode = ArmedMode.none);
+                ref.read(armedModeProvider.notifier).state = ArmedMode.none;
                 ScaffoldMessenger.of(context).hideCurrentSnackBar();
                 if (_isModalOpen) Navigator.of(context).pop();
                 _setSheetState(null, 'Toggle OFF: Closing occurrence sheet');
@@ -788,16 +789,16 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
               }
             },
             onToggleMarketingMode: () {
-              if (_armedMode == ArmedMode.marketing) {
-                setState(() => _armedMode = ArmedMode.none);
+              if (ref.read(armedModeProvider) == ArmedMode.marketing) {
+                ref.read(armedModeProvider.notifier).state = ArmedMode.none;
                 ScaffoldMessenger.of(context).hideCurrentSnackBar();
               } else {
                 _armMarketingMode();
               }
             },
-            isMarketingMode: _armedMode == ArmedMode.marketing,
+            isMarketingMode: ref.watch(armedModeProvider) == ArmedMode.marketing,
             isDrawMode: sheetState?.type == MapSheetType.draw,
-            isOccurrenceMode: _armedMode == ArmedMode.occurrences,
+            isOccurrenceMode: ref.watch(armedModeProvider) == ArmedMode.occurrences,
             isCheckInActive: ref.watch(
               visitControllerProvider.select(
                 (v) => v.valueOrNull?.status == 'active',
@@ -823,6 +824,10 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
                 () => ref.read(drawingControllerProvider).undoDrawingPoint(),
             canUndo: canUndo,
             canRedo: canRedo,
+            isRadarActive: ref.watch(showRadarProvider),
+            onToggleRadar: () => ref
+                .read(showRadarProvider.notifier)
+                .state = !ref.read(showRadarProvider),
             currentCenter: _isMapReady
                 ? _mapController.camera.center
                 : const LatLng(0, 0),
@@ -899,7 +904,7 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
             ),
 
           // FIX 1 — Indicador visual efêmero: modo seleção de ponto para ocorrência
-          if (_armedMode == ArmedMode.occurrences)
+          if (ref.watch(armedModeProvider) == ArmedMode.occurrences)
             Positioned(
               top: MediaQuery.of(context).padding.top + 8,
               left: 0,
