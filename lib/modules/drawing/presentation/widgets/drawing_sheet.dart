@@ -543,7 +543,7 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
                             true)) {
                       final confirmar = await showDialog<bool>(
                         context: context,
-                        builder: (_) => AlertDialog(
+                        builder: (dialogContext) => AlertDialog(
                           title: const Text('Sobreposição detectada'),
                           content: const Text(
                             'A geometria importada sobrepõe uma área existente. '
@@ -552,14 +552,14 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
                           actions: [
                             TextButton(
                               onPressed: () => Navigator.of(
-                                context,
+                                dialogContext,
                                 rootNavigator: false,
                               ).pop(false),
                               child: const Text('Cancelar'),
                             ),
                             ElevatedButton(
                               onPressed: () => Navigator.of(
-                                context,
+                                dialogContext,
                                 rootNavigator: false,
                               ).pop(true),
                               style: ElevatedButton.styleFrom(
@@ -1066,8 +1066,12 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
 
   void _showCreateFarmDialog() {
     final nameController = TextEditingController();
-    final cityController = TextEditingController();
-    final stateController = TextEditingController();
+    final cityController = TextEditingController(
+      text: _selectedClient?.city ?? '',
+    );
+    final stateController = TextEditingController(
+      text: _selectedClient?.state ?? '',
+    );
 
     showDialog(
       context: context,
