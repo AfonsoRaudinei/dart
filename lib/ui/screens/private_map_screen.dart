@@ -58,6 +58,7 @@ import 'package:geolocator/geolocator.dart';
 import '../../core/ui/sheets/sheet_tokens.dart';
 import 'map/providers/map_armed_mode_provider.dart';
 import 'map/widgets/armed_mode_banner.dart';
+import 'map/layers/talhao_polygon_layer.dart';
 
 part 'private_map_sheets.dart';
 
@@ -718,15 +719,8 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
               const RadarLayerWidget(),
 
               // Polígonos de talhões
-              if (mapFields.hasValue)
-                PolygonLayer(
-                  polygons: mapFields.value!.map((t) {
-                    return TalhaoMapAdapter.toPolygon(
-                      t,
-                      isSelected: t.id == selectedTalhaoId,
-                    );
-                  }).toList(),
-                ),
+              // ADR-030 F3: extraído para TalhaoPolygonLayer
+              const TalhaoPolygonLayer(),
 
               // Camada de Desenho
               // 🔧 FIX-DRAW-RACE: Usar ref.read() para evitar referência stale
