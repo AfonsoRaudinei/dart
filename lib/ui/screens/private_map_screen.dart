@@ -50,7 +50,7 @@ import 'map/layers/talhao_polygon_layer.dart';
 import 'map/widgets/drawing_map_behavior_listener.dart';
 import 'map/handlers/map_location_handler.dart';
 import 'map/controllers/map_viewport_controller.dart';
-import 'map/widgets/map_sheet_content_builder.dart';
+import 'map/controllers/map_sheet_controller.dart';
 
 part 'private_map_sheets.dart';
 

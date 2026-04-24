@@ -182,76 +182,16 @@ extension _PrivateMapSheets on _PrivateMapScreenState {
 
   // ── _openSheetAsModal ─────────────────────────────────────────────────────
 
-  // 🔧 MODAL: Abre os tipos publications/occurrences/checkIn/layers como modal nativo
-  // Observação: o fluxo de Drawing NÃO usa showModalBottomSheet.
-  // Drawing é renderizado via MapBottomSheet no Stack (MapSheetType.draw).
+  // 🔧 MODAL: delegate para MapSheetController.openSheet — ADR-031 F4
   void _openSheetAsModal(BuildContext context, MapSheetState state) {
-    if (ref.read(isModalOpenProvider)) return;
-    if (!mounted) return;
-    _setModalOpen(true);
-    final gen = ++ref.read(modalGenerationProvider.notifier).state;
-
-    // Bug 1: checkIn precisa de mais altura inicial e máxima para exibir
-    // 4 dropdowns + botão sem corte. Outros tipos mantêm valores anteriores.
-    final isCheckIn = state.type == MapSheetType.checkIn;
-    final initialSize = isCheckIn ? 0.6 : 0.5;
-    final maxSize = isCheckIn ? 0.92 : 0.9;
-    final snapSizesList = isCheckIn ? [0.6, 0.92] : [0.5, 0.9];
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      barrierColor: Colors.black.withValues(alpha: 0.15),
-      enableDrag: true,
-      isDismissible: true,
-      builder: (modalContext) => DraggableScrollableSheet(
-        initialChildSize: initialSize,
-        minChildSize: 0.3,
-        maxChildSize: maxSize,
-        expand: false,
-        snap: true,
-        snapSizes: snapSizesList,
-        builder: (_, scrollController) => Container(
-          decoration: BoxDecoration(
-            color: Theme.of(context).scaffoldBackgroundColor,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-          ),
-          child: Column(
-            children: [
-              Center(
-                child: Container(
-                  margin: const EdgeInsets.symmetric(vertical: 8),
-                  width: 36,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).dividerColor.withValues(alpha: 0.3),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              Expanded(
-                child: buildSheetContent(
-                  context,
-                  ref,
-                  state,
-                  scrollController,
-                  _armOccurrenceMode,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    ).whenComplete(() {
-      if (mounted && gen == ref.read(modalGenerationProvider)) {
-        _setModalOpen(false);
-        final currentState = ref.read(mapSheetStateProvider);
-        if (currentState?.type == state.type) {
-          _setSheetState(null, 'Modal: whenComplete dismiss');
-        }
-      }
-    });
+    MapSheetController.openSheet(
+      context,
+      ref,
+      state,
+      _armOccurrenceMode,
+      _setSheetState,
+      _setModalOpen,
+    );
   }
 
   // ── _finishDrawing ────────────────────────────────────────────────────────
@@ -288,37 +228,8 @@ extension _PrivateMapSheets on _PrivateMapScreenState {
 
   // ── _toggleDrawMode ───────────────────────────────────────────────────────
 
+  // 🔧 delegate para MapSheetController.toggleDrawMode — ADR-031 F4
   void _toggleDrawMode() {
-    HapticFeedback.mediumImpact();
-    final controller = ref.read(drawingControllerProvider);
-    // Reuso intencional do mapSheetStateProvider como estado de abertura
-    // do DrawingSheet (toggle do ícone de desenho no mapa).
-    // Não há drawingSheetOpenProvider separado.
-    final currentSheet = ref.read(mapSheetStateProvider);
-
-    // Toggle explícito: se draw já está aberto, fecha.
-    if (currentSheet?.type == MapSheetType.draw) {
-      final wasDrawing = controller.currentState != DrawingState.idle;
-      // Mantém comportamento anterior: cancelar operação ativa ao fechar.
-      controller.cancelOperation();
-      _setSheetState(null, 'ToggleDrawMode: Closing draw sheet');
-
-      if (wasDrawing) {
-        ScaffoldMessenger.of(context).hideCurrentSnackBar();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Desenho cancelado'),
-            duration: Duration(seconds: 2),
-          ),
-        );
-      }
-      return;
-    }
-
-    // Abrir draw quando estiver fechado.
-    _setSheetState(
-      const MapSheetState(type: MapSheetType.draw),
-      'ToggleDrawMode: Opening draw sheet',
-    );
+    MapSheetController.toggleDrawMode(context, ref, _setSheetState);
   }
 }
