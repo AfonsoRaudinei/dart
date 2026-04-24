@@ -103,13 +103,15 @@ class MapConfig {
   static bool get hasStadiaApiKey => _stadiaApiKey.isNotEmpty;
 
   /// URL do Stamen Terrain com API key quando disponível.
-  /// Sem key → URL base (dev / free tier sem auth).
-  /// Com key → appenda ?api_key=<key> (produção).
+  /// Sem key → fallback OpenStreetMap Carto (gratuito, sem auth).
+  /// Com key → Stadia Stamen Terrain com ?api_key=<key> (produção).
   static String get stadiaStamenTerrainUrl {
     if (_stadiaApiKey.isNotEmpty) {
       return '$stadiaStamenTerrain?api_key=$_stadiaApiKey';
     }
-    return stadiaStamenTerrain;
+    // Fallback gratuito quando STADIA_API_KEY não configurada (dev/CI).
+    // OSM Carto não requer autenticação e evita HTTP 403.
+    return 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
   }
 
   // ═══════════════════════════════════════════════════════════

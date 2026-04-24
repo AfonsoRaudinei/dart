@@ -11,6 +11,7 @@ import '../../../core/constants/layout_constants.dart';
 import '../../../core/domain/map_models.dart';
 import '../../../core/domain/publicacao.dart';
 import '../../../core/state/map_state.dart';
+import '../../../core/state/map_ui_providers.dart';
 
 class BaseMapSheet extends StatelessWidget {
   final String title;
@@ -100,6 +101,7 @@ class LayersSheet extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final currentLayer = ref.watch(activeLayerProvider);
     final showMarkers = ref.watch(showMarkersProvider);
+    final showRadar = ref.watch(showRadarProvider);
 
     return Container(
       decoration: const BoxDecoration(
@@ -212,6 +214,37 @@ class LayersSheet extends ConsumerWidget {
                         onChanged: (v) {
                           HapticFeedback.lightImpact();
                           ref.read(showMarkersProvider.notifier).toggle();
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 16),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: _surface,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: _border, width: 0.5),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Radar de Chuva',
+                        style: TextStyle(color: Colors.white, fontSize: 15),
+                      ),
+                      Switch(
+                        value: showRadar,
+                        activeThumbColor: _accent,
+                        activeTrackColor: _accent.withValues(alpha: 0.3),
+                        onChanged: (v) {
+                          HapticFeedback.lightImpact();
+                          ref.read(showRadarProvider.notifier).state = v;
                         },
                       ),
                     ],

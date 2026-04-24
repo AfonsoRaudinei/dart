@@ -51,7 +51,7 @@ class MapLayersWidget extends ConsumerWidget {
         // MapTiler não usa subdomínios — retorna lista vazia
         return const [];
       case LayerType.standard:
-        return MapConfig.cartoSubdomains;
+        return const []; // OSM/Stadia não usa subdomains
       case LayerType.relevo:
         // MapTiler não usa subdomínios — retorna lista vazia
         return const [];
