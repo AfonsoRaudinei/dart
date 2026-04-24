@@ -50,7 +50,13 @@ class _OportunidadesClienteSectionState
 
     return oportunidadesAsync.when(
       loading: () => const LinearProgressIndicator(minHeight: 2),
-      error: (_, __) => const SizedBox.shrink(),
+      error: (err, __) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 6),
+        child: Text(
+          'Oportunidades indisponíveis: $err',
+          style: const TextStyle(fontSize: 11, color: Colors.red),
+        ),
+      ),
       data: (oportunidades) {
         if (oportunidades.isEmpty) return const SizedBox.shrink();
 
