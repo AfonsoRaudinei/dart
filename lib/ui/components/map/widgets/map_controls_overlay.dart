@@ -5,7 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:latlong2/latlong.dart';
 import '../../../../../../core/design/sf_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../modules/dashboard/controllers/location_controller.dart';
+import '../../../../modules/dashboard/providers/location_providers.dart';
 import '../../../../modules/dashboard/domain/location_state.dart';
 import '../../../../modules/map/presentation/providers/map_location_mode_provider.dart';
 import '../../../../core/providers/connectivity_provider.dart';
