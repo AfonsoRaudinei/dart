@@ -46,6 +46,9 @@ import 'map/controllers/map_viewport_controller.dart';
 import 'map/controllers/map_sheet_controller.dart';
 import 'map/handlers/novo_case_modal_launcher.dart';
 
+// TODO(ADR-032): arquivo em 707 linhas.
+// Meta: < 400 linhas via extração de initState bootstrap e build() orquestrador.
+// Bloqueadores: _isMapReady (ciclo de vida MapController), _setSheetState.
 
 // ════════════════════════════════════════════════════════════════
 // GOVERNANCE ADR-025 — DT-025-5
