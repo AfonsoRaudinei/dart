@@ -46,15 +46,15 @@ import '../../modules/consultoria/occurrences/presentation/widgets/occurrence_de
 import '../../modules/consultoria/occurrences/presentation/controllers/occurrence_controller.dart';
 import '../../modules/map/presentation/widgets/visit_sheet.dart';
 import '../../modules/visitas/presentation/controllers/visit_controller.dart';
-import '../../core/design/sf_icons.dart';
-import '../../core/contracts/i_field_lookup_geofence_provider.dart';
 import '../../core/ui/sheets/sheet_tokens.dart';
+import '../../core/contracts/i_field_lookup_geofence_provider.dart';
 import 'map/providers/map_armed_mode_provider.dart';
 import 'map/widgets/armed_mode_banner.dart';
 import 'map/layers/talhao_polygon_layer.dart';
 import 'map/widgets/drawing_map_behavior_listener.dart';
 import 'map/handlers/map_location_handler.dart';
 import 'map/controllers/map_viewport_controller.dart';
+import 'map/widgets/active_visit_sheet.dart';
 
 part 'private_map_sheets.dart';
 

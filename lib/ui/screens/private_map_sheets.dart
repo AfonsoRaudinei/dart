@@ -332,7 +332,7 @@ extension _PrivateMapSheets on _PrivateMapScreenState {
               ),
             );
             if (isActive) {
-              return _buildActiveVisitContent(widgetRef);
+              return const ActiveVisitSheet();
             }
             return VisitSheet(
               preSelectedClienteId: state.preSelectedClienteId,
@@ -358,61 +358,6 @@ extension _PrivateMapSheets on _PrivateMapScreenState {
         // Nunca deve chegar aqui — draw permanece no Stack
         return const SizedBox.shrink();
     }
-  }
-
-  // ── _buildActiveVisitContent ──────────────────────────────────────────────
-
-  // 🔧 MODAL: UI de visita ativa no checkIn sheet
-  Widget _buildActiveVisitContent(WidgetRef widgetRef) {
-    return Padding(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(SFIcons.checkCircle, size: 64, color: PremiumTokens.brandGreen),
-          const SizedBox(height: 16),
-          Text(
-            'Visita em Andamento',
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-          const SizedBox(height: 32),
-          ElevatedButton(
-            onPressed: () async {
-              // ✅ FIX Causa A: ler sessão da mesma fonte que o card.
-              // visitControllerProvider.endSession() acessa state.value
-              // (SQLite offline-first) — sem depender de agendaProvider.
-              // Após encerrar: state = null → card desaparece reativamente.
-              try {
-                await widgetRef
-                    .read(visitControllerProvider.notifier)
-                    .endSession();
-                if (mounted) {
-                  HapticFeedback.mediumImpact();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Visita encerrada com sucesso.'),
-                      backgroundColor: PremiumTokens.brandGreenDark,
-                    ),
-                  );
-                  Navigator.of(context).pop();
-                }
-              } catch (e) {
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Erro ao encerrar visita: $e')),
-                  );
-                }
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: PremiumTokens.alertError,
-              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-            ),
-            child: const Text('Encerrar Visita'),
-          ),
-        ],
-      ),
-    );
   }
 
   // ── _finishDrawing ────────────────────────────────────────────────────────
