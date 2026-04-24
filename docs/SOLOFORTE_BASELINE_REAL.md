@@ -8,7 +8,7 @@
 | Arquivos Dart em `lib/` | 436 |
 | Módulos em `lib/modules/` | 17 (agenda, auth, carteira, clima, consultoria, dashboard, drawing, feedback, map, marketing, ndvi, operacao, planos, public, settings, visitas) |
 | Banco de dados | `soloforte.db` único — SQLite (sqflite) |
-| Schema DB versão atual | **v28** (`_migrateToV28` — `client_id` opcional em `occurrences`) |
+| Schema DB versão atual | **v29** (`_migrateToV29` — `closed_percent` em `carteira_lancamentos`) |
 | flutter analyze — erros | 0 |
 | flutter analyze — issues totais | 65 (infos/warnings pré-existentes, nenhum erro) |
 | arch_check.sh | ✅ APROVADO — EXIT 0 |
@@ -37,6 +37,7 @@
 | v26 | Migração de schema (confirmado no código) | ✅ Aplicado |
 | v27 | NDVI: recriação de `ndvi_cache` (schema atualizado) | ✅ Aplicado |
 | v28 | `occurrences.client_id` (nullable, vínculo opcional com cliente) | ✅ Aplicado |
+| v29 | `carteira_lancamentos.closed_percent` (nullable) | ✅ Aplicado |
 
 > **Nota:** O baseline anterior documentava `marketing_cases.db` e `visitas_tecnicas.db` como bancos separados.
 > Verificação 0.16 confirma que há **apenas `soloforte.db`** — banco único. A dívida documental foi corrigida aqui.
@@ -111,7 +112,7 @@
 | flutter analyze — issues totais | 65 (todos `info`/`deprecated_member_use` pré-existentes) |
 | arch_check.sh | ✅ EXIT 0 — APROVADO |
 | Testes | 612 ✅ / 2 ❌ (falhas pré-existentes em drawing — não relacionadas à Sessão 3) |
-| Schema DB | v26 — soloforte.db (banco único) |
+| Schema DB | v29 — soloforte.db (banco único) |
 | ADRs formais confirmados no código | 12 (ADR-007 a ADR-022) |
 | .baseline_marker | ✅ Ativo — enforcement REGRA 3 funciona |
 | repairOrphanUserIds | ✅ Implementado |
@@ -146,5 +147,5 @@
 
 ---
 
-*Atualizado em: 24/04/2026 | Branch: `release/v1.1` | Pós-feature Occurrence Client Link (schema v28)*
-*Pós-auditoria 23/03/2026 + Sessões 1, 2, 3 + vínculo opcional de cliente em occurrences*
+*Atualizado em: 24/04/2026 | Branch: `release/v1.1` | Pós-feature Occurrence Client Link + schema v29*
+*Pós-auditoria 23/03/2026 + Sessões 1, 2, 3 + vínculo opcional de cliente em occurrences + carteira v29*

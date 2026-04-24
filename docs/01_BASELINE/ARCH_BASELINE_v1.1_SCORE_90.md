@@ -35,7 +35,7 @@
 | Erros `flutter analyze` | **0** |
 | Enforcement CI ativo | SIM |
 | Arquivos >900 linhas | **5** legados (WARN controlado — inclui `database_helper.dart`) |
-| Schema DB | `soloforte.db` v28 (banco único) |
+| Schema DB | `soloforte.db` v29 (banco único) |
 | ADRs confirmados no código | 12 (ADR-007 a ADR-022) |
 
 ---
@@ -125,6 +125,9 @@ Casos de marketing com visualização no mapa.
 - Sync Supabase atualizado (`client_id` no upsert/pull)
 - UI de criação com seletor opcional via `IClientLookup`
 - Novo arquivo: `lib/modules/consultoria/occurrences/presentation/widgets/occurrence_client_selector.dart`
+
+### `carteira/` — atualização de schema v29
+- Schema v29: coluna nullable `closed_percent` em `carteira_lancamentos`
 
 ### Settings / Auth
 Módulos satélite sem dependências cruzadas.
@@ -318,4 +321,4 @@ Qualquer evolução arquitetural deve referenciar esta baseline e justificar o d
 
 ---
 
-*Atualizado em: 24/04/2026 | Branch: `release/v1.1` | Inclui Occurrence Client Link (schema v28) | Score: 90/100*
+*Atualizado em: 24/04/2026 | Branch: `release/v1.1` | Inclui Occurrence Client Link + schema v29 | Score: 90/100*
