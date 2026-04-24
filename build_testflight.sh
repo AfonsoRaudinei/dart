@@ -59,7 +59,7 @@ echo "✅ Build $VERSION+$BUILD_NUMBER concluído."
 
 # Confirmação que credenciais entraram no binário
 echo "🔍 Verificando credenciais no binário..."
-if strings build/ios/archive/Runner.xcarchive/Products/Applications/Runner.app/Runner | grep -q "pyoejhhkjlrjijiviryq"; then
+if strings build/ios/archive/Runner.xcarchive/Products/Applications/Runner.app/Frameworks/App.framework/App | grep -q "pyoejhhkjlrjijiviryq"; then
   echo "✅ SUPABASE_URL confirmada no binário."
 else
   echo "❌ ATENÇÃO: SUPABASE_URL NÃO encontrada no binário. NÃO suba este IPA."
