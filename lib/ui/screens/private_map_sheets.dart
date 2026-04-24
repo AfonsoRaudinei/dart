@@ -186,10 +186,10 @@ extension _PrivateMapSheets on _PrivateMapScreenState {
   // Observação: o fluxo de Drawing NÃO usa showModalBottomSheet.
   // Drawing é renderizado via MapBottomSheet no Stack (MapSheetType.draw).
   void _openSheetAsModal(BuildContext context, MapSheetState state) {
-    if (_isModalOpen) return;
+    if (ref.read(isModalOpenProvider)) return;
     if (!mounted) return;
     _setModalOpen(true);
-    final gen = ++_modalGeneration;
+    final gen = ++ref.read(modalGenerationProvider.notifier).state;
 
     // Bug 1: checkIn precisa de mais altura inicial e máxima para exibir
     // 4 dropdowns + botão sem corte. Outros tipos mantêm valores anteriores.
@@ -236,7 +236,7 @@ extension _PrivateMapSheets on _PrivateMapScreenState {
         ),
       ),
     ).whenComplete(() {
-      if (mounted && gen == _modalGeneration) {
+      if (mounted && gen == ref.read(modalGenerationProvider)) {
         _setModalOpen(false);
         final currentState = ref.read(mapSheetStateProvider);
         if (currentState?.type == state.type) {
@@ -261,9 +261,10 @@ extension _PrivateMapSheets on _PrivateMapScreenState {
           child: LayersSheet(onClose: () => Navigator.of(context).pop()),
         );
       case MapSheetType.occurrences:
-        if (state.isCreatingOccurrence && _pendingOccurrenceLocation != null) {
-          final lat = _pendingOccurrenceLocation!.latitude;
-          final lng = _pendingOccurrenceLocation!.longitude;
+        if (state.isCreatingOccurrence &&
+            ref.read(pendingOccurrenceLocationProvider) != null) {
+          final lat = ref.read(pendingOccurrenceLocationProvider)!.latitude;
+          final lng = ref.read(pendingOccurrenceLocationProvider)!.longitude;
           return OccurrenceCreationSheet(
             latitude: lat,
             longitude: lng,

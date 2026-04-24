@@ -79,16 +79,10 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
 
   bool _isMapReady = false; // 🔒 Guard: MapController só pode ser usado se true
 
-  LatLng? _pendingOccurrenceLocation; // Se != null, abre sheet de ocorrência
-
   // 🔧 LIFECYCLE: Referência cacheada do DrawingController.
   // Capturada no build() para uso seguro no dispose() SEM ref.read().
   // ref é invalidado em deactivate() (antes de dispose()) — ADR-008.
   dynamic _drawingController;
-
-  // 🔧 MODAL: Controle de modais ativos
-  bool _isModalOpen = false;
-  int _modalGeneration = 0;
 
   @override
   void initState() {
@@ -224,7 +218,7 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
 
   void _setModalOpen(bool value) {
     if (!mounted) return;
-    setState(() => _isModalOpen = value);
+    ref.read(isModalOpenProvider.notifier).state = value;
   }
 
   // 🛡 HARDENING DEFINITIVO: Máquina de Decisão de Viewport
@@ -283,9 +277,8 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
       ),
       'OpenOccurrenceSheet (Create Mode)',
     );
-    setState(() {
-      _pendingOccurrenceLocation = LatLng(lat, lng); // Trigger Creation Mode
-    });
+    ref.read(pendingOccurrenceLocationProvider.notifier).state =
+        LatLng(lat, lng); // Trigger Creation Mode
   }
 
   void _armMarketingMode() {
@@ -547,7 +540,7 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
                 // Desarmar e fechar o sheet/modal
                 ref.read(armedModeProvider.notifier).state = ArmedMode.none;
                 ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                if (_isModalOpen) Navigator.of(context).pop();
+                if (ref.read(isModalOpenProvider)) Navigator.of(context).pop();
                 _setSheetState(null, 'Toggle OFF: Closing occurrence sheet');
               } else {
                 _armOccurrenceMode();
@@ -610,26 +603,24 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
 
               if (currentType == newType) {
                 // Toggle: fechar modal se aberto
-                if (_isModalOpen) Navigator.of(context).pop();
+                if (ref.read(isModalOpenProvider)) Navigator.of(context).pop();
                 _setSheetState(
                   null,
                   'MapControlsOverlay: Toggle Close (Source: $source)',
                 );
               } else {
                 // Switch: se há modal aberto, liberar guarda e fechar antes de abrir novo
-                if (_isModalOpen) {
+                if (ref.read(isModalOpenProvider)) {
                   Navigator.of(context).pop();
-                  _modalGeneration++; // Invalida o whenComplete do modal anterior
-                  setState(() => _isModalOpen = false);
+                  ref.read(modalGenerationProvider.notifier).state++; // Invalida o whenComplete do modal anterior
+                  ref.read(isModalOpenProvider.notifier).state = false;
                 }
                 _setSheetState(
                   MapSheetState(type: newType!),
                   'MapControlsOverlay: Select Tab $newType (Source: $source)',
                 );
               }
-              setState(() {
-                _pendingOccurrenceLocation = null;
-              });
+              ref.read(pendingOccurrenceLocationProvider.notifier).state = null;
             },
             ),
           ),
@@ -669,7 +660,7 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
                 onClose: () {
                   _setSheetState(null, 'MapBottomSheet: onClose');
                 },
-                creationLocation: _pendingOccurrenceLocation,
+                creationLocation: ref.read(pendingOccurrenceLocationProvider),
                 onLocationRequested: _centerOnUser,
               ),
             ),
