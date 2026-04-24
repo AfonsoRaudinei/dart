@@ -8,7 +8,7 @@
 | Arquivos Dart em `lib/` | 436 |
 | Módulos em `lib/modules/` | 17 (agenda, auth, carteira, clima, consultoria, dashboard, drawing, feedback, map, marketing, ndvi, operacao, planos, public, settings, visitas) |
 | Banco de dados | `soloforte.db` único — SQLite (sqflite) |
-| Schema DB versão atual | **v26** (`_migrateToV26` — última migração confirmada) |
+| Schema DB versão atual | **v28** (`_migrateToV28` — `client_id` opcional em `occurrences`) |
 | flutter analyze — erros | 0 |
 | flutter analyze — issues totais | 65 (infos/warnings pré-existentes, nenhum erro) |
 | arch_check.sh | ✅ APROVADO — EXIT 0 |
@@ -34,7 +34,9 @@
 | v23 | Migração de schema (confirmado no código) | ✅ Aplicado |
 | v24 | Migração de schema (confirmado no código) | ✅ Aplicado |
 | v25 | Migração de schema (confirmado no código) | ✅ Aplicado |
-| v26 | **Versão atual** — última migração | ✅ Aplicado |
+| v26 | Migração de schema (confirmado no código) | ✅ Aplicado |
+| v27 | NDVI: recriação de `ndvi_cache` (schema atualizado) | ✅ Aplicado |
+| v28 | `occurrences.client_id` (nullable, vínculo opcional com cliente) | ✅ Aplicado |
 
 > **Nota:** O baseline anterior documentava `marketing_cases.db` e `visitas_tecnicas.db` como bancos separados.
 > Verificação 0.16 confirma que há **apenas `soloforte.db`** — banco único. A dívida documental foi corrigida aqui.
@@ -65,6 +67,7 @@
 
 | Feature | Status | Localização |
 |---|---|---|
+| Occurrence Client Link (cliente opcional em ocorrência) | ✅ IMPLEMENTADO | `database_helper.dart` (v28), `occurrence.dart` (`clientId`), `occurrence_sync_service.dart` (`client_id` push/pull), `occurrence_client_selector.dart`, `occurrence_creation_sheet.dart` |
 | GPS Walk / Gravar Rota | ✅ IMPLEMENTADO | `drawing/domain/models/gps_walk_session.dart`, `gps_walk_controller.dart`, `gps_walk_providers.dart`, `gps_walk_metrics_bar.dart`, `gps_walk_bottom_bar.dart`, `gps_walk_controls_overlay.dart` |
 | NDVI Panel | ✅ IMPLEMENTADO | `lib/modules/ndvi/presentation/widgets/ndvi_panel_widget.dart` (444 linhas, provider real, 0 TODOs) |
 | Marketing PASSO 6 (long press → NovoCaseSheet) | ✅ IMPLEMENTADO | `private_map_screen.dart` + `private_map_sheets.dart` |
@@ -132,6 +135,7 @@
 
 | Item | Prioridade | Arquivo | Ação necessária |
 |---|---|---|---|
+| Golden de auth (`register_golden_test.dart`) falhando fora do escopo de occurrences | **Médio** — dívida técnica conhecida | `test/auth/register_golden_test.dart` | Investigar causa raiz e atualizar golden apenas em task dedicada |
 | Sub-rota `publicacao/edit` dentro de `/map` | **Alto** — viola contrato Map-First | `app_router.dart:102` | Remover GoRoute, converter para overlay |
 | `visit_controller` usa `AgendaRepository` concreto | **Médio** — ADR-018 regredido | `visitas/presentation/controllers/visit_controller.dart:38` | Migrar para `IAgendaRepository` |
 | `occurrence_list_sheet` importa `visitas/` diretamente | **Médio** — violação de bounded context | `occurrence_list_sheet.dart:11` | Usar contrato em `core/contracts/` |
@@ -142,5 +146,5 @@
 
 ---
 
-*Atualizado em: 24/03/2026 | Branch: `release/v1.1` | Commit de referência: `51c5c99`*
-*Pós-auditoria 23/03/2026 + Sessões 1, 2, 3 de correção*
+*Atualizado em: 24/04/2026 | Branch: `release/v1.1` | Pós-feature Occurrence Client Link (schema v28)*
+*Pós-auditoria 23/03/2026 + Sessões 1, 2, 3 + vínculo opcional de cliente em occurrences*

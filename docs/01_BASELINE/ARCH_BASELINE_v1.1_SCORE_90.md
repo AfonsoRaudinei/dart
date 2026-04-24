@@ -35,7 +35,7 @@
 | Erros `flutter analyze` | **0** |
 | Enforcement CI ativo | SIM |
 | Arquivos >900 linhas | **5** legados (WARN controlado — inclui `database_helper.dart`) |
-| Schema DB | `soloforte.db` v26 (banco único) |
+| Schema DB | `soloforte.db` v28 (banco único) |
 | ADRs confirmados no código | 12 (ADR-007 a ADR-022) |
 
 ---
@@ -118,6 +118,13 @@ Gravação de rota por GPS integrada ao módulo drawing.
 Casos de marketing com visualização no mapa.
 - PASSO 6: long press → `NovoCaseSheet` (em `private_map_screen.dart` + `private_map_sheets.dart`) ✅
 - PASSO 7: pins no mapa via `isolated_marker_layers.dart` + `marketingCasesProvider` ✅
+
+### `consultoria/occurrences/` — vínculo opcional de cliente
+- Schema v28: coluna nullable `client_id` em `occurrences`
+- Modelo `Occurrence` atualizado com `clientId` (`toMap`/`fromMap`/`copyWith`)
+- Sync Supabase atualizado (`client_id` no upsert/pull)
+- UI de criação com seletor opcional via `IClientLookup`
+- Novo arquivo: `lib/modules/consultoria/occurrences/presentation/widgets/occurrence_client_selector.dart`
 
 ### Settings / Auth
 Módulos satélite sem dependências cruzadas.
@@ -304,10 +311,11 @@ Qualquer evolução arquitetural deve referenciar esta baseline e justificar o d
 
 | Issue | Nota |
 |---|---|
+| Golden de auth (`register_golden_test.dart`) com diff de pixel (fora do escopo de occurrences) | Dívida técnica conhecida — tratar em task dedicada; não atualizar golden em feature não relacionada |
 | `DrawingRemoteStore` ainda stub — sync remoto de desenhos não funcional | Depende de infraestrutura de sync |
 | 65 issues `flutter analyze` — todos `info`/`deprecated_member_use` | Nenhum é erro; pré-existentes |
 | 45 TODOs em produção | Nenhum em caminho crítico |
 
 ---
 
-*Atualizado em: 24/03/2026 | Branch: `release/v1.1` | Commit de referência: `51c5c99` | Score: 90/100*
+*Atualizado em: 24/04/2026 | Branch: `release/v1.1` | Inclui Occurrence Client Link (schema v28) | Score: 90/100*
