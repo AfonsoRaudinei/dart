@@ -63,7 +63,7 @@ Future<ClimaLatLon> climaLocation(Ref ref) async {
     final pos = await Geolocator.getCurrentPosition(
       locationSettings: const LocationSettings(
         accuracy: LocationAccuracy.medium,
-        timeLimit: Duration(seconds: 8),
+        timeLimit: Duration(seconds: 25),
       ),
     );
     return (lat: pos.latitude, lon: pos.longitude);
