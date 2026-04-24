@@ -230,7 +230,15 @@ extension _PrivateMapSheets on _PrivateMapScreenState {
                   ),
                 ),
               ),
-              Expanded(child: _buildSheetContent(state, scrollController)),
+              Expanded(
+                child: buildSheetContent(
+                  context,
+                  ref,
+                  state,
+                  scrollController,
+                  _armOccurrenceMode,
+                ),
+              ),
             ],
           ),
         ),
@@ -244,120 +252,6 @@ extension _PrivateMapSheets on _PrivateMapScreenState {
         }
       }
     });
-  }
-
-  // ── _buildSheetContent ────────────────────────────────────────────────────
-
-  // 🔧 MODAL: Conteúdo específico por tipo (recebe scrollController do DraggableScrollableSheet)
-  Widget _buildSheetContent(
-    MapSheetState state,
-    ScrollController scrollController,
-  ) {
-    switch (state.type) {
-      case MapSheetType.layers:
-        return SingleChildScrollView(
-          controller: scrollController,
-          physics: const BouncingScrollPhysics(),
-          child: LayersSheet(onClose: () => Navigator.of(context).pop()),
-        );
-      case MapSheetType.occurrences:
-        if (state.isCreatingOccurrence &&
-            ref.read(pendingOccurrenceLocationProvider) != null) {
-          final lat = ref.read(pendingOccurrenceLocationProvider)!.latitude;
-          final lng = ref.read(pendingOccurrenceLocationProvider)!.longitude;
-          return OccurrenceCreationSheet(
-            latitude: lat,
-            longitude: lng,
-            scrollController: scrollController,
-            onCancel: () => Navigator.of(context).pop(),
-            onConfirm: (data) {
-              ref.read(occurrenceControllerProvider).createOccurrence(
-                type: data.type,
-                description: data.description,
-                clientId: data.clientId,
-                photoPath: data.photoPath,
-                lat: lat,
-                long: lng,
-                category: data.category,
-                status: 'draft',
-                cultivar: data.cultivar,
-                dataPlantio: data.dataPlantio,
-                estadioFenologico: data.estadioFenologico,
-                tipoOcorrencia: data.tipoOcorrencia,
-                amostraSolo: data.amostraSolo,
-                recomendacoes: data.recomendacoes,
-                metricasJson: data.metricasJson,
-                nutrientesJson: data.nutrientesJson,
-                categoriasJson: data.categoriasJson,
-                notasCategoriasJson: data.notasCategoriasJson,
-                fotosCategoriasJson: data.fotosCategoriasJson,
-              );
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Ocorrência registrada com sucesso!'),
-                  backgroundColor: PremiumTokens.brandGreen,
-                ),
-              );
-              Navigator.of(context).pop();
-            },
-          );
-        }
-        return OccurrenceListSheet(
-          scrollController: scrollController,
-          showHandle: false,
-          showDecoration: false,
-          mapBounds: null,
-          onClose: () => Navigator.of(context).pop(),
-          onOccurrenceTap: (occurrence) {
-            AppLogger.debug(
-              'Ocorrência tocada: ${occurrence.id}',
-              tag: 'MapSheet',
-            );
-          },
-          onRequestNewOccurrence: () {
-            Navigator.of(context).pop();
-            // FIX 1: Armar modo seleção de ponto em vez de abrir sheet diretamente
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (mounted) _armOccurrenceMode();
-            });
-          },
-        );
-      case MapSheetType.checkIn:
-        return Consumer(
-          builder: (ctx, widgetRef, _) {
-            // ⚡ Sprint 8: .select() para rebuild só quando status muda
-            final isActive = widgetRef.watch(
-              visitControllerProvider.select(
-                (v) => v.valueOrNull?.status == 'active',
-              ),
-            );
-            if (isActive) {
-              return const ActiveVisitSheet();
-            }
-            return VisitSheet(
-              preSelectedClienteId: state.preSelectedClienteId,
-              // Bug 1: scrollController conecta DraggableScrollableSheet ao
-              // SingleChildScrollView interno para expansão correta via drag.
-              scrollController: scrollController,
-              onConfirm: (clientId, areaId, activity) {
-                widgetRef
-                    .read(visitControllerProvider.notifier)
-                    .startSession(clientId, areaId, activity, 0.0, 0.0);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Visita iniciada. Bom trabalho!'),
-                    backgroundColor: PremiumTokens.brandGreenDark,
-                  ),
-                );
-                Navigator.of(context).pop();
-              },
-            );
-          },
-        );
-      case MapSheetType.draw:
-        // Nunca deve chegar aqui — draw permanece no Stack
-        return const SizedBox.shrink();
-    }
   }
 
   // ── _finishDrawing ────────────────────────────────────────────────────────
