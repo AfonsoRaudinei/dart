@@ -46,7 +46,6 @@ import 'map/controllers/map_viewport_controller.dart';
 import 'map/controllers/map_sheet_controller.dart';
 import 'map/handlers/novo_case_modal_launcher.dart';
 
-part 'private_map_sheets.dart';
 
 // ════════════════════════════════════════════════════════════════
 // GOVERNANCE ADR-025 — DT-025-5
@@ -211,7 +210,50 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
     ref.read(isModalOpenProvider.notifier).state = value;
   }
 
-  // 🛡 HARDENING DEFINITIVO: Máquina de Decisão de Viewport
+  // ── _handleMapLongPress ── delegate ADR-031 F5 ─────────────────────────
+  void _handleMapLongPress(TapPosition tapPos, LatLng latLng) {
+    NovoCaseModalLauncher.launch(
+      position: latLng,
+      context: context,
+      ref: ref,
+    );
+  }
+
+  // ── _openSheetAsModal ── delegate ADR-031 F4 ───────────────────────────
+  void _openSheetAsModal(BuildContext ctx, MapSheetState state) {
+    MapSheetController.openSheet(
+      ctx,
+      ref,
+      state,
+      _armOccurrenceMode,
+      _setSheetState,
+      _setModalOpen,
+    );
+  }
+
+  // ── _finishDrawing ─────────────────────────────────────────────────────
+  Future<void> _finishDrawing() async {
+    final controller = ref.read(drawingControllerProvider);
+    if (controller.currentState != DrawingState.drawing) return;
+    if (controller.liveGeometry == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Adicione pelo menos 3 pontos para criar um polígono'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+    controller.completeDrawing();
+    if (controller.currentState != DrawingState.reviewing) return;
+  }
+
+  // ── _toggleDrawMode ── delegate ADR-031 F4 ────────────────────────────
+  void _toggleDrawMode() {
+    MapSheetController.toggleDrawMode(context, ref, _setSheetState);
+  }
+
+  // HARDENING DEFINITIVO: Máquina de Decisão de Viewport
   // Determinístico. Idempotente. Sem race loops.
   // ADR-030 F6: lógica extraída para MapViewportController
   void _applyInitialViewport() async {
