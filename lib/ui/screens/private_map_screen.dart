@@ -12,7 +12,6 @@ import '../../modules/auth/services/auth_service.dart';
 import '../../core/utils/app_logger.dart';
 import '../../core/utils/map_logger.dart';
 import '../../core/utils/debouncer.dart';
-import '../../modules/marketing/presentation/providers/marketing_providers.dart';
 import '../../modules/consultoria/clients/presentation/providers/field_providers.dart';
 import '../../modules/consultoria/services/talhao_map_adapter.dart';
 import '../../modules/drawing/presentation/widgets/drawing_layers.dart';
@@ -21,8 +20,6 @@ import '../../modules/drawing/domain/drawing_state.dart';
 import '../../modules/drawing/presentation/widgets/drawing_state_indicator.dart';
 import '../../modules/dashboard/providers/location_providers.dart';
 import '../../modules/consultoria/occurrences/domain/occurrence.dart' as occ;
-import '../../modules/marketing/presentation/screens/novo_case_sheet.dart';
-import '../../modules/marketing/presentation/widgets/draft_saved_sheet.dart';
 import '../components/map/map_bottom_sheet.dart';
 import '../components/map/widgets/map_canvas.dart';
 import '../components/map/widgets/map_layers.dart';
@@ -35,14 +32,10 @@ import '../../modules/drawing/presentation/widgets/drawing_edit_layer.dart';
 import '../../modules/drawing/presentation/widgets/gps_tracking_overlay.dart';
 import '../../core/domain/map_models.dart';
 import '../components/map/map_sheet_state.dart';
-// ADR-012 — planos/
-import '../../modules/planos/presentation/providers/plano_providers.dart';
-import 'widgets/plano_block_sheet.dart';
 // 🔧 MODAL: imports para showModalBottomSheet dos tipos não-draw
 // (conteúdo migrado para map_sheet_content_builder.dart — ADR-031 F3)
 import '../../modules/consultoria/occurrences/presentation/widgets/occurrence_detail_sheet.dart';
 import '../../modules/visitas/presentation/controllers/visit_controller.dart';
-import '../../core/ui/sheets/sheet_tokens.dart';
 import '../../core/contracts/i_field_lookup_geofence_provider.dart';
 import 'map/providers/map_armed_mode_provider.dart';
 import 'map/widgets/armed_mode_banner.dart';
@@ -51,6 +44,7 @@ import 'map/widgets/drawing_map_behavior_listener.dart';
 import 'map/handlers/map_location_handler.dart';
 import 'map/controllers/map_viewport_controller.dart';
 import 'map/controllers/map_sheet_controller.dart';
+import 'map/handlers/novo_case_modal_launcher.dart';
 
 part 'private_map_sheets.dart';
 
