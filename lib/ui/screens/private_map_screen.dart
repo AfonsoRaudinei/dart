@@ -617,10 +617,6 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
                 () => ref.read(drawingControllerProvider).undoDrawingPoint(),
             canUndo: canUndo,
             canRedo: canRedo,
-            isRadarActive: ref.watch(showRadarProvider),
-            onToggleRadar: () => ref
-                .read(showRadarProvider.notifier)
-                .state = !ref.read(showRadarProvider),
             currentCenter: _isMapReady
                 ? _mapController.camera.center
                 : const LatLng(0, 0),
