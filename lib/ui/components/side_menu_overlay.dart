@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
+import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -9,6 +10,8 @@ import 'package:soloforte_app/core/state/side_menu_state.dart';
 import 'package:soloforte_app/modules/planos/presentation/providers/plano_providers.dart';
 import 'package:soloforte_app/modules/planos/domain/entities/user_plan.dart';
 import 'package:soloforte_app/modules/planos/domain/enums/plano_tipo.dart';
+import 'package:soloforte_app/modules/settings/presentation/providers/settings_providers.dart';
+import 'package:soloforte_app/modules/settings/presentation/providers/user_profile_provider.dart';
 // ignore_for_file: unused_import
 
 class SideMenuOverlay extends ConsumerWidget {
@@ -69,7 +72,7 @@ class SideMenuOverlay extends ConsumerWidget {
               ),
               child: Column(
                 children: [
-                  _buildHeader(context),
+                  _buildHeader(context, ref),
                   Expanded(
                     child: SingleChildScrollView(
                       child: Column(
@@ -155,7 +158,29 @@ class SideMenuOverlay extends ConsumerWidget {
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
+  Widget _buildHeader(BuildContext context, WidgetRef ref) {
+    final userProfileAsync = ref.watch(currentUserProfileProvider);
+    final localProfile = ref.watch(profileProvider);
+
+    final profile = userProfileAsync.asData?.value;
+    final displayName =
+        (profile?.fullName?.trim().isNotEmpty ?? false)
+            ? profile!.fullName!
+            : 'Usuário';
+    final displayRole = _formatRole(profile?.role ?? '');
+
+    ImageProvider<Object>? avatarImage;
+    final localPath = localProfile.imagePath;
+    if (localPath != null && File(localPath).existsSync()) {
+      avatarImage = FileImage(File(localPath));
+    } else if ((profile?.photoUrl?.trim().isNotEmpty ?? false)) {
+      avatarImage = NetworkImage(profile!.photoUrl!);
+    }
+
+    final initial = displayName.trim().isNotEmpty
+        ? displayName.trim().characters.first.toUpperCase()
+        : 'U';
+
     return Container(
       color: Theme.of(context).colorScheme.primary,
       padding: EdgeInsets.only(
@@ -170,23 +195,28 @@ class SideMenuOverlay extends ConsumerWidget {
             backgroundColor: Theme.of(
               context,
             ).colorScheme.onPrimary.withValues(alpha: 0.2),
-            child: Text(
-              "J",
-              style: TextStyle(color: Theme.of(context).colorScheme.onPrimary),
-            ),
+            backgroundImage: avatarImage,
+            child: avatarImage == null
+                ? Text(
+                    initial,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onPrimary,
+                    ),
+                  )
+                : null,
           ),
           const SizedBox(width: 12),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                "Consultor",
+                displayRole,
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
                   color: Theme.of(context).colorScheme.onPrimary,
                 ),
               ),
               Text(
-                "João Silva",
+                displayName,
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   color: Theme.of(context).colorScheme.onPrimary,
                   fontWeight: FontWeight.bold,
@@ -197,6 +227,16 @@ class SideMenuOverlay extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  String _formatRole(String role) {
+    final normalized = role.trim().toLowerCase();
+    return switch (normalized) {
+      'consultor' => 'Consultor',
+      'produtor' => 'Produtor',
+      '' || 'não informado' => 'Conta',
+      _ => role,
+    };
   }
 
   Widget _buildSectionLabel(BuildContext context, String label) {
