@@ -10,7 +10,11 @@ import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 import 'dart:ui' as ui;
 import '../../../../core/session/session_controller.dart';
 import '../providers/settings_providers.dart';
+import '../providers/user_profile_provider.dart';
 import '../../domain/settings_models.dart';
+import '../../domain/entities/user_profile.dart';
+import '../widgets/audit_trail_widget.dart';
+import 'edit_profile_screen.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -18,7 +22,7 @@ class SettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final userProfile = ref.watch(profileProvider);
-    final accountProfileAsync = ref.watch(accountProfileProvider);
+    final userProfileAsync = ref.watch(currentUserProfileProvider);
     final currentThemeMode = ref.watch(themeProvider);
 
     return Scaffold(
@@ -57,7 +61,7 @@ class SettingsScreen extends ConsumerWidget {
               // Perfil
               _buildSectionHeader('PERFIL'),
               _buildSection(context, [
-                _buildProfileTile(context, ref, userProfile),
+                _buildProfileTile(context, ref, userProfile, userProfileAsync),
                 _buildSwitchTile(
                   context,
                   title: 'Usar como ícone do app',
@@ -71,13 +75,31 @@ class SettingsScreen extends ConsumerWidget {
               // Dados cadastrais
               _buildSectionHeader('DADOS CADASTRAIS'),
               _buildSection(context, [
-                _buildAccountProfileTile(context, accountProfileAsync),
+                _buildAccountProfileTile(context, userProfileAsync),
               ]),
 
               // Aparência
               _buildSectionHeader('APARÊNCIA'),
               _buildSection(context, [
                 _buildThemeSelector(context, ref, currentThemeMode),
+              ]),
+
+              // Histórico de alterações do perfil
+              _buildSectionHeader('HISTÓRICO DE ALTERAÇÕES'),
+              _buildSection(context, [
+                Consumer(
+                  builder: (ctx, r, _) {
+                    final auditAsync = r.watch(profileAuditTrailProvider);
+                    return auditAsync.when(
+                      loading: () => const Padding(
+                        padding: EdgeInsets.all(16),
+                        child: LinearProgressIndicator(minHeight: 2),
+                      ),
+                      error: (_, __) => const SizedBox.shrink(),
+                      data: (entries) => AuditTrailWidget(entries: entries),
+                    );
+                  },
+                ),
               ]),
 
               // Dados Offline
@@ -221,10 +243,19 @@ class SettingsScreen extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
     ProfileState profile,
+    AsyncValue<UserProfile?> userProfileAsync,
   ) {
     File? imageFile;
-    if (profile.imagePath != null) {
+    if (profile.imagePath != null && File(profile.imagePath!).existsSync()) {
       imageFile = File(profile.imagePath!);
+    }
+
+    final photoUrl = userProfileAsync.asData?.value?.photoUrl ?? '';
+    ImageProvider<Object>? avatarImage;
+    if (imageFile != null) {
+      avatarImage = FileImage(imageFile);
+    } else if (photoUrl.trim().isNotEmpty) {
+      avatarImage = NetworkImage(photoUrl);
     }
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -241,10 +272,8 @@ class SettingsScreen extends ConsumerWidget {
                 CircleAvatar(
                   radius: 30,
                   backgroundColor: Colors.grey.shade300,
-                  backgroundImage: imageFile != null
-                      ? FileImage(imageFile)
-                      : null,
-                  child: imageFile == null
+                  backgroundImage: avatarImage,
+                  child: avatarImage == null
                       ? const Icon(Icons.person, size: 30, color: Colors.grey)
                       : null,
                 ),
@@ -409,9 +438,9 @@ class SettingsScreen extends ConsumerWidget {
 
   Widget _buildAccountProfileTile(
     BuildContext context,
-    AsyncValue<AccountProfileData> accountProfileAsync,
+    AsyncValue<UserProfile?> userProfileAsync,
   ) {
-    return accountProfileAsync.when(
+    return userProfileAsync.when(
       loading: () => const Padding(
         padding: EdgeInsets.all(16),
         child: LinearProgressIndicator(minHeight: 2),
@@ -425,21 +454,78 @@ class SettingsScreen extends ConsumerWidget {
                   .copyWith(color: PremiumTokens.textSecondaryLight),
         ),
       ),
-      data: (data) => Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildInfoRow(context, 'Nome', data.name),
-            const SizedBox(height: 10),
-            _buildInfoRow(context, 'E-mail', data.email),
-            const SizedBox(height: 10),
-            _buildInfoRow(context, 'Telefone', data.phone),
-            const SizedBox(height: 10),
-            _buildInfoRow(context, 'Perfil', data.role),
-          ],
-        ),
-      ),
+      data: (profile) {
+        if (profile == null) {
+          return Padding(
+            padding: const EdgeInsets.all(16),
+            child: Text(
+              'Usuário não autenticado.',
+              style:
+                  (Theme.of(context).textTheme.labelMedium ?? const TextStyle())
+                      .copyWith(color: PremiumTokens.textSecondaryLight),
+            ),
+          );
+        }
+        return Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildInfoRow(
+                context,
+                'Nome',
+                profile.fullName?.isNotEmpty == true
+                    ? profile.fullName!
+                    : 'Não informado',
+              ),
+              const SizedBox(height: 10),
+              _buildInfoRow(context, 'E-mail', profile.email),
+              const SizedBox(height: 10),
+              _buildInfoRow(
+                context,
+                'Telefone',
+                profile.phone?.isNotEmpty == true
+                    ? profile.phone!
+                    : 'Não informado',
+              ),
+              const SizedBox(height: 10),
+              _buildInfoRow(
+                context,
+                'Perfil',
+                profile.role?.isNotEmpty == true
+                    ? profile.role!
+                    : 'Não informado',
+              ),
+              if (profile.creaNumber?.isNotEmpty == true) ...[
+                const SizedBox(height: 10),
+                _buildInfoRow(context, 'CREA/CFT', profile.creaNumber!),
+              ],
+              const SizedBox(height: 14),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          EditProfileScreen(initialProfile: profile),
+                    ),
+                  ),
+                  icon: const Icon(Icons.edit_outlined, size: 16),
+                  label: const Text('Editar perfil'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFFF59E0B),
+                    side: const BorderSide(color: Color(0xFFF59E0B)),
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
