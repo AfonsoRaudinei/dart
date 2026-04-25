@@ -483,19 +483,16 @@ class _OccurrenceCreationSheetState
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             color: isSelected
-                                ? selectedColor.withValues(alpha: 0.15)
-                                : const Color(0xFF2C2C2E),
+                                ? selectedColor.withValues(alpha: 0.2)
+                                : Colors.grey[800],
                             border: isSelected
-                                ? Border.all(color: selectedColor, width: 1.5)
-                                : Border.all(
-                                    color: const Color(0xFF3A3A3C),
-                                    width: 1,
-                                  ),
+                                ? Border.all(color: selectedColor, width: 2)
+                                : null,
                           ),
                           child: Icon(
                             cat.icon,
                             size: 28,
-                            color: isSelected ? Colors.white : Colors.white70,
+                            color: isSelected ? selectedColor : Colors.white70,
                           ),
                         ),
                         const SizedBox(height: 4),
@@ -506,8 +503,8 @@ class _OccurrenceCreationSheetState
                             style: TextStyle(
                               fontSize: 11,
                               color: isSelected
-                                  ? Colors.white
-                                  : const Color(0xFF8E8E93),
+                                  ? selectedColor
+                                  : Colors.white70,
                             ),
                             textAlign: TextAlign.center,
                             maxLines: 2,
