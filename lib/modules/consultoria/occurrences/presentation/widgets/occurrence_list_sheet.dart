@@ -273,21 +273,17 @@ class _OccurrenceListItem extends StatelessWidget {
   // ── Helpers ──────────────────────────────────────────────────
 
   Color _catColor(OccurrenceCategory cat) {
-    return cat.markerColor;
-  }
-
-  IconData _catIcon(OccurrenceCategory cat) {
     switch (cat) {
       case OccurrenceCategory.doenca:
-        return Icons.coronavirus_outlined;
+        return const Color(0xFF34C759);
       case OccurrenceCategory.insetos:
-        return Icons.bug_report_outlined;
+        return const Color(0xFFFF2D55);
       case OccurrenceCategory.daninhas:
-        return Icons.grass_outlined;
+        return const Color(0xFFFF9500);
       case OccurrenceCategory.nutricional:
-        return Icons.science_outlined;
+        return const Color(0xFF8E8E93);
       case OccurrenceCategory.agua:
-        return Icons.water_drop_outlined;
+        return const Color(0xFF30B0C7);
     }
   }
 
@@ -406,16 +402,9 @@ class _OccurrenceListItem extends StatelessWidget {
                       height: 80,
                       fit: BoxFit.cover,
                       errorBuilder: (_, __, ___) => _CategoryIcon(
-                        cat: primaryCat,
-                        color: color,
-                        icon: _catIcon(primaryCat),
-                      ),
+                          cat: primaryCat, color: color),
                     )
-                  : _CategoryIcon(
-                      cat: primaryCat,
-                      color: color,
-                      icon: _catIcon(primaryCat),
-                    ),
+                  : _CategoryIcon(cat: primaryCat, color: color),
             ),
             const SizedBox(width: 10),
 
@@ -430,6 +419,15 @@ class _OccurrenceListItem extends StatelessWidget {
                     // Linha 1: categorias + badges
                     Row(
                       children: [
+                        // Emojis das categorias ativas
+                        ...cats.take(3).map((c) => Padding(
+                              padding:
+                                  const EdgeInsets.only(right: 2),
+                              child: Text(c.emoji,
+                                  style: const TextStyle(
+                                      fontSize: 14)),
+                            )),
+                        const SizedBox(width: 4),
                         Expanded(
                           child: Text(
                             cats.map((c) => c.label).join(' + '),
@@ -459,7 +457,7 @@ class _OccurrenceListItem extends StatelessWidget {
                             if (occurrence.estadioFenologico != null)
                               _MiniChip(
                                 label:
-                                    'Estádio ${occurrence.estadioFenologico}',
+                                    '📊 ${occurrence.estadioFenologico}',
                                 color:
                                     PremiumTokens.brandGreen,
                               ),
@@ -559,32 +557,16 @@ class _OccurrenceListItem extends StatelessWidget {
 class _CategoryIcon extends StatelessWidget {
   final OccurrenceCategory cat;
   final Color color;
-  final IconData icon;
-  const _CategoryIcon({
-    required this.cat,
-    required this.color,
-    required this.icon,
-  });
+  const _CategoryIcon({required this.cat, required this.color});
 
   @override
   Widget build(BuildContext context) => Container(
         width: 60,
         height: 80,
-        color: const Color(0xFF1C1C1E),
+        color: color.withOpacity(.1),
         child: Center(
-          child: Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: color,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              icon,
-              color: Colors.white,
-              size: 22,
-            ),
-          ),
+          child: Text(cat.emoji,
+              style: const TextStyle(fontSize: 28)),
         ),
       );
 }
