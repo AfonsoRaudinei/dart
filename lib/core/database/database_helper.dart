@@ -23,7 +23,7 @@ class DatabaseHelper {
 
     final db = await openDatabase(
       path,
-      version: 29,
+      version: 30,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -150,6 +150,9 @@ class DatabaseHelper {
           break;
         case 29:
           await _migrateToV29(db);
+          break;
+        case 30:
+          await _migrateToV30(db);
           break;
       }
     }
@@ -1180,6 +1183,41 @@ class DatabaseHelper {
         tag: 'DB.Migration',
       );
     }
+  }
+
+  Future<void> _migrateToV30(Database db) async {
+    await db.execute('DROP TABLE IF EXISTS user_profile_cache');
+    await db.execute('''
+      CREATE TABLE user_profile_cache (
+        id TEXT PRIMARY KEY,
+        email TEXT NOT NULL,
+        full_name TEXT,
+        phone TEXT,
+        role TEXT,
+        photo_url TEXT,
+        crea_number TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        sync_status INTEGER NOT NULL DEFAULT 0
+      )
+    ''');
+
+    await db.execute('DROP TABLE IF EXISTS user_profile_edits');
+    await db.execute('''
+      CREATE TABLE user_profile_edits (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        field_changed TEXT NOT NULL,
+        old_value TEXT,
+        new_value TEXT NOT NULL,
+        changed_at TEXT NOT NULL
+      )
+    ''');
+
+    AppLogger.debug(
+      'V30: user_profile_cache e user_profile_edits criadas',
+      tag: 'DB.Migration',
+    );
   }
 
   /// Remove registros locais não sincronizados do usuário no logout.
