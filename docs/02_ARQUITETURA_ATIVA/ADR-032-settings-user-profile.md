@@ -1,57 +1,60 @@
 # ADR-032 — Settings: Perfil do Usuário Completo, Editável e Auditável
 
-**Status:** Aprovado  
+**Status:** ATIVO  
 **Data:** Abr/2026  
-**Módulo:** `settings` (bounded context satélite — sem dependências cruzadas)  
+**Módulo:** `settings`  
 **DB:** v29 → v30  
-**Branch:** release/v1.1
+**Substitui:** `accountProfileProvider` (removido)
 
 ---
 
 ## Contexto
 
-O módulo `settings` existia estruturalmente vazio em termos de perfil de usuário: apenas `ProfileState` com `imagePath` e `useAsAppIcon`. O `accountProfileProvider` em `settings_providers.dart` fazia leitura simples do Supabase Auth + tabela `perfis`, mas sem cache local, sem edição e sem rastreabilidade de alterações.
+O módulo `settings` exibia dados parciais do usuário via `accountProfileProvider`, que lia
+`supabase.auth.currentUser` + tabela `perfis` diretamente no provider, sem cache local,
+sem entidade de domínio, sem possibilidade de edição e sem trilha de auditoria.
 
-Os dados do login (nome, telefone, CREA) nunca foram bridgeados para a tela de configurações de forma estruturada.
+**Problemas identificados:**
+- `ProfileState` (domain/settings_models.dart) continha apenas `photoUrl`
+- `crea_number` não existe na tabela `perfis` do Supabase — apenas `name`, `phone`, `role`, `photo_url`
+- Nenhuma escrita era possível a partir da tela de configurações
+- Nenhum registro de quem alterou o quê e quando
 
 ---
 
 ## Decisão
 
-Implementar três capacidades dentro do bounded context `settings`:
-
-1. **Exibição completa** dos dados do usuário autenticado via `userProfileProvider` (Riverpod codegen, autoDispose), com cache SQLite offline-first.
-2. **Edição** dos campos editáveis (`fullName`, `phone`, `photoUrl`, `creaNumber`) via `edit_profile_screen.dart`, aberta como `Navigator.push` sem criar nova rota no GoRouter.
-3. **Trilha de auditoria local** append-only: cada campo alterado gera 1 entrada em `user_profile_edits` (SQLite), nunca deletada.
+1. **Criar** entidade `UserProfile` em `settings/domain/entities/`
+2. **Criar** interface `IUserProfileRepository` em `settings/domain/repositories/`
+3. **Criar** `UserProfileRepositoryImpl` em `settings/data/repositories/` — absorve lógica do `accountProfileProvider`
+4. **Criar** `UserProfileAuditEntry` em `settings/data/models/`
+5. **Criar** provider `userProfileProvider` (Riverpod codegen) — substitui `accountProfileProvider`
+6. **Remover** `accountProfileProvider` de `settings_providers.dart` após integração
+7. **Criar** `edit_profile_screen.dart` acessível via modal/push da `settings_screen.dart`
+8. **Migrar** DB para v30: tabelas `user_profile_cache` + `user_profile_edits`
+9. **`crea_number`** salvo apenas em `userMetadata` do Supabase Auth — sem ALTER em `perfis`
 
 ---
 
-## Arquivos criados / modificados
+## Contrato de Campos
 
-### Novos
-| Arquivo | Descrição |
-|---|---|
-| `settings/domain/entities/user_profile.dart` | Entidade imutável com `copyWith` |
-| `settings/domain/repositories/i_user_profile_repository.dart` | Interface do repositório |
-| `settings/data/models/user_profile_audit_entry.dart` | Modelo com `toMap`/`fromMap` |
-| `settings/data/repositories/user_profile_repository_impl.dart` | Implementação (Supabase + SQLite) |
-| `settings/presentation/providers/user_profile_provider.dart` | Riverpod codegen autoDispose |
-| `settings/presentation/screens/edit_profile_screen.dart` | Tela de edição (sem rota nova) |
-| `settings/presentation/widgets/profile_field_tile.dart` | Widget de exibição de campo |
-| `settings/presentation/widgets/audit_trail_widget.dart` | Lista de auditoria |
-
-### Modificados
-| Arquivo | Mudança |
-|---|---|
-| `core/database/database_helper.dart` | v29 → v30: tabelas `user_profile_cache` e `user_profile_edits` |
-| `settings/presentation/screens/settings_screen.dart` | Integração com `userProfileProvider`; seção "Histórico de alterações" |
-| `settings/presentation/providers/settings_providers.dart` | Remoção de `AccountProfileData` e `accountProfileProvider` (absorvidos) |
+| Campo | Fonte | Editável | Observação |
+|---|---|---|---|
+| `id` | Supabase Auth uid | NÃO | somente leitura |
+| `email` | Supabase Auth email | NÃO | somente leitura |
+| `fullName` | tabela `perfis`.name + userMetadata | SIM | |
+| `phone` | tabela `perfis`.phone | SIM | |
+| `role` | tabela `perfis`.role | NÃO | gerenciado pelo backend |
+| `photoUrl` | tabela `perfis`.photo_url | SIM | Supabase Storage |
+| `creaNumber` | userMetadata apenas | SIM | tabela `perfis` não tem coluna |
+| `createdAt` | Supabase Auth createdAt | NÃO | somente leitura |
 
 ---
 
 ## Schema SQLite v30
 
 ### `user_profile_cache`
+
 ```sql
 CREATE TABLE user_profile_cache (
   id TEXT PRIMARY KEY,
@@ -68,6 +71,7 @@ CREATE TABLE user_profile_cache (
 ```
 
 ### `user_profile_edits` (append-only — nunca deletar)
+
 ```sql
 CREATE TABLE user_profile_edits (
   id TEXT PRIMARY KEY,
@@ -87,7 +91,7 @@ Padrão: `DROP TABLE IF EXISTS` + `CREATE TABLE` (idempotente, conforme históri
 
 | Campo | Fonte primária | Fallback |
 |---|---|---|
-| `id`, `email`, `createdAt` | Supabase Auth | — (somente leitura) |
+| `id`, `email`, `createdAt` | Supabase Auth | — somente leitura |
 | `fullName`, `phone`, `role`, `photoUrl` | Supabase tabela `perfis` | SQLite cache |
 | `creaNumber` | Supabase `userMetadata['crea_number']` | SQLite cache |
 
@@ -95,27 +99,12 @@ Padrão: `DROP TABLE IF EXISTS` + `CREATE TABLE` (idempotente, conforme históri
 
 ---
 
-## Campos editáveis vs somente leitura
+## Trilha de Auditoria
 
-| Campo | Editável | Destino da edição |
-|---|---|---|
-| `id` | ❌ | — |
-| `email` | ❌ | — |
-| `createdAt` | ❌ | — |
-| `role` | ❌ | — |
-| `fullName` | ✅ | `perfis.name` + cache |
-| `phone` | ✅ | `perfis.phone` + cache |
-| `photoUrl` | ✅ | Storage Supabase (fluxo existente) |
-| `creaNumber` | ✅ | `userMetadata` Supabase Auth |
-
----
-
-## Regras de Auditoria
-
-- Cada campo editado = 1 entrada na tabela `user_profile_edits`
-- Múltiplos campos na mesma edição = múltiplas entradas com mesmo `changedAt`
-- Append-only: sem `DELETE`, sem `UPDATE` na tabela de auditoria
-- UI exibe últimas 20 entradas em ordem cronológica reversa
+- Append-only — nunca deletar entradas
+- 1 entrada por campo alterado por save
+- Exibir últimas 20 na `settings_screen.dart`
+- Schema SQLite: `user_profile_edits` (v30)
 
 ---
 
@@ -127,21 +116,49 @@ Padrão: `DROP TABLE IF EXISTS` + `CREATE TABLE` (idempotente, conforme históri
 
 ---
 
-## Restrições
-
-- ❌ Nenhuma rota nova no GoRouter — `edit_profile_screen` abre via `Navigator.push`
-- ❌ Nenhuma coluna nova na tabela `perfis` — `crea_number` vai apenas em `userMetadata`
-- ❌ Nenhuma dependência cruzada entre módulos — `settings` permanece satélite
-- ❌ Nenhum `ALTER TABLE` em tabelas existentes — apenas novas tabelas em v30
-
----
-
 ## Consequências
 
-- `accountProfileProvider` e `AccountProfileData` removidos de `settings_providers.dart` após integração
-- `settings_screen.dart` passa a usar `currentUserProfileProvider` (codegen)
-- `ProfileState` em `settings_models.dart` permanece (gerencia foto/ícone app — escopo diferente)
+- `accountProfileProvider` removido — **breaking change intencional e controlado**
+- `settings_screen.dart` migra para `currentUserProfileProvider`
+- `side_menu_overlay.dart` migra para `currentUserProfileProvider`
+- `arch_check.sh` não é afetado — settings permanece bounded context satélite
+- Retrocompatível: novas tabelas, sem ALTER em tabelas existentes
+- DB v30 idempotente (DROP + CREATE)
 
 ---
 
-*ADR-032 aprovado — Engenheiro Sênior Flutter/Dart — Abr/2026*
+## Arquivos Afetados
+
+```
+CRIADOS:
+  lib/modules/settings/domain/entities/user_profile.dart
+  lib/modules/settings/domain/repositories/i_user_profile_repository.dart
+  lib/modules/settings/data/repositories/user_profile_repository_impl.dart
+  lib/modules/settings/data/models/user_profile_audit_entry.dart
+  lib/modules/settings/presentation/providers/user_profile_provider.dart
+  lib/modules/settings/presentation/screens/edit_profile_screen.dart
+  lib/modules/settings/presentation/widgets/profile_field_tile.dart
+  lib/modules/settings/presentation/widgets/audit_trail_widget.dart
+
+MODIFICADOS:
+  lib/core/database/database_helper.dart          ← migração v30
+  lib/modules/settings/presentation/providers/settings_providers.dart ← removido accountProfileProvider
+  lib/modules/settings/presentation/screens/settings_screen.dart ← integrado novo provider + auditoria
+  lib/ui/components/side_menu_overlay.dart ← migrado para currentUserProfileProvider
+```
+
+---
+
+## Status de Implementação
+
+- [x] GATE 2 — ADR-032 criado
+- [x] GATE 3 — DB v29 → v30 (`user_profile_cache`, `user_profile_edits`)
+- [x] GATE 4 — Entidade + Interface + Repositório + Provider compilando
+- [x] GATE 5 — `settings_screen.dart` exibe dados reais via `currentUserProfileProvider`
+- [x] GATE 6 — `edit_profile_screen.dart` salva + gera auditoria
+- [x] GATE 7 — `accountProfileProvider` removido (`grep` retorna zero referências)
+- [x] GATE 8 — `arch_check.sh` Exit 0 — `flutter analyze` 0 novos erros
+
+---
+
+*ADR-032 — SoloForte App — Abr/2026*
