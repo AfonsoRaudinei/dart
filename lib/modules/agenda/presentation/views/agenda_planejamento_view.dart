@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
+import 'dart:io';
+import '../../../../core/contracts/i_client_lookup_provider.dart';
 import '../../domain/entities/event.dart';
 import '../../domain/enums/event_status.dart';
 import '../providers/agenda_provider.dart';
+import '../services/agenda_pdf_service.dart';
 import '../widgets/day_event_card.dart';
-import 'package:intl/intl.dart';
 
 /// View de Planejamento Semanal (modelo da skill)
 class AgendaPlanejamentoView extends ConsumerStatefulWidget {
@@ -18,6 +23,7 @@ class AgendaPlanejamentoView extends ConsumerStatefulWidget {
 class _AgendaPlanejamentoViewState
     extends ConsumerState<AgendaPlanejamentoView> {
   late DateTime _weekStart;
+  bool _exportLoading = false;
 
   @override
   void initState() {
@@ -89,17 +95,67 @@ class _AgendaPlanejamentoViewState
               fontWeight: FontWeight.w600,
             ),
           ),
-          IconButton(
-            icon: const Icon(Icons.chevron_right),
-            onPressed: () {
-              setState(() {
-                _weekStart = _weekStart.add(const Duration(days: 7));
-              });
-            },
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                icon: const Icon(Icons.chevron_right),
+                onPressed: () {
+                  setState(() {
+                    _weekStart = _weekStart.add(const Duration(days: 7));
+                  });
+                },
+              ),
+              _exportLoading
+                  ? const SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : IconButton(
+                      icon: const Icon(Icons.picture_as_pdf),
+                      tooltip: 'Exportar PDF da semana',
+                      onPressed: _exportPdf,
+                    ),
+            ],
           ),
         ],
       ),
     );
+  }
+
+  Future<void> _exportPdf() async {
+    setState(() => _exportLoading = true);
+    try {
+      final weekEnd = _weekStart.add(const Duration(days: 6));
+      final weekEvents = ref
+          .read(agendaProvider.notifier)
+          .getEventsByDateRange(_weekStart, weekEnd);
+
+      final clientLookup = ref.read(clientLookupProvider);
+      final service = AgendaPdfService(clientLookup);
+      final bytes = await service.generateWeekPdf(weekEvents, _weekStart);
+
+      final dir = await getTemporaryDirectory();
+      final fmt = DateFormat('yyyy-MM-dd');
+      final fileName =
+          'soloforte_agenda_${fmt.format(_weekStart)}_${fmt.format(weekEnd)}.pdf';
+      final file = File('${dir.path}/$fileName');
+      await file.writeAsBytes(bytes);
+
+      await Share.shareXFiles(
+        [XFile(file.path, mimeType: 'application/pdf')],
+        subject: 'Planejamento Semanal SoloForte',
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erro ao gerar PDF: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _exportLoading = false);
+    }
   }
 
   Widget _buildDayCard(
