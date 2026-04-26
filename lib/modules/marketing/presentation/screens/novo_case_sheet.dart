@@ -498,12 +498,12 @@ class _NovoCaseSheetState extends State<NovoCaseSheet> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Text(
+                  const Text(
                     'Depois *',
                     style: TextStyle(
                       fontWeight: FontWeight.w600,
                       fontSize: 12,
-                      color: Colors.green.shade700,
+                      color: SoloForteSheetTokens.inputHint,
                     ),
                   ),
                   const SizedBox(height: 6),
