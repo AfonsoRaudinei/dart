@@ -708,8 +708,9 @@ class DrawingController extends ChangeNotifier {
   // SPRINT 6: Atualiza campos agronômicos sem criar nova versão de geometria.
   // ---------------------------------------------------------------------------
 
-  /// Atualiza campos descritivos (nome, cultura, safra, amostragem, nutrientes)
-  /// sem tocar na geometria — não gera nova versão no histórico de vértices.
+  /// Atualiza campos descritivos (nome, cultura, safra, amostragem, nutrientes,
+  /// clienteId, fazendaId) sem tocar na geometria — não gera nova versão no
+  /// histórico de vértices.
   void updateMetadata(
     String id, {
     String? nome,
@@ -717,6 +718,8 @@ class DrawingController extends ChangeNotifier {
     String? safra,
     String? soilSamplingScheme,
     Map<String, double>? recByNutrient,
+    String? clienteId,
+    String? fazendaId,
   }) {
     final index = _features.indexWhere((f) => f.id == id);
     if (index == -1) return;
@@ -731,6 +734,8 @@ class DrawingController extends ChangeNotifier {
         safra: safra,
         soilSamplingScheme: soilSamplingScheme,
         recByNutrient: recByNutrient,
+        clienteId: clienteId,
+        fazendaId: fazendaId,
         updatedAt: DateTime.now(),
         syncStatus: SyncStatus.local_only,
       ),

@@ -12,6 +12,7 @@ import '../providers/gps_walk_providers.dart';
 import '../../../../core/constants/layout_constants.dart';
 import 'components/drawing_tool_selector.dart';
 import 'components/drawing_actions_bar.dart';
+import 'drawing_info_edit_sheet.dart';
 import '../../../../ui/theme/premium/design_tokens.dart';
 import 'gps_walk_controls_overlay.dart';
 import '../../../../core/ui/sheets/sheet_tokens.dart';
@@ -608,9 +609,14 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
       selectedFeature: feature,
       onEditGeometry: widget.controller.startEditMode,
       onEditMetadata: () {
-        // TODO: Implementar diálogo de edição de metadados
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Editar metadados (em breve)')),
+        showModalBottomSheet(
+          context: context,
+          isScrollControlled: true,
+          backgroundColor: Colors.transparent,
+          builder: (_) => DrawingInfoEditSheet(
+            feature: feature,
+            controller: widget.controller,
+          ),
         );
       },
       onUnion: widget.controller.startUnionMode,
