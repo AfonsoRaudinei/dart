@@ -499,10 +499,10 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
                   // Mas o bottom sheet pode querer o fundo sólido de sheet do iOS:
                   color: Theme.of(
                     context,
-                  ).scaffoldBackgroundColor.withOpacity(0.92),
+                  ).scaffoldBackgroundColor.withValues(alpha: 0.92),
                   border: Border(
                     top: BorderSide(
-                      color: Theme.of(context).dividerColor.withOpacity(0.1),
+                      color: Theme.of(context).dividerColor.withValues(alpha: 0.1),
                       width: 0.5,
                     ),
                   ),

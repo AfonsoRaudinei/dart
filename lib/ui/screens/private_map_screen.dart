@@ -201,8 +201,13 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
 
     ref.read(mapSheetStateProvider.notifier).state = state;
 
-    // 🔧 MODAL: draw permanece no Stack; demais tipos abrem como showModalBottomSheet
-    if (state == null || state.type == MapSheetType.draw) return;
+    // 🔧 MODAL: draw e occurrences permanecem no Stack;
+    // demais tipos abrem como showModalBottomSheet
+    if (state == null ||
+        state.type == MapSheetType.draw ||
+        state.type == MapSheetType.occurrences) {
+      return;
+    }
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _openSheetAsModal(context, state);
     });
@@ -675,9 +680,11 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
               ),
             ),
 
-          // �🛡 CONSOLIDATION: DrawingSheet permanece no Stack (draw type)
-          // Tipos publications/occurrences/checkIn/layers usam showModalBottomSheet
-          if (sheetState != null && sheetState.type == MapSheetType.draw)
+          // �🛡 CONSOLIDATION: DrawingSheet e OccurrenceSheet permanecem no Stack
+          // Tipos checkIn/layers continuam usando showModalBottomSheet
+          if (sheetState != null &&
+              (sheetState.type == MapSheetType.draw ||
+                  sheetState.type == MapSheetType.occurrences))
             Positioned(
               bottom: 0,
               left: 0,
