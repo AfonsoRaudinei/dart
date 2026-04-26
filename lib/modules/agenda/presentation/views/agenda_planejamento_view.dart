@@ -22,14 +22,14 @@ class AgendaPlanejamentoView extends ConsumerStatefulWidget {
 
 class _AgendaPlanejamentoViewState
     extends ConsumerState<AgendaPlanejamentoView> {
-  late DateTime _weekStart;
+  late DateTime _currentWeekStart;
   bool _exportLoading = false;
+  final Set<int> _activeDayFilters = {0, 1, 2, 3, 4, 5, 6}; // 0=dom..6=sab
 
   @override
   void initState() {
     super.initState();
-    final now = DateTime.now();
-    _weekStart = now.subtract(Duration(days: now.weekday - 1));
+    _currentWeekStart = _calcWeekStart(DateTime.now());
   }
 
   @override
@@ -37,35 +37,44 @@ class _AgendaPlanejamentoViewState
     final theme = Theme.of(context);
     final agendaState = ref.watch(agendaProvider);
 
-    final weekEnd = _weekStart.add(const Duration(days: 6));
+    final weekEnd = _currentWeekStart.add(const Duration(days: 6));
     final weekEvents = ref
         .read(agendaProvider.notifier)
-        .getEventsByDateRange(_weekStart, weekEnd);
+        .getEventsByDateRange(_currentWeekStart, weekEnd);
 
     final eventsByDay = _groupEventsByDay(weekEvents);
+    final filteredDays = _filteredDays();
 
     return Column(
       children: [
         _buildWeekNavigation(theme),
-        const SizedBox(height: 16),
+        _buildDayFilters(theme),
+        const SizedBox(height: 8),
         Expanded(
           child: agendaState.isLoading
               ? const Center(child: CircularProgressIndicator())
-              : ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: 7,
-                  itemBuilder: (context, index) {
-                    final day = _weekStart.add(Duration(days: index));
-                    final dayEvents = eventsByDay[_dayKey(day)] ?? [];
-                    return _buildDayCard(context, theme, day, dayEvents);
-                  },
-                ),
+              : filteredDays.isEmpty
+                  ? const Center(
+                      child: Text('Nenhum dia selecionado.'),
+                    )
+                  : ListView.builder(
+                      padding: const EdgeInsets.all(16),
+                      itemCount: filteredDays.length,
+                      itemBuilder: (context, index) {
+                        final day = filteredDays[index];
+                        final dayEvents = eventsByDay[_dayKey(day)] ?? [];
+                        return _buildDayCard(context, theme, day, dayEvents);
+                      },
+                    ),
         ),
       ],
     );
   }
 
   Widget _buildWeekNavigation(ThemeData theme) {
+    final isCurrentWeek =
+        _currentWeekStart == _calcWeekStart(DateTime.now());
+
     return Container(
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
@@ -81,16 +90,23 @@ class _AgendaPlanejamentoViewState
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          IconButton(
-            icon: const Icon(Icons.chevron_left),
-            onPressed: () {
-              setState(() {
-                _weekStart = _weekStart.subtract(const Duration(days: 7));
-              });
-            },
+          Opacity(
+            opacity: isCurrentWeek ? 0.3 : 1.0,
+            child: IconButton(
+              icon: const Icon(Icons.chevron_left),
+              onPressed: isCurrentWeek
+                  ? null
+                  : () {
+                      setState(() {
+                        _currentWeekStart = _currentWeekStart
+                            .subtract(const Duration(days: 7));
+                        _activeDayFilters.addAll({0, 1, 2, 3, 4, 5, 6});
+                      });
+                    },
+            ),
           ),
           Text(
-            _formatWeekRange(_weekStart),
+            _formatWeekRange(_currentWeekStart),
             style: theme.textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.w600,
             ),
@@ -102,7 +118,9 @@ class _AgendaPlanejamentoViewState
                 icon: const Icon(Icons.chevron_right),
                 onPressed: () {
                   setState(() {
-                    _weekStart = _weekStart.add(const Duration(days: 7));
+                    _currentWeekStart =
+                        _currentWeekStart.add(const Duration(days: 7));
+                    _activeDayFilters.addAll({0, 1, 2, 3, 4, 5, 6});
                   });
                 },
               ),
@@ -127,19 +145,26 @@ class _AgendaPlanejamentoViewState
   Future<void> _exportPdf() async {
     setState(() => _exportLoading = true);
     try {
-      final weekEnd = _weekStart.add(const Duration(days: 6));
-      final weekEvents = ref
+      final weekEnd = _currentWeekStart.add(const Duration(days: 6));
+      // Usar apenas os dias visiveis/filtrados no PDF
+      final visibleDayKeys =
+          _filteredDays().map(_dayKey).toSet();
+      final allWeekEvents = ref
           .read(agendaProvider.notifier)
-          .getEventsByDateRange(_weekStart, weekEnd);
+          .getEventsByDateRange(_currentWeekStart, weekEnd);
+      final filteredEvents = allWeekEvents
+          .where((e) => visibleDayKeys.contains(_dayKey(e.dataInicioPlanejada)))
+          .toList();
 
       final clientLookup = ref.read(clientLookupProvider);
       final service = AgendaPdfService(clientLookup);
-      final bytes = await service.generateWeekPdf(weekEvents, _weekStart);
+      final bytes =
+          await service.generateWeekPdf(filteredEvents, _currentWeekStart);
 
       final dir = await getTemporaryDirectory();
       final fmt = DateFormat('yyyy-MM-dd');
       final fileName =
-          'soloforte_agenda_${fmt.format(_weekStart)}_${fmt.format(weekEnd)}.pdf';
+          'soloforte_agenda_${fmt.format(_currentWeekStart)}_${fmt.format(weekEnd)}.pdf';
       final file = File('${dir.path}/$fileName');
       await file.writeAsBytes(bytes);
 
@@ -156,6 +181,105 @@ class _AgendaPlanejamentoViewState
     } finally {
       if (mounted) setState(() => _exportLoading = false);
     }
+  }
+
+  // ── Lógica de semana e filtro ─────────────────────────────────
+
+  /// Calcula a segunda-feira da semana que contém [ref].
+  /// weekday: 1=seg … 7=dom  →  subtrai (weekday - 1) dias.
+  DateTime _calcWeekStart(DateTime ref) {
+    return DateTime(ref.year, ref.month, ref.day)
+        .subtract(Duration(days: ref.weekday - 1));
+  }
+
+  /// Dias da semana atual visíveis:
+  ///   - Semana atual: apenas dias >= hoje (hoje sempre incluso)
+  ///   - Semanas futuras: todos os 7 dias
+  List<DateTime> _visibleDays() {
+    final today = DateTime.now();
+    final todayOnly = DateTime(today.year, today.month, today.day);
+    final weekNow = _calcWeekStart(today);
+    final isCurrentWeek = _currentWeekStart == weekNow;
+
+    return List.generate(
+      7,
+      (i) => _currentWeekStart.add(Duration(days: i)),
+    ).where((d) => !isCurrentWeek || !d.isBefore(todayOnly)).toList();
+  }
+
+  /// Aplica o filtro de chips sobre os dias visíveis.
+  /// Índice: d.weekday % 7  →  seg=1, ter=2, …, sab=6, dom=0
+  List<DateTime> _filteredDays() {
+    return _visibleDays()
+        .where((d) => _activeDayFilters.contains(d.weekday % 7))
+        .toList();
+  }
+
+  /// Chips de filtro por dia da semana.
+  Widget _buildDayFilters(ThemeData theme) {
+    const labels = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
+    // Índices 0..6 = dom, seg, ter, qua, qui, sex, sáb
+    final visibleIndices =
+        _visibleDays().map((d) => d.weekday % 7).toSet();
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: List.generate(7, (i) {
+          final isVisible = visibleIndices.contains(i);
+          final isActive = _activeDayFilters.contains(i);
+          return GestureDetector(
+            onTap: isVisible
+                ? () {
+                    setState(() {
+                      if (isActive) {
+                        _activeDayFilters.remove(i);
+                      } else {
+                        _activeDayFilters.add(i);
+                      }
+                    });
+                  }
+                : null,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 150),
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: !isVisible
+                    ? (theme.brightness == Brightness.dark
+                        ? const Color(0xFF1E2428)
+                        : const Color(0xFFF3F4F6))
+                    : isActive
+                        ? const Color(0xFF4ADE80)
+                        : (theme.brightness == Brightness.dark
+                            ? const Color(0xFF2A3136)
+                            : const Color(0xFFE5E7EB)),
+              ),
+              child: Center(
+                child: Text(
+                  labels[i],
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: !isVisible
+                        ? (theme.brightness == Brightness.dark
+                            ? const Color(0xFF3A3A3C)
+                            : const Color(0xFFD1D5DB))
+                        : isActive
+                            ? const Color(0xFF14532D)
+                            : (theme.brightness == Brightness.dark
+                                ? const Color(0xFF9CA3AF)
+                                : const Color(0xFF6B7280)),
+                  ),
+                ),
+              ),
+            ),
+          );
+        }),
+      ),
+    );
   }
 
   Widget _buildDayCard(
@@ -306,7 +430,7 @@ class _AgendaPlanejamentoViewState
 
   String _formatWeekRange(DateTime start) {
     final end = start.add(const Duration(days: 6));
-    return '${DateFormat('d MMM', 'pt_BR').format(start)} - ${DateFormat('d MMM yyyy', 'pt_BR').format(end)}';
+    return '${DateFormat('d MMM', 'pt_BR').format(start)} – ${DateFormat('d MMM yyyy', 'pt_BR').format(end)}';
   }
 
   bool _isToday(DateTime date) {
