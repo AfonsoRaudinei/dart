@@ -354,17 +354,21 @@ class AgendaEventDetailPage extends ConsumerWidget {
             final confirm = await showDialog<bool>(
               context: context,
               builder: (context) => AlertDialog(
-                title: const Text('Cancelar Evento'),
-                content: const Text('Deseja realmente cancelar este evento?'),
+                title: const Text('Excluir evento?'),
+                content: const Text(
+                  'O evento será removido permanentemente.',
+                ),
                 actions: [
                   TextButton(
                     onPressed: () => Navigator.pop(context, false),
-                    child: const Text('Não'),
+                    child: const Text('Cancelar'),
                   ),
                   TextButton(
                     onPressed: () => Navigator.pop(context, true),
-                    style: TextButton.styleFrom(foregroundColor: Colors.red),
-                    child: const Text('Sim, cancelar'),
+                    style: TextButton.styleFrom(
+                      foregroundColor: Colors.red,
+                    ),
+                    child: const Text('Excluir'),
                   ),
                 ],
               ),
@@ -372,24 +376,26 @@ class AgendaEventDetailPage extends ConsumerWidget {
 
             if (confirm == true && context.mounted) {
               try {
-                await ref.read(agendaProvider.notifier).cancelEvent(event.id);
+                await ref
+                    .read(agendaProvider.notifier)
+                    .deleteEvent(event.id);
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Evento cancelado!')),
+                    const SnackBar(content: Text('Evento excluído.')),
                   );
-                  context.go(AppRoutes.agenda);
+                  context.pop();
                 }
               } catch (e) {
                 if (context.mounted) {
-                  ScaffoldMessenger.of(
-                    context,
-                  ).showSnackBar(SnackBar(content: Text('Erro: $e')));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Erro ao excluir: $e')),
+                  );
                 }
               }
             }
           },
-          icon: const Icon(Icons.cancel),
-          label: const Text('Cancelar Evento'),
+          icon: const Icon(Icons.delete_outline),
+          label: const Text('Excluir Evento'),
           style: OutlinedButton.styleFrom(
             foregroundColor: Colors.red,
             padding: const EdgeInsets.symmetric(vertical: 16),

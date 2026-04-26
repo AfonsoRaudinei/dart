@@ -12,6 +12,7 @@ import '../../domain/repositories/i_agenda_repository.dart';
 import '../../domain/services/i_agenda_notification_service.dart';
 import '../../domain/use_cases/create_event_use_case.dart';
 import '../../domain/use_cases/update_event_use_case.dart';
+import '../../domain/use_cases/delete_event_use_case.dart';
 import '../../domain/rules/event_rules.dart';
 import '../../data/repositories/agenda_repository.dart';
 import '../../data/services/agenda_notification_service.dart';
@@ -525,6 +526,23 @@ class AgendaNotifier extends StateNotifier<AgendaState> {
     _updateEvent(updatedEvent);
 
     return updatedEvent;
+  }
+
+  /// Soft delete de um evento — sync_status = 'deleted'.
+  ///
+  /// O evento é removido do estado em memória imediatamente.
+  /// [SyncOrchestrator] processa a deletão remota com conectividade.
+  ///
+  /// Lança [StateError] se o evento estiver em andamento com sessão ativa.
+  Future<void> deleteEvent(String eventId) async {
+    await DeleteEventUseCase(
+      _AgendaRepositoryAdapter(_repository),
+    ).execute(eventId);
+
+    // Remove do estado em memória para somêr da listagem imediatamente
+    state = state.copyWith(
+      events: state.events.where((e) => e.id != eventId).toList(),
+    );
   }
 
   /// Retorna eventos de um período específico
