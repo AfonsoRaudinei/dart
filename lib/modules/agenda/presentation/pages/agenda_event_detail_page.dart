@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:soloforte_app/core/constants/layout_constants.dart';
 import 'package:soloforte_app/core/router/app_routes.dart';
+import 'package:soloforte_app/core/contracts/i_client_lookup.dart';
+import 'package:soloforte_app/core/contracts/i_client_lookup_provider.dart';
 import '../../domain/entities/event.dart';
 import '../../domain/enums/event_status.dart';
 import '../providers/agenda_provider.dart';
@@ -31,10 +33,23 @@ class AgendaEventDetailPage extends ConsumerWidget {
       );
     }
 
+    // Resolve nome do cliente via IClientLookup (ADR-015) — nunca exibe UUID bruto
+    final clientAsync = ref.watch(_clientByIdProvider(event.clienteId));
+    final clientNome = clientAsync.when(
+      data: (c) => c?.name ?? 'Cliente não encontrado',
+      loading: () => '…',
+      error: (_, __) => 'Cliente não encontrado',
+    );
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Detalhes do Evento'),
         automaticallyImplyLeading: false,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new),
+          onPressed: () => context.pop(),
+          tooltip: 'Voltar',
+        ),
         actions: [
           if (!event.status.isFinished)
             IconButton(
@@ -72,7 +87,7 @@ class AgendaEventDetailPage extends ConsumerWidget {
 
             // Cliente/Fazenda/Talhão
             _buildInfoSection('Localização', [
-              _buildInfoRow(Icons.person, 'Cliente', event.clienteId),
+              _buildInfoRow(Icons.person, 'Cliente', clientNome),
               if (event.fazendaId != null)
                 _buildInfoRow(Icons.agriculture, 'Fazenda', event.fazendaId!),
               if (event.talhaoId != null)
@@ -86,20 +101,13 @@ class AgendaEventDetailPage extends ConsumerWidget {
               const SizedBox(height: 24),
             ],
 
-            // Informações técnicas
-            _buildInfoSection('Informações Técnicas', [
-              _buildInfoRow(Icons.fingerprint, 'ID', event.id),
+            // Oportunidades — ver ficha do cliente
+            _buildInfoSection('Oportunidades', [
               _buildInfoRow(
-                Icons.calendar_today,
-                'Criado em',
-                _formatDateTime(event.createdAt),
+                Icons.trending_up_rounded,
+                'Oportunidades',
+                'Ver na ficha do cliente',
               ),
-              _buildInfoRow(
-                Icons.update,
-                'Atualizado em',
-                _formatDateTime(event.updatedAt),
-              ),
-              _buildInfoRow(Icons.sync, 'Status Sync', event.syncStatus),
             ]),
             const SizedBox(height: 24),
 
@@ -424,3 +432,10 @@ class AgendaEventDetailPage extends ConsumerWidget {
     return '${_formatDate(dateTime)} às ${_formatTime(dateTime)}';
   }
 }
+
+/// Provider privado — resolve ClientSummary por ID via IClientLookup (ADR-015).
+/// Padrão idêntico ao adotado em client_selector_dropdown.dart.
+final _clientByIdProvider =
+    FutureProvider.autoDispose.family<ClientSummary?, String>(
+  (ref, id) => ref.watch(clientLookupProvider).findById(id),
+);
