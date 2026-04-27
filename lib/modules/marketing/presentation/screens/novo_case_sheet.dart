@@ -709,16 +709,19 @@ class _NovoCaseSheetState extends State<NovoCaseSheet> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
+              const Text(
                 'Novo Case',
-                style: Theme.of(
-                  context,
-                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
               Text(
                 'Lat: ${widget.lat.toStringAsFixed(5)}, Lng: ${widget.lng.toStringAsFixed(5)}',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: PremiumTokens.textSecondaryLight,
+                style: const TextStyle(
+                  color: Color(0xFF8E8E93),
+                  fontSize: 12,
                 ),
               ),
             ],

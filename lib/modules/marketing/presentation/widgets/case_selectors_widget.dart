@@ -51,7 +51,7 @@ class CaseTipoSelector extends StatelessWidget {
                 style: Theme.of(context).textTheme.labelMedium?.copyWith(
                   color: isSelected
                       ? Colors.white
-                      : PremiumTokens.textSecondaryLight,
+                      : const Color(0xFF8E8E93),
                   fontWeight: isSelected ? FontWeight.w700 : FontWeight.normal,
                 ),
               ),
