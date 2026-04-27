@@ -267,7 +267,7 @@ class _CategoriasTab extends ConsumerWidget {
                         Padding(
                           padding: const EdgeInsets.only(top: 2),
                           child: Text(
-                            'R\$ ${custoSacasHa.toStringAsFixed(3)} sc/ha',
+                            '${custoSacasHa.toStringAsFixed(3)} ${categoria.unidade.label}',
                             style: TextStyle(
                               fontSize: 11,
                               color: Theme.of(context).hintColor,
