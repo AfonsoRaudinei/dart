@@ -231,11 +231,11 @@ class _LancamentoFormDialogState extends ConsumerState<LancamentoFormDialog> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Fechado: ${closedValuePerHa.toStringAsFixed(2)} $unidadeLabel/ha',
+                      'Fechado: ${closedValuePerHa.toStringAsFixed(2)} $unidadeLabel',
                       style: const TextStyle(fontSize: 13),
                     ),
                     Text(
-                      'Residual: ${residualValuePerHa.toStringAsFixed(2)} $unidadeLabel/ha '
+                      'Residual: ${residualValuePerHa.toStringAsFixed(2)} $unidadeLabel '
                       '(${residualPercent.toStringAsFixed(1)}%)',
                       style: const TextStyle(fontSize: 13),
                     ),
