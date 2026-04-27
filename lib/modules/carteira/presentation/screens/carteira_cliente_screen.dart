@@ -331,10 +331,13 @@ class _CategoriaClienteItemState extends ConsumerState<_CategoriaClienteItem> {
                           final qtd = l.quantidade % 1 == 0
                               ? l.quantidade.toInt().toString()
                               : l.quantidade.toStringAsFixed(1);
+                          final valorLabel = l.closedPercent == 0.0
+                              ? 'Em negociação'
+                              : '$qtd $unidade';
                           return Padding(
                             padding: const EdgeInsets.only(bottom: 2),
                             child: Text(
-                              '$fmt · $qtd $unidade'
+                              '$fmt · $valorLabel'
                               '${l.observacao != null ? ' · ${l.observacao}' : ''}',
                               style: TextStyle(
                                 fontSize: 12,
