@@ -5,20 +5,26 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
 import '../../../../core/contracts/i_client_lookup.dart';
+import '../../../../core/contracts/i_farm_lookup.dart';
 import '../../domain/entities/event.dart';
 
 /// Serviço de geração de PDF do planejamento semanal da agenda.
 ///
 /// - Agrupa eventos por dia (omite dias sem eventos).
 /// - Resolve nome do cliente via [IClientLookup] (nunca exibe UUID bruto).
+/// - Resolve nome da fazenda via [IFarmLookup] quando disponível.
 /// - Filtra eventos com sync_status 'deleted' ou 'deleted_local'.
 /// - Retorna [Uint8List] — não abre share nem salva arquivo.
 ///
-/// ADR-015: usa IClientLookup da zona neutra (zero import de consultoria/).
+/// ADR-015: usa IClientLookup e IFarmLookup da zona neutra
+/// (zero import de consultoria/).
 class AgendaPdfService {
   final IClientLookup _clientLookup;
 
-  const AgendaPdfService(this._clientLookup);
+  /// Lookup de fazendas — opcional. Se null, exibe ID truncado.
+  final IFarmLookup? _farmLookup;
+
+  const AgendaPdfService(this._clientLookup, [this._farmLookup]);
 
   /// Gera o PDF dos eventos da semana.
   ///
@@ -48,12 +54,35 @@ class AgendaPdfService {
       clientIds.map((id) async {
         try {
           final c = await _clientLookup.findById(id);
-          clientNames[id] = c?.name ?? 'Cliente não encontrado';
+          clientNames[id] = c?.name ?? '—';
         } catch (_) {
-          clientNames[id] = 'Cliente não encontrado';
+          clientNames[id] = '—';
         }
       }),
     );
+
+    // Resolver nomes das fazendas em paralelo (via IFarmLookup quando disponível)
+    final farmIds = filtered
+        .map((e) => e.fazendaId)
+        .whereType<String>()
+        .toSet();
+    final farmNames = <String, String>{};
+    if (_farmLookup != null && farmIds.isNotEmpty) {
+      await Future.wait(
+        farmIds.map((id) async {
+          try {
+            final f = await _farmLookup.findById(id);
+            farmNames[id] = f?.name ?? 'Fazenda: ${id.substring(0, id.length.clamp(0, 8))}…';
+          } catch (_) {
+            farmNames[id] = 'Fazenda: ${id.substring(0, id.length.clamp(0, 8))}…';
+          }
+        }),
+      );
+    } else {
+      for (final id in farmIds) {
+        farmNames[id] = 'Fazenda: ${id.substring(0, id.length.clamp(0, 8))}…';
+      }
+    }
 
     // Agrupar por dia
     final byDay = <DateTime, List<Event>>{};
@@ -85,7 +114,7 @@ class AgendaPdfService {
         footer: (ctx) => _buildFooter(ctx),
         build: (ctx) => [
           pw.SizedBox(height: 16),
-          ..._buildDays(byDay, clientNames, ptBR, timeFormat),
+          ..._buildDays(byDay, clientNames, farmNames, ptBR, timeFormat),
         ],
       ),
     );
@@ -165,13 +194,14 @@ class AgendaPdfService {
   List<pw.Widget> _buildDays(
     Map<DateTime, List<Event>> byDay,
     Map<String, String> clientNames,
+    Map<String, String> farmNames,
     DateFormat ptBR,
     DateFormat timeFormat,
   ) {
     final widgets = <pw.Widget>[];
 
     for (final entry in byDay.entries) {
-      if (entry.value.isEmpty) continue; // omite dias sem eventos
+      // Mantém todos os dias — exibe aviso quando vazio (nunca omite)
 
       final day = entry.key;
       final dayEvents = entry.value;
@@ -217,9 +247,21 @@ class AgendaPdfService {
             ),
             pw.SizedBox(height: 6),
             // Eventos do dia
-            ...dayEvents.map(
-              (e) => _buildEventRow(e, clientNames, timeFormat),
-            ),
+            if (dayEvents.isEmpty)
+              pw.Padding(
+                padding: const pw.EdgeInsets.only(left: 4, top: 2, bottom: 4),
+                child: pw.Text(
+                  'Nenhum evento agendado',
+                  style: const pw.TextStyle(
+                    fontSize: 10,
+                    color: PdfColors.grey600,
+                  ),
+                ),
+              )
+            else
+              ...dayEvents.map(
+                (e) => _buildEventRow(e, clientNames, farmNames, timeFormat),
+              ),
           ],
         ),
       );
@@ -242,11 +284,20 @@ class AgendaPdfService {
   pw.Widget _buildEventRow(
     Event event,
     Map<String, String> clientNames,
+    Map<String, String> farmNames,
     DateFormat timeFormat,
   ) {
     final inicio = timeFormat.format(event.dataInicioPlanejada);
     final fim = timeFormat.format(event.dataFimPlanejada);
     final clienteNome = clientNames[event.clienteId] ?? '—';
+    final fazendaNome = event.fazendaId != null
+        ? (farmNames[event.fazendaId!] ?? '—')
+        : '—';
+
+    // DT: IOpportunityLookup não está disponível no contexto da agenda —
+    // oportunidades exibem '—' até que um provider neutro seja exposto
+    // em core/contracts/. Registrar como dívida técnica.
+    const oportunidades = '—';
 
     return pw.Container(
       margin: const pw.EdgeInsets.only(bottom: 6),
@@ -266,19 +317,40 @@ class AgendaPdfService {
             ),
           ),
           pw.SizedBox(height: 3),
-          pw.Text(
-            '${event.tipo.label} · $inicio – $fim',
-            style: const pw.TextStyle(
-              fontSize: 10,
-              color: PdfColors.grey700,
+          _infoRow('Tipo', '${event.tipo.label} · $inicio – $fim'),
+          _infoRow('Cliente', clienteNome),
+          _infoRow('Fazenda', fazendaNome),
+          _infoRow('Status', event.status.label),
+          _infoRow('Oportunidades', oportunidades),
+        ],
+      ),
+    );
+  }
+
+  pw.Widget _infoRow(String label, String value) {
+    return pw.Padding(
+      padding: const pw.EdgeInsets.only(top: 2),
+      child: pw.Row(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          pw.SizedBox(
+            width: 90,
+            child: pw.Text(
+              '$label:',
+              style: pw.TextStyle(
+                fontSize: 10,
+                fontWeight: pw.FontWeight.bold,
+                color: PdfColors.grey800,
+              ),
             ),
           ),
-          pw.SizedBox(height: 2),
-          pw.Text(
-            'Cliente: $clienteNome',
-            style: const pw.TextStyle(
-              fontSize: 10,
-              color: PdfColors.grey700,
+          pw.Expanded(
+            child: pw.Text(
+              value,
+              style: const pw.TextStyle(
+                fontSize: 10,
+                color: PdfColors.grey700,
+              ),
             ),
           ),
         ],

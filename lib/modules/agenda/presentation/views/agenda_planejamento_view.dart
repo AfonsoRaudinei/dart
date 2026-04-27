@@ -5,6 +5,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'dart:io';
 import '../../../../core/contracts/i_client_lookup_provider.dart';
+import '../../../../core/contracts/i_farm_lookup_provider.dart';
 import '../../domain/entities/event.dart';
 import '../../domain/enums/event_status.dart';
 import '../providers/agenda_provider.dart';
@@ -157,7 +158,8 @@ class _AgendaPlanejamentoViewState
           .toList();
 
       final clientLookup = ref.read(clientLookupProvider);
-      final service = AgendaPdfService(clientLookup);
+      final farmLookup = ref.read(iFarmLookupProvider);
+      final service = AgendaPdfService(clientLookup, farmLookup);
       final bytes =
           await service.generateWeekPdf(filteredEvents, _currentWeekStart);
 
