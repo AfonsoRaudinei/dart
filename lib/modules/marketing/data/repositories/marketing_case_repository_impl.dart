@@ -20,14 +20,23 @@ class MarketingCaseRepositoryImpl implements IMarketingCaseRepository {
 
     _db = await openDatabase(
       path,
-      version: 1,
+      version: 2,
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE marketing_cases_cache (
             id TEXT PRIMARY KEY,
+            user_id TEXT NOT NULL DEFAULT '',
             data TEXT
           )
         ''');
+      },
+      onUpgrade: (db, oldVersion, newVersion) async {
+        if (oldVersion < 2) {
+          // Adiciona user_id para isolamento de cache por usuário (DT fix Abr/2026)
+          await db.execute(
+            "ALTER TABLE marketing_cases_cache ADD COLUMN user_id TEXT NOT NULL DEFAULT ''",
+          );
+        }
       },
     );
     return _db!;
@@ -122,9 +131,15 @@ class MarketingCaseRepositoryImpl implements IMarketingCaseRepository {
   @override
   Future<List<MarketingCase>> getLocalCases() async {
     final db = await _database;
-    final List<Map<String, dynamic>> maps = await db.query(
-      'marketing_cases_cache',
-    );
+    final userId = _supabase.auth.currentUser?.id;
+    // Filtra por user_id quando disponível — evita vazamento entre usuários no mesmo device
+    final List<Map<String, dynamic>> maps = (userId != null && userId.isNotEmpty)
+        ? await db.query(
+            'marketing_cases_cache',
+            where: 'user_id = ?',
+            whereArgs: [userId],
+          )
+        : await db.query('marketing_cases_cache');
 
     return maps.map((map) {
       final data = jsonDecode(map['data'] as String);
@@ -135,14 +150,24 @@ class MarketingCaseRepositoryImpl implements IMarketingCaseRepository {
   @override
   Future<void> saveToCache(List<MarketingCase> cases) async {
     final db = await _database;
+    final userId = _supabase.auth.currentUser?.id ?? '';
     Batch batch = db.batch();
 
-    // Deleta cache antigo e atualiza (Offline-first / TTL)
-    batch.delete('marketing_cases_cache');
+    // Deleta apenas o cache do usuário atual (isolamento multi-usuário)
+    if (userId.isNotEmpty) {
+      batch.delete(
+        'marketing_cases_cache',
+        where: 'user_id = ?',
+        whereArgs: [userId],
+      );
+    } else {
+      batch.delete('marketing_cases_cache');
+    }
 
     for (var mc in cases) {
       batch.insert('marketing_cases_cache', {
         'id': mc.id,
+        'user_id': userId,
         'data': jsonEncode(mc.toJson()),
       }, conflictAlgorithm: ConflictAlgorithm.replace);
     }
@@ -168,8 +193,10 @@ class MarketingCaseRepositoryImpl implements IMarketingCaseRepository {
   @override
   Future<void> saveSingleToCache(MarketingCase marketingCase) async {
     final db = await _database;
+    final userId = _supabase.auth.currentUser?.id ?? '';
     await db.insert('marketing_cases_cache', {
       'id': marketingCase.id,
+      'user_id': userId,
       'data': jsonEncode(marketingCase.toJson()),
     }, conflictAlgorithm: ConflictAlgorithm.replace);
   }
