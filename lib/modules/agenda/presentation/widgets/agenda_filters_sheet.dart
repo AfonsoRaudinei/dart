@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
 import '../../domain/enums/event_type.dart';
 import '../../domain/enums/event_status.dart';
 import '../providers/agenda_filters_provider.dart';
@@ -15,14 +16,26 @@ class AgendaFiltersSheet extends ConsumerWidget {
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-      decoration: BoxDecoration(
-        color: theme.scaffoldBackgroundColor,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+      decoration: const BoxDecoration(
+        color: SoloForteSheetTokens.sheetBackground,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // VFX-01: Handle visual
+          Center(
+            child: Container(
+              width: 36,
+              height: 4,
+              margin: const EdgeInsets.only(bottom: 16),
+              decoration: BoxDecoration(
+                color: const Color(0xFF3A3A3C),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
           // Header
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -45,10 +58,13 @@ class AgendaFiltersSheet extends ConsumerWidget {
           const SizedBox(height: 20),
 
           // Tipos
-          Text(
-            'Tipos de Evento',
-            style: theme.textTheme.titleMedium?.copyWith(
+          const Text(
+            'TIPOS DE EVENTO',
+            style: TextStyle(
+              fontSize: 11,
               fontWeight: FontWeight.w600,
+              letterSpacing: 1.2,
+              color: Color(0xFF8E8E93),
             ),
           ),
           const SizedBox(height: 12),
@@ -81,10 +97,13 @@ class AgendaFiltersSheet extends ConsumerWidget {
           const SizedBox(height: 24),
 
           // Status
-          Text(
-            'Status',
-            style: theme.textTheme.titleMedium?.copyWith(
+          const Text(
+            'STATUS',
+            style: TextStyle(
+              fontSize: 11,
               fontWeight: FontWeight.w600,
+              letterSpacing: 1.2,
+              color: Color(0xFF8E8E93),
             ),
           ),
           const SizedBox(height: 12),
@@ -115,9 +134,17 @@ class AgendaFiltersSheet extends ConsumerWidget {
             child: ElevatedButton(
               onPressed: () => Navigator.pop(context),
               style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
+                backgroundColor: const Color(0xFFF59E0B),
+                foregroundColor: Colors.black,
+                minimumSize: const Size(double.infinity, 52),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
-              child: const Text('Aplicar Filtros'),
+              child: const Text(
+                'Aplicar Filtros',
+                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+              ),
             ),
           ),
           SizedBox(height: MediaQuery.of(context).padding.bottom),

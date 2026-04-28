@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:soloforte_app/core/contracts/i_client_lookup.dart';
 import 'package:soloforte_app/core/contracts/i_client_lookup_provider.dart';
@@ -48,7 +47,7 @@ class _VisitSheetState extends ConsumerState<VisitSheet> {
 
     return Container(
       decoration: const BoxDecoration(
-        color: Colors.white,
+        color: Color(0xFF1C1C1E),
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       padding: const EdgeInsets.all(24),
@@ -58,10 +57,10 @@ class _VisitSheetState extends ConsumerState<VisitSheet> {
         children: [
           Center(
             child: Container(
-              width: 40,
+              width: 36,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.grey[300],
+                color: const Color(0xFF3A3A3C),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -159,13 +158,14 @@ class _VisitSheetState extends ConsumerState<VisitSheet> {
                   }
                 : null,
             style: ElevatedButton.styleFrom(
-              backgroundColor: PremiumTokens.brandGreen,
-              foregroundColor: Colors.white, // Texto branco em verde forte
+              backgroundColor: const Color(0xFFF59E0B),
+              foregroundColor: Colors.black,
               padding: const EdgeInsets.symmetric(vertical: 16),
+              minimumSize: const Size(double.infinity, 52),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
-              disabledBackgroundColor: Colors.grey[300],
+              disabledBackgroundColor: const Color(0xFF3A3A3C),
             ),
             child: const Text(
               'CONFIRMAR CHEGADA',
@@ -192,7 +192,13 @@ class _VisitSheetState extends ConsumerState<VisitSheet> {
       initialValue: value,
       decoration: InputDecoration(
         labelText: label,
+        filled: true,
+        fillColor: const Color(0xFF2C2C2E),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 16,
           vertical: 12,

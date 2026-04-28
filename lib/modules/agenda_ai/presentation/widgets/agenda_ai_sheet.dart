@@ -333,17 +333,17 @@ class _AgendaAiSheetState extends ConsumerState<_AgendaAiSheet> {
     return Container(
       height: height,
       decoration: const BoxDecoration(
-        color: Colors.white,
+        color: Color(0xFF1C1C1E),
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: Column(
         children: [
           const SizedBox(height: 10),
           Container(
-            width: 44,
+            width: 36,
             height: 4,
             decoration: BoxDecoration(
-              color: Colors.black12,
+              color: const Color(0xFF3A3A3C),
               borderRadius: BorderRadius.circular(999),
             ),
           ),
@@ -452,15 +452,29 @@ class _AgendaAiSheetState extends ConsumerState<_AgendaAiSheet> {
                                         controller: _chatController,
                                         decoration: const InputDecoration(
                                           hintText: 'Ex: qual abordagem usar nessa visita?',
-                                          border: OutlineInputBorder(),
+                                          hintStyle: TextStyle(color: Color(0xFF8E8E93)),
+                                          filled: true,
+                                          fillColor: Color(0xFF2C2C2E),
+                                          border: OutlineInputBorder(
+                                            borderSide: BorderSide.none,
+                                            borderRadius: BorderRadius.all(Radius.circular(12)),
+                                          ),
                                           isDense: true,
                                         ),
                                         onSubmitted: (_) => _sendChat(),
                                       ),
                                     ),
                                     const SizedBox(width: 8),
-                                    FilledButton(
+                                    ElevatedButton(
                                       onPressed: _sendChat,
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: const Color(0xFFF59E0B),
+                                        foregroundColor: Colors.black,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                                      ),
                                       child: const Text('Enviar'),
                                     ),
                                   ],

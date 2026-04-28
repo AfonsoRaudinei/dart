@@ -89,9 +89,10 @@ class DraftSavedSheet extends StatelessWidget {
               // A navegação fica NO PAI — nunca neste widget.
               onPressed: () => Navigator.of(context).pop(true),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF007AFF),
-                foregroundColor: Colors.white,
+                backgroundColor: const Color(0xFFF59E0B),
+                foregroundColor: Colors.black,
                 padding: const EdgeInsets.symmetric(vertical: 16),
+                minimumSize: const Size(double.infinity, 52),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),

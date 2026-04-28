@@ -23,9 +23,9 @@ class NdviTalhaoSheet extends ConsumerWidget {
     final ndviAsync = ref.watch(ndviImagesProvider(fieldId));
 
     return Container(
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+      decoration: const BoxDecoration(
+        color: Color(0xFF1C1C1E),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -34,10 +34,10 @@ class NdviTalhaoSheet extends ConsumerWidget {
           Center(
             child: Container(
               margin: const EdgeInsets.only(top: 12, bottom: 8),
-              width: 40,
+              width: 36,
               height: 4,
               decoration: BoxDecoration(
-                color: Theme.of(context).dividerColor.withValues(alpha: 0.3),
+                color: const Color(0xFF3A3A3C),
                 borderRadius: BorderRadius.circular(10),
               ),
             ),
