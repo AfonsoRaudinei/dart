@@ -16,10 +16,7 @@ import 'active_visit_sheet.dart';
 ///
 /// Extraído de `_PrivateMapSheets._buildSheetContent` — ADR-031 F3.
 /// Função pura (sem estado próprio) — recebe todos os dados por parâmetro.
-/// O switch aqui é o ponto de adição futura para [MapSheetType.clima] (DT-028).
-// TODO(DT-028): quando MapContext.clima for implementado,
-// adicionar case MapSheetType.clima aqui.
-// Ver: docs/DT-028-SHOW-RADAR-PROVIDER.md
+/// O switch aqui é o ponto de adição futura para [MapSheetType.clima] (DT-028 concluído — usa ArmedMode.clima).
 Widget buildSheetContent(
   BuildContext context,
   WidgetRef ref,
