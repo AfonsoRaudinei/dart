@@ -67,7 +67,8 @@ class _FotoPickerWidgetState extends State<FotoPickerWidget> {
           widget.onChanged(url);
         }
       }
-    } catch (e) {
+    } catch (e, st) {
+      debugPrint('FotoPickerWidget upload error: $e\n$st');
       if (!mounted) return;
       setState(() => _loading = false);
       ScaffoldMessenger.of(context).showSnackBar(
