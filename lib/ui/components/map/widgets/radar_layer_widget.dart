@@ -1,16 +1,15 @@
-// TODO(DT-028): Este widget lê showRadarProvider (bool) em vez de MapContext.clima.
-// Ver: docs/DT-028-SHOW-RADAR-PROVIDER.md para condição de remoção.
+// DT-028 concluído: widget migrado de showRadarProvider → armedModeProvider == ArmedMode.clima
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/config/map_config.dart';
-import '../../../../core/state/map_ui_providers.dart';
+import '../../../../ui/screens/map/providers/map_armed_mode_provider.dart';
 import '../providers/rainviewer_provider.dart';
 
 /// Camada de radar de precipitação em tempo real (RainViewer — ADR-028).
 ///
 /// Renderiza um [TileLayer] sobre o mapa base quando:
-///   1. [showRadarProvider] == true  (toggle ativado pelo usuário)
+///   1. [armedModeProvider] == [ArmedMode.clima]  (toggle ativado pelo usuário)
 ///   2. [rainviewerTileUrlProvider] retornou URL válida (API acessível)
 ///
 /// Graceful degradation: se a API estiver indisponível ou a lista de frames
@@ -23,7 +22,7 @@ class RadarLayerWidget extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final showRadar = ref.watch(showRadarProvider);
+    final showRadar = ref.watch(armedModeProvider) == ArmedMode.clima;
 
     // Radar desativado → não assiste o FutureProvider (economiza request)
     if (!showRadar) return const SizedBox.shrink();

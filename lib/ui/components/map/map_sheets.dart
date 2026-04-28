@@ -12,6 +12,7 @@ import '../../../core/domain/map_models.dart';
 import '../../../core/domain/publicacao.dart';
 import '../../../core/state/map_state.dart';
 import '../../../core/state/map_ui_providers.dart';
+import '../../screens/map/providers/map_armed_mode_provider.dart';
 
 class BaseMapSheet extends StatelessWidget {
   final String title;
@@ -101,7 +102,7 @@ class LayersSheet extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final currentLayer = ref.watch(activeLayerProvider);
     final showMarkers = ref.watch(showMarkersProvider);
-    final showRadar = ref.watch(showRadarProvider);
+    final showRadar = ref.watch(armedModeProvider) == ArmedMode.clima;
 
     return Container(
       decoration: const BoxDecoration(
@@ -244,7 +245,8 @@ class LayersSheet extends ConsumerWidget {
                         activeTrackColor: _accent.withValues(alpha: 0.3),
                         onChanged: (v) {
                           HapticFeedback.lightImpact();
-                          ref.read(showRadarProvider.notifier).state = v;
+                          ref.read(armedModeProvider.notifier).state =
+                              v ? ArmedMode.clima : ArmedMode.none;
                         },
                       ),
                     ],

@@ -5,7 +5,7 @@
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-enum ArmedMode { none, occurrences, marketing }
+enum ArmedMode { none, occurrences, marketing, clima }
 
 final armedModeProvider = StateProvider<ArmedMode>(
   (ref) => ArmedMode.none,
