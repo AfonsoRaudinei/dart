@@ -102,10 +102,7 @@ class DrawingActionsBar extends StatelessWidget {
             description: 'Mover e ajustar vértices',
             onTap: () {
               HapticFeedback.lightImpact();
-              if (onEditGeometry != null) {
-                onEditGeometry!();
-              }
-              Navigator.of(context).pop();
+              onEditGeometry?.call();
             },
           ),
           const SizedBox(height: 12),
@@ -115,9 +112,7 @@ class DrawingActionsBar extends StatelessWidget {
             description: 'Nome, tipo, cliente, etc',
             onTap: () {
               HapticFeedback.lightImpact();
-              if (onEditMetadata != null) {
-                onEditMetadata!();
-              }
+              onEditMetadata?.call();
             },
           ),
           const SizedBox(height: 16),
@@ -140,9 +135,7 @@ class DrawingActionsBar extends StatelessWidget {
             description: 'Combinar com outra área',
             onTap: () {
               HapticFeedback.lightImpact();
-              if (onUnion != null) {
-                onUnion!();
-              }
+              onUnion?.call();
             },
           ),
           const SizedBox(height: 12),
@@ -152,9 +145,7 @@ class DrawingActionsBar extends StatelessWidget {
             description: 'Subtrair outra área',
             onTap: () {
               HapticFeedback.lightImpact();
-              if (onDifference != null) {
-                onDifference!();
-              }
+              onDifference?.call();
             },
           ),
           const SizedBox(height: 12),
@@ -164,9 +155,7 @@ class DrawingActionsBar extends StatelessWidget {
             description: 'Manter apenas sobreposição',
             onTap: () {
               HapticFeedback.lightImpact();
-              if (onIntersection != null) {
-                onIntersection!();
-              }
+              onIntersection?.call();
             },
           ),
           const SizedBox(height: 16),
@@ -189,9 +178,7 @@ class DrawingActionsBar extends StatelessWidget {
             description: 'Compartilhar como arquivo .geojson',
             onTap: () {
               HapticFeedback.lightImpact();
-              if (onExport != null) {
-                onExport!();
-              }
+              onExport?.call();
             },
           ),
           const SizedBox(height: 12),
