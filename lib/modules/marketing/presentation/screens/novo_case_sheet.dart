@@ -11,10 +11,13 @@ import '../../domain/enums/case_tipo.dart';
 import '../../domain/enums/plano_marketing.dart';
 import '../../domain/enums/produtividade_unidade.dart';
 import '../widgets/avaliacao_bloco_widget.dart';
-import '../widgets/roi_bloco_widget.dart';
-import '../widgets/conclusao_bloco_widget.dart';
-import '../widgets/foto_picker_widget.dart';
 import '../widgets/case_selectors_widget.dart';
+import '../widgets/novo_case_antes_depois_section.dart';
+import '../widgets/novo_case_avaliacao_section.dart';
+import '../widgets/novo_case_form_helpers.dart';
+import '../widgets/novo_case_header.dart';
+import '../widgets/novo_case_publicar_button.dart';
+import '../widgets/novo_case_resultado_section.dart';
 import '../../../../core/ui/sheets/sheet_tokens.dart';
 
 class NovoCaseSheet extends StatefulWidget {
@@ -297,40 +300,44 @@ class _NovoCaseSheetState extends State<NovoCaseSheet> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _buildHeader(),
+            NovoCaseHeader(
+              lat: widget.lat,
+              lng: widget.lng,
+              onClose: widget.onClose,
+            ),
             const SizedBox(height: 24),
-            _buildSectionLabel('Tipo de Case'),
+            novoCaseSectionLabel('Tipo de Case'),
             const SizedBox(height: 8),
             CaseTipoSelector(
               selectedTipo: _tipo,
               onChanged: (t) => setState(() => _tipo = t),
             ),
             const SizedBox(height: 20),
-            _buildSectionLabel('Visibilidade'),
+            novoCaseSectionLabel('Visibilidade'),
             const SizedBox(height: 8),
             PlanoMarketingSelector(
               selectedPlano: _visibilidade,
               onChanged: (p) => setState(() => _visibilidade = p),
             ),
             const SizedBox(height: 20),
-            _buildSectionLabel('Identificação'),
+            novoCaseSectionLabel('Identificação'),
             const SizedBox(height: 8),
-            _buildFieldBox(
+            novoCaseFieldBox(
               child: Column(
                 children: [
-                  _buildTextInput(
+                  novoCaseTextInput(
                     _produtorCtrl,
                     'Produtor / Fazenda *',
                     required: true,
                   ),
-                  const _FDivider(),
-                  _buildTextInput(
+                  const NovoCaseFDivider(),
+                  novoCaseTextInput(
                     _produtoCtrl,
                     'Produto Utilizado *',
                     required: true,
                   ),
-                  const _FDivider(),
-                  _buildTextInput(
+                  const NovoCaseFDivider(),
+                  novoCaseTextInput(
                     _localizacaoCtrl,
                     'Localização (ex: Jataizinho - PR) *',
                     required: true,
@@ -340,13 +347,13 @@ class _NovoCaseSheetState extends State<NovoCaseSheet> {
             ),
             const SizedBox(height: 20),
             if (_tipo != CaseTipo.avaliacao) ...[
-              _buildSectionLabel('Produtividade'),
+              novoCaseSectionLabel('Produtividade'),
               const SizedBox(height: 8),
-              _buildFieldBox(
+              novoCaseFieldBox(
                 child: Row(
                   children: [
                     Expanded(
-                      child: _buildTextInput(
+                      child: novoCaseTextInput(
                         _produtividadeCtrl,
                         'Valor *',
                         keyboardType: TextInputType.number,
@@ -360,17 +367,58 @@ class _NovoCaseSheetState extends State<NovoCaseSheet> {
               ),
               const SizedBox(height: 20),
             ],
-            if (_tipo == CaseTipo.resultado) _buildResultadoFields(),
-            if (_tipo == CaseTipo.antesDepois) _buildAntesDepoisFields(),
-            if (_tipo == CaseTipo.avaliacao) _buildAvaliacaoFields(),
-            _buildSectionLabel('Vendedor (opcional)'),
+            if (_tipo == CaseTipo.resultado)
+              NovoCaseResultadoSection(
+                fotoPrincipalUrl: _fotoPrincipalUrl,
+                onFotoChanged: (url) =>
+                    setState(() => _fotoPrincipalUrl = url),
+                qtdProduzidaCtrl: _qtdProduzidaCtrl,
+                economiaCtrl: _economiaCtrl,
+              ),
+            if (_tipo == CaseTipo.antesDepois)
+              NovoCaseAntesDepoisSection(
+                fotoAntesUrl: _fotoAntesUrl,
+                fotoDepoisUrl: _fotoDepoisUrl,
+                onFotoAntesChanged: (url) =>
+                    setState(() => _fotoAntesUrl = url),
+                onFotoDepoisChanged: (url) =>
+                    setState(() => _fotoDepoisUrl = url),
+                ganhoProdutividadeCtrl: _ganhoProdutividadeCtrl,
+                economiaCtrl: _economiaCtrl,
+              ),
+            if (_tipo == CaseTipo.avaliacao)
+              NovoCaseAvaliacaoSection(
+                avaliacoes: _avaliacoes,
+                nomeTalhaoCtrl: _nomeTalhaoCtrl,
+                tamanhoHaCtrl: _tamanhoHaCtrl,
+                hasRoi: _hasRoi,
+                roiInvestimentoCtrl: _roiInvestimentoCtrl,
+                roiRetornoCtrl: _roiRetornoCtrl,
+                hasConclusao: _hasConclusao,
+                conclusaoCtrl: _conclusaoCtrl,
+                onAddAvaliacao: _addAvaliacao,
+                onRemoveAvaliacao: _removeAvaliacao,
+                onAddRoi: () => setState(() => _hasRoi = true),
+                onRemoveRoi: () => setState(() {
+                  _hasRoi = false;
+                  _roiInvestimentoCtrl.clear();
+                  _roiRetornoCtrl.clear();
+                }),
+                onAddConclusao: () => setState(() => _hasConclusao = true),
+                onRemoveConclusao: () => setState(() {
+                  _hasConclusao = false;
+                  _conclusaoCtrl.clear();
+                }),
+                onChanged: () => setState(() {}),
+              ),
+            novoCaseSectionLabel('Vendedor (opcional)'),
             const SizedBox(height: 8),
-            _buildFieldBox(
+            novoCaseFieldBox(
               child: Column(
                 children: [
-                  _buildTextInput(_nomeVendedorCtrl, 'Nome do Vendedor'),
-                  const _FDivider(),
-                  _buildTextInput(
+                  novoCaseTextInput(_nomeVendedorCtrl, 'Nome do Vendedor'),
+                  const NovoCaseFDivider(),
+                  novoCaseTextInput(
                     _telefoneCtrl,
                     'Telefone',
                     keyboardType: TextInputType.phone,
@@ -379,15 +427,18 @@ class _NovoCaseSheetState extends State<NovoCaseSheet> {
               ),
             ),
             const SizedBox(height: 20),
-            _buildFieldBox(
-              child: _buildTextInput(
+            novoCaseFieldBox(
+              child: novoCaseTextInput(
                 _descricaoCtrl,
                 'Descrição (opcional)',
                 maxLines: 3,
               ),
             ),
             const SizedBox(height: 32),
-            _buildPublicarButton(),
+            NovoCasePublicarButton(
+              isLoading: _isLoading,
+              onPressed: _handlePublicar,
+            ),
             const SizedBox(height: 8),
             TextButton(
               onPressed: widget.onClose,
@@ -402,391 +453,7 @@ class _NovoCaseSheetState extends State<NovoCaseSheet> {
     );
   }
 
-  // ── Seções ─────────────────────────────────────────────────────
-
-  Widget _buildResultadoFields() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _buildSectionLabel('Foto Principal *'),
-        const SizedBox(height: 8),
-        FotoPickerWidget(
-          label: 'Foto do Resultado (obrigatória)',
-          url: _fotoPrincipalUrl,
-          folder: 'resultado',
-          height: 180,
-          required: _fotoPrincipalUrl == null,
-          onChanged: (url) => setState(() => _fotoPrincipalUrl = url),
-        ),
-        const SizedBox(height: 16),
-        _buildSectionLabel('Dados do Resultado'),
-        const SizedBox(height: 8),
-        _buildFieldBox(
-          child: Column(
-            children: [
-              _buildTextInput(
-                _qtdProduzidaCtrl,
-                'Quantidade Produzida *',
-                keyboardType: TextInputType.number,
-                required: true,
-              ),
-              const _FDivider(),
-              _buildTextInput(
-                _economiaCtrl,
-                'Economia Gerada (ex: R\$ 22.000)',
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 20),
-      ],
-    );
-  }
-
-  Widget _buildAntesDepoisFields() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _buildSectionLabel('Comparação Antes/Depois'),
-        const SizedBox(height: 8),
-        _buildFieldBox(
-          child: Column(
-            children: [
-              _buildTextInput(
-                _ganhoProdutividadeCtrl,
-                'Ganho de Produtividade (ex: +38%) *',
-                required: true,
-              ),
-              const _FDivider(),
-              _buildTextInput(
-                _economiaCtrl,
-                'Economia Gerada (ex: R\$ 22.000)',
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 16),
-        // Fotos Antes e Depois lado a lado
-        Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const Text(
-                    'Antes *',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 12,
-                      color: SoloForteSheetTokens.inputHint,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  FotoPickerWidget(
-                    label: 'Foto Antes',
-                    url: _fotoAntesUrl,
-                    folder: 'antes_depois',
-                    height: 140,
-                    required: _fotoAntesUrl == null,
-                    onChanged: (url) => setState(() => _fotoAntesUrl = url),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const Text(
-                    'Depois *',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 12,
-                      color: SoloForteSheetTokens.inputHint,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  FotoPickerWidget(
-                    label: 'Foto Depois',
-                    url: _fotoDepoisUrl,
-                    folder: 'antes_depois',
-                    height: 140,
-                    required: _fotoDepoisUrl == null,
-                    onChanged: (url) => setState(() => _fotoDepoisUrl = url),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 20),
-      ],
-    );
-  }
-
-  Widget _buildAvaliacaoFields() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        // Dados do Talhão
-        _buildSectionLabel('Dados do Talhão'),
-        const SizedBox(height: 8),
-        _buildFieldBox(
-          child: Column(
-            children: [
-              _buildTextInput(
-                _nomeTalhaoCtrl,
-                'Nome do Talhão *',
-                required: true,
-              ),
-              const _FDivider(),
-              _buildTextInput(
-                _tamanhoHaCtrl,
-                'Tamanho (ha)',
-                keyboardType: TextInputType.number,
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 20),
-
-        // ── Lista dinâmica de Avaliações ─────────────────────────
-        if (_avaliacoes.isNotEmpty) ...[
-          _buildSectionLabel('Avaliações (${_avaliacoes.length})'),
-          const SizedBox(height: 10),
-          ...List.generate(_avaliacoes.length, (i) {
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: AvaliacaoBlocoWidget(
-                key: ValueKey(_avaliacoes[i].id),
-                state: _avaliacoes[i],
-                index: i,
-                onRemove: () => _removeAvaliacao(i),
-                onChanged: () => setState(() {}),
-              ),
-            );
-          }),
-        ],
-
-        // Botão + Adicionar Avaliação
-        GestureDetector(
-          onTap: _addAvaliacao,
-          child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 14),
-            decoration: BoxDecoration(
-              border: Border.all(
-                color: PremiumTokens.brandGreen.withValues(alpha: 0.5),
-                style: BorderStyle.solid,
-              ),
-              borderRadius: BorderRadius.circular(12),
-              color: PremiumTokens.brandGreen.withValues(alpha: 0.05),
-            ),
-            child: const Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.add_circle_outline,
-                  color: PremiumTokens.brandGreen,
-                  size: 18,
-                ),
-                SizedBox(width: 8),
-                Text(
-                  '+ Adicionar Avaliação',
-                  style: TextStyle(
-                    color: PremiumTokens.brandGreen,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 14,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(height: 16),
-
-        // ── Bloco ROI ─────────────────────────────────────────────
-        if (!_hasRoi)
-          _buildAddBlocoButton(
-            icon: Icons.trending_up_rounded,
-            label: '+ Adicionar Bloco de ROI',
-            color: const Color(0xFF34C759),
-            onTap: () => setState(() => _hasRoi = true),
-          )
-        else ...[
-          RoiBlocoWidget(
-            investimentoCtrl: _roiInvestimentoCtrl,
-            retornoCtrl: _roiRetornoCtrl,
-            onRemove: () => setState(() {
-              _hasRoi = false;
-              _roiInvestimentoCtrl.clear();
-              _roiRetornoCtrl.clear();
-            }),
-          ),
-          const SizedBox(height: 12),
-        ],
-
-        const SizedBox(height: 12),
-
-        // ── Bloco Conclusão ──────────────────────────────────────
-        if (!_hasConclusao)
-          _buildAddBlocoButton(
-            icon: Icons.notes_rounded,
-            label: '+ Adicionar Conclusão Técnica',
-            color: const Color(0xFF0057FF),
-            onTap: () => setState(() => _hasConclusao = true),
-          )
-        else
-          ConclusaoBlocoWidget(
-            conclusaoCtrl: _conclusaoCtrl,
-            onRemove: () => setState(() {
-              _hasConclusao = false;
-              _conclusaoCtrl.clear();
-            }),
-          ),
-
-        const SizedBox(height: 20),
-      ],
-    );
-  }
-
-  Widget _buildAddBlocoButton({
-    required IconData icon,
-    required String label,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: () {
-        HapticFeedback.selectionClick();
-        onTap();
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-        decoration: BoxDecoration(
-          border: Border.all(color: color.withValues(alpha: 0.4)),
-          borderRadius: BorderRadius.circular(12),
-          color: color.withValues(alpha: 0.05),
-        ),
-        child: Row(
-          children: [
-            Icon(icon, color: color, size: 18),
-            const SizedBox(width: 10),
-            Text(
-              label,
-              style: TextStyle(
-                color: color,
-                fontWeight: FontWeight.w600,
-                fontSize: 14,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // ── Builders comuns ───────────────────────────────────────────
-
-  Widget _buildHeader() {
-    return Row(
-      children: [
-        Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            gradient: PremiumTokens.brandGradient,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: const Icon(
-            Icons.campaign_rounded,
-            color: Colors.white,
-            size: 22,
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Novo Case',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              Text(
-                'Lat: ${widget.lat.toStringAsFixed(5)}, Lng: ${widget.lng.toStringAsFixed(5)}',
-                style: const TextStyle(
-                  color: Color(0xFF8E8E93),
-                  fontSize: 12,
-                ),
-              ),
-            ],
-          ),
-        ),
-        IconButton(
-          icon: const Icon(Icons.close),
-          onPressed: widget.onClose,
-          color: PremiumTokens.textSecondaryLight,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSectionLabel(String label) {
-    return Text(
-      label.toUpperCase(),
-      style: const TextStyle(
-        color: SoloForteSheetTokens.sectionLabel,
-        fontWeight: SoloForteSheetTokens.sectionWeight,
-        fontSize: SoloForteSheetTokens.sectionFontSize,
-      ),
-    );
-  }
-
-  Widget _buildTextInput(
-    TextEditingController controller,
-    String hint, {
-    TextInputType keyboardType = TextInputType.text,
-    bool required = false,
-    int maxLines = 1,
-    void Function(String)? onChanged,
-  }) {
-    return TextFormField(
-      controller: controller,
-      keyboardType: keyboardType,
-      maxLines: maxLines,
-      onChanged: onChanged,
-      style: const TextStyle(color: SoloForteSheetTokens.inputText),
-      decoration: InputDecoration(
-        hintText: hint,
-        hintStyle: const TextStyle(color: SoloForteSheetTokens.inputHint, fontSize: 14),
-        filled: true,
-        fillColor: SoloForteSheetTokens.inputBackground,
-        border: InputBorder.none,
-        contentPadding: const EdgeInsets.symmetric(vertical: 12),
-        isDense: true,
-      ),
-      validator: required
-          ? (v) => (v == null || v.trim().isEmpty) ? 'Campo obrigatório' : null
-          : null,
-    );
-  }
-
-  Widget _buildFieldBox({required Widget child}) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: BoxDecoration(
-        color: SoloForteSheetTokens.inputBackground,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: PremiumTokens.hairlineLight),
-      ),
-      child: child,
-    );
-  }
+  // ── Builders locais ────────────────────────────────────────────
 
   Widget _buildUnidadeDropdown() {
     return DropdownButtonHideUnderline(
@@ -805,41 +472,4 @@ class _NovoCaseSheetState extends State<NovoCaseSheet> {
     );
   }
 
-  Widget _buildPublicarButton() {
-    return ElevatedButton.icon(
-      onPressed: _isLoading ? null : _handlePublicar,
-      icon: _isLoading
-          ? const SizedBox(
-              width: 16,
-              height: 16,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: Colors.white,
-              ),
-            )
-          : const Icon(Icons.campaign_rounded, size: 20),
-      label: Text(_isLoading ? 'Publicando...' : 'Publicar Case'),
-      style: ElevatedButton.styleFrom(
-        backgroundColor: PremiumTokens.brandGreen,
-        foregroundColor: Colors.white,
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-        textStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
-      ),
-    );
-  }
-}
-
-// ── Divisor interno ────────────────────────────────────────────
-class _FDivider extends StatelessWidget {
-  const _FDivider();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Divider(
-      height: 0.5,
-      thickness: 0.5,
-      color: PremiumTokens.hairlineLight,
-    );
-  }
 }
