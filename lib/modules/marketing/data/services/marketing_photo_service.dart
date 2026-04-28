@@ -65,7 +65,22 @@ class MarketingPhotoService {
   /// Faz upload do arquivo para o Supabase Storage.
   Future<String?> _upload(File file, {String? folder}) async {
     try {
-      final ext = p.extension(file.path).replaceFirst('.', '');
+      // FIX: image_picker no iOS pode retornar path sem extensão (ex: arquivo
+      // temporário). p.extension() retorna '' nesses casos, gerando path inválido
+      // ("uuid.") e contentType inválido ("image/"), causando StorageException.
+      // Fallback seguro para 'jpg'. HEIC normalizado para 'jpg' (MIME padrão).
+      var ext = p.extension(file.path).replaceFirst('.', '').toLowerCase();
+      if (ext.isEmpty || ext == 'heic' || ext == 'heif') ext = 'jpg';
+      // FIX: 'image/jpg' é MIME inválido — Supabase Storage exige 'image/jpeg'.
+      // Mapeamento explícito ext → MIME type válido (RFC 2046 / IANA).
+      final mimeType = switch (ext) {
+        'jpg' => 'image/jpeg',
+        'jpeg' => 'image/jpeg',
+        'png' => 'image/png',
+        'webp' => 'image/webp',
+        'gif' => 'image/gif',
+        _ => 'image/jpeg',
+      };
       final name = '${_uuid.v4()}.$ext';
       final path = folder != null ? '$folder/$name' : name;
 
@@ -74,7 +89,7 @@ class MarketingPhotoService {
           .upload(
             path,
             file,
-            fileOptions: FileOptions(contentType: 'image/$ext', upsert: false),
+            fileOptions: FileOptions(contentType: mimeType, upsert: false),
           );
 
       final publicUrl = _supabase.storage.from(_bucket).getPublicUrl(path);
