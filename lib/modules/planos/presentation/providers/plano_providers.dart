@@ -44,15 +44,18 @@ ReferralService referralService(ReferralServiceRef ref) {
 /// keepAlive: true — sobrevive ao dispose de telas para que
 /// marketing/ e map/ possam consultá-lo sem re-fetch.
 ///
-/// Retorna null se o usuário não possui plano ativo.
+/// Nunca retorna null: quando o usuário não possui plano ou não está
+/// autenticado, retorna [UserPlan.free()].
 ///
 /// Observa [sessionControllerProvider] para reagir automaticamente ao
-/// logout: quando a sessão vira [SessionPublic], retorna null sem erro.
+/// logout: quando a sessão vira [SessionPublic], retorna UserPlan.free().
 @Riverpod(keepAlive: true)
-Future<UserPlan?> planoAtivo(PlanoAtivoRef ref) async {
-  // Reage a mudanças de auth: logout → SessionPublic → retorna null (não erro)
+Future<UserPlan> planoAtivo(PlanoAtivoRef ref) async {
+  // Reage a mudanças de auth: logout → SessionPublic → retorna free (não erro)
   final session = ref.watch(sessionControllerProvider);
-  if (session is! SessionAuthenticated) return null;
+  if (session is! SessionAuthenticated) {
+    return UserPlan.free(userId: '');
+  }
 
   final userId = session.user.id;
 

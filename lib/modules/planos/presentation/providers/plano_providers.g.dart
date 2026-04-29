@@ -40,21 +40,22 @@ final referralServiceProvider = Provider<ReferralService>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef ReferralServiceRef = ProviderRef<ReferralService>;
-String _$planoAtivoHash() => r'6e6eb2a6d9244cdffee94aab90e34ea384d269aa';
+String _$planoAtivoHash() => r'9a78bb2f9eb936140350256bed41b22f62648d83';
 
 /// Plano ativo do usuário autenticado.
 ///
 /// keepAlive: true — sobrevive ao dispose de telas para que
 /// marketing/ e map/ possam consultá-lo sem re-fetch.
 ///
-/// Retorna null se o usuário não possui plano ativo.
+/// Nunca retorna null: quando o usuário não possui plano ou não está
+/// autenticado, retorna [UserPlan.free()].
 ///
 /// Observa [sessionControllerProvider] para reagir automaticamente ao
-/// logout: quando a sessão vira [SessionPublic], retorna null sem erro.
+/// logout: quando a sessão vira [SessionPublic], retorna UserPlan.free().
 ///
 /// Copied from [planoAtivo].
 @ProviderFor(planoAtivo)
-final planoAtivoProvider = FutureProvider<UserPlan?>.internal(
+final planoAtivoProvider = FutureProvider<UserPlan>.internal(
   planoAtivo,
   name: r'planoAtivoProvider',
   debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
@@ -66,7 +67,7 @@ final planoAtivoProvider = FutureProvider<UserPlan?>.internal(
 
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
-typedef PlanoAtivoRef = FutureProviderRef<UserPlan?>;
+typedef PlanoAtivoRef = FutureProviderRef<UserPlan>;
 String _$referralsHash() => r'34fe3c3dd0706c3eba9e8a440c8cce2912cecf49';
 
 /// See also [referrals].

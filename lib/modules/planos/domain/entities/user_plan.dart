@@ -19,6 +19,9 @@ class UserPlan {
   final String? paymentId;
   final DateTime criadoEm;
 
+  /// Verdadeiro quando o usuário tem flag admin no Supabase.
+  final bool isAdmin;
+
   const UserPlan({
     required this.id,
     required this.userId,
@@ -29,7 +32,23 @@ class UserPlan {
     required this.expiraEm,
     this.paymentId,
     required this.criadoEm,
+    this.isAdmin = false,
   });
+
+  /// Plano free padrão para usuários sem plano ativo no Supabase.
+  ///
+  /// Nunca retornar null de [planoAtivoProvider] — usar esta factory.
+  factory UserPlan.free({required String userId}) => UserPlan(
+        id: 'free',
+        userId: userId,
+        plano: PlanoTipo.bronze,
+        origem: PlanoOrigem.pagamento,
+        ativo: true,
+        isAdmin: false,
+        iniciouEm: DateTime.fromMillisecondsSinceEpoch(0),
+        expiraEm: DateTime(9999),
+        criadoEm: DateTime.fromMillisecondsSinceEpoch(0),
+      );
 
   /// Dias restantes até expiração. Negativo = expirado.
   int get diasRestantes => expiraEm.difference(DateTime.now()).inDays;
@@ -41,7 +60,16 @@ class UserPlan {
   bool get expirado => expiraEm.isBefore(DateTime.now());
 
   /// Limite de cases ativos no mapa conforme o plano.
-  int get limiteCases => plano.limiteCases;
+  ///
+  /// Admin sempre tem acesso ilimitado, independente do plano.
+  int get limiteCases {
+    if (isAdmin) return 999999;
+    return switch (plano) {
+      PlanoTipo.ouro   => 999999,
+      PlanoTipo.prata  => 5,
+      PlanoTipo.bronze => 3,
+    };
+  }
 
   UserPlan copyWith({
     String? id,
@@ -53,6 +81,7 @@ class UserPlan {
     DateTime? expiraEm,
     String? paymentId,
     DateTime? criadoEm,
+    bool? isAdmin,
   }) {
     return UserPlan(
       id: id ?? this.id,
@@ -64,6 +93,7 @@ class UserPlan {
       expiraEm: expiraEm ?? this.expiraEm,
       paymentId: paymentId ?? this.paymentId,
       criadoEm: criadoEm ?? this.criadoEm,
+      isAdmin: isAdmin ?? this.isAdmin,
     );
   }
 
@@ -79,6 +109,7 @@ class UserPlan {
       expiraEm: DateTime.parse(json['expira_em'] as String),
       paymentId: json['payment_id'] as String?,
       criadoEm: DateTime.parse(json['criado_em'] as String),
+      isAdmin: json['is_admin'] as bool? ?? false,
     );
   }
 
@@ -92,6 +123,7 @@ class UserPlan {
     'expira_em': expiraEm.toIso8601String(),
     'payment_id': paymentId,
     'criado_em': criadoEm.toIso8601String(),
+    'is_admin': isAdmin,
   };
 
   @override

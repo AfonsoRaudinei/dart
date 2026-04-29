@@ -28,9 +28,7 @@ class MeuPlanoScreen extends ConsumerWidget {
             _buildHeader(context),
             Expanded(
               child: planoAsync.when(
-                data: (plano) => plano != null
-                    ? _PlanoAtivoContent(plano: plano)
-                    : _SemPlanoContent(),
+                data: (plano) => _PlanoAtivoContent(plano: plano),
                 loading: () => const Center(
                   child: CircularProgressIndicator(color: Color(0xFF32D74B)),
                 ),
@@ -238,73 +236,6 @@ class _PlanoAtivoContent extends StatelessWidget {
 
 // ─────────────────────────────────────────────────────────────
 // CONTEÚDO: SEM PLANO
-// ─────────────────────────────────────────────────────────────
-
-class _SemPlanoContent extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Text('🌱', style: TextStyle(fontSize: 64)),
-          const SizedBox(height: 24),
-          const Text(
-            'Você não possui um plano ativo',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontFamily: 'Inter',
-              fontSize: 22,
-              fontWeight: FontWeight.w700,
-              color: Colors.white,
-            ),
-          ),
-          const SizedBox(height: 12),
-          const Text(
-            'Assine um plano para publicar seus cases agronômicos no mapa.',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontFamily: 'Inter',
-              fontSize: 15,
-              color: Color(0xFF8E8E93),
-            ),
-          ),
-          const SizedBox(height: 32),
-          SizedBox(
-            width: double.infinity,
-            height: 52,
-            child: GestureDetector(
-              onTap: () {
-                HapticFeedback.lightImpact();
-                context.go('/planos');
-              },
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  color: const Color(0xFF32D74B),
-                  borderRadius: BorderRadius.circular(50),
-                ),
-                child: const Center(
-                  child: Text(
-                    'Ver planos',
-                    style: TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.black,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: kFabSafeArea),
-        ],
-      ),
-    );
-  }
-}
-
 // ─────────────────────────────────────────────────────────────
 // CONTEÚDO: ERRO
 // ─────────────────────────────────────────────────────────────

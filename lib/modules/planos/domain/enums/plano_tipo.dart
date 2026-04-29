@@ -5,14 +5,15 @@ enum PlanoTipo {
   ouro;
 
   /// Limite de cases ativos que o plano permite publicar no mapa.
+  /// Admin sobrescreve este valor via UserPlan.limiteCases.
   int get limiteCases {
     switch (this) {
       case PlanoTipo.bronze:
-        return 1;
-      case PlanoTipo.prata:
-        return 2;
-      case PlanoTipo.ouro:
         return 3;
+      case PlanoTipo.prata:
+        return 5;
+      case PlanoTipo.ouro:
+        return 999999; // ilimitado
     }
   }
 

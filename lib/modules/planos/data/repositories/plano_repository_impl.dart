@@ -15,7 +15,7 @@ class PlanoRepositoryImpl implements IPlanoRepository {
   const PlanoRepositoryImpl(this._client);
 
   @override
-  Future<UserPlan?> getPlanoAtivo(String userId) async {
+  Future<UserPlan> getPlanoAtivo(String userId) async {
     final response = await _client
         .from('user_plans')
         .select()
@@ -25,7 +25,7 @@ class PlanoRepositoryImpl implements IPlanoRepository {
         .limit(1)
         .maybeSingle();
 
-    if (response == null) return null;
+    if (response == null) return UserPlan.free(userId: userId);
     return UserPlan.fromJson(response);
   }
 
@@ -54,7 +54,7 @@ class PlanoRepositoryImpl implements IPlanoRepository {
   }
 
   @override
-  Stream<UserPlan?> watchPlanoAtivo(String userId) {
+  Stream<UserPlan> watchPlanoAtivo(String userId) {
     return _client
         .from('user_plans')
         .stream(primaryKey: ['id'])
@@ -66,7 +66,7 @@ class PlanoRepositoryImpl implements IPlanoRepository {
                 a['criado_em'] as String,
               ),
             );
-          if (ativos.isEmpty) return null;
+          if (ativos.isEmpty) return UserPlan.free(userId: userId);
           return UserPlan.fromJson(ativos.first);
         });
   }

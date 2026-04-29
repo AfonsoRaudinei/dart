@@ -65,15 +65,13 @@ class _ConfirmacaoScreenState extends ConsumerState<ConfirmacaoScreen>
         // 🛡 LIFECYCLE GUARD: callback .then() executa de forma assíncrona
         // e pode chegar após o widget ter sido descartado.
         if (!mounted) return;
-        if (plano != null) {
-          setState(() => _confirmado = true);
-          _controller.forward();
-          HapticFeedback.heavyImpact();
-          // Redireciona para meu-plano após 2s
-          Future.delayed(const Duration(seconds: 2), () {
-            if (mounted) context.go('/planos/meu-plano');
-          });
-        }
+        setState(() => _confirmado = true);
+        _controller.forward();
+        HapticFeedback.heavyImpact();
+        // Redireciona para meu-plano após 2s
+        Future.delayed(const Duration(seconds: 2), () {
+          if (mounted) context.go('/planos/meu-plano');
+        });
       });
     });
   }
