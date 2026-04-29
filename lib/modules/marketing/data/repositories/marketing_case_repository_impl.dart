@@ -20,7 +20,7 @@ class MarketingCaseRepositoryImpl implements IMarketingCaseRepository {
 
     _db = await openDatabase(
       path,
-      version: 2,
+      version: 3,
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE marketing_cases_cache (
@@ -31,11 +31,17 @@ class MarketingCaseRepositoryImpl implements IMarketingCaseRepository {
         ''');
       },
       onUpgrade: (db, oldVersion, newVersion) async {
-        if (oldVersion < 2) {
-          // Adiciona user_id para isolamento de cache por usuário (DT fix Abr/2026)
-          await db.execute(
-            "ALTER TABLE marketing_cases_cache ADD COLUMN user_id TEXT NOT NULL DEFAULT ''",
-          );
+        if (oldVersion < 3) {
+          // DROP+CREATE — nunca usar ALTER TABLE (regra do projeto)
+          // Corrige "duplicate column name: user_id" introduzido na v2 via ALTER TABLE
+          await db.execute('DROP TABLE IF EXISTS marketing_cases_cache');
+          await db.execute('''
+            CREATE TABLE marketing_cases_cache (
+              id TEXT PRIMARY KEY,
+              user_id TEXT NOT NULL DEFAULT '',
+              data TEXT
+            )
+          ''');
         }
       },
     );
