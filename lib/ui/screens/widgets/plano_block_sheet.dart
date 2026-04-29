@@ -6,32 +6,43 @@ import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 class PlanoBlockSheet extends StatelessWidget {
   final String motivo;
   final String? planoLabel;
+  final int? limite;
 
-  const PlanoBlockSheet({super.key, required this.motivo, this.planoLabel});
+  const PlanoBlockSheet({
+    super.key,
+    required this.motivo,
+    this.planoLabel,
+    this.limite,
+  });
 
   static void show(
     BuildContext context, {
     required String motivo,
     String? planoLabel,
+    int? limite,
   }) {
     HapticFeedback.heavyImpact();
     showSoloForteSheet(
       context: context,
       showDragHandle: false,
-      builder: (ctx) => PlanoBlockSheet(motivo: motivo, planoLabel: planoLabel),
+      builder: (ctx) => PlanoBlockSheet(
+        motivo: motivo,
+        planoLabel: planoLabel,
+        limite: limite,
+      ),
     );
   }
 
   int _limiteDoPlano(String? label) {
     switch (label) {
       case 'Bronze':
-        return 1;
-      case 'Prata':
-        return 2;
-      case 'Ouro':
         return 3;
+      case 'Prata':
+        return 5;
+      case 'Ouro':
+        return 999999; // ilimitado (admin bypass deve evitar chegar aqui)
       default:
-        return 0;
+        return 3; // free tier
     }
   }
 
@@ -74,7 +85,7 @@ class PlanoBlockSheet extends StatelessWidget {
             Text(
               motivo == 'sem_plano'
                   ? 'Assine um plano para publicar seus cases agronômicos no mapa.'
-                  : 'Seu plano $planoLabel permite apenas ${_limiteDoPlano(planoLabel)} case(s) ativo(s). Faça upgrade para publicar mais.',
+                  : 'Seu plano ${planoLabel ?? 'atual'} permite apenas ${limite ?? _limiteDoPlano(planoLabel)} case(s) ativo(s). Faça upgrade para publicar mais.',
               textAlign: TextAlign.center,
               style: const TextStyle(
                 fontFamily: 'Inter',

@@ -2,13 +2,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
 
 import '../../../../core/ui/sheets/sheet_tokens.dart';
 import '../../../../modules/marketing/presentation/providers/marketing_providers.dart';
 import '../../../../modules/marketing/presentation/screens/novo_case_sheet.dart';
-import '../../../../modules/marketing/presentation/widgets/draft_saved_sheet.dart';
 import '../../../../modules/planos/presentation/providers/plano_providers.dart';
 import '../../widgets/plano_block_sheet.dart';
 
@@ -56,42 +54,21 @@ class NovoCaseModalLauncher {
                 lng: position.longitude,
                 onClose: () => Navigator.of(context).pop(),
                 onPublicar: (newCase) async {
-                  // Verifica plano APÓS preenchimento do formulário
+                  // Lê plano — nunca null após PROMPT-A (retorna UserPlan.free())
                   final plano = ref.read(planoAtivoProvider).valueOrNull;
 
-                  if (plano == null || plano.expirado) {
-                    // Sem plano → salva como rascunho
-                    try {
-                      await ref
-                          .read(marketingCasesProvider.notifier)
-                          .saveAsDraft(newCase);
-
-                      if (!context.mounted) return;
-
-                      // Fecha o NovoCaseSheet
-                      Navigator.of(context).pop();
-
-                      // Exibe DraftSavedSheet e captura decisão do usuário.
-                      final goToPlanos = await DraftSavedSheet.show(context);
-
-                      if (!context.mounted) return;
-                      if (goToPlanos == true) {
-                        context.go('/planos');
-                      }
-                    } catch (e) {
-                      if (!context.mounted) return;
-                      Navigator.of(context).pop();
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Erro ao salvar rascunho: $e'),
-                          backgroundColor: Colors.red,
-                        ),
-                      );
-                    }
+                  // 1. Admin bypass — sem verificação de limite
+                  if (plano?.isAdmin == true) {
+                    Navigator.of(context).pop();
+                    final saved = await ref
+                        .read(marketingCasesProvider.notifier)
+                        .publishCase(newCase);
+                    if (!context.mounted) return;
+                    _showPublishResult(context, saved);
                     return;
                   }
 
-                  // Com plano → verifica limite de cases publicados
+                  // 2. Contar cases publicados do usuário
                   final cases =
                       ref.read(marketingCasesProvider).valueOrNull ?? [];
                   final casesPublicados = cases
@@ -103,18 +80,22 @@ class NovoCaseModalLauncher {
                       )
                       .length;
 
-                  if (casesPublicados >= plano.limiteCases) {
+                  // 3. Limite: free tier = 3, plano padrão conforme UserPlan
+                  final limite = plano?.limiteCases ?? 3;
+
+                  if (casesPublicados >= limite) {
                     if (!context.mounted) return;
                     Navigator.of(context).pop();
                     PlanoBlockSheet.show(
                       context,
                       motivo: 'limite_atingido',
-                      planoLabel: plano.plano.label,
+                      planoLabel: plano?.plano.label,
+                      limite: limite,
                     );
                     return;
                   }
 
-                  // Publica normalmente
+                  // 4. Publica normalmente
                   Navigator.of(context).pop();
 
                   final saved = await ref
@@ -122,55 +103,7 @@ class NovoCaseModalLauncher {
                       .publishCase(newCase);
 
                   if (!context.mounted) return;
-                  if (saved != null) {
-                    HapticFeedback.heavyImpact();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: const Row(
-                          children: [
-                            Icon(
-                              Icons.check_circle,
-                              color: Colors.white,
-                              size: 18,
-                            ),
-                            SizedBox(width: 8),
-                            Text('Case publicado com sucesso! 📈'),
-                          ],
-                        ),
-                        backgroundColor: const Color(0xFF34C759),
-                        behavior: SnackBarBehavior.floating,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                    );
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: const Row(
-                          children: [
-                            Icon(
-                              Icons.cloud_off,
-                              color: Colors.white,
-                              size: 18,
-                            ),
-                            SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                'Sem conexão — case salvo localmente e será sincronizado.',
-                              ),
-                            ),
-                          ],
-                        ),
-                        backgroundColor: Colors.orange,
-                        behavior: SnackBarBehavior.floating,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        duration: const Duration(seconds: 4),
-                      ),
-                    );
-                  }
+                  _showPublishResult(context, saved);
                 },
               ),
             ),
@@ -179,4 +112,47 @@ class NovoCaseModalLauncher {
       ),
     );
   }
-}
+  /// Exibe snackbar de resultado de publicação (sucesso ou offline).
+  static void _showPublishResult(BuildContext context, dynamic saved) {
+    if (saved != null) {
+      HapticFeedback.heavyImpact();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Row(
+            children: [
+              Icon(Icons.check_circle, color: Colors.white, size: 18),
+              SizedBox(width: 8),
+              Text('Case publicado com sucesso! 📈'),
+            ],
+          ),
+          backgroundColor: const Color(0xFF34C759),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Row(
+            children: [
+              Icon(Icons.cloud_off, color: Colors.white, size: 18),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Sem conexão — case salvo localmente e será sincronizado.',
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: Colors.orange,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          duration: const Duration(seconds: 4),
+        ),
+      );
+    }
+  }}
