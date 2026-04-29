@@ -133,9 +133,9 @@ class IsolatedMarketingMarkersLayer extends ConsumerWidget {
             (mCase) => Marker(
               key: ValueKey('mkt_${mCase.id}'),
               point: LatLng(mCase.lat, mCase.lng),
-              width: 100,
-              height: 100,
-              alignment: Alignment.center,
+              width: MarketingCaseMarker.pinWidth(mCase.visibilidade),
+              height: MarketingCaseMarker.pinHeight(mCase.visibilidade) + 10,
+              alignment: Alignment.bottomCenter,
               child: MarketingCaseMarker(
                 marketingCase: mCase,
                 onTap: () {
