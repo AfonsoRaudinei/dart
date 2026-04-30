@@ -148,9 +148,9 @@ class _DrawingInfoEditSheetState extends ConsumerState<DrawingInfoEditSheet> {
     );
 
     return Container(
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         color: bg,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
       padding: EdgeInsets.only(
         left: 16,
@@ -188,7 +188,7 @@ class _DrawingInfoEditSheetState extends ConsumerState<DrawingInfoEditSheet> {
             const SizedBox(height: 20),
 
             // Nome
-            Text('Nome do talhão *', style: labelStyle),
+            const Text('Nome do talhão *', style: labelStyle),
             const SizedBox(height: 6),
             TextFormField(
               controller: _nomeCtrl,
@@ -197,7 +197,7 @@ class _DrawingInfoEditSheetState extends ConsumerState<DrawingInfoEditSheet> {
                 filled: true,
                 fillColor: inputBg,
                 hintText: 'Ex: Talhão 01',
-                hintStyle: TextStyle(color: hintColor),
+                hintStyle: const TextStyle(color: hintColor),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                   borderSide: BorderSide.none,
@@ -209,7 +209,7 @@ class _DrawingInfoEditSheetState extends ConsumerState<DrawingInfoEditSheet> {
             const SizedBox(height: 16),
 
             // Área (read-only)
-            Text('Área (ha)', style: labelStyle),
+            const Text('Área (ha)', style: labelStyle),
             const SizedBox(height: 6),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
@@ -225,15 +225,15 @@ class _DrawingInfoEditSheetState extends ConsumerState<DrawingInfoEditSheet> {
             const SizedBox(height: 16),
 
             // Cliente
-            Text('Cliente', style: labelStyle),
+            const Text('Cliente', style: labelStyle),
             const SizedBox(height: 6),
             clientState.isLoadingClients
                 ? const LinearProgressIndicator()
                 : DropdownButtonFormField<Client>(
-                    value: _selectedClient,
+                    initialValue: _selectedClient,
                     dropdownColor: inputBg,
                     style: textStyle,
-                    hint: Text('Selecionar cliente',
+                    hint: const Text('Selecionar cliente',
                         style: TextStyle(color: hintColor)),
                     decoration: InputDecoration(
                       filled: true,
@@ -244,7 +244,7 @@ class _DrawingInfoEditSheetState extends ConsumerState<DrawingInfoEditSheet> {
                       ),
                     ),
                     items: [
-                      DropdownMenuItem<Client>(
+                      const DropdownMenuItem<Client>(
                         value: null,
                         child: Text('— Nenhum —',
                             style: TextStyle(color: hintColor)),
@@ -261,15 +261,15 @@ class _DrawingInfoEditSheetState extends ConsumerState<DrawingInfoEditSheet> {
             const SizedBox(height: 16),
 
             // Fazenda
-            Text('Fazenda', style: labelStyle),
+            const Text('Fazenda', style: labelStyle),
             const SizedBox(height: 6),
             clientState.isLoadingFarms
                 ? const LinearProgressIndicator()
                 : DropdownButtonFormField<Farm>(
-                    value: _selectedFarm,
+                    initialValue: _selectedFarm,
                     dropdownColor: inputBg,
                     style: textStyle,
-                    hint: Text('Selecionar fazenda',
+                    hint: const Text('Selecionar fazenda',
                         style: TextStyle(color: hintColor)),
                     decoration: InputDecoration(
                       filled: true,
@@ -280,7 +280,7 @@ class _DrawingInfoEditSheetState extends ConsumerState<DrawingInfoEditSheet> {
                       ),
                     ),
                     items: [
-                      DropdownMenuItem<Farm>(
+                      const DropdownMenuItem<Farm>(
                         value: null,
                         child: Text('— Nenhuma —',
                             style: TextStyle(color: hintColor)),
@@ -299,7 +299,7 @@ class _DrawingInfoEditSheetState extends ConsumerState<DrawingInfoEditSheet> {
             const SizedBox(height: 16),
 
             // Cultura
-            Text('Cultura', style: labelStyle),
+            const Text('Cultura', style: labelStyle),
             const SizedBox(height: 6),
             TextFormField(
               controller: _culturaCtrl,
@@ -308,7 +308,7 @@ class _DrawingInfoEditSheetState extends ConsumerState<DrawingInfoEditSheet> {
                 filled: true,
                 fillColor: inputBg,
                 hintText: 'Ex: soja, milho, café',
-                hintStyle: TextStyle(color: hintColor),
+                hintStyle: const TextStyle(color: hintColor),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                   borderSide: BorderSide.none,
@@ -318,7 +318,7 @@ class _DrawingInfoEditSheetState extends ConsumerState<DrawingInfoEditSheet> {
             const SizedBox(height: 16),
 
             // Safra
-            Text('Safra', style: labelStyle),
+            const Text('Safra', style: labelStyle),
             const SizedBox(height: 6),
             TextFormField(
               controller: _safraCtrl,
@@ -327,7 +327,7 @@ class _DrawingInfoEditSheetState extends ConsumerState<DrawingInfoEditSheet> {
                 filled: true,
                 fillColor: inputBg,
                 hintText: 'Ex: 2025/2026',
-                hintStyle: TextStyle(color: hintColor),
+                hintStyle: const TextStyle(color: hintColor),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                   borderSide: BorderSide.none,
@@ -336,7 +336,7 @@ class _DrawingInfoEditSheetState extends ConsumerState<DrawingInfoEditSheet> {
             ),
             const SizedBox(height: 28),
 
-            Divider(color: divColor),
+            const Divider(color: divColor),
             const SizedBox(height: 12),
 
             Row(
@@ -346,7 +346,7 @@ class _DrawingInfoEditSheetState extends ConsumerState<DrawingInfoEditSheet> {
                     onPressed: () => Navigator.of(context).pop(),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: Colors.white70,
-                      side: BorderSide(color: divColor),
+                      side: const BorderSide(color: divColor),
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),

@@ -44,6 +44,15 @@ class CarteiraLancamento {
   final DateTime dataLancamento;
   final DateTime createdAt;
 
+  /// Compatibilidade com sistema legado de metas.
+  /// Derivado de closedPercent — nunca lido do banco diretamente.
+  int get percentualFechado {
+    final rounded = closedPercent.round();
+    if (rounded < 0) return 0;
+    if (rounded > 100) return 100;
+    return rounded;
+  }
+
   const CarteiraLancamento({
     required this.id,
     required this.userId,
@@ -91,6 +100,7 @@ class CarteiraLancamento {
       'cliente_id': clienteId,
       'quantidade': quantidade,
       'closed_percent': closedPercent,
+      'percentual_fechado': percentualFechado,
       'observacao': observacao,
       'tipo_fechamento': tipoFechamento?.dbValue,
       'nome_concorrente': nomeConcorrente,

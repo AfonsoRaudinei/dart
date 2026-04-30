@@ -24,7 +24,6 @@ import '../../../modules/consultoria/clients/presentation/screens/client_detail_
 import '../../../modules/consultoria/relatorios/presentation/relatorios_page.dart';
 import '../../../modules/consultoria/relatorios/presentation/relatorio_detail_screen.dart';
 import '../../../modules/consultoria/relatorios/presentation/relatorio_form_screen.dart';
-import '../../../modules/consultoria/reports/presentation/screens/report_form_screen.dart';
 // import '../../../modules/consultoria/reports/presentation/screens/report_detail_screen.dart';
 import '../../../modules/consultoria/clients/presentation/screens/farm_detail_screen.dart';
 import '../../../modules/consultoria/clients/presentation/screens/field_detail_screen.dart';
@@ -119,10 +118,6 @@ GoRouter router(Ref ref) {
             path: AppRoutes.reports,
             builder: (_, __) => const RelatoriosScreen(),
             routes: [
-              GoRoute(
-                path: 'novo',
-                builder: (_, __) => const ReportFormScreen(),
-              ),
               GoRoute(
                 path: ':id',
                 builder: (_, state) {

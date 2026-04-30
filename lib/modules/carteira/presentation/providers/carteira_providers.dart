@@ -141,13 +141,20 @@ final realizadoCategoriaProvider = FutureProvider.autoDispose
 
 final progressoCategoriaProvider = FutureProvider.autoDispose
     .family<double, String>((ref, categoriaId) async {
-      final realizado = await ref.watch(
-        realizadoCategoriaProvider(categoriaId).future,
-      );
       final meta = await ref.watch(metaCategoriaProvider(categoriaId).future);
       if (meta == null || meta.quantidade <= 0) return 0.0;
-      final pct = (realizado / meta.quantidade) * 100.0;
-      return pct.clamp(0.0, 100.0);
+
+      final lancamentos = await ref.watch(
+        lancamentosSafraProvider((categoriaId: categoriaId, clienteId: null))
+            .future,
+      );
+
+      final somaClosedPercent = lancamentos.fold<double>(
+        0.0,
+        (sum, lancamento) => sum + lancamento.closedPercent,
+      );
+
+      return somaClosedPercent.clamp(0.0, 100.0);
     });
 
 final realizadoClienteCategoriaProvider = FutureProvider.autoDispose

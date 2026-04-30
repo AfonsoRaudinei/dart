@@ -10,7 +10,6 @@ import 'core/contracts/i_farm_lookup_provider.dart';
 import 'core/contracts/i_visit_client_lookup_provider.dart';
 import 'core/contracts/i_visit_session_lookup_provider.dart';
 import 'core/contracts/i_occurrence_read_provider.dart';
-import 'core/contracts/i_visit_report_provider.dart';
 import 'core/contracts/i_agenda_session_bridge_provider.dart';
 import 'core/contracts/i_field_lookup_geofence_provider.dart';
 import 'core/contracts/i_agenda_observable.dart';
@@ -28,8 +27,6 @@ import 'modules/consultoria/fields/data/repositories/field_repository.dart';
 import 'modules/consultoria/fields/infra/field_lookup_geofence_adapter.dart';
 import 'modules/consultoria/occurrences/data/occurrence_repository.dart';
 import 'modules/consultoria/occurrences/infra/occurrence_read_adapter.dart';
-import 'modules/consultoria/reports/data/sqlite_report_repository.dart';
-import 'modules/consultoria/reports/infra/visit_report_adapter.dart';
 import 'modules/agenda/data/repositories/agenda_repository.dart';
 import 'modules/agenda/infra/agenda_session_bridge_adapter.dart';
 import 'modules/agenda/presentation/providers/agenda_provider.dart';
@@ -104,10 +101,6 @@ Future<void> main() async {
               // ADR-024: implementação concreta de IOccurrenceRead
               occurrenceReadProvider.overrideWithValue(
                 OccurrenceReadAdapter(OccurrenceRepository()),
-              ),
-              // ADR-024: implementação concreta de IVisitReportRepository
-              visitReportProvider.overrideWithValue(
-                VisitReportAdapter(SQLiteReportRepository()),
               ),
               // ADR-024: implementação concreta de IAgendaSessionBridge
               agendaSessionBridgeProvider.overrideWithValue(

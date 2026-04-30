@@ -123,8 +123,7 @@ class SideMenuOverlay extends ConsumerWidget {
                               final planoAsync = ref.watch(planoAtivoProvider);
                               return planoAsync.when(
                                 data: (plano) {
-                                  if (plano == null ||
-                                      plano.plano == PlanoTipo.ouro) {
+                                  if (plano.plano == PlanoTipo.ouro) {
                                     return const SizedBox.shrink();
                                   }
                                   return _MenuItem(

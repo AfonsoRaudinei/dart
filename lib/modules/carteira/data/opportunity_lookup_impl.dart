@@ -30,62 +30,66 @@ class OpportunityLookupImpl implements IOpportunityLookup {
   Future<List<OpportunitySummary>> getOpenOpportunities(
     String clientId,
   ) async {
-    final userId = _userId;
-    if (userId.isEmpty) return [];
+    try {
+      final userId = _userId;
+      if (userId.isEmpty) return [];
 
-    final categorias = await _repository.getCategorias(userId);
-    if (categorias.isEmpty) return [];
+      final categorias = await _repository.getCategorias(userId);
+      if (categorias.isEmpty) return [];
 
-    final database = await _db.database;
+      final database = await _db.database;
 
-    final clientRows = await database.query(
-      'clients',
-      columns: ['area_total'],
-      where: 'id = ?',
-      whereArgs: [clientId],
-      limit: 1,
-    );
-    final areaHa = clientRows.isNotEmpty
-        ? (clientRows.first['area_total'] as num?)?.toDouble() ?? 0.0
-        : 0.0;
-
-    final summaries = <OpportunitySummary>[];
-
-    for (final categoria in categorias) {
-      final result = await database.rawQuery(
-        'SELECT COALESCE(SUM(closed_percent), 0.0) AS total '
-        'FROM carteira_lancamentos '
-        'WHERE cliente_id = ? AND categoria_id = ? AND user_id = ?',
-        [clientId, categoria.id, userId],
+      final clientRows = await database.query(
+        'clients',
+        columns: ['area_total'],
+        where: 'id = ?',
+        whereArgs: [clientId],
+        limit: 1,
       );
-      final rawPct =
-          (result.first['total'] as num?)?.toDouble() ?? 0.0;
-      final closedPercent = rawPct.clamp(0.0, 100.0);
+      final areaHa = clientRows.isNotEmpty
+          ? (clientRows.first['area_total'] as num?)?.toDouble() ?? 0.0
+          : 0.0;
 
-      summaries.add(
-        OpportunitySummary(
-          clientId: clientId,
-          categoryId: categoria.id,
-          categoryName: categoria.nome,
-          categoryColor: _parseCategoryColor(categoria.cor),
-          referenceValuePerHa: categoria.valorReferencia ?? 0.0,
-          closedPercent: closedPercent,
-          areaHa: areaHa,
-          unit: categoria.unidade.label,
-        ),
+      final summaries = <OpportunitySummary>[];
+
+      for (final categoria in categorias) {
+        final result = await database.rawQuery(
+          'SELECT COALESCE(SUM(closed_percent), 0.0) AS total '
+          'FROM carteira_lancamentos '
+          'WHERE cliente_id = ? AND categoria_id = ? AND user_id = ?',
+          [clientId, categoria.id, userId],
+        );
+        final rawPct =
+            (result.first['total'] as num?)?.toDouble() ?? 0.0;
+        final closedPercent = rawPct.clamp(0.0, 100.0);
+
+        summaries.add(
+          OpportunitySummary(
+            clientId: clientId,
+            categoryId: categoria.id,
+            categoryName: categoria.nome,
+            categoryColor: _parseCategoryColor(categoria.cor),
+            referenceValuePerHa: categoria.valorReferencia ?? 0.0,
+            closedPercent: closedPercent,
+            areaHa: areaHa,
+            unit: categoria.unidade.label,
+          ),
+        );
+      }
+
+      final open = summaries
+          .where((s) => s.residualPercent > 0.0)
+          .toList();
+
+      open.sort(
+        (a, b) =>
+            b.totalOpportunityValue.compareTo(a.totalOpportunityValue),
       );
+
+      return open;
+    } catch (_) {
+      return [];
     }
-
-    final open = summaries
-        .where((s) => s.residualPercent > 0.0)
-        .toList();
-
-    open.sort(
-      (a, b) =>
-          b.totalOpportunityValue.compareTo(a.totalOpportunityValue),
-    );
-
-    return open;
   }
 
   /// Converte cor hex (#RRGGBB) para ARGB int.

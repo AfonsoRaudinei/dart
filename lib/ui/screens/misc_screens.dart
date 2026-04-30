@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/session/session_controller.dart';
 
-import '../../modules/consultoria/reports/presentation/widgets/kpi_dashboard_widget.dart';
-
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
@@ -45,7 +43,7 @@ class RelatoriosScreen extends StatelessWidget {
         elevation: 0,
         centerTitle: false,
       ),
-      body: const KpiDashboardWidget(),
+      body: const Center(child: Text('Dashboard Placeholder')),
     );
   }
 }

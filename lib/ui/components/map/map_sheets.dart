@@ -11,7 +11,6 @@ import '../../../core/constants/layout_constants.dart';
 import '../../../core/domain/map_models.dart';
 import '../../../core/domain/publicacao.dart';
 import '../../../core/state/map_state.dart';
-import '../../../core/state/map_ui_providers.dart';
 import '../../screens/map/providers/map_armed_mode_provider.dart';
 
 class BaseMapSheet extends StatelessWidget {

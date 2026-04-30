@@ -3,10 +3,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/models/visit_session.dart';
 import '../../data/repositories/visit_repository.dart';
-import 'package:soloforte_app/core/contracts/i_occurrence_read.dart';
-import 'package:soloforte_app/core/contracts/i_occurrence_read_provider.dart';
-import 'package:soloforte_app/core/contracts/i_visit_report_repository.dart';
-import 'package:soloforte_app/core/contracts/i_visit_report_provider.dart';
 import 'package:soloforte_app/core/contracts/i_agenda_session_bridge.dart';
 import 'package:soloforte_app/core/contracts/i_agenda_session_bridge_provider.dart';
 import 'package:uuid/uuid.dart';
@@ -19,22 +15,16 @@ final visitControllerProvider =
     StateNotifierProvider<VisitController, AsyncValue<VisitSession?>>((ref) {
       return VisitController(
         ref.watch(visitRepositoryProvider),
-        ref.watch(occurrenceReadProvider),     // IOccurrenceRead — ADR-024
-        ref.watch(visitReportProvider),        // IVisitReportRepository — ADR-024
         ref.watch(agendaSessionBridgeProvider), // IAgendaSessionBridge — ADR-024
       );
     });
 
 class VisitController extends StateNotifier<AsyncValue<VisitSession?>> {
   final VisitRepository _repository;
-  final IOccurrenceRead _occurrenceLookup;       // ADR-024
-  final IVisitReportRepository _reportRepository; // ADR-024
   final IAgendaSessionBridge _agendaBridge;        // ADR-024
 
   VisitController(
     this._repository,
-    this._occurrenceLookup,
-    this._reportRepository,
     this._agendaBridge,
   ) : super(const AsyncValue.loading()) {
     checkActiveSession();
@@ -137,42 +127,6 @@ class VisitController extends StateNotifier<AsyncValue<VisitSession?>> {
       final now = DateTime.now();
 
       // 1. Fetch Occurrences — via contrato neutro IOccurrenceRead (ADR-024)
-      final occurrences = await _occurrenceLookup.getBySessionId(
-        currentSession.id,
-      );
-
-      // 2. Generate Report Content (Snapshot)
-      final duration = now.difference(currentSession.startTime);
-      final reportContent =
-          '''
-Relatório Automático de Visita
-------------------------------
-Produtor ID: ${currentSession.producerId}
-Área ID: ${currentSession.areaId}
-Atividade: ${currentSession.activityType}
-Início: ${currentSession.startTime}
-Fim: $now
-Duração: ${duration.inMinutes} minutos
-Ocorrências: ${occurrences.length}
-
-Resumo de Ocorrências:
-${occurrences.map((o) => '- [${o.type}] ${o.description}').join('\n')}
-''';
-
-      // 3. Save Report — via contrato neutro IVisitReportRepository (ADR-024)
-      final report = VisitReportData(
-        id: const Uuid().v4(),
-        title: 'Visita Técnica - ${currentSession.activityType}',
-        clientId: currentSession.producerId,
-        startDate: currentSession.startTime,
-        endDate: now,
-        content: reportContent,
-        createdAt: now,
-        author: 'Consultor (Auto)', // Should get current user
-        observations: 'Gerado automaticamente ao encerrar sessão.',
-      );
-      await _reportRepository.saveVisitReport(report, currentSession.id);
-
       // 4. Update Agenda Event — via contrato neutro IAgendaSessionBridge (ADR-024)
       await _agendaBridge.markEventAsDone(currentSession.id);
 

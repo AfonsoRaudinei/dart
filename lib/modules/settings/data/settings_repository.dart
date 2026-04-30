@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../domain/settings_models.dart';
 import '../../../core/utils/app_logger.dart';
 
@@ -51,6 +52,39 @@ class SettingsRepository {
     ).copy('${appDir.path}/$fileName');
 
     return savedImage.path;
+  }
+
+  Future<void> syncProfilePhoto(String localPath) async {
+    try {
+      final client = Supabase.instance.client;
+      final user = client.auth.currentUser;
+      if (user == null) return;
+
+      final ext = localPath.contains('.')
+          ? localPath.split('.').last
+          : 'jpg';
+      final fileName = '${user.id}_${DateTime.now().millisecondsSinceEpoch}.$ext';
+      final storagePath = 'avatars/$fileName';
+
+      await client.storage.from('avatars').upload(
+        storagePath,
+        File(localPath),
+        fileOptions: const FileOptions(cacheControl: '3600', upsert: true),
+      );
+
+      final publicUrl = client.storage.from('avatars').getPublicUrl(storagePath);
+
+      await client.from('perfis').update({
+        'photo_url': publicUrl,
+        'updated_at': DateTime.now().toUtc().toIso8601String(),
+      }).eq('id', user.id);
+    } catch (e) {
+      AppLogger.warning(
+        'Erro ao sincronizar foto de perfil',
+        tag: 'Settings',
+        error: e,
+      );
+    }
   }
 
   // Future methods for storage usage

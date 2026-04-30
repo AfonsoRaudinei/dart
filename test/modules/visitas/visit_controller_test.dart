@@ -8,17 +8,13 @@
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:soloforte_app/core/contracts/i_occurrence_read.dart';
-import 'package:soloforte_app/core/contracts/i_occurrence_read_provider.dart';
-import 'package:soloforte_app/core/contracts/i_visit_report_repository.dart';
-import 'package:soloforte_app/core/contracts/i_visit_report_provider.dart';
 import 'package:soloforte_app/core/contracts/i_agenda_session_bridge.dart';
 import 'package:soloforte_app/core/contracts/i_agenda_session_bridge_provider.dart';
 import 'package:soloforte_app/modules/visitas/data/repositories/visit_repository.dart';
 import 'package:soloforte_app/modules/visitas/domain/models/visit_session.dart';
 import 'package:soloforte_app/modules/visitas/presentation/controllers/visit_controller.dart';
 
-// ── Fake 1: VisitRepository (sem SQLite) ────────────────────────────────────
+// ── Fake 1: VisitRepository  ────────────────────────────────────
 class FakeVisitRepository extends VisitRepository {
   VisitSession? _activeSession;
   VisitSession? lastSaved;
@@ -48,29 +44,7 @@ class FakeVisitRepository extends VisitRepository {
   }
 }
 
-// ── Fake 2: IOccurrenceRead ─────────────────────────────────────────────────
-class FakeOccurrenceRead implements IOccurrenceRead {
-  final List<OccurrenceSummary> _data;
-  FakeOccurrenceRead([this._data = const []]);
-
-  @override
-  Future<List<OccurrenceSummary>> getBySessionId(String sessionId) async =>
-      _data;
-}
-
-// ── Fake 3: IVisitReportRepository ─────────────────────────────────────────
-class FakeVisitReportRepository implements IVisitReportRepository {
-  VisitReportData? lastSaved;
-  String? lastSavedSessionId;
-
-  @override
-  Future<void> saveVisitReport(VisitReportData report, String sessionId) async {
-    lastSaved = report;
-    lastSavedSessionId = sessionId;
-  }
-}
-
-// ── Fake 4: IAgendaSessionBridge ───────────────────────────────────────────
+// ── Fake 2: IAgendaSessionBridge ───────────────────────────────────────────
 class FakeAgendaSessionBridge implements IAgendaSessionBridge {
   String? lastLinkedEventId;
   String? lastLinkedSessionId;
@@ -108,22 +82,16 @@ VisitSession _makeSession({String status = 'active'}) => VisitSession(
 // ── Testes ──────────────────────────────────────────────────────────────────
 void main() {
   late FakeVisitRepository fakeVisitRepo;
-  late FakeOccurrenceRead fakeOccurrenceLookup;
-  late FakeVisitReportRepository fakeReportRepo;
   late FakeAgendaSessionBridge fakeAgendaBridge;
   late ProviderContainer container;
 
   setUp(() {
     fakeVisitRepo = FakeVisitRepository();
-    fakeOccurrenceLookup = FakeOccurrenceRead();
-    fakeReportRepo = FakeVisitReportRepository();
     fakeAgendaBridge = FakeAgendaSessionBridge();
 
     container = ProviderContainer(
       overrides: [
         visitRepositoryProvider.overrideWithValue(fakeVisitRepo),
-        occurrenceReadProvider.overrideWithValue(fakeOccurrenceLookup),
-        visitReportProvider.overrideWithValue(fakeReportRepo),
         agendaSessionBridgeProvider.overrideWithValue(fakeAgendaBridge),
       ],
     );
@@ -133,11 +101,8 @@ void main() {
 
   group('VisitController — contratos neutros ADR-024', () {
     test('startSession cria sessão quando não há sessão ativa', () async {
-      // Arrange: repositório não tem sessão ativa
-      // (fakeVisitRepo._activeSession = null por padrão)
       final controller = container.read(visitControllerProvider.notifier);
 
-      // Act
       await controller.startSession(
         'producer-001',
         'area-001',
@@ -146,7 +111,6 @@ void main() {
         -47.0,
       );
 
-      // Assert: sessão foi salva e state reflete a sessão nova
       expect(fakeVisitRepo.lastSaved, isNotNull);
       expect(fakeVisitRepo.lastSaved!.producerId, equals('producer-001'));
       final state = container.read(visitControllerProvider);
@@ -155,14 +119,11 @@ void main() {
     });
 
     test('startSession falha com exceção quando sessão já está ativa', () async {
-      // Arrange: repositório já tem sessão ativa
       fakeVisitRepo.seedActiveSession(_makeSession());
-      // aguarda o checkActiveSession() do construtor
       await Future.delayed(Duration.zero);
 
       final controller = container.read(visitControllerProvider.notifier);
 
-      // Act
       await controller.startSession(
         'producer-002',
         'area-002',
@@ -171,7 +132,6 @@ void main() {
         -47.0,
       );
 
-      // Assert: state é AsyncError
       final state = container.read(visitControllerProvider);
       expect(state.hasError, isTrue);
       expect(
@@ -180,27 +140,15 @@ void main() {
       );
     });
 
-    test('endSession salva relatório via IVisitReportRepository e encerra sessão',
-        () async {
-      // Arrange: sessão ativa pré-carregada
+    test('endSession encerra sessão', () async {
       fakeVisitRepo.seedActiveSession(_makeSession());
-      await Future.delayed(Duration.zero); // aguarda checkActiveSession
+      await Future.delayed(Duration.zero); 
 
       final controller = container.read(visitControllerProvider.notifier);
 
-      // Act
       await controller.endSession();
 
-      // Assert: relatório foi salvo via contrato neutro
-      expect(fakeReportRepo.lastSaved, isNotNull);
-      expect(fakeReportRepo.lastSavedSessionId, equals('session-test-001'));
-      expect(
-        fakeReportRepo.lastSaved!.clientId,
-        equals('producer-001'),
-      );
-      // endSession também encerra a sessão no repositório
       expect(fakeVisitRepo.lastEndedId, equals('session-test-001'));
-      // e notifica o bridge de agenda
       expect(fakeAgendaBridge.lastDoneSessionId, equals('session-test-001'));
     });
   });

@@ -23,7 +23,7 @@ class DatabaseHelper {
 
     final db = await openDatabase(
       path,
-      version: 30,
+      version: 31,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -153,6 +153,9 @@ class DatabaseHelper {
           break;
         case 30:
           await _migrateToV30(db);
+          break;
+        case 31:
+          await _migrateToV31(db);
           break;
       }
     }
@@ -302,18 +305,6 @@ class DatabaseHelper {
     await db.execute(
       'CREATE INDEX IF NOT EXISTS idx_occurrences_session ON occurrences(visit_session_id)',
     );
-
-    await db.execute('''
-      CREATE TABLE IF NOT EXISTS visit_reports (
-        id TEXT PRIMARY KEY,
-        user_id TEXT NOT NULL DEFAULT '',
-        visit_session_id TEXT NOT NULL UNIQUE,
-        content TEXT NOT NULL,
-        created_at TEXT NOT NULL,
-        sync_status INTEGER DEFAULT 1,
-        FOREIGN KEY (visit_session_id) REFERENCES visit_sessions (id)
-      )
-    ''');
   }
 
   Future<void> _migrateToV5(Database db) async {
@@ -1294,5 +1285,11 @@ class DatabaseHelper {
         debugPrint('[DB] repairOrphanUserIds erro em $table: $e');
       }
     }
+  }
+
+  // ADR-034: Limpeza do legado reports/ (visit_reports)
+  Future<void> _migrateToV31(Database db) async {
+    debugPrint('[DB] Migrando para V31: Drop tabela visit_reports');
+    await db.execute('DROP TABLE IF EXISTS visit_reports');
   }
 }
