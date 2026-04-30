@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../application/report_providers.dart';
@@ -124,13 +125,17 @@ class _RelatorioCard extends StatelessWidget {
     final statusLabel = _syncStatusLabel(relatorio.syncStatus);
     final statusColor = _syncStatusColor(relatorio.syncStatus);
 
-    return _DataCard(
-      leading: const Icon(Icons.description_outlined, size: 20),
-      title: relatorio.titulo,
-      subtitle: relatorio.descricao.isNotEmpty ? relatorio.descricao : null,
-      date: dateFormat.format(relatorio.createdAt.toLocal()),
-      statusLabel: statusLabel,
-      statusColor: statusColor,
+    return InkWell(
+      onTap: () => context.go('/consultoria/relatorios/${relatorio.id}'),
+      borderRadius: BorderRadius.circular(12),
+      child: _DataCard(
+        leading: const Icon(Icons.description_outlined, size: 20),
+        title: relatorio.titulo,
+        subtitle: relatorio.descricao.isNotEmpty ? relatorio.descricao : null,
+        date: dateFormat.format(relatorio.createdAt.toLocal()),
+        statusLabel: statusLabel,
+        statusColor: statusColor,
+      ),
     );
   }
 
