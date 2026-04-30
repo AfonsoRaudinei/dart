@@ -284,58 +284,61 @@ class _OccurrenceCreationSheetState
     final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
     return Material(
       color: const Color(0xFF1C1C1E),
-      borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       child: Stack(
         children: [
           ListView(
             controller: widget.scrollController,
             padding: EdgeInsets.fromLTRB(16, 12, 16, 96 + keyboardHeight),
             children: [
-              Center(
-                child: Container(
-                  width: 36,
-                  height: 5,
-                  margin: const EdgeInsets.only(bottom: 16),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFC5C5C7),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-              ),
-
+              // ── Header padrão ADR-027 (espelha NovoCaseHeader) ──────────
               Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 6,
-                    ),
+                    width: 40,
+                    height: 40,
                     decoration: BoxDecoration(
-                      color: PremiumTokens.brandGreen.withOpacity(.15),
-                      borderRadius: BorderRadius.circular(8),
+                      color: PremiumTokens.brandGreen.withValues(alpha: .15),
+                      borderRadius: BorderRadius.circular(12),
                       border: Border.all(
                         color: PremiumTokens.brandGreen,
                         width: .6,
                       ),
                     ),
-                    child: Text(
-                      '📍 ${widget.latitude.toStringAsFixed(5)}, ${widget.longitude.toStringAsFixed(5)}',
-                      style: const TextStyle(
-                        color: PremiumTokens.brandGreen,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                      ),
+                    child: const Icon(
+                      Icons.location_on_rounded,
+                      color: PremiumTokens.brandGreen,
+                      size: 22,
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  const Text(
-                    'Nova Ocorrência',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Nova Ocorrência',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        Text(
+                          '${widget.latitude.toStringAsFixed(5)}, ${widget.longitude.toStringAsFixed(5)}',
+                          style: const TextStyle(
+                            color: Color(0xFF8E8E93),
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
+                  if (widget.onCancel != null)
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: widget.onCancel,
+                      color: const Color(0xFF8E8E93),
+                    ),
                 ],
               ),
               const SizedBox(height: 20),
