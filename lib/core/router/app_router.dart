@@ -23,6 +23,7 @@ import '../../../modules/consultoria/clients/presentation/screens/client_form_sc
 import '../../../modules/consultoria/clients/presentation/screens/client_detail_screen.dart';
 import '../../../modules/consultoria/relatorios/presentation/relatorios_page.dart';
 import '../../../modules/consultoria/relatorios/presentation/relatorio_detail_screen.dart';
+import '../../../modules/consultoria/relatorios/presentation/relatorio_form_screen.dart';
 import '../../../modules/consultoria/reports/presentation/screens/report_form_screen.dart';
 // import '../../../modules/consultoria/reports/presentation/screens/report_detail_screen.dart';
 import '../../../modules/consultoria/clients/presentation/screens/farm_detail_screen.dart';
@@ -128,6 +129,15 @@ GoRouter router(Ref ref) {
                   final id = state.pathParameters['id']!;
                   return RelatorioDetailScreen(relatorioId: id);
                 },
+                routes: [
+                  GoRoute(
+                    path: 'edit',
+                    builder: (context, state) {
+                      final id = state.pathParameters['id']!;
+                      return RelatorioFormScreen(relatorioId: id);
+                    },
+                  ),
+                ],
               ),
             ],
           ),
