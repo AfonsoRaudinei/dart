@@ -421,5 +421,21 @@ class _RelatorioDetailProviderElement
   String get id => (origin as RelatorioDetailProvider).id;
 }
 
+String _$relatorioNotifierHash() => r'bef1ee560d7d2b6ac2bac3e69b0a9525ebe07a13';
+
+/// See also [RelatorioNotifier].
+@ProviderFor(RelatorioNotifier)
+final relatorioNotifierProvider =
+    AutoDisposeAsyncNotifierProvider<RelatorioNotifier, void>.internal(
+      RelatorioNotifier.new,
+      name: r'relatorioNotifierProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$relatorioNotifierHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+typedef _$RelatorioNotifier = AutoDisposeAsyncNotifier<void>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

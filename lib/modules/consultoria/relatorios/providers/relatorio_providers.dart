@@ -57,3 +57,24 @@ Future<RelatorioTecnico?> relatorioDetail(
   final repository = ref.watch(relatorioRepositoryProvider);
   return repository.getById(id);
 }
+
+@riverpod
+class RelatorioNotifier extends _$RelatorioNotifier {
+  @override
+  FutureOr<void> build() {}
+
+  Future<void> updateRelatorio(RelatorioTecnico relatorio) async {
+    final repo = ref.read(relatorioRepositoryProvider);
+    await repo.update(relatorio);
+    // Invalida a lista para esse cliente específico se tivermos clientId, caso contrário não conseguimos invalidar elegantemente.
+    // Mas relatoriosListProvider não é a única forma de obter listas.. vamos invalidar tudo da família para garantir:
+    ref.invalidate(relatoriosListProvider); 
+    ref.invalidate(relatorioDetailProvider);
+  }
+
+  Future<void> softDelete(String id) async {
+    final repo = ref.read(relatorioRepositoryProvider);
+    await repo.softDelete(id);
+    ref.invalidate(relatoriosListProvider);
+  }
+}
