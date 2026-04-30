@@ -4,6 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import 'package:printing/printing.dart';
+import '../infra/relatorio_pdf_service.dart';
+
 import '../../../../core/router/app_routes.dart';
 import '../models/relatorio_status.dart';
 import '../models/relatorio_tecnico.dart';
@@ -159,7 +162,9 @@ class _RelatorioDetailScreenState extends ConsumerState<RelatorioDetailScreen> {
             PopupMenuButton<String>(
               icon: const Icon(Icons.more_vert, color: Color(0xFF6B7280)),
               onSelected: (value) async {
-                if (value == 'edit') {
+                if (value == 'pdf') {
+                  await _gerarPdf(context, ref, relatorio);
+                } else if (value == 'edit') {
                   context.go('/consultoria/relatorios/${widget.relatorioId}/edit');
                 } else if (value == 'delete') {
                   final confirm = await showDialog<bool>(
@@ -192,6 +197,16 @@ class _RelatorioDetailScreenState extends ConsumerState<RelatorioDetailScreen> {
                 }
               },
               itemBuilder: (_) => [
+                const PopupMenuItem(
+                  value: 'pdf',
+                  child: Row(
+                    children: [
+                      Icon(Icons.picture_as_pdf_outlined, size: 18),
+                      SizedBox(width: 8),
+                      Text('Gerar PDF'),
+                    ],
+                  ),
+                ),
                 if (relatorio.status == RelatorioStatus.pendente_revisao)
                   const PopupMenuItem(value: 'edit', child: Text('Editar')),
                 const PopupMenuItem(
@@ -453,6 +468,33 @@ class _RelatorioDetailScreenState extends ConsumerState<RelatorioDetailScreen> {
   // ══════════════════════════════════════════════════════════════════════
   // AÇÕES
   // ══════════════════════════════════════════════════════════════════════
+
+  Future<void> _gerarPdf(
+    BuildContext context,
+    WidgetRef ref,
+    RelatorioTecnico relatorio,
+  ) async {
+    if (!context.mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Gerando PDF...')),
+    );
+
+    try {
+      final bytes = await RelatorioPdfService.generate(relatorio);
+
+      await Printing.sharePdf(
+        bytes: Uint8List.fromList(bytes),
+        filename: 'relatorio_${relatorio.id}.pdf',
+      );
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erro ao gerar PDF: $e')),
+        );
+      }
+    }
+  }
 
   Future<void> _saveChanges(RelatorioTecnico relatorio) async {
     HapticFeedback.mediumImpact();
