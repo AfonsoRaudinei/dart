@@ -155,6 +155,50 @@ class _RelatorioDetailScreenState extends ConsumerState<RelatorioDetailScreen> {
             ),
             const SizedBox(width: 12),
             _StatusChip(status: relatorio.status),
+            const SizedBox(width: 8),
+            PopupMenuButton<String>(
+              icon: const Icon(Icons.more_vert, color: Color(0xFF6B7280)),
+              onSelected: (value) async {
+                if (value == 'edit') {
+                  context.go('/consultoria/relatorios/${widget.relatorioId}/edit');
+                } else if (value == 'delete') {
+                  final confirm = await showDialog<bool>(
+                    context: context,
+                    builder: (ctx) => AlertDialog(
+                      backgroundColor: const Color(0xFF1C1C1E),
+                      title: const Text('Excluir relatório?',
+                          style: TextStyle(color: Colors.white)),
+                      content: const Text('Esta ação não pode ser desfeita.',
+                          style: TextStyle(color: Color(0xFF8E8E93))),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(ctx, false),
+                          child: const Text('Cancelar'),
+                        ),
+                        TextButton(
+                          onPressed: () => Navigator.pop(ctx, true),
+                          child: const Text('Excluir',
+                              style: TextStyle(color: Colors.red)),
+                        ),
+                      ],
+                    ),
+                  );
+                  if (confirm == true) {
+                    await ref
+                        .read(relatorioNotifierProvider.notifier)
+                        .softDelete(widget.relatorioId);
+                    if (mounted) context.go('/consultoria/relatorios');
+                  }
+                }
+              },
+              itemBuilder: (_) => [
+                if (relatorio.status == RelatorioStatus.pendente_revisao)
+                  const PopupMenuItem(value: 'edit', child: Text('Editar')),
+                const PopupMenuItem(
+                    value: 'delete',
+                    child: Text('Excluir', style: TextStyle(color: Colors.red))),
+              ],
+            ),
           ],
         ),
       ),
