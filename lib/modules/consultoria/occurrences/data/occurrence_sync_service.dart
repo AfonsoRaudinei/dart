@@ -33,7 +33,10 @@ class OccurrenceSyncService {
         final payload = _toSupabasePayload(occurrence);
 
         final userId = _supabase.auth.currentUser?.id;
-        if (userId == null) continue;
+        if (userId == null) {
+          AppLogger.warning('Skipping occurrence push: userId is null', tag: 'OccurrenceSync');
+          continue;
+        }
 
         await NetworkPolicy.withTimeout(
           () => _supabase.from('occurrences').upsert({
@@ -62,7 +65,10 @@ class OccurrenceSyncService {
   Future<void> _syncOccurrencesPull() async {
     final db = await DatabaseHelper.instance.database;
     final userId = _supabase.auth.currentUser?.id;
-    if (userId == null) return;
+    if (userId == null) {
+      AppLogger.warning('Skipping occurrence pull: userId is null', tag: 'OccurrenceSync');
+      return;
+    }
 
     try {
       final remoteOccurrences = await NetworkPolicy.withTimeout(

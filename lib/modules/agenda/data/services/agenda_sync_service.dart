@@ -35,7 +35,10 @@ class AgendaSyncService {
 
   Future<void> _pushEvents() async {
     final userId = _supabase.auth.currentUser?.id;
-    if (userId == null) return;
+    if (userId == null) {
+      AppLogger.warning('Skipping agenda event push: userId is null', tag: 'AgendaSync');
+      return;
+    }
 
     final pendingEvents = await _repository.getPendingSyncEvents();
 
@@ -80,7 +83,10 @@ class AgendaSyncService {
 
   Future<void> _pushSessions() async {
     final userId = _supabase.auth.currentUser?.id;
-    if (userId == null) return;
+    if (userId == null) {
+      AppLogger.warning('Skipping agenda session push: userId is null', tag: 'AgendaSync');
+      return;
+    }
 
     final sessions = await _repository.getAllSessions();
     final pendingSessions = sessions.where((s) => s.syncStatus == 'pending');
@@ -122,7 +128,10 @@ class AgendaSyncService {
 
   Future<void> _pullEvents() async {
     final userId = _supabase.auth.currentUser?.id;
-    if (userId == null) return;
+    if (userId == null) {
+      AppLogger.warning('Skipping agenda event pull: userId is null', tag: 'AgendaSync');
+      return;
+    }
 
     try {
       final remoteEvents = await NetworkPolicy.withTimeout(
@@ -155,7 +164,10 @@ class AgendaSyncService {
 
   Future<void> _pullSessions() async {
     final userId = _supabase.auth.currentUser?.id;
-    if (userId == null) return;
+    if (userId == null) {
+      AppLogger.warning('Skipping agenda session pull: userId is null', tag: 'AgendaSync');
+      return;
+    }
 
     try {
       final remoteSessions = await NetworkPolicy.withTimeout(
