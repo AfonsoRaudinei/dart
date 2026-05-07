@@ -12,6 +12,7 @@ import 'package:soloforte_app/modules/planos/domain/entities/user_plan.dart';
 import 'package:soloforte_app/modules/planos/domain/enums/plano_tipo.dart';
 import 'package:soloforte_app/modules/settings/presentation/providers/settings_providers.dart';
 import 'package:soloforte_app/modules/settings/presentation/providers/user_profile_provider.dart';
+import 'package:soloforte_app/core/services/sync_service.dart';
 // ignore_for_file: unused_import
 
 class SideMenuOverlay extends ConsumerWidget {
@@ -135,6 +136,38 @@ class SideMenuOverlay extends ConsumerWidget {
                                 },
                                 loading: () => const SizedBox.shrink(),
                                 error: (_, __) => const SizedBox.shrink(),
+                              );
+                            },
+                          ),
+                          Consumer(
+                            builder: (context, ref, _) {
+                              final syncState = ref.watch(manualSyncProvider);
+                              return ListTile(
+                                dense: true,
+                                leading: syncState.isLoading
+                                    ? const SizedBox(
+                                        width: 24,
+                                        height: 24,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                        ),
+                                      )
+                                    : const Icon(Icons.sync_outlined),
+                                title: const Text('Sincronizar agora'),
+                                enabled: !syncState.isLoading,
+                                onTap: syncState.isLoading
+                                    ? null
+                                    : () {
+                                        ref.invalidate(manualSyncProvider);
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(
+                                          const SnackBar(
+                                            content:
+                                                Text('Sincronização iniciada'),
+                                            duration: Duration(seconds: 2),
+                                          ),
+                                        );
+                                      },
                               );
                             },
                           ),
