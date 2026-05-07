@@ -178,6 +178,7 @@ class _SoloForteAppState extends ConsumerState<SoloForteApp> {
       if (mounted) {
         final orchestrator = ref.read(syncOrchestratorProvider);
         registerSyncModules(orchestrator);
+        orchestrator.triggerSync(SyncPriority.immediate); // FALHA-1: sync imediato no boot
         ref.read(
           visitCompletionObserverProvider,
         ); // ADR-010: ativa listener agenda → relatorio
