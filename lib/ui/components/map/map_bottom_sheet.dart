@@ -404,13 +404,8 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
       longitude: lng,
       scrollController: _scrollController,
       onCancel: () {
-        // Voltar para lista de ocorrências
-        widget.onStateChange(
-          const MapSheetState(
-            type: MapSheetType.occurrences,
-            isCreatingOccurrence: false,
-          ),
-        );
+        // Encerrar completamente o contexto (modo disabled) e fechar form creation
+        widget.onClose();
       },
       onConfirm: (data) {
         // visit_session_id herdado automaticamente pelo OccurrenceController
@@ -490,16 +485,14 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
           return SizedBox(
             height: _heightAnimation.value,
             child: PremiumGlassPanel(
+              isDark: true,
               borderRadius: const BorderRadius.vertical(
                 top: Radius.circular(24.0),
               ),
               child: Container(
                 decoration: BoxDecoration(
-                  // Adaptativo ou remover e confiar apenas no PremiumGlassPanel (que usa glassColor puro)
-                  // Mas o bottom sheet pode querer o fundo sólido de sheet do iOS:
-                  color: Theme.of(
-                    context,
-                  ).scaffoldBackgroundColor.withValues(alpha: 0.92),
+                  // Fundo escuro fixo — evita sombra branca no light mode
+                  color: PremiumTokens.surfaceDark,
                   border: Border(
                     top: BorderSide(
                       color: Theme.of(context).dividerColor.withValues(alpha: 0.1),
