@@ -20,20 +20,80 @@ class ClimaScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final tab = ref.watch(climaTabIndexProvider);
+    final fallback = ref.watch(climaLocationFallbackProvider);
 
     return Scaffold(
       backgroundColor: kClimaBg,
       body: SafeArea(
-        child: AnimatedSwitcher(
-          duration: const Duration(milliseconds: 260),
-          transitionBuilder: (child, anim) =>
-              FadeTransition(opacity: anim, child: child),
-          child: switch (tab) {
-            1 => const _HoraryView(key: ValueKey('horaria')),
-            2 => const _WeeklyView(key: ValueKey('semanal')),
-            _ => const _CurrentView(key: ValueKey('atual')),
-          },
+        child: Column(
+          children: [
+            if (fallback != ClimaLocationFallback.none)
+              _ClimaFallbackBanner(state: fallback),
+            Expanded(
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 260),
+                transitionBuilder: (child, anim) =>
+                    FadeTransition(opacity: anim, child: child),
+                child: switch (tab) {
+                  1 => const _HoraryView(key: ValueKey('horaria')),
+                  2 => const _WeeklyView(key: ValueKey('semanal')),
+                  _ => const _CurrentView(key: ValueKey('atual')),
+                },
+              ),
+            ),
+          ],
         ),
+      ),
+    );
+  }
+}
+
+// ─── Fallback Banner ──────────────────────────────────────────────────────────
+class _ClimaFallbackBanner extends StatelessWidget {
+  const _ClimaFallbackBanner({required this.state});
+
+  final ClimaLocationFallback state;
+
+  @override
+  Widget build(BuildContext context) {
+    final (String message, IconData icon, Color color) = switch (state) {
+      ClimaLocationFallback.userDenied => (
+          'Permissão de localização negada. Exibindo Brasília-DF.',
+          Icons.location_off_outlined,
+          Colors.orange,
+        ),
+      ClimaLocationFallback.timeout => (
+          'GPS não respondeu. Exibindo Brasília-DF.',
+          Icons.access_time_outlined,
+          Colors.amber,
+        ),
+      ClimaLocationFallback.unavailable => (
+          'GPS desabilitado. Exibindo Brasília-DF.',
+          Icons.gps_off_outlined,
+          Colors.redAccent,
+        ),
+      ClimaLocationFallback.none => ('', Icons.check, Colors.transparent),
+    };
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      color: color.withValues(alpha: 0.15),
+      child: Row(
+        children: [
+          Icon(icon, color: color, size: 18),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              message,
+              style: TextStyle(
+                color: color,
+                fontSize: 13,
+                fontFamily: 'Inter',
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

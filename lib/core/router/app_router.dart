@@ -28,7 +28,7 @@ import '../../../modules/consultoria/relatorios/presentation/relatorio_form_scre
 import '../../../modules/consultoria/clients/presentation/screens/farm_detail_screen.dart';
 import '../../../modules/consultoria/clients/presentation/screens/field_detail_screen.dart';
 import '../../../modules/feedback/presentation/screens/feedback_screen.dart';
-import '../../ui/screens/clima_screen.dart';
+import '../../modules/clima/presentation/screens/clima_screen.dart';
 // ADR-012 — Módulo planos/
 import '../../../modules/planos/presentation/screens/planos_screen.dart';
 import '../../../modules/planos/presentation/screens/pagamento_screen.dart';
