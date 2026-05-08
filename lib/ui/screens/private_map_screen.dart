@@ -175,6 +175,17 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
       ref.read(drawingControllerProvider).selectTool('none');
     }
 
+    // 🐛 BUGFIX: Fechar modal branco (layers/checkIn) antes de renderizar
+    // sheet escuro no Stack. Sem isso, o modal fica vivo atrás e reaparece
+    // ao fechar o MapBottomSheet. Padrão idêntico ao onTabSelected do orchestrator.
+    // R-1: rootNavigator: false garante que o pop nunca escala até o GoRouter raiz,
+    // mesmo se isModalOpenProvider dessincronizar por swipe dismiss.
+    if (ref.read(isModalOpenProvider) && context.mounted) {
+      Navigator.of(context, rootNavigator: false).pop();
+      ref.read(modalGenerationProvider.notifier).state++;
+      ref.read(isModalOpenProvider.notifier).state = false;
+    }
+
     ref.read(mapSheetStateProvider.notifier).state = state;
 
     // 🔧 MODAL: draw e occurrences permanecem no Stack;

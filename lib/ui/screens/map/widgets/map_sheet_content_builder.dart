@@ -1,11 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
-import '../../../../core/state/map_ui_providers.dart';
-import '../../../../core/utils/app_logger.dart';
-import '../../../../modules/consultoria/occurrences/presentation/widgets/occurrence_creation_sheet.dart';
-import '../../../../modules/consultoria/occurrences/presentation/widgets/occurrence_list_sheet.dart';
-import '../../../../modules/consultoria/occurrences/presentation/controllers/occurrence_controller.dart';
 import '../../../../modules/map/presentation/widgets/visit_sheet.dart';
 import '../../../../modules/visitas/presentation/controllers/visit_controller.dart';
 import '../../../../ui/components/map/map_sheet_state.dart';
@@ -31,68 +26,15 @@ Widget buildSheetContent(
         physics: const BouncingScrollPhysics(),
         child: LayersSheet(onClose: () => Navigator.of(context).pop()),
       );
+    // R-2: MapSheetType.occurrences NUNCA chega a este builder em produção.
+    // O guard em _setSheetState (private_map_screen.dart) redireciona occurrences
+    // para o MapBottomSheet no Stack — nunca para showModalBottomSheet.
+    // Manter este case ativo seria armadilha de double-save no OccurrenceController.
+    // Caminho ativo: MapBuildOrchestrator → MapBottomSheet → _buildOccurrenceForm/_buildOccurrenceList
     case MapSheetType.occurrences:
-      if (state.isCreatingOccurrence &&
-          ref.read(pendingOccurrenceLocationProvider) != null) {
-        final lat = ref.read(pendingOccurrenceLocationProvider)!.latitude;
-        final lng = ref.read(pendingOccurrenceLocationProvider)!.longitude;
-        return OccurrenceCreationSheet(
-          latitude: lat,
-          longitude: lng,
-          scrollController: scrollController,
-          onCancel: () => Navigator.of(context).pop(),
-          onConfirm: (data) {
-            ref.read(occurrenceControllerProvider).createOccurrence(
-              type: data.type,
-              description: data.description,
-              clientId: data.clientId,
-              photoPath: data.photoPath,
-              lat: lat,
-              long: lng,
-              category: data.category,
-              status: 'draft',
-              cultivar: data.cultivar,
-              dataPlantio: data.dataPlantio,
-              estadioFenologico: data.estadioFenologico,
-              tipoOcorrencia: data.tipoOcorrencia,
-              amostraSolo: data.amostraSolo,
-              recomendacoes: data.recomendacoes,
-              metricasJson: data.metricasJson,
-              nutrientesJson: data.nutrientesJson,
-              categoriasJson: data.categoriasJson,
-              notasCategoriasJson: data.notasCategoriasJson,
-              fotosCategoriasJson: data.fotosCategoriasJson,
-            );
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Ocorrência registrada com sucesso!'),
-                backgroundColor: PremiumTokens.brandGreen,
-              ),
-            );
-            Navigator.of(context).pop();
-          },
-        );
-      }
-      return OccurrenceListSheet(
-        scrollController: scrollController,
-        showHandle: false,
-        showDecoration: false,
-        mapBounds: null,
-        onClose: () => Navigator.of(context).pop(),
-        onOccurrenceTap: (occurrence) {
-          AppLogger.debug(
-            'Ocorrência tocada: ${occurrence.id}',
-            tag: 'MapSheet',
-          );
-        },
-        onRequestNewOccurrence: () {
-          Navigator.of(context).pop();
-          // FIX 1: Armar modo seleção de ponto em vez de abrir sheet diretamente
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (context.mounted) onArmOccurrenceMode();
-          });
-        },
-      );
+      // Código morto intencional: se chegar aqui, há bug de fluxo — nunca deve ocorrer.
+      assert(false, 'occurrences deve ser tratado pelo MapBottomSheet no Stack');
+      return const SizedBox.shrink();
     case MapSheetType.checkIn:
       return Consumer(
         builder: (ctx, widgetRef, _) {

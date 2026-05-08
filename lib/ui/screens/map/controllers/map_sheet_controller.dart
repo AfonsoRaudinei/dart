@@ -48,7 +48,7 @@ class MapSheetController {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      barrierColor: Colors.black.withValues(alpha: 0.15),
+      barrierColor: Colors.black54,
       enableDrag: true,
       isDismissible: true,
       builder: (modalContext) => DraggableScrollableSheet(
@@ -91,8 +91,15 @@ class MapSheetController {
       ),
     ).whenComplete(() {
       if (!context.mounted) return;
-      // Invalida se uma nova geração de modal foi aberta após este.
-      if (ref.read(modalGenerationProvider) != gen) return;
+      // R-3: Sempre limpar isModalOpenProvider ao fechar (cobre swipe dismiss).
+      // Se outra geração foi aberta entre meio-tempo, apenas limpa o flag sem
+      // alterar o sheetState — evita fechar sheet que não foi aberto por este modal.
+      if (ref.read(modalGenerationProvider) != gen) {
+        // Outro modal foi aberto: só garantir que flag não ficou preso.
+        // NÃO chamar setSheetState — seria o modal errado fechando o estado.
+        setModalOpen(false);
+        return;
+      }
       setModalOpen(false);
       final currentState = ref.read(mapSheetStateProvider);
       if (currentState?.type == state.type) {
