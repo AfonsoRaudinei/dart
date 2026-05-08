@@ -23,9 +23,12 @@ final climaRepositoryProvider = AutoDisposeProvider<IClimaRepository>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef ClimaRepositoryRef = AutoDisposeProviderRef<IClimaRepository>;
-String _$climaLocationHash() => r'b69954d0418f9e63cb82b0594598fa9d5ee56048';
+String _$climaLocationHash() => r'07988fdf3828290685869781d431f3ff106f4a54';
 
-/// Obtém coordenadas via GPS. Retorna Brasília como fallback.
+/// Obtém coordenadas para o clima.
+/// Prioridade 1: userPositionProvider (já populado pelo mapa).
+/// Prioridade 2: GPS direto (usuário ainda não navegou no mapa).
+/// Fallback: Brasília-DF com estado de erro exposto na UI.
 ///
 /// Copied from [climaLocation].
 @ProviderFor(climaLocation)
