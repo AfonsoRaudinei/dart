@@ -1,54 +1,32 @@
 import 'package:flutter/material.dart';
-import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../core/state/map_state.dart';
 import '../../core/state/map_ui_providers.dart';
 import '../../modules/auth/services/auth_service.dart';
 import '../../core/utils/app_logger.dart';
-import '../../core/utils/map_logger.dart';
 import '../../core/utils/debouncer.dart';
-import '../../modules/consultoria/clients/presentation/providers/field_providers.dart';
-import '../../modules/consultoria/services/talhao_map_adapter.dart';
-import '../../modules/drawing/presentation/widgets/drawing_layers.dart';
 import '../../modules/drawing/presentation/providers/drawing_provider.dart';
 import '../../modules/drawing/domain/drawing_state.dart';
-import '../../modules/drawing/presentation/widgets/drawing_state_indicator.dart';
 import '../../modules/dashboard/providers/location_providers.dart';
 import '../../modules/consultoria/occurrences/domain/occurrence.dart' as occ;
-import '../components/map/map_bottom_sheet.dart';
-import '../components/map/widgets/map_canvas.dart';
-import '../components/map/widgets/map_layers.dart';
-import '../components/map/widgets/radar_layer_widget.dart';
-import '../../core/config/map_config.dart';
-import '../components/map/widgets/map_markers.dart';
-import '../components/map/widgets/map_controls_overlay.dart';
-import '../components/map/widgets/isolated_marker_layers.dart';
-import '../../modules/drawing/presentation/widgets/drawing_edit_layer.dart';
-import '../../modules/drawing/presentation/widgets/gps_tracking_overlay.dart';
-import '../../core/domain/map_models.dart';
 import '../components/map/map_sheet_state.dart';
 // 🔧 MODAL: imports para showModalBottomSheet dos tipos não-draw
 // (conteúdo migrado para map_sheet_content_builder.dart — ADR-031 F3)
 import '../../modules/consultoria/occurrences/presentation/widgets/occurrence_detail_sheet.dart';
-import '../../modules/visitas/presentation/controllers/visit_controller.dart';
-import '../../core/contracts/i_field_lookup_geofence_provider.dart';
 import 'map/providers/map_armed_mode_provider.dart';
-import 'map/widgets/armed_mode_banner.dart';
-import 'map/layers/talhao_polygon_layer.dart';
-import 'map/widgets/drawing_map_behavior_listener.dart';
+import 'map/providers/map_ready_state_provider.dart';
+import 'map/widgets/map_build_orchestrator.dart';
 import 'map/handlers/map_location_handler.dart';
 import 'map/controllers/map_viewport_controller.dart';
 import 'map/controllers/map_sheet_controller.dart';
 import 'map/handlers/novo_case_modal_launcher.dart';
 
-// TODO(ADR-032): arquivo em 707 linhas.
-// Meta: < 400 linhas via extração de initState bootstrap e build() orquestrador.
-// Bloqueadores: _isMapReady (ciclo de vida MapController), _setSheetState.
+// ADR-032 F1: _isMapReady migrado → mapReadyStateProvider (autoDispose).
+// Bloqueador restante: _setSheetState (modal state).
 
 // ════════════════════════════════════════════════════════════════
 // GOVERNANCE ADR-025 — DT-025-5
@@ -68,8 +46,6 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
   final _mapEventDebouncer = Debouncer(
     delay: const Duration(milliseconds: 300),
   );
-
-  bool _isMapReady = false; // 🔒 Guard: MapController só pode ser usado se true
 
   // 🔧 LIFECYCLE: Referência cacheada do DrawingController.
   // Capturada no build() para uso seguro no dispose() SEM ref.read().
@@ -268,7 +244,7 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
     await MapViewportController.apply(
       ref: ref,
       mapController: _mapController,
-      isMapReady: _isMapReady,
+      isMapReady: ref.read(mapReadyStateProvider),
       isMounted: mounted,
     );
   }
@@ -278,7 +254,7 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
       ref: ref,
       context: context,
       mapController: _mapController,
-      isMapReady: _isMapReady,
+      isMapReady: ref.read(mapReadyStateProvider),
     );
   }
 
@@ -287,7 +263,7 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
       ref: ref,
       context: context,
       mapController: _mapController,
-      isMapReady: _isMapReady,
+      isMapReady: ref.read(mapReadyStateProvider),
     );
   }
 
@@ -339,375 +315,25 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final stopwatch = Stopwatch()..start();
-
     // 🛡 LIFECYCLE: Cachear referência do DrawingController para uso
     // seguro no dispose() — ref é invalidado antes de dispose() ser chamado.
     _drawingController = ref.read(drawingControllerProvider);
 
-    // Mantém GeofenceController ativo somente durante o ciclo de vida desta tela.
-    ref.watch(iFieldLookupGeofenceProvider);
-
-    // Apenas providers necessários para lógica de tap e polígonos
-    final mapFields = ref.watch(mapFieldsProvider);
-    final selectedTalhaoId = ref.watch(selectedTalhaoIdProvider);
-    // ⚡ Otimização: Observar apenas currentState e currentTool (não toda a lista de features)
-    // 🔧 FIX-DRAW-RACE: NÃO usar ref.watch para o controller usado em callbacks
-    // Usar ref.read() nos callbacks evita race conditions com referências stale
-    final drawingState = ref.watch(
-      drawingControllerProvider.select((c) => c.currentState),
-    );
-    final drawingTool = ref.watch(
-      drawingControllerProvider.select((c) => c.currentTool),
-    );
-    // Sprint 2: Undo/Redo — observar canUndo/canRedo granularmente
-    final canUndo = ref.watch(
-      drawingControllerProvider.select((c) => c.canUndo),
-    );
-    final canRedo = ref.watch(
-      drawingControllerProvider.select((c) => c.canRedo),
-    );
-    final sheetState = ref.watch(mapSheetStateProvider);
-
-    // 🔒 LISTENERS PARA FOCO INICIAL (Idempotentes)
-    // Observar carregamento dos fields (para Produtores)
-    ref.listen(mapFieldsProvider, (prev, next) {
-      // 🛡 LIFECYCLE GUARD: listener pode disparar após dispose do widget
-      if (!mounted) return;
-
-      final vp = ref.read(viewportStateProvider);
-      if (vp != InitialViewportState.applied &&
-          vp != InitialViewportState.aborted &&
-          _isMapReady) {
-        _applyInitialViewport();
-      }
-    });
-
-    // Observar disponibilidade de GPS (para Outros)
-    ref.listen(locationStateProvider, (prev, next) {
-      // 🛡 LIFECYCLE GUARD: listener pode disparar após dispose do widget
-      if (!mounted) return;
-
-      final vp = ref.read(viewportStateProvider);
-      if (vp != InitialViewportState.applied &&
-          vp != InitialViewportState.aborted &&
-          _isMapReady) {
-        _applyInitialViewport();
-      }
-    });
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      stopwatch.stop();
-      MapLogger.logRenderTime(stopwatch.elapsedMilliseconds);
-    });
-
-    return DrawingStateOverlay(
-      state: drawingState,
-      tool: drawingTool,
-      child: Stack(
-        children: [
-          MapCanvas(
-            mapController: _mapController,
-            onMapReady: () {
-              // Mark map as ready FIRST
-              if (mounted) {
-                // Ao montar, marcamos como pronto.
-                // setState trigger rebuild, permitindo que Overlay use controller depois.
-                setState(() => _isMapReady = true);
-
-                // Trigger viewport logic immediately
-                _applyInitialViewport();
-              }
-            },
-            onTap: (tapPos, point) {
-              // 🎯 Prioridade 1a: Modo armado marketing
-              if (ref.read(armedModeProvider) == ArmedMode.marketing) {
-                ref.read(armedModeProvider.notifier).state = ArmedMode.none;
-                ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                _handleMapLongPress(tapPos, point);
-                return;
-              }
-
-              // 🎯 Prioridade 1b: Verificar modo armado de ocorrências
-              if (ref.read(armedModeProvider) == ArmedMode.occurrences) {
-                final lat = point.latitude;
-                final lng = point.longitude;
-
-                // Desarmar imediatamente para evitar múltiplos taps
-                ref.read(armedModeProvider.notifier).state = ArmedMode.none;
-                ScaffoldMessenger.of(context).hideCurrentSnackBar();
-
-                // Abrir sheet de criação de ocorrência com coordenadas
-                _openOccurrenceSheet(lat, lng);
-                return; // Não processar lógica de talhão
-              }
-
-              // 🎯 Prioridade 2: Drawing Module (Interação)
-              // 🔧 FIX-DRAW-RACE: Usar ref.read() para sempre acessar estado atual
-              final drawCtrl = ref.read(drawingControllerProvider);
-              if (drawCtrl.currentState == DrawingState.drawing ||
-                  drawCtrl.currentState == DrawingState.armed) {
-                drawCtrl.appendDrawingPoint(point);
-                return;
-              }
-
-              if (drawCtrl.currentState == DrawingState.idle ||
-                  drawCtrl.currentState == DrawingState.reviewing) {
-                final drawingFeature = drawCtrl.findFeatureAt(point);
-                if (drawingFeature != null) {
-                  drawCtrl.selectFeature(drawingFeature);
-                  HapticFeedback.selectionClick();
-                  // 🔧 FIX-DRAW-SYNC: Reutilizar MapBottomSheet existente
-                  // Em vez de abrir novo modal, navegar o sheet persistente
-                  _setSheetState(
-                    const MapSheetState(type: MapSheetType.draw),
-                    'Feature tap: editing existing drawing',
-                  );
-                  return;
-                }
-              }
-
-              // 🎯 Comportamento normal: Seleção de talhão
-              final fields = mapFields.valueOrNull ?? [];
-              bool hit = false;
-
-              for (final field in fields) {
-                if (field.geometry == null) continue;
-                // Lazy parse for hit test (optimization: cache parsed polygons if needed)
-                // Here purely for hit detection
-                final polygonPoints = TalhaoMapAdapter.toPolygon(field).points;
-
-                if (TalhaoMapAdapter.isPointInside(point, polygonPoints)) {
-                  ref.read(selectedTalhaoIdProvider.notifier).state = field.id;
-                  hit = true;
-                  HapticFeedback.selectionClick();
-
-                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Talhão: ${field.name}'),
-                      backgroundColor: PremiumTokens.brandGreen,
-                      duration: const Duration(seconds: 1),
-                    ),
-                  );
-                  break; // Stop on first hit
-                }
-              }
-
-              if (!hit) {
-                // Deselect if tapping empty space
-                if (selectedTalhaoId != null) {
-                  ref.read(selectedTalhaoIdProvider.notifier).state = null;
-                  HapticFeedback.lightImpact();
-                }
-              }
-            },
-            onLongPress: _handleMapLongPress,
-            onPositionChanged: (pos, hasGesture) {
-              if (hasGesture) {
-                _mapEventDebouncer.run(() {
-                  MapLogger.logEvent(
-                    'Pan/Zoom: Center=${pos.center.latitude.toStringAsFixed(4)},${pos.center.longitude.toStringAsFixed(4)} Zoom=${pos.zoom.toStringAsFixed(1)}',
-                  );
-                  bool isClusteringActive = pos.zoom < 15;
-                  MapLogger.logEvent('Clustering Active: $isClusteringActive');
-                });
-              }
-            },
-            children: [
-              // Layer base de tiles
-              const MapLayersWidget(),
-
-              // ADR-028 — Overlay de radar de precipitação (RainViewer)
-              const RadarLayerWidget(),
-
-              // Polígonos de talhões
-              // ADR-030 F3: extraído para TalhaoPolygonLayer
-              const TalhaoPolygonLayer(),
-
-              // Camada de Desenho
-              // 🔧 FIX-DRAW-RACE: Usar ref.read() para evitar referência stale
-              DrawingLayerWidget(
-                controller: ref.read(drawingControllerProvider),
-                onFeatureTap: (feature) {
-                  ref.read(drawingControllerProvider).selectFeature(feature);
-                  HapticFeedback.selectionClick();
-                },
-                onDrawingComplete: _finishDrawing,
-              ),
-
-              // 🔧 Camada de Edição (Vertex Handles)
-              DrawingEditLayer(
-                controller: ref.read(drawingControllerProvider),
-                mapController: _mapController,
-              ),
-
-              // 🔒 MARKERS ISOLADOS: Não rebuildam por GPS/zoom/pan
-              // Markers globais (MapMarkersWidget já otimizado)
-              const MapMarkersWidget(),
-
-              // Markers de ocorrências (isolados)
-              IsolatedOccurrenceMarkersLayer(
-                onOccurrenceTap: _handleOccurrencePinTap,
-              ),
-
-              // Markers de Marketing (isolados — Sprint 8 Performance)
-              const IsolatedMarketingMarkersLayer(),
-
-              // 🎯 ÚNICA LAYER QUE REBUILDA: Localização GPS
-              const IsolatedUserLocationLayer(),
-
-              // ⚖️ ATRIBUIÇÃO LEGAL: © Google — exibida somente no layer satellite
-              // Obrigatória pelos Termos de Serviço do Google Maps Platform
-              if (ref.watch(activeLayerProvider) == LayerType.satellite)
-                const RichAttributionWidget(
-                  attributions: [
-                    TextSourceAttribution(
-                      MapConfig.googleAttribution,
-                    ),
-                  ],
-                ),
-            ],
-          ),
-
-          // Controles do mapa (Consumer isolado + RepaintBoundary Sprint 8)
-          RepaintBoundary(
-            child: MapControlsOverlay(
-            onCenterUser: _centerOnUser,
-            onToggleDrawMode: _toggleDrawMode,
-            onToggleOccurrenceMode: () {
-              if (ref.read(armedModeProvider) == ArmedMode.occurrences) {
-                // Desarmar e fechar o sheet/modal
-                ref.read(armedModeProvider.notifier).state = ArmedMode.none;
-                ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                if (ref.read(isModalOpenProvider)) Navigator.of(context).pop();
-                _setSheetState(null, 'Toggle OFF: Closing occurrence sheet');
-              } else {
-                _armOccurrenceMode();
-              }
-            },
-            onToggleMarketingMode: () {
-              if (ref.read(armedModeProvider) == ArmedMode.marketing) {
-                ref.read(armedModeProvider.notifier).state = ArmedMode.none;
-                ScaffoldMessenger.of(context).hideCurrentSnackBar();
-              } else {
-                _armMarketingMode();
-              }
-            },
-            isMarketingMode: ref.watch(armedModeProvider) == ArmedMode.marketing,
-            isDrawMode: sheetState?.type == MapSheetType.draw,
-            isOccurrenceMode: ref.watch(armedModeProvider) == ArmedMode.occurrences,
-            isCheckInActive: ref.watch(
-              visitControllerProvider.select(
-                (v) => v.valueOrNull?.status == 'active',
-              ),
-            ),
-            drawingState: drawingState,
-            onFinishDrawing: _finishDrawing,
-            onCancelDrawing: () {
-              ref.read(drawingControllerProvider).cancelOperation();
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Desenho cancelado'),
-                  duration: Duration(seconds: 2),
-                ),
-              );
-            },
-            onSaveEdit: () => ref.read(drawingControllerProvider).saveEdit(),
-            onCancelEdit: () =>
-                ref.read(drawingControllerProvider).cancelEdit(),
-            onUndoEdit: () => ref.read(drawingControllerProvider).undoEdit(),
-            onRedoEdit: () => ref.read(drawingControllerProvider).redoEdit(),
-            onUndoDrawing:
-                () => ref.read(drawingControllerProvider).undoDrawingPoint(),
-            canUndo: canUndo,
-            canRedo: canRedo,
-            currentCenter: _isMapReady
-                ? _mapController.camera.center
-                : const LatLng(0, 0),
-            currentZoom: _isMapReady ? _mapController.camera.zoom : 13.0,
-            onTabSelected: (index, source) {
-              // 🛡 REFATORAÇÃO: Mapear index para MapSheetType
-              final sheetTypeMap = {
-                2: MapSheetType.occurrences,
-                3: MapSheetType.checkIn,
-                4: MapSheetType.layers,
-              };
-
-              final currentType = sheetState?.type;
-              final newType = sheetTypeMap[index];
-
-              if (currentType == newType) {
-                // Toggle: fechar modal se aberto
-                if (ref.read(isModalOpenProvider)) Navigator.of(context).pop();
-                _setSheetState(
-                  null,
-                  'MapControlsOverlay: Toggle Close (Source: $source)',
-                );
-              } else {
-                // Switch: se há modal aberto, liberar guarda e fechar antes de abrir novo
-                if (ref.read(isModalOpenProvider)) {
-                  Navigator.of(context).pop();
-                  ref.read(modalGenerationProvider.notifier).state++; // Invalida o whenComplete do modal anterior
-                  ref.read(isModalOpenProvider.notifier).state = false;
-                }
-                _setSheetState(
-                  MapSheetState(type: newType!),
-                  'MapControlsOverlay: Select Tab $newType (Source: $source)',
-                );
-              }
-              ref.read(pendingOccurrenceLocationProvider.notifier).state = null;
-            },
-            ),
-          ),
-
-          // � GPS TRACKING OVERLAY (Sprint 5)
-          // Exibido apenas quando o usuário está rastreando o perímetro com GPS.
-          // Não é um FAB nem nova rota — é um overlay no Stack existente.
-          // ADR-030 F4: DrawingMapBehaviorListener — side effects de drawing no mapa
-          DrawingMapBehaviorListener(
-            mapController: _mapController,
-            isMapReady: _isMapReady,
-            onCenterOnUser: _centerOnUser,
-          ),
-          if (drawingState == DrawingState.gpsTracking)
-            RepaintBoundary(
-              child: ListenableBuilder(
-                listenable: ref.read(drawingControllerProvider),
-                builder: (context, _) => GpsTrackingOverlay(
-                  controller: ref.read(drawingControllerProvider),
-                ),
-              ),
-            ),
-
-          // �🛡 CONSOLIDATION: DrawingSheet e OccurrenceSheet permanecem no Stack
-          // Tipos checkIn/layers continuam usando showModalBottomSheet
-          if (sheetState != null &&
-              (sheetState.type == MapSheetType.draw ||
-                  sheetState.type == MapSheetType.occurrences))
-            Positioned(
-              bottom: 0,
-              left: 0,
-              right: 0,
-              child: MapBottomSheet(
-                drawingController: ref.read(drawingControllerProvider),
-                state: sheetState,
-                onStateChange: (newState) {
-                  _setSheetState(newState, 'MapBottomSheet: State Changed');
-                },
-                onClose: () {
-                  _setSheetState(null, 'MapBottomSheet: onClose');
-                },
-                creationLocation: ref.read(pendingOccurrenceLocationProvider),
-                onLocationRequested: _centerOnUser,
-              ),
-            ),
-
-          // FIX 1 — Indicador visual efêmero: modo seleção de ponto para ocorrência
-          // ADR-030 F2: extraído para ArmedModeBanner
-          const ArmedModeBanner(),
-        ],
-      ),
+    // ADR-032 F3: Build orchestrado por MapBuildOrchestrator.
+    // Todo o conteúdo do Stack (canvas, layers, overlays, controls, sheet)
+    // vive em map/widgets/map_build_orchestrator.dart.
+    return MapBuildOrchestrator(
+      mapController: _mapController,
+      setSheetState: _setSheetState,
+      openOccurrenceSheet: _openOccurrenceSheet,
+      handleMapLongPress: _handleMapLongPress,
+      finishDrawing: _finishDrawing,
+      toggleDrawMode: _toggleDrawMode,
+      centerOnUser: _centerOnUser,
+      armOccurrenceMode: _armOccurrenceMode,
+      armMarketingMode: _armMarketingMode,
+      handleOccurrencePinTap: _handleOccurrencePinTap,
+      applyInitialViewport: _applyInitialViewport,
     );
   }
 }
