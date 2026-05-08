@@ -15,6 +15,8 @@ import 'core/contracts/i_field_lookup_geofence_provider.dart';
 import 'core/contracts/i_agenda_observable.dart';
 import 'core/contracts/i_agenda_observable_provider.dart';
 import 'core/contracts/i_report_writer_provider.dart';
+import 'core/contracts/i_user_location_lookup_provider.dart';
+import 'modules/dashboard/infra/location_lookup_adapter.dart';
 import 'core/infra/preferences_service.dart';
 import 'core/router/app_router.dart';
 import 'core/services/sync_orchestrator.dart';
@@ -140,6 +142,10 @@ Future<void> main() async {
               // ADR-025: IReportWriter para visit_completion_observer (DT-025-7)
               reportWriterProvider.overrideWith(
                 (ref) => ReportWriterAdapter(ref),
+              ),
+              // Contrato de localização do usuário para módulo clima/
+              userLocationLookupProvider.overrideWith(
+                (ref) => LocationLookupAdapter(ref),
               ),
             ],
             child: const SoloForteApp(),
