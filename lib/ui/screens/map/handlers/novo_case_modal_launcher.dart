@@ -4,7 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 
-import '../../../../core/ui/sheets/sheet_tokens.dart';
+import '../../../../core/ui/sheets/soloforte_sheet.dart';
 import '../../../../modules/marketing/presentation/providers/marketing_providers.dart';
 import '../../../../modules/marketing/presentation/screens/novo_case_sheet.dart';
 import '../../../../modules/planos/presentation/providers/plano_providers.dart';
@@ -22,17 +22,13 @@ class NovoCaseModalLauncher {
   }) async {
     if (!context.mounted) return;
 
-    await showModalBottomSheet(
+    await showSoloForteSheet(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => Container(
-        constraints: BoxConstraints(
-          maxHeight: MediaQuery.of(context).size.height * 0.85,
-        ),
-        decoration: const BoxDecoration(
-          color: SoloForteSheetTokens.sheetBackground,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      showDragHandle: false,
+      maxHeightFraction: 0.85,
+      builder: (sheetContext) => Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -43,7 +39,9 @@ class NovoCaseModalLauncher {
                 width: 36,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: Theme.of(context).dividerColor.withValues(alpha: 0.3),
+                  color: Theme.of(
+                    sheetContext,
+                  ).dividerColor.withValues(alpha: 0.3),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -112,6 +110,7 @@ class NovoCaseModalLauncher {
       ),
     );
   }
+
   /// Exibe snackbar de resultado de publicação (sucesso ou offline).
   static void _showPublishResult(BuildContext context, dynamic saved) {
     if (saved != null) {
@@ -155,4 +154,5 @@ class NovoCaseModalLauncher {
         ),
       );
     }
-  }}
+  }
+}
