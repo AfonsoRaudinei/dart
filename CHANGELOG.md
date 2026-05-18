@@ -41,3 +41,35 @@ Baseline estável do módulo Drawing após hardening completo RT-DRAW-01 → RT-
 ### Regra de Governança
 - ❌ Nenhuma alteração estrutural no Drawing sem nova branch + novos testes + nova tag incremental
 - ❌ Tag imutável — nunca reusar, nunca sobrescrever
+
+---
+
+## [1.1.0] - 2026-05-18
+
+### Added
+- MapTiler Outdoor v2 integration
+- Marker filtering by user plan tier
+- REGRA-CROSS-MODULE-2 (warning-only enforcement)
+- 17 bounded contexts fully documented
+
+### Fixed
+- Centralized bottom sheet wrapper (ADR-027)
+- HTML doc comments escaped in map config area
+- Drawing tests stabilized with Supabase initialization mock
+
+### Documentation
+- ADR-035: DT-035 ui→marketing debt
+- ADR-036: bypass REGRA-SHEET-1 (temporary v1.1)
+- bounded_contexts.md updated with dependency matrix
+
+### Technical Debt
+- DT-025-3: map → visitas (planned v1.2)
+- DT-028: showRadarProvider → MapContext.clima (planned v1.2)
+- DT-035: ui → marketing (planned v1.2)
+- Bypass REGRA-SHEET-1 (removal planned v1.2)
+
+### Metrics
+- flutter analyze: 52 issues
+- flutter test: 645 passed, 1 skipped
+- arch_check.sh: EXIT 0 (warnings documented)
+- 11 structured commits for baseline closure
