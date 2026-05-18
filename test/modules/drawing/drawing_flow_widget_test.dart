@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:soloforte_app/modules/drawing/presentation/controllers/drawing_controller.dart';
 import 'package:soloforte_app/modules/drawing/presentation/widgets/drawing_sheet.dart';
 import 'package:soloforte_app/modules/drawing/domain/drawing_state.dart';
@@ -33,6 +35,19 @@ class MockDrawingRepository extends DrawingRepository {
 ///
 /// Este teste BLINDAGEM contra regressões de UI no fluxo crítico.
 void main() {
+  setUpAll(() async {
+    TestWidgetsFlutterBinding.ensureInitialized();
+    SharedPreferences.setMockInitialValues({});
+    try {
+      Supabase.instance;
+    } catch (_) {
+      await Supabase.initialize(
+        url: 'https://mock-supabase-for-tests.co',
+        anonKey: 'mock-anon-key-1234567890abcdef',
+      );
+    }
+  });
+
   group('FIX-DRAW-FLOW-02 — DrawingSheet Widget Flow', () {
     testWidgets('✅ Bottom Sheet deve exibir ferramentas', (
       WidgetTester tester,
