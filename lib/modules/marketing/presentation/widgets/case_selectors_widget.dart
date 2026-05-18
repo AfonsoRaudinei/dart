@@ -80,11 +80,6 @@ class PlanoMarketingSelector extends StatelessWidget {
       PlanoMarketing.prata: const Color(0xFF9EA9B2),
       PlanoMarketing.bronze: const Color(0xFFA0522D),
     };
-    final icons = {
-      PlanoMarketing.ouro: Icons.workspace_premium_rounded,
-      PlanoMarketing.prata: Icons.verified_rounded,
-      PlanoMarketing.bronze: Icons.star_border_rounded,
-    };
     return Row(
       children: PlanoMarketing.values.map((p) {
         final isSelected = selectedPlano == p;
@@ -109,21 +104,15 @@ class PlanoMarketingSelector extends StatelessWidget {
                   width: isSelected ? 2.0 : 1.0,
                 ),
               ),
-              child: Column(
-                children: [
-                  Icon(icons[p]!, color: color, size: 20),
-                  const SizedBox(height: 4),
-                  Text(
-                    p.name.toUpperCase(),
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: color,
-                      fontWeight: isSelected
-                          ? FontWeight.w700
-                          : FontWeight.normal,
-                    ),
-                  ),
-                ],
+              child: Text(
+                p.name.toUpperCase(),
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: color,
+                  fontWeight: isSelected
+                      ? FontWeight.w700
+                      : FontWeight.normal,
+                ),
               ),
             ),
           ),
