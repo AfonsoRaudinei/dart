@@ -396,6 +396,154 @@ fi
 echo ""
 
 # =============================================================================
+# REGRA-CROSS-MODULE-2 — Acoplamentos laterais entre bounded contexts
+#
+# Modo v1.1: WARNING-ONLY. A regra reporta dependencias diretas conhecidas,
+# mas nao incrementa VIOLATIONS ate a migracao para contratos neutros.
+# =============================================================================
+echo -e "── ${CYAN}REGRA-CROSS-MODULE-2${NC}: acoplamentos laterais warning-only ─────"
+echo ""
+
+CROSS_MODULE_VIOLATIONS=()
+CROSS_MODULE_WHITELIST=()
+CROSS_MODULE_GROUPS=0
+CROSS_MODULE_WHITELIST_GROUPS=0
+
+add_cross_violation() {
+  local LABEL="$1"
+  local FILE="$2"
+  local PATTERN="$3"
+  local SUGGESTION="$4"
+
+  if [ ! -f "$FILE" ]; then
+    warn "REGRA-CROSS-MODULE-2: arquivo nao encontrado para $LABEL: $FILE"
+    return
+  fi
+
+  local RESULT
+  RESULT=$(grep -nE "$PATTERN" "$FILE" || true)
+
+  if [ -n "$RESULT" ]; then
+    CROSS_MODULE_GROUPS=$((CROSS_MODULE_GROUPS + 1))
+    while IFS= read -r line; do
+      CROSS_MODULE_VIOLATIONS+=("$LABEL|$FILE:$line|$SUGGESTION")
+    done <<< "$RESULT"
+  fi
+}
+
+add_cross_whitelist() {
+  local LABEL="$1"
+  local FILE="$2"
+  local PATTERN="$3"
+  local ADR="$4"
+
+  if [ ! -f "$FILE" ]; then
+    warn "REGRA-CROSS-MODULE-2: arquivo whitelist nao encontrado para $LABEL: $FILE"
+    return
+  fi
+
+  local RESULT
+  RESULT=$(grep -nE "$PATTERN" "$FILE" || true)
+
+  if [ -n "$RESULT" ]; then
+    CROSS_MODULE_WHITELIST_GROUPS=$((CROSS_MODULE_WHITELIST_GROUPS + 1))
+    while IFS= read -r line; do
+      CROSS_MODULE_WHITELIST+=("$LABEL|$FILE:$line|$ADR")
+    done <<< "$RESULT"
+  fi
+}
+
+add_cross_violation \
+  "agenda_ai -> agenda" \
+  "lib/modules/agenda_ai/presentation/widgets/agenda_ai_sheet.dart" \
+  "import.*package:soloforte_app/modules/agenda/" \
+  "Criar contrato neutro para leitura de agenda/visitas em core/contracts"
+
+add_cross_violation \
+  "agenda_ai -> carteira" \
+  "lib/modules/agenda_ai/presentation/widgets/agenda_ai_sheet.dart" \
+  "import.*package:soloforte_app/modules/carteira/" \
+  "Criar contrato neutro de resumo de carteira/oportunidades em core/contracts"
+
+add_cross_violation \
+  "agenda -> agenda_ai" \
+  "lib/modules/agenda/presentation/pages/agenda_month_page.dart" \
+  "import.*package:soloforte_app/modules/agenda_ai/" \
+  "Mover composicao para camada neutra ou criar IAgendaAILookup"
+
+add_cross_violation \
+  "agenda -> carteira" \
+  "lib/modules/agenda/presentation/widgets/oportunidades_cliente_section.dart" \
+  "import.*package:soloforte_app/modules/carteira/" \
+  "Usar IOpportunityLookup em core/contracts em vez de provider de carteira"
+
+add_cross_violation \
+  "map -> consultoria/ndvi" \
+  "lib/modules/map/presentation/widgets/visit_active_card.dart" \
+  "import.*package:soloforte_app/modules/(consultoria|ndvi)/" \
+  "Usar DTOs/contratos neutros para dados de cliente, talhao e NDVI"
+
+add_cross_violation \
+  "consultoria -> ndvi" \
+  "lib/modules/consultoria/clients/presentation/screens/field_detail_screen.dart" \
+  "import.*package:soloforte_app/modules/ndvi/" \
+  "Expor imagens NDVI via contrato neutro ou rota/composicao externa"
+
+add_cross_violation \
+  "ndvi -> drawing" \
+  "lib/modules/ndvi/presentation/providers/ndvi_providers.dart" \
+  "import.*package:soloforte_app/modules/drawing/" \
+  "Usar IFieldLookup de core/contracts em vez de provider de drawing"
+
+add_cross_violation \
+  "consultoria -> marketing" \
+  "lib/modules/consultoria/relatorios/presentation/relatorios_page.dart" \
+  "import.*package:soloforte_app/modules/marketing/" \
+  "Criar contrato neutro para resumo de cases de marketing"
+
+add_cross_whitelist \
+  "map -> visitas" \
+  "lib/modules/map/presentation/widgets/visit_active_card.dart" \
+  "import.*package:soloforte_app/modules/visitas/" \
+  "DT-025-3 — migrar para contrato em ciclo futuro"
+
+add_cross_whitelist \
+  "ui/components/map -> marketing" \
+  "lib/ui/components/map/widgets/isolated_marker_layers.dart" \
+  "import.*modules/marketing/" \
+  "DT-035 — ADR-035 aceita divida temporaria para v1.1"
+
+if [ "${#CROSS_MODULE_VIOLATIONS[@]}" -gt 0 ]; then
+  warn "REGRA-CROSS-MODULE-2: $CROSS_MODULE_GROUPS grupo(s) de acoplamento lateral detectado(s)"
+  echo "      Ocorrencias de import: ${#CROSS_MODULE_VIOLATIONS[@]}"
+  echo "      MODO WARNING-ONLY — nao bloqueia CI nesta versao v1.1"
+  echo ""
+  for violation in "${CROSS_MODULE_VIOLATIONS[@]}"; do
+    IFS="|" read -r label location suggestion <<< "$violation"
+    echo -e "      ${YELLOW}→${NC} $location"
+    echo "        $label"
+    echo "        Sugestao: $suggestion"
+  done
+  echo ""
+  echo "      Solucao: usar contratos em core/contracts/ para comunicacao entre modulos."
+  echo "      Enforcement rigido planejado para v1.2 apos migracao."
+  echo ""
+  # v1.1 warning-only: nao incrementar VIOLATIONS ainda.
+  # VIOLATIONS=$((VIOLATIONS + ${#CROSS_MODULE_VIOLATIONS[@]}))
+else
+  pass "REGRA-CROSS-MODULE-2: nenhum acoplamento lateral detectado"
+fi
+
+if [ "${#CROSS_MODULE_WHITELIST[@]}" -gt 0 ]; then
+  info "REGRA-CROSS-MODULE-2: $CROSS_MODULE_WHITELIST_GROUPS divida(s) em whitelist temporaria (${#CROSS_MODULE_WHITELIST[@]} ocorrencia(s))"
+  echo "      DT-025-3 — map -> visitas direto"
+  echo "      DT-035 — ui/components/map -> marketing direto"
+  echo ""
+fi
+
+echo ""
+
+# =============================================================================
 # RESULTADO FINAL
 # =============================================================================
 echo -e "${CYAN}═══════════════════════════════════════════════════════════════${NC}"
