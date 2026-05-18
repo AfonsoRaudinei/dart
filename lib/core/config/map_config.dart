@@ -47,7 +47,9 @@ class MapConfig {
   /// Subdomínios 0-3 = load balancing automático entre servidores Google
   /// ⚠️ OBSOLETO: Endpoint não oficial — viola Google ToS e pode causar
   /// rejeição na App Store. Mantido apenas como referência.
-  @Deprecated('Usar mapTilerSatelliteUrl — endpoint Google não oficial viola ToS')
+  @Deprecated(
+    'Usar mapTilerSatelliteUrl — endpoint Google não oficial viola ToS',
+  )
   static const String googleSatelliteUrl =
       'https://mt{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}';
 
@@ -57,18 +59,26 @@ class MapConfig {
 
   /// MapTiler Satellite — Imagem satelital com labels
   /// Cobertura global de alta resolução
-  /// Requer API key via --dart-define=MAPTILER_API_KEY=<key>
+  /// Requer API key via --dart-define=MAPTILER_API_KEY=[key]
   /// Free tier: 100k requests/mês — https://www.maptiler.com/cloud/
   static String mapTilerSatelliteUrl(String apiKey) =>
       'https://api.maptiler.com/maps/hybrid/{z}/{x}/{y}.jpg?key=$apiKey';
 
   /// MapTiler Landscape — Estilo relevo com curvas topográficas
   /// Cobertura global com visualização de terreno e elevação
-  /// Requer API key via --dart-define=MAPTILER_API_KEY=<key>
+  /// Requer API key via --dart-define=MAPTILER_API_KEY=[key]
   /// Free tier: 100k requests/mês — https://www.maptiler.com/cloud/
   /// maxZoom: 18 (mesmo do Google Satellite)
   static String mapTilerLandscapeUrl(String apiKey) =>
       'https://api.maptiler.com/maps/landscape/{z}/{x}/{y}.png?key=$apiKey';
+
+  /// MapTiler Outdoor — Estilo iOS verde com topografia e curvas de nível
+  /// Visual: verde intenso, lagos azuis, rodovias limpas — similar ao Apple Maps terrain
+  /// Ideal para uso agrícola/campo: mostra relevo, vegetação e hidrografia
+  /// Requer API key via --dart-define=MAPTILER_API_KEY=[key]
+  /// Free tier: 100k requests/mês
+  static String mapTilerOutdoorUrl(String apiKey) =>
+      'https://api.maptiler.com/maps/outdoor-v2/{z}/{x}/{y}.png?key=$apiKey';
 
   /// OpenStreetMap - Fallback padrão
   /// Sempre disponível, sem limites
@@ -90,7 +100,7 @@ class MapConfig {
   // STADIA MAPS — API KEY (dart-define injetada no build)
   // ═══════════════════════════════════════════════════════════
 
-  /// Chave da API Stadia Maps — injetada via --dart-define=STADIA_API_KEY=<key>
+  /// Chave da API Stadia Maps — injetada via --dart-define=STADIA_API_KEY=[key]
   /// Free tier: https://client.stadiamaps.com/signup/
   /// Dev sem key: free tier libera requests sem autenticação até threshold diário.
   /// Produção (TestFlight/App Store): OBRIGATÓRIA para evitar bloqueio.
@@ -104,7 +114,7 @@ class MapConfig {
 
   /// URL do Stamen Terrain com API key quando disponível.
   /// Sem key → fallback OpenStreetMap Carto (gratuito, sem auth).
-  /// Com key → Stadia Stamen Terrain com ?api_key=<key> (produção).
+  /// Com key → Stadia Stamen Terrain com ?api_key=[key] (produção).
   static String get stadiaStamenTerrainUrl {
     if (_stadiaApiKey.isNotEmpty) {
       return '$stadiaStamenTerrain?api_key=$_stadiaApiKey';
