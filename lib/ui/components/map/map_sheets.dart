@@ -6,6 +6,7 @@ import '../../../../core/design/sf_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/config/map_config.dart';
+import '../../../core/config/map_secrets.dart';
 import '../../theme/premium/design_tokens.dart';
 import '../../../core/constants/layout_constants.dart';
 import '../../../core/domain/map_models.dart';
@@ -89,8 +90,6 @@ class BaseMapSheet extends StatelessWidget {
 
 class LayersSheet extends ConsumerWidget {
   static const _sheetBg = Color(0xFF1C1C1E);
-  static const _surface = Color(0xFF2C2C2E);
-  static const _border = Color(0xFF3A3A3C);
   static const _accent = Color(0xFF4CAF50);
 
   final VoidCallback? onClose; // 🔧 FIX: Callback de fechamento externo
@@ -152,7 +151,7 @@ class LayersSheet extends ConsumerWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
                     _MapPreviewTile(
-                      tileUrl: MapConfig.stadiaStamenTerrain,
+                      tileUrl: MapConfig.stadiaStamenTerrainUrl,
                       label: 'Padrão',
                       isSelected: currentLayer == LayerType.standard,
                       subdomains: null,
@@ -160,96 +159,38 @@ class LayersSheet extends ConsumerWidget {
                           .read(activeLayerProvider.notifier)
                           .setLayer(LayerType.standard),
                     ),
-                    _SolidPreviewTile(
+                    _MapPreviewTile(
+                      tileUrl: MapConfig.mapTilerSatelliteUrl(kMapTilerApiKey),
                       label: 'Satélite',
                       isSelected: currentLayer == LayerType.satellite,
-                      color: const Color(0xFF2E4A3A),
+                      subdomains: null,
                       onTap: () => ref
                           .read(activeLayerProvider.notifier)
                           .setLayer(LayerType.satellite),
                     ),
-                    _SolidPreviewTile(
+                    _MapPreviewTile(
+                      tileUrl: MapConfig.mapTilerOutdoorUrl(kMapTilerApiKey),
                       label: 'Relevo',
                       isSelected: currentLayer == LayerType.relevo,
-                      color: const Color(0xFF8D6E63),
+                      subdomains: null,
                       onTap: () => ref
                           .read(activeLayerProvider.notifier)
                           .setLayer(LayerType.relevo),
                     ),
-                  ],
-                ),
-                const Padding(
-                  padding: EdgeInsets.only(left: 20, top: 20, bottom: 8),
-                  child: Text(
-                    'Sobreposições',
-                    style: TextStyle(
-                      color: Colors.white54,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
+                    _OverlayToggleColumn(
+                      showMarkers: showMarkers,
+                      showRadar: showRadar,
+                      onToggleMarkers: () {
+                        HapticFeedback.lightImpact();
+                        ref.read(showMarkersProvider.notifier).toggle();
+                      },
+                      onToggleRadar: () {
+                        HapticFeedback.lightImpact();
+                        ref.read(armedModeProvider.notifier).state =
+                            showRadar ? ArmedMode.none : ArmedMode.clima;
+                      },
                     ),
-                  ),
-                ),
-                Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 16),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: _surface,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: _border, width: 0.5),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'Mostrar Pinos',
-                        style: TextStyle(color: Colors.white, fontSize: 15),
-                      ),
-                      Switch(
-                        value: showMarkers,
-                        activeThumbColor: _accent,
-                        activeTrackColor: _accent.withValues(alpha: 0.3),
-                        onChanged: (v) {
-                          HapticFeedback.lightImpact();
-                          ref.read(showMarkersProvider.notifier).toggle();
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 16),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: _surface,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: _border, width: 0.5),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'Radar de Chuva',
-                        style: TextStyle(color: Colors.white, fontSize: 15),
-                      ),
-                      Switch(
-                        value: showRadar,
-                        activeThumbColor: _accent,
-                        activeTrackColor: _accent.withValues(alpha: 0.3),
-                        onChanged: (v) {
-                          HapticFeedback.lightImpact();
-                          ref.read(armedModeProvider.notifier).state =
-                              v ? ArmedMode.clima : ArmedMode.none;
-                        },
-                      ),
-                    ],
-                  ),
+                  ],
                 ),
                 const SizedBox(height: kFabSafeArea),
               ],
@@ -311,6 +252,7 @@ class _MapPreviewTile extends StatelessWidget {
                         TileLayer(
                           urlTemplate: tileUrl,
                           subdomains: subdomains ?? const <String>[],
+                          maxNativeZoom: 18,
                         ),
                       ],
                     ),
@@ -340,60 +282,110 @@ class _MapPreviewTile extends StatelessWidget {
   }
 }
 
-class _SolidPreviewTile extends StatelessWidget {
+/// Coluna de ícones de toggle para Pinos e Radar de Chuva.
+class _OverlayToggleColumn extends StatelessWidget {
   static const _accent = Color(0xFF4CAF50);
+  static const _inactive = Color(0xFF6E6E73);
 
-  final String label;
-  final bool isSelected;
-  final Color color;
-  final VoidCallback onTap;
+  final bool showMarkers;
+  final bool showRadar;
+  final VoidCallback onToggleMarkers;
+  final VoidCallback onToggleRadar;
 
-  const _SolidPreviewTile({
-    required this.label,
-    required this.isSelected,
-    required this.color,
-    required this.onTap,
+  const _OverlayToggleColumn({
+    required this.showMarkers,
+    required this.showRadar,
+    required this.onToggleMarkers,
+    required this.onToggleRadar,
   });
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        children: [
-          Container(
-            width: 96,
-            height: 72,
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        GestureDetector(
+          onTap: onToggleMarkers,
+          child: Container(
+            width: 72,
+            height: 32,
             decoration: BoxDecoration(
-              color: color,
-              borderRadius: BorderRadius.circular(12),
+              color: showMarkers
+                  ? _accent.withValues(alpha: 0.15)
+                  : Colors.transparent,
+              borderRadius: BorderRadius.circular(8),
               border: Border.all(
-                color: isSelected ? _accent : Colors.transparent,
-                width: 2.5,
+                color: showMarkers ? _accent : _inactive,
+                width: 1.5,
               ),
             ),
-            child: Stack(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                if (isSelected)
-                  const Positioned(
-                    top: 4,
-                    right: 4,
-                    child: _LayerSelectedBadge(),
+                Icon(
+                  Icons.location_on,
+                  size: 16,
+                  color: showMarkers ? _accent : _inactive,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  'Pinos',
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: showMarkers ? _accent : _inactive,
+                    fontWeight: FontWeight.w500,
                   ),
+                ),
               ],
             ),
           ),
-          const SizedBox(height: 6),
-          Text(
-            label,
-            style: TextStyle(
-              color: isSelected ? Colors.white : Colors.white60,
-              fontSize: 12,
-              fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+        ),
+        const SizedBox(height: 8),
+        GestureDetector(
+          onTap: onToggleRadar,
+          child: Container(
+            width: 72,
+            height: 32,
+            decoration: BoxDecoration(
+              color: showRadar
+                  ? const Color(0xFF2196F3).withValues(alpha: 0.15)
+                  : Colors.transparent,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: showRadar ? const Color(0xFF2196F3) : _inactive,
+                width: 1.5,
+              ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.grain,
+                  size: 16,
+                  color: showRadar ? const Color(0xFF2196F3) : _inactive,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  'Chuva',
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: showRadar ? const Color(0xFF2196F3) : _inactive,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
             ),
           ),
-        ],
-      ),
+        ),
+        const SizedBox(height: 6),
+        const Text(
+          'Camadas',
+          style: TextStyle(
+            color: Colors.transparent,
+            fontSize: 12,
+          ),
+        ),
+      ],
     );
   }
 }

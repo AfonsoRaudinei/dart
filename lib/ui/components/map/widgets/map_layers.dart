@@ -32,11 +32,10 @@ class MapLayersWidget extends ConsumerWidget {
         // Free tier: 100k requests/mês
         return MapConfig.mapTilerSatelliteUrl(kMapTilerApiKey);
       case LayerType.relevo:
-        // 🗻 RELEVO: MapTiler Landscape
-        // Estilo topográfico com curvas de nível e sombreamento de relevo.
+        // 🌿 RELEVO: MapTiler Outdoor v2
+        // Estilo iOS verde — vegetação verde intensa, lagos azuis, topografia com sombreamento.
         // Requer API key via --dart-define=MAPTILER_API_KEY=<key>
-        // Free tier: 100k requests/mês
-        return MapConfig.mapTilerLandscapeUrl(kMapTilerApiKey);
+        return MapConfig.mapTilerOutdoorUrl(kMapTilerApiKey);
       case LayerType.standard:
         // 🎨 ESTILO PADRÃO: Stadia Stamen Terrain (com API key injetada via --dart-define)
         // Vegetação verde, água azul, estradas limpas — funciona em produção iOS/TestFlight.
@@ -66,6 +65,7 @@ class MapLayersWidget extends ConsumerWidget {
       urlTemplate: _getLayerUrl(activeLayer),
       subdomains: _getSubdomains(activeLayer),
       userAgentPackageName: MapConfig.userAgent,
+      maxNativeZoom: activeLayer == LayerType.satellite ? 20 : 18,
     );
   }
 }
