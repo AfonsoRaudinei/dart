@@ -165,3 +165,244 @@ Qualquer alteração exige: atualização desta tabela + ADR em `02_ARQUITETURA_
 ---
 
 *Referência: `01_BASELINE/ARCH_BASELINE_v1.1_SCORE_90.md` — Seções 3 e 4*
+
+---
+
+## Contextos Complementares v1.1 (Auditoria Parte 2)
+
+## agenda
+
+**Responsabilidade**: Planejamento e ciclo de vida de eventos agronômicos.
+
+## auth
+
+**Responsabilidade**: Autenticação e controle de sessão.
+
+## consultoria
+
+**Responsabilidade**: Gestão de ocorrências e conteúdo técnico.
+
+## drawing
+
+**Responsabilidade**: Geometrias e desenho técnico em mapa.
+
+## map
+
+**Responsabilidade**: Projeção agregadora espacial e orquestração visual.
+
+## operacao
+
+**Responsabilidade**: Execução de visitas e fluxo operacional em campo.
+
+## planos
+
+**Responsabilidade**: Monetização, assinatura e pagamentos.
+
+## settings
+
+**Responsabilidade**: Configurações de usuário e preferências do app.
+
+## visitas
+
+**Responsabilidade**: Sessões de visita técnica (check-in/check-out e sync).
+
+## agenda_ai
+
+**Responsabilidade**: Sugestões inteligentes de agendamento usando IA
+
+**Camada de Apresentação**:
+- `agenda_ai_sheet.dart` e widgets de sugestão
+
+**Camada de Domínio**:
+- Entidades: `AgendaSuggestion`
+- Providers: `agendaAiSuggestionsProvider`
+
+**Dependências Permitidas**:
+- ✅ `core/contracts/IAgendaSessionBridge` para consulta de slots
+- ✅ `core/contracts/IClientLookup` para dados de clientes
+- ❌ Import direto de `modules/agenda` e `modules/carteira`
+
+**Contratos Expostos**:
+- Nenhum (consumidor interno)
+
+**Dívidas Técnicas Conhecidas**:
+- Acoplamento lateral `agenda_ai -> agenda/carteira` detectado pela `REGRA-CROSS-MODULE-2`
+
+## carteira
+
+**Responsabilidade**: Gestão de carteira de clientes e oportunidades comerciais
+
+**Camada de Apresentação**:
+- `carteira_screen.dart`
+- `cliente_detail_screen.dart`
+
+**Camada de Domínio**:
+- Entidades: `Cliente`, `Oportunidade`
+- Repositórios e providers de clientes/oportunidades
+
+**Dependências Permitidas**:
+- ✅ `core/contracts/IClientLookup`
+- ✅ `core/contracts/IOpportunityLookup`
+- ❌ Imports diretos de outros `modules/`
+
+**Contratos Expostos**:
+- `IClientLookup`
+- `IOpportunityLookup`
+
+**Dívidas Técnicas Conhecidas**:
+- Nenhuma específica registrada nesta auditoria
+
+## clima
+
+**Responsabilidade**: Visualização de radar meteorológico e apoio climático no mapa
+
+**Camada de Apresentação**:
+- overlays/widgets de clima integrados ao mapa
+
+**Camada de Domínio**:
+- Providers de visibilidade de radar e dados climáticos
+
+**Dependências Permitidas**:
+- ✅ `core/contracts/IUserLocationLookup` quando necessário
+- ❌ Imports diretos de outros `modules/`
+
+**Contratos Expostos**:
+- Nenhum
+
+**Dívidas Técnicas Conhecidas**:
+- DT-028: migrar `showRadarProvider` para `MapContext.clima`
+
+## dashboard
+
+**Responsabilidade**: Consolidação de métricas e KPIs do usuário
+
+**Camada de Apresentação**:
+- `dashboard_screen.dart` e widgets de KPI
+
+**Camada de Domínio**:
+- Entidades de métricas agregadas
+- Providers de resumo
+
+**Dependências Permitidas**:
+- ✅ `core/contracts/IVisitSessionLookup`
+- ✅ `core/contracts/IClientLookup`
+
+**Contratos Expostos**:
+- Nenhum
+
+**Dívidas Técnicas Conhecidas**:
+- Nenhuma específica registrada nesta auditoria
+
+## feedback
+
+**Responsabilidade**: Coleta de feedback de usuário e suporte
+
+**Camada de Apresentação**:
+- `feedback_screen.dart`
+
+**Camada de Domínio**:
+- Entidades de submissão
+- Repositório de feedback
+
+**Dependências Permitidas**:
+- ✅ `core/utils/`
+- ❌ Imports diretos de outros `modules/`
+
+**Contratos Expostos**:
+- Nenhum
+
+**Dívidas Técnicas Conhecidas**:
+- Nenhuma específica registrada nesta auditoria
+
+## marketing
+
+**Responsabilidade**: Cases de marketing, plano de usuário e regras de visibilidade por plano
+
+**Camada de Apresentação**:
+- telas/widgets de cases e seleção de plano
+
+**Camada de Domínio**:
+- Entidades: `MarketingCase`, `PlanoMarketing`, `UserPlan`
+- Providers de cases e plano
+
+**Dependências Permitidas**:
+- ✅ `core/contracts/IClientLookup`
+- ✅ `core/contracts/IFarmLookup`
+- ✅ Dependência explícita `marketing -> planos` já documentada
+
+**Contratos Expostos**:
+- Pendente: `IPlanLimitsLookup` (planejado em ADR futuro)
+
+**Dívidas Técnicas Conhecidas**:
+- DT-035: `ui/components/map/widgets/isolated_marker_layers.dart` importa `PlanoMarketing` direto (ADR-035)
+
+## ndvi
+
+**Responsabilidade**: Análise NDVI e consumo de dados de vegetação
+
+**Camada de Apresentação**:
+- `ndvi_talhao_sheet.dart`
+
+**Camada de Domínio**:
+- Entidades e providers de NDVI
+- Repositório com integração Supabase
+
+**Dependências Permitidas**:
+- ✅ `core/contracts/IFieldLookup` (ADR-022)
+- ✅ `core/contracts/IFarmLookup`
+- ❌ Import direto de `modules/drawing`
+
+**Contratos Expostos**:
+- Nenhum
+
+**Dívidas Técnicas Conhecidas**:
+- Acoplamento lateral `ndvi -> drawing` detectado pela `REGRA-CROSS-MODULE-2`
+
+## public
+
+**Responsabilidade**: Fluxos públicos e onboarding sem autenticação
+
+**Camada de Apresentação**:
+- telas públicas (onboarding, termos e afins)
+
+**Camada de Domínio**:
+- Sem domínio transacional relevante; foco em apresentação
+
+**Dependências Permitidas**:
+- ✅ `core/utils/`
+- ❌ Import direto de outros `modules/`
+
+**Contratos Expostos**:
+- Nenhum
+
+**Dívidas Técnicas Conhecidas**:
+- Nenhuma específica registrada nesta auditoria
+
+---
+
+## Matriz de Dependências Entre Contextos
+
+| Contexto | Depende de (via Contratos) | Expõe Contratos |
+|----------|-----------------------------|-----------------|
+| agenda | `IClientLookup`, `IAgendaSessionBridge` | `IAgendaObservable` |
+| agenda_ai | `IAgendaSessionBridge`, `IClientLookup` | - |
+| auth | - | - |
+| carteira | - | `IClientLookup`, `IOpportunityLookup` |
+| clima | `IUserLocationLookup` | - |
+| consultoria | `IClientLookup`, `IFarmLookup`, `IFieldLookup`, `IVisitSessionLookup` | `IReportWriter` |
+| dashboard | `IVisitSessionLookup`, `IClientLookup` | - |
+| drawing | `IFarmLookup` | - |
+| feedback | - | - |
+| map | múltiplos contratos e composição | - |
+| marketing | `IClientLookup`, `IFarmLookup` | *`IPlanLimitsLookup` (pendente)* |
+| ndvi | `IFieldLookup`, `IFarmLookup` | - |
+| operacao | `IClientLookup` | - |
+| planos | - | - |
+| public | - | - |
+| settings | - | - |
+| visitas | `IClientLookup` | `IVisitSessionLookup`, `IVisitClientLookup` |
+
+**Legenda**:
+- ✅ Dependência via contrato (permitida)
+- ❌ Dependência direta (violação)
+- *Itálico* = contrato pendente de criação
