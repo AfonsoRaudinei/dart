@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'package:soloforte_app/core/database/database_helper.dart';
+import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
 import 'package:soloforte_app/modules/clima/domain/entities/clima_atual.dart';
 import 'package:soloforte_app/modules/clima/presentation/widgets/clima_tokens.dart';
 
@@ -166,15 +167,19 @@ class _ClimaWhatsAppSheetState extends State<ClimaWhatsAppSheet> {
     final rows = await db.rawQuery(
       'SELECT nome, telefone FROM clients '
       'WHERE user_id = ? AND telefone IS NOT NULL AND telefone != "" '
+      'AND deleted_at IS NULL '
       'ORDER BY nome ASC',
       [userId],
     );
+    if (!mounted) return;
     setState(() {
       _clientes = rows
-          .map((r) => {
-                'nome': r['nome'] as String,
-                'telefone': r['telefone'] as String,
-              })
+          .map(
+            (r) => {
+              'nome': r['nome'] as String,
+              'telefone': r['telefone'] as String,
+            },
+          )
           .toList();
       _loading = false;
     });
@@ -193,8 +198,7 @@ class _ClimaWhatsAppSheetState extends State<ClimaWhatsAppSheet> {
   Future<void> _enviarWhatsApp(String telefone) async {
     final tel = telefone.replaceAll(RegExp(r'[^0-9]'), '');
     final mensagem = _buildMensagem(widget.clima);
-    final url =
-        'https://wa.me/55$tel?text=${Uri.encodeComponent(mensagem)}';
+    final url = 'https://wa.me/55$tel?text=${Uri.encodeComponent(mensagem)}';
     await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
   }
 
@@ -209,159 +213,297 @@ class _ClimaWhatsAppSheetState extends State<ClimaWhatsAppSheet> {
   Widget build(BuildContext context) {
     final total = _selecionados.length;
 
-    return Padding(
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // ── Handle ──────────────────────────────────────────────────────────
-          Center(
-            child: Container(
-              margin: const EdgeInsets.only(top: 12),
-              width: 36,
-              height: 4,
-              decoration: BoxDecoration(
-                color: const Color(0xFF48484A),
-                borderRadius: BorderRadius.circular(2),
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // ── Handle ──────────────────────────────────────────────────────────
+            Center(
+              child: Container(
+                margin: const EdgeInsets.only(top: 12),
+                width: 36,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF48484A),
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
             ),
-          ),
-          // ── Header ──────────────────────────────────────────────────────────
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 4),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Compartilhar previsão por WhatsApp',
-                  style: TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 17,
-                    fontWeight: FontWeight.w600,
-                    color: kClimaTextPrimary,
+            // ── Header ──────────────────────────────────────────────────────────
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 4),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Compartilhar previsão por WhatsApp',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 17,
+                      fontWeight: FontWeight.w600,
+                      color: SoloForteSheetTokens.titleColor,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    widget.clima.cidade,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 13,
+                      color: SoloForteSheetTokens.categoryLabel,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Divider(color: SoloForteSheetTokens.divider, height: 1),
+            _ClimaWhatsAppPreview(clima: widget.clima),
+            const Divider(color: SoloForteSheetTokens.divider, height: 1),
+            // ── Lista de clientes ────────────────────────────────────────────────
+            ConstrainedBox(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(context).size.height * 0.45,
+              ),
+              child: _loading
+                  ? const Padding(
+                      padding: EdgeInsets.all(32),
+                      child: Center(
+                        child: CircularProgressIndicator(
+                          color: kClimaTint,
+                          strokeWidth: 2.5,
+                        ),
+                      ),
+                    )
+                  : _clientes.isEmpty
+                  ? const Padding(
+                      padding: EdgeInsets.all(32),
+                      child: Center(
+                        child: Text(
+                          'Nenhum cliente com telefone cadastrado.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 14,
+                            color: SoloForteSheetTokens.categoryLabel,
+                          ),
+                        ),
+                      ),
+                    )
+                  : ListView.separated(
+                      shrinkWrap: true,
+                      itemCount: _clientes.length,
+                      separatorBuilder: (_, __) => const Divider(
+                        color: SoloForteSheetTokens.divider,
+                        height: 1,
+                      ),
+                      itemBuilder: (_, i) {
+                        final cliente = _clientes[i];
+                        final tel = cliente['telefone']!;
+                        return CheckboxListTile(
+                          tileColor: const Color(0xFF2C2C2E),
+                          activeColor: const Color(0xFF4ADE80),
+                          checkColor: Colors.black,
+                          value: _selecionados.contains(tel),
+                          onChanged: (checked) {
+                            setState(() {
+                              if (checked == true) {
+                                _selecionados.add(tel);
+                              } else {
+                                _selecionados.remove(tel);
+                              }
+                            });
+                          },
+                          title: Text(
+                            cliente['nome']!,
+                            style: const TextStyle(
+                              fontFamily: 'Inter',
+                              fontSize: 15,
+                              fontWeight: FontWeight.w500,
+                              color: SoloForteSheetTokens.inputText,
+                            ),
+                          ),
+                          subtitle: Text(
+                            tel,
+                            style: const TextStyle(
+                              fontFamily: 'Inter',
+                              fontSize: 13,
+                              color: SoloForteSheetTokens.categoryLabel,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+            ),
+            const Divider(color: SoloForteSheetTokens.divider, height: 1),
+            // ── Botão de envio ──────────────────────────────────────────────────
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+              child: SizedBox(
+                width: double.infinity,
+                child: Tooltip(
+                  message: total == 0
+                      ? 'Selecione ao menos um destinatário'
+                      : 'Enviar previsão pelo WhatsApp',
+                  child: FilledButton.icon(
+                    onPressed: total == 0 ? null : _enviarParaSelecionados,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: const Color(0xFF4ADE80),
+                      disabledBackgroundColor: const Color(0xFF2C2C2E),
+                      foregroundColor: Colors.black,
+                      disabledForegroundColor: const Color(0xFF48484A),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    icon: const Icon(Icons.send_rounded, size: 18),
+                    label: Text(
+                      total == 0
+                          ? 'Selecione destinatários'
+                          : 'Enviar pelo WhatsApp ($total)',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ),
                 ),
-                const SizedBox(height: 2),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ClimaWhatsAppPreview extends StatelessWidget {
+  const _ClimaWhatsAppPreview({required this.clima});
+
+  final ClimaAtual clima;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: SoloForteSheetTokens.inputBackground,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: SoloForteSheetTokens.divider),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Prévia do card',
+              style: TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.7,
+                color: SoloForteSheetTokens.categoryLabel,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
                 Text(
-                  widget.clima.cidade,
-                  style: const TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 13,
-                    color: kClimaTextSecondary,
+                  climaWeatherEmoji(clima.condicaoCodigo),
+                  style: const TextStyle(fontSize: 28),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '${clima.temperatura.toStringAsFixed(0)}°C · ${clima.cidade}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: SoloForteSheetTokens.inputText,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        clima.condicao,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 13,
+                          color: SoloForteSheetTokens.categoryLabel,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
-          ),
-          const Divider(color: Color(0xFF38383A), height: 1),
-          // ── Lista de clientes ────────────────────────────────────────────────
-          ConstrainedBox(
-            constraints: BoxConstraints(
-              maxHeight: MediaQuery.of(context).size.height * 0.45,
-            ),
-            child: _loading
-                ? const Padding(
-                    padding: EdgeInsets.all(32),
-                    child: Center(
-                      child: CircularProgressIndicator(
-                        color: kClimaTint,
-                        strokeWidth: 2.5,
-                      ),
-                    ),
-                  )
-                : _clientes.isEmpty
-                    ? const Padding(
-                        padding: EdgeInsets.all(32),
-                        child: Center(
-                          child: Text(
-                            'Nenhum cliente com telefone cadastrado.',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontFamily: 'Inter',
-                              fontSize: 14,
-                              color: kClimaTextSecondary,
-                            ),
-                          ),
-                        ),
-                      )
-                    : ListView.separated(
-                        shrinkWrap: true,
-                        itemCount: _clientes.length,
-                        separatorBuilder: (_, __) =>
-                            const Divider(color: Color(0xFF38383A), height: 1),
-                        itemBuilder: (_, i) {
-                          final cliente = _clientes[i];
-                          final tel = cliente['telefone']!;
-                          return CheckboxListTile(
-                            tileColor: const Color(0xFF2C2C2E),
-                            activeColor: const Color(0xFF4ADE80),
-                            checkColor: Colors.black,
-                            value: _selecionados.contains(tel),
-                            onChanged: (checked) {
-                              setState(() {
-                                if (checked == true) {
-                                  _selecionados.add(tel);
-                                } else {
-                                  _selecionados.remove(tel);
-                                }
-                              });
-                            },
-                            title: Text(
-                              cliente['nome']!,
-                              style: const TextStyle(
-                                fontFamily: 'Inter',
-                                fontSize: 15,
-                                fontWeight: FontWeight.w500,
-                                color: kClimaTextPrimary,
-                              ),
-                            ),
-                            subtitle: Text(
-                              tel,
-                              style: const TextStyle(
-                                fontFamily: 'Inter',
-                                fontSize: 13,
-                                color: kClimaTextSecondary,
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-          ),
-          const Divider(color: Color(0xFF38383A), height: 1),
-          // ── Botão de envio ──────────────────────────────────────────────────
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
-            child: SizedBox(
-              width: double.infinity,
-              child: FilledButton(
-                onPressed: total == 0 ? null : _enviarParaSelecionados,
-                style: FilledButton.styleFrom(
-                  backgroundColor: const Color(0xFF4ADE80),
-                  disabledBackgroundColor: const Color(0xFF2C2C2E),
-                  foregroundColor: Colors.black,
-                  disabledForegroundColor: const Color(0xFF48484A),
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                _PreviewChip(label: 'Umidade ${clima.umidade}%'),
+                _PreviewChip(
+                  label:
+                      'Vento ${clima.ventoVelocidade.toStringAsFixed(0)} km/h',
                 ),
-                child: Text(
-                  total == 0
-                      ? 'Selecione destinatários'
-                      : 'Enviar para $total ${total == 1 ? 'selecionado' : 'selecionados'}',
-                  style: const TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                  ),
+                _PreviewChip(
+                  label: 'Chuva ${clima.precipitacao.toStringAsFixed(1)} mm',
                 ),
-              ),
+                _PreviewChip(label: 'UV ${clima.indiceUV}'),
+              ],
             ),
-          ),
-        ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PreviewChip extends StatelessWidget {
+  const _PreviewChip({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: SoloForteSheetTokens.categoryBackground,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(
+          fontFamily: 'Inter',
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
+          color: SoloForteSheetTokens.inputText,
+        ),
       ),
     );
   }

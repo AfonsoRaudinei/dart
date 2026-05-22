@@ -1,10 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:soloforte_app/core/contracts/i_user_location_lookup.dart';
-import 'package:soloforte_app/modules/dashboard/controllers/location_controller.dart';
+import 'package:soloforte_app/modules/dashboard/providers/location_providers.dart';
 
 /// Implementação concreta de IUserLocationLookup.
-/// Lê userPositionProvider (populado pelo LocationController do mapa).
+/// Lê a última posição emitida pelo stream real usado pelo mapa.
 /// Registrado via ProviderScope.overrides em main.dart.
 /// NÃO importar este arquivo fora de dashboard/ ou da injeção de dependência.
 class LocationLookupAdapter implements IUserLocationLookup {
@@ -14,6 +14,7 @@ class LocationLookupAdapter implements IUserLocationLookup {
 
   @override
   LatLng? getUserLatLng() {
-    return _ref.read(userPositionProvider);
+    return _ref.read(locationStreamProvider).valueOrNull ??
+        _ref.read(initialLocationProvider).valueOrNull;
   }
 }

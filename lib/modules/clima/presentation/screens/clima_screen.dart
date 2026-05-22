@@ -1,8 +1,13 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:geolocator/geolocator.dart';
 
 import 'package:soloforte_app/core/constants/layout_constants.dart';
+import 'package:soloforte_app/core/permissions/location_permission_gate.dart';
+import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 import 'package:soloforte_app/modules/clima/domain/entities/alerta_meteorologico.dart';
 import 'package:soloforte_app/modules/clima/domain/entities/clima_atual.dart';
 import 'package:soloforte_app/modules/clima/presentation/providers/clima_providers.dart';
@@ -58,20 +63,20 @@ class _ClimaFallbackBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     final (String message, IconData icon, Color color) = switch (state) {
       ClimaLocationFallback.userDenied => (
-          'Permissão de localização negada. Exibindo Brasília-DF.',
-          Icons.location_off_outlined,
-          Colors.orange,
-        ),
+        'Permissão de localização negada. Exibindo Brasília-DF.',
+        Icons.location_off_outlined,
+        Colors.orange,
+      ),
       ClimaLocationFallback.timeout => (
-          'GPS não respondeu. Exibindo Brasília-DF.',
-          Icons.access_time_outlined,
-          Colors.amber,
-        ),
+        'GPS não respondeu. Exibindo Brasília-DF.',
+        Icons.access_time_outlined,
+        Colors.amber,
+      ),
       ClimaLocationFallback.unavailable => (
-          'GPS desabilitado. Exibindo Brasília-DF.',
-          Icons.gps_off_outlined,
-          Colors.redAccent,
-        ),
+        'GPS desabilitado. Exibindo Brasília-DF.',
+        Icons.gps_off_outlined,
+        Colors.redAccent,
+      ),
       ClimaLocationFallback.none => ('', Icons.check, Colors.transparent),
     };
 
@@ -86,11 +91,7 @@ class _ClimaFallbackBanner extends StatelessWidget {
           Expanded(
             child: Text(
               message,
-              style: TextStyle(
-                color: color,
-                fontSize: 13,
-                fontFamily: 'Inter',
-              ),
+              style: TextStyle(color: color, fontSize: 13, fontFamily: 'Inter'),
             ),
           ),
         ],
@@ -103,6 +104,67 @@ class _ClimaFallbackBanner extends StatelessWidget {
 
 class _CurrentView extends ConsumerWidget {
   const _CurrentView({super.key});
+
+  Future<void> _refreshCurrentLocation(WidgetRef ref) async {
+    HapticFeedback.lightImpact();
+    ref.read(climaSelectedCityProvider.notifier).state = null;
+
+    final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      ref.read(climaManualLocationProvider.notifier).state = null;
+      ref.read(climaLocationFallbackProvider.notifier).state =
+          ClimaLocationFallback.unavailable;
+      _invalidateWeather(ref);
+      return;
+    }
+
+    var permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await LocationPermissionGate.request();
+    }
+
+    if (permission == LocationPermission.denied ||
+        permission == LocationPermission.deniedForever) {
+      ref.read(climaManualLocationProvider.notifier).state = null;
+      ref.read(climaLocationFallbackProvider.notifier).state =
+          ClimaLocationFallback.userDenied;
+      _invalidateWeather(ref);
+      return;
+    }
+
+    try {
+      final position = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+          timeLimit: Duration(seconds: 15),
+        ),
+      );
+      ref.read(climaManualLocationProvider.notifier).state = (
+        lat: position.latitude,
+        lon: position.longitude,
+      );
+      ref.read(climaLocationFallbackProvider.notifier).state =
+          ClimaLocationFallback.none;
+    } on TimeoutException {
+      ref.read(climaManualLocationProvider.notifier).state = null;
+      ref.read(climaLocationFallbackProvider.notifier).state =
+          ClimaLocationFallback.timeout;
+    } catch (_) {
+      ref.read(climaManualLocationProvider.notifier).state = null;
+      ref.read(climaLocationFallbackProvider.notifier).state =
+          ClimaLocationFallback.unavailable;
+    }
+
+    _invalidateWeather(ref);
+  }
+
+  void _invalidateWeather(WidgetRef ref) {
+    ref.invalidate(climaLocationProvider);
+    ref.invalidate(climaAtualProvider);
+    ref.invalidate(alertasClimaProvider);
+    ref.invalidate(previsaoHorariaProvider);
+    ref.invalidate(previsaoSemanalProvider);
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -136,12 +198,7 @@ class _CurrentView extends ConsumerWidget {
                   children: [
                     ClimaIconBtn(
                       icon: Icons.my_location_outlined,
-                      onTap: () {
-                        HapticFeedback.lightImpact();
-                        ref.invalidate(climaLocationProvider);
-                        ref.invalidate(climaAtualProvider);
-                        ref.invalidate(alertasClimaProvider);
-                      },
+                      onTap: () => _refreshCurrentLocation(ref),
                     ),
                     const SizedBox(width: 8),
                     ClimaIconBtn(
@@ -163,32 +220,21 @@ class _CurrentView extends ConsumerWidget {
           child: climaAsync.when(
             data: (ClimaAtual clima) => Column(
               children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: ClimaLocationRow(
-                        cidade: clima.cidade,
-                        atualizadoEm: clima.atualizadoEm,
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(
-                        Icons.share_outlined,
-                        color: Color(0xFF4ADE80),
-                      ),
-                      tooltip: 'Compartilhar no WhatsApp',
-                      onPressed: () => showModalBottomSheet(
-                        context: context,
-                        isScrollControlled: true,
-                        backgroundColor: const Color(0xFF1C1C1E),
-                        shape: const RoundedRectangleBorder(
-                          borderRadius:
-                              BorderRadius.vertical(top: Radius.circular(16)),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: ClimaLocationRow(
+                          cidade: clima.cidade,
+                          atualizadoEm: clima.atualizadoEm,
+                          padding: EdgeInsets.zero,
                         ),
-                        builder: (_) => ClimaWhatsAppSheet(clima: clima),
                       ),
-                    ),
-                  ],
+                      const SizedBox(width: 10),
+                      _ClimaWhatsAppButton(clima: clima),
+                    ],
+                  ),
                 ),
                 ClimaCurrentWeatherCard(clima: clima, unidade: unidade),
                 ClimaDetailsCard(clima: clima),
@@ -223,6 +269,56 @@ class _CurrentView extends ConsumerWidget {
 
         const SliverToBoxAdapter(child: SizedBox(height: kFabSafeArea)),
       ],
+    );
+  }
+}
+
+class _ClimaWhatsAppButton extends StatelessWidget {
+  const _ClimaWhatsAppButton({required this.clima});
+
+  final ClimaAtual clima;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: 'Compartilhar previsão no WhatsApp',
+      child: Tooltip(
+        message: 'Compartilhar no WhatsApp',
+        child: SizedBox(
+          width: 44,
+          height: 44,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: kClimaCard,
+              borderRadius: BorderRadius.circular(14),
+              boxShadow: const [
+                BoxShadow(
+                  color: kClimaShadow,
+                  offset: Offset(0, 2),
+                  blurRadius: 8,
+                ),
+              ],
+            ),
+            child: IconButton(
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints.expand(),
+              icon: const Icon(
+                Icons.share_outlined,
+                color: Color(0xFF4ADE80),
+                size: 22,
+              ),
+              tooltip: 'Compartilhar no WhatsApp',
+              onPressed: () => showSoloForteSheet<void>(
+                context: context,
+                isScrollControlled: true,
+                showDragHandle: false,
+                builder: (_) => ClimaWhatsAppSheet(clima: clima),
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -297,4 +393,3 @@ class _WeeklyView extends ConsumerWidget {
     );
   }
 }
-

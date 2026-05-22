@@ -12,11 +12,13 @@ import 'package:soloforte_app/modules/clima/presentation/widgets/clima_tokens.da
 class ClimaLocationRow extends StatelessWidget {
   final String cidade;
   final DateTime atualizadoEm;
+  final EdgeInsetsGeometry padding;
 
   const ClimaLocationRow({
     super.key,
     required this.cidade,
     required this.atualizadoEm,
+    this.padding = const EdgeInsets.fromLTRB(20, 8, 20, 0),
   });
 
   String get _tempoAtras {
@@ -29,7 +31,7 @@ class ClimaLocationRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+      padding: padding,
       child: Row(
         children: [
           const Icon(Icons.location_on_rounded, size: 14, color: kClimaTint),
@@ -131,14 +133,8 @@ class ClimaCurrentWeatherCard extends StatelessWidget {
                   label: 'Sensação',
                   value: climaTempStr(clima.sensacaoTermica, unidade),
                 ),
-                _MiniStat(
-                  label: 'Nascer ☀️',
-                  value: _hm(clima.nascerSol),
-                ),
-                _MiniStat(
-                  label: 'Pôr ☀️',
-                  value: _hm(clima.porSol),
-                ),
+                _MiniStat(label: 'Nascer ☀️', value: _hm(clima.nascerSol)),
+                _MiniStat(label: 'Pôr ☀️', value: _hm(clima.porSol)),
               ],
             ),
           ],
@@ -202,11 +198,7 @@ class ClimaDetailsCard extends StatelessWidget {
         '${clima.ventoVelocidade.round()} km/h ${clima.ventoDirecao}',
       ),
       _DetailRow('💧', 'Umidade', '${clima.umidade}%'),
-      _DetailRow(
-        '🌧️',
-        'Chuva',
-        '${clima.precipitacao.toStringAsFixed(1)} mm',
-      ),
+      _DetailRow('🌧️', 'Chuva', '${clima.precipitacao.toStringAsFixed(1)} mm'),
       _DetailRow('🧭', 'Pressão', '${clima.pressao.round()} hPa'),
       _DetailRow(
         '👁️',
@@ -257,10 +249,7 @@ class ClimaDetailsCard extends StatelessWidget {
                     ),
                     child: Row(
                       children: [
-                        Text(
-                          row.emoji,
-                          style: const TextStyle(fontSize: 16),
-                        ),
+                        Text(row.emoji, style: const TextStyle(fontSize: 16)),
                         const SizedBox(width: 10),
                         Text(
                           row.label,
@@ -349,32 +338,34 @@ class ClimaAlertasBanner extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 10),
-            ...alertas.take(2).map(
-              (a) => Padding(
-                padding: const EdgeInsets.only(bottom: 6),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      _tipoEmoji(a.tipo),
-                      style: const TextStyle(fontSize: 14),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        a.titulo,
-                        style: const TextStyle(
-                          fontFamily: 'Inter',
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          color: Color(0xFF92400E),
+            ...alertas
+                .take(2)
+                .map(
+                  (a) => Padding(
+                    padding: const EdgeInsets.only(bottom: 6),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _tipoEmoji(a.tipo),
+                          style: const TextStyle(fontSize: 14),
                         ),
-                      ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            a.titulo,
+                            style: const TextStyle(
+                              fontFamily: 'Inter',
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                              color: Color(0xFF92400E),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
-              ),
-            ),
           ],
         ),
       ),
@@ -382,12 +373,12 @@ class ClimaAlertasBanner extends StatelessWidget {
   }
 
   String _tipoEmoji(TipoAlerta tipo) => switch (tipo) {
-        TipoAlerta.tempestade => '⛈️',
-        TipoAlerta.geada => '❄️',
-        TipoAlerta.chuvaIntensa => '🌧️',
-        TipoAlerta.ventoForte => '💨',
-        TipoAlerta.temperaturaExtrema => '🌡️',
-      };
+    TipoAlerta.tempestade => '⛈️',
+    TipoAlerta.geada => '❄️',
+    TipoAlerta.chuvaIntensa => '🌧️',
+    TipoAlerta.ventoForte => '💨',
+    TipoAlerta.temperaturaExtrema => '🌡️',
+  };
 }
 
 // ─── Tab Chips ────────────────────────────────────────────────────────────────
