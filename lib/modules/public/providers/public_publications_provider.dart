@@ -1,6 +1,7 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/domain/publicacao.dart';
+import '../../../core/state/map_state.dart';
 
 part 'public_publications_provider.g.dart';
 
@@ -10,11 +11,6 @@ part 'public_publications_provider.g.dart';
 /// Essas publicações são exibidas como pins no mapa, mas sem ações de edição.
 @riverpod
 Future<List<Publicacao>> publicPublications(Ref ref) async {
-  // TODO(backend): Integrar com Supabase quando tabela publicacoes estiver pronta
-  // final response = await Supabase.instance.client
-  //     .from('publicacoes')
-  //     .select()
-  //     .eq('isVisible', true)
-  //     .eq('status', 'published');
-  return [];
+  final repository = ref.read(mapRepositoryProvider);
+  return repository.fetchPublicPublicacoes();
 }

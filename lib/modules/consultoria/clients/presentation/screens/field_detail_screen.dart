@@ -4,6 +4,7 @@ import 'package:soloforte_app/modules/ndvi/domain/entities/ndvi_image.dart';
 import 'package:soloforte_app/modules/ndvi/presentation/providers/ndvi_providers.dart';
 import 'package:soloforte_app/modules/ndvi/presentation/widgets/ndvi_talhao_sheet.dart';
 import 'package:soloforte_app/core/constants/layout_constants.dart';
+import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 
 class FieldDetailScreen extends ConsumerWidget {
   final String farmId;
@@ -72,15 +73,9 @@ class FieldDetailScreen extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Talhão',
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
+          Text('Talhão', style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 4),
-          Text(
-            'ID: $fieldId',
-            style: Theme.of(context).textTheme.bodySmall,
-          ),
+          Text('ID: $fieldId', style: Theme.of(context).textTheme.bodySmall),
         ],
       ),
     );
@@ -94,10 +89,7 @@ class FieldDetailScreen extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'NDVI',
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
+          Text('NDVI', style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 12),
           latestAsync.when(
             loading: () => const SizedBox(
@@ -152,9 +144,9 @@ class FieldDetailScreen extends ConsumerWidget {
               children: [
                 Text(
                   'NDVI médio: ${image.ndviMean.toStringAsFixed(2)}',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(width: 8),
                 Text(
@@ -170,12 +162,16 @@ class FieldDetailScreen extends ConsumerWidget {
             SizedBox(
               width: double.infinity,
               child: OutlinedButton.icon(
-                onPressed: () => showModalBottomSheet(
+                onPressed: () => showSoloForteSheet(
                   context: context,
                   isScrollControlled: true,
                   backgroundColor: Theme.of(context).colorScheme.surface,
+                  showDragHandle: false,
+                  useSafeArea: false,
                   shape: const RoundedRectangleBorder(
-                    borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+                    borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(16),
+                    ),
                   ),
                   builder: (_) => NdviTalhaoSheet(
                     fieldId: fieldId,

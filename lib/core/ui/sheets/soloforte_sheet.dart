@@ -22,8 +22,14 @@ Future<T?> showSoloForteSheet<T>({
   bool isDismissible = true,
   bool enableDrag = true,
   bool showDragHandle = true,
+  bool useSafeArea = true,
   double? maxHeightFraction,
+  Color? backgroundColor,
   Color? barrierColor,
+  ShapeBorder? shape,
+  BoxConstraints? constraints,
+  Clip? clipBehavior,
+  bool preserveMaterialDefaults = false,
 }) {
   return showModalBottomSheet<T>(
     context: context,
@@ -31,21 +37,30 @@ Future<T?> showSoloForteSheet<T>({
     isDismissible: isDismissible,
     enableDrag: enableDrag,
     showDragHandle: showDragHandle,
-    useSafeArea: true,
-    clipBehavior: Clip.antiAliasWithSaveLayer,
-    backgroundColor: SoloForteSheetTokens.sheetBackground,
+    useSafeArea: useSafeArea,
+    clipBehavior: preserveMaterialDefaults
+        ? clipBehavior
+        : (clipBehavior ?? Clip.antiAliasWithSaveLayer),
+    backgroundColor: preserveMaterialDefaults
+        ? backgroundColor
+        : (backgroundColor ?? SoloForteSheetTokens.sheetBackground),
     barrierColor: barrierColor,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(
-        top: Radius.circular(SoloForteSheetTokens.borderRadius),
-      ),
-    ),
-    constraints: maxHeightFraction != null
-        ? BoxConstraints(
-            maxHeight:
-                MediaQuery.of(context).size.height * maxHeightFraction,
-          )
-        : null,
+    shape: preserveMaterialDefaults
+        ? shape
+        : (shape ??
+              const RoundedRectangleBorder(
+                borderRadius: BorderRadius.vertical(
+                  top: Radius.circular(SoloForteSheetTokens.borderRadius),
+                ),
+              )),
+    constraints:
+        constraints ??
+        (maxHeightFraction != null
+            ? BoxConstraints(
+                maxHeight:
+                    MediaQuery.of(context).size.height * maxHeightFraction,
+              )
+            : null),
     builder: builder,
   );
 }

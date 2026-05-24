@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 import 'package:uuid/uuid.dart';
 import '../providers/clients_providers.dart';
 import '../../domain/client.dart';
@@ -69,8 +70,11 @@ class _ClientFormScreenState extends ConsumerState<ClientFormScreen> {
   }
 
   Future<void> _pickImage() async {
-    await showModalBottomSheet<void>(
+    await showSoloForteSheet<void>(
       context: context,
+      showDragHandle: false,
+      useSafeArea: false,
+      preserveMaterialDefaults: true,
       builder: (ctx) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -80,8 +84,9 @@ class _ClientFormScreenState extends ConsumerState<ClientFormScreen> {
               title: const Text('Câmera'),
               onTap: () async {
                 Navigator.of(ctx).pop();
-                final picked = await ImagePicker()
-                    .pickImage(source: ImageSource.camera);
+                final picked = await ImagePicker().pickImage(
+                  source: ImageSource.camera,
+                );
                 if (!mounted) return;
                 if (picked != null) setState(() => _fotoPath = picked.path);
               },
@@ -91,8 +96,9 @@ class _ClientFormScreenState extends ConsumerState<ClientFormScreen> {
               title: const Text('Galeria'),
               onTap: () async {
                 Navigator.of(ctx).pop();
-                final picked = await ImagePicker()
-                    .pickImage(source: ImageSource.gallery);
+                final picked = await ImagePicker().pickImage(
+                  source: ImageSource.gallery,
+                );
                 if (!mounted) return;
                 if (picked != null) setState(() => _fotoPath = picked.path);
               },
@@ -121,13 +127,17 @@ class _ClientFormScreenState extends ConsumerState<ClientFormScreen> {
     final safraController = TextEditingController();
     final obsController = TextEditingController();
 
-    await showModalBottomSheet<void>(
+    await showSoloForteSheet<void>(
       context: context,
       isScrollControlled: true,
+      showDragHandle: false,
+      useSafeArea: false,
+      preserveMaterialDefaults: true,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setModalState) => Padding(
-          padding:
-              EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(ctx).viewInsets.bottom,
+          ),
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(20),
             child: Form(
@@ -136,19 +146,23 @@ class _ClientFormScreenState extends ConsumerState<ClientFormScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text('Adicionar Cultura',
-                      style: Theme.of(ctx)
-                          .textTheme
-                          .titleMedium
-                          ?.copyWith(fontWeight: FontWeight.bold)),
+                  Text(
+                    'Adicionar Cultura',
+                    style: Theme.of(ctx).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                   const SizedBox(height: 16),
                   DropdownButtonFormField<CulturaTipo>(
                     decoration: _inputDeco('Cultura *'),
                     items: CulturaTipo.values
-                        .map((c) => DropdownMenuItem(
-                            value: c, child: Text(c.label)))
+                        .map(
+                          (c) =>
+                              DropdownMenuItem(value: c, child: Text(c.label)),
+                        )
                         .toList(),
-                    onChanged: (v) => setModalState(() => culturaSelecionada = v),
+                    onChanged: (v) =>
+                        setModalState(() => culturaSelecionada = v),
                     validator: (v) =>
                         v == null ? 'Selecione uma cultura' : null,
                   ),
@@ -157,7 +171,8 @@ class _ClientFormScreenState extends ConsumerState<ClientFormScreen> {
                     controller: areaController,
                     decoration: _inputDeco('Área (ha) *'),
                     keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true),
+                      decimal: true,
+                    ),
                     validator: (v) {
                       final d = double.tryParse(v ?? '');
                       if (d == null || d <= 0) return 'Informe área > 0';
@@ -261,14 +276,16 @@ class _ClientFormScreenState extends ConsumerState<ClientFormScreen> {
           ? null
           : _safraAtualController.text.trim(),
       usaAssistenciaTecnica: _usaAssistencia,
-      tecnicoResponsavel: _usaAssistencia &&
+      tecnicoResponsavel:
+          _usaAssistencia &&
               _tecnicoResponsavelController.text.trim().isNotEmpty
           ? _tecnicoResponsavelController.text.trim()
           : null,
     );
 
-    final culturasComId =
-        _culturas.map((c) => c.copyWith(clientId: clientId)).toList();
+    final culturasComId = _culturas
+        .map((c) => c.copyWith(clientId: clientId))
+        .toList();
 
     await ref
         .read(clientsControllerProvider)
@@ -349,9 +366,10 @@ class _ClientFormScreenState extends ConsumerState<ClientFormScreen> {
             child: const Text(
               'Salvar',
               style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: PremiumTokens.brandGreen),
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: PremiumTokens.brandGreen,
+              ),
             ),
           ),
         ],
@@ -360,214 +378,220 @@ class _ClientFormScreenState extends ConsumerState<ClientFormScreen> {
   }
 
   Widget _sectionTitle(String title) => Padding(
-        padding: const EdgeInsets.only(bottom: 12),
-        child: Text(title,
-            style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87)),
-      );
+    padding: const EdgeInsets.only(bottom: 12),
+    child: Text(
+      title,
+      style: const TextStyle(
+        fontSize: 16,
+        fontWeight: FontWeight.bold,
+        color: Colors.black87,
+      ),
+    ),
+  );
 
   Widget _buildFotoSection() => Center(
-        child: Column(
-          children: [
-            GestureDetector(
-              onTap: _pickImage,
-              child: ClientAvatarWidget(
-                fotoPath: _fotoPath,
-                nome: _nomeController.text.isEmpty ? '?' : _nomeController.text,
-                radius: 48,
-              ),
-            ),
-            const SizedBox(height: 8),
-            const Text('Adicionar Foto', style: TextStyle(color: Colors.grey)),
-          ],
+    child: Column(
+      children: [
+        GestureDetector(
+          onTap: _pickImage,
+          child: ClientAvatarWidget(
+            fotoPath: _fotoPath,
+            nome: _nomeController.text.isEmpty ? '?' : _nomeController.text,
+            radius: 48,
+          ),
         ),
-      );
+        const SizedBox(height: 8),
+        const Text('Adicionar Foto', style: TextStyle(color: Colors.grey)),
+      ],
+    ),
+  );
 
   Widget _buildIdentificacaoSection() => Column(
-        children: [
-          _field(
-            controller: _nomeController,
-            label: 'Nome Completo *',
-            validator: (v) {
-              if (v == null || v.trim().length < 2) return 'Mínimo 2 caracteres';
-              return null;
-            },
-            onChanged: (_) => setState(() {}),
-          ),
-          const SizedBox(height: 12),
-          _field(
-            controller: _emailController,
-            label: 'E-mail',
-            keyboardType: TextInputType.emailAddress,
-            validator: (v) {
-              if (v == null || v.isEmpty) return null;
-              if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(v)) {
-                return 'E-mail inválido';
-              }
-              return null;
-            },
-          ),
-          const SizedBox(height: 12),
-          _field(
-            controller: _telefoneController,
-            label: 'Telefone',
-            keyboardType: TextInputType.phone,
-          ),
-          const SizedBox(height: 12),
-          _field(
-            controller: _cpfCnpjController,
-            label: 'CPF / CNPJ',
-            keyboardType: TextInputType.number,
-          ),
-          const SizedBox(height: 12),
-          GestureDetector(
-            onTap: _pickDataNascimento,
-            child: AbsorbPointer(
-              child: _field(
-                controller: TextEditingController(
-                  text: _dataNascimento != null
-                      ? '${_dataNascimento!.day.toString().padLeft(2, '0')}/${_dataNascimento!.month.toString().padLeft(2, '0')}/${_dataNascimento!.year}'
-                      : '',
-                ),
-                label: 'Data de Nascimento',
-                suffixIcon: const Icon(Icons.calendar_today, size: 18),
-              ),
+    children: [
+      _field(
+        controller: _nomeController,
+        label: 'Nome Completo *',
+        validator: (v) {
+          if (v == null || v.trim().length < 2) return 'Mínimo 2 caracteres';
+          return null;
+        },
+        onChanged: (_) => setState(() {}),
+      ),
+      const SizedBox(height: 12),
+      _field(
+        controller: _emailController,
+        label: 'E-mail',
+        keyboardType: TextInputType.emailAddress,
+        validator: (v) {
+          if (v == null || v.isEmpty) return null;
+          if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(v)) {
+            return 'E-mail inválido';
+          }
+          return null;
+        },
+      ),
+      const SizedBox(height: 12),
+      _field(
+        controller: _telefoneController,
+        label: 'Telefone',
+        keyboardType: TextInputType.phone,
+      ),
+      const SizedBox(height: 12),
+      _field(
+        controller: _cpfCnpjController,
+        label: 'CPF / CNPJ',
+        keyboardType: TextInputType.number,
+      ),
+      const SizedBox(height: 12),
+      GestureDetector(
+        onTap: _pickDataNascimento,
+        child: AbsorbPointer(
+          child: _field(
+            controller: TextEditingController(
+              text: _dataNascimento != null
+                  ? '${_dataNascimento!.day.toString().padLeft(2, '0')}/${_dataNascimento!.month.toString().padLeft(2, '0')}/${_dataNascimento!.year}'
+                  : '',
             ),
+            label: 'Data de Nascimento',
+            suffixIcon: const Icon(Icons.calendar_today, size: 18),
           ),
-        ],
-      );
+        ),
+      ),
+    ],
+  );
 
   Widget _buildLocalizacaoSection() => Row(
-        children: [
-          Expanded(
-            flex: 2,
-            child: _field(controller: _cidadeController, label: 'Cidade'),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            flex: 1,
-            child: _field(
-              controller: _ufController,
-              label: 'UF',
-              inputFormatters: [
-                LengthLimitingTextInputFormatter(2),
-                _UpperCaseFormatter(),
-              ],
-            ),
-          ),
-        ],
-      );
+    children: [
+      Expanded(
+        flex: 2,
+        child: _field(controller: _cidadeController, label: 'Cidade'),
+      ),
+      const SizedBox(width: 12),
+      Expanded(
+        flex: 1,
+        child: _field(
+          controller: _ufController,
+          label: 'UF',
+          inputFormatters: [
+            LengthLimitingTextInputFormatter(2),
+            _UpperCaseFormatter(),
+          ],
+        ),
+      ),
+    ],
+  );
 
   Widget _buildPropriedadeSection() => Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _field(
-            controller: _areaTotalController,
-            label: 'Área Total (ha)',
-            keyboardType:
-                const TextInputType.numberWithOptions(decimal: true),
-            validator: (v) {
-              if (v == null || v.isEmpty) return null;
-              final d = double.tryParse(v);
-              if (d == null || d <= 0) return 'Valor deve ser > 0';
-              return null;
-            },
-          ),
-          const SizedBox(height: 16),
-          _chipRow(
-            'Tipo de Propriedade',
-            const ['propria', 'arrendada', 'mista'],
-            const ['Própria', 'Arrendada', 'Mista'],
-            _tipoPropriedade,
-            (v) => setState(() => _tipoPropriedade = v),
-          ),
-          const SizedBox(height: 16),
-          _chipRow(
-            'Irrigação',
-            const ['sequeiro', 'irrigado', 'misto'],
-            const ['Sequeiro', 'Irrigado', 'Misto'],
-            _sistemaIrrigacao,
-            (v) => setState(() => _sistemaIrrigacao = v),
-          ),
-          const SizedBox(height: 16),
-          _chipRow(
-            'Solo',
-            const ['arenoso', 'argiloso', 'misto', 'outro'],
-            const ['Arenoso', 'Argiloso', 'Misto', 'Outro'],
-            _soloTipo,
-            (v) => setState(() => _soloTipo = v),
-          ),
-          const SizedBox(height: 16),
-          _field(controller: _regiaoAgricolaController, label: 'Região Agrícola'),
-          const SizedBox(height: 12),
-          _field(
-            controller: _safraAtualController,
-            label: 'Safra Atual (ex: 2024/2025)',
-          ),
-          const SizedBox(height: 12),
-          SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            title: const Text('Usa Assistência Técnica'),
-            value: _usaAssistencia,
-            activeThumbColor: PremiumTokens.brandGreen,
-            onChanged: (v) => setState(() => _usaAssistencia = v),
-          ),
-          AnimatedSize(
-            duration: const Duration(milliseconds: 200),
-            child: Visibility(
-              visible: _usaAssistencia,
-              child: Padding(
-                padding: const EdgeInsets.only(top: 12),
-                child: _field(
-                  controller: _tecnicoResponsavelController,
-                  label: 'Técnico Responsável',
-                ),
-              ),
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      _field(
+        controller: _areaTotalController,
+        label: 'Área Total (ha)',
+        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+        validator: (v) {
+          if (v == null || v.isEmpty) return null;
+          final d = double.tryParse(v);
+          if (d == null || d <= 0) return 'Valor deve ser > 0';
+          return null;
+        },
+      ),
+      const SizedBox(height: 16),
+      _chipRow(
+        'Tipo de Propriedade',
+        const ['propria', 'arrendada', 'mista'],
+        const ['Própria', 'Arrendada', 'Mista'],
+        _tipoPropriedade,
+        (v) => setState(() => _tipoPropriedade = v),
+      ),
+      const SizedBox(height: 16),
+      _chipRow(
+        'Irrigação',
+        const ['sequeiro', 'irrigado', 'misto'],
+        const ['Sequeiro', 'Irrigado', 'Misto'],
+        _sistemaIrrigacao,
+        (v) => setState(() => _sistemaIrrigacao = v),
+      ),
+      const SizedBox(height: 16),
+      _chipRow(
+        'Solo',
+        const ['arenoso', 'argiloso', 'misto', 'outro'],
+        const ['Arenoso', 'Argiloso', 'Misto', 'Outro'],
+        _soloTipo,
+        (v) => setState(() => _soloTipo = v),
+      ),
+      const SizedBox(height: 16),
+      _field(controller: _regiaoAgricolaController, label: 'Região Agrícola'),
+      const SizedBox(height: 12),
+      _field(
+        controller: _safraAtualController,
+        label: 'Safra Atual (ex: 2024/2025)',
+      ),
+      const SizedBox(height: 12),
+      SwitchListTile(
+        contentPadding: EdgeInsets.zero,
+        title: const Text('Usa Assistência Técnica'),
+        value: _usaAssistencia,
+        activeThumbColor: PremiumTokens.brandGreen,
+        onChanged: (v) => setState(() => _usaAssistencia = v),
+      ),
+      AnimatedSize(
+        duration: const Duration(milliseconds: 200),
+        child: Visibility(
+          visible: _usaAssistencia,
+          child: Padding(
+            padding: const EdgeInsets.only(top: 12),
+            child: _field(
+              controller: _tecnicoResponsavelController,
+              label: 'Técnico Responsável',
             ),
           ),
-        ],
-      );
+        ),
+      ),
+    ],
+  );
 
   Widget _buildCulturasSection() => Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (_culturas.isEmpty)
-            Container(
-              padding: const EdgeInsets.all(24),
-              width: double.infinity,
-              decoration: BoxDecoration(
-                color: Colors.grey[50],
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey[200]!),
-              ),
-              child: Column(
-                children: [
-                  Icon(Icons.eco, size: 36, color: Colors.grey[400]),
-                  const SizedBox(height: 8),
-                  Text('Nenhuma cultura adicionada',
-                      style: TextStyle(color: Colors.grey[600])),
-                ],
-              ),
-            )
-          else
-            ...List.generate(
-              _culturas.length,
-              (i) => CulturaItemWidget(
-                cultura: _culturas[i],
-                onRemove: () => setState(() => _culturas.removeAt(i)),
-              ),
-            ),
-          const SizedBox(height: 8),
-          TextButton.icon(
-            icon: const Icon(Icons.add, color: PremiumTokens.brandGreen),
-            label: const Text('+ Adicionar Cultura',
-                style: TextStyle(color: PremiumTokens.brandGreen)),
-            onPressed: _abrirBottomSheetCultura,
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      if (_culturas.isEmpty)
+        Container(
+          padding: const EdgeInsets.all(24),
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: Colors.grey[50],
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.grey[200]!),
           ),
-        ],
-      );
+          child: Column(
+            children: [
+              Icon(Icons.eco, size: 36, color: Colors.grey[400]),
+              const SizedBox(height: 8),
+              Text(
+                'Nenhuma cultura adicionada',
+                style: TextStyle(color: Colors.grey[600]),
+              ),
+            ],
+          ),
+        )
+      else
+        ...List.generate(
+          _culturas.length,
+          (i) => CulturaItemWidget(
+            cultura: _culturas[i],
+            onRemove: () => setState(() => _culturas.removeAt(i)),
+          ),
+        ),
+      const SizedBox(height: 8),
+      TextButton.icon(
+        icon: const Icon(Icons.add, color: PremiumTokens.brandGreen),
+        label: const Text(
+          '+ Adicionar Cultura',
+          style: TextStyle(color: PremiumTokens.brandGreen),
+        ),
+        onPressed: _abrirBottomSheetCultura,
+      ),
+    ],
+  );
 
   Widget _field({
     required TextEditingController controller,
@@ -578,16 +602,15 @@ class _ClientFormScreenState extends ConsumerState<ClientFormScreen> {
     int maxLines = 1,
     List<TextInputFormatter>? inputFormatters,
     ValueChanged<String>? onChanged,
-  }) =>
-      TextFormField(
-        controller: controller,
-        decoration: _inputDeco(label, suffixIcon: suffixIcon),
-        keyboardType: maxLines > 1 ? TextInputType.multiline : keyboardType,
-        maxLines: maxLines,
-        validator: validator,
-        inputFormatters: inputFormatters,
-        onChanged: onChanged,
-      );
+  }) => TextFormField(
+    controller: controller,
+    decoration: _inputDeco(label, suffixIcon: suffixIcon),
+    keyboardType: maxLines > 1 ? TextInputType.multiline : keyboardType,
+    maxLines: maxLines,
+    validator: validator,
+    inputFormatters: inputFormatters,
+    onChanged: onChanged,
+  );
 
   InputDecoration _inputDeco(String label, {Widget? suffixIcon}) =>
       InputDecoration(
@@ -598,8 +621,10 @@ class _ClientFormScreenState extends ConsumerState<ClientFormScreen> {
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,
         ),
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 16,
+        ),
         suffixIcon: suffixIcon,
       );
 
@@ -609,37 +634,33 @@ class _ClientFormScreenState extends ConsumerState<ClientFormScreen> {
     List<String> labels,
     String? selected,
     ValueChanged<String?> onSelected,
-  ) =>
-      Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(title,
-              style: const TextStyle(fontSize: 13, color: Colors.black54)),
-          const SizedBox(height: 6),
-          Wrap(
-            spacing: 8,
-            children: List.generate(options.length, (i) {
-              final isSel = selected == options[i];
-              return ChoiceChip(
-                label: Text(labels[i]),
-                selected: isSel,
-                selectedColor: PremiumTokens.brandGreen,
-                labelStyle: TextStyle(
-                  color: isSel ? Colors.white : Colors.black87,
-                  fontWeight: isSel ? FontWeight.w600 : FontWeight.normal,
-                ),
-                onSelected: (_) =>
-                    onSelected(isSel ? null : options[i]),
-              );
-            }),
-          ),
-        ],
-      );
+  ) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(title, style: const TextStyle(fontSize: 13, color: Colors.black54)),
+      const SizedBox(height: 6),
+      Wrap(
+        spacing: 8,
+        children: List.generate(options.length, (i) {
+          final isSel = selected == options[i];
+          return ChoiceChip(
+            label: Text(labels[i]),
+            selected: isSel,
+            selectedColor: PremiumTokens.brandGreen,
+            labelStyle: TextStyle(
+              color: isSel ? Colors.white : Colors.black87,
+              fontWeight: isSel ? FontWeight.w600 : FontWeight.normal,
+            ),
+            onSelected: (_) => onSelected(isSel ? null : options[i]),
+          );
+        }),
+      ),
+    ],
+  );
 }
 
 class _UpperCaseFormatter extends TextInputFormatter {
   @override
-  TextEditingValue formatEditUpdate(
-          TextEditingValue o, TextEditingValue n) =>
+  TextEditingValue formatEditUpdate(TextEditingValue o, TextEditingValue n) =>
       n.copyWith(text: n.text.toUpperCase());
 }

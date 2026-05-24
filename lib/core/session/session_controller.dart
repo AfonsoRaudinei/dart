@@ -182,12 +182,6 @@ class SessionController extends _$SessionController {
 
   /// Logout real via Supabase Auth.
   Future<void> logout() async {
-    try {
-      await _clearLocalUserData();
-    } catch (e, st) {
-      debugPrint('[SessionController] clearLocalUserData falhou: $e\n$st');
-    }
-
     _invalidateUserScopedProviders();
 
     await Supabase.instance.client.auth.signOut();

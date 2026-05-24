@@ -5,6 +5,21 @@ import 'design_tokens.dart';
 
 /// O novo Tema Premium do aplicativo (Responsável pela Fase 1)
 class PremiumAppTheme {
+  static const Color _greenAccent = PremiumTokens.brandGreen;
+  static const Color _blueAccent = Color(0xFF1B6EE0);
+
+  static ThemeData themeFor(String mode) {
+    return switch (mode) {
+      'blue' => _buildLightTheme(_blueAccent),
+      'black' => darkTheme,
+      'green' || _ => lightTheme,
+    };
+  }
+
+  static ThemeMode themeModeFor(String mode) {
+    return mode == 'black' ? ThemeMode.dark : ThemeMode.light;
+  }
+
   // ============================================
   // TEXT THEMES: Geometria de texto iOS com Fonte Inter
   // ============================================
@@ -56,7 +71,7 @@ class PremiumAppTheme {
   // COMPONENTES PREMIUM (Inputs e Botões M3 Adaptados)
   // ============================================
 
-  static InputDecorationTheme _buildInputDecoration(bool isDark) {
+  static InputDecorationTheme _buildInputDecoration(bool isDark, Color accent) {
     final fillColor = isDark ? PremiumTokens.surfaceDark : Colors.white;
     final borderColor = isDark
         ? PremiumTokens.hairlineDark
@@ -82,7 +97,7 @@ class PremiumAppTheme {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(PremiumTokens.borderRadiusMd),
-        borderSide: const BorderSide(color: PremiumTokens.brandGreen, width: 2),
+        borderSide: BorderSide(color: accent, width: 2),
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(PremiumTokens.borderRadiusMd),
@@ -110,10 +125,10 @@ class PremiumAppTheme {
     );
   }
 
-  static ElevatedButtonThemeData get _elevatedButtonTheme {
+  static ElevatedButtonThemeData _buildElevatedButtonTheme(Color accent) {
     return ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
-        backgroundColor: PremiumTokens.brandGreen,
+        backgroundColor: accent,
         foregroundColor: Colors.white,
         padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
         shape: RoundedRectangleBorder(
@@ -131,6 +146,10 @@ class PremiumAppTheme {
   // ============================================
 
   static ThemeData get lightTheme {
+    return _buildLightTheme(_greenAccent);
+  }
+
+  static ThemeData _buildLightTheme(Color accent) {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.light,
@@ -142,13 +161,13 @@ class PremiumAppTheme {
       hoverColor: Colors.transparent,
 
       // Cores Massivas
-      primaryColor: PremiumTokens.brandGreen,
+      primaryColor: accent,
       scaffoldBackgroundColor: PremiumTokens.backgroundLight,
 
       // Esquema Oficial iOS (Monocromo com Destaque de TintColor)
-      colorScheme: const ColorScheme.light(
-        primary: PremiumTokens.brandGreen,
-        secondary: PremiumTokens.brandGreen,
+      colorScheme: ColorScheme.light(
+        primary: accent,
+        secondary: accent,
         surface: PremiumTokens.surfaceLight,
         error: PremiumTokens.alertError,
         onPrimary: Colors.white,
@@ -175,8 +194,8 @@ class PremiumAppTheme {
         PremiumTokens.textSecondaryLight,
       ),
 
-      inputDecorationTheme: _buildInputDecoration(false),
-      elevatedButtonTheme: _elevatedButtonTheme,
+      inputDecorationTheme: _buildInputDecoration(false, accent),
+      elevatedButtonTheme: _buildElevatedButtonTheme(accent),
 
       // Retirando fundos duros dos divisores (Finíssimos igual cabelo)
       dividerTheme: const DividerThemeData(
@@ -192,6 +211,8 @@ class PremiumAppTheme {
   // ============================================
 
   static ThemeData get darkTheme {
+    const accent = PremiumTokens.brandGreenDark;
+
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
@@ -233,8 +254,8 @@ class PremiumAppTheme {
         PremiumTokens.textSecondaryDark,
       ),
 
-      inputDecorationTheme: _buildInputDecoration(true),
-      elevatedButtonTheme: _elevatedButtonTheme,
+      inputDecorationTheme: _buildInputDecoration(true, accent),
+      elevatedButtonTheme: _buildElevatedButtonTheme(accent),
 
       dividerTheme: const DividerThemeData(
         color: PremiumTokens.hairlineDark,

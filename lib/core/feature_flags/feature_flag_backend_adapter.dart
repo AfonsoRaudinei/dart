@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import '../config/app_config.dart';
 
 /// Adapter para backend de feature flags.
@@ -6,8 +8,8 @@ import '../config/app_config.dart';
 /// Em produção (`ENV=production` ou `ENV=staging`), conectará ao endpoint real.
 /// Em desenvolvimento (`ENV=development`), usa mock local.
 class FeatureFlagBackendAdapter {
-  // ignore: unused_field — será usado quando HTTP real for implementado (PR #10)
   static const String _backendUrl = 'https://api.soloforte.com/feature-flags';
+  static const Duration _requestTimeout = Duration(seconds: 8);
 
   /// Verdadeiro quando o ambiente não é produção — lido de [AppConfig].
   static bool get _isDevelopment => !AppConfig.isProduction;
@@ -21,18 +23,32 @@ class FeatureFlagBackendAdapter {
       return _mockBackendResponse();
     }
 
-    // TODO: Implementar HTTP request real
-    // try {
-    //   final response = await http.get(Uri.parse(_backendUrl));
-    //   if (response.statusCode == 200) {
-    //     return jsonDecode(response.body) as Map<String, dynamic>;
-    //   }
-    //   throw Exception('Backend returned ${response.statusCode}');
-    // } catch (e) {
-    //   throw Exception('Failed to fetch flags: $e');
-    // }
+    final response = await http
+        .get(Uri.parse(_backendUrl))
+        .timeout(
+          _requestTimeout,
+          onTimeout: () => throw TimeoutException(
+            'Feature flags request timed out after ${_requestTimeout.inSeconds}s',
+          ),
+        );
 
-    return _mockBackendResponse();
+    if (response.statusCode != 200) {
+      throw StateError(
+        'Feature flags backend returned HTTP ${response.statusCode}',
+      );
+    }
+
+    final decoded = jsonDecode(response.body);
+    if (decoded is! Map<String, dynamic>) {
+      throw const FormatException(
+        'Feature flags payload must be a JSON object',
+      );
+    }
+    if (decoded['flags'] is! List) {
+      throw const FormatException('Feature flags payload missing "flags" list');
+    }
+
+    return decoded;
   }
 
   /// Mock do backend para desenvolvimento.

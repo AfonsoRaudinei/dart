@@ -14,7 +14,7 @@ import '../../modules/drawing/domain/drawing_state.dart';
 import '../../modules/dashboard/providers/location_providers.dart';
 import '../../modules/consultoria/occurrences/domain/occurrence.dart' as occ;
 import '../components/map/map_sheet_state.dart';
-// 🔧 MODAL: imports para showModalBottomSheet dos tipos não-draw
+// 🔧 MODAL: imports para sheets dos tipos não-draw
 // (conteúdo migrado para map_sheet_content_builder.dart — ADR-031 F3)
 import '../../modules/consultoria/occurrences/presentation/widgets/occurrence_detail_sheet.dart';
 import 'map/providers/map_armed_mode_provider.dart';
@@ -189,7 +189,7 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
     ref.read(mapSheetStateProvider.notifier).state = state;
 
     // 🔧 MODAL: draw e occurrences permanecem no Stack;
-    // demais tipos abrem como showModalBottomSheet
+    // demais tipos abrem como sheet modal padronizado
     if (state == null ||
         state.type == MapSheetType.draw ||
         state.type == MapSheetType.occurrences) {
@@ -207,11 +207,7 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
 
   // ── _handleMapLongPress ── delegate ADR-031 F5 ─────────────────────────
   void _handleMapLongPress(TapPosition tapPos, LatLng latLng) {
-    NovoCaseModalLauncher.launch(
-      position: latLng,
-      context: context,
-      ref: ref,
-    );
+    NovoCaseModalLauncher.launch(position: latLng, context: context, ref: ref);
   }
 
   // ── _openSheetAsModal ── delegate ADR-031 F4 ───────────────────────────
@@ -291,7 +287,6 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
     );
   }
 
-
   void _openOccurrenceSheet(double lat, double lng) async {
     // 🛡 CONSOLIDATION: Redirect to MapBottomSheet
     if (!mounted) return;
@@ -304,8 +299,10 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
       ),
       'OpenOccurrenceSheet (Create Mode)',
     );
-    ref.read(pendingOccurrenceLocationProvider.notifier).state =
-        LatLng(lat, lng); // Trigger Creation Mode
+    ref.read(pendingOccurrenceLocationProvider.notifier).state = LatLng(
+      lat,
+      lng,
+    ); // Trigger Creation Mode
   }
 
   void _armMarketingMode() {
@@ -317,7 +314,6 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
       ),
     );
   }
-
 
   void _handleOccurrencePinTap(occ.Occurrence occurrence) {
     if (!mounted) return;

@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:soloforte_app/core/constants/layout_constants.dart';
+import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:uuid/uuid.dart';
@@ -16,10 +17,8 @@ import '../widgets/client_detail_sub_widgets.dart';
 // ── Formulário de edição de cliente (extraído de client_detail_screen) ───
 // Sprint 7 — Bounded Context Hygiene: mantém client_detail_screen < 900 linhas.
 
-typedef ClientEditSaveCallback = void Function(
-  Client clienteAtualizado,
-  List<ClientCultura> culturasComId,
-);
+typedef ClientEditSaveCallback =
+    void Function(Client clienteAtualizado, List<ClientCultura> culturasComId);
 
 class ClientEditForm extends StatefulWidget {
   final Client client;
@@ -121,15 +120,17 @@ class _ClientEditFormState extends State<ClientEditForm> {
       tipoPropriedade: _tipoPropriedadeEdit,
       sistemaIrrigacao: _sistemaIrrigacaoEdit,
       soloTipo: _soloTipoEdit,
-      regiaoAgricola:
-          _regiaoCtrl.text.trim().isEmpty ? null : _regiaoCtrl.text.trim(),
-      safraAtual:
-          _safraCtrl.text.trim().isEmpty ? null : _safraCtrl.text.trim(),
+      regiaoAgricola: _regiaoCtrl.text.trim().isEmpty
+          ? null
+          : _regiaoCtrl.text.trim(),
+      safraAtual: _safraCtrl.text.trim().isEmpty
+          ? null
+          : _safraCtrl.text.trim(),
       usaAssistenciaTecnica: _usaAssistenciaEdit,
       tecnicoResponsavel:
           _usaAssistenciaEdit && _tecnicoCtrl.text.trim().isNotEmpty
-              ? _tecnicoCtrl.text.trim()
-              : null,
+          ? _tecnicoCtrl.text.trim()
+          : null,
       updatedAt: DateTime.now(),
     );
 
@@ -141,8 +142,11 @@ class _ClientEditFormState extends State<ClientEditForm> {
   }
 
   Future<void> _pickImage() async {
-    await showModalBottomSheet<void>(
+    await showSoloForteSheet<void>(
       context: context,
+      showDragHandle: false,
+      useSafeArea: false,
+      preserveMaterialDefaults: true,
       builder: (ctx) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -152,8 +156,9 @@ class _ClientEditFormState extends State<ClientEditForm> {
               title: const Text('Câmera'),
               onTap: () async {
                 Navigator.of(ctx).pop();
-                final picked =
-                    await ImagePicker().pickImage(source: ImageSource.camera);
+                final picked = await ImagePicker().pickImage(
+                  source: ImageSource.camera,
+                );
                 if (!mounted) return;
                 if (picked != null) setState(() => _fotoPathEdit = picked.path);
               },
@@ -163,8 +168,9 @@ class _ClientEditFormState extends State<ClientEditForm> {
               title: const Text('Galeria'),
               onTap: () async {
                 Navigator.of(ctx).pop();
-                final picked =
-                    await ImagePicker().pickImage(source: ImageSource.gallery);
+                final picked = await ImagePicker().pickImage(
+                  source: ImageSource.gallery,
+                );
                 if (!mounted) return;
                 if (picked != null) setState(() => _fotoPathEdit = picked.path);
               },
@@ -183,12 +189,17 @@ class _ClientEditFormState extends State<ClientEditForm> {
     final safraCtrl = TextEditingController();
     final obsCtrl = TextEditingController();
 
-    await showModalBottomSheet<void>(
+    await showSoloForteSheet<void>(
       context: context,
       isScrollControlled: true,
+      showDragHandle: false,
+      useSafeArea: false,
+      preserveMaterialDefaults: true,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setS) => Padding(
-          padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(ctx).viewInsets.bottom,
+          ),
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(20),
             child: Form(
@@ -196,27 +207,32 @@ class _ClientEditFormState extends State<ClientEditForm> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text('Adicionar Cultura',
-                      style: Theme.of(ctx)
-                          .textTheme
-                          .titleMedium
-                          ?.copyWith(fontWeight: FontWeight.bold)),
+                  Text(
+                    'Adicionar Cultura',
+                    style: Theme.of(ctx).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                   const SizedBox(height: 16),
                   DropdownButtonFormField<CulturaTipo>(
                     decoration: _deco('Cultura *'),
                     items: CulturaTipo.values
-                        .map((c) =>
-                            DropdownMenuItem(value: c, child: Text(c.label)))
+                        .map(
+                          (c) =>
+                              DropdownMenuItem(value: c, child: Text(c.label)),
+                        )
                         .toList(),
                     onChanged: (v) => setS(() => culturaSel = v),
-                    validator: (v) => v == null ? 'Selecione uma cultura' : null,
+                    validator: (v) =>
+                        v == null ? 'Selecione uma cultura' : null,
                   ),
                   const SizedBox(height: 12),
                   TextFormField(
                     controller: areaCtrl,
                     decoration: _deco('Área (ha) *'),
-                    keyboardType:
-                        const TextInputType.numberWithOptions(decimal: true),
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
                     validator: (v) {
                       final d = double.tryParse(v ?? '');
                       if (d == null || d <= 0) return 'Informe área > 0';
@@ -229,7 +245,10 @@ class _ClientEditFormState extends State<ClientEditForm> {
                     decoration: _deco('Variedade / Cultivar'),
                   ),
                   const SizedBox(height: 12),
-                  TextFormField(controller: safraCtrl, decoration: _deco('Safra')),
+                  TextFormField(
+                    controller: safraCtrl,
+                    decoration: _deco('Safra'),
+                  ),
                   const SizedBox(height: 12),
                   TextFormField(
                     controller: obsCtrl,
@@ -255,8 +274,9 @@ class _ClientEditFormState extends State<ClientEditForm> {
                               ? null
                               : variedadeCtrl.text,
                           safra: safraCtrl.text.isEmpty ? null : safraCtrl.text,
-                          observacao:
-                              obsCtrl.text.isEmpty ? null : obsCtrl.text,
+                          observacao: obsCtrl.text.isEmpty
+                              ? null
+                              : obsCtrl.text,
                           createdAt: DateTime.now(),
                           updatedAt: DateTime.now(),
                         );
@@ -280,17 +300,16 @@ class _ClientEditFormState extends State<ClientEditForm> {
       '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
 
   InputDecoration _deco(String label, {Widget? suffixIcon}) => InputDecoration(
-        labelText: label,
-        filled: true,
-        fillColor: Colors.grey[50],
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide.none,
-        ),
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-        suffixIcon: suffixIcon,
-      );
+    labelText: label,
+    filled: true,
+    fillColor: Colors.grey[50],
+    border: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(12),
+      borderSide: BorderSide.none,
+    ),
+    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+    suffixIcon: suffixIcon,
+  );
 
   Widget _field(
     TextEditingController ctrl,
@@ -300,28 +319,27 @@ class _ClientEditFormState extends State<ClientEditForm> {
     Widget? suffixIcon,
     int maxLines = 1,
     List<TextInputFormatter>? inputFormatters,
-  }) =>
-      TextFormField(
-        controller: ctrl,
-        decoration: _deco(label, suffixIcon: suffixIcon),
-        keyboardType: maxLines > 1 ? TextInputType.multiline : keyboardType,
-        maxLines: maxLines,
-        validator: validator,
-        inputFormatters: inputFormatters,
-      );
+  }) => TextFormField(
+    controller: ctrl,
+    decoration: _deco(label, suffixIcon: suffixIcon),
+    keyboardType: maxLines > 1 ? TextInputType.multiline : keyboardType,
+    maxLines: maxLines,
+    validator: validator,
+    inputFormatters: inputFormatters,
+  );
 
   Widget _sectionTitle(String t) => Padding(
-        padding: const EdgeInsets.only(bottom: 12),
-        child: Text(
-          t,
-          style: const TextStyle(
-            fontSize: 17,
-            fontWeight: FontWeight.w600,
-            letterSpacing: -0.4,
-            color: Colors.black87,
-          ),
-        ),
-      );
+    padding: const EdgeInsets.only(bottom: 12),
+    child: Text(
+      t,
+      style: const TextStyle(
+        fontSize: 17,
+        fontWeight: FontWeight.w600,
+        letterSpacing: -0.4,
+        color: Colors.black87,
+      ),
+    ),
+  );
 
   Widget _chipRow(
     String title,
@@ -329,31 +347,29 @@ class _ClientEditFormState extends State<ClientEditForm> {
     List<String> labels,
     String? selected,
     ValueChanged<String?> onSelected,
-  ) =>
-      Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(title,
-              style: const TextStyle(fontSize: 13, color: Colors.black54)),
-          const SizedBox(height: 6),
-          Wrap(
-            spacing: 8,
-            children: List.generate(options.length, (i) {
-              final isSel = selected == options[i];
-              return ChoiceChip(
-                label: Text(labels[i]),
-                selected: isSel,
-                selectedColor: PremiumTokens.brandGreen,
-                labelStyle: TextStyle(
-                  color: isSel ? Colors.white : Colors.black87,
-                  fontWeight: isSel ? FontWeight.w600 : FontWeight.normal,
-                ),
-                onSelected: (_) => onSelected(isSel ? null : options[i]),
-              );
-            }),
-          ),
-        ],
-      );
+  ) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(title, style: const TextStyle(fontSize: 13, color: Colors.black54)),
+      const SizedBox(height: 6),
+      Wrap(
+        spacing: 8,
+        children: List.generate(options.length, (i) {
+          final isSel = selected == options[i];
+          return ChoiceChip(
+            label: Text(labels[i]),
+            selected: isSel,
+            selectedColor: PremiumTokens.brandGreen,
+            labelStyle: TextStyle(
+              color: isSel ? Colors.white : Colors.black87,
+              fontWeight: isSel ? FontWeight.w600 : FontWeight.normal,
+            ),
+            onSelected: (_) => onSelected(isSel ? null : options[i]),
+          );
+        }),
+      ),
+    ],
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -367,8 +383,10 @@ class _ClientEditFormState extends State<ClientEditForm> {
               children: [
                 TextButton(
                   onPressed: widget.onCancel,
-                  child: const Text('Cancelar',
-                      style: TextStyle(color: Colors.grey)),
+                  child: const Text(
+                    'Cancelar',
+                    style: TextStyle(color: Colors.grey),
+                  ),
                 ),
                 const Spacer(),
                 const Text(
@@ -385,8 +403,9 @@ class _ClientEditFormState extends State<ClientEditForm> {
                   child: const Text(
                     'Salvar',
                     style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: PremiumTokens.brandGreen),
+                      fontWeight: FontWeight.bold,
+                      color: PremiumTokens.brandGreen,
+                    ),
                   ),
                 ),
               ],
@@ -416,34 +435,50 @@ class _ClientEditFormState extends State<ClientEditForm> {
                           ),
                         ),
                         const SizedBox(height: 8),
-                        const Text('Toque para alterar foto',
-                            style: TextStyle(color: Colors.grey, fontSize: 12)),
+                        const Text(
+                          'Toque para alterar foto',
+                          style: TextStyle(color: Colors.grey, fontSize: 12),
+                        ),
                       ],
                     ),
                   ),
                   const SizedBox(height: 28),
                   _sectionTitle('Identificação'),
-                  _field(_nomeCtrl, 'Nome Completo *', validator: (v) {
-                    if (v == null || v.trim().length < 2) {
-                      return 'Mínimo 2 caracteres';
-                    }
-                    return null;
-                  }),
+                  _field(
+                    _nomeCtrl,
+                    'Nome Completo *',
+                    validator: (v) {
+                      if (v == null || v.trim().length < 2) {
+                        return 'Mínimo 2 caracteres';
+                      }
+                      return null;
+                    },
+                  ),
                   const SizedBox(height: 12),
-                  _field(_emailCtrl, 'E-mail',
-                      keyboardType: TextInputType.emailAddress, validator: (v) {
-                    if (v == null || v.isEmpty) return null;
-                    if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(v)) {
-                      return 'E-mail inválido';
-                    }
-                    return null;
-                  }),
+                  _field(
+                    _emailCtrl,
+                    'E-mail',
+                    keyboardType: TextInputType.emailAddress,
+                    validator: (v) {
+                      if (v == null || v.isEmpty) return null;
+                      if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(v)) {
+                        return 'E-mail inválido';
+                      }
+                      return null;
+                    },
+                  ),
                   const SizedBox(height: 12),
-                  _field(_telefoneCtrl, 'Telefone',
-                      keyboardType: TextInputType.phone),
+                  _field(
+                    _telefoneCtrl,
+                    'Telefone',
+                    keyboardType: TextInputType.phone,
+                  ),
                   const SizedBox(height: 12),
-                  _field(_cpfCnpjCtrl, 'CPF / CNPJ',
-                      keyboardType: TextInputType.number),
+                  _field(
+                    _cpfCnpjCtrl,
+                    'CPF / CNPJ',
+                    keyboardType: TextInputType.number,
+                  ),
                   const SizedBox(height: 12),
                   GestureDetector(
                     onTap: () async {
@@ -458,12 +493,12 @@ class _ClientEditFormState extends State<ClientEditForm> {
                     child: AbsorbPointer(
                       child: _field(
                         TextEditingController(
-                            text: _dataNascimentoEdit != null
-                                ? _formatDate(_dataNascimentoEdit!)
-                                : ''),
+                          text: _dataNascimentoEdit != null
+                              ? _formatDate(_dataNascimentoEdit!)
+                              : '',
+                        ),
                         'Data de Nascimento',
-                        suffixIcon:
-                            const Icon(Icons.calendar_today, size: 18),
+                        suffixIcon: const Icon(Icons.calendar_today, size: 18),
                       ),
                     ),
                   ),
@@ -488,30 +523,37 @@ class _ClientEditFormState extends State<ClientEditForm> {
                   ),
                   const SizedBox(height: 28),
                   _sectionTitle('Propriedade'),
-                  _field(_areaTotalCtrl, 'Área Total (ha)',
-                      keyboardType:
-                          const TextInputType.numberWithOptions(decimal: true)),
+                  _field(
+                    _areaTotalCtrl,
+                    'Área Total (ha)',
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                  ),
                   const SizedBox(height: 16),
                   _chipRow(
-                      'Tipo',
-                      const ['propria', 'arrendada', 'mista'],
-                      const ['Própria', 'Arrendada', 'Mista'],
-                      _tipoPropriedadeEdit,
-                      (v) => setState(() => _tipoPropriedadeEdit = v)),
+                    'Tipo',
+                    const ['propria', 'arrendada', 'mista'],
+                    const ['Própria', 'Arrendada', 'Mista'],
+                    _tipoPropriedadeEdit,
+                    (v) => setState(() => _tipoPropriedadeEdit = v),
+                  ),
                   const SizedBox(height: 16),
                   _chipRow(
-                      'Irrigação',
-                      const ['sequeiro', 'irrigado', 'misto'],
-                      const ['Sequeiro', 'Irrigado', 'Misto'],
-                      _sistemaIrrigacaoEdit,
-                      (v) => setState(() => _sistemaIrrigacaoEdit = v)),
+                    'Irrigação',
+                    const ['sequeiro', 'irrigado', 'misto'],
+                    const ['Sequeiro', 'Irrigado', 'Misto'],
+                    _sistemaIrrigacaoEdit,
+                    (v) => setState(() => _sistemaIrrigacaoEdit = v),
+                  ),
                   const SizedBox(height: 16),
                   _chipRow(
-                      'Solo',
-                      const ['arenoso', 'argiloso', 'misto', 'outro'],
-                      const ['Arenoso', 'Argiloso', 'Misto', 'Outro'],
-                      _soloTipoEdit,
-                      (v) => setState(() => _soloTipoEdit = v)),
+                    'Solo',
+                    const ['arenoso', 'argiloso', 'misto', 'outro'],
+                    const ['Arenoso', 'Argiloso', 'Misto', 'Outro'],
+                    _soloTipoEdit,
+                    (v) => setState(() => _soloTipoEdit = v),
+                  ),
                   const SizedBox(height: 16),
                   _field(_regiaoCtrl, 'Região Agrícola'),
                   const SizedBox(height: 12),
@@ -545,12 +587,16 @@ class _ClientEditFormState extends State<ClientEditForm> {
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(color: Colors.grey[200]!),
                       ),
-                      child: Column(children: [
-                        Icon(Icons.eco, size: 36, color: Colors.grey[400]),
-                        const SizedBox(height: 8),
-                        Text('Nenhuma cultura',
-                            style: TextStyle(color: Colors.grey[600])),
-                      ]),
+                      child: Column(
+                        children: [
+                          Icon(Icons.eco, size: 36, color: Colors.grey[400]),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Nenhuma cultura',
+                            style: TextStyle(color: Colors.grey[600]),
+                          ),
+                        ],
+                      ),
                     )
                   else
                     ...List.generate(
@@ -563,9 +609,14 @@ class _ClientEditFormState extends State<ClientEditForm> {
                     ),
                   const SizedBox(height: 8),
                   TextButton.icon(
-                    icon: const Icon(Icons.add, color: PremiumTokens.brandGreen),
-                    label: const Text('+ Adicionar Cultura',
-                        style: TextStyle(color: PremiumTokens.brandGreen)),
+                    icon: const Icon(
+                      Icons.add,
+                      color: PremiumTokens.brandGreen,
+                    ),
+                    label: const Text(
+                      '+ Adicionar Cultura',
+                      style: TextStyle(color: PremiumTokens.brandGreen),
+                    ),
                     onPressed: _abrirBottomSheetCultura,
                   ),
                   const SizedBox(height: 28),

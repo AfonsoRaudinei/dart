@@ -1,8 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:soloforte_app/core/contracts/i_opportunity_lookup_provider.dart';
 import 'package:soloforte_app/core/contracts/opportunity_summary.dart';
-import 'package:soloforte_app/modules/carteira/presentation/providers/carteira_providers.dart';
+
+final _clientOpenOpportunitiesProvider = FutureProvider.autoDispose
+    .family<List<OpportunitySummary>, String>((ref, clientId) {
+      return ref
+          .watch(opportunityLookupProvider)
+          .getOpenOpportunities(clientId);
+    });
 
 /// Seção expansível que exibe oportunidades abertas de um cliente.
 /// Usada no formulário de Nova Visita (agenda/).
@@ -45,7 +52,7 @@ class _OportunidadesClienteSectionState
     }
 
     final oportunidadesAsync = ref.watch(
-      clientOpportunitiesProvider(clienteId),
+      _clientOpenOpportunitiesProvider(clienteId),
     );
 
     return oportunidadesAsync.when(

@@ -9,7 +9,7 @@ import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 
 /// Sheet de detalhe de uma ocorrência existente.
 ///
-/// Abre via [showModalBottomSheet] pelo tap no marcador no mapa.
+/// Abre via sheet modal padronizado pelo tap no marcador no mapa.
 /// Estado local efêmero — nenhum dado é alterado.
 /// Fecha via [Navigator.of(context).pop()] interno — sem interferir no Map-First.
 class OccurrenceDetailSheet extends StatelessWidget {
@@ -117,9 +117,10 @@ class OccurrenceDetailSheet extends StatelessWidget {
     final categoryLabel = _labelForCategory(occurrence.category);
     final urgencyLabel = _labelForUrgency(occurrence.type);
 
-    final formattedDate =
-        DateFormat("dd 'de' MMMM 'de' yyyy", 'pt_BR')
-            .format(occurrence.createdAt);
+    final formattedDate = DateFormat(
+      "dd 'de' MMMM 'de' yyyy",
+      'pt_BR',
+    ).format(occurrence.createdAt);
 
     final lat = occurrence.lat;
     final lng = occurrence.long;
@@ -131,7 +132,9 @@ class OccurrenceDetailSheet extends StatelessWidget {
       top: false,
       child: Container(
         decoration: BoxDecoration(
-          color: isDark ? PremiumTokens.surfaceDark : PremiumTokens.surfaceLight,
+          color: isDark
+              ? PremiumTokens.surfaceDark
+              : PremiumTokens.surfaceLight,
           borderRadius: const BorderRadius.vertical(
             top: Radius.circular(PremiumTokens.borderRadiusLg),
           ),
@@ -240,8 +243,9 @@ class OccurrenceDetailSheet extends StatelessWidget {
                   color: isDark
                       ? const Color(0xFF2C2C2E)
                       : PremiumTokens.backgroundLight,
-                  borderRadius:
-                      BorderRadius.circular(PremiumTokens.borderRadiusSm),
+                  borderRadius: BorderRadius.circular(
+                    PremiumTokens.borderRadiusSm,
+                  ),
                 ),
                 child: Column(
                   children: [
@@ -437,8 +441,7 @@ class _CupertinoCloseButtonState extends State<CupertinoCloseButton> {
               color: widget.isDark
                   ? const Color(0xFF2C2C2E)
                   : PremiumTokens.backgroundLight,
-              borderRadius:
-                  BorderRadius.circular(PremiumTokens.borderRadiusMd),
+              borderRadius: BorderRadius.circular(PremiumTokens.borderRadiusMd),
             ),
             alignment: Alignment.center,
             child: Text(

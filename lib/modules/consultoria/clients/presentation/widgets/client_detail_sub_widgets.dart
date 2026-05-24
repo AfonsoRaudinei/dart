@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
+import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 
 // ── Sub-widgets públicos de ClientDetailScreen ────────────────────────────
@@ -159,8 +160,7 @@ class UpperCaseFormatter extends TextInputFormatter {
   TextEditingValue formatEditUpdate(
     TextEditingValue oldValue,
     TextEditingValue newValue,
-  ) =>
-      newValue.copyWith(text: newValue.text.toUpperCase());
+  ) => newValue.copyWith(text: newValue.text.toUpperCase());
 }
 
 // ── Opção no modal de nova fazenda/talhão (iOS Premium) ──────────────────
@@ -245,9 +245,13 @@ class ClientModalOption extends StatelessWidget {
 
 void showNovaFazendaModal(BuildContext context, dynamic client) {
   HapticFeedback.lightImpact();
-  showModalBottomSheet<void>(
+  showSoloForteSheet<void>(
     context: context,
     backgroundColor: Colors.transparent,
+    showDragHandle: false,
+    useSafeArea: false,
+    shape: const RoundedRectangleBorder(),
+    clipBehavior: Clip.none,
     builder: (_) => Container(
       decoration: const BoxDecoration(
         color: Colors.white,

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/state/map_ui_providers.dart';
+import '../../../../core/ui/sheets/soloforte_sheet.dart';
 import '../../../../modules/drawing/presentation/providers/drawing_provider.dart';
 import '../../../../modules/drawing/domain/drawing_state.dart';
 import '../../../../ui/components/map/map_sheet_state.dart';
@@ -11,7 +12,7 @@ import '../widgets/map_sheet_content_builder.dart';
 ///
 /// Extraído de `_PrivateMapSheets._openSheetAsModal` + `_toggleDrawMode` — ADR-031 F4.
 ///
-/// [openSheet] — abre qualquer [MapSheetState] como [showModalBottomSheet] com
+/// [openSheet] — abre qualquer [MapSheetState] como sheet modal com
 ///   [DraggableScrollableSheet]. Preserva lógica de [modalGenerationProvider]
 ///   para invalidar callbacks [whenComplete] de modais anteriores.
 ///   ⚠️ NÃO simplificar a lógica de geração — previne race condition real.
@@ -44,13 +45,17 @@ class MapSheetController {
     final maxSize = isCheckIn ? 0.92 : 0.9;
     final snapSizesList = isCheckIn ? [0.6, 0.92] : [0.5, 0.9];
 
-    showModalBottomSheet(
+    showSoloForteSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       barrierColor: Colors.black54,
       enableDrag: true,
       isDismissible: true,
+      showDragHandle: false,
+      useSafeArea: false,
+      shape: const RoundedRectangleBorder(),
+      clipBehavior: Clip.none,
       builder: (modalContext) => DraggableScrollableSheet(
         initialChildSize: initialSize,
         minChildSize: 0.3,
@@ -71,7 +76,9 @@ class MapSheetController {
                   width: 36,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: Theme.of(context).dividerColor.withValues(alpha: 0.3),
+                    color: Theme.of(
+                      context,
+                    ).dividerColor.withValues(alpha: 0.3),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),

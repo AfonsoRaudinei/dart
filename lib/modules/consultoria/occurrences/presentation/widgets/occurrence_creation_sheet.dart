@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:soloforte_app/core/contracts/i_client_lookup.dart';
 import 'package:soloforte_app/core/contracts/i_client_lookup_provider.dart';
+import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 import 'package:soloforte_app/core/ui/sheets/widgets/sheet_section_header.dart';
 import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 
@@ -15,97 +16,7 @@ import 'occurrence_client_selector.dart';
 import 'occurrence_fenologia_data.dart';
 import 'occurrence_form_widgets.dart';
 
-class _OccurrenceCategory {
-  final String label;
-  final IconData icon;
-  final String value;
-  final OccurrenceCategory? enumValue; // compatibilidade com métricas (SEÇÃO 4)
-  const _OccurrenceCategory({
-    required this.label,
-    required this.icon,
-    required this.value,
-    this.enumValue,
-  });
-}
-
-const _categories = [
-  _OccurrenceCategory(
-    label: 'Doença',
-    icon: Icons.coronavirus_outlined,
-    value: 'doenca',
-    enumValue: OccurrenceCategory.doenca,
-  ),
-  _OccurrenceCategory(
-    label: 'Insetos',
-    icon: Icons.bug_report_outlined,
-    value: 'insetos',
-    enumValue: OccurrenceCategory.insetos,
-  ),
-  _OccurrenceCategory(
-    label: 'Ervas Daninhas',
-    icon: Icons.grass_outlined,
-    value: 'ervas_daninhas',
-    enumValue: OccurrenceCategory.daninhas,
-  ),
-  _OccurrenceCategory(
-    label: 'Nutrientes',
-    icon: Icons.science_outlined,
-    value: 'nutrientes',
-    enumValue: OccurrenceCategory.nutricional,
-  ),
-  _OccurrenceCategory(
-    label: 'Água',
-    icon: Icons.water_drop_outlined,
-    value: 'agua',
-    enumValue: OccurrenceCategory.agua,
-  ),
-  _OccurrenceCategory(
-    label: 'Amostra\nde Solo',
-    icon: Icons.biotech_outlined,
-    value: 'amostra_solo',
-  ),
-];
-
-/// Empacota todos os campos coletados pelo formulário agronômico v14.
-class OccurrenceFormData {
-  final String type; // urgência: "Baixa" | "Média" | "Alta"
-  final String description;
-  final String? clientId;
-  final String? photoPath; // primeiro caminho de foto (se houver)
-  final String? category; // categoria principal (1ª selecionada)
-  final String? cultivar;
-  final String? dataPlantio; // "yyyy-MM-dd"
-  final String? estadioFenologico; // código ex.: "V4", "R5.1"
-  final String? tipoOcorrencia; // "sazonal" | "permanente"
-  final bool amostraSolo;
-  final String? recomendacoes;
-  final String? metricasJson;
-  final String? nutrientesJson;
-  final String? categoriasJson;
-  final String? notasCategoriasJson;
-  final String? fotosCategoriasJson;
-
-  const OccurrenceFormData({
-    required this.type,
-    required this.description,
-    this.clientId,
-    this.photoPath,
-    this.category,
-    this.cultivar,
-    this.dataPlantio,
-    this.estadioFenologico,
-    this.tipoOcorrencia,
-    this.amostraSolo = false,
-    this.recomendacoes,
-    this.metricasJson,
-    this.nutrientesJson,
-    this.categoriasJson,
-    this.notasCategoriasJson,
-    this.fotosCategoriasJson,
-  });
-}
-
-typedef OccurrenceConfirmCallback = void Function(OccurrenceFormData data);
+part 'occurrence_creation_sheet_models.dart';
 
 class OccurrenceCreationSheet extends ConsumerStatefulWidget {
   final double latitude;
@@ -216,9 +127,13 @@ class _OccurrenceCreationSheetState
   String? _encodeFotos() => _fotos.isEmpty ? null : jsonEncode(_fotos);
 
   Future<void> _pickPhoto(OccurrenceCategory cat) async {
-    final src = await showModalBottomSheet<ImageSource>(
+    final src = await showSoloForteSheet<ImageSource>(
       context: context,
       backgroundColor: Colors.transparent,
+      showDragHandle: false,
+      useSafeArea: false,
+      shape: const RoundedRectangleBorder(),
+      clipBehavior: Clip.none,
       builder: (_) =>
           OccurrencePhotoSourceSheet(catEmoji: cat.emoji, catLabel: cat.label),
     );
@@ -344,7 +259,11 @@ class _OccurrenceCreationSheetState
               const SizedBox(height: 20),
 
               const SheetSectionHeader(
-                icon: Icon(Icons.person_outline, size: 18, color: Colors.white70),
+                icon: Icon(
+                  Icons.person_outline,
+                  size: 18,
+                  color: Colors.white70,
+                ),
                 label: 'Cliente',
               ),
               OccurrenceClientSelector(
@@ -656,9 +575,13 @@ class _OccurrenceCreationSheetState
                   if (_cats.length == 1) {
                     await _pickPhoto(_cats.first);
                   } else {
-                    final cat = await showModalBottomSheet<OccurrenceCategory>(
+                    final cat = await showSoloForteSheet<OccurrenceCategory>(
                       context: context,
                       backgroundColor: Colors.transparent,
+                      showDragHandle: false,
+                      useSafeArea: false,
+                      shape: const RoundedRectangleBorder(),
+                      clipBehavior: Clip.none,
                       builder: (_) =>
                           OccurrenceCatPickerSheet(cats: _cats.toList()),
                     );

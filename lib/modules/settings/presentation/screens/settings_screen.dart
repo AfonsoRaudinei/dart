@@ -152,13 +152,17 @@ class SettingsScreen extends ConsumerWidget {
                   context,
                   title: 'Termos de Serviço',
                   icon: SFIcons.info,
-                  onTap: () => _openUrl('https://afonsoraudinei.github.io/SoloForte-Termos-de-Uso/'),
+                  onTap: () => _openUrl(
+                    'https://afonsoraudinei.github.io/SoloForte-Termos-de-Uso/',
+                  ),
                 ),
                 _buildTile(
                   context,
                   title: 'Política de Privacidade',
                   icon: SFIcons.info,
-                  onTap: () => _openUrl('https://afonsoraudinei.github.io/SoloForte-Pol-tica-de-Privacidade/'),
+                  onTap: () => _openUrl(
+                    'https://afonsoraudinei.github.io/SoloForte-Pol-tica-de-Privacidade/',
+                  ),
                 ),
               ]),
 
@@ -371,6 +375,7 @@ class SettingsScreen extends ConsumerWidget {
     WidgetRef ref,
     String currentTheme,
   ) {
+    final primaryColor = Theme.of(context).colorScheme.primary;
     final themes = [
       {'id': 'green', 'color': const Color(0xFF34C759), 'label': 'Verde'},
       {'id': 'blue', 'color': const Color(0xFF1B6EE0), 'label': 'Azul'},
@@ -395,7 +400,7 @@ class SettingsScreen extends ConsumerWidget {
                     color: t['color'] as Color,
                     shape: BoxShape.circle,
                     border: isSelected
-                        ? Border.all(color: PremiumTokens.brandGreen, width: 3)
+                        ? Border.all(color: primaryColor, width: 3)
                         : Border.all(color: Colors.grey.withValues(alpha: 0.3)),
                     boxShadow: isSelected
                         ? [
@@ -449,9 +454,8 @@ class SettingsScreen extends ConsumerWidget {
         padding: const EdgeInsets.all(16),
         child: Text(
           'Não foi possível carregar os dados cadastrais.',
-          style:
-              (Theme.of(context).textTheme.labelMedium ?? const TextStyle())
-                  .copyWith(color: PremiumTokens.textSecondaryLight),
+          style: (Theme.of(context).textTheme.labelMedium ?? const TextStyle())
+              .copyWith(color: PremiumTokens.textSecondaryLight),
         ),
       ),
       data: (profile) {

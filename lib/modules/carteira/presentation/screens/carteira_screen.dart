@@ -6,6 +6,7 @@ import 'package:uuid/uuid.dart';
 
 import 'package:soloforte_app/core/constants/layout_constants.dart';
 import 'package:soloforte_app/core/router/app_routes.dart';
+import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 import 'package:soloforte_app/modules/carteira/domain/entities/categoria_global.dart';
 import 'package:soloforte_app/modules/carteira/domain/enums/unidade_categoria.dart';
 import 'package:soloforte_app/modules/carteira/presentation/providers/carteira_providers.dart';
@@ -142,10 +143,14 @@ class _CategoriasTab extends ConsumerWidget {
   }
 
   Future<void> _criarCategoria(BuildContext context, WidgetRef ref) async {
-    final result = await showModalBottomSheet<CategoriaFormResult>(
+    final result = await showSoloForteSheet<CategoriaFormResult>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
+      showDragHandle: false,
+      useSafeArea: false,
+      shape: const RoundedRectangleBorder(),
+      clipBehavior: Clip.none,
       builder: (_) => const CategoriaFormDialog(),
     );
     if (result == null) return;
@@ -175,10 +180,14 @@ class _CategoriasTab extends ConsumerWidget {
     WidgetRef ref,
     CategoriaGlobal categoria,
   ) async {
-    final result = await showModalBottomSheet<CategoriaFormResult>(
+    final result = await showSoloForteSheet<CategoriaFormResult>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
+      showDragHandle: false,
+      useSafeArea: false,
+      shape: const RoundedRectangleBorder(),
+      clipBehavior: Clip.none,
       builder: (_) => CategoriaFormDialog(
         title: 'Editar categoria',
         initialNome: categoria.nome,
@@ -329,18 +338,12 @@ class _OportunidadesTab extends ConsumerWidget {
 
     return clientesAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (_, __) =>
-          const Center(child: Text('Erro ao carregar clientes.')),
+      error: (_, __) => const Center(child: Text('Erro ao carregar clientes.')),
       data: (clientes) {
         if (clientes.isEmpty) {
-          return const Center(
-            child: Text('Nenhuma oportunidade em aberto 🎯'),
-          );
+          return const Center(child: Text('Nenhuma oportunidade em aberto 🎯'));
         }
-        return _OportunidadesClientesList(
-          clientes: clientes,
-          userId: userId,
-        );
+        return _OportunidadesClientesList(clientes: clientes, userId: userId);
       },
     );
   }
@@ -361,8 +364,7 @@ class _OportunidadesClientesList extends ConsumerWidget {
 
     for (final cliente in clientes) {
       final lista =
-          ref.watch(oportunidadesClienteProvider(cliente.id)).valueOrNull ??
-              [];
+          ref.watch(oportunidadesClienteProvider(cliente.id)).valueOrNull ?? [];
       if (lista.isNotEmpty) porCliente[cliente] = lista;
     }
 
@@ -374,9 +376,7 @@ class _OportunidadesClientesList extends ConsumerWidget {
       if (algumCarregando) {
         return const Center(child: CircularProgressIndicator());
       }
-      return const Center(
-        child: Text('Nenhuma oportunidade em aberto 🎯'),
-      );
+      return const Center(child: Text('Nenhuma oportunidade em aberto 🎯'));
     }
 
     final sorted = porCliente.entries.toList()

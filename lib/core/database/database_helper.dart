@@ -161,6 +161,26 @@ class DatabaseHelper {
     }
   }
 
+  Future<bool> _tableExists(Database db, String tableName) async {
+    final rows = await db.rawQuery(
+      "SELECT name FROM sqlite_master WHERE type = 'table' AND name = ? LIMIT 1",
+      [tableName],
+    );
+    return rows.isNotEmpty;
+  }
+
+  Future<void> _renameTableIfExists(
+    Database db,
+    String tableName,
+    String backupName,
+  ) async {
+    final exists = await _tableExists(db, tableName);
+    final backupExists = await _tableExists(db, backupName);
+    if (exists && !backupExists) {
+      await db.execute('ALTER TABLE $tableName RENAME TO $backupName');
+    }
+  }
+
   // ════════════════════════════════════════════════════════════════════
   // MÉTODOS DE MIGRAÇÃO (ISOLADOS E INCREMENTAIS)
   // ════════════════════════════════════════════════════════════════════
@@ -429,7 +449,7 @@ class DatabaseHelper {
 
   Future<void> _migrateToV10(Database db) async {
     // 🎯 RECONSTRUÇÃO DA AGENDA (Incompatibilidade com schema v5)
-    await db.execute('DROP TABLE IF EXISTS agenda_events');
+    await _renameTableIfExists(db, 'agenda_events', 'agenda_events_v5_legacy');
 
     await db.execute('''
       CREATE TABLE IF NOT EXISTS agenda_events (
@@ -480,6 +500,41 @@ class DatabaseHelper {
     await db.execute(
       'CREATE INDEX IF NOT EXISTS idx_agenda_sessions_evento ON agenda_visit_sessions(evento_id)',
     );
+
+    if (await _tableExists(db, 'agenda_events_v5_legacy')) {
+      await db.execute('''
+        INSERT OR IGNORE INTO agenda_events (
+          id,
+          user_id,
+          tipo,
+          cliente_id,
+          talhao_id,
+          titulo,
+          data_inicio_planejada,
+          data_fim_planejada,
+          status,
+          visit_session_id,
+          created_at,
+          updated_at,
+          sync_status
+        )
+          SELECT
+            id,
+            user_id,
+            activity_type,
+            producer_id,
+            area_id,
+            COALESCE(NULLIF(description, ''), activity_type),
+            scheduled_date,
+            scheduled_date,
+            status,
+            visit_session_id,
+            created_at,
+            COALESCE(realized_at, created_at),
+            CAST(sync_status AS TEXT)
+          FROM agenda_events_v5_legacy
+      ''');
+    }
   }
 
   // ── V11, V12, V13: reservadas para próximas features ──────────────────
@@ -731,7 +786,11 @@ class DatabaseHelper {
         FROM visit_sessions
     ''');
 
-    await db.execute('DROP TABLE IF EXISTS visit_sessions');
+    await _renameTableIfExists(
+      db,
+      'visit_sessions',
+      'visit_sessions_v17_legacy',
+    );
     await db.execute('ALTER TABLE visit_sessions_v18 RENAME TO visit_sessions');
     await db.execute(
       'CREATE INDEX IF NOT EXISTS idx_visit_sessions_status ON visit_sessions(status)',
@@ -1112,10 +1171,13 @@ class DatabaseHelper {
   /// Idempotente: CREATE TABLE IF NOT EXISTS garante segurança em re-execução.
   Future<void> _migrateToV27(Database db) async {
     try {
-      await db.execute('DROP TABLE IF EXISTS ndvi_cache');
-      AppLogger.debug('V27: ndvi_cache antiga removida', tag: 'DB.Migration');
+      await _renameTableIfExists(db, 'ndvi_cache', 'ndvi_cache_v19_legacy');
+      AppLogger.debug(
+        'V27: ndvi_cache antiga preservada como ndvi_cache_v19_legacy',
+        tag: 'DB.Migration',
+      );
     } catch (_) {
-      AppLogger.debug('V27: drop ndvi_cache — ignorado', tag: 'DB.Migration');
+      AppLogger.debug('V27: backup ndvi_cache — ignorado', tag: 'DB.Migration');
     }
     try {
       await db.execute('''
@@ -1138,9 +1200,45 @@ class DatabaseHelper {
       await db.execute(
         'CREATE INDEX IF NOT EXISTS idx_ndvi_cache_field ON ndvi_cache(field_id)',
       );
-      AppLogger.debug('V27: ndvi_cache recriada com novo schema', tag: 'DB.Migration');
+      if (await _tableExists(db, 'ndvi_cache_v19_legacy')) {
+        await db.execute('''
+          INSERT OR IGNORE INTO ndvi_cache (
+            id,
+            user_id,
+            field_id,
+            image_date,
+            ndvi_min,
+            ndvi_max,
+            ndvi_mean,
+            local_path,
+            source,
+            fetched_at,
+            sync_status
+          )
+            SELECT
+              id,
+              user_id,
+              area_id,
+              date,
+              0.0,
+              0.0,
+              0.0,
+              image_path,
+              source,
+              cached_at,
+              0
+            FROM ndvi_cache_v19_legacy
+        ''');
+      }
+      AppLogger.debug(
+        'V27: ndvi_cache recriada com novo schema',
+        tag: 'DB.Migration',
+      );
     } catch (_) {
-      AppLogger.debug('V27: criação ndvi_cache — ignorado', tag: 'DB.Migration');
+      AppLogger.debug(
+        'V27: criação ndvi_cache — ignorado',
+        tag: 'DB.Migration',
+      );
     }
   }
 
@@ -1151,9 +1249,15 @@ class DatabaseHelper {
   Future<void> _migrateToV28(Database db) async {
     try {
       await db.execute('ALTER TABLE occurrences ADD COLUMN client_id TEXT');
-      AppLogger.debug('V28: client_id adicionado em occurrences', tag: 'DB.Migration');
+      AppLogger.debug(
+        'V28: client_id adicionado em occurrences',
+        tag: 'DB.Migration',
+      );
     } catch (_) {
-      AppLogger.debug('V28: client_id já existe em occurrences — ignorado', tag: 'DB.Migration');
+      AppLogger.debug(
+        'V28: client_id já existe em occurrences — ignorado',
+        tag: 'DB.Migration',
+      );
     }
   }
 
@@ -1177,9 +1281,8 @@ class DatabaseHelper {
   }
 
   Future<void> _migrateToV30(Database db) async {
-    await db.execute('DROP TABLE IF EXISTS user_profile_cache');
     await db.execute('''
-      CREATE TABLE user_profile_cache (
+      CREATE TABLE IF NOT EXISTS user_profile_cache (
         id TEXT PRIMARY KEY,
         email TEXT NOT NULL,
         full_name TEXT,
@@ -1193,9 +1296,8 @@ class DatabaseHelper {
       )
     ''');
 
-    await db.execute('DROP TABLE IF EXISTS user_profile_edits');
     await db.execute('''
-      CREATE TABLE user_profile_edits (
+      CREATE TABLE IF NOT EXISTS user_profile_edits (
         id TEXT PRIMARY KEY,
         user_id TEXT NOT NULL,
         field_changed TEXT NOT NULL,
@@ -1211,7 +1313,7 @@ class DatabaseHelper {
     );
   }
 
-  /// Remove registros locais não sincronizados do usuário no logout.
+  /// Remove registros locais não sincronizados do usuário ao excluir a conta.
   Future<void> clearUserLocalData(String userId) async {
     if (userId.isEmpty) return;
 
@@ -1289,7 +1391,7 @@ class DatabaseHelper {
 
   // ADR-034: Limpeza do legado reports/ (visit_reports)
   Future<void> _migrateToV31(Database db) async {
-    debugPrint('[DB] Migrando para V31: Drop tabela visit_reports');
-    await db.execute('DROP TABLE IF EXISTS visit_reports');
+    debugPrint('[DB] Migrando para V31: arquivar tabela visit_reports');
+    await _renameTableIfExists(db, 'visit_reports', 'visit_reports_legacy_v31');
   }
 }

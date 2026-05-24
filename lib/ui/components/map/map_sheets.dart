@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/config/map_config.dart';
 import '../../../core/config/map_secrets.dart';
+import '../../../core/ui/sheets/sheet_tokens.dart';
 import '../../theme/premium/design_tokens.dart';
 import '../../../core/constants/layout_constants.dart';
 import '../../../core/domain/map_models.dart';
@@ -89,8 +90,7 @@ class BaseMapSheet extends StatelessWidget {
 }
 
 class LayersSheet extends ConsumerWidget {
-  static const _sheetBg = Color(0xFF1C1C1E);
-  static const _accent = Color(0xFF4CAF50);
+  static const _accent = PremiumTokens.brandGreenDark;
 
   final VoidCallback? onClose; // 🔧 FIX: Callback de fechamento externo
 
@@ -104,8 +104,10 @@ class LayersSheet extends ConsumerWidget {
 
     return Container(
       decoration: const BoxDecoration(
-        color: _sheetBg,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        color: SoloForteSheetTokens.sheetBackground,
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(SoloForteSheetTokens.borderRadius),
+        ),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -119,9 +121,9 @@ class LayersSheet extends ConsumerWidget {
                   child: Text(
                     'Camadas',
                     style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
+                      fontSize: SoloForteSheetTokens.titleFontSize,
+                      fontWeight: SoloForteSheetTokens.titleWeight,
+                      color: SoloForteSheetTokens.titleColor,
                     ),
                   ),
                 ),
@@ -134,63 +136,84 @@ class LayersSheet extends ConsumerWidget {
                     style: TextStyle(
                       color: _accent,
                       fontSize: 15,
-                      fontWeight: FontWeight.w500,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
               ],
             ),
           ),
-          Divider(height: 1, color: Colors.white.withValues(alpha: 0.08)),
+          const Divider(height: 1, color: SoloForteSheetTokens.divider),
           Flexible(
             child: ListView(
               shrinkWrap: true,
               padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    _MapPreviewTile(
-                      tileUrl: MapConfig.stadiaStamenTerrainUrl,
-                      label: 'Padrão',
-                      isSelected: currentLayer == LayerType.standard,
-                      subdomains: null,
-                      onTap: () => ref
-                          .read(activeLayerProvider.notifier)
-                          .setLayer(LayerType.standard),
-                    ),
-                    _MapPreviewTile(
-                      tileUrl: MapConfig.mapTilerSatelliteUrl(kMapTilerApiKey),
-                      label: 'Satélite',
-                      isSelected: currentLayer == LayerType.satellite,
-                      subdomains: null,
-                      onTap: () => ref
-                          .read(activeLayerProvider.notifier)
-                          .setLayer(LayerType.satellite),
-                    ),
-                    _MapPreviewTile(
-                      tileUrl: MapConfig.mapTilerOutdoorUrl(kMapTilerApiKey),
-                      label: 'Relevo',
-                      isSelected: currentLayer == LayerType.relevo,
-                      subdomains: null,
-                      onTap: () => ref
-                          .read(activeLayerProvider.notifier)
-                          .setLayer(LayerType.relevo),
-                    ),
-                    _OverlayToggleColumn(
-                      showMarkers: showMarkers,
-                      showRadar: showRadar,
-                      onToggleMarkers: () {
-                        HapticFeedback.lightImpact();
-                        ref.read(showMarkersProvider.notifier).toggle();
-                      },
-                      onToggleRadar: () {
-                        HapticFeedback.lightImpact();
-                        ref.read(armedModeProvider.notifier).state =
-                            showRadar ? ArmedMode.none : ArmedMode.clima;
-                      },
-                    ),
-                  ],
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final itemWidth = ((constraints.maxWidth - 24) / 4).clamp(
+                      72.0,
+                      96.0,
+                    );
+                    final itemHeight = itemWidth * 0.75;
+
+                    return Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        _MapPreviewTile(
+                          width: itemWidth,
+                          height: itemHeight,
+                          tileUrl: MapConfig.mapTilerSatelliteUrl(
+                            kMapTilerApiKey,
+                          ),
+                          label: 'Satélite',
+                          isSelected: currentLayer == LayerType.satellite,
+                          subdomains: null,
+                          onTap: () => ref
+                              .read(activeLayerProvider.notifier)
+                              .setLayer(LayerType.satellite),
+                        ),
+                        _MapPreviewTile(
+                          width: itemWidth,
+                          height: itemHeight,
+                          tileUrl: MapConfig.mapTilerOutdoorUrl(
+                            kMapTilerApiKey,
+                          ),
+                          label: 'Relevo',
+                          isSelected: currentLayer == LayerType.relevo,
+                          subdomains: null,
+                          onTap: () => ref
+                              .read(activeLayerProvider.notifier)
+                              .setLayer(LayerType.relevo),
+                        ),
+                        _OverlayToggleTile(
+                          width: itemWidth,
+                          height: itemHeight,
+                          label: 'Pinos',
+                          isSelected: showMarkers,
+                          activeAsset: _LayerAssets.pinsActive,
+                          inactiveAsset: _LayerAssets.pinsInactive,
+                          onTap: () {
+                            HapticFeedback.lightImpact();
+                            ref.read(showMarkersProvider.notifier).toggle();
+                          },
+                        ),
+                        _OverlayToggleTile(
+                          width: itemWidth,
+                          height: itemHeight,
+                          label: 'Chuva',
+                          isSelected: showRadar,
+                          activeAsset: _LayerAssets.rainActive,
+                          inactiveAsset: _LayerAssets.rainInactive,
+                          onTap: () {
+                            HapticFeedback.lightImpact();
+                            ref.read(armedModeProvider.notifier).state =
+                                showRadar ? ArmedMode.none : ArmedMode.clima;
+                          },
+                        ),
+                      ],
+                    );
+                  },
                 ),
                 const SizedBox(height: kFabSafeArea),
               ],
@@ -203,8 +226,10 @@ class LayersSheet extends ConsumerWidget {
 }
 
 class _MapPreviewTile extends StatelessWidget {
-  static const _accent = Color(0xFF4CAF50);
+  static const _accent = PremiumTokens.brandGreenDark;
 
+  final double width;
+  final double height;
   final String tileUrl;
   final String label;
   final bool isSelected;
@@ -212,6 +237,8 @@ class _MapPreviewTile extends StatelessWidget {
   final VoidCallback onTap;
 
   const _MapPreviewTile({
+    required this.width,
+    required this.height,
     required this.tileUrl,
     required this.label,
     required this.isSelected,
@@ -226,8 +253,8 @@ class _MapPreviewTile extends StatelessWidget {
       child: Column(
         children: [
           Container(
-            width: 96,
-            height: 72,
+            width: width,
+            height: height,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
@@ -282,110 +309,84 @@ class _MapPreviewTile extends StatelessWidget {
   }
 }
 
-/// Coluna de ícones de toggle para Pinos e Radar de Chuva.
-class _OverlayToggleColumn extends StatelessWidget {
-  static const _accent = Color(0xFF4CAF50);
-  static const _inactive = Color(0xFF6E6E73);
+class _LayerAssets {
+  static const pinsInactive = 'assets/images/map_pins_inactive.jpg';
+  static const pinsActive = 'assets/images/map_pins_active.jpg';
+  static const rainInactive = 'assets/images/map_rain_inactive.jpg';
+  static const rainActive = 'assets/images/map_rain_active.jpg';
+}
 
-  final bool showMarkers;
-  final bool showRadar;
-  final VoidCallback onToggleMarkers;
-  final VoidCallback onToggleRadar;
+/// Tile de toggle para Pinos e Radar de Chuva.
+class _OverlayToggleTile extends StatelessWidget {
+  static const _accent = PremiumTokens.brandGreenDark;
 
-  const _OverlayToggleColumn({
-    required this.showMarkers,
-    required this.showRadar,
-    required this.onToggleMarkers,
-    required this.onToggleRadar,
+  final double width;
+  final double height;
+  final String label;
+  final bool isSelected;
+  final String activeAsset;
+  final String inactiveAsset;
+  final VoidCallback onTap;
+
+  const _OverlayToggleTile({
+    required this.width,
+    required this.height,
+    required this.label,
+    required this.isSelected,
+    required this.activeAsset,
+    required this.inactiveAsset,
+    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        GestureDetector(
-          onTap: onToggleMarkers,
-          child: Container(
-            width: 72,
-            height: 32,
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        children: [
+          Container(
+            width: width,
+            height: height,
             decoration: BoxDecoration(
-              color: showMarkers
-                  ? _accent.withValues(alpha: 0.15)
-                  : Colors.transparent,
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: showMarkers ? _accent : _inactive,
-                width: 1.5,
+                color: isSelected ? _accent : Colors.transparent,
+                width: 2.5,
               ),
             ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.location_on,
-                  size: 16,
-                  color: showMarkers ? _accent : _inactive,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  'Pinos',
-                  style: TextStyle(
-                    fontSize: 10,
-                    color: showMarkers ? _accent : _inactive,
-                    fontWeight: FontWeight.w500,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(10),
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  Image.asset(
+                    isSelected ? activeAsset : inactiveAsset,
+                    fit: BoxFit.cover,
+                    filterQuality: FilterQuality.medium,
                   ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(height: 8),
-        GestureDetector(
-          onTap: onToggleRadar,
-          child: Container(
-            width: 72,
-            height: 32,
-            decoration: BoxDecoration(
-              color: showRadar
-                  ? const Color(0xFF2196F3).withValues(alpha: 0.15)
-                  : Colors.transparent,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: showRadar ? const Color(0xFF2196F3) : _inactive,
-                width: 1.5,
+                  if (isSelected)
+                    const Positioned(
+                      top: 4,
+                      right: 4,
+                      child: _LayerSelectedBadge(),
+                    ),
+                ],
               ),
             ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.grain,
-                  size: 16,
-                  color: showRadar ? const Color(0xFF2196F3) : _inactive,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  'Chuva',
-                  style: TextStyle(
-                    fontSize: 10,
-                    color: showRadar ? const Color(0xFF2196F3) : _inactive,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: isSelected ? Colors.white : Colors.white60,
+              fontSize: 12,
+              fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
             ),
           ),
-        ),
-        const SizedBox(height: 6),
-        const Text(
-          'Camadas',
-          style: TextStyle(
-            color: Colors.transparent,
-            fontSize: 12,
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
@@ -397,7 +398,10 @@ class _LayerSelectedBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(2),
-      decoration: const BoxDecoration(color: Color(0xFF4CAF50), shape: BoxShape.circle),
+      decoration: const BoxDecoration(
+        color: PremiumTokens.brandGreenDark,
+        shape: BoxShape.circle,
+      ),
       child: const Icon(Icons.check, color: Colors.white, size: 12),
     );
   }

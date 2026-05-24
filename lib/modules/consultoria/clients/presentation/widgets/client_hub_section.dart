@@ -72,7 +72,8 @@ class ClientStatsPanel extends ConsumerWidget {
                 children: [
                   for (var i = 0; i < stats.proximosEventos.length; i++) ...[
                     _EventoItem(
-                      titulo: stats.proximosEventos[i]['titulo'] as String? ??
+                      titulo:
+                          stats.proximosEventos[i]['titulo'] as String? ??
                           'Evento',
                       data: _formatDate(
                         stats.proximosEventos[i]['data_inicio_planejada']
@@ -118,8 +119,7 @@ class ClientStatsPanel extends ConsumerWidget {
                       data: _formatDate(
                         stats.ultimasVisitas[i]['start_at_real'] as String?,
                       ),
-                      duracao:
-                          stats.ultimasVisitas[i]['duracao_min'] as int?,
+                      duracao: stats.ultimasVisitas[i]['duracao_min'] as int?,
                     ),
                     if (i < stats.ultimasVisitas.length - 1)
                       const Divider(
@@ -141,26 +141,23 @@ class ClientStatsPanel extends ConsumerWidget {
   }
 
   Widget _sectionTitle(BuildContext context, String t) => Padding(
-        padding: const EdgeInsets.only(bottom: 4),
-        child: Text(
-          t,
-          style: const TextStyle(
-            fontSize: 17,
-            fontWeight: FontWeight.w600,
-            letterSpacing: -0.4,
-            color: Colors.black87,
-          ),
-        ),
-      );
+    padding: const EdgeInsets.only(bottom: 4),
+    child: Text(
+      t,
+      style: const TextStyle(
+        fontSize: 17,
+        fontWeight: FontWeight.w600,
+        letterSpacing: -0.4,
+        color: Colors.black87,
+      ),
+    ),
+  );
 
   String _formatDate(String? iso) {
     if (iso == null) return '—';
-    try {
-      final dt = DateTime.parse(iso).toLocal();
-      return DateFormat('dd/MM/yyyy').format(dt);
-    } catch (_) {
-      return '—';
-    }
+    final dt = DateTime.tryParse(iso)?.toLocal();
+    if (dt == null) return '—';
+    return DateFormat('dd/MM/yyyy').format(dt);
   }
 }
 

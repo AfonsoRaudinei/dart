@@ -121,26 +121,6 @@ class SideMenuOverlay extends ConsumerWidget {
                           const _MenuPlanoBadgeItem(),
                           Consumer(
                             builder: (context, ref, _) {
-                              final planoAsync = ref.watch(planoAtivoProvider);
-                              return planoAsync.when(
-                                data: (plano) {
-                                  if (plano.plano == PlanoTipo.ouro) {
-                                    return const SizedBox.shrink();
-                                  }
-                                  return _MenuItem(
-                                    icon: Icons.group_add_outlined,
-                                    label: 'Indicações',
-                                    subtitle: buildIndicacaoSubtitle(plano),
-                                    route: AppRoutes.planosIndicacoes,
-                                  );
-                                },
-                                loading: () => const SizedBox.shrink(),
-                                error: (_, __) => const SizedBox.shrink(),
-                              );
-                            },
-                          ),
-                          Consumer(
-                            builder: (context, ref, _) {
                               final syncState = ref.watch(manualSyncProvider);
                               return ListTile(
                                 dense: true,
@@ -159,11 +139,13 @@ class SideMenuOverlay extends ConsumerWidget {
                                     ? null
                                     : () {
                                         ref.invalidate(manualSyncProvider);
-                                        ScaffoldMessenger.of(context)
-                                            .showSnackBar(
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
                                           const SnackBar(
-                                            content:
-                                                Text('Sincronização iniciada'),
+                                            content: Text(
+                                              'Sincronização iniciada',
+                                            ),
                                             duration: Duration(seconds: 2),
                                           ),
                                         );
@@ -195,10 +177,9 @@ class SideMenuOverlay extends ConsumerWidget {
     final localProfile = ref.watch(profileProvider);
 
     final profile = userProfileAsync.asData?.value;
-    final displayName =
-        (profile?.fullName?.trim().isNotEmpty ?? false)
-            ? profile!.fullName!
-            : 'Usuário';
+    final displayName = (profile?.fullName?.trim().isNotEmpty ?? false)
+        ? profile!.fullName!
+        : 'Usuário';
     final displayRole = _formatRole(profile?.role ?? '');
 
     ImageProvider<Object>? avatarImage;
@@ -343,12 +324,12 @@ class _MenuItem extends ConsumerWidget {
 // ADR-012 — Funções e widgets auxiliares para planos/
 // ─────────────────────────────────────────────────────────────
 
-String buildIndicacaoSubtitle(UserPlan plano) {
+String buildIndicacaoSubtitle(UserPlan plano, int indicacoesValidadas) {
   switch (plano.plano) {
     case PlanoTipo.bronze:
-      return '? /5 para Prata';
+      return '$indicacoesValidadas/5 para Prata';
     case PlanoTipo.prata:
-      return '? /10 para Ouro';
+      return '$indicacoesValidadas/10 para Ouro';
     case PlanoTipo.ouro:
       return '';
   }

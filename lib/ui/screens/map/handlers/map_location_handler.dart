@@ -24,8 +24,12 @@ class MapLocationHandler {
     required bool isMapReady,
   }) async {
     final permission = await ref.read(locationPermissionProvider.future);
+    if (!context.mounted) return;
+
     if (permission == LocationPermission.denied) {
       final newPermission = await LocationPermissionGate.request();
+      if (!context.mounted) return;
+
       await _handlePermissionResult(
         permission: newPermission,
         ref: ref,
@@ -117,8 +121,12 @@ class MapLocationHandler {
     if (!isMapReady) return;
 
     final permission = await ref.read(locationPermissionProvider.future);
+    if (!context.mounted) return;
+
     if (permission == LocationPermission.denied) {
       final newPermission = await LocationPermissionGate.request();
+      if (!context.mounted) return;
+
       await _handlePermissionResult(
         permission: newPermission,
         ref: ref,
@@ -133,11 +141,11 @@ class MapLocationHandler {
     final locationState = ref.read(locationStateProvider);
     if (locationState != LocationState.available) {
       await ref.read(locationStateProvider.notifier).init();
+      if (!context.mounted) return;
+
       final retryState = ref.read(locationStateProvider);
       if (retryState != LocationState.available) {
-        if (context.mounted) {
-          showGPSRequiredMessage(ref: ref, context: context);
-        }
+        showGPSRequiredMessage(ref: ref, context: context);
         return;
       }
     }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
+import '../../../../modules/dashboard/services/location_service.dart';
 import '../../../../modules/map/presentation/widgets/visit_sheet.dart';
 import '../../../../modules/visitas/presentation/controllers/visit_controller.dart';
 import '../../../../ui/components/map/map_sheet_state.dart';
@@ -28,12 +29,15 @@ Widget buildSheetContent(
       );
     // R-2: MapSheetType.occurrences NUNCA chega a este builder em produção.
     // O guard em _setSheetState (private_map_screen.dart) redireciona occurrences
-    // para o MapBottomSheet no Stack — nunca para showModalBottomSheet.
+    // para o MapBottomSheet no Stack — nunca para sheet modal.
     // Manter este case ativo seria armadilha de double-save no OccurrenceController.
     // Caminho ativo: MapBuildOrchestrator → MapBottomSheet → _buildOccurrenceForm/_buildOccurrenceList
     case MapSheetType.occurrences:
       // Código morto intencional: se chegar aqui, há bug de fluxo — nunca deve ocorrer.
-      assert(false, 'occurrences deve ser tratado pelo MapBottomSheet no Stack');
+      assert(
+        false,
+        'occurrences deve ser tratado pelo MapBottomSheet no Stack',
+      );
       return const SizedBox.shrink();
     case MapSheetType.checkIn:
       return Consumer(
@@ -52,10 +56,37 @@ Widget buildSheetContent(
             // Bug 1: scrollController conecta DraggableScrollableSheet ao
             // SingleChildScrollView interno para expansão correta via drag.
             scrollController: scrollController,
-            onConfirm: (clientId, areaId, activity) {
-              widgetRef
+            onConfirm: (clientId, areaId, activity) async {
+              final locationService = LocationService();
+              final isAvailable = await locationService.checkAvailability();
+              final position = isAvailable
+                  ? await locationService.getCurrentPosition()
+                  : null;
+
+              if (!context.mounted) return;
+
+              if (position == null) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Não foi possível obter sua posição GPS.'),
+                    backgroundColor: PremiumTokens.alertError,
+                  ),
+                );
+                return;
+              }
+
+              await widgetRef
                   .read(visitControllerProvider.notifier)
-                  .startSession(clientId, areaId, activity, 0.0, 0.0);
+                  .startSession(
+                    clientId,
+                    areaId,
+                    activity,
+                    position.latitude,
+                    position.longitude,
+                  );
+
+              if (!context.mounted) return;
+
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
                   content: Text('Visita iniciada. Bom trabalho!'),

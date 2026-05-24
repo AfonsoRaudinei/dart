@@ -30,7 +30,6 @@ REGRA DE OURO:
 ════════════════════════════════════════════════════════════════════
 */
 import 'package:flutter/material.dart';
-import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -73,8 +72,8 @@ class _SmartButtonState extends ConsumerState<SmartButton> {
         ? ref.read(sideMenuOpenProvider.notifier)
         : null;
 
-    // Tokens oficiais
-    final primaryColor = PremiumTokens.brandGreen;
+    // Accent visual do tema atual.
+    final primaryColor = Theme.of(context).colorScheme.primary;
     final safeElevation = 2.0; // Sombra mínima conforme design
 
     // ═══════════════════════════════════════════════════════════════
@@ -98,10 +97,9 @@ class _SmartButtonState extends ConsumerState<SmartButton> {
           ),
           label: Text(
             'Acessar SoloForte',
-            style: const TextStyle(fontSize: 14).copyWith(
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
+            style: const TextStyle(
+              fontSize: 14,
+            ).copyWith(fontWeight: FontWeight.bold, color: Colors.white),
           ),
           icon: const Icon(Icons.login, color: Colors.white),
         );

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 // Removed dart:ui
 import 'package:flutter/material.dart';
 import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
@@ -77,15 +79,12 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
   Widget build(BuildContext context) {
     // Use SafeArea top padding to ensure elements are below the status bar/notch
     final safeTop = MediaQuery.of(context).padding.top;
+    final primaryColor = Theme.of(context).colorScheme.primary;
 
     return Stack(
       children: [
         // 1. Card de Visita Ativa (Top Left) — visível apenas com sessão ativa
-        Positioned(
-          top: safeTop + 8,
-          left: 12,
-          child: const VisitActiveCard(),
-        ),
+        Positioned(top: safeTop + 8, left: 12, child: const VisitActiveCard()),
 
         // 2. Botão de Localização + Indicador de Conectividade (canto superior direito)
         Positioned(
@@ -105,13 +104,17 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
 
         // 3. Ações verticais do mapa (direita)
         Positioned(
-          top: safeTop + 80, // Ajustado para não colidir com o botão de localização menor
+          top:
+              safeTop +
+              80, // Ajustado para não colidir com o botão de localização menor
           right: 16,
           child: Column(
             mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               _MapActionButton(
                 icon: SFIcons.edit,
+                label: 'Desenhar',
                 isActive: widget.isDrawMode,
                 onTap: widget.onToggleDrawMode,
               ),
@@ -119,11 +122,13 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
               const SizedBox(height: 12),
               _MapActionButton(
                 icon: SFIcons.layers,
+                label: 'Camadas',
                 onTap: () => widget.onTabSelected(4, 'Button_Layers'),
               ),
               const SizedBox(height: 12),
               _MapActionButton(
                 icon: SFIcons.warning,
+                label: 'Ocorrências',
                 isActive: widget.isOccurrenceMode,
                 onTap: () {
                   // 🐛 BUGFIX: onToggleOccurrenceMode → _armOccurrenceMode → _openOccurrenceCreationSheet
@@ -137,6 +142,7 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
               const SizedBox(height: 12),
               _MapActionButton(
                 icon: Icons.campaign_rounded,
+                label: 'Publicações',
                 isActive: widget.isMarketingMode,
                 onTap: () {
                   if (widget.onToggleMarketingMode != null) {
@@ -147,10 +153,10 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
               const SizedBox(height: 12),
               _MapActionButton(
                 icon: SFIcons.checkCircle,
+                label: 'Check-in',
                 isActive: widget.isCheckInActive,
                 onTap: () => widget.onTabSelected(3, 'Button_CheckIn'),
               ),
-
             ],
           ),
         ),
@@ -166,12 +172,14 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
                 Material(
                   elevation: 4,
                   shape: const CircleBorder(),
-                  color: widget.hasSelfIntersection 
-                      ? Colors.grey 
-                      : PremiumTokens.brandGreen,
+                  color: widget.hasSelfIntersection
+                      ? Colors.grey
+                      : primaryColor,
                   child: InkWell(
                     customBorder: const CircleBorder(),
-                    onTap: widget.hasSelfIntersection ? null : widget.onFinishDrawing,
+                    onTap: widget.hasSelfIntersection
+                        ? null
+                        : widget.onFinishDrawing,
                     child: const Padding(
                       padding: EdgeInsets.all(16),
                       child: Icon(SFIcons.check, color: Colors.white, size: 24),
@@ -191,7 +199,11 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
                       onTap: widget.canUndo ? widget.onUndoDrawing : null,
                       child: const Padding(
                         padding: EdgeInsets.all(12),
-                        child: Icon(Icons.undo_rounded, color: Colors.black87, size: 24),
+                        child: Icon(
+                          Icons.undo_rounded,
+                          color: Colors.black87,
+                          size: 24,
+                        ),
                       ),
                     ),
                   ),
@@ -236,41 +248,136 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
   }
 }
 
-class _MapActionButton extends StatelessWidget {
+class _MapActionButton extends StatefulWidget {
   final IconData icon;
+  final String label;
   final VoidCallback onTap;
   final bool isActive;
 
   const _MapActionButton({
     required this.icon,
+    required this.label,
     required this.onTap,
     this.isActive = false,
   });
 
   @override
+  State<_MapActionButton> createState() => _MapActionButtonState();
+}
+
+class _MapActionButtonState extends State<_MapActionButton> {
+  Timer? _labelTimer;
+  bool _showLabel = false;
+
+  @override
+  void dispose() {
+    _labelTimer?.cancel();
+    super.dispose();
+  }
+
+  void _showTemporaryLabel() {
+    _labelTimer?.cancel();
+    setState(() => _showLabel = true);
+    _labelTimer = Timer(const Duration(milliseconds: 1600), () {
+      if (mounted) {
+        setState(() => _showLabel = false);
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        HapticFeedback.selectionClick();
-        onTap();
-      },
-      behavior: HitTestBehavior.opaque,
-      child: PremiumGlassPanel(
-        borderRadius: BorderRadius.circular(99.0), // Totalmente Redondo
-        isDark:
-            isActive, // Quando ativo, usa glass Escuro/Verde (faremos custom se precisar, mas isDark ou mudar container interno ajuda)
-        child: Container(
-          width: 48,
-          height: 48,
-          decoration: BoxDecoration(
-            color: isActive ? PremiumTokens.brandGreen : Colors.transparent,
-            shape: BoxShape.circle,
-          ),
-          child: Icon(
-            icon,
-            color: isActive ? Colors.white : PremiumTokens.textPrimaryLight,
+    final primaryColor = Theme.of(context).colorScheme.primary;
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _MapButtonLabel(text: widget.label, isVisible: _showLabel),
+        const SizedBox(width: 8),
+        Tooltip(
+          message: widget.label,
+          waitDuration: const Duration(milliseconds: 450),
+          child: GestureDetector(
+            onTap: () {
+              HapticFeedback.selectionClick();
+              _showTemporaryLabel();
+              widget.onTap();
+            },
+            onLongPress: _showTemporaryLabel,
+            behavior: HitTestBehavior.opaque,
+            child: PremiumGlassPanel(
+              borderRadius: BorderRadius.circular(99.0), // Totalmente Redondo
+              isDark: widget
+                  .isActive, // Quando ativo, usa glass Escuro/Verde (faremos custom se precisar, mas isDark ou mudar container interno ajuda)
+              child: Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: widget.isActive ? primaryColor : Colors.transparent,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  widget.icon,
+                  color: widget.isActive
+                      ? Colors.white
+                      : PremiumTokens.textPrimaryLight,
+                ),
+              ),
+            ),
           ),
         ),
+      ],
+    );
+  }
+}
+
+class _MapButtonLabel extends StatelessWidget {
+  final String text;
+  final bool isVisible;
+
+  const _MapButtonLabel({required this.text, required this.isVisible});
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child: AnimatedSize(
+        duration: const Duration(milliseconds: 160),
+        curve: Curves.easeOut,
+        alignment: Alignment.centerRight,
+        child: isVisible
+            ? AnimatedOpacity(
+                opacity: 1,
+                duration: const Duration(milliseconds: 160),
+                curve: Curves.easeOut,
+                child: AnimatedScale(
+                  scale: 1,
+                  duration: const Duration(milliseconds: 160),
+                  curve: Curves.easeOut,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.72),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 7,
+                      ),
+                      child: Text(
+                        text,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              )
+            : const SizedBox.shrink(),
       ),
     );
   }
@@ -281,21 +388,20 @@ class _ConnectivityDot extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isOnline = ref.watch(isOnlineProvider).valueOrNull ?? true;
-    
+
     return Container(
       width: 10,
       height: 10,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: isOnline 
+        color: isOnline
             ? const Color(0xFF34C759) // Verde iOS
             : const Color(0xFFFF3B30), // Vermelho iOS
         boxShadow: [
           BoxShadow(
-            color: (isOnline 
-                ? const Color(0xFF34C759) 
-                : const Color(0xFFFF3B30)
-            ).withValues(alpha: 0.4),
+            color:
+                (isOnline ? const Color(0xFF34C759) : const Color(0xFFFF3B30))
+                    .withValues(alpha: 0.4),
             blurRadius: 4,
             spreadRadius: 1,
           ),
@@ -306,56 +412,98 @@ class _ConnectivityDot extends ConsumerWidget {
 }
 
 /// Botão de localização com 3 estados (idle / following / northLocked)
-class _LocationButton extends ConsumerWidget {
+class _LocationButton extends ConsumerStatefulWidget {
   final VoidCallback onCenterUser;
 
   const _LocationButton({required this.onCenterUser});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_LocationButton> createState() => _LocationButtonState();
+}
+
+class _LocationButtonState extends ConsumerState<_LocationButton> {
+  Timer? _labelTimer;
+  bool _showLabel = false;
+
+  @override
+  void dispose() {
+    _labelTimer?.cancel();
+    super.dispose();
+  }
+
+  void _showTemporaryLabel() {
+    _labelTimer?.cancel();
+    setState(() => _showLabel = true);
+    _labelTimer = Timer(const Duration(milliseconds: 1600), () {
+      if (mounted) {
+        setState(() => _showLabel = false);
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final locationMode = ref.watch(mapLocationModeProvider);
     final locationState = ref.watch(locationStateProvider);
     final colorScheme = Theme.of(context).colorScheme;
+    const label = 'Localização';
 
-    return Material(
-      shape: const CircleBorder(),
-      elevation: 2,
-      color: Colors.white,
-      child: InkWell(
-        customBorder: const CircleBorder(),
-        onTap: () {
-          HapticFeedback.selectionClick();
-          
-          // Ciclo de estados: idle → following → northLocked → idle
-          final nextMode = switch (locationMode) {
-            MapLocationMode.idle => MapLocationMode.following,
-            MapLocationMode.following => MapLocationMode.northLocked,
-            MapLocationMode.northLocked => MapLocationMode.idle,
-          };
-          
-          ref.read(mapLocationModeProvider.notifier).state = nextMode;
-          
-          // Centralizar usuário quando entra em following
-          if (nextMode == MapLocationMode.following || 
-              nextMode == MapLocationMode.northLocked) {
-            onCenterUser();
-          }
-          
-          AppLogger.debug(
-            "MapOverlay: Modo de localização mudou para $nextMode",
-            tag: 'MapControls',
-          );
-        },
-        child: SizedBox(
-          width: 36,
-          height: 36,
-          child: Icon(
-            _iconForMode(locationMode),
-            size: 18,
-            color: _colorForMode(locationMode, locationState, colorScheme),
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _MapButtonLabel(text: label, isVisible: _showLabel),
+        const SizedBox(width: 8),
+        Tooltip(
+          message: label,
+          waitDuration: const Duration(milliseconds: 450),
+          child: Material(
+            shape: const CircleBorder(),
+            elevation: 2,
+            color: Colors.white,
+            child: InkWell(
+              customBorder: const CircleBorder(),
+              onTap: () {
+                HapticFeedback.selectionClick();
+                _showTemporaryLabel();
+
+                // Ciclo de estados: idle → following → northLocked → idle
+                final nextMode = switch (locationMode) {
+                  MapLocationMode.idle => MapLocationMode.following,
+                  MapLocationMode.following => MapLocationMode.northLocked,
+                  MapLocationMode.northLocked => MapLocationMode.idle,
+                };
+
+                ref.read(mapLocationModeProvider.notifier).state = nextMode;
+
+                // Centralizar usuário quando entra em following
+                if (nextMode == MapLocationMode.following ||
+                    nextMode == MapLocationMode.northLocked) {
+                  widget.onCenterUser();
+                }
+
+                AppLogger.debug(
+                  "MapOverlay: Modo de localização mudou para $nextMode",
+                  tag: 'MapControls',
+                );
+              },
+              onLongPress: _showTemporaryLabel,
+              child: SizedBox(
+                width: 36,
+                height: 36,
+                child: Icon(
+                  _iconForMode(locationMode),
+                  size: 18,
+                  color: _colorForMode(
+                    locationMode,
+                    locationState,
+                    colorScheme,
+                  ),
+                ),
+              ),
+            ),
           ),
         ),
-      ),
+      ],
     );
   }
 

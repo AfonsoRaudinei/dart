@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:soloforte_app/core/constants/layout_constants.dart';
+import 'package:soloforte_app/core/router/app_routes.dart';
 
 import '../providers/plano_providers.dart';
 import '../../domain/entities/user_plan.dart';
@@ -67,7 +68,7 @@ class MeuPlanoScreen extends ConsumerWidget {
 // CONTEÚDO: PLANO ATIVO
 // ─────────────────────────────────────────────────────────────
 
-class _PlanoAtivoContent extends StatelessWidget {
+class _PlanoAtivoContent extends ConsumerWidget {
   final UserPlan plano;
 
   const _PlanoAtivoContent({required this.plano});
@@ -95,9 +96,10 @@ class _PlanoAtivoContent extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final dias = plano.diasRestantes;
     final expiraEmBreve = plano.expiraEmBreve;
+    final codigoAsync = ref.watch(meuCodigoIndicacaoProvider);
 
     return ListView(
       padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -192,6 +194,18 @@ class _PlanoAtivoContent extends StatelessWidget {
           label: 'Cases ativos no mapa',
           value: '${plano.limiteCases} case${plano.limiteCases > 1 ? 's' : ''}',
         ),
+        if (plano.plano != PlanoTipo.ouro) ...[
+          const SizedBox(height: 16),
+          _NavigationRow(
+            icon: Icons.group_add_outlined,
+            label: 'Indicações',
+            value: _buildIndicacaoSubtitle(
+              plano,
+              codigoAsync.asData?.value?.indicacoesValidadas ?? 0,
+            ),
+            route: AppRoutes.planosIndicacoes,
+          ),
+        ],
         const SizedBox(height: 32),
         if (plano.plano != PlanoTipo.ouro)
           SizedBox(
@@ -231,6 +245,17 @@ class _PlanoAtivoContent extends StatelessWidget {
     return '${date.day.toString().padLeft(2, '0')}/'
         '${date.month.toString().padLeft(2, '0')}/'
         '${date.year}';
+  }
+
+  String _buildIndicacaoSubtitle(UserPlan plano, int indicacoesValidadas) {
+    switch (plano.plano) {
+      case PlanoTipo.bronze:
+        return '$indicacoesValidadas/5 para Prata';
+      case PlanoTipo.prata:
+        return '$indicacoesValidadas/10 para Ouro';
+      case PlanoTipo.ouro:
+        return '';
+    }
   }
 }
 
@@ -306,6 +331,69 @@ class _InfoRow extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _NavigationRow extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+  final String route;
+
+  const _NavigationRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.route,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: const Color(0xFF1C1C1E),
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: () {
+          HapticFeedback.lightImpact();
+          context.go(route);
+        },
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          child: Row(
+            children: [
+              Icon(icon, color: const Color(0xFF32D74B), size: 22),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  label,
+                  style: const TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 15,
+                    color: Color(0xFFE5E5EA),
+                  ),
+                ),
+              ),
+              Text(
+                value,
+                style: const TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(width: 8),
+              const Icon(
+                Icons.chevron_right_rounded,
+                color: Color(0xFF8E8E93),
+                size: 22,
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

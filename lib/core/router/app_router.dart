@@ -144,9 +144,10 @@ GoRouter router(Ref ref) {
                 path: 'day',
                 builder: (_, state) {
                   final dateStr = state.uri.queryParameters['date'];
-                  final date = dateStr != null
-                      ? DateTime.parse(dateStr)
-                      : DateTime.now();
+                  final parsedDate = dateStr != null
+                      ? DateTime.tryParse(dateStr)
+                      : null;
+                  final date = parsedDate ?? DateTime.now();
                   return AgendaDayPage(selectedDate: date);
                 },
               ),

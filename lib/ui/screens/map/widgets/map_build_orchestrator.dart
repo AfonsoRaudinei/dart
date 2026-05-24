@@ -24,7 +24,8 @@ import '../../../../modules/drawing/presentation/widgets/gps_tracking_overlay.da
 import '../../../../modules/consultoria/clients/presentation/providers/field_providers.dart';
 import '../../../../modules/dashboard/providers/location_providers.dart';
 import '../../../../modules/consultoria/services/talhao_map_adapter.dart';
-import '../../../../modules/consultoria/occurrences/domain/occurrence.dart' as occ;
+import '../../../../modules/consultoria/occurrences/domain/occurrence.dart'
+    as occ;
 import '../../../../modules/visitas/presentation/controllers/visit_controller.dart';
 import '../../../../core/contracts/i_field_lookup_geofence_provider.dart';
 import '../../../components/map/map_bottom_sheet.dart';
@@ -284,9 +285,7 @@ class MapBuildOrchestrator extends ConsumerWidget {
               if (ref.watch(activeLayerProvider) == LayerType.satellite)
                 const RichAttributionWidget(
                   attributions: [
-                    TextSourceAttribution(
-                      MapConfig.googleAttribution,
-                    ),
+                    TextSourceAttribution(MapConfig.googleAttribution),
                   ],
                 ),
             ],
@@ -409,7 +408,7 @@ class MapBuildOrchestrator extends ConsumerWidget {
             ),
 
           // 🛡 CONSOLIDATION: DrawingSheet e OccurrenceSheet permanecem no Stack
-          // Tipos checkIn/layers continuam usando showModalBottomSheet
+          // Tipos checkIn/layers continuam usando sheet modal padronizado
           if (sheetState != null &&
               (sheetState.type == MapSheetType.draw ||
                   sheetState.type == MapSheetType.occurrences))

@@ -33,12 +33,16 @@ class ActiveLayer extends _$ActiveLayer {
       final prefs = ref.read(preferencesServiceProvider);
       final saved = prefs.getString(_kLayerKey);
       if (saved != null) {
-        final verify = LayerType.values.firstWhere(
+        final savedLayer = LayerType.values.firstWhere(
           (e) => e.toString() == saved,
           orElse: () => LayerType.satellite,
         );
+        final verify = savedLayer == LayerType.standard
+            ? LayerType.satellite
+            : savedLayer;
         if (verify != state) {
           state = verify;
+          prefs.setString(_kLayerKey, verify.toString());
         }
       }
     } catch (e) {

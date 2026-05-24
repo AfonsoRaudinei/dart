@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path/path.dart' as p;
+import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 
@@ -105,9 +106,13 @@ class MarketingPhotoService {
 
   /// Diálogo de escolha de origem (Câmera / Galeria)
   Future<ImageSource?> _showSourceDialog(BuildContext context) async {
-    return showModalBottomSheet<ImageSource>(
+    return showSoloForteSheet<ImageSource>(
       context: context,
       backgroundColor: Colors.transparent,
+      showDragHandle: false,
+      useSafeArea: false,
+      shape: const RoundedRectangleBorder(),
+      clipBehavior: Clip.none,
       builder: (_) => Container(
         margin: const EdgeInsets.fromLTRB(16, 0, 16, 32),
         decoration: BoxDecoration(

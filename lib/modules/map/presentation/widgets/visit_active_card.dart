@@ -7,6 +7,7 @@ import 'package:soloforte_app/modules/consultoria/clients/domain/client.dart';
 import 'package:soloforte_app/modules/consultoria/clients/presentation/providers/clients_providers.dart';
 import 'package:soloforte_app/modules/ndvi/presentation/widgets/ndvi_talhao_sheet.dart';
 import 'package:soloforte_app/modules/visitas/presentation/controllers/visit_controller.dart';
+import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 
 /// Card compacto de visita ativa — canto superior esquerdo do mapa.
@@ -28,9 +29,7 @@ class VisitActiveCard extends ConsumerWidget {
     final clientAsync = ref.watch(clientDetailProvider(session.producerId));
 
     return clientAsync.when(
-      loading: () => _GlassChip(
-        child: _LoadingRow(),
-      ),
+      loading: () => _GlassChip(child: _LoadingRow()),
       error: (_, __) => const SizedBox.shrink(),
       data: (client) {
         if (client == null) return const SizedBox.shrink();
@@ -139,12 +138,16 @@ class VisitActiveCard extends ConsumerWidget {
                   Padding(
                     padding: const EdgeInsets.only(top: 8),
                     child: OutlinedButton.icon(
-                      onPressed: () => showModalBottomSheet(
+                      onPressed: () => showSoloForteSheet(
                         context: context,
                         isScrollControlled: true,
                         backgroundColor: Theme.of(context).colorScheme.surface,
+                        showDragHandle: false,
+                        useSafeArea: false,
                         shape: const RoundedRectangleBorder(
-                          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+                          borderRadius: BorderRadius.vertical(
+                            top: Radius.circular(16),
+                          ),
                         ),
                         builder: (_) => NdviTalhaoSheet(
                           fieldId: session.areaId!,
@@ -174,10 +177,14 @@ class VisitActiveCard extends ConsumerWidget {
     Talhao? currentTalhao,
   ) {
     HapticFeedback.lightImpact();
-    showModalBottomSheet(
+    showSoloForteSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
+      showDragHandle: false,
+      useSafeArea: false,
+      shape: const RoundedRectangleBorder(),
+      clipBehavior: Clip.none,
       builder: (_) => _SelectionSheet(
         title: 'Selecionar Fazenda',
         items: client.farms.map((f) => f.name).toList(),
@@ -206,10 +213,14 @@ class VisitActiveCard extends ConsumerWidget {
     Talhao? currentTalhao,
   ) {
     HapticFeedback.lightImpact();
-    showModalBottomSheet(
+    showSoloForteSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
+      showDragHandle: false,
+      useSafeArea: false,
+      shape: const RoundedRectangleBorder(),
+      clipBehavior: Clip.none,
       builder: (_) => _SelectionSheet(
         title: 'Selecionar Talhão',
         items: farm.fields.map((t) => t.name).toList(),
@@ -218,9 +229,7 @@ class VisitActiveCard extends ConsumerWidget {
             : farm.fields.indexWhere((t) => t.id == currentTalhao.id),
         onSelect: (index) {
           final newTalhao = farm.fields[index];
-          ref
-              .read(visitControllerProvider.notifier)
-              .updateArea(newTalhao.id);
+          ref.read(visitControllerProvider.notifier).updateArea(newTalhao.id);
         },
       ),
     );
@@ -271,11 +280,7 @@ class _EditableRow extends StatelessWidget {
   final IconData icon;
   final VoidCallback? onTap;
 
-  const _EditableRow({
-    required this.label,
-    required this.icon,
-    this.onTap,
-  });
+  const _EditableRow({required this.label, required this.icon, this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -419,8 +424,9 @@ class _SelectionSheet extends StatelessWidget {
                     items[index],
                     style: TextStyle(
                       fontSize: 15,
-                      fontWeight:
-                          isSelected ? FontWeight.w600 : FontWeight.w400,
+                      fontWeight: isSelected
+                          ? FontWeight.w600
+                          : FontWeight.w400,
                       color: isSelected
                           ? PremiumTokens.brandGreen
                           : PremiumTokens.textPrimaryLight,

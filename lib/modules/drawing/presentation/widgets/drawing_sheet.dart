@@ -10,6 +10,7 @@ import '../../domain/repositories/i_clients_repository.dart';
 import '../providers/drawing_client_provider.dart';
 import '../providers/gps_walk_providers.dart';
 import '../../../../core/constants/layout_constants.dart';
+import '../../../../core/ui/sheets/soloforte_sheet.dart';
 import 'components/drawing_tool_selector.dart';
 import 'components/drawing_actions_bar.dart';
 import 'drawing_info_edit_sheet.dart';
@@ -370,7 +371,11 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
         children: [
           const Text(
             'Importar Arquivo',
-            style: TextStyle(color: SoloForteSheetTokens.sectionLabel, fontSize: 16, fontWeight: FontWeight.w600),
+            style: TextStyle(
+              color: SoloForteSheetTokens.sectionLabel,
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
           ),
           const SizedBox(height: 8),
           const Text(
@@ -441,7 +446,11 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
         children: [
           Text(
             title,
-            style: const TextStyle(color: SoloForteSheetTokens.sectionLabel, fontSize: 16, fontWeight: FontWeight.w600),
+            style: const TextStyle(
+              color: SoloForteSheetTokens.sectionLabel,
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
           ),
           const Divider(),
           Padding(
@@ -609,10 +618,14 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
       selectedFeature: feature,
       onEditGeometry: widget.controller.startEditMode,
       onEditMetadata: () {
-        showModalBottomSheet(
+        showSoloForteSheet(
           context: context,
           isScrollControlled: true,
           backgroundColor: Colors.transparent,
+          showDragHandle: false,
+          useSafeArea: false,
+          shape: const RoundedRectangleBorder(),
+          clipBehavior: Clip.none,
           builder: (_) => DrawingInfoEditSheet(
             feature: feature,
             controller: widget.controller,
@@ -1179,7 +1192,11 @@ class _SheetHeader extends StatelessWidget {
             alignment: Alignment.centerLeft,
             child: Text(
               'Ferramentas de Desenho',
-              style: TextStyle(color: SoloForteSheetTokens.titleColor, fontSize: 18, fontWeight: FontWeight.w600),
+              style: TextStyle(
+                color: SoloForteSheetTokens.titleColor,
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
         ),

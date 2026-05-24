@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:soloforte_app/core/constants/layout_constants.dart';
+import 'package:soloforte_app/core/contracts/i_agenda_ai_launcher_provider.dart';
+import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 import 'package:soloforte_app/core/feature_flags/feature_flag_analytics.dart';
 import 'package:soloforte_app/core/feature_flags/feature_flag_providers.dart';
 import 'package:soloforte_app/core/feature_flags/feature_flag_resolver.dart';
@@ -16,7 +18,6 @@ import '../widgets/agenda_segmented_control.dart';
 import '../widgets/month_calendar_grid.dart';
 import '../widgets/agenda_filters_sheet.dart';
 import '../widgets/visit_form_dialog.dart';
-import 'package:soloforte_app/modules/agenda_ai/presentation/widgets/agenda_ai_sheet.dart';
 
 class AgendaMonthPage extends ConsumerStatefulWidget {
   const AgendaMonthPage({super.key});
@@ -139,10 +140,14 @@ class _AgendaMonthPageState extends ConsumerState<AgendaMonthPage> {
           IconButton(
             icon: const Icon(Icons.filter_list),
             onPressed: () {
-              showModalBottomSheet(
+              showSoloForteSheet(
                 context: context,
                 isScrollControlled: true,
                 backgroundColor: Colors.transparent,
+                showDragHandle: false,
+                useSafeArea: false,
+                shape: const RoundedRectangleBorder(),
+                clipBehavior: Clip.none,
                 builder: (context) => const AgendaFiltersSheet(),
               );
             },
@@ -236,7 +241,7 @@ class _AgendaMonthPageState extends ConsumerState<AgendaMonthPage> {
                             userId: userId,
                           );
                         }
-                        showAgendaAiSheet(context);
+                        ref.read(agendaAiLauncherProvider).showSheet(context);
                       },
                       child: Container(
                         width: 64,
@@ -269,8 +274,8 @@ class _AgendaMonthPageState extends ConsumerState<AgendaMonthPage> {
                       onPressed: () {
                         showDialog<void>(
                           context: context,
-                          builder:
-                              (_) => VisitFormDialog(initialDate: DateTime.now()),
+                          builder: (_) =>
+                              VisitFormDialog(initialDate: DateTime.now()),
                         );
                       },
                       icon: const Icon(Icons.add, color: Colors.white),

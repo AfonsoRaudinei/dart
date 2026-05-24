@@ -17,6 +17,7 @@ import '../../../core/feature_flags/feature_flag_resolver.dart';
 import '../../../core/feature_flags/feature_flag_analytics.dart';
 import '../../../../modules/consultoria/occurrences/presentation/widgets/occurrence_list_sheet.dart';
 import '../../../../modules/consultoria/occurrences/presentation/widgets/occurrence_creation_sheet.dart';
+import '../../../modules/dashboard/services/location_service.dart';
 import 'map_sheet_state.dart'; // 🛡 REFATORAÇÃO: Modelo compartilhado
 import '../../../core/utils/app_logger.dart';
 import '../../../../core/contracts/i_visit_session_lookup.dart';
@@ -208,7 +209,10 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
     final keyboardHeight = mediaQuery.viewInsets.bottom;
     final availableHeight = screenHeight - keyboardHeight - safeAreaBottom;
     final expandedHeight = (screenHeight * 0.75).clamp(350.0, availableHeight);
-    final mediumHeight = (screenHeight * 0.52).clamp(320.0, expandedHeight - 24);
+    final mediumHeight = (screenHeight * 0.52).clamp(
+      320.0,
+      expandedHeight - 24,
+    );
 
     switch (detent) {
       case SheetDetent.closed:
@@ -347,26 +351,43 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
 
     // Iniciar visita
     return VisitSheet(
-      onConfirm: (clientId, areaId, activity) {
-        // TODO: Obter posição real do GPS
-        ref
+      onConfirm: (clientId, areaId, activity) async {
+        final locationService = LocationService();
+        final isAvailable = await locationService.checkAvailability();
+        final position = isAvailable
+            ? await locationService.getCurrentPosition()
+            : null;
+
+        if (!mounted) return;
+
+        if (position == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Não foi possível obter sua posição GPS.'),
+              backgroundColor: PremiumTokens.alertError,
+            ),
+          );
+          return;
+        }
+
+        await ref
             .read(visitControllerProvider.notifier)
             .startSession(
               clientId,
               areaId,
               activity,
-              0.0, // Será preenchido com posição real
-              0.0,
+              position.latitude,
+              position.longitude,
             );
 
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Visita iniciada. Bom trabalho!'),
-              backgroundColor: PremiumTokens.brandGreenDark,
-            ),
-          );
-        }
+        if (!mounted) return;
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Visita iniciada. Bom trabalho!'),
+            backgroundColor: PremiumTokens.brandGreenDark,
+          ),
+        );
         // 🔹 FECHAMENTO REAL: Iniciar visita fecha o sheet (ETAPA 5)
         widget.onClose();
       },
@@ -396,8 +417,9 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
   // 🐛 BUGFIX: Substituído MapOccurrenceSheet (Relatório de Visita) por
   // OccurrenceCreationSheet — formulário correto de criação de ocorrência.
   Widget _buildOccurrenceForm() {
-    final lat = widget.creationLocation?.latitude ?? 0;
-    final lng = widget.creationLocation?.longitude ?? 0;
+    final creationLocation = widget.creationLocation;
+    final lat = creationLocation?.latitude ?? 0;
+    final lng = creationLocation?.longitude ?? 0;
 
     return OccurrenceCreationSheet(
       latitude: lat,
@@ -407,18 +429,40 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
         // Encerrar completamente o contexto (modo disabled) e fechar form creation
         widget.onClose();
       },
-      onConfirm: (data) {
+      onConfirm: (data) async {
+        final saveLocation =
+            creationLocation ??
+            await () async {
+              final locationService = LocationService();
+              final isAvailable = await locationService.checkAvailability();
+              return isAvailable
+                  ? await locationService.getCurrentPosition()
+                  : null;
+            }();
+
+        if (!mounted) return;
+
+        if (saveLocation == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Não foi possível obter sua posição GPS.'),
+              backgroundColor: PremiumTokens.alertError,
+            ),
+          );
+          return;
+        }
+
         // visit_session_id herdado automaticamente pelo OccurrenceController
         // caso haja sessão de visita ativa.
-        ref
+        await ref
             .read(occurrenceControllerProvider)
             .createOccurrence(
               type: data.type,
               description: data.description,
               clientId: data.clientId,
               photoPath: data.photoPath,
-              lat: lat,
-              long: lng,
+              lat: saveLocation.latitude,
+              long: saveLocation.longitude,
               category: data.category,
               status: 'draft',
               cultivar: data.cultivar,
@@ -433,6 +477,8 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
               notasCategoriasJson: data.notasCategoriasJson,
               fotosCategoriasJson: data.fotosCategoriasJson,
             );
+
+        if (!mounted) return;
 
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -495,7 +541,9 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
                   color: PremiumTokens.surfaceDark,
                   border: Border(
                     top: BorderSide(
-                      color: Theme.of(context).dividerColor.withValues(alpha: 0.1),
+                      color: Theme.of(
+                        context,
+                      ).dividerColor.withValues(alpha: 0.1),
                       width: 0.5,
                     ),
                   ),

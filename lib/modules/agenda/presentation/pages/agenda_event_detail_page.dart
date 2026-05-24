@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:soloforte_app/core/constants/layout_constants.dart';
 import 'package:soloforte_app/core/router/app_routes.dart';
 import 'package:soloforte_app/core/contracts/i_client_lookup.dart';
@@ -271,9 +272,14 @@ class AgendaEventDetailPage extends ConsumerWidget {
           ElevatedButton.icon(
             onPressed: () async {
               try {
+                final userId = Supabase.instance.client.auth.currentUser?.id;
+                if (userId == null || userId.isEmpty) {
+                  throw StateError('Usuário autenticado não encontrado.');
+                }
+
                 await ref
                     .read(agendaProvider.notifier)
-                    .startEvent(event.id, 'user-current');
+                    .startEvent(event.id, userId);
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Evento iniciado!')),

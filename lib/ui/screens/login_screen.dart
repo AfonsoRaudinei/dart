@@ -11,7 +11,6 @@ import '../../modules/auth/utils/auth_validators.dart';
 import '../../modules/marketing/presentation/widgets/ouro_map_background.dart';
 import '../components/login/login_input_field.dart';
 import '../components/login/gradient_button.dart';
-import '../components/login/social_auth_button.dart';
 import '../components/login/demo_mode_checkbox.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -119,10 +118,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       } else {
         await ref
             .read(sessionControllerProvider.notifier)
-            .login(
-              _emailCtrl.text.trim().toLowerCase(),
-              _passCtrl.text,
-            );
+            .login(_emailCtrl.text.trim().toLowerCase(), _passCtrl.text);
       }
       _failedAttempts = 0;
     } catch (e) {
@@ -131,9 +127,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
         _startCooldown();
       }
       if (mounted) {
-        _showErrorMessage(
-          e.toString().replaceAll('Exception: ', ''),
-        );
+        _showErrorMessage(e.toString().replaceAll('Exception: ', ''));
       }
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -147,17 +141,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
         backgroundColor: const Color(0xFFFF3B30),
         behavior: SnackBarBehavior.floating,
         duration: const Duration(seconds: 3),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      ),
-    );
-  }
-
-  void _handleSocialAuth(String provider) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Login com $provider estará disponível em breve.'),
-        behavior: SnackBarBehavior.floating,
-        duration: const Duration(seconds: 2),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
@@ -447,51 +430,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                                 ),
                               ),
                             ),
-
-                            // Divider
-                            Row(
-                              children: [
-                                const Expanded(
-                                  child: Divider(
-                                    color: PremiumTokens.hairlineLight,
-                                  ),
-                                ),
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                  ),
-                                  child: Text(
-                                    'ou',
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      color: Colors.grey.shade400,
-                                    ),
-                                  ),
-                                ),
-                                const Expanded(
-                                  child: Divider(
-                                    color: PremiumTokens.hairlineLight,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 12),
-
-                            // Botões Sociais
-                            SocialAuthButton(
-                              text: 'Entrar com Apple',
-                              icon: Icons.apple,
-                              onPressed: () => _handleSocialAuth('Apple'),
-                              borderColor: Colors.black,
-                              iconColor: Colors.black,
-                            ),
-                            const SizedBox(height: 8),
-                            SocialAuthButton(
-                              text: 'Entrar com Google',
-                              icon: Icons.g_mobiledata,
-                              onPressed: () => _handleSocialAuth('Google'),
-                            ),
-                            const SizedBox(height: 16),
 
                             // Modo Demo — visível apenas em debug builds
                             if (kDebugMode)

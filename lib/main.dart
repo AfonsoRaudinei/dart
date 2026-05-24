@@ -6,17 +6,21 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'core/config/app_config.dart';
 import 'core/contracts/i_client_lookup_provider.dart';
+import 'core/contracts/i_agenda_ai_launcher_provider.dart';
 import 'core/contracts/i_farm_lookup_provider.dart';
 import 'core/contracts/i_visit_client_lookup_provider.dart';
 import 'core/contracts/i_visit_session_lookup_provider.dart';
 import 'core/contracts/i_occurrence_read_provider.dart';
 import 'core/contracts/i_agenda_session_bridge_provider.dart';
+import 'core/contracts/i_field_lookup_provider.dart';
 import 'core/contracts/i_field_lookup_geofence_provider.dart';
+import 'core/contracts/i_opportunity_lookup_provider.dart';
 import 'core/contracts/i_agenda_observable.dart';
 import 'core/contracts/i_agenda_observable_provider.dart';
 import 'core/contracts/i_report_writer_provider.dart';
 import 'core/contracts/i_user_location_lookup_provider.dart';
 import 'modules/dashboard/infra/location_lookup_adapter.dart';
+import 'core/database/database_helper.dart';
 import 'core/infra/preferences_service.dart';
 import 'core/router/app_router.dart';
 import 'core/services/sync_orchestrator.dart';
@@ -32,9 +36,14 @@ import 'modules/consultoria/occurrences/infra/occurrence_read_adapter.dart';
 import 'modules/agenda/data/repositories/agenda_repository.dart';
 import 'modules/agenda/infra/agenda_session_bridge_adapter.dart';
 import 'modules/agenda/presentation/providers/agenda_provider.dart';
+import 'modules/agenda_ai/infra/agenda_ai_launcher_adapter.dart';
 import 'modules/consultoria/relatorios/infra/report_writer_adapter.dart';
+import 'modules/carteira/data/opportunity_lookup_impl.dart';
+import 'modules/carteira/data/repositories/carteira_repository_impl.dart';
 import 'modules/visitas/data/repositories/visit_repository.dart';
 import 'modules/visitas/infra/visit_session_lookup_adapter.dart';
+import 'modules/drawing/infra/field_lookup_adapter.dart';
+import 'modules/drawing/presentation/providers/drawing_provider.dart';
 import 'modules/map/presentation/providers/visit_completion_observer.dart';
 import 'modules/settings/data/settings_repository.dart';
 import 'modules/settings/presentation/providers/settings_providers.dart';
@@ -88,6 +97,15 @@ Future<void> main() async {
               clientLookupProvider.overrideWithValue(
                 ClientLookupAdapter(clientsRepository),
               ),
+              agendaAiLauncherProvider.overrideWithValue(
+                const AgendaAiLauncherAdapter(),
+              ),
+              opportunityLookupProvider.overrideWith((ref) {
+                return OpportunityLookupImpl(
+                  repository: CarteiraRepositoryImpl(),
+                  db: DatabaseHelper.instance,
+                );
+              }),
               // Contrato de fazendas para módulos desacoplados (drawing/).
               iFarmLookupProvider.overrideWithValue(
                 FarmLookupAdapter(clientsRepository),
@@ -112,6 +130,10 @@ Future<void> main() async {
               iFieldLookupGeofenceProvider.overrideWithValue(
                 FieldLookupGeofenceAdapter(FieldRepository()),
               ),
+              // ADR-022: IFieldLookup para NDVI via DrawingLocalStore.
+              iFieldLookupProvider.overrideWith((ref) {
+                return FieldLookupAdapter(ref.watch(drawingLocalStoreProvider));
+              }),
               // ADR-025: AgendaObservableState neutro para visit_completion_observer
               agendaObservableProvider.overrideWith((ref) {
                 final agendaState = ref.watch(agendaProvider);
@@ -184,7 +206,9 @@ class _SoloForteAppState extends ConsumerState<SoloForteApp> {
       if (mounted) {
         final orchestrator = ref.read(syncOrchestratorProvider);
         registerSyncModules(orchestrator);
-        orchestrator.triggerSync(SyncPriority.immediate); // FALHA-1: sync imediato no boot
+        orchestrator.triggerSync(
+          SyncPriority.immediate,
+        ); // FALHA-1: sync imediato no boot
         ref.read(
           visitCompletionObserverProvider,
         ); // ADR-010: ativa listener agenda → relatorio
@@ -199,9 +223,9 @@ class _SoloForteAppState extends ConsumerState<SoloForteApp> {
 
     return MaterialApp.router(
       title: 'SoloForte',
-      theme: PremiumAppTheme.lightTheme,
+      theme: PremiumAppTheme.themeFor(themeMode),
       darkTheme: PremiumAppTheme.darkTheme,
-      themeMode: themeMode == 'dark' ? ThemeMode.dark : ThemeMode.light,
+      themeMode: PremiumAppTheme.themeModeFor(themeMode),
       routerConfig: router,
       debugShowCheckedModeBanner: false,
       // Fallback para erro crítico durante build do router
@@ -232,8 +256,7 @@ class _BootErrorApp extends StatelessWidget {
     final msg = error.toString();
     final lower = msg.toLowerCase();
 
-    if (lower.contains('supabase_url') ||
-        lower.contains('supabase_anon_key')) {
+    if (lower.contains('supabase_url') || lower.contains('supabase_anon_key')) {
       return 'Configuração incompleta.\nContate o suporte: suporte@soloforte.com';
     }
     if (lower.contains('timeout') || lower.contains('15s')) {

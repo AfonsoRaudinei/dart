@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:soloforte_app/core/contracts/i_client_lookup_provider.dart';
 import 'package:soloforte_app/core/feature_flags/feature_flag_analytics.dart';
+import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 import 'package:soloforte_app/modules/agenda/domain/enums/event_type.dart';
 import 'package:soloforte_app/modules/agenda/domain/entities/visit.dart';
 import 'package:soloforte_app/modules/agenda/presentation/providers/agenda_provider.dart';
@@ -12,10 +13,14 @@ import 'package:soloforte_app/modules/carteira/domain/entities/carteira_meta.dar
 import 'package:soloforte_app/modules/carteira/presentation/providers/carteira_providers.dart';
 
 Future<void> showAgendaAiSheet(BuildContext context) {
-  return showModalBottomSheet<void>(
+  return showSoloForteSheet<void>(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
+    showDragHandle: false,
+    useSafeArea: false,
+    shape: const RoundedRectangleBorder(),
+    clipBehavior: Clip.none,
     builder: (_) => const _AgendaAiSheet(),
   );
 }
@@ -64,9 +69,11 @@ class _AgendaAiSheetState extends ConsumerState<_AgendaAiSheet> {
 
       final data = await _service.recommend(payload: payload);
       final recs = (data['recommendations'] as List<dynamic>? ?? [])
-          .map((e) => e is Map<String, dynamic>
-              ? e
-              : (e as Map).map((k, v) => MapEntry(k.toString(), v)))
+          .map(
+            (e) => e is Map<String, dynamic>
+                ? e
+                : (e as Map).map((k, v) => MapEntry(k.toString(), v)),
+          )
           .toList(growable: false);
 
       final aiMap = (data['ai'] is Map)
@@ -75,9 +82,13 @@ class _AgendaAiSheetState extends ConsumerState<_AgendaAiSheet> {
 
       setState(() {
         _recommendations = recs;
-        if (aiMap != null && aiMap['enabled'] == true && aiMap['text'] is String) {
+        if (aiMap != null &&
+            aiMap['enabled'] == true &&
+            aiMap['text'] is String) {
           _chat.add(_ChatMsg(text: aiMap['text'] as String, isUser: false));
-        } else if (aiMap != null && aiMap['reason'] is String && chatMessage != null) {
+        } else if (aiMap != null &&
+            aiMap['reason'] is String &&
+            chatMessage != null) {
           _chat.add(_ChatMsg(text: aiMap['reason'] as String, isUser: false));
         }
       });
@@ -162,20 +173,23 @@ class _AgendaAiSheetState extends ConsumerState<_AgendaAiSheet> {
 
     final events = ref.read(agendaProvider).events;
 
-    final opportunities = targetRegistros.map((r) {
-      final client = byId[r.clienteId];
-      final lastVisit = _lastVisitAt(events, r.clienteId);
-      return {
-        'clientId': r.clienteId,
-        'clientName': client?.name ?? 'Cliente',
-        'city': '',
-        'location': null,
-        'categoryId': r.categoriaId,
-        'categoryProgressPercent': r.percentualFechado,
-        'categoryAchievedValue': (target.quantidade * r.percentualFechado) / 100.0,
-        'lastVisitAt': lastVisit?.toUtc().toIso8601String(),
-      };
-    }).toList(growable: false);
+    final opportunities = targetRegistros
+        .map((r) {
+          final client = byId[r.clienteId];
+          final lastVisit = _lastVisitAt(events, r.clienteId);
+          return {
+            'clientId': r.clienteId,
+            'clientName': client?.name ?? 'Cliente',
+            'city': '',
+            'location': null,
+            'categoryId': r.categoriaId,
+            'categoryProgressPercent': r.percentualFechado,
+            'categoryAchievedValue':
+                (target.quantidade * r.percentualFechado) / 100.0,
+            'lastVisitAt': lastVisit?.toUtc().toIso8601String(),
+          };
+        })
+        .toList(growable: false);
 
     return {
       'consultantId': userId,
@@ -284,7 +298,9 @@ class _AgendaAiSheetState extends ConsumerState<_AgendaAiSheet> {
       final start = now.add(const Duration(hours: 1));
       final end = start.add(const Duration(hours: 1));
 
-      await ref.read(agendaProvider.notifier).createEvent(
+      await ref
+          .read(agendaProvider.notifier)
+          .createEvent(
             tipo: EventType.visitaTecnica,
             clienteId: rec['clientId'] as String,
             titulo: 'Visita sugerida IA • ${rec['clientName'] ?? 'Cliente'}',
@@ -366,124 +382,137 @@ class _AgendaAiSheetState extends ConsumerState<_AgendaAiSheet> {
             child: _loading
                 ? const Center(child: CircularProgressIndicator())
                 : _error != null
-                    ? Center(child: Text(_error!))
-                    : ListView(
-                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                        children: [
-                          const Text(
-                            'Sugestão de visita',
-                            style: TextStyle(fontWeight: FontWeight.w700),
+                ? Center(child: Text(_error!))
+                : ListView(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                    children: [
+                      const Text(
+                        'Sugestão de visita',
+                        style: TextStyle(fontWeight: FontWeight.w700),
+                      ),
+                      const SizedBox(height: 8),
+                      if (_recommendations.isEmpty)
+                        const Card(
+                          child: Padding(
+                            padding: EdgeInsets.all(12),
+                            child: Text('Sem sugestão elegível no momento.'),
                           ),
-                          const SizedBox(height: 8),
-                          if (_recommendations.isEmpty)
-                            const Card(
-                              child: Padding(
-                                padding: EdgeInsets.all(12),
-                                child: Text('Sem sugestão elegível no momento.'),
+                        )
+                      else
+                        ..._recommendations.map(
+                          (rec) => Card(
+                            child: ListTile(
+                              title: Text(
+                                rec['clientName'] as String? ?? 'Cliente',
                               ),
-                            )
-                          else
-                            ..._recommendations.map(
-                              (rec) => Card(
-                                child: ListTile(
-                                  title: Text(rec['clientName'] as String? ?? 'Cliente'),
-                                  subtitle: Text(rec['reason'] as String? ?? ''),
-                                  trailing: _creatingVisit
-                                      ? const SizedBox(
-                                          width: 20,
-                                          height: 20,
-                                          child: CircularProgressIndicator(strokeWidth: 2),
-                                        )
-                                      : IconButton(
-                                          icon: const Icon(Icons.add_task),
-                                          onPressed: () => _createVisitFromRecommendation(rec),
-                                        ),
+                              subtitle: Text(rec['reason'] as String? ?? ''),
+                              trailing: _creatingVisit
+                                  ? const SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                  : IconButton(
+                                      icon: const Icon(Icons.add_task),
+                                      onPressed: () =>
+                                          _createVisitFromRecommendation(rec),
+                                    ),
+                            ),
+                          ),
+                        ),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'Chat rápido',
+                        style: TextStyle(fontWeight: FontWeight.w700),
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF7F7F9),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Column(
+                          children: [
+                            if (_chat.isEmpty)
+                              const Align(
+                                alignment: Alignment.centerLeft,
+                                child: Text(
+                                  'Pergunte algo sobre a sugestão e próximos passos.',
+                                ),
+                              )
+                            else
+                              ..._chat.map(
+                                (m) => Align(
+                                  alignment: m.isUser
+                                      ? Alignment.centerRight
+                                      : Alignment.centerLeft,
+                                  child: Container(
+                                    margin: const EdgeInsets.only(bottom: 8),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 8,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: m.isUser
+                                          ? const Color(0xFFE7F7EC)
+                                          : Colors.white,
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: Text(m.text),
+                                  ),
                                 ),
                               ),
-                            ),
-                          const SizedBox(height: 16),
-                          const Text(
-                            'Chat rápido',
-                            style: TextStyle(fontWeight: FontWeight.w700),
-                          ),
-                          const SizedBox(height: 8),
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFF7F7F9),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Column(
+                            const SizedBox(height: 8),
+                            Row(
                               children: [
-                                if (_chat.isEmpty)
-                                  const Align(
-                                    alignment: Alignment.centerLeft,
-                                    child: Text(
-                                      'Pergunte algo sobre a sugestão e próximos passos.',
-                                    ),
-                                  )
-                                else
-                                  ..._chat.map(
-                                    (m) => Align(
-                                      alignment: m.isUser
-                                          ? Alignment.centerRight
-                                          : Alignment.centerLeft,
-                                      child: Container(
-                                        margin: const EdgeInsets.only(bottom: 8),
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 10,
-                                          vertical: 8,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: m.isUser
-                                              ? const Color(0xFFE7F7EC)
-                                              : Colors.white,
-                                          borderRadius: BorderRadius.circular(10),
-                                        ),
-                                        child: Text(m.text),
+                                Expanded(
+                                  child: TextField(
+                                    controller: _chatController,
+                                    decoration: const InputDecoration(
+                                      hintText:
+                                          'Ex: qual abordagem usar nessa visita?',
+                                      hintStyle: TextStyle(
+                                        color: Color(0xFF8E8E93),
                                       ),
+                                      filled: true,
+                                      fillColor: Color(0xFF2C2C2E),
+                                      border: OutlineInputBorder(
+                                        borderSide: BorderSide.none,
+                                        borderRadius: BorderRadius.all(
+                                          Radius.circular(12),
+                                        ),
+                                      ),
+                                      isDense: true,
+                                    ),
+                                    onSubmitted: (_) => _sendChat(),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                ElevatedButton(
+                                  onPressed: _sendChat,
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xFFF59E0B),
+                                    foregroundColor: Colors.black,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                      vertical: 10,
                                     ),
                                   ),
-                                const SizedBox(height: 8),
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: TextField(
-                                        controller: _chatController,
-                                        decoration: const InputDecoration(
-                                          hintText: 'Ex: qual abordagem usar nessa visita?',
-                                          hintStyle: TextStyle(color: Color(0xFF8E8E93)),
-                                          filled: true,
-                                          fillColor: Color(0xFF2C2C2E),
-                                          border: OutlineInputBorder(
-                                            borderSide: BorderSide.none,
-                                            borderRadius: BorderRadius.all(Radius.circular(12)),
-                                          ),
-                                          isDense: true,
-                                        ),
-                                        onSubmitted: (_) => _sendChat(),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    ElevatedButton(
-                                      onPressed: _sendChat,
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: const Color(0xFFF59E0B),
-                                        foregroundColor: Colors.black,
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(12),
-                                        ),
-                                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                                      ),
-                                      child: const Text('Enviar'),
-                                    ),
-                                  ],
+                                  child: const Text('Enviar'),
                                 ),
                               ],
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
+                    ],
+                  ),
           ),
         ],
       ),

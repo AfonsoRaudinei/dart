@@ -368,7 +368,6 @@ echo ""
 
 # =============================================================================
 # REGRA-SHEET-1 — showModalBottomSheet direto é proibido (ADR-027)
-# BYPASS TEMPORARIO v1.1 (ADR-036): remover em v1.2 apos migracao completa
 # =============================================================================
 echo -e "── ${CYAN}REGRA-SHEET-1${NC}: showModalBottomSheet direto proibido ─────────"
 echo ""
@@ -381,7 +380,6 @@ DIRECT_MODAL=$(grep -rn "showModalBottomSheet" lib/ \
 
 if [ "$DIRECT_MODAL" -gt "0" ]; then
   fail "REGRA-SHEET-1: showModalBottomSheet direto detectado."
-  warn "BYPASS ATIVO (ADR-036): violacoes de sheet mascaradas temporariamente ate v1.2"
   echo "   Use showSoloForteSheet() de lib/core/ui/sheets/soloforte_sheet.dart"
   grep -rn "showModalBottomSheet" lib/ --include="*.dart" \
     | grep -v "lib/core/ui/sheets/soloforte_sheet.dart" \
@@ -389,8 +387,6 @@ if [ "$DIRECT_MODAL" -gt "0" ]; then
       echo -e "      ${RED}→${NC} $line"
     done
   echo ""
-  # BYPASS TEMPORARIO v1.1 (ADR-036) — remover em v1.2
-  VIOLATIONS=$((VIOLATIONS - 1))
 else
   pass "Nenhum showModalBottomSheet direto detectado (ADR-027)"
 fi

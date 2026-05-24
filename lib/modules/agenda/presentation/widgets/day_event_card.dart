@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../domain/entities/event.dart';
 import '../../domain/enums/event_status.dart';
 import '../providers/agenda_provider.dart';
@@ -222,9 +224,13 @@ class DayEventCard extends ConsumerWidget {
     WidgetRef ref,
     Event event,
   ) async {
-    await showModalBottomSheet<void>(
+    await showSoloForteSheet<void>(
       context: context,
       backgroundColor: Colors.transparent,
+      showDragHandle: false,
+      useSafeArea: false,
+      shape: const RoundedRectangleBorder(),
+      clipBehavior: Clip.none,
       builder: (ctx) => Container(
         margin: const EdgeInsets.all(16),
         decoration: BoxDecoration(
@@ -322,12 +328,14 @@ class DayEventCard extends ConsumerWidget {
         return ElevatedButton(
           onPressed: () async {
             try {
+              final userId = Supabase.instance.client.auth.currentUser?.id;
+              if (userId == null || userId.isEmpty) {
+                throw StateError('Usuário autenticado não encontrado.');
+              }
+
               await ref
                   .read(agendaProvider.notifier)
-                  .startEvent(
-                    event.id,
-                    'user-current', // TODO: pegar usuário real
-                  );
+                  .startEvent(event.id, userId);
             } catch (e) {
               if (context.mounted) {
                 ScaffoldMessenger.of(
