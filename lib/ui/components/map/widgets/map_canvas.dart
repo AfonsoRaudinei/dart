@@ -13,6 +13,7 @@ class MapCanvas extends StatelessWidget {
   final Function(MapCamera, bool) onPositionChanged;
   final List<Widget> children;
   final InteractionOptions? interactionOptions;
+  final double maxZoom;
 
   const MapCanvas({
     super.key,
@@ -23,6 +24,7 @@ class MapCanvas extends StatelessWidget {
     required this.onPositionChanged,
     required this.children,
     this.interactionOptions,
+    this.maxZoom = MapConfig.maxZoom,
   });
 
   @override
@@ -34,7 +36,7 @@ class MapCanvas extends StatelessWidget {
         initialCenter: const LatLng(-23.5505, -46.6333),
         initialZoom: 14.0,
         minZoom: 4.0,
-        maxZoom: MapConfig.maxZoom,
+        maxZoom: maxZoom,
         onTap: onTap,
         onLongPress: onLongPress,
         onPositionChanged: onPositionChanged,

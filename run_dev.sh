@@ -25,6 +25,7 @@ GOOGLE_WEATHER_API_KEY="${GOOGLE_WEATHER_API_KEY:-}"
 SUPABASE_URL="${SUPABASE_URL:-}"
 SUPABASE_ANON_KEY="${SUPABASE_ANON_KEY:-}"
 STADIA_API_KEY="${STADIA_API_KEY:-}"
+MAPTILER_API_KEY="${MAPTILER_API_KEY:-}"
 ENV="${ENV:-development}"
 
 flutter run \
@@ -33,5 +34,6 @@ flutter run \
   --dart-define=SUPABASE_URL="$SUPABASE_URL" \
   --dart-define=SUPABASE_ANON_KEY="$SUPABASE_ANON_KEY" \
   --dart-define=STADIA_API_KEY="$STADIA_API_KEY" \
+  --dart-define=MAPTILER_API_KEY="$MAPTILER_API_KEY" \
   --dart-define=ENV="$ENV" \
   "$@"

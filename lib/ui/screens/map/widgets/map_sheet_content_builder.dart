@@ -22,10 +22,17 @@ Widget buildSheetContent(
 ) {
   switch (state.type) {
     case MapSheetType.layers:
-      return SingleChildScrollView(
-        controller: scrollController,
-        physics: const BouncingScrollPhysics(),
-        child: LayersSheet(onClose: () => Navigator.of(context).pop()),
+      return LayoutBuilder(
+        builder: (context, constraints) {
+          return SingleChildScrollView(
+            controller: scrollController,
+            physics: const BouncingScrollPhysics(),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: constraints.maxHeight),
+              child: LayersSheet(onClose: () => Navigator.of(context).pop()),
+            ),
+          );
+        },
       );
     // R-2: MapSheetType.occurrences NUNCA chega a este builder em produção.
     // O guard em _setSheetState (private_map_screen.dart) redireciona occurrences

@@ -5,8 +5,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 
 import '../../../../core/ui/sheets/soloforte_sheet.dart';
+import '../../../../modules/marketing/domain/entities/marketing_case.dart';
+import '../../../../modules/marketing/domain/enums/case_tipo.dart';
 import '../../../../modules/marketing/presentation/providers/marketing_providers.dart';
 import '../../../../modules/marketing/presentation/screens/novo_case_sheet.dart';
+import '../../../../modules/marketing/presentation/screens/novo_case_type_sheets.dart';
 import '../../../../modules/planos/presentation/providers/plano_providers.dart';
 import '../../widgets/plano_block_sheet.dart';
 
@@ -19,8 +22,98 @@ class NovoCaseModalLauncher {
     required LatLng position,
     required BuildContext context,
     required WidgetRef ref,
+    CaseTipo? initialTipo,
   }) async {
     if (!context.mounted) return;
+
+    Future<void> handlePublicar(MarketingCase newCase) async {
+      // Lê plano — nunca null após PROMPT-A (retorna UserPlan.free())
+      final plano = ref.read(planoAtivoProvider).valueOrNull;
+
+      // 1. Admin bypass — sem verificação de limite
+      if (plano?.isAdmin == true) {
+        Navigator.of(context).pop();
+        final saved = await ref
+            .read(marketingCasesProvider.notifier)
+            .publishCase(newCase);
+        if (!context.mounted) return;
+        _showPublishResult(context, saved);
+        return;
+      }
+
+      // 2. Contar cases publicados do usuário
+      final cases = ref.read(marketingCasesProvider).valueOrNull ?? [];
+      final casesPublicados = cases
+          .where(
+            (c) =>
+                c.status.toValue() == 'published' &&
+                c.ativo &&
+                c.deletadoEm == null,
+          )
+          .length;
+
+      // 3. Limite: free tier = 3, plano padrão conforme UserPlan
+      final limite = plano?.limiteCases ?? 3;
+
+      if (casesPublicados >= limite) {
+        if (!context.mounted) return;
+        Navigator.of(context).pop();
+        PlanoBlockSheet.show(
+          context,
+          motivo: 'limite_atingido',
+          planoLabel: plano?.plano.label,
+          limite: limite,
+        );
+        return;
+      }
+
+      // 4. Publica normalmente
+      Navigator.of(context).pop();
+
+      final saved = await ref
+          .read(marketingCasesProvider.notifier)
+          .publishCase(newCase);
+
+      if (!context.mounted) return;
+      _showPublishResult(context, saved);
+    }
+
+    Widget buildCaseSheet() {
+      final lat = position.latitude;
+      final lng = position.longitude;
+      void onClose() => Navigator.of(context).pop();
+
+      switch (initialTipo) {
+        case CaseTipo.resultado:
+          return NovoResultadoCaseSheet(
+            lat: lat,
+            lng: lng,
+            onClose: onClose,
+            onPublicar: handlePublicar,
+          );
+        case CaseTipo.antesDepois:
+          return NovoAntesDepoisCaseSheet(
+            lat: lat,
+            lng: lng,
+            onClose: onClose,
+            onPublicar: handlePublicar,
+          );
+        case CaseTipo.avaliacao:
+          return NovaAvaliacaoCaseSheet(
+            lat: lat,
+            lng: lng,
+            onClose: onClose,
+            onPublicar: handlePublicar,
+          );
+        case null:
+          return NovoCaseSheet(
+            lat: lat,
+            lng: lng,
+            onClose: onClose,
+            onPublicar: handlePublicar,
+          );
+      }
+    }
 
     await showSoloForteSheet(
       context: context,
@@ -46,65 +139,7 @@ class NovoCaseModalLauncher {
                 ),
               ),
             ),
-            Flexible(
-              child: NovoCaseSheet(
-                lat: position.latitude,
-                lng: position.longitude,
-                onClose: () => Navigator.of(context).pop(),
-                onPublicar: (newCase) async {
-                  // Lê plano — nunca null após PROMPT-A (retorna UserPlan.free())
-                  final plano = ref.read(planoAtivoProvider).valueOrNull;
-
-                  // 1. Admin bypass — sem verificação de limite
-                  if (plano?.isAdmin == true) {
-                    Navigator.of(context).pop();
-                    final saved = await ref
-                        .read(marketingCasesProvider.notifier)
-                        .publishCase(newCase);
-                    if (!context.mounted) return;
-                    _showPublishResult(context, saved);
-                    return;
-                  }
-
-                  // 2. Contar cases publicados do usuário
-                  final cases =
-                      ref.read(marketingCasesProvider).valueOrNull ?? [];
-                  final casesPublicados = cases
-                      .where(
-                        (c) =>
-                            c.status.toValue() == 'published' &&
-                            c.ativo &&
-                            c.deletadoEm == null,
-                      )
-                      .length;
-
-                  // 3. Limite: free tier = 3, plano padrão conforme UserPlan
-                  final limite = plano?.limiteCases ?? 3;
-
-                  if (casesPublicados >= limite) {
-                    if (!context.mounted) return;
-                    Navigator.of(context).pop();
-                    PlanoBlockSheet.show(
-                      context,
-                      motivo: 'limite_atingido',
-                      planoLabel: plano?.plano.label,
-                      limite: limite,
-                    );
-                    return;
-                  }
-
-                  // 4. Publica normalmente
-                  Navigator.of(context).pop();
-
-                  final saved = await ref
-                      .read(marketingCasesProvider.notifier)
-                      .publishCase(newCase);
-
-                  if (!context.mounted) return;
-                  _showPublishResult(context, saved);
-                },
-              ),
-            ),
+            Flexible(child: buildCaseSheet()),
           ],
         ),
       ),

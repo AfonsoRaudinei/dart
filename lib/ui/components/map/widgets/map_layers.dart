@@ -2,70 +2,36 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/state/map_state.dart';
-import '../../../../core/domain/map_models.dart';
 import '../../../../core/config/map_config.dart';
 import '../../../../core/config/map_secrets.dart';
+import '../../../../core/utils/map_logger.dart';
 
 /// Widget que observa apenas activeLayerProvider e renderiza o TileLayer.
 /// Rebuild isolado quando a camada muda.
 class MapLayersWidget extends ConsumerWidget {
   const MapLayersWidget({super.key});
 
-  /// Retorna a URL do tile provider para cada tipo de camada.
-  ///
-  /// [LayerType.standard] → Carto Voyager
-  ///   Estilo natural polido (Apple Maps style): cores pastéis claras, águas azuis,
-  ///   rodovias limpas — ideal para focar o usuário nas sobreposições do app.
-  ///   Paleta baseada na estética de navegação fluida.
-  ///
-  /// [LayerType.satellite] → Google Maps Satellite Híbrido (lyrs=y)
-  ///   Imagem de alta resolução + labels de cidades/rodovias — ideal para campo
-  ///
-  /// [LayerType.relevo] → MapTiler Landscape
-  ///   Mapa topográfico com curvas de nível e visualização de elevação
-  String _getLayerUrl(LayerType type) {
-    switch (type) {
-      case LayerType.satellite:
-        // 🛰️ SATÉLITE: MapTiler Hybrid (satellite + labels)
-        // Migrado de Google Maps (endpoint não oficial, viola ToS)
-        // para MapTiler Satellite — cobertura global, API key obrigatória.
-        // Free tier: 100k requests/mês
-        return MapConfig.mapTilerSatelliteUrl(kMapTilerApiKey);
-      case LayerType.relevo:
-        // 🌿 RELEVO: MapTiler Outdoor v2
-        // Estilo iOS verde — vegetação verde intensa, lagos azuis, topografia com sombreamento.
-        // Requer API key via --dart-define=MAPTILER_API_KEY=<key>
-        return MapConfig.mapTilerOutdoorUrl(kMapTilerApiKey);
-      case LayerType.standard:
-        // 🎨 ESTILO PADRÃO: Stadia Stamen Terrain (com API key injetada via --dart-define)
-        // Vegetação verde, água azul, estradas limpas — funciona em produção iOS/TestFlight.
-        // API key appended automaticamente por MapConfig.stadiaStamenTerrainUrl.
-        return MapConfig.stadiaStamenTerrainUrl;
-    }
-  }
-
-  List<String> _getSubdomains(LayerType type) {
-    switch (type) {
-      case LayerType.satellite:
-        // MapTiler não usa subdomínios — retorna lista vazia
-        return const [];
-      case LayerType.standard:
-        return const []; // OSM/Stadia não usa subdomains
-      case LayerType.relevo:
-        // MapTiler não usa subdomínios — retorna lista vazia
-        return const [];
-    }
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final activeLayer = ref.watch(activeLayerProvider);
+    final tileConfig = MapConfig.tileConfigForLayer(
+      activeLayer,
+      mapTilerApiKey: kMapTilerApiKey,
+    );
 
     return TileLayer(
-      urlTemplate: _getLayerUrl(activeLayer),
-      subdomains: _getSubdomains(activeLayer),
+      urlTemplate: tileConfig.urlTemplate,
+      fallbackUrl: tileConfig.fallbackUrl,
+      subdomains: tileConfig.subdomains,
       userAgentPackageName: MapConfig.userAgent,
-      maxNativeZoom: activeLayer == LayerType.satellite ? 20 : 18,
+      maxZoom: tileConfig.maxZoom,
+      maxNativeZoom: tileConfig.maxNativeZoom,
+      retinaMode: tileConfig.retinaMode && RetinaMode.isHighDensity(context),
+      keepBuffer: 3,
+      panBuffer: 1,
+      errorTileCallback: (tile, error, stackTrace) {
+        MapLogger.logError('Tile error on $activeLayer: $error', stackTrace);
+      },
     );
   }
 }

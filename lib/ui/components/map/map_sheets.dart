@@ -163,12 +163,12 @@ class LayersSheet extends ConsumerWidget {
                         _MapPreviewTile(
                           width: itemWidth,
                           height: itemHeight,
-                          tileUrl: MapConfig.mapTilerSatelliteUrl(
-                            kMapTilerApiKey,
+                          tileConfig: MapConfig.tileConfigForLayer(
+                            LayerType.satellite,
+                            mapTilerApiKey: kMapTilerApiKey,
                           ),
                           label: 'Satélite',
                           isSelected: currentLayer == LayerType.satellite,
-                          subdomains: null,
                           onTap: () => ref
                               .read(activeLayerProvider.notifier)
                               .setLayer(LayerType.satellite),
@@ -176,12 +176,12 @@ class LayersSheet extends ConsumerWidget {
                         _MapPreviewTile(
                           width: itemWidth,
                           height: itemHeight,
-                          tileUrl: MapConfig.mapTilerOutdoorUrl(
-                            kMapTilerApiKey,
+                          tileConfig: MapConfig.tileConfigForLayer(
+                            LayerType.relevo,
+                            mapTilerApiKey: kMapTilerApiKey,
                           ),
                           label: 'Relevo',
                           isSelected: currentLayer == LayerType.relevo,
-                          subdomains: null,
                           onTap: () => ref
                               .read(activeLayerProvider.notifier)
                               .setLayer(LayerType.relevo),
@@ -230,19 +230,17 @@ class _MapPreviewTile extends StatelessWidget {
 
   final double width;
   final double height;
-  final String tileUrl;
+  final MapLayerTileConfig tileConfig;
   final String label;
   final bool isSelected;
-  final List<String>? subdomains;
   final VoidCallback onTap;
 
   const _MapPreviewTile({
     required this.width,
     required this.height,
-    required this.tileUrl,
+    required this.tileConfig,
     required this.label,
     required this.isSelected,
-    required this.subdomains,
     required this.onTap,
   });
 
@@ -277,9 +275,14 @@ class _MapPreviewTile extends StatelessWidget {
                       ),
                       children: [
                         TileLayer(
-                          urlTemplate: tileUrl,
-                          subdomains: subdomains ?? const <String>[],
-                          maxNativeZoom: 18,
+                          urlTemplate: tileConfig.urlTemplate,
+                          fallbackUrl: tileConfig.fallbackUrl,
+                          subdomains: tileConfig.subdomains,
+                          maxZoom: tileConfig.maxZoom,
+                          maxNativeZoom: tileConfig.maxNativeZoom,
+                          retinaMode:
+                              tileConfig.retinaMode &&
+                              RetinaMode.isHighDensity(context),
                         ),
                       ],
                     ),

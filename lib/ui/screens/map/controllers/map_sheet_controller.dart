@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/state/map_ui_providers.dart';
+import '../../../../core/ui/sheets/sheet_tokens.dart';
 import '../../../../core/ui/sheets/soloforte_sheet.dart';
 import '../../../../modules/drawing/presentation/providers/drawing_provider.dart';
 import '../../../../modules/drawing/domain/drawing_state.dart';
@@ -41,6 +42,7 @@ class MapSheetController {
     // Bug 1: checkIn precisa de mais altura inicial e máxima para exibir
     // 4 dropdowns + botão sem corte. Outros tipos mantêm valores anteriores.
     final isCheckIn = state.type == MapSheetType.checkIn;
+    final isLayers = state.type == MapSheetType.layers;
     final initialSize = isCheckIn ? 0.6 : 0.5;
     final maxSize = isCheckIn ? 0.92 : 0.9;
     final snapSizesList = isCheckIn ? [0.6, 0.92] : [0.5, 0.9];
@@ -65,7 +67,9 @@ class MapSheetController {
         snapSizes: snapSizesList,
         builder: (_, scrollController) => Container(
           decoration: BoxDecoration(
-            color: Theme.of(context).scaffoldBackgroundColor,
+            color: isLayers
+                ? SoloForteSheetTokens.sheetBackground
+                : Theme.of(context).scaffoldBackgroundColor,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
           ),
           child: Column(

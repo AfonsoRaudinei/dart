@@ -13,6 +13,7 @@ import '../../modules/drawing/presentation/providers/drawing_provider.dart';
 import '../../modules/drawing/domain/drawing_state.dart';
 import '../../modules/dashboard/providers/location_providers.dart';
 import '../../modules/consultoria/occurrences/domain/occurrence.dart' as occ;
+import '../../modules/marketing/domain/enums/case_tipo.dart';
 import '../components/map/map_sheet_state.dart';
 // 🔧 MODAL: imports para sheets dos tipos não-draw
 // (conteúdo migrado para map_sheet_content_builder.dart — ADR-031 F3)
@@ -51,6 +52,7 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
   // Capturada no build() para uso seguro no dispose() SEM ref.read().
   // ref é invalidado em deactivate() (antes de dispose()) — ADR-008.
   dynamic _drawingController;
+  CaseTipo? _pendingMarketingCaseTipo;
 
   @override
   void initState() {
@@ -161,6 +163,9 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
 
   // 🔎 INSTRUMENTATION: Rastrear quem altera o estado
   void _setSheetState(MapSheetState? state, String reason) {
+    if (state != null) {
+      _pendingMarketingCaseTipo = null;
+    }
     final currentSheet = ref.read(mapSheetStateProvider);
     AppLogger.debug(
       'SHEET CHANGE | old=${currentSheet?.type} | new=${state?.type} | reason=$reason',
@@ -207,7 +212,14 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
 
   // ── _handleMapLongPress ── delegate ADR-031 F5 ─────────────────────────
   void _handleMapLongPress(TapPosition tapPos, LatLng latLng) {
-    NovoCaseModalLauncher.launch(position: latLng, context: context, ref: ref);
+    final initialTipo = _pendingMarketingCaseTipo;
+    _pendingMarketingCaseTipo = null;
+    NovoCaseModalLauncher.launch(
+      position: latLng,
+      context: context,
+      ref: ref,
+      initialTipo: initialTipo,
+    );
   }
 
   // ── _openSheetAsModal ── delegate ADR-031 F4 ───────────────────────────
@@ -276,6 +288,7 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
 
   void _armOccurrenceMode() {
     // FIX 1: Entrar em modo seleção — usuário toca no mapa para capturar LatLng
+    _pendingMarketingCaseTipo = null;
     ref.read(armedModeProvider.notifier).state = ArmedMode.occurrences;
     HapticFeedback.lightImpact();
     ScaffoldMessenger.of(context).showSnackBar(
@@ -305,14 +318,28 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
     ); // Trigger Creation Mode
   }
 
-  void _armMarketingMode() {
+  void _armMarketingMode(CaseTipo tipo) {
+    _pendingMarketingCaseTipo = tipo;
     ref.read(armedModeProvider.notifier).state = ArmedMode.marketing;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Toque no mapa para localizar o case de marketing'),
-        duration: Duration(seconds: 2),
+      SnackBar(
+        content: Text(
+          'Toque no mapa para localizar o case de ${_caseTipoLabel(tipo)}',
+        ),
+        duration: const Duration(seconds: 2),
       ),
     );
+  }
+
+  String _caseTipoLabel(CaseTipo tipo) {
+    switch (tipo) {
+      case CaseTipo.resultado:
+        return 'resultado';
+      case CaseTipo.antesDepois:
+        return 'antes/depois';
+      case CaseTipo.avaliacao:
+        return 'avaliação';
+    }
   }
 
   void _handleOccurrencePinTap(occ.Occurrence occurrence) {

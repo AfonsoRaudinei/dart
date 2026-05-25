@@ -4,6 +4,32 @@
 /// com foco em design limpo estilo iOS/Apple Maps.
 library;
 
+import '../domain/map_models.dart';
+
+class MapLayerTileConfig {
+  final String urlTemplate;
+  final String attribution;
+  final List<String> subdomains;
+  final double maxZoom;
+  final int maxNativeZoom;
+  final bool retinaMode;
+  final String? fallbackUrl;
+  final bool requiresApiKey;
+  final bool isFallback;
+
+  const MapLayerTileConfig({
+    required this.urlTemplate,
+    required this.attribution,
+    this.subdomains = const [],
+    required this.maxZoom,
+    required this.maxNativeZoom,
+    this.retinaMode = false,
+    this.fallbackUrl,
+    this.requiresApiKey = false,
+    this.isFallback = false,
+  });
+}
+
 class MapConfig {
   MapConfig._();
 
@@ -62,28 +88,32 @@ class MapConfig {
   /// Requer API key via --dart-define=MAPTILER_API_KEY=[key]
   /// Free tier: 100k requests/mês — https://www.maptiler.com/cloud/
   static String mapTilerSatelliteUrl(String apiKey) =>
-      'https://api.maptiler.com/maps/hybrid/{z}/{x}/{y}.jpg?key=$apiKey';
+      'https://api.maptiler.com/maps/hybrid/256/{z}/{x}/{y}{r}.jpg?key=$apiKey';
 
-  /// MapTiler Landscape — Estilo relevo com curvas topográficas
-  /// Cobertura global com visualização de terreno e elevação
+  /// MapTiler Landscape — Estilo natural com relevo suave.
+  /// Visual mais vivo, próximo do Apple Maps: verdes, água azul e estradas limpas.
   /// Requer API key via --dart-define=MAPTILER_API_KEY=[key]
   /// Free tier: 100k requests/mês — https://www.maptiler.com/cloud/
   /// maxZoom: 18 (mesmo do Google Satellite)
   static String mapTilerLandscapeUrl(String apiKey) =>
-      'https://api.maptiler.com/maps/landscape/{z}/{x}/{y}.png?key=$apiKey';
+      'https://api.maptiler.com/maps/landscape/256/{z}/{x}/{y}{r}.png?key=$apiKey';
 
-  /// MapTiler Outdoor — Estilo iOS verde com topografia e curvas de nível
+  /// MapTiler Outdoor — Estilo topográfico técnico com trilhas/curvas de nível.
   /// Visual: verde intenso, lagos azuis, rodovias limpas — similar ao Apple Maps terrain
   /// Ideal para uso agrícola/campo: mostra relevo, vegetação e hidrografia
   /// Requer API key via --dart-define=MAPTILER_API_KEY=[key]
   /// Free tier: 100k requests/mês
   static String mapTilerOutdoorUrl(String apiKey) =>
-      'https://api.maptiler.com/maps/outdoor-v2/{z}/{x}/{y}.png?key=$apiKey';
+      'https://api.maptiler.com/maps/outdoor-v2/256/{z}/{x}/{y}{r}.png?key=$apiKey';
 
   /// OpenStreetMap - Fallback padrão
   /// Sempre disponível, sem limites
   static const String openStreetMap =
       'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+
+  /// Carto Voyager com placeholder retina para fallback visual em telas densas.
+  static const String cartoVoyagerRetina =
+      'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
 
   // ═══════════════════════════════════════════════════════════
   // CONFIGURAÇÃO ATIVA
@@ -111,6 +141,9 @@ class MapConfig {
 
   /// True se a key foi injetada no build.
   static bool get hasStadiaApiKey => _stadiaApiKey.isNotEmpty;
+
+  /// True se a key MapTiler foi injetada no build.
+  static bool hasMapTilerApiKey(String apiKey) => apiKey.isNotEmpty;
 
   /// URL do Stamen Terrain com API key quando disponível.
   /// Sem key → fallback OpenStreetMap Carto (gratuito, sem auth).
@@ -141,6 +174,70 @@ class MapConfig {
   static const double minZoom = 3.0;
   static const double maxZoom = 18.0;
   static const double defaultZoom = 13.0;
+
+  static const double satelliteMaxZoom = 20.0;
+  static const int satelliteMaxNativeZoom = 20;
+  static const double defaultLayerMaxZoom = 18.0;
+  static const int defaultLayerMaxNativeZoom = 18;
+
+  static MapLayerTileConfig tileConfigForLayer(
+    LayerType type, {
+    required String mapTilerApiKey,
+  }) {
+    switch (type) {
+      case LayerType.satellite:
+        if (!hasMapTilerApiKey(mapTilerApiKey)) {
+          return const MapLayerTileConfig(
+            urlTemplate: cartoVoyagerRetina,
+            attribution: cartoAttribution,
+            subdomains: cartoSubdomains,
+            maxZoom: defaultLayerMaxZoom,
+            maxNativeZoom: defaultLayerMaxNativeZoom,
+            retinaMode: true,
+            isFallback: true,
+          );
+        }
+        return MapLayerTileConfig(
+          urlTemplate: mapTilerSatelliteUrl(mapTilerApiKey),
+          attribution: mapTilerAttribution,
+          subdomains: cartoSubdomains,
+          maxZoom: satelliteMaxZoom,
+          maxNativeZoom: satelliteMaxNativeZoom,
+          retinaMode: true,
+          fallbackUrl: cartoVoyagerRetina,
+          requiresApiKey: true,
+        );
+      case LayerType.relevo:
+        if (!hasMapTilerApiKey(mapTilerApiKey)) {
+          return MapLayerTileConfig(
+            urlTemplate: stadiaStamenTerrainUrl,
+            attribution: hasStadiaApiKey ? stadiaAttribution : osmAttribution,
+            maxZoom: defaultLayerMaxZoom,
+            maxNativeZoom: defaultLayerMaxNativeZoom,
+            isFallback: true,
+          );
+        }
+        return MapLayerTileConfig(
+          urlTemplate: mapTilerLandscapeUrl(mapTilerApiKey),
+          attribution: mapTilerAttribution,
+          subdomains: cartoSubdomains,
+          maxZoom: defaultLayerMaxZoom,
+          maxNativeZoom: defaultLayerMaxNativeZoom,
+          retinaMode: true,
+          fallbackUrl: cartoVoyagerRetina,
+          requiresApiKey: true,
+        );
+      case LayerType.standard:
+        return const MapLayerTileConfig(
+          urlTemplate: cartoVoyagerRetina,
+          attribution: cartoAttribution,
+          subdomains: cartoSubdomains,
+          maxZoom: defaultLayerMaxZoom,
+          maxNativeZoom: defaultLayerMaxNativeZoom,
+          retinaMode: true,
+        );
+    }
+  }
 
   // ═══════════════════════════════════════════════════════════
   // ATRIBUIÇÃO (OBRIGATÓRIO)

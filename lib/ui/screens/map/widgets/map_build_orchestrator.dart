@@ -13,7 +13,7 @@ import '../../../../ui/theme/premium/design_tokens.dart';
 import '../../../../core/state/map_ui_providers.dart';
 import '../../../../core/state/map_state.dart';
 import '../../../../core/config/map_config.dart';
-import '../../../../core/domain/map_models.dart';
+import '../../../../core/config/map_secrets.dart';
 import '../../../../core/utils/map_logger.dart';
 import '../../../../modules/drawing/presentation/providers/drawing_provider.dart';
 import '../../../../modules/drawing/domain/drawing_state.dart';
@@ -26,6 +26,7 @@ import '../../../../modules/dashboard/providers/location_providers.dart';
 import '../../../../modules/consultoria/services/talhao_map_adapter.dart';
 import '../../../../modules/consultoria/occurrences/domain/occurrence.dart'
     as occ;
+import '../../../../modules/marketing/domain/enums/case_tipo.dart';
 import '../../../../modules/visitas/presentation/controllers/visit_controller.dart';
 import '../../../../core/contracts/i_field_lookup_geofence_provider.dart';
 import '../../../components/map/map_bottom_sheet.dart';
@@ -63,7 +64,7 @@ class MapBuildOrchestrator extends ConsumerWidget {
   final void Function() toggleDrawMode;
   final void Function() centerOnUser;
   final void Function() armOccurrenceMode;
-  final void Function() armMarketingMode;
+  final void Function(CaseTipo tipo) armMarketingMode;
   final void Function(occ.Occurrence occurrence) handleOccurrencePinTap;
   final void Function() applyInitialViewport;
 
@@ -109,6 +110,11 @@ class MapBuildOrchestrator extends ConsumerWidget {
     );
     final sheetState = ref.watch(mapSheetStateProvider);
     final isMapReady = ref.watch(mapReadyStateProvider);
+    final activeLayer = ref.watch(activeLayerProvider);
+    final tileConfig = MapConfig.tileConfigForLayer(
+      activeLayer,
+      mapTilerApiKey: kMapTilerApiKey,
+    );
 
     // 🔒 LISTENERS PARA FOCO INICIAL (Idempotentes)
     // Observar carregamento dos fields (para Produtores)
@@ -239,6 +245,7 @@ class MapBuildOrchestrator extends ConsumerWidget {
                 MapLogger.logEvent('Clustering Active: ${pos.zoom < 15}');
               }
             },
+            maxZoom: tileConfig.maxZoom,
             children: [
               // Layer base de tiles
               const MapLayersWidget(),
@@ -281,13 +288,14 @@ class MapBuildOrchestrator extends ConsumerWidget {
               // 🎯 ÚNICA LAYER QUE REBUILDA: Localização GPS
               const IsolatedUserLocationLayer(),
 
-              // ⚖️ ATRIBUIÇÃO LEGAL: © Google — exibida somente no layer satellite
-              if (ref.watch(activeLayerProvider) == LayerType.satellite)
-                const RichAttributionWidget(
-                  attributions: [
-                    TextSourceAttribution(MapConfig.googleAttribution),
-                  ],
-                ),
+              RichAttributionWidget(
+                attributions: [TextSourceAttribution(tileConfig.attribution)],
+                showFlutterMapAttribution: false,
+                alignment: AttributionAlignment.bottomLeft,
+                popupInitialDisplayDuration: const Duration(seconds: 2),
+                popupBorderRadius: BorderRadius.circular(8),
+                popupBackgroundColor: Colors.black.withValues(alpha: 0.72),
+              ),
             ],
           ),
 
@@ -309,14 +317,10 @@ class MapBuildOrchestrator extends ConsumerWidget {
                   armOccurrenceMode();
                 }
               },
-              onToggleMarketingMode: () {
-                if (ref.read(armedModeProvider) == ArmedMode.marketing) {
-                  ref.read(armedModeProvider.notifier).state = ArmedMode.none;
-                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                } else {
-                  armMarketingMode();
-                }
-              },
+              onCreateResultadoCase: () => armMarketingMode(CaseTipo.resultado),
+              onCreateAntesDepoisCase: () =>
+                  armMarketingMode(CaseTipo.antesDepois),
+              onCreateAvaliacaoCase: () => armMarketingMode(CaseTipo.avaliacao),
               isMarketingMode:
                   ref.watch(armedModeProvider) == ArmedMode.marketing,
               isDrawMode: sheetState?.type == MapSheetType.draw,

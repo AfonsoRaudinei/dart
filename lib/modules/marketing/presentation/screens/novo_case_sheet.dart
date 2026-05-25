@@ -23,6 +23,7 @@ import '../../../../core/ui/sheets/sheet_tokens.dart';
 class NovoCaseSheet extends StatefulWidget {
   final double lat;
   final double lng;
+  final CaseTipo? initialTipo;
   final VoidCallback onClose;
   final void Function(MarketingCase) onPublicar;
 
@@ -30,6 +31,7 @@ class NovoCaseSheet extends StatefulWidget {
     super.key,
     required this.lat,
     required this.lng,
+    this.initialTipo,
     required this.onClose,
     required this.onPublicar,
   });
@@ -43,7 +45,7 @@ class _NovoCaseSheetState extends State<NovoCaseSheet> {
   final _uuid = const Uuid();
 
   // ── Campos Comuns ──────────────────────────────────────────────
-  CaseTipo _tipo = CaseTipo.resultado;
+  late CaseTipo _tipo;
   PlanoMarketing _visibilidade = PlanoMarketing.prata;
   final _produtorCtrl = TextEditingController();
   final _produtoCtrl = TextEditingController();
@@ -85,6 +87,12 @@ class _NovoCaseSheetState extends State<NovoCaseSheet> {
   String? _fotoDepoisUrl; // Antes/Depois
 
   bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _tipo = widget.initialTipo ?? CaseTipo.resultado;
+  }
 
   @override
   void dispose() {
@@ -133,7 +141,7 @@ class _NovoCaseSheetState extends State<NovoCaseSheet> {
   void _handlePublicar() {
     // 🔧 FIX: Fechar teclado antes da validação (Bug A)
     FocusScope.of(context).unfocus();
-    
+
     if (!_formKey.currentState!.validate()) return;
 
     // Validações de foto obrigatória
@@ -370,8 +378,7 @@ class _NovoCaseSheetState extends State<NovoCaseSheet> {
             if (_tipo == CaseTipo.resultado)
               NovoCaseResultadoSection(
                 fotoPrincipalUrl: _fotoPrincipalUrl,
-                onFotoChanged: (url) =>
-                    setState(() => _fotoPrincipalUrl = url),
+                onFotoChanged: (url) => setState(() => _fotoPrincipalUrl = url),
                 qtdProduzidaCtrl: _qtdProduzidaCtrl,
                 economiaCtrl: _economiaCtrl,
               ),
@@ -471,5 +478,4 @@ class _NovoCaseSheetState extends State<NovoCaseSheet> {
       ),
     );
   }
-
 }

@@ -17,6 +17,7 @@ import '../../../../modules/drawing/domain/drawing_state.dart';
 import '../../../../core/utils/app_logger.dart';
 import './editing_controls_overlay.dart';
 import '../../../../modules/map/presentation/widgets/visit_active_card.dart';
+import 'map_action_fab_menu.dart';
 
 /// Overlay de controles do mapa (header, botões, check-in).
 /// Observa apenas locationStateProvider para status do GPS.
@@ -24,7 +25,9 @@ class MapControlsOverlay extends ConsumerStatefulWidget {
   final VoidCallback onCenterUser;
   final VoidCallback onToggleDrawMode;
   final VoidCallback? onToggleOccurrenceMode;
-  final VoidCallback? onToggleMarketingMode;
+  final VoidCallback? onCreateResultadoCase;
+  final VoidCallback? onCreateAntesDepoisCase;
+  final VoidCallback? onCreateAvaliacaoCase;
   final bool isMarketingMode;
   final Function(int, String) onTabSelected;
   final bool isDrawMode;
@@ -49,7 +52,9 @@ class MapControlsOverlay extends ConsumerStatefulWidget {
     required this.onCenterUser,
     required this.onToggleDrawMode,
     this.onToggleOccurrenceMode,
-    this.onToggleMarketingMode,
+    this.onCreateResultadoCase,
+    this.onCreateAntesDepoisCase,
+    this.onCreateAvaliacaoCase,
     this.isMarketingMode = false,
     required this.isDrawMode,
     this.isOccurrenceMode = false,
@@ -126,30 +131,7 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
                 onTap: () => widget.onTabSelected(4, 'Button_Layers'),
               ),
               const SizedBox(height: 12),
-              _MapActionButton(
-                icon: SFIcons.warning,
-                label: 'Ocorrências',
-                isActive: widget.isOccurrenceMode,
-                onTap: () {
-                  // 🐛 BUGFIX: onToggleOccurrenceMode → _armOccurrenceMode → _openOccurrenceCreationSheet
-                  if (widget.onToggleOccurrenceMode != null) {
-                    widget.onToggleOccurrenceMode!();
-                  } else {
-                    widget.onTabSelected(2, 'Button_Occurrences');
-                  }
-                },
-              ),
-              const SizedBox(height: 12),
-              _MapActionButton(
-                icon: Icons.campaign_rounded,
-                label: 'Publicações',
-                isActive: widget.isMarketingMode,
-                onTap: () {
-                  if (widget.onToggleMarketingMode != null) {
-                    widget.onToggleMarketingMode!();
-                  }
-                },
-              ),
+              const SizedBox(width: 48, height: 48),
               const SizedBox(height: 12),
               _MapActionButton(
                 icon: SFIcons.checkCircle,
@@ -158,6 +140,28 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
                 onTap: () => widget.onTabSelected(3, 'Button_CheckIn'),
               ),
             ],
+          ),
+        ),
+
+        Positioned.fill(
+          child: MapActionFabMenu(
+            right: 16,
+            top: safeTop + 200,
+            padding: EdgeInsets.zero,
+            direction: MapActionFabMenuDirection.left,
+            isActive: widget.isMarketingMode || widget.isOccurrenceMode,
+            onResultado: widget.onCreateResultadoCase ?? () {},
+            onAntesDepois: widget.onCreateAntesDepoisCase ?? () {},
+            onAvaliacao: widget.onCreateAvaliacaoCase ?? () {},
+            onOcorrencia: () {
+              // Fluxo preservado: armar ocorrência e deixar o toque no mapa
+              // abrir o OccurrenceCreationSheet atual.
+              if (widget.onToggleOccurrenceMode != null) {
+                widget.onToggleOccurrenceMode!();
+              } else {
+                widget.onTabSelected(2, 'Button_Occurrences');
+              }
+            },
           ),
         ),
 

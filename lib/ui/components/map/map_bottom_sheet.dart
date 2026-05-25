@@ -270,10 +270,17 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
   }
 
   Widget _buildLayers() {
-    return SingleChildScrollView(
-      controller: _scrollController,
-      physics: const BouncingScrollPhysics(),
-      child: LayersSheet(onClose: widget.onClose),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          controller: _scrollController,
+          physics: const BouncingScrollPhysics(),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: LayersSheet(onClose: widget.onClose),
+          ),
+        );
+      },
     );
   }
 
