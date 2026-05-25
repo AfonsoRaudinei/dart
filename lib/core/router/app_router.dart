@@ -7,6 +7,7 @@ import '../../core/session/session_models.dart';
 import '../../ui/components/app_shell.dart';
 import '../../ui/screens/public_map_screen.dart';
 import '../../ui/screens/private_map_screen.dart';
+import '../../ui/screens/private_map_bootstrap_screen.dart';
 import '../../ui/screens/login_screen.dart';
 import '../../modules/auth/pages/register_page.dart';
 import '../../modules/auth/pages/recover_password_page.dart';
@@ -107,7 +108,7 @@ GoRouter router(Ref ref) {
           ),
           GoRoute(
             path: AppRoutes.map,
-            builder: (_, __) => const PrivateMapScreen(),
+            builder: (_, __) => const PrivateMapBootstrapScreen(),
           ),
 
           GoRoute(

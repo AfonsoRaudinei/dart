@@ -60,6 +60,10 @@ Future<void> main() async {
 
       // 🛡 Erros do framework Flutter exibidos em vez de tela preta
       FlutterError.onError = FlutterError.presentError;
+      ErrorWidget.builder = (details) {
+        final message = details.exceptionAsString();
+        return _BootErrorApp(error: message);
+      };
 
       try {
         // 1. Validação fail-fast de variáveis de ambiente
