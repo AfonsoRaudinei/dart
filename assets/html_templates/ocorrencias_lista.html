@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>SoloForte — Relatório de Ocorrências</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --sf-navy:       #2C5564;
+    --sf-navy-light: #3A6B7D;
+    --sf-green:      #2E7D32;
+    --sf-green-leaf: #8BC34A;
+    --sf-amber:      #F5B935;
+    --sf-amber-pale: #FEF3C7;
+    --sf-cream:      #F7F5F0;
+    --sf-stone:      #E8E4DC;
+    --sf-text:       #1A1A1A;
+    --sf-text-muted: #6B7280;
+    --sf-white:      #FFFFFF;
+    --sf-shadow:     rgba(44, 85, 100, 0.12);
+
+    /* Urgência */
+    --urg-alta:   #DC2626;
+    --urg-media:  #F59E0B;
+    --urg-baixa:  #16A34A;
+
+    /* Categorias */
+    --cat-doenca:     #DC2626;
+    --cat-insetos:    #F59E0B;
+    --cat-daninhas:   #84CC16;
+    --cat-nutrientes: #06B6D4;
+    --cat-agua:       #3B82F6;
+    --cat-solo:       #92400E;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    width: 100%;
+    overflow-x: hidden;
+    background: var(--sf-white);
+  }
+
+  body {
+    font-family: 'DM Sans', system-ui, sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+    background: var(--sf-cream);
+    color: var(--sf-text);
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+  }
+
+  .page {
+    max-width: 860px;
+    margin: 0 auto;
+    background: var(--sf-white);
+    min-height: 100vh;
+    width: 100%;
+    overflow-x: hidden;
+  }
+
+  /* ═══ HEADER ═══ */
+  .header {
+    background: var(--sf-navy);
+    padding: 28px 32px 24px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .header::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+      radial-gradient(circle at 80% 20%, rgba(139,195,74,0.15) 0%, transparent 50%),
+      radial-gradient(circle at 10% 80%, rgba(245,185,53,0.10) 0%, transparent 40%);
+    pointer-events: none;
+  }
+
+  .header-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .logo-area { display: flex; align-items: center; gap: 10px; }
+
+  .logo-img {
+    width: 38px; height: 38px;
+    object-fit: contain;
+    filter: brightness(0) invert(1);
+    opacity: 0.92;
+  }
+
+  .logo-name {
+    font-family: 'DM Serif Display', serif;
+    font-size: 20px;
+    color: var(--sf-white);
+    letter-spacing: 0.02em;
+  }
+
+  .tipo-badge {
+    background: var(--sf-amber);
+    color: var(--sf-navy);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 4px 12px;
+    border-radius: 100px;
+  }
+
+  .header-meta { position: relative; z-index: 1; }
+
+  .header-titulo {
+    font-family: 'DM Serif Display', serif;
+    font-size: 26px;
+    color: var(--sf-white);
+    line-height: 1.2;
+    margin-bottom: 6px;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+  }
+
+  .header-subtitle {
+    font-size: 13px;
+    color: var(--sf-green-leaf);
+    font-weight: 500;
+    margin-bottom: 14px;
+    letter-spacing: 0.02em;
+    word-break: break-word;
+  }
+
+  .header-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.18);
+    border-radius: 100px;
+    padding: 4px 12px;
+    font-size: 11.5px;
+    color: rgba(255,255,255,0.85);
+  }
+
+  .pill-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--sf-amber);
+    flex-shrink: 0;
+  }
+
+  /* ═══ CONTENT ═══ */
+  .content { padding: 28px 32px; }
+
+  .section-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .section-label-bar {
+    width: 3px;
+    height: 20px;
+    background: var(--sf-amber);
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+
+  .section-label-text {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.10em;
+    text-transform: uppercase;
+    color: var(--sf-text-muted);
+  }
+
+  /* ═══ RESUMO DA VISITA (dashboard) ═══ */
+  .resumo-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 10px;
+    margin-bottom: 28px;
+  }
+
+  .resumo-card {
+    background: var(--sf-cream);
+    border: 1px solid var(--sf-stone);
+    border-radius: 14px;
+    padding: 14px 16px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .resumo-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: var(--sf-amber);
+    border-radius: 14px 14px 0 0;
+  }
+
+  .resumo-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--sf-text-muted);
+    margin-bottom: 6px;
+  }
+
+  .resumo-value {
+    font-family: 'DM Serif Display', serif;
+    font-size: 28px;
+    color: var(--sf-navy);
+    line-height: 1;
+    margin-bottom: 2px;
+  }
+
+  .resumo-unit {
+    font-size: 10.5px;
+    color: var(--sf-text-muted);
+  }
+
+  /* ═══ DISTRIBUIÇÃO POR URGÊNCIA (barra horizontal) ═══ */
+  .urg-summary {
+    background: var(--sf-cream);
+    border: 1px solid var(--sf-stone);
+    border-radius: 14px;
+    padding: 16px 18px;
+    margin-bottom: 28px;
+  }
+
+  .urg-summary-title {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--sf-text-muted);
+    margin-bottom: 12px;
+  }
+
+  .urg-bar {
+    display: flex;
+    width: 100%;
+    height: 10px;
+    border-radius: 100px;
+    overflow: hidden;
+    background: var(--sf-stone);
+    margin-bottom: 12px;
+  }
+
+  .urg-bar-segment {
+    height: 100%;
+    transition: width 0.3s ease;
+  }
+
+  .urg-bar-segment.alta  { background: var(--urg-alta); }
+  .urg-bar-segment.media { background: var(--urg-media); }
+  .urg-bar-segment.baixa { background: var(--urg-baixa); }
+
+  .urg-legend {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .urg-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--sf-text);
+  }
+
+  .urg-legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .urg-legend-dot.alta  { background: var(--urg-alta); }
+  .urg-legend-dot.media { background: var(--urg-media); }
+  .urg-legend-dot.baixa { background: var(--urg-baixa); }
+
+  .urg-legend-count {
+    font-weight: 600;
+    color: var(--sf-navy);
+  }
+
+  /* ═══ AGRUPAMENTO POR CATEGORIA ═══ */
+  .grupo-categoria { margin-bottom: 28px; }
+
+  .grupo-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--sf-stone);
+  }
+
+  .grupo-emoji { font-size: 22px; }
+
+  .grupo-titulo {
+    font-family: 'DM Serif Display', serif;
+    font-size: 18px;
+    color: var(--sf-navy);
+    flex: 1;
+  }
+
+  .grupo-count {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--sf-white);
+    background: var(--sf-navy);
+    padding: 3px 10px;
+    border-radius: 100px;
+    letter-spacing: 0.04em;
+  }
+
+  /* ═══ CARD DE OCORRÊNCIA (item da lista) ═══ */
+  .ocorrencia-card {
+    background: var(--sf-white);
+    border: 1px solid var(--sf-stone);
+    border-radius: 14px;
+    overflow: hidden;
+    margin-bottom: 10px;
+    box-shadow: 0 1px 4px var(--sf-shadow);
+    display: grid;
+    grid-template-columns: 100px 1fr;
+    gap: 0;
+  }
+
+  .ocorrencia-foto {
+    background: var(--sf-stone);
+    aspect-ratio: 1/1;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .ocorrencia-foto img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .ocorrencia-foto-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--sf-stone);
+  }
+
+  .ocorrencia-foto-placeholder svg {
+    opacity: 0.30;
+    width: 24px;
+    height: 24px;
+  }
+
+  .ocorrencia-info {
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+  }
+
+  .ocorrencia-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .ocorrencia-urg-tag {
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 2px 8px;
+    border-radius: 100px;
+    color: white;
+    flex-shrink: 0;
+  }
+
+  .ocorrencia-urg-tag.alta  { background: var(--urg-alta); }
+  .ocorrencia-urg-tag.media { background: var(--urg-media); }
+  .ocorrencia-urg-tag.baixa { background: var(--urg-baixa); }
+
+  .ocorrencia-id {
+    font-size: 10px;
+    color: var(--sf-text-muted);
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    letter-spacing: 0.03em;
+  }
+
+  .ocorrencia-descricao {
+    font-size: 13px;
+    color: var(--sf-text);
+    line-height: 1.5;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .ocorrencia-meta {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    font-size: 11px;
+    color: var(--sf-text-muted);
+    margin-top: 2px;
+  }
+
+  .ocorrencia-meta-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .ocorrencia-meta-item svg {
+    width: 11px;
+    height: 11px;
+    fill: var(--sf-text-muted);
+  }
+
+  /* ═══ ESTADO VAZIO (sem ocorrências) ═══ */
+  .empty-state {
+    text-align: center;
+    padding: 48px 24px;
+    background: var(--sf-cream);
+    border-radius: 16px;
+    border: 1px dashed var(--sf-stone);
+  }
+
+  .empty-state-emoji {
+    font-size: 48px;
+    margin-bottom: 12px;
+    opacity: 0.5;
+  }
+
+  .empty-state-text {
+    font-size: 14px;
+    color: var(--sf-text-muted);
+  }
+
+  /* ═══ INFO VISITA (contexto) ═══ */
+  .visita-info {
+    background: linear-gradient(135deg, var(--sf-navy) 0%, var(--sf-navy-light) 100%);
+    border-radius: 16px;
+    padding: 20px 22px;
+    margin-bottom: 28px;
+    position: relative;
+    overflow: hidden;
+    color: var(--sf-white);
+  }
+
+  .visita-info::before {
+    content: '';
+    position: absolute;
+    top: -40%;
+    right: -10%;
+    width: 60%;
+    height: 180%;
+    background: radial-gradient(ellipse, rgba(139,195,74,0.15) 0%, transparent 60%);
+    pointer-events: none;
+  }
+
+  .visita-info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 14px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .visita-info-item-label {
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.55);
+    margin-bottom: 4px;
+  }
+
+  .visita-info-item-value {
+    font-family: 'DM Serif Display', serif;
+    font-size: 15px;
+    color: var(--sf-white);
+    line-height: 1.3;
+    word-break: break-word;
+  }
+
+  /* ═══ FOOTER ═══ */
+  .footer {
+    background: var(--sf-cream);
+    border-top: 1px solid var(--sf-stone);
+    padding: 18px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .footer-brand {
+    font-family: 'DM Serif Display', serif;
+    font-size: 13px;
+    color: var(--sf-navy);
+    opacity: 0.7;
+    white-space: nowrap;
+  }
+
+  .footer-meta {
+    font-size: 11px;
+    color: var(--sf-text-muted);
+    text-align: right;
+    line-height: 1.5;
+    white-space: nowrap;
+  }
+
+  /* ═══ PRINT ═══ */
+  @media print {
+    body { background: white; }
+    .page { box-shadow: none; max-width: 100%; }
+    .header, .visita-info, .ocorrencia-urg-tag, .urg-bar-segment {
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .ocorrencia-card { page-break-inside: avoid; }
+  }
+
+  /* ═══ MOBILE ═══ */
+  @media (max-width: 600px) {
+    .header { padding: 22px 20px 20px; }
+    .content { padding: 22px 20px; }
+    .header-titulo { font-size: 21px; }
+    .footer { padding: 16px 20px; }
+    .header-pills { gap: 6px; }
+    .pill { font-size: 10.5px; padding: 3px 9px; }
+    .resumo-grid { grid-template-columns: 1fr 1fr; }
+    .resumo-value { font-size: 24px; }
+    .ocorrencia-card { grid-template-columns: 80px 1fr; }
+    .grupo-titulo { font-size: 16px; }
+  }
+
+  @media (max-width: 380px) {
+    .header-titulo { font-size: 18px; }
+    .ocorrencia-card { grid-template-columns: 1fr; }
+    .ocorrencia-foto { aspect-ratio: 16/9; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- ══════════ HEADER ══════════ -->
+  <header class="header">
+    <div class="header-top">
+      <div class="logo-area">
+        <svg class="logo-img" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M50 8 L90 42 L80 42 L80 78 L20 78 L20 42 L10 42 Z" fill="white" opacity="0.9"/>
+          <rect x="42" y="46" width="7" height="7" rx="1" fill="#F5B935"/>
+          <rect x="51" y="46" width="7" height="7" rx="1" fill="#F5B935"/>
+          <rect x="42" y="55" width="7" height="7" rx="1" fill="#F5B935"/>
+          <rect x="51" y="55" width="7" height="7" rx="1" fill="#F5B935"/>
+          <path d="M25 90 Q35 70 50 78 Q65 70 75 90" fill="#8BC34A" opacity="0.85"/>
+          <path d="M20 88 Q30 65 50 76" stroke="#2E7D32" stroke-width="2" fill="none" opacity="0.5"/>
+          <path d="M80 88 Q70 65 50 76" stroke="#2E7D32" stroke-width="2" fill="none" opacity="0.5"/>
+        </svg>
+        <span class="logo-name">SoloForte</span>
+      </div>
+      <span class="tipo-badge">Relatório de Visita</span>
+    </div>
+
+    <div class="header-meta">
+      <div class="header-titulo">{{cliente_nome}}</div>
+      <!-- {{#if fazenda_nome}} -->
+      <div class="header-subtitle">{{fazenda_nome}} · {{talhao_nome}}</div>
+      <!-- {{/if}} -->
+      <div class="header-pills">
+        <span class="pill"><span class="pill-dot"></span>{{data_visita_formatada}}</span>
+        <span class="pill"><span class="pill-dot"></span>{{total_ocorrencias}} ocorrências</span>
+        <!-- {{#if cultivar}} -->
+        <span class="pill"><span class="pill-dot"></span>{{cultivar}}</span>
+        <!-- {{/if}} -->
+      </div>
+    </div>
+  </header>
+
+  <!-- ══════════ CONTEÚDO ══════════ -->
+  <main class="content">
+
+    <!-- INFO CONTEXTO DA VISITA -->
+    <div class="visita-info">
+      <div class="visita-info-grid">
+        <!-- {{#if agronomist_nome}} -->
+        <div>
+          <div class="visita-info-item-label">Agrônomo</div>
+          <div class="visita-info-item-value">{{agronomist_nome}}</div>
+        </div>
+        <!-- {{/if}} -->
+
+        <!-- {{#if data_visita_formatada}} -->
+        <div>
+          <div class="visita-info-item-label">Data da Visita</div>
+          <div class="visita-info-item-value">{{data_visita_formatada}}</div>
+        </div>
+        <!-- {{/if}} -->
+
+        <!-- {{#if duracao_visita}} -->
+        <div>
+          <div class="visita-info-item-label">Duração</div>
+          <div class="visita-info-item-value">{{duracao_visita}}</div>
+        </div>
+        <!-- {{/if}} -->
+
+        <!-- {{#if estadio_fenologico}} -->
+        <div>
+          <div class="visita-info-item-label">Estádio</div>
+          <div class="visita-info-item-value">{{estadio_fenologico}}</div>
+        </div>
+        <!-- {{/if}} -->
+      </div>
+    </div>
+
+    <!-- RESUMO NUMÉRICO -->
+    <div class="section-label">
+      <div class="section-label-bar"></div>
+      <span class="section-label-text">Resumo</span>
+    </div>
+
+    <div class="resumo-grid">
+      <div class="resumo-card">
+        <div class="resumo-label">Total</div>
+        <div class="resumo-value">{{total_ocorrencias}}</div>
+        <div class="resumo-unit">ocorrências</div>
+      </div>
+
+      <div class="resumo-card">
+        <div class="resumo-label">Categorias</div>
+        <div class="resumo-value">{{total_categorias}}</div>
+        <div class="resumo-unit">distintas</div>
+      </div>
+
+      <!-- {{#if total_fotos}} -->
+      <div class="resumo-card">
+        <div class="resumo-label">Fotos</div>
+        <div class="resumo-value">{{total_fotos}}</div>
+        <div class="resumo-unit">registradas</div>
+      </div>
+      <!-- {{/if}} -->
+
+      <!-- {{#if amostras_solo}} -->
+      <div class="resumo-card">
+        <div class="resumo-label">Amostras</div>
+        <div class="resumo-value">{{amostras_solo}}</div>
+        <div class="resumo-unit">de solo</div>
+      </div>
+      <!-- {{/if}} -->
+    </div>
+
+    <!-- DISTRIBUIÇÃO POR URGÊNCIA -->
+    <!-- {{#if total_ocorrencias > 0}} -->
+    <div class="urg-summary">
+      <div class="urg-summary-title">Distribuição por Urgência</div>
+      <div class="urg-bar">
+        <!-- larguras calculadas no Dart como % -->
+        <div class="urg-bar-segment alta"  style="width: {{pct_alta}}%"></div>
+        <div class="urg-bar-segment media" style="width: {{pct_media}}%"></div>
+        <div class="urg-bar-segment baixa" style="width: {{pct_baixa}}%"></div>
+      </div>
+      <div class="urg-legend">
+        <div class="urg-legend-item">
+          <span class="urg-legend-dot alta"></span>
+          <span>Alta</span>
+          <span class="urg-legend-count">{{count_alta}}</span>
+        </div>
+        <div class="urg-legend-item">
+          <span class="urg-legend-dot media"></span>
+          <span>Média</span>
+          <span class="urg-legend-count">{{count_media}}</span>
+        </div>
+        <div class="urg-legend-item">
+          <span class="urg-legend-dot baixa"></span>
+          <span>Baixa</span>
+          <span class="urg-legend-count">{{count_baixa}}</span>
+        </div>
+      </div>
+    </div>
+    <!-- {{/if}} -->
+
+    <!-- LISTA AGRUPADA POR CATEGORIA -->
+    <div class="section-label">
+      <div class="section-label-bar"></div>
+      <span class="section-label-text">Ocorrências Registradas</span>
+    </div>
+
+    <!-- {{#if grupos.length > 0}} -->
+    <!-- {{#each grupos}} -->
+    <div class="grupo-categoria">
+      <div class="grupo-header">
+        <span class="grupo-emoji">{{categoria_emoji}}</span>
+        <span class="grupo-titulo">{{categoria_label}}</span>
+        <span class="grupo-count">{{count}}</span>
+      </div>
+
+      <!-- {{#each ocorrencias}} -->
+      <div class="ocorrencia-card">
+        <div class="ocorrencia-foto">
+          <!-- {{#if photo_base64}} -->
+          <img src="{{photo_base64}}" alt="Foto" loading="lazy">
+          <!-- {{else}} -->
+          <div class="ocorrencia-foto-placeholder">
+            <svg viewBox="0 0 24 24" fill="#9CA3AF" xmlns="http://www.w3.org/2000/svg">
+              <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>
+            </svg>
+          </div>
+          <!-- {{/if}} -->
+        </div>
+
+        <div class="ocorrencia-info">
+          <div class="ocorrencia-top">
+            <span class="ocorrencia-urg-tag {{urgencia_class}}">{{type}}</span>
+            <span class="ocorrencia-id">#{{id_curto}}</span>
+          </div>
+
+          <div class="ocorrencia-descricao">{{description}}</div>
+
+          <div class="ocorrencia-meta">
+            <!-- {{#if created_at_hora}} -->
+            <span class="ocorrencia-meta-item">
+              <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm.5 11H8v-2h2.5V7H13v6z"/>
+              </svg>
+              {{created_at_hora}}
+            </span>
+            <!-- {{/if}} -->
+
+            <!-- {{#if has_location}} -->
+            <span class="ocorrencia-meta-item">
+              <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+              </svg>
+              Georreferenciada
+            </span>
+            <!-- {{/if}} -->
+
+            <!-- {{#if amostra_solo}} -->
+            <span class="ocorrencia-meta-item">
+              <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 2L4 7v10l8 5 8-5V7l-8-5zm0 2.4L17.6 8 12 11.6 6.4 8 12 4.4z"/>
+              </svg>
+              Amostra coletada
+            </span>
+            <!-- {{/if}} -->
+          </div>
+        </div>
+      </div>
+      <!-- {{/each}} -->
+    </div>
+    <!-- {{/each}} -->
+    <!-- {{else}} -->
+    <div class="empty-state">
+      <div class="empty-state-emoji">🌾</div>
+      <div class="empty-state-text">Nenhuma ocorrência registrada nesta visita.</div>
+    </div>
+    <!-- {{/if}} -->
+
+  </main>
+
+  <!-- ══════════ FOOTER ══════════ -->
+  <footer class="footer">
+    <div class="footer-brand">SoloForte</div>
+    <div class="footer-meta">
+      Gerado em {{gerado_em_formatado}}<br>
+      Sessão: {{visit_session_id_curto}}
+    </div>
+  </footer>
+
+</div>
+</body>
+</html>

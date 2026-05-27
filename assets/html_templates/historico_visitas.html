@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>SoloForte — Histórico de Visitas</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --sf-navy:       #2C5564;
+    --sf-navy-light: #3A6B7D;
+    --sf-green:      #2E7D32;
+    --sf-green-leaf: #8BC34A;
+    --sf-amber:      #F5B935;
+    --sf-amber-pale: #FEF3C7;
+    --sf-cream:      #F7F5F0;
+    --sf-stone:      #E8E4DC;
+    --sf-text:       #1A1A1A;
+    --sf-text-muted: #6B7280;
+    --sf-white:      #FFFFFF;
+    --sf-shadow:     rgba(44, 85, 100, 0.12);
+
+    /* Status do relatório */
+    --status-pendente:  #F59E0B;
+    --status-publicado: #16A34A;
+    --status-arquivado: #6B7280;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    width: 100%;
+    overflow-x: hidden;
+    background: var(--sf-white);
+  }
+
+  body {
+    font-family: 'DM Sans', system-ui, sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+    background: var(--sf-cream);
+    color: var(--sf-text);
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+  }
+
+  .page {
+    max-width: 860px;
+    margin: 0 auto;
+    background: var(--sf-white);
+    min-height: 100vh;
+    width: 100%;
+    overflow-x: hidden;
+  }
+
+  /* ═══ HEADER ═══ */
+  .header {
+    background: var(--sf-navy);
+    padding: 28px 32px 24px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .header::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+      radial-gradient(circle at 80% 20%, rgba(139,195,74,0.15) 0%, transparent 50%),
+      radial-gradient(circle at 10% 80%, rgba(245,185,53,0.10) 0%, transparent 40%);
+    pointer-events: none;
+  }
+
+  .header-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .logo-area { display: flex; align-items: center; gap: 10px; }
+
+  .logo-img {
+    width: 38px; height: 38px;
+    object-fit: contain;
+    filter: brightness(0) invert(1);
+    opacity: 0.92;
+  }
+
+  .logo-name {
+    font-family: 'DM Serif Display', serif;
+    font-size: 20px;
+    color: var(--sf-white);
+    letter-spacing: 0.02em;
+  }
+
+  .tipo-badge {
+    background: var(--sf-amber);
+    color: var(--sf-navy);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 4px 12px;
+    border-radius: 100px;
+    white-space: nowrap;
+  }
+
+  .header-meta { position: relative; z-index: 1; }
+
+  .header-titulo {
+    font-family: 'DM Serif Display', serif;
+    font-size: 26px;
+    color: var(--sf-white);
+    line-height: 1.2;
+    margin-bottom: 6px;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+  }
+
+  .header-subtitulo {
+    font-size: 13px;
+    color: var(--sf-green-leaf);
+    font-weight: 500;
+    margin-bottom: 14px;
+    letter-spacing: 0.02em;
+    word-break: break-word;
+  }
+
+  .header-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.18);
+    border-radius: 100px;
+    padding: 4px 12px;
+    font-size: 11.5px;
+    color: rgba(255,255,255,0.85);
+  }
+
+  .pill-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--sf-amber);
+    flex-shrink: 0;
+  }
+
+  /* ═══ CONTENT ═══ */
+  .content { padding: 28px 32px; }
+
+  .section-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .section-label-bar {
+    width: 3px; height: 20px;
+    background: var(--sf-amber);
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+
+  .section-label-text {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.10em;
+    text-transform: uppercase;
+    color: var(--sf-text-muted);
+  }
+
+  /* ═══ KPIs ═══ */
+  .kpi-strip {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px;
+    margin-bottom: 28px;
+  }
+
+  .kpi-card {
+    background: var(--sf-cream);
+    border: 1px solid var(--sf-stone);
+    border-radius: 14px;
+    padding: 16px 18px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .kpi-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: var(--sf-amber);
+    border-radius: 14px 14px 0 0;
+  }
+
+  .kpi-label {
+    font-size: 10.5px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--sf-text-muted);
+    margin-bottom: 6px;
+  }
+
+  .kpi-value {
+    font-family: 'DM Serif Display', serif;
+    font-size: 28px;
+    color: var(--sf-navy);
+    line-height: 1;
+    margin-bottom: 2px;
+  }
+
+  .kpi-unit {
+    font-size: 11px;
+    color: var(--sf-text-muted);
+  }
+
+  /* ═══ TIMELINE ═══ */
+  .timeline {
+    position: relative;
+    margin-bottom: 28px;
+  }
+
+  /* linha vertical da timeline */
+  .timeline::before {
+    content: '';
+    position: absolute;
+    top: 0; bottom: 0;
+    left: 18px;
+    width: 2px;
+    background: var(--sf-stone);
+    z-index: 0;
+  }
+
+  /* ═══ ITEM DA TIMELINE (cada relatorio) ═══ */
+  .timeline-item {
+    position: relative;
+    padding-left: 52px;
+    margin-bottom: 16px;
+  }
+
+  .timeline-item:last-child { margin-bottom: 0; }
+
+  /* bolinha na linha */
+  .timeline-dot {
+    position: absolute;
+    left: 10px;
+    top: 18px;
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    border: 3px solid var(--sf-white);
+    z-index: 1;
+    box-shadow: 0 0 0 2px var(--sf-stone);
+  }
+
+  .timeline-dot.pendente_revisao { background: var(--status-pendente); box-shadow: 0 0 0 2px var(--status-pendente); }
+  .timeline-dot.publicado        { background: var(--status-publicado); box-shadow: 0 0 0 2px var(--status-publicado); }
+  .timeline-dot.arquivado        { background: var(--status-arquivado); box-shadow: 0 0 0 2px var(--status-arquivado); }
+
+  /* card de cada visita */
+  .visita-card {
+    background: var(--sf-white);
+    border: 1px solid var(--sf-stone);
+    border-radius: 14px;
+    padding: 16px 18px;
+    box-shadow: 0 1px 4px var(--sf-shadow);
+    position: relative;
+  }
+
+  .visita-card-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+  }
+
+  .visita-titulo {
+    font-family: 'DM Serif Display', serif;
+    font-size: 16px;
+    color: var(--sf-navy);
+    line-height: 1.3;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    flex: 1;
+    min-width: 0;
+  }
+
+  /* badge de status */
+  .status-badge {
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 3px 10px;
+    border-radius: 100px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .status-badge.pendente_revisao {
+    background: #FEF3C7;
+    color: #92400E;
+  }
+
+  .status-badge.publicado {
+    background: #DCFCE7;
+    color: #14532D;
+  }
+
+  .status-badge.arquivado {
+    background: var(--sf-stone);
+    color: var(--sf-text-muted);
+  }
+
+  /* metadados da visita */
+  .visita-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  .visita-meta-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    color: var(--sf-text-muted);
+  }
+
+  .visita-meta-item svg {
+    width: 12px; height: 12px;
+    fill: var(--sf-text-muted);
+    flex-shrink: 0;
+  }
+
+  .visita-meta-item strong {
+    color: var(--sf-text);
+    font-weight: 500;
+  }
+
+  /* período da visita */
+  .visita-periodo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--sf-cream);
+    border-radius: 8px;
+    padding: 8px 12px;
+    margin-bottom: 10px;
+  }
+
+  .visita-periodo svg {
+    width: 13px; height: 13px;
+    fill: var(--sf-navy);
+    flex-shrink: 0;
+  }
+
+  .visita-periodo-text {
+    font-size: 12px;
+    color: var(--sf-text);
+    word-break: break-word;
+  }
+
+  .visita-periodo-text strong {
+    color: var(--sf-navy);
+    font-weight: 600;
+  }
+
+  /* custom_notes (condicional) */
+  .visita-notes {
+    font-size: 12.5px;
+    color: var(--sf-text-muted);
+    font-style: italic;
+    line-height: 1.5;
+    border-top: 1px solid var(--sf-stone);
+    padding-top: 8px;
+    margin-top: 4px;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  /* contadores de dados da visita */
+  .visita-counters {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 8px;
+  }
+
+  .counter-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    color: var(--sf-navy);
+    background: var(--sf-amber-pale);
+    border-radius: 100px;
+    padding: 3px 10px;
+    font-weight: 500;
+  }
+
+  /* ═══ ESTADO VAZIO ═══ */
+  .empty-state {
+    text-align: center;
+    padding: 48px 24px;
+    background: var(--sf-cream);
+    border-radius: 16px;
+    border: 1px dashed var(--sf-stone);
+    margin-bottom: 28px;
+  }
+
+  .empty-state-emoji {
+    font-size: 44px;
+    margin-bottom: 12px;
+    opacity: 0.5;
+  }
+
+  .empty-state-text {
+    font-size: 13px;
+    color: var(--sf-text-muted);
+  }
+
+  /* ═══ FOOTER ═══ */
+  .footer {
+    background: var(--sf-cream);
+    border-top: 1px solid var(--sf-stone);
+    padding: 18px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .footer-brand {
+    font-family: 'DM Serif Display', serif;
+    font-size: 13px;
+    color: var(--sf-navy);
+    opacity: 0.7;
+    white-space: nowrap;
+  }
+
+  .footer-meta {
+    font-size: 11px;
+    color: var(--sf-text-muted);
+    text-align: right;
+    line-height: 1.5;
+    white-space: nowrap;
+  }
+
+  /* ═══ PRINT ═══ */
+  @media print {
+    body { background: white; }
+    .page { box-shadow: none; max-width: 100%; }
+    .header, .status-badge, .timeline-dot {
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .visita-card { page-break-inside: avoid; }
+    .timeline::before { display: none; }
+  }
+
+  /* ═══ MOBILE ═══ */
+  @media (max-width: 600px) {
+    .header { padding: 22px 20px 20px; }
+    .content { padding: 22px 20px; }
+    .header-titulo { font-size: 21px; }
+    .footer { padding: 16px 20px; }
+    .header-pills { gap: 6px; }
+    .pill { font-size: 10.5px; padding: 3px 9px; }
+    .kpi-strip { grid-template-columns: 1fr 1fr; }
+    .kpi-value { font-size: 24px; }
+    .timeline::before { left: 14px; }
+    .timeline-item { padding-left: 42px; }
+    .timeline-dot { left: 6px; width: 16px; height: 16px; }
+  }
+
+  @media (max-width: 380px) {
+    .header-titulo { font-size: 18px; }
+    .kpi-strip { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- ══════════ HEADER ══════════ -->
+  <header class="header">
+    <div class="header-top">
+      <div class="logo-area">
+        <svg class="logo-img" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M50 8 L90 42 L80 42 L80 78 L20 78 L20 42 L10 42 Z" fill="white" opacity="0.9"/>
+          <rect x="42" y="46" width="7" height="7" rx="1" fill="#F5B935"/>
+          <rect x="51" y="46" width="7" height="7" rx="1" fill="#F5B935"/>
+          <rect x="42" y="55" width="7" height="7" rx="1" fill="#F5B935"/>
+          <rect x="51" y="55" width="7" height="7" rx="1" fill="#F5B935"/>
+          <path d="M25 90 Q35 70 50 78 Q65 70 75 90" fill="#8BC34A" opacity="0.85"/>
+          <path d="M20 88 Q30 65 50 76" stroke="#2E7D32" stroke-width="2" fill="none" opacity="0.5"/>
+          <path d="M80 88 Q70 65 50 76" stroke="#2E7D32" stroke-width="2" fill="none" opacity="0.5"/>
+        </svg>
+        <span class="logo-name">SoloForte</span>
+      </div>
+      <span class="tipo-badge">Histórico</span>
+    </div>
+
+    <div class="header-meta">
+      <!-- cliente_nome via lookup client_id -->
+      <div class="header-titulo">{{cliente_nome}}</div>
+      <!-- farm_name do primeiro relatorio ou lookup -->
+      <!-- {{#if farm_name}} -->
+      <div class="header-subtitulo">{{farm_name}}</div>
+      <!-- {{/if}} -->
+      <div class="header-pills">
+        <span class="pill"><span class="pill-dot"></span>{{total_visitas}} visitas</span>
+        <!-- {{#if periodo_inicio}} -->
+        <span class="pill"><span class="pill-dot"></span>{{periodo_inicio}} – {{periodo_fim}}</span>
+        <!-- {{/if}} -->
+        <span class="pill"><span class="pill-dot"></span>{{total_publicados}} publicados</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ══════════ CONTEÚDO ══════════ -->
+  <main class="content">
+
+    <!-- KPIs -->
+    <div class="section-label">
+      <div class="section-label-bar"></div>
+      <span class="section-label-text">Resumo</span>
+    </div>
+
+    <div class="kpi-strip">
+      <div class="kpi-card">
+        <div class="kpi-label">Total de Visitas</div>
+        <div class="kpi-value">{{total_visitas}}</div>
+        <div class="kpi-unit">registradas</div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-label">Publicados</div>
+        <div class="kpi-value">{{total_publicados}}</div>
+        <div class="kpi-unit">relatórios</div>
+      </div>
+
+      <!-- {{#if total_ocorrencias_geral}} -->
+      <div class="kpi-card">
+        <div class="kpi-label">Ocorrências</div>
+        <div class="kpi-value">{{total_ocorrencias_geral}}</div>
+        <div class="kpi-unit">registradas</div>
+      </div>
+      <!-- {{/if}} -->
+
+      <!-- {{#if total_pendentes}} -->
+      <div class="kpi-card">
+        <div class="kpi-label">Pendentes</div>
+        <div class="kpi-value">{{total_pendentes}}</div>
+        <div class="kpi-unit">revisão</div>
+      </div>
+      <!-- {{/if}} -->
+    </div>
+
+    <!-- TIMELINE DE VISITAS -->
+    <div class="section-label">
+      <div class="section-label-bar"></div>
+      <span class="section-label-text">Linha do Tempo</span>
+    </div>
+
+    <!-- {{#if relatorios.length > 0}} -->
+    <div class="timeline">
+
+      <!-- {{#each relatorios}} -->
+      <!-- Cada item = um registro da tabela relatorios_v2 -->
+      <div class="timeline-item">
+
+        <!-- bolinha colorida pelo status -->
+        <div class="timeline-dot {{status}}"></div>
+
+        <div class="visita-card">
+          <div class="visita-card-top">
+            <!-- title (editável pelo agrônomo) ou fallback para farm_name -->
+            <div class="visita-titulo">
+              {{title_ou_farm_name}}
+            </div>
+            <!-- status: pendente_revisao | publicado | arquivado -->
+            <span class="status-badge {{status}}">
+              <!-- pendente_revisao → "Em Revisão" | publicado → "Publicado" | arquivado → "Arquivado" -->
+              {{status_label}}
+            </span>
+          </div>
+
+          <!-- period_start + period_end -->
+          <div class="visita-periodo">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path d="M9 11H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2zm2-7h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z"/>
+            </svg>
+            <span class="visita-periodo-text">
+              <strong>{{period_start_formatado}}</strong>
+              <!-- {{#if period_end != period_start}} -->
+              &nbsp;→&nbsp;<strong>{{period_end_formatado}}</strong>
+              <!-- {{/if}} -->
+            </span>
+          </div>
+
+          <!-- metadados: agronomist_id (lookup), farm_name -->
+          <div class="visita-meta">
+            <span class="visita-meta-item">
+              <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+              </svg>
+              <strong>{{agronomist_nome}}</strong>
+            </span>
+            <span class="visita-meta-item">
+              <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+              </svg>
+              {{farm_name}}
+            </span>
+          </div>
+
+          <!-- contadores: ocorrencias[], talhoes[], fotos[], publicacoes_refs[] -->
+          <div class="visita-counters">
+            <!-- {{#if ocorrencias_count > 0}} -->
+            <span class="counter-chip">🔍 {{ocorrencias_count}} ocorrências</span>
+            <!-- {{/if}} -->
+            <!-- {{#if talhoes_count > 0}} -->
+            <span class="counter-chip">🗺️ {{talhoes_count}} talhões</span>
+            <!-- {{/if}} -->
+            <!-- {{#if fotos_count > 0}} -->
+            <span class="counter-chip">📷 {{fotos_count}} fotos</span>
+            <!-- {{/if}} -->
+            <!-- {{#if publicacoes_count > 0}} -->
+            <span class="counter-chip">📄 {{publicacoes_count}} publicações</span>
+            <!-- {{/if}} -->
+          </div>
+
+          <!-- custom_notes (condicional, truncado) -->
+          <!-- {{#if custom_notes}} -->
+          <div class="visita-notes">{{custom_notes}}</div>
+          <!-- {{/if}} -->
+        </div>
+      </div>
+      <!-- {{/each}} -->
+
+    </div>
+    <!-- {{else}} -->
+    <div class="empty-state">
+      <div class="empty-state-emoji">📋</div>
+      <div class="empty-state-text">Nenhuma visita registrada para este cliente.</div>
+    </div>
+    <!-- {{/if}} -->
+
+  </main>
+
+  <!-- ══════════ FOOTER ══════════ -->
+  <footer class="footer">
+    <div class="footer-brand">SoloForte</div>
+    <div class="footer-meta">
+      Gerado em {{gerado_em_formatado}}<br>
+      {{total_visitas}} visitas · {{cliente_nome}}
+    </div>
+  </footer>
+
+</div>
+</body>
+</html>

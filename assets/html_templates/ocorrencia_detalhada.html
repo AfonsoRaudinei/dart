@@ -1,0 +1,916 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>SoloForte — Ocorrência</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --sf-navy:       #2C5564;
+    --sf-navy-light: #3A6B7D;
+    --sf-green:      #2E7D32;
+    --sf-green-leaf: #8BC34A;
+    --sf-amber:      #F5B935;
+    --sf-amber-pale: #FEF3C7;
+    --sf-cream:      #F7F5F0;
+    --sf-stone:      #E8E4DC;
+    --sf-text:       #1A1A1A;
+    --sf-text-muted: #6B7280;
+    --sf-white:      #FFFFFF;
+    --sf-shadow:     rgba(44, 85, 100, 0.12);
+
+    /* Urgência (campo type) */
+    --urg-alta:   #DC2626;
+    --urg-media:  #F59E0B;
+    --urg-baixa:  #16A34A;
+
+    /* Categorias (cor + emoji por OccurrenceCategory) */
+    --cat-doenca:    #DC2626;
+    --cat-insetos:   #F59E0B;
+    --cat-daninhas:  #84CC16;
+    --cat-nutrientes: #06B6D4;
+    --cat-agua:      #3B82F6;
+    --cat-solo:      #92400E;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    width: 100%;
+    overflow-x: hidden;
+    background: var(--sf-white);
+  }
+
+  body {
+    font-family: 'DM Sans', system-ui, sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+    background: var(--sf-cream);
+    color: var(--sf-text);
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+  }
+
+  .page {
+    max-width: 860px;
+    margin: 0 auto;
+    background: var(--sf-white);
+    min-height: 100vh;
+    width: 100%;
+    overflow-x: hidden;
+  }
+
+  /* ═══ HEADER ═══ */
+  .header {
+    background: var(--sf-navy);
+    padding: 28px 32px 24px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .header::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+      radial-gradient(circle at 80% 20%, rgba(139,195,74,0.15) 0%, transparent 50%),
+      radial-gradient(circle at 10% 80%, rgba(245,185,53,0.10) 0%, transparent 40%);
+    pointer-events: none;
+  }
+
+  .header-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .logo-area { display: flex; align-items: center; gap: 10px; }
+
+  .logo-img {
+    width: 38px; height: 38px;
+    object-fit: contain;
+    filter: brightness(0) invert(1);
+    opacity: 0.92;
+  }
+
+  .logo-name {
+    font-family: 'DM Serif Display', serif;
+    font-size: 20px;
+    color: var(--sf-white);
+    letter-spacing: 0.02em;
+  }
+
+  .tipo-badge {
+    background: var(--sf-amber);
+    color: var(--sf-navy);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 4px 12px;
+    border-radius: 100px;
+  }
+
+  .header-meta { position: relative; z-index: 1; }
+
+  /* Categoria com emoji grande no header */
+  .header-categoria {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+  }
+
+  .cat-emoji {
+    font-size: 32px;
+    line-height: 1;
+  }
+
+  .header-titulo {
+    font-family: 'DM Serif Display', serif;
+    font-size: 26px;
+    color: var(--sf-white);
+    line-height: 1.2;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+  }
+
+  .header-subtitle {
+    font-size: 13px;
+    color: var(--sf-green-leaf);
+    font-weight: 500;
+    margin-bottom: 14px;
+    letter-spacing: 0.02em;
+  }
+
+  .header-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.18);
+    border-radius: 100px;
+    padding: 4px 12px;
+    font-size: 11.5px;
+    color: rgba(255,255,255,0.85);
+  }
+
+  .pill-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--sf-amber);
+    flex-shrink: 0;
+  }
+
+  /* Pill de urgência colorida */
+  .pill-urg {
+    border-color: transparent;
+    font-weight: 600;
+  }
+  .pill-urg.alta  { background: var(--urg-alta);  color: white; }
+  .pill-urg.media { background: var(--urg-media); color: white; }
+  .pill-urg.baixa { background: var(--urg-baixa); color: white; }
+
+  /* ═══ CONTENT ═══ */
+  .content { padding: 28px 32px; }
+
+  .section-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .section-label-bar {
+    width: 3px;
+    height: 20px;
+    background: var(--sf-amber);
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+
+  .section-label-text {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.10em;
+    text-transform: uppercase;
+    color: var(--sf-text-muted);
+  }
+
+  /* ═══ CARD VISÃO GERAL (categoria + urgência + estágio) ═══ */
+  .visao-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px;
+    margin-bottom: 28px;
+  }
+
+  .visao-card {
+    background: var(--sf-cream);
+    border: 1px solid var(--sf-stone);
+    border-radius: 14px;
+    padding: 14px 16px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .visao-card-icon {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 10px;
+    font-size: 16px;
+  }
+
+  .visao-card-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--sf-text-muted);
+    margin-bottom: 4px;
+  }
+
+  .visao-card-value {
+    font-family: 'DM Serif Display', serif;
+    font-size: 16px;
+    color: var(--sf-navy);
+    line-height: 1.2;
+    word-break: break-word;
+  }
+
+  /* ═══ DESCRIÇÃO ═══ */
+  .descricao-block {
+    background: var(--sf-cream);
+    border-left: 3px solid var(--sf-navy);
+    border-radius: 0 12px 12px 0;
+    padding: 16px 20px;
+    margin-bottom: 28px;
+    font-size: 13.5px;
+    color: var(--sf-text);
+    line-height: 1.7;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+  }
+
+  /* ═══ FOTO ÚNICA PRINCIPAL ═══ */
+  .photo-hero {
+    border-radius: 16px;
+    overflow: hidden;
+    position: relative;
+    aspect-ratio: 4/3;
+    background: var(--sf-stone);
+    box-shadow: 0 4px 24px var(--sf-shadow);
+    margin-bottom: 28px;
+  }
+
+  .photo-hero img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .photo-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    color: var(--sf-text-muted);
+    font-size: 13px;
+    background: var(--sf-stone);
+  }
+
+  .photo-placeholder svg { opacity: 0.35; }
+
+  /* ═══ GALERIA DE FOTOS POR CATEGORIA ═══ */
+  .galeria-grupo { margin-bottom: 20px; }
+
+  .galeria-grupo-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+
+  .galeria-grupo-emoji { font-size: 18px; }
+
+  .galeria-grupo-nome {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--sf-navy);
+    letter-spacing: 0.04em;
+  }
+
+  .galeria-grupo-count {
+    font-size: 10px;
+    color: var(--sf-text-muted);
+    background: var(--sf-stone);
+    padding: 2px 8px;
+    border-radius: 100px;
+  }
+
+  .galeria-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 8px;
+  }
+
+  .galeria-foto {
+    border-radius: 10px;
+    overflow: hidden;
+    aspect-ratio: 1/1;
+    background: var(--sf-stone);
+    position: relative;
+  }
+
+  .galeria-foto img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  /* ═══ NOTAS POR CATEGORIA ═══ */
+  .notas-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 28px; }
+
+  .nota-item {
+    background: var(--sf-cream);
+    border-radius: 12px;
+    padding: 12px 16px;
+    border-left: 3px solid var(--sf-amber);
+  }
+
+  .nota-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 4px;
+  }
+
+  .nota-emoji { font-size: 14px; }
+
+  .nota-categoria {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--sf-navy);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .nota-texto {
+    font-size: 13px;
+    color: var(--sf-text);
+    line-height: 1.5;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+  }
+
+  /* ═══ MÉTRICAS (severidade, incidência) ═══ */
+  .metricas-block {
+    background: var(--sf-cream);
+    border: 1px solid var(--sf-stone);
+    border-radius: 14px;
+    padding: 16px 18px;
+    margin-bottom: 28px;
+  }
+
+  .metricas-grupo {
+    margin-bottom: 14px;
+  }
+
+  .metricas-grupo:last-child { margin-bottom: 0; }
+
+  .metricas-grupo-titulo {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--sf-navy);
+    margin-bottom: 8px;
+  }
+
+  .metricas-items {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 10px;
+  }
+
+  .metrica-item {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    background: var(--sf-white);
+    border-radius: 8px;
+    padding: 8px 10px;
+  }
+
+  .metrica-nome {
+    font-size: 11px;
+    color: var(--sf-text-muted);
+    text-transform: capitalize;
+  }
+
+  .metrica-valor {
+    font-family: 'DM Serif Display', serif;
+    font-size: 15px;
+    color: var(--sf-navy);
+    margin-left: auto;
+  }
+
+  /* ═══ NUTRIENTES (badges) ═══ */
+  .nutrientes-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 28px;
+  }
+
+  .nutriente-badge {
+    background: var(--sf-amber-pale);
+    color: #92400E;
+    font-size: 11.5px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 100px;
+    border: 1px solid rgba(146, 64, 14, 0.2);
+  }
+
+  /* ═══ RECOMENDAÇÕES (destaque navy) ═══ */
+  .recomendacoes-block {
+    background: linear-gradient(135deg, var(--sf-navy) 0%, var(--sf-navy-light) 100%);
+    border-radius: 16px;
+    padding: 22px 24px;
+    margin-bottom: 28px;
+    position: relative;
+    overflow: hidden;
+    color: var(--sf-white);
+  }
+
+  .recomendacoes-block::before {
+    content: '';
+    position: absolute;
+    top: -40%;
+    right: -10%;
+    width: 60%;
+    height: 180%;
+    background: radial-gradient(ellipse, rgba(245,185,53,0.18) 0%, transparent 60%);
+    pointer-events: none;
+  }
+
+  .recomendacoes-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .recomendacoes-icon {
+    width: 28px;
+    height: 28px;
+    background: var(--sf-amber);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .recomendacoes-icon svg {
+    width: 16px;
+    height: 16px;
+    fill: var(--sf-navy);
+  }
+
+  .recomendacoes-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 18px;
+    color: var(--sf-white);
+    letter-spacing: 0.02em;
+  }
+
+  .recomendacoes-text {
+    font-size: 14px;
+    color: rgba(255,255,255,0.9);
+    line-height: 1.7;
+    position: relative;
+    z-index: 1;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+  }
+
+  /* ═══ LOCALIZAÇÃO ═══ */
+  .localizacao-block {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    background: var(--sf-cream);
+    border: 1px solid var(--sf-stone);
+    border-radius: 12px;
+    padding: 14px 18px;
+    margin-bottom: 28px;
+  }
+
+  .localizacao-icon {
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    background: var(--sf-navy);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 1px;
+  }
+
+  .localizacao-icon svg {
+    width: 15px;
+    height: 15px;
+    fill: white;
+  }
+
+  .localizacao-info { flex: 1; min-width: 0; overflow: hidden; }
+
+  .localizacao-text {
+    font-size: 13px;
+    color: var(--sf-text);
+    line-height: 1.5;
+    word-break: break-word;
+  }
+
+  .localizacao-coords {
+    font-size: 11px;
+    color: var(--sf-text-muted);
+    margin-top: 2px;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    word-break: break-all;
+  }
+
+  /* ═══ TIMESTAMPS ═══ */
+  .timestamps {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 28px;
+  }
+
+  .timestamp-item {
+    background: var(--sf-cream);
+    border-radius: 10px;
+    padding: 10px 14px;
+    border-left: 2px solid var(--sf-amber);
+  }
+
+  .timestamp-label {
+    font-size: 10px;
+    color: var(--sf-text-muted);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 2px;
+  }
+
+  .timestamp-value {
+    font-size: 13px;
+    color: var(--sf-text);
+    font-weight: 500;
+  }
+
+  /* ═══ FOOTER ═══ */
+  .footer {
+    background: var(--sf-cream);
+    border-top: 1px solid var(--sf-stone);
+    padding: 18px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .footer-brand {
+    font-family: 'DM Serif Display', serif;
+    font-size: 13px;
+    color: var(--sf-navy);
+    opacity: 0.7;
+    white-space: nowrap;
+  }
+
+  .footer-meta {
+    font-size: 11px;
+    color: var(--sf-text-muted);
+    text-align: right;
+    line-height: 1.5;
+    white-space: nowrap;
+  }
+
+  /* ═══ PRINT ═══ */
+  @media print {
+    body { background: white; }
+    .page { box-shadow: none; max-width: 100%; }
+    .header, .recomendacoes-block, .pill-urg {
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .photo-hero img, .galeria-foto img { page-break-inside: avoid; }
+  }
+
+  /* ═══ MOBILE ═══ */
+  @media (max-width: 600px) {
+    .header { padding: 22px 20px 20px; }
+    .content { padding: 22px 20px; }
+    .header-titulo { font-size: 21px; }
+    .cat-emoji { font-size: 28px; }
+    .footer { padding: 16px 20px; }
+    .header-pills { gap: 6px; }
+    .pill { font-size: 10.5px; padding: 3px 9px; }
+    .visao-grid { grid-template-columns: 1fr 1fr; }
+    .galeria-grid { grid-template-columns: repeat(2, 1fr); }
+    .timestamps { grid-template-columns: 1fr; }
+  }
+
+  @media (max-width: 380px) {
+    .header-titulo { font-size: 18px; }
+    .visao-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- ══════════ HEADER ══════════ -->
+  <header class="header">
+    <div class="header-top">
+      <div class="logo-area">
+        <svg class="logo-img" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M50 8 L90 42 L80 42 L80 78 L20 78 L20 42 L10 42 Z" fill="white" opacity="0.9"/>
+          <rect x="42" y="46" width="7" height="7" rx="1" fill="#F5B935"/>
+          <rect x="51" y="46" width="7" height="7" rx="1" fill="#F5B935"/>
+          <rect x="42" y="55" width="7" height="7" rx="1" fill="#F5B935"/>
+          <rect x="51" y="55" width="7" height="7" rx="1" fill="#F5B935"/>
+          <path d="M25 90 Q35 70 50 78 Q65 70 75 90" fill="#8BC34A" opacity="0.85"/>
+          <path d="M20 88 Q30 65 50 76" stroke="#2E7D32" stroke-width="2" fill="none" opacity="0.5"/>
+          <path d="M80 88 Q70 65 50 76" stroke="#2E7D32" stroke-width="2" fill="none" opacity="0.5"/>
+        </svg>
+        <span class="logo-name">SoloForte</span>
+      </div>
+      <span class="tipo-badge">Ocorrência</span>
+    </div>
+
+    <div class="header-meta">
+      <div class="header-categoria">
+        <span class="cat-emoji">{{categoria_emoji}}</span>
+        <div class="header-titulo">{{categoria_label}}</div>
+      </div>
+      <!-- {{#if cultivar}} -->
+      <div class="header-subtitle">{{cultivar}} · {{estadio_fenologico}}</div>
+      <!-- {{/if}} -->
+      <div class="header-pills">
+        <!-- urgência: alta | media | baixa -->
+        <span class="pill pill-urg {{urgencia_class}}">{{type}}</span>
+        <!-- {{#if status}} -->
+        <span class="pill"><span class="pill-dot"></span>{{status}}</span>
+        <!-- {{/if}} -->
+        <!-- {{#if data_plantio}} -->
+        <span class="pill"><span class="pill-dot"></span>Plantio: {{data_plantio_formatado}}</span>
+        <!-- {{/if}} -->
+      </div>
+    </div>
+  </header>
+
+  <!-- ══════════ CONTEÚDO ══════════ -->
+  <main class="content">
+
+    <!-- VISÃO GERAL: cards rápidos -->
+    <div class="section-label">
+      <div class="section-label-bar"></div>
+      <span class="section-label-text">Visão Geral</span>
+    </div>
+
+    <div class="visao-grid">
+      <div class="visao-card">
+        <div class="visao-card-icon" style="background: var(--cat-{{category}}); color: white;">
+          {{categoria_emoji}}
+        </div>
+        <div class="visao-card-label">Categoria</div>
+        <div class="visao-card-value">{{categoria_label}}</div>
+      </div>
+
+      <div class="visao-card">
+        <div class="visao-card-icon" style="background: var(--urg-{{urgencia_class}}); color: white;">⚠</div>
+        <div class="visao-card-label">Urgência</div>
+        <div class="visao-card-value">{{type}}</div>
+      </div>
+
+      <!-- {{#if cultivar}} -->
+      <div class="visao-card">
+        <div class="visao-card-icon" style="background: var(--sf-green-leaf); color: var(--sf-navy);">🌱</div>
+        <div class="visao-card-label">Cultivar</div>
+        <div class="visao-card-value">{{cultivar}}</div>
+      </div>
+      <!-- {{/if}} -->
+
+      <!-- {{#if estadio_fenologico}} -->
+      <div class="visao-card">
+        <div class="visao-card-icon" style="background: var(--sf-amber); color: var(--sf-navy);">📊</div>
+        <div class="visao-card-label">Estádio</div>
+        <div class="visao-card-value">{{estadio_fenologico}}</div>
+      </div>
+      <!-- {{/if}} -->
+
+      <!-- {{#if amostra_solo}} -->
+      <div class="visao-card">
+        <div class="visao-card-icon" style="background: var(--cat-solo); color: white;">🪨</div>
+        <div class="visao-card-label">Amostra de Solo</div>
+        <div class="visao-card-value">Coletada</div>
+      </div>
+      <!-- {{/if}} -->
+    </div>
+
+    <!-- DESCRIÇÃO -->
+    <!-- {{#if description}} -->
+    <div class="section-label">
+      <div class="section-label-bar"></div>
+      <span class="section-label-text">Descrição da Ocorrência</span>
+    </div>
+    <div class="descricao-block">{{description}}</div>
+    <!-- {{/if}} -->
+
+    <!-- FOTO PRINCIPAL (photoPath convertido para base64 pelo Dart) -->
+    <!-- {{#if photo_base64}} -->
+    <div class="section-label">
+      <div class="section-label-bar"></div>
+      <span class="section-label-text">Registro Fotográfico</span>
+    </div>
+    <div class="photo-hero">
+      <img src="{{photo_base64}}" alt="Foto principal da ocorrência" loading="lazy">
+    </div>
+    <!-- {{/if}} -->
+
+    <!-- GALERIA POR CATEGORIA (fotosCategoriasJson) -->
+    <!-- {{#if fotos_categorias}} -->
+    <div class="section-label">
+      <div class="section-label-bar"></div>
+      <span class="section-label-text">Galeria por Categoria</span>
+    </div>
+
+    <!-- {{#each fotos_categorias}} -->
+    <div class="galeria-grupo">
+      <div class="galeria-grupo-header">
+        <span class="galeria-grupo-emoji">{{categoria_emoji}}</span>
+        <span class="galeria-grupo-nome">{{categoria_label}}</span>
+        <span class="galeria-grupo-count">{{count}} fotos</span>
+      </div>
+      <div class="galeria-grid">
+        <!-- {{#each fotos_base64}} -->
+        <div class="galeria-foto">
+          <img src="{{base64}}" alt="Foto" loading="lazy">
+        </div>
+        <!-- {{/each}} -->
+      </div>
+    </div>
+    <!-- {{/each}} -->
+    <!-- {{/if}} -->
+
+    <!-- NOTAS POR CATEGORIA (notasCategoriasJson) -->
+    <!-- {{#if notas_categorias}} -->
+    <div class="section-label">
+      <div class="section-label-bar"></div>
+      <span class="section-label-text">Notas Técnicas</span>
+    </div>
+
+    <div class="notas-list">
+      <!-- {{#each notas_categorias}} -->
+      <div class="nota-item">
+        <div class="nota-header">
+          <span class="nota-emoji">{{categoria_emoji}}</span>
+          <span class="nota-categoria">{{categoria_label}}</span>
+        </div>
+        <div class="nota-texto">{{texto}}</div>
+      </div>
+      <!-- {{/each}} -->
+    </div>
+    <!-- {{/if}} -->
+
+    <!-- MÉTRICAS (metricasJson - severidade, incidência etc) -->
+    <!-- {{#if metricas}} -->
+    <div class="section-label">
+      <div class="section-label-bar"></div>
+      <span class="section-label-text">Métricas Avaliadas</span>
+    </div>
+
+    <div class="metricas-block">
+      <!-- {{#each metricas}} -->
+      <div class="metricas-grupo">
+        <div class="metricas-grupo-titulo">
+          <span>{{categoria_emoji}}</span>
+          <span>{{categoria_label}}</span>
+        </div>
+        <div class="metricas-items">
+          <!-- {{#each items}} -->
+          <div class="metrica-item">
+            <span class="metrica-nome">{{nome}}</span>
+            <span class="metrica-valor">{{valor}}</span>
+          </div>
+          <!-- {{/each}} -->
+        </div>
+      </div>
+      <!-- {{/each}} -->
+    </div>
+    <!-- {{/if}} -->
+
+    <!-- NUTRIENTES (nutrientesJson) -->
+    <!-- {{#if nutrientes && nutrientes.length > 0}} -->
+    <div class="section-label">
+      <div class="section-label-bar"></div>
+      <span class="section-label-text">Nutrientes Identificados</span>
+    </div>
+    <div class="nutrientes-list">
+      <!-- {{#each nutrientes}} -->
+      <span class="nutriente-badge">{{nutriente}}</span>
+      <!-- {{/each}} -->
+    </div>
+    <!-- {{/if}} -->
+
+    <!-- RECOMENDAÇÕES -->
+    <!-- {{#if recomendacoes}} -->
+    <div class="recomendacoes-block">
+      <div class="recomendacoes-header">
+        <div class="recomendacoes-icon">
+          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15l-5-5 1.41-1.41L11 14.17l7.59-7.59L20 8l-9 9z"/>
+          </svg>
+        </div>
+        <span class="recomendacoes-title">Recomendações Técnicas</span>
+      </div>
+      <div class="recomendacoes-text">{{recomendacoes}}</div>
+    </div>
+    <!-- {{/if}} -->
+
+    <!-- LOCALIZAÇÃO -->
+    <!-- {{#if lat && long}} -->
+    <div class="section-label">
+      <div class="section-label-bar"></div>
+      <span class="section-label-text">Localização</span>
+    </div>
+    <div class="localizacao-block">
+      <div class="localizacao-icon">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+        </svg>
+      </div>
+      <div class="localizacao-info">
+        <div class="localizacao-text">Coordenadas registradas</div>
+        <div class="localizacao-coords">{{lat}}, {{long}}</div>
+      </div>
+    </div>
+    <!-- {{/if}} -->
+
+    <!-- TIMESTAMPS -->
+    <div class="section-label">
+      <div class="section-label-bar"></div>
+      <span class="section-label-text">Histórico</span>
+    </div>
+    <div class="timestamps">
+      <div class="timestamp-item">
+        <div class="timestamp-label">Criado em</div>
+        <div class="timestamp-value">{{created_at_formatado}}</div>
+      </div>
+      <div class="timestamp-item">
+        <div class="timestamp-label">Atualizado em</div>
+        <div class="timestamp-value">{{updated_at_formatado}}</div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- ══════════ FOOTER ══════════ -->
+  <footer class="footer">
+    <div class="footer-brand">SoloForte</div>
+    <div class="footer-meta">
+      ID: {{id_curto}}<br>
+      Sync: {{sync_status}}
+    </div>
+  </footer>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,1111 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>SoloForte — Relatório de Avaliação</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  /* ═══════════════════════════════════════════
+     TOKENS — Paleta oficial SoloForte (do logo)
+  ═══════════════════════════════════════════ */
+  :root {
+    --sf-navy:       #2C5564;
+    --sf-navy-light: #3A6B7D;
+    --sf-green:      #2E7D32;
+    --sf-green-leaf: #8BC34A;
+    --sf-amber:      #F5B935;
+    --sf-amber-pale: #FEF3C7;
+    --sf-cream:      #F7F5F0;
+    --sf-stone:      #E8E4DC;
+    --sf-text:       #1A1A1A;
+    --sf-text-muted: #6B7280;
+    --sf-white:      #FFFFFF;
+    --sf-shadow:     rgba(44, 85, 100, 0.12);
+    --sf-shadow-md:  rgba(44, 85, 100, 0.20);
+
+    /* Cores para identificar os lados na comparação */
+    --lado-a: var(--sf-green);
+    --lado-b: var(--sf-navy);
+  }
+
+  /* ═══════════════════════════════════════════
+     RESET + BASE
+  ═══════════════════════════════════════════ */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    width: 100%;
+    overflow-x: hidden;
+    background: var(--sf-white);
+  }
+
+  body {
+    font-family: 'DM Sans', system-ui, sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+    background: var(--sf-cream);
+    color: var(--sf-text);
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+  }
+
+  .page {
+    max-width: 860px;
+    margin: 0 auto;
+    background: var(--sf-white);
+    min-height: 100vh;
+    width: 100%;
+    overflow-x: hidden;
+  }
+
+  /* ═══════════════════════════════════════════
+     HEADER
+  ═══════════════════════════════════════════ */
+  .header {
+    background: var(--sf-navy);
+    padding: 28px 32px 24px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .header::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+      radial-gradient(circle at 80% 20%, rgba(139,195,74,0.15) 0%, transparent 50%),
+      radial-gradient(circle at 10% 80%, rgba(245,185,53,0.10) 0%, transparent 40%);
+    pointer-events: none;
+  }
+
+  .header-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .logo-area {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .logo-img {
+    width: 38px;
+    height: 38px;
+    object-fit: contain;
+    filter: brightness(0) invert(1);
+    opacity: 0.92;
+  }
+
+  .logo-name {
+    font-family: 'DM Serif Display', serif;
+    font-size: 20px;
+    color: var(--sf-white);
+    letter-spacing: 0.02em;
+  }
+
+  .tipo-badge {
+    background: var(--sf-amber);
+    color: var(--sf-navy);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 4px 12px;
+    border-radius: 100px;
+  }
+
+  .header-meta {
+    position: relative;
+    z-index: 1;
+  }
+
+  .header-fazenda {
+    font-family: 'DM Serif Display', serif;
+    font-size: 26px;
+    color: var(--sf-white);
+    line-height: 1.2;
+    margin-bottom: 6px;
+  }
+
+  .header-produto {
+    font-size: 13px;
+    color: var(--sf-green-leaf);
+    font-weight: 500;
+    margin-bottom: 14px;
+    letter-spacing: 0.02em;
+  }
+
+  .header-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.18);
+    border-radius: 100px;
+    padding: 4px 12px;
+    font-size: 11.5px;
+    color: rgba(255,255,255,0.85);
+  }
+
+  .pill-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--sf-amber);
+    flex-shrink: 0;
+  }
+
+  /* ═══════════════════════════════════════════
+     BODY CONTENT
+  ═══════════════════════════════════════════ */
+  .content {
+    padding: 28px 32px;
+  }
+
+  /* ═══════════════════════════════════════════
+     SECTION LABEL
+  ═══════════════════════════════════════════ */
+  .section-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .section-label-bar {
+    width: 3px;
+    height: 20px;
+    background: var(--sf-amber);
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+
+  .section-label-text {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.10em;
+    text-transform: uppercase;
+    color: var(--sf-text-muted);
+  }
+
+  /* ═══════════════════════════════════════════
+     CARD DE METADADOS DO TALHÃO
+  ═══════════════════════════════════════════ */
+  .talhao-card {
+    background: var(--sf-cream);
+    border: 1px solid var(--sf-stone);
+    border-radius: 14px;
+    padding: 18px 20px;
+    margin-bottom: 28px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 16px;
+  }
+
+  .talhao-item-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--sf-text-muted);
+    margin-bottom: 4px;
+  }
+
+  .talhao-item-value {
+    font-family: 'DM Serif Display', serif;
+    font-size: 17px;
+    color: var(--sf-navy);
+    line-height: 1.2;
+  }
+
+  .talhao-item-unit {
+    font-size: 12px;
+    color: var(--sf-text-muted);
+    font-weight: 400;
+    margin-left: 2px;
+  }
+
+  /* ═══════════════════════════════════════════
+     BLOCO DE AVALIAÇÃO (cada item do loop)
+  ═══════════════════════════════════════════ */
+  .avaliacao-block {
+    background: var(--sf-white);
+    border: 1px solid var(--sf-stone);
+    border-radius: 16px;
+    margin-bottom: 20px;
+    overflow: hidden;
+    box-shadow: 0 2px 12px var(--sf-shadow);
+  }
+
+  .avaliacao-header {
+    background: var(--sf-cream);
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--sf-stone);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .avaliacao-ordem {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .avaliacao-ordem-num {
+    width: 28px;
+    height: 28px;
+    background: var(--sf-navy);
+    color: var(--sf-amber);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'DM Serif Display', serif;
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+
+  .avaliacao-ordem-text {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--sf-navy);
+  }
+
+  .avaliacao-layout-tag {
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--sf-text-muted);
+    background: var(--sf-white);
+    border: 1px solid var(--sf-stone);
+    border-radius: 100px;
+    padding: 3px 10px;
+  }
+
+  /* ═══════════════════════════════════════════
+     GRID DE LADOS (duas_fotos)
+  ═══════════════════════════════════════════ */
+  .lados-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+  }
+
+  .lados-grid.uma-foto {
+    grid-template-columns: 1fr;
+  }
+
+  .lado {
+    padding: 16px;
+    border-right: 1px solid var(--sf-stone);
+  }
+
+  .lado:last-child { border-right: none; }
+
+  .lados-grid.uma-foto .lado {
+    border-right: none;
+  }
+
+  .lado-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+
+  .lado-badge {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.10em;
+    text-transform: uppercase;
+    padding: 3px 10px;
+    border-radius: 100px;
+    color: var(--sf-white);
+  }
+
+  .lado-badge.a { background: var(--lado-a); }
+  .lado-badge.b { background: var(--lado-b); }
+
+  .lado-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--sf-text);
+    flex: 1;
+    min-width: 0;
+    word-break: break-word;
+  }
+
+  .lado-foto {
+    border-radius: 10px;
+    overflow: hidden;
+    position: relative;
+    aspect-ratio: 3/4;
+    background: var(--sf-stone);
+    margin-bottom: 12px;
+  }
+
+  .lado-foto img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .lado-foto-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    color: var(--sf-text-muted);
+    font-size: 11px;
+    background: var(--sf-stone);
+  }
+
+  .lado-foto-placeholder svg {
+    opacity: 0.35;
+  }
+
+  .lado-info {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .lado-cultura {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11.5px;
+    color: var(--sf-text-muted);
+  }
+
+  .lado-cultura svg {
+    width: 12px;
+    height: 12px;
+    fill: var(--sf-green);
+    flex-shrink: 0;
+  }
+
+  .lado-obs {
+    font-size: 12px;
+    color: var(--sf-text);
+    line-height: 1.5;
+    background: var(--sf-cream);
+    border-radius: 8px;
+    padding: 8px 10px;
+    margin-top: 4px;
+  }
+
+  /* ═══════════════════════════════════════════
+     CONCLUSÃO (campo único)
+  ═══════════════════════════════════════════ */
+  .conclusao-block {
+    background: linear-gradient(135deg, var(--sf-navy) 0%, var(--sf-navy-light) 100%);
+    border-radius: 16px;
+    padding: 22px 24px;
+    margin-bottom: 28px;
+    position: relative;
+    overflow: hidden;
+    color: var(--sf-white);
+  }
+
+  .conclusao-block::before {
+    content: '';
+    position: absolute;
+    top: -40%;
+    right: -10%;
+    width: 60%;
+    height: 180%;
+    background: radial-gradient(ellipse, rgba(139,195,74,0.15) 0%, transparent 60%);
+    pointer-events: none;
+  }
+
+  .conclusao-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .conclusao-icon {
+    width: 28px;
+    height: 28px;
+    background: var(--sf-amber);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .conclusao-icon svg {
+    width: 16px;
+    height: 16px;
+    fill: var(--sf-navy);
+  }
+
+  .conclusao-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 18px;
+    color: var(--sf-white);
+    letter-spacing: 0.02em;
+  }
+
+  .conclusao-text {
+    font-size: 14px;
+    color: rgba(255,255,255,0.9);
+    line-height: 1.7;
+    position: relative;
+    z-index: 1;
+    font-style: italic;
+  }
+
+  /* ═══════════════════════════════════════════
+     BLOCO ROI (mesmo do T-M1)
+  ═══════════════════════════════════════════ */
+  .roi-block {
+    background: linear-gradient(135deg, var(--sf-navy) 0%, var(--sf-navy-light) 100%);
+    border-radius: 16px;
+    padding: 24px 24px 22px;
+    margin-bottom: 28px;
+    position: relative;
+    overflow: hidden;
+    color: var(--sf-white);
+  }
+
+  .roi-block::before {
+    content: '';
+    position: absolute;
+    top: -40%;
+    right: -10%;
+    width: 60%;
+    height: 180%;
+    background: radial-gradient(ellipse, rgba(245,185,53,0.18) 0%, transparent 60%);
+    pointer-events: none;
+  }
+
+  .roi-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 18px;
+    position: relative;
+    z-index: 1;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .roi-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .roi-title-icon {
+    width: 28px;
+    height: 28px;
+    background: var(--sf-amber);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .roi-title-icon svg {
+    width: 16px;
+    height: 16px;
+    fill: var(--sf-navy);
+  }
+
+  .roi-title-text {
+    font-family: 'DM Serif Display', serif;
+    font-size: 18px;
+    color: var(--sf-white);
+    letter-spacing: 0.02em;
+  }
+
+  .roi-badge {
+    background: rgba(245,185,53,0.20);
+    border: 1px solid rgba(245,185,53,0.40);
+    color: var(--sf-amber);
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 4px 11px;
+    border-radius: 100px;
+    white-space: nowrap;
+  }
+
+  .roi-main {
+    position: relative;
+    z-index: 1;
+    margin-bottom: 18px;
+  }
+
+  .roi-main-label {
+    font-size: 10.5px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.55);
+    margin-bottom: 4px;
+  }
+
+  .roi-main-value {
+    font-family: 'DM Serif Display', serif;
+    font-size: 44px;
+    color: var(--sf-amber);
+    line-height: 1;
+    letter-spacing: -0.01em;
+  }
+
+  .roi-main-unit {
+    display: inline-block;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    color: rgba(255,255,255,0.6);
+    margin-left: 4px;
+    font-weight: 400;
+  }
+
+  .roi-breakdown {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    position: relative;
+    z-index: 1;
+    padding-top: 16px;
+    border-top: 1px solid rgba(255,255,255,0.12);
+  }
+
+  .roi-item-label {
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.55);
+    margin-bottom: 4px;
+  }
+
+  .roi-item-value {
+    font-family: 'DM Serif Display', serif;
+    font-size: 18px;
+    color: var(--sf-white);
+    line-height: 1.2;
+  }
+
+  /* ═══════════════════════════════════════════
+     DESCRIÇÃO
+  ═══════════════════════════════════════════ */
+  .descricao-block {
+    background: var(--sf-cream);
+    border-left: 3px solid var(--sf-navy);
+    border-radius: 0 12px 12px 0;
+    padding: 16px 20px;
+    margin-bottom: 28px;
+    font-size: 13.5px;
+    color: var(--sf-text);
+    line-height: 1.7;
+    font-style: italic;
+  }
+
+  /* ═══════════════════════════════════════════
+     LOCALIZAÇÃO
+  ═══════════════════════════════════════════ */
+  .localizacao-block {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    background: var(--sf-cream);
+    border: 1px solid var(--sf-stone);
+    border-radius: 12px;
+    padding: 14px 18px;
+    margin-bottom: 28px;
+  }
+
+  .localizacao-icon {
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    background: var(--sf-navy);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 1px;
+  }
+
+  .localizacao-icon svg {
+    width: 15px;
+    height: 15px;
+    fill: white;
+  }
+
+  .localizacao-text {
+    font-size: 13px;
+    color: var(--sf-text);
+    line-height: 1.5;
+  }
+
+  .localizacao-coords {
+    font-size: 11px;
+    color: var(--sf-text-muted);
+    margin-top: 2px;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+  }
+
+  /* ═══════════════════════════════════════════
+     VENDEDOR
+  ═══════════════════════════════════════════ */
+  .vendedor-block {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: var(--sf-navy);
+    border-radius: 14px;
+    padding: 18px 20px;
+    margin-bottom: 28px;
+  }
+
+  .vendedor-avatar {
+    width: 44px;
+    height: 44px;
+    background: var(--sf-amber);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'DM Serif Display', serif;
+    font-size: 18px;
+    color: var(--sf-navy);
+    flex-shrink: 0;
+  }
+
+  .vendedor-info {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .vendedor-label {
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.55);
+    margin-bottom: 2px;
+  }
+
+  .vendedor-nome {
+    font-size: 14px;
+    font-weight: 600;
+    color: white;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+  }
+
+  .vendedor-tel {
+    font-size: 12px;
+    color: var(--sf-green-leaf);
+    margin-top: 1px;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+  }
+
+  /* ═══════════════════════════════════════════
+     FOOTER
+  ═══════════════════════════════════════════ */
+  .footer {
+    background: var(--sf-cream);
+    border-top: 1px solid var(--sf-stone);
+    padding: 18px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .footer-brand {
+    font-family: 'DM Serif Display', serif;
+    font-size: 13px;
+    color: var(--sf-navy);
+    opacity: 0.7;
+    white-space: nowrap;
+  }
+
+  .footer-meta {
+    font-size: 11px;
+    color: var(--sf-text-muted);
+    text-align: right;
+    line-height: 1.5;
+    white-space: nowrap;
+  }
+
+  /* ═══════════════════════════════════════════
+     PRINT
+  ═══════════════════════════════════════════ */
+  @media print {
+    body { background: white; }
+    .page { box-shadow: none; max-width: 100%; }
+    .header,
+    .conclusao-block,
+    .roi-block,
+    .vendedor-block,
+    .avaliacao-ordem-num,
+    .lado-badge {
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .avaliacao-block { page-break-inside: avoid; }
+    .lado-foto img { page-break-inside: avoid; }
+  }
+
+  /* ═══════════════════════════════════════════
+     MOBILE
+  ═══════════════════════════════════════════ */
+  @media (max-width: 600px) {
+    .header { padding: 22px 20px 20px; }
+    .content { padding: 22px 20px; }
+    .header-fazenda { font-size: 21px; }
+    .footer { padding: 16px 20px; }
+    .header-pills { gap: 6px; }
+    .pill { font-size: 10.5px; padding: 3px 9px; }
+
+    .lados-grid { grid-template-columns: 1fr; }
+    .lado { border-right: none; border-bottom: 1px solid var(--sf-stone); }
+    .lado:last-child { border-bottom: none; }
+
+    .talhao-card { grid-template-columns: 1fr 1fr; }
+
+    .roi-main-value { font-size: 36px; }
+    .roi-item-value { font-size: 16px; }
+    .roi-block { padding: 20px; }
+  }
+
+  @media (max-width: 380px) {
+    .header-fazenda { font-size: 18px; }
+    .talhao-card { grid-template-columns: 1fr; }
+    .roi-breakdown { grid-template-columns: 1fr; gap: 10px; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- ══════════ HEADER ══════════ -->
+  <header class="header">
+    <div class="header-top">
+      <div class="logo-area">
+        <svg class="logo-img" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M50 8 L90 42 L80 42 L80 78 L20 78 L20 42 L10 42 Z" fill="white" opacity="0.9"/>
+          <rect x="42" y="46" width="7" height="7" rx="1" fill="#F5B935"/>
+          <rect x="51" y="46" width="7" height="7" rx="1" fill="#F5B935"/>
+          <rect x="42" y="55" width="7" height="7" rx="1" fill="#F5B935"/>
+          <rect x="51" y="55" width="7" height="7" rx="1" fill="#F5B935"/>
+          <path d="M25 90 Q35 70 50 78 Q65 70 75 90" fill="#8BC34A" opacity="0.85"/>
+          <path d="M20 88 Q30 65 50 76" stroke="#2E7D32" stroke-width="2" fill="none" opacity="0.5"/>
+          <path d="M80 88 Q70 65 50 76" stroke="#2E7D32" stroke-width="2" fill="none" opacity="0.5"/>
+        </svg>
+        <span class="logo-name">SoloForte</span>
+      </div>
+      <span class="tipo-badge">Avaliação</span>
+    </div>
+
+    <div class="header-meta">
+      <div class="header-fazenda">{{produtor_fazenda}}</div>
+      <div class="header-produto">{{produto_utilizado}}</div>
+      <div class="header-pills">
+        <span class="pill"><span class="pill-dot"></span>{{localizacao_texto}}</span>
+        <!-- {{#if nome_talhao}} -->
+        <span class="pill"><span class="pill-dot"></span>Talhão: {{nome_talhao}}</span>
+        <!-- {{/if}} -->
+        <span class="pill"><span class="pill-dot"></span>{{visibilidade}}</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ══════════ CONTEÚDO ══════════ -->
+  <main class="content">
+
+    <!-- METADADOS DO TALHÃO -->
+    <!-- {{#if nome_talhao || tamanho_ha}} -->
+    <div class="section-label">
+      <div class="section-label-bar"></div>
+      <span class="section-label-text">Informações do Talhão</span>
+    </div>
+
+    <div class="talhao-card">
+      <!-- {{#if nome_talhao}} -->
+      <div>
+        <div class="talhao-item-label">Talhão</div>
+        <div class="talhao-item-value">{{nome_talhao}}</div>
+      </div>
+      <!-- {{/if}} -->
+
+      <!-- {{#if tamanho_ha}} -->
+      <div>
+        <div class="talhao-item-label">Área</div>
+        <div class="talhao-item-value">{{tamanho_ha}}<span class="talhao-item-unit">ha</span></div>
+      </div>
+      <!-- {{/if}} -->
+
+      <!-- {{#if produtividade_valor}} -->
+      <div>
+        <div class="talhao-item-label">Produtividade</div>
+        <div class="talhao-item-value">{{produtividade_valor}}<span class="talhao-item-unit">{{produtividade_unidade}}</span></div>
+      </div>
+      <!-- {{/if}} -->
+    </div>
+    <!-- {{/if}} -->
+
+    <!-- LOOP DE AVALIAÇÕES -->
+    <div class="section-label">
+      <div class="section-label-bar"></div>
+      <span class="section-label-text">Comparativo de Avaliações</span>
+    </div>
+
+    <!-- {{#each avaliacoes}} -->
+    <div class="avaliacao-block">
+      <div class="avaliacao-header">
+        <div class="avaliacao-ordem">
+          <div class="avaliacao-ordem-num">{{ordem}}</div>
+          <span class="avaliacao-ordem-text">Avaliação {{ordem}}</span>
+        </div>
+        <span class="avaliacao-layout-tag">
+          <!-- {{#if layout == 'duas_fotos'}}Lado A vs Lado B{{else}}Foto Única{{/if}} -->
+          Lado A vs Lado B
+        </span>
+      </div>
+
+      <!-- LAYOUT: duas_fotos -->
+      <!-- {{#if layout == 'duas_fotos'}} -->
+      <div class="lados-grid">
+        <!-- LADO A -->
+        <div class="lado">
+          <div class="lado-header">
+            <span class="lado-badge a">A</span>
+            <span class="lado-label">{{lado_a_label}}</span>
+          </div>
+          <div class="lado-foto">
+            <!-- {{#if lado_a_foto_url}} -->
+            <img
+              src="{{lado_a_foto_url}}"
+              alt="Lado A"
+              loading="lazy"
+              onerror="this.parentElement.innerHTML='<div class=\'lado-foto-placeholder\'><svg width=\'32\' height=\'32\' viewBox=\'0 0 24 24\' fill=\'#9CA3AF\'><path d=\'M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z\'/></svg><span>Sem foto</span></div>'"
+            >
+            <!-- {{/if}} -->
+          </div>
+          <div class="lado-info">
+            <!-- {{#if lado_a_cultura}} -->
+            <span class="lado-cultura">
+              <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 2a7 7 0 0 1 7 7c0 3.5-3 7-7 13C8 16 5 12.5 5 9a7 7 0 0 1 7-7z"/>
+              </svg>
+              {{lado_a_cultura}}
+            </span>
+            <!-- {{/if}} -->
+            <!-- {{#if lado_a_obs}} -->
+            <div class="lado-obs">{{lado_a_obs}}</div>
+            <!-- {{/if}} -->
+          </div>
+        </div>
+
+        <!-- LADO B -->
+        <div class="lado">
+          <div class="lado-header">
+            <span class="lado-badge b">B</span>
+            <span class="lado-label">{{lado_b_label}}</span>
+          </div>
+          <div class="lado-foto">
+            <!-- {{#if lado_b_foto_url}} -->
+            <img
+              src="{{lado_b_foto_url}}"
+              alt="Lado B"
+              loading="lazy"
+              onerror="this.parentElement.innerHTML='<div class=\'lado-foto-placeholder\'><svg width=\'32\' height=\'32\' viewBox=\'0 0 24 24\' fill=\'#9CA3AF\'><path d=\'M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z\'/></svg><span>Sem foto</span></div>'"
+            >
+            <!-- {{/if}} -->
+          </div>
+          <div class="lado-info">
+            <!-- {{#if lado_b_cultura}} -->
+            <span class="lado-cultura">
+              <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 2a7 7 0 0 1 7 7c0 3.5-3 7-7 13C8 16 5 12.5 5 9a7 7 0 0 1 7-7z"/>
+              </svg>
+              {{lado_b_cultura}}
+            </span>
+            <!-- {{/if}} -->
+            <!-- {{#if lado_b_obs}} -->
+            <div class="lado-obs">{{lado_b_obs}}</div>
+            <!-- {{/if}} -->
+          </div>
+        </div>
+      </div>
+      <!-- {{else}} -->
+      <!-- LAYOUT: uma_foto (apenas lado A) -->
+      <div class="lados-grid uma-foto">
+        <div class="lado">
+          <div class="lado-header">
+            <span class="lado-badge a">A</span>
+            <span class="lado-label">{{lado_a_label}}</span>
+          </div>
+          <div class="lado-foto">
+            <img src="{{lado_a_foto_url}}" alt="Foto única" loading="lazy">
+          </div>
+          <div class="lado-info">
+            <!-- {{#if lado_a_cultura}} -->
+            <span class="lado-cultura">{{lado_a_cultura}}</span>
+            <!-- {{/if}} -->
+            <!-- {{#if lado_a_obs}} -->
+            <div class="lado-obs">{{lado_a_obs}}</div>
+            <!-- {{/if}} -->
+          </div>
+        </div>
+      </div>
+      <!-- {{/if}} -->
+    </div>
+    <!-- {{/each}} -->
+
+    <!-- CONCLUSÃO (campo único do case) -->
+    <!-- {{#if conclusao}} -->
+    <div class="conclusao-block">
+      <div class="conclusao-header">
+        <div class="conclusao-icon">
+          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+          </svg>
+        </div>
+        <span class="conclusao-title">Conclusão Técnica</span>
+      </div>
+      <div class="conclusao-text">{{conclusao}}</div>
+    </div>
+    <!-- {{/if}} -->
+
+    <!-- BLOCO ROI (condicional, igual ao T-M1) -->
+    <!-- {{#if roi_calculado}} -->
+    <div class="section-label">
+      <div class="section-label-bar"></div>
+      <span class="section-label-text">Retorno sobre Investimento</span>
+    </div>
+
+    <div class="roi-block">
+      <div class="roi-header">
+        <div class="roi-title">
+          <div class="roi-title-icon">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6h-6z"/>
+            </svg>
+          </div>
+          <span class="roi-title-text">ROI Calculado</span>
+        </div>
+        <span class="roi-badge">Análise Financeira</span>
+      </div>
+
+      <div class="roi-main">
+        <div class="roi-main-label">Retorno sobre o investimento</div>
+        <div>
+          <span class="roi-main-value">{{roi_calculado}}</span><span class="roi-main-unit">x</span>
+        </div>
+      </div>
+
+      <div class="roi-breakdown">
+        <div>
+          <div class="roi-item-label">Investimento</div>
+          <div class="roi-item-value">R$ {{roi_investimento}}</div>
+        </div>
+        <div>
+          <div class="roi-item-label">Retorno</div>
+          <div class="roi-item-value">R$ {{roi_retorno}}</div>
+        </div>
+      </div>
+    </div>
+    <!-- {{/if}} -->
+
+    <!-- DESCRIÇÃO -->
+    <!-- {{#if descricao}} -->
+    <div class="section-label">
+      <div class="section-label-bar"></div>
+      <span class="section-label-text">Observações Gerais</span>
+    </div>
+    <div class="descricao-block">
+      {{descricao}}
+    </div>
+    <!-- {{/if}} -->
+
+    <!-- LOCALIZAÇÃO -->
+    <div class="section-label">
+      <div class="section-label-bar"></div>
+      <span class="section-label-text">Localização</span>
+    </div>
+    <div class="localizacao-block">
+      <div class="localizacao-icon">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+        </svg>
+      </div>
+      <div>
+        <div class="localizacao-text">{{localizacao_texto}}</div>
+        <!-- {{#if lat && lng}} -->
+        <div class="localizacao-coords">{{lat}}, {{lng}}</div>
+        <!-- {{/if}} -->
+      </div>
+    </div>
+
+    <!-- VENDEDOR -->
+    <!-- {{#if nome_vendedor}} -->
+    <div class="section-label">
+      <div class="section-label-bar"></div>
+      <span class="section-label-text">Responsável Comercial</span>
+    </div>
+    <div class="vendedor-block">
+      <div class="vendedor-avatar">{{nome_vendedor_inicial}}</div>
+      <div class="vendedor-info">
+        <div class="vendedor-label">Vendedor / Responsável</div>
+        <div class="vendedor-nome">{{nome_vendedor}}</div>
+        <!-- {{#if telefone_vendedor}} -->
+        <div class="vendedor-tel">{{telefone_vendedor}}</div>
+        <!-- {{/if}} -->
+      </div>
+    </div>
+    <!-- {{/if}} -->
+
+  </main>
+
+  <!-- ══════════ FOOTER ══════════ -->
+  <footer class="footer">
+    <div class="footer-brand">SoloForte</div>
+    <div class="footer-meta">
+      Criado em {{criado_em_formatado}}<br>
+      Status: {{status}}
+    </div>
+  </footer>
+
+</div>
+</body>
+</html>
