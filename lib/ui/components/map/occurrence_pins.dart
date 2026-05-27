@@ -60,6 +60,8 @@ class _OccurrencePin extends StatelessWidget {
         return SFIcons.science; // ⚗️
       case OccurrenceCategory.agua:
         return SFIcons.waterDrop; // 💧
+      case OccurrenceCategory.amostraSolo:
+        return Icons.biotech_outlined; // 🧪
     }
   }
 

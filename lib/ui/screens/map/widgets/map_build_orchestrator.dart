@@ -36,6 +36,7 @@ import '../../../components/map/widgets/radar_layer_widget.dart';
 import '../../../components/map/widgets/map_markers.dart';
 import '../../../components/map/widgets/map_controls_overlay.dart';
 import '../../../components/map/widgets/isolated_marker_layers.dart';
+import '../../../components/map/widgets/map_tools_bottom_sheet.dart';
 import '../../../components/map/map_sheet_state.dart';
 import '../providers/map_armed_mode_provider.dart';
 import '../providers/map_ready_state_provider.dart';
@@ -304,6 +305,10 @@ class MapBuildOrchestrator extends ConsumerWidget {
             child: MapControlsOverlay(
               onCenterUser: centerOnUser,
               onToggleDrawMode: toggleDrawMode,
+              onOpenMapTools: () => MapToolsBottomSheet.show(
+                context: context,
+                drawingController: ref.read(drawingControllerProvider),
+              ),
               onToggleOccurrenceMode: () {
                 if (ref.read(armedModeProvider) == ArmedMode.occurrences) {
                   // Desarmar e fechar o sheet/modal

@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../../../../core/design/sf_icons.dart';
 import '../../../theme/premium/design_tokens.dart';
 import '../../premium/premium_glass_panel.dart';
+import 'publication_actions_bottom_sheet.dart';
 
 enum MapActionFabMenuDirection { up, left }
 
@@ -16,6 +17,7 @@ class MapActionFabMenu extends StatefulWidget {
   final VoidCallback onAntesDepois;
   final VoidCallback onAvaliacao;
   final VoidCallback onOcorrencia;
+  final VoidCallback onFotoRapida;
   final bool isEnabled;
   final bool isActive;
   final EdgeInsets padding;
@@ -23,6 +25,7 @@ class MapActionFabMenu extends StatefulWidget {
   final double? top;
   final double? bottom;
   final MapActionFabMenuDirection direction;
+  final bool useLegacyExpandedMenu;
 
   const MapActionFabMenu({
     super.key,
@@ -30,6 +33,7 @@ class MapActionFabMenu extends StatefulWidget {
     required this.onAntesDepois,
     required this.onAvaliacao,
     required this.onOcorrencia,
+    required this.onFotoRapida,
     this.isEnabled = true,
     this.isActive = false,
     this.padding = const EdgeInsets.only(right: 16, bottom: 24),
@@ -37,6 +41,7 @@ class MapActionFabMenu extends StatefulWidget {
     this.top,
     this.bottom = 0,
     this.direction = MapActionFabMenuDirection.up,
+    this.useLegacyExpandedMenu = false,
   });
 
   @override
@@ -73,7 +78,20 @@ class _MapActionFabMenuState extends State<MapActionFabMenu>
     super.dispose();
   }
 
-  void _toggle() {
+  void _toggle(BuildContext context) {
+    if (!widget.isEnabled) return;
+    HapticFeedback.selectionClick();
+    PublicationActionsBottomSheet.show(
+      context: context,
+      onResultado: widget.onResultado,
+      onAntesDepois: widget.onAntesDepois,
+      onAvaliacao: widget.onAvaliacao,
+      onOcorrencia: widget.onOcorrencia,
+      onFotoRapida: widget.onFotoRapida,
+    );
+  }
+
+  void _toggleLegacy() {
     if (!widget.isEnabled) return;
     HapticFeedback.selectionClick();
     setState(() => _isOpen = !_isOpen);
@@ -133,6 +151,18 @@ class _MapActionFabMenuState extends State<MapActionFabMenu>
   }
 
   Widget _buildMenuBody() {
+    if (widget.useLegacyExpandedMenu) {
+      return _buildLegacyMenuBody();
+    }
+
+    return _MasterFab(
+      isOpen: false,
+      isActive: widget.isActive,
+      onTap: () => _toggle(context),
+    );
+  }
+
+  Widget _buildLegacyMenuBody() {
     final actions = IgnorePointer(
       ignoring: !_isOpen,
       child: FadeTransition(
@@ -157,7 +187,7 @@ class _MapActionFabMenuState extends State<MapActionFabMenu>
           _MasterFab(
             isOpen: _isOpen,
             isActive: widget.isActive,
-            onTap: _toggle,
+            onTap: _toggleLegacy,
           ),
         ],
       );
@@ -169,7 +199,11 @@ class _MapActionFabMenuState extends State<MapActionFabMenu>
       children: [
         actions,
         const SizedBox(height: 12),
-        _MasterFab(isOpen: _isOpen, isActive: widget.isActive, onTap: _toggle),
+        _MasterFab(
+          isOpen: _isOpen,
+          isActive: widget.isActive,
+          onTap: _toggleLegacy,
+        ),
       ],
     );
   }
@@ -248,7 +282,7 @@ class _MasterFab extends StatelessWidget {
             duration: const Duration(milliseconds: 180),
             curve: Curves.easeOutCubic,
             child: Icon(
-              isOpen ? SFIcons.close : SFIcons.menu,
+              isOpen ? SFIcons.close : SFIcons.add,
               color: Colors.white,
               size: 27,
             ),

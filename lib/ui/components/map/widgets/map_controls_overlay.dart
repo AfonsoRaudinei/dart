@@ -24,6 +24,7 @@ import 'map_action_fab_menu.dart';
 class MapControlsOverlay extends ConsumerStatefulWidget {
   final VoidCallback onCenterUser;
   final VoidCallback onToggleDrawMode;
+  final VoidCallback onOpenMapTools;
   final VoidCallback? onToggleOccurrenceMode;
   final VoidCallback? onCreateResultadoCase;
   final VoidCallback? onCreateAntesDepoisCase;
@@ -51,6 +52,7 @@ class MapControlsOverlay extends ConsumerStatefulWidget {
     super.key,
     required this.onCenterUser,
     required this.onToggleDrawMode,
+    required this.onOpenMapTools,
     this.onToggleOccurrenceMode,
     this.onCreateResultadoCase,
     this.onCreateAntesDepoisCase,
@@ -118,28 +120,24 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               _MapActionButton(
-                icon: SFIcons.edit,
-                label: 'Desenhar',
-                isActive: widget.isDrawMode,
-                onTap: widget.onToggleDrawMode,
-              ),
-              // REMOVIDO: Botão de localização duplicado
-              const SizedBox(height: 12),
-              _MapActionButton(
-                icon: SFIcons.layers,
-                label: 'Camadas',
-                onTap: () => widget.onTabSelected(4, 'Button_Layers'),
-              ),
-              const SizedBox(height: 12),
-              const SizedBox(width: 48, height: 48),
-              const SizedBox(height: 12),
-              _MapActionButton(
                 icon: SFIcons.checkCircle,
                 label: 'Check-in',
                 isActive: widget.isCheckInActive,
                 onTap: () => widget.onTabSelected(3, 'Button_CheckIn'),
               ),
             ],
+          ),
+        ),
+
+        Positioned(
+          right: 16,
+          bottom: 24,
+          child: SafeArea(
+            top: false,
+            child: _MapToolsFab(
+              isActive: widget.isDrawMode,
+              onTap: widget.onOpenMapTools,
+            ),
           ),
         ),
 
@@ -161,6 +159,17 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
               } else {
                 widget.onTabSelected(2, 'Button_Occurrences');
               }
+            },
+            onFotoRapida: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text(
+                    'Foto rápida será implementada na próxima fase.',
+                  ),
+                  duration: Duration(seconds: 2),
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
             },
           ),
         ),
@@ -331,6 +340,51 @@ class _MapActionButtonState extends State<_MapActionButton> {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _MapToolsFab extends StatelessWidget {
+  final bool isActive;
+  final VoidCallback onTap;
+
+  const _MapToolsFab({required this.isActive, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: 'Ferramentas do mapa',
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () {
+          HapticFeedback.selectionClick();
+          onTap();
+        },
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeOutCubic,
+          width: 58,
+          height: 58,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: const Color(0xFF007AFF),
+            border: Border.all(
+              color: isActive
+                  ? PremiumTokens.brandGreen.withValues(alpha: 0.88)
+                  : Colors.white.withValues(alpha: 0.08),
+              width: isActive ? 2 : 0.5,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.22),
+                blurRadius: 18,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: const Icon(SFIcons.layers, color: Colors.white, size: 27),
+        ),
+      ),
     );
   }
 }
