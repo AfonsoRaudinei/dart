@@ -284,6 +284,8 @@ class _OccurrenceListItem extends StatelessWidget {
         return const Color(0xFF8E8E93);
       case OccurrenceCategory.agua:
         return const Color(0xFF30B0C7);
+      case OccurrenceCategory.amostraSolo:
+        return const Color(0xFF8B5CF6);
     }
   }
 

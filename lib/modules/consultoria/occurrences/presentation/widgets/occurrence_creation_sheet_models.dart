@@ -48,6 +48,7 @@ const _categories = [
     label: 'Amostra\nde Solo',
     icon: Icons.biotech_outlined,
     value: 'amostra_solo',
+    enumValue: OccurrenceCategory.amostraSolo,
   ),
 ];
 

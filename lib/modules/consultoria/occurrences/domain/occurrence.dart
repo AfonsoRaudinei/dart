@@ -30,7 +30,8 @@ enum OccurrenceCategory {
   insetos('Insetos', '🐛'),
   daninhas('Ervas Daninhas', '🌿'),
   nutricional('Nutrientes', '⚗️'),
-  agua('Água', '💧');
+  agua('Água', '💧'),
+  amostraSolo('Amostra de Solo', '🧪');
 
   final String label;
   final String emoji;
@@ -47,6 +48,7 @@ enum OccurrenceCategory {
         return OccurrenceCategory.insetos;
       case 'daninhas':
       case 'ervas daninhas':
+      case 'ervas_daninhas':
         return OccurrenceCategory.daninhas;
       case 'nutricional':
       case 'nutrientes':
@@ -55,6 +57,10 @@ enum OccurrenceCategory {
       case 'água':
       case 'estresse hídrico':
         return OccurrenceCategory.agua;
+      case 'amostra_solo':
+      case 'amostra solo':
+      case 'amostra de solo':
+        return OccurrenceCategory.amostraSolo;
       default:
         return OccurrenceCategory.doenca;
     }
@@ -77,6 +83,9 @@ extension OccurrenceCategoryColor on OccurrenceCategory {
     }
     if (this == OccurrenceCategory.agua) {
       return const Color(0xFF00ACC1);
+    }
+    if (this == OccurrenceCategory.amostraSolo) {
+      return const Color(0xFF8B5CF6);
     }
     return const Color(0xFF616161);
   }
@@ -149,6 +158,13 @@ class Occurrence {
   }) : updatedAt = updatedAt ?? DateTime.now();
 
   factory Occurrence.fromMap(Map<String, dynamic> map) {
+    final category = map['category'] as String?;
+    final amostraSoloDb = (map['amostra_solo'] as int? ?? 0) == 1;
+    final amostraSoloByCategory =
+        (category ?? '').toLowerCase() == 'amostra_solo' ||
+        (category ?? '').toLowerCase() == 'amostra solo' ||
+        (category ?? '').toLowerCase() == 'amostra de solo';
+
     return Occurrence(
       id: map['id'],
       visitSessionId: map['visit_session_id'],
@@ -164,14 +180,16 @@ class Occurrence {
           ? DateTime.parse(map['updated_at'])
           : null,
       syncStatus: map['sync_status'] ?? 'local',
-      category: map['category'],
+      category: category,
       status: map['status'] ?? 'draft',
       // v14 agronômico
       cultivar: map['cultivar'],
       dataPlantio: map['data_plantio'],
       estadioFenologico: map['estadio_fenologico'],
       tipoOcorrencia: map['tipo_ocorrencia'],
-      amostraSolo: (map['amostra_solo'] as int? ?? 0) == 1,
+      // Back-compat: alguns fluxos antigos salvavam apenas `category`
+      // e deixavam `amostra_solo` como 0. Garantimos consistência.
+      amostraSolo: amostraSoloDb || amostraSoloByCategory,
       recomendacoes: map['recomendacoes'],
       metricasJson: map['metricas_json'],
       nutrientesJson: map['nutrientes_json'],
@@ -182,6 +200,12 @@ class Occurrence {
   }
 
   Map<String, dynamic> toMap() {
+    final categoryLower = (category ?? '').toLowerCase();
+    final isAmostraSoloCategory =
+        categoryLower == 'amostra_solo' ||
+        categoryLower == 'amostra solo' ||
+        categoryLower == 'amostra de solo';
+
     return {
       'id': id,
       'visit_session_id': visitSessionId,
@@ -202,7 +226,9 @@ class Occurrence {
       'data_plantio': dataPlantio,
       'estadio_fenologico': estadioFenologico,
       'tipo_ocorrencia': tipoOcorrencia,
-      'amostra_solo': amostraSolo ? 1 : 0,
+      // Consistência: se a categoria indica amostra de solo,
+      // garantimos flag = 1 mesmo que amostraSolo esteja false.
+      'amostra_solo': (amostraSolo || isAmostraSoloCategory) ? 1 : 0,
       'recomendacoes': recomendacoes,
       'metricas_json': metricasJson,
       'nutrientes_json': nutrientesJson,
