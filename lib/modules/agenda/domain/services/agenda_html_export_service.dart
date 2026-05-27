@@ -1,9 +1,12 @@
 import 'package:soloforte_app/core/contracts/i_client_lookup.dart';
 import 'package:soloforte_app/core/contracts/opportunity_summary.dart';
-
-import '../entities/event.dart';
+import 'package:soloforte_app/modules/agenda/domain/entities/event.dart';
+import 'package:soloforte_app/modules/agenda/domain/entities/visit.dart';
+import 'package:soloforte_app/modules/agenda/domain/enums/event_status.dart';
 
 class AgendaHtmlExportService {
+  /// Retorna String HTML auto-contida pronta para exportação.
+  /// Nunca lança exceção — campos null são omitidos silenciosamente.
   String export({
     required List<Event> events,
     required Map<String, ClientSummary> clientes,
@@ -12,28 +15,24 @@ class AgendaHtmlExportService {
     String? periodoLabel,
   }) {
     try {
-      final ordered = [...events]
-        ..sort(
-          (a, b) => a.dataInicioPlanejada.compareTo(b.dataInicioPlanejada),
-        );
+      final ordered = [
+        ...events,
+      ]..sort((a, b) => a.dataInicioPlanejada.compareTo(b.dataInicioPlanejada));
 
-      final total = ordered.length;
-      final produtores = ordered.map((event) => event.clienteId).toSet().length;
-      final comOport = ordered
-          .where(
-            (event) => (oportunidades[event.clienteId]?.isNotEmpty ?? false),
-          )
+      final total = events.length;
+      final produtores = events.map((e) => e.clienteId).toSet().length;
+      final comOport = events
+          .where((e) => (oportunidades[e.clienteId]?.isNotEmpty ?? false))
           .length;
-      final urgentes = ordered
-          .where((event) => event.priority.name.toLowerCase() != 'normal')
+      final urgentes = events
+          .where((e) => e.priority != VisitPriority.normal)
           .length;
 
-      final exportDate = exportadoEm ?? DateTime.now();
-      final exportadoLabel = _formatExportDateTime(exportDate);
-      final safePeriodo = _esc(periodoLabel?.trim());
-      final periodoSuffix =
-          safePeriodo.isNotEmpty ? ' &nbsp;&middot;&nbsp; $safePeriodo' : '';
-
+      final exportadoLabel = _esc(
+        _formatExportDateTime(exportadoEm ?? DateTime.now()),
+      );
+      final periodo = _esc(periodoLabel?.trim());
+      final periodoHtml = periodo.isEmpty ? '' : ' &nbsp;·&nbsp; $periodo';
       final cards = ordered
           .map(
             (event) => _buildEventCard(
@@ -51,7 +50,7 @@ class AgendaHtmlExportService {
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light only">
-<title>Agenda - SoloForte</title>
+<title>Agenda — SoloForte</title>
 <style>
   :root { color-scheme: light only; }
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
@@ -123,6 +122,7 @@ class AgendaHtmlExportService {
 </head>
 <body>
 
+<!-- HEADER — gerado dinamicamente -->
 <div class="hdr">
   <div class="brand">
     <div class="brand-icon">
@@ -131,9 +131,10 @@ class AgendaHtmlExportService {
     <span class="brand-name">SoloForte</span>
   </div>
   <div class="hdr-title">Agenda de Visitas</div>
-  <div class="hdr-meta">Exportado em <b>${_esc(exportadoLabel)}</b> &nbsp;&middot;&nbsp; <b>$total eventos</b>$periodoSuffix</div>
+  <div class="hdr-meta">Exportado em <b>$exportadoLabel</b> &nbsp;·&nbsp; <b>$total eventos</b>$periodoHtml</div>
 </div>
 
+<!-- SUMMARY — contagens calculadas dos dados reais -->
 <div class="sum">
   <div class="sc"><span class="sc-n">$total</span><span class="sc-l">Eventos</span></div>
   <div class="sc"><span class="sc-n">$produtores</span><span class="sc-l">Produtores</span></div>
@@ -144,11 +145,10 @@ class AgendaHtmlExportService {
 <p class="slbl">Visitas agendadas</p>
 
 <div class="cg">
-$cards
-</div>
+$cards</div>
 
 <div class="ftr">
-  <p class="ftxt">Gerado por <span class="fgreen">SoloForte</span> &nbsp;&middot;&nbsp; AgendaHtmlExportService &nbsp;&middot;&nbsp; soloforte.app</p>
+  <p class="ftxt">Gerado por <span class="fgreen">SoloForte</span> &nbsp;·&nbsp; AgendaHtmlExportService &nbsp;·&nbsp; soloforte.app</p>
 </div>
 
 </body>
@@ -158,8 +158,8 @@ $cards
       return '''
 <!DOCTYPE html>
 <html lang="pt-BR">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Agenda - SoloForte</title></head>
-<body><div style="max-width:600px;margin:0 auto;font-family:sans-serif;">Exportacao indisponivel.</div></body>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Agenda — SoloForte</title></head>
+<body></body>
 </html>
 ''';
     }
@@ -175,82 +175,71 @@ $cards
           ? cliente!.name
           : 'Produtor não informado',
     );
-    final cidade = _esc(_extractCity(cliente));
-    final fazenda = _esc(event.titulo.trim());
-    final objetivo = _esc(event.titulo.trim());
-
-    final dateText = _formatAgendaDate(event.dataInicioPlanejada);
-    final timeText = _formatTimeRange(event);
-    final timeLine = timeText.isEmpty ? '' : '<span class="dt-t">$timeText</span>';
-
-    final statusMeta = _statusMeta(event.status.name);
-
+    final titulo = _esc(event.titulo.trim());
+    final data = _esc(_formatAgendaDate(event.dataInicioPlanejada));
+    final horario = _formatTimeRange(event);
+    final status = _statusMeta(event.status);
     final fields = <String>[
       '<div class="field"><span class="fl">Produtor</span><span class="fv sb">$nomeProdutor</span></div>',
     ];
-    if (fazenda.isNotEmpty) {
-      fields.add(
-        '<div class="field"><span class="fl">Fazenda</span><span class="fv">$fazenda</span></div>',
-      );
-    }
-    if (cidade.isNotEmpty) {
-      fields.add(
-        '<div class="field"><span class="fl">Cidade</span><span class="fv">$cidade</span></div>',
-      );
-    }
-    if (objetivo.isNotEmpty) {
-      fields.add(
-        '<div class="field"><span class="fl">Objetivo</span><span class="fv">$objetivo</span></div>',
-      );
+
+    if (titulo.isNotEmpty) {
+      fields
+        ..add(
+          '<div class="field"><span class="fl">Fazenda</span><span class="fv">$titulo</span></div>',
+        )
+        ..add(
+          '<div class="field"><span class="fl">Objetivo</span><span class="fv">$titulo</span></div>',
+        );
     }
 
-    final isUrgente = event.priority.name.toLowerCase() != 'normal';
-    final prioridade = isUrgente
-        ? '<div class="prow"><div class="pdot"></div><span class="ptxt">Alta prioridade</span></div>'
-        : '';
-
-    final oportunidadesBloco = oportunidades.isEmpty
+    final horarioHtml = horario.isEmpty
         ? ''
         : '''
-<div class="ob">
-  <div class="ol">Oportunidades de Mercado</div>
-  ${oportunidades.map(_buildOpportunityItem).join()}
-</div>''';
+          <span class="dt-t">${_esc(horario)}</span>''';
+    final prioridadeHtml = event.priority == VisitPriority.normal
+        ? ''
+        : '''
+      <div class="prow"><div class="pdot"></div><span class="ptxt">Alta prioridade</span></div>''';
+    final oportunidadesHtml = oportunidades.isEmpty
+        ? ''
+        : '''
+      <div class="ob">
+        <div class="ol">Oportunidades de Mercado</div>
+${oportunidades.map(_buildOpportunityItem).join()}      </div>''';
 
     return '''
-<div class="card">
-  <div class="ci">
-    <div class="stripe ${statusMeta.stripeClass}"></div>
-    <div class="cb">
-      <div class="ctop">
-        <div class="cdt">
-          <span class="dt-d">$dateText</span>
-          $timeLine
+  <div class="card">
+    <div class="ci">
+      <div class="stripe ${status.stripeClass}"></div>
+      <div class="cb">
+        <div class="ctop">
+          <div class="cdt">
+            <span class="dt-d">$data</span>
+$horarioHtml
+          </div>
+          <span class="badge ${status.badgeClass}">${_esc(status.label)}</span>
         </div>
-        <span class="badge ${statusMeta.badgeClass}">${_esc(statusMeta.label)}</span>
+        <div class="fields">
+          ${fields.join()}
+        </div>$prioridadeHtml$oportunidadesHtml
       </div>
-      <div class="fields">
-        ${fields.join()}
-      </div>
-      $prioridade
-      $oportunidadesBloco
     </div>
   </div>
-</div>
 ''';
   }
 
   String _buildOpportunityItem(OpportunitySummary op) {
     return '''
-<div class="oi">
-  <div class="otick"><svg viewBox="0 0 10 10"><polyline points="2,5 4,7 8,3"/></svg></div>
-  <span class="ot">${_esc(_opportunityText(op))}</span>
-</div>
+        <div class="oi">
+          <div class="otick"><svg viewBox="0 0 10 10"><polyline points="2,5 4,7 8,3"/></svg></div>
+          <span class="ot">${_esc(_opportunityText(op))}</span>
+        </div>
 ''';
   }
 
   String _opportunityText(OpportunitySummary op) {
-    return '${op.categoryName}: R\$ ${_decimal(op.referenceValuePerHa)}/${op.unit} - Fechado ${_decimal(op.closedPercent)}% - Area ${_decimal(op.areaHa)} ha';
+    return '${op.categoryName}: ${_decimal(op.residualValuePerHa)} ${op.unit} pendente por ha, ${_decimal(op.residualPercent)}% em aberto, ${_decimal(op.areaHa)} ha';
   }
 
   String _decimal(double value) {
@@ -276,8 +265,7 @@ $cards
     final weekday = weekdays[date.weekday - 1];
     final day = date.day.toString().padLeft(2, '0');
     final month = months[date.month - 1];
-    final year = date.year.toString();
-    return '$weekday, $day $month $year';
+    return '$weekday, $day $month ${date.year}';
   }
 
   String _formatExportDateTime(DateTime date) {
@@ -292,11 +280,12 @@ $cards
   String _formatTimeRange(Event event) {
     final start = event.startTime;
     if (start == null) return '';
+
     final startText = _timeOfDay(start.hour, start.minute);
     final end = event.endTime;
     if (end == null) return startText;
-    final endText = _timeOfDay(end.hour, end.minute);
-    return '$startText - $endText';
+
+    return '$startText – ${_timeOfDay(end.hour, end.minute)}';
   }
 
   String _timeOfDay(int hour, int minute) {
@@ -305,36 +294,18 @@ $cards
     return '$hh:$mm';
   }
 
-  _StatusMeta _statusMeta(String statusName) {
-    final normalized = statusName.trim().toLowerCase();
-    if (normalized == 'active' || normalized == 'ativa') {
-      return const _StatusMeta('', 'ba', 'Ativa');
+  _StatusMeta _statusMeta(EventStatus status) {
+    switch (status) {
+      case EventStatus.emAndamento:
+      case EventStatus.finalizando:
+        return const _StatusMeta('', 'ba', 'Ativa');
+      case EventStatus.agendado:
+        return const _StatusMeta('a', 'bp', 'Pendente');
+      case EventStatus.concluido:
+        return const _StatusMeta('b', 'bc', 'Concluída');
+      case EventStatus.cancelado:
+        return const _StatusMeta('g', 'bx', 'Cancelada');
     }
-    if (normalized == 'pending' || normalized == 'pendente') {
-      return const _StatusMeta('a', 'bp', 'Pendente');
-    }
-    if (normalized == 'completed' || normalized == 'concluida') {
-      return const _StatusMeta('b', 'bc', 'Concluída');
-    }
-    if (normalized == 'cancelled' || normalized == 'cancelada') {
-      return const _StatusMeta('g', 'bx', 'Cancelada');
-    }
-    return _StatusMeta(
-      'g',
-      'bx',
-      statusName.trim().isEmpty ? 'Status' : statusName.trim(),
-    );
-  }
-
-  String _extractCity(ClientSummary? cliente) {
-    if (cliente == null) return '';
-    try {
-      final dynamic maybeCity = (cliente as dynamic).city;
-      if (maybeCity is String && maybeCity.trim().isNotEmpty) {
-        return maybeCity.trim();
-      }
-    } catch (_) {}
-    return '';
   }
 
   String _esc(String? s) {
@@ -348,9 +319,9 @@ $cards
 }
 
 class _StatusMeta {
+  const _StatusMeta(this.stripeClass, this.badgeClass, this.label);
+
   final String stripeClass;
   final String badgeClass;
   final String label;
-
-  const _StatusMeta(this.stripeClass, this.badgeClass, this.label);
 }
