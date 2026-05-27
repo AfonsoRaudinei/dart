@@ -51,6 +51,7 @@ android/app/release/
 **/ios/Flutter/App.framework.dSYM/
 **/macos/Pods/
 **/macos/Runner.xcworkspace/xcuserdata/
+macos/Flutter/GeneratedPluginRegistrant.swift
 
 # Symbols and splashes
 **/ios/Runner/Assets.xcassets/LaunchImage.imageset/Contents.json
