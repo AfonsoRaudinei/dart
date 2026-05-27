@@ -65,6 +65,11 @@ Future<void> main() async {
         return _BootErrorApp(error: message);
       };
 
+      // 🛡 IPA-109: mostra splash nativo imediatamente enquanto o boot
+      // assíncrono acontece. Elimina o frame preto entre o LaunchScreen
+      // nativo do iOS e o primeiro frame do Flutter.
+      runApp(const _BootSplashApp());
+
       try {
         // 1. Validação fail-fast de variáveis de ambiente
         AppConfig.validate();
@@ -73,13 +78,16 @@ Future<void> main() async {
         await initializeDateFormatting('pt_BR', null);
 
         // 3. Supabase com timeout explícito
+        // 🛡 IPA-109: timeout aumentado de 15s → 30s.
+        // Em redes 4G/3G lentas 15s era insuficiente, causando queda
+        // prematura no _BootErrorApp com tela de erro desnecessária.
         await Supabase.initialize(
           url: AppConfig.supabaseUrl,
           anonKey: AppConfig.supabaseAnonKey,
         ).timeout(
-          const Duration(seconds: 15),
+          const Duration(seconds: 30),
           onTimeout: () => throw TimeoutException(
-            'Supabase demorou mais de 15s para inicializar. '
+            'Supabase demorou mais de 30s para inicializar. '
             'Verifique sua conexão.',
           ),
         );
@@ -210,9 +218,10 @@ class _SoloForteAppState extends ConsumerState<SoloForteApp> {
       if (mounted) {
         final orchestrator = ref.read(syncOrchestratorProvider);
         registerSyncModules(orchestrator);
-        orchestrator.triggerSync(
-          SyncPriority.immediate,
-        ); // FALHA-1: sync imediato no boot
+        // 🛡 IPA-109: sync em background — não bloqueia o primeiro frame.
+        // SyncPriority.immediate forçava as 31 migrações SQLite durante
+        // a renderização inicial, causando tela preta (FALHA-1 removida).
+        orchestrator.triggerSync(SyncPriority.background);
         ref.read(
           visitCompletionObserverProvider,
         ); // ADR-010: ativa listener agenda → relatorio
@@ -246,6 +255,50 @@ class _SoloForteAppState extends ConsumerState<SoloForteApp> {
         }
         return child;
       },
+    );
+  }
+}
+
+/// Widget de splash exibido imediatamente no início do boot.
+/// Elimina o frame preto entre o LaunchScreen nativo do iOS e o primeiro
+/// frame do Flutter, enquanto Supabase/SharedPreferences inicializam.
+/// Usa apenas recursos nativos (sem fontes/assets externos) para garantir
+/// exibição correta em qualquer condição de build.
+class _BootSplashApp extends StatelessWidget {
+  const _BootSplashApp();
+
+  @override
+  Widget build(BuildContext context) {
+    return const MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: Scaffold(
+        backgroundColor: Color(0xFFFFFFFF),
+        body: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(
+                width: 48,
+                height: 48,
+                child: CircularProgressIndicator(
+                  strokeWidth: 3,
+                  color: Color(0xFF34C759),
+                ),
+              ),
+              SizedBox(height: 24),
+              Text(
+                'Carregando...',
+                style: TextStyle(
+                  color: Color(0xFF888888),
+                  fontSize: 14,
+                  fontFamily:
+                      null, // fonte do sistema — sem dependência de assets
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
@@ -288,7 +341,9 @@ class _BootErrorApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       home: Scaffold(
-        backgroundColor: Colors.black,
+        // 🛡 IPA-109: fundo branco garante legibilidade mesmo se fontes
+        // customizadas não forem embarcadas corretamente no bundle.
+        backgroundColor: Colors.white,
         body: SafeArea(
           child: Center(
             child: Padding(
@@ -298,16 +353,19 @@ class _BootErrorApp extends StatelessWidget {
                 children: [
                   const Icon(
                     Icons.cloud_off_outlined,
-                    color: Colors.white54,
+                    color: Color(0xFF888888),
                     size: 64,
                   ),
                   const SizedBox(height: 24),
+                  // 🛡 fontFamily: null → usa fonte do sistema (San Francisco no iOS)
+                  // garantindo que o texto seja exibido sem dependências de assets.
                   Text(
                     _friendlyMessage,
                     style: const TextStyle(
-                      color: Colors.white,
+                      color: Color(0xFF333333),
                       fontSize: 15,
                       height: 1.6,
+                      fontFamily: null,
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -323,6 +381,7 @@ class _BootErrorApp extends StatelessWidget {
                         color: Color(0xFF34C759),
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
+                        fontFamily: null,
                       ),
                     ),
                   ),

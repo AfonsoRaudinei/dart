@@ -6,7 +6,6 @@ import '../../core/session/session_controller.dart';
 import '../../core/session/session_models.dart';
 import '../../ui/components/app_shell.dart';
 import '../../ui/screens/public_map_screen.dart';
-import '../../ui/screens/private_map_screen.dart';
 import '../../ui/screens/private_map_bootstrap_screen.dart';
 import '../../ui/screens/login_screen.dart';
 import '../../modules/auth/pages/register_page.dart';
@@ -53,6 +52,15 @@ GoRouter router(Ref ref) {
     initialLocation: AppRoutes.publicMap,
     refreshListenable: notifier,
     redirect: (context, state) {
+      // 🛡 IPA-109: aguarda bootstrap de autenticação concluir antes de
+      // redirecionar. Enquanto _isInitializing==true o Supabase ainda pode
+      // estar restaurando a sessão do storage local. Sem este guard o router
+      // renderizava PublicMapScreen ou /map prematuramente, causando frame
+      // branco/preto enquanto o SessionUnknown ainda estava ativo.
+      if (notifier.isInitializing) {
+        return AppRoutes.publicMap; // seguro: já é a initialLocation
+      }
+
       final session = ref.read(sessionControllerProvider);
       final isAuth = notifier.isAuthenticated;
       final isRecovery = session is SessionPasswordRecovery;
