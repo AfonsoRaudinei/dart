@@ -1,22 +1,35 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../domain/entities/event.dart';
+import '../providers/agenda_export_provider.dart';
 import '../providers/agenda_provider.dart';
 import '../widgets/day_event_card.dart';
 import '../../../../core/constants/layout_constants.dart';
 
 /// Página de visualização dos eventos de um dia específico
-class AgendaDayPage extends ConsumerWidget {
+class AgendaDayPage extends ConsumerStatefulWidget {
   final DateTime selectedDate;
 
   const AgendaDayPage({super.key, required this.selectedDate});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<AgendaDayPage> createState() => _AgendaDayPageState();
+}
+
+class _AgendaDayPageState extends ConsumerState<AgendaDayPage> {
+  bool _isExporting = false;
+
+  @override
+  Widget build(BuildContext context) {
     final agendaState = ref.watch(agendaProvider);
     final events = ref
         .read(agendaProvider.notifier)
-        .getEventsByDay(selectedDate);
+        .getEventsByDay(widget.selectedDate);
 
     // Ordena por horário
     final sortedEvents = [...events]
@@ -24,9 +37,10 @@ class AgendaDayPage extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(_formatDate(selectedDate)),
+        title: Text(_formatDate(widget.selectedDate)),
         automaticallyImplyLeading: false,
         actions: [
+          _buildExportAction(context, sortedEvents),
           // Indicador de eventos ativos
           if (sortedEvents.any((e) => e.status.isActive))
             Padding(
@@ -60,6 +74,59 @@ class AgendaDayPage extends ConsumerWidget {
           ? _buildEmptyState(context)
           : _buildEventList(sortedEvents),
     );
+  }
+
+  Widget _buildExportAction(BuildContext context, List<Event> events) {
+    if (_isExporting) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(horizontal: 16),
+        child: Center(
+          child: SizedBox(
+            width: 20,
+            height: 20,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+        ),
+      );
+    }
+
+    return IconButton(
+      icon: const Icon(Icons.ios_share),
+      tooltip: 'Exportar agenda',
+      onPressed: events.isEmpty
+          ? null
+          : () => _shareHtmlExport(context, events),
+    );
+  }
+
+  Future<void> _shareHtmlExport(
+    BuildContext context,
+    List<Event> events,
+  ) async {
+    setState(() => _isExporting = true);
+
+    try {
+      final html = await ref.read(agendaExportProvider(events).future);
+      final directory = await getTemporaryDirectory();
+      final date = DateFormat('yyyyMMdd').format(widget.selectedDate);
+      final file = File('${directory.path}/agenda_export_$date.html');
+
+      await file.writeAsString(html);
+      await Share.shareXFiles(
+        [XFile(file.path, mimeType: 'text/html')],
+        subject:
+            'Agenda SoloForte - ${DateFormat('dd/MM/yyyy').format(widget.selectedDate)}',
+      );
+    } catch (_) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Erro ao exportar agenda')));
+    } finally {
+      if (mounted) {
+        setState(() => _isExporting = false);
+      }
+    }
   }
 
   Widget _buildEmptyState(BuildContext context) {
