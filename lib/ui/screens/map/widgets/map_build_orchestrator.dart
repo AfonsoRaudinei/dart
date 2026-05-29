@@ -23,6 +23,7 @@ import '../../../../modules/drawing/presentation/widgets/drawing_edit_layer.dart
 import '../../../../modules/drawing/presentation/widgets/gps_tracking_overlay.dart';
 import '../../../../modules/consultoria/clients/presentation/providers/field_providers.dart';
 import '../../../../modules/dashboard/providers/location_providers.dart';
+import '../../../../modules/map/presentation/providers/map_location_mode_provider.dart';
 import '../../../../modules/consultoria/services/talhao_map_adapter.dart';
 import '../../../../modules/consultoria/occurrences/domain/occurrence.dart'
     as occ;
@@ -64,6 +65,8 @@ class MapBuildOrchestrator extends ConsumerWidget {
   final Future<void> Function() finishDrawing;
   final void Function() toggleDrawMode;
   final void Function() centerOnUser;
+  final ValueChanged<MapLocationMode> onLocationModeChanged;
+  final VoidCallback stopFollowing;
   final void Function() armOccurrenceMode;
   final void Function(CaseTipo tipo) armMarketingMode;
   final void Function(occ.Occurrence occurrence) handleOccurrencePinTap;
@@ -78,6 +81,8 @@ class MapBuildOrchestrator extends ConsumerWidget {
     required this.finishDrawing,
     required this.toggleDrawMode,
     required this.centerOnUser,
+    required this.onLocationModeChanged,
+    required this.stopFollowing,
     required this.armOccurrenceMode,
     required this.armMarketingMode,
     required this.handleOccurrencePinTap,
@@ -238,6 +243,14 @@ class MapBuildOrchestrator extends ConsumerWidget {
             onLongPress: handleMapLongPress,
             onPositionChanged: (pos, hasGesture) {
               if (hasGesture) {
+                final locationMode = ref.read(mapLocationModeProvider);
+                if (locationMode == MapLocationMode.following ||
+                    locationMode == MapLocationMode.northLocked) {
+                  ref.read(mapLocationModeProvider.notifier).state =
+                      MapLocationMode.idle;
+                  stopFollowing();
+                }
+
                 MapLogger.logEvent(
                   'Pan/Zoom: Center=${pos.center.latitude.toStringAsFixed(4)},'
                   '${pos.center.longitude.toStringAsFixed(4)} '
@@ -304,6 +317,7 @@ class MapBuildOrchestrator extends ConsumerWidget {
           RepaintBoundary(
             child: MapControlsOverlay(
               onCenterUser: centerOnUser,
+              onLocationModeChanged: onLocationModeChanged,
               onToggleDrawMode: toggleDrawMode,
               onOpenMapTools: () => MapToolsBottomSheet.show(
                 context: context,

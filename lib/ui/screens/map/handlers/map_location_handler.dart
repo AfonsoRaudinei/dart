@@ -1,12 +1,14 @@
 // ADR-030 F5 — Classe extraída de private_map_screen.dart (B3)
-// Gerencia permissão de localização e centralização do mapa no usuário.
-// Classe estática — não é widget, não tem estado próprio.
+// Gerencia permissão de localização, centralização e follow do mapa.
+// Classe estática — mantém somente a assinatura do follow contínuo.
 
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:latlong2/latlong.dart';
 import '../../../../core/permissions/location_permission_gate.dart';
 import '../../../../core/permissions/permission_provider.dart';
 import '../../../../modules/dashboard/domain/location_state.dart';
@@ -15,6 +17,8 @@ import '../../../../modules/dashboard/services/location_service.dart';
 
 class MapLocationHandler {
   MapLocationHandler._();
+
+  static StreamSubscription<LatLng>? _followSubscription;
 
   /// Solicita permissão de localização e, se concedida, centraliza o mapa.
   static Future<void> requestPermission({
@@ -159,5 +163,29 @@ class MapLocationHandler {
     if (position != null && isMapReady && context.mounted) {
       mapController.move(position, 16.0);
     }
+  }
+
+  /// Inicia follow contínuo da câmera usando o stream GPS existente.
+  static void startFollowing({
+    required Stream<LatLng> locationStream,
+    required MapController mapController,
+    required bool isMapReady,
+  }) {
+    _followSubscription?.cancel();
+    if (!isMapReady) return;
+
+    _followSubscription = locationStream.listen(
+      (position) {
+        mapController.move(position, mapController.camera.zoom);
+      },
+      onError: (_) {},
+      cancelOnError: false,
+    );
+  }
+
+  /// Cancela o follow contínuo da câmera.
+  static void stopFollowing() {
+    _followSubscription?.cancel();
+    _followSubscription = null;
   }
 }

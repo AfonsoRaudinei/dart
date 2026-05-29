@@ -5,12 +5,14 @@ import '../../../../ui/theme/premium/design_tokens.dart';
 class NovoCaseHeader extends StatelessWidget {
   final double lat;
   final double lng;
+  final String tipoLabel;
   final VoidCallback onClose;
 
   const NovoCaseHeader({
     super.key,
     required this.lat,
     required this.lng,
+    required this.tipoLabel,
     required this.onClose,
   });
 
@@ -36,9 +38,9 @@ class NovoCaseHeader extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Novo Case',
-                style: TextStyle(
+              Text(
+                'Novo Case · $tipoLabel',
+                style: const TextStyle(
                   color: Colors.white,
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
@@ -46,10 +48,7 @@ class NovoCaseHeader extends StatelessWidget {
               ),
               Text(
                 'Lat: ${lat.toStringAsFixed(5)}, Lng: ${lng.toStringAsFixed(5)}',
-                style: const TextStyle(
-                  color: Color(0xFF8E8E93),
-                  fontSize: 12,
-                ),
+                style: const TextStyle(color: Color(0xFF8E8E93), fontSize: 12),
               ),
             ],
           ),

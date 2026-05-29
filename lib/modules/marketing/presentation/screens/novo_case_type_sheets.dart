@@ -27,7 +27,7 @@ class NovoResultadoCaseSheet extends StatelessWidget {
     return NovoCaseSheet(
       lat: lat,
       lng: lng,
-      initialTipo: CaseTipo.resultado,
+      tipo: CaseTipo.resultado,
       onClose: onClose,
       onPublicar: onPublicar,
     );
@@ -53,7 +53,7 @@ class NovoAntesDepoisCaseSheet extends StatelessWidget {
     return NovoCaseSheet(
       lat: lat,
       lng: lng,
-      initialTipo: CaseTipo.antesDepois,
+      tipo: CaseTipo.antesDepois,
       onClose: onClose,
       onPublicar: onPublicar,
     );
@@ -79,7 +79,7 @@ class NovaAvaliacaoCaseSheet extends StatelessWidget {
     return NovoCaseSheet(
       lat: lat,
       lng: lng,
-      initialTipo: CaseTipo.avaliacao,
+      tipo: CaseTipo.avaliacao,
       onClose: onClose,
       onPublicar: onPublicar,
     );

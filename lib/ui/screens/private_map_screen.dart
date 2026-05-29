@@ -20,6 +20,7 @@ import '../components/map/map_sheet_state.dart';
 import '../../modules/consultoria/occurrences/presentation/widgets/occurrence_detail_sheet.dart';
 import 'map/providers/map_armed_mode_provider.dart';
 import 'map/providers/map_ready_state_provider.dart';
+import '../../modules/map/presentation/providers/map_location_mode_provider.dart';
 import 'map/widgets/map_build_orchestrator.dart';
 import 'map/handlers/map_location_handler.dart';
 import 'map/controllers/map_viewport_controller.dart';
@@ -156,6 +157,7 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
     // Usar referência cacheada em _drawingController, capturada no build().
     // NUNCA usar ref.read() aqui — causa BadState crash.
     _drawingController?.cancelOperation();
+    MapLocationHandler.stopFollowing();
 
     _mapEventDebouncer.dispose();
     super.dispose();
@@ -286,6 +288,25 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
     );
   }
 
+  void _handleLocationModeChanged(MapLocationMode mode) {
+    switch (mode) {
+      case MapLocationMode.idle:
+        MapLocationHandler.stopFollowing();
+        break;
+      case MapLocationMode.following:
+      case MapLocationMode.northLocked:
+        MapLocationHandler.startFollowing(
+          // Riverpod 2.x exposes the provider stream; this keeps the existing
+          // GPS source and avoids creating another location pipeline.
+          // ignore: deprecated_member_use
+          locationStream: ref.read(locationStreamProvider.stream),
+          mapController: _mapController,
+          isMapReady: ref.read(mapReadyStateProvider),
+        );
+        break;
+    }
+  }
+
   void _armOccurrenceMode() {
     // FIX 1: Entrar em modo seleção — usuário toca no mapa para capturar LatLng
     _pendingMarketingCaseTipo = null;
@@ -364,6 +385,8 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
       finishDrawing: _finishDrawing,
       toggleDrawMode: _toggleDrawMode,
       centerOnUser: _centerOnUser,
+      onLocationModeChanged: _handleLocationModeChanged,
+      stopFollowing: MapLocationHandler.stopFollowing,
       armOccurrenceMode: _armOccurrenceMode,
       armMarketingMode: _armMarketingMode,
       handleOccurrencePinTap: _handleOccurrencePinTap,

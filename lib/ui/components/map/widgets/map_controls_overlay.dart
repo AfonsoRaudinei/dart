@@ -9,7 +9,9 @@ import '../../../../../../core/design/sf_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../modules/dashboard/providers/location_providers.dart';
 import '../../../../modules/dashboard/domain/location_state.dart';
+import '../../../../modules/consultoria/quick_photo/presentation/quick_photo_flow.dart';
 import '../../../../modules/map/presentation/providers/map_location_mode_provider.dart';
+import '../../../../core/constants/layout_constants.dart';
 import '../../../../core/providers/connectivity_provider.dart';
 
 import '../../premium/premium_glass_panel.dart';
@@ -23,6 +25,7 @@ import 'map_action_fab_menu.dart';
 /// Observa apenas locationStateProvider para status do GPS.
 class MapControlsOverlay extends ConsumerStatefulWidget {
   final VoidCallback onCenterUser;
+  final ValueChanged<MapLocationMode> onLocationModeChanged;
   final VoidCallback onToggleDrawMode;
   final VoidCallback onOpenMapTools;
   final VoidCallback? onToggleOccurrenceMode;
@@ -51,6 +54,7 @@ class MapControlsOverlay extends ConsumerStatefulWidget {
   const MapControlsOverlay({
     super.key,
     required this.onCenterUser,
+    required this.onLocationModeChanged,
     required this.onToggleDrawMode,
     required this.onOpenMapTools,
     this.onToggleOccurrenceMode,
@@ -86,6 +90,7 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
   Widget build(BuildContext context) {
     // Use SafeArea top padding to ensure elements are below the status bar/notch
     final safeTop = MediaQuery.of(context).padding.top;
+    final safeBottom = MediaQuery.of(context).padding.bottom;
     final primaryColor = Theme.of(context).colorScheme.primary;
 
     return Stack(
@@ -104,34 +109,18 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
               _ConnectivityDot(),
               const SizedBox(width: 6),
               // Botão de Localização com 3 estados
-              _LocationButton(onCenterUser: widget.onCenterUser),
+              _LocationButton(
+                onCenterUser: widget.onCenterUser,
+                onLocationModeChanged: widget.onLocationModeChanged,
+              ),
             ],
           ),
         ),
 
         // 3. Ações verticais do mapa (direita)
         Positioned(
-          top:
-              safeTop +
-              80, // Ajustado para não colidir com o botão de localização menor
           right: 16,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              _MapActionButton(
-                icon: SFIcons.checkCircle,
-                label: 'Check-in',
-                isActive: widget.isCheckInActive,
-                onTap: () => widget.onTabSelected(3, 'Button_CheckIn'),
-              ),
-            ],
-          ),
-        ),
-
-        Positioned(
-          right: 16,
-          bottom: 24,
+          bottom: kFabSafeArea + safeBottom + 130,
           child: SafeArea(
             top: false,
             child: _MapToolsFab(
@@ -144,7 +133,7 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
         Positioned.fill(
           child: MapActionFabMenu(
             right: 16,
-            top: safeTop + 200,
+            bottom: kFabSafeArea + safeBottom + 60,
             padding: EdgeInsets.zero,
             direction: MapActionFabMenuDirection.left,
             isActive: widget.isMarketingMode || widget.isOccurrenceMode,
@@ -161,16 +150,29 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
               }
             },
             onFotoRapida: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text(
-                    'Foto rápida será implementada na próxima fase.',
-                  ),
-                  duration: Duration(seconds: 2),
-                  behavior: SnackBarBehavior.floating,
-                ),
+              QuickPhotoFlow.open(
+                context,
+                lat: widget.currentCenter.latitude,
+                lng: widget.currentCenter.longitude,
               );
             },
+          ),
+        ),
+
+        Positioned(
+          bottom: kFabSafeArea + safeBottom,
+          right: 16,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              _MapActionButton(
+                icon: SFIcons.checkCircle,
+                label: 'Check-in',
+                isActive: widget.isCheckInActive,
+                onTap: () => widget.onTabSelected(3, 'Button_CheckIn'),
+              ),
+            ],
           ),
         ),
 
@@ -472,8 +474,12 @@ class _ConnectivityDot extends ConsumerWidget {
 /// Botão de localização com 3 estados (idle / following / northLocked)
 class _LocationButton extends ConsumerStatefulWidget {
   final VoidCallback onCenterUser;
+  final ValueChanged<MapLocationMode> onLocationModeChanged;
 
-  const _LocationButton({required this.onCenterUser});
+  const _LocationButton({
+    required this.onCenterUser,
+    required this.onLocationModeChanged,
+  });
 
   @override
   ConsumerState<_LocationButton> createState() => _LocationButtonState();
@@ -503,8 +509,10 @@ class _LocationButtonState extends ConsumerState<_LocationButton> {
   Widget build(BuildContext context) {
     final locationMode = ref.watch(mapLocationModeProvider);
     final locationState = ref.watch(locationStateProvider);
-    final colorScheme = Theme.of(context).colorScheme;
     const label = 'Localização';
+    final isAvailable = locationState == LocationState.available;
+    final iconColor = _colorForMode(locationMode, isAvailable);
+    final backgroundColor = _backgroundForMode(locationMode);
 
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -515,11 +523,10 @@ class _LocationButtonState extends ConsumerState<_LocationButton> {
           message: label,
           waitDuration: const Duration(milliseconds: 450),
           child: Material(
-            shape: const CircleBorder(),
-            elevation: 2,
-            color: Colors.white,
+            color: Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
             child: InkWell(
-              customBorder: const CircleBorder(),
+              borderRadius: BorderRadius.circular(12),
               onTap: () {
                 HapticFeedback.selectionClick();
                 _showTemporaryLabel();
@@ -532,6 +539,7 @@ class _LocationButtonState extends ConsumerState<_LocationButton> {
                 };
 
                 ref.read(mapLocationModeProvider.notifier).state = nextMode;
+                widget.onLocationModeChanged(nextMode);
 
                 // Centralizar usuário quando entra em following
                 if (nextMode == MapLocationMode.following ||
@@ -545,17 +553,32 @@ class _LocationButtonState extends ConsumerState<_LocationButton> {
                 );
               },
               onLongPress: _showTemporaryLabel,
-              child: SizedBox(
-                width: 36,
-                height: 36,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                curve: Curves.easeOutCubic,
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: backgroundColor,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      blurRadius: locationMode == MapLocationMode.idle ? 8 : 10,
+                      color: Colors.black12,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                  border: locationMode == MapLocationMode.idle
+                      ? Border.all(
+                          color: Colors.black.withValues(alpha: 0.06),
+                          width: 0.5,
+                        )
+                      : null,
+                ),
                 child: Icon(
                   _iconForMode(locationMode),
-                  size: 18,
-                  color: _colorForMode(
-                    locationMode,
-                    locationState,
-                    colorScheme,
-                  ),
+                  size: 22,
+                  color: isAvailable ? iconColor : Colors.grey.shade500,
                 ),
               ),
             ),
@@ -573,21 +596,21 @@ class _LocationButtonState extends ConsumerState<_LocationButton> {
     };
   }
 
-  Color _colorForMode(
-    MapLocationMode mode,
-    LocationState locationState,
-    ColorScheme colorScheme,
-  ) {
-    // Se GPS indisponível, sempre preto
-    if (locationState != LocationState.available) {
-      return Colors.black87;
-    }
+  Color _colorForMode(MapLocationMode mode, bool isAvailable) {
+    if (!isAvailable) return Colors.grey.shade500;
 
-    // Estados ativos (following / northLocked) usam cor primary
     return switch (mode) {
-      MapLocationMode.idle => Colors.black87,
-      MapLocationMode.following => colorScheme.primary,
-      MapLocationMode.northLocked => colorScheme.primary,
+      MapLocationMode.idle => Colors.grey.shade600,
+      MapLocationMode.following => Colors.blue,
+      MapLocationMode.northLocked => Colors.white,
+    };
+  }
+
+  Color _backgroundForMode(MapLocationMode mode) {
+    return switch (mode) {
+      MapLocationMode.idle => const Color(0xFFF9FAFB),
+      MapLocationMode.following => Colors.white,
+      MapLocationMode.northLocked => Colors.blue,
     };
   }
 }

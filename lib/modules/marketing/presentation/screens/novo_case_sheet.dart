@@ -23,7 +23,7 @@ import '../../../../core/ui/sheets/sheet_tokens.dart';
 class NovoCaseSheet extends StatefulWidget {
   final double lat;
   final double lng;
-  final CaseTipo? initialTipo;
+  final CaseTipo tipo;
   final VoidCallback onClose;
   final void Function(MarketingCase) onPublicar;
 
@@ -31,7 +31,7 @@ class NovoCaseSheet extends StatefulWidget {
     super.key,
     required this.lat,
     required this.lng,
-    this.initialTipo,
+    required this.tipo,
     required this.onClose,
     required this.onPublicar,
   });
@@ -45,7 +45,7 @@ class _NovoCaseSheetState extends State<NovoCaseSheet> {
   final _uuid = const Uuid();
 
   // ── Campos Comuns ──────────────────────────────────────────────
-  late CaseTipo _tipo;
+  late final CaseTipo _tipo;
   PlanoMarketing _visibilidade = PlanoMarketing.prata;
   final _produtorCtrl = TextEditingController();
   final _produtoCtrl = TextEditingController();
@@ -91,7 +91,7 @@ class _NovoCaseSheetState extends State<NovoCaseSheet> {
   @override
   void initState() {
     super.initState();
-    _tipo = widget.initialTipo ?? CaseTipo.resultado;
+    _tipo = widget.tipo;
   }
 
   @override
@@ -293,6 +293,17 @@ class _NovoCaseSheetState extends State<NovoCaseSheet> {
     );
   }
 
+  String get _tipoLabel {
+    switch (_tipo) {
+      case CaseTipo.resultado:
+        return 'Resultado';
+      case CaseTipo.antesDepois:
+        return 'Antes/Depois';
+      case CaseTipo.avaliacao:
+        return 'Avaliação';
+    }
+  }
+
   // ── Build ──────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
@@ -311,16 +322,10 @@ class _NovoCaseSheetState extends State<NovoCaseSheet> {
             NovoCaseHeader(
               lat: widget.lat,
               lng: widget.lng,
+              tipoLabel: _tipoLabel,
               onClose: widget.onClose,
             ),
             const SizedBox(height: 24),
-            novoCaseSectionLabel('Tipo de Case'),
-            const SizedBox(height: 8),
-            CaseTipoSelector(
-              selectedTipo: _tipo,
-              onChanged: (t) => setState(() => _tipo = t),
-            ),
-            const SizedBox(height: 20),
             novoCaseSectionLabel('Visibilidade'),
             const SizedBox(height: 8),
             PlanoMarketingSelector(

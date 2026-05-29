@@ -8,7 +8,6 @@ import '../../../../core/ui/sheets/soloforte_sheet.dart';
 import '../../../../modules/marketing/domain/entities/marketing_case.dart';
 import '../../../../modules/marketing/domain/enums/case_tipo.dart';
 import '../../../../modules/marketing/presentation/providers/marketing_providers.dart';
-import '../../../../modules/marketing/presentation/screens/novo_case_sheet.dart';
 import '../../../../modules/marketing/presentation/screens/novo_case_type_sheets.dart';
 import '../../../../modules/planos/presentation/providers/plano_providers.dart';
 import '../../widgets/plano_block_sheet.dart';
@@ -106,7 +105,7 @@ class NovoCaseModalLauncher {
             onPublicar: handlePublicar,
           );
         case null:
-          return NovoCaseSheet(
+          return NovoResultadoCaseSheet(
             lat: lat,
             lng: lng,
             onClose: onClose,
