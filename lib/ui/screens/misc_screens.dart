@@ -28,26 +28,6 @@ class SettingsScreen extends ConsumerWidget {
   }
 }
 
-class RelatoriosScreen extends StatelessWidget {
-  const RelatoriosScreen({super.key});
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        // Removido const
-        title: const Text(
-          'Relatórios & Performance',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-        ),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        centerTitle: false,
-      ),
-      body: const Center(child: Text('Dashboard Placeholder')),
-    );
-  }
-}
-
 class AgendaScreen extends StatelessWidget {
   const AgendaScreen({super.key});
   @override
