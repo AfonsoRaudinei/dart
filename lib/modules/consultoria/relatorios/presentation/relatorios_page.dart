@@ -8,6 +8,7 @@ import '../domain/entities/relatorio.dart';
 
 // Ocorrências — mesmo bounded context (consultoria/)
 import '../../occurrences/presentation/controllers/occurrence_controller.dart';
+import '../../occurrences/presentation/widgets/occurrence_detail_sheet.dart';
 // hide SyncStatus para evitar conflito com o enum de relatorio.dart
 import '../../occurrences/domain/occurrence.dart' hide SyncStatus;
 
@@ -216,13 +217,17 @@ class _OccurrenciaCard extends StatelessWidget {
     final statusColor = _occStatusColor(occurrence.status);
     final categoryLabel = occurrence.category ?? occurrence.type;
 
-    return _DataCard(
-      leading: const Icon(Icons.warning_amber_rounded, size: 20),
-      title: occurrence.type,
-      subtitle: categoryLabel != occurrence.type ? categoryLabel : null,
-      date: dateFormat.format(occurrence.createdAt.toLocal()),
-      statusLabel: statusLabel,
-      statusColor: statusColor,
+    return InkWell(
+      onTap: () => OccurrenceDetailSheet.show(context, occurrence),
+      borderRadius: BorderRadius.circular(12),
+      child: _DataCard(
+        leading: const Icon(Icons.warning_amber_rounded, size: 20),
+        title: occurrence.type,
+        subtitle: categoryLabel != occurrence.type ? categoryLabel : null,
+        date: dateFormat.format(occurrence.createdAt.toLocal()),
+        statusLabel: statusLabel,
+        statusColor: statusColor,
+      ),
     );
   }
 
