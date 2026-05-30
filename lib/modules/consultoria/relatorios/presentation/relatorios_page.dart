@@ -15,6 +15,7 @@ import '../../occurrences/domain/occurrence.dart' hide SyncStatus;
 // Marketing Cases — cross-module (ADR-008)
 // Entidade importada para tipagem segura — Fix B (elimina casts dynamic inseguros)
 // Arch: consultoria→marketing permitido; bloqueio é consultoria→operacao
+import '../../marketing/presentation/widgets/marketing_case_sheet.dart';
 import 'package:soloforte_app/modules/marketing/domain/entities/marketing_case.dart';
 import 'package:soloforte_app/modules/marketing/presentation/providers/marketing_providers.dart';
 
@@ -313,13 +314,17 @@ class _MarketingCaseCard extends StatelessWidget {
     final statusLabel = _caseStatusLabel(marketingCase.status.toValue());
     final statusColor = _caseStatusColor(marketingCase.status.toValue());
 
-    return _DataCard(
-      leading: const Icon(Icons.star_outline_rounded, size: 20),
-      title: marketingCase.produtorFazenda,
-      subtitle: marketingCase.tipo.toValue(),
-      date: dateFormat.format(marketingCase.criadoEm.toLocal()),
-      statusLabel: statusLabel,
-      statusColor: statusColor,
+    return InkWell(
+      onTap: () => MarketingCaseSheet.show(context, marketingCase),
+      borderRadius: BorderRadius.circular(12),
+      child: _DataCard(
+        leading: const Icon(Icons.star_outline_rounded, size: 20),
+        title: marketingCase.produtorFazenda,
+        subtitle: marketingCase.tipo.toValue(),
+        date: dateFormat.format(marketingCase.criadoEm.toLocal()),
+        statusLabel: statusLabel,
+        statusColor: statusColor,
+      ),
     );
   }
 
