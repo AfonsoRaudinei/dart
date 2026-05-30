@@ -1,6 +1,6 @@
 # ADR-032 — Settings: Perfil do Usuário Completo, Editável e Auditável
 
-**Status:** ATIVO  
+**Status:** ENCERRADO  
 **Data:** Abr/2026  
 **Módulo:** `settings`  
 **DB:** v29 → v30  
@@ -158,6 +158,17 @@ MODIFICADOS:
 - [x] GATE 6 — `edit_profile_screen.dart` salva + gera auditoria
 - [x] GATE 7 — `accountProfileProvider` removido (`grep` retorna zero referências)
 - [x] GATE 8 — `arch_check.sh` Exit 0 — `flutter analyze` 0 novos erros
+
+---
+
+## Encerramento
+
+Data: 30/05/2026
+Motivo: Módulo implementado e funcional.
+Implementado em: lib/modules/settings/
+Gaps registrados como dívida técnica:
+- Campo `especialidade` ausente (baixa prioridade)
+- Retry de sync pendente (baixa prioridade)
 
 ---
 

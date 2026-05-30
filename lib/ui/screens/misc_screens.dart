@@ -1,32 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../core/session/session_controller.dart';
-
-class SettingsScreen extends ConsumerWidget {
-  const SettingsScreen({super.key});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Text('Configurações', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
-          const SizedBox(height: 20),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFFF3B30),
-            ),
-            onPressed: () {
-              ref.read(sessionControllerProvider.notifier).logout();
-            },
-            child: const Text('Sair (Logout)'),
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 class AgendaScreen extends StatelessWidget {
   const AgendaScreen({super.key});
