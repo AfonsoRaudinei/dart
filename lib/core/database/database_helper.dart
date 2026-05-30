@@ -23,7 +23,7 @@ class DatabaseHelper {
 
     final db = await openDatabase(
       path,
-      version: 31,
+      version: 32,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -156,6 +156,9 @@ class DatabaseHelper {
           break;
         case 31:
           await _migrateToV31(db);
+          break;
+        case 32:
+          await _migrateToV32(db);
           break;
       }
     }
@@ -1393,5 +1396,32 @@ class DatabaseHelper {
   Future<void> _migrateToV31(Database db) async {
     debugPrint('[DB] Migrando para V31: arquivar tabela visit_reports');
     await _renameTableIfExists(db, 'visit_reports', 'visit_reports_legacy_v31');
+  }
+
+  Future<void> _migrateToV32(Database db) async {
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS relatorios (
+        id TEXT PRIMARY KEY,
+        visit_session_id TEXT NOT NULL,
+        client_id TEXT NOT NULL,
+        agronomist_id TEXT NOT NULL,
+        farm_name TEXT NOT NULL,
+        period_start TEXT NOT NULL,
+        period_end TEXT NOT NULL,
+        status TEXT NOT NULL,
+        sync_status TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        deleted_at TEXT,
+        title TEXT,
+        custom_notes TEXT,
+        publicacoes_refs TEXT NOT NULL DEFAULT '[]',
+        ocorrencias TEXT NOT NULL DEFAULT '[]',
+        talhoes TEXT NOT NULL DEFAULT '[]',
+        fotos TEXT NOT NULL DEFAULT '[]',
+        monitoramentos TEXT NOT NULL DEFAULT '[]',
+        user_id TEXT NOT NULL DEFAULT ''
+      )
+    ''');
   }
 }
