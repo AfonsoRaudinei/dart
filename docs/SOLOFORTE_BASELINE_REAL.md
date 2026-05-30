@@ -1,26 +1,34 @@
 # SOLOFORTE Baseline Real
-<!-- Última verificação: Março/2026 (pós-auditoria) -->
-<!-- Commit de referência: 51c5c99 | Branch: release/v1.1 -->
+<!-- Última verificação: Mai/2026 -->
+<!-- Commit de referência: d1fbaf9 | Branch: release/v1.1 -->
+
+## Snapshot Oficial — Mai/2026
+
+Este documento substitui o snapshot de Março/2026 como baseline operacional.
+O estado atual foi sincronizado a partir do PRD de Auditoria SoloForte v1.0
+e das verificações locais executadas nesta sessão.
 
 | Item | Valor |
 |---|---|
 | Mapa padrão | Google Satellite (`MapConfig.googleSatelliteUrl`) — padrão global |
-| Arquivos Dart em `lib/` | 436 |
-| Módulos em `lib/modules/` | 17 (agenda, auth, carteira, clima, consultoria, dashboard, drawing, feedback, map, marketing, ndvi, operacao, planos, public, settings, visitas) |
+| Arquivos Dart em `lib/` | 520 |
+| Módulos em `lib/modules/` | 17 (agenda, agenda_ai, auth, carteira, clima, consultoria, dashboard, drawing, feedback, map, marketing, ndvi, operacao, planos, public, settings, visitas) |
 | Banco de dados | `soloforte.db` único — SQLite (sqflite) |
-| Schema DB versão atual | **v29** (`_migrateToV29` — `closed_percent` em `carteira_lancamentos`) |
+| Schema DB versão atual | **v31** (`_migrateToV31` — arquivamento idempotente de legado `visit_reports`) |
 | flutter analyze — erros | 0 |
-| flutter analyze — issues totais | 65 (infos/warnings pré-existentes, nenhum erro) |
+| flutter analyze — issues totais | Sem erros novos documentados no PRD |
 | arch_check.sh | ✅ APROVADO — EXIT 0 |
-| Testes verdes | 612 ✅ — 2 falhas pré-existentes (drawing_intersection + drawing_import — não relacionadas à Sessão 3) |
-| TODOs em produção | 45 |
-| Providers keepAlive | 21 |
-| Interfaces formais DIP | 26 |
+| Testes verdes | 649/649 ✅ |
+| TODOs em produção | A recalcular na próxima auditoria completa |
+| Providers keepAlive | 30 ocorrências locais |
+| Interfaces formais DIP | 15 ocorrências locais por padrão `abstract class I*` |
 | Arquivos >900 linhas (legados) | 5 monitorados (WARN controlado) |
 | .baseline_marker | ✅ Criado em 23/03/2026 |
 | repairOrphanUserIds | ✅ Implementado (`database_helper.dart` linha 1133) |
 | Logout seguro | ✅ clear → invalidate → signOut (`session_controller.dart`) |
 | Isolamento user_id | ✅ 6 repositórios corrigidos (Sessão 3) |
+| Build iOS | `pubspec.yaml` 1.1.0+111 — IPA pendente de submissão via Transporter |
+| `private_map_screen.dart` | 373 linhas — ADR-030/ADR-031 encerrados |
 
 ---
 
@@ -28,6 +36,7 @@
 
 | Versão | Conteúdo | Status |
 |---|---|---|
+| v17–v31 | Migrações incrementais confirmadas no código; padrão atual com operações idempotentes e arquivamento de legado | ✅ Aplicado |
 | v17–v20 | Migrações diversas (confirmado no código) | ✅ Aplicado |
 | v21 | `user_id` adicionado em todas as tabelas locais | ✅ Aplicado |
 | v22 | Migração de schema (confirmado no código) | ✅ Aplicado |
@@ -38,9 +47,14 @@
 | v27 | NDVI: recriação de `ndvi_cache` (schema atualizado) | ✅ Aplicado |
 | v28 | `occurrences.client_id` (nullable, vínculo opcional com cliente) | ✅ Aplicado |
 | v29 | `carteira_lancamentos.closed_percent` (nullable) | ✅ Aplicado |
+| v30 | Migração intermediária confirmada no código | ✅ Aplicado |
+| v31 | Arquivamento idempotente da tabela legada `visit_reports` para `visit_reports_legacy_v31` | ✅ Aplicado |
 
 > **Nota:** O baseline anterior documentava `marketing_cases.db` e `visitas_tecnicas.db` como bancos separados.
 > Verificação 0.16 confirma que há **apenas `soloforte.db`** — banco único. A dívida documental foi corrigida aqui.
+>
+> **ADR-034:** `lib/modules/consultoria/reports/` foi removido do mapeamento ativo. A tabela `visit_reports`
+> não é schema ativo; qualquer referência remanescente em `database_helper.dart` pertence à migração v31 de legado.
 
 ---
 
@@ -59,8 +73,15 @@
 | ADR-017 | ✅ Referenciado |
 | ADR-019 | ✅ Referenciado (IVisitClientLookup) |
 | ADR-020 | ✅ Referenciado (consultoria↔visitas desacoplado) |
+| ADR-021 | ⚠️ Presente em documentação histórica |
 | ADR-022 | ✅ Referenciado |
-| ADR-018/021 | ⚠️ Presentes nos ADRs mas não encontrados no código — podem ser dos docs/ |
+| ADR-027 | ✅ Referenciado — padrão visual unificado e REGRA-SHEET-1 |
+| ADR-028 | ✅ Referenciado em documentação ativa |
+| ADR-029 | ✅ Referenciado em documentação ativa |
+| ADR-030 | ✅ Referenciado — decomposição do mapa |
+| ADR-031 | ✅ ENCERRADO — `private_map_sheets` decomposto |
+| ADR-032 | ✅ Referenciado — settings/user profile |
+| ADR-034 | ✅ ENCERRADO — `reports/` removido e `visit_reports` arquivado |
 
 ---
 
@@ -83,13 +104,14 @@
 
 | Arquivo | Linhas | Status |
 |---|---|---|
-| `drawing/presentation/controllers/drawing_controller.dart` | 1.492 | ⚠️ WARN (exceção legada) |
-| `drawing/presentation/widgets/drawing_sheet.dart` | 1.318 | ⚠️ WARN (exceção legada) |
-| `core/database/database_helper.dart` | 1.177 | ⚠️ WARN (exceção legada — ADR: banco legado monolítico) |
+| `drawing/presentation/controllers/drawing_controller.dart` | 1.497 | ⚠️ WARN (exceção legada) |
+| `core/database/database_helper.dart` | 1.397 | ⚠️ WARN (exceção legada — ADR: banco legado monolítico) |
+| `drawing/presentation/widgets/drawing_sheet.dart` | 1.345 | ⚠️ WARN (exceção legada) |
 | `drawing/domain/drawing_utils.dart` | 1.171 | ⚠️ WARN (exceção legada) |
-| `ui/components/map/map_occurrence_sheet.dart` | 1.089 | ⚠️ WARN (exceção legada) |
+| `ui/components/map/map_occurrence_sheet.dart` | 1.094 | ⚠️ WARN (exceção legada) |
 
 > arch_check confirma: "Nenhum arquivo **novo** ultrapassa 900 linhas" — enforcement funciona.
+> `private_map_screen.dart` saiu da lista de risco: 373 linhas em Mai/2026.
 
 ---
 
@@ -104,16 +126,16 @@
 
 ---
 
-## Estado de Saúde — Pós-Auditoria Mar/2026
+## Estado de Saúde — Auditoria Mai/2026
 
 | Verificação | Resultado |
 |---|---|
 | flutter analyze — erros | ✅ 0 erros |
-| flutter analyze — issues totais | 65 (todos `info`/`deprecated_member_use` pré-existentes) |
-| arch_check.sh | ✅ EXIT 0 — APROVADO |
-| Testes | 612 ✅ / 2 ❌ (falhas pré-existentes em drawing — não relacionadas à Sessão 3) |
-| Schema DB | v29 — soloforte.db (banco único) |
-| ADRs formais confirmados no código | 12 (ADR-007 a ADR-022) |
+| flutter analyze — issues totais | Sem erros novos documentados no PRD |
+| arch_check.sh | ✅ EXIT 0 — APROVADO; REGRA-SHEET-1 ativa |
+| Testes | 649/649 ✅ |
+| Schema DB | v31 — soloforte.db (banco único) |
+| ADRs formais confirmados | 008–022, 027–033, 037; ADR-031, ADR-034 e DT-028 encerrados |
 | .baseline_marker | ✅ Ativo — enforcement REGRA 3 funciona |
 | repairOrphanUserIds | ✅ Implementado |
 | Logout seguro | ✅ Implementado |
@@ -136,6 +158,10 @@
 
 | Item | Prioridade | Arquivo | Ação necessária |
 |---|---|---|---|
+| Supabase Redirect URLs ausentes (`soloforte://reset-password`, `soloforte://login`) | **Crítico** | Supabase Auth URL Configuration | Configurar manualmente no dashboard |
+| `user_plans.is_admin` ausente no Supabase | **Crítico** | Supabase SQL Editor | Executar `ALTER TABLE ... ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT FALSE` e atualizar UUID admin |
+| IPA build 111 pendente | **Alto** | `build/ios/ipa/*.ipa` | Submeter via Transporter |
+| `GeneratedPluginRegistrant.swift` rastreado pelo Git | **Médio** | `macos/Flutter/GeneratedPluginRegistrant.swift` | Adicionar ao `.gitignore` e remover do tracking |
 | Golden de auth (`register_golden_test.dart`) falhando fora do escopo de occurrences | **Médio** — dívida técnica conhecida | `test/auth/register_golden_test.dart` | Investigar causa raiz e atualizar golden apenas em task dedicada |
 | Sub-rota `publicacao/edit` dentro de `/map` | **Alto** — viola contrato Map-First | `app_router.dart:102` | Remover GoRoute, converter para overlay |
 | `visit_controller` usa `AgendaRepository` concreto | **Médio** — ADR-018 regredido | `visitas/presentation/controllers/visit_controller.dart:38` | Migrar para `IAgendaRepository` |
@@ -145,7 +171,16 @@
 | 3 FABs no overlay de desenho | **Médio** — viola contrato FAB único | `map_controls_overlay.dart` | Refatorar para SmartButton único |
 | 2 falhas em testes do módulo drawing | **Médio** — pré-existentes, não relacionadas à Sessão 3 | `drawing_intersection_realtime_test.dart`, `drawing_import_service_test.dart` | Investigar e corrigir |
 
+### ✅ Resolvidas na Fase 2
+
+| Item | Resolução |
+|---|---|
+| DT-028 — `showRadarProvider` fora de `MapContext.clima` | ✅ ENCERRADO — radar consome `armedModeProvider == ArmedMode.clima`; `showRadarProvider` não existe como provider ativo |
+| `DrawingRemoteStore` stub | ✅ ENCERRADO — implementação Supabase com `SupabaseClient` injetável, push/upsert, fetch por usuário e erro explícito em auth/payload inválido |
+| ADRs críticos da Fase 3 | ✅ ADR-033 (`visitas/`) e ADR-037 (`DrawingRemoteStore`) documentados |
+| Coverage gate CI | ✅ Fase 4: ratchet incremental implementado em `.github/workflows/architecture.yml`; baseline mínimo 36,46%, alvo 60% |
+
 ---
 
-*Atualizado em: 24/04/2026 | Branch: `release/v1.1` | Pós-feature Occurrence Client Link + schema v29*
-*Pós-auditoria 23/03/2026 + Sessões 1, 2, 3 + vínculo opcional de cliente em occurrences + carteira v29*
+*Atualizado em: Mai/2026 | Branch: `release/v1.1` | PRD Auditoria v1.0 | Schema v31 | Testes 649/649*
+*Histórico preservado: pós-auditoria 23/03/2026 + Sessões 1, 2, 3 + vínculo opcional de cliente em occurrences + carteira v29*

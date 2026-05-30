@@ -1,4 +1,4 @@
-// DT-028 concluído: widget migrado de showRadarProvider → armedModeProvider == ArmedMode.clima
+// DT-028 concluído: radar controlado por armedModeProvider == ArmedMode.clima.
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

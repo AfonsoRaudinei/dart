@@ -28,3 +28,42 @@ jobs:
       - name: Executar enforcement arquitetural
         run: ./tool/arch_check.sh
         # Exit 0 → aprovado | Exit 1 → PR bloqueado
+
+  coverage:
+    name: Coverage Flutter Ratchet
+    runs-on: ubuntu-latest
+    env:
+      COVERAGE_MIN: "36.46"
+      COVERAGE_TARGET: "60"
+
+    steps:
+      - name: Checkout do repositório
+        uses: actions/checkout@v4
+
+      - name: Configurar Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Instalar lcov
+        run: sudo apt-get update && sudo apt-get install -y lcov
+
+      - name: Instalar dependências Flutter
+        run: flutter pub get
+
+      - name: Executar testes com coverage
+        run: flutter test --coverage
+
+      - name: Gerar relatório HTML
+        run: genhtml coverage/lcov.info -o coverage/html
+
+      - name: Validar threshold de coverage
+        run: tool/coverage_gate.sh coverage/lcov.info
+
+      - name: Upload do relatório de coverage
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: flutter-coverage-html
+          path: coverage/html

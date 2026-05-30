@@ -15,7 +15,7 @@ class DrawingRemoteStore {
   final SupabaseClient _supabase;
 
   DrawingRemoteStore({SupabaseClient? supabase})
-      : _supabase = supabase ?? Supabase.instance.client;
+    : _supabase = supabase ?? Supabase.instance.client;
 
   /// PUSH — upsert idempotente com [onConflict: 'id'].
   ///
@@ -24,10 +24,10 @@ class DrawingRemoteStore {
   /// [sync_status] NÃO é enviado — esse campo é controle local apenas.
   Future<void> push(DrawingFeature feature) async {
     try {
-      await _supabase.from('drawings').upsert(
-        _toRemoteRow(feature),
-        onConflict: 'id',
-      );
+      final userId = _requireUserId();
+      await _supabase
+          .from('drawings')
+          .upsert(_toRemoteRow(feature, userId: userId), onConflict: 'id');
     } catch (e, st) {
       debugPrint('DrawingRemoteStore.push error [id=${feature.id}]: $e\n$st');
       rethrow;
@@ -42,8 +42,7 @@ class DrawingRemoteStore {
   /// para que o local possa aplicar a deleção.
   Future<List<DrawingFeature>> fetchUpdates(DateTime? lastSync) async {
     try {
-      final userId = _supabase.auth.currentUser?.id;
-      if (userId == null || userId.isEmpty) return [];
+      final userId = _requireUserId();
 
       var query = _supabase
           .from('drawings')
@@ -58,10 +57,7 @@ class DrawingRemoteStore {
 
       final rows = await query.order('updated_at', ascending: false);
 
-      return rows
-          .map((row) => _fromRemoteRow(row))
-          .whereType<DrawingFeature>()
-          .toList();
+      return rows.map((row) => _fromRemoteRow(row)).toList();
     } catch (e, st) {
       debugPrint('DrawingRemoteStore.fetchUpdates error: $e\n$st');
       rethrow;
@@ -70,12 +66,23 @@ class DrawingRemoteStore {
 
   // ─── Serialização ──────────────────────────────────────────────────────────
 
+  String _requireUserId() {
+    final userId = _supabase.auth.currentUser?.id;
+    if (userId == null || userId.isEmpty) {
+      throw StateError('DrawingRemoteStore requires an authenticated user.');
+    }
+    return userId;
+  }
+
   /// Monta o payload remoto — exclui [sync_status] (controle local).
-  Map<String, dynamic> _toRemoteRow(DrawingFeature f) {
+  Map<String, dynamic> _toRemoteRow(
+    DrawingFeature f, {
+    required String userId,
+  }) {
     final p = f.properties;
     return {
       'id': f.id,
-      'user_id': _supabase.auth.currentUser!.id,
+      'user_id': userId,
       'geometry': f.geometry.toJson(),
       'properties': {
         'nome': p.nome,
@@ -107,8 +114,10 @@ class DrawingRemoteStore {
   }
 
   /// Reconstrói [DrawingFeature] a partir de uma linha remota.
-  /// Retorna null se a linha estiver corrompida — ignorada silenciosamente.
-  DrawingFeature? _fromRemoteRow(Map<String, dynamic> row) {
+  ///
+  /// Linhas corrompidas interrompem o sync com erro explícito. Ignorar payload
+  /// inválido aqui deixaria o cliente acreditar que o sync terminou corretamente.
+  DrawingFeature _fromRemoteRow(Map<String, dynamic> row) {
     try {
       final rawGeometry = row['geometry'];
       final geometryMap = rawGeometry is String
@@ -143,7 +152,7 @@ class DrawingRemoteStore {
         fazendaId: props['fazenda_id'] as String?,
         areaHa: (props['area_ha'] as num).toDouble(),
         versao: props['versao'] as int,
-        ativo: props['ativo'] as bool,
+        ativo: row['deleted_at'] == null && (props['ativo'] as bool),
         subtipo: props['subtipo'] as String?,
         raioMetros: props['raio_metros'] != null
             ? (props['raio_metros'] as num).toDouble()
@@ -169,7 +178,10 @@ class DrawingRemoteStore {
       debugPrint(
         'DrawingRemoteStore._fromRemoteRow parse error [id=${row['id']}]: $e\n$st',
       );
-      return null;
+      throw FormatException(
+        'Invalid remote drawing row: ${row['id'] ?? '<missing-id>'}',
+        e,
+      );
     }
   }
 }

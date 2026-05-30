@@ -1,15 +1,35 @@
 # DT-028 — showRadarProvider como proxy de MapContext.clima
 
 **Data:** 22/04/2026
-**Status:** ATIVO — DÍVIDA TÉCNICA CONTROLADA
+**Status:** ENCERRADO — migrado para `ArmedMode.clima`
 **Originado em:** ADR-028 (RainViewer Radar Overlay)
 **Tipo:** Desvio de contrato arquitetural (não-bloqueante)
 **Bloqueante?** NÃO
 **Prioridade:** BAIXA
+**Encerrado em:** Mai/2026
 
 ---
 
 ## Contexto
+
+### Estado atual — Mai/2026
+
+O desvio foi encerrado. O codebase real não possui mais um `showRadarProvider`
+ativo; a única ocorrência do termo está em comentário histórico no topo de
+`radar_layer_widget.dart`.
+
+O radar agora usa:
+
+- `ArmedMode.clima` em `lib/ui/screens/map/providers/map_armed_mode_provider.dart`
+- `armedModeProvider == ArmedMode.clima` em `RadarLayerWidget`
+- toggle de chuva em `LayersSheet` alternando `ArmedMode.none`/`ArmedMode.clima`
+
+Esta foi a decisão compatível com o estado real do projeto, onde o enum
+operacional do mapa é `ArmedMode`, não `MapContext`.
+
+---
+
+## Contexto Histórico
 
 Durante a execução do ADR-028, o agente verificou que `MapContext.clima`
 não existe como valor no enum `MapContext` do codebase atual.
@@ -37,35 +57,37 @@ de toggle, isolado ao contexto do mapa.
 | Aspecto | Estado |
 |---|---|
 | Funcionalidade de radar | ✅ Funcional |
-| Testes | ✅ 645/645 passando |
+| Testes | ✅ 649/649 passando |
 | arch_check.sh | ✅ Exit 0 |
 | flutter analyze | ✅ 0 erros |
-| Contrato MapContext | ⚠️ Divergente — enum incompleto |
+| Contrato MapContext | ✅ Resolvido via `ArmedMode.clima` |
 
-O impacto é **arquitetural, não funcional**. O radar funciona corretamente.
-A divergência é que o mecanismo de ativação (bool toggle) não segue o
-padrão enum de contexto do mapa.
+O impacto foi **arquitetural, não funcional**. O radar funcionava corretamente.
+A divergência foi removida substituindo o toggle booleano por estado de contexto
+do mapa em `ArmedMode.clima`.
 
 ---
 
 ## Condição de Remoção
 
-Esta dívida é encerrada quando **todas** as condições forem atendidas:
+Esta dívida foi encerrada porque as condições aplicáveis ao codebase real foram
+atendidas:
 
-1. `private_map_screen.dart` for decomposto (ADR futuro — arquivo ~955 linhas)
-2. `MapContext.clima` for adicionado ao enum `MapContext` real
-3. `showRadarProvider` for substituído por leitura de `mapContextProvider`
-4. `RadarLayerWidget` for atualizado para consumir `MapContext.clima`
-5. `TODO(DT-028)` removido dos arquivos marcados abaixo
+1. `private_map_screen.dart` foi decomposto e está com 373 linhas
+2. O enum real do mapa (`ArmedMode`) recebeu `clima`
+3. `showRadarProvider` foi substituído por leitura de `armedModeProvider`
+4. `RadarLayerWidget` foi atualizado para consumir `ArmedMode.clima`
+5. Não há provider ativo chamado `showRadarProvider`
 
 ---
 
-## Arquivos com TODO(DT-028)
+## Arquivos Relevantes
 
 | Arquivo | Linha |
 |---|---|
-| `lib/core/state/map_ui_providers.dart` | bloco antes de `showRadarProvider` |
-| `lib/ui/components/map/widgets/radar_layer_widget.dart` | topo do arquivo |
+| `lib/ui/screens/map/providers/map_armed_mode_provider.dart` | `enum ArmedMode { none, occurrences, marketing, clima }` |
+| `lib/ui/components/map/widgets/radar_layer_widget.dart` | consome `armedModeProvider == ArmedMode.clima` |
+| `lib/ui/components/map/map_sheets.dart` | toggle de chuva alterna `ArmedMode.none`/`ArmedMode.clima` |
 
 ---
 
@@ -94,13 +116,13 @@ Esta dívida é encerrada quando **todas** as condições forem atendidas:
 | B1 | `map_config.dart` tem `rainViewerApiUrl`? | SIM | ✅ |
 | B2 | `map_config.dart` tem `rainViewerTileBase`? | SIM | ✅ |
 | B3 | `map_config.dart` tem `radarOverlayOpacity`? | SIM | ✅ |
-| B4 | `map_ui_providers.dart` tem `showRadarProvider`? | SIM | ✅ |
-| B5 | `showRadarProvider` é `StateProvider<bool>.autoDispose`? | SIM | ✅ |
+| B4 | `showRadarProvider` removido como provider ativo? | SIM | ✅ |
+| B5 | `armedModeProvider` tem `ArmedMode.clima`? | SIM | ✅ |
 | B6 | `map_controls_overlay.dart` tem botão de radar? | SIM | ✅ |
 | B7 | Botão usa `Icons.water_drop_outlined`? | SIM | ✅ |
 | B8 | `private_map_screen.dart` importa `RadarLayerWidget`? | SIM | ✅ |
 | B9 | `RadarLayerWidget` posicionado após camadas base, antes de markers? | SIM | ✅ linha 720 (MapLayersWidget=717, PolygonLayer=724) |
-| B10 | `private_map_screen.dart` abaixo de 900 linhas? | SIM | ⚠️ 955 linhas — ver ACHADO-001 |
+| B10 | `private_map_screen.dart` abaixo de 900 linhas? | SIM | ✅ 373 linhas |
 
 ### C — Isolamento de módulos
 
@@ -117,10 +139,10 @@ Esta dívida é encerrada quando **todas** as condições forem atendidas:
 | # | Verificação | Estado |
 |---|---|---|
 | D1 | `MapContext` enum existe no codebase? | ❌ NÃO EXISTE |
-| D2 | `MapContext.clima` existe? | ❌ NÃO EXISTE |
-| D3 | `showRadarProvider` é divergência do contrato arquitetural? | ✅ SIM — registrado como DT-028 |
+| D2 | `ArmedMode.clima` existe? | ✅ SIM |
+| D3 | `showRadarProvider` é divergência ativa? | ❌ NÃO — encerrado |
 | D4 | Impacto funcional do desvio? | ✅ NENHUM — funciona corretamente |
-| D5 | TODO(DT-028) inserido nos arquivos relevantes? | ✅ SIM |
+| D5 | TODO(DT-028) ativo? | ❌ NÃO |
 
 ---
 
@@ -132,11 +154,11 @@ Esta dívida é encerrada quando **todas** as condições forem atendidas:
 **Descrição:** O ADR-028 especificava uso de `dio`, mas o projeto não tem `dio` — apenas `http: ^1.6.0`. O agente usou `http` corretamente.
 **Ação:** Nenhuma. Consistente com o projeto.
 
-### ACHADO-002 — `private_map_screen.dart` com 955 linhas
-**Severidade:** 🟡 MÉDIO (limite arquitetural = 900)
+### ACHADO-002 — `private_map_screen.dart` decomposto
+**Severidade:** ✅ RESOLVIDO
 **Arquivo:** `lib/ui/screens/private_map_screen.dart`
-**Descrição:** Arquivo está 55 linhas acima do limite de 900. Condição pré-existente ao ADR-028 (estava em 950 antes, passou para 955 com o wiring do radar).
-**Ação:** Registrar. Endereçar no ADR de decomposição de `private_map_screen.dart` (vinculado à condição de remoção desta DT).
+**Descrição:** Arquivo está com 373 linhas em Mai/2026.
+**Ação:** Nenhuma.
 
 ---
 
@@ -145,6 +167,6 @@ Esta dívida é encerrada quando **todas** as condições forem atendidas:
 | Campo | Valor |
 |---|---|
 | ADR de origem | ADR-028 |
-| ADR de remoção | A definir (decomposição private_map_screen) |
+| ADR de remoção | ADR-030/ADR-031 |
 | Identificado em | Auditoria ADR-028 — 22/04/2026 |
-| Prioridade de remoção | Sprint com decomposição de `private_map_screen.dart` |
+| Encerrado em | Mai/2026 |

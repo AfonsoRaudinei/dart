@@ -1,5 +1,5 @@
 # SoloForte — Architectural Baseline v1.1
-## Score Estrutural 90/100
+## Score Estrutural 91/100
 
 ---
 
@@ -11,12 +11,12 @@
 | **Tecnologia** | Flutter (Dart) |
 | **Arquitetura** | Modular, Clean Architecture, Map-First |
 | **Versão arquitetural** | v1.2 |
-| **Última atualização** | 28/02/2026 |
-| **Módulos registrados** | core, map, drawing, agenda, operacao, consultoria, settings, auth, marketing, planos |
-| **Score estrutural estimado** | 90–91/100 |
+| **Última atualização** | Mai/2026 |
+| **Módulos registrados** | core, map, drawing, agenda, agenda_ai, operacao, consultoria, settings, auth, marketing, planos, carteira, clima, dashboard, feedback, ndvi, public, visitas |
+| **Score estrutural estimado** | 91/100 |
 | **Data de congelamento** | 22 de fevereiro de 2026 |
 | **Branch** | `release/v1.1` |
-| **Commit hash** | `0eb0975c06b4331e937947ef921067c11d42bbaa` |
+| **Commit hash** | `d1fbaf9` (snapshot PRD Mai/2026) |
 | **Tag oficial** | `ARCH_BASELINE_v1.1_SCORE_90` |
 
 ---
@@ -25,18 +25,19 @@
 
 | Métrica | Valor |
 |---|---|
-| Arquivos Dart em `lib/` | **436** |
-| Providers keepAlive | **21** |
-| TODOs em produção | **45** |
-| Interfaces formais (DIP) | **26** |
-| Testes verdes | **612** (2 falhas pré-existentes em drawing — não relacionadas à Sessão 3) |
+| Arquivos Dart em `lib/` | **520** |
+| Providers keepAlive | **30 ocorrências locais** |
+| TODOs em produção | A recalcular na próxima auditoria completa |
+| Interfaces formais (DIP) | **15 ocorrências locais por padrão `abstract class I*`** |
+| Testes verdes | **649/649** |
 | Violação `core → modules` | 0 |
 | Módulos zumbi | 0 |
 | Erros `flutter analyze` | **0** |
-| Enforcement CI ativo | SIM |
+| Enforcement CI ativo | SIM — inclui REGRA-SHEET-1 |
 | Arquivos >900 linhas | **5** legados (WARN controlado — inclui `database_helper.dart`) |
-| Schema DB | `soloforte.db` v29 (banco único) |
-| ADRs confirmados no código | 12 (ADR-007 a ADR-022) |
+| `private_map_screen.dart` | **373 linhas** |
+| Schema DB | `soloforte.db` v31 (banco único) |
+| ADRs ativos | ADR-008–022, ADR-027–033, ADR-037; ADR-031 e ADR-034 encerrados |
 
 ---
 
@@ -65,8 +66,13 @@ Automaticamente validadas por `tool/arch_check.sh` (CI: `.github/workflows/archi
 ### Regra 3 — Limite de crescimento estrutural
 
 - Arquivos novos não podem exceder **900 linhas**
-- 4 arquivos legados marcados como `WARN` e monitorados
+- 5 arquivos legados marcados como `WARN` e monitorados
 - Nenhum novo monólito é permitido
+
+### REGRA-SHEET-1 — Bottom sheets padronizados
+
+`showModalBottomSheet` direto é proibido fora dos wrappers aprovados pelo padrão visual
+ADR-027. A regra está ativa em `tool/arch_check.sh`.
 
 ---
 
@@ -132,6 +138,20 @@ Casos de marketing com visualização no mapa.
 ### Settings / Auth
 Módulos satélite sem dependências cruzadas.
 
+### Visitas
+Bounded context de check-in/check-out, geofence e `VisitSession`.
+Integração com consultoria deve ocorrer por contratos em `core/contracts/`, não por imports laterais.
+
+### Carteira
+Controle financeiro/comercial por safra, categorias, lançamentos e metas.
+
+### Clima
+Contexto climático do mapa. DT-028 encerrada em Mai/2026: radar usa
+`armedModeProvider == ArmedMode.clima`.
+
+### Dashboard / Feedback / Public
+Módulos de apoio e visualização, mantidos como contextos próprios sem acoplamento lateral proibido.
+
 ### `planos/`
 **Natureza:** Módulo de monetização — folha na árvore de dependências  
 **Responsabilidade:** Planos pagos (Bronze/Prata/Ouro), pagamentos via Mercado Pago (PIX + Cartão), sistema de indicações com upgrade automático e controle de visibilidade de marketing cases no mapa  
@@ -148,10 +168,12 @@ Módulos satélite sem dependências cruzadas.
 | Garantia | Status |
 |---|---|
 | Enforcement CI ativo bloqueando regressão estrutural | ✅ |
+| REGRA-SHEET-1 bloqueando bottom sheets fora do padrão ADR-027 | ✅ |
 | DIP aplicado em Drawing (repo + file picker + clients) | ✅ |
 | DIP aplicado em Agenda (notificações) | ✅ |
 | I/O abstraído via interfaces | ✅ |
 | God Object DrawingController decomposto | ✅ |
+| `private_map_screen.dart` decomposto para 373 linhas | ✅ |
 | Agenda coberta por testes de domínio | ✅ |
 | Nenhuma violação de dependência lateral | ✅ |
 | Nenhuma dependência circular detectada | ✅ |
@@ -163,6 +185,8 @@ Módulos satélite sem dependências cruzadas.
 | GPS Walk implementado | ✅ |
 | NDVI Panel implementado | ✅ |
 | Marketing PASSO 6+7 implementados | ✅ |
+| ADR-031 encerrado (`private_map_sheets` decomposto) | ✅ |
+| ADR-034 encerrado (`reports/` deletado; `visit_reports` removida do schema ativo) | ✅ |
 
 ---
 
@@ -219,11 +243,11 @@ Módulos satélite sem dependências cruzadas.
 | Risco | Severidade | Mitigação atual |
 |---|---|---|
 | 5 arquivos legados >900 linhas | Média | Monitorados em `WARN` pelo `arch_check.sh` |
-| Coverage global sem gate automático | Média | Testes por módulo crítico (Drawing + Agenda) |
+| Coverage global abaixo de 60% | Média | Fase 4 criou ratchet CI: baseline mínimo 36,46%, alvo 60% |
+| Supabase Redirect URLs ausentes | Alta | Configuração manual prevista na Fase 1 do PRD |
+| `user_plans.is_admin` ausente no Supabase | Alta | SQL idempotente previsto na Fase 1 do PRD |
 | Complexidade ciclomática sem CI | Baixa | Revisão manual por PR |
 | Acoplamento aferido manualmente | Baixa | `arch_check.sh` cobre fronteiras principais |
-| 45 TODOs em produção | Baixa | Nenhum em caminho crítico confirmado |
-| 2 falhas em testes drawing (pré-existentes) | Média | Isoladas — não afetam consultoria/core |
 
 ---
 
@@ -249,7 +273,7 @@ Para evoluir além de 90, as seguintes iniciativas estão identificadas:
 
 | Iniciativa | Impacto estimado |
 |---|---|
-| Coverage gate no CI (`lcov` threshold ≥ 60%) | +2 pontos |
+| Coverage gate no CI (`lcov` threshold ≥ 60%) | ✅ Ratchet implementado; não permite regressão abaixo de 36,46% e mantém alvo ≥ 60% |
 | Complexity threshold automatizado (`dart_code_metrics`) | +1 ponto |
 | Snapshot de contratos públicos (golden files) | +1 ponto |
 | Dependency graph automatizado | +0,5 ponto |
@@ -288,6 +312,12 @@ Qualquer evolução arquitetural deve referenciar esta baseline e justificar o d
 | ADR-019 | IVISIT-CLIENT-LOOKUP | Contrato visitas/consultoria via DIP | ATIVO |
 | ADR-020 | CONSULTORIA-VISITAS-DECOUPLING | Acoplamento consultoria↔visitas removido | ATIVO |
 | ADR-022 | — | Referenciado no código | ATIVO |
+| ADR-027 | PADRAO-VISUAL-UNIFICADO | Tokens e wrappers visuais, incluindo REGRA-SHEET-1 | ATIVO |
+| ADR-031 | PRIVATE-MAP-SHEETS-DECOMPOSED | Decomposição de sheets do mapa | ENCERRADO |
+| ADR-032 | SETTINGS-USER-PROFILE | Perfil de usuário em settings | ATIVO |
+| ADR-033 | VISITAS-BOUNDED-CONTEXT | Sessão de campo, geofence e VisitSession | ATIVO |
+| ADR-034 | DEPRECATE-REPORTS-MODULE | Remoção de `reports/` e desativação de `visit_reports` | ENCERRADO |
+| ADR-037 | DRAWING-REMOTE-STORE | Sync remoto Supabase do módulo drawing | ATIVO |
 
 ---
 
@@ -315,10 +345,9 @@ Qualquer evolução arquitetural deve referenciar esta baseline e justificar o d
 | Issue | Nota |
 |---|---|
 | Golden de auth (`register_golden_test.dart`) com diff de pixel (fora do escopo de occurrences) | Dívida técnica conhecida — tratar em task dedicada; não atualizar golden em feature não relacionada |
-| `DrawingRemoteStore` ainda stub — sync remoto de desenhos não funcional | Depende de infraestrutura de sync |
-| 65 issues `flutter analyze` — todos `info`/`deprecated_member_use` | Nenhum é erro; pré-existentes |
-| 45 TODOs em produção | Nenhum em caminho crítico |
+| `DrawingRemoteStore` Supabase | Implementado na Fase 2 com erro explícito em auth/payload inválido |
+| DT-028 — `showRadarProvider` como proxy temporário | Encerrado; radar usa `ArmedMode.clima` |
 
 ---
 
-*Atualizado em: 24/04/2026 | Branch: `release/v1.1` | Inclui Occurrence Client Link + schema v29 | Score: 90/100*
+*Atualizado em: Mai/2026 | Branch: `release/v1.1` | PRD Auditoria v1.0 | Schema v31 | Testes 649/649 | Score: 91/100*
