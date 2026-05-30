@@ -227,6 +227,7 @@ class RelatorioRepositoryImpl implements IRelatorioRepository {
     RelatorioTable.colMonitoramentos: jsonEncode(
       r.monitoramentos.map((e) => e.toJson()).toList(),
     ),
+    'user_id': Supabase.instance.client.auth.currentUser?.id ?? '',
   };
 
   /// Reconstrói um [RelatorioTecnico] a partir de uma linha SQLite.
