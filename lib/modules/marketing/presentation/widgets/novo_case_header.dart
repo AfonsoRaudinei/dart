@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../ui/theme/premium/design_tokens.dart';
 
-/// Header do NovoCaseSheet com ícone, título e coordenadas.
+/// Header do NovoCaseSheet com título e coordenadas.
 class NovoCaseHeader extends StatelessWidget {
   final double lat;
   final double lng;
@@ -20,26 +20,12 @@ class NovoCaseHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            gradient: PremiumTokens.brandGradient,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: const Icon(
-            Icons.campaign_rounded,
-            color: Colors.white,
-            size: 22,
-          ),
-        ),
-        const SizedBox(width: 12),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Novo Case · $tipoLabel',
+                tipoLabel,
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 16,
