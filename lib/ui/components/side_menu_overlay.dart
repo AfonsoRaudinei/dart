@@ -1,19 +1,29 @@
-import 'package:flutter/material.dart';
-import 'dart:math' as math;
 import 'dart:io';
+import 'dart:math' as math;
+import 'dart:ui' as ui;
+
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:soloforte_app/core/router/app_routes.dart';
+import 'package:soloforte_app/core/services/connectivity_service.dart';
+import 'package:soloforte_app/core/services/sync_service.dart';
 import 'package:soloforte_app/core/state/side_menu_state.dart';
-// ADR-012 — planos/
-import 'package:soloforte_app/modules/planos/presentation/providers/plano_providers.dart';
 import 'package:soloforte_app/modules/planos/domain/entities/user_plan.dart';
 import 'package:soloforte_app/modules/planos/domain/enums/plano_tipo.dart';
+import 'package:soloforte_app/modules/planos/presentation/providers/plano_providers.dart';
 import 'package:soloforte_app/modules/settings/presentation/providers/settings_providers.dart';
 import 'package:soloforte_app/modules/settings/presentation/providers/user_profile_provider.dart';
-import 'package:soloforte_app/core/services/sync_service.dart';
-// ignore_for_file: unused_import
+
+const _menuGreen = Color(0xFF34C759);
+const _deepGreen = Color(0xFF1E3A2F);
+const _softGreen = Color(0xFFF1FAF4);
+const _cardBorder = Color(0xFFE5E5E7);
+const _appBuildVersion = String.fromEnvironment(
+  'APP_VERSION',
+  defaultValue: '1.1.0+115',
+);
 
 class SideMenuOverlay extends ConsumerWidget {
   const SideMenuOverlay({super.key});
@@ -25,8 +35,8 @@ class SideMenuOverlay extends ConsumerWidget {
     if (!isOpen) return const SizedBox.shrink();
 
     final drawerWidth = math.min(
-      MediaQuery.of(context).size.width * 0.80,
-      320.0,
+      MediaQuery.of(context).size.width * 0.88,
+      390.0,
     );
 
     return Stack(
@@ -38,7 +48,7 @@ class SideMenuOverlay extends ConsumerWidget {
             },
             child: TweenAnimationBuilder<double>(
               tween: Tween(begin: 0.0, end: 1.0),
-              duration: const Duration(milliseconds: 300),
+              duration: const Duration(milliseconds: 260),
               curve: Curves.easeOut,
               builder: (context, value, child) {
                 return Container(
@@ -54,7 +64,7 @@ class SideMenuOverlay extends ConsumerWidget {
           right: 0,
           child: TweenAnimationBuilder<double>(
             tween: Tween(begin: 0.0, end: 1.0),
-            duration: const Duration(milliseconds: 300),
+            duration: const Duration(milliseconds: 260),
             curve: Curves.easeOutCubic,
             builder: (context, value, child) {
               return Transform.translate(
@@ -67,102 +77,92 @@ class SideMenuOverlay extends ConsumerWidget {
               backgroundColor: Theme.of(context).colorScheme.surface,
               shape: const RoundedRectangleBorder(
                 borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(16),
-                  bottomLeft: Radius.circular(16),
+                  topLeft: Radius.circular(22),
+                  bottomLeft: Radius.circular(22),
                 ),
               ),
               child: Column(
                 children: [
                   _buildHeader(context, ref),
-                  Expanded(
+                  const Expanded(
                     child: SingleChildScrollView(
+                      padding: EdgeInsets.fromLTRB(14, 14, 14, 18),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          _buildSectionLabel(context, "PRINCIPAL"),
-                          const _MenuItem(
-                            icon: Icons.calendar_today_outlined,
-                            label: 'Agenda',
-                            subtitle: 'Próximas visitas',
-                            route: AppRoutes.agenda,
+                          _SectionTitle('Menu principal'),
+                          SizedBox(height: 6),
+                          _MenuPanel(
+                            children: [
+                              _MenuItem(
+                                icon: Icons.calendar_today_outlined,
+                                label: 'Agenda',
+                                subtitle: 'Próximas visitas',
+                                route: AppRoutes.agenda,
+                              ),
+                              _MenuItem(
+                                icon: Icons.people_outline_rounded,
+                                label: 'Clientes',
+                                subtitle: 'Gerenciar carteira',
+                                route: AppRoutes.clients,
+                              ),
+                              _MenuItem(
+                                icon: Icons.analytics_outlined,
+                                label: 'Relatórios',
+                                subtitle: 'Análises e KPIs',
+                                route: AppRoutes.reports,
+                              ),
+                              _MenuItem(
+                                icon: Icons.chat_bubble_outline_rounded,
+                                label: 'Feedback',
+                                subtitle: 'Envie sua opinião',
+                                route: AppRoutes.feedback,
+                              ),
+                              _MenuItem(
+                                icon: Icons.wb_sunny_outlined,
+                                label: 'Clima',
+                                subtitle: 'Previsão para o campo',
+                                route: AppRoutes.clima,
+                              ),
+                              _MenuItem(
+                                icon: Icons.account_balance_wallet_outlined,
+                                label: 'Carteira',
+                                subtitle: 'Acompanhamento de mercado',
+                                route: AppRoutes.carteira,
+                              ),
+                              _MenuItem(
+                                icon: Icons.settings_outlined,
+                                label: 'Configurações',
+                                subtitle: 'Ajustes do aplicativo',
+                                route: AppRoutes.settings,
+                                showDivider: false,
+                              ),
+                            ],
                           ),
-                          const _MenuItem(
-                            icon: Icons.people_outline_rounded,
-                            label: 'Clientes',
-                            subtitle: 'Gerenciar carteira',
-                            route: AppRoutes.clients,
+                          SizedBox(height: 18),
+                          _SectionTitle('Conta'),
+                          SizedBox(height: 6),
+                          _MenuPanel(
+                            children: [
+                              _MenuPlanoBadgeItem(),
+                              _ManualSyncItem(),
+                            ],
                           ),
-                          const _MenuItem(
-                            icon: Icons.analytics_outlined,
-                            label: 'Relatórios',
-                            subtitle: 'Análises e KPIs',
-                            route: AppRoutes.reports,
-                          ),
-                          const _MenuItem(
-                            icon: Icons.chat_bubble_outline_rounded,
-                            label: 'Feedback',
-                            route: AppRoutes.feedback,
-                          ),
-
-                          _buildSectionLabel(context, "FERRAMENTAS"),
-                          const _MenuItem(
-                            icon: Icons.wb_sunny_outlined,
-                            label: 'Clima',
-                            route: AppRoutes.clima,
-                          ),
-                          const _MenuItem(
-                            icon: Icons.account_balance_wallet_outlined,
-                            label: 'Carteira',
-                            subtitle: 'Acompanhamento de mercado',
-                            route: AppRoutes.carteira,
-                          ),
-
-                          _buildSectionLabel(context, "CONTA"),
-                          const _MenuPlanoBadgeItem(),
-                          Consumer(
-                            builder: (context, ref, _) {
-                              final syncState = ref.watch(manualSyncProvider);
-                              return ListTile(
-                                dense: true,
-                                leading: syncState.isLoading
-                                    ? const SizedBox(
-                                        width: 24,
-                                        height: 24,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                        ),
-                                      )
-                                    : const Icon(Icons.sync_outlined),
-                                title: const Text('Sincronizar agora'),
-                                enabled: !syncState.isLoading,
-                                onTap: syncState.isLoading
-                                    ? null
-                                    : () {
-                                        ref.invalidate(manualSyncProvider);
-                                        ScaffoldMessenger.of(
-                                          context,
-                                        ).showSnackBar(
-                                          const SnackBar(
-                                            content: Text(
-                                              'Sincronização iniciada',
-                                            ),
-                                            duration: Duration(seconds: 2),
-                                          ),
-                                        );
-                                      },
-                              );
-                            },
-                          ),
-                          const _MenuItem(
-                            icon: Icons.settings_outlined,
-                            label: 'Configurações',
-                            route: AppRoutes.settings,
-                          ),
+                          SizedBox(height: 18),
+                          _SectionTitle('Acesso rápido'),
+                          SizedBox(height: 8),
+                          _QuickActionsGrid(),
+                          SizedBox(height: 18),
+                          _SectionTitle('Resumo de hoje'),
+                          SizedBox(height: 8),
+                          _DailySummary(),
+                          SizedBox(height: 16),
+                          _MotivationalCard(),
                         ],
                       ),
                     ),
                   ),
-                  _buildFooter(context),
+                  _buildFooter(context, ref),
                 ],
               ),
             ),
@@ -181,6 +181,7 @@ class SideMenuOverlay extends ConsumerWidget {
         ? profile!.fullName!
         : 'Usuário';
     final displayRole = _formatRole(profile?.role ?? '');
+    final displayEmail = profile?.email.trim() ?? '';
 
     ImageProvider<Object>? avatarImage;
     final localPath = localProfile.imagePath;
@@ -193,47 +194,189 @@ class SideMenuOverlay extends ConsumerWidget {
     final initial = displayName.trim().isNotEmpty
         ? displayName.trim().characters.first.toUpperCase()
         : 'U';
+    final safeTop = MediaQuery.of(context).padding.top;
+
+    return SizedBox(
+      height: safeTop + 136,
+      child: ClipRRect(
+        borderRadius: const BorderRadius.only(topLeft: Radius.circular(22)),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            ImageFiltered(
+              imageFilter: ui.ImageFilter.blur(sigmaX: 9, sigmaY: 9),
+              child: Image.asset(
+                'assets/images/logo.jpeg',
+                fit: BoxFit.cover,
+                color: _deepGreen.withValues(alpha: 0.32),
+                colorBlendMode: BlendMode.multiply,
+              ),
+            ),
+            const DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Color(0xF21E3A2F), Color(0xD934C759)],
+                ),
+              ),
+            ),
+            Padding(
+              padding: EdgeInsets.fromLTRB(18, safeTop + 16, 18, 14),
+              child: Row(
+                children: [
+                  Container(
+                    width: 56,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.76),
+                        width: 1.5,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.16),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: CircleAvatar(
+                      backgroundColor: Colors.white.withValues(alpha: 0.2),
+                      backgroundImage: avatarImage,
+                      child: avatarImage == null
+                          ? Text(
+                              initial,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 20,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            )
+                          : null,
+                    ),
+                  ),
+                  const SizedBox(width: 13),
+                  Expanded(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          displayRole,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.82),
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 0.3,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          displayName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 17,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        if (displayEmail.isNotEmpty) ...[
+                          const SizedBox(height: 2),
+                          Text(
+                            displayEmail,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.82),
+                              fontSize: 11,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFooter(BuildContext context, WidgetRef ref) {
+    final connectivity = ref.watch(connectivityStateProvider);
+    final isOnline = connectivity.asData?.value == true;
 
     return Container(
-      color: Theme.of(context).colorScheme.primary,
-      padding: EdgeInsets.only(
-        top: MediaQuery.of(context).padding.top + 16,
-        left: 20,
-        right: 20,
-        bottom: 24,
+      padding: EdgeInsets.fromLTRB(
+        14,
+        10,
+        14,
+        MediaQuery.of(context).padding.bottom + 10,
+      ),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        border: const Border(top: BorderSide(color: _cardBorder, width: 0.7)),
       ),
       child: Row(
         children: [
-          CircleAvatar(
-            backgroundColor: Theme.of(
-              context,
-            ).colorScheme.onPrimary.withValues(alpha: 0.2),
-            backgroundImage: avatarImage,
-            child: avatarImage == null
-                ? Text(
-                    initial,
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.onPrimary,
-                    ),
-                  )
-                : null,
+          Image.asset(
+            'assets/images/soloforte_logo.png',
+            width: 30,
+            height: 30,
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 8),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'SoloForte',
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+                ),
+                Text(
+                  'Inteligência Agronômica',
+                  style: TextStyle(fontSize: 9, color: Color(0xFF8E8E93)),
+                ),
+              ],
+            ),
+          ),
           Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Text(
-                displayRole,
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onPrimary,
-                ),
+              const Text(
+                'Versão $_appBuildVersion',
+                style: TextStyle(fontSize: 9, color: Color(0xFF8E8E93)),
               ),
-              Text(
-                displayName,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onPrimary,
-                  fontWeight: FontWeight.bold,
-                ),
+              const SizedBox(height: 3),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 7,
+                    height: 7,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: isOnline
+                          ? const Color(0xFF34C759)
+                          : const Color(0xFF8E8E93),
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    isOnline ? 'Online' : 'Offline',
+                    style: const TextStyle(
+                      fontSize: 9,
+                      color: Color(0xFF8E8E93),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -251,30 +394,41 @@ class SideMenuOverlay extends ConsumerWidget {
       _ => role,
     };
   }
+}
 
-  Widget _buildSectionLabel(BuildContext context, String label) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
-      child: Text(
-        label,
-        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-          color: Theme.of(context).colorScheme.outline,
-          letterSpacing: 1.2,
-        ),
+class _SectionTitle extends StatelessWidget {
+  final String label;
+
+  const _SectionTitle(this.label);
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      label.toUpperCase(),
+      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+        color: Theme.of(context).colorScheme.outline,
+        fontSize: 10,
+        fontWeight: FontWeight.w700,
+        letterSpacing: 1.1,
       ),
     );
   }
+}
 
-  Widget _buildFooter(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Text(
-        "SoloForte v1.0.0",
-        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-          color: Theme.of(context).colorScheme.outlineVariant,
-        ),
-        textAlign: TextAlign.center,
+class _MenuPanel extends StatelessWidget {
+  final List<Widget> children;
+
+  const _MenuPanel({required this.children});
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _cardBorder),
       ),
+      child: Column(children: children),
     );
   }
 }
@@ -284,45 +438,80 @@ class _MenuItem extends ConsumerWidget {
   final String label;
   final String? subtitle;
   final String route;
+  final bool showDivider;
 
   const _MenuItem({
     required this.icon,
     required this.label,
     this.subtitle,
     required this.route,
+    this.showDivider = true,
   });
-
-  void _closeAndNavigate(BuildContext context, WidgetRef ref, String route) {
-    // Captura o construtor do router ANTES de fechar o menu.
-    // Quando sideMenuOpenProvider → false, o SideMenuOverlay desaparece
-    // e desmonta este widget imediatamente, tornando context.mounted false.
-    final router = GoRouter.of(context);
-    ref.read(sideMenuOpenProvider.notifier).state = false;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      router.go(route);
-    });
-  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return ListTile(
-      leading: Icon(icon, color: Theme.of(context).colorScheme.primary),
-      title: Text(label),
-      subtitle: subtitle != null
-          ? Text(subtitle!, style: Theme.of(context).textTheme.bodySmall)
-          : null,
-      trailing: Icon(
-        Icons.chevron_right,
-        color: Theme.of(context).colorScheme.outline,
-      ),
+    return InkWell(
+      borderRadius: BorderRadius.circular(15),
       onTap: () => _closeAndNavigate(context, ref, route),
+      child: Column(
+        children: [
+          SizedBox(
+            height: 57,
+            child: Row(
+              children: [
+                const SizedBox(width: 12),
+                Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: _softGreen,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(icon, color: _menuGreen, size: 18),
+                ),
+                const SizedBox(width: 11),
+                Expanded(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      if (subtitle != null)
+                        Text(
+                          subtitle!,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.outline,
+                            fontSize: 10,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: Theme.of(context).colorScheme.outlineVariant,
+                  size: 20,
+                ),
+                const SizedBox(width: 9),
+              ],
+            ),
+          ),
+          if (showDivider) const Divider(height: 1, thickness: 0.6, indent: 55),
+        ],
+      ),
     );
   }
 }
-
-// ─────────────────────────────────────────────────────────────
-// ADR-012 — Funções e widgets auxiliares para planos/
-// ─────────────────────────────────────────────────────────────
 
 String buildIndicacaoSubtitle(UserPlan plano, int indicacoesValidadas) {
   switch (plano.plano) {
@@ -335,12 +524,6 @@ String buildIndicacaoSubtitle(UserPlan plano, int indicacoesValidadas) {
   }
 }
 
-/// Item "Meu Plano" no SideMenu com estados diferenciados:
-/// - loading: texto "Carregando..."
-/// - null: "Sem plano · Assinar" (usuário free — não é erro)
-/// - plano ativo: label + dias restantes
-/// - erro de rede: "Sem conexão" com ícone wifi_off + retry ao tocar
-/// - erro genérico: "Não foi possível carregar" + retry ao tocar
 class _MenuPlanoBadgeItem extends ConsumerWidget {
   const _MenuPlanoBadgeItem();
 
@@ -349,29 +532,17 @@ class _MenuPlanoBadgeItem extends ConsumerWidget {
     final planoAsync = ref.watch(planoAtivoProvider);
 
     return planoAsync.when(
-      loading: () => _buildLoading(context),
-      data: (plano) => _buildData(context, plano),
-      error: (e, _) => _buildError(context, ref, e),
+      loading: () => const _AccountActionItem(
+        icon: Icons.workspace_premium_rounded,
+        label: 'Meu Plano',
+        subtitle: 'Carregando...',
+      ),
+      data: (plano) => _buildData(plano),
+      error: (error, _) => _buildError(context, ref, error),
     );
   }
 
-  Widget _buildLoading(BuildContext context) {
-    return ListTile(
-      leading: Icon(
-        Icons.workspace_premium_rounded,
-        color: Theme.of(context).colorScheme.outline,
-      ),
-      title: const Text('Meu Plano'),
-      subtitle: Text(
-        'Carregando...',
-        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-          color: Theme.of(context).colorScheme.outline,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildData(BuildContext context, UserPlan? plano) {
+  Widget _buildData(UserPlan? plano) {
     String subtitle;
     String targetRoute = AppRoutes.meuPlano;
 
@@ -395,31 +566,357 @@ class _MenuPlanoBadgeItem extends ConsumerWidget {
     );
   }
 
-  Widget _buildError(BuildContext context, WidgetRef ref, Object e) {
-    // Verificação de erro de rede sem dart:io (web-safe)
-    final eStr = e.toString().toLowerCase();
+  Widget _buildError(BuildContext context, WidgetRef ref, Object error) {
+    final errorText = error.toString().toLowerCase();
     final isNetwork =
-        eStr.contains('socketexception') ||
-        eStr.contains('failed host lookup') ||
-        eStr.contains('network is unreachable') ||
-        eStr.contains('connection refused') ||
-        eStr.contains('no address associated') ||
-        eStr.contains('networkrequestfailed');
+        errorText.contains('socketexception') ||
+        errorText.contains('failed host lookup') ||
+        errorText.contains('network is unreachable') ||
+        errorText.contains('connection refused') ||
+        errorText.contains('no address associated') ||
+        errorText.contains('networkrequestfailed');
 
-    return ListTile(
-      leading: Icon(
-        isNetwork ? Icons.wifi_off_outlined : Icons.error_outline,
-        color: Theme.of(context).colorScheme.error,
-      ),
-      title: const Text('Meu Plano'),
-      subtitle: Text(
-        isNetwork ? 'Sem conexão' : 'Não foi possível carregar',
-        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-          color: Theme.of(context).colorScheme.error,
-        ),
-      ),
-      trailing: Icon(Icons.refresh, color: Theme.of(context).colorScheme.error),
-      onTap: () => ref.invalidate(planoAtivoProvider), // retry
+    return _AccountActionItem(
+      icon: isNetwork ? Icons.wifi_off_outlined : Icons.error_outline,
+      label: 'Meu Plano',
+      subtitle: isNetwork ? 'Sem conexão' : 'Não foi possível carregar',
+      iconColor: Theme.of(context).colorScheme.error,
+      trailingIcon: Icons.refresh,
+      onTap: () => ref.invalidate(planoAtivoProvider),
     );
   }
+}
+
+class _ManualSyncItem extends ConsumerWidget {
+  const _ManualSyncItem();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final syncState = ref.watch(manualSyncProvider);
+
+    return _AccountActionItem(
+      icon: Icons.sync_outlined,
+      label: 'Sincronizar agora',
+      isLoading: syncState.isLoading,
+      showDivider: false,
+      onTap: syncState.isLoading
+          ? null
+          : () {
+              ref.invalidate(manualSyncProvider);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Sincronização iniciada'),
+                  duration: Duration(seconds: 2),
+                ),
+              );
+            },
+    );
+  }
+}
+
+class _AccountActionItem extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String? subtitle;
+  final Color? iconColor;
+  final IconData? trailingIcon;
+  final VoidCallback? onTap;
+  final bool isLoading;
+  final bool showDivider;
+
+  const _AccountActionItem({
+    required this.icon,
+    required this.label,
+    this.subtitle,
+    this.iconColor,
+    this.trailingIcon,
+    this.onTap,
+    this.isLoading = false,
+    this.showDivider = true,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final effectiveIconColor = iconColor ?? _menuGreen;
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(15),
+      onTap: onTap,
+      child: Column(
+        children: [
+          SizedBox(
+            height: 57,
+            child: Row(
+              children: [
+                const SizedBox(width: 12),
+                Container(
+                  width: 32,
+                  height: 32,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: effectiveIconColor.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: isLoading
+                      ? SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            color: effectiveIconColor,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : Icon(icon, color: effectiveIconColor, size: 18),
+                ),
+                const SizedBox(width: 11),
+                Expanded(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      if (subtitle != null)
+                        Text(
+                          subtitle!,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.outline,
+                            fontSize: 10,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+                if (trailingIcon != null)
+                  Icon(trailingIcon, color: effectiveIconColor, size: 19),
+                const SizedBox(width: 10),
+              ],
+            ),
+          ),
+          if (showDivider) const Divider(height: 1, thickness: 0.6, indent: 55),
+        ],
+      ),
+    );
+  }
+}
+
+class _QuickActionsGrid extends StatelessWidget {
+  const _QuickActionsGrid();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Column(
+      children: [
+        SizedBox(
+          height: 84,
+          child: Row(
+            children: [
+              Expanded(
+                child: _QuickActionCard(
+                  icon: Icons.event_available_outlined,
+                  label: 'Nova Visita',
+                  route: '${AppRoutes.agenda}?novoEvento=true',
+                ),
+              ),
+              SizedBox(width: 8),
+              Expanded(
+                child: _QuickActionCard(
+                  icon: Icons.person_add_alt_1_outlined,
+                  label: 'Novo Cliente',
+                  route: AppRoutes.clientNew,
+                ),
+              ),
+            ],
+          ),
+        ),
+        SizedBox(height: 8),
+        SizedBox(
+          height: 84,
+          child: Row(
+            children: [
+              Expanded(
+                child: _QuickActionCard(
+                  icon: Icons.insert_chart_outlined_rounded,
+                  label: 'Ver Relatórios',
+                  route: AppRoutes.reports,
+                ),
+              ),
+              SizedBox(width: 8),
+              Expanded(
+                child: _QuickActionCard(
+                  icon: Icons.warning_amber_rounded,
+                  label: 'Nova Ocorrência',
+                  route: '${AppRoutes.map}?modo=ocorrencia',
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _QuickActionCard extends ConsumerWidget {
+  final IconData icon;
+  final String label;
+  final String route;
+
+  const _QuickActionCard({
+    required this.icon,
+    required this.label,
+    required this.route,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Material(
+      color: Theme.of(context).colorScheme.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: const BorderSide(color: _cardBorder),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: () => _closeAndNavigate(context, ref, route),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, color: _menuGreen, size: 21),
+              const Spacer(),
+              Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _DailySummary extends StatelessWidget {
+  const _DailySummary();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 76,
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 9),
+      decoration: BoxDecoration(
+        color: _softGreen,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: const Row(
+        children: [
+          _SummaryMetric(icon: Icons.calendar_today_outlined, label: 'Visitas'),
+          _SummaryMetric(icon: Icons.people_outline_rounded, label: 'Clientes'),
+          _SummaryMetric(
+            icon: Icons.account_balance_wallet_outlined,
+            label: 'Carteira',
+          ),
+          _SummaryMetric(icon: Icons.analytics_outlined, label: 'Relatórios'),
+        ],
+      ),
+    );
+  }
+}
+
+class _SummaryMetric extends StatelessWidget {
+  final IconData icon;
+  final String label;
+
+  const _SummaryMetric({required this.icon, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, size: 15, color: _menuGreen),
+          const SizedBox(height: 2),
+          const Text(
+            '--',
+            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+          ),
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontSize: 9, color: Color(0xFF6B7280)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MotivationalCard extends StatelessWidget {
+  const _MotivationalCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: const BoxConstraints(maxHeight: 90),
+      padding: const EdgeInsets.all(13),
+      decoration: BoxDecoration(
+        color: _softGreen,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: const Row(
+        children: [
+          Icon(Icons.eco_outlined, color: _menuGreen, size: 24),
+          SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Foco no que importa',
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+                ),
+                SizedBox(height: 3),
+                Flexible(
+                  child: Text(
+                    'Acompanhe suas visitas, clientes e resultados em tempo real.',
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontSize: 10, color: Color(0xFF6B7280)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+void _closeAndNavigate(BuildContext context, WidgetRef ref, String route) {
+  final router = GoRouter.of(context);
+  ref.read(sideMenuOpenProvider.notifier).state = false;
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    router.go(route);
+  });
 }

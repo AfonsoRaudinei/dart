@@ -47,6 +47,7 @@ flutter build ipa \
   --release \
   --build-name="$VERSION" \
   --build-number="$BUILD_NUMBER" \
+  --dart-define=APP_VERSION="$VERSION+$BUILD_NUMBER" \
   --dart-define=SUPABASE_URL="$SUPABASE_URL" \
   --dart-define=SUPABASE_ANON_KEY="$SUPABASE_ANON_KEY" \
   --dart-define=STADIA_API_KEY="$STADIA_API_KEY" \

@@ -106,13 +106,23 @@ class _PhotoEditorScreenState extends State<PhotoEditorScreen> {
   }
 
   Future<void> _save() async {
+    final baseBytes = _baseBytes;
     final baseImage = _baseImage;
     final canvasSize = _lastCanvasSize;
-    if (baseImage == null || canvasSize == null || _isSaving) return;
+    if (baseBytes == null ||
+        baseImage == null ||
+        canvasSize == null ||
+        _isSaving) {
+      return;
+    }
 
     setState(() => _isSaving = true);
     try {
-      final finalBytes = await _composeFinalBytes(baseImage, canvasSize);
+      final finalBytes = await _composeFinalBytes(
+        baseBytes,
+        baseImage,
+        canvasSize,
+      );
       await File(widget.imagePath).writeAsBytes(finalBytes, flush: true);
       await _repository.uploadAndInsert(
         bytes: finalBytes,
@@ -139,9 +149,11 @@ class _PhotoEditorScreenState extends State<PhotoEditorScreen> {
   }
 
   Future<Uint8List> _composeFinalBytes(
+    Uint8List baseBytes,
     ui.Image baseImage,
     Size canvasSize,
   ) async {
+    final outputBaseImage = await _buildOutputBaseImage(baseBytes, baseImage);
     final outputSize = Size(
       baseImage.width.toDouble(),
       baseImage.height.toDouble(),
@@ -149,7 +161,7 @@ class _PhotoEditorScreenState extends State<PhotoEditorScreen> {
     final recorder = ui.PictureRecorder();
     final canvas = Canvas(recorder);
 
-    canvas.drawImage(baseImage, Offset.zero, Paint());
+    canvas.drawImage(outputBaseImage, Offset.zero, Paint());
     canvas.save();
     canvas.scale(
       outputSize.width / canvasSize.width,
@@ -165,12 +177,20 @@ class _PhotoEditorScreenState extends State<PhotoEditorScreen> {
     final decoded = img.decodeImage(pngBytes);
     if (decoded == null) return pngBytes;
 
-    if (_filterActive) {
-      final filtered = await compute(applyVegetalFilter, decoded);
-      return Uint8List.fromList(img.encodeJpg(filtered, quality: 85));
-    }
-
     return Uint8List.fromList(img.encodeJpg(decoded, quality: 85));
+  }
+
+  Future<ui.Image> _buildOutputBaseImage(
+    Uint8List baseBytes,
+    ui.Image baseImage,
+  ) async {
+    if (!_filterActive) return baseImage;
+
+    final source = img.decodeImage(baseBytes);
+    if (source == null) return baseImage;
+
+    final filtered = await compute(applyVegetalFilter, source);
+    return _decodeUiImage(Uint8List.fromList(img.encodePng(filtered)));
   }
 
   Rect _containedRect(Size imageSize, Size bounds) {

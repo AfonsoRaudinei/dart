@@ -26,6 +26,7 @@ import 'map/handlers/map_location_handler.dart';
 import 'map/controllers/map_viewport_controller.dart';
 import 'map/controllers/map_sheet_controller.dart';
 import 'map/handlers/novo_case_modal_launcher.dart';
+import 'map/handlers/map_first_query_handler.dart';
 
 // ADR-032 F1: _isMapReady migrado → mapReadyStateProvider (autoDispose).
 // Bloqueador restante: _setSheetState (modal state).
@@ -54,6 +55,7 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
   // ref é invalidado em deactivate() (antes de dispose()) — ADR-008.
   dynamic _drawingController;
   CaseTipo? _pendingMarketingCaseTipo;
+  String? _handledMapFirstUri;
 
   @override
   void initState() {
@@ -81,69 +83,21 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
           );
         },
       );
+    });
+  }
 
-      // 🗺️ MAP-FIRST: Leitura de query params provenientes de DetalheCliente
-      // Exemplo: /map?modo=desenho&clienteId=X&clienteNome=Fulano
-      // Ativa DrawingMode com o cliente pré-selecionado — NÃO cria nova lógica.
-      if (mounted) {
-        final uri = GoRouterState.of(context).uri;
-        final modoParam = uri.queryParameters['modo'];
-        final clienteIdParam = uri.queryParameters['clienteId'];
-
-        if (modoParam == 'desenho' && clienteIdParam != null) {
-          AppLogger.debug(
-            'MAP-FIRST: recebido modo=desenho clienteId=$clienteIdParam',
-            tag: 'PrivateMap',
-          );
-          // Pré-seleciona cliente via DrawingClientNotifier (ADR-019)
-          ref
-              .read(drawingClientProvider.notifier)
-              .setClienteAtivo(clienteIdParam);
-          // Abre o painel de desenho (mecanismo já existente)
-          _setSheetState(
-            const MapSheetState(type: MapSheetType.draw),
-            'query_param_modo_desenho',
-          );
-        }
-
-        // 🆕 SPRINT 3: modo=importar — abre painel e dispara seletor de arquivo
-        if (modoParam == 'importar') {
-          AppLogger.debug(
-            'MAP-FIRST: recebido modo=importar clienteId=$clienteIdParam',
-            tag: 'PrivateMap',
-          );
-          if (clienteIdParam != null) {
-            ref
-                .read(drawingClientProvider.notifier)
-                .setClienteAtivo(clienteIdParam);
-          }
-          _setSheetState(
-            const MapSheetState(type: MapSheetType.draw),
-            'query_param_modo_importar',
-          );
-          // Aguarda o sheet estar montado antes de abrir a UI de import
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted) {
-              ref.read(drawingControllerProvider).startImportMode();
-            }
-          });
-        }
-
-        // P5: modo=visita — abre checkIn sheet com cliente pré-selecionado
-        if (modoParam == 'visita' && clienteIdParam != null) {
-          AppLogger.debug(
-            'MAP-FIRST: recebido modo=visita clienteId=$clienteIdParam',
-            tag: 'PrivateMap',
-          );
-          _setSheetState(
-            MapSheetState(
-              type: MapSheetType.checkIn,
-              preSelectedClienteId: clienteIdParam,
-            ),
-            'query_param_modo_visita',
-          );
-        }
-      }
+  void _scheduleMapFirstQueryHandling(Uri uri) {
+    final key = uri.toString();
+    if (_handledMapFirstUri == key) return;
+    _handledMapFirstUri = key;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      MapFirstQueryHandler.handle(
+        uri: uri,
+        ref: ref,
+        setSheetState: _setSheetState,
+        armOccurrenceMode: _armOccurrenceMode,
+      );
     });
   }
 
@@ -373,6 +327,7 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
     // 🛡 LIFECYCLE: Cachear referência do DrawingController para uso
     // seguro no dispose() — ref é invalidado antes de dispose() ser chamado.
     _drawingController = ref.read(drawingControllerProvider);
+    _scheduleMapFirstQueryHandling(GoRouterState.of(context).uri);
 
     // ADR-032 F3: Build orchestrado por MapBuildOrchestrator.
     // Todo o conteúdo do Stack (canvas, layers, overlays, controls, sheet)
