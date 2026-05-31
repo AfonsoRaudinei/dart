@@ -6,8 +6,6 @@ import 'package:soloforte_app/core/constants/layout_constants.dart';
 import 'package:soloforte_app/core/contracts/i_agenda_ai_launcher_provider.dart';
 import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 import 'package:soloforte_app/core/feature_flags/feature_flag_analytics.dart';
-import 'package:soloforte_app/core/feature_flags/feature_flag_providers.dart';
-import 'package:soloforte_app/core/feature_flags/feature_flag_resolver.dart';
 import '../../domain/entities/event.dart';
 import '../../domain/enums/agenda_view.dart';
 import '../providers/agenda_provider.dart';
@@ -28,54 +26,11 @@ class AgendaMonthPage extends ConsumerStatefulWidget {
 
 class _AgendaMonthPageState extends ConsumerState<AgendaMonthPage> {
   late DateTime _currentMonth;
-  bool _agendaAiEnabled = false;
 
   @override
   void initState() {
     super.initState();
     _currentMonth = DateTime(DateTime.now().year, DateTime.now().month);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _resolveAgendaAiFlag();
-    });
-  }
-
-  Future<void> _resolveAgendaAiFlag() async {
-    final user = Supabase.instance.client.auth.currentUser;
-    if (user == null) {
-      if (mounted) {
-        setState(() => _agendaAiEnabled = false);
-      }
-      return;
-    }
-
-    final role = user.userMetadata?['role']?.toString() ?? 'produtor';
-    final ffUser = FeatureFlagUser(
-      userId: user.id,
-      role: role,
-      appVersion: '1.1.0',
-    );
-
-    try {
-      final enabled = await ref.read(isAgendaAiEnabledProvider(ffUser).future);
-
-      FeatureFlagAnalytics.trackAgendaAiAccess(
-        userId: user.id,
-        userRole: role,
-        wasEnabled: enabled,
-      );
-
-      if (mounted) {
-        setState(() => _agendaAiEnabled = enabled);
-      }
-    } catch (e) {
-      FeatureFlagAnalytics.trackAgendaAiError(
-        errorType: 'flag_resolution_error',
-        errorMessage: e.toString(),
-      );
-      if (mounted) {
-        setState(() => _agendaAiEnabled = false);
-      }
-    }
   }
 
   @override
@@ -228,66 +183,56 @@ class _AgendaMonthPageState extends ConsumerState<AgendaMonthPage> {
             right: 16,
             child: Row(
               children: [
-                if (_agendaAiEnabled)
-                  Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(999),
-                      onTap: () {
-                        final userId =
-                            Supabase.instance.client.auth.currentUser?.id;
-                        if (userId != null && userId.isNotEmpty) {
-                          FeatureFlagAnalytics.trackAgendaAiOpened(
-                            userId: userId,
-                          );
-                        }
-                        ref.read(agendaAiLauncherProvider).showSheet(context);
-                      },
-                      child: Container(
-                        width: 64,
-                        height: 64,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.15),
-                              blurRadius: 8,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: ClipOval(
-                          child: Image.asset(
-                            'assets/ia.png',
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                      ),
-                    ),
-                  )
-                else
-                  const SizedBox(width: 64, height: 64),
-                Expanded(
-                  child: Center(
-                    child: FloatingActionButton.extended(
-                      heroTag: 'agenda_novo_evento_fab',
-                      onPressed: () {
-                        showDialog<void>(
-                          context: context,
-                          builder: (_) =>
-                              VisitFormDialog(initialDate: DateTime.now()),
+                Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(999),
+                    onTap: () {
+                      final userId =
+                          Supabase.instance.client.auth.currentUser?.id;
+                      if (userId != null && userId.isNotEmpty) {
+                        FeatureFlagAnalytics.trackAgendaAiOpened(
+                          userId: userId,
                         );
-                      },
-                      icon: const Icon(Icons.add, color: Colors.white),
-                      label: const Text(
-                        'Novo evento',
-                        style: TextStyle(color: Colors.white),
+                      }
+                      ref.read(agendaAiLauncherProvider).showSheet(context);
+                    },
+                    child: Container(
+                      width: 64,
+                      height: 64,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.15),
+                            blurRadius: 8,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
                       ),
-                      backgroundColor: const Color(0xFF4ADE80),
+                      child: ClipOval(
+                        child: Image.asset('assets/ia.png', fit: BoxFit.cover),
+                      ),
                     ),
                   ),
                 ),
-                const SizedBox(width: 64, height: 64),
+                const Spacer(),
+                FloatingActionButton.extended(
+                  heroTag: 'agenda_novo_evento_fab',
+                  onPressed: () {
+                    showDialog<void>(
+                      context: context,
+                      builder: (_) =>
+                          VisitFormDialog(initialDate: DateTime.now()),
+                    );
+                  },
+                  icon: const Icon(Icons.add, color: Colors.white),
+                  label: const Text(
+                    'Novo evento',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                  backgroundColor: const Color(0xFF4ADE80),
+                ),
               ],
             ),
           ),
