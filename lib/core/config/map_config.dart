@@ -66,22 +66,24 @@ class MapConfig {
   static const String stadiaStamenTerrain =
       'https://tiles.stadiamaps.com/tiles/stamen_terrain/{z}/{x}/{y}.png';
 
-  /// Google Maps Satellite Híbrido — tile endpoint público
+  /// Google Maps Satellite Híbrido — tile endpoint público.
   /// lyrs=y = satellite + labels (cidades/rodovias) — recomendado para campo
   /// lyrs=s = satellite puro (sem labels)
   /// Cobertura superior no Brasil rural, zoom até 20+
   /// Subdomínios 0-3 = load balancing automático entre servidores Google
-  /// ⚠️ OBSOLETO: Endpoint não oficial — viola Google ToS e pode causar
-  /// rejeição na App Store. Mantido apenas como referência.
-  @Deprecated(
-    'Usar mapTilerSatelliteUrl — endpoint Google não oficial viola ToS',
-  )
   static const String googleSatelliteUrl =
       'https://mt{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}';
 
   /// Subdomínios do Google Maps Tile Server (load balancing)
-  @Deprecated('Usar MapTiler Satellite')
   static const List<String> googleSatelliteSubdomains = ['0', '1', '2', '3'];
+
+  /// Esri World Imagery — fallback de satélite sem API key.
+  static const String esriWorldImagery =
+      'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
+
+  /// Esri World Topographic — fallback topo com mais verde/azul sem API key.
+  static const String esriWorldTopo =
+      'https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}';
 
   /// MapTiler Satellite — Imagem satelital com labels
   /// Cobertura global de alta resolução
@@ -186,45 +188,41 @@ class MapConfig {
   }) {
     switch (type) {
       case LayerType.satellite:
-        if (!hasMapTilerApiKey(mapTilerApiKey)) {
-          return const MapLayerTileConfig(
-            urlTemplate: cartoVoyagerRetina,
-            attribution: cartoAttribution,
-            subdomains: cartoSubdomains,
-            maxZoom: defaultLayerMaxZoom,
-            maxNativeZoom: defaultLayerMaxNativeZoom,
-            retinaMode: true,
-            isFallback: true,
-          );
-        }
-        return MapLayerTileConfig(
-          urlTemplate: mapTilerSatelliteUrl(mapTilerApiKey),
-          attribution: mapTilerAttribution,
-          subdomains: cartoSubdomains,
+        return const MapLayerTileConfig(
+          urlTemplate: googleSatelliteUrl,
+          attribution: googleAttribution,
+          subdomains: googleSatelliteSubdomains,
           maxZoom: satelliteMaxZoom,
           maxNativeZoom: satelliteMaxNativeZoom,
-          retinaMode: true,
-          fallbackUrl: cartoVoyagerRetina,
-          requiresApiKey: true,
+          fallbackUrl: esriWorldImagery,
         );
       case LayerType.relevo:
         if (!hasMapTilerApiKey(mapTilerApiKey)) {
-          return MapLayerTileConfig(
-            urlTemplate: stadiaStamenTerrainUrl,
-            attribution: hasStadiaApiKey ? stadiaAttribution : osmAttribution,
+          if (hasStadiaApiKey) {
+            return MapLayerTileConfig(
+              urlTemplate: stadiaStamenTerrainUrl,
+              attribution: stadiaAttribution,
+              maxZoom: defaultLayerMaxZoom,
+              maxNativeZoom: defaultLayerMaxNativeZoom,
+              fallbackUrl: esriWorldTopo,
+              isFallback: true,
+            );
+          }
+          return const MapLayerTileConfig(
+            urlTemplate: esriWorldTopo,
+            attribution: esriAttribution,
             maxZoom: defaultLayerMaxZoom,
             maxNativeZoom: defaultLayerMaxNativeZoom,
             isFallback: true,
           );
         }
         return MapLayerTileConfig(
-          urlTemplate: mapTilerLandscapeUrl(mapTilerApiKey),
+          urlTemplate: mapTilerOutdoorUrl(mapTilerApiKey),
           attribution: mapTilerAttribution,
-          subdomains: cartoSubdomains,
           maxZoom: defaultLayerMaxZoom,
           maxNativeZoom: defaultLayerMaxNativeZoom,
           retinaMode: true,
-          fallbackUrl: cartoVoyagerRetina,
+          fallbackUrl: esriWorldTopo,
           requiresApiKey: true,
         );
       case LayerType.standard:
@@ -255,6 +253,9 @@ class MapConfig {
 
   /// Atribuição do Google Maps (obrigatória pelos Termos de Serviço)
   static const String googleAttribution = '© Google';
+
+  /// Atribuição da Esri (obrigatória)
+  static const String esriAttribution = '© Esri';
 
   /// Atribuição do MapTiler (obrigatória pelos Termos de Serviço)
   static const String mapTilerAttribution =
