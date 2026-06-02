@@ -1,8 +1,8 @@
 # SOLOFORTE Baseline Real
-<!-- Última verificação: Mai/2026 -->
+<!-- Última verificação: Jun/2026 -->
 <!-- Commit de referência: d1fbaf9 | Branch: release/v1.1 -->
 
-## Snapshot Oficial — Mai/2026
+## Snapshot Oficial — Jun/2026
 
 Este documento substitui o snapshot de Março/2026 como baseline operacional.
 O estado atual foi sincronizado a partir do PRD de Auditoria SoloForte v1.0
@@ -12,13 +12,13 @@ e das verificações locais executadas nesta sessão.
 |---|---|
 | Mapa padrão | Google Satellite (`MapConfig.googleSatelliteUrl`) — padrão global |
 | Arquivos Dart em `lib/` | 520 |
-| Módulos em `lib/modules/` | 17 (agenda, agenda_ai, auth, carteira, clima, consultoria, dashboard, drawing, feedback, map, marketing, ndvi, operacao, planos, public, settings, visitas) |
+| Módulos em `lib/modules/` | 16 (agenda, agenda_ai, auth, carteira, clima, consultoria, dashboard, drawing, feedback, map, marketing, ndvi, planos, public, settings, visitas) |
 | Banco de dados | `soloforte.db` único — SQLite (sqflite) |
-| Schema DB versão atual | **v31** (`_migrateToV31` — arquivamento idempotente de legado `visit_reports`) |
+| Schema DB versão atual | **v33** (`_migrateToV33` — contexto opcional de fazenda em visitas) |
 | flutter analyze — erros | 0 |
 | flutter analyze — issues totais | Sem erros novos documentados no PRD |
 | arch_check.sh | ✅ APROVADO — EXIT 0 |
-| Testes verdes | 649/649 ✅ |
+| Testes verdes | 702 aprovados + 1 ignorado ✅ |
 | TODOs em produção | A recalcular na próxima auditoria completa |
 | Providers keepAlive | 30 ocorrências locais |
 | Interfaces formais DIP | 15 ocorrências locais por padrão `abstract class I*` |
@@ -36,7 +36,7 @@ e das verificações locais executadas nesta sessão.
 
 | Versão | Conteúdo | Status |
 |---|---|---|
-| v17–v31 | Migrações incrementais confirmadas no código; padrão atual com operações idempotentes e arquivamento de legado | ✅ Aplicado |
+| v17–v33 | Migrações incrementais confirmadas no código; padrão atual com operações idempotentes | ✅ Aplicado |
 | v17–v20 | Migrações diversas (confirmado no código) | ✅ Aplicado |
 | v21 | `user_id` adicionado em todas as tabelas locais | ✅ Aplicado |
 | v22 | Migração de schema (confirmado no código) | ✅ Aplicado |
@@ -49,6 +49,8 @@ e das verificações locais executadas nesta sessão.
 | v29 | `carteira_lancamentos.closed_percent` (nullable) | ✅ Aplicado |
 | v30 | Migração intermediária confirmada no código | ✅ Aplicado |
 | v31 | Arquivamento idempotente da tabela legada `visit_reports` para `visit_reports_legacy_v31` | ✅ Aplicado |
+| v32 | Tabela ativa de relatórios | ✅ Aplicado |
+| v33 | `visit_sessions.farm_id` opcional | ✅ Aplicado |
 
 > **Nota:** O baseline anterior documentava `marketing_cases.db` e `visitas_tecnicas.db` como bancos separados.
 > Verificação 0.16 confirma que há **apenas `soloforte.db`** — banco único. A dívida documental foi corrigida aqui.
@@ -126,15 +128,15 @@ e das verificações locais executadas nesta sessão.
 
 ---
 
-## Estado de Saúde — Auditoria Mai/2026
+## Estado de Saúde — Auditoria Jun/2026
 
 | Verificação | Resultado |
 |---|---|
 | flutter analyze — erros | ✅ 0 erros |
 | flutter analyze — issues totais | Sem erros novos documentados no PRD |
 | arch_check.sh | ✅ EXIT 0 — APROVADO; REGRA-SHEET-1 ativa |
-| Testes | 649/649 ✅ |
-| Schema DB | v31 — soloforte.db (banco único) |
+| Testes | 702 aprovados + 1 ignorado ✅ |
+| Schema DB | v33 — soloforte.db (banco único) |
 | ADRs formais confirmados | 008–022, 027–033, 037; ADR-031, ADR-034 e DT-028 encerrados |
 | .baseline_marker | ✅ Ativo — enforcement REGRA 3 funciona |
 | repairOrphanUserIds | ✅ Implementado |
@@ -182,5 +184,5 @@ e das verificações locais executadas nesta sessão.
 
 ---
 
-*Atualizado em: Mai/2026 | Branch: `release/v1.1` | PRD Auditoria v1.0 | Schema v31 | Testes 649/649*
+*Atualizado em: Jun/2026 | Branch: `release/v1.1` | PRD Auditoria v1.0 | Schema v33 | Testes 702 aprovados + 1 ignorado*
 *Histórico preservado: pós-auditoria 23/03/2026 + Sessões 1, 2, 3 + vínculo opcional de cliente em occurrences + carteira v29*

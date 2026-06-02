@@ -1,7 +1,11 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:soloforte_app/core/permissions/location_permission_gate.dart';
+
+typedef PositionStreamFactory =
+    Stream<Position> Function(LocationSettings locationSettings);
 
 /// 🌍 SERVIÇO DE LOCALIZAÇÃO GPS - STREAM REAL
 ///
@@ -17,6 +21,9 @@ import 'package:soloforte_app/core/permissions/location_permission_gate.dart';
 /// - Stream único (singleton pattern)
 class LocationService {
   static LocationService? _instance;
+  static PositionStreamFactory _positionStreamFactory = (locationSettings) =>
+      Geolocator.getPositionStream(locationSettings: locationSettings);
+
   StreamController<LatLng>? _controller;
   StreamSubscription<Position>? _subscription;
 
@@ -52,27 +59,38 @@ class LocationService {
       // timeLimit não usado (stream contínuo)
     );
 
-    _subscription =
-        Geolocator.getPositionStream(locationSettings: locationSettings).listen(
-          (Position position) {
-            // Converter Position para LatLng e emitir
-            if (_controller != null && !_controller!.isClosed) {
-              _controller!.add(LatLng(position.latitude, position.longitude));
-            }
-          },
-          onError: (error) {
-            // Emitir erro no stream (widget pode tratar)
-            if (_controller != null && !_controller!.isClosed) {
-              _controller!.addError(error);
-            }
-          },
-          cancelOnError: false, // Continuar ouvindo mesmo após erro
-        );
+    _subscription = _positionStreamFactory(locationSettings).listen(
+      (Position position) {
+        // Converter Position para LatLng e emitir
+        if (_controller != null && !_controller!.isClosed) {
+          _controller!.add(LatLng(position.latitude, position.longitude));
+        }
+      },
+      onError: (error) {
+        // Emitir erro no stream (widget pode tratar)
+        if (_controller != null && !_controller!.isClosed) {
+          _controller!.addError(error);
+        }
+      },
+      cancelOnError: false, // Continuar ouvindo mesmo após erro
+    );
   }
 
   void _onCancel() {
-    // Callback quando último listener cancela
-    // Não fechar stream imediatamente (pode ter novos listeners)
+    unawaited(_stopListening());
+  }
+
+  Future<void> _stopListening() async {
+    final subscription = _subscription;
+    _subscription = null;
+
+    final controller = _controller;
+    _controller = null;
+
+    await subscription?.cancel();
+    if (controller != null && !controller.isClosed) {
+      await controller.close();
+    }
   }
 
   /// Verificar se GPS está disponível (permissões + service enabled)
@@ -102,18 +120,31 @@ class LocationService {
         locationSettings: const LocationSettings(
           accuracy: LocationAccuracy.high,
         ),
-      );
+        // 🛡 IPA-124: timeout para evitar bloqueio indefinido em GPS frio
+      ).timeout(const Duration(seconds: 10));
       return LatLng(position.latitude, position.longitude);
     } catch (e) {
       return null;
     }
   }
 
-  /// Limpar recursos (opcional - stream é broadcast e se auto-gerencia)
   void dispose() {
-    _subscription?.cancel();
-    _subscription = null;
-    _controller?.close();
-    _controller = null;
+    unawaited(_stopListening());
+  }
+
+  @visibleForTesting
+  bool get hasActiveNativeStream => _subscription != null;
+
+  @visibleForTesting
+  static void debugSetPositionStreamFactory(PositionStreamFactory factory) {
+    _positionStreamFactory = factory;
+  }
+
+  @visibleForTesting
+  static void debugReset() {
+    _positionStreamFactory = (locationSettings) =>
+        Geolocator.getPositionStream(locationSettings: locationSettings);
+    _instance?.dispose();
+    _instance = null;
   }
 }

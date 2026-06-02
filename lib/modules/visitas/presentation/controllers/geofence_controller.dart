@@ -1,9 +1,9 @@
 import 'dart:async';
 import 'dart:convert'; // para jsonDecode do GeoJSON — ADR-024
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:geolocator/geolocator.dart';
 import '../../../../core/services/notification_service.dart';
 import 'package:soloforte_app/modules/visitas/domain/models/geofence_state.dart';
+import 'package:soloforte_app/modules/dashboard/providers/location_providers.dart';
 import '../controllers/visit_controller.dart';
 import 'package:soloforte_app/core/contracts/i_field_lookup.dart';
 import 'package:soloforte_app/core/contracts/i_field_lookup_geofence_provider.dart';
@@ -18,26 +18,21 @@ final geofenceStateProvider = StateProvider<GeofenceState>((ref) {
 class GeofenceController {
   final Ref _ref;
   final NotificationService _notificationService = NotificationService();
-  Timer? _checkTimer;
   Timer? _durationTimer; // Timer for 4h alert
   bool _isDisposed = false;
+  bool _isChecking = false;
+  DateTime? _lastEvaluationAt;
+
+  static const _evaluationThrottle = Duration(seconds: 15);
 
   GeofenceController(this._ref) {
     _init();
   }
 
   void _init() {
-    // 1. Listen to location changes (using same stream as LocationController if exposed, or periodic check)
-    // For simplicity and to avoid stream conflicts, we'll run a periodic check every 30-60 seconds
-    // or when location updates if available.
-    // The LocationController in Dashboard handles the stream for the map.
-    // We can just listen to the locationStateProvider's last known position if it stored it?
-    // Actually LocationController doesn't expose position stream globally as a provider yet, just `locationStateProvider`.
-    // Let's create a periodic check which is battery friendly enough for "Assistant".
-
-    _checkTimer = Timer.periodic(const Duration(seconds: 45), (timer) {
-      _checkGeofence();
-    });
+    _ref.listen<AsyncValue<LatLng>>(locationStreamProvider, (previous, next) {
+      next.whenData(_handlePosition);
+    }, fireImmediately: true);
 
     _durationTimer = Timer.periodic(const Duration(minutes: 15), (timer) {
       _checkDuration();
@@ -45,8 +40,6 @@ class GeofenceController {
   }
 
   void _cancelAllTimers() {
-    _checkTimer?.cancel();
-    _checkTimer = null;
     _durationTimer?.cancel();
     _durationTimer = null;
   }
@@ -57,43 +50,34 @@ class GeofenceController {
     _cancelAllTimers();
   }
 
-  Future<void> _checkGeofence() async {
+  void _handlePosition(LatLng userPoint) {
+    if (_isDisposed || _isChecking) return;
+    final now = DateTime.now();
+    final lastEvaluationAt = _lastEvaluationAt;
+    if (lastEvaluationAt != null &&
+        now.difference(lastEvaluationAt) < _evaluationThrottle) {
+      return;
+    }
+    _lastEvaluationAt = now;
+    _isChecking = true;
+    unawaited(
+      _checkGeofence(userPoint)
+          .catchError((Object error) {
+            AppLogger.warning(
+              'Falha ao avaliar geofence',
+              tag: 'Geofence',
+              error: error,
+            );
+          })
+          .whenComplete(() => _isChecking = false),
+    );
+  }
+
+  Future<void> _checkGeofence(LatLng userPoint) async {
     if (_isDisposed) return;
 
     final visitState = _ref.read(visitControllerProvider);
 
-    // Get current position (single request)
-    Position? position;
-    try {
-      // Check permission without asking
-      final permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.always ||
-          permission == LocationPermission.whileInUse) {
-        position = await Geolocator.getLastKnownPosition();
-        if (position == null ||
-            DateTime.now().difference(position.timestamp) >
-                const Duration(minutes: 5)) {
-          // If old, try fresh but with timeout
-          position = await Geolocator.getCurrentPosition(
-            locationSettings: const LocationSettings(
-              timeLimit: Duration(seconds: 10),
-            ),
-          );
-        }
-      }
-    } catch (e) {
-      AppLogger.warning(
-        'Falha ao obter posição para geofence',
-        tag: 'Geofence',
-        error: e,
-      );
-      return;
-    }
-
-    if (position == null) return;
-    final userPoint = LatLng(position.latitude, position.longitude);
-
-    // Carregar talhões via contrato neutro — ADR-024
     final fieldLookup = _ref.read(iFieldLookupGeofenceProvider);
     List<FieldSummary> fields;
     try {
