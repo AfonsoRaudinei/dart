@@ -65,40 +65,56 @@ class MapSheetController {
         expand: false,
         snap: true,
         snapSizes: snapSizesList,
-        builder: (_, scrollController) => Container(
-          decoration: BoxDecoration(
-            color: isLayers
-                ? SoloForteSheetTokens.sheetBackground
-                : Theme.of(context).scaffoldBackgroundColor,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-          ),
-          child: Column(
-            children: [
-              Center(
-                child: Container(
-                  margin: const EdgeInsets.symmetric(vertical: 8),
-                  width: 36,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Theme.of(
-                      context,
-                    ).dividerColor.withValues(alpha: 0.3),
-                    borderRadius: BorderRadius.circular(2),
+        builder: (_, scrollController) {
+          final content = buildSheetContent(
+            context,
+            ref,
+            state,
+            scrollController,
+            onArmOccurrenceMode,
+          );
+
+          if (isCheckIn) {
+            return ClipRRect(
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(24),
+              ),
+              child: ColoredBox(
+                color: SoloForteSheetTokens.sheetBackground,
+                child: content,
+              ),
+            );
+          }
+
+          return Container(
+            decoration: BoxDecoration(
+              color: isLayers
+                  ? SoloForteSheetTokens.sheetBackground
+                  : Theme.of(context).scaffoldBackgroundColor,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(24),
+              ),
+            ),
+            child: Column(
+              children: [
+                Center(
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(vertical: 8),
+                    width: 36,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Theme.of(
+                        context,
+                      ).dividerColor.withValues(alpha: 0.3),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
                   ),
                 ),
-              ),
-              Expanded(
-                child: buildSheetContent(
-                  context,
-                  ref,
-                  state,
-                  scrollController,
-                  onArmOccurrenceMode,
-                ),
-              ),
-            ],
-          ),
-        ),
+                Expanded(child: content),
+              ],
+            ),
+          );
+        },
       ),
     ).whenComplete(() {
       if (!context.mounted) return;
