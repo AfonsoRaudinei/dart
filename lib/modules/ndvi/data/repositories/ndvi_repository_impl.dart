@@ -17,16 +17,17 @@ class NdviRepositoryImpl implements INdviRepository {
     final cached = await _local.getLatest(fieldId);
     if (cached != null) return cached.toEntity();
 
-    // 2. Sem cache — buscar bbox via IFieldLookup
+    // 2. Sem cache — buscar bbox/geometria via IFieldLookup
     final summary = await _fieldLookup.findById(fieldId);
-    if (summary == null || summary.bbox == null) {
+    if (summary == null || (summary.bbox == null && summary.geometry == null)) {
       return null;
     }
 
     // 3. Buscar remoto
     final model = await _remote.fetchNdvi(
       fieldId: fieldId,
-      bbox: summary.bbox!,
+      bbox: summary.bbox,
+      geometry: summary.geometry,
     );
     if (model == null) return null;
 

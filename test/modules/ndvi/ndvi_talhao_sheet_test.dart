@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:soloforte_app/modules/ndvi/domain/entities/ndvi_image.dart';
+import 'package:soloforte_app/modules/ndvi/presentation/providers/ndvi_display_mode_provider.dart';
 import 'package:soloforte_app/modules/ndvi/presentation/providers/ndvi_providers.dart';
 import 'package:soloforte_app/modules/ndvi/presentation/widgets/ndvi_talhao_sheet.dart';
 
@@ -9,12 +10,17 @@ void main() {
   const fieldId = 'F1';
   const fieldName = 'Talhão Teste';
 
-  testWidgets('Estado loading — CircularProgressIndicator visível', (tester) async {
+  testWidgets('Estado loading — CircularProgressIndicator visível', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
           ndviImagesProvider(fieldId).overrideWith((ref) {
-             return Future.delayed(const Duration(seconds: 1), () => <NdviImage>[]);
+            return Future.delayed(
+              const Duration(seconds: 1),
+              () => <NdviImage>[],
+            );
           }),
         ],
         child: const MaterialApp(
@@ -26,7 +32,7 @@ void main() {
     );
 
     expect(find.byType(CircularProgressIndicator), findsOneWidget);
-    
+
     // Resolve pending timer to avoid test failure
     await tester.pump(const Duration(seconds: 1));
   });
@@ -46,23 +52,32 @@ void main() {
     );
 
     await tester.pump();
-    expect(find.text('Nenhuma imagem disponível para este talhão'), findsOneWidget);
+    expect(
+      find.text('Nenhuma imagem disponível para este talhão'),
+      findsOneWidget,
+    );
   });
 
-  testWidgets('Estado com 1 imagem — ambas as setas desabilitadas', (tester) async {
+  testWidgets('Estado com 1 imagem — ambas as setas desabilitadas', (
+    tester,
+  ) async {
     final images = [
       NdviImage(
-        id: '1', fieldId: fieldId, imageDate: DateTime(2026, 1, 1),
-        ndviMin: 0.1, ndviMax: 0.8, ndviMean: 0.5, source: 'auto',
-        fetchedAt: DateTime.now(), syncStatus: 0,
+        id: '1',
+        fieldId: fieldId,
+        imageDate: DateTime(2026, 1, 1),
+        ndviMin: 0.1,
+        ndviMax: 0.8,
+        ndviMean: 0.5,
+        source: 'auto',
+        fetchedAt: DateTime.now(),
+        syncStatus: 0,
       ),
     ];
 
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [
-          ndviImagesProvider(fieldId).overrideWith((ref) => images),
-        ],
+        overrides: [ndviImagesProvider(fieldId).overrideWith((ref) => images)],
         child: const MaterialApp(
           home: Scaffold(
             body: NdviTalhaoSheet(fieldId: fieldId, fieldName: fieldName),
@@ -72,26 +87,126 @@ void main() {
     );
 
     await tester.pump();
-    
-    final leftArrow = tester.widget<IconButton>(find.widgetWithIcon(IconButton, Icons.chevron_left_rounded));
-    final rightArrow = tester.widget<IconButton>(find.widgetWithIcon(IconButton, Icons.chevron_right_rounded));
-    
+
+    final leftArrow = tester.widget<IconButton>(
+      find.widgetWithIcon(IconButton, Icons.chevron_left_rounded),
+    );
+    final rightArrow = tester.widget<IconButton>(
+      find.widgetWithIcon(IconButton, Icons.chevron_right_rounded),
+    );
+
     expect(leftArrow.onPressed, isNull);
     expect(rightArrow.onPressed, isNull);
   });
 
+  testWidgets(
+    'Controle de visualizacao inicia colorido, alterna para mascara e volta',
+    (tester) async {
+      final images = [
+        NdviImage(
+          id: '1',
+          fieldId: fieldId,
+          imageDate: DateTime(2026, 1, 1),
+          ndviMin: 0.1,
+          ndviMax: 0.8,
+          ndviMean: 0.5,
+          source: 'auto',
+          fetchedAt: DateTime.now(),
+          syncStatus: 0,
+        ),
+      ];
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            ndviImagesProvider(fieldId).overrideWith((ref) => images),
+          ],
+          child: const MaterialApp(
+            home: Scaffold(
+              body: NdviTalhaoSheet(fieldId: fieldId, fieldName: fieldName),
+            ),
+          ),
+        ),
+      );
+
+      await tester.pump();
+
+      expect(find.text('NDVI'), findsOneWidget);
+      expect(find.text('Máscara verde'), findsOneWidget);
+      expect(find.text('Modo: NDVI'), findsOneWidget);
+      expect(find.text('01/01/2026'), findsOneWidget);
+      expect(find.text('Auto'), findsOneWidget);
+      expect(find.text('Indisponivel'), findsOneWidget);
+      expect(find.text('Baixo'), findsOneWidget);
+      expect(find.text('Medio'), findsOneWidget);
+      expect(find.text('Alto'), findsOneWidget);
+
+      var control = tester.widget<SegmentedButton<NdviDisplayMode>>(
+        find.byType(SegmentedButton<NdviDisplayMode>),
+      );
+      expect(control.selected, {NdviDisplayMode.color});
+
+      await tester.tap(find.text('Máscara verde'));
+      await tester.pump();
+
+      control = tester.widget<SegmentedButton<NdviDisplayMode>>(
+        find.byType(SegmentedButton<NdviDisplayMode>),
+      );
+      expect(control.selected, {NdviDisplayMode.greenMask});
+      expect(find.text('Modo: Mascara verde'), findsOneWidget);
+      expect(find.text('Vegetacao'), findsOneWidget);
+      expect(find.text('Nao vegetacao'), findsOneWidget);
+
+      await tester.tap(find.text('NDVI'));
+      await tester.pump();
+
+      control = tester.widget<SegmentedButton<NdviDisplayMode>>(
+        find.byType(SegmentedButton<NdviDisplayMode>),
+      );
+      expect(control.selected, {NdviDisplayMode.color});
+    },
+  );
+
   testWidgets('Estado com 3 imagens — navegação correta', (tester) async {
     final images = [
-      NdviImage(id: '3', fieldId: fieldId, imageDate: DateTime(2026, 3, 1), ndviMin: 0.1, ndviMax: 0.8, ndviMean: 0.7, source: 'auto', fetchedAt: DateTime.now(), syncStatus: 0),
-      NdviImage(id: '2', fieldId: fieldId, imageDate: DateTime(2026, 2, 1), ndviMin: 0.1, ndviMax: 0.8, ndviMean: 0.6, source: 'auto', fetchedAt: DateTime.now(), syncStatus: 0),
-      NdviImage(id: '1', fieldId: fieldId, imageDate: DateTime(2026, 1, 1), ndviMin: 0.1, ndviMax: 0.8, ndviMean: 0.5, source: 'auto', fetchedAt: DateTime.now(), syncStatus: 0),
+      NdviImage(
+        id: '3',
+        fieldId: fieldId,
+        imageDate: DateTime(2026, 3, 1),
+        ndviMin: 0.1,
+        ndviMax: 0.8,
+        ndviMean: 0.7,
+        source: 'auto',
+        fetchedAt: DateTime.now(),
+        syncStatus: 0,
+      ),
+      NdviImage(
+        id: '2',
+        fieldId: fieldId,
+        imageDate: DateTime(2026, 2, 1),
+        ndviMin: 0.1,
+        ndviMax: 0.8,
+        ndviMean: 0.6,
+        source: 'auto',
+        fetchedAt: DateTime.now(),
+        syncStatus: 0,
+      ),
+      NdviImage(
+        id: '1',
+        fieldId: fieldId,
+        imageDate: DateTime(2026, 1, 1),
+        ndviMin: 0.1,
+        ndviMax: 0.8,
+        ndviMean: 0.5,
+        source: 'auto',
+        fetchedAt: DateTime.now(),
+        syncStatus: 0,
+      ),
     ];
 
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [
-          ndviImagesProvider(fieldId).overrideWith((ref) => images),
-        ],
+        overrides: [ndviImagesProvider(fieldId).overrideWith((ref) => images)],
         child: const MaterialApp(
           home: Scaffold(
             body: NdviTalhaoSheet(fieldId: fieldId, fieldName: fieldName),
@@ -101,17 +216,74 @@ void main() {
     );
 
     await tester.pump();
-    
+
     // Index 0 (mais recente)
     expect(find.text('1 de 3 imagens'), findsOneWidget);
-    
-    final rightArrow = tester.widget<IconButton>(find.widgetWithIcon(IconButton, Icons.chevron_right_rounded));
+
+    final rightArrow = tester.widget<IconButton>(
+      find.widgetWithIcon(IconButton, Icons.chevron_right_rounded),
+    );
     expect(rightArrow.onPressed, isNull); // Não tem mais recente
 
-    final leftArrow = find.widgetWithIcon(IconButton, Icons.chevron_left_rounded);
+    final leftArrow = find.widgetWithIcon(
+      IconButton,
+      Icons.chevron_left_rounded,
+    );
     await tester.tap(leftArrow);
     await tester.pump();
-    
+
     expect(find.text('2 de 3 imagens'), findsOneWidget);
+  });
+
+  testWidgets('Chips de data permitem trocar a imagem atual', (tester) async {
+    final images = [
+      NdviImage(
+        id: '3',
+        fieldId: fieldId,
+        imageDate: DateTime(2026, 3, 1),
+        ndviMin: 0.1,
+        ndviMax: 0.8,
+        ndviMean: 0.7,
+        source: 'sentinel',
+        fetchedAt: DateTime.now(),
+        syncStatus: 0,
+      ),
+      NdviImage(
+        id: '2',
+        fieldId: fieldId,
+        imageDate: DateTime(2026, 2, 1),
+        ndviMin: 0.1,
+        ndviMax: 0.8,
+        ndviMean: 0.6,
+        source: 'planet',
+        fetchedAt: DateTime.now(),
+        syncStatus: 0,
+        imageUrl: 'https://example.com/test.png',
+      ),
+    ];
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [ndviImagesProvider(fieldId).overrideWith((ref) => images)],
+        child: const MaterialApp(
+          home: Scaffold(
+            body: NdviTalhaoSheet(fieldId: fieldId, fieldName: fieldName),
+          ),
+        ),
+      ),
+    );
+
+    await tester.pump();
+
+    expect(find.text('01/03'), findsOneWidget);
+    expect(find.text('01/02'), findsOneWidget);
+    expect(find.text('Sentinel'), findsOneWidget);
+
+    await tester.tap(find.text('01/02'));
+    await tester.pump();
+
+    expect(find.text('Planet'), findsOneWidget);
+    expect(find.text('Online'), findsOneWidget);
+    expect(find.text('01/02/2026'), findsOneWidget);
   });
 }

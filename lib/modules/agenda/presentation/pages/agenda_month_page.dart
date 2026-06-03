@@ -145,11 +145,7 @@ class _AgendaMonthPageState extends ConsumerState<AgendaMonthPage> {
               showSoloForteSheet(
                 context: context,
                 isScrollControlled: true,
-                backgroundColor: Colors.transparent,
                 showDragHandle: false,
-                useSafeArea: false,
-                shape: const RoundedRectangleBorder(),
-                clipBehavior: Clip.none,
                 builder: (context) => const AgendaFiltersSheet(),
               );
             },

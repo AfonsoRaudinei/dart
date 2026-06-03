@@ -23,7 +23,7 @@ class FakeLocalDataSource implements NdviLocalDatasource {
 
   @override
   Future<void> deleteAll(String fieldId) async {}
-  
+
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
@@ -35,13 +35,19 @@ class FakeRemoteDataSource implements NdviRemoteDatasource {
   @override
   Future<NdviImageModel?> fetchNdvi({
     required String fieldId,
-    required List<double> bbox,
+    List<double>? bbox,
+    String? geometry,
     String? date,
     String source = 'auto',
   }) async {
     called = true;
+    lastBbox = bbox;
+    lastGeometry = geometry;
     return nextReturn;
   }
+
+  List<double>? lastBbox;
+  String? lastGeometry;
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
@@ -73,49 +79,89 @@ void main() {
     repository = NdviRepositoryImpl(local, remote, lookup);
   });
 
-  test('Cenário 1: cache vazio + bbox disponível → chama remote e salva', () async {
-    const fieldId = 'F1';
-    local.nextReturn = null;
-    lookup.nextReturn = const FieldSummary(
-      id: fieldId,
-      name: 'Teste',
-      farmId: 'FAZ1',
-      bbox: [-50.0, -20.0, -49.0, -19.0],
-    );
-    remote.nextReturn = const NdviImageModel(
-      id: 'IMG1',
-      fieldId: fieldId,
-      imageDate: '2026-01-01',
-      ndviMin: 0.1,
-      ndviMax: 0.8,
-      ndviMean: 0.5,
-      source: 'sentinel',
-      fetchedAt: '2026-01-01',
-      syncStatus: 0,
-    );
+  test(
+    'Cenário 1: cache vazio + bbox disponível → chama remote e salva',
+    () async {
+      const fieldId = 'F1';
+      local.nextReturn = null;
+      lookup.nextReturn = const FieldSummary(
+        id: fieldId,
+        name: 'Teste',
+        farmId: 'FAZ1',
+        bbox: [-50.0, -20.0, -49.0, -19.0],
+      );
+      remote.nextReturn = const NdviImageModel(
+        id: 'IMG1',
+        fieldId: fieldId,
+        imageDate: '2026-01-01',
+        ndviMin: 0.1,
+        ndviMax: 0.8,
+        ndviMean: 0.5,
+        source: 'sentinel',
+        fetchedAt: '2026-01-01',
+        syncStatus: 0,
+      );
 
-    final result = await repository.getLatestByFieldId(fieldId);
+      final result = await repository.getLatestByFieldId(fieldId);
 
-    expect(result, isNotNull);
-    expect(remote.called, isTrue);
-    expect(local.lastSaved?.id, 'IMG1');
-  });
+      expect(result, isNotNull);
+      expect(remote.called, isTrue);
+      expect(local.lastSaved?.id, 'IMG1');
+    },
+  );
 
-  test('Cenário 2: cache vazio + bbox null → retorna null, não chama remote', () async {
-    const fieldId = 'F1';
-    local.nextReturn = null;
-    lookup.nextReturn = const FieldSummary(
-      id: fieldId,
-      name: 'Teste',
-      farmId: 'FAZ1',
-      bbox: null,
-    );
+  test(
+    'Cenário 2: cache vazio + bbox e geometry null → retorna null, não chama remote',
+    () async {
+      const fieldId = 'F1';
+      local.nextReturn = null;
+      lookup.nextReturn = const FieldSummary(
+        id: fieldId,
+        name: 'Teste',
+        farmId: 'FAZ1',
+        bbox: null,
+      );
 
-    final result = await repository.getLatestByFieldId(fieldId);
+      final result = await repository.getLatestByFieldId(fieldId);
 
-    expect(result, isNull);
-    expect(remote.called, isFalse);
-  });
+      expect(result, isNull);
+      expect(remote.called, isFalse);
+    },
+  );
+
+  test(
+    'Cenário 3: cache vazio + geometry disponível → chama remote com geometry',
+    () async {
+      const fieldId = 'F1';
+      const geometry =
+          '{"type":"Polygon","coordinates":[[[-50,-20],[-49,-20],[-49,-19],[-50,-19],[-50,-20]]]}';
+      local.nextReturn = null;
+      lookup.nextReturn = const FieldSummary(
+        id: fieldId,
+        name: 'Teste',
+        farmId: 'FAZ1',
+        geometry: geometry,
+      );
+      remote.nextReturn = const NdviImageModel(
+        id: 'IMG1',
+        fieldId: fieldId,
+        imageDate: '2026-01-01',
+        ndviMin: 0.1,
+        ndviMax: 0.8,
+        ndviMean: 0.5,
+        source: 'sentinel',
+        fetchedAt: '2026-01-01',
+        syncStatus: 0,
+      );
+
+      final result = await repository.getLatestByFieldId(fieldId);
+
+      expect(result, isNotNull);
+      expect(remote.called, isTrue);
+      expect(remote.lastBbox, isNull);
+      expect(remote.lastGeometry, geometry);
+    },
+  );
 
   test('Cenário 4: cache presente → retorna cache, NÃO chama remote', () async {
     const fieldId = 'F1';

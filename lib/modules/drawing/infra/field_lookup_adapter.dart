@@ -1,4 +1,7 @@
+import 'dart:convert';
+
 import 'package:soloforte_app/core/contracts/i_field_lookup.dart';
+import 'package:soloforte_app/core/utils/app_logger.dart';
 import 'package:soloforte_app/modules/drawing/domain/models/drawing_models.dart';
 import 'package:soloforte_app/modules/drawing/data/data_sources/drawing_local_store.dart';
 
@@ -20,7 +23,9 @@ class FieldLookupAdapter implements IFieldLookup {
   Future<List<FieldSummary>> listByFarmId(String farmId) async {
     final all = await _store.getAll();
     return all
-        .where((f) => f.properties.fazendaId == farmId) // Usando fazendaId do DrawingProperties
+        .where(
+          (f) => f.properties.fazendaId == farmId,
+        ) // Usando fazendaId do DrawingProperties
         .map(_toSummary)
         .toList();
   }
@@ -39,9 +44,7 @@ class FieldLookupAdapter implements IFieldLookup {
       farmId: feature.properties.fazendaId ?? '',
       areaHa: feature.properties.areaHa,
       bbox: _calculateBbox(feature),
-      // drawing/ usa seu próprio modelo de geometria (DrawingPolygon/MultiPolygon)
-      // não serializa para GeoJSON — geofence usa adapter próprio em consultoria/
-      geometry: null,
+      geometry: jsonEncode(feature.geometry.toJson()),
     );
   }
 
@@ -78,7 +81,13 @@ class FieldLookupAdapter implements IFieldLookup {
       } else if (geometry is DrawingMultiPolygon) {
         return geometry.coordinates.expand((polygon) => polygon).toList();
       }
-    } catch (_) {}
+    } catch (error) {
+      AppLogger.warning(
+        'Geometria inválida ignorada no lookup de talhão',
+        tag: 'FieldLookup',
+        error: error,
+      );
+    }
     return [];
   }
 }

@@ -6,6 +6,56 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
+type GeoJsonGeometry = {
+  type: string;
+  coordinates: unknown;
+};
+
+function isGeoJsonGeometry(value: unknown): value is GeoJsonGeometry {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    typeof (value as { type?: unknown }).type === "string" &&
+    Array.isArray((value as { coordinates?: unknown }).coordinates)
+  );
+}
+
+function bboxFromGeometry(geometry: GeoJsonGeometry): number[] | null {
+  const values: number[] = [];
+  const walk = (node: unknown) => {
+    if (Array.isArray(node)) {
+      if (
+        node.length >= 2 &&
+        typeof node[0] === "number" &&
+        typeof node[1] === "number"
+      ) {
+        values.push(node[0], node[1]);
+        return;
+      }
+      for (const child of node) walk(child);
+    }
+  };
+  walk(geometry.coordinates);
+
+  if (values.length < 2) return null;
+
+  let minLon = Infinity;
+  let minLat = Infinity;
+  let maxLon = -Infinity;
+  let maxLat = -Infinity;
+
+  for (let i = 0; i < values.length; i += 2) {
+    const lon = values[i];
+    const lat = values[i + 1];
+    if (lon < minLon) minLon = lon;
+    if (lat < minLat) minLat = lat;
+    if (lon > maxLon) maxLon = lon;
+    if (lat > maxLat) maxLat = lat;
+  }
+
+  return [minLon, minLat, maxLon, maxLat];
+}
+
 // ── Evalscript NDVI com colormap RdYlGn (Sentinel Hub) ──────────────────────
 const NDVI_EVALSCRIPT = `
 //VERSION=3
@@ -68,16 +118,26 @@ async function fetchSentinelImage(
   bbox: number[],
   token: string,
   date: string,
+  geometry?: GeoJsonGeometry,
   cloudCoverageMax = 80
 ): Promise<{ base64: string; cloudCoverage: number } | null> {
-  const body = {
-    input: {
-      bounds: {
-        bbox: bbox,
+  const bounds = geometry
+    ? {
+        geometry,
         properties: {
           crs: "http://www.opengis.net/def/crs/EPSG/0/4326",
         },
-      },
+      }
+    : {
+        bbox,
+        properties: {
+          crs: "http://www.opengis.net/def/crs/EPSG/0/4326",
+        },
+      };
+
+  const body = {
+    input: {
+      bounds,
       data: [
         {
           type: "sentinel-2-l2a",
@@ -287,13 +347,19 @@ serve(async (req) => {
     }
 
     const areaId = body.area_id as string | undefined;
-    const bbox = body.bbox as number[] | undefined;
+    const geometry = isGeoJsonGeometry(body.geometry) ? body.geometry : undefined;
+    const bodyBbox = body.bbox as number[] | undefined;
+    const bbox = bodyBbox && bodyBbox.length === 4
+      ? bodyBbox
+      : geometry
+        ? bboxFromGeometry(geometry)
+        : null;
     const requestedDate = body.date as string | undefined;
     const source = (body.source as string | undefined) ?? "auto";
 
     if (!areaId || !bbox || bbox.length !== 4) {
       return new Response(
-        JSON.stringify({ error: "area_id e bbox (4 valores) são obrigatórios." }),
+        JSON.stringify({ error: "area_id e bbox ou geometry são obrigatórios." }),
         {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -331,7 +397,7 @@ serve(async (req) => {
           ? (availableDates.includes(requestedDate) ? requestedDate : availableDates[0])
           : availableDates[0];
 
-        const result = await fetchSentinelImage(bbox, sentinelToken, finalDate);
+        const result = await fetchSentinelImage(bbox, sentinelToken, finalDate, geometry);
         if (result) {
           imageBase64 = result.base64;
           cloudCoverage = result.cloudCoverage;
