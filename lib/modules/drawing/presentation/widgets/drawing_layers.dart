@@ -27,12 +27,17 @@ class DrawingLayerWidget extends StatefulWidget {
 }
 
 class _DrawingLayerWidgetState extends State<DrawingLayerWidget> {
+  static const Color _manualOutlineColor = Colors.white;
+  static const Color _manualOutlineHalo = Color(0xCC111111);
+  static const Color _gpsOutlineHalo = Color(0xB3000000);
+
   // ⚡ CACHE: Evita reconstruir polígonos quando features não mudaram
   List<Polygon>? _cachedPolygons;
   List<Polyline>? _cachedPolylines;
   List<Marker>? _cachedMarkers;
   List<DrawingFeature>? _lastFeatures;
   String? _lastSelectedId;
+  Set<String>? _lastSelectedIds;
   DrawingGeometry? _lastLiveGeo;
   Set<int>? _lastIntersectingIndices;
 
@@ -43,6 +48,7 @@ class _DrawingLayerWidgetState extends State<DrawingLayerWidget> {
       builder: (context, _) {
         final features = widget.controller.features;
         final selectedId = widget.controller.selectedFeature?.id;
+        final selectedIds = widget.controller.selectedFeatureIds;
         final liveGeo = widget.controller.liveGeometry;
         final intersectingIndices =
             widget.controller.intersectingSegmentIndices;
@@ -51,6 +57,7 @@ class _DrawingLayerWidgetState extends State<DrawingLayerWidget> {
         final needsRebuild =
             _lastFeatures != features ||
             _lastSelectedId != selectedId ||
+            !_sameIds(_lastSelectedIds, selectedIds) ||
             _lastLiveGeo != liveGeo ||
             _lastIntersectingIndices != intersectingIndices;
 
@@ -71,6 +78,7 @@ class _DrawingLayerWidgetState extends State<DrawingLayerWidget> {
         // Atualizar cache vars
         _lastFeatures = features;
         _lastSelectedId = selectedId;
+        _lastSelectedIds = Set.from(selectedIds);
         _lastLiveGeo = liveGeo;
         _lastIntersectingIndices = Set.from(intersectingIndices);
 
@@ -80,58 +88,36 @@ class _DrawingLayerWidgetState extends State<DrawingLayerWidget> {
 
         // 1. Renderiza features salvas
         for (final feature in features) {
-          if (feature.geometry is DrawingPolygon) {
-            final poly = feature.geometry as DrawingPolygon;
+          final geometry = feature.geometry;
+          final parts = geometry is DrawingPolygon
+              ? [geometry.coordinates]
+              : geometry is DrawingMultiPolygon
+              ? geometry.coordinates
+              : const <List<List<List<double>>>>[];
+          final isSelected =
+              feature.id == selectedId || selectedIds.contains(feature.id);
+          final style = isSelected ? FieldStyle.selected : feature.style;
 
-            // Converter coordenadas [lon, lat] para LatLng(lat, lon)
-            // O primeiro anel é o outline externo
-            if (poly.coordinates.isEmpty) continue;
-
-            final outerRing = poly.coordinates.first
-                .map((c) => LatLng(c[1], c[0]))
-                .toList();
-
-            // Os demais anéis são buracos
-            final holes = poly.coordinates.length > 1
-                ? poly.coordinates.skip(1).map((ring) {
-                    return ring.map((c) => LatLng(c[1], c[0])).toList();
-                  }).toList()
-                : null;
-
-            final isSelected = feature.id == selectedId;
-
-            // Determina estilo
-            // Se estiver selecionado no controller, sobrescreve o estilo base
-            final style = isSelected ? FieldStyle.selected : feature.style;
-
+          for (var index = 0; index < parts.length; index++) {
+            final rings = parts[index];
+            if (rings.isEmpty) continue;
             polygons.add(
-              Polygon(
-                points: outerRing,
-                holePointsList: holes,
+              _polygonFromRings(
+                rings,
                 color: style.fillColor.withValues(alpha: style.fillOpacity),
                 borderColor: style.borderColor,
                 borderStrokeWidth: style.borderWidth,
                 pattern: style.isDashed
                     ? StrokePattern.dashed(segments: const [10, 5])
                     : const StrokePattern.solid(),
-                label: feature.properties.nome,
-                labelStyle: const TextStyle(
-                  color: Colors.black,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 12,
-                ), // TODO: Usar tema SoloForteTextStyles
-                rotateLabel: true,
+                label: index == 0 ? feature.properties.nome : null,
               ),
             );
           }
         }
 
         // 2. Renderiza sketch em progresso (manual ou GPS Walk)
-        if (liveGeo is DrawingPolygon && liveGeo.coordinates.isNotEmpty) {
-          final outerRing = liveGeo.coordinates.first
-              .map((c) => LatLng(c[1], c[0]))
-              .toList();
-
+        if (liveGeo is DrawingPolygon || liveGeo is DrawingMultiPolygon) {
           // GPS Walk usa estilo vermelho; desenho manual usa branco
           final isGpsWalk =
               widget.controller.currentState == DrawingState.gpsTracking;
@@ -140,23 +126,57 @@ class _DrawingLayerWidgetState extends State<DrawingLayerWidget> {
               widget.controller.interactionMode ==
                   DrawingInteraction.importPreview;
 
-          polygons.add(
-            Polygon(
-              points: outerRing,
-              color: isGpsWalk
-                  ? Colors.red.withValues(alpha: 0.18)
-                  : Colors.white.withValues(alpha: 0.2),
-              borderColor: isGpsWalk ? Colors.red : Colors.white,
-              borderStrokeWidth: isGpsWalk ? 2.0 : 3,
-              pattern: isGpsWalk
-                  ? const StrokePattern.solid()
-                  : const StrokePattern.dotted(),
-            ),
-          );
+          final parts = liveGeo is DrawingPolygon
+              ? [liveGeo.coordinates]
+              : (liveGeo as DrawingMultiPolygon).coordinates;
+          for (final rings in parts) {
+            if (rings.isEmpty) continue;
+            final outerRing = _toLatLngRing(rings.first);
+            if (outerRing.length >= 2) {
+              final outlineColor = isGpsWalk ? Colors.red : _manualOutlineColor;
+              final haloColor = isGpsWalk
+                  ? _gpsOutlineHalo
+                  : _manualOutlineHalo;
+
+              polylines.add(
+                Polyline(
+                  points: outerRing,
+                  color: haloColor,
+                  strokeWidth: isGpsWalk ? 7 : 8,
+                ),
+              );
+              polylines.add(
+                Polyline(
+                  points: outerRing,
+                  color: outlineColor,
+                  strokeWidth: isGpsWalk ? 3 : 4,
+                  pattern: isGpsWalk
+                      ? const StrokePattern.solid()
+                      : const StrokePattern.dotted(),
+                ),
+              );
+            }
+            polygons.add(
+              _polygonFromRings(
+                rings,
+                color: isGpsWalk
+                    ? Colors.red.withValues(alpha: 0.18)
+                    : Colors.white.withValues(alpha: 0.2),
+                borderColor: isGpsWalk ? Colors.red : Colors.white,
+                borderStrokeWidth: isGpsWalk ? 2.0 : 3,
+                pattern: isGpsWalk
+                    ? const StrokePattern.solid()
+                    : const StrokePattern.dotted(),
+              ),
+            );
+          }
 
           // Renderizar vértices apenas no desenho manual/GPS.
           // Em importPreview exibimos somente o polígono para evitar "pontos soltos".
-          if (!isImportPreview) {
+          if (!isImportPreview &&
+              liveGeo is DrawingPolygon &&
+              liveGeo.coordinates.isNotEmpty) {
+            final outerRing = _toLatLngRing(liveGeo.coordinates.first);
             for (int i = 0; i < outerRing.length; i++) {
               final point = outerRing[i];
               final isStart = i == 0;
@@ -230,4 +250,41 @@ class _DrawingLayerWidgetState extends State<DrawingLayerWidget> {
       },
     );
   }
+
+  bool _sameIds(Set<String>? previous, Set<String> current) {
+    return previous != null &&
+        previous.length == current.length &&
+        previous.containsAll(current);
+  }
+
+  Polygon _polygonFromRings(
+    List<List<List<double>>> rings, {
+    required Color color,
+    required Color borderColor,
+    required double borderStrokeWidth,
+    required StrokePattern pattern,
+    String? label,
+  }) {
+    final holes = rings.length > 1
+        ? rings.skip(1).map(_toLatLngRing).toList()
+        : null;
+    return Polygon(
+      points: _toLatLngRing(rings.first),
+      holePointsList: holes,
+      color: color,
+      borderColor: borderColor,
+      borderStrokeWidth: borderStrokeWidth,
+      pattern: pattern,
+      label: label,
+      labelStyle: const TextStyle(
+        color: Colors.black,
+        fontWeight: FontWeight.bold,
+        fontSize: 12,
+      ),
+      rotateLabel: true,
+    );
+  }
+
+  List<LatLng> _toLatLngRing(List<List<double>> ring) =>
+      ring.map((c) => LatLng(c[1], c[0])).toList();
 }

@@ -303,6 +303,50 @@ void main() {
 
       controller.dispose();
     });
+
+    testWidgets('💾 Revisão expõe CTA de salvar de forma explícita', (
+      WidgetTester tester,
+    ) async {
+      tester.view.physicalSize = const Size(800, 2000);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final controller = DrawingController(repository: MockDrawingRepository());
+
+      await tester.pumpWidget(
+        ProviderScope(
+          child: MaterialApp(
+            home: Scaffold(
+              body: SingleChildScrollView(
+                child: DrawingSheet(controller: controller),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      controller.selectTool('polygon');
+      controller.appendDrawingPoint(const LatLng(-15.7801, -47.9292));
+      controller.appendDrawingPoint(const LatLng(-15.7802, -47.9293));
+      controller.appendDrawingPoint(const LatLng(-15.7803, -47.9291));
+      controller.completeDrawing();
+
+      await tester.pumpAndSettle();
+
+      expect(controller.currentState, DrawingState.reviewing);
+      expect(find.byKey(const Key('drawing_review_save_hint')), findsOneWidget);
+      expect(
+        find.byKey(const Key('drawing_review_save_cta_top')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const Key('drawing_review_save_cta_bottom')),
+        findsOneWidget,
+      );
+
+      controller.dispose();
+    });
   });
 
   group('FIX-DRAW-FLOW-02 — Regressão Sheet State', () {

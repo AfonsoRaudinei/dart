@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:latlong2/latlong.dart';
 import '../controllers/drawing_controller.dart';
 import '../../domain/models/drawing_models.dart';
 import '../../domain/models/gps_walk_session.dart';
@@ -9,6 +10,8 @@ import '../../domain/drawing_state.dart';
 import '../../domain/repositories/i_clients_repository.dart';
 import '../providers/drawing_client_provider.dart';
 import '../providers/gps_walk_providers.dart';
+import '../providers/drawing_export_provider.dart';
+import '../../../dashboard/providers/location_providers.dart';
 import '../../../../core/constants/layout_constants.dart';
 import '../../../../core/ui/sheets/soloforte_sheet.dart';
 import 'components/drawing_tool_selector.dart';
@@ -24,8 +27,13 @@ import '../../../../core/ui/sheets/sheet_tokens.dart';
 // lib/modules/drawing/presentation/widgets/components/drawing_tool_selector.dart
 class DrawingSheet extends ConsumerStatefulWidget {
   final DrawingController controller;
+  final ValueChanged<DrawingFeature>? onFocusFeature;
 
-  const DrawingSheet({super.key, required this.controller});
+  const DrawingSheet({
+    super.key,
+    required this.controller,
+    this.onFocusFeature,
+  });
 
   @override
   ConsumerState<DrawingSheet> createState() => _DrawingSheetState();
@@ -75,12 +83,21 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
   void _syncPreSelectedClient(DrawingClientState clientState) {
     final preId = clientState.preSelectedClientId;
     if (preId == null) return;
-    if (_selectedClient?.id == preId) return; // já selecionado
-    if (clientState.clients.isEmpty) return; // ainda carregando
 
     final match = clientState.clients.where((c) => c.id == preId).toList();
-    if (match.isNotEmpty && mounted) {
+    if (match.isNotEmpty &&
+        !identical(_selectedClient, match.first) &&
+        mounted) {
       setState(() => _selectedClient = match.first);
+    } else if (_selectedClient == null &&
+        clientState.preSelectedClientName != null &&
+        mounted) {
+      setState(
+        () => _selectedClient = Client(
+          id: preId,
+          name: clientState.preSelectedClientName!,
+        ),
+      );
     }
   }
 
@@ -159,6 +176,21 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
       }
     });
 
+    ref.listen<ExportState>(drawingExportProvider, (_, next) {
+      if (!mounted) return;
+      if (next is ExportSuccess) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Exportado: ${next.fileName}')));
+        ref.read(drawingExportProvider.notifier).reset();
+      } else if (next is ExportError) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(next.message)));
+        ref.read(drawingExportProvider.notifier).reset();
+      }
+    });
+
     // NOTA ARQUITETURAL: O handle (pílula de drag) é renderizado pelo
     // componente pai (lib/ui/screens/private_map_sheets.dart / MapBottomSheet).
     // Este widget não inclui handle próprio.
@@ -179,73 +211,99 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
             const _SheetHeader(),
 
             // Conteúdo Dinâmico
-            ListenableBuilder(
-              listenable: widget.controller,
-              builder: (context, _) {
-                // ── GPS Walk: sincronizar métricas a cada novo vértice GPS ────
-                final gpsSession = ref.watch(gpsWalkProvider);
-                if (gpsSession != null) {
-                  // Sincroniza pontos do DrawingController → GpsWalkNotifier
-                  final pts = widget.controller.gpsVertices;
-                  if (pts.length != gpsSession.points.length) {
-                    // Schedule post-frame para não chamar durante build
-                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                      ref
-                          .read(gpsWalkProvider.notifier)
-                          .syncFromController(pts);
-                    });
-                  }
-                  return const GpsWalkControlsOverlay();
-                }
+            Flexible(
+              child: SingleChildScrollView(
+                child: ListenableBuilder(
+                  listenable: widget.controller,
+                  builder: (context, _) {
+                    // ── GPS Walk: sincronizar métricas a cada novo vértice GPS ────
+                    final gpsSession = ref.watch(gpsWalkProvider);
+                    if (gpsSession != null) {
+                      // Sincroniza pontos do DrawingController → GpsWalkNotifier
+                      final pts = widget.controller.gpsVertices;
+                      if (pts.length != gpsSession.points.length) {
+                        // Schedule post-frame para não chamar durante build
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          ref
+                              .read(gpsWalkProvider.notifier)
+                              .syncFromController(pts);
+                        });
+                      }
+                      return const GpsWalkControlsOverlay();
+                    }
 
-                final content = Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Always calculate and show metrics if available
-                    _buildMetricsPanel(context),
+                    final content = Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Always calculate and show metrics if available
+                        _buildMetricsPanel(context),
 
-                    if (widget.controller.errorMessage != null)
-                      _buildErrorState(context)
-                    // 🆕 Modo de revisão: Formulário após desenhar
-                    else if (widget.controller.currentState ==
-                        DrawingState.reviewing)
-                      _buildReviewingMode(context)
-                    else if (widget.controller.interactionMode ==
-                        DrawingInteraction.importing)
-                      _buildImportingMode(context)
-                    else if (widget.controller.interactionMode ==
-                        DrawingInteraction.importPreview)
-                      _buildImportPreviewMode(context)
-                    else if (widget.controller.interactionMode ==
-                        DrawingInteraction.unionSelection)
-                      _buildUnionMode(context)
-                    else if (widget.controller.interactionMode ==
-                        DrawingInteraction.differenceSelection)
-                      _buildDifferenceMode(context) // Replaces cut
-                    else if (widget.controller.interactionMode ==
-                        DrawingInteraction.intersectionSelection)
-                      _buildIntersectionMode(context)
-                    else if (widget.controller.interactionMode ==
-                        DrawingInteraction.editing)
-                      _buildEditingMode(context)
-                    else if (widget.controller.selectedFeature != null)
-                      _buildSelectedMode(context)
-                    else
-                      _buildToolsGrid(context),
-                  ],
-                );
-                return Padding(
-                  padding: EdgeInsets.only(
-                    bottom: kFabSafeArea + safeBottom + 40,
-                  ),
-                  child: content,
-                );
-              },
+                        if (widget.controller.errorMessage != null)
+                          _buildErrorState(context)
+                        // 🆕 Modo de revisão: Formulário após desenhar
+                        else if (widget.controller.currentState ==
+                            DrawingState.reviewing)
+                          _buildReviewingMode(context)
+                        else if (widget.controller.interactionMode ==
+                            DrawingInteraction.importing)
+                          _buildImportingMode(context)
+                        else if (widget.controller.interactionMode ==
+                            DrawingInteraction.importPreview)
+                          _buildImportPreviewMode(context)
+                        else if (widget.controller.interactionMode ==
+                            DrawingInteraction.unionSelection)
+                          _buildUnionMode(context)
+                        else if (widget.controller.interactionMode ==
+                            DrawingInteraction.differenceSelection)
+                          _buildDifferenceMode(context) // Replaces cut
+                        else if (widget.controller.interactionMode ==
+                            DrawingInteraction.intersectionSelection)
+                          _buildIntersectionMode(context)
+                        else if (widget.controller.interactionMode ==
+                            DrawingInteraction.editing)
+                          _buildEditingMode(context)
+                        else if (widget.controller.selectedFeature != null)
+                          _buildSelectedMode(context)
+                        else
+                          _buildToolsGrid(context),
+                      ],
+                    );
+                    return Padding(
+                      padding: EdgeInsets.only(
+                        bottom: kFabSafeArea + safeBottom + 40,
+                      ),
+                      child: content,
+                    );
+                  },
+                ),
+              ),
             ),
           ],
         ),
       ),
     );
+  }
+
+  void _submitReview() {
+    HapticFeedback.mediumImpact();
+    final geometry = widget.controller.liveGeometry;
+    if (geometry == null) return;
+
+    widget.controller.addFeature(
+      geometry: geometry,
+      nome: _nomeController.text.trim(),
+      tipo: DrawingType.talhao,
+      origem:
+          widget.controller.pendingImportOrigin ?? DrawingOrigin.desenho_manual,
+      autorId: 'current_user',
+      autorTipo: _isConsultant ? AuthorType.consultor : AuthorType.cliente,
+      clienteId: _selectedClient?.id ?? 'SELF',
+      fazendaId: _selectedFarm?.id,
+      grupo: _selectedFarm?.name,
+      cor: _selectedColor.toARGB32(),
+    );
+
+    _resetReviewForm();
   }
 
   Widget _buildMetricsPanel(BuildContext context) {
@@ -343,6 +401,12 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
             selectedToolKey: _selectedToolKey,
             onToolSelected: _onToolSelected,
           ),
+          const SizedBox(height: 12),
+          OutlinedButton.icon(
+            onPressed: () => _openGroupMeasurementsNavigator(context),
+            icon: const Icon(Icons.folder_open_outlined),
+            label: const Text('Grupo > Medições'),
+          ),
           if (pendingCount > 0) ...[
             const SizedBox(height: 16),
             ElevatedButton.icon(
@@ -358,6 +422,171 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
         ],
       ),
     );
+  }
+
+  Future<void> _openGroupMeasurementsNavigator(BuildContext context) async {
+    final all = widget.controller.features;
+    if (all.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Nenhuma medição disponível.')),
+      );
+      return;
+    }
+
+    final groups =
+        all
+            .map((f) => (f.properties.grupo ?? 'Sem Grupo').trim())
+            .toSet()
+            .toList()
+          ..sort();
+    final currentPosition = await ref.read(initialLocationProvider.future);
+    final distance = const Distance();
+    String query = '';
+    String selectedGroup = 'Todos';
+    bool orderByProximity = true;
+
+    if (!context.mounted) return;
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setLocalState) {
+          List<DrawingFeature> filtered = all.where((f) {
+            final g = (f.properties.grupo ?? 'Sem Grupo').trim();
+            final name = f.properties.nome.toLowerCase();
+            final matchesGroup = selectedGroup == 'Todos' || g == selectedGroup;
+            final matchesQuery =
+                query.isEmpty ||
+                name.contains(query.toLowerCase()) ||
+                g.toLowerCase().contains(query.toLowerCase());
+            return matchesGroup && matchesQuery;
+          }).toList();
+
+          if (orderByProximity && currentPosition != null) {
+            filtered.sort((a, b) {
+              final da = _featureDistanceM(a, currentPosition, distance);
+              final db = _featureDistanceM(b, currentPosition, distance);
+              return da.compareTo(db);
+            });
+          } else {
+            filtered.sort(
+              (a, b) => a.properties.nome.compareTo(b.properties.nome),
+            );
+          }
+
+          return AlertDialog(
+            title: const Text('Grupo > Medições'),
+            content: SizedBox(
+              width: 520,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    decoration: const InputDecoration(
+                      labelText: 'Buscar por grupo ou medição',
+                      prefixIcon: Icon(Icons.search),
+                    ),
+                    onChanged: (v) => setLocalState(() => query = v),
+                  ),
+                  const SizedBox(height: 8),
+                  DropdownButtonFormField<String>(
+                    initialValue: 'Todos',
+                    items: [
+                      const DropdownMenuItem(
+                        value: 'Todos',
+                        child: Text('Todos'),
+                      ),
+                      ...groups.map(
+                        (g) => DropdownMenuItem(value: g, child: Text(g)),
+                      ),
+                    ],
+                    onChanged: (v) =>
+                        setLocalState(() => selectedGroup = v ?? 'Todos'),
+                  ),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Ordenar por proximidade'),
+                    value: orderByProximity,
+                    onChanged: (v) => setLocalState(() => orderByProximity = v),
+                  ),
+                  const SizedBox(height: 8),
+                  Flexible(
+                    child: ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: filtered.length,
+                      itemBuilder: (_, i) {
+                        final f = filtered[i];
+                        final g = (f.properties.grupo ?? 'Sem Grupo').trim();
+                        final d = currentPosition == null
+                            ? null
+                            : _featureDistanceM(f, currentPosition, distance);
+                        return ListTile(
+                          title: Text(f.properties.nome),
+                          subtitle: Text(
+                            '$g · ${f.properties.areaHa.toStringAsFixed(2)} ha'
+                            '${d == null ? '' : ' · ${(d / 1000).toStringAsFixed(2)} km'}',
+                          ),
+                          trailing: const Icon(Icons.chevron_right),
+                          onTap: () {
+                            widget.controller.selectFeature(f);
+                            widget.onFocusFeature?.call(f);
+                            Navigator.of(ctx).pop();
+                          },
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(),
+                child: const Text('Fechar'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  double _featureDistanceM(
+    DrawingFeature feature,
+    LatLng user,
+    Distance distance,
+  ) {
+    final c = _featureCentroid(feature.geometry);
+    if (c == null) return double.infinity;
+    return distance.as(LengthUnit.Meter, user, c);
+  }
+
+  LatLng? _featureCentroid(DrawingGeometry geometry) {
+    if (geometry is DrawingPolygon &&
+        geometry.coordinates.isNotEmpty &&
+        geometry.coordinates.first.isNotEmpty) {
+      final ring = geometry.coordinates.first;
+      double sumLat = 0;
+      double sumLng = 0;
+      for (final p in ring) {
+        sumLng += p[0];
+        sumLat += p[1];
+      }
+      return LatLng(sumLat / ring.length, sumLng / ring.length);
+    }
+    if (geometry is DrawingMultiPolygon &&
+        geometry.coordinates.isNotEmpty &&
+        geometry.coordinates.first.isNotEmpty &&
+        geometry.coordinates.first.first.isNotEmpty) {
+      final ring = geometry.coordinates.first.first;
+      double sumLat = 0;
+      double sumLng = 0;
+      for (final p in ring) {
+        sumLng += p[0];
+        sumLat += p[1];
+      }
+      return LatLng(sumLat / ring.length, sumLng / ring.length);
+    }
+    return null;
   }
 
   // 🆕 REFATORADO: Métodos de construção de modo
@@ -635,6 +864,34 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
       onUnion: widget.controller.startUnionMode,
       onDifference: widget.controller.startDifferenceMode,
       onIntersection: widget.controller.startIntersectionMode,
+      onExport: () => _exportSelected(context, feature),
+      onExportAll: () => _exportAll(context),
+      onToggleMultiSelect: () {
+        widget.controller.setMultiSelectEnabled(
+          !widget.controller.isMultiSelectEnabled,
+        );
+      },
+      onDuplicateSelected: () async {
+        await widget.controller.duplicateSelectedFeatures();
+      },
+      onMoveSelected: () async {
+        final delta = await _askMoveDelta(context);
+        if (delta == null) return;
+        await widget.controller.moveSelectedFeatures(
+          deltaLat: delta.$1,
+          deltaLng: delta.$2,
+        );
+      },
+      onSelectByGroup: () async {
+        final group = await _askGroupName(context, feature.properties.grupo);
+        if (group == null || group.trim().isEmpty) return;
+        widget.controller.selectByGroup(group);
+      },
+      onDeleteSelected: () {
+        widget.controller.deleteSelectedFeatures();
+      },
+      isMultiSelectEnabled: widget.controller.isMultiSelectEnabled,
+      selectedCount: widget.controller.selectedFeatureIds.length,
       onDelete: () async {
         // 1. Guardar referência para undo
         final deletedFeature = feature;
@@ -764,6 +1021,49 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
+            const SizedBox(height: 8),
+            Container(
+              key: const Key('drawing_review_save_hint'),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: PremiumTokens.brandGreen.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: PremiumTokens.brandGreen.withValues(alpha: 0.2),
+                ),
+              ),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.save_outlined,
+                    color: PremiumTokens.brandGreen,
+                  ),
+                  const SizedBox(width: 10),
+                  const Expanded(
+                    child: Text(
+                      'Revise os dados e toque em salvar para criar o desenho no mapa.',
+                      style: TextStyle(fontSize: 13.5),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  ElevatedButton(
+                    key: const Key('drawing_review_save_cta_top'),
+                    onPressed: _submitReview,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: PremiumTokens.brandGreen,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 12,
+                      ),
+                    ),
+                    child: const Text(
+                      'Salvar',
+                      style: TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                  ),
+                ],
+              ),
+            ),
             const SizedBox(height: 16),
             if (widget.controller.hasSelfIntersection ||
                 widget.controller.intersectionWarningMessage != null) ...[
@@ -807,32 +1107,7 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
               ),
             ),
             const SizedBox(height: 8),
-            DropdownButtonFormField<Client>(
-              initialValue: _selectedClient,
-              decoration: InputDecoration(
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              hint: const Text('Selecione o cliente...'),
-              items: ref.watch(drawingClientProvider).clients.map((c) {
-                return DropdownMenuItem(value: c, child: Text(c.name));
-              }).toList(),
-              onChanged: (client) {
-                setState(() {
-                  _selectedClient = client;
-                  _selectedFarm = null; // Reset farm
-                });
-                if (client != null) {
-                  ref.read(drawingClientProvider.notifier).loadFarms(client.id);
-                }
-              },
-              validator: (v) => v == null ? 'Selecione um cliente' : null,
-            ),
+            _buildClientField(),
             const SizedBox(height: 16),
 
             // 2. Selecionar Fazenda
@@ -1006,34 +1281,8 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
                 const SizedBox(width: 16),
                 Expanded(
                   child: ElevatedButton(
-                    onPressed: () {
-                      HapticFeedback.mediumImpact(); // ✅ iOS Premium: feedback tátil ao salvar
-                      final geometry = widget.controller.liveGeometry;
-                      if (geometry == null) return;
-
-                      // 🚀 SALVAR com IDs
-                      widget.controller.addFeature(
-                        geometry: geometry,
-                        nome: _nomeController.text.trim(),
-                        tipo: DrawingType.talhao,
-                        origem:
-                            widget.controller.pendingImportOrigin ??
-                            DrawingOrigin.desenho_manual,
-                        autorId: 'current_user',
-                        autorTipo: _isConsultant
-                            ? AuthorType.consultor
-                            : AuthorType.cliente, // FIXED
-                        clienteId:
-                            _selectedClient?.id ??
-                            'SELF', // If producer, assumes self
-                        fazendaId: _selectedFarm?.id,
-                        // Opcional: passar grupo como Nome da Fazenda para compatibilidade visual
-                        grupo: _selectedFarm?.name,
-                        cor: _selectedColor.value,
-                      );
-
-                      _resetReviewForm();
-                    },
+                    key: const Key('drawing_review_save_cta_bottom'),
+                    onPressed: _submitReview,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: PremiumTokens.brandGreen,
                       padding: const EdgeInsets.symmetric(vertical: 16),
@@ -1149,15 +1398,184 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
     );
   }
 
+  Widget _buildClientField() {
+    final clientState = ref.watch(drawingClientProvider);
+    if (clientState.preSelectedClientId != null) {
+      final name =
+          _selectedClient?.name ??
+          clientState.preSelectedClientName ??
+          'Cliente selecionado';
+      return InputDecorator(
+        decoration: InputDecoration(
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 12,
+          ),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+          suffixIcon: const Icon(Icons.lock_outline, size: 18),
+        ),
+        child: Text(name),
+      );
+    }
+
+    return DropdownButtonFormField<Client>(
+      initialValue: _selectedClient,
+      decoration: InputDecoration(
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 12,
+        ),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+      ),
+      hint: const Text('Selecione o cliente...'),
+      items: clientState.clients.map((c) {
+        return DropdownMenuItem(value: c, child: Text(c.name));
+      }).toList(),
+      onChanged: (client) {
+        setState(() {
+          _selectedClient = client;
+          _selectedFarm = null;
+        });
+        if (client != null) {
+          ref.read(drawingClientProvider.notifier).loadFarms(client.id);
+        }
+      },
+      validator: (v) => v == null ? 'Selecione um cliente' : null,
+    );
+  }
+
   // Antigo helper de limpar form
   void _resetReviewForm() {
     _nomeController.text = "Talhão Novo";
     // _descricaoController.clear(); // Removed as per instruction
+    final preserveContextClient =
+        ref.read(drawingClientProvider).preSelectedClientId != null;
     setState(() {
-      _selectedClient = null;
+      if (!preserveContextClient) _selectedClient = null;
       _selectedFarm = null;
       _selectedColor = PremiumTokens.brandGreen;
     });
+  }
+
+  Future<void> _exportSelected(
+    BuildContext context,
+    DrawingFeature feature,
+  ) async {
+    final format = await _selectExportFormat(context);
+    if (format == null || !mounted) return;
+    await ref
+        .read(drawingExportProvider.notifier)
+        .exportFeature(feature, format: format);
+  }
+
+  Future<void> _exportAll(BuildContext context) async {
+    final format = await _selectExportFormat(context);
+    if (format == null || !mounted) return;
+    await ref
+        .read(drawingExportProvider.notifier)
+        .exportAll(widget.controller.features, format: format);
+  }
+
+  Future<DrawingExportFormat?> _selectExportFormat(BuildContext context) async {
+    return showSoloForteSheet<DrawingExportFormat>(
+      context: context,
+      backgroundColor: SoloForteSheetTokens.sheetBackground,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const ListTile(
+              title: Text(
+                'Formato de exportação',
+                style: TextStyle(fontWeight: FontWeight.w700),
+              ),
+            ),
+            ..._ExportOption.values.map(
+              (opt) => ListTile(
+                leading: Icon(opt.icon, color: PremiumTokens.brandGreen),
+                title: Text(opt.label),
+                subtitle: Text(opt.subtitle),
+                onTap: () => Navigator.of(ctx).pop(opt.format),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<(double, double)?> _askMoveDelta(BuildContext context) async {
+    final latController = TextEditingController(text: '0.0000');
+    final lngController = TextEditingController(text: '0.0000');
+    return showDialog<(double, double)>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Mover polígonos'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: latController,
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+                signed: true,
+              ),
+              decoration: const InputDecoration(labelText: 'Delta latitude'),
+            ),
+            TextField(
+              controller: lngController,
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+                signed: true,
+              ),
+              decoration: const InputDecoration(labelText: 'Delta longitude'),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () {
+              final dLat = double.tryParse(latController.text);
+              final dLng = double.tryParse(lngController.text);
+              if (dLat == null || dLng == null) return;
+              Navigator.of(ctx).pop((dLat, dLng));
+            },
+            child: const Text('Aplicar'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<String?> _askGroupName(
+    BuildContext context,
+    String? initialValue,
+  ) async {
+    final controller = TextEditingController(text: initialValue ?? '');
+    return showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Selecionar por grupo'),
+        content: TextField(
+          controller: controller,
+          decoration: const InputDecoration(labelText: 'Nome do grupo'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(controller.text.trim()),
+            child: const Text('Selecionar'),
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -1204,6 +1622,52 @@ class _SheetHeader extends StatelessWidget {
       ],
     );
   }
+}
+
+enum _ExportOption {
+  geojson(
+    DrawingExportFormat.geojson,
+    'GeoJSON',
+    'Padrão GIS moderno',
+    Icons.map_outlined,
+  ),
+  gpx(
+    DrawingExportFormat.gpx,
+    'GPX',
+    'Trilhas e pontos GPS',
+    Icons.route_outlined,
+  ),
+  dxf(
+    DrawingExportFormat.dxf,
+    'DXF',
+    'CAD/AutoCAD',
+    Icons.architecture_outlined,
+  ),
+  csv(
+    DrawingExportFormat.csv,
+    'CSV',
+    'Planilha com vértices',
+    Icons.table_chart_outlined,
+  ),
+  txt(
+    DrawingExportFormat.txt,
+    'TXT',
+    'Relatório textual',
+    Icons.description_outlined,
+  ),
+  pdf(
+    DrawingExportFormat.pdf,
+    'PDF',
+    'Coordenadas para operação',
+    Icons.picture_as_pdf_outlined,
+  );
+
+  final DrawingExportFormat format;
+  final String label;
+  final String subtitle;
+  final IconData icon;
+
+  const _ExportOption(this.format, this.label, this.subtitle, this.icon);
 }
 
 class _MetricItem extends StatelessWidget {
@@ -1308,7 +1772,7 @@ class _ColorOption extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isSelected = color.value == selected.value;
+    final isSelected = color.toARGB32() == selected.toARGB32();
     return GestureDetector(
       onTap: () => onTap(color),
       child: Container(
@@ -1323,7 +1787,7 @@ class _ColorOption extends StatelessWidget {
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: color.withOpacity(0.4),
+                    color: color.withValues(alpha: 0.4),
                     blurRadius: 8,
                     offset: const Offset(0, 4),
                   ),
