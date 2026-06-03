@@ -66,13 +66,16 @@ class MapConfig {
   static const String stadiaStamenTerrain =
       'https://tiles.stadiamaps.com/tiles/stamen_terrain/{z}/{x}/{y}.png';
 
-  /// Google Maps Satellite Híbrido — tile endpoint público.
-  /// lyrs=y = satellite + labels (cidades/rodovias) — recomendado para campo
-  /// lyrs=s = satellite puro (sem labels)
-  /// Cobertura superior no Brasil rural, zoom até 20+
+  /// Google Maps Satellite — tile endpoint público.
+  /// lyrs=s = satellite puro (sem labels), melhor para desenho/medição.
+  /// Evita textos no mapa e reduz poluição visual sobre polígonos.
+  ///
+  /// Observação: alguns servidores devolvem uma imagem "Zoom Level Not
+  /// Supported" em zooms nativos altos. Por isso o app limita o zoom nativo
+  /// abaixo e deixa o FlutterMap fazer overzoom visual.
   /// Subdomínios 0-3 = load balancing automático entre servidores Google
   static const String googleSatelliteUrl =
-      'https://mt{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}';
+      'https://mt{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}';
 
   /// Subdomínios do Google Maps Tile Server (load balancing)
   static const List<String> googleSatelliteSubdomains = ['0', '1', '2', '3'];
@@ -85,11 +88,18 @@ class MapConfig {
   static const String esriWorldTopo =
       'https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}';
 
-  /// MapTiler Satellite — Imagem satelital com labels
-  /// Cobertura global de alta resolução
+  /// MapTiler Satellite — imagem satelital limpa, sem labels.
+  /// Cobertura global oficial e estável para uso agrícola/desenho.
   /// Requer API key via --dart-define=MAPTILER_API_KEY=[key]
   /// Free tier: 100k requests/mês — https://www.maptiler.com/cloud/
   static String mapTilerSatelliteUrl(String apiKey) =>
+      'https://api.maptiler.com/maps/satellite-v4/256/{z}/{x}/{y}.jpg?key=$apiKey';
+
+  /// MapTiler Hybrid — imagem satelital com labels.
+  /// Mantido para cenários futuros onde nomes/rodovias sejam necessários.
+  /// Requer API key via --dart-define=MAPTILER_API_KEY=[key]
+  /// Free tier: 100k requests/mês — https://www.maptiler.com/cloud/
+  static String mapTilerHybridUrl(String apiKey) =>
       'https://api.maptiler.com/maps/hybrid/256/{z}/{x}/{y}{r}.jpg?key=$apiKey';
 
   /// MapTiler Landscape — Estilo natural com relevo suave.
@@ -177,10 +187,13 @@ class MapConfig {
   static const double maxZoom = 18.0;
   static const double defaultZoom = 13.0;
 
-  static const double satelliteMaxZoom = 20.0;
-  static const int satelliteMaxNativeZoom = 20;
+  static const double satelliteMaxZoom = 22.0;
+  static const int satelliteMaxNativeZoom = 18;
+  static const int mapTilerSatelliteMaxNativeZoom = 20;
   static const double defaultLayerMaxZoom = 18.0;
   static const int defaultLayerMaxNativeZoom = 18;
+  static const double mapTilerStyledMaxZoom = 22.0;
+  static const int mapTilerStyledMaxNativeZoom = 22;
 
   static MapLayerTileConfig tileConfigForLayer(
     LayerType type, {
@@ -188,6 +201,16 @@ class MapConfig {
   }) {
     switch (type) {
       case LayerType.satellite:
+        if (hasMapTilerApiKey(mapTilerApiKey)) {
+          return MapLayerTileConfig(
+            urlTemplate: mapTilerSatelliteUrl(mapTilerApiKey),
+            attribution: mapTilerAttribution,
+            maxZoom: satelliteMaxZoom,
+            maxNativeZoom: mapTilerSatelliteMaxNativeZoom,
+            fallbackUrl: esriWorldImagery,
+            requiresApiKey: true,
+          );
+        }
         return const MapLayerTileConfig(
           urlTemplate: googleSatelliteUrl,
           attribution: googleAttribution,
@@ -217,15 +240,26 @@ class MapConfig {
           );
         }
         return MapLayerTileConfig(
-          urlTemplate: mapTilerOutdoorUrl(mapTilerApiKey),
+          urlTemplate: mapTilerLandscapeUrl(mapTilerApiKey),
           attribution: mapTilerAttribution,
-          maxZoom: defaultLayerMaxZoom,
-          maxNativeZoom: defaultLayerMaxNativeZoom,
+          maxZoom: mapTilerStyledMaxZoom,
+          maxNativeZoom: mapTilerStyledMaxNativeZoom,
           retinaMode: true,
           fallbackUrl: esriWorldTopo,
           requiresApiKey: true,
         );
       case LayerType.standard:
+        if (hasMapTilerApiKey(mapTilerApiKey)) {
+          return MapLayerTileConfig(
+            urlTemplate: mapTilerLandscapeUrl(mapTilerApiKey),
+            attribution: mapTilerAttribution,
+            maxZoom: mapTilerStyledMaxZoom,
+            maxNativeZoom: mapTilerStyledMaxNativeZoom,
+            retinaMode: true,
+            fallbackUrl: esriWorldTopo,
+            requiresApiKey: true,
+          );
+        }
         return const MapLayerTileConfig(
           urlTemplate: cartoVoyagerRetina,
           attribution: cartoAttribution,
