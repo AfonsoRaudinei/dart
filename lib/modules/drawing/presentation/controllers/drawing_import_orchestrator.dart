@@ -50,6 +50,9 @@ class DrawingImportOrchestrator {
         (text.contains('linhas') && text.contains('cruz'));
   }
 
+  bool _isOverlapMessage(String? message) =>
+      (message ?? '').toLowerCase().contains('sobreposição');
+
   DrawingOrigin? _currentImportOrigin;
   DrawingOrigin? get pendingImportOrigin => _currentImportOrigin;
 
@@ -96,7 +99,8 @@ class DrawingImportOrchestrator {
     _validateGeometry(preview);
     final validation = _getValidationResult();
     if (!validation.isValid) {
-      if (!_isSelfIntersectionMessage(validation.message)) {
+      if (!_isSelfIntersectionMessage(validation.message) &&
+          !_isOverlapMessage(validation.message)) {
         _setErrorMessage(validation.message);
         _notifyHost();
         return;
@@ -110,17 +114,6 @@ class DrawingImportOrchestrator {
     _notifyHost();
   }
 
-  /// Confirma a importação ignorando alertas de sobreposição.
-  ///
-  /// Chamado quando o usuário reconhece a sobreposição e opta por prosseguir.
-  void confirmImportForced() {
-    final preview = _getPreviewGeometry();
-    if (preview == null || _currentImportOrigin == null) return;
-
-    _setErrorMessage(null);
-    _setPreviewGeometry(_finalizeGeometry(preview));
-    _setInteractionMode(DrawingInteraction.normal);
-    _confirmImportState();
-    _notifyHost();
-  }
+  /// Compatibilidade para chamadas antigas: usa o mesmo caminho validado.
+  void confirmImportForced() => confirmImport();
 }

@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import '../../ui/components/map/map_sheet_state.dart';
 
@@ -44,21 +45,40 @@ final viewportStateProvider = StateProvider.autoDispose<InitialViewportState>(
 
 /// Guard de modal aberto — impede abertura simultânea de dois modais.
 /// TODO(ADR-031-F1): migrado de _isModalOpen (setState) em private_map_screen.dart
-final isModalOpenProvider = StateProvider.autoDispose<bool>(
-  (ref) => false,
-);
+final isModalOpenProvider = StateProvider.autoDispose<bool>((ref) => false);
 
 /// Contador de geração de modal — invalida callbacks whenComplete de modais
 /// anteriores quando um novo modal sobrepõe o antigo.
 /// ⚠️ NÃO simplificar — previne race condition real em troca rápida de tabs.
 /// TODO(ADR-031-F1): migrado de _modalGeneration (setState) em private_map_screen.dart
-final modalGenerationProvider = StateProvider.autoDispose<int>(
-  (ref) => 0,
-);
+final modalGenerationProvider = StateProvider.autoDispose<int>((ref) => 0);
 
 /// Localização pendente para criação de ocorrência.
 /// != null → abre OccurrenceCreationSheet; null → OccurrenceListSheet.
 /// TODO(ADR-031-F1): migrado de _pendingOccurrenceLocation (setState) em private_map_screen.dart
 final pendingOccurrenceLocationProvider = StateProvider.autoDispose<LatLng?>(
+  (ref) => null,
+);
+
+/// Marcador efêmero de destino para navegação por coordenadas.
+/// Null = sem marcador ativo.
+final destinationCoordinateMarkerProvider = StateProvider.autoDispose<LatLng?>(
+  (ref) => null,
+);
+
+class MapCameraSnapshot {
+  final LatLng center;
+  final double zoom;
+  final LatLngBounds visibleBounds;
+
+  const MapCameraSnapshot({
+    required this.center,
+    required this.zoom,
+    required this.visibleBounds,
+  });
+}
+
+/// Camera atual para indicadores reativos que dependem de pan/zoom.
+final mapCameraSnapshotProvider = StateProvider.autoDispose<MapCameraSnapshot?>(
   (ref) => null,
 );

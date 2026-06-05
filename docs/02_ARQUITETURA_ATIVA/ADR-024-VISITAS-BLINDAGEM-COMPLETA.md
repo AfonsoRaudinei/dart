@@ -121,7 +121,7 @@ iFieldLookupGeofenceProvider.overrideWithValue(FieldLookupGeofenceAdapter(FieldR
 | DT-023-5: `map/` e `ui/` importam `visitas/` diretamente | ⏳ Pendente — próximo ciclo ADR |
 | DT-023-6: ponto cego CI | ✅ Resolvido — ADR-023 ciclo `visitas/` PROMPT 05 |
 | DT-023-7: `VisitSession` não `@immutable` | ⏳ Pendente — ADR futuro |
-| DT-023-8: Geofence duplicado `operacao/` vs `visitas/` | ⏳ Pendente — ADR futuro |
+| DT-023-8: Geofence duplicado `operacao/` vs `visitas/` | ✅ Resolvido — legado `operacao/` removido |
 
 ---
 

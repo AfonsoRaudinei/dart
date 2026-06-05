@@ -104,6 +104,22 @@ const _kmlComPoligono = '''<?xml version="1.0" encoding="UTF-8"?>
 
 const _kmlComBOM = '\uFEFF$_kmlComPoligono';
 
+const _kmlFieldsMultiPolygon = '''<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <Placemark><Polygon><outerBoundaryIs><LinearRing><coordinates>
+      -48.8009903,-10.5737557,0 -48.8009903,-10.5737550,0
+      -48.8000000,-10.5737550,0 -48.8000000,-10.5727550,0
+      -48.8009903,-10.5727550,0 -48.8009903,-10.5737557,0
+    </coordinates></LinearRing></outerBoundaryIs></Polygon></Placemark>
+    <Placemark><Polygon><outerBoundaryIs><LinearRing><coordinates>
+      -48.7900000,-10.5737550,0 -48.7890000,-10.5737550,0
+      -48.7890000,-10.5727550,0 -48.7900000,-10.5727550,0
+      -48.7900000,-10.5737550,0
+    </coordinates></LinearRing></outerBoundaryIs></Polygon></Placemark>
+  </Document>
+</kml>''';
+
 // =============================================================================
 // Testes
 // =============================================================================
@@ -156,6 +172,18 @@ void main() {
       expect(result.error, isNull);
       expect(result.isSuccess, isTrue);
       expect(result.geometry, isA<DrawingPolygon>());
+    });
+
+    test('aceita export Fields com múltiplos polígonos', () async {
+      final file = await _tempKml(_kmlFieldsMultiPolygon);
+      final service = DrawingImportService(_FilePicker(file));
+      final result = await service.pickAndParse();
+
+      expect(result.error, isNull);
+      expect(result.geometry, isA<DrawingMultiPolygon>());
+      final geometry = result.geometry! as DrawingMultiPolygon;
+      expect(geometry.coordinates, hasLength(2));
+      expect(geometry.coordinates.first.first, hasLength(5));
     });
 
     test('retorna geometria quando KMZ válido', () async {

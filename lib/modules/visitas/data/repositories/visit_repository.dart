@@ -27,10 +27,11 @@ class VisitRepository {
   /// Adicionado em ADR-023 — DT-023-2 (suporte a IVisitSessionLookup.findById)
   Future<VisitSession?> getById(String sessionId) async {
     final db = await _databaseHelper.database;
+    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
     final List<Map<String, dynamic>> maps = await db.query(
       'visit_sessions',
-      where: 'id = ?',
-      whereArgs: [sessionId],
+      where: 'id = ? AND user_id = ?',
+      whereArgs: [sessionId, userId],
       limit: 1,
     );
     if (maps.isNotEmpty) {
@@ -41,29 +42,52 @@ class VisitRepository {
 
   Future<void> saveSession(VisitSession session) async {
     final db = await _databaseHelper.database;
-    await db.insert(
-      'visit_sessions',
-      session.toMap(),
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
+    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
+    await db.insert('visit_sessions', {
+      ...session.toMap(),
+      'user_id': userId,
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
-  Future<void> updateArea(String sessionId, String newAreaId) async {
+  Future<void> updateFarm(String sessionId, String newFarmId) async {
     final db = await _databaseHelper.database;
+    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
     await db.update(
       'visit_sessions',
       {
+        'farm_id': newFarmId,
+        'area_id': null,
+        'updated_at': DateTime.now().toIso8601String(),
+        'sync_status': 1,
+      },
+      where: 'id = ? AND user_id = ?',
+      whereArgs: [sessionId, userId],
+    );
+  }
+
+  Future<void> updateArea(
+    String sessionId,
+    String newAreaId, {
+    String? farmId,
+  }) async {
+    final db = await _databaseHelper.database;
+    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
+    await db.update(
+      'visit_sessions',
+      {
+        if (farmId != null) 'farm_id': farmId,
         'area_id': newAreaId,
         'updated_at': DateTime.now().toIso8601String(),
         'sync_status': 1,
       },
-      where: 'id = ?',
-      whereArgs: [sessionId],
+      where: 'id = ? AND user_id = ?',
+      whereArgs: [sessionId, userId],
     );
   }
 
   Future<void> endSession(String sessionId, DateTime endTime) async {
     final db = await _databaseHelper.database;
+    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
     await db.update(
       'visit_sessions',
       {
@@ -72,8 +96,8 @@ class VisitRepository {
         'updated_at': DateTime.now().toIso8601String(),
         'sync_status': 1,
       },
-      where: 'id = ?',
-      whereArgs: [sessionId],
+      where: 'id = ? AND user_id = ?',
+      whereArgs: [sessionId, userId],
     );
   }
 
@@ -215,7 +239,8 @@ class VisitRepository {
 
     final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
 
-    String whereClause = 'status = ? AND user_id = ? AND start_time BETWEEN ? AND ?';
+    String whereClause =
+        'status = ? AND user_id = ? AND start_time BETWEEN ? AND ?';
     List<dynamic> args = ['finished', userId, startStr, endStr];
 
     if (producerId != null) {

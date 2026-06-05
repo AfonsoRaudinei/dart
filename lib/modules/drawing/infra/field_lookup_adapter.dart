@@ -43,6 +43,8 @@ class FieldLookupAdapter implements IFieldLookup {
       name: feature.properties.nome,
       farmId: feature.properties.fazendaId ?? '',
       areaHa: feature.properties.areaHa,
+      crop: feature.properties.cultura,
+      harvest: feature.properties.safra,
       bbox: _calculateBbox(feature),
       geometry: jsonEncode(feature.geometry.toJson()),
     );

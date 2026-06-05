@@ -79,9 +79,7 @@ class MarketingCaseRepositoryImpl implements IMarketingCaseRepository {
       return getLocalCases();
     } catch (e) {
       // Erro de rede ou timeout → serve cache local
-      debugPrint(
-        '⚠️ [MarketingRepo] Erro inesperado, servindo cache: $e',
-      );
+      debugPrint('⚠️ [MarketingRepo] Erro inesperado, servindo cache: $e');
       return getLocalCases();
     }
   }
@@ -139,7 +137,8 @@ class MarketingCaseRepositoryImpl implements IMarketingCaseRepository {
     final db = await _database;
     final userId = _supabase.auth.currentUser?.id;
     // Filtra por user_id quando disponível — evita vazamento entre usuários no mesmo device
-    final List<Map<String, dynamic>> maps = (userId != null && userId.isNotEmpty)
+    final List<Map<String, dynamic>> maps =
+        (userId != null && userId.isNotEmpty)
         ? await db.query(
             'marketing_cases_cache',
             where: 'user_id = ?',
@@ -209,6 +208,11 @@ class MarketingCaseRepositoryImpl implements IMarketingCaseRepository {
 
   @override
   Future<MarketingCase> saveCase(MarketingCase marketingCase) async {
+    final userId = _supabase.auth.currentUser?.id;
+    if (userId == null || userId.isEmpty) {
+      throw StateError('Usuario nao autenticado.');
+    }
+
     // 0. Persistir localmente como pending_sync ANTES de ir ao Supabase
     //    Garante que o case nao seja perdido se o app morrer durante o upload
     final pendingCase = MarketingCase.fromJson({
@@ -223,6 +227,7 @@ class MarketingCaseRepositoryImpl implements IMarketingCaseRepository {
 
     // Campos ROI ficam no próprio registro (já estão em toJson via spread de roi)
     // atualizado_em é o momento local — o DB tem default now() mas podemos forçar
+    caseJson['user_id'] = userId;
     caseJson['atualizado_em'] = DateTime.now().toIso8601String();
     caseJson['sync_status'] = 'synced';
 
@@ -234,10 +239,7 @@ class MarketingCaseRepositoryImpl implements IMarketingCaseRepository {
         .single();
 
     // Garantir que ativo está presente na resposta (pode ser null em schemas antigos)
-    final responseWithDefaults = {
-      'ativo': true,
-      ...response,
-    };
+    final responseWithDefaults = {'ativo': true, ...response};
     final savedCase = MarketingCase.fromJson(responseWithDefaults);
 
     // 3. Salva cada avaliação na tabela filha
@@ -246,6 +248,7 @@ class MarketingCaseRepositoryImpl implements IMarketingCaseRepository {
         return {
           'id': av.id,
           'case_id': savedCase.id,
+          'user_id': userId,
           'ordem': av.ordem,
           'layout': av.layout.toValue(),
           'colapsado': av.colapsado,

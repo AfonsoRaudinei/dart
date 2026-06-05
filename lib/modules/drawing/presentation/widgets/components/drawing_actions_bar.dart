@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../domain/models/drawing_models.dart';
 import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
+
 /// Widget responsável por exibir ações contextuais para features de desenho.
 ///
 /// Ações disponíveis:
@@ -21,10 +22,19 @@ class DrawingActionsBar extends StatelessWidget {
   final VoidCallback? onDifference;
   final VoidCallback? onIntersection;
   final VoidCallback? onDelete;
-  /// Exporta este talhão como GeoJSON.
+
+  /// Exporta este talhão no formato escolhido.
   final VoidCallback? onExport;
-  /// Exporta todos os talhões como FeatureCollection GeoJSON.
+
+  /// Exporta todos os talhões no formato escolhido.
   final VoidCallback? onExportAll;
+  final VoidCallback? onToggleMultiSelect;
+  final VoidCallback? onDuplicateSelected;
+  final VoidCallback? onMoveSelected;
+  final VoidCallback? onSelectByGroup;
+  final VoidCallback? onDeleteSelected;
+  final bool isMultiSelectEnabled;
+  final int selectedCount;
 
   const DrawingActionsBar({
     super.key,
@@ -37,6 +47,13 @@ class DrawingActionsBar extends StatelessWidget {
     this.onDelete,
     this.onExport,
     this.onExportAll,
+    this.onToggleMultiSelect,
+    this.onDuplicateSelected,
+    this.onMoveSelected,
+    this.onSelectByGroup,
+    this.onDeleteSelected,
+    this.isMultiSelectEnabled = false,
+    this.selectedCount = 0,
   });
 
   @override
@@ -162,7 +179,7 @@ class DrawingActionsBar extends StatelessWidget {
           const Divider(height: 1),
           const SizedBox(height: 16),
 
-          // Exportar GeoJSON
+          // Exportar (multi-formato)
           const Text(
             'Exportar',
             style: TextStyle(
@@ -175,7 +192,7 @@ class DrawingActionsBar extends StatelessWidget {
           _ActionButton(
             icon: Icons.file_download_outlined,
             label: 'Exportar este talhão',
-            description: 'Compartilhar como arquivo .geojson',
+            description: 'GeoJSON, GPX, DXF, CSV, TXT ou PDF',
             onTap: () {
               HapticFeedback.lightImpact();
               onExport?.call();
@@ -185,12 +202,81 @@ class DrawingActionsBar extends StatelessWidget {
           _ActionButton(
             icon: Icons.folder_zip_outlined,
             label: 'Exportar todos os talhões',
-            description: 'FeatureCollection com todos os talhões',
+            description: 'Coleção completa no formato escolhido',
             onTap: () {
               HapticFeedback.lightImpact();
               if (onExportAll != null) {
                 onExportAll!();
               }
+            },
+          ),
+          const SizedBox(height: 16),
+          const Divider(height: 1),
+          const SizedBox(height: 16),
+
+          const Text(
+            'Lote',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: SoloForteSheetTokens.inputHint,
+            ),
+          ),
+          const SizedBox(height: 12),
+          _ActionButton(
+            icon: isMultiSelectEnabled
+                ? Icons.checklist_rtl
+                : Icons.playlist_add_check,
+            label: isMultiSelectEnabled
+                ? 'Sair da multi-seleção'
+                : 'Ativar multi-seleção',
+            description: isMultiSelectEnabled
+                ? '$selectedCount item(ns) selecionado(s)'
+                : 'Toque nos talhões no mapa para selecionar vários',
+            onTap: () {
+              HapticFeedback.lightImpact();
+              onToggleMultiSelect?.call();
+            },
+          ),
+          const SizedBox(height: 12),
+          _ActionButton(
+            icon: Icons.copy_all_outlined,
+            label: 'Duplicar selecionados',
+            description: 'Cria cópia de todas as áreas selecionadas',
+            onTap: () {
+              HapticFeedback.lightImpact();
+              onDuplicateSelected?.call();
+            },
+          ),
+          const SizedBox(height: 12),
+          _ActionButton(
+            icon: Icons.open_with,
+            label: 'Mover selecionados',
+            description: 'Desloca polígonos inteiros em lote',
+            onTap: () {
+              HapticFeedback.lightImpact();
+              onMoveSelected?.call();
+            },
+          ),
+          const SizedBox(height: 12),
+          _ActionButton(
+            icon: Icons.label_outline,
+            label: 'Selecionar por grupo',
+            description: 'Seleciona todos os talhões do mesmo grupo',
+            onTap: () {
+              HapticFeedback.lightImpact();
+              onSelectByGroup?.call();
+            },
+          ),
+          const SizedBox(height: 12),
+          _ActionButton(
+            icon: Icons.delete_sweep_outlined,
+            label: 'Excluir selecionados',
+            description: 'Remove todos os selecionados de uma vez',
+            isDestructive: true,
+            onTap: () {
+              HapticFeedback.mediumImpact();
+              _showBulkDeleteConfirmation(context);
             },
           ),
           const SizedBox(height: 16),
@@ -240,6 +326,33 @@ class DrawingActionsBar extends StatelessWidget {
       ),
     );
   }
+
+  void _showBulkDeleteConfirmation(BuildContext context) {
+    showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Excluir áreas selecionadas?'),
+        content: Text(
+          'Tem certeza que deseja excluir $selectedCount área(s)? '
+          'Esta ação não pode ser desfeita.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              onDeleteSelected?.call();
+            },
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Excluir'),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 /// Botão individual de ação.
@@ -260,7 +373,9 @@ class _ActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = isDestructive ? Colors.red : SoloForteSheetTokens.sectionLabel;
+    final color = isDestructive
+        ? Colors.red
+        : SoloForteSheetTokens.sectionLabel;
 
     return Material(
       color: SoloForteSheetTokens.inputBackground,

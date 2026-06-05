@@ -238,6 +238,8 @@ class DrawingController extends ChangeNotifier {
 
   // Interaction state
   DrawingFeature? _selectedFeature;
+  bool _multiSelectEnabled = false;
+  final Set<String> _selectedFeatureIds = <String>{};
   DrawingInteraction _interactionMode = DrawingInteraction.normal;
   DrawingGeometry? _previewGeometry; // Result preview
   DrawingGeometry? _reviewGeometrySnapshot;
@@ -258,6 +260,11 @@ class DrawingController extends ChangeNotifier {
   List<DrawingFeature> get features =>
       List.unmodifiable(_features.where((f) => f.properties.ativo));
   DrawingFeature? get selectedFeature => _selectedFeature;
+  bool get isMultiSelectEnabled => _multiSelectEnabled;
+  Set<String> get selectedFeatureIds => Set.unmodifiable(_selectedFeatureIds);
+  List<DrawingFeature> get selectedFeatures => features
+      .where((f) => _selectedFeatureIds.contains(f.id))
+      .toList(growable: false);
   bool get isHighComplexity => _isHighComplexity;
 
   bool get isDraggingVertex => _isDraggingVertex;
@@ -290,6 +297,13 @@ class DrawingController extends ChangeNotifier {
       _booleanOpsOrchestrator.pendingFeatureB;
   DrawingGeometry? get previewGeometry => _previewGeometry;
   String? get intersectionWarningMessage => _intersectionWarningMessage;
+  bool get hasPendingImportWarning =>
+      _stateMachine.currentState == DrawingState.importPreview &&
+      _isImportedOrigin(_importOrchestrator.pendingImportOrigin) &&
+      _isImportedWarningMessage(_validationResult.message);
+  String? get pendingImportWarningMessage => hasPendingImportWarning
+      ? _importWarningMessageFor(_validationResult.message)
+      : null;
   double get reviewAreaHa =>
       _stateMachine.currentState == DrawingState.reviewing
       ? _reviewAreaHa
@@ -430,6 +444,31 @@ class DrawingController extends ChangeNotifier {
   List<double> get liveSegmentsKm =>
       DrawingUtils.calculateSegmentsKm(liveGeometry);
 
+  /// Azimute (0-360°) do último segmento útil da geometria em desenho.
+  double? get liveAzimuthDegrees {
+    List<LatLng> pts = [];
+    if (_stateMachine.currentState == DrawingState.gpsTracking &&
+        _gpsOrchestrator.gpsVertices.length >= 2) {
+      pts = _gpsOrchestrator.gpsVertices;
+    } else if (_currentPoints.length >= 2) {
+      pts = _currentPoints;
+    } else {
+      final geom = liveGeometry;
+      if (geom is DrawingPolygon &&
+          geom.coordinates.isNotEmpty &&
+          geom.coordinates.first.length >= 2) {
+        pts = geom.coordinates.first
+            .take(geom.coordinates.first.length - 1)
+            .map((p) => LatLng(p[1], p[0]))
+            .toList();
+      }
+    }
+    if (pts.length < 2) return null;
+    final a = pts[pts.length - 2];
+    final b = pts[pts.length - 1];
+    return DrawingUtils.bearingDegrees(a, b);
+  }
+
   // ===========================================================================
   // INTERACTION FLOW
   // ===========================================================================
@@ -569,6 +608,26 @@ class DrawingController extends ChangeNotifier {
         (text.contains('linhas') && text.contains('cruz'));
   }
 
+  bool _isOverlapMessage(String? message) =>
+      (message ?? '').toLowerCase().contains('sobreposição');
+
+  bool _isImportedOrigin(DrawingOrigin? origin) =>
+      origin == DrawingOrigin.importacao_kml ||
+      origin == DrawingOrigin.importacao_kmz;
+
+  bool _isImportedWarningMessage(String? message) =>
+      _isSelfIntersectionMessage(message) || _isOverlapMessage(message);
+
+  String _importWarningMessageFor(String? message) {
+    if (_isSelfIntersectionMessage(message)) {
+      return 'Linhas da geometria importada se cruzam. O arquivo será salvo e poderá ser ajustado depois.';
+    }
+    if (_isOverlapMessage(message)) {
+      return 'A geometria importada sobrepõe uma área existente. O arquivo será salvo e poderá ser ajustado depois.';
+    }
+    return message ?? 'A geometria importada possui ajustes pendentes.';
+  }
+
   void validateGeometry(DrawingGeometry? g, {bool forceFull = false}) {
     if (g == null) {
       _validationResult = const DrawingValidationResult.valid();
@@ -623,7 +682,13 @@ class DrawingController extends ChangeNotifier {
     geometry = DrawingUtils.normalizeGeometry(geometry);
     validateGeometry(geometry);
     if (!_validationResult.isValid) {
-      if (_isSelfIntersectionMessage(_validationResult.message)) {
+      if (_isImportedOrigin(origem) &&
+          _isImportedWarningMessage(_validationResult.message)) {
+        _intersectionWarningMessage = _importWarningMessageFor(
+          _validationResult.message,
+        );
+        _errorMessage = null;
+      } else if (_isSelfIntersectionMessage(_validationResult.message)) {
         _intersectionWarningMessage =
             'Linhas se cruzam. Salve e edite os vértices depois.';
       } else {
@@ -749,6 +814,10 @@ class DrawingController extends ChangeNotifier {
   }
 
   void selectFeature(DrawingFeature? feature) {
+    if (_multiSelectEnabled) {
+      toggleFeatureSelection(feature);
+      return;
+    }
     // ⚡ OTIMIZAÇÃO: Só notificar se a seleção mudou
     if (_selectedFeature?.id == feature?.id) {
       return; // Já está selecionado
@@ -772,6 +841,218 @@ class DrawingController extends ChangeNotifier {
       }
     }
     notifyListeners();
+  }
+
+  void setMultiSelectEnabled(bool enabled) {
+    if (_multiSelectEnabled == enabled) return;
+    _multiSelectEnabled = enabled;
+    if (!enabled) {
+      _selectedFeatureIds.clear();
+    } else if (_selectedFeature != null) {
+      _selectedFeatureIds.add(_selectedFeature!.id);
+    }
+    notifyListeners();
+  }
+
+  void toggleFeatureSelection(DrawingFeature? feature) {
+    if (!_multiSelectEnabled || feature == null) return;
+    if (_selectedFeatureIds.contains(feature.id)) {
+      _selectedFeatureIds.remove(feature.id);
+    } else {
+      _selectedFeatureIds.add(feature.id);
+    }
+    _selectedFeature = _selectedFeatureIds.isEmpty
+        ? null
+        : features.firstWhere(
+            (f) => _selectedFeatureIds.contains(f.id),
+            orElse: () => feature,
+          );
+    notifyListeners();
+  }
+
+  void clearMultiSelection() {
+    if (_selectedFeatureIds.isEmpty) return;
+    _selectedFeatureIds.clear();
+    _selectedFeature = null;
+    notifyListeners();
+  }
+
+  void selectByGroup(String group) {
+    final ids = features
+        .where((f) => (f.properties.grupo ?? '').trim() == group.trim())
+        .map((f) => f.id)
+        .toSet();
+    _selectedFeatureIds
+      ..clear()
+      ..addAll(ids);
+    _selectedFeature = ids.isEmpty
+        ? null
+        : features.firstWhere((f) => ids.contains(f.id));
+    notifyListeners();
+  }
+
+  Future<void> duplicateSelectedFeatures() async {
+    final source = selectedFeatures;
+    if (source.isEmpty) return;
+    final created = <DrawingFeature>[];
+    for (final feature in source) {
+      final shifted = _translateGeometry(
+        feature.geometry,
+        deltaLat: 0.00018,
+        deltaLng: 0.00018,
+      );
+      final clone = await _crudService.saveFeature(
+        geometry: shifted,
+        nome: '${feature.properties.nome} (cópia)',
+        tipo: feature.properties.tipo,
+        origem: DrawingOrigin.gerado_sistema,
+        autorId: feature.properties.autorId,
+        autorTipo: feature.properties.autorTipo,
+        persistFeature: _repository.saveFeature,
+        getTotalAreaByClienteId: _repository.getTotalAreaByClienteId,
+        onClientAreaUpdate: _onClientAreaUpdate,
+        subtipo: feature.properties.subtipo,
+        raioMetros: feature.properties.raioMetros,
+        clienteId: feature.properties.clienteId,
+        fazendaId: feature.properties.fazendaId,
+        grupo: feature.properties.grupo,
+        cor: feature.properties.cor,
+      );
+      _features.add(clone);
+      created.add(clone);
+    }
+    _selectedFeatureIds
+      ..clear()
+      ..addAll(created.map((e) => e.id));
+    _selectedFeature = created.isNotEmpty ? created.first : null;
+    _isDirty = true;
+    notifyListeners();
+  }
+
+  Future<void> moveSelectedFeatures({
+    required double deltaLat,
+    required double deltaLng,
+  }) async {
+    if (_selectedFeatureIds.isEmpty) return;
+    final canMoveAll = selectedFeatures.every(
+      (feature) => _isGeometryWithinWorldBounds(
+        _translateGeometry(
+          feature.geometry,
+          deltaLat: deltaLat,
+          deltaLng: deltaLng,
+        ),
+      ),
+    );
+    if (!canMoveAll) {
+      _errorMessage =
+          'Movimento inválido: uma ou mais coordenadas sairiam dos limites do mapa.';
+      notifyListeners();
+      return;
+    }
+    final updatedIds = <String>{};
+    final affectedClientIds = <String>{};
+    for (int i = 0; i < _features.length; i++) {
+      final feature = _features[i];
+      if (!_selectedFeatureIds.contains(feature.id)) continue;
+      final movedGeometry = _translateGeometry(
+        feature.geometry,
+        deltaLat: deltaLat,
+        deltaLng: deltaLng,
+      );
+      final (:updated, :deactivated) = _crudService.buildUpdate(
+        feature,
+        newGeometry: movedGeometry,
+        editorId: feature.properties.autorId,
+        editorType: feature.properties.autorTipo,
+      );
+      if (deactivated != null) await _repository.saveFeature(deactivated);
+      _features[i] = updated;
+      updatedIds.add(updated.id);
+      await _repository.saveFeature(updated);
+      final clientId = feature.properties.clienteId;
+      if (clientId != null && clientId.isNotEmpty) {
+        affectedClientIds.add(clientId);
+      }
+    }
+    _selectedFeatureIds
+      ..clear()
+      ..addAll(updatedIds);
+    await _refreshClientAreas(affectedClientIds);
+    _selectedFeature = updatedIds.isEmpty
+        ? null
+        : _features.firstWhere((f) => updatedIds.contains(f.id));
+    _isDirty = true;
+    notifyListeners();
+  }
+
+  Future<void> _refreshClientAreas(Iterable<String> clientIds) async {
+    for (final clientId in clientIds) {
+      final total = await _repository.getTotalAreaByClienteId(clientId);
+      await _onClientAreaUpdate(clientId, total);
+    }
+  }
+
+  bool _isGeometryWithinWorldBounds(DrawingGeometry geometry) {
+    Iterable<List<double>> coordinates;
+    if (geometry is DrawingPolygon) {
+      coordinates = geometry.coordinates.expand((ring) => ring);
+    } else if (geometry is DrawingMultiPolygon) {
+      coordinates = geometry.coordinates
+          .expand((polygon) => polygon)
+          .expand((ring) => ring);
+    } else {
+      return true;
+    }
+    return coordinates.every(
+      (point) =>
+          point.length >= 2 &&
+          point[0] >= -180 &&
+          point[0] <= 180 &&
+          point[1] >= -90 &&
+          point[1] <= 90,
+    );
+  }
+
+  void deleteSelectedFeatures() {
+    final ids = _selectedFeatureIds.toList(growable: false);
+    for (final id in ids) {
+      deleteFeature(id);
+    }
+    _selectedFeatureIds.clear();
+    _selectedFeature = null;
+    notifyListeners();
+  }
+
+  DrawingGeometry _translateGeometry(
+    DrawingGeometry geometry, {
+    required double deltaLat,
+    required double deltaLng,
+  }) {
+    if (geometry is DrawingPolygon) {
+      final coords = geometry.coordinates
+          .map(
+            (ring) => ring
+                .map((p) => <double>[p[0] + deltaLng, p[1] + deltaLat])
+                .toList(),
+          )
+          .toList();
+      return DrawingPolygon(coordinates: coords);
+    }
+    if (geometry is DrawingMultiPolygon) {
+      final coords = geometry.coordinates
+          .map(
+            (poly) => poly
+                .map(
+                  (ring) => ring
+                      .map((p) => <double>[p[0] + deltaLng, p[1] + deltaLat])
+                      .toList(),
+                )
+                .toList(),
+          )
+          .toList();
+      return DrawingMultiPolygon(coordinates: coords);
+    }
+    return geometry;
   }
 
   void deleteFeature(String id) {
@@ -1441,7 +1722,9 @@ class DrawingController extends ChangeNotifier {
   // IMPORT FLOW
   // ===========================================================================
 
-  void startImportMode() => _importOrchestrator.startImportMode();
+  void startImportMode() {
+    _importOrchestrator.startImportMode();
+  }
 
   Future<void> pickImportFile() => _importOrchestrator.pickImportFile();
 
@@ -1465,18 +1748,22 @@ class DrawingController extends ChangeNotifier {
     _importOrchestrator.confirmImport();
     if (_stateMachine.currentState == DrawingState.reviewing) {
       _captureReviewMetrics(liveGeometry);
-      if (_isSelfIntersectionMessage(_validationResult.message)) {
+      if (_isImportedOrigin(pendingImportOrigin) &&
+          _isImportedWarningMessage(_validationResult.message)) {
+        _intersectionWarningMessage = _importWarningMessageFor(
+          _validationResult.message,
+        );
+      } else if (_isSelfIntersectionMessage(_validationResult.message)) {
         _intersectionWarningMessage =
             'Linhas se cruzam. Salve e edite os vértices depois.';
+      } else {
+        _intersectionWarningMessage = null;
       }
     }
   }
 
   void confirmImportForced() {
-    _importOrchestrator.confirmImportForced();
-    if (_stateMachine.currentState == DrawingState.reviewing) {
-      _captureReviewMetrics(liveGeometry);
-    }
+    confirmImport();
   }
 
   // Helper for snapping

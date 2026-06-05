@@ -2,9 +2,11 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../../ui/theme/premium/design_tokens.dart';
+import '../../../../core/router/app_routes.dart';
 import 'package:soloforte_app/core/design/sf_icons.dart';
 import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 import 'dart:ui' as ui;
@@ -15,6 +17,7 @@ import '../../domain/settings_models.dart';
 import '../../domain/entities/user_profile.dart';
 import '../widgets/audit_trail_widget.dart';
 import 'edit_profile_screen.dart';
+import 'report_branding_screen.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -135,6 +138,12 @@ class SettingsScreen extends ConsumerWidget {
               // Preferências
               _buildSectionHeader('PREFERÊNCIAS'),
               _buildSection(context, [
+                _buildTile(
+                  context,
+                  title: 'Meu Plano',
+                  icon: Icons.workspace_premium_rounded,
+                  onTap: () => context.go(AppRoutes.meuPlano),
+                ),
                 _buildSwitchTile(
                   context,
                   title: 'Notificações',
@@ -146,7 +155,11 @@ class SettingsScreen extends ConsumerWidget {
                   context,
                   title: 'Relatórios & Exportação',
                   icon: SFIcons.openInNew,
-                  onTap: () {},
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const ReportBrandingScreen(),
+                    ),
+                  ),
                 ),
                 _buildTile(
                   context,

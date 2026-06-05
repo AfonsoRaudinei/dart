@@ -28,6 +28,7 @@ void main() {
       repo.activeSession = VisitSession(
         id: 'session-1',
         producerId: 'producer-1',
+        farmId: 'farm-1',
         areaId: 'field-1',
         activityType: 'Monitoramento',
         startTime: DateTime(2026, 3, 8, 9),
@@ -43,6 +44,7 @@ void main() {
 
       expect(result, isNotNull);
       expect(result!.id, 'session-1');
+      expect(result.farmId, 'farm-1');
       expect(result.status, 'active');
       expect(result.isActive, isTrue);
     });

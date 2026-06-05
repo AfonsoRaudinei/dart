@@ -74,8 +74,10 @@ class OccurrenceDarkField extends StatelessWidget {
         hintStyle: const TextStyle(color: Colors.white24, fontSize: 13),
         filled: true,
         fillColor: const Color(0xFF1C1C1E),
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 14,
+          vertical: 12,
+        ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: Colors.white12),
@@ -86,8 +88,10 @@ class OccurrenceDarkField extends StatelessWidget {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide:
-              const BorderSide(color: PremiumTokens.brandGreen, width: 1.5),
+          borderSide: const BorderSide(
+            color: PremiumTokens.brandGreen,
+            width: 1.5,
+          ),
         ),
       ),
     );
@@ -120,13 +124,14 @@ class OccurrenceSliderRow extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(label,
-                  style: const TextStyle(color: Colors.white70, fontSize: 13)),
+              Text(
+                label,
+                style: const TextStyle(color: Colors.white70, fontSize: 13),
+              ),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: _sliderColor(value).withOpacity(.2),
+                  color: _sliderColor(value).withValues(alpha: .2),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
@@ -145,7 +150,7 @@ class OccurrenceSliderRow extends StatelessWidget {
               activeTrackColor: color,
               inactiveTrackColor: Colors.white12,
               thumbColor: color,
-              overlayColor: color.withOpacity(.2),
+              overlayColor: color.withValues(alpha: .2),
               trackHeight: 4,
             ),
             child: Slider(
@@ -211,8 +216,7 @@ class OccurrenceEstadioDropdown extends StatelessWidget {
                       padding: EdgeInsets.symmetric(horizontal: 14),
                       child: Text(
                         'Selecionar estádio (opcional)',
-                        style:
-                            TextStyle(color: Colors.white38, fontSize: 13),
+                        style: TextStyle(color: Colors.white38, fontSize: 13),
                       ),
                     ),
                     dropdownColor: const Color(0xFF2C2C2E),
@@ -224,8 +228,7 @@ class OccurrenceEstadioDropdown extends StatelessWidget {
                         value: null,
                         child: Text(
                           '— Nenhum —',
-                          style: TextStyle(
-                              color: Colors.white38, fontSize: 13),
+                          style: TextStyle(color: Colors.white38, fontSize: 13),
                         ),
                       ),
                       ...kEstadios.map(
@@ -234,7 +237,9 @@ class OccurrenceEstadioDropdown extends StatelessWidget {
                           child: Text(
                             e.name,
                             style: const TextStyle(
-                                color: Colors.white, fontSize: 13),
+                              color: Colors.white,
+                              fontSize: 13,
+                            ),
                           ),
                         ),
                       ),
@@ -267,10 +272,11 @@ class OccurrenceEstadioDropdown extends StatelessWidget {
                   margin: const EdgeInsets.only(top: 8),
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: PremiumTokens.brandGreen.withOpacity(.07),
+                    color: PremiumTokens.brandGreen.withValues(alpha: .07),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                        color: PremiumTokens.brandGreen.withOpacity(.3)),
+                      color: PremiumTokens.brandGreen.withValues(alpha: .3),
+                    ),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -279,10 +285,13 @@ class OccurrenceEstadioDropdown extends StatelessWidget {
                         children: [
                           Container(
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 4),
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
                             decoration: BoxDecoration(
-                              color:
-                                  PremiumTokens.brandGreen.withOpacity(.2),
+                              color: PremiumTokens.brandGreen.withValues(
+                                alpha: .2,
+                              ),
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: Text(
@@ -299,13 +308,17 @@ class OccurrenceEstadioDropdown extends StatelessWidget {
                             child: Text(
                               selected!.description,
                               style: const TextStyle(
-                                  color: Colors.white70, fontSize: 12),
+                                color: Colors.white70,
+                                fontSize: 12,
+                              ),
                             ),
                           ),
                           Text(
                             '~${selected!.dap} DAP',
                             style: const TextStyle(
-                                color: Colors.white38, fontSize: 11),
+                              color: Colors.white38,
+                              fontSize: 11,
+                            ),
                           ),
                         ],
                       ),
@@ -325,15 +338,21 @@ class OccurrenceEstadioDropdown extends StatelessWidget {
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text('• ',
-                                  style: TextStyle(
-                                      color: PremiumTokens.brandGreen,
-                                      fontSize: 12)),
+                              const Text(
+                                '• ',
+                                style: TextStyle(
+                                  color: PremiumTokens.brandGreen,
+                                  fontSize: 12,
+                                ),
+                              ),
                               Expanded(
-                                child: Text(a,
-                                    style: const TextStyle(
-                                        color: Colors.white54,
-                                        fontSize: 11)),
+                                child: Text(
+                                  a,
+                                  style: const TextStyle(
+                                    color: Colors.white54,
+                                    fontSize: 11,
+                                  ),
+                                ),
                               ),
                             ],
                           ),
@@ -374,7 +393,7 @@ class OccurrenceRadioChip extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         decoration: BoxDecoration(
           color: selected
-              ? PremiumTokens.brandGreen.withOpacity(.15)
+              ? PremiumTokens.brandGreen.withValues(alpha: .15)
               : const Color(0xFF1C1C1E),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
@@ -391,8 +410,7 @@ class OccurrenceRadioChip extends StatelessWidget {
               label,
               style: TextStyle(
                 color: selected ? PremiumTokens.brandGreen : Colors.white38,
-                fontWeight:
-                    selected ? FontWeight.bold : FontWeight.normal,
+                fontWeight: selected ? FontWeight.bold : FontWeight.normal,
                 fontSize: 14,
               ),
             ),
@@ -430,23 +448,26 @@ class OccurrencePhotoSourceSheet extends StatelessWidget {
           Text(
             '$catEmoji $catLabel',
             style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 16),
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+            ),
           ),
           const SizedBox(height: 16),
           ListTile(
-            leading:
-                const Icon(Icons.camera_alt_outlined, color: Colors.white70),
-            title: const Text('Câmera',
-                style: TextStyle(color: Colors.white)),
+            leading: const Icon(
+              Icons.camera_alt_outlined,
+              color: Colors.white70,
+            ),
+            title: const Text('Câmera', style: TextStyle(color: Colors.white)),
             onTap: () => Navigator.pop(context, ImageSource.camera),
           ),
           ListTile(
-            leading: const Icon(Icons.photo_library_outlined,
-                color: Colors.white70),
-            title: const Text('Galeria',
-                style: TextStyle(color: Colors.white)),
+            leading: const Icon(
+              Icons.photo_library_outlined,
+              color: Colors.white70,
+            ),
+            title: const Text('Galeria', style: TextStyle(color: Colors.white)),
             onTap: () => Navigator.pop(context, ImageSource.gallery),
           ),
         ],
@@ -477,16 +498,19 @@ class OccurrenceCatPickerSheet extends StatelessWidget {
           const Text(
             'Foto para qual categoria?',
             style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 15),
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 15,
+            ),
           ),
           const SizedBox(height: 12),
           ...cats.map(
             (cat) => ListTile(
               leading: Text(cat.emoji, style: const TextStyle(fontSize: 22)),
-              title:
-                  Text(cat.label, style: const TextStyle(color: Colors.white)),
+              title: Text(
+                cat.label,
+                style: const TextStyle(color: Colors.white),
+              ),
               onTap: () => Navigator.pop(context, cat),
             ),
           ),

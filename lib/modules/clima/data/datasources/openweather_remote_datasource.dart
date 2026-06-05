@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../../../../core/config/clima_config.dart';
 import '../../../../core/network/network_policy.dart';
@@ -41,6 +42,15 @@ class OpenWeatherRemoteDatasource implements IClimaRemoteDatasource {
   // ─── Fetch único (cache de resposta interna) ────────────────────────────────
 
   Future<Map<String, dynamic>> _fetchRaw(double lat, double lon) async {
+    if (ClimaConfig.openWeatherApiKey.isEmpty) {
+      debugPrint(
+        '[Clima] OPENWEATHER_API_KEY ausente. Ambas as fontes falharam.',
+      );
+      throw Exception(
+        '[OpenWeather] OPENWEATHER_API_KEY não configurada via --dart-define.',
+      );
+    }
+
     final response = await NetworkPolicy.withRetry(
       () => _client.get(_buildUri(lat, lon)),
     );

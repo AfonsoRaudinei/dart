@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 import 'package:flutter_map/flutter_map.dart';
 import '../../../core/domain/publicacao.dart';
@@ -85,17 +86,15 @@ class _PublicationPin extends StatelessWidget {
           ),
           child: ClipOval(
             child: publication.media.isNotEmpty
-                ? Image.network(
-                    publication.coverMedia.path,
+                ? CachedNetworkImage(
+                    imageUrl: publication.coverMedia.path,
                     fit: BoxFit.cover,
-                    // Cache de imagens
-                    cacheWidth: 100,
-                    cacheHeight: 100,
-                    errorBuilder: (context, error, stackTrace) {
+                    memCacheWidth: 100,
+                    memCacheHeight: 100,
+                    errorWidget: (context, url, error) {
                       return _buildPlaceholder();
                     },
-                    loadingBuilder: (context, child, loadingProgress) {
-                      if (loadingProgress == null) return child;
+                    placeholder: (context, url) {
                       return _buildPlaceholder();
                     },
                   )
@@ -129,7 +128,11 @@ class _PublicationPin extends StatelessWidget {
   Widget _buildPlaceholder() {
     return Container(
       color: PremiumTokens.surfaceLight,
-      child: const Icon(Icons.image, color: PremiumTokens.textSecondaryLight, size: 24),
+      child: const Icon(
+        Icons.image,
+        color: PremiumTokens.textSecondaryLight,
+        size: 24,
+      ),
     );
   }
 

@@ -77,7 +77,9 @@ class _DrawingInfoEditSheetState extends ConsumerState<DrawingInfoEditSheet> {
     try {
       final farm = farms.firstWhere((f) => f.id == farmId);
       setState(() => _selectedFarm = farm);
-    } catch (_) {}
+    } catch (_) {
+      // Fazenda removida ou ainda não carregada: mantém seleção vazia.
+    }
   }
 
   @override
@@ -131,9 +133,13 @@ class _DrawingInfoEditSheetState extends ConsumerState<DrawingInfoEditSheet> {
             _selectedFarm = clientState.farms.firstWhere(
               (f) => f.id == widget.feature.properties.fazendaId,
             );
-          } catch (_) {}
+          } catch (_) {
+            // Fazenda removida: mantém seleção vazia.
+          }
         }
-      } catch (_) {}
+      } catch (_) {
+        // Cliente removido: mantém seleção vazia.
+      }
     }
 
     const bg = SoloForteSheetTokens.sheetBackground;

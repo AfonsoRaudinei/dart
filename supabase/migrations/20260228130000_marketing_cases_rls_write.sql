@@ -6,38 +6,48 @@
 -- ============================================================
 
 -- ── marketing_cases: INSERT ──────────────────────────────────
--- Permite que usuário autenticado crie um novo case
+-- Permite que usuário autenticado crie apenas case próprio
+DROP POLICY IF EXISTS "authenticated insert cases" ON marketing_cases;
 CREATE POLICY "authenticated insert cases" ON marketing_cases
   FOR INSERT TO authenticated
-  WITH CHECK (true);
+  WITH CHECK (auth.uid() = user_id);
 
 -- ── marketing_cases: UPDATE ──────────────────────────────────
 -- Permite upsert via saveCase() (o repositório faz .upsert())
+DROP POLICY IF EXISTS "authenticated update cases" ON marketing_cases;
 CREATE POLICY "authenticated update cases" ON marketing_cases
   FOR UPDATE TO authenticated
-  USING (true)
-  WITH CHECK (true);
+  USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
 
 -- ── marketing_avaliacoes: INSERT ─────────────────────────────
 -- Permite inserir avaliações apenas se o case pai existe
+DROP POLICY IF EXISTS "authenticated insert avaliacoes" ON marketing_avaliacoes;
 CREATE POLICY "authenticated insert avaliacoes" ON marketing_avaliacoes
   FOR INSERT TO authenticated
   WITH CHECK (
+    auth.uid() = user_id
+    AND
     EXISTS (
       SELECT 1 FROM marketing_cases mc
       WHERE mc.id = case_id
+        AND mc.user_id = auth.uid()
     )
   );
 
 -- ── marketing_avaliacoes: UPDATE ─────────────────────────────
 -- Permite upsert das avaliações
+DROP POLICY IF EXISTS "authenticated update avaliacoes" ON marketing_avaliacoes;
 CREATE POLICY "authenticated update avaliacoes" ON marketing_avaliacoes
   FOR UPDATE TO authenticated
-  USING (true)
+  USING (auth.uid() = user_id)
   WITH CHECK (
+    auth.uid() = user_id
+    AND
     EXISTS (
       SELECT 1 FROM marketing_cases mc
       WHERE mc.id = case_id
+        AND mc.user_id = auth.uid()
     )
   );
 

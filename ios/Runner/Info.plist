@@ -7,7 +7,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Soloforte App</string>
+	<string>SoloForte</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -27,12 +27,12 @@
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<!-- Localização em uso -->
-	<!-- Soloforte Location Always Usage -->
-	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>O SoloForte usa sua localização para posicionar ocorrências e talhões no mapa, mesmo quando o aplicativo estiver em segundo plano para garantir o rastreio da vistoria.</string>
-
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>O SoloForte usa sua localização para posicionar ocorrências, talhões e rotas de visita no mapa da propriedade.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>O SoloForte usa sua localização para posicionar ocorrências, talhões e rotas de visita no mapa da propriedade, inclusive em segundo plano durante visitas ativas.</string>
+	<key>NSLocationAlwaysUsageDescription</key>
+	<string>O SoloForte usa sua localização para posicionar ocorrências, talhões e rotas de visita no mapa da propriedade, inclusive em segundo plano durante visitas ativas.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

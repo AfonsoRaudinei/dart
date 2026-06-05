@@ -3,6 +3,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 import '../../../../core/config/map_config.dart';
+import '../../../../core/utils/app_logger.dart';
 import '../../domain/entities/marketing_case.dart';
 import '../../domain/enums/plano_marketing.dart';
 import '../../presentation/providers/marketing_providers.dart';
@@ -51,7 +52,12 @@ class _OuroMapBackgroundState extends ConsumerState<OuroMapBackground>
     if (!_isMapReady) return;
     try {
       _mapController.move(_defaultCenter, _driftAnimation.value);
-    } catch (_) {}
+    } catch (error) {
+      AppLogger.debug(
+        'Drift ignorado antes do mapa ficar pronto: $error',
+        tag: 'LoginMap',
+      );
+    }
   }
 
   @override

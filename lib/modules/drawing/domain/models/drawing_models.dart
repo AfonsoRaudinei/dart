@@ -183,9 +183,9 @@ class DrawingProperties {
   final String? versaoAnteriorId;
 
   // 🌱 Sprint 6: Campos agronômicos
-  final String? cultura;             // ex: soja, milho, café
-  final String? safra;               // ex: 2025/2026
-  final String? soilSamplingScheme;  // grade | zona | dirigido
+  final String? cultura; // ex: soja, milho, café
+  final String? safra; // ex: 2025/2026
+  final String? soilSamplingScheme; // grade | zona | dirigido
   final Map<String, double>? recByNutrient; // N, P, K, S, Ca, Mg …
 
   DrawingProperties({
@@ -398,6 +398,7 @@ class DrawingFeature {
         // Update author to whoever is making the change
         autorId: authorId,
         autorTipo: authorType,
+        syncStatus: SyncStatus.local_only,
       ),
     );
   }

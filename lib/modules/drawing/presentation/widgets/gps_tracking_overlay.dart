@@ -161,8 +161,10 @@ class GpsTrackingOverlay extends StatelessWidget {
             GestureDetector(
               onTap: () {
                 HapticFeedback.lightImpact();
-                AppLogger.debug('GPS: cancelar pelo overlay',
-                    tag: 'GpsTrackingOverlay');
+                AppLogger.debug(
+                  'GPS: cancelar pelo overlay',
+                  tag: 'GpsTrackingOverlay',
+                );
                 controller.cancelOperation();
               },
               child: const Text(
@@ -197,10 +199,10 @@ class _GlassCard extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
           decoration: BoxDecoration(
-            color: Colors.black.withOpacity(0.55),
+            color: Colors.black.withValues(alpha: 0.55),
             borderRadius: BorderRadius.circular(24),
             border: Border.all(
-              color: Colors.white.withOpacity(0.12),
+              color: Colors.white.withValues(alpha: 0.12),
               width: 1,
             ),
           ),
@@ -225,17 +227,12 @@ class _GpsQualityBadge extends StatelessWidget {
       GpsQuality.poor => (const Color(0xFFFF453A), '●'),
     };
 
-    final label = accuracyM > 0
-        ? '${accuracyM.toStringAsFixed(0)}m'
-        : '--';
+    final label = accuracyM > 0 ? '${accuracyM.toStringAsFixed(0)}m' : '--';
 
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text(
-          emoji,
-          style: TextStyle(color: color, fontSize: 12),
-        ),
+        Text(emoji, style: TextStyle(color: color, fontSize: 12)),
         const SizedBox(width: 4),
         Text(
           label,
@@ -267,8 +264,8 @@ class _MetricChip extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         color: highlight
-            ? const Color(0xFFFFD60A).withOpacity(0.15)
-            : Colors.white.withOpacity(0.10),
+            ? const Color(0xFFFFD60A).withValues(alpha: 0.15)
+            : Colors.white.withValues(alpha: 0.10),
         borderRadius: BorderRadius.circular(10),
       ),
       child: Row(
@@ -316,7 +313,7 @@ class _ActionButton extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.12),
+            color: Colors.white.withValues(alpha: 0.12),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Column(
@@ -326,10 +323,7 @@ class _ActionButton extends StatelessWidget {
               const SizedBox(height: 3),
               Text(
                 label,
-                style: const TextStyle(
-                  color: Colors.white70,
-                  fontSize: 11,
-                ),
+                style: const TextStyle(color: Colors.white70, fontSize: 11),
               ),
             ],
           ),
@@ -357,7 +351,7 @@ class _FinalizeButton extends StatelessWidget {
           decoration: BoxDecoration(
             color: enabled
                 ? const Color(0xFF30D158)
-                : Colors.white.withOpacity(0.15),
+                : Colors.white.withValues(alpha: 0.15),
             borderRadius: BorderRadius.circular(14),
           ),
           child: const Row(

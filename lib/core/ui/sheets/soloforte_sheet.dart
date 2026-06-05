@@ -40,7 +40,7 @@ Future<T?> showSoloForteSheet<T>({
     useSafeArea: useSafeArea,
     clipBehavior: preserveMaterialDefaults
         ? clipBehavior
-        : (clipBehavior ?? Clip.antiAliasWithSaveLayer),
+        : (clipBehavior ?? Clip.antiAlias),
     backgroundColor: preserveMaterialDefaults
         ? backgroundColor
         : (backgroundColor ?? SoloForteSheetTokens.sheetBackground),

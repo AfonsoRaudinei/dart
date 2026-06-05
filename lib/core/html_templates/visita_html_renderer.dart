@@ -10,8 +10,17 @@ class VisitaHtmlRenderer {
     required String agronomistNome,
     required String clienteNome,
     required Map<String, String> publicacoesTitulos,
+    String? reportBrandName,
+    String? reportLogoPath,
+    String? consultantRole,
   }) async {
     var tpl = await RelatorioHtmlRenderer.loadTemplate('relatorio_visita.html');
+    final branding = await RelatorioHtmlRenderer.brandingPlaceholders(
+      customBrandName: reportBrandName,
+      customLogoPath: reportLogoPath,
+      consultantName: agronomistNome,
+      consultantRole: consultantRole,
+    );
 
     final status = _string(relatorio['status'], fallback: 'pendente_revisao');
     final title = _string(relatorio['title']);
@@ -24,6 +33,7 @@ class VisitaHtmlRenderer {
     final publicacoesRefs = _listOfStrings(relatorio['publicacoesRefs']);
 
     tpl = RelatorioHtmlRenderer.replacePlaceholders(tpl, {
+      ...branding,
       'status': RelatorioHtmlRenderer.escapeHtml(status),
       'status_label': _statusLabel(status),
       'title_ou_farm_name': RelatorioHtmlRenderer.escapeHtml(titleOuFarm),
@@ -40,22 +50,73 @@ class VisitaHtmlRenderer {
       'gerado_em_formatado': RelatorioHtmlRenderer.geradoEm(),
     });
 
-    tpl = tpl.replaceAll('<!-- {{TALHOES_LOOP}} -->', _renderTalhoes(talhoes));
-    tpl = tpl.replaceAll(
-      '<!-- {{OCORRENCIAS_LOOP}} -->',
-      await _renderOcorrencias(ocorrencias),
+    tpl = RelatorioHtmlRenderer.resolveIfBlock(
+      tpl,
+      'custom_notes',
+      include: _string(relatorio['customNotes']).isNotEmpty,
     );
-    tpl = tpl.replaceAll(
-      '<!-- {{MONITORAMENTOS_LOOP}} -->',
-      _renderMonitoramentos(monitoramentos),
+    tpl = RelatorioHtmlRenderer.resolveIfBlock(
+      tpl,
+      'talhoes.length > 0',
+      include: talhoes.isNotEmpty,
+      truthyHtml: '<div class="talhao-list">${_renderTalhoes(talhoes)}</div>',
+      falsyHtml:
+          '<div class="empty-section">Nenhum talhão registrado nesta visita.</div>',
     );
-    tpl = tpl.replaceAll('<!-- {{FOTOS_LOOP}} -->', await _renderFotos(fotos));
-    tpl = tpl.replaceAll(
-      '<!-- {{PUBLICACOES_LOOP}} -->',
-      _renderPublicacoes(publicacoesRefs, publicacoesTitulos),
+    tpl = RelatorioHtmlRenderer.resolveIfBlock(
+      tpl,
+      'ocorrencias.length > 0',
+      include: ocorrencias.isNotEmpty,
+      truthyHtml:
+          '''
+    <div class="section-label">
+      <div class="section-label-bar"></div>
+      <span class="section-label-text">Ocorrências Registradas</span>
+    </div>
+    <div class="ocorrencia-list">${await _renderOcorrencias(ocorrencias)}</div>
+    ''',
+    );
+    tpl = RelatorioHtmlRenderer.resolveIfBlock(
+      tpl,
+      'monitoramentos.length > 0',
+      include: monitoramentos.isNotEmpty,
+      truthyHtml:
+          '''
+    <div class="section-label">
+      <div class="section-label-bar"></div>
+      <span class="section-label-text">Monitoramentos</span>
+    </div>
+    <div class="monitoramento-list">${_renderMonitoramentos(monitoramentos)}</div>
+    ''',
+    );
+    tpl = RelatorioHtmlRenderer.resolveIfBlock(
+      tpl,
+      'fotos.length > 0',
+      include: fotos.isNotEmpty,
+      truthyHtml:
+          '''
+    <div class="section-label">
+      <div class="section-label-bar"></div>
+      <span class="section-label-text">Registro Fotográfico</span>
+    </div>
+    <div class="fotos-grid">${await _renderFotos(fotos)}</div>
+    ''',
+    );
+    tpl = RelatorioHtmlRenderer.resolveIfBlock(
+      tpl,
+      'publicacoes_refs.length > 0',
+      include: publicacoesRefs.isNotEmpty,
+      truthyHtml:
+          '''
+    <div class="section-label">
+      <div class="section-label-bar"></div>
+      <span class="section-label-text">Publicações Técnicas</span>
+    </div>
+    <div class="publicacoes-list">${_renderPublicacoes(publicacoesRefs, publicacoesTitulos)}</div>
+    ''',
     );
 
-    return tpl;
+    return RelatorioHtmlRenderer.stripUnresolvedPlaceholders(tpl);
   }
 
   static String _renderTalhoes(List<Map<String, dynamic>> talhoes) {

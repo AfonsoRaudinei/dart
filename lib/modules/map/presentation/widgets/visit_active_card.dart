@@ -35,7 +35,9 @@ class VisitActiveCard extends ConsumerWidget {
         if (client == null) return const SizedBox.shrink();
 
         // Resolve fazenda e talhão a partir do areaId atual
-        Farm? currentFarm;
+        Farm? currentFarm = client.farms
+            .where((farm) => farm.id == session.farmId)
+            .firstOrNull;
         Talhao? currentTalhao;
         for (final farm in client.farms) {
           for (final talhao in farm.fields) {
@@ -191,13 +193,16 @@ class VisitActiveCard extends ConsumerWidget {
         selectedIndex: currentFarm == null
             ? null
             : client.farms.indexWhere((f) => f.id == currentFarm.id),
-        onSelect: (index) {
+        onSelect: (index) async {
           final newFarm = client.farms[index];
+          final controller = ref.read(visitControllerProvider.notifier);
+          await controller.updateFarm(newFarm.id);
           // Seleciona o primeiro talhão da nova fazenda automaticamente
           if (newFarm.fields.isNotEmpty) {
-            ref
-                .read(visitControllerProvider.notifier)
-                .updateArea(newFarm.fields.first.id);
+            await controller.updateArea(
+              newFarm.fields.first.id,
+              farmId: newFarm.id,
+            );
           }
         },
       ),
@@ -229,7 +234,9 @@ class VisitActiveCard extends ConsumerWidget {
             : farm.fields.indexWhere((t) => t.id == currentTalhao.id),
         onSelect: (index) {
           final newTalhao = farm.fields[index];
-          ref.read(visitControllerProvider.notifier).updateArea(newTalhao.id);
+          ref
+              .read(visitControllerProvider.notifier)
+              .updateArea(newTalhao.id, farmId: farm.id);
         },
       ),
     );

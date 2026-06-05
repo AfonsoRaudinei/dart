@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:soloforte_app/core/contracts/i_client_lookup.dart';
 import 'package:soloforte_app/core/contracts/i_client_lookup_provider.dart';
+import 'package:soloforte_app/core/contracts/i_active_visit_context_lookup_provider.dart';
 import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 import 'package:soloforte_app/core/ui/sheets/widgets/sheet_section_header.dart';
 import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
@@ -17,6 +18,7 @@ import 'occurrence_fenologia_data.dart';
 import 'occurrence_form_widgets.dart';
 
 part 'occurrence_creation_sheet_models.dart';
+part 'occurrence_creation_sheet_ui_helpers.dart';
 
 class OccurrenceCreationSheet extends ConsumerStatefulWidget {
   final double latitude;
@@ -24,6 +26,7 @@ class OccurrenceCreationSheet extends ConsumerStatefulWidget {
   final OccurrenceConfirmCallback onConfirm;
   final VoidCallback? onCancel;
   final ScrollController? scrollController;
+  final Occurrence? initialOccurrence;
 
   const OccurrenceCreationSheet({
     super.key,
@@ -32,6 +35,7 @@ class OccurrenceCreationSheet extends ConsumerStatefulWidget {
     required this.onConfirm,
     this.onCancel,
     this.scrollController,
+    this.initialOccurrence,
   });
 
   @override
@@ -62,6 +66,75 @@ class _OccurrenceCreationSheetState
   void initState() {
     super.initState();
     _clientsFuture = ref.read(clientLookupProvider).listAtivos();
+    _hydrateInitialOccurrence();
+    if (widget.initialOccurrence != null) {
+      _prefillInitialClient();
+    } else {
+      _prefillActiveVisitClient();
+    }
+  }
+
+  void _hydrateInitialOccurrence() {
+    final occurrence = widget.initialOccurrence;
+    if (occurrence == null) return;
+
+    _cultivarCtrl.text = occurrence.cultivar ?? '';
+    _descCtrl.text = occurrence.description;
+    _recomCtrl.text = occurrence.recomendacoes ?? '';
+    _urgency = occurrence.type;
+    _selectedCategoryValue = occurrence.category;
+    _dataPlantio = occurrence.dataPlantio != null
+        ? DateTime.tryParse(occurrence.dataPlantio!)
+        : null;
+    _estadio = _findEstadio(occurrence.estadioFenologico);
+
+    final cat = _categories
+        .where((item) => item.value == occurrence.category)
+        .firstOrNull
+        ?.enumValue;
+    if (cat != null) _cats.add(cat);
+
+    _metrics.addAll(_decodeNestedIntMap(occurrence.metricasJson));
+    _nutrientes.addAll(_decodeStringSet(occurrence.nutrientesJson));
+    _fotos.addAll(_decodeStringListMap(occurrence.fotosCategoriasJson));
+    final notas = _decodeStringMap(occurrence.notasCategoriasJson);
+    for (final entry in notas.entries) {
+      _notaCtrl(entry.key).text = entry.value;
+    }
+  }
+
+  Future<void> _prefillInitialClient() async {
+    try {
+      final clientId = widget.initialOccurrence?.clientId;
+      if (clientId == null || clientId.isEmpty) return;
+      final clients = await _clientsFuture;
+      if (!mounted || _selectedClient != null) return;
+      final selected = clients
+          .where((client) => client.id == clientId)
+          .firstOrNull;
+      if (selected != null) setState(() => _selectedClient = selected);
+    } catch (_) {
+      // Edição segue disponível mesmo se o cliente não estiver mais na lista.
+    }
+  }
+
+  Future<void> _prefillActiveVisitClient() async {
+    try {
+      final activeContext = await ref
+          .read(activeVisitContextLookupProvider)
+          .getActiveContext();
+      if (!mounted || activeContext == null || _selectedClient != null) return;
+
+      final clients = await _clientsFuture;
+      if (!mounted || _selectedClient != null) return;
+
+      final selected = clients
+          .where((client) => client.id == activeContext.clientId)
+          .firstOrNull;
+      if (selected != null) setState(() => _selectedClient = selected);
+    } catch (_) {
+      // Ocorrências continuam disponíveis fora de uma visita ativa.
+    }
   }
 
   @override
@@ -105,6 +178,10 @@ class _OccurrenceCreationSheetState
     });
   }
 
+  void _toggleNutriente(String sym, bool selected) {
+    setState(() => selected ? _nutrientes.remove(sym) : _nutrientes.add(sym));
+  }
+
   String _formatDate(DateTime d) =>
       '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
 
@@ -127,6 +204,74 @@ class _OccurrenceCreationSheetState
   }
 
   String? _encodeFotos() => _fotos.isEmpty ? null : jsonEncode(_fotos);
+
+  EstadioData? _findEstadio(String? code) {
+    if (code == null || code.isEmpty) return null;
+    return kEstadios.where((item) => item.code == code).firstOrNull;
+  }
+
+  Map<String, Map<String, int>> _decodeNestedIntMap(String? raw) {
+    if (raw == null || raw.isEmpty) return {};
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is! Map) return {};
+      return decoded.map((key, value) {
+        final inner = value is Map
+            ? value.map(
+                (innerKey, innerValue) => MapEntry(
+                  innerKey.toString(),
+                  innerValue is num
+                      ? innerValue.toInt()
+                      : int.tryParse(innerValue.toString()) ?? 0,
+                ),
+              )
+            : <String, int>{};
+        return MapEntry(key.toString(), Map<String, int>.from(inner));
+      });
+    } catch (_) {
+      return {};
+    }
+  }
+
+  Set<String> _decodeStringSet(String? raw) {
+    if (raw == null || raw.isEmpty) return {};
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is! List) return {};
+      return decoded.map((item) => item.toString()).toSet();
+    } catch (_) {
+      return {};
+    }
+  }
+
+  Map<String, String> _decodeStringMap(String? raw) {
+    if (raw == null || raw.isEmpty) return {};
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is! Map) return {};
+      return decoded.map(
+        (key, value) => MapEntry(key.toString(), value.toString()),
+      );
+    } catch (_) {
+      return {};
+    }
+  }
+
+  Map<String, List<String>> _decodeStringListMap(String? raw) {
+    if (raw == null || raw.isEmpty) return {};
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is! Map) return {};
+      return decoded.map((key, value) {
+        final list = value is List
+            ? value.map((item) => item.toString()).toList()
+            : <String>[];
+        return MapEntry(key.toString(), list);
+      });
+    } catch (_) {
+      return {};
+    }
+  }
 
   Future<void> _pickPhoto(OccurrenceCategory cat) async {
     final src = await showSoloForteSheet<ImageSource>(
@@ -232,9 +377,11 @@ class _OccurrenceCreationSheetState
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Nova Ocorrência',
-                          style: TextStyle(
+                        Text(
+                          widget.initialOccurrence == null
+                              ? 'Nova Ocorrência'
+                              : 'Editar Ocorrência',
+                          style: const TextStyle(
                             color: Colors.white,
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
@@ -463,7 +610,7 @@ class _OccurrenceCreationSheetState
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         decoration: BoxDecoration(
                           color: sel
-                              ? color.withOpacity(.18)
+                              ? color.withValues(alpha: .18)
                               : const Color(0xFF1C1C1E),
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
@@ -551,9 +698,11 @@ class _OccurrenceCreationSheetState
                           borderRadius: BorderRadius.circular(50),
                         ),
                       ),
-                      child: const Text(
-                        'Salvar Ocorrência',
-                        style: TextStyle(
+                      child: Text(
+                        widget.initialOccurrence == null
+                            ? 'Salvar Ocorrência'
+                            : 'Salvar Alterações',
+                        style: const TextStyle(
                           fontWeight: FontWeight.w600,
                           letterSpacing: -0.4,
                         ),
@@ -608,9 +757,9 @@ class _OccurrenceCreationSheetState
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
         decoration: BoxDecoration(
-          color: color.withOpacity(.07),
+          color: color.withValues(alpha: .07),
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: color.withOpacity(.3)),
+          border: Border.all(color: color.withValues(alpha: .3)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -705,115 +854,6 @@ class _OccurrenceCreationSheetState
             const SizedBox(height: 4),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildNutrientGrid(Color color) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(14, 0, 14, 8),
-      child: Wrap(
-        spacing: 8,
-        runSpacing: 8,
-        children: kNutrientes.map((entry) {
-          final sym = entry.$1;
-          final name = entry.$2;
-          final sel = _nutrientes.contains(sym);
-          return GestureDetector(
-            onTap: () {
-              HapticFeedback.selectionClick();
-              setState(
-                () => sel ? _nutrientes.remove(sym) : _nutrientes.add(sym),
-              );
-            },
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 150),
-              width: 56,
-              height: 56,
-              decoration: BoxDecoration(
-                color: sel ? color.withOpacity(.25) : const Color(0xFF1C1C1E),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(
-                  color: sel ? color : Colors.white12,
-                  width: sel ? 1.5 : 1,
-                ),
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    sym,
-                    style: TextStyle(
-                      color: sel ? color : Colors.white60,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
-                  ),
-                  Text(
-                    name.substring(0, name.length.clamp(0, 6)),
-                    style: TextStyle(
-                      color: sel ? color.withOpacity(.8) : Colors.white24,
-                      fontSize: 9,
-                    ),
-                    textAlign: TextAlign.center,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
-            ),
-          );
-        }).toList(),
-      ),
-    );
-  }
-
-  Widget _buildAguaSection(Color color) {
-    final current = _metricValue(OccurrenceCategory.agua, 'status');
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(14, 0, 14, 8),
-      child: Row(
-        children: List.generate(kAguaLabels.length, (i) {
-          final sel = current == i;
-          return Expanded(
-            child: GestureDetector(
-              onTap: () => _setMetric(OccurrenceCategory.agua, 'status', i),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 180),
-                margin: const EdgeInsets.only(right: 6),
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                decoration: BoxDecoration(
-                  color: sel ? color.withOpacity(.2) : const Color(0xFF1C1C1E),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                    color: sel ? color : Colors.white12,
-                    width: sel ? 1.5 : 1,
-                  ),
-                ),
-                child: Column(
-                  children: [
-                    Text(
-                      i == 0
-                          ? '💧'
-                          : i == 1
-                          ? '🏜'
-                          : '🌊',
-                      style: const TextStyle(fontSize: 18),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      kAguaLabels[i],
-                      style: TextStyle(
-                        color: sel ? color : Colors.white38,
-                        fontWeight: sel ? FontWeight.bold : FontWeight.normal,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          );
-        }),
       ),
     );
   }

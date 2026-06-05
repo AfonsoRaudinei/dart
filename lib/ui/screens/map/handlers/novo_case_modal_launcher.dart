@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 
 import '../../../../core/ui/sheets/soloforte_sheet.dart';
+import '../../../../core/contracts/i_active_visit_context_lookup.dart';
+import '../../../../core/contracts/i_active_visit_context_lookup_provider.dart';
 import '../../../../modules/marketing/domain/entities/marketing_case.dart';
 import '../../../../modules/marketing/domain/enums/case_tipo.dart';
 import '../../../../modules/marketing/presentation/providers/marketing_providers.dart';
@@ -23,6 +25,8 @@ class NovoCaseModalLauncher {
     required WidgetRef ref,
     CaseTipo? initialTipo,
   }) async {
+    if (!context.mounted) return;
+    final activeVisitContext = await _loadActiveVisitContext(ref);
     if (!context.mounted) return;
 
     Future<void> handlePublicar(MarketingCase newCase) async {
@@ -87,6 +91,7 @@ class NovoCaseModalLauncher {
           return NovoResultadoCaseSheet(
             lat: lat,
             lng: lng,
+            initialVisitContext: activeVisitContext,
             onClose: onClose,
             onPublicar: handlePublicar,
           );
@@ -94,6 +99,7 @@ class NovoCaseModalLauncher {
           return NovoAntesDepoisCaseSheet(
             lat: lat,
             lng: lng,
+            initialVisitContext: activeVisitContext,
             onClose: onClose,
             onPublicar: handlePublicar,
           );
@@ -101,6 +107,7 @@ class NovoCaseModalLauncher {
           return NovaAvaliacaoCaseSheet(
             lat: lat,
             lng: lng,
+            initialVisitContext: activeVisitContext,
             onClose: onClose,
             onPublicar: handlePublicar,
           );
@@ -108,6 +115,7 @@ class NovoCaseModalLauncher {
           return NovoResultadoCaseSheet(
             lat: lat,
             lng: lng,
+            initialVisitContext: activeVisitContext,
             onClose: onClose,
             onPublicar: handlePublicar,
           );
@@ -143,6 +151,19 @@ class NovoCaseModalLauncher {
         ),
       ),
     );
+  }
+
+  static Future<ActiveVisitContext?> _loadActiveVisitContext(
+    WidgetRef ref,
+  ) async {
+    try {
+      return await ref
+          .read(activeVisitContextLookupProvider)
+          .getActiveContext();
+    } catch (_) {
+      // O case continua disponível fora de visita ou com cadastro incompleto.
+      return null;
+    }
   }
 
   /// Exibe snackbar de resultado de publicação (sucesso ou offline).

@@ -18,12 +18,41 @@ class OccurrenceRepository {
     );
   }
 
+  Future<void> updateOccurrence(Occurrence occurrence) async {
+    final db = await _databaseHelper.database;
+    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
+    final map = occurrence
+        .copyWith(updatedAt: DateTime.now(), syncStatus: 'updated')
+        .toMap();
+    map['user_id'] = userId;
+    await db.insert(
+      'occurrences',
+      map,
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  Future<void> softDeleteOccurrence(String id) async {
+    final db = await _databaseHelper.database;
+    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
+    await db.update(
+      'occurrences',
+      {
+        'sync_status': 'deleted',
+        'updated_at': DateTime.now().toIso8601String(),
+      },
+      where: 'id = ? AND user_id = ?',
+      whereArgs: [id, userId],
+    );
+  }
+
   Future<List<Occurrence>> getOccurrencesBySession(String sessionId) async {
     final db = await _databaseHelper.database;
     final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
     final List<Map<String, dynamic>> maps = await db.query(
       'occurrences',
-      where: 'visit_session_id = ? AND user_id = ?',
+      where:
+          "visit_session_id = ? AND user_id = ? AND sync_status != 'deleted'",
       whereArgs: [sessionId, userId],
     );
     return List.generate(maps.length, (i) => Occurrence.fromMap(maps[i]));
@@ -34,7 +63,7 @@ class OccurrenceRepository {
     final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
     final List<Map<String, dynamic>> maps = await db.query(
       'occurrences',
-      where: 'user_id = ?',
+      where: "user_id = ? AND sync_status != 'deleted'",
       whereArgs: [userId],
       orderBy: 'created_at DESC',
       limit: 50, // Safety limit
@@ -45,7 +74,7 @@ class OccurrenceRepository {
   Future<Map<String, int>> getStats({DateTime? start, DateTime? end}) async {
     final db = await _databaseHelper.database;
     final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
-    String where = 'WHERE user_id = ?';
+    String where = "WHERE user_id = ? AND sync_status != 'deleted'";
     List<dynamic> args = [userId];
 
     if (start != null && end != null) {

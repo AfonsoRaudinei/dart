@@ -6,9 +6,13 @@ import 'package:latlong2/latlong.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/state/map_ui_providers.dart';
+import '../../core/state/map_state.dart';
+import '../../core/config/map_config.dart';
+import '../../core/config/map_secrets.dart';
+import '../../core/services/offline_tile_cache_service.dart';
+import '../../core/utils/coordinate_parser.dart';
 import '../../modules/auth/services/auth_service.dart';
 import '../../core/utils/app_logger.dart';
-import '../../core/utils/debouncer.dart';
 import '../../modules/drawing/presentation/providers/drawing_provider.dart';
 import '../../modules/drawing/domain/drawing_state.dart';
 import '../../modules/dashboard/providers/location_providers.dart';
@@ -46,10 +50,6 @@ class PrivateMapScreen extends ConsumerStatefulWidget {
 
 class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
   final MapController _mapController = MapController();
-  final _mapEventDebouncer = Debouncer(
-    delay: const Duration(milliseconds: 300),
-  );
-
   // 🔧 LIFECYCLE: Referência cacheada do DrawingController.
   // Capturada no build() para uso seguro no dispose() SEM ref.read().
   // ref é invalidado em deactivate() (antes de dispose()) — ADR-008.
@@ -113,7 +113,6 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
     _drawingController?.cancelOperation();
     MapLocationHandler.stopFollowing();
 
-    _mapEventDebouncer.dispose();
     super.dispose();
   }
 
@@ -275,9 +274,251 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
     );
   }
 
+  Future<void> _openCoordinateSearch() async {
+    final controller = TextEditingController();
+    final value = await showDialog<String>(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          title: const Text('Ir para coordenada'),
+          content: TextField(
+            controller: controller,
+            autofocus: true,
+            decoration: const InputDecoration(
+              hintText: 'Ex: -10.1823,-48.3331 | 22K 788000 8872000',
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('Cancelar'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(ctx).pop(controller.text.trim()),
+              child: const Text('Ir'),
+            ),
+          ],
+        );
+      },
+    );
+    if (!mounted || value == null || value.isEmpty) return;
+
+    final parsed = CoordinateParser.parse(value);
+    if (parsed == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Formato inválido. Use decimal, DMS/DDM (com hemisfério) ou UTM.',
+          ),
+        ),
+      );
+      return;
+    }
+
+    _mapController.move(parsed, 17.0);
+    ref.read(destinationCoordinateMarkerProvider.notifier).state = parsed;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Destino: ${parsed.latitude.toStringAsFixed(6)}, '
+          '${parsed.longitude.toStringAsFixed(6)}',
+        ),
+        duration: const Duration(seconds: 3),
+      ),
+    );
+  }
+
+  Future<void> _downloadOfflineArea() async {
+    final minZoomController = TextEditingController(text: '12');
+    final maxZoomController = TextEditingController(text: '18');
+
+    final submitted = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Baixar área offline'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Será usada a área visível atual do mapa (bounding box).',
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: minZoomController,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(labelText: 'Zoom mínimo'),
+            ),
+            TextField(
+              controller: maxZoomController,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(labelText: 'Zoom máximo'),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Baixar'),
+          ),
+        ],
+      ),
+    );
+    if (!mounted || submitted != true) return;
+
+    final minZoom = int.tryParse(minZoomController.text) ?? 12;
+    final maxZoom = int.tryParse(maxZoomController.text) ?? 18;
+    final bounds = _mapController.camera.visibleBounds;
+    final south = bounds.south;
+    final north = bounds.north;
+    final west = bounds.west;
+    final east = bounds.east;
+
+    final activeLayer = ref.read(activeLayerProvider);
+    final tileConfig = MapConfig.tileConfigForLayer(
+      activeLayer,
+      mapTilerApiKey: kMapTilerApiKey,
+    );
+    final cacheService = ref.read(offlineTileCacheServiceProvider);
+    final layerKey = cacheService.layerKeyFromTemplate(tileConfig.urlTemplate);
+    late final int estimatedTiles;
+    try {
+      estimatedTiles = cacheService.estimateTileCount(
+        south: south,
+        west: west,
+        north: north,
+        east: east,
+        minZoom: minZoom,
+        maxZoom: maxZoom,
+      );
+      if (estimatedTiles > OfflineTileCacheService.maxTileDownloadCount) {
+        throw OfflineTileCacheException(
+          'Área excede o limite de '
+          '${OfflineTileCacheService.maxTileDownloadCount} tiles '
+          '($estimatedTiles solicitados). Reduza o zoom máximo ou aproxime o mapa.',
+        );
+      }
+    } on OfflineTileCacheException catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.message)));
+      return;
+    }
+
+    bool cancelRequested = false;
+    final progress = ValueNotifier(
+      OfflinePrefetchProgress(
+        total: estimatedTiles,
+        processed: 0,
+        downloaded: 0,
+        skipped: 0,
+        failed: 0,
+      ),
+    );
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Baixando área offline'),
+        content: ValueListenableBuilder<OfflinePrefetchProgress>(
+          valueListenable: progress,
+          builder: (_, value, _) => Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              LinearProgressIndicator(value: value.fraction),
+              const SizedBox(height: 12),
+              Text('${value.processed} de ${value.total} tiles'),
+              if (value.failed > 0) Text('Falhas: ${value.failed}'),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => cancelRequested = true,
+            child: const Text('Cancelar'),
+          ),
+        ],
+      ),
+    );
+
+    late final OfflinePrefetchResult result;
+    try {
+      result = await cacheService.prefetchArea(
+        layerKey: layerKey,
+        urlTemplate: tileConfig.urlTemplate,
+        subdomains: tileConfig.subdomains,
+        south: south,
+        west: west,
+        north: north,
+        east: east,
+        minZoom: minZoom,
+        maxZoom: maxZoom,
+        headers: {'User-Agent': MapConfig.userAgent},
+        onProgress: (value) => progress.value = value,
+        shouldCancel: () => cancelRequested,
+      );
+    } on OfflineTileCacheException catch (e) {
+      if (mounted) Navigator.of(context, rootNavigator: true).pop();
+      progress.dispose();
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.message)));
+      return;
+    }
+    if (mounted) Navigator.of(context, rootNavigator: true).pop();
+    progress.dispose();
+    if (!mounted) return;
+    if (!result.isComplete) {
+      final message = result.cancelled
+          ? 'Download offline cancelado.'
+          : 'Download incompleto: ${result.failed} tile(s) falharam. Tente novamente.';
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
+      return;
+    }
+
+    ref
+        .read(offlineMapAreasProvider.notifier)
+        .addArea(
+          OfflineMapAreaConfig(
+            id: DateTime.now().millisecondsSinceEpoch.toString(),
+            layerKey: layerKey,
+            south: south,
+            west: west,
+            north: north,
+            east: east,
+            minZoom: minZoom.toDouble(),
+            maxZoom: maxZoom.toDouble(),
+            createdAt: DateTime.now(),
+          ),
+        );
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Área offline baixada: ${result.downloaded} tile(s) novo(s), '
+          '${result.skipped} já existente(s)'
+          ' (${south.toStringAsFixed(4)},${west.toStringAsFixed(4)})'
+          ' → (${north.toStringAsFixed(4)},${east.toStringAsFixed(4)})',
+        ),
+      ),
+    );
+  }
+
   void _openOccurrenceSheet(double lat, double lng) async {
     // 🛡 CONSOLIDATION: Redirect to MapBottomSheet
     if (!mounted) return;
+
+    // O ponto precisa existir antes do sheet para evitar o primeiro frame em 0,0.
+    ref.read(pendingOccurrenceLocationProvider.notifier).state = LatLng(
+      lat,
+      lng,
+    );
 
     // Usando setter instrumentado
     _setSheetState(
@@ -287,10 +528,6 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
       ),
       'OpenOccurrenceSheet (Create Mode)',
     );
-    ref.read(pendingOccurrenceLocationProvider.notifier).state = LatLng(
-      lat,
-      lng,
-    ); // Trigger Creation Mode
   }
 
   void _armMarketingMode(CaseTipo tipo) {
@@ -346,6 +583,8 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
       armMarketingMode: _armMarketingMode,
       handleOccurrencePinTap: _handleOccurrencePinTap,
       applyInitialViewport: _applyInitialViewport,
+      openCoordinateSearch: _openCoordinateSearch,
+      downloadOfflineArea: _downloadOfflineArea,
     );
   }
 }

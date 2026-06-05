@@ -4,6 +4,7 @@ DROP TABLE IF EXISTS marketing_pins CASCADE;
 -- Tabela principal
 CREATE TABLE marketing_cases (
   id                    UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id               UUID REFERENCES auth.users(id) ON DELETE SET NULL,
   tipo                  TEXT NOT NULL CHECK (tipo IN ('resultado','antes_depois','avaliacao')),
   visibilidade          TEXT NOT NULL CHECK (visibilidade IN ('ouro','prata','bronze')),
   lat                   NUMERIC(10,7) NOT NULL,
@@ -39,6 +40,7 @@ CREATE TABLE marketing_cases (
 CREATE TABLE marketing_avaliacoes (
   id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   case_id         UUID NOT NULL REFERENCES marketing_cases(id) ON DELETE CASCADE,
+  user_id         UUID REFERENCES auth.users(id) ON DELETE SET NULL,
   ordem           INT NOT NULL,
   layout          TEXT NOT NULL DEFAULT 'duas_fotos',
   colapsado       BOOLEAN NOT NULL DEFAULT false,
@@ -90,32 +92,38 @@ CREATE POLICY "avaliacoes public read" ON marketing_avaliacoes
 -- Usuário autenticado pode criar novos cases
 CREATE POLICY "authenticated insert cases" ON marketing_cases
   FOR INSERT TO authenticated
-  WITH CHECK (true);
+  WITH CHECK (auth.uid() = user_id);
 
--- Usuário autenticado pode atualizar seus cases (upsert no saveCase)
+-- Usuário autenticado pode atualizar apenas seus cases (upsert no saveCase)
 CREATE POLICY "authenticated update cases" ON marketing_cases
   FOR UPDATE TO authenticated
-  USING (true)
-  WITH CHECK (true);
+  USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
 
 -- Usuário autenticado pode inserir avaliações de um case existente
 CREATE POLICY "authenticated insert avaliacoes" ON marketing_avaliacoes
   FOR INSERT TO authenticated
   WITH CHECK (
+    auth.uid() = user_id
+    AND
     EXISTS (
       SELECT 1 FROM marketing_cases mc
       WHERE mc.id = case_id
+        AND mc.user_id = auth.uid()
     )
   );
 
 -- Usuário autenticado pode atualizar avaliações (upsert)
 CREATE POLICY "authenticated update avaliacoes" ON marketing_avaliacoes
   FOR UPDATE TO authenticated
-  USING (true)
+  USING (auth.uid() = user_id)
   WITH CHECK (
+    auth.uid() = user_id
+    AND
     EXISTS (
       SELECT 1 FROM marketing_cases mc
       WHERE mc.id = case_id
+        AND mc.user_id = auth.uid()
     )
   );
 

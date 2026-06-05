@@ -23,7 +23,7 @@ class DatabaseHelper {
 
     final db = await openDatabase(
       path,
-      version: 32,
+      version: 34,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -159,6 +159,12 @@ class DatabaseHelper {
           break;
         case 32:
           await _migrateToV32(db);
+          break;
+        case 33:
+          await _migrateToV33(db);
+          break;
+        case 34:
+          await _migrateToV34(db);
           break;
       }
     }
@@ -761,6 +767,7 @@ class DatabaseHelper {
     await db.execute('''
       INSERT INTO visit_sessions_v18 (
         id,
+        user_id,
         producer_id,
         area_id,
         activity_type,
@@ -775,6 +782,7 @@ class DatabaseHelper {
       )
         SELECT
           id,
+          user_id,
           producer_id,
           NULLIF(area_id, ''),
           NULLIF(activity_type, ''),
@@ -1089,7 +1097,9 @@ class DatabaseHelper {
         'ALTER TABLE carteira_categorias '
         'ADD COLUMN unidade TEXT NOT NULL DEFAULT "realPorHa"',
       );
-    } catch (_) {}
+    } catch (_) {
+      AppLogger.debug('V24: coluna unidade já existente', tag: 'DB.Migration');
+    }
 
     // Adicionar valor_referencia em carteira_categorias (idempotente)
     try {
@@ -1097,7 +1107,12 @@ class DatabaseHelper {
         'ALTER TABLE carteira_categorias '
         'ADD COLUMN valor_referencia REAL',
       );
-    } catch (_) {}
+    } catch (_) {
+      AppLogger.debug(
+        'V24: coluna valor_referencia já existente',
+        tag: 'DB.Migration',
+      );
+    }
 
     // Migrar dados existentes: valor_real → valor_referencia
     await db.execute('''
@@ -1423,5 +1438,44 @@ class DatabaseHelper {
         user_id TEXT NOT NULL DEFAULT ''
       )
     ''');
+  }
+
+  /// Mantém a fazenda escolhida no check-in mesmo quando não há talhão.
+  Future<void> _migrateToV33(Database db) async {
+    try {
+      await db.execute('ALTER TABLE visit_sessions ADD COLUMN farm_id TEXT');
+      AppLogger.debug(
+        'V33: farm_id adicionado em visit_sessions',
+        tag: 'DB.Migration',
+      );
+    } catch (e) {
+      AppLogger.debug(
+        'V33: farm_id já existe em visit_sessions — $e',
+        tag: 'DB.Migration',
+      );
+    }
+  }
+
+  Future<void> _migrateToV34(Database db) async {
+    final columns = <String, String>{
+      'report_brand_name': 'TEXT',
+      'report_logo_url': 'TEXT',
+    };
+    for (final entry in columns.entries) {
+      try {
+        await db.execute(
+          'ALTER TABLE user_profile_cache ADD COLUMN ${entry.key} ${entry.value}',
+        );
+        AppLogger.debug(
+          'V34: coluna ${entry.key} adicionada em user_profile_cache',
+          tag: 'DB.Migration',
+        );
+      } catch (e) {
+        AppLogger.debug(
+          'V34: ${entry.key} já existe em user_profile_cache — $e',
+          tag: 'DB.Migration',
+        );
+      }
+    }
   }
 }

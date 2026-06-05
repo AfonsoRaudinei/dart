@@ -5,10 +5,10 @@ import '../controllers/gps_walk_controller.dart';
 
 /// Provider autoDispose para a sessão GPS Walk.
 ///
-/// AutoDispose garante que o estado da sessão é descartado ao sair do
-/// modo de medição, sem vazar memória.
+/// O MapBuildOrchestrator também escuta este provider, então a sessão sobrevive
+/// ao fechamento do DrawingSheet e é descartada ao sair da tela do mapa.
 ///
-/// Padrão: [NotifierProvider.autoDispose] — consistente com o módulo drawing.
+/// O ciclo de vida é encerrado explicitamente por `cancel()` ou `finish()`.
 ///
 /// Uso:
 /// ```dart
@@ -21,5 +21,5 @@ import '../controllers/gps_walk_controller.dart';
 /// ```
 final gpsWalkProvider =
     NotifierProvider.autoDispose<GpsWalkNotifier, GpsWalkSession?>(
-  GpsWalkNotifier.new,
-);
+      GpsWalkNotifier.new,
+    );

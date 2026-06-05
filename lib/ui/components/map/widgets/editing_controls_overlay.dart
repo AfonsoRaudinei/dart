@@ -34,12 +34,12 @@ class EditingControlsOverlay extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.8),
+              color: Colors.white.withValues(alpha: 0.8),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.white.withOpacity(0.5)),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.5)),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
+                  color: Colors.black.withValues(alpha: 0.1),
                   blurRadius: 10,
                   offset: const Offset(0, 4),
                 ),
@@ -81,7 +81,7 @@ class EditingControlsOverlay extends StatelessWidget {
                 Container(
                   height: 24,
                   width: 1,
-                  color: Colors.grey.withOpacity(0.4),
+                  color: Colors.grey.withValues(alpha: 0.4),
                   margin: const EdgeInsets.symmetric(horizontal: 8),
                 ),
                 TextButton.icon(

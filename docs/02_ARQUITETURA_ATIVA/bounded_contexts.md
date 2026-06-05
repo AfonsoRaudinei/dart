@@ -78,14 +78,6 @@
 
 ---
 
-### `operacao`
-**Natureza:** Execução de visitas  
-**Responsabilidade:** Registro e condução de visitas técnicas em campo  
-**Dependências permitidas:** `Agenda`  
-**Regra:** Pode depender de `Agenda`, mas não o contrário  
-
----
-
 ### `visitas/`
 **Natureza:** Execução de sessão de visita técnica em campo  
 **Responsabilidade:** Ciclo check-in → check-out, geofencing, estatísticas, sync  
@@ -93,8 +85,7 @@
 **ADR:** ADR-023  
 **Contratos em core/contracts/:** `IVisitSessionLookup`, `IVisitClientLookup`  
 **Regra:** NÃO depende de `consultoria/` nem de `drawing/`  
-**Ponto cego CI:** violações internas em `visit_controller` e `geofence_controller`
-são dívida técnica registrada em ADR-023 seção 9 (DT-023-3, DT-023-4)  
+**Geofence:** execução foreground enquanto o mapa privado está aberto
 
 ---
 
@@ -116,7 +107,7 @@ são dívida técnica registrada em ADR-023 seção 9 (DT-023-3, DT-023-4)
 **Natureza:** Módulo de monetização  
 **Responsabilidade:** Gestão de planos pagos, pagamentos via Mercado Pago e sistema de indicações com upgrade automático  
 **Dependências permitidas:** Supabase (remoto) — sem dependências de outros módulos  
-**Regra:** NÃO depende de nenhum módulo de domínio (`consultoria`, `operacao`, `drawing`, `agenda`, `marketing`)  
+**Regra:** NÃO depende de nenhum módulo de domínio (`consultoria`, `drawing`, `agenda`, `marketing`)
 **Regra:** `marketing/` pode depender de `planos/` para verificar plano ativo  
 **Regra:** `map/` pode depender de `planos/` para exibir badge no SideMenu  
 **Nota:** Publicação de cases é fluxo online-only — fonte da verdade é Supabase, não SQLite  
@@ -133,12 +124,10 @@ são dívida técnica registrada em ADR-023 seção 9 (DT-023-3, DT-023-4)
 | `consultoria` | `drawing` | ❌ PROIBIDO |
 | `consultoria` | `visitas` (presentation) | ❌ PROIBIDO |
 | `visitas` | `consultoria` (presentation) | ❌ PROIBIDO |
-| `operacao` | `consultoria` | ✅ PERMITIDO (dependência semântica válida) |
-| `map` | `agenda` / `drawing` / `consultoria` / `operacao` | ✅ PERMITIDO |
+| `map` | `agenda` / `drawing` / `consultoria` | ✅ PERMITIDO |
 | `consultoria` | `core/contracts` | ✅ PERMITIDO |
 | `visitas` | `core/contracts` | ✅ PERMITIDO |
 | `agenda/` | `visitas/` | ✅ PERMITIDO (StartEventUseCase) |
-| `operacao/` | `visitas/` | ✅ PERMITIDO |
 | `map/` | `visitas/` via contratos | ✅ PERMITIDO |
 | `map/` | `visitas/` direto | ⚠️ A MIGRAR — DT-025-3 (ex-DT-023-5) |
 | módulos externos | `map/` | ❌ PROIBIDO — REGRA-MAP-1 (ADR-025) |
@@ -189,10 +178,6 @@ Qualquer alteração exige: atualização desta tabela + ADR em `02_ARQUITETURA_
 ## map
 
 **Responsabilidade**: Projeção agregadora espacial e orquestração visual.
-
-## operacao
-
-**Responsabilidade**: Execução de visitas e fluxo operacional em campo.
 
 ## planos
 
@@ -396,7 +381,6 @@ Qualquer alteração exige: atualização desta tabela + ADR em `02_ARQUITETURA_
 | map | múltiplos contratos e composição | - |
 | marketing | `IClientLookup`, `IFarmLookup` | *`IPlanLimitsLookup` (pendente)* |
 | ndvi | `IFieldLookup`, `IFarmLookup` | - |
-| operacao | `IClientLookup` | - |
 | planos | - | - |
 | public | - | - |
 | settings | - | - |

@@ -34,7 +34,7 @@ Auditoria PROMPT 01 identificou quatro problemas estruturais principais:
 | Dimensão | Valor |
 |---|---|
 | **Natureza** | Agregador visual — projeção de todos os domínios no contexto espacial |
-| **Dependências permitidas** | `agenda/`, `drawing/`, `consultoria/`, `operacao/`, `visitas/` (via contratos), `planos/` |
+| **Dependências permitidas** | `agenda/`, `drawing/`, `consultoria/`, `visitas/` (via contratos), `planos/` |
 | **Regra central** | `map/` pode depender de tudo; **ninguém depende de `map/`** |
 | **Exceções autorizadas (REGRA-MAP-1)** | `app_router.dart`, `main.dart`, `ui/components/map/`, `ui/screens/` — Fase 3 pending |
 
@@ -58,7 +58,7 @@ Auditoria PROMPT 01 identificou quatro problemas estruturais principais:
 │  modules/map/  (AGREGADOR — depende de tudo)            │
 │                                                         │
 │  ✅ PODE importar:                                       │
-│     agenda/, drawing/, consultoria/, operacao/          │
+│     agenda/, drawing/, consultoria/                     │
 │     visitas/ via core/contracts/                        │
 │     planos/ (badge SideMenu)                            │
 │                                                         │

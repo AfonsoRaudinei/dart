@@ -23,7 +23,9 @@ class AuthService extends _$AuthService {
     } on AuthException catch (e) {
       throw Exception(_traduzirErro(e.message));
     } catch (e) {
-      throw Exception('Não foi possível completar a operação. Verifique sua conexão.');
+      throw Exception(
+        'Não foi possível completar a operação. Verifique sua conexão.',
+      );
     }
   }
 
@@ -32,10 +34,7 @@ class AuthService extends _$AuthService {
       final result = await _client.auth.signUp(
         email: dto.email,
         password: dto.password,
-        data: {
-          'full_name': dto.name,
-          'role': dto.role,
-        },
+        data: {'full_name': dto.name},
       );
 
       // Se sessão ativa (email-confirm desativado), completar perfil agora
@@ -53,7 +52,9 @@ class AuthService extends _$AuthService {
     } on AuthException catch (e) {
       throw Exception(_traduzirErro(e.message));
     } catch (e) {
-      throw Exception('Não foi possível completar a operação. Verifique sua conexão.');
+      throw Exception(
+        'Não foi possível completar a operação. Verifique sua conexão.',
+      );
     }
   }
 
@@ -66,7 +67,9 @@ class AuthService extends _$AuthService {
     } on AuthException catch (e) {
       throw Exception(_traduzirErro(e.message));
     } catch (e) {
-      throw Exception('Não foi possível completar a operação. Verifique sua conexão.');
+      throw Exception(
+        'Não foi possível completar a operação. Verifique sua conexão.',
+      );
     }
   }
 
@@ -79,7 +82,9 @@ class AuthService extends _$AuthService {
     } on AuthException catch (e) {
       throw Exception(_traduzirErro(e.message));
     } catch (e) {
-      throw Exception('Não foi possível completar a operação. Verifique sua conexão.');
+      throw Exception(
+        'Não foi possível completar a operação. Verifique sua conexão.',
+      );
     }
   }
 
@@ -89,7 +94,9 @@ class AuthService extends _$AuthService {
     } on AuthException catch (e) {
       throw Exception(_traduzirErro(e.message));
     } catch (e) {
-      throw Exception('Não foi possível completar a operação. Verifique sua conexão.');
+      throw Exception(
+        'Não foi possível completar a operação. Verifique sua conexão.',
+      );
     }
   }
 
@@ -149,9 +156,7 @@ class AuthService extends _$AuthService {
       debugPrint('✅ [AuthService] Perfil completado: ${updates.keys}');
     } on PostgrestException catch (e) {
       // Não bloquear login por falha no perfil
-      debugPrint(
-        '⚠️ [AuthService] Erro ao completar perfil: ${e.message}',
-      );
+      debugPrint('⚠️ [AuthService] Erro ao completar perfil: ${e.message}');
     } catch (e) {
       debugPrint('⚠️ [AuthService] Erro inesperado no perfil: $e');
     }
@@ -197,12 +202,14 @@ class AuthService extends _$AuthService {
     // UPDATE (não INSERT) — perfil já criado pelo trigger
     try {
       await NetworkPolicy.withTimeout(
-        () => _client.from('perfis').update({
-          'name': dto.name,
-          'phone': dto.phone,
-          'role': dto.role,
-          'photo_url': photoUrl,
-        }).eq('id', userId),
+        () => _client
+            .from('perfis')
+            .update({
+              'name': dto.name,
+              'phone': dto.phone,
+              'photo_url': photoUrl,
+            })
+            .eq('id', userId),
       );
     } on PostgrestException catch (e) {
       debugPrint('⚠️ [AuthService] Erro ao atualizar perfil: ${e.message}');

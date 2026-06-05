@@ -1,4 +1,5 @@
 import 'dart:ui' as ui;
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import '../../../../core/design/sf_icons.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -109,10 +110,10 @@ class _PublicacaoPin extends StatelessWidget {
               children: [
                 // Foto de capa ou ícone placeholder
                 if (hasCover)
-                  Image.network(
-                    publicacao.coverMedia.path,
+                  CachedNetworkImage(
+                    imageUrl: publicacao.coverMedia.path,
                     fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => _buildPlaceholder(color),
+                    errorWidget: (_, __, ___) => _buildPlaceholder(color),
                   )
                 else
                   _buildPlaceholder(color),

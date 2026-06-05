@@ -32,9 +32,7 @@ class FieldLookupGeofenceAdapter implements IFieldLookup {
   @override
   Future<List<FieldSummary>> listByFarmId(String farmId) async {
     final talhoes = await _repository.getFieldsByFarmId(farmId);
-    return talhoes
-        .map((t) => _toSummaryWithFarm(t, farmId))
-        .toList();
+    return talhoes.map((t) => _toSummaryWithFarm(t, farmId)).toList();
   }
 
   @override
@@ -53,11 +51,11 @@ class FieldLookupGeofenceAdapter implements IFieldLookup {
       name: talhao.name,
       farmId: farmId,
       areaHa: talhao.areaHa,
+      crop: talhao.crop,
+      harvest: talhao.harvest,
       // Serializa geometry de Map<String,dynamic> para String (GeoJSON)
       // para compatibilidade com FieldSummary.geometry: String?
-      geometry: talhao.geometry != null
-          ? jsonEncode(talhao.geometry)
-          : null,
+      geometry: talhao.geometry != null ? jsonEncode(talhao.geometry) : null,
     );
   }
 }

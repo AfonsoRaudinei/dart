@@ -16,10 +16,14 @@ import '../../../../core/config/map_config.dart';
 import '../../../../core/config/map_secrets.dart';
 import '../../../../core/utils/map_logger.dart';
 import '../../../../modules/drawing/presentation/providers/drawing_provider.dart';
+import '../../../../modules/drawing/presentation/providers/gps_walk_providers.dart';
 import '../../../../modules/drawing/domain/drawing_state.dart';
+import '../../../../modules/drawing/domain/models/gps_walk_session.dart';
+import '../../../../modules/drawing/domain/models/drawing_models.dart';
 import '../../../../modules/drawing/presentation/widgets/drawing_layers.dart';
 import '../../../../modules/drawing/presentation/widgets/drawing_state_indicator.dart';
 import '../../../../modules/drawing/presentation/widgets/drawing_edit_layer.dart';
+import '../../../../modules/drawing/presentation/widgets/gps_walk_controls_overlay.dart';
 import '../../../../modules/drawing/presentation/widgets/gps_tracking_overlay.dart';
 import '../../../../modules/consultoria/clients/presentation/providers/field_providers.dart';
 import '../../../../modules/dashboard/providers/location_providers.dart';
@@ -28,8 +32,8 @@ import '../../../../modules/consultoria/services/talhao_map_adapter.dart';
 import '../../../../modules/consultoria/occurrences/domain/occurrence.dart'
     as occ;
 import '../../../../modules/marketing/domain/enums/case_tipo.dart';
+import '../../../../modules/visitas/presentation/controllers/geofence_controller.dart';
 import '../../../../modules/visitas/presentation/controllers/visit_controller.dart';
-import '../../../../core/contracts/i_field_lookup_geofence_provider.dart';
 import '../../../components/map/map_bottom_sheet.dart';
 import '../../../components/map/widgets/map_canvas.dart';
 import '../../../components/map/widgets/map_layers.dart';
@@ -71,6 +75,8 @@ class MapBuildOrchestrator extends ConsumerWidget {
   final void Function(CaseTipo tipo) armMarketingMode;
   final void Function(occ.Occurrence occurrence) handleOccurrencePinTap;
   final void Function() applyInitialViewport;
+  final Future<void> Function() openCoordinateSearch;
+  final Future<void> Function() downloadOfflineArea;
 
   const MapBuildOrchestrator({
     super.key,
@@ -87,6 +93,8 @@ class MapBuildOrchestrator extends ConsumerWidget {
     required this.armMarketingMode,
     required this.handleOccurrencePinTap,
     required this.applyInitialViewport,
+    required this.openCoordinateSearch,
+    required this.downloadOfflineArea,
   });
 
   @override
@@ -94,7 +102,7 @@ class MapBuildOrchestrator extends ConsumerWidget {
     final stopwatch = Stopwatch()..start();
 
     // Mantém GeofenceController ativo somente durante o ciclo de vida desta tela.
-    ref.watch(iFieldLookupGeofenceProvider);
+    ref.watch(geofenceControllerProvider);
 
     // Apenas providers necessários para lógica de tap e polígonos
     final mapFields = ref.watch(mapFieldsProvider);
@@ -104,6 +112,19 @@ class MapBuildOrchestrator extends ConsumerWidget {
     final drawingState = ref.watch(
       drawingControllerProvider.select((c) => c.currentState),
     );
+    final measureArea = ref.watch(
+      drawingControllerProvider.select((c) => c.reviewAreaHa),
+    );
+    final measurePerimeter = ref.watch(
+      drawingControllerProvider.select((c) => c.reviewPerimeterKm),
+    );
+    final measureAzimuth = ref.watch(
+      drawingControllerProvider.select((c) => c.liveAzimuthDegrees),
+    );
+    final gpsAccuracyM = ref.watch(
+      drawingControllerProvider.select((c) => c.gpsLastAccuracyM),
+    );
+    final gpsWalkSession = ref.watch(gpsWalkProvider);
     final drawingTool = ref.watch(
       drawingControllerProvider.select((c) => c.currentTool),
     );
@@ -158,6 +179,13 @@ class MapBuildOrchestrator extends ConsumerWidget {
             onMapReady: () {
               // ADR-032 F1: _isMapReady → mapReadyStateProvider
               ref.read(mapReadyStateProvider.notifier).state = true;
+              ref
+                  .read(mapCameraSnapshotProvider.notifier)
+                  .state = MapCameraSnapshot(
+                center: mapController.camera.center,
+                zoom: mapController.camera.zoom,
+                visibleBounds: mapController.camera.visibleBounds,
+              );
               applyInitialViewport();
             },
             onTap: (tapPos, point) {
@@ -192,11 +220,17 @@ class MapBuildOrchestrator extends ConsumerWidget {
                 return;
               }
 
-              if (drawCtrl.currentState == DrawingState.idle ||
-                  drawCtrl.currentState == DrawingState.reviewing) {
+              if (drawCtrl.isMultiSelectEnabled ||
+                  drawCtrl.currentState == DrawingState.idle ||
+                  drawCtrl.currentState == DrawingState.reviewing ||
+                  drawCtrl.currentState == DrawingState.selected) {
                 final drawingFeature = drawCtrl.findFeatureAt(point);
                 if (drawingFeature != null) {
-                  drawCtrl.selectFeature(drawingFeature);
+                  if (drawCtrl.isMultiSelectEnabled) {
+                    drawCtrl.toggleFeatureSelection(drawingFeature);
+                  } else {
+                    drawCtrl.selectFeature(drawingFeature);
+                  }
                   HapticFeedback.selectionClick();
                   // 🔧 FIX-DRAW-SYNC: Reutilizar MapBottomSheet existente
                   setSheetState(
@@ -242,6 +276,13 @@ class MapBuildOrchestrator extends ConsumerWidget {
             },
             onLongPress: handleMapLongPress,
             onPositionChanged: (pos, hasGesture) {
+              ref
+                  .read(mapCameraSnapshotProvider.notifier)
+                  .state = MapCameraSnapshot(
+                center: pos.center,
+                zoom: pos.zoom,
+                visibleBounds: pos.visibleBounds,
+              );
               if (hasGesture) {
                 final locationMode = ref.read(mapLocationModeProvider);
                 if (locationMode == MapLocationMode.following ||
@@ -299,6 +340,30 @@ class MapBuildOrchestrator extends ConsumerWidget {
               // Markers de Marketing (isolados — Sprint 8 Performance)
               const IsolatedMarketingMarkersLayer(),
 
+              Consumer(
+                builder: (context, ref, _) {
+                  final destination = ref.watch(
+                    destinationCoordinateMarkerProvider,
+                  );
+                  if (destination == null) return const SizedBox.shrink();
+                  return MarkerLayer(
+                    markers: [
+                      Marker(
+                        point: destination,
+                        width: 40,
+                        height: 40,
+                        alignment: Alignment.topCenter,
+                        child: const Icon(
+                          Icons.place,
+                          size: 40,
+                          color: Colors.redAccent,
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
+
               // 🎯 ÚNICA LAYER QUE REBUILDA: Localização GPS
               const IsolatedUserLocationLayer(),
 
@@ -322,6 +387,8 @@ class MapBuildOrchestrator extends ConsumerWidget {
               onOpenMapTools: () => MapToolsBottomSheet.show(
                 context: context,
                 drawingController: ref.read(drawingControllerProvider),
+                onCoordinateSearch: openCoordinateSearch,
+                onDownloadOfflineArea: downloadOfflineArea,
               ),
               onToggleOccurrenceMode: () {
                 if (ref.read(armedModeProvider) == ArmedMode.occurrences) {
@@ -370,6 +437,10 @@ class MapBuildOrchestrator extends ConsumerWidget {
                   ref.read(drawingControllerProvider).undoDrawingPoint(),
               canUndo: canUndo,
               canRedo: canRedo,
+              measurementAreaHa: measureArea,
+              measurementPerimeterKm: measurePerimeter,
+              measurementAzimuthDeg: measureAzimuth,
+              gpsAccuracyM: gpsAccuracyM,
               currentCenter: isMapReady
                   ? mapController.camera.center
                   : const LatLng(0, 0),
@@ -420,7 +491,34 @@ class MapBuildOrchestrator extends ConsumerWidget {
             isMapReady: isMapReady,
             onCenterOnUser: centerOnUser,
           ),
-          if (drawingState == DrawingState.gpsTracking)
+          if (gpsWalkSession != null)
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: RepaintBoundary(
+                child: ListenableBuilder(
+                  listenable: ref.read(drawingControllerProvider),
+                  builder: (context, _) {
+                    final points = ref
+                        .read(drawingControllerProvider)
+                        .gpsVertices;
+                    final session = ref.read(gpsWalkProvider);
+                    if (session != null &&
+                        session.status != GpsWalkStatus.finished &&
+                        points.length != session.points.length) {
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        ref
+                            .read(gpsWalkProvider.notifier)
+                            .syncFromController(points);
+                      });
+                    }
+                    return const GpsWalkControlsOverlay();
+                  },
+                ),
+              ),
+            )
+          else if (drawingState == DrawingState.gpsTracking)
             RepaintBoundary(
               child: ListenableBuilder(
                 listenable: ref.read(drawingControllerProvider),
@@ -448,8 +546,10 @@ class MapBuildOrchestrator extends ConsumerWidget {
                 onClose: () {
                   setSheetState(null, 'MapBottomSheet: onClose');
                 },
-                creationLocation: ref.read(pendingOccurrenceLocationProvider),
+                creationLocation: ref.watch(pendingOccurrenceLocationProvider),
                 onLocationRequested: centerOnUser,
+                onFocusDrawingFeature: (feature) =>
+                    _focusDrawingFeature(mapController, feature),
               ),
             ),
 
@@ -457,6 +557,32 @@ class MapBuildOrchestrator extends ConsumerWidget {
           // ADR-030 F2: extraído para ArmedModeBanner
           const ArmedModeBanner(),
         ],
+      ),
+    );
+  }
+
+  void _focusDrawingFeature(
+    MapController mapController,
+    DrawingFeature feature,
+  ) {
+    final points = <LatLng>[];
+    final geometry = feature.geometry;
+    if (geometry is DrawingPolygon) {
+      for (final ring in geometry.coordinates) {
+        points.addAll(ring.map((point) => LatLng(point[1], point[0])));
+      }
+    } else if (geometry is DrawingMultiPolygon) {
+      for (final polygon in geometry.coordinates) {
+        for (final ring in polygon) {
+          points.addAll(ring.map((point) => LatLng(point[1], point[0])));
+        }
+      }
+    }
+    if (points.isEmpty) return;
+    mapController.fitCamera(
+      CameraFit.bounds(
+        bounds: LatLngBounds.fromPoints(points),
+        padding: const EdgeInsets.all(48),
       ),
     );
   }

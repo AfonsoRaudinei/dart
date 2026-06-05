@@ -20,6 +20,7 @@ class MapActionFabMenu extends StatefulWidget {
   final VoidCallback onFotoRapida;
   final bool isEnabled;
   final bool isActive;
+  final Color activeColor;
   final EdgeInsets padding;
   final double right;
   final double? top;
@@ -36,6 +37,7 @@ class MapActionFabMenu extends StatefulWidget {
     required this.onFotoRapida,
     this.isEnabled = true,
     this.isActive = false,
+    required this.activeColor,
     this.padding = const EdgeInsets.only(right: 16, bottom: 24),
     this.right = 0,
     this.top,
@@ -158,6 +160,7 @@ class _MapActionFabMenuState extends State<MapActionFabMenu>
     return _MasterFab(
       isOpen: false,
       isActive: widget.isActive,
+      activeColor: widget.activeColor,
       onTap: () => _toggle(context),
     );
   }
@@ -187,6 +190,7 @@ class _MapActionFabMenuState extends State<MapActionFabMenu>
           _MasterFab(
             isOpen: _isOpen,
             isActive: widget.isActive,
+            activeColor: widget.activeColor,
             onTap: _toggleLegacy,
           ),
         ],
@@ -202,6 +206,7 @@ class _MapActionFabMenuState extends State<MapActionFabMenu>
         _MasterFab(
           isOpen: _isOpen,
           isActive: widget.isActive,
+          activeColor: widget.activeColor,
           onTap: _toggleLegacy,
         ),
       ],
@@ -238,11 +243,13 @@ class _MapActionFabMenuState extends State<MapActionFabMenu>
 class _MasterFab extends StatelessWidget {
   final bool isOpen;
   final bool isActive;
+  final Color activeColor;
   final VoidCallback onTap;
 
   const _MasterFab({
     required this.isOpen,
     required this.isActive,
+    required this.activeColor,
     required this.onTap,
   });
 
@@ -256,24 +263,16 @@ class _MasterFab extends StatelessWidget {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
           curve: Curves.easeOutCubic,
-          width: 58,
-          height: 58,
+          width: 44,
+          height: 44,
           decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: isOpen || isActive
-                ? PremiumTokens.surfaceDark
-                : const Color(0xFF007AFF),
-            border: Border.all(
-              color: isActive
-                  ? PremiumTokens.brandGreen.withValues(alpha: 0.9)
-                  : Colors.transparent,
-              width: 2,
-            ),
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.22),
-                blurRadius: 18,
-                offset: const Offset(0, 8),
+                color: Colors.black.withValues(alpha: 0.15),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
               ),
             ],
           ),
@@ -283,8 +282,8 @@ class _MasterFab extends StatelessWidget {
             curve: Curves.easeOutCubic,
             child: Icon(
               isOpen ? SFIcons.close : SFIcons.add,
-              color: Colors.white,
-              size: 27,
+              color: isOpen || isActive ? activeColor : Colors.grey.shade600,
+              size: 22,
             ),
           ),
         ),

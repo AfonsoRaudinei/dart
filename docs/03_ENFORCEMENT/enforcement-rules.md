@@ -46,7 +46,6 @@ grep -rn "import.*modules/" lib/core/ --include="*.dart" \
 | `drawing → consultoria` | ❌ PROIBIDO | Domínios independentes |
 | `agenda → consultoria` | ❌ PROIBIDO | Domínios independentes |
 | `consultoria → drawing` | ❌ PROIBIDO | Domínios independentes |
-| `operacao → consultoria` | ✅ PERMITIDO | Dependência semântica válida |
 | `visitas → consultoria` | ❌ PROIBIDO | ADR-023 — acesso via `core/contracts/` |
 | `visitas → drawing` | ❌ PROIBIDO | ADR-023 — domínios independentes |
 | `visitas → agenda/presentation` | ❌ PROIBIDO | ADR-023 — acesso via `core/contracts/` |

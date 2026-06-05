@@ -29,6 +29,7 @@ class DrawingUtils {
   static const double toleranciaSnapMetros = 1.0;
   static const double toleranciaSimplificacaoMetros = 0.5;
   static const double toleranciaMinDistanciaVertice = 0.1;
+  static const double toleranciaImportacaoVerticeDuplicadoMetros = 0.3;
 
   /// Generates a new UUID v4
   static String generateId() => _uuid.v4();
@@ -237,6 +238,19 @@ class DrawingUtils {
     newCoords.add(holeRing);
 
     return DrawingPolygon(coordinates: newCoords);
+  }
+
+  /// Retorna azimute geodésico aproximado (graus 0..360) entre dois pontos.
+  static double bearingDegrees(LatLng from, LatLng to) {
+    final lat1 = from.latitude * math.pi / 180.0;
+    final lat2 = to.latitude * math.pi / 180.0;
+    final dLon = (to.longitude - from.longitude) * math.pi / 180.0;
+    final y = math.sin(dLon) * math.cos(lat2);
+    final x =
+        math.cos(lat1) * math.sin(lat2) -
+        math.sin(lat1) * math.cos(lat2) * math.cos(dLon);
+    final brng = math.atan2(y, x) * 180.0 / math.pi;
+    return (brng + 360.0) % 360.0;
   }
 
   // ===========================================================================
@@ -916,16 +930,21 @@ class DrawingUtils {
   static List<List<double>> _normalizeRing(List<List<double>> ring) {
     if (ring.isEmpty) return [];
 
-    // 1. Remove consecutive duplicates and close points
+    // 1. Remove consecutive duplicates and sub-meter artifacts from exports.
     final List<List<double>> clean = [];
+    const distance = Distance();
     for (int i = 0; i < ring.length; i++) {
       final p = ring[i];
       if (clean.isEmpty) {
         clean.add(p);
       } else {
         final last = clean.last;
-        // Check exact duplicate or very close
-        if ((last[0] - p[0]).abs() > 1e-9 || (last[1] - p[1]).abs() > 1e-9) {
+        final distanceMeters = distance.as(
+          LengthUnit.Meter,
+          LatLng(last[1], last[0]),
+          LatLng(p[1], p[0]),
+        );
+        if (distanceMeters > toleranciaImportacaoVerticeDuplicadoMetros) {
           clean.add(p);
         }
       }

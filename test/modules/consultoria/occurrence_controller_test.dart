@@ -74,6 +74,7 @@ void main() {
         fakeOccurrenceRepository.lastSaved!.visitSessionId,
         'visit-active-1',
       );
+      expect(fakeOccurrenceRepository.lastSaved!.clientId, 'producer-test-1');
     },
   );
 

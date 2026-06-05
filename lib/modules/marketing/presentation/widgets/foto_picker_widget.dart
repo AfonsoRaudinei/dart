@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../data/services/marketing_photo_service.dart';
 
@@ -60,7 +61,7 @@ class _FotoPickerWidgetState extends State<FotoPickerWidget> {
         // 🔧 FIX: Atualizar estado interno primeiro, depois notificar pai (Bug B)
         // Isso garante que quando o pai reconstruir o widget, o loading já está false
         setState(() => _loading = false);
-        
+
         if (url != null) {
           HapticFeedback.mediumImpact();
           // Notificar o pai após o setState para evitar race condition de rebuild
@@ -163,22 +164,18 @@ class _FotoPickerWidgetState extends State<FotoPickerWidget> {
       fit: StackFit.expand,
       children: [
         // Thumbnail
-        Image.network(
-          url,
+        CachedNetworkImage(
+          imageUrl: url,
           fit: BoxFit.cover,
-          loadingBuilder: (_, child, progress) {
-            if (progress == null) return child;
+          progressIndicatorBuilder: (_, __, progress) {
             return Center(
               child: CircularProgressIndicator(
-                value: progress.expectedTotalBytes != null
-                    ? progress.cumulativeBytesLoaded /
-                          progress.expectedTotalBytes!
-                    : null,
+                value: progress.progress,
                 strokeWidth: 2,
               ),
             );
           },
-          errorBuilder: (_, __, ___) => const Center(
+          errorWidget: (_, __, ___) => const Center(
             child: Icon(
               Icons.broken_image_outlined,
               size: 40,

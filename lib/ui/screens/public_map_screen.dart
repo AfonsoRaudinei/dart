@@ -120,6 +120,9 @@ class _PublicMapScreenState extends ConsumerState<PublicMapScreen> {
     final publicationsAsync = ref.watch(publicPublicationsProvider);
 
     return Scaffold(
+      // 🛡 IPA-123: background branco — visível antes dos tiles do FlutterMap
+      // carregarem durante a janela isInitializing=true (debounce 300ms).
+      backgroundColor: Colors.white,
       body: Stack(
         children: [
           // Mapa como fundo

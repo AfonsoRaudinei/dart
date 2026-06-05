@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 import 'package:intl/intl.dart';
 import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
@@ -116,10 +117,10 @@ class _PublicPublicationPreviewSheet extends StatelessWidget {
       borderRadius: BorderRadius.circular(16),
       child: AspectRatio(
         aspectRatio: 16 / 9,
-        child: Image.network(
-          publication.coverMedia.path,
+        child: CachedNetworkImage(
+          imageUrl: publication.coverMedia.path,
           fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) {
+          errorWidget: (context, url, error) {
             return Container(
               color: PremiumTokens.surfaceLight,
               child: const Icon(
@@ -129,8 +130,7 @@ class _PublicPublicationPreviewSheet extends StatelessWidget {
               ),
             );
           },
-          loadingBuilder: (context, child, loadingProgress) {
-            if (loadingProgress == null) return child;
+          placeholder: (context, url) {
             return Container(
               color: PremiumTokens.surfaceLight,
               child: const Center(
@@ -234,10 +234,10 @@ class _PublicPublicationPreviewSheet extends StatelessWidget {
                 borderRadius: BorderRadius.circular(12),
                 child: AspectRatio(
                   aspectRatio: 1,
-                  child: Image.network(
-                    media.path,
+                  child: CachedNetworkImage(
+                    imageUrl: media.path,
                     fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
+                    errorWidget: (context, url, error) {
                       return Container(
                         color: PremiumTokens.surfaceLight,
                         child: const Icon(

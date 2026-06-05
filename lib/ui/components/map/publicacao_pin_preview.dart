@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 import '../../../../core/design/sf_icons.dart';
 import 'package:flutter/services.dart';
@@ -128,11 +129,11 @@ class _CoverSection extends StatelessWidget {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(10.0),
         child: hasCover
-            ? Image.network(
-                cover.path,
+            ? CachedNetworkImage(
+                imageUrl: cover.path,
                 fit: BoxFit.cover,
                 width: double.infinity,
-                errorBuilder: (_, __, ___) => _placeholder(),
+                errorWidget: (_, __, ___) => _placeholder(),
               )
             : _placeholder(),
       ),
@@ -141,7 +142,11 @@ class _CoverSection extends StatelessWidget {
 
   Widget _placeholder() {
     return const Center(
-      child: Icon(SFIcons.image, size: 48, color: PremiumTokens.textTertiaryLight),
+      child: Icon(
+        SFIcons.image,
+        size: 48,
+        color: PremiumTokens.textTertiaryLight,
+      ),
     );
   }
 }

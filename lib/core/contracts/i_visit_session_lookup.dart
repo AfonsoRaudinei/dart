@@ -15,6 +15,7 @@ class VisitSessionSummary {
     required this.producerId,
     required this.status,
     required this.startTime,
+    this.farmId,
     this.areaId,
     this.activityType,
     this.endTime,
@@ -24,6 +25,7 @@ class VisitSessionSummary {
   final String producerId;
   final String status; // 'active' | 'finished'
   final DateTime startTime;
+  final String? farmId;
   final String? areaId;
   final String? activityType;
   final DateTime? endTime;

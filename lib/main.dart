@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -10,6 +11,7 @@ import 'core/contracts/i_agenda_ai_launcher_provider.dart';
 import 'core/contracts/i_farm_lookup_provider.dart';
 import 'core/contracts/i_visit_client_lookup_provider.dart';
 import 'core/contracts/i_visit_session_lookup_provider.dart';
+import 'core/contracts/i_active_visit_context_lookup_provider.dart';
 import 'core/contracts/i_occurrence_read_provider.dart';
 import 'core/contracts/i_agenda_session_bridge_provider.dart';
 import 'core/contracts/i_field_lookup_provider.dart';
@@ -24,11 +26,13 @@ import 'core/database/database_helper.dart';
 import 'core/infra/preferences_service.dart';
 import 'core/router/app_router.dart';
 import 'core/services/sync_orchestrator.dart';
+import 'core/utils/app_logger.dart';
 import 'app/sync_registration.dart';
 import 'modules/consultoria/clients/data/clients_repository.dart';
 import 'modules/consultoria/clients/infra/client_lookup_adapter.dart';
 import 'modules/consultoria/clients/infra/farm_lookup_adapter.dart';
 import 'modules/consultoria/clients/infra/visit_client_lookup_adapter.dart';
+import 'modules/consultoria/clients/infra/active_visit_context_lookup_adapter.dart';
 import 'modules/consultoria/fields/data/repositories/field_repository.dart';
 import 'modules/consultoria/fields/infra/field_lookup_geofence_adapter.dart';
 import 'modules/consultoria/occurrences/data/occurrence_repository.dart';
@@ -57,6 +61,12 @@ Future<void> main() async {
     () async {
       // 🔒 Binding inicializado dentro da zona — resolve zone mismatch
       WidgetsFlutterBinding.ensureInitialized();
+
+      // 🛡 IPA-124: desabilitar download HTTP de fontes GoogleFonts.
+      // Sem isso, o app tentava baixar a fonte Inter da internet no primeiro
+      // frame — em rede lenta ou offline causava freeze de UI.
+      // As fontes do sistema (San Francisco no iOS) são usadas como fallback.
+      GoogleFonts.config.allowRuntimeFetching = false;
 
       // 🛡 Erros do framework Flutter exibidos em vez de tela preta
       FlutterError.onError = FlutterError.presentError;
@@ -96,6 +106,8 @@ Future<void> main() async {
         final prefs = await SharedPreferences.getInstance();
         final preferencesService = PreferencesService(prefs);
         final clientsRepository = ClientsRepository();
+        final fieldRepository = FieldRepository();
+        final visitSessionLookup = VisitSessionLookupAdapter(VisitRepository());
 
         // 5. App principal
         runApp(
@@ -124,11 +136,16 @@ Future<void> main() async {
               ),
               // ADR-020: implementação concreta de IVisitClientLookup
               visitClientLookupProvider.overrideWithValue(
-                VisitClientLookupAdapter(clientsRepository, FieldRepository()),
+                VisitClientLookupAdapter(clientsRepository, fieldRepository),
               ),
               // ADR-020: implementação concreta de IVisitSessionLookup
-              visitSessionLookupProvider.overrideWithValue(
-                VisitSessionLookupAdapter(VisitRepository()),
+              visitSessionLookupProvider.overrideWithValue(visitSessionLookup),
+              activeVisitContextLookupProvider.overrideWithValue(
+                ActiveVisitContextLookupAdapter(
+                  visitSessionLookup,
+                  clientsRepository,
+                  fieldRepository,
+                ),
               ),
               // ADR-024: implementação concreta de IOccurrenceRead
               occurrenceReadProvider.overrideWithValue(
@@ -140,7 +157,7 @@ Future<void> main() async {
               ),
               // ADR-024: IFieldLookup para geofence_controller (consultoria/fields)
               iFieldLookupGeofenceProvider.overrideWithValue(
-                FieldLookupGeofenceAdapter(FieldRepository()),
+                FieldLookupGeofenceAdapter(fieldRepository),
               ),
               // ADR-022: IFieldLookup para NDVI via DrawingLocalStore.
               iFieldLookupProvider.overrideWith((ref) {
@@ -193,7 +210,12 @@ Future<void> main() async {
     },
     (error, stack) {
       // 🛡 Erros assíncronos não capturados após o boot
-      debugPrint('⚠️ [main] Erro não capturado: $error\n$stack');
+      AppLogger.error(
+        'Erro assíncrono não capturado após o boot',
+        tag: 'Main',
+        error: error,
+        stackTrace: stack,
+      );
       // Não chamar runApp aqui (zona diferente pode disparar "Zone mismatch").
       // O app já está renderizado; apenas registramos o erro global.
     },
@@ -245,6 +267,8 @@ class _SoloForteAppState extends ConsumerState<SoloForteApp> {
       builder: (context, child) {
         if (child == null) {
           return const Scaffold(
+            // 🛡 IPA-123: background branco explícito no fallback do builder
+            backgroundColor: Colors.white,
             body: Center(
               child: Text(
                 'Erro ao carregar aplicativo',

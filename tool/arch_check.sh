@@ -84,7 +84,6 @@ echo ""
 #   consultoria → drawing  : PROIBIDO
 #
 # Relações permitidas (não bloqueadas por este script):
-#   operacao → consultoria  : PERMITIDO (execução usa dados agronômicos)
 #   consultoria → consultoria: PERMITIDO (submódulos do mesmo domínio)
 #   agenda   → agenda       : PERMITIDO
 # =============================================================================
@@ -177,18 +176,6 @@ check_lateral_relative \
   "drawing" \
   "consultoria/ não importa drawing/ via caminho relativo"
 
-# =============================================================================
-# REGRA 2 (ADR-009) — consultoria/ não pode importar diretamente de operacao/
-#
-# Fundamento: consultoria consome dados de VisitSession exclusivamente via
-#             VisitSessionSnapshot (DTO próprio de consultoria/relatorios/models/).
-#             Importação direta criaria ciclo com operacao → consultoria.
-# =============================================================================
-check_lateral \
-  "lib/modules/consultoria/" \
-  "modules/operacao/" \
-  "consultoria/ não importa operacao/ (usa VisitSessionSnapshot — ADR-009)"
-
 check_lateral \
   "lib/modules/consultoria/" \
   "modules/visitas/" \
@@ -201,8 +188,8 @@ check_lateral \
 
 check_lateral \
   "lib/modules/marketing/" \
-  "\(modules/consultoria/\|modules/operacao/\|modules/agenda/\|modules/drawing/\)" \
-  "marketing/ não importa módulos core de negócio (consultoria, operacao, agenda, drawing)"
+  "\(modules/consultoria/\|modules/agenda/\|modules/drawing/\)" \
+  "marketing/ não importa módulos core de negócio (consultoria, agenda, drawing)"
 
 # =============================================================================
 # REGRA 2 (ADR-023) — visitas/ não pode importar consultoria/ nem drawing/

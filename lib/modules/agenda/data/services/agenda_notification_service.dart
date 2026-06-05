@@ -87,6 +87,23 @@ class AgendaNotificationService {
         ?.requestPermissions(alert: true, badge: true, sound: true);
   }
 
+  Future<AndroidScheduleMode> _androidScheduleMode() async {
+    final androidPlugin = _notifications
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >();
+    final canScheduleExact =
+        await androidPlugin?.canScheduleExactNotifications() ?? true;
+    if (canScheduleExact) return AndroidScheduleMode.exactAllowWhileIdle;
+
+    await androidPlugin?.requestExactAlarmsPermission();
+    final granted =
+        await androidPlugin?.canScheduleExactNotifications() ?? false;
+    return granted
+        ? AndroidScheduleMode.exactAllowWhileIdle
+        : AndroidScheduleMode.inexactAllowWhileIdle;
+  }
+
   /// Callback quando notificação é tocada
   void _onNotificationTapped(NotificationResponse response) {
     // TODO: Navegar para o evento
@@ -143,13 +160,14 @@ class AgendaNotificationService {
       iOS: iosDetails,
     );
 
+    final scheduleMode = await _androidScheduleMode();
     await _notifications.zonedSchedule(
       id: _getReminderNotificationId(event.id),
       title: '${event.tipo.icon} Lembrete: ${event.titulo}',
       body: 'Seu evento começa em 30 minutos',
       scheduledDate: tz.TZDateTime.from(reminderTime, tz.local),
       notificationDetails: details,
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      androidScheduleMode: scheduleMode,
       payload: event.id,
     );
   }
@@ -166,7 +184,6 @@ class AgendaNotificationService {
       importance: Importance.max,
       priority: Priority.max,
       icon: '@mipmap/ic_launcher',
-      fullScreenIntent: true,
     );
 
     const iosDetails = DarwinNotificationDetails(
@@ -181,13 +198,14 @@ class AgendaNotificationService {
       iOS: iosDetails,
     );
 
+    final scheduleMode = await _androidScheduleMode();
     await _notifications.zonedSchedule(
       id: _getStartNotificationId(event.id),
       title: '${event.tipo.icon} ${event.titulo}',
       body: 'Seu evento começou agora!',
       scheduledDate: tz.TZDateTime.from(event.dataInicioPlanejada, tz.local),
       notificationDetails: details,
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      androidScheduleMode: scheduleMode,
       payload: event.id,
     );
   }

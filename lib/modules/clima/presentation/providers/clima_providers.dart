@@ -1,8 +1,10 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:soloforte_app/core/config/clima_config.dart';
 import 'package:soloforte_app/core/contracts/i_user_location_lookup_provider.dart';
 import 'package:soloforte_app/core/permissions/location_permission_gate.dart';
 import 'package:soloforte_app/core/utils/app_logger.dart';
@@ -19,6 +21,36 @@ import 'package:soloforte_app/modules/clima/domain/repositories/i_clima_reposito
 import 'package:soloforte_app/modules/clima/presentation/widgets/clima_tokens.dart';
 
 part 'clima_providers.g.dart';
+
+const _climaUnavailableMessage =
+    'Previsão indisponível. Verifique sua conexão.';
+
+class ClimaForecastUnavailableException implements Exception {
+  const ClimaForecastUnavailableException();
+
+  @override
+  String toString() => _climaUnavailableMessage;
+}
+
+Future<T> _loadClimaData<T>(Future<T> Function() load) async {
+  if (ClimaConfig.googleWeatherApiKey.isEmpty &&
+      ClimaConfig.openWeatherApiKey.isEmpty) {
+    debugPrint(
+      '[Clima] GOOGLE_WEATHER_API_KEY e OPENWEATHER_API_KEY ausentes.',
+    );
+    throw const ClimaForecastUnavailableException();
+  }
+
+  try {
+    return await load();
+  } catch (e, stackTrace) {
+    debugPrint('[Clima] Falha ao carregar previsão: $e');
+    Error.throwWithStackTrace(
+      const ClimaForecastUnavailableException(),
+      stackTrace,
+    );
+  }
+}
 
 // ─── Coordenada tipada ────────────────────────────────────────────────────────
 
@@ -199,31 +231,39 @@ Future<ClimaLatLon> climaLocation(Ref ref) async {
 @riverpod
 Future<ClimaAtual> climaAtual(Ref ref) async {
   final loc = await ref.watch(climaLocationProvider.future);
-  return ref
-      .watch(climaRepositoryProvider)
-      .getClimaAtual(lat: loc.lat, lon: loc.lon);
+  return _loadClimaData(
+    () => ref
+        .watch(climaRepositoryProvider)
+        .getClimaAtual(lat: loc.lat, lon: loc.lon),
+  );
 }
 
 @riverpod
 Future<List<PrevisaoHoraria>> previsaoHoraria(Ref ref) async {
   final loc = await ref.watch(climaLocationProvider.future);
-  return ref
-      .watch(climaRepositoryProvider)
-      .getPrevisaoHoraria(lat: loc.lat, lon: loc.lon);
+  return _loadClimaData(
+    () => ref
+        .watch(climaRepositoryProvider)
+        .getPrevisaoHoraria(lat: loc.lat, lon: loc.lon),
+  );
 }
 
 @riverpod
 Future<List<PrevisaoDiaria>> previsaoSemanal(Ref ref) async {
   final loc = await ref.watch(climaLocationProvider.future);
-  return ref
-      .watch(climaRepositoryProvider)
-      .getPrevisaoSemanal(lat: loc.lat, lon: loc.lon);
+  return _loadClimaData(
+    () => ref
+        .watch(climaRepositoryProvider)
+        .getPrevisaoSemanal(lat: loc.lat, lon: loc.lon),
+  );
 }
 
 @riverpod
 Future<List<AlertaMeteorologico>> alertasClima(Ref ref) async {
   final loc = await ref.watch(climaLocationProvider.future);
-  return ref
-      .watch(climaRepositoryProvider)
-      .getAlertas(lat: loc.lat, lon: loc.lon);
+  return _loadClimaData(
+    () => ref
+        .watch(climaRepositoryProvider)
+        .getAlertas(lat: loc.lat, lon: loc.lon),
+  );
 }

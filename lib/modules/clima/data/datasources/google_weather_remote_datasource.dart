@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 import '../../../../core/config/clima_config.dart';
@@ -175,6 +176,9 @@ class GoogleWeatherRemoteDatasource implements IClimaRemoteDatasource {
   }) async {
     final apiKey = ClimaConfig.googleWeatherApiKey;
     if (apiKey.isEmpty) {
+      debugPrint(
+        '[Clima] GOOGLE_WEATHER_API_KEY ausente. Tentando OpenWeather...',
+      );
       throw Exception(
         '[GoogleWeather] GOOGLE_WEATHER_API_KEY não configurada via --dart-define.',
       );

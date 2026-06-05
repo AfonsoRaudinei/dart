@@ -35,6 +35,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/router/app_routes.dart';
 import '../../core/session/session_controller.dart';
 import '../../core/session/session_models.dart';
+import '../../core/utils/app_logger.dart';
 import 'side_menu_overlay.dart';
 import 'smart_button.dart';
 
@@ -65,6 +66,7 @@ class AppShell extends ConsumerStatefulWidget {
 class _AppShellState extends ConsumerState<AppShell> {
   late final AppLinks _appLinks;
   StreamSubscription<AuthState>? _authSubscription;
+  StreamSubscription<Uri>? _deepLinkSubscription;
 
   @override
   void initState() {
@@ -76,6 +78,7 @@ class _AppShellState extends ConsumerState<AppShell> {
   @override
   void dispose() {
     _authSubscription?.cancel();
+    _deepLinkSubscription?.cancel();
     super.dispose();
   }
 
@@ -86,10 +89,14 @@ class _AppShellState extends ConsumerState<AppShell> {
   // capturar o URI. Este listener garante a navegação correta.
   // ─────────────────────────────────────────────────────────────────
   void _listenAuthChanges() {
-    _authSubscription =
-        Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+    _authSubscription = Supabase.instance.client.auth.onAuthStateChange.listen((
+      data,
+    ) {
       if (data.event == AuthChangeEvent.passwordRecovery) {
-        debugPrint('[Auth] passwordRecovery event — navegando para reset');
+        AppLogger.debug(
+          'passwordRecovery event — navegando para reset',
+          tag: 'Auth',
+        );
         if (mounted) {
           context.go(AppRoutes.resetPassword);
         }
@@ -104,21 +111,24 @@ class _AppShellState extends ConsumerState<AppShell> {
     _appLinks = AppLinks();
 
     // Link recebido com app aberto (foreground)
-    _appLinks.uriLinkStream.listen(
+    _deepLinkSubscription = _appLinks.uriLinkStream.listen(
       (uri) {
         _handleDeepLink(uri);
       },
       onError: (e) {
-        debugPrint('⚠️ [DeepLink] Erro no stream: $e');
+        AppLogger.error('Erro no stream', tag: 'DeepLink', error: e);
       },
     );
 
     // Link recebido que abriu o app (cold start)
-    _appLinks.getInitialLink().then((uri) {
-      if (uri != null) _handleDeepLink(uri);
-    }).catchError((e) {
-      debugPrint('⚠️ [DeepLink] Erro no getInitialLink: $e');
-    });
+    _appLinks
+        .getInitialLink()
+        .then((uri) {
+          if (uri != null) _handleDeepLink(uri);
+        })
+        .catchError((e) {
+          AppLogger.error('Erro no getInitialLink', tag: 'DeepLink', error: e);
+        });
   }
 
   // ─────────────────────────────────────────────────────────────────
@@ -130,14 +140,16 @@ class _AppShellState extends ConsumerState<AppShell> {
   //   signup   → confirmação de cadastro → login com SnackBar
   // ─────────────────────────────────────────────────────────────────
   void _handleDeepLink(Uri uri) {
-    debugPrint('[DeepLink] URI recebida — host: ${uri.host}, type: ${uri.path}');
+    AppLogger.debug(
+      'URI recebida — host: ${uri.host}, type: ${uri.path}',
+      tag: 'DeepLink',
+    );
 
     // Fallback: tentar fragment primeiro, depois query params
-    final rawParams =
-        uri.fragment.isNotEmpty ? uri.fragment : uri.query;
+    final rawParams = uri.fragment.isNotEmpty ? uri.fragment : uri.query;
 
     if (rawParams.isEmpty) {
-      debugPrint('[DeepLink] Sem parâmetros — ignorando.');
+      AppLogger.debug('Sem parâmetros — ignorando.', tag: 'DeepLink');
       return;
     }
 
@@ -146,10 +158,13 @@ class _AppShellState extends ConsumerState<AppShell> {
     final accessToken = params['access_token'];
     final refreshToken = params['refresh_token'];
 
-    debugPrint('[DeepLink] type=$type, hasToken=${accessToken != null}');
+    AppLogger.debug(
+      'type=$type, hasToken=${accessToken != null}',
+      tag: 'DeepLink',
+    );
 
     if (accessToken == null || refreshToken == null) {
-      debugPrint('[DeepLink] Tokens ausentes — ignorando.');
+      AppLogger.debug('Tokens ausentes — ignorando.', tag: 'DeepLink');
       return;
     }
 
@@ -162,22 +177,23 @@ class _AppShellState extends ConsumerState<AppShell> {
         Supabase.instance.client.auth
             .setSession(refreshToken)
             .then((_) {
-          debugPrint('[DeepLink] Recovery: sessão estabelecida');
-          if (mounted) {
-            context.go(AppRoutes.resetPassword);
-          }
-        }).catchError((e) {
-          debugPrint('⚠️ [DeepLink] Erro no recovery: $e');
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text(
-                  'Link expirado ou inválido. Solicite uma nova recuperação de senha.',
-                ),
-              ),
-            );
-          }
-        });
+              AppLogger.debug('Recovery: sessão estabelecida', tag: 'DeepLink');
+              if (mounted) {
+                context.go(AppRoutes.resetPassword);
+              }
+            })
+            .catchError((e) {
+              AppLogger.error('Erro no recovery', tag: 'DeepLink', error: e);
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text(
+                      'Link expirado ou inválido. Solicite uma nova recuperação de senha.',
+                    ),
+                  ),
+                );
+              }
+            });
 
       case 'signup':
         // Confirmação de cadastro — o Supabase já ativou o usuário.
@@ -186,36 +202,44 @@ class _AppShellState extends ConsumerState<AppShell> {
         Supabase.instance.client.auth
             .setSession(refreshToken)
             .then((_) {
-          debugPrint('[DeepLink] Signup confirmado — fazendo signOut limpo');
-          return Supabase.instance.client.auth.signOut();
-        }).then((_) {
-          if (mounted) {
-            context.go(AppRoutes.login);
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text(
-                  'Email confirmado com sucesso! Faça login para continuar.',
-                ),
-                duration: Duration(seconds: 4),
-              ),
-            );
-          }
-        }).catchError((e) {
-          debugPrint('⚠️ [DeepLink] Erro no signup: $e');
-          if (mounted) {
-            context.go(AppRoutes.login);
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text(
-                  'Confirmação realizada. Faça login para continuar.',
-                ),
-              ),
-            );
-          }
-        });
+              AppLogger.debug(
+                'Signup confirmado — fazendo signOut limpo',
+                tag: 'DeepLink',
+              );
+              return Supabase.instance.client.auth.signOut();
+            })
+            .then((_) {
+              if (mounted) {
+                context.go(AppRoutes.login);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text(
+                      'Email confirmado com sucesso! Faça login para continuar.',
+                    ),
+                    duration: Duration(seconds: 4),
+                  ),
+                );
+              }
+            })
+            .catchError((e) {
+              AppLogger.error('Erro no signup', tag: 'DeepLink', error: e);
+              if (mounted) {
+                context.go(AppRoutes.login);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text(
+                      'Confirmação realizada. Faça login para continuar.',
+                    ),
+                  ),
+                );
+              }
+            });
 
       default:
-        debugPrint('[DeepLink] Tipo desconhecido: $type — ignorando.');
+        AppLogger.debug(
+          'Tipo desconhecido: $type — ignorando.',
+          tag: 'DeepLink',
+        );
     }
   }
 
@@ -231,6 +255,9 @@ class _AppShellState extends ConsumerState<AppShell> {
     // 2. SCAFFOLD SIMPLES (SEM DRAWER)
     // ═══════════════════════════════════════════════════════════════
     return Scaffold(
+      // 🛡 IPA-123: background branco explícito — evita tela preta durante
+      // transições de rota quando o tema é 'black' (scaffoldBackgroundColor = #000).
+      backgroundColor: Colors.white,
       body: Stack(
         children: [
           // Camada 1: Conteúdo da tela (child)

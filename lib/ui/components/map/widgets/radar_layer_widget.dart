@@ -13,7 +13,7 @@ import '../providers/rainviewer_provider.dart';
 ///   2. [rainviewerTileUrlProvider] retornou URL válida (API acessível)
 ///
 /// Graceful degradation: se a API estiver indisponível ou a lista de frames
-/// estiver vazia, o widget retorna [SizedBox.shrink()] sem erro nem crash.
+/// estiver vazia, exibe um indicador discreto sem comprometer o mapa.
 ///
 /// Posicionamento: deve estar no FlutterMap.children APÓS o [MapLayersWidget]
 /// (camada base) e ANTES dos markers.
@@ -31,7 +31,7 @@ class RadarLayerWidget extends ConsumerWidget {
 
     return tileUrlAsync.when(
       data: (tileUrl) {
-        if (tileUrl == null) return const SizedBox.shrink();
+        if (tileUrl == null) return const _RadarUnavailableIndicator();
         return Opacity(
           opacity: MapConfig.radarOverlayOpacity,
           child: TileLayer(
@@ -42,9 +42,36 @@ class RadarLayerWidget extends ConsumerWidget {
           ),
         );
       },
-      // Carregando ou erro → nenhum overlay (mapa continua íntegro)
+      // Durante o carregamento, o mapa continua íntegro sem overlay.
       loading: () => const SizedBox.shrink(),
-      error: (_, __) => const SizedBox.shrink(),
+      error: (_, __) => const _RadarUnavailableIndicator(),
+    );
+  }
+}
+
+class _RadarUnavailableIndicator extends StatelessWidget {
+  const _RadarUnavailableIndicator();
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child: SafeArea(
+        child: Align(
+          alignment: Alignment.topCenter,
+          child: Container(
+            margin: const EdgeInsets.only(top: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.black.withValues(alpha: 0.68),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Text(
+              'Radar indisponível',
+              style: TextStyle(color: Colors.white, fontSize: 13),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

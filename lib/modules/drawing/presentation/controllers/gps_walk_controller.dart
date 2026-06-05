@@ -98,10 +98,7 @@ class GpsWalkNotifier extends AutoDisposeNotifier<GpsWalkSession?> {
         _dc.resumeGpsTracking(); // Auto ON → retomar stream
       }
     }
-    AppLogger.debug(
-      'GPS Walk: modo auto = $newAuto',
-      tag: 'GpsWalkNotifier',
-    );
+    AppLogger.debug('GPS Walk: modo auto = $newAuto', tag: 'GpsWalkNotifier');
   }
 
   /// Captura a posição GPS atual e adiciona manualmente ao polígono.
@@ -129,7 +126,10 @@ class GpsWalkNotifier extends AutoDisposeNotifier<GpsWalkSession?> {
         ),
       );
       _dc.addManualGpsPoint(LatLng(pos.latitude, pos.longitude));
-      AppLogger.debug('GPS Walk: ponto manual adicionado', tag: 'GpsWalkNotifier');
+      AppLogger.debug(
+        'GPS Walk: ponto manual adicionado',
+        tag: 'GpsWalkNotifier',
+      );
     } catch (e) {
       AppLogger.warning(
         'GPS Walk: erro ao obter posição manual',
@@ -167,10 +167,7 @@ class GpsWalkNotifier extends AutoDisposeNotifier<GpsWalkSession?> {
       return;
     }
     _dc.finalizeGpsTracking();
-    state = state!.copyWith(
-      status: GpsWalkStatus.finished,
-      finishedAt: DateTime.now(),
-    );
+    state = null;
     AppLogger.debug('GPS Walk: concluído', tag: 'GpsWalkNotifier');
   }
 

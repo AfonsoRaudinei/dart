@@ -37,6 +37,7 @@ class VisitSessionLookupAdapter implements IVisitSessionLookup {
       producerId: session.producerId,
       status: session.status,
       startTime: session.startTime,
+      farmId: session.farmId,
       areaId: session.areaId,
       activityType: session.activityType,
       endTime: session.endTime,

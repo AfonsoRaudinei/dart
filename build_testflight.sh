@@ -36,6 +36,11 @@ if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_ANON_KEY" ]; then
   exit 1
 fi
 
+if [ -z "$MAPTILER_API_KEY" ]; then
+  echo "❌ ERRO: MAPTILER_API_KEY vazia. Abortando para evitar fallback de mapa em produção."
+  exit 1
+fi
+
 echo "🧹 Limpando cache..."
 rm -rf ios/Pods ios/Podfile.lock
 flutter clean

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 import '../../../../ui/theme/premium/design_tokens.dart';
 import '../../domain/entities/marketing_case.dart';
@@ -284,12 +285,12 @@ class MarketingCaseSheet extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 20),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(16),
-        child: Image.network(
-          url,
+        child: CachedNetworkImage(
+          imageUrl: url,
           height: 200,
           width: double.infinity,
           fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) => Container(
+          errorWidget: (_, __, ___) => Container(
             height: 200,
             decoration: const BoxDecoration(color: Color(0xFFE5E5EA)),
             child: const Icon(
@@ -453,12 +454,12 @@ class MarketingCaseSheet extends StatelessWidget {
   Widget _buildFotoMini(String url) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(10),
-      child: Image.network(
-        url,
+      child: CachedNetworkImage(
+        imageUrl: url,
         height: 130,
         width: double.infinity,
         fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => Container(
+        errorWidget: (_, __, ___) => Container(
           height: 130,
           decoration: const BoxDecoration(color: Color(0xFFE5E5EA)),
           child: const Icon(

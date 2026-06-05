@@ -18,6 +18,7 @@ class DrawingClientState {
 
   /// ID pré-selecionado via query param `/map?clienteId=X` (Map-First flow).
   final String? preSelectedClientId;
+  final String? preSelectedClientName;
 
   final bool isLoadingClients;
   final bool isLoadingFarms;
@@ -26,6 +27,7 @@ class DrawingClientState {
     this.clients = const [],
     this.farms = const [],
     this.preSelectedClientId,
+    this.preSelectedClientName,
     this.isLoadingClients = false,
     this.isLoadingFarms = false,
   });
@@ -34,6 +36,7 @@ class DrawingClientState {
     List<Client>? clients,
     List<Farm>? farms,
     String? preSelectedClientId,
+    String? preSelectedClientName,
     bool clearPreSelected = false,
     bool? isLoadingClients,
     bool? isLoadingFarms,
@@ -41,8 +44,12 @@ class DrawingClientState {
     return DrawingClientState(
       clients: clients ?? this.clients,
       farms: farms ?? this.farms,
-      preSelectedClientId:
-          clearPreSelected ? null : (preSelectedClientId ?? this.preSelectedClientId),
+      preSelectedClientId: clearPreSelected
+          ? null
+          : (preSelectedClientId ?? this.preSelectedClientId),
+      preSelectedClientName: clearPreSelected
+          ? null
+          : (preSelectedClientName ?? this.preSelectedClientName),
       isLoadingClients: isLoadingClients ?? this.isLoadingClients,
       isLoadingFarms: isLoadingFarms ?? this.isLoadingFarms,
     );
@@ -138,8 +145,11 @@ class DrawingClientNotifier extends Notifier<DrawingClientState> {
 
   /// Define o cliente pré-selecionado via query param e pré-carrega suas fazendas.
   /// Chamado por PrivateMapScreen ao receber `/map?clienteId=X`.
-  void setClienteAtivo(String clientId) {
-    state = state.copyWith(preSelectedClientId: clientId);
+  void setClienteAtivo(String clientId, {String? clientName}) {
+    state = state.copyWith(
+      preSelectedClientId: clientId,
+      preSelectedClientName: clientName,
+    );
     loadFarms(clientId);
   }
 }
@@ -150,5 +160,5 @@ class DrawingClientNotifier extends Notifier<DrawingClientState> {
 
 final drawingClientProvider =
     NotifierProvider<DrawingClientNotifier, DrawingClientState>(
-  DrawingClientNotifier.new,
-);
+      DrawingClientNotifier.new,
+    );

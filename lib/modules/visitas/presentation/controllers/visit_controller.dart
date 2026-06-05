@@ -15,18 +15,18 @@ final visitControllerProvider =
     StateNotifierProvider<VisitController, AsyncValue<VisitSession?>>((ref) {
       return VisitController(
         ref.watch(visitRepositoryProvider),
-        ref.watch(agendaSessionBridgeProvider), // IAgendaSessionBridge — ADR-024
+        ref.watch(
+          agendaSessionBridgeProvider,
+        ), // IAgendaSessionBridge — ADR-024
       );
     });
 
 class VisitController extends StateNotifier<AsyncValue<VisitSession?>> {
   final VisitRepository _repository;
-  final IAgendaSessionBridge _agendaBridge;        // ADR-024
+  final IAgendaSessionBridge _agendaBridge; // ADR-024
 
-  VisitController(
-    this._repository,
-    this._agendaBridge,
-  ) : super(const AsyncValue.loading()) {
+  VisitController(this._repository, this._agendaBridge)
+    : super(const AsyncValue.loading()) {
     checkActiveSession();
   }
 
@@ -62,6 +62,7 @@ class VisitController extends StateNotifier<AsyncValue<VisitSession?>> {
     String? activityType,
     double lat,
     double long, {
+    String? farmId,
     String? agendaEventId,
   }) async {
     state = const AsyncValue.loading();
@@ -76,6 +77,7 @@ class VisitController extends StateNotifier<AsyncValue<VisitSession?>> {
       final newSession = VisitSession(
         id: const Uuid().v4(),
         producerId: producerId,
+        farmId: farmId,
         areaId: areaId,
         activityType: activityType,
         startTime: now,
@@ -102,13 +104,33 @@ class VisitController extends StateNotifier<AsyncValue<VisitSession?>> {
     }
   }
 
-  /// Atualiza o talhão da visita ativa sem encerrar a sessão.
-  Future<void> updateArea(String newAreaId) async {
+  /// Atualiza a fazenda e limpa o talhão anterior sem encerrar a sessão.
+  Future<void> updateFarm(String newFarmId) async {
     final currentSession = state.valueOrNull;
     if (currentSession == null) return;
     try {
-      await _repository.updateArea(currentSession.id, newAreaId);
-      state = AsyncValue.data(currentSession.copyWith(areaId: newAreaId));
+      await _repository.updateFarm(currentSession.id, newFarmId);
+      state = AsyncValue.data(
+        currentSession.copyWith(farmId: newFarmId, clearAreaId: true),
+      );
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+    }
+  }
+
+  /// Atualiza o talhão da visita ativa sem encerrar a sessão.
+  Future<void> updateArea(String newAreaId, {String? farmId}) async {
+    final currentSession = state.valueOrNull;
+    if (currentSession == null) return;
+    try {
+      await _repository.updateArea(
+        currentSession.id,
+        newAreaId,
+        farmId: farmId,
+      );
+      state = AsyncValue.data(
+        currentSession.copyWith(areaId: newAreaId, farmId: farmId),
+      );
     } catch (e, st) {
       state = AsyncValue.error(e, st);
     }

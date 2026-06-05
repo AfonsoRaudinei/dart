@@ -13,9 +13,10 @@ import 'package:soloforte_app/core/contracts/i_visit_session_lookup_provider.dar
 import './occurrence_filters.dart';
 import './occurrence_fenologia_data.dart';
 
-final _activeVisitSessionProvider = FutureProvider.autoDispose<VisitSessionSummary?>(
-  (ref) => ref.watch(visitSessionLookupProvider).getActiveSession(),
-);
+final _activeVisitSessionProvider =
+    FutureProvider.autoDispose<VisitSessionSummary?>(
+      (ref) => ref.watch(visitSessionLookupProvider).getActiveSession(),
+    );
 
 /// Bottom Sheet com lista de ocorrências filtrada por viewport
 class OccurrenceListSheet extends ConsumerStatefulWidget {
@@ -76,11 +77,12 @@ class _OccurrenceListSheetState extends ConsumerState<OccurrenceListSheet> {
                 )
               : null,
           child: Column(
-            mainAxisSize:
-                widget.showDecoration ? MainAxisSize.min : MainAxisSize.max,
+            mainAxisSize: widget.showDecoration
+                ? MainAxisSize.min
+                : MainAxisSize.max,
             children: [
               // Drag handle — suprimido quando encapsulado em modal
-              if (widget.showHandle) ...[  
+              if (widget.showHandle) ...[
                 Container(
                   margin: const EdgeInsets.only(top: 12),
                   width: 40,
@@ -100,7 +102,8 @@ class _OccurrenceListSheetState extends ConsumerState<OccurrenceListSheet> {
                     Expanded(
                       child: Text(
                         'Ocorrências',
-                        style: Theme.of(context).textTheme.titleMedium!.copyWith(fontWeight: FontWeight.w600),
+                        style: Theme.of(context).textTheme.titleMedium!
+                            .copyWith(fontWeight: FontWeight.w600),
                       ),
                     ),
                     IconButton(
@@ -179,9 +182,10 @@ class _OccurrenceListSheetState extends ConsumerState<OccurrenceListSheet> {
                                 _filters.hasAnyFilter
                                     ? 'Nenhuma ocorrência com os filtros ativos'
                                     : 'Nenhuma ocorrência nesta área',
-                                style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                                  color: PremiumTokens.textSecondaryLight,
-                                ),
+                                style: Theme.of(context).textTheme.bodyMedium!
+                                    .copyWith(
+                                      color: PremiumTokens.textSecondaryLight,
+                                    ),
                                 textAlign: TextAlign.center,
                               ),
                               if (_filters.hasAnyFilter) ...[
@@ -296,7 +300,9 @@ class _OccurrenceListItem extends StatelessWidget {
         return list
             .map((s) => OccurrenceCategory.fromString(s as String))
             .toList();
-      } catch (_) {}
+      } catch (_) {
+        // JSON legado inválido: usa category simples como fallback.
+      }
     }
     if (occurrence.category != null) {
       return [OccurrenceCategory.fromString(occurrence.category)];
@@ -307,8 +313,7 @@ class _OccurrenceListItem extends StatelessWidget {
   String? _firstMetricLabel() {
     if (occurrence.metricasJson == null) return null;
     try {
-      final map =
-          jsonDecode(occurrence.metricasJson!) as Map<String, dynamic>;
+      final map = jsonDecode(occurrence.metricasJson!) as Map<String, dynamic>;
       for (final catEntry in map.entries) {
         final metrics = catEntry.value as Map<String, dynamic>;
         for (final m in metrics.entries) {
@@ -318,37 +323,54 @@ class _OccurrenceListItem extends StatelessWidget {
           }
         }
       }
-    } catch (_) {}
+    } catch (_) {
+      // Métrica opcional inválida: omite o resumo sem bloquear a lista.
+    }
     return null;
   }
 
   String _metricDisplayName(String key) {
     switch (key) {
-      case 'incidencia': return 'Incidência';
-      case 'severidade': return 'Severidade';
-      case 'desfolha': return 'Desfolha';
-      case 'infestacao': return 'Infestação';
-      case 'acamamento': return 'Acamamento';
-      case 'status': return 'Status Hídrico';
-      default: return key;
+      case 'incidencia':
+        return 'Incidência';
+      case 'severidade':
+        return 'Severidade';
+      case 'desfolha':
+        return 'Desfolha';
+      case 'infestacao':
+        return 'Infestação';
+      case 'acamamento':
+        return 'Acamamento';
+      case 'status':
+        return 'Status Hídrico';
+      default:
+        return key;
     }
   }
 
   Color _syncColor() {
     switch (occurrence.syncStatus) {
-      case 'synced': return const Color(0xFF34C759);
-      case 'updated': return const Color(0xFF30B0C7);
-      case 'deleted': return const Color(0xFFFF3B30);
-      default: return const Color(0xFFFF9500); // local
+      case 'synced':
+        return const Color(0xFF34C759);
+      case 'updated':
+        return const Color(0xFF30B0C7);
+      case 'deleted':
+        return const Color(0xFFFF3B30);
+      default:
+        return const Color(0xFFFF9500); // local
     }
   }
 
   String _syncLabel() {
     switch (occurrence.syncStatus) {
-      case 'synced': return 'Sincronizado';
-      case 'updated': return 'Atualizado';
-      case 'deleted': return 'Excluído';
-      default: return 'Local';
+      case 'synced':
+        return 'Sincronizado';
+      case 'updated':
+        return 'Atualizado';
+      case 'deleted':
+        return 'Excluído';
+      default:
+        return 'Local';
     }
   }
 
@@ -368,19 +390,19 @@ class _OccurrenceListItem extends StatelessWidget {
         : OccurrenceCategory.fromString(occurrence.category);
     final color = _catColor(primaryCat);
     final isDraft = occurrence.status == 'draft';
-    final isFromVisit = occurrence.visitSessionId == activeVisitId &&
-        activeVisitId != null;
+    final isFromVisit =
+        occurrence.visitSessionId == activeVisitId && activeVisitId != null;
     final firstMetric = _firstMetricLabel();
     final syncColor = _syncColor();
-    final hasPhoto = occurrence.photoPath != null &&
-        occurrence.photoPath!.isNotEmpty;
+    final hasPhoto =
+        occurrence.photoPath != null && occurrence.photoPath!.isNotEmpty;
 
     return GestureDetector(
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
           color: isSelected
-              ? color.withOpacity(.08)
+              ? color.withValues(alpha: .08)
               : const Color(0xFF1C1C1E),
           border: Border.all(
             color: isSelected ? color : Colors.white12,
@@ -403,8 +425,8 @@ class _OccurrenceListItem extends StatelessWidget {
                       width: 60,
                       height: 80,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => _CategoryIcon(
-                          cat: primaryCat, color: color),
+                      errorBuilder: (_, __, ___) =>
+                          _CategoryIcon(cat: primaryCat, color: color),
                     )
                   : _CategoryIcon(cat: primaryCat, color: color),
             ),
@@ -413,8 +435,7 @@ class _OccurrenceListItem extends StatelessWidget {
             // ── Conteúdo ─────────────────────────────────────────
             Expanded(
               child: Padding(
-                padding:
-                    const EdgeInsets.fromLTRB(0, 10, 10, 10),
+                padding: const EdgeInsets.fromLTRB(0, 10, 10, 10),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -422,13 +443,17 @@ class _OccurrenceListItem extends StatelessWidget {
                     Row(
                       children: [
                         // Emojis das categorias ativas
-                        ...cats.take(3).map((c) => Padding(
-                              padding:
-                                  const EdgeInsets.only(right: 2),
-                              child: Text(c.emoji,
-                                  style: const TextStyle(
-                                      fontSize: 14)),
-                            )),
+                        ...cats
+                            .take(3)
+                            .map(
+                              (c) => Padding(
+                                padding: const EdgeInsets.only(right: 2),
+                                child: Text(
+                                  c.emoji,
+                                  style: const TextStyle(fontSize: 14),
+                                ),
+                              ),
+                            ),
                         const SizedBox(width: 4),
                         Expanded(
                           child: Text(
@@ -451,60 +476,55 @@ class _OccurrenceListItem extends StatelessWidget {
 
                     // Linha 2: estádio + cultivar
                     if (occurrence.estadioFenologico != null ||
-                        occurrence.cultivar != null) ...
-                      [
-                        const SizedBox(height: 4),
-                        Row(
-                          children: [
-                            if (occurrence.estadioFenologico != null)
-                              _MiniChip(
-                                label:
-                                    '📊 ${occurrence.estadioFenologico}',
-                                color:
-                                    PremiumTokens.brandGreen,
+                        occurrence.cultivar != null) ...[
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          if (occurrence.estadioFenologico != null)
+                            _MiniChip(
+                              label: '📊 ${occurrence.estadioFenologico}',
+                              color: PremiumTokens.brandGreen,
+                            ),
+                          if (occurrence.cultivar != null) ...[
+                            const SizedBox(width: 4),
+                            Text(
+                              occurrence.cultivar!,
+                              style: const TextStyle(
+                                color: Colors.white54,
+                                fontSize: 11,
                               ),
-                            if (occurrence.cultivar != null) ...
-                              [
-                                const SizedBox(width: 4),
-                                Text(
-                                  occurrence.cultivar!,
-                                  style: const TextStyle(
-                                    color: Colors.white54,
-                                    fontSize: 11,
-                                  ),
-                                ),
-                              ],
+                            ),
                           ],
-                        ),
-                      ],
+                        ],
+                      ),
+                    ],
 
                     // Linha 3: description
-                    if (occurrence.description.isNotEmpty) ...
-                      [
-                        const SizedBox(height: 4),
-                        Text(
-                          occurrence.description,
-                          style: const TextStyle(
-                              color: Colors.white54,
-                              fontSize: 12),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
+                    if (occurrence.description.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        occurrence.description,
+                        style: const TextStyle(
+                          color: Colors.white54,
+                          fontSize: 12,
                         ),
-                      ],
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
 
                     // Linha 4: primeira métrica
-                    if (firstMetric != null) ...
-                      [
-                        const SizedBox(height: 4),
-                        Text(
-                          firstMetric,
-                          style: TextStyle(
-                            color: color.withOpacity(.8),
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                          ),
+                    if (firstMetric != null) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        firstMetric,
+                        style: TextStyle(
+                          color: color.withValues(alpha: .8),
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
                         ),
-                      ],
+                      ),
+                    ],
 
                     // Linha 5: data + badges
                     const SizedBox(height: 6),
@@ -519,11 +539,12 @@ class _OccurrenceListItem extends StatelessWidget {
                         // Sync badge
                         Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 5, vertical: 2),
+                            horizontal: 5,
+                            vertical: 2,
+                          ),
                           decoration: BoxDecoration(
-                            color: syncColor.withOpacity(.15),
-                            borderRadius:
-                                BorderRadius.circular(4),
+                            color: syncColor.withValues(alpha: .15),
+                            borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(
                             _syncLabel(),
@@ -538,8 +559,9 @@ class _OccurrenceListItem extends StatelessWidget {
                         Text(
                           _formatDate(occurrence.createdAt),
                           style: const TextStyle(
-                              color: Colors.white24,
-                              fontSize: 10),
+                            color: Colors.white24,
+                            fontSize: 10,
+                          ),
                         ),
                       ],
                     ),
@@ -563,14 +585,11 @@ class _CategoryIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-        width: 60,
-        height: 80,
-        color: color.withOpacity(.1),
-        child: Center(
-          child: Text(cat.emoji,
-              style: const TextStyle(fontSize: 28)),
-        ),
-      );
+    width: 60,
+    height: 80,
+    color: color.withValues(alpha: .1),
+    child: Center(child: Text(cat.emoji, style: const TextStyle(fontSize: 28))),
+  );
 }
 
 class _MiniChip extends StatelessWidget {
@@ -580,19 +599,14 @@ class _MiniChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-        padding:
-            const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-        decoration: BoxDecoration(
-          color: color.withOpacity(.15),
-          borderRadius: BorderRadius.circular(4),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: color,
-            fontSize: 9,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      );
+    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+    decoration: BoxDecoration(
+      color: color.withValues(alpha: .15),
+      borderRadius: BorderRadius.circular(4),
+    ),
+    child: Text(
+      label,
+      style: TextStyle(color: color, fontSize: 9, fontWeight: FontWeight.bold),
+    ),
+  );
 }

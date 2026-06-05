@@ -16,7 +16,7 @@ void main() {
       expect(config.subdomains, MapConfig.googleSatelliteSubdomains);
       expect(config.maxZoom, MapConfig.satelliteMaxZoom);
       expect(config.maxNativeZoom, MapConfig.satelliteMaxNativeZoom);
-      expect(config.fallbackUrl, MapConfig.esriWorldImagery);
+      expect(config.fallbackUrl, isNull);
     });
 
     test('satellite com MapTiler key usa MapTiler oficial', () {
@@ -32,24 +32,27 @@ void main() {
       expect(config.attribution, MapConfig.mapTilerAttribution);
       expect(config.maxZoom, MapConfig.satelliteMaxZoom);
       expect(config.maxNativeZoom, MapConfig.mapTilerSatelliteMaxNativeZoom);
-      expect(config.fallbackUrl, MapConfig.esriWorldImagery);
+      expect(config.fallbackUrl, isNull);
     });
 
-    test('relevo sem MapTiler key usa fallback natural', () {
+    test('relevo sem MapTiler key usa fallback limpo sem Esri', () {
       final config = MapConfig.tileConfigForLayer(
         LayerType.relevo,
         mapTilerApiKey: '',
       );
 
       expect(config.isFallback, isTrue);
-      expect(config.urlTemplate, MapConfig.esriWorldTopo);
-      expect(config.attribution, MapConfig.esriAttribution);
+      expect(config.urlTemplate, MapConfig.cartoVoyagerRetina);
+      expect(config.attribution, MapConfig.cartoAttribution);
+      expect(config.subdomains, MapConfig.cartoSubdomains);
       expect(config.maxZoom, MapConfig.defaultLayerMaxZoom);
       expect(config.maxNativeZoom, MapConfig.defaultLayerMaxNativeZoom);
+      expect(config.retinaMode, isTrue);
+      expect(config.fallbackUrl, isNull);
     });
 
     test(
-      'relevo com MapTiler key usa Landscape iOS-like com fallback topo',
+      'relevo com MapTiler key usa Landscape iOS-like sem fallback Esri',
       () {
         final config = MapConfig.tileConfigForLayer(
           LayerType.relevo,
@@ -59,11 +62,29 @@ void main() {
         expect(config.requiresApiKey, isTrue);
         expect(config.urlTemplate, contains('/landscape/256/'));
         expect(config.urlTemplate, contains('{y}{r}.png'));
-        expect(config.fallbackUrl, MapConfig.esriWorldTopo);
+        expect(config.fallbackUrl, isNull);
         expect(config.maxZoom, MapConfig.mapTilerStyledMaxZoom);
         expect(config.maxNativeZoom, MapConfig.mapTilerStyledMaxNativeZoom);
         expect(config.retinaMode, isTrue);
       },
     );
+
+    test('camadas base não usam Esri como fallback automático', () {
+      for (final layer in LayerType.values) {
+        final withoutKey = MapConfig.tileConfigForLayer(
+          layer,
+          mapTilerApiKey: '',
+        );
+        final withKey = MapConfig.tileConfigForLayer(
+          layer,
+          mapTilerApiKey: 'test-key',
+        );
+
+        expect(withoutKey.fallbackUrl, isNot(MapConfig.esriWorldImagery));
+        expect(withoutKey.fallbackUrl, isNot(MapConfig.esriWorldTopo));
+        expect(withKey.fallbackUrl, isNot(MapConfig.esriWorldImagery));
+        expect(withKey.fallbackUrl, isNot(MapConfig.esriWorldTopo));
+      }
+    });
   });
 }

@@ -1,3 +1,5 @@
+// ignore_for_file: constant_identifier_names
+
 enum SyncStatus { local_only, pending_sync, synced, sync_error, deleted_local }
 
 class Relatorio {

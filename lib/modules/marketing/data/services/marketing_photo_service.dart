@@ -66,6 +66,11 @@ class MarketingPhotoService {
   /// Faz upload do arquivo para o Supabase Storage.
   Future<String?> _upload(File file, {String? folder}) async {
     try {
+      final userId = _supabase.auth.currentUser?.id;
+      if (userId == null || userId.isEmpty) {
+        throw StateError('Usuario nao autenticado.');
+      }
+
       // FIX: image_picker no iOS pode retornar path sem extensão (ex: arquivo
       // temporário). p.extension() retorna '' nesses casos, gerando path inválido
       // ("uuid.") e contentType inválido ("image/"), causando StorageException.
@@ -83,7 +88,10 @@ class MarketingPhotoService {
         _ => 'image/jpeg',
       };
       final name = '${_uuid.v4()}.$ext';
-      final path = folder != null ? '$folder/$name' : name;
+      final safeFolder = folder?.replaceAll(RegExp(r'(^/+|/+$)'), '');
+      final path = safeFolder != null && safeFolder.isNotEmpty
+          ? '$userId/$safeFolder/$name'
+          : '$userId/$name';
 
       await _supabase.storage
           .from(_bucket)

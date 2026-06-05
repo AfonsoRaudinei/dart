@@ -3,13 +3,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'dart:io';
+import '../../../../core/html_templates/html_report_viewer.dart';
 import '../../../../core/contracts/i_client_lookup_provider.dart';
 import '../../../../core/contracts/i_farm_lookup_provider.dart';
+import '../../../../core/contracts/i_field_lookup_provider.dart';
 import '../../domain/entities/event.dart';
 import '../../domain/enums/event_status.dart';
 import '../providers/agenda_provider.dart';
 import '../services/agenda_pdf_service.dart';
+import '../services/agenda_visit_html_service.dart';
 import '../widgets/day_event_card.dart';
 
 /// View de Planejamento Semanal (modelo da skill)
@@ -55,26 +59,23 @@ class _AgendaPlanejamentoViewState
           child: agendaState.isLoading
               ? const Center(child: CircularProgressIndicator())
               : filteredDays.isEmpty
-                  ? const Center(
-                      child: Text('Nenhum dia selecionado.'),
-                    )
-                  : ListView.builder(
-                      padding: const EdgeInsets.all(16),
-                      itemCount: filteredDays.length,
-                      itemBuilder: (context, index) {
-                        final day = filteredDays[index];
-                        final dayEvents = eventsByDay[_dayKey(day)] ?? [];
-                        return _buildDayCard(context, theme, day, dayEvents);
-                      },
-                    ),
+              ? const Center(child: Text('Nenhum dia selecionado.'))
+              : ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: filteredDays.length,
+                  itemBuilder: (context, index) {
+                    final day = filteredDays[index];
+                    final dayEvents = eventsByDay[_dayKey(day)] ?? [];
+                    return _buildDayCard(context, theme, day, dayEvents);
+                  },
+                ),
         ),
       ],
     );
   }
 
   Widget _buildWeekNavigation(ThemeData theme) {
-    final isCurrentWeek =
-        _currentWeekStart == _calcWeekStart(DateTime.now());
+    final isCurrentWeek = _currentWeekStart == _calcWeekStart(DateTime.now());
 
     return Container(
       margin: const EdgeInsets.all(16),
@@ -99,8 +100,9 @@ class _AgendaPlanejamentoViewState
                   ? null
                   : () {
                       setState(() {
-                        _currentWeekStart = _currentWeekStart
-                            .subtract(const Duration(days: 7));
+                        _currentWeekStart = _currentWeekStart.subtract(
+                          const Duration(days: 7),
+                        );
                         _activeDayFilters.addAll({0, 1, 2, 3, 4, 5, 6});
                       });
                     },
@@ -119,8 +121,9 @@ class _AgendaPlanejamentoViewState
                 icon: const Icon(Icons.chevron_right),
                 onPressed: () {
                   setState(() {
-                    _currentWeekStart =
-                        _currentWeekStart.add(const Duration(days: 7));
+                    _currentWeekStart = _currentWeekStart.add(
+                      const Duration(days: 7),
+                    );
                     _activeDayFilters.addAll({0, 1, 2, 3, 4, 5, 6});
                   });
                 },
@@ -148,8 +151,7 @@ class _AgendaPlanejamentoViewState
     try {
       final weekEnd = _currentWeekStart.add(const Duration(days: 6));
       // Usar apenas os dias visiveis/filtrados no PDF
-      final visibleDayKeys =
-          _filteredDays().map(_dayKey).toSet();
+      final visibleDayKeys = _filteredDays().map(_dayKey).toSet();
       final allWeekEvents = ref
           .read(agendaProvider.notifier)
           .getEventsByDateRange(_currentWeekStart, weekEnd);
@@ -160,8 +162,10 @@ class _AgendaPlanejamentoViewState
       final clientLookup = ref.read(clientLookupProvider);
       final farmLookup = ref.read(iFarmLookupProvider);
       final service = AgendaPdfService(clientLookup, farmLookup);
-      final bytes =
-          await service.generateWeekPdf(filteredEvents, _currentWeekStart);
+      final bytes = await service.generateWeekPdf(
+        filteredEvents,
+        _currentWeekStart,
+      );
 
       final dir = await getTemporaryDirectory();
       final fmt = DateFormat('yyyy-MM-dd');
@@ -170,15 +174,14 @@ class _AgendaPlanejamentoViewState
       final file = File('${dir.path}/$fileName');
       await file.writeAsBytes(bytes);
 
-      await Share.shareXFiles(
-        [XFile(file.path, mimeType: 'application/pdf')],
-        subject: 'Planejamento Semanal SoloForte',
-      );
+      await Share.shareXFiles([
+        XFile(file.path, mimeType: 'application/pdf'),
+      ], subject: 'Planejamento Semanal SoloForte');
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erro ao gerar PDF: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Erro ao gerar PDF: $e')));
       }
     } finally {
       if (mounted) setState(() => _exportLoading = false);
@@ -190,8 +193,11 @@ class _AgendaPlanejamentoViewState
   /// Calcula a segunda-feira da semana que contém [ref].
   /// weekday: 1=seg … 7=dom  →  subtrai (weekday - 1) dias.
   DateTime _calcWeekStart(DateTime ref) {
-    return DateTime(ref.year, ref.month, ref.day)
-        .subtract(Duration(days: ref.weekday - 1));
+    return DateTime(
+      ref.year,
+      ref.month,
+      ref.day,
+    ).subtract(Duration(days: ref.weekday - 1));
   }
 
   /// Dias da semana atual visíveis:
@@ -221,8 +227,7 @@ class _AgendaPlanejamentoViewState
   Widget _buildDayFilters(ThemeData theme) {
     const labels = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
     // Índices 0..6 = dom, seg, ter, qua, qui, sex, sáb
-    final visibleIndices =
-        _visibleDays().map((d) => d.weekday % 7).toSet();
+    final visibleIndices = _visibleDays().map((d) => d.weekday % 7).toSet();
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -251,13 +256,13 @@ class _AgendaPlanejamentoViewState
                 shape: BoxShape.circle,
                 color: !isVisible
                     ? (theme.brightness == Brightness.dark
-                        ? const Color(0xFF1E2428)
-                        : const Color(0xFFF3F4F6))
+                          ? const Color(0xFF1E2428)
+                          : const Color(0xFFF3F4F6))
                     : isActive
-                        ? const Color(0xFF4ADE80)
-                        : (theme.brightness == Brightness.dark
-                            ? const Color(0xFF2A3136)
-                            : const Color(0xFFE5E7EB)),
+                    ? const Color(0xFF4ADE80)
+                    : (theme.brightness == Brightness.dark
+                          ? const Color(0xFF2A3136)
+                          : const Color(0xFFE5E7EB)),
               ),
               child: Center(
                 child: Text(
@@ -267,13 +272,13 @@ class _AgendaPlanejamentoViewState
                     fontWeight: FontWeight.w700,
                     color: !isVisible
                         ? (theme.brightness == Brightness.dark
-                            ? const Color(0xFF3A3A3C)
-                            : const Color(0xFFD1D5DB))
+                              ? const Color(0xFF3A3A3C)
+                              : const Color(0xFFD1D5DB))
                         : isActive
-                            ? const Color(0xFF14532D)
-                            : (theme.brightness == Brightness.dark
-                                ? const Color(0xFF9CA3AF)
-                                : const Color(0xFF6B7280)),
+                        ? const Color(0xFF14532D)
+                        : (theme.brightness == Brightness.dark
+                              ? const Color(0xFF9CA3AF)
+                              : const Color(0xFF6B7280)),
                   ),
                 ),
               ),
@@ -338,6 +343,7 @@ class _AgendaPlanejamentoViewState
                 return DayEventCard(
                   event: events[index],
                   enablePlanningSwipeActions: true,
+                  onVisitHtml: _openVisitHtml,
                   onTap: () {
                     // Navegar para detalhes
                   },
@@ -347,6 +353,49 @@ class _AgendaPlanejamentoViewState
         ],
       ),
     );
+  }
+
+  Future<void> _openVisitHtml(Event event) async {
+    try {
+      final agendaState = ref.read(agendaProvider);
+      final session = event.visitSessionId == null
+          ? agendaState.sessions
+                .where((item) => item.eventoId == event.id)
+                .firstOrNull
+          : agendaState.sessions
+                .where((item) => item.id == event.visitSessionId)
+                .firstOrNull;
+      final user = Supabase.instance.client.auth.currentUser;
+      final agronomistNome =
+          user?.userMetadata?['name']?.toString().trim().isNotEmpty == true
+          ? user!.userMetadata!['name'].toString()
+          : user?.email ?? 'Agrônomo';
+
+      final service = AgendaVisitHtmlService(
+        ref.read(clientLookupProvider),
+        ref.read(iFarmLookupProvider),
+        ref.read(iFieldLookupProvider),
+      );
+      final html = await service.renderEventVisit(
+        event: event,
+        session: session,
+        agronomistNome: agronomistNome,
+      );
+      if (!mounted) return;
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => HtmlReportViewer(
+            title: 'Visita - ${event.titulo}',
+            htmlContent: html,
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erro ao gerar HTML da visita: $e')),
+      );
+    }
   }
 
   Widget _buildDayHeader(

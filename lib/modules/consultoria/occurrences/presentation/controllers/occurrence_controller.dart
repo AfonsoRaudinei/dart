@@ -49,6 +49,9 @@ class OccurrenceController {
     final String? sessionId = activeSession?.isActive == true
         ? activeSession!.id
         : null;
+    final resolvedClientId =
+        clientId ??
+        (activeSession?.isActive == true ? activeSession!.producerId : null);
 
     String? geometry;
     if (lat != null && long != null) {
@@ -61,7 +64,7 @@ class OccurrenceController {
     final occurrence = Occurrence(
       id: const Uuid().v4(),
       visitSessionId: sessionId,
-      clientId: clientId,
+      clientId: resolvedClientId,
       type: type,
       description: description,
       photoPath: photoPath,

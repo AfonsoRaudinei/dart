@@ -644,17 +644,7 @@
   <header class="header">
     <div class="header-top">
       <div class="logo-area">
-        <svg class="logo-img" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M50 8 L90 42 L80 42 L80 78 L20 78 L20 42 L10 42 Z" fill="white" opacity="0.9"/>
-          <rect x="42" y="46" width="7" height="7" rx="1" fill="#F5B935"/>
-          <rect x="51" y="46" width="7" height="7" rx="1" fill="#F5B935"/>
-          <rect x="42" y="55" width="7" height="7" rx="1" fill="#F5B935"/>
-          <rect x="51" y="55" width="7" height="7" rx="1" fill="#F5B935"/>
-          <path d="M25 90 Q35 70 50 78 Q65 70 75 90" fill="#8BC34A" opacity="0.85"/>
-          <path d="M20 88 Q30 65 50 76" stroke="#2E7D32" stroke-width="2" fill="none" opacity="0.5"/>
-          <path d="M80 88 Q70 65 50 76" stroke="#2E7D32" stroke-width="2" fill="none" opacity="0.5"/>
-        </svg>
-        <span class="logo-name">SoloForte</span>
+        {{report_header_signature}}
       </div>
       <!-- status: pendente_revisao | publicado | arquivado -->
       <span class="status-badge-header {{status}}">{{status_label}}</span>
@@ -890,7 +880,7 @@
 
   <!-- ══════════ FOOTER ══════════ -->
   <footer class="footer">
-    <div class="footer-brand">SoloForte</div>
+    {{report_footer_signature}}
     <div class="footer-meta">
       ID: {{id_curto}}<br>
       Gerado em {{gerado_em_formatado}}

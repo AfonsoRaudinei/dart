@@ -13,11 +13,14 @@ class FeedbackFormState {
     bool? isSubmitting,
     bool? isSuccess,
     String? errorMessage,
+    bool clearErrorMessage = false,
   }) {
     return FeedbackFormState(
       isSubmitting: isSubmitting ?? this.isSubmitting,
       isSuccess: isSuccess ?? this.isSuccess,
-      errorMessage: errorMessage ?? this.errorMessage,
+      errorMessage: clearErrorMessage
+          ? null
+          : errorMessage ?? this.errorMessage,
     );
   }
 }

@@ -5,7 +5,7 @@ import '../../../../modules/dashboard/services/location_service.dart';
 import '../../../../modules/map/presentation/widgets/visit_sheet.dart';
 import '../../../../modules/visitas/presentation/controllers/visit_controller.dart';
 import '../../../../ui/components/map/map_sheet_state.dart';
-import '../../../../ui/components/map/map_sheets.dart';
+import '../../../../ui/components/map/map_layers_sheet.dart';
 import 'active_visit_sheet.dart';
 
 /// Constrói o widget de conteúdo correto para cada [MapSheetType].
@@ -63,7 +63,7 @@ Widget buildSheetContent(
             // Bug 1: scrollController conecta DraggableScrollableSheet ao
             // SingleChildScrollView interno para expansão correta via drag.
             scrollController: scrollController,
-            onConfirm: (clientId, areaId, activity) async {
+            onConfirm: (clientId, farmId, areaId, activity) async {
               final locationService = LocationService();
               final isAvailable = await locationService.checkAvailability();
               final position = isAvailable
@@ -90,6 +90,7 @@ Widget buildSheetContent(
                     activity,
                     position.latitude,
                     position.longitude,
+                    farmId: farmId,
                   );
 
               if (!context.mounted) return;

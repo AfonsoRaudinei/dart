@@ -21,12 +21,19 @@ class MarketingHtmlRenderer {
     final tpl = await RelatorioHtmlRenderer.loadTemplate(
       'marketing_resultado.html',
     );
+    final branding = await RelatorioHtmlRenderer.brandingPlaceholders(
+      customBrandName: data['report_brand_name'] as String?,
+      customLogoPath: data['report_logo_path'] as String?,
+      consultantName: data['nome_vendedor'] as String?,
+      consultantRole: 'Consultoria',
+    );
     final fotoPrincipalUrl = data['foto_principal_url'] as String?;
     final foto = await RelatorioHtmlRenderer.photoPathToBase64(
       fotoPrincipalUrl,
     );
 
-    return RelatorioHtmlRenderer.replacePlaceholders(tpl, {
+    final html = RelatorioHtmlRenderer.replacePlaceholders(tpl, {
+      ...branding,
       'produtor_fazenda': RelatorioHtmlRenderer.escapeHtml(
         data['produtor_fazenda'] as String? ?? '',
       ),
@@ -62,14 +69,22 @@ class MarketingHtmlRenderer {
       'criado_em_formatado': _parseDate(data['criado_em'] as String?),
       'status': data['status'] as String? ?? '',
     });
+    return RelatorioHtmlRenderer.stripUnresolvedPlaceholders(html);
   }
 
   static Future<String> _renderAntesDepois(Map<String, dynamic> data) async {
     final tpl = await RelatorioHtmlRenderer.loadTemplate(
       'marketing_antes_depois.html',
     );
+    final branding = await RelatorioHtmlRenderer.brandingPlaceholders(
+      customBrandName: data['report_brand_name'] as String?,
+      customLogoPath: data['report_logo_path'] as String?,
+      consultantName: data['nome_vendedor'] as String?,
+      consultantRole: 'Consultoria',
+    );
 
-    return RelatorioHtmlRenderer.replacePlaceholders(tpl, {
+    final html = RelatorioHtmlRenderer.replacePlaceholders(tpl, {
+      ...branding,
       'produtor_fazenda': RelatorioHtmlRenderer.escapeHtml(
         data['produtor_fazenda'] as String? ?? '',
       ),
@@ -105,14 +120,22 @@ class MarketingHtmlRenderer {
       'criado_em_formatado': _parseDate(data['criado_em'] as String?),
       'status': data['status'] as String? ?? '',
     });
+    return RelatorioHtmlRenderer.stripUnresolvedPlaceholders(html);
   }
 
   static Future<String> _renderAvaliacao(Map<String, dynamic> data) async {
     var tpl = await RelatorioHtmlRenderer.loadTemplate(
       'marketing_avaliacao.html',
     );
+    final branding = await RelatorioHtmlRenderer.brandingPlaceholders(
+      customBrandName: data['report_brand_name'] as String?,
+      customLogoPath: data['report_logo_path'] as String?,
+      consultantName: data['nome_vendedor'] as String?,
+      consultantRole: 'Consultoria',
+    );
 
     tpl = RelatorioHtmlRenderer.replacePlaceholders(tpl, {
+      ...branding,
       'produtor_fazenda': RelatorioHtmlRenderer.escapeHtml(
         data['produtor_fazenda'] as String? ?? '',
       ),
@@ -166,10 +189,13 @@ class MarketingHtmlRenderer {
       }
     }
 
-    return tpl.replaceAll(
-      '<!-- {{AVALIACOES_LOOP}} -->',
-      blocosHtml.toString(),
+    tpl = RelatorioHtmlRenderer.resolveEachBlock(
+      tpl,
+      'avaliacoes',
+      html: blocosHtml.toString(),
     );
+
+    return RelatorioHtmlRenderer.stripUnresolvedPlaceholders(tpl);
   }
 
   static String _renderAvaliacaoBloco(Map<String, dynamic> data, int ordem) {

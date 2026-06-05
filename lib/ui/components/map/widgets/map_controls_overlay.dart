@@ -14,12 +14,13 @@ import '../../../../modules/settings/presentation/providers/settings_providers.d
 import '../../../../core/constants/layout_constants.dart';
 import '../../../../core/providers/connectivity_provider.dart';
 import '../../../../core/state/map_state.dart';
-
 import '../../../../modules/drawing/domain/drawing_state.dart';
 import '../../../../core/utils/app_logger.dart';
-import './editing_controls_overlay.dart';
 import '../../../../modules/map/presentation/widgets/visit_active_card.dart';
+import '../../../theme/premium/design_tokens.dart';
 import 'map_action_fab_menu.dart';
+
+part 'map_controls_location_button.dart';
 
 Color _themeColor(String theme) {
   switch (theme) {
@@ -239,17 +240,14 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
         if (widget.drawingState == DrawingState.editing)
           Positioned(
             bottom: 120,
-            left: 20,
-            right: 20,
-            child: Center(
-              child: EditingControlsOverlay(
-                onSave: widget.onSaveEdit,
-                onCancel: widget.onCancelEdit,
-                onUndo: widget.onUndoEdit,
-                onRedo: widget.onRedoEdit,
-                canUndo: widget.canUndo,
-                canRedo: widget.canRedo,
-              ),
+            right: 16,
+            child: EditingControlsCluster(
+              onSave: widget.onSaveEdit,
+              onCancel: widget.onCancelEdit,
+              onUndo: widget.onUndoEdit,
+              onRedo: widget.onRedoEdit,
+              canUndo: widget.canUndo,
+              canRedo: widget.canRedo,
             ),
           ),
       ],
@@ -336,6 +334,134 @@ class DrawingControlsCluster extends StatelessWidget {
             child: InkWell(
               customBorder: const CircleBorder(),
               onTap: onCancelDrawing,
+              child: const Padding(
+                padding: EdgeInsets.all(16),
+                child: Icon(SFIcons.close, color: Colors.white, size: 24),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class EditingControlsCluster extends StatelessWidget {
+  final VoidCallback onSave;
+  final VoidCallback onCancel;
+  final VoidCallback onUndo;
+  final VoidCallback? onRedo;
+  final bool canUndo;
+  final bool canRedo;
+
+  const EditingControlsCluster({
+    super.key,
+    required this.onSave,
+    required this.onCancel,
+    required this.onUndo,
+    this.onRedo,
+    this.canUndo = true,
+    this.canRedo = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      key: const Key('editing_controls_backplate'),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.28),
+        borderRadius: BorderRadius.circular(32),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.35),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Material(
+            elevation: 4,
+            shape: const CircleBorder(),
+            color: PremiumTokens.brandGreen,
+            child: InkWell(
+              key: const Key('editing_control_save'),
+              customBorder: const CircleBorder(),
+              onTap: onSave,
+              child: const Padding(
+                padding: EdgeInsets.all(16),
+                child: Icon(SFIcons.check, color: Colors.white, size: 24),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Opacity(
+            opacity: canUndo ? 1.0 : 0.4,
+            child: Material(
+              elevation: 4,
+              shape: const CircleBorder(),
+              color: Colors.white,
+              child: InkWell(
+                key: const Key('editing_control_undo'),
+                customBorder: const CircleBorder(),
+                onTap: canUndo
+                    ? () {
+                        HapticFeedback.lightImpact();
+                        onUndo();
+                      }
+                    : null,
+                child: const Padding(
+                  padding: EdgeInsets.all(12),
+                  child: Icon(
+                    Icons.undo_rounded,
+                    color: Colors.black87,
+                    size: 24,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          if (onRedo != null) ...[
+            const SizedBox(height: 12),
+            Opacity(
+              opacity: canRedo ? 1.0 : 0.4,
+              child: Material(
+                elevation: 4,
+                shape: const CircleBorder(),
+                color: Colors.white,
+                child: InkWell(
+                  key: const Key('editing_control_redo'),
+                  customBorder: const CircleBorder(),
+                  onTap: canRedo
+                      ? () {
+                          HapticFeedback.lightImpact();
+                          onRedo!();
+                        }
+                      : null,
+                  child: const Padding(
+                    padding: EdgeInsets.all(12),
+                    child: Icon(
+                      Icons.redo_rounded,
+                      color: Colors.black87,
+                      size: 24,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+          const SizedBox(height: 12),
+          Material(
+            elevation: 4,
+            shape: const CircleBorder(),
+            color: Colors.redAccent,
+            child: InkWell(
+              key: const Key('editing_control_cancel'),
+              customBorder: const CircleBorder(),
+              onTap: onCancel,
               child: const Padding(
                 padding: EdgeInsets.all(16),
                 child: Icon(SFIcons.close, color: Colors.white, size: 24),
@@ -705,130 +831,5 @@ class _ConnectivityDot extends ConsumerWidget {
         ],
       ),
     );
-  }
-}
-
-/// Botão de localização com 3 estados (idle / following / northLocked)
-class _LocationButton extends ConsumerStatefulWidget {
-  final VoidCallback onCenterUser;
-  final ValueChanged<MapLocationMode> onLocationModeChanged;
-  final Color activeColor;
-
-  const _LocationButton({
-    required this.onCenterUser,
-    required this.onLocationModeChanged,
-    required this.activeColor,
-  });
-
-  @override
-  ConsumerState<_LocationButton> createState() => _LocationButtonState();
-}
-
-class _LocationButtonState extends ConsumerState<_LocationButton> {
-  Timer? _labelTimer;
-  bool _showLabel = false;
-
-  @override
-  void dispose() {
-    _labelTimer?.cancel();
-    super.dispose();
-  }
-
-  void _showTemporaryLabel() {
-    _labelTimer?.cancel();
-    setState(() => _showLabel = true);
-    _labelTimer = Timer(const Duration(milliseconds: 1600), () {
-      if (mounted) {
-        setState(() => _showLabel = false);
-      }
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final locationMode = ref.watch(mapLocationModeProvider);
-    final locationState = ref.watch(locationStateProvider);
-    const label = 'Localização';
-    final isAvailable = locationState == LocationState.available;
-    final isActive = locationMode != MapLocationMode.idle;
-
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        _MapButtonLabel(text: label, isVisible: _showLabel),
-        const SizedBox(width: 8),
-        Tooltip(
-          message: label,
-          waitDuration: const Duration(milliseconds: 450),
-          child: Material(
-            color: Colors.transparent,
-            borderRadius: BorderRadius.circular(12),
-            child: InkWell(
-              borderRadius: BorderRadius.circular(12),
-              onTap: () {
-                HapticFeedback.selectionClick();
-                _showTemporaryLabel();
-
-                // Ciclo de estados: idle → following → northLocked → idle
-                final nextMode = switch (locationMode) {
-                  MapLocationMode.idle => MapLocationMode.following,
-                  MapLocationMode.following => MapLocationMode.northLocked,
-                  MapLocationMode.northLocked => MapLocationMode.idle,
-                };
-
-                ref.read(mapLocationModeProvider.notifier).state = nextMode;
-                widget.onLocationModeChanged(nextMode);
-
-                // Centralizar usuário quando entra em following
-                if (nextMode == MapLocationMode.following ||
-                    nextMode == MapLocationMode.northLocked) {
-                  widget.onCenterUser();
-                }
-
-                AppLogger.debug(
-                  "MapOverlay: Modo de localização mudou para $nextMode",
-                  tag: 'MapControls',
-                );
-              },
-              onLongPress: _showTemporaryLabel,
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                curve: Curves.easeOutCubic,
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.15),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Icon(
-                  _iconForMode(locationMode),
-                  size: 22,
-                  color: isAvailable
-                      ? isActive
-                            ? widget.activeColor
-                            : Colors.grey.shade600
-                      : Colors.grey.shade500,
-                ),
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  IconData _iconForMode(MapLocationMode mode) {
-    return switch (mode) {
-      MapLocationMode.idle => Icons.navigation_outlined,
-      MapLocationMode.following => Icons.navigation,
-      MapLocationMode.northLocked => Icons.explore,
-    };
   }
 }

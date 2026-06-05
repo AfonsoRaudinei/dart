@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import '../../../../core/config/map_config.dart';
@@ -24,7 +25,9 @@ final rainviewerTileUrlProvider = FutureProvider.autoDispose<String?>((
         .get(Uri.parse(MapConfig.rainViewerApiUrl))
         .timeout(const Duration(seconds: 8));
 
-    if (response.statusCode != 200) return null;
+    if (response.statusCode != 200) {
+      throw Exception('[RainViewer] HTTP ${response.statusCode}');
+    }
 
     final json = jsonDecode(response.body) as Map<String, dynamic>;
 
@@ -43,8 +46,8 @@ final rainviewerTileUrlProvider = FutureProvider.autoDispose<String?>((
 
     // Monta URL template compatível com flutter_map TileLayer
     return '${MapConfig.rainViewerTileBase}$path/512/{z}/{x}/{y}/2/1_1.png';
-  } catch (_) {
-    // Qualquer erro de rede, parse ou timeout → null (mapa continua funcional)
-    return null;
+  } catch (e, stackTrace) {
+    debugPrint('[RainViewer] Erro ao buscar tiles: $e');
+    Error.throwWithStackTrace(e, stackTrace);
   }
 });

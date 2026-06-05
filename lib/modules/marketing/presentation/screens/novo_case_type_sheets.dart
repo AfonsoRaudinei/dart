@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/contracts/i_active_visit_context_lookup.dart';
 import '../../domain/entities/marketing_case.dart';
 import '../../domain/enums/case_tipo.dart';
 import 'novo_case_sheet.dart';
@@ -11,6 +12,7 @@ import 'novo_case_sheet.dart';
 class NovoResultadoCaseSheet extends StatelessWidget {
   final double lat;
   final double lng;
+  final ActiveVisitContext? initialVisitContext;
   final VoidCallback onClose;
   final void Function(MarketingCase) onPublicar;
 
@@ -18,6 +20,7 @@ class NovoResultadoCaseSheet extends StatelessWidget {
     super.key,
     required this.lat,
     required this.lng,
+    this.initialVisitContext,
     required this.onClose,
     required this.onPublicar,
   });
@@ -28,6 +31,7 @@ class NovoResultadoCaseSheet extends StatelessWidget {
       lat: lat,
       lng: lng,
       tipo: CaseTipo.resultado,
+      initialVisitContext: initialVisitContext,
       onClose: onClose,
       onPublicar: onPublicar,
     );
@@ -37,6 +41,7 @@ class NovoResultadoCaseSheet extends StatelessWidget {
 class NovoAntesDepoisCaseSheet extends StatelessWidget {
   final double lat;
   final double lng;
+  final ActiveVisitContext? initialVisitContext;
   final VoidCallback onClose;
   final void Function(MarketingCase) onPublicar;
 
@@ -44,6 +49,7 @@ class NovoAntesDepoisCaseSheet extends StatelessWidget {
     super.key,
     required this.lat,
     required this.lng,
+    this.initialVisitContext,
     required this.onClose,
     required this.onPublicar,
   });
@@ -54,6 +60,7 @@ class NovoAntesDepoisCaseSheet extends StatelessWidget {
       lat: lat,
       lng: lng,
       tipo: CaseTipo.antesDepois,
+      initialVisitContext: initialVisitContext,
       onClose: onClose,
       onPublicar: onPublicar,
     );
@@ -63,6 +70,7 @@ class NovoAntesDepoisCaseSheet extends StatelessWidget {
 class NovaAvaliacaoCaseSheet extends StatelessWidget {
   final double lat;
   final double lng;
+  final ActiveVisitContext? initialVisitContext;
   final VoidCallback onClose;
   final void Function(MarketingCase) onPublicar;
 
@@ -70,6 +78,7 @@ class NovaAvaliacaoCaseSheet extends StatelessWidget {
     super.key,
     required this.lat,
     required this.lng,
+    this.initialVisitContext,
     required this.onClose,
     required this.onPublicar,
   });
@@ -80,6 +89,7 @@ class NovaAvaliacaoCaseSheet extends StatelessWidget {
       lat: lat,
       lng: lng,
       tipo: CaseTipo.avaliacao,
+      initialVisitContext: initialVisitContext,
       onClose: onClose,
       onPublicar: onPublicar,
     );

@@ -84,6 +84,7 @@ create table public.visit_sessions (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
   producer_id text,
+  farm_id text,
   area_id text,
   activity_type text,
   started_at timestamptz not null,
@@ -204,6 +205,8 @@ create table public.feedback (
   id uuid primary key default gen_random_uuid(),
   user_id uuid references auth.users(id) on delete set null,
   type text,
+  module text,
+  impact text,
   message text not null,
   rating integer,
   created_at timestamptz default now()
@@ -226,34 +229,54 @@ alter table public.marketing_avaliacoes enable row level security;
 alter table public.feedback enable row level security;
 
 -- Perfis
-create policy "perfis_own" on public.perfis for all using (auth.uid() = id);
+create policy "perfis_own" on public.perfis for all
+  using (auth.uid() = id)
+  with check (auth.uid() = id);
 
 -- Agenda events
-create policy "agenda_events_own" on public.agenda_events for all using (auth.uid() = user_id);
+create policy "agenda_events_own" on public.agenda_events for all
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
 
 -- Agenda visit sessions
-create policy "agenda_sessions_own" on public.agenda_visit_sessions for all using (auth.uid() = user_id);
+create policy "agenda_sessions_own" on public.agenda_visit_sessions for all
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
 
 -- Visit sessions
-create policy "visit_sessions_own" on public.visit_sessions for all using (auth.uid() = user_id);
+create policy "visit_sessions_own" on public.visit_sessions for all
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
 
 -- Clients
-create policy "clients_own" on public.clients for all using (auth.uid() = user_id);
+create policy "clients_own" on public.clients for all
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
 
 -- Farms
-create policy "farms_own" on public.farms for all using (auth.uid() = user_id);
+create policy "farms_own" on public.farms for all
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
 
 -- Fields
-create policy "fields_own" on public.fields for all using (auth.uid() = user_id);
+create policy "fields_own" on public.fields for all
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
 
 -- Occurrences
-create policy "occurrences_own" on public.occurrences for all using (auth.uid() = user_id);
+create policy "occurrences_own" on public.occurrences for all
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
 
 -- Marketing cases
-create policy "marketing_cases_own" on public.marketing_cases for all using (auth.uid() = user_id);
+create policy "marketing_cases_own" on public.marketing_cases for all
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
 
 -- Marketing avaliacoes
-create policy "marketing_avaliacoes_own" on public.marketing_avaliacoes for all using (auth.uid() = user_id);
+create policy "marketing_avaliacoes_own" on public.marketing_avaliacoes for all
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
 
 -- Feedback
 create policy "feedback_insert" on public.feedback for insert with check (auth.uid() = user_id);

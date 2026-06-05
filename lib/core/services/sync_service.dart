@@ -6,12 +6,8 @@ import 'package:soloforte_app/core/services/sync_orchestrator.dart';
 
 class SyncService {
   final Ref _ref;
-  Timer? _syncTimer;
   bool _isSyncing = false;
 
-  // 🛡 LIFECYCLE: Flag para evitar _ref.read() após invalidação do Ref.
-  // Timer.periodic de 5min pode disparar depois que o provider
-  // foi descartado, causando BadState no _ref.read().
   bool _isDisposed = false;
 
   SyncService(this._ref) {
@@ -26,21 +22,6 @@ class SyncService {
         }
       });
     });
-
-    _syncTimer = Timer.periodic(const Duration(minutes: 5), (_) async {
-      // 🛡 LIFECYCLE GUARD: Ref pode estar invalidado se o provider
-      // foi descartado antes do timer disparar.
-      if (_isDisposed || _isSyncing) return;
-      try {
-        final connectivityService = _ref.read(connectivityServiceProvider);
-        final isConnected = await connectivityService.isConnected;
-        if (!_isDisposed && isConnected) {
-          await _performSync();
-        }
-      } catch (_) {
-        // Ref inválido ou provider descartado — ignorar silenciosamente.
-      }
-    });
   }
 
   Future<void> sync() async {
@@ -48,7 +29,7 @@ class SyncService {
   }
 
   Future<void> _performSync() async {
-    if (_isSyncing) return;
+    if (_isDisposed || _isSyncing) return;
 
     _isSyncing = true;
 
@@ -70,9 +51,7 @@ class SyncService {
   }
 
   void dispose() {
-    // 🛡 Marcar como disposed ANTES de cancelar o timer.
     _isDisposed = true;
-    _syncTimer?.cancel();
   }
 }
 

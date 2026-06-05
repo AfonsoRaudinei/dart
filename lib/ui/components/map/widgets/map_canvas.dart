@@ -37,6 +37,8 @@ class MapCanvas extends StatelessWidget {
         initialZoom: 14.0,
         minZoom: 4.0,
         maxZoom: maxZoom,
+        // 🛡 IPA-123: background branco antes dos tiles carregarem
+        backgroundColor: Colors.white,
         onTap: onTap,
         onLongPress: onLongPress,
         onPositionChanged: onPositionChanged,

@@ -80,11 +80,18 @@ class MapConfig {
   /// Subdomínios do Google Maps Tile Server (load balancing)
   static const List<String> googleSatelliteSubdomains = ['0', '1', '2', '3'];
 
-  /// Esri World Imagery — fallback de satélite sem API key.
+  /// Esri World Imagery — mantido apenas como referência/compatibilidade.
+  ///
+  /// Não usar como fallback automático no mapa principal: em algumas regiões ou
+  /// níveis de zoom o serviço devolve um tile válido com o texto "Zoom Level
+  /// Not Supported", que polui visualmente o mapa e não dispara erro HTTP.
   static const String esriWorldImagery =
       'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
 
-  /// Esri World Topographic — fallback topo com mais verde/azul sem API key.
+  /// Esri World Topographic — mantido apenas como referência/compatibilidade.
+  ///
+  /// Pelo mesmo motivo de [esriWorldImagery], não deve ser fallback automático
+  /// das camadas base em produção.
   static const String esriWorldTopo =
       'https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}';
 
@@ -207,7 +214,6 @@ class MapConfig {
             attribution: mapTilerAttribution,
             maxZoom: satelliteMaxZoom,
             maxNativeZoom: mapTilerSatelliteMaxNativeZoom,
-            fallbackUrl: esriWorldImagery,
             requiresApiKey: true,
           );
         }
@@ -217,7 +223,6 @@ class MapConfig {
           subdomains: googleSatelliteSubdomains,
           maxZoom: satelliteMaxZoom,
           maxNativeZoom: satelliteMaxNativeZoom,
-          fallbackUrl: esriWorldImagery,
         );
       case LayerType.relevo:
         if (!hasMapTilerApiKey(mapTilerApiKey)) {
@@ -227,15 +232,16 @@ class MapConfig {
               attribution: stadiaAttribution,
               maxZoom: defaultLayerMaxZoom,
               maxNativeZoom: defaultLayerMaxNativeZoom,
-              fallbackUrl: esriWorldTopo,
               isFallback: true,
             );
           }
           return const MapLayerTileConfig(
-            urlTemplate: esriWorldTopo,
-            attribution: esriAttribution,
+            urlTemplate: cartoVoyagerRetina,
+            attribution: cartoAttribution,
+            subdomains: cartoSubdomains,
             maxZoom: defaultLayerMaxZoom,
             maxNativeZoom: defaultLayerMaxNativeZoom,
+            retinaMode: true,
             isFallback: true,
           );
         }
@@ -245,7 +251,6 @@ class MapConfig {
           maxZoom: mapTilerStyledMaxZoom,
           maxNativeZoom: mapTilerStyledMaxNativeZoom,
           retinaMode: true,
-          fallbackUrl: esriWorldTopo,
           requiresApiKey: true,
         );
       case LayerType.standard:
@@ -256,7 +261,6 @@ class MapConfig {
             maxZoom: mapTilerStyledMaxZoom,
             maxNativeZoom: mapTilerStyledMaxNativeZoom,
             retinaMode: true,
-            fallbackUrl: esriWorldTopo,
             requiresApiKey: true,
           );
         }

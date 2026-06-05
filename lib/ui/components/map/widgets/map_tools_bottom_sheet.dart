@@ -7,16 +7,25 @@ import '../../../../core/ui/sheets/soloforte_sheet.dart';
 import '../../../../modules/drawing/presentation/controllers/drawing_controller.dart';
 import '../../../../modules/drawing/presentation/widgets/drawing_sheet.dart';
 import '../../../theme/premium/design_tokens.dart';
-import '../map_sheets.dart';
+import '../map_layers_sheet.dart';
 
 class MapToolsBottomSheet extends StatefulWidget {
   final DrawingController drawingController;
+  final Future<void> Function()? onCoordinateSearch;
+  final Future<void> Function()? onDownloadOfflineArea;
 
-  const MapToolsBottomSheet({super.key, required this.drawingController});
+  const MapToolsBottomSheet({
+    super.key,
+    required this.drawingController,
+    this.onCoordinateSearch,
+    this.onDownloadOfflineArea,
+  });
 
   static Future<void> show({
     required BuildContext context,
     required DrawingController drawingController,
+    Future<void> Function()? onCoordinateSearch,
+    Future<void> Function()? onDownloadOfflineArea,
   }) {
     return showSoloForteSheet<void>(
       context: context,
@@ -25,7 +34,11 @@ class MapToolsBottomSheet extends StatefulWidget {
       maxHeightFraction: 0.78,
       backgroundColor: Colors.transparent,
       barrierColor: Colors.black.withValues(alpha: 0.38),
-      builder: (_) => MapToolsBottomSheet(drawingController: drawingController),
+      builder: (_) => MapToolsBottomSheet(
+        drawingController: drawingController,
+        onCoordinateSearch: onCoordinateSearch,
+        onDownloadOfflineArea: onDownloadOfflineArea,
+      ),
     );
   }
 
@@ -87,6 +100,8 @@ class _MapToolsBottomSheetState extends State<MapToolsBottomSheet> {
                     LayersSheet(
                       onClose: () =>
                           Navigator.of(context, rootNavigator: false).pop(),
+                      onCoordinateSearch: widget.onCoordinateSearch,
+                      onDownloadOfflineArea: widget.onDownloadOfflineArea,
                     ),
                   ],
                 ),

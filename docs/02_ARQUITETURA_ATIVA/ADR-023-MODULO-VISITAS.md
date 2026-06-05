@@ -152,7 +152,6 @@ este ponto cego.
 | `visitas/` → `drawing/` | ❌ PROIBIDO |
 | `visitas/` → `agenda/` (direto) | ❌ PROIBIDO — usar contratos |
 | `agenda/` → `visitas/` | ✅ PERMITIDO (`StartEventUseCase` cria `VisitSession`) |
-| `operacao/` → `visitas/` | ✅ PERMITIDO |
 | `map/` → `visitas/` via contratos | ✅ PERMITIDO |
 | `map/` → `visitas/` direto | ⚠️ A MIGRAR — ver seção 6 |
 | `consultoria/` → `visitas/` via `core/contracts/` | ✅ PERMITIDO |
@@ -170,7 +169,7 @@ este ponto cego.
 | DT-023-5 | `map/` e `ui/` importam `visitas/` diretamente (sem contratos) | Médio | PROMPT 04 |
 | DT-023-6 | `arch_check.sh` sem cobertura da camada de dados | Alto | ✅ RESOLVIDO — PROMPT 05 |
 | DT-023-7 | `VisitSession` não é `@immutable` / `final class` | Baixo | ADR futuro |
-| DT-023-8 | Geofence duplicado em `visitas/` e `operacao/` | Médio | ADR futuro |
+| DT-023-8 | Geofence duplicado em `visitas/` e `operacao/` | Médio | ✅ RESOLVIDO — legado `operacao/` removido |
 
 ---
 

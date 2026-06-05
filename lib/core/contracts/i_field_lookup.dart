@@ -15,6 +15,8 @@ class FieldSummary {
     required this.name,
     required this.farmId,
     this.areaHa,
+    this.crop,
+    this.harvest,
     this.bbox,
     this.geometry,
   });
@@ -23,11 +25,13 @@ class FieldSummary {
   final String name;
   final String farmId;
   final double? areaHa;
+  final String? crop;
+  final String? harvest;
 
   // [minLon, minLat, maxLon, maxLat]
   final List<double>? bbox;
 
-  /// GeoJSON serializado como String (jsonEncode de Map<String,dynamic>).
+  /// GeoJSON serializado como String (`jsonEncode` de `Map<String, dynamic>`).
   /// Nullable para retrocompatibilidade — adapters existentes podem omitir.
   /// ADR-024
   final String? geometry;
@@ -46,4 +50,3 @@ abstract interface class IFieldLookup {
   /// Adicionado em ADR-024 — necessário para geofence_controller.
   Future<List<FieldSummary>> listAll();
 }
-

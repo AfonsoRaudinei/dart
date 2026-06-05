@@ -53,6 +53,7 @@ class ClimaRepositoryImpl implements IClimaRepository {
       await _local.savePrevisaoHoraria(previsoes);
       return previsoes;
     } catch (_) {
+      // TODO(H2-debt): distinguish stale cache from empty fallback in the UI.
       return _local.getCachedPrevisaoHoraria(lat: lat, lon: lon);
     }
   }
@@ -72,6 +73,7 @@ class ClimaRepositoryImpl implements IClimaRepository {
       await _local.savePrevisaoSemanal(previsoes);
       return previsoes;
     } catch (_) {
+      // TODO(H2-debt): distinguish stale cache from empty fallback in the UI.
       return _local.getCachedPrevisaoSemanal(lat: lat, lon: lon);
     }
   }

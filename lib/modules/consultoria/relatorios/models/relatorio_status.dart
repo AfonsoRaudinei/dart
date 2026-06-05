@@ -1,3 +1,5 @@
+// ignore_for_file: constant_identifier_names
+
 /// Enums de status do Relatório Técnico — ADR-009
 ///
 /// Define o ciclo de vida de um [RelatorioTecnico] e seu status

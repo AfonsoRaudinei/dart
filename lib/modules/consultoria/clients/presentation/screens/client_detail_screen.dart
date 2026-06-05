@@ -17,6 +17,7 @@ import '../widgets/cultura_item_widget.dart';
 import '../widgets/client_hub_section.dart';
 import '../widgets/client_detail_sub_widgets.dart';
 import '../widgets/client_edit_form.dart';
+import '../widgets/talhao_map_preview.dart';
 
 class ClientDetailScreen extends ConsumerStatefulWidget {
   final String clientId;
@@ -44,10 +45,9 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen> {
     Client clienteAtualizado,
     List<ClientCultura> culturasComId,
   ) async {
-    await ref.read(clientsControllerProvider).updateClient(
-          clienteAtualizado,
-          culturas: culturasComId,
-        );
+    await ref
+        .read(clientsControllerProvider)
+        .updateClient(clienteAtualizado, culturas: culturasComId);
     if (!mounted) return;
     setState(() => _editando = false);
   }
@@ -94,233 +94,253 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen> {
         Column(
           children: [
             SafeArea(
-          bottom: false,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-            child: Row(
-              children: [
-                const SizedBox(width: 48),
-                Expanded(
-                  child: Text(
-                    client.name,
-                    textAlign: TextAlign.center,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 17,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: -0.4,
-                    ),
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.edit_outlined),
-                  color: PremiumTokens.brandGreen,
-                  tooltip: 'Editar',
-                  onPressed: () => _iniciarEdicao(client, culturas),
-                ),
-              ],
-            ),
-          ),
-        ),
-        Expanded(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Avatar
-                Center(
-                  child: ClientAvatarWidget(
-                    fotoPath: client.photoPath,
-                    nome: client.name,
-                    radius: 50,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Center(
-                  child: Text(client.city.isNotEmpty
-                      ? '${client.city} — ${client.state}'
-                      : ''),
-                ),
-                const SizedBox(height: 32),
-
-                // Ações rápidas Hub do Cliente — WS-4
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: [
-                      ClientActionButton(
-                        icon: Icons.phone,
-                        label: 'Ligar',
-                        onTap: () => _launchURL('tel:${client.phone}'),
-                      ),
-                      const SizedBox(width: 16),
-                      ClientActionButton(
-                        icon: Icons.chat,
-                        label: 'WhatsApp',
-                        onTap: () => _launchURL(
-                          'https://wa.me/55${client.phone.replaceAll(RegExp(r'[^0-9]'), '')}',
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      ClientActionButton(
-                        icon: Icons.description_outlined,
-                        label: 'Relatórios',
-                        onTap: () => context.go(
-                          '/consultoria/relatorios?clienteId=${client.id}',
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      ClientActionButton(
-                        icon: Icons.calendar_today_outlined,
-                        label: 'Agenda',
-                        onTap: () =>
-                            context.go('/agenda?clienteId=${client.id}'),
-                      ),
-                      const SizedBox(width: 16),
-                      ClientActionButton(
-                        icon: Icons.directions_walk,
-                        label: 'Visita',
-                        onTap: () => context.go(
-                          '/map?modo=visita&clienteId=${client.id}'
-                          '&clienteNome=${Uri.encodeComponent(client.name)}',
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 24),
-
-                // — Painel de estatísticas (WS-4 / WS-8) —
-                ClientStatsPanel(clientId: client.id),
-                const SizedBox(height: 24),
-
-                // Seção Identificação
-                if (client.email != null || client.cpfCnpj != null) ...[
-                  _sectionTitle('Identificação'),
-                  if (client.email != null) _infoRow('E-mail', client.email!),
-                  if (client.cpfCnpj != null)
-                    _infoRow('CPF / CNPJ', client.cpfCnpj!),
-                  if (client.dataNascimento != null)
-                    _infoRow('Nascimento', _formatDate(client.dataNascimento!)),
-                  const SizedBox(height: 24),
-                ],
-
-                // Seção Propriedade
-                if (client.areaTotal != null ||
-                    client.tipoPropriedade != null ||
-                    client.safraAtual != null) ...[
-                  _sectionTitle('Propriedade'),
-                  if (client.areaTotal != null)
-                    _infoRow('Área Total', '${client.areaTotal} ha'),
-                  if (client.tipoPropriedade != null)
-                    _infoRow('Tipo', client.tipoPropriedade!),
-                  if (client.sistemaIrrigacao != null)
-                    _infoRow('Irrigação', client.sistemaIrrigacao!),
-                  if (client.soloTipo != null)
-                    _infoRow('Solo', client.soloTipo!),
-                  if (client.regiaoAgricola != null)
-                    _infoRow('Região', client.regiaoAgricola!),
-                  if (client.safraAtual != null)
-                    _infoRow('Safra', client.safraAtual!),
-                  const SizedBox(height: 24),
-                ],
-
-                // Seção Assistência
-                if (client.usaAssistenciaTecnica == true) ...[
-                  _sectionTitle('Assistência Técnica'),
-                  if (client.tecnicoResponsavel != null)
-                    _infoRow('Técnico', client.tecnicoResponsavel!),
-                  const SizedBox(height: 24),
-                ],
-
-                // Seção Culturas
-                _sectionTitle('Culturas'),
-                if (culturas.isEmpty)
-                  Container(
-                    padding: const EdgeInsets.all(24),
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      color: Colors.grey[50],
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.grey[200]!),
-                    ),
-                    child: Text(
-                      'Nenhuma cultura cadastrada',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: Colors.grey[600]),
-                    ),
-                  )
-                else
-                  ...culturas.map(
-                    (c) => CulturaItemWidget(cultura: c, onRemove: null),
-                  ),
-                const SizedBox(height: 32),
-
-                // Seção Fazendas
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              bottom: false,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                child: Row(
                   children: [
-                    const Text(
-                      'Fazendas',
-                      style: TextStyle(
-                          fontSize: 20, fontWeight: FontWeight.bold),
-                    ),
-                    // ── INTEGRAÇÃO MAP-FIRST ───────────────────────
-                    TextButton.icon(
-                      icon: const Icon(Icons.add,
-                          color: PremiumTokens.brandGreen),
-                      label: const Text(
-                        'Nova',
-                        style: TextStyle(
-                          color: PremiumTokens.brandGreen,
-                          fontWeight: FontWeight.bold,
+                    const SizedBox(width: 48),
+                    Expanded(
+                      child: Text(
+                        client.name,
+                        textAlign: TextAlign.center,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: -0.4,
                         ),
                       ),
-                      // 🆕 SPRINT 3: Modal de escolha em vez de ir direto ao mapa
-                      onPressed: () => _showNovaFazendaModal(context, client),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.edit_outlined),
+                      color: PremiumTokens.brandGreen,
+                      tooltip: 'Editar',
+                      onPressed: () => _iniciarEdicao(client, culturas),
                     ),
                   ],
                 ),
-                const SizedBox(height: 16),
-                if (client.farms.isEmpty)
-                  Container(
-                    padding: const EdgeInsets.all(24),
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      color: Colors.grey[50],
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.grey[200]!),
+              ),
+            ),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Avatar
+                    Center(
+                      child: ClientAvatarWidget(
+                        fotoPath: client.photoPath,
+                        nome: client.name,
+                        radius: 50,
+                      ),
                     ),
-                    child: Column(
-                      children: [
-                        Icon(Icons.agriculture,
-                            size: 48, color: Colors.grey[400]),
-                        const SizedBox(height: 12),
-                        Text(
-                          'Nenhuma fazenda cadastrada',
+                    const SizedBox(height: 16),
+                    Center(
+                      child: Text(
+                        client.city.isNotEmpty
+                            ? '${client.city} — ${client.state}'
+                            : '',
+                      ),
+                    ),
+                    const SizedBox(height: 32),
+
+                    // Ações rápidas Hub do Cliente — WS-4
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: [
+                          ClientActionButton(
+                            icon: Icons.phone,
+                            label: 'Ligar',
+                            onTap: () => _launchURL('tel:${client.phone}'),
+                          ),
+                          const SizedBox(width: 16),
+                          ClientActionButton(
+                            icon: Icons.chat,
+                            label: 'WhatsApp',
+                            onTap: () => _launchURL(
+                              'https://wa.me/55${client.phone.replaceAll(RegExp(r'[^0-9]'), '')}',
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          ClientActionButton(
+                            icon: Icons.description_outlined,
+                            label: 'Relatórios',
+                            onTap: () => context.go(
+                              '/consultoria/relatorios?clienteId=${client.id}',
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          ClientActionButton(
+                            icon: Icons.calendar_today_outlined,
+                            label: 'Agenda',
+                            onTap: () =>
+                                context.go('/agenda?clienteId=${client.id}'),
+                          ),
+                          const SizedBox(width: 16),
+                          ClientActionButton(
+                            icon: Icons.directions_walk,
+                            label: 'Visita',
+                            onTap: () => context.go(
+                              '/map?modo=visita&clienteId=${client.id}'
+                              '&clienteNome=${Uri.encodeComponent(client.name)}',
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+
+                    // — Painel de estatísticas (WS-4 / WS-8) —
+                    ClientStatsPanel(clientId: client.id),
+                    const SizedBox(height: 24),
+
+                    // Seção Identificação
+                    if (client.email != null || client.cpfCnpj != null) ...[
+                      _sectionTitle('Identificação'),
+                      if (client.email != null)
+                        _infoRow('E-mail', client.email!),
+                      if (client.cpfCnpj != null)
+                        _infoRow('CPF / CNPJ', client.cpfCnpj!),
+                      if (client.dataNascimento != null)
+                        _infoRow(
+                          'Nascimento',
+                          _formatDate(client.dataNascimento!),
+                        ),
+                      const SizedBox(height: 24),
+                    ],
+
+                    // Seção Propriedade
+                    if (client.areaTotal != null ||
+                        client.tipoPropriedade != null ||
+                        client.safraAtual != null) ...[
+                      _sectionTitle('Propriedade'),
+                      if (client.areaTotal != null)
+                        _infoRow('Área Total', '${client.areaTotal} ha'),
+                      if (client.tipoPropriedade != null)
+                        _infoRow('Tipo', client.tipoPropriedade!),
+                      if (client.sistemaIrrigacao != null)
+                        _infoRow('Irrigação', client.sistemaIrrigacao!),
+                      if (client.soloTipo != null)
+                        _infoRow('Solo', client.soloTipo!),
+                      if (client.regiaoAgricola != null)
+                        _infoRow('Região', client.regiaoAgricola!),
+                      if (client.safraAtual != null)
+                        _infoRow('Safra', client.safraAtual!),
+                      const SizedBox(height: 24),
+                    ],
+
+                    // Seção Assistência
+                    if (client.usaAssistenciaTecnica == true) ...[
+                      _sectionTitle('Assistência Técnica'),
+                      if (client.tecnicoResponsavel != null)
+                        _infoRow('Técnico', client.tecnicoResponsavel!),
+                      const SizedBox(height: 24),
+                    ],
+
+                    // Seção Culturas
+                    _sectionTitle('Culturas'),
+                    if (culturas.isEmpty)
+                      Container(
+                        padding: const EdgeInsets.all(24),
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          color: Colors.grey[50],
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.grey[200]!),
+                        ),
+                        child: Text(
+                          'Nenhuma cultura cadastrada',
+                          textAlign: TextAlign.center,
                           style: TextStyle(color: Colors.grey[600]),
+                        ),
+                      )
+                    else
+                      ...culturas.map(
+                        (c) => CulturaItemWidget(cultura: c, onRemove: null),
+                      ),
+                    const SizedBox(height: 32),
+
+                    // Seção Fazendas
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Fazendas',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        // ── INTEGRAÇÃO MAP-FIRST ───────────────────────
+                        TextButton.icon(
+                          icon: const Icon(
+                            Icons.add,
+                            color: PremiumTokens.brandGreen,
+                          ),
+                          label: const Text(
+                            'Nova',
+                            style: TextStyle(
+                              color: PremiumTokens.brandGreen,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          // 🆕 SPRINT 3: Modal de escolha em vez de ir direto ao mapa
+                          onPressed: () =>
+                              _showNovaFazendaModal(context, client),
                         ),
                       ],
                     ),
-                  )
-                else
-                  ...client.farms.map((farm) => _ClientFarmWithTalhoes(client: client, farm: farm)),
+                    const SizedBox(height: 16),
+                    if (client.farms.isEmpty)
+                      Container(
+                        padding: const EdgeInsets.all(24),
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          color: Colors.grey[50],
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.grey[200]!),
+                        ),
+                        child: Column(
+                          children: [
+                            Icon(
+                              Icons.agriculture,
+                              size: 48,
+                              color: Colors.grey[400],
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              'Nenhuma fazenda cadastrada',
+                              style: TextStyle(color: Colors.grey[600]),
+                            ),
+                          ],
+                        ),
+                      )
+                    else
+                      ...client.farms.map(
+                        (farm) =>
+                            _ClientFarmWithTalhoes(client: client, farm: farm),
+                      ),
 
-                // Observações
-                if (client.observation != null &&
-                    client.observation!.isNotEmpty) ...[
-                  const SizedBox(height: 32),
-                  _sectionTitle('Observações'),
-                  Text(client.observation!),
-                ],
-                const SizedBox(height: 32),
-                const SizedBox(height: kFabSafeArea),
-              ],
+                    const SizedBox(height: 20),
+                    _ClientDrawingFieldsSection(client: client),
+
+                    // Observações
+                    if (client.observation != null &&
+                        client.observation!.isNotEmpty) ...[
+                      const SizedBox(height: 32),
+                      _sectionTitle('Observações'),
+                      Text(client.observation!),
+                    ],
+                    const SizedBox(height: 32),
+                    const SizedBox(height: kFabSafeArea),
+                  ],
+                ),
+              ),
             ),
-          ),
-        ),
           ],
         ),
         Positioned(
@@ -366,35 +386,34 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen> {
   // ── Helpers ───────────────────────────────────────────────────────
 
   Widget _sectionTitle(String t) => Padding(
-        padding: const EdgeInsets.only(bottom: 12),
-        child: Text(
-          t,
-          style: const TextStyle(
-            fontSize: 17,
-            fontWeight: FontWeight.w600,
-            letterSpacing: -0.4,
-            color: Colors.black87,
-          ),
-        ),
-      );
+    padding: const EdgeInsets.only(bottom: 12),
+    child: Text(
+      t,
+      style: const TextStyle(
+        fontSize: 17,
+        fontWeight: FontWeight.w600,
+        letterSpacing: -0.4,
+        color: Colors.black87,
+      ),
+    ),
+  );
 
   Widget _infoRow(String label, String value) => Padding(
-        padding: const EdgeInsets.only(bottom: 8),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SizedBox(
-              width: 110,
-              child: Text(label,
-                  style: TextStyle(
-                      color: Colors.grey[600], fontSize: 13)),
-            ),
-            Expanded(
-                child: Text(value,
-                    style: const TextStyle(fontSize: 14))),
-          ],
+    padding: const EdgeInsets.only(bottom: 8),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: 110,
+          child: Text(
+            label,
+            style: TextStyle(color: Colors.grey[600], fontSize: 13),
+          ),
         ),
-      );
+        Expanded(child: Text(value, style: const TextStyle(fontSize: 14))),
+      ],
+    ),
+  );
 
   String _formatDate(DateTime d) =>
       '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
@@ -449,7 +468,9 @@ class _ClientFarmWithTalhoes extends ConsumerWidget {
                             borderRadius: BorderRadius.circular(8),
                             image: field.thumbnailPath != null
                                 ? DecorationImage(
-                                    image: FileImage(File(field.thumbnailPath!)),
+                                    image: FileImage(
+                                      File(field.thumbnailPath!),
+                                    ),
                                     fit: BoxFit.cover,
                                   )
                                 : null,
@@ -488,7 +509,11 @@ class _ClientFarmWithTalhoes extends ConsumerWidget {
                             padding: EdgeInsets.only(left: 8.0),
                             child: Tooltip(
                               message: 'Sincronização Pendente',
-                              child: Icon(Icons.cloud_off, color: Colors.orange, size: 20),
+                              child: Icon(
+                                Icons.cloud_off,
+                                color: Colors.orange,
+                                size: 20,
+                              ),
                             ),
                           ),
                       ],
@@ -509,4 +534,58 @@ class _ClientFarmWithTalhoes extends ConsumerWidget {
   }
 }
 
+class _ClientDrawingFieldsSection extends ConsumerWidget {
+  final Client client;
 
+  const _ClientDrawingFieldsSection({required this.client});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final drawingFieldsAsync = ref.watch(
+      clientDrawingFieldsProvider(client.id),
+    );
+
+    return drawingFieldsAsync.when(
+      data: (fields) {
+        if (fields.isEmpty) return const SizedBox.shrink();
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Talhões do mapa',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+            ...fields.map((field) {
+              final farmName = field.farmId == null
+                  ? null
+                  : _findFarmName(client, field.farmId!);
+
+              return TalhaoMapPreviewWidget(
+                vertices: field.vertices,
+                nome: field.name,
+                areaHa: field.areaHa,
+                subtitle: farmName == null ? null : 'Fazenda: $farmName',
+                onTap: () =>
+                    context.go('/map?modo=desenho&clienteId=${client.id}'),
+              );
+            }),
+          ],
+        );
+      },
+      loading: () => const Padding(
+        padding: EdgeInsets.symmetric(vertical: 12),
+        child: Center(child: CircularProgressIndicator()),
+      ),
+      error: (_, __) => const SizedBox.shrink(),
+    );
+  }
+
+  String? _findFarmName(Client client, String farmId) {
+    for (final farm in client.farms) {
+      if (farm.id == farmId) return farm.name;
+    }
+    return null;
+  }
+}

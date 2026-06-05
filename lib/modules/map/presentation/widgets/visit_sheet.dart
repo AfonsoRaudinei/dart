@@ -23,7 +23,12 @@ final _visitFieldsProvider = FutureProvider.family
 
 class VisitSheet extends ConsumerStatefulWidget {
   // Bug 2: areaId e activityType são opcionais — apenas produtor é obrigatório.
-  final Function(String clientId, String? areaId, String? activityType)
+  final Function(
+    String clientId,
+    String? farmId,
+    String? areaId,
+    String? activityType,
+  )
   onConfirm;
 
   /// ID do cliente pré-selecionado via query param modo=visita (P5).
@@ -222,6 +227,7 @@ class _VisitSheetState extends ConsumerState<VisitSheet> {
                     ? () {
                         widget.onConfirm(
                           _selectedClient!.id,
+                          _selectedFarm?.id,
                           _selectedTalhao?.id, // null quando não selecionado
                           _selectedActivity, // sempre tem default 'Monitoramento'
                         );

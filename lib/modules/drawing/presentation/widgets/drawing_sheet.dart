@@ -28,11 +28,13 @@ import '../../../../core/ui/sheets/sheet_tokens.dart';
 class DrawingSheet extends ConsumerStatefulWidget {
   final DrawingController controller;
   final ValueChanged<DrawingFeature>? onFocusFeature;
+  final VoidCallback? onGpsMeasureStarted;
 
   const DrawingSheet({
     super.key,
     required this.controller,
     this.onFocusFeature,
+    this.onGpsMeasureStarted,
   });
 
   @override
@@ -173,6 +175,10 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
     ref.listen<GpsWalkSession?>(gpsWalkProvider, (prev, next) {
       if (prev != null && next == null && _selectedToolKey == 'gps') {
         setState(() => _selectedToolKey = null);
+      }
+      if (prev?.status == GpsWalkStatus.idle &&
+          next?.status == GpsWalkStatus.measuring) {
+        widget.onGpsMeasureStarted?.call();
       }
     });
 
@@ -738,6 +744,8 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
   }
 
   Widget _buildImportPreviewMode(BuildContext context) {
+    final hasImportWarning = widget.controller.hasPendingImportWarning;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
@@ -757,6 +765,10 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
               style: TextStyle(color: SoloForteSheetTokens.sectionLabel),
             ),
           ),
+          if (hasImportWarning) ...[
+            _buildSelfIntersectionWarning(),
+            const SizedBox(height: 16),
+          ],
           Row(
             children: [
               Expanded(
@@ -774,58 +786,17 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
               const SizedBox(width: 12),
               Expanded(
                 child: ElevatedButton(
-                  onPressed: () async {
+                  onPressed: () {
                     HapticFeedback.mediumImpact();
-                    final validation = widget.controller.validationResult;
-                    if (!validation.isValid &&
-                        (validation.message?.contains('sobreposição') ==
-                            true)) {
-                      final confirmar = await showDialog<bool>(
-                        context: context,
-                        builder: (dialogContext) => AlertDialog(
-                          title: const Text('Sobreposição detectada'),
-                          content: const Text(
-                            'A geometria importada sobrepõe uma área existente. '
-                            'Deseja importar assim mesmo?',
-                          ),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.of(
-                                dialogContext,
-                                rootNavigator: false,
-                              ).pop(false),
-                              child: const Text('Cancelar'),
-                            ),
-                            ElevatedButton(
-                              onPressed: () => Navigator.of(
-                                dialogContext,
-                                rootNavigator: false,
-                              ).pop(true),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: PremiumTokens.brandGreen,
-                              ),
-                              child: const Text(
-                                'Importar assim mesmo',
-                                style: TextStyle(color: Colors.white),
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                      if (confirmar == true && context.mounted) {
-                        widget.controller.confirmImportForced();
-                      }
-                    } else {
-                      widget.controller.confirmImport();
-                    }
+                    widget.controller.confirmImport();
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor:
                         PremiumTokens.brandGreen, // Keep import green
                   ),
-                  child: const Text(
-                    'Confirmar',
-                    style: TextStyle(
+                  child: Text(
+                    hasImportWarning ? 'Importar assim mesmo' : 'Confirmar',
+                    style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.w600,
                     ),
@@ -939,59 +910,10 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 8),
             child: Text(
-              'Arraste os pontos para modificar a área.',
+              'Arraste os pontos para modificar a área.\nUse os controles laterais para salvar, desfazer, refazer ou cancelar.',
               textAlign: TextAlign.center,
               style: TextStyle(color: SoloForteSheetTokens.inputHint),
             ),
-          ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              IconButton(
-                icon: const Icon(Icons.undo),
-                onPressed: widget
-                    .controller
-                    .undoEdit, // Check if controller exposes this
-                tooltip: 'Desfazer',
-              ),
-              // Redo? Not implemented yet
-            ],
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: TextButton(
-                  onPressed: widget.controller.cancelEdit,
-                  child: const Text(
-                    'Cancelar',
-                    style: TextStyle(
-                      color: PremiumTokens.brandGreen,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: () {
-                    HapticFeedback.mediumImpact();
-                    widget.controller.saveEdit();
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: PremiumTokens.brandGreen,
-                  ),
-                  child: const Text(
-                    'Salvar Edição',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ),
-            ],
           ),
         ],
       ),

@@ -1,8 +1,8 @@
 class VisitSession {
   final String id;
   final String producerId;
-  // Nullable: pode ser null quando check-in é feito apenas com produtor.
-  // No SQLite (area_id TEXT NOT NULL) é persistido como '' quando null.
+  // Nullable: check-in pode ser feito apenas com produtor.
+  final String? farmId;
   final String? areaId;
   final String? activityType;
   final DateTime startTime;
@@ -17,6 +17,7 @@ class VisitSession {
   VisitSession({
     required this.id,
     required this.producerId,
+    this.farmId,
     this.areaId,
     this.activityType,
     required this.startTime,
@@ -33,6 +34,7 @@ class VisitSession {
     return VisitSession(
       id: map['id'],
       producerId: map['producer_id'],
+      farmId: map['farm_id'] as String?,
       areaId: map['area_id'] as String?,
       activityType: map['activity_type'] as String?,
       startTime: DateTime.parse(map['start_time']),
@@ -50,6 +52,7 @@ class VisitSession {
     return {
       'id': id,
       'producer_id': producerId,
+      'farm_id': farmId,
       'area_id': areaId,
       'activity_type': activityType,
       'start_time': startTime.toIso8601String(),
@@ -66,7 +69,9 @@ class VisitSession {
   VisitSession copyWith({
     String? id,
     String? producerId,
+    String? farmId,
     String? areaId,
+    bool clearAreaId = false,
     String? activityType,
     DateTime? startTime,
     DateTime? endTime,
@@ -80,7 +85,8 @@ class VisitSession {
     return VisitSession(
       id: id ?? this.id,
       producerId: producerId ?? this.producerId,
-      areaId: areaId ?? this.areaId,
+      farmId: farmId ?? this.farmId,
+      areaId: clearAreaId ? null : (areaId ?? this.areaId),
       activityType: activityType ?? this.activityType,
       startTime: startTime ?? this.startTime,
       endTime: endTime ?? this.endTime,

@@ -168,14 +168,12 @@ class SessionController extends _$SessionController {
       await Supabase.instance.client.auth.signUp(
         email: email,
         password: password,
-        data: {'full_name': name, 'role': 'produtor'},
+        data: {'full_name': name},
       );
     } on AuthException catch (e) {
       throw Exception(_traduzirErro(e.message));
     } catch (e) {
-      throw Exception(
-        'Não foi possível criar a conta. Verifique sua conexão.',
-      );
+      throw Exception('Não foi possível criar a conta. Verifique sua conexão.');
     }
     // O stream onAuthStateChange atualiza o state automaticamente.
   }
@@ -206,10 +204,7 @@ class SessionController extends _$SessionController {
     }
 
     // 1. Chamar Edge Function que deleta dados do servidor
-    final response = await client.functions.invoke(
-      'delete-user',
-      body: {'user_id': userId},
-    );
+    final response = await client.functions.invoke('delete-user');
 
     if (response.status != 200) {
       final errorMsg = response.data is Map

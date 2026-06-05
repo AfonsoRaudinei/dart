@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:soloforte_app/modules/feedback/domain/entities/feedback_impact.dart';
+import 'package:soloforte_app/modules/feedback/domain/entities/feedback_module.dart';
 import 'package:soloforte_app/modules/feedback/domain/entities/feedback_stats.dart';
 import 'package:soloforte_app/modules/feedback/domain/entities/feedback_type.dart';
 import 'package:soloforte_app/modules/feedback/domain/repositories/i_feedback_repository.dart';
@@ -20,10 +22,17 @@ class FakeFeedbackRepository implements IFeedbackRepository {
   @override
   Future<void> sendFeedback({
     required FeedbackType type,
+    required FeedbackModule module,
+    required FeedbackImpact impact,
     required String message,
   }) async {
     if (shouldThrowError) throw Exception('Fake error');
-    lastSubmission = {'type': type, 'message': message};
+    lastSubmission = {
+      'type': type,
+      'module': module,
+      'impact': impact,
+      'message': message,
+    };
   }
 }
 
@@ -49,6 +58,7 @@ void main() {
       bugCount: 1,
       suggestionCount: 1,
       praiseCount: 1,
+      suggestionsByModule: {FeedbackModule.agenda: 1},
     );
     fakeRepository.statsResponse = stats;
 
@@ -60,11 +70,18 @@ void main() {
   test('FeedbackController - Submit success', () async {
     final controller = container.read(feedbackControllerProvider.notifier);
 
-    await controller.submitFeedback(type: FeedbackType.bug, message: 'Test');
+    await controller.submitFeedback(
+      type: FeedbackType.bug,
+      module: FeedbackModule.agenda,
+      impact: FeedbackImpact.high,
+      message: ' Test ',
+    );
 
     final state = container.read(feedbackControllerProvider);
     expect(state.isSuccess, true);
     expect(state.isSubmitting, false);
+    expect(fakeRepository.lastSubmission!['module'], FeedbackModule.agenda);
+    expect(fakeRepository.lastSubmission!['impact'], FeedbackImpact.high);
     expect(fakeRepository.lastSubmission!['message'], 'Test');
   });
 
@@ -72,7 +89,12 @@ void main() {
     fakeRepository.shouldThrowError = true;
     final controller = container.read(feedbackControllerProvider.notifier);
 
-    await controller.submitFeedback(type: FeedbackType.bug, message: 'Test');
+    await controller.submitFeedback(
+      type: FeedbackType.bug,
+      module: FeedbackModule.agenda,
+      impact: FeedbackImpact.high,
+      message: 'Test',
+    );
 
     final state = container.read(feedbackControllerProvider);
     expect(state.isSuccess, false);

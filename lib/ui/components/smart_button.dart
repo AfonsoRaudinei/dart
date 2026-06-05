@@ -34,7 +34,13 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:soloforte_app/core/router/app_routes.dart';
+import 'package:soloforte_app/core/services/connectivity_service.dart';
+import 'package:soloforte_app/core/services/sync_orchestrator.dart';
 import 'package:soloforte_app/core/state/side_menu_state.dart';
+
+const Color kSyncColorLilas = Color(0xFF7B5EA7);
+
+enum _SyncBadgeState { synced, syncing, error, pending }
 
 /// SmartButton — FAB global (ConsumerStatefulWidget)
 ///
@@ -109,18 +115,30 @@ class _SmartButtonState extends ConsumerState<SmartButton> {
         // L0: MAPA — ☰ Abre SideMenu via Provider
         // NÃO usa Scaffold.openEndDrawer() mais
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        return FloatingActionButton(
-          heroTag: 'smart_button_menu',
-          onPressed: () {
-            // Guard: widget pode ter sido disposed durante transição de rota
-            if (!mounted) return;
-            // Abrir menu via notifier já capturado no build (sem ref)
-            sideMenuNotifier?.state = true;
-          },
-          backgroundColor: primaryColor,
-          elevation: safeElevation,
-          shape: const CircleBorder(), // Design: Botões flutuantes circulares
-          child: const Icon(Icons.menu, color: Colors.white),
+        final syncBadgeState = _resolveSyncBadgeState(ref);
+        return Stack(
+          clipBehavior: Clip.none,
+          children: [
+            FloatingActionButton(
+              heroTag: 'smart_button_menu',
+              onPressed: () {
+                // Guard: widget pode ter sido disposed durante transição de rota
+                if (!mounted) return;
+                // Abrir menu via notifier já capturado no build (sem ref)
+                sideMenuNotifier?.state = true;
+              },
+              backgroundColor: primaryColor,
+              elevation: safeElevation,
+              shape:
+                  const CircleBorder(), // Design: Botões flutuantes circulares
+              child: const Icon(Icons.menu, color: Colors.white),
+            ),
+            Positioned(
+              top: -1,
+              right: -1,
+              child: _SyncBadge(state: syncBadgeState),
+            ),
+          ],
         );
 
       case RouteLevel.l1:
@@ -145,5 +163,102 @@ class _SmartButtonState extends ConsumerState<SmartButton> {
           child: const Icon(Icons.arrow_back, color: Colors.white),
         );
     }
+  }
+
+  _SyncBadgeState _resolveSyncBadgeState(WidgetRef ref) {
+    final orchestrator = ref.watch(syncOrchestratorProvider);
+    final connectivity = ref.watch(connectivityStateProvider);
+
+    if (connectivity.asData?.value != true) {
+      return _SyncBadgeState.pending;
+    }
+    if (orchestrator.isSyncing) {
+      return _SyncBadgeState.syncing;
+    }
+    if (orchestrator.lastError != null) {
+      return _SyncBadgeState.error;
+    }
+    return _SyncBadgeState.synced;
+  }
+}
+
+class _SyncBadge extends StatefulWidget {
+  final _SyncBadgeState state;
+
+  const _SyncBadge({required this.state});
+
+  @override
+  State<_SyncBadge> createState() => _SyncBadgeStateWidget();
+}
+
+class _SyncBadgeStateWidget extends State<_SyncBadge>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _rotationController;
+
+  @override
+  void initState() {
+    super.initState();
+    _rotationController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 1),
+    );
+    _updateRotation();
+  }
+
+  @override
+  void didUpdateWidget(covariant _SyncBadge oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.state != widget.state) {
+      _updateRotation();
+    }
+  }
+
+  @override
+  void dispose() {
+    _rotationController.dispose();
+    super.dispose();
+  }
+
+  void _updateRotation() {
+    if (widget.state == _SyncBadgeState.syncing) {
+      _rotationController.repeat();
+    } else {
+      _rotationController.stop();
+      _rotationController.reset();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final Color backgroundColor;
+    final IconData icon;
+
+    switch (widget.state) {
+      case _SyncBadgeState.synced:
+      case _SyncBadgeState.syncing:
+        backgroundColor = kSyncColorLilas;
+        icon = Icons.sync_rounded;
+        break;
+      case _SyncBadgeState.error:
+        backgroundColor = theme.colorScheme.error;
+        icon = Icons.sync_problem_rounded;
+        break;
+      case _SyncBadgeState.pending:
+        backgroundColor = theme.disabledColor;
+        icon = Icons.cloud_off_rounded;
+        break;
+    }
+
+    final badgeIcon = Icon(icon, color: Colors.white, size: 11);
+
+    return Container(
+      width: 16,
+      height: 16,
+      decoration: BoxDecoration(color: backgroundColor, shape: BoxShape.circle),
+      child: widget.state == _SyncBadgeState.syncing
+          ? RotationTransition(turns: _rotationController, child: badgeIcon)
+          : badgeIcon,
+    );
   }
 }

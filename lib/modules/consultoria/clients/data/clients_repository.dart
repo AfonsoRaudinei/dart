@@ -42,18 +42,37 @@ class ClientsRepository {
         orderBy: 'nome ASC',
       );
 
-      final farms = farmMaps
-          .map(
-            (f) => Farm(
-              id: f['id'] as String,
-              name: f['nome'] as String,
-              city: f['municipio'] as String? ?? '',
-              state: f['uf'] as String? ?? '',
-              totalAreaHa: (f['area_total'] as num?)?.toDouble() ?? 0.0,
-              fields: [],
-            ),
-          )
-          .toList();
+      final farms = <Farm>[];
+      for (final farmMap in farmMaps) {
+        final farmId = farmMap['id'] as String;
+        final fieldMaps = await db.query(
+          'fields',
+          where: 'fazenda_id = ? AND user_id = ? AND deleted_at IS NULL',
+          whereArgs: [farmId, userId],
+          orderBy: 'nome ASC',
+        );
+        farms.add(
+          Farm(
+            id: farmId,
+            name: farmMap['nome'] as String,
+            city: farmMap['municipio'] as String? ?? '',
+            state: farmMap['uf'] as String? ?? '',
+            totalAreaHa: (farmMap['area_total'] as num?)?.toDouble() ?? 0.0,
+            fields: fieldMaps
+                .map(
+                  (field) => Talhao(
+                    id: field['id'] as String,
+                    name: field['nome'] as String,
+                    areaHa:
+                        (field['area_produtiva'] as num?)?.toDouble() ?? 0.0,
+                    crop: '',
+                    harvest: '',
+                  ),
+                )
+                .toList(),
+          ),
+        );
+      }
 
       return client.copyWith(farms: farms);
     }

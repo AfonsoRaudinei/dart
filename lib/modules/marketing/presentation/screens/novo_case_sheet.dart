@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:uuid/uuid.dart';
+import '../../../../core/contracts/i_active_visit_context_lookup.dart';
 import '../../../../ui/theme/premium/design_tokens.dart';
 import '../../domain/entities/avaliacao_bloco.dart';
 import '../../domain/entities/avaliacao_lado.dart';
@@ -24,6 +25,7 @@ class NovoCaseSheet extends StatefulWidget {
   final double lat;
   final double lng;
   final CaseTipo tipo;
+  final ActiveVisitContext? initialVisitContext;
   final VoidCallback onClose;
   final void Function(MarketingCase) onPublicar;
 
@@ -32,6 +34,7 @@ class NovoCaseSheet extends StatefulWidget {
     required this.lat,
     required this.lng,
     required this.tipo,
+    this.initialVisitContext,
     required this.onClose,
     required this.onPublicar,
   });
@@ -92,6 +95,12 @@ class _NovoCaseSheetState extends State<NovoCaseSheet> {
   void initState() {
     super.initState();
     _tipo = widget.tipo;
+    final initialContext = widget.initialVisitContext;
+    if (initialContext == null) return;
+    _produtorCtrl.text = initialContext.producerFarmLabel ?? '';
+    _localizacaoCtrl.text = initialContext.locationLabel ?? '';
+    _nomeTalhaoCtrl.text = initialContext.fieldName ?? '';
+    _tamanhoHaCtrl.text = initialContext.fieldAreaHa?.toString() ?? '';
   }
 
   @override

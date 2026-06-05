@@ -1,10 +1,7 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:printing/printing.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:webview_flutter/webview_flutter.dart';
+
+import 'report_export_service.dart';
 
 /// Widget genérico para exibir qualquer relatório HTML gerado pelos renderers.
 ///
@@ -20,11 +17,19 @@ import 'package:webview_flutter/webview_flutter.dart';
 class HtmlReportViewer extends StatefulWidget {
   final String title;
   final String htmlContent;
+  final String? fileBaseName;
+  final Map<String, dynamic>? jsonData;
+  final String? csvData;
+  final ReportExportService exportService;
 
   const HtmlReportViewer({
     super.key,
     required this.title,
     required this.htmlContent,
+    this.fileBaseName,
+    this.jsonData,
+    this.csvData,
+    this.exportService = const ReportExportService(),
   });
 
   @override
@@ -39,7 +44,7 @@ class _HtmlReportViewerState extends State<HtmlReportViewer> {
   void initState() {
     super.initState();
     _controller = WebViewController()
-      ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..setJavaScriptMode(JavaScriptMode.disabled)
       ..setNavigationDelegate(
         NavigationDelegate(
           onPageFinished: (_) => setState(() => _loading = false),
@@ -64,15 +69,30 @@ class _HtmlReportViewerState extends State<HtmlReportViewer> {
           ),
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.picture_as_pdf_outlined),
-            tooltip: 'Exportar PDF',
-            onPressed: _exportPdf,
-          ),
-          IconButton(
-            icon: const Icon(Icons.share_outlined),
-            tooltip: 'Compartilhar',
-            onPressed: _shareHtml,
+          PopupMenuButton<ReportExportFormat>(
+            tooltip: 'Exportar dados',
+            icon: const Icon(Icons.ios_share_outlined),
+            onSelected: _export,
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: ReportExportFormat.pdf,
+                child: Text('Exportar PDF'),
+              ),
+              const PopupMenuItem(
+                value: ReportExportFormat.html,
+                child: Text('Exportar HTML'),
+              ),
+              if (widget.jsonData != null)
+                const PopupMenuItem(
+                  value: ReportExportFormat.json,
+                  child: Text('Exportar JSON'),
+                ),
+              if (widget.csvData != null)
+                const PopupMenuItem(
+                  value: ReportExportFormat.csv,
+                  child: Text('Exportar CSV'),
+                ),
+            ],
           ),
         ],
       ),
@@ -88,39 +108,28 @@ class _HtmlReportViewerState extends State<HtmlReportViewer> {
     );
   }
 
-  Future<void> _exportPdf() async {
+  Future<void> _export(ReportExportFormat format) async {
     try {
-      await Printing.layoutPdf(
-        onLayout: (format) async {
-          // ignore: deprecated_member_use
-          return Printing.convertHtml(format: format, html: widget.htmlContent);
-        },
-        name: widget.title,
+      await widget.exportService.export(
+        format,
+        ReportExportPayload(
+          title: widget.title,
+          html: widget.htmlContent,
+          fileBaseName: widget.fileBaseName,
+          json: widget.jsonData,
+          csv: widget.csvData,
+        ),
       );
-    } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('Erro ao gerar PDF: $e')));
+        ).showSnackBar(const SnackBar(content: Text('Exportação iniciada.')));
       }
-    }
-  }
-
-  Future<void> _shareHtml() async {
-    try {
-      final dir = await getTemporaryDirectory();
-      final safe = widget.title
-          .replaceAll(RegExp(r'[^\w\s]'), '')
-          .replaceAll(' ', '_')
-          .toLowerCase();
-      final file = File('${dir.path}/$safe.html');
-      await file.writeAsString(widget.htmlContent);
-      await Share.shareXFiles([XFile(file.path)], subject: widget.title);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('Erro ao compartilhar: $e')));
+        ).showSnackBar(SnackBar(content: Text('Erro ao exportar: $e')));
       }
     }
   }

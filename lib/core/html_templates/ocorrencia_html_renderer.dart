@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'relatorio_html_renderer.dart';
 
 class OcorrenciaHtmlRenderer {
@@ -5,15 +7,28 @@ class OcorrenciaHtmlRenderer {
   ///
   /// Estrutura esperada: campos do schema occurrences e campos calculados
   /// opcionais: categoria_emoji, categoria_label, urgencia_class, foto_base64.
-  static Future<String> renderDetalhe(Map<String, dynamic> data) async {
+  static Future<String> renderDetalhe(
+    Map<String, dynamic> data, {
+    String? reportBrandName,
+    String? reportLogoPath,
+    String? consultantName,
+    String? consultantRole,
+  }) async {
     var tpl = await RelatorioHtmlRenderer.loadTemplate(
       'ocorrencia_detalhada.html',
+    );
+    final branding = await RelatorioHtmlRenderer.brandingPlaceholders(
+      customBrandName: reportBrandName,
+      customLogoPath: reportLogoPath,
+      consultantName: consultantName,
+      consultantRole: consultantRole,
     );
 
     final category = data['category'] as String? ?? '';
     final cat = _categoriaInfo(category);
 
     tpl = RelatorioHtmlRenderer.replacePlaceholders(tpl, {
+      ...branding,
       'categoria_emoji': data['categoria_emoji'] as String? ?? cat.emoji,
       'categoria_label': data['categoria_label'] as String? ?? cat.label,
       'category': category,
@@ -50,19 +65,80 @@ class OcorrenciaHtmlRenderer {
       'sync_status': data['sync_status'] as String? ?? '',
     });
 
-    final galeria = _renderGaleria(data['fotos_categorias_json'] as String?);
-    tpl = tpl.replaceAll('<!-- {{FOTOS_CATEGORIAS_LOOP}} -->', galeria);
-
+    final galeria = await _renderGaleria(
+      data['fotos_categorias_json'] as String?,
+    );
     final notas = _renderNotas(data['notas_categorias_json'] as String?);
-    tpl = tpl.replaceAll('<!-- {{NOTAS_CATEGORIAS_LOOP}} -->', notas);
-
     final metricas = _renderMetricas(data['metricas_json'] as String?);
-    tpl = tpl.replaceAll('<!-- {{METRICAS_LOOP}} -->', metricas);
-
     final nutrientes = _renderNutrientes(data['nutrientes_json'] as String?);
-    tpl = tpl.replaceAll('<!-- {{NUTRIENTES_LOOP}} -->', nutrientes);
 
-    return tpl;
+    tpl = _resolveRepeatedIf(
+      tpl,
+      'status',
+      (data['status'] as String?)?.isNotEmpty == true,
+    );
+    tpl = _resolveRepeatedIf(
+      tpl,
+      'cultivar',
+      (data['cultivar'] as String?)?.isNotEmpty == true,
+    );
+    tpl = _resolveRepeatedIf(
+      tpl,
+      'estadio_fenologico',
+      (data['estadio_fenologico'] as String?)?.isNotEmpty == true,
+    );
+    tpl = _resolveRepeatedIf(
+      tpl,
+      'data_plantio',
+      (data['data_plantio'] as String?)?.isNotEmpty == true,
+    );
+    tpl = _resolveRepeatedIf(tpl, 'amostra_solo', _isAmostraSolo(data));
+    tpl = _resolveRepeatedIf(
+      tpl,
+      'description',
+      (data['description'] as String?)?.isNotEmpty == true,
+    );
+    tpl = _resolveRepeatedIf(
+      tpl,
+      'photo_base64',
+      (data['foto_base64'] as String?)?.isNotEmpty == true,
+    );
+    tpl = RelatorioHtmlRenderer.resolveIfBlock(
+      tpl,
+      'fotos_categorias',
+      include: galeria.isNotEmpty,
+      truthyHtml: galeria,
+    );
+    tpl = RelatorioHtmlRenderer.resolveIfBlock(
+      tpl,
+      'notas_categorias',
+      include: notas.isNotEmpty,
+      truthyHtml: notas,
+    );
+    tpl = RelatorioHtmlRenderer.resolveIfBlock(
+      tpl,
+      'metricas',
+      include: metricas.isNotEmpty,
+      truthyHtml: metricas,
+    );
+    tpl = RelatorioHtmlRenderer.resolveIfBlock(
+      tpl,
+      'nutrientes && nutrientes.length > 0',
+      include: nutrientes.isNotEmpty,
+      truthyHtml: nutrientes,
+    );
+    tpl = _resolveRepeatedIf(
+      tpl,
+      'recomendacoes',
+      (data['recomendacoes'] as String?)?.isNotEmpty == true,
+    );
+    tpl = _resolveRepeatedIf(
+      tpl,
+      'lat && long',
+      data['lat'] != null && data['long'] != null,
+    );
+
+    return RelatorioHtmlRenderer.stripUnresolvedPlaceholders(tpl);
   }
 
   static Future<String> renderLista({
@@ -74,9 +150,18 @@ class OcorrenciaHtmlRenderer {
     String? agronomistNome,
     DateTime? dataVisita,
     String? visitSessionId,
+    String? reportBrandName,
+    String? reportLogoPath,
+    String? consultantRole,
   }) async {
     var tpl = await RelatorioHtmlRenderer.loadTemplate(
       'ocorrencias_lista.html',
+    );
+    final branding = await RelatorioHtmlRenderer.brandingPlaceholders(
+      customBrandName: reportBrandName,
+      customLogoPath: reportLogoPath,
+      consultantName: agronomistNome,
+      consultantRole: consultantRole,
     );
 
     final total = ocorrencias.length;
@@ -100,6 +185,7 @@ class OcorrenciaHtmlRenderer {
         .length;
 
     tpl = RelatorioHtmlRenderer.replacePlaceholders(tpl, {
+      ...branding,
       'cliente_nome': RelatorioHtmlRenderer.escapeHtml(clienteNome),
       'fazenda_nome': RelatorioHtmlRenderer.escapeHtml(fazendaNome),
       'talhao_nome': RelatorioHtmlRenderer.escapeHtml(talhaoNome),
@@ -123,9 +209,30 @@ class OcorrenciaHtmlRenderer {
     });
 
     final grupos = await _renderGrupos(ocorrencias);
-    tpl = tpl.replaceAll('<!-- {{GRUPOS_LOOP}} -->', grupos);
+    tpl = RelatorioHtmlRenderer.resolveIfBlock(
+      tpl,
+      'grupos.length > 0',
+      include: grupos.isNotEmpty,
+      truthyHtml: grupos,
+      falsyHtml:
+          '<div class="empty-state"><div class="empty-state-emoji">🌾</div><div class="empty-state-text">Nenhuma ocorrência registrada nesta visita.</div></div>',
+    );
 
-    return tpl;
+    return RelatorioHtmlRenderer.stripUnresolvedPlaceholders(tpl);
+  }
+
+  static String _resolveRepeatedIf(String tpl, String condition, bool include) {
+    var result = tpl;
+    for (var i = 0; i < 8; i++) {
+      final next = RelatorioHtmlRenderer.resolveIfBlock(
+        result,
+        condition,
+        include: include,
+      );
+      if (next == result) break;
+      result = next;
+    }
+    return result;
   }
 
   static Future<String> _renderGrupos(
@@ -186,24 +293,168 @@ class OcorrenciaHtmlRenderer {
     return sb.toString();
   }
 
-  static String _renderGaleria(String? fotosJson) {
+  static Future<String> _renderGaleria(String? fotosJson) async {
     if (fotosJson == null || fotosJson == '{}') return '';
-    return '';
+    final map = _decodeMap(fotosJson);
+    if (map.isEmpty) return '';
+
+    final sb = StringBuffer();
+    for (final entry in map.entries) {
+      final fotos = _asStringList(entry.value);
+      if (fotos.isEmpty) continue;
+
+      final imagens = <String>[];
+      for (final path in fotos) {
+        final base64 = await RelatorioHtmlRenderer.photoPathToBase64(path);
+        if (base64 != null && base64.isNotEmpty) imagens.add(base64);
+      }
+      if (imagens.isEmpty) continue;
+
+      final cat = _categoriaInfo(entry.key);
+      sb.write('''
+        <div class="galeria-grupo">
+          <div class="galeria-grupo-header">
+            <span class="galeria-grupo-emoji">${cat.emoji}</span>
+            <span class="galeria-grupo-nome">${RelatorioHtmlRenderer.escapeHtml(cat.label)}</span>
+            <span class="galeria-grupo-count">${imagens.length} fotos</span>
+          </div>
+          <div class="galeria-grid">
+      ''');
+      for (final image in imagens) {
+        sb.write('''
+            <div class="galeria-foto">
+              <img src="$image" alt="Foto" loading="lazy">
+            </div>
+        ''');
+      }
+      sb.write('''
+          </div>
+        </div>
+      ''');
+    }
+    return sb.toString();
   }
 
   static String _renderNotas(String? notasJson) {
     if (notasJson == null || notasJson == '{}') return '';
-    return '';
+    final map = _decodeMap(notasJson);
+    if (map.isEmpty) return '';
+
+    final sb = StringBuffer();
+    sb.write('<div class="notas-list">');
+    for (final entry in map.entries) {
+      final texto = entry.value?.toString().trim() ?? '';
+      if (texto.isEmpty) continue;
+      final cat = _categoriaInfo(entry.key);
+      sb.write('''
+        <div class="nota-item">
+          <div class="nota-header">
+            <span class="nota-emoji">${cat.emoji}</span>
+            <span class="nota-categoria">${RelatorioHtmlRenderer.escapeHtml(cat.label)}</span>
+          </div>
+          <div class="nota-texto">${RelatorioHtmlRenderer.escapeHtml(texto)}</div>
+        </div>
+      ''');
+    }
+    sb.write('</div>');
+    return sb.toString();
   }
 
   static String _renderMetricas(String? metricasJson) {
     if (metricasJson == null || metricasJson == '{}') return '';
-    return '';
+    final map = _decodeMap(metricasJson);
+    if (map.isEmpty) return '';
+
+    final sb = StringBuffer();
+    sb.write('<div class="metricas-block">');
+    for (final entry in map.entries) {
+      final metrics = entry.value is Map ? entry.value as Map : const {};
+      final visibleMetrics = metrics.entries
+          .where(
+            (metric) => metric.value != null && metric.value.toString() != '0',
+          )
+          .toList();
+      if (visibleMetrics.isEmpty) continue;
+
+      final cat = _categoriaInfo(entry.key);
+      sb.write('''
+        <div class="metricas-grupo">
+          <div class="metricas-grupo-titulo">
+            <span>${cat.emoji}</span>
+            <span>${RelatorioHtmlRenderer.escapeHtml(cat.label)}</span>
+          </div>
+          <div class="metricas-items">
+      ''');
+      for (final metric in visibleMetrics) {
+        sb.write('''
+            <div class="metrica-item">
+              <span class="metrica-nome">${RelatorioHtmlRenderer.escapeHtml(_metricLabel(metric.key.toString()))}</span>
+              <span class="metrica-valor">${RelatorioHtmlRenderer.escapeHtml(metric.value.toString())}</span>
+            </div>
+        ''');
+      }
+      sb.write('''
+          </div>
+        </div>
+      ''');
+    }
+    sb.write('</div>');
+    return sb.toString();
   }
 
   static String _renderNutrientes(String? nutrientesJson) {
     if (nutrientesJson == null || nutrientesJson == '[]') return '';
-    return '';
+    final nutrientes = _decodeList(nutrientesJson)
+        .map((item) => item.toString().trim())
+        .where((item) => item.isNotEmpty)
+        .toList();
+    if (nutrientes.isEmpty) return '';
+
+    final sb = StringBuffer();
+    sb.write('<div class="nutrientes-list">');
+    for (final nutriente in nutrientes) {
+      sb.write(
+        '<span class="nutriente-badge">${RelatorioHtmlRenderer.escapeHtml(nutriente)}</span>',
+      );
+    }
+    sb.write('</div>');
+    return sb.toString();
+  }
+
+  static Map<String, dynamic> _decodeMap(String json) {
+    try {
+      final decoded = jsonDecode(json);
+      if (decoded is Map) {
+        return decoded.map((key, value) => MapEntry(key.toString(), value));
+      }
+    } catch (_) {
+      return const {};
+    }
+    return const {};
+  }
+
+  static List<dynamic> _decodeList(String json) {
+    try {
+      final decoded = jsonDecode(json);
+      if (decoded is List) return decoded;
+    } catch (_) {
+      return const [];
+    }
+    return const [];
+  }
+
+  static List<String> _asStringList(Object? value) {
+    if (value is List) {
+      return value
+          .map((item) => item.toString().trim())
+          .where((item) => item.isNotEmpty)
+          .toList();
+    }
+    return const [];
+  }
+
+  static String _metricLabel(String key) {
+    return key.replaceAll('_', ' ');
   }
 
   static String _svgPlaceholder() => '''

@@ -15,12 +15,14 @@ class DayEventCard extends ConsumerWidget {
   final Event event;
   final VoidCallback? onTap;
   final bool enablePlanningSwipeActions;
+  final Future<void> Function(Event event)? onVisitHtml;
 
   const DayEventCard({
     super.key,
     required this.event,
     this.onTap,
     this.enablePlanningSwipeActions = false,
+    this.onVisitHtml,
   });
 
   @override
@@ -259,6 +261,18 @@ class DayEventCard extends ConsumerWidget {
               ),
             ),
             const Divider(height: 1),
+            if (onVisitHtml != null)
+              ListTile(
+                leading: const Icon(
+                  Icons.article_outlined,
+                  color: Color(0xFF16A34A),
+                ),
+                title: const Text('Pré-visualizar HTML de visita'),
+                onTap: () async {
+                  Navigator.of(ctx).pop();
+                  await onVisitHtml!(event);
+                },
+              ),
             ListTile(
               leading: const Icon(
                 Icons.edit_outlined,

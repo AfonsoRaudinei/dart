@@ -6,10 +6,11 @@ import '../../theme/premium/design_tokens.dart';
 import '../premium/premium_glass_panel.dart';
 import 'package:latlong2/latlong.dart';
 import '../../../../modules/consultoria/occurrences/presentation/controllers/occurrence_controller.dart';
-import 'map_sheets.dart';
+import 'map_layers_sheet.dart';
 import '../../../modules/drawing/presentation/widgets/drawing_sheet.dart';
 import '../../../modules/drawing/presentation/widgets/drawing_disabled_widget.dart';
 import '../../../modules/drawing/presentation/controllers/drawing_controller.dart';
+import '../../../modules/drawing/domain/models/drawing_models.dart';
 import '../../../modules/map/presentation/widgets/visit_sheet.dart';
 import '../../../modules/visitas/presentation/controllers/visit_controller.dart';
 import '../../../core/feature_flags/feature_flag_providers.dart';
@@ -41,6 +42,7 @@ class MapBottomSheet extends ConsumerStatefulWidget {
   final Function(MapSheetState)
   onStateChange; // 🛡 REFATORAÇÃO: Callback de mudança
   final LatLng? creationLocation;
+  final ValueChanged<DrawingFeature>? onFocusDrawingFeature;
 
   const MapBottomSheet({
     super.key,
@@ -50,6 +52,7 @@ class MapBottomSheet extends ConsumerStatefulWidget {
     required this.state,
     required this.onStateChange,
     this.creationLocation,
+    this.onFocusDrawingFeature,
   });
 
   @override
@@ -262,7 +265,11 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
             );
           }
           return snapshot.data!
-              ? DrawingSheet(controller: widget.drawingController)
+              ? DrawingSheet(
+                  controller: widget.drawingController,
+                  onFocusFeature: widget.onFocusDrawingFeature,
+                  onGpsMeasureStarted: widget.onClose,
+                )
               : const DrawingDisabledWidget();
         },
       ),
@@ -358,7 +365,7 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
 
     // Iniciar visita
     return VisitSheet(
-      onConfirm: (clientId, areaId, activity) async {
+      onConfirm: (clientId, farmId, areaId, activity) async {
         final locationService = LocationService();
         final isAvailable = await locationService.checkAvailability();
         final position = isAvailable
@@ -385,6 +392,7 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
               activity,
               position.latitude,
               position.longitude,
+              farmId: farmId,
             );
 
         if (!mounted) return;

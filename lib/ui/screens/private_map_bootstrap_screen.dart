@@ -108,7 +108,9 @@ class _BootstrapScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      // 🛡 IPA-120: fundo branco garante legibilidade mesmo sem fontes
+      // customizadas no bundle. Fundo preto causava tela preta no IPA 119.
+      backgroundColor: Colors.white,
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(
@@ -120,16 +122,17 @@ class _BootstrapScaffold extends StatelessWidget {
                 children: [
                   const Icon(
                     Icons.storage_outlined,
-                    color: Colors.white54,
+                    color: Color(0xFF888888),
                     size: 64,
                   ),
                   const SizedBox(height: 20),
                   Text(
                     title,
                     style: const TextStyle(
-                      color: Colors.white,
+                      color: Color(0xFF333333),
                       fontSize: 18,
                       fontWeight: FontWeight.w700,
+                      fontFamily: null,
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -137,9 +140,10 @@ class _BootstrapScaffold extends StatelessWidget {
                   Text(
                     subtitle,
                     style: const TextStyle(
-                      color: Colors.white70,
+                      color: Color(0xFF666666),
                       fontSize: 14,
                       height: 1.4,
+                      fontFamily: null,
                     ),
                     textAlign: TextAlign.center,
                   ),

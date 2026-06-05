@@ -12,9 +12,19 @@ class PropriedadeHtmlRenderer {
     required DateTime createdAt,
     required DateTime updatedAt,
     required List<Map<String, dynamic>> fields,
+    String? reportBrandName,
+    String? reportLogoPath,
+    String? consultantName,
+    String? consultantRole,
   }) async {
     var tpl = await RelatorioHtmlRenderer.loadTemplate(
       'resumo_propriedade.html',
+    );
+    final branding = await RelatorioHtmlRenderer.brandingPlaceholders(
+      customBrandName: reportBrandName,
+      customLogoPath: reportLogoPath,
+      consultantName: consultantName,
+      consultantRole: consultantRole,
     );
 
     final areaProdutiva = fields
@@ -22,6 +32,7 @@ class PropriedadeHtmlRenderer {
         .fold<double>(0, (a, b) => a + b);
 
     tpl = RelatorioHtmlRenderer.replacePlaceholders(tpl, {
+      ...branding,
       'nome': RelatorioHtmlRenderer.escapeHtml(farmNome),
       'cliente_nome': RelatorioHtmlRenderer.escapeHtml(clienteNome),
       'area_total_formatado': RelatorioHtmlRenderer.formatHectares(areaTotal),
@@ -38,9 +49,16 @@ class PropriedadeHtmlRenderer {
     });
 
     final fieldsHtml = _renderFields(fields);
-    tpl = tpl.replaceAll('<!-- {{FIELDS_LOOP}} -->', fieldsHtml);
+    tpl = RelatorioHtmlRenderer.resolveIfBlock(
+      tpl,
+      'fields.length > 0',
+      include: fieldsHtml.isNotEmpty,
+      truthyHtml: '<div class="field-list">$fieldsHtml</div>',
+      falsyHtml:
+          '<div class="empty-state"><div class="empty-state-emoji">🗺️</div><div class="empty-state-text">Nenhum talhão cadastrado para esta fazenda.</div></div>',
+    );
 
-    return tpl;
+    return RelatorioHtmlRenderer.stripUnresolvedPlaceholders(tpl);
   }
 
   // ─── T-08: Histórico de Visitas ──────────────────────────────────
@@ -49,9 +67,19 @@ class PropriedadeHtmlRenderer {
     String? farmName,
     required List<Map<String, dynamic>> relatorios,
     required Map<String, String> agronomistNomes,
+    String? reportBrandName,
+    String? reportLogoPath,
+    String? consultantName,
+    String? consultantRole,
   }) async {
     var tpl = await RelatorioHtmlRenderer.loadTemplate(
       'historico_visitas.html',
+    );
+    final branding = await RelatorioHtmlRenderer.brandingPlaceholders(
+      customBrandName: reportBrandName,
+      customLogoPath: reportLogoPath,
+      consultantName: consultantName,
+      consultantRole: consultantRole,
     );
 
     final total = relatorios.length;
@@ -86,6 +114,7 @@ class PropriedadeHtmlRenderer {
         : '';
 
     tpl = RelatorioHtmlRenderer.replacePlaceholders(tpl, {
+      ...branding,
       'cliente_nome': RelatorioHtmlRenderer.escapeHtml(clienteNome),
       'farm_name': RelatorioHtmlRenderer.escapeHtml(farmName),
       'total_visitas': total.toString(),
@@ -98,9 +127,16 @@ class PropriedadeHtmlRenderer {
     });
 
     final timelineHtml = _renderTimeline(relatorios, agronomistNomes);
-    tpl = tpl.replaceAll('<!-- {{TIMELINE_LOOP}} -->', timelineHtml);
+    tpl = RelatorioHtmlRenderer.resolveIfBlock(
+      tpl,
+      'relatorios.length > 0',
+      include: timelineHtml.isNotEmpty,
+      truthyHtml: '<div class="timeline">$timelineHtml</div>',
+      falsyHtml:
+          '<div class="empty-state"><div class="empty-state-emoji">📋</div><div class="empty-state-text">Nenhuma visita registrada para este cliente.</div></div>',
+    );
 
-    return tpl;
+    return RelatorioHtmlRenderer.stripUnresolvedPlaceholders(tpl);
   }
 
   static String _renderFields(List<Map<String, dynamic>> fields) {
