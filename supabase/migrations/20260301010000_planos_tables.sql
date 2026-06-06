@@ -24,6 +24,7 @@ CREATE TABLE IF NOT EXISTS user_plans (
 ALTER TABLE user_plans ENABLE ROW LEVEL SECURITY;
 
 -- Usuário vê apenas o próprio plano
+DROP POLICY IF EXISTS "user sees own plan" ON user_plans;
 CREATE POLICY "user sees own plan"
   ON user_plans
   FOR SELECT
@@ -49,6 +50,7 @@ CREATE TABLE IF NOT EXISTS referral_codes (
 ALTER TABLE referral_codes ENABLE ROW LEVEL SECURITY;
 
 -- Usuário vê apenas o próprio código
+DROP POLICY IF EXISTS "user sees own referral code" ON referral_codes;
 CREATE POLICY "user sees own referral code"
   ON referral_codes
   FOR SELECT
@@ -56,6 +58,7 @@ CREATE POLICY "user sees own referral code"
   USING (user_id = auth.uid());
 
 -- Usuário pode inserir o próprio código (gerado no cadastro)
+DROP POLICY IF EXISTS "user inserts own referral code" ON referral_codes;
 CREATE POLICY "user inserts own referral code"
   ON referral_codes
   FOR INSERT
@@ -81,6 +84,7 @@ CREATE TABLE IF NOT EXISTS referrals (
 ALTER TABLE referrals ENABLE ROW LEVEL SECURITY;
 
 -- Quem indicou vê suas indicações
+DROP POLICY IF EXISTS "referrer sees own referrals" ON referrals;
 CREATE POLICY "referrer sees own referrals"
   ON referrals
   FOR SELECT
@@ -92,16 +96,26 @@ CREATE POLICY "referrer sees own referrals"
 -- ATENÇÃO: Requer extensão pg_cron ativa no Supabase
 -- Verificar: Database → Extensions → pg_cron
 -- ------------------------------------------------------------
-SELECT cron.schedule(
-  'expire-plans',
-  '0 0 * * *',
-  $$
-    UPDATE user_plans
-    SET ativo = false
-    WHERE ativo = true
-      AND expira_em < now();
-  $$
-);
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1
+    FROM pg_extension
+    WHERE extname = 'pg_cron'
+  ) THEN
+    IF NOT EXISTS (
+      SELECT 1
+      FROM cron.job
+      WHERE jobname = 'expire-plans'
+    ) THEN
+      PERFORM cron.schedule(
+        'expire-plans',
+        '0 0 * * *',
+        'UPDATE user_plans SET ativo = false WHERE ativo = true AND expira_em < now();'
+      );
+    END IF;
+  END IF;
+END $$;
 
 -- ------------------------------------------------------------
 -- VERIFICAÇÃO FINAL

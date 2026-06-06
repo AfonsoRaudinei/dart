@@ -11,6 +11,7 @@ DROP POLICY IF EXISTS "marketing_avaliacoes_own" ON marketing_avaliacoes;
 -- PASSO 2: Criar policies granulares e explícitas
 
 -- SELECT: usuário lê apenas suas próprias avaliações
+DROP POLICY IF EXISTS "avaliacoes_select_own" ON marketing_avaliacoes;
 CREATE POLICY "avaliacoes_select_own"
   ON marketing_avaliacoes
   FOR SELECT
@@ -18,6 +19,7 @@ CREATE POLICY "avaliacoes_select_own"
   USING (auth.uid() = user_id);
 
 -- INSERT: usuário insere apenas avaliações com seu próprio user_id
+DROP POLICY IF EXISTS "avaliacoes_insert_own" ON marketing_avaliacoes;
 CREATE POLICY "avaliacoes_insert_own"
   ON marketing_avaliacoes
   FOR INSERT
@@ -25,6 +27,7 @@ CREATE POLICY "avaliacoes_insert_own"
   WITH CHECK (auth.uid() = user_id);
 
 -- UPDATE: usuário atualiza apenas suas próprias avaliações
+DROP POLICY IF EXISTS "avaliacoes_update_own" ON marketing_avaliacoes;
 CREATE POLICY "avaliacoes_update_own"
   ON marketing_avaliacoes
   FOR UPDATE

@@ -16,6 +16,7 @@ VALUES (
 ON CONFLICT (id) DO NOTHING;
 
 -- 2. Policy: qualquer um pode LER (download de fotos)
+DROP POLICY IF EXISTS "public read marketing photos" ON storage.objects;
 CREATE POLICY "public read marketing photos"
   ON storage.objects FOR SELECT
   USING (bucket_id = 'marketing-cases');
