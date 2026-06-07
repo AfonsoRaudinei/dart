@@ -28,6 +28,38 @@ class ClientDrawingFieldSummary {
   final int? syncStatus;
 }
 
+enum FarmLinkedFieldSource { field, drawing }
+
+class FarmLinkedFieldSummary {
+  const FarmLinkedFieldSummary({
+    required this.id,
+    required this.name,
+    required this.areaHa,
+    required this.source,
+    this.vertices = const [],
+    this.crop,
+    this.harvest,
+    this.updatedAt,
+    this.syncStatus,
+    this.perimeter,
+    this.thumbnailPath,
+  });
+
+  final String id;
+  final String name;
+  final double areaHa;
+  final FarmLinkedFieldSource source;
+  final List<LatLng> vertices;
+  final String? crop;
+  final String? harvest;
+  final DateTime? updatedAt;
+  final int? syncStatus;
+  final double? perimeter;
+  final String? thumbnailPath;
+
+  bool get isDrawing => source == FarmLinkedFieldSource.drawing;
+}
+
 // Repository Provider
 final fieldRepositoryProvider = Provider<FieldRepository>((ref) {
   return FieldRepository();
@@ -54,6 +86,20 @@ final farmFieldsProvider = FutureProvider.family
     .autoDispose<List<Talhao>, String>((ref, farmId) async {
       final repo = ref.read(fieldRepositoryProvider);
       return repo.getFieldsByFarmId(farmId);
+    });
+
+final farmLinkedFieldsProvider = FutureProvider.family
+    .autoDispose<List<FarmLinkedFieldSummary>, String>((ref, farmId) async {
+      if (farmId.isEmpty) return const [];
+
+      final repo = ref.read(fieldRepositoryProvider);
+      final fields = await repo.getFieldsByFarmId(farmId);
+      final drawingFields = await _loadDrawingFieldsByFarmId(farmId);
+
+      return mergeFarmLinkedFieldSummaries(
+        fieldSummaries: fields.map(_linkedSummaryFromField).toList(),
+        drawingSummaries: drawingFields,
+      );
     });
 
 final clientDrawingFieldsProvider = FutureProvider.family
@@ -97,6 +143,94 @@ final clientDrawingFieldsProvider = FutureProvider.family
         );
       }).toList();
     });
+
+List<FarmLinkedFieldSummary> mergeFarmLinkedFieldSummaries({
+  required List<FarmLinkedFieldSummary> fieldSummaries,
+  required List<FarmLinkedFieldSummary> drawingSummaries,
+}) {
+  final seenIds = <String>{};
+  final merged = <FarmLinkedFieldSummary>[];
+
+  for (final summary in [...fieldSummaries, ...drawingSummaries]) {
+    if (summary.id.isEmpty || !seenIds.add(summary.id)) continue;
+    merged.add(summary);
+  }
+
+  return merged;
+}
+
+double totalFarmLinkedAreaHa(List<FarmLinkedFieldSummary> fields) {
+  return fields.fold<double>(0, (sum, field) => sum + field.areaHa);
+}
+
+FarmLinkedFieldSummary _linkedSummaryFromField(Talhao field) {
+  return FarmLinkedFieldSummary(
+    id: field.id,
+    name: field.name,
+    areaHa: field.areaHa,
+    source: FarmLinkedFieldSource.field,
+    vertices: _verticesFromGeometry(field.geometry),
+    crop: field.crop.isEmpty ? null : field.crop,
+    harvest: field.harvest.isEmpty ? null : field.harvest,
+    updatedAt: field.updatedAt,
+    syncStatus: field.syncStatus,
+    perimeter: field.perimeter,
+    thumbnailPath: field.thumbnailPath,
+  );
+}
+
+Future<List<FarmLinkedFieldSummary>> _loadDrawingFieldsByFarmId(
+  String farmId,
+) async {
+  final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
+  if (userId.isEmpty || farmId.isEmpty) return const [];
+
+  final Database db = await DatabaseHelper.instance.database;
+  final maps = await db.query(
+    'drawings',
+    columns: [
+      'id',
+      'nome',
+      'area_ha',
+      'geojson',
+      'updated_at',
+      'sync_status',
+      'cultura',
+      'safra',
+    ],
+    where:
+        'user_id = ? AND fazenda_id = ? AND deleted_at IS NULL AND ativo = 1',
+    whereArgs: [userId, farmId],
+    orderBy: 'updated_at DESC',
+  );
+
+  return maps.map((row) {
+    return FarmLinkedFieldSummary(
+      id: row['id'] as String,
+      name: row['nome'] as String? ?? 'Talhão sem nome',
+      areaHa: (row['area_ha'] as num?)?.toDouble() ?? 0,
+      source: FarmLinkedFieldSource.drawing,
+      vertices: _verticesFromGeoJson(row['geojson'] as String?),
+      crop: row['cultura'] as String?,
+      harvest: row['safra'] as String?,
+      updatedAt: row['updated_at'] != null
+          ? DateTime.tryParse(row['updated_at'] as String)
+          : null,
+      syncStatus: _syncStatusFromValue(row['sync_status']),
+    );
+  }).toList();
+}
+
+int? _syncStatusFromValue(Object? value) {
+  if (value is int) return value;
+  if (value is String) return int.tryParse(value);
+  return null;
+}
+
+List<LatLng> _verticesFromGeometry(Map<String, dynamic>? geometry) {
+  if (geometry == null || geometry.isEmpty) return const [];
+  return _verticesFromGeoJson(jsonEncode(geometry));
+}
 
 List<LatLng> _verticesFromGeoJson(String? rawGeoJson) {
   if (rawGeoJson == null || rawGeoJson.isEmpty) return const [];

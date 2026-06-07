@@ -432,14 +432,18 @@ class _ClientFarmWithTalhoes extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final fieldsAsync = ref.watch(farmFieldsProvider(farm.id));
+    final fieldsAsync = ref.watch(farmLinkedFieldsProvider(farm.id));
+    final linkedFields = fieldsAsync.asData?.value;
+    final displayedAreaHa = linkedFields == null
+        ? farm.totalAreaHa
+        : totalFarmLinkedAreaHa(linkedFields);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         ClientFarmItem(
           name: farm.name,
-          area: '${farm.totalAreaHa} ha',
+          area: '${_formatAreaHa(displayedAreaHa)} ha',
           onTap: () => context.go(AppRoutes.farmDetail(client.id, farm.id)),
         ),
         fieldsAsync.when(
@@ -476,7 +480,12 @@ class _ClientFarmWithTalhoes extends ConsumerWidget {
                                 : null,
                           ),
                           child: field.thumbnailPath == null
-                              ? Icon(Icons.terrain, color: Colors.grey.shade400)
+                              ? Icon(
+                                  field.isDrawing
+                                      ? Icons.map_outlined
+                                      : Icons.terrain,
+                                  color: Colors.grey.shade400,
+                                )
                               : null,
                         ),
                         const SizedBox(width: 12),
@@ -494,7 +503,7 @@ class _ClientFarmWithTalhoes extends ConsumerWidget {
                               ),
                               const SizedBox(height: 2),
                               Text(
-                                'Área: ${field.areaHa.toStringAsFixed(2)} ha • Perímetro: ${field.perimeter != null ? field.perimeter!.toStringAsFixed(2) : "0.00"} km',
+                                _farmFieldSubtitle(field),
                                 style: TextStyle(
                                   color: Colors.grey.shade600,
                                   fontSize: 12,
@@ -531,6 +540,21 @@ class _ClientFarmWithTalhoes extends ConsumerWidget {
         ),
       ],
     );
+  }
+
+  String _farmFieldSubtitle(FarmLinkedFieldSummary field) {
+    final parts = <String>['Área: ${_formatAreaHa(field.areaHa)} ha'];
+    if (field.perimeter != null) {
+      parts.add('Perímetro: ${field.perimeter!.toStringAsFixed(2)} km');
+    }
+    if (field.isDrawing) {
+      parts.add('Talhão do mapa');
+    }
+    return parts.join(' • ');
+  }
+
+  String _formatAreaHa(double areaHa) {
+    return areaHa.toStringAsFixed(areaHa >= 100 ? 1 : 2);
   }
 }
 

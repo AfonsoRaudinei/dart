@@ -29,10 +29,8 @@ class FarmDetailScreen extends ConsumerWidget {
     // 1. Fetch Farm
     final farmAsync = ref.watch(farmDetailProvider(farmId));
 
-    // 2. Fetch Fields
-    final fieldsFuture = ref
-        .watch(fieldRepositoryProvider)
-        .getFieldsByFarmId(farmId);
+    // 2. Fetch fields + map drawings linked to this farm.
+    final linkedFieldsAsync = ref.watch(farmLinkedFieldsProvider(farmId));
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -41,6 +39,11 @@ class FarmDetailScreen extends ConsumerWidget {
           if (farm == null) {
             return const Center(child: Text('Fazenda não encontrada'));
           }
+
+          final linkedFields = linkedFieldsAsync.asData?.value;
+          final totalAreaHa = linkedFields == null
+              ? farm.totalAreaHa
+              : totalFarmLinkedAreaHa(linkedFields);
 
           return SafeArea(
             child: Column(
@@ -95,7 +98,7 @@ class FarmDetailScreen extends ConsumerWidget {
                                 style: TextStyle(color: Colors.grey[600]),
                               ),
                               Text(
-                                '${farm.totalAreaHa} ha',
+                                '${_formatAreaHa(totalAreaHa)} ha',
                                 style: const TextStyle(
                                   fontSize: 24,
                                   fontWeight: FontWeight.bold,
@@ -146,16 +149,8 @@ class FarmDetailScreen extends ConsumerWidget {
                         ),
                         const SizedBox(height: 16),
 
-                        FutureBuilder(
-                          future: fieldsFuture,
-                          builder: (context, snapshot) {
-                            if (!snapshot.hasData) {
-                              return const Center(
-                                child: CircularProgressIndicator(),
-                              );
-                            }
-                            final fields = snapshot.data as List;
-
+                        linkedFieldsAsync.when(
+                          data: (fields) {
                             if (fields.isEmpty) {
                               return Container(
                                 padding: const EdgeInsets.all(24),
@@ -196,9 +191,7 @@ class FarmDetailScreen extends ConsumerWidget {
                                             fontWeight: FontWeight.w600,
                                           ),
                                         ),
-                                        subtitle: Text(
-                                          '${field.areaHa} ha • ${field.crop ?? '-'}',
-                                        ),
+                                        subtitle: Text(_fieldSubtitle(field)),
                                         trailing: const Icon(
                                           Icons.chevron_right,
                                           color: Colors.grey,
@@ -220,6 +213,18 @@ class FarmDetailScreen extends ConsumerWidget {
                                   .toList(),
                             );
                           },
+                          loading: () {
+                            if ((linkedFieldsAsync.asData?.value ?? const [])
+                                .isEmpty) {
+                              return const Center(
+                                child: CircularProgressIndicator(),
+                              );
+                            }
+                            return const SizedBox.shrink();
+                          },
+                          error: (e, s) => Center(
+                            child: Text('Erro ao carregar talhões: $e'),
+                          ),
                         ),
                       ],
                     ),
@@ -233,5 +238,23 @@ class FarmDetailScreen extends ConsumerWidget {
         error: (e, s) => Center(child: Text('Erro: $e')),
       ),
     );
+  }
+
+  String _fieldSubtitle(FarmLinkedFieldSummary field) {
+    final parts = <String>['${_formatAreaHa(field.areaHa)} ha'];
+
+    if (field.isDrawing) {
+      parts.add('Talhão do mapa');
+    }
+
+    if (field.crop != null && field.crop!.trim().isNotEmpty) {
+      parts.add(field.crop!.trim());
+    }
+
+    return parts.join(' • ');
+  }
+
+  String _formatAreaHa(double areaHa) {
+    return areaHa.toStringAsFixed(areaHa >= 100 ? 1 : 2);
   }
 }
