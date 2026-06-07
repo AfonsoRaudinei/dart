@@ -269,6 +269,7 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
                   controller: widget.drawingController,
                   onFocusFeature: widget.onFocusDrawingFeature,
                   onGpsMeasureStarted: widget.onClose,
+                  onSaved: widget.onClose,
                 )
               : const DrawingDisabledWidget();
         },

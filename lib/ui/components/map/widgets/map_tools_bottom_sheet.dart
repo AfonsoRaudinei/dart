@@ -95,7 +95,11 @@ class _MapToolsBottomSheetState extends State<MapToolsBottomSheet> {
                   children: [
                     SingleChildScrollView(
                       physics: const BouncingScrollPhysics(),
-                      child: DrawingSheet(controller: widget.drawingController),
+                      child: DrawingSheet(
+                        controller: widget.drawingController,
+                        onSaved: () =>
+                            Navigator.of(context, rootNavigator: false).pop(),
+                      ),
                     ),
                     LayersSheet(
                       onClose: () =>

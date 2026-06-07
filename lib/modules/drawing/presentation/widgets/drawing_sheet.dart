@@ -29,12 +29,14 @@ class DrawingSheet extends ConsumerStatefulWidget {
   final DrawingController controller;
   final ValueChanged<DrawingFeature>? onFocusFeature;
   final VoidCallback? onGpsMeasureStarted;
+  final VoidCallback? onSaved;
 
   const DrawingSheet({
     super.key,
     required this.controller,
     this.onFocusFeature,
     this.onGpsMeasureStarted,
+    this.onSaved,
   });
 
   @override
@@ -43,6 +45,7 @@ class DrawingSheet extends ConsumerStatefulWidget {
 
 class _DrawingSheetState extends ConsumerState<DrawingSheet> {
   String? _selectedToolKey;
+  bool _isSaving = false;
 
   // 🆕 ESTADO LOCAL PARA REVISÃO COMPLETA
   final _formKey = GlobalKey<FormState>();
@@ -290,26 +293,40 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
     );
   }
 
-  void _submitReview() {
+  Future<void> _submitReview() async {
+    if (_isSaving) return;
     HapticFeedback.mediumImpact();
     final geometry = widget.controller.liveGeometry;
     if (geometry == null) return;
 
-    widget.controller.addFeature(
-      geometry: geometry,
-      nome: _nomeController.text.trim(),
-      tipo: DrawingType.talhao,
-      origem:
-          widget.controller.pendingImportOrigin ?? DrawingOrigin.desenho_manual,
-      autorId: 'current_user',
-      autorTipo: _isConsultant ? AuthorType.consultor : AuthorType.cliente,
-      clienteId: _selectedClient?.id ?? 'SELF',
-      fazendaId: _selectedFarm?.id,
-      grupo: _selectedFarm?.name,
-      cor: _selectedColor.toARGB32(),
-    );
+    setState(() => _isSaving = true);
+    final DrawingFeature? savedFeature;
+    try {
+      savedFeature = await widget.controller.addFeature(
+        geometry: geometry,
+        nome: _nomeController.text.trim(),
+        tipo: DrawingType.talhao,
+        origem:
+            widget.controller.pendingImportOrigin ??
+            DrawingOrigin.desenho_manual,
+        autorId: 'current_user',
+        autorTipo: _isConsultant ? AuthorType.consultor : AuthorType.cliente,
+        clienteId: _selectedClient?.id ?? 'SELF',
+        fazendaId: _selectedFarm?.id,
+        grupo: _selectedFarm?.name,
+        cor: _selectedColor.toARGB32(),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isSaving = false);
+      }
+    }
+
+    if (!mounted) return;
+    if (savedFeature == null) return;
 
     _resetReviewForm();
+    widget.onSaved?.call();
   }
 
   Widget _buildMetricsPanel(BuildContext context) {
@@ -970,7 +987,7 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
                   const SizedBox(width: 10),
                   ElevatedButton(
                     key: const Key('drawing_review_save_cta_top'),
-                    onPressed: _submitReview,
+                    onPressed: _isSaving ? null : _submitReview,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: PremiumTokens.brandGreen,
                       padding: const EdgeInsets.symmetric(
@@ -1204,14 +1221,14 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
                 Expanded(
                   child: ElevatedButton(
                     key: const Key('drawing_review_save_cta_bottom'),
-                    onPressed: _submitReview,
+                    onPressed: _isSaving ? null : _submitReview,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: PremiumTokens.brandGreen,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                     ),
-                    child: const Text(
-                      'SALVAR',
-                      style: TextStyle(fontWeight: FontWeight.bold),
+                    child: Text(
+                      _isSaving ? 'SALVANDO...' : 'SALVAR',
+                      style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                   ),
                 ),

@@ -665,7 +665,7 @@ class DrawingController extends ChangeNotifier {
   ///
   /// Delega construção para [DrawingFeatureCrudService.buildFeature].
   /// Valida topologia antes de persistir.
-  Future<void> addFeature({
+  Future<DrawingFeature?> addFeature({
     required DrawingGeometry geometry,
     required String nome,
     required DrawingType tipo,
@@ -694,7 +694,7 @@ class DrawingController extends ChangeNotifier {
       } else {
         _errorMessage = _validationResult.message;
         notifyListeners();
-        return;
+        return null;
       }
     }
 
@@ -731,6 +731,7 @@ class DrawingController extends ChangeNotifier {
     _previewGeometry = null;
     _interactionMode = DrawingInteraction.normal;
     notifyListeners();
+    return newFeature;
   }
 
   /// Updates an existing feature (Attributes or Geometry).

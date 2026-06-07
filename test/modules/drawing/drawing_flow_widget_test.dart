@@ -12,13 +12,16 @@ import 'package:soloforte_app/modules/drawing/data/repositories/drawing_reposito
 
 /// Mock repository que não acessa banco de dados
 class MockDrawingRepository extends DrawingRepository {
+  final savedFeatures = <DrawingFeature>[];
+
   @override
   Future<List<DrawingFeature>> getAllFeatures() async {
-    return [];
+    return List.of(savedFeatures);
   }
 
   @override
   Future<void> saveFeature(DrawingFeature feature) async {
+    savedFeatures.add(feature);
     return;
   }
 
@@ -26,6 +29,17 @@ class MockDrawingRepository extends DrawingRepository {
   Future<void> deleteFeature(String id) async {
     return;
   }
+
+  @override
+  Future<double> getTotalAreaByClienteId(String clienteId) async {
+    return savedFeatures.fold<double>(
+      0.0,
+      (total, feature) => total + feature.properties.areaHa,
+    );
+  }
+
+  @override
+  Future<void> updateClientAreaTotal(String clientId, double areaTotal) async {}
 }
 
 /// ✅ FIX-DRAW-FLOW-02 — Testes de Widget do Fluxo de Desenho
@@ -344,6 +358,52 @@ void main() {
         find.byKey(const Key('drawing_review_save_cta_bottom')),
         findsOneWidget,
       );
+
+      controller.dispose();
+    });
+
+    testWidgets('💾 Salvar revisão dispara fechamento após persistir', (
+      WidgetTester tester,
+    ) async {
+      tester.view.physicalSize = const Size(800, 2000);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final repository = MockDrawingRepository();
+      final controller = DrawingController(repository: repository);
+      var closeCount = 0;
+
+      await tester.pumpWidget(
+        ProviderScope(
+          child: MaterialApp(
+            home: Scaffold(
+              body: SingleChildScrollView(
+                child: DrawingSheet(
+                  controller: controller,
+                  onSaved: () => closeCount++,
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      controller.selectTool('polygon');
+      controller.appendDrawingPoint(const LatLng(-15.7801, -47.9292));
+      controller.appendDrawingPoint(const LatLng(-15.7802, -47.9293));
+      controller.appendDrawingPoint(const LatLng(-15.7803, -47.9291));
+      controller.completeDrawing();
+
+      await tester.pumpAndSettle();
+      expect(controller.currentState, DrawingState.reviewing);
+
+      await tester.tap(find.byKey(const Key('drawing_review_save_cta_top')));
+      await tester.pumpAndSettle();
+
+      expect(repository.savedFeatures, hasLength(1));
+      expect(closeCount, 1);
+      expect(controller.currentState, DrawingState.idle);
 
       controller.dispose();
     });
