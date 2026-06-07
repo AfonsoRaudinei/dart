@@ -43,6 +43,7 @@ class ReportWriterAdapter implements IReportWriter {
       finishedAt: input.finishedAt,
       ocorrencias: input.occurrences.map(_toOcorrenciaSnapshot).toList(),
       talhoes: _buildTalhoes(input),
+      fotos: input.fotos.map((photo) => photo.localPath).toList(),
     );
   }
 

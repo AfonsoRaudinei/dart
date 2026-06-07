@@ -23,7 +23,7 @@ class DatabaseHelper {
 
     final db = await openDatabase(
       path,
-      version: 34,
+      version: 35,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -165,6 +165,9 @@ class DatabaseHelper {
           break;
         case 34:
           await _migrateToV34(db);
+          break;
+        case 35:
+          await _migrateToV35(db);
           break;
       }
     }
@@ -1477,5 +1480,33 @@ class DatabaseHelper {
         );
       }
     }
+  }
+
+  Future<void> _migrateToV35(Database db) async {
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS quick_photos (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL DEFAULT '',
+        visit_session_id TEXT,
+        local_path TEXT NOT NULL,
+        storage_path TEXT,
+        public_url TEXT,
+        lat REAL,
+        lng REAL,
+        photo_type TEXT NOT NULL DEFAULT 'normal',
+        created_at TEXT NOT NULL,
+        sync_status INTEGER NOT NULL DEFAULT 1,
+        FOREIGN KEY (visit_session_id) REFERENCES visit_sessions (id)
+      )
+    ''');
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_quick_photos_visit_session '
+      'ON quick_photos(visit_session_id)',
+    );
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_quick_photos_sync '
+      'ON quick_photos(sync_status)',
+    );
+    AppLogger.debug('V35: tabela quick_photos criada', tag: 'DB.Migration');
   }
 }

@@ -12,6 +12,7 @@ import '../../../../modules/consultoria/quick_photo/presentation/quick_photo_flo
 import '../../../../modules/map/presentation/providers/map_location_mode_provider.dart';
 import '../../../../modules/settings/presentation/providers/settings_providers.dart';
 import '../../../../core/constants/layout_constants.dart';
+import '../../../../core/contracts/i_visit_session_lookup_provider.dart';
 import '../../../../core/providers/connectivity_provider.dart';
 import '../../../../core/state/map_state.dart';
 import '../../../../modules/drawing/domain/drawing_state.dart';
@@ -107,6 +108,33 @@ class MapControlsOverlay extends ConsumerStatefulWidget {
 }
 
 class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
+  Future<void> _openQuickPhoto({required bool initialFilterActive}) async {
+    String? visitSessionId;
+    try {
+      final activeSession = await ref
+          .read(visitSessionLookupProvider)
+          .getActiveSession();
+      visitSessionId = activeSession?.isActive == true
+          ? activeSession!.id
+          : null;
+    } catch (error) {
+      AppLogger.warning(
+        'Não foi possível vincular foto rápida à visita ativa',
+        tag: 'QuickPhoto',
+        error: error,
+      );
+    }
+
+    if (!mounted) return;
+    await QuickPhotoFlow.open(
+      context,
+      lat: widget.currentCenter.latitude,
+      lng: widget.currentCenter.longitude,
+      visitSessionId: visitSessionId,
+      initialFilterActive: initialFilterActive,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     // Use SafeArea top padding to ensure elements are below the status bar/notch
@@ -194,11 +222,10 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
               }
             },
             onFotoRapida: () {
-              QuickPhotoFlow.open(
-                context,
-                lat: widget.currentCenter.latitude,
-                lng: widget.currentCenter.longitude,
-              );
+              unawaited(_openQuickPhoto(initialFilterActive: false));
+            },
+            onInversaoVegetal: () {
+              unawaited(_openQuickPhoto(initialFilterActive: true));
             },
           ),
         ),

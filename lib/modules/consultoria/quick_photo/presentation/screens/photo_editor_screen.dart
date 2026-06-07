@@ -15,12 +15,16 @@ class PhotoEditorScreen extends StatefulWidget {
   final String imagePath;
   final double? lat;
   final double? lng;
+  final String? visitSessionId;
+  final bool initialFilterActive;
 
   const PhotoEditorScreen({
     super.key,
     required this.imagePath,
     this.lat,
     this.lng,
+    this.visitSessionId,
+    this.initialFilterActive = false,
   });
 
   @override
@@ -54,7 +58,11 @@ class _PhotoEditorScreenState extends State<PhotoEditorScreen> {
     setState(() {
       _baseBytes = bytes;
       _baseImage = image;
+      _filterActive = widget.initialFilterActive;
     });
+    if (widget.initialFilterActive) {
+      await _buildFilterPreview();
+    }
   }
 
   Future<ui.Image> _decodeUiImage(Uint8List bytes) async {
@@ -129,6 +137,10 @@ class _PhotoEditorScreenState extends State<PhotoEditorScreen> {
         localPath: widget.imagePath,
         lat: widget.lat,
         lng: widget.lng,
+        visitSessionId: widget.visitSessionId,
+        type: _filterActive
+            ? QuickPhotoType.vegetalFilter
+            : QuickPhotoType.normal,
       );
       if (!mounted) return;
       Navigator.of(context).pop(true);

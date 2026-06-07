@@ -6,6 +6,7 @@ import '../../../../core/contracts/i_occurrence_read.dart';
 import '../../../../core/contracts/i_occurrence_read_provider.dart';
 import '../../../../core/contracts/i_report_writer.dart';
 import '../../../../core/contracts/i_report_writer_provider.dart';
+import '../../../../core/contracts/i_visit_photo_read_provider.dart';
 import '../../../../core/utils/app_logger.dart';
 
 part 'visit_completion_observer.g.dart';
@@ -137,7 +138,8 @@ class VisitCompletionObserver extends _$VisitCompletionObserver {
 
     AppLogger.debug(
       'Gerando relatório para sessão ${session.id} — '
-      '${input.occurrences.length} ocorrência(s).',
+      '${input.occurrences.length} ocorrência(s), '
+      '${input.fotos.length} foto(s).',
       tag: _tag,
     );
 
@@ -167,6 +169,9 @@ class VisitCompletionObserver extends _$VisitCompletionObserver {
     final occurrences = await ref
         .read(occurrenceReadProvider)
         .getBySessionId(session.id);
+    final fotos = await ref
+        .read(visitPhotoReadProvider)
+        .getBySessionId(session.id);
 
     return VisitReportInput(
       sessionId: session.id,
@@ -176,6 +181,7 @@ class VisitCompletionObserver extends _$VisitCompletionObserver {
       startedAt: session.startAtReal,
       finishedAt: session.endAtReal!, // endAtReal != null garantido
       occurrences: occurrences,
+      fotos: fotos,
       talhaoId: event.talhaoId,
       // TODO: buscar nome via IFieldLookup quando disponível
       talhaoName: event.talhaoId,

@@ -10,6 +10,8 @@ class QuickPhotoFlow {
     BuildContext context, {
     double? lat,
     double? lng,
+    String? visitSessionId,
+    bool initialFilterActive = false,
   }) async {
     final imagePath = await ImageStorageService().captureAndSaveImage();
     if (imagePath == null || !context.mounted) return;
@@ -17,8 +19,13 @@ class QuickPhotoFlow {
     await Navigator.of(context).push<bool>(
       MaterialPageRoute(
         fullscreenDialog: true,
-        builder: (_) =>
-            PhotoEditorScreen(imagePath: imagePath, lat: lat, lng: lng),
+        builder: (_) => PhotoEditorScreen(
+          imagePath: imagePath,
+          lat: lat,
+          lng: lng,
+          visitSessionId: visitSessionId,
+          initialFilterActive: initialFilterActive,
+        ),
       ),
     );
   }

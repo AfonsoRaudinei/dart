@@ -12,6 +12,7 @@ class PublicationActionsBottomSheet extends StatelessWidget {
   final VoidCallback onAvaliacao;
   final VoidCallback onOcorrencia;
   final VoidCallback onFotoRapida;
+  final VoidCallback onInversaoVegetal;
 
   const PublicationActionsBottomSheet({
     super.key,
@@ -20,6 +21,7 @@ class PublicationActionsBottomSheet extends StatelessWidget {
     required this.onAvaliacao,
     required this.onOcorrencia,
     required this.onFotoRapida,
+    required this.onInversaoVegetal,
   });
 
   static Future<void> show({
@@ -29,6 +31,7 @@ class PublicationActionsBottomSheet extends StatelessWidget {
     required VoidCallback onAvaliacao,
     required VoidCallback onOcorrencia,
     required VoidCallback onFotoRapida,
+    required VoidCallback onInversaoVegetal,
   }) {
     return showSoloForteSheet<void>(
       context: context,
@@ -43,6 +46,7 @@ class PublicationActionsBottomSheet extends StatelessWidget {
         onAvaliacao: onAvaliacao,
         onOcorrencia: onOcorrencia,
         onFotoRapida: onFotoRapida,
+        onInversaoVegetal: onInversaoVegetal,
       ),
     );
   }
@@ -75,50 +79,58 @@ class PublicationActionsBottomSheet extends StatelessWidget {
               ),
             ),
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 38,
-                height: 5,
-                margin: const EdgeInsets.only(bottom: 10),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.34),
-                  borderRadius: BorderRadius.circular(99),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 38,
+                  height: 5,
+                  margin: const EdgeInsets.only(bottom: 10),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.34),
+                    borderRadius: BorderRadius.circular(99),
+                  ),
                 ),
-              ),
-              _ActionRow(
-                icon: SFIcons.barChart,
-                title: 'Resultado',
-                color: PremiumTokens.brandGreen,
-                onTap: () => _select(context, onResultado),
-              ),
-              _ActionRow(
-                icon: SFIcons.compareArrows,
-                title: 'Antes/Depois',
-                color: const Color(0xFFF59E0B),
-                onTap: () => _select(context, onAntesDepois),
-              ),
-              _ActionRow(
-                icon: SFIcons.science,
-                title: 'Avaliação',
-                color: const Color(0xFF3B82F6),
-                onTap: () => _select(context, onAvaliacao),
-              ),
-              _ActionRow(
-                icon: SFIcons.warning,
-                title: 'Ocorrência',
-                color: PremiumTokens.alertWarning,
-                onTap: () => _select(context, onOcorrencia),
-              ),
-              _ActionRow(
-                icon: SFIcons.image,
-                title: 'Foto rápida',
-                color: const Color(0xFFAF52DE),
-                showDivider: false,
-                onTap: () => _select(context, onFotoRapida),
-              ),
-            ],
+                _ActionRow(
+                  icon: SFIcons.barChart,
+                  title: 'Resultado',
+                  color: PremiumTokens.brandGreen,
+                  onTap: () => _select(context, onResultado),
+                ),
+                _ActionRow(
+                  icon: SFIcons.compareArrows,
+                  title: 'Antes/Depois',
+                  color: const Color(0xFFF59E0B),
+                  onTap: () => _select(context, onAntesDepois),
+                ),
+                _ActionRow(
+                  icon: SFIcons.science,
+                  title: 'Avaliação',
+                  color: const Color(0xFF3B82F6),
+                  onTap: () => _select(context, onAvaliacao),
+                ),
+                _ActionRow(
+                  icon: SFIcons.warning,
+                  title: 'Ocorrência',
+                  color: PremiumTokens.alertWarning,
+                  onTap: () => _select(context, onOcorrencia),
+                ),
+                _ActionRow(
+                  icon: SFIcons.image,
+                  title: 'Foto rápida',
+                  color: const Color(0xFFAF52DE),
+                  onTap: () => _select(context, onFotoRapida),
+                ),
+                _ActionRow(
+                  icon: SFIcons.leaf,
+                  title: 'Inversão vegetal',
+                  color: PremiumTokens.brandGreen,
+                  showDivider: false,
+                  onTap: () => _select(context, onInversaoVegetal),
+                ),
+              ],
+            ),
           ),
         ),
       ),

@@ -80,6 +80,7 @@ class SFIcons {
       CupertinoIcons.shield_fill; // Disease/Protection
   static const IconData bugReport = CupertinoIcons.ant; // Insects
   static const IconData grass = CupertinoIcons.tree; // Grass/Weeds
+  static const IconData leaf = Icons.eco_rounded;
   static const IconData science =
       Icons.science_outlined; // Fallback to Material for specific domain icon
   static const IconData waterDrop = CupertinoIcons.drop_fill; // Water

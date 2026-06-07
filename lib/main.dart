@@ -13,6 +13,7 @@ import 'core/contracts/i_visit_client_lookup_provider.dart';
 import 'core/contracts/i_visit_session_lookup_provider.dart';
 import 'core/contracts/i_active_visit_context_lookup_provider.dart';
 import 'core/contracts/i_occurrence_read_provider.dart';
+import 'core/contracts/i_visit_photo_read_provider.dart';
 import 'core/contracts/i_agenda_session_bridge_provider.dart';
 import 'core/contracts/i_field_lookup_provider.dart';
 import 'core/contracts/i_field_lookup_geofence_provider.dart';
@@ -37,6 +38,8 @@ import 'modules/consultoria/fields/data/repositories/field_repository.dart';
 import 'modules/consultoria/fields/infra/field_lookup_geofence_adapter.dart';
 import 'modules/consultoria/occurrences/data/occurrence_repository.dart';
 import 'modules/consultoria/occurrences/infra/occurrence_read_adapter.dart';
+import 'modules/consultoria/quick_photo/data/quick_photo_repository.dart';
+import 'modules/consultoria/quick_photo/infra/quick_photo_read_adapter.dart';
 import 'modules/agenda/data/repositories/agenda_repository.dart';
 import 'modules/agenda/infra/agenda_session_bridge_adapter.dart';
 import 'modules/agenda/presentation/providers/agenda_provider.dart';
@@ -150,6 +153,9 @@ Future<void> main() async {
               // ADR-024: implementação concreta de IOccurrenceRead
               occurrenceReadProvider.overrideWithValue(
                 OccurrenceReadAdapter(OccurrenceRepository()),
+              ),
+              visitPhotoReadProvider.overrideWithValue(
+                QuickPhotoReadAdapter(QuickPhotoRepository()),
               ),
               // ADR-024: implementação concreta de IAgendaSessionBridge
               agendaSessionBridgeProvider.overrideWithValue(
@@ -337,7 +343,10 @@ class _BootErrorApp extends StatelessWidget {
     final msg = error.toString();
     final lower = msg.toLowerCase();
 
-    if (lower.contains('supabase_url') || lower.contains('supabase_anon_key')) {
+    if (lower.contains('supabase_url') ||
+        lower.contains('supabase_anon_key') ||
+        lower.contains('placeholder') ||
+        lower.contains('seu-projeto.supabase.co')) {
       return 'Configuração incompleta.\nContate o suporte: suporte@soloforte.com';
     }
     if (lower.contains('timeout') || lower.contains('15s')) {

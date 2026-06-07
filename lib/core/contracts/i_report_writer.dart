@@ -10,6 +10,7 @@
 // Substitui a dependência direta em generateRelatorioProvider.
 
 import 'i_occurrence_read.dart';
+import 'i_visit_photo_read.dart';
 
 /// DTO de entrada para geração de relatório de visita.
 /// Construído por map/ usando tipos de core/ — sem dependência de consultoria/.
@@ -24,6 +25,7 @@ class VisitReportInput {
     required this.startedAt,
     required this.finishedAt,
     this.occurrences = const [],
+    this.fotos = const [],
     this.talhaoId,
     this.talhaoName,
   });
@@ -49,6 +51,9 @@ class VisitReportInput {
 
   /// Ocorrências da sessão (via IOccurrenceRead — ADR-024).
   final List<OccurrenceSummary> occurrences;
+
+  /// Fotos rápidas registradas durante a sessão.
+  final List<VisitPhotoSummary> fotos;
 
   /// ID do talhão visitado (opcional).
   final String? talhaoId;
