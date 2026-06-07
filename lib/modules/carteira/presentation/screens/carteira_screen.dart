@@ -35,6 +35,7 @@ class CarteiraScreen extends ConsumerWidget {
         appBar: AppBar(
           title: const Text('Carteira'),
           bottom: const TabBar(
+            isScrollable: true,
             tabs: [
               Tab(text: 'Clientes'),
               Tab(text: 'Categorias'),
@@ -87,16 +88,14 @@ class _ClientesTab extends ConsumerWidget {
       return const Center(child: Text('Nenhum cliente ativo encontrado.'));
     }
 
-    if (categorias.isEmpty) {
-      return const Center(child: Text('Nenhuma categoria ativa.'));
-    }
-
     final percentualPorClienteCategoria = <String, int>{
       for (final r in registros)
         '${r.clienteId}_${r.categoriaId}': r.percentualFechado,
     };
 
     double mediaCliente(String clienteId) {
+      if (categorias.isEmpty) return 0;
+
       var soma = 0;
       for (final categoria in categorias) {
         soma +=
