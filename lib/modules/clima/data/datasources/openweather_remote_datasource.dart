@@ -7,6 +7,7 @@ import '../../domain/entities/clima_atual.dart';
 import '../../domain/entities/previsao_horaria.dart';
 import '../../domain/entities/previsao_diaria.dart';
 import '../../domain/entities/alerta_meteorologico.dart';
+import '../services/reverse_geocoder.dart';
 import '../datasources/i_clima_remote_datasource.dart';
 
 /// Implementação do datasource remoto usando OpenWeatherMap One Call API 3.0.
@@ -117,14 +118,19 @@ class OpenWeatherRemoteDatasource implements IClimaRemoteDatasource {
 
   // ─── Parsers ────────────────────────────────────────────────────────────────
 
-  ClimaAtual _parseClimaAtual(
+  Future<ClimaAtual> _parseClimaAtual(
     Map<String, dynamic> data,
     double lat,
     double lon,
-  ) {
+  ) async {
     final current = data['current'] as Map<String, dynamic>;
     final weather =
         (current['weather'] as List<dynamic>).first as Map<String, dynamic>;
+
+    final cidade = await ReverseGeocoder.instance.resolveCityLabel(
+      latitude: lat,
+      longitude: lon,
+    );
 
     return ClimaAtual(
       temperatura: (current['temp'] as num).toDouble(),
@@ -147,7 +153,7 @@ class OpenWeatherRemoteDatasource implements IClimaRemoteDatasource {
       ),
       latitude: lat,
       longitude: lon,
-      cidade: (data['timezone'] as String).split('/').last.replaceAll('_', ' '),
+      cidade: cidade,
       atualizadoEm: DateTime.fromMillisecondsSinceEpoch(
         (current['dt'] as int) * 1000,
       ),
