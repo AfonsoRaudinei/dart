@@ -17,22 +17,28 @@ class MapFirstQueryHandler {
     required WidgetRef ref,
     required void Function(MapSheetState state, String reason) setSheetState,
     required VoidCallback armOccurrenceMode,
+    required Future<void> Function(String drawingId, {required bool edit})
+    focusDrawing,
   }) {
     final modo = uri.queryParameters['modo'];
     final clienteId = uri.queryParameters['clienteId'];
+    final drawingId = uri.queryParameters['drawingId'];
 
-    if (modo == 'desenho' && clienteId != null) {
+    if ((modo == 'desenho' || modo == 'editar') && clienteId != null) {
       AppLogger.debug(
-        'MAP-FIRST: recebido modo=desenho clienteId=$clienteId',
+        'MAP-FIRST: recebido modo=$modo clienteId=$clienteId drawingId=$drawingId',
         tag: 'PrivateMap',
       );
-      ref
-          .read(drawingClientProvider.notifier)
-          .setClienteAtivo(clienteId);
+      ref.read(drawingClientProvider.notifier).setClienteAtivo(clienteId);
       setSheetState(
         const MapSheetState(type: MapSheetType.draw),
         'query_param_modo_desenho',
       );
+      if (drawingId != null && drawingId.isNotEmpty) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          focusDrawing(drawingId, edit: modo == 'editar');
+        });
+      }
       return;
     }
 
@@ -42,9 +48,7 @@ class MapFirstQueryHandler {
         tag: 'PrivateMap',
       );
       if (clienteId != null) {
-        ref
-            .read(drawingClientProvider.notifier)
-            .setClienteAtivo(clienteId);
+        ref.read(drawingClientProvider.notifier).setClienteAtivo(clienteId);
       }
       setSheetState(
         const MapSheetState(type: MapSheetType.draw),

@@ -18,6 +18,7 @@ import '../widgets/client_hub_section.dart';
 import '../widgets/client_detail_sub_widgets.dart';
 import '../widgets/client_edit_form.dart';
 import '../widgets/talhao_map_preview.dart';
+import '../../../../drawing/presentation/providers/drawing_provider.dart';
 
 class ClientDetailScreen extends ConsumerStatefulWidget {
   final String clientId;
@@ -591,8 +592,28 @@ class _ClientDrawingFieldsSection extends ConsumerWidget {
                 nome: field.name,
                 areaHa: field.areaHa,
                 subtitle: farmName == null ? null : 'Fazenda: $farmName',
-                onTap: () =>
-                    context.go('/map?modo=desenho&clienteId=${client.id}'),
+                onTap: () => context.go(_mapViewUri(field)),
+                actions: [
+                  IconButton(
+                    tooltip: 'Abrir no mapa',
+                    icon: const Icon(Icons.open_in_full, size: 20),
+                    onPressed: () => context.go(_mapViewUri(field)),
+                  ),
+                  IconButton(
+                    tooltip: 'Editar no mapa',
+                    icon: const Icon(Icons.edit_outlined, size: 20),
+                    onPressed: () => context.go(_mapEditUri(field)),
+                  ),
+                  IconButton(
+                    tooltip: 'Excluir talhão',
+                    icon: const Icon(
+                      Icons.delete_outline,
+                      size: 20,
+                      color: Colors.red,
+                    ),
+                    onPressed: () => _confirmDeleteDrawing(context, ref, field),
+                  ),
+                ],
               );
             }),
           ],
@@ -611,5 +632,70 @@ class _ClientDrawingFieldsSection extends ConsumerWidget {
       if (farm.id == farmId) return farm.name;
     }
     return null;
+  }
+
+  Future<void> _confirmDeleteDrawing(
+    BuildContext context,
+    WidgetRef ref,
+    ClientDrawingFieldSummary field,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Excluir talhão?'),
+        content: Text('O talhão "${field.name}" será removido do mapa.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Excluir', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !context.mounted) return;
+
+    final repository = ref.read(drawingRepositoryProvider);
+    await repository.deleteFeature(field.id);
+    final totalAreaHa = await repository.getTotalAreaByClienteId(client.id);
+    await repository.updateClientAreaTotal(client.id, totalAreaHa);
+
+    ref.invalidate(clientDrawingFieldsProvider(client.id));
+    if (field.farmId != null) {
+      ref.invalidate(farmLinkedFieldsProvider(field.farmId!));
+    }
+
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Talhão excluído.')));
+  }
+
+  String _mapViewUri(ClientDrawingFieldSummary field) {
+    return Uri(
+      path: AppRoutes.map,
+      queryParameters: {
+        'modo': 'desenho',
+        'clienteId': client.id,
+        if (field.farmId != null) 'fazendaId': field.farmId!,
+        'drawingId': field.id,
+      },
+    ).toString();
+  }
+
+  String _mapEditUri(ClientDrawingFieldSummary field) {
+    return Uri(
+      path: AppRoutes.map,
+      queryParameters: {
+        'modo': 'editar',
+        'clienteId': client.id,
+        if (field.farmId != null) 'fazendaId': field.farmId!,
+        'drawingId': field.id,
+      },
+    ).toString();
   }
 }

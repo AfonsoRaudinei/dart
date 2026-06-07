@@ -15,6 +15,7 @@ import '../../modules/auth/services/auth_service.dart';
 import '../../core/utils/app_logger.dart';
 import '../../modules/drawing/presentation/providers/drawing_provider.dart';
 import '../../modules/drawing/domain/drawing_state.dart';
+import '../../modules/drawing/domain/models/drawing_models.dart';
 import '../../modules/dashboard/providers/location_providers.dart';
 import '../../modules/consultoria/occurrences/domain/occurrence.dart' as occ;
 import '../../modules/marketing/domain/enums/case_tipo.dart';
@@ -97,8 +98,44 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
         ref: ref,
         setSheetState: _setSheetState,
         armOccurrenceMode: _armOccurrenceMode,
+        focusDrawing: _focusDrawingFromQuery,
       );
     });
+  }
+
+  Future<void> _focusDrawingFromQuery(
+    String drawingId, {
+    required bool edit,
+  }) async {
+    final controller = ref.read(drawingControllerProvider);
+    await controller.loadFeatures();
+    if (!mounted) return;
+
+    DrawingFeature? feature;
+    for (final item in controller.features) {
+      if (item.id == drawingId) {
+        feature = item;
+        break;
+      }
+    }
+
+    if (feature == null) {
+      AppLogger.warning(
+        'Drawing informado na rota não foi encontrado: $drawingId',
+        tag: 'PrivateMap',
+      );
+      return;
+    }
+
+    controller.selectFeature(feature);
+    MapViewportController.focusDrawingFeature(
+      mapController: _mapController,
+      feature: feature,
+    );
+
+    if (edit) {
+      controller.startEditMode();
+    }
   }
 
   @override

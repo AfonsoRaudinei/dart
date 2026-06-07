@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import 'package:soloforte_app/core/router/app_routes.dart';
 import 'package:soloforte_app/modules/consultoria/farms/data/repositories/farm_repository.dart';
 import 'package:soloforte_app/modules/consultoria/clients/presentation/providers/field_providers.dart';
+import 'package:soloforte_app/modules/consultoria/clients/presentation/widgets/talhao_map_preview.dart';
+import 'package:soloforte_app/modules/drawing/presentation/providers/drawing_provider.dart';
 
 final farmDetailProvider = FutureProvider.family.autoDispose<dynamic, String>((
   ref,
@@ -127,11 +131,7 @@ class FarmDetailScreen extends ConsumerWidget {
                             ),
                             TextButton.icon(
                               onPressed: () {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Adicionar Talhão: Em breve'),
-                                  ),
-                                );
+                                context.go(_mapCreateUri());
                               },
                               icon: const Icon(
                                 Icons.add,
@@ -166,51 +166,16 @@ class FarmDetailScreen extends ConsumerWidget {
                             }
 
                             return Column(
-                              children: fields
-                                  .map(
-                                    (field) => Container(
-                                      margin: const EdgeInsets.only(bottom: 12),
-                                      child: ListTile(
-                                        contentPadding:
-                                            const EdgeInsets.symmetric(
-                                              horizontal: 16,
-                                              vertical: 8,
-                                            ),
-                                        tileColor: Colors.white,
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(
-                                            12,
-                                          ),
-                                          side: BorderSide(
-                                            color: Colors.grey[200]!,
-                                          ),
-                                        ),
-                                        title: Text(
-                                          field.name,
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                        ),
-                                        subtitle: Text(_fieldSubtitle(field)),
-                                        trailing: const Icon(
-                                          Icons.chevron_right,
-                                          color: Colors.grey,
-                                        ),
-                                        onTap: () {
-                                          ScaffoldMessenger.of(
-                                            context,
-                                          ).showSnackBar(
-                                            SnackBar(
-                                              content: Text(
-                                                'Talhão: ${field.name}',
-                                              ),
-                                            ),
-                                          );
-                                        },
-                                      ),
-                                    ),
-                                  )
-                                  .toList(),
+                              children: fields.map((field) {
+                                return TalhaoMapPreviewWidget(
+                                  vertices: field.vertices,
+                                  nome: field.name,
+                                  areaHa: field.areaHa,
+                                  subtitle: _fieldSubtitle(field),
+                                  onTap: () => _openField(context, field),
+                                  actions: _fieldActions(context, ref, field),
+                                );
+                              }).toList(),
                             );
                           },
                           loading: () {
@@ -256,5 +221,119 @@ class FarmDetailScreen extends ConsumerWidget {
 
   String _formatAreaHa(double areaHa) {
     return areaHa.toStringAsFixed(areaHa >= 100 ? 1 : 2);
+  }
+
+  List<Widget> _fieldActions(
+    BuildContext context,
+    WidgetRef ref,
+    FarmLinkedFieldSummary field,
+  ) {
+    final actions = <Widget>[
+      IconButton(
+        tooltip: 'Abrir no mapa',
+        icon: const Icon(Icons.open_in_full, size: 20),
+        onPressed: () => _openField(context, field),
+      ),
+    ];
+
+    if (field.isDrawing) {
+      actions.addAll([
+        IconButton(
+          tooltip: 'Editar no mapa',
+          icon: const Icon(Icons.edit_outlined, size: 20),
+          onPressed: () => context.go(_mapEditUri(field.id)),
+        ),
+        IconButton(
+          tooltip: 'Excluir talhão',
+          icon: const Icon(Icons.delete_outline, size: 20, color: Colors.red),
+          onPressed: () => _confirmDeleteDrawing(context, ref, field),
+        ),
+      ]);
+    }
+
+    return actions;
+  }
+
+  void _openField(BuildContext context, FarmLinkedFieldSummary field) {
+    if (field.isDrawing) {
+      context.go(_mapViewUri(field.id));
+      return;
+    }
+
+    context.go(AppRoutes.fieldDetail(clientId, farmId, field.id));
+  }
+
+  Future<void> _confirmDeleteDrawing(
+    BuildContext context,
+    WidgetRef ref,
+    FarmLinkedFieldSummary field,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Excluir talhão?'),
+        content: Text('O talhão "${field.name}" será removido do mapa.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Excluir', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !context.mounted) return;
+
+    final repository = ref.read(drawingRepositoryProvider);
+    await repository.deleteFeature(field.id);
+    final totalAreaHa = await repository.getTotalAreaByClienteId(clientId);
+    await repository.updateClientAreaTotal(clientId, totalAreaHa);
+
+    ref.invalidate(farmLinkedFieldsProvider(farmId));
+    ref.invalidate(clientDrawingFieldsProvider(clientId));
+
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Talhão excluído.')));
+  }
+
+  String _mapCreateUri() {
+    return Uri(
+      path: AppRoutes.map,
+      queryParameters: {
+        'modo': 'desenho',
+        'clienteId': clientId,
+        'fazendaId': farmId,
+      },
+    ).toString();
+  }
+
+  String _mapViewUri(String drawingId) {
+    return Uri(
+      path: AppRoutes.map,
+      queryParameters: {
+        'modo': 'desenho',
+        'clienteId': clientId,
+        'fazendaId': farmId,
+        'drawingId': drawingId,
+      },
+    ).toString();
+  }
+
+  String _mapEditUri(String drawingId) {
+    return Uri(
+      path: AppRoutes.map,
+      queryParameters: {
+        'modo': 'editar',
+        'clienteId': clientId,
+        'fazendaId': farmId,
+        'drawingId': drawingId,
+      },
+    ).toString();
   }
 }

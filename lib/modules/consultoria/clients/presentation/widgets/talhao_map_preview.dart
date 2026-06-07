@@ -11,6 +11,7 @@ class TalhaoMapPreviewWidget extends StatelessWidget {
     required this.areaHa,
     this.subtitle,
     this.onTap,
+    this.actions = const [],
   });
 
   final List<LatLng> vertices;
@@ -18,6 +19,7 @@ class TalhaoMapPreviewWidget extends StatelessWidget {
   final double areaHa;
   final String? subtitle;
   final VoidCallback? onTap;
+  final List<Widget> actions;
 
   @override
   Widget build(BuildContext context) {
@@ -68,22 +70,27 @@ class TalhaoMapPreviewWidget extends StatelessWidget {
                       ],
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  Text(
-                    '${areaHa.toStringAsFixed(2)} ha',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.grey.shade800,
+                  if (actions.isEmpty) ...[
+                    const SizedBox(width: 12),
+                    Text(
+                      '${areaHa.toStringAsFixed(2)} ha',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.grey.shade800,
+                      ),
                     ),
-                  ),
-                  if (onTap != null) ...[
-                    const SizedBox(width: 4),
-                    const Icon(
-                      Icons.chevron_right,
-                      color: Color(0xFFC7C7CC),
-                      size: 20,
-                    ),
+                    if (onTap != null) ...[
+                      const SizedBox(width: 4),
+                      const Icon(
+                        Icons.chevron_right,
+                        color: Color(0xFFC7C7CC),
+                        size: 20,
+                      ),
+                    ],
+                  ] else ...[
+                    const SizedBox(width: 8),
+                    Row(mainAxisSize: MainAxisSize.min, children: actions),
                   ],
                 ],
               ),

@@ -6,6 +6,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/state/map_ui_providers.dart';
 import '../../../../modules/consultoria/clients/presentation/providers/field_providers.dart';
@@ -13,6 +14,7 @@ import '../../../../modules/consultoria/services/talhao_map_adapter.dart';
 import '../../../../modules/dashboard/domain/location_state.dart';
 import '../../../../modules/dashboard/providers/location_providers.dart';
 import '../../../../modules/dashboard/services/location_service.dart';
+import '../../../../modules/drawing/domain/models/drawing_models.dart';
 
 class MapViewportController {
   MapViewportController._();
@@ -135,5 +137,35 @@ class MapViewportController {
         }
       }
     }
+  }
+
+  static bool focusDrawingFeature({
+    required MapController mapController,
+    required DrawingFeature feature,
+  }) {
+    final points = <LatLng>[];
+    final geometry = feature.geometry;
+
+    if (geometry is DrawingPolygon) {
+      for (final ring in geometry.coordinates) {
+        points.addAll(ring.map((point) => LatLng(point[1], point[0])));
+      }
+    } else if (geometry is DrawingMultiPolygon) {
+      for (final polygon in geometry.coordinates) {
+        for (final ring in polygon) {
+          points.addAll(ring.map((point) => LatLng(point[1], point[0])));
+        }
+      }
+    }
+
+    if (points.isEmpty) return false;
+
+    mapController.fitCamera(
+      CameraFit.bounds(
+        bounds: LatLngBounds.fromPoints(points),
+        padding: const EdgeInsets.all(48),
+      ),
+    );
+    return true;
   }
 }
