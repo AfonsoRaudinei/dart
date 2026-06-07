@@ -9,6 +9,7 @@ import '../../domain/entities/alerta_meteorologico.dart';
 import '../../domain/entities/clima_atual.dart';
 import '../../domain/entities/previsao_diaria.dart';
 import '../../domain/entities/previsao_horaria.dart';
+import '../services/reverse_geocoder.dart';
 import '../datasources/i_clima_remote_datasource.dart';
 
 /// Implementação principal usando Google Maps Platform Weather API.
@@ -41,7 +42,6 @@ class GoogleWeatherRemoteDatasource implements IClimaRemoteDatasource {
         final day = await _fetchFirstForecastDay(lat, lon);
 
         final weather = _map(current['weatherCondition']);
-        final timeZone = _map(current['timeZone']);
         final wind = _map(current['wind']);
         final windDirection = _map(wind['direction']);
         final windSpeed = _map(wind['speed']);
@@ -53,6 +53,11 @@ class GoogleWeatherRemoteDatasource implements IClimaRemoteDatasource {
 
         final isDaytime = current['isDaytime'] == true;
         final condType = _readString(weather['type']);
+
+        final cidade = await ReverseGeocoder.instance.resolveCityLabel(
+          latitude: lat,
+          longitude: lon,
+        );
 
         return ClimaAtual(
           temperatura: _readDegrees(current['temperature']),
@@ -71,7 +76,7 @@ class GoogleWeatherRemoteDatasource implements IClimaRemoteDatasource {
           porSol: _parseDateTime(sunEvents['sunsetTime']) ?? DateTime.now(),
           latitude: lat,
           longitude: lon,
-          cidade: _timezoneToCity(_readString(timeZone['id'])),
+          cidade: cidade,
           atualizadoEm: _parseDateTime(current['currentTime']) ?? DateTime.now(),
         );
       },
@@ -365,12 +370,6 @@ class GoogleWeatherRemoteDatasource implements IClimaRemoteDatasource {
     final valid = values.where((v) => v > 0).toList();
     if (valid.isEmpty) return 0;
     return valid.reduce((a, b) => a + b) / valid.length;
-  }
-
-  String _timezoneToCity(String tz) {
-    if (tz.isEmpty) return 'Local atual';
-    final parts = tz.split('/');
-    return parts.isNotEmpty ? parts.last.replaceAll('_', ' ') : tz;
   }
 
   String _readCardinalOrDegrees(Map<String, dynamic> direction) {
