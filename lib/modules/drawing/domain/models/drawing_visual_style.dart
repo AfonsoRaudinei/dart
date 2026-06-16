@@ -46,26 +46,27 @@ class FieldStyle {
   /// Estilo padrão para talhões consolidados (Verde SoloForte)
   static const standard = FieldStyle(
     fillColor: PremiumTokens.brandGreen,
-    borderColor: Color(0xFF248A3D),
-    fillOpacity: 0.2, // Mais sutil para não poluir
+    borderColor: Color(0xFF145A2A),
+    borderWidth: 3.0,
+    fillOpacity: 0.28, // Mais legível sobre satélite sem cobrir demais
   );
 
   /// Estilo para rascunhos (Cinza/Neutro, tracejado)
   static const draft = FieldStyle(
     fillColor: Colors.grey,
     borderColor: Colors.blueGrey,
-    borderWidth: 2.0,
+    borderWidth: 2.5,
     isDashed: true,
-    fillOpacity: 0.2,
+    fillOpacity: 0.24,
   );
 
   /// Estilo para pendente de sincronização (Laranja sutil)
   static const pendingSync = FieldStyle(
     fillColor: Colors.orange,
     borderColor: Colors.deepOrange,
-    borderWidth: 2.0,
+    borderWidth: 2.5,
     isDashed: true, // Indica que ainda "não está lá"
-    fillOpacity: 0.2,
+    fillOpacity: 0.24,
   );
 
   /// Estilo para conflito/erro (Vermelho alerta)
@@ -80,8 +81,8 @@ class FieldStyle {
   static const selected = FieldStyle(
     fillColor: Colors.blue,
     borderColor: Colors.blueAccent,
-    borderWidth: 4.0, // Destaque na borda
-    fillOpacity: 0.3, // Pouco mais forte
+    borderWidth: 4.5, // Destaque na borda
+    fillOpacity: 0.34, // Seleção precisa ficar inequívoca
   );
 
   /// Estilo para modo de edição (Roxo, muito transparente para ver vértices)
@@ -104,6 +105,16 @@ class FieldStyle {
 
 /// Extensão para obter o estilo diretamente de uma DrawingFeature
 extension DrawingFeatureStyle on DrawingFeature {
+  static Color _emphasizeBorder(Color base) {
+    final hsl = HSLColor.fromColor(base);
+    final darkerLightness = (hsl.lightness - 0.22).clamp(0.12, 0.45);
+    final strongerSaturation = (hsl.saturation + 0.08).clamp(0.0, 1.0);
+    return hsl
+        .withLightness(darkerLightness)
+        .withSaturation(strongerSaturation)
+        .toColor();
+  }
+
   FieldVisualState get visualState {
     if (!properties.ativo) return FieldVisualState.archived;
 
@@ -135,8 +146,9 @@ extension DrawingFeatureStyle on DrawingFeature {
           final customColor = Color(properties.cor!);
           return FieldStyle(
             fillColor: customColor,
-            borderColor: customColor,
-            fillOpacity: 0.2,
+            borderColor: _emphasizeBorder(customColor),
+            borderWidth: 3.0,
+            fillOpacity: 0.26,
           );
         }
         return FieldStyle.standard;
