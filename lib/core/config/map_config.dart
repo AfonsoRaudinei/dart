@@ -318,6 +318,12 @@ class MapConfig {
   /// 0.6 = equilíbrio entre visibilidade e mapa base legível.
   static const double radarOverlayOpacity = 0.6;
 
+  /// Zoom máximo nativo confiável para tiles RainViewer.
+  static const int rainViewerMaxNativeZoom = 10;
+
+  /// Zoom máximo visual do overlay; acima do nativo o FlutterMap faz overzoom.
+  static const double rainViewerMaxZoom = satelliteMaxZoom;
+
   /// Intervalo entre frames da animação do radar RainViewer.
   static const Duration rainViewerAnimationFrameInterval = Duration(
     milliseconds: 700,

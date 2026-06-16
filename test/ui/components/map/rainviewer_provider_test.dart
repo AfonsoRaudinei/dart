@@ -141,6 +141,8 @@ void main() {
       expect(MapConfig.rainViewerTileBase, isNotEmpty);
       expect(MapConfig.radarOverlayOpacity, greaterThan(0.0));
       expect(MapConfig.radarOverlayOpacity, lessThanOrEqualTo(1.0));
+      expect(MapConfig.rainViewerMaxNativeZoom, 10);
+      expect(MapConfig.rainViewerMaxZoom, MapConfig.satelliteMaxZoom);
       expect(
         MapConfig.rainViewerAnimationFrameInterval,
         const Duration(milliseconds: 700),

@@ -20,7 +20,9 @@ import '../providers/rainviewer_provider.dart';
 /// Posicionamento: deve estar no FlutterMap.children APÓS o [MapLayersWidget]
 /// (camada base) e ANTES dos markers.
 class RadarLayerWidget extends ConsumerStatefulWidget {
-  const RadarLayerWidget({super.key});
+  final TileProvider? tileProvider;
+
+  const RadarLayerWidget({super.key, this.tileProvider});
 
   @override
   ConsumerState<RadarLayerWidget> createState() => _RadarLayerWidgetState();
@@ -86,14 +88,22 @@ class _RadarLayerWidgetState extends ConsumerState<RadarLayerWidget> {
         final frameIndex = rawIndex.clamp(0, frames.length - 1);
         final tileUrl = frames[frameIndex].urlTemplate;
 
-        return Opacity(
-          opacity: MapConfig.radarOverlayOpacity,
-          child: TileLayer(
-            urlTemplate: tileUrl,
-            userAgentPackageName: MapConfig.userAgent,
-            // Tiles RainViewer não usam subdomínios
-            subdomains: const [],
-          ),
+        return Stack(
+          children: [
+            Opacity(
+              opacity: MapConfig.radarOverlayOpacity,
+              child: TileLayer(
+                urlTemplate: tileUrl,
+                userAgentPackageName: MapConfig.userAgent,
+                maxZoom: MapConfig.rainViewerMaxZoom,
+                maxNativeZoom: MapConfig.rainViewerMaxNativeZoom,
+                tileProvider: widget.tileProvider,
+                // Tiles RainViewer não usam subdomínios.
+                subdomains: const [],
+              ),
+            ),
+            const _RadarActiveIndicator(),
+          ],
         );
       },
       // Durante o carregamento, o mapa continua íntegro sem overlay.
@@ -105,6 +115,35 @@ class _RadarLayerWidgetState extends ConsumerState<RadarLayerWidget> {
         _stopAnimation();
         return const _RadarUnavailableIndicator();
       },
+    );
+  }
+}
+
+class _RadarActiveIndicator extends StatelessWidget {
+  const _RadarActiveIndicator();
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child: SafeArea(
+        child: Align(
+          alignment: Alignment.topLeft,
+          child: Container(
+            margin: const EdgeInsets.only(left: 12, top: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+            decoration: BoxDecoration(
+              color: Colors.black.withValues(alpha: 0.56),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Text(
+              'Radar ativo · sem chuva visível onde não há eco',
+              style: TextStyle(color: Colors.white, fontSize: 12),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
