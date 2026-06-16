@@ -13,34 +13,41 @@ class NdviRepositoryImpl implements INdviRepository {
 
   @override
   Future<NdviImage?> getLatestByFieldId(String fieldId) async {
-    // 1. Cache local primeiro (offline-first)
-    final cached = await _local.getLatest(fieldId);
-    if (cached != null) return cached.toEntity();
-
-    // 2. Sem cache — buscar bbox/geometria via IFieldLookup
-    final summary = await _fieldLookup.findById(fieldId);
-    if (summary == null || (summary.bbox == null && summary.geometry == null)) {
-      return null;
-    }
-
-    // 3. Buscar remoto
-    final model = await _remote.fetchNdvi(
-      fieldId: fieldId,
-      bbox: summary.bbox,
-      geometry: summary.geometry,
-    );
-    if (model == null) return null;
-
-    // 4. Salvar no cache local
-    final image = model.toEntity();
-    await _local.save(image);
-    return image;
+    final images = await getByFieldId(fieldId);
+    return images.isEmpty ? null : images.first;
   }
 
   @override
   Future<List<NdviImage>> getByFieldId(String fieldId) async {
-    final list = await _local.getAll(fieldId);
-    return list.map((m) => m.toEntity()).toList();
+    final cached = await _local.getAll(fieldId);
+    if (cached.isNotEmpty) {
+      return cached.map((model) => model.toEntity()).toList();
+    }
+
+    return _fetchAndCacheFirstImage(fieldId);
+  }
+
+  Future<List<NdviImage>> _fetchAndCacheFirstImage(String fieldId) async {
+    try {
+      final summary = await _fieldLookup.findById(fieldId);
+      if (summary == null ||
+          (summary.bbox == null && summary.geometry == null)) {
+        return const [];
+      }
+
+      final model = await _remote.fetchNdvi(
+        fieldId: fieldId,
+        bbox: summary.bbox,
+        geometry: summary.geometry,
+      );
+      if (model == null) return const [];
+
+      final image = model.toEntity();
+      await _local.save(image);
+      return [image];
+    } catch (_) {
+      return const [];
+    }
   }
 
   @override
