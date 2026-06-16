@@ -100,7 +100,6 @@ class CarteiraLancamento {
       'cliente_id': clienteId,
       'quantidade': quantidade,
       'closed_percent': closedPercent,
-      'percentual_fechado': percentualFechado,
       'observacao': observacao,
       'tipo_fechamento': tipoFechamento?.dbValue,
       'nome_concorrente': nomeConcorrente,

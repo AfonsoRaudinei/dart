@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:soloforte_app/core/services/sync_orchestrator.dart';
 import '../providers/clients_providers.dart';
 import '../../../../../core/router/app_routes.dart';
 import '../../../../../ui/theme/premium/design_tokens.dart';
@@ -13,6 +14,12 @@ class ClientListScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.listen(syncOrchestratorProvider, (_, orchestrator) {
+      if (!orchestrator.isSyncing) {
+        ref.invalidate(clientsListProvider);
+      }
+    });
+
     final clientsAsync = ref.watch(filteredClientsProvider);
     final filter = ref.watch(clientFilterProvider);
 
@@ -188,29 +195,29 @@ class ClientListScreen extends ConsumerWidget {
                       ),
                       confirmDismiss: (_) async {
                         return await showDialog<bool>(
-                          context: context,
-                          builder: (ctx) => AlertDialog(
-                            title: const Text('Excluir cliente'),
-                            content: Text(
-                              'Deseja excluir "${client.name}"?\nEsta ação não pode ser desfeita.',
-                            ),
-                            actions: [
-                              TextButton(
-                                onPressed: () =>
-                                    Navigator.of(ctx).pop(false),
-                                child: const Text('Cancelar'),
-                              ),
-                              TextButton(
-                                onPressed: () =>
-                                    Navigator.of(ctx).pop(true),
-                                child: const Text(
-                                  'Excluir',
-                                  style: TextStyle(color: Colors.red),
+                              context: context,
+                              builder: (ctx) => AlertDialog(
+                                title: const Text('Excluir cliente'),
+                                content: Text(
+                                  'Deseja excluir "${client.name}"?\nEsta ação não pode ser desfeita.',
                                 ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () =>
+                                        Navigator.of(ctx).pop(false),
+                                    child: const Text('Cancelar'),
+                                  ),
+                                  TextButton(
+                                    onPressed: () =>
+                                        Navigator.of(ctx).pop(true),
+                                    child: const Text(
+                                      'Excluir',
+                                      style: TextStyle(color: Colors.red),
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ],
-                          ),
-                        ) ??
+                            ) ??
                             false;
                       },
                       onDismissed: (_) {
@@ -219,8 +226,7 @@ class ClientListScreen extends ConsumerWidget {
                             .deleteClient(client.id);
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content:
-                                Text('"${client.name}" excluído'),
+                            content: Text('"${client.name}" excluído'),
                             duration: const Duration(seconds: 3),
                           ),
                         );
@@ -239,54 +245,58 @@ class ClientListScreen extends ConsumerWidget {
                             boxShadow: PremiumTokens.tightShadow,
                           ),
                           child: Row(
-                          children: [
-                            ClientAvatarWidget(
-                              fotoPath: client.photoPath,
-                              nome: client.name,
-                              radius: 24,
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    client.name,
-                                    style: Theme.of(context).textTheme.bodyLarge
-                                        ?.copyWith(fontWeight: FontWeight.w600),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    '${client.city} - ${client.state}',
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .bodyMedium
-                                        ?.copyWith(
-                                          color:
-                                              PremiumTokens.textSecondaryLight,
-                                        ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    client.phone,
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .labelMedium
-                                        ?.copyWith(
-                                          color:
-                                              PremiumTokens.textTertiaryLight,
-                                        ),
-                                  ),
-                                ],
+                            children: [
+                              ClientAvatarWidget(
+                                fotoPath: client.photoPath,
+                                nome: client.name,
+                                radius: 24,
                               ),
-                            ),
-                            const Icon(
-                              SFIcons.chevronRight,
-                              color: PremiumTokens.textTertiaryLight,
-                            ),
-                          ],
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      client.name,
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodyLarge
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      '${client.city} - ${client.state}',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodyMedium
+                                          ?.copyWith(
+                                            color: PremiumTokens
+                                                .textSecondaryLight,
+                                          ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      client.phone,
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .labelMedium
+                                          ?.copyWith(
+                                            color:
+                                                PremiumTokens.textTertiaryLight,
+                                          ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const Icon(
+                                SFIcons.chevronRight,
+                                color: PremiumTokens.textTertiaryLight,
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
                       ),
                     );
                   }, childCount: clients.length),
