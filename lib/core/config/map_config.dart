@@ -317,6 +317,11 @@ class MapConfig {
   /// Opacidade do overlay de radar (0.0–1.0).
   /// 0.6 = equilíbrio entre visibilidade e mapa base legível.
   static const double radarOverlayOpacity = 0.6;
+
+  /// Intervalo entre frames da animação do radar RainViewer.
+  static const Duration rainViewerAnimationFrameInterval = Duration(
+    milliseconds: 700,
+  );
 }
 
 /// Enum para facilitar seleção de estilos
