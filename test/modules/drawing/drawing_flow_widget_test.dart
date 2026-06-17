@@ -407,6 +407,52 @@ void main() {
 
       controller.dispose();
     });
+
+    testWidgets('↩️ Cancelar revisão fecha sheet e limpa operação', (
+      WidgetTester tester,
+    ) async {
+      tester.view.physicalSize = const Size(800, 2000);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final controller = DrawingController(repository: MockDrawingRepository());
+      var closeCount = 0;
+
+      await tester.pumpWidget(
+        ProviderScope(
+          child: MaterialApp(
+            home: Scaffold(
+              body: SingleChildScrollView(
+                child: DrawingSheet(
+                  controller: controller,
+                  onSaved: () => closeCount++,
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      controller.selectTool('polygon');
+      controller.appendDrawingPoint(const LatLng(-15.7801, -47.9292));
+      controller.appendDrawingPoint(const LatLng(-15.7802, -47.9293));
+      controller.appendDrawingPoint(const LatLng(-15.7803, -47.9291));
+      controller.completeDrawing();
+
+      await tester.pumpAndSettle();
+      expect(controller.currentState, DrawingState.reviewing);
+
+      final cancelButton = find.text('CANCELAR');
+      await tester.ensureVisible(cancelButton);
+      await tester.tap(cancelButton);
+      await tester.pumpAndSettle();
+
+      expect(closeCount, 1);
+      expect(controller.currentState, DrawingState.idle);
+
+      controller.dispose();
+    });
   });
 
   group('FIX-DRAW-FLOW-02 — Regressão Sheet State', () {

@@ -877,6 +877,7 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
       },
       onDeleteSelected: () {
         widget.controller.deleteSelectedFeatures();
+        widget.onSaved?.call();
       },
       isMultiSelectEnabled: widget.controller.isMultiSelectEnabled,
       selectedCount: widget.controller.selectedFeatureIds.length,
@@ -887,8 +888,8 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
         // 2. Deletar imediatamente
         widget.controller.deleteFeature(feature.id);
 
-        // 3. Fechar o sheet
-        Navigator.of(context, rootNavigator: false).pop();
+        // 3. Fechar o sheet pelo controlador do mapa, sem navegar.
+        widget.onSaved?.call();
 
         // 4. Mostrar feedback com Undo
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1207,6 +1208,7 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
                     onPressed: () {
                       _resetReviewForm();
                       widget.controller.cancelOperation();
+                      widget.onSaved?.call();
                     },
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 16),
@@ -1234,7 +1236,9 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
                 ),
               ],
             ),
-            SizedBox(height: MediaQuery.of(context).padding.bottom + 16),
+            SizedBox(
+              height: kFabSafeArea + MediaQuery.of(context).padding.bottom + 16,
+            ),
           ],
         ),
       ),

@@ -241,6 +241,10 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
     }
     controller.completeDrawing();
     if (controller.currentState != DrawingState.reviewing) return;
+    _setSheetState(
+      const MapSheetState(type: MapSheetType.draw),
+      'FinishDrawing: Opening draw review sheet',
+    );
   }
 
   // ── _toggleDrawMode ── delegate ADR-031 F4 ────────────────────────────
