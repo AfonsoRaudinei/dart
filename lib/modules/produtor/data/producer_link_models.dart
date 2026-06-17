@@ -124,11 +124,13 @@ class ProducerOwnField {
   final String id;
   final String name;
   final double areaHa;
+  final bool hasGeometry;
 
   const ProducerOwnField({
     required this.id,
     required this.name,
     required this.areaHa,
+    this.hasGeometry = false,
   });
 }
 

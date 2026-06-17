@@ -123,14 +123,34 @@ class ProducerPropertyRepository {
     required String name,
     required double areaHa,
   }) async {
+    final currentField = fieldId == null
+        ? null
+        : await _fieldRepository.getFieldById(fieldId);
     final field = Talhao(
       id: fieldId ?? _uuid.v4(),
       name: name.trim(),
       areaHa: areaHa,
-      crop: '',
-      harvest: '',
+      crop: currentField?.crop ?? '',
+      harvest: currentField?.harvest ?? '',
+      geometry: currentField?.geometry,
+      perimeter: currentField?.perimeter,
+      thumbnailPath: currentField?.thumbnailPath,
+      syncStatus: currentField?.syncStatus,
     );
     await _fieldRepository.saveField(field, farmId);
+  }
+
+  Future<void> deleteOwnFarm(String farmId) async {
+    final fields = await _fieldRepository.getFieldsByFarmId(farmId);
+    if (fields.isNotEmpty) {
+      throw StateError('Remova os talhões antes de excluir a fazenda.');
+    }
+
+    await _farmRepository.deleteFarm(farmId);
+  }
+
+  Future<void> deleteOwnField(String fieldId) async {
+    await _fieldRepository.deleteField(fieldId);
   }
 
   User _currentUser() {
@@ -164,6 +184,7 @@ class ProducerPropertyRepository {
               id: field.id,
               name: field.name,
               areaHa: field.areaHa,
+              hasGeometry: field.geometry != null,
             ),
           )
           .toList(),

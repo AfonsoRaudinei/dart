@@ -9,6 +9,8 @@ import '../../data/producer_link_models.dart';
 import '../../data/producer_link_repository.dart';
 import '../../data/producer_property_repository.dart';
 
+part 'producer_property_forms.dart';
+
 class ProducerPropertyScreen extends ConsumerStatefulWidget {
   const ProducerPropertyScreen({super.key});
 
@@ -88,6 +90,58 @@ class _ProducerPropertyScreenState
     ref.invalidate(producerPropertyDashboardProvider);
   }
 
+  Future<void> _deleteFarm(ProducerOwnFarm farm) async {
+    final confirmed = await _confirmDelete(
+      context,
+      title: 'Excluir fazenda?',
+      message: 'A fazenda "${farm.name}" será removida da sua propriedade.',
+    );
+    if (confirmed != true) return;
+
+    try {
+      await ref.read(producerPropertyRepositoryProvider).deleteOwnFarm(farm.id);
+      ref.invalidate(producerPropertyDashboardProvider);
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Fazenda excluída.')));
+    } on StateError catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.message)));
+    }
+  }
+
+  Future<void> _deleteField(ProducerOwnField field) async {
+    final confirmed = await _confirmDelete(
+      context,
+      title: 'Excluir talhão?',
+      message: 'O talhão "${field.name}" será removido da sua propriedade.',
+    );
+    if (confirmed != true) return;
+
+    await ref.read(producerPropertyRepositoryProvider).deleteOwnField(field.id);
+    ref.invalidate(producerPropertyDashboardProvider);
+    if (!mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Talhão excluído.')));
+  }
+
+  void _openDrawing(ProducerOwnProperty property, ProducerOwnFarm farm) {
+    context.go(
+      Uri(
+        path: AppRoutes.map,
+        queryParameters: {
+          'modo': 'desenho',
+          'clienteId': property.clientId,
+          'fazendaId': farm.id,
+        },
+      ).toString(),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final dashboardAsync = ref.watch(producerPropertyDashboardProvider);
@@ -134,9 +188,12 @@ class _ProducerPropertyScreenState
                         onSubmitToken: _acceptToken,
                         onAddFarm: () => _saveFarm(),
                         onEditFarm: (farm) => _saveFarm(farm: farm),
+                        onDeleteFarm: _deleteFarm,
                         onAddField: (farm) => _saveField(farm),
                         onEditField: (farm, field) =>
                             _saveField(farm, field: field),
+                        onDeleteField: (_, field) => _deleteField(field),
+                        onOpenDrawing: _openDrawing,
                       ),
                       loading: () =>
                           const Center(child: CircularProgressIndicator()),
@@ -156,204 +213,6 @@ class _ProducerPropertyScreenState
   }
 }
 
-Future<_FarmFormData?> _showFarmFormDialog(
-  BuildContext context, {
-  ProducerOwnFarm? farm,
-}) {
-  final nameController = TextEditingController(text: farm?.name ?? '');
-  final cityController = TextEditingController(text: farm?.city ?? '');
-  final stateController = TextEditingController(text: farm?.state ?? '');
-  final areaController = TextEditingController(
-    text: farm == null || farm.areaHa == 0
-        ? ''
-        : farm.areaHa.toStringAsFixed(1),
-  );
-
-  return showDialog<_FarmFormData>(
-    context: context,
-    builder: (dialogContext) => AlertDialog(
-      title: Text(farm == null ? 'Cadastrar fazenda' : 'Editar fazenda'),
-      content: _FarmFormFields(
-        nameController: nameController,
-        cityController: cityController,
-        stateController: stateController,
-        areaController: areaController,
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(dialogContext).pop(),
-          child: const Text('Cancelar'),
-        ),
-        FilledButton(
-          onPressed: () {
-            final name = nameController.text.trim();
-            if (name.isEmpty) return;
-            Navigator.of(dialogContext).pop(
-              _FarmFormData(
-                name: name,
-                city: cityController.text.trim(),
-                state: stateController.text.trim(),
-                areaHa: _parseArea(areaController.text),
-              ),
-            );
-          },
-          child: const Text('Salvar'),
-        ),
-      ],
-    ),
-  ).whenComplete(() {
-    nameController.dispose();
-    cityController.dispose();
-    stateController.dispose();
-    areaController.dispose();
-  });
-}
-
-Future<_FieldFormData?> _showFieldFormDialog(
-  BuildContext context, {
-  ProducerOwnField? field,
-}) {
-  final nameController = TextEditingController(text: field?.name ?? '');
-  final areaController = TextEditingController(
-    text: field == null || field.areaHa == 0
-        ? ''
-        : field.areaHa.toStringAsFixed(1),
-  );
-
-  return showDialog<_FieldFormData>(
-    context: context,
-    builder: (dialogContext) => AlertDialog(
-      title: Text(field == null ? 'Cadastrar talhão' : 'Editar talhão'),
-      content: _FieldFormFields(
-        nameController: nameController,
-        areaController: areaController,
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(dialogContext).pop(),
-          child: const Text('Cancelar'),
-        ),
-        FilledButton(
-          onPressed: () {
-            final name = nameController.text.trim();
-            if (name.isEmpty) return;
-            Navigator.of(dialogContext).pop(
-              _FieldFormData(
-                name: name,
-                areaHa: _parseArea(areaController.text),
-              ),
-            );
-          },
-          child: const Text('Salvar'),
-        ),
-      ],
-    ),
-  ).whenComplete(() {
-    nameController.dispose();
-    areaController.dispose();
-  });
-}
-
-double _parseArea(String value) {
-  return double.tryParse(value.replaceAll(',', '.').trim()) ?? 0;
-}
-
-class _FarmFormData {
-  final String name;
-  final String city;
-  final String state;
-  final double areaHa;
-
-  const _FarmFormData({
-    required this.name,
-    required this.city,
-    required this.state,
-    required this.areaHa,
-  });
-}
-
-class _FieldFormData {
-  final String name;
-  final double areaHa;
-
-  const _FieldFormData({required this.name, required this.areaHa});
-}
-
-class _FarmFormFields extends StatelessWidget {
-  const _FarmFormFields({
-    required this.nameController,
-    required this.cityController,
-    required this.stateController,
-    required this.areaController,
-  });
-
-  final TextEditingController nameController;
-  final TextEditingController cityController;
-  final TextEditingController stateController;
-  final TextEditingController areaController;
-
-  @override
-  Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          TextField(
-            controller: nameController,
-            decoration: const InputDecoration(labelText: 'Nome da fazenda'),
-            textCapitalization: TextCapitalization.words,
-          ),
-          TextField(
-            controller: cityController,
-            decoration: const InputDecoration(labelText: 'Município'),
-            textCapitalization: TextCapitalization.words,
-          ),
-          TextField(
-            controller: stateController,
-            decoration: const InputDecoration(labelText: 'UF'),
-            textCapitalization: TextCapitalization.characters,
-            maxLength: 2,
-          ),
-          TextField(
-            controller: areaController,
-            decoration: const InputDecoration(labelText: 'Área total (ha)'),
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _FieldFormFields extends StatelessWidget {
-  const _FieldFormFields({
-    required this.nameController,
-    required this.areaController,
-  });
-
-  final TextEditingController nameController;
-  final TextEditingController areaController;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        TextField(
-          controller: nameController,
-          decoration: const InputDecoration(labelText: 'Nome do talhão'),
-          textCapitalization: TextCapitalization.words,
-        ),
-        TextField(
-          controller: areaController,
-          decoration: const InputDecoration(labelText: 'Área produtiva (ha)'),
-          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-        ),
-      ],
-    );
-  }
-}
-
 class _DashboardContent extends StatelessWidget {
   const _DashboardContent({
     required this.dashboard,
@@ -362,8 +221,11 @@ class _DashboardContent extends StatelessWidget {
     required this.onSubmitToken,
     required this.onAddFarm,
     required this.onEditFarm,
+    required this.onDeleteFarm,
     required this.onAddField,
     required this.onEditField,
+    required this.onDeleteField,
+    required this.onOpenDrawing,
   });
 
   final ProducerPropertyDashboard dashboard;
@@ -372,8 +234,13 @@ class _DashboardContent extends StatelessWidget {
   final VoidCallback onSubmitToken;
   final VoidCallback onAddFarm;
   final ValueChanged<ProducerOwnFarm> onEditFarm;
+  final ValueChanged<ProducerOwnFarm> onDeleteFarm;
   final ValueChanged<ProducerOwnFarm> onAddField;
   final void Function(ProducerOwnFarm farm, ProducerOwnField field) onEditField;
+  final void Function(ProducerOwnFarm farm, ProducerOwnField field)
+  onDeleteField;
+  final void Function(ProducerOwnProperty property, ProducerOwnFarm farm)
+  onOpenDrawing;
 
   @override
   Widget build(BuildContext context) {
@@ -384,8 +251,11 @@ class _DashboardContent extends StatelessWidget {
           property: dashboard.ownProperty,
           onAddFarm: onAddFarm,
           onEditFarm: onEditFarm,
+          onDeleteFarm: onDeleteFarm,
           onAddField: onAddField,
           onEditField: onEditField,
+          onDeleteField: onDeleteField,
+          onOpenDrawing: onOpenDrawing,
         ),
         const SizedBox(height: 20),
         _ConsultantDataSection(
@@ -404,15 +274,23 @@ class _OwnPropertySection extends StatelessWidget {
     required this.property,
     required this.onAddFarm,
     required this.onEditFarm,
+    required this.onDeleteFarm,
     required this.onAddField,
     required this.onEditField,
+    required this.onDeleteField,
+    required this.onOpenDrawing,
   });
 
   final ProducerOwnProperty property;
   final VoidCallback onAddFarm;
   final ValueChanged<ProducerOwnFarm> onEditFarm;
+  final ValueChanged<ProducerOwnFarm> onDeleteFarm;
   final ValueChanged<ProducerOwnFarm> onAddField;
   final void Function(ProducerOwnFarm farm, ProducerOwnField field) onEditField;
+  final void Function(ProducerOwnFarm farm, ProducerOwnField field)
+  onDeleteField;
+  final void Function(ProducerOwnProperty property, ProducerOwnFarm farm)
+  onOpenDrawing;
 
   @override
   Widget build(BuildContext context) {
@@ -420,16 +298,7 @@ class _OwnPropertySection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              const Expanded(child: _SectionTitle('Minha área')),
-              IconButton(
-                tooltip: 'Adicionar fazenda',
-                icon: const Icon(Icons.add_business_outlined),
-                onPressed: onAddFarm,
-              ),
-            ],
-          ),
+          const _SectionTitle('Minha área'),
           Text(
             property.name,
             style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
@@ -449,8 +318,11 @@ class _OwnPropertySection extends StatelessWidget {
               (farm) => _OwnFarmTile(
                 farm: farm,
                 onEditFarm: () => onEditFarm(farm),
+                onDeleteFarm: () => onDeleteFarm(farm),
                 onAddField: () => onAddField(farm),
+                onOpenDrawing: () => onOpenDrawing(property, farm),
                 onEditField: (field) => onEditField(farm, field),
+                onDeleteField: (field) => onDeleteField(farm, field),
               ),
             ),
           const SizedBox(height: 12),
@@ -472,14 +344,20 @@ class _OwnFarmTile extends StatelessWidget {
   const _OwnFarmTile({
     required this.farm,
     required this.onEditFarm,
+    required this.onDeleteFarm,
     required this.onAddField,
+    required this.onOpenDrawing,
     required this.onEditField,
+    required this.onDeleteField,
   });
 
   final ProducerOwnFarm farm;
   final VoidCallback onEditFarm;
+  final VoidCallback onDeleteFarm;
   final VoidCallback onAddField;
+  final VoidCallback onOpenDrawing;
   final ValueChanged<ProducerOwnField> onEditField;
+  final ValueChanged<ProducerOwnField> onDeleteField;
 
   @override
   Widget build(BuildContext context) {
@@ -516,6 +394,15 @@ class _OwnFarmTile extends StatelessWidget {
                     icon: const Icon(Icons.edit_outlined, size: 19),
                     onPressed: onEditFarm,
                   ),
+                  IconButton(
+                    tooltip: 'Excluir fazenda',
+                    icon: const Icon(
+                      Icons.delete_outline,
+                      size: 19,
+                      color: Colors.red,
+                    ),
+                    onPressed: onDeleteFarm,
+                  ),
                 ],
               ),
               Text(
@@ -536,6 +423,14 @@ class _OwnFarmTile extends StatelessWidget {
                   ),
                 ],
               ),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: onOpenDrawing,
+                  icon: const Icon(Icons.map_outlined, size: 18),
+                  label: const Text('Desenhar ou importar KML/KMZ'),
+                ),
+              ),
               if (farm.fields.isEmpty)
                 const _MutedText('Nenhum talhão cadastrado.')
               else
@@ -543,13 +438,35 @@ class _OwnFarmTile extends StatelessWidget {
                   (field) => ListTile(
                     dense: true,
                     contentPadding: EdgeInsets.zero,
-                    leading: const Icon(Icons.grid_view_outlined),
+                    leading: Icon(
+                      field.hasGeometry
+                          ? Icons.polyline_outlined
+                          : Icons.grid_view_outlined,
+                    ),
                     title: Text(field.name),
-                    subtitle: Text('${field.areaHa.toStringAsFixed(1)} ha'),
-                    trailing: IconButton(
-                      tooltip: 'Editar talhão',
-                      icon: const Icon(Icons.edit_outlined),
-                      onPressed: () => onEditField(field),
+                    subtitle: Text(
+                      [
+                        '${field.areaHa.toStringAsFixed(1)} ha',
+                        if (field.hasGeometry) 'com mapa',
+                      ].join(' • '),
+                    ),
+                    trailing: Wrap(
+                      spacing: 2,
+                      children: [
+                        IconButton(
+                          tooltip: 'Editar talhão',
+                          icon: const Icon(Icons.edit_outlined),
+                          onPressed: () => onEditField(field),
+                        ),
+                        IconButton(
+                          tooltip: 'Excluir talhão',
+                          icon: const Icon(
+                            Icons.delete_outline,
+                            color: Colors.red,
+                          ),
+                          onPressed: () => onDeleteField(field),
+                        ),
+                      ],
                     ),
                   ),
                 ),
