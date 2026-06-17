@@ -53,12 +53,32 @@ void main() {
 
       expect(repo.savedClientIds, ['client-offline']);
     });
+
+    test('deleteClient faz soft delete local e dispara sync', () async {
+      final repo = _FakeClientsRepository();
+      var syncCalls = 0;
+      final container = ProviderContainer(
+        overrides: [
+          clientsRepositoryProvider.overrideWithValue(repo),
+          clientSyncTriggerProvider.overrideWithValue(() async {
+            syncCalls++;
+          }),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await container.read(clientsControllerProvider).deleteClient('client-1');
+
+      expect(repo.deletedClientIds, ['client-1']);
+      expect(syncCalls, 1);
+    });
   });
 }
 
 class _FakeClientsRepository extends ClientsRepository {
   final List<Client> _clients = [];
   final List<String> savedClientIds = [];
+  final List<String> deletedClientIds = [];
   int getClientsCalls = 0;
 
   @override
@@ -74,6 +94,11 @@ class _FakeClientsRepository extends ClientsRepository {
   }) async {
     savedClientIds.add(client.id);
     _clients.add(client);
+  }
+
+  @override
+  Future<void> deleteClient(String id) async {
+    deletedClientIds.add(id);
   }
 }
 

@@ -1,10 +1,13 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:soloforte_app/core/constants/layout_constants.dart';
 import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:soloforte_app/core/contracts/i_drawing_field_writer_provider.dart';
+import 'package:soloforte_app/core/contracts/i_producer_invite_writer_provider.dart';
 import 'package:soloforte_app/core/router/app_routes.dart';
 
 import '../providers/clients_providers.dart';
@@ -18,7 +21,32 @@ import '../widgets/client_hub_section.dart';
 import '../widgets/client_detail_sub_widgets.dart';
 import '../widgets/client_edit_form.dart';
 import '../widgets/talhao_map_preview.dart';
-import '../../../../drawing/presentation/providers/drawing_provider.dart';
+
+Future<bool> showClientDeleteConfirmation(
+  BuildContext context,
+  String clientName,
+) async {
+  return await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Excluir cliente'),
+          content: Text(
+            'Deseja excluir "$clientName"?\nEsta ação não pode ser desfeita.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('Cancelar'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: const Text('Excluir', style: TextStyle(color: Colors.red)),
+            ),
+          ],
+        ),
+      ) ??
+      false;
+}
 
 class ClientDetailScreen extends ConsumerStatefulWidget {
   final String clientId;
@@ -31,6 +59,7 @@ class ClientDetailScreen extends ConsumerStatefulWidget {
 
 class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen> {
   bool _editando = false;
+  bool _excluindo = false;
   Client? _clienteEditandoSnapshot;
   List<ClientCultura> _culturasEditandoSnapshot = [];
 
@@ -51,6 +80,24 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen> {
         .updateClient(clienteAtualizado, culturas: culturasComId);
     if (!mounted) return;
     setState(() => _editando = false);
+  }
+
+  Future<void> _confirmarExclusao(Client client) async {
+    final confirmed = await showClientDeleteConfirmation(context, client.name);
+    if (!confirmed || !mounted) return;
+
+    setState(() => _excluindo = true);
+    try {
+      await ref.read(clientsControllerProvider).deleteClient(client.id);
+      if (!mounted) return;
+      context.go(AppRoutes.clients);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _excluindo = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Não foi possível excluir o cliente.')),
+      );
+    }
   }
 
   // 🆕 SPRINT 3: Modal iOS Premium — escolha de ação para nova fazenda/talhão
@@ -100,7 +147,7 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                 child: Row(
                   children: [
-                    const SizedBox(width: 48),
+                    const SizedBox(width: 96),
                     Expanded(
                       child: Text(
                         client.name,
@@ -114,11 +161,28 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen> {
                         ),
                       ),
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.edit_outlined),
-                      color: PremiumTokens.brandGreen,
-                      tooltip: 'Editar',
-                      onPressed: () => _iniciarEdicao(client, culturas),
+                    SizedBox(
+                      width: 96,
+                      child: Row(
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.delete_outline),
+                            color: Colors.red,
+                            tooltip: 'Excluir cliente',
+                            onPressed: _excluindo
+                                ? null
+                                : () => _confirmarExclusao(client),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.edit_outlined),
+                            color: PremiumTokens.brandGreen,
+                            tooltip: 'Editar',
+                            onPressed: _excluindo
+                                ? null
+                                : () => _iniciarEdicao(client, culturas),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
@@ -173,6 +237,13 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen> {
                             onTap: () => context.go(
                               '/consultoria/relatorios?clienteId=${client.id}',
                             ),
+                          ),
+                          const SizedBox(width: 16),
+                          ClientActionButton(
+                            icon: Icons.key_outlined,
+                            label: 'Convite',
+                            onTap: () =>
+                                _showProducerInviteDialog(context, client),
                           ),
                           const SizedBox(width: 16),
                           ClientActionButton(
@@ -423,6 +494,117 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen> {
     final uri = Uri.parse(url);
     if (await canLaunchUrl(uri)) await launchUrl(uri);
   }
+
+  void _showProducerInviteDialog(BuildContext context, Client client) {
+    String? token;
+    DateTime? expiresAt;
+    Object? error;
+    var loading = false;
+
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          Future<void> generateInvite() async {
+            setDialogState(() {
+              loading = true;
+              error = null;
+            });
+            try {
+              final invite = await ref
+                  .read(producerInviteWriterProvider)
+                  .createInvite(client.id);
+              if (!dialogContext.mounted) return;
+              setDialogState(() {
+                token = invite.token;
+                expiresAt = invite.expiresAt.toLocal();
+              });
+            } catch (e) {
+              if (!dialogContext.mounted) return;
+              setDialogState(() => error = e);
+            } finally {
+              if (dialogContext.mounted) {
+                setDialogState(() => loading = false);
+              }
+            }
+          }
+
+          return AlertDialog(
+            title: const Text('Convite do produtor'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Gere um token para ${client.name} vincular a conta dele a este cadastro.',
+                ),
+                const SizedBox(height: 16),
+                if (token != null) ...[
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF2F8F2),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: SelectableText(
+                      token!,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                  ),
+                  if (expiresAt != null) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      'Válido até ${_formatDate(expiresAt!)}',
+                      style: const TextStyle(color: Color(0xFF6B7280)),
+                    ),
+                  ],
+                ],
+                if (error != null) ...[
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Não foi possível gerar o convite agora.',
+                    style: TextStyle(color: Color(0xFFFF3B30)),
+                  ),
+                ],
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(),
+                child: const Text('Fechar'),
+              ),
+              if (token != null)
+                TextButton(
+                  onPressed: () {
+                    Clipboard.setData(ClipboardData(text: token!));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Token copiado.')),
+                    );
+                  },
+                  child: const Text('Copiar'),
+                ),
+              FilledButton(
+                onPressed: loading ? null : generateInvite,
+                child: loading
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : Text(token == null ? 'Gerar token' : 'Gerar novo'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
 }
 
 class _ClientFarmWithTalhoes extends ConsumerWidget {
@@ -659,10 +841,12 @@ class _ClientDrawingFieldsSection extends ConsumerWidget {
 
     if (confirmed != true || !context.mounted) return;
 
-    final repository = ref.read(drawingRepositoryProvider);
-    await repository.deleteFeature(field.id);
-    final totalAreaHa = await repository.getTotalAreaByClienteId(client.id);
-    await repository.updateClientAreaTotal(client.id, totalAreaHa);
+    await ref
+        .read(iDrawingFieldWriterProvider)
+        .deleteFieldAndRecalculateClientArea(
+          fieldId: field.id,
+          clientId: client.id,
+        );
 
     ref.invalidate(clientDrawingFieldsProvider(client.id));
     if (field.farmId != null) {
