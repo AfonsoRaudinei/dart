@@ -51,6 +51,8 @@ class MapControlsOverlay extends ConsumerStatefulWidget {
   final bool isDrawMode;
   final bool isOccurrenceMode;
   final bool isCheckInActive;
+  final bool showCheckInAction;
+  final Widget? topLeftCard;
   final LatLng currentCenter;
   final double currentZoom;
   final DrawingState drawingState;
@@ -83,6 +85,8 @@ class MapControlsOverlay extends ConsumerStatefulWidget {
     required this.isDrawMode,
     this.isOccurrenceMode = false,
     this.isCheckInActive = false,
+    this.showCheckInAction = true,
+    this.topLeftCard,
     required this.currentCenter,
     required this.currentZoom,
     required this.onTabSelected,
@@ -147,8 +151,12 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
 
     return Stack(
       children: [
-        // 1. Card de Visita Ativa (Top Left) — visível apenas com sessão ativa
-        Positioned(top: safeTop + 8, left: 12, child: const VisitActiveCard()),
+        // 1. Card de contexto (Top Left)
+        Positioned(
+          top: safeTop + 8,
+          left: 12,
+          child: widget.topLeftCard ?? const VisitActiveCard(),
+        ),
 
         // 2. Botão de Localização + Indicador de Conectividade (canto superior direito)
         Positioned(
@@ -230,23 +238,24 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
           ),
         ),
 
-        Positioned(
-          bottom: kFabSafeArea + safeBottom,
-          right: 16,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              _MapActionButton(
-                icon: SFIcons.checkCircle,
-                label: 'Check-in',
-                isActive: widget.isCheckInActive,
-                activeColor: activeColor,
-                onTap: () => widget.onTabSelected(3, 'Button_CheckIn'),
-              ),
-            ],
+        if (widget.showCheckInAction)
+          Positioned(
+            bottom: kFabSafeArea + safeBottom,
+            right: 16,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                _MapActionButton(
+                  icon: SFIcons.checkCircle,
+                  label: 'Check-in',
+                  isActive: widget.isCheckInActive,
+                  activeColor: activeColor,
+                  onTap: () => widget.onTabSelected(3, 'Button_CheckIn'),
+                ),
+              ],
+            ),
           ),
-        ),
 
         // 4. Drawing Actions (Conditional)
         if (widget.drawingState == DrawingState.drawing)

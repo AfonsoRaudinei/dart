@@ -14,6 +14,7 @@ import '../../../../core/state/map_ui_providers.dart';
 import '../../../../core/state/map_state.dart';
 import '../../../../core/config/map_config.dart';
 import '../../../../core/config/map_secrets.dart';
+import '../../../../core/session/user_role.dart';
 import '../../../../core/utils/map_logger.dart';
 import '../../../../modules/drawing/presentation/providers/drawing_provider.dart';
 import '../../../../modules/drawing/presentation/providers/gps_walk_providers.dart';
@@ -26,12 +27,14 @@ import '../../../../modules/drawing/presentation/widgets/drawing_edit_layer.dart
 import '../../../../modules/drawing/presentation/widgets/gps_walk_controls_overlay.dart';
 import '../../../../modules/drawing/presentation/widgets/gps_tracking_overlay.dart';
 import '../../../../modules/consultoria/clients/presentation/providers/field_providers.dart';
+import '../../../../modules/consultoria/clients/domain/agronomic_models.dart';
 import '../../../../modules/dashboard/providers/location_providers.dart';
 import '../../../../modules/map/presentation/providers/map_location_mode_provider.dart';
 import '../../../../modules/consultoria/services/talhao_map_adapter.dart';
 import '../../../../modules/consultoria/occurrences/domain/occurrence.dart'
     as occ;
 import '../../../../modules/marketing/domain/enums/case_tipo.dart';
+import '../../../../modules/settings/presentation/providers/user_profile_provider.dart';
 import '../../../../modules/visitas/presentation/controllers/geofence_controller.dart';
 import '../../../../modules/visitas/presentation/controllers/visit_controller.dart';
 import '../../../components/map/map_bottom_sheet.dart';
@@ -42,6 +45,7 @@ import '../../../components/map/widgets/map_markers.dart';
 import '../../../components/map/widgets/map_controls_overlay.dart';
 import '../../../components/map/widgets/isolated_marker_layers.dart';
 import '../../../components/map/widgets/map_tools_bottom_sheet.dart';
+import '../../../components/map/widgets/producer_map_context_card.dart';
 import '../../../components/map/map_sheet_state.dart';
 import '../providers/map_armed_mode_provider.dart';
 import '../providers/map_ready_state_provider.dart';
@@ -97,6 +101,25 @@ class MapBuildOrchestrator extends ConsumerWidget {
     required this.downloadOfflineArea,
   });
 
+  bool _focusTalhaoFields(List<Talhao> fields) {
+    final points = fields
+        .expand((field) => TalhaoMapAdapter.toPolygon(field).points)
+        .toList(growable: false);
+    if (points.isEmpty) return false;
+
+    mapController.fitCamera(
+      CameraFit.bounds(
+        bounds: LatLngBounds.fromPoints(points),
+        padding: const EdgeInsets.all(56),
+      ),
+    );
+    return true;
+  }
+
+  bool _focusTalhaoField(Talhao field) {
+    return _focusTalhaoFields([field]);
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final stopwatch = Stopwatch()..start();
@@ -137,6 +160,7 @@ class MapBuildOrchestrator extends ConsumerWidget {
     );
     final sheetState = ref.watch(mapSheetStateProvider);
     final isMapReady = ref.watch(mapReadyStateProvider);
+    final currentUserRole = ref.watch(currentUserRoleProvider);
     final activeLayer = ref.watch(activeLayerProvider);
     final tileConfig = MapConfig.tileConfigForLayer(
       activeLayer,
@@ -417,6 +441,13 @@ class MapBuildOrchestrator extends ConsumerWidget {
                   (v) => v.valueOrNull?.status == 'active',
                 ),
               ),
+              showCheckInAction: !currentUserRole.isProdutor,
+              topLeftCard: currentUserRole.isProdutor
+                  ? ProducerMapContextCard(
+                      onFocusFarm: _focusTalhaoFields,
+                      onFocusField: _focusTalhaoField,
+                    )
+                  : null,
               drawingState: drawingState,
               onFinishDrawing: finishDrawing,
               onCancelDrawing: () {

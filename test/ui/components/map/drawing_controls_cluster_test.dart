@@ -135,9 +135,88 @@ void main() {
     expect(find.byType(EditingControlsOverlay), findsNothing);
     expect(find.byKey(const Key('drawing_controls_backplate')), findsNothing);
   });
+
+  testWidgets('MapControlsOverlay exibe check-in quando ação está habilitada', (
+    tester,
+  ) async {
+    await _pumpMapControlsOverlay(tester, showCheckInAction: true);
+
+    expect(find.byTooltip('Check-in'), findsOneWidget);
+  });
+
+  testWidgets(
+    'MapControlsOverlay oculta check-in quando ação está desabilitada',
+    (tester) async {
+      await _pumpMapControlsOverlay(tester, showCheckInAction: false);
+
+      expect(find.byTooltip('Check-in'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'MapControlsOverlay renderiza card customizado no topo esquerdo',
+    (tester) async {
+      await _pumpMapControlsOverlay(
+        tester,
+        showCheckInAction: false,
+        topLeftCard: const Text('Contexto produtor'),
+      );
+
+      expect(find.text('Contexto produtor'), findsOneWidget);
+      expect(find.byTooltip('Check-in'), findsNothing);
+    },
+  );
 }
 
 void _noop() {}
+
+Future<void> _pumpMapControlsOverlay(
+  WidgetTester tester, {
+  required bool showCheckInAction,
+  Widget? topLeftCard,
+}) async {
+  SharedPreferences.setMockInitialValues({});
+  final settingsRepository = SettingsRepository(
+    await SharedPreferences.getInstance(),
+  );
+  final preferencesService = PreferencesService(
+    await SharedPreferences.getInstance(),
+  );
+
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [
+        preferencesServiceProvider.overrideWithValue(preferencesService),
+        settingsRepositoryProvider.overrideWithValue(settingsRepository),
+        isOnlineProvider.overrideWith((ref) => Stream.value(true)),
+        visitRepositoryProvider.overrideWithValue(_NoActiveVisitRepository()),
+        agendaSessionBridgeProvider.overrideWithValue(_NoopAgendaBridge()),
+      ],
+      child: MaterialApp(
+        home: Scaffold(
+          body: MapControlsOverlay(
+            onCenterUser: _noop,
+            onLocationModeChanged: (_) {},
+            onToggleDrawMode: _noop,
+            onOpenMapTools: _noop,
+            onTabSelected: (_, _) {},
+            isDrawMode: false,
+            showCheckInAction: showCheckInAction,
+            topLeftCard: topLeftCard,
+            currentCenter: const LatLng(0, 0),
+            currentZoom: 13,
+            drawingState: DrawingState.idle,
+            onFinishDrawing: _noop,
+            onCancelDrawing: _noop,
+            onSaveEdit: _noop,
+            onCancelEdit: _noop,
+            onUndoEdit: _noop,
+          ),
+        ),
+      ),
+    ),
+  );
+}
 
 class _NoActiveVisitRepository extends VisitRepository {
   @override
