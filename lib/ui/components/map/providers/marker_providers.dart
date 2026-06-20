@@ -68,14 +68,15 @@ final occurrenceMarkersProvider =
 
       final markers = occurrences
           .map((occ) {
-            // Occurrence usa lat/long, não latitude/longitude
-            if (occ.lat == null || occ.long == null) return null;
+            final coords = occ.getCoordinates();
+            if (coords == null) return null;
 
             return Marker(
               key: ValueKey('occ_${occ.id}'),
-              point: LatLng(occ.lat!, occ.long!),
+              point: LatLng(coords['lat']!, coords['long']!),
               width: 40,
               height: 40,
+              alignment: Alignment.center,
               child: GestureDetector(
                 onTap: () => onTap(occ),
                 child: _OccurrencePin(occurrence: occ),

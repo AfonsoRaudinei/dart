@@ -1,8 +1,11 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:soloforte_app/ui/components/map/providers/marker_providers.dart';
 import 'package:soloforte_app/core/domain/publicacao.dart';
+import 'package:soloforte_app/modules/consultoria/occurrences/domain/occurrence.dart';
+import 'package:soloforte_app/modules/consultoria/occurrences/presentation/controllers/occurrence_controller.dart';
 
 void main() {
   group('publicationMarkersProvider', () {
@@ -117,16 +120,56 @@ void main() {
   });
 
   group('occurrenceMarkersProvider', () {
-    test('deve filtrar ocorrências com lat/long null', () {
-      final container = ProviderContainer();
+    test('deve filtrar ocorrências com lat/long null', () async {
+      final now = DateTime.now();
+      final container = ProviderContainer(
+        overrides: [
+          occurrencesListProvider.overrideWith(
+            (ref) async => [
+              Occurrence(
+                id: 'sem-coord',
+                type: 'Média',
+                description: 'Sem coordenadas',
+                createdAt: now,
+              ),
+            ],
+          ),
+        ],
+      );
       addTearDown(container.dispose);
 
-      // Este teste requer mock do occurrencesListProvider
-      // Por enquanto, apenas validar que o provider existe
-      expect(
-        () => container.read(occurrenceMarkersProvider((occ) {})),
-        returnsNormally,
+      await container.read(occurrencesListProvider.future);
+      final markers = container.read(occurrenceMarkersProvider((occ) {}));
+      expect(markers, isEmpty);
+    });
+
+    test('deve criar marker quando só geometry estiver preenchida', () async {
+      final now = DateTime.now();
+      final container = ProviderContainer(
+        overrides: [
+          occurrencesListProvider.overrideWith(
+            (ref) async => [
+              Occurrence(
+                id: 'geometry-only',
+                type: 'Média',
+                description: 'Com geometry',
+                geometry:
+                    '{"type":"Point","coordinates":[-46.6333,-23.5505]}',
+                createdAt: now,
+              ),
+            ],
+          ),
+        ],
       );
+      addTearDown(container.dispose);
+
+      await container.read(occurrencesListProvider.future);
+      final markers = container.read(occurrenceMarkersProvider((occ) {}));
+
+      expect(markers, hasLength(1));
+      expect(markers.first.point.latitude, equals(-23.5505));
+      expect(markers.first.point.longitude, equals(-46.6333));
+      expect(markers.first.alignment, equals(Alignment.center));
     });
   });
 

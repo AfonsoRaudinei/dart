@@ -446,8 +446,12 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
         widget.onClose();
       },
       onConfirm: (data) async {
+        final selectedLocation = creationLocation ??
+            ((lat != 0 || lng != 0)
+                ? LatLng(lat, lng)
+                : null);
         final saveLocation =
-            creationLocation ??
+            selectedLocation ??
             await () async {
               final locationService = LocationService();
               final isAvailable = await locationService.checkAvailability();
