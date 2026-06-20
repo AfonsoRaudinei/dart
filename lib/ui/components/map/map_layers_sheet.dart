@@ -13,8 +13,8 @@ import '../../../core/domain/map_models.dart';
 import '../../../core/services/local_geotiff_service.dart';
 import '../../../core/state/map_state.dart';
 import '../../../core/ui/sheets/sheet_tokens.dart';
-import '../../screens/map/providers/map_armed_mode_provider.dart';
 import '../../theme/premium/design_tokens.dart';
+import 'providers/rainviewer_provider.dart';
 
 class LayersSheet extends ConsumerWidget {
   static const _accent = PremiumTokens.brandGreenDark;
@@ -36,7 +36,7 @@ class LayersSheet extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final currentLayer = ref.watch(activeLayerProvider);
     final showMarkers = ref.watch(showMarkersProvider);
-    final showRadar = ref.watch(armedModeProvider) == ArmedMode.clima;
+    final showRadar = ref.watch(radarEnabledProvider);
     final wms = ref.watch(externalWmsLayerProvider);
     final raster = ref.watch(externalRasterLayerProvider);
 
@@ -147,14 +147,35 @@ class LayersSheet extends ConsumerWidget {
                           inactiveAsset: _LayerAssets.rainInactive,
                           onTap: () {
                             HapticFeedback.lightImpact();
-                            ref.read(armedModeProvider.notifier).state =
-                                showRadar ? ArmedMode.none : ArmedMode.clima;
+                            ref.read(radarEnabledProvider.notifier).state =
+                                !showRadar;
                           },
                         ),
                       ],
                     );
                   },
                 ),
+                if (showRadar) ...[
+                  const SizedBox(height: 12),
+                  const Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        Icons.info_outline,
+                        size: 14,
+                        color: Colors.white60,
+                      ),
+                      SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          'Mostra a chuva em tempo real (áreas em azul). '
+                          'Pode não haver chuva na sua região agora.',
+                          style: TextStyle(color: Colors.white60, fontSize: 11),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
                 const SizedBox(height: kFabSafeArea),
                 const Divider(color: SoloForteSheetTokens.divider),
                 const SizedBox(height: 8),

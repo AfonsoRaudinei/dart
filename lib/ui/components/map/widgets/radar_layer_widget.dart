@@ -1,17 +1,18 @@
-// DT-028 concluído: radar controlado por armedModeProvider == ArmedMode.clima.
+// Radar de chuva controlado por radarEnabledProvider (overlay persistente,
+// independente de armedModeProvider).
 import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/config/map_config.dart';
-import '../../../../ui/screens/map/providers/map_armed_mode_provider.dart';
+import '../../../../core/state/map_ui_providers.dart';
 import '../providers/rainviewer_provider.dart';
 
 /// Camada de radar de precipitação em tempo real (RainViewer — ADR-028).
 ///
 /// Renderiza um [TileLayer] sobre o mapa base quando:
-///   1. [armedModeProvider] == [ArmedMode.clima]  (toggle ativado pelo usuário)
+///   1. [radarEnabledProvider] == true  (toggle ativado pelo usuário)
 ///   2. [rainviewerRadarFramesProvider] retornou frames válidos
 ///
 /// Graceful degradation: se a API estiver indisponível ou a lista de frames
@@ -66,7 +67,7 @@ class _RadarLayerWidgetState extends ConsumerState<RadarLayerWidget> {
 
   @override
   Widget build(BuildContext context) {
-    final showRadar = ref.watch(armedModeProvider) == ArmedMode.clima;
+    final showRadar = ref.watch(radarEnabledProvider);
 
     // Radar desativado → não assiste o FutureProvider (economiza request)
     if (!showRadar) {
@@ -119,27 +120,69 @@ class _RadarLayerWidgetState extends ConsumerState<RadarLayerWidget> {
   }
 }
 
-class _RadarActiveIndicator extends StatelessWidget {
+/// Banner de status do radar ativo.
+///
+/// É um [ConsumerWidget] separado para que a observação do zoom (Etapa 3)
+/// reconstrua apenas o banner — nunca o [TileLayer] — evitando recarga de
+/// tiles a cada pan/zoom.
+class _RadarActiveIndicator extends ConsumerWidget {
   const _RadarActiveIndicator();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final zoom = ref.watch(
+      mapCameraSnapshotProvider.select((snap) => snap?.zoom),
+    );
+    // Acima do zoom nativo da RainViewer o tile sofre overzoom e fica grosseiro
+    // (mosaico global de ~1 km). Avisamos para não passar impressão de "bug".
+    final coarse = zoom != null && zoom > MapConfig.rainViewerMaxNativeZoom;
+
     return IgnorePointer(
       child: SafeArea(
         child: Align(
-          alignment: Alignment.topLeft,
+          // topCenter: zona livre entre o card de conta (esquerda) e a
+          // bússola (direita). Evita a oclusão que ocorria em topLeft.
+          alignment: Alignment.topCenter,
           child: Container(
-            margin: const EdgeInsets.only(left: 12, top: 12),
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+            margin: const EdgeInsets.only(top: 12, left: 12, right: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.56),
+              color: Colors.black.withValues(alpha: 0.68),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: const Text(
-              'Radar ativo · sem chuva visível onde não há eco',
-              style: TextStyle(color: Colors.white, fontSize: 12),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.water_drop,
+                      color: Colors.lightBlueAccent,
+                      size: 14,
+                    ),
+                    SizedBox(width: 6),
+                    Flexible(
+                      child: Text(
+                        'Radar de chuva ativo · áreas em azul indicam chuva agora',
+                        style: TextStyle(color: Colors.white, fontSize: 12),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+                if (coarse)
+                  const Padding(
+                    padding: EdgeInsets.only(top: 2),
+                    child: Text(
+                      'Resolução regional (~1 km) neste zoom',
+                      style: TextStyle(color: Colors.white60, fontSize: 10),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+              ],
             ),
           ),
         ),

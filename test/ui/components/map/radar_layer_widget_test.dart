@@ -6,7 +6,6 @@ import 'package:latlong2/latlong.dart';
 import 'package:soloforte_app/core/config/map_config.dart';
 import 'package:soloforte_app/ui/components/map/providers/rainviewer_provider.dart';
 import 'package:soloforte_app/ui/components/map/widgets/radar_layer_widget.dart';
-import 'package:soloforte_app/ui/screens/map/providers/map_armed_mode_provider.dart';
 
 void main() {
   group('RadarLayerWidget', () {
@@ -15,7 +14,7 @@ void main() {
     ) async {
       await tester.pumpWidget(
         _buildRadarMap(
-          armedMode: ArmedMode.none,
+          radarEnabled: false,
           frames: const [
             RainviewerRadarFrame(
               time: 1713000000,
@@ -36,7 +35,7 @@ void main() {
     ) async {
       await tester.pumpWidget(
         _buildRadarMap(
-          armedMode: ArmedMode.clima,
+          radarEnabled: true,
           frames: const [
             RainviewerRadarFrame(
               time: 1713000000,
@@ -52,7 +51,7 @@ void main() {
       expect(find.byType(TileLayer), findsOneWidget);
       expect(find.text('Radar indisponível'), findsNothing);
       expect(
-        find.text('Radar ativo · sem chuva visível onde não há eco'),
+        find.text('Radar de chuva ativo · áreas em azul indicam chuva agora'),
         findsOneWidget,
       );
     });
@@ -62,7 +61,7 @@ void main() {
     ) async {
       await tester.pumpWidget(
         _buildRadarMap(
-          armedMode: ArmedMode.clima,
+          radarEnabled: true,
           frames: const [
             RainviewerRadarFrame(
               time: 1713000000,
@@ -84,7 +83,7 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(
-        _buildRadarMap(armedMode: ArmedMode.clima, frames: const []),
+        _buildRadarMap(radarEnabled: true, frames: const []),
       );
       await tester.pump();
 
@@ -95,12 +94,12 @@ void main() {
 }
 
 Widget _buildRadarMap({
-  required ArmedMode armedMode,
+  required bool radarEnabled,
   required List<RainviewerRadarFrame> frames,
 }) {
   return ProviderScope(
     overrides: [
-      armedModeProvider.overrideWith((ref) => armedMode),
+      radarEnabledProvider.overrideWith((ref) => radarEnabled),
       rainviewerRadarFramesProvider.overrideWith((ref) async => frames),
     ],
     child: MaterialApp(
