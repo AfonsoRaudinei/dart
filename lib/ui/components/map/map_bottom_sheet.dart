@@ -250,30 +250,27 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
   }
 
   Widget _buildDraw() {
-    return SingleChildScrollView(
-      controller: _scrollController,
-      physics: const BouncingScrollPhysics(),
-      child: FutureBuilder<bool>(
-        future: _checkDrawingFeatureFlag(),
-        builder: (context, snapshot) {
-          if (!snapshot.hasData) {
-            return const Center(
-              child: Padding(
-                padding: EdgeInsets.all(32),
-                child: CircularProgressIndicator(),
-              ),
-            );
-          }
-          return snapshot.data!
-              ? DrawingSheet(
-                  controller: widget.drawingController,
-                  onFocusFeature: widget.onFocusDrawingFeature,
-                  onGpsMeasureStarted: widget.onClose,
-                  onSaved: widget.onClose,
-                )
-              : const DrawingDisabledWidget();
-        },
-      ),
+    return FutureBuilder<bool>(
+      future: _checkDrawingFeatureFlag(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const Center(
+            child: Padding(
+              padding: EdgeInsets.all(32),
+              child: CircularProgressIndicator(),
+            ),
+          );
+        }
+        return snapshot.data!
+            ? DrawingSheet(
+                controller: widget.drawingController,
+                onFocusFeature: widget.onFocusDrawingFeature,
+                onGpsMeasureStarted: widget.onClose,
+                onSaved: widget.onClose,
+                onClose: widget.onClose,
+              )
+            : const DrawingDisabledWidget();
+      },
     );
   }
 
@@ -446,10 +443,9 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
         widget.onClose();
       },
       onConfirm: (data) async {
-        final selectedLocation = creationLocation ??
-            ((lat != 0 || lng != 0)
-                ? LatLng(lat, lng)
-                : null);
+        final selectedLocation =
+            creationLocation ??
+            ((lat != 0 || lng != 0) ? LatLng(lat, lng) : null);
         final saveLocation =
             selectedLocation ??
             await () async {
