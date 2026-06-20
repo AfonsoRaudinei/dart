@@ -22,6 +22,13 @@ final rainviewerFetchProvider = Provider<RainviewerFetch>((ref) {
   return (uri) => http.get(uri).timeout(const Duration(seconds: 8));
 });
 
+/// Liga/desliga o overlay de radar de chuva.
+///
+/// Provider dedicado (não reaproveita `armedModeProvider`) porque o radar é um
+/// **overlay persistente**, não um "modo de toque" mutuamente exclusivo. Assim,
+/// armar Ocorrências/Marketing não desliga mais a chuva silenciosamente.
+final radarEnabledProvider = StateProvider<bool>((ref) => false);
+
 /// Índice do frame atual da animação do radar.
 final rainviewerFrameIndexProvider = StateProvider.autoDispose<int>((ref) => 0);
 

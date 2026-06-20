@@ -315,8 +315,8 @@ class MapConfig {
   static const String rainViewerTileBase = 'https://tilecache.rainviewer.com';
 
   /// Opacidade do overlay de radar (0.0–1.0).
-  /// 0.6 = equilíbrio entre visibilidade e mapa base legível.
-  static const double radarOverlayOpacity = 0.6;
+  /// 0.75 = eco de chuva nítido sobre o satélite, mantendo o mapa base legível.
+  static const double radarOverlayOpacity = 0.75;
 
   /// Zoom máximo nativo confiável para tiles RainViewer.
   static const int rainViewerMaxNativeZoom = 10;
