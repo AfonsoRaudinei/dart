@@ -125,8 +125,8 @@ class DrawingActionsBar extends StatelessWidget {
           const SizedBox(height: 12),
           _ActionButton(
             icon: Icons.edit_note,
-            label: 'Editar Informações',
-            description: 'Nome, tipo, cliente, etc',
+            label: 'Vincular / editar dados',
+            description: 'Cliente, fazenda, nome e safra',
             onTap: () {
               HapticFeedback.lightImpact();
               onEditMetadata?.call();

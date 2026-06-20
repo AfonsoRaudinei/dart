@@ -30,6 +30,7 @@ class DrawingSheet extends ConsumerStatefulWidget {
   final ValueChanged<DrawingFeature>? onFocusFeature;
   final VoidCallback? onGpsMeasureStarted;
   final VoidCallback? onSaved;
+  final VoidCallback? onClose;
 
   const DrawingSheet({
     super.key,
@@ -37,6 +38,7 @@ class DrawingSheet extends ConsumerStatefulWidget {
     this.onFocusFeature,
     this.onGpsMeasureStarted,
     this.onSaved,
+    this.onClose,
   });
 
   @override
@@ -46,6 +48,7 @@ class DrawingSheet extends ConsumerStatefulWidget {
 class _DrawingSheetState extends ConsumerState<DrawingSheet> {
   String? _selectedToolKey;
   bool _isSaving = false;
+  bool _isEditingMetadata = false;
 
   // 🆕 ESTADO LOCAL PARA REVISÃO COMPLETA
   final _formKey = GlobalKey<FormState>();
@@ -217,7 +220,7 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // 4. Cabeçalho Fixo (Fonte Única)
-            const _SheetHeader(),
+            _SheetHeader(onClose: widget.onClose),
 
             // Conteúdo Dinâmico
             Flexible(
@@ -830,25 +833,25 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
   Widget _buildSelectedMode(BuildContext context) {
     final feature = widget.controller.selectedFeature!;
 
-    // 🆕 REFATORADO: Usar DrawingActionsBar component
+    if (_isEditingMetadata) {
+      return DrawingInfoEditSheet(
+        feature: feature,
+        controller: widget.controller,
+        embedded: true,
+        onCancel: () => setState(() => _isEditingMetadata = false),
+        onSaved: () {
+          setState(() => _isEditingMetadata = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Dados do talhão salvos')),
+          );
+        },
+      );
+    }
+
     return DrawingActionsBar(
       selectedFeature: feature,
       onEditGeometry: widget.controller.startEditMode,
-      onEditMetadata: () {
-        showSoloForteSheet(
-          context: context,
-          isScrollControlled: true,
-          backgroundColor: Colors.transparent,
-          showDragHandle: false,
-          useSafeArea: false,
-          shape: const RoundedRectangleBorder(),
-          clipBehavior: Clip.none,
-          builder: (_) => DrawingInfoEditSheet(
-            feature: feature,
-            controller: widget.controller,
-          ),
-        );
-      },
+      onEditMetadata: () => setState(() => _isEditingMetadata = true),
       onUnion: widget.controller.startUnionMode,
       onDifference: widget.controller.startDifferenceMode,
       onIntersection: widget.controller.startIntersectionMode,
@@ -1523,7 +1526,9 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
 }
 
 class _SheetHeader extends StatelessWidget {
-  const _SheetHeader();
+  final VoidCallback? onClose;
+
+  const _SheetHeader({this.onClose});
 
   @override
   Widget build(BuildContext context) {
@@ -1532,33 +1537,28 @@ class _SheetHeader extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Center(
-          child: Padding(
-            padding: EdgeInsets.only(top: 12),
-            child: SizedBox(
-              width: 40,
-              height: 4,
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  color: Color(0xFF8E8E93),
-                  borderRadius: BorderRadius.all(Radius.circular(2)),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 8, 8, 8),
+          child: Row(
+            children: [
+              const Expanded(
+                child: Text(
+                  'Ferramentas de Desenho',
+                  style: TextStyle(
+                    color: SoloForteSheetTokens.titleColor,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
-            ),
-          ),
-        ),
-        const Padding(
-          padding: EdgeInsets.fromLTRB(20, 16, 20, 8),
-          child: Align(
-            alignment: Alignment.centerLeft,
-            child: Text(
-              'Ferramentas de Desenho',
-              style: TextStyle(
-                color: SoloForteSheetTokens.titleColor,
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
+              if (onClose != null)
+                IconButton(
+                  key: const Key('drawing_sheet_close'),
+                  tooltip: 'Fechar',
+                  onPressed: onClose,
+                  icon: const Icon(Icons.close),
+                ),
+            ],
           ),
         ),
         Divider(height: 1, color: scheme.outlineVariant.withValues(alpha: 0.5)),

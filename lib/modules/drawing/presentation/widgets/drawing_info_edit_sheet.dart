@@ -13,11 +13,17 @@ import '../../../../core/ui/sheets/sheet_tokens.dart';
 class DrawingInfoEditSheet extends ConsumerStatefulWidget {
   final DrawingFeature feature;
   final DrawingController controller;
+  final bool embedded;
+  final VoidCallback? onCancel;
+  final VoidCallback? onSaved;
 
   const DrawingInfoEditSheet({
     super.key,
     required this.feature,
     required this.controller,
+    this.embedded = false,
+    this.onCancel,
+    this.onSaved,
   });
 
   @override
@@ -66,10 +72,7 @@ class _DrawingInfoEditSheetState extends ConsumerState<DrawingInfoEditSheet> {
     }
   }
 
-  Future<void> _loadFarmsAndSelect(
-    String clientId,
-    String? farmId,
-  ) async {
+  Future<void> _loadFarmsAndSelect(String clientId, String? farmId) async {
     await ref.read(drawingClientProvider.notifier).loadFarms(clientId);
     if (!mounted) return;
     if (farmId == null) return;
@@ -100,6 +103,14 @@ class _DrawingInfoEditSheetState extends ConsumerState<DrawingInfoEditSheet> {
     }
   }
 
+  void _close() {
+    if (widget.onCancel != null) {
+      widget.onCancel!();
+      return;
+    }
+    Navigator.of(context).pop();
+  }
+
   void _save() {
     if (!_formKey.currentState!.validate()) return;
     widget.controller.updateMetadata(
@@ -112,6 +123,10 @@ class _DrawingInfoEditSheetState extends ConsumerState<DrawingInfoEditSheet> {
       clienteId: _selectedClient?.id,
       fazendaId: _selectedFarm?.id,
     );
+    if (widget.onSaved != null) {
+      widget.onSaved!();
+      return;
+    }
     Navigator.of(context).pop();
   }
 
@@ -170,18 +185,18 @@ class _DrawingInfoEditSheetState extends ConsumerState<DrawingInfoEditSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Handle
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                margin: const EdgeInsets.only(bottom: 16),
-                decoration: BoxDecoration(
-                  color: divColor,
-                  borderRadius: BorderRadius.circular(2),
+            if (!widget.embedded)
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    color: divColor,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
               ),
-            ),
 
             const Text(
               'Editar Informações',
@@ -239,8 +254,10 @@ class _DrawingInfoEditSheetState extends ConsumerState<DrawingInfoEditSheet> {
                     initialValue: _selectedClient,
                     dropdownColor: inputBg,
                     style: textStyle,
-                    hint: const Text('Selecionar cliente',
-                        style: TextStyle(color: hintColor)),
+                    hint: const Text(
+                      'Selecionar cliente',
+                      style: TextStyle(color: hintColor),
+                    ),
                     decoration: InputDecoration(
                       filled: true,
                       fillColor: inputBg,
@@ -252,14 +269,13 @@ class _DrawingInfoEditSheetState extends ConsumerState<DrawingInfoEditSheet> {
                     items: [
                       const DropdownMenuItem<Client>(
                         value: null,
-                        child: Text('— Nenhum —',
-                            style: TextStyle(color: hintColor)),
+                        child: Text(
+                          '— Nenhum —',
+                          style: TextStyle(color: hintColor),
+                        ),
                       ),
                       ...clientState.clients.map(
-                        (c) => DropdownMenuItem(
-                          value: c,
-                          child: Text(c.name),
-                        ),
+                        (c) => DropdownMenuItem(value: c, child: Text(c.name)),
                       ),
                     ],
                     onChanged: _onClientChanged,
@@ -275,8 +291,10 @@ class _DrawingInfoEditSheetState extends ConsumerState<DrawingInfoEditSheet> {
                     initialValue: _selectedFarm,
                     dropdownColor: inputBg,
                     style: textStyle,
-                    hint: const Text('Selecionar fazenda',
-                        style: TextStyle(color: hintColor)),
+                    hint: const Text(
+                      'Selecionar fazenda',
+                      style: TextStyle(color: hintColor),
+                    ),
                     decoration: InputDecoration(
                       filled: true,
                       fillColor: inputBg,
@@ -288,14 +306,13 @@ class _DrawingInfoEditSheetState extends ConsumerState<DrawingInfoEditSheet> {
                     items: [
                       const DropdownMenuItem<Farm>(
                         value: null,
-                        child: Text('— Nenhuma —',
-                            style: TextStyle(color: hintColor)),
+                        child: Text(
+                          '— Nenhuma —',
+                          style: TextStyle(color: hintColor),
+                        ),
                       ),
                       ...clientState.farms.map(
-                        (f) => DropdownMenuItem(
-                          value: f,
-                          child: Text(f.name),
-                        ),
+                        (f) => DropdownMenuItem(value: f, child: Text(f.name)),
                       ),
                     ],
                     onChanged: _selectedClient == null
@@ -349,7 +366,7 @@ class _DrawingInfoEditSheetState extends ConsumerState<DrawingInfoEditSheet> {
               children: [
                 Expanded(
                   child: OutlinedButton(
-                    onPressed: () => Navigator.of(context).pop(),
+                    onPressed: _close,
                     style: OutlinedButton.styleFrom(
                       foregroundColor: Colors.white70,
                       side: const BorderSide(color: divColor),
