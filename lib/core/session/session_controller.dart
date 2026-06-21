@@ -3,9 +3,14 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../config/app_config.dart';
+import '../infra/preferences_service.dart';
 import '../../core/network/network_policy.dart';
 import '../../core/state/map_state.dart';
 import '../database/database_helper.dart';
+import 'pending_signup_role_store.dart';
+import 'profile_role_resolver.dart';
+import 'user_role.dart';
 import 'session_models.dart';
 
 part 'session_controller.g.dart';
@@ -72,6 +77,18 @@ class SessionController extends _$SessionController {
         final user = data.session?.user;
         if (user != null) {
           state = SessionAuthenticated(user);
+          unawaited(() async {
+            try {
+              await DatabaseHelper.instance.repairOrphanUserIds(user.id);
+            } catch (e, st) {
+              debugPrint('[SessionController] repairOrphanUserIds falhou: $e\n$st');
+            }
+            try {
+              await _ensureProfileComplete(loginEmail: user.email);
+            } catch (_) {
+              // Não bloquear autenticação por falha no bootstrap de perfil.
+            }
+          }());
         } else {
           state = const SessionPublic();
         }
@@ -88,6 +105,7 @@ class SessionController extends _$SessionController {
   /// esta chamada preenche nome/role do user_metadata).
   Future<void> login(String email, String password) async {
     try {
+      AppConfig.validate();
       await NetworkPolicy.withTimeout(
         () => Supabase.instance.client.auth.signInWithPassword(
           email: email,
@@ -95,13 +113,17 @@ class SessionController extends _$SessionController {
         ),
       );
     } on AuthException catch (e) {
-      throw Exception(_traduzirErro(e.message));
+      throw Exception(_traduzirAuthException(e));
+    } on StateError {
+      throw Exception(
+        'Configuração inválida do aplicativo. Reinstale a versão mais recente ou contate o suporte.',
+      );
     } on TimeoutException {
       throw Exception(
-        'Tempo esgotado. Verifique sua conexão e tente novamente.',
+        'Não foi possível conectar ao servidor. Verifique sua conexão e tente novamente.',
       );
     } catch (e) {
-      throw Exception('Não foi possível fazer login. Verifique sua conexão.');
+      throw Exception(_traduzirErroDesconhecido(e));
     }
     // O stream onAuthStateChange atualiza o state automaticamente.
 
@@ -118,16 +140,64 @@ class SessionController extends _$SessionController {
     // Se o cadastro foi feito com email confirmation, o perfil está vazio.
     // Esta chamada preenche os dados do user_metadata.
     try {
-      await _ensureProfileComplete();
+      await _ensureProfileComplete(loginEmail: email);
     } catch (_) {
       // Não bloquear login por falha no perfil
+    }
+  }
+
+  Future<void> loginWithGoogle() async {
+    try {
+      AppConfig.validate();
+      await NetworkPolicy.withTimeout(
+        () => Supabase.instance.client.auth.signInWithOAuth(
+          OAuthProvider.google,
+          redirectTo: '${AppConfig.supabaseUrl}/auth/v1/callback',
+        ),
+      );
+    } on AuthException catch (e) {
+      throw Exception(_traduzirAuthException(e));
+    } on StateError {
+      throw Exception(
+        'Configuração inválida do aplicativo. Reinstale a versão mais recente ou contate o suporte.',
+      );
+    } on TimeoutException {
+      throw Exception(
+        'Não foi possível conectar ao servidor. Verifique sua conexão e tente novamente.',
+      );
+    } catch (e) {
+      throw Exception(_traduzirErroDesconhecido(e));
+    }
+  }
+
+  Future<void> loginWithApple() async {
+    try {
+      AppConfig.validate();
+      await NetworkPolicy.withTimeout(
+        () => Supabase.instance.client.auth.signInWithOAuth(
+          OAuthProvider.apple,
+          redirectTo: '${AppConfig.supabaseUrl}/auth/v1/callback',
+        ),
+      );
+    } on AuthException catch (e) {
+      throw Exception(_traduzirAuthException(e));
+    } on StateError {
+      throw Exception(
+        'Configuração inválida do aplicativo. Reinstale a versão mais recente ou contate o suporte.',
+      );
+    } on TimeoutException {
+      throw Exception(
+        'Não foi possível conectar ao servidor. Verifique sua conexão e tente novamente.',
+      );
+    } catch (e) {
+      throw Exception(_traduzirErroDesconhecido(e));
     }
   }
 
   /// Preenche perfil vazio (criado pelo trigger) com dados do user_metadata.
   /// Idempotente: nunca sobrescreve dados válidos já existentes.
   /// Seguro para múltiplas execuções (login + bootstrap Map).
-  Future<void> _ensureProfileComplete() async {
+  Future<void> _ensureProfileComplete({String? loginEmail}) async {
     final client = Supabase.instance.client;
     final user = client.auth.currentUser;
     if (user == null) return;
@@ -140,40 +210,111 @@ class SessionController extends _$SessionController {
           .maybeSingle(),
     );
 
-    if (profile == null) return;
+    final metadataName = user.userMetadata?['full_name'] as String?;
+    final metadataRole = user.userMetadata?['role'] as String?;
+    final roleEmail = loginEmail ?? user.email;
+    final pendingSignupRole = await _readPendingSignupRole(roleEmail);
+
+    if (profile == null) {
+      final resolvedRole = ProfileRoleResolver.resolve(
+        pendingSignupRole: pendingSignupRole,
+        metadataRole: metadataRole,
+        profileRole: null,
+      );
+      await NetworkPolicy.withTimeout(
+        () => client.from('perfis').upsert({
+          'id': user.id,
+          'name': metadataName ?? '',
+          'role': resolvedRole,
+          'updated_at': DateTime.now().toUtc().toIso8601String(),
+        }),
+      );
+      if (metadataRole.toUserRole() != resolvedRole.toUserRole()) {
+        await _syncAuthRole(client, resolvedRole);
+      }
+      await _pendingSignupRoleStore().clear(roleEmail);
+      return;
+    }
 
     final currentName = profile['name'] as String?;
     final currentRole = profile['role'] as String?;
+    final resolvedRole = ProfileRoleResolver.resolve(
+      pendingSignupRole: pendingSignupRole,
+      metadataRole: metadataRole,
+      profileRole: currentRole,
+    );
 
     // Só atualizar campos que estão vazios — nunca sobrescrever dados válidos
     final updates = <String, dynamic>{};
 
     if (currentName == null || currentName.isEmpty) {
-      updates['name'] = user.userMetadata?['full_name'] ?? '';
+      updates['name'] = metadataName ?? '';
     }
-    if (currentRole == null || currentRole.isEmpty) {
-      updates['role'] = user.userMetadata?['role'] ?? 'produtor';
+    if (ProfileRoleResolver.shouldUpdateProfileRole(
+      pendingSignupRole: pendingSignupRole,
+      metadataRole: metadataRole,
+      profileRole: currentRole,
+    )) {
+      updates['role'] = resolvedRole;
     }
 
-    if (updates.isEmpty) return; // Perfil já completo — noop
+    if (updates.isEmpty) {
+      if (metadataRole.toUserRole() != resolvedRole.toUserRole()) {
+        await _syncAuthRole(client, resolvedRole);
+      }
+      await _pendingSignupRoleStore().clear(roleEmail);
+      return; // Perfil já completo — noop
+    }
 
     await NetworkPolicy.withTimeout(
       () => client.from('perfis').update(updates).eq('id', user.id),
     );
+
+    if (metadataRole.toUserRole() != resolvedRole.toUserRole()) {
+      await _syncAuthRole(client, resolvedRole);
+    }
+    await _pendingSignupRoleStore().clear(roleEmail);
+  }
+
+  Future<void> _syncAuthRole(SupabaseClient client, String role) async {
+    try {
+      await NetworkPolicy.withTimeout(
+        () => client.auth.updateUser(UserAttributes(data: {'role': role})),
+      );
+    } catch (e, st) {
+      debugPrint('[SessionController] sync role falhou: $e\n$st');
+    }
+  }
+
+  PendingSignupRoleStore _pendingSignupRoleStore() {
+    return PendingSignupRoleStore(ref.read(preferencesServiceProvider));
+  }
+
+  Future<String?> _readPendingSignupRole(String? email) async {
+    try {
+      return _pendingSignupRoleStore().readValidRole(email);
+    } catch (_) {
+      return null;
+    }
   }
 
   /// Cadastro real via Supabase Auth.
   Future<void> signup(String name, String email, String password) async {
     try {
+      AppConfig.validate();
       await Supabase.instance.client.auth.signUp(
         email: email,
         password: password,
         data: {'full_name': name},
       );
     } on AuthException catch (e) {
-      throw Exception(_traduzirErro(e.message));
+      throw Exception(_traduzirAuthException(e));
+    } on StateError {
+      throw Exception(
+        'Configuração inválida do aplicativo. Reinstale a versão mais recente ou contate o suporte.',
+      );
     } catch (e) {
-      throw Exception('Não foi possível criar a conta. Verifique sua conexão.');
+      throw Exception(_traduzirErroDesconhecido(e));
     }
     // O stream onAuthStateChange atualiza o state automaticamente.
   }
@@ -268,8 +409,16 @@ class SessionController extends _$SessionController {
     await DatabaseHelper.instance.clearUserLocalData(userId);
   }
 
-  String _traduzirErro(String message) {
-    final lower = message.toLowerCase();
+  String _traduzirAuthException(AuthException error) {
+    if (error is AuthRetryableFetchException) {
+      return 'Não foi possível conectar ao servidor. Verifique sua conexão e tente novamente.';
+    }
+
+    if (error is AuthUnknownException) {
+      return 'Não foi possível concluir a autenticação agora. Tente novamente em instantes.';
+    }
+
+    final lower = error.message.toLowerCase();
     if (lower.contains('invalid login credentials') ||
         lower.contains('invalid email or password')) {
       return 'Email ou senha incorretos.';
@@ -289,9 +438,26 @@ class SessionController extends _$SessionController {
     }
     if (lower.contains('network') ||
         lower.contains('socket') ||
+        lower.contains('host lookup') ||
         lower.contains('connection')) {
-      return 'Sem conexão com a internet. Verifique sua rede.';
+      return 'Não foi possível conectar ao servidor. Verifique sua conexão e tente novamente.';
     }
     return 'Erro de autenticação. Tente novamente.';
+  }
+
+  String _traduzirErroDesconhecido(Object error) {
+    final lower = error.toString().toLowerCase();
+    if (lower.contains('supabase_url') ||
+        lower.contains('supabase_anon_key') ||
+        lower.contains('seu-projeto.supabase.co')) {
+      return 'Configuração inválida do aplicativo. Reinstale a versão mais recente ou contate o suporte.';
+    }
+    if (lower.contains('host lookup') ||
+        lower.contains('socket') ||
+        lower.contains('connection refused') ||
+        lower.contains('network is unreachable')) {
+      return 'Não foi possível conectar ao servidor. Verifique sua conexão e tente novamente.';
+    }
+    return 'Não foi possível completar a operação. Tente novamente.';
   }
 }

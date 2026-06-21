@@ -12,6 +12,7 @@ import '../../modules/marketing/presentation/widgets/ouro_map_background.dart';
 import '../components/login/login_input_field.dart';
 import '../components/login/gradient_button.dart';
 import '../components/login/demo_mode_checkbox.dart';
+import '../components/login/social_auth_button.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -39,6 +40,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   final _passFocusNode = FocusNode();
 
   bool _loading = false;
+  bool _socialLoading = false;
   bool _isDemoMode = false;
 
   // ── Rate limiting ──────────────────────────────────────────
@@ -134,6 +136,34 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     }
   }
 
+  Future<void> _handleGoogleLogin() async {
+    if (_loading || _socialLoading) return;
+    setState(() => _socialLoading = true);
+    try {
+      await ref.read(sessionControllerProvider.notifier).loginWithGoogle();
+    } catch (e) {
+      if (mounted) {
+        _showErrorMessage(e.toString().replaceAll('Exception: ', ''));
+      }
+    } finally {
+      if (mounted) setState(() => _socialLoading = false);
+    }
+  }
+
+  Future<void> _handleAppleLogin() async {
+    if (_loading || _socialLoading) return;
+    setState(() => _socialLoading = true);
+    try {
+      await ref.read(sessionControllerProvider.notifier).loginWithApple();
+    } catch (e) {
+      if (mounted) {
+        _showErrorMessage(e.toString().replaceAll('Exception: ', ''));
+      }
+    } finally {
+      if (mounted) setState(() => _socialLoading = false);
+    }
+  }
+
   void _showErrorMessage(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -152,7 +182,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
 
   @override
   Widget build(BuildContext context) {
-    final canGoBack = context.canPop();
     final screenHeight = MediaQuery.of(context).size.height;
 
     return Scaffold(
@@ -268,27 +297,26 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                             ),
 
                             // Botão Voltar
-                            if (canGoBack)
-                              Align(
-                                alignment: Alignment.centerLeft,
-                                child: TextButton.icon(
-                                  onPressed: () => context.pop(),
-                                  icon: const Icon(
-                                    Icons.arrow_back_ios,
-                                    size: 16,
+                            Align(
+                              alignment: Alignment.centerLeft,
+                              child: TextButton.icon(
+                                onPressed: () => context.go(AppRoutes.publicMap),
+                                icon: const Icon(
+                                  Icons.arrow_back_ios,
+                                  size: 16,
+                                  color: PremiumTokens.brandGreen,
+                                ),
+                                label: const Text(
+                                  'VOLTAR',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
                                     color: PremiumTokens.brandGreen,
-                                  ),
-                                  label: const Text(
-                                    'VOLTAR',
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w600,
-                                      color: PremiumTokens.brandGreen,
-                                      letterSpacing: 0.5,
-                                    ),
+                                    letterSpacing: 0.5,
                                   ),
                                 ),
                               ),
+                            ),
 
                             // Logo
                             Hero(
@@ -402,6 +430,23 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                                   : _handleLogin,
                               isLoading: _loading,
                               height: 50,
+                            ),
+                            const SizedBox(height: 12),
+
+                            SocialAuthButton(
+                              text: 'Continuar com Google',
+                              icon: Icons.account_circle_outlined,
+                              onPressed: _loading || _socialLoading
+                                  ? () {}
+                                  : _handleGoogleLogin,
+                            ),
+                            const SizedBox(height: 10),
+                            SocialAuthButton(
+                              text: 'Continuar com Apple',
+                              icon: Icons.apple,
+                              onPressed: _loading || _socialLoading
+                                  ? () {}
+                                  : _handleAppleLogin,
                             ),
                             const SizedBox(height: 12),
 
