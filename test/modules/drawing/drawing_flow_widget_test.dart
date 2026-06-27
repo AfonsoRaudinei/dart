@@ -362,6 +362,75 @@ void main() {
       controller.dispose();
     });
 
+    testWidgets('✏️ Edição expõe botão salvar e retorna para seleção', (
+      WidgetTester tester,
+    ) async {
+      tester.view.physicalSize = const Size(800, 2000);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final repository = MockDrawingRepository();
+      final controller = DrawingController(repository: repository);
+
+      final feature = DrawingFeature(
+        id: 'field-edit',
+        geometry: DrawingPolygon(
+          coordinates: const [
+            [
+              [-48, -10],
+              [-47.99, -10],
+              [-47.99, -9.99],
+              [-48, -10],
+            ],
+          ],
+        ),
+        properties: DrawingProperties(
+          nome: 'Talhão Editável',
+          tipo: DrawingType.talhao,
+          origem: DrawingOrigin.desenho_manual,
+          status: DrawingStatus.rascunho,
+          autorId: 'user-1',
+          autorTipo: AuthorType.consultor,
+          areaHa: 1,
+          versao: 1,
+          ativo: true,
+          createdAt: DateTime(2026),
+          updatedAt: DateTime(2026),
+          syncStatus: SyncStatus.synced,
+        ),
+      );
+
+      repository.savedFeatures.add(feature);
+      await controller.loadFeatures();
+      controller.selectFeature(controller.features.single);
+      controller.startEditMode();
+
+      await tester.pumpWidget(
+        ProviderScope(
+          child: MaterialApp(
+            home: Scaffold(
+              body: SingleChildScrollView(
+                child: DrawingSheet(controller: controller),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(controller.currentState, DrawingState.editing);
+      expect(find.byKey(const Key('drawing_edit_save_button')), findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('drawing_edit_save_button')));
+      await tester.pumpAndSettle();
+
+      expect(controller.currentState, DrawingState.selected);
+      expect(find.text('Sair da seleção'), findsOneWidget);
+
+      controller.dispose();
+    });
+
     testWidgets('💾 Salvar revisão dispara fechamento após persistir', (
       WidgetTester tester,
     ) async {

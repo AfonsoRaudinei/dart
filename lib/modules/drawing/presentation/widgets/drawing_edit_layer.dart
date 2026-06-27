@@ -287,21 +287,26 @@ class _DrawingEditLayerState extends State<DrawingEditLayer> {
                 width: 80,
                 height: 30, // Enough for text
                 alignment: Alignment.topCenter,
-                child: Transform.translate(
-                  offset: const Offset(0, 10), // Push below midpoint
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 4,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withAlpha(150),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Text(
-                      distText,
-                      style: const TextStyle(color: Colors.white, fontSize: 10),
-                      textAlign: TextAlign.center,
+                child: IgnorePointer(
+                  child: Transform.translate(
+                    offset: const Offset(0, 10), // Push below midpoint
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 4,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withAlpha(150),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        distText,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
                     ),
                   ),
                 ),
@@ -340,6 +345,7 @@ class _VertexHandle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
+      key: Key('drawing_vertex_${ringIndex}_$index'),
       // TODO(drawing): V2 bloquear pan/zoom do mapa durante drag de vértice.
       // V1: GestureDetector do marker já permite arraste funcional.
       behavior: HitTestBehavior.opaque,

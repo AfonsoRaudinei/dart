@@ -63,16 +63,25 @@ void main() {
 
     container
         .read(drawingClientProvider.notifier)
-        .setClienteAtivo('cli-1', clientName: 'José Augusto Miranda');
+        .setClienteAtivo(
+          'cli-1',
+          clientName: 'José Augusto Miranda',
+          farmId: 'farm-1',
+          farmName: 'Retiro',
+        );
     await Future<void>.delayed(Duration.zero);
 
     final state = container.read(drawingClientProvider);
     expect(state.preSelectedClientId, 'cli-1');
     expect(state.preSelectedClientName, 'José Augusto Miranda');
+    expect(state.preSelectedFarmId, 'farm-1');
+    expect(state.preSelectedFarmName, 'Retiro');
     expect(state.farms.single.id, 'farm-1');
   });
 
-  testWidgets('revisão contextual não pede cliente novamente', (tester) async {
+  testWidgets('revisão contextual trava cliente e fazenda pré-selecionados', (
+    tester,
+  ) async {
     tester.view.physicalSize = const Size(800, 2200);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
@@ -88,7 +97,12 @@ void main() {
     addTearDown(container.dispose);
     container
         .read(drawingClientProvider.notifier)
-        .setClienteAtivo('cli-1', clientName: 'José Augusto Miranda');
+        .setClienteAtivo(
+          'cli-1',
+          clientName: 'José Augusto Miranda',
+          farmId: 'farm-1',
+          farmName: 'Retiro',
+        );
 
     final controller = DrawingController(repository: _DrawingRepository());
     addTearDown(controller.dispose);
@@ -113,7 +127,9 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('José Augusto Miranda'), findsOneWidget);
+    expect(find.text('Retiro'), findsOneWidget);
     expect(find.text('Selecione o cliente...'), findsNothing);
-    expect(find.byIcon(Icons.lock_outline), findsOneWidget);
+    expect(find.text('Selecione a fazenda...'), findsNothing);
+    expect(find.byIcon(Icons.lock_outline), findsNWidgets(2));
   });
 }

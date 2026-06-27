@@ -265,6 +265,11 @@ class DrawingController extends ChangeNotifier {
   List<DrawingFeature> get selectedFeatures => features
       .where((f) => _selectedFeatureIds.contains(f.id))
       .toList(growable: false);
+  bool get hasSelection =>
+      _selectedFeature != null ||
+      _selectedFeatureIds.isNotEmpty ||
+      _multiSelectEnabled ||
+      _stateMachine.currentState == DrawingState.selected;
   bool get isHighComplexity => _isHighComplexity;
 
   bool get isDraggingVertex => _isDraggingVertex;
@@ -1232,6 +1237,11 @@ class DrawingController extends ChangeNotifier {
 
     _gpsOrchestrator
         .cancelTracking(); // Cancela GPS se ativo antes de limpar estado
+    _selectedFeature = null;
+    _selectedFeatureIds.clear();
+    _multiSelectEnabled = false;
+    _editGeometry = null;
+    _history.clear();
     _interactionMode = DrawingInteraction.normal;
     _booleanOpsOrchestrator.clear();
     _previewGeometry = null;
@@ -1245,6 +1255,21 @@ class DrawingController extends ChangeNotifier {
     _intersectionWarningMessage = null;
     _currentPoints.clear(); // 🔧 FIX-DRAW-FLOW-02: Limpar pontos ao cancelar
     _stateMachine.cancel(); // Use state machine cancel
+    notifyListeners();
+  }
+
+  void clearSelection({bool disableMultiSelect = true}) {
+    final hadSelection = hasSelection;
+    if (!hadSelection) return;
+
+    _selectedFeature = null;
+    _selectedFeatureIds.clear();
+    if (disableMultiSelect) {
+      _multiSelectEnabled = false;
+    }
+    if (_stateMachine.currentState == DrawingState.selected) {
+      _stateMachine.exitSelected();
+    }
     notifyListeners();
   }
 

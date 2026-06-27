@@ -12,10 +12,7 @@ class _FakeClientsRepository implements IClientsRepository {
   Farm? lastSavedFarm;
   String? lastSavedClientId;
 
-  _FakeClientsRepository({
-    this.clients = const [],
-    this.farms = const [],
-  });
+  _FakeClientsRepository({this.clients = const [], this.farms = const []});
 
   @override
   Future<List<Client>> getClients() async => clients;
@@ -35,22 +32,22 @@ class _FakeClientsRepository implements IClientsRepository {
 // =============================================================================
 
 Client _makeClient(String id) => Client(
-      id: id,
-      name: 'Cliente $id',
-      phone: '11999990000',
-      city: 'Sao Paulo',
-      state: 'SP',
-      createdAt: DateTime(2024, 1, 1),
-    );
+  id: id,
+  name: 'Cliente $id',
+  phone: '11999990000',
+  city: 'Sao Paulo',
+  state: 'SP',
+  createdAt: DateTime(2024, 1, 1),
+);
 
 Farm _makeFarm(String id) => Farm(
-      id: id,
-      name: 'Fazenda $id',
-      city: 'Ribeirao',
-      state: 'SP',
-      totalAreaHa: 100.0,
-      fields: [],
-    );
+  id: id,
+  name: 'Fazenda $id',
+  city: 'Ribeirao',
+  state: 'SP',
+  totalAreaHa: 100.0,
+  fields: [],
+);
 
 // =============================================================================
 // Testes
@@ -96,29 +93,33 @@ void main() {
       final repo = _FakeClientsRepository();
       final service = DrawingClientFarmBridgeService(repo);
 
-      await service.createFarm('Fazenda Nova', 'cli-42', 'Uberlandia', 'MG');
+      await service.createFarm(
+        'Fazenda Nova',
+        'cli-42',
+        'Uberlandia',
+        'MG',
+        240.5,
+      );
 
       expect(repo.lastSavedFarm, isNotNull);
       expect(repo.lastSavedFarm!.name, equals('Fazenda Nova'));
       expect(repo.lastSavedFarm!.city, equals('Uberlandia'));
       expect(repo.lastSavedFarm!.state, equals('MG'));
+      expect(repo.lastSavedFarm!.totalAreaHa, equals(240.5));
       expect(repo.lastSavedClientId, equals('cli-42'));
     });
 
     test('createFarm nao lança exceção quando repositório é null', () async {
       final service = const DrawingClientFarmBridgeService(null);
       // Não deve lançar
-      await expectLater(
-        service.createFarm('X', 'y', 'z', 'w'),
-        completes,
-      );
+      await expectLater(service.createFarm('X', 'y', 'z', 'w', 10), completes);
     });
 
     test('createFarm gera id nao vazio para nova fazenda', () async {
       final repo = _FakeClientsRepository();
       final service = DrawingClientFarmBridgeService(repo);
 
-      await service.createFarm('FazNova', 'cli-1', 'Cidade', 'UF');
+      await service.createFarm('FazNova', 'cli-1', 'Cidade', 'UF', 15);
 
       expect(repo.lastSavedFarm!.id, isNotEmpty);
     });

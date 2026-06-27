@@ -72,7 +72,7 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
         ref.read(drawingClientProvider.notifier).loadClients();
       }
       // Sincronizar pré-seleção inicial
-      _syncPreSelectedClient(ref.read(drawingClientProvider));
+      _syncPreSelectedContext(ref.read(drawingClientProvider));
     });
 
     // Suggest logical name
@@ -86,27 +86,96 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
     super.dispose();
   }
 
-  /// Aplica pré-seleção de cliente proveniente de query param Map-First.
+  /// Aplica pré-seleção de cliente/fazenda proveniente do fluxo Map-First.
   /// Chamado via ref.listen e no postFrameCallback inicial.
-  void _syncPreSelectedClient(DrawingClientState clientState) {
-    final preId = clientState.preSelectedClientId;
-    if (preId == null) return;
+  void _syncPreSelectedContext(DrawingClientState clientState) {
+    final preClientId = clientState.preSelectedClientId;
+    if (preClientId == null || !mounted) return;
 
-    final match = clientState.clients.where((c) => c.id == preId).toList();
-    if (match.isNotEmpty &&
-        !identical(_selectedClient, match.first) &&
-        mounted) {
-      setState(() => _selectedClient = match.first);
+    Client? nextClient = _selectedClient;
+    final clientMatches = clientState.clients.where((c) => c.id == preClientId);
+    if (clientMatches.isNotEmpty) {
+      nextClient = clientMatches.first;
     } else if (_selectedClient == null &&
-        clientState.preSelectedClientName != null &&
-        mounted) {
-      setState(
-        () => _selectedClient = Client(
-          id: preId,
-          name: clientState.preSelectedClientName!,
-        ),
+        clientState.preSelectedClientName != null) {
+      nextClient = Client(
+        id: preClientId,
+        name: clientState.preSelectedClientName!,
       );
     }
+
+    Farm? nextFarm = _selectedFarm;
+    final preFarmId = clientState.preSelectedFarmId;
+    if (preFarmId != null) {
+      final farmMatches = clientState.farms.where((f) => f.id == preFarmId);
+      if (farmMatches.isNotEmpty) {
+        nextFarm = farmMatches.first;
+      } else if ((_selectedFarm == null || _selectedFarm!.id != preFarmId) &&
+          clientState.preSelectedFarmName != null) {
+        nextFarm = Farm(
+          id: preFarmId,
+          clientId: preClientId,
+          name: clientState.preSelectedFarmName!,
+          city: '',
+          state: '',
+        );
+      }
+    }
+
+    final shouldUpdateClient =
+        nextClient != null && nextClient != _selectedClient;
+    final shouldUpdateFarm =
+        preFarmId != null && nextFarm != null && nextFarm != _selectedFarm;
+
+    if (shouldUpdateClient || shouldUpdateFarm) {
+      setState(() {
+        if (shouldUpdateClient) {
+          _selectedClient = nextClient;
+        }
+        if (shouldUpdateFarm) {
+          _selectedFarm = nextFarm;
+        }
+      });
+    }
+  }
+
+  double _parseArea(String value) {
+    return double.tryParse(value.replaceAll(',', '.').trim()) ?? 0;
+  }
+
+  void _closeSheetPanel() {
+    widget.onClose?.call();
+  }
+
+  void _exitSelectionAndClose() {
+    widget.controller.clearSelection();
+    _closeSheetPanel();
+  }
+
+  void _handleClosePressed() {
+    if (_isEditingMetadata) {
+      setState(() => _isEditingMetadata = false);
+      return;
+    }
+
+    if (widget.controller.interactionMode == DrawingInteraction.editing) {
+      widget.controller.cancelEdit();
+      return;
+    }
+
+    if (widget.controller.hasSelection) {
+      _exitSelectionAndClose();
+      return;
+    }
+
+    if (widget.controller.currentState != DrawingState.idle ||
+        widget.controller.currentTool != DrawingTool.none) {
+      widget.controller.cancelOperation();
+      _closeSheetPanel();
+      return;
+    }
+
+    _closeSheetPanel();
   }
 
   void _onToolSelected(String key) {
@@ -174,7 +243,7 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
 
     // ADR-019: escuta mudancas de clientes para pre-selecao Map-First
     ref.listen<DrawingClientState>(drawingClientProvider, (_, next) {
-      _syncPreSelectedClient(next);
+      _syncPreSelectedContext(next);
     });
 
     // ── GPS Walk: resetar seleção quando sessão é cancelada/finalizada ───────
@@ -220,7 +289,7 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // 4. Cabeçalho Fixo (Fonte Única)
-            _SheetHeader(onClose: widget.onClose),
+            _SheetHeader(onClose: _handleClosePressed),
 
             // Conteúdo Dinâmico
             Flexible(
@@ -852,6 +921,7 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
       selectedFeature: feature,
       onEditGeometry: widget.controller.startEditMode,
       onEditMetadata: () => setState(() => _isEditingMetadata = true),
+      onExitSelection: _exitSelectionAndClose,
       onUnion: widget.controller.startUnionMode,
       onDifference: widget.controller.startDifferenceMode,
       onIntersection: widget.controller.startIntersectionMode,
@@ -935,6 +1005,31 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
               textAlign: TextAlign.center,
               style: TextStyle(color: SoloForteSheetTokens.inputHint),
             ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: widget.controller.cancelEdit,
+                  child: const Text('Cancelar'),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton(
+                  key: const Key('drawing_edit_save_button'),
+                  onPressed: widget.controller.saveEdit,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: PremiumTokens.brandGreen,
+                  ),
+                  child: const Text(
+                    'Salvar',
+                    style: TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -1062,63 +1157,7 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
               ),
             ),
             const SizedBox(height: 8),
-            DropdownButtonFormField<dynamic>(
-              // Dynamic to allow 'NEW_FARM' string or Farm object
-              initialValue: _selectedFarm,
-              decoration: InputDecoration(
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              hint: const Text('Selecione a fazenda...'),
-              items: [
-                ...ref
-                    .watch(drawingClientProvider)
-                    .farms
-                    .map(
-                      (f) => DropdownMenuItem(value: f, child: Text(f.name)),
-                    ),
-                const DropdownMenuItem(
-                  value: 'NEW_FARM',
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.add_circle_outline,
-                        size: 16,
-                        color: Colors.blue,
-                      ),
-                      SizedBox(width: 8),
-                      Text(
-                        'Nova Fazenda',
-                        style: TextStyle(color: Colors.blue),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-              onChanged: (getValue) {
-                if (getValue == 'NEW_FARM') {
-                  if (_selectedClient == null) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Selecione o Cliente primeiro'),
-                      ),
-                    );
-                    return;
-                  }
-                  _showCreateFarmDialog();
-                } else {
-                  setState(() => _selectedFarm = getValue as Farm?);
-                }
-              },
-              validator: (v) => v == null && _selectedFarm == null
-                  ? 'Selecione uma fazenda'
-                  : null,
-            ),
+            _buildFarmField(),
             const SizedBox(height: 16),
 
             // 3. Nome do Talhão
@@ -1286,6 +1325,7 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
     final stateController = TextEditingController(
       text: _selectedClient?.state ?? '',
     );
+    final areaController = TextEditingController();
 
     showDialog(
       context: context,
@@ -1307,6 +1347,13 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
               controller: stateController,
               decoration: const InputDecoration(labelText: 'UF'),
             ),
+            TextField(
+              controller: areaController,
+              decoration: const InputDecoration(labelText: 'Área total (ha)'),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
+            ),
           ],
         ),
         actions: [
@@ -1316,32 +1363,37 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
           ),
           ElevatedButton(
             onPressed: () async {
-              if (nameController.text.isEmpty) return;
+              if (nameController.text.trim().isEmpty) return;
 
               final clientId =
                   _selectedClient?.id ??
                   'SELF'; // TODO: Handle Producer ID properly
-              await ref
+              final newFarm = await ref
                   .read(drawingClientProvider.notifier)
                   .createFarm(
-                    nameController.text,
+                    nameController.text.trim(),
                     clientId,
-                    cityController.text,
-                    stateController.text,
+                    cityController.text.trim(),
+                    stateController.text.trim().toUpperCase(),
+                    _parseArea(areaController.text),
                   );
+              if (newFarm != null && mounted) {
+                setState(() => _selectedFarm = newFarm);
+              }
               if (context.mounted) {
                 Navigator.of(context, rootNavigator: false).pop();
               }
-
-              // Auto-select the newly created farm (Assume it's the last one or find by name)
-              // Simple approach: reload farms handled by controller, then user selects.
-              // Or better: controller could return the ID.
             },
             child: const Text('Criar'),
           ),
         ],
       ),
-    );
+    ).whenComplete(() {
+      nameController.dispose();
+      cityController.dispose();
+      stateController.dispose();
+      areaController.dispose();
+    });
   }
 
   Widget _buildClientField() {
@@ -1390,15 +1442,79 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
     );
   }
 
+  Widget _buildFarmField() {
+    final clientState = ref.watch(drawingClientProvider);
+    if (clientState.preSelectedFarmId != null) {
+      final name =
+          _selectedFarm?.name ??
+          clientState.preSelectedFarmName ??
+          'Fazenda selecionada';
+      return InputDecorator(
+        decoration: InputDecoration(
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 12,
+          ),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+          suffixIcon: const Icon(Icons.lock_outline, size: 18),
+        ),
+        child: Text(name),
+      );
+    }
+
+    return DropdownButtonFormField<dynamic>(
+      initialValue: _selectedFarm,
+      decoration: InputDecoration(
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 12,
+        ),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+      ),
+      hint: const Text('Selecione a fazenda...'),
+      items: [
+        ...clientState.farms.map(
+          (f) => DropdownMenuItem(value: f, child: Text(f.name)),
+        ),
+        const DropdownMenuItem(
+          value: 'NEW_FARM',
+          child: Row(
+            children: [
+              Icon(Icons.add_circle_outline, size: 16, color: Colors.blue),
+              SizedBox(width: 8),
+              Text('Nova Fazenda', style: TextStyle(color: Colors.blue)),
+            ],
+          ),
+        ),
+      ],
+      onChanged: (getValue) {
+        if (getValue == 'NEW_FARM') {
+          if (_selectedClient == null) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Selecione o Cliente primeiro')),
+            );
+            return;
+          }
+          _showCreateFarmDialog();
+          return;
+        }
+        setState(() => _selectedFarm = getValue as Farm?);
+      },
+      validator: (v) =>
+          v == null && _selectedFarm == null ? 'Selecione uma fazenda' : null,
+    );
+  }
+
   // Antigo helper de limpar form
   void _resetReviewForm() {
     _nomeController.text = "Talhão Novo";
     // _descricaoController.clear(); // Removed as per instruction
-    final preserveContextClient =
-        ref.read(drawingClientProvider).preSelectedClientId != null;
+    final clientState = ref.read(drawingClientProvider);
+    final preserveContextClient = clientState.preSelectedClientId != null;
+    final preserveContextFarm = clientState.preSelectedFarmId != null;
     setState(() {
       if (!preserveContextClient) _selectedClient = null;
-      _selectedFarm = null;
+      if (!preserveContextFarm) _selectedFarm = null;
       _selectedColor = PremiumTokens.brandGreen;
     });
   }

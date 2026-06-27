@@ -33,6 +33,7 @@ class DrawingActionsBar extends StatelessWidget {
   final VoidCallback? onMoveSelected;
   final VoidCallback? onSelectByGroup;
   final VoidCallback? onDeleteSelected;
+  final VoidCallback? onExitSelection;
   final bool isMultiSelectEnabled;
   final int selectedCount;
 
@@ -52,6 +53,7 @@ class DrawingActionsBar extends StatelessWidget {
     this.onMoveSelected,
     this.onSelectByGroup,
     this.onDeleteSelected,
+    this.onExitSelection,
     this.isMultiSelectEnabled = false,
     this.selectedCount = 0,
   });
@@ -130,6 +132,19 @@ class DrawingActionsBar extends StatelessWidget {
             onTap: () {
               HapticFeedback.lightImpact();
               onEditMetadata?.call();
+            },
+          ),
+          const SizedBox(height: 16),
+          const Divider(height: 1),
+          const SizedBox(height: 16),
+
+          _ActionButton(
+            icon: Icons.check_circle_outline,
+            label: 'Sair da seleção',
+            description: 'Fecha o painel e remove o destaque do talhão',
+            onTap: () {
+              HapticFeedback.lightImpact();
+              onExitSelection?.call();
             },
           ),
           const SizedBox(height: 16),

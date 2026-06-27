@@ -19,6 +19,8 @@ class DrawingClientState {
   /// ID pré-selecionado via query param `/map?clienteId=X` (Map-First flow).
   final String? preSelectedClientId;
   final String? preSelectedClientName;
+  final String? preSelectedFarmId;
+  final String? preSelectedFarmName;
 
   final bool isLoadingClients;
   final bool isLoadingFarms;
@@ -28,6 +30,8 @@ class DrawingClientState {
     this.farms = const [],
     this.preSelectedClientId,
     this.preSelectedClientName,
+    this.preSelectedFarmId,
+    this.preSelectedFarmName,
     this.isLoadingClients = false,
     this.isLoadingFarms = false,
   });
@@ -37,7 +41,10 @@ class DrawingClientState {
     List<Farm>? farms,
     String? preSelectedClientId,
     String? preSelectedClientName,
+    String? preSelectedFarmId,
+    String? preSelectedFarmName,
     bool clearPreSelected = false,
+    bool clearPreSelectedFarm = false,
     bool? isLoadingClients,
     bool? isLoadingFarms,
   }) {
@@ -50,6 +57,12 @@ class DrawingClientState {
       preSelectedClientName: clearPreSelected
           ? null
           : (preSelectedClientName ?? this.preSelectedClientName),
+      preSelectedFarmId: clearPreSelected || clearPreSelectedFarm
+          ? null
+          : (preSelectedFarmId ?? this.preSelectedFarmId),
+      preSelectedFarmName: clearPreSelected || clearPreSelectedFarm
+          ? null
+          : (preSelectedFarmName ?? this.preSelectedFarmName),
       isLoadingClients: isLoadingClients ?? this.isLoadingClients,
       isLoadingFarms: isLoadingFarms ?? this.isLoadingFarms,
     );
@@ -113,11 +126,12 @@ class DrawingClientNotifier extends Notifier<DrawingClientState> {
     }
   }
 
-  Future<void> createFarm(
+  Future<Farm?> createFarm(
     String name,
     String clientId,
     String city,
     String farmState,
+    double areaHa,
   ) async {
     try {
       final newFarm = Farm(
@@ -125,17 +139,24 @@ class DrawingClientNotifier extends Notifier<DrawingClientState> {
         name: name,
         city: city,
         state: farmState,
-        totalAreaHa: 0.0,
+        totalAreaHa: areaHa,
         fields: [],
       );
       await _repo.saveFarm(newFarm, clientId);
       await loadFarms(clientId);
+      for (final farm in state.farms) {
+        if (farm.id == newFarm.id) {
+          return farm;
+        }
+      }
+      return newFarm;
     } catch (e) {
       AppLogger.warning(
         'Erro ao criar fazenda',
         tag: 'DrawingClientNotifier',
         error: e,
       );
+      return null;
     }
   }
 
@@ -145,10 +166,18 @@ class DrawingClientNotifier extends Notifier<DrawingClientState> {
 
   /// Define o cliente pré-selecionado via query param e pré-carrega suas fazendas.
   /// Chamado por PrivateMapScreen ao receber `/map?clienteId=X`.
-  void setClienteAtivo(String clientId, {String? clientName}) {
+  void setClienteAtivo(
+    String clientId, {
+    String? clientName,
+    String? farmId,
+    String? farmName,
+  }) {
     state = state.copyWith(
       preSelectedClientId: clientId,
       preSelectedClientName: clientName,
+      preSelectedFarmId: farmId,
+      preSelectedFarmName: farmName,
+      clearPreSelectedFarm: farmId == null,
     );
     loadFarms(clientId);
   }

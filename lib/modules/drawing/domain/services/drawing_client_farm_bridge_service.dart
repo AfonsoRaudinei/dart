@@ -29,6 +29,7 @@ class DrawingClientFarmBridgeService {
     String clientId,
     String city,
     String state,
+    double areaHa,
   ) async {
     if (_repository == null) return;
     final newFarm = Farm(
@@ -36,7 +37,7 @@ class DrawingClientFarmBridgeService {
       name: name,
       city: city,
       state: state,
-      totalAreaHa: 0.0,
+      totalAreaHa: areaHa,
       fields: [],
     );
     await _repository.saveFarm(newFarm, clientId);

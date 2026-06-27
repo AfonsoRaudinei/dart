@@ -9,6 +9,7 @@ import 'package:soloforte_app/modules/drawing/domain/repositories/i_clients_repo
 import 'package:soloforte_app/modules/drawing/infra/clients/i_clients_repository_provider.dart';
 import 'package:soloforte_app/modules/drawing/presentation/controllers/drawing_controller.dart';
 import 'package:soloforte_app/modules/drawing/presentation/widgets/drawing_sheet.dart';
+import 'package:soloforte_app/modules/drawing/domain/drawing_state.dart';
 
 void main() {
   setUpAll(() async {
@@ -61,9 +62,6 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byKey(const Key('drawing_sheet_close')));
-      expect(closeCount, 1);
-
       await tester.tap(find.text('Vincular / editar dados'));
       await tester.pumpAndSettle();
       expect(find.text('Cliente'), findsOneWidget);
@@ -93,8 +91,58 @@ void main() {
       expect(find.text('Dados do talhão salvos'), findsOneWidget);
       expect(repository.saved.last.properties.clienteId, 'client-1');
       expect(repository.saved.last.properties.fazendaId, 'farm-1');
+
+      await tester.tap(find.byKey(const Key('drawing_sheet_close')));
+      await tester.pumpAndSettle();
+      expect(closeCount, 1);
+      expect(controller.selectedFeature, isNull);
+      expect(controller.currentState, DrawingState.idle);
     },
   );
+
+  testWidgets('acao explicita sai da selecao e fecha o painel', (tester) async {
+    tester.view.physicalSize = const Size(800, 2000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final repository = _DrawingRepository(_feature());
+    final controller = DrawingController(repository: repository);
+    addTearDown(controller.dispose);
+    await controller.loadFeatures();
+    controller.selectFeature(controller.features.single);
+    var closeCount = 0;
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          drawingClientsRepositoryProvider.overrideWithValue(
+            _ClientsRepository(),
+          ),
+        ],
+        child: MaterialApp(
+          home: Scaffold(
+            body: SizedBox(
+              height: 1200,
+              child: DrawingSheet(
+                controller: controller,
+                onClose: () => closeCount++,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.ensureVisible(find.text('Sair da seleção'));
+    await tester.tap(find.text('Sair da seleção'));
+    await tester.pumpAndSettle();
+
+    expect(closeCount, 1);
+    expect(controller.selectedFeature, isNull);
+    expect(controller.currentState, DrawingState.idle);
+  });
 }
 
 class _DrawingRepository extends DrawingRepository {
