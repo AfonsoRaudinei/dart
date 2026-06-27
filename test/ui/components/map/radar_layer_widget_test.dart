@@ -50,10 +50,8 @@ void main() {
 
       expect(find.byType(TileLayer), findsOneWidget);
       expect(find.text('Radar indisponível'), findsNothing);
-      expect(
-        find.text('Radar de chuva ativo · áreas em azul indicam chuva agora'),
-        findsOneWidget,
-      );
+      expect(find.byKey(const Key('radar_active_dot')), findsOneWidget);
+      expect(find.textContaining('Radar de chuva ativo'), findsNothing);
     });
 
     testWidgets('configura limites de zoom para overzoom do radar', (
@@ -105,7 +103,7 @@ Widget _buildRadarMap({
     child: MaterialApp(
       home: Scaffold(
         body: FlutterMap(
-          options: MapOptions(
+          options: const MapOptions(
             initialCenter: LatLng(-15.7801, -47.9292),
             initialZoom: 5,
           ),

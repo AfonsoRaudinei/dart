@@ -36,6 +36,12 @@ void main() {
     );
 
     expect(find.byKey(const Key('drawing_controls_backplate')), findsOneWidget);
+    final backplate = tester.widget<Container>(
+      find.byKey(const Key('drawing_controls_backplate')),
+    );
+    final decoration = backplate.decoration! as BoxDecoration;
+    expect(decoration.color, const Color(0xFF232326));
+    expect(decoration.color!.a, 1);
     expect(find.byIcon(Icons.undo_rounded), findsOneWidget);
     expect(find.byType(InkWell), findsNWidgets(3));
   });
@@ -82,6 +88,65 @@ void main() {
       expect(undoCalls, 1);
       expect(redoCalls, 1);
       expect(cancelCalls, 1);
+    },
+  );
+
+  testWidgets(
+    'backplate do cluster lateral não bloqueia toque fora dos botões',
+    (tester) async {
+      var backgroundTaps = 0;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Stack(
+              children: [
+                Positioned.fill(
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () => backgroundTaps++,
+                  ),
+                ),
+                const Align(
+                  alignment: Alignment.bottomRight,
+                  child: Padding(
+                    padding: EdgeInsets.only(right: 16, bottom: 120),
+                    child: EditingControlsCluster(
+                      onSave: _noop,
+                      onCancel: _noop,
+                      onUndo: _noop,
+                      onRedo: _noop,
+                      canUndo: true,
+                      canRedo: true,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+
+      final backplate = tester.getRect(
+        find.byKey(const Key('editing_controls_backplate')),
+      );
+      final saveButton = tester.getRect(
+        find.byKey(const Key('editing_control_save')),
+      );
+
+      final tapPoint = Offset(
+        backplate.left + backplate.width / 2,
+        (saveButton.bottom +
+                tester
+                    .getRect(find.byKey(const Key('editing_control_undo')))
+                    .top) /
+            2,
+      );
+
+      await tester.tapAt(tapPoint);
+      await tester.pump();
+
+      expect(backgroundTaps, 1);
     },
   );
 
@@ -166,6 +231,49 @@ void main() {
       expect(find.byTooltip('Check-in'), findsNothing);
     },
   );
+
+  testWidgets('card de medição compacto mostra apenas a área', (tester) async {
+    await _pumpMapControlsOverlay(
+      tester,
+      showCheckInAction: false,
+      measurementAreaHa: 17.407,
+      measurementPerimeterKm: 1.711,
+      measurementAzimuthDeg: 159.3,
+      gpsAccuracyM: 4.2,
+    );
+
+    expect(find.text('17.407 ha'), findsOneWidget);
+    expect(find.text('Medição'), findsNothing);
+    expect(find.textContaining('Perímetro:'), findsNothing);
+    expect(find.textContaining('Azimute:'), findsNothing);
+    expect(find.textContaining('GPS:'), findsNothing);
+    expect(find.text('ha'), findsOneWidget);
+    expect(find.text('m²'), findsOneWidget);
+    expect(find.text('alq GO/MG'), findsOneWidget);
+    expect(find.text('km'), findsNothing);
+    expect(find.byKey(const Key('measurement_details_card')), findsNothing);
+  });
+
+  testWidgets('detalhes da medição abrem em painel auxiliar', (tester) async {
+    await _pumpMapControlsOverlay(
+      tester,
+      showCheckInAction: false,
+      measurementAreaHa: 17.407,
+      measurementPerimeterKm: 1.711,
+      measurementAzimuthDeg: 159.3,
+      gpsAccuracyM: 4.2,
+    );
+
+    await tester.tap(find.byKey(const Key('measurement_details_toggle')));
+    await tester.pump();
+
+    expect(find.byKey(const Key('measurement_details_card')), findsOneWidget);
+    expect(find.text('Perímetro: 1.711 km'), findsOneWidget);
+    expect(find.text('Azimute: 159.3°'), findsOneWidget);
+    expect(find.text('GPS: ±4.2 m'), findsOneWidget);
+    expect(find.text('km'), findsOneWidget);
+    expect(find.text('m'), findsOneWidget);
+  });
 }
 
 void _noop() {}
@@ -174,6 +282,10 @@ Future<void> _pumpMapControlsOverlay(
   WidgetTester tester, {
   required bool showCheckInAction,
   Widget? topLeftCard,
+  double measurementAreaHa = 0,
+  double measurementPerimeterKm = 0,
+  double? measurementAzimuthDeg,
+  double gpsAccuracyM = 0,
 }) async {
   SharedPreferences.setMockInitialValues({});
   final settingsRepository = SettingsRepository(
@@ -205,6 +317,10 @@ Future<void> _pumpMapControlsOverlay(
             topLeftCard: topLeftCard,
             currentCenter: const LatLng(0, 0),
             currentZoom: 13,
+            measurementAreaHa: measurementAreaHa,
+            measurementPerimeterKm: measurementPerimeterKm,
+            measurementAzimuthDeg: measurementAzimuthDeg,
+            gpsAccuracyM: gpsAccuracyM,
             drawingState: DrawingState.idle,
             onFinishDrawing: _noop,
             onCancelDrawing: _noop,

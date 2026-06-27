@@ -118,6 +118,13 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
     }
   }
 
+  void _dismissCurrentSheet() {
+    if (widget.state.type == MapSheetType.draw) {
+      widget.drawingController.cancelOperation();
+    }
+    widget.onClose();
+  }
+
   void _animateToDetent(SheetDetent targetDetent) {
     if (_currentDetent == targetDetent) return;
 
@@ -180,7 +187,7 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
           _animateToDetent(SheetDetent.compact);
         } else if (_currentDetent == SheetDetent.compact) {
           // 🔹 FECHAMENTO REAL: Flick down no compact (ETAPA 3)
-          widget.onClose();
+          _dismissCurrentSheet();
         }
       }
       return;
@@ -195,7 +202,7 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
     // Calcular em qual "zona" está
     if (currentHeight < closeThreshold) {
       // 🔹 FECHAMENTO REAL: Drag abaixo do threshold (ETAPA 3)
-      widget.onClose();
+      _dismissCurrentSheet();
     } else if (currentHeight < (compactHeight + mediumHeight) * 0.5) {
       _animateToDetent(SheetDetent.compact);
     } else if (currentHeight < (mediumHeight + expandedHeight) * 0.5) {
@@ -265,9 +272,9 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
             ? DrawingSheet(
                 controller: widget.drawingController,
                 onFocusFeature: widget.onFocusDrawingFeature,
-                onGpsMeasureStarted: widget.onClose,
-                onSaved: widget.onClose,
-                onClose: widget.onClose,
+                onGpsMeasureStarted: _dismissCurrentSheet,
+                onSaved: _dismissCurrentSheet,
+                onClose: _dismissCurrentSheet,
               )
             : const DrawingDisabledWidget();
       },

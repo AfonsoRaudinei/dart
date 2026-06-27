@@ -22,6 +22,7 @@ import '../../../theme/premium/design_tokens.dart';
 import 'map_action_fab_menu.dart';
 
 part 'map_controls_location_button.dart';
+part 'map_controls_measurement.dart';
 
 Color _themeColor(String theme) {
   switch (theme) {
@@ -112,6 +113,8 @@ class MapControlsOverlay extends ConsumerStatefulWidget {
 }
 
 class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
+  bool _showMeasurementDetails = false;
+
   Future<void> _openQuickPhoto({required bool initialFilterActive}) async {
     String? visitSessionId;
     try {
@@ -148,7 +151,6 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
     final activeColor = _themeColor(ref.watch(themeProvider));
     final areaUnit = ref.watch(areaDisplayUnitProvider);
     final distanceUnit = ref.watch(distanceDisplayUnitProvider);
-
     return Stack(
       children: [
         // 1. Card de contexto (Top Left)
@@ -181,17 +183,34 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
           Positioned(
             top: safeTop + 56,
             left: 12,
-            child: _FieldMeasurementCard(
-              areaHa: widget.measurementAreaHa,
-              perimeterKm: widget.measurementPerimeterKm,
-              azimuthDeg: widget.measurementAzimuthDeg,
-              gpsAccuracyM: widget.gpsAccuracyM,
-              areaUnit: areaUnit,
-              distanceUnit: distanceUnit,
-              onAreaUnit: (u) =>
-                  ref.read(areaDisplayUnitProvider.notifier).setUnit(u),
-              onDistanceUnit: (u) =>
-                  ref.read(distanceDisplayUnitProvider.notifier).setUnit(u),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _FieldMeasurementCard(
+                  areaHa: widget.measurementAreaHa,
+                  areaUnit: areaUnit,
+                  showDetails: _showMeasurementDetails,
+                  onAreaUnit: (u) =>
+                      ref.read(areaDisplayUnitProvider.notifier).setUnit(u),
+                  onToggleDetails: () {
+                    setState(() {
+                      _showMeasurementDetails = !_showMeasurementDetails;
+                    });
+                  },
+                ),
+                if (_showMeasurementDetails) ...[
+                  const SizedBox(height: 8),
+                  _MeasurementDetailsCard(
+                    perimeterKm: widget.measurementPerimeterKm,
+                    azimuthDeg: widget.measurementAzimuthDeg,
+                    gpsAccuracyM: widget.gpsAccuracyM,
+                    distanceUnit: distanceUnit,
+                    onDistanceUnit: (u) => ref
+                        .read(distanceDisplayUnitProvider.notifier)
+                        .setUnit(u),
+                  ),
+                ],
+              ],
             ),
           ),
 
@@ -315,7 +334,7 @@ class DrawingControlsCluster extends StatelessWidget {
       key: const Key('drawing_controls_backplate'),
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.28),
+        color: const Color(0xFF232326),
         borderRadius: BorderRadius.circular(32),
         boxShadow: [
           BoxShadow(
@@ -402,253 +421,121 @@ class EditingControlsCluster extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      key: const Key('editing_controls_backplate'),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-      decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.28),
-        borderRadius: BorderRadius.circular(32),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.35),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
+    return IntrinsicWidth(
+      child: Stack(
         children: [
-          Material(
-            elevation: 4,
-            shape: const CircleBorder(),
-            color: PremiumTokens.brandGreen,
-            child: InkWell(
-              key: const Key('editing_control_save'),
-              customBorder: const CircleBorder(),
-              onTap: onSave,
-              child: const Padding(
-                padding: EdgeInsets.all(16),
-                child: Icon(SFIcons.check, color: Colors.white, size: 24),
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-          Opacity(
-            opacity: canUndo ? 1.0 : 0.4,
-            child: Material(
-              elevation: 4,
-              shape: const CircleBorder(),
-              color: Colors.white,
-              child: InkWell(
-                key: const Key('editing_control_undo'),
-                customBorder: const CircleBorder(),
-                onTap: canUndo
-                    ? () {
-                        HapticFeedback.lightImpact();
-                        onUndo();
-                      }
-                    : null,
-                child: const Padding(
-                  padding: EdgeInsets.all(12),
-                  child: Icon(
-                    Icons.undo_rounded,
-                    color: Colors.black87,
-                    size: 24,
-                  ),
+          Positioned.fill(
+            child: IgnorePointer(
+              child: DecoratedBox(
+                key: const Key('editing_controls_backplate'),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF232326),
+                  borderRadius: BorderRadius.circular(32),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.35),
+                      blurRadius: 18,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
                 ),
               ),
             ),
           ),
-          if (onRedo != null) ...[
-            const SizedBox(height: 12),
-            Opacity(
-              opacity: canRedo ? 1.0 : 0.4,
-              child: Material(
-                elevation: 4,
-                shape: const CircleBorder(),
-                color: Colors.white,
-                child: InkWell(
-                  key: const Key('editing_control_redo'),
-                  customBorder: const CircleBorder(),
-                  onTap: canRedo
-                      ? () {
-                          HapticFeedback.lightImpact();
-                          onRedo!();
-                        }
-                      : null,
-                  child: const Padding(
-                    padding: EdgeInsets.all(12),
-                    child: Icon(
-                      Icons.redo_rounded,
-                      color: Colors.black87,
-                      size: 24,
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Material(
+                  elevation: 4,
+                  shape: const CircleBorder(),
+                  color: PremiumTokens.brandGreen,
+                  child: InkWell(
+                    key: const Key('editing_control_save'),
+                    customBorder: const CircleBorder(),
+                    onTap: onSave,
+                    child: const Padding(
+                      padding: EdgeInsets.all(16),
+                      child: Icon(SFIcons.check, color: Colors.white, size: 24),
                     ),
                   ),
                 ),
-              ),
-            ),
-          ],
-          const SizedBox(height: 12),
-          Material(
-            elevation: 4,
-            shape: const CircleBorder(),
-            color: Colors.redAccent,
-            child: InkWell(
-              key: const Key('editing_control_cancel'),
-              customBorder: const CircleBorder(),
-              onTap: onCancel,
-              child: const Padding(
-                padding: EdgeInsets.all(16),
-                child: Icon(SFIcons.close, color: Colors.white, size: 24),
-              ),
+                const SizedBox(height: 12),
+                Opacity(
+                  opacity: canUndo ? 1.0 : 0.4,
+                  child: Material(
+                    elevation: 4,
+                    shape: const CircleBorder(),
+                    color: Colors.white,
+                    child: InkWell(
+                      key: const Key('editing_control_undo'),
+                      customBorder: const CircleBorder(),
+                      onTap: canUndo
+                          ? () {
+                              HapticFeedback.lightImpact();
+                              onUndo();
+                            }
+                          : null,
+                      child: const Padding(
+                        padding: EdgeInsets.all(12),
+                        child: Icon(
+                          Icons.undo_rounded,
+                          color: Colors.black87,
+                          size: 24,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                if (onRedo != null) ...[
+                  const SizedBox(height: 12),
+                  Opacity(
+                    opacity: canRedo ? 1.0 : 0.4,
+                    child: Material(
+                      elevation: 4,
+                      shape: const CircleBorder(),
+                      color: Colors.white,
+                      child: InkWell(
+                        key: const Key('editing_control_redo'),
+                        customBorder: const CircleBorder(),
+                        onTap: canRedo
+                            ? () {
+                                HapticFeedback.lightImpact();
+                                onRedo!();
+                              }
+                            : null,
+                        child: const Padding(
+                          padding: EdgeInsets.all(12),
+                          child: Icon(
+                            Icons.redo_rounded,
+                            color: Colors.black87,
+                            size: 24,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 12),
+                Material(
+                  elevation: 4,
+                  shape: const CircleBorder(),
+                  color: Colors.redAccent,
+                  child: InkWell(
+                    key: const Key('editing_control_cancel'),
+                    customBorder: const CircleBorder(),
+                    onTap: onCancel,
+                    child: const Padding(
+                      padding: EdgeInsets.all(16),
+                      child: Icon(SFIcons.close, color: Colors.white, size: 24),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _FieldMeasurementCard extends StatelessWidget {
-  final double areaHa;
-  final double perimeterKm;
-  final double? azimuthDeg;
-  final double gpsAccuracyM;
-  final AreaDisplayUnit areaUnit;
-  final DistanceDisplayUnit distanceUnit;
-  final ValueChanged<AreaDisplayUnit> onAreaUnit;
-  final ValueChanged<DistanceDisplayUnit> onDistanceUnit;
-
-  const _FieldMeasurementCard({
-    required this.areaHa,
-    required this.perimeterKm,
-    required this.azimuthDeg,
-    required this.gpsAccuracyM,
-    required this.areaUnit,
-    required this.distanceUnit,
-    required this.onAreaUnit,
-    required this.onDistanceUnit,
-  });
-
-  String _formatArea() {
-    switch (areaUnit) {
-      case AreaDisplayUnit.hectare:
-        return '${areaHa.toStringAsFixed(3)} ha';
-      case AreaDisplayUnit.squareMeter:
-        return '${(areaHa * 10000).toStringAsFixed(0)} m²';
-      case AreaDisplayUnit.alqueire:
-        return '${(areaHa / 4.84).toStringAsFixed(3)} alq GO/MG';
-    }
-  }
-
-  String _formatDistance() {
-    switch (distanceUnit) {
-      case DistanceDisplayUnit.kilometer:
-        return '${perimeterKm.toStringAsFixed(3)} km';
-      case DistanceDisplayUnit.meter:
-        return '${(perimeterKm * 1000).toStringAsFixed(0)} m';
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 234,
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.72),
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Medição',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            'Área: ${_formatArea()}',
-            style: const TextStyle(color: Colors.white),
-          ),
-          Text(
-            'Perímetro: ${_formatDistance()}',
-            style: const TextStyle(color: Colors.white),
-          ),
-          Text(
-            'Azimute: ${azimuthDeg?.toStringAsFixed(1) ?? '--'}°',
-            style: const TextStyle(color: Colors.white),
-          ),
-          Text(
-            gpsAccuracyM > 0
-                ? 'GPS: ±${gpsAccuracyM.toStringAsFixed(1)} m'
-                : 'GPS: --',
-            style: const TextStyle(color: Colors.white),
-          ),
-          const SizedBox(height: 6),
-          Wrap(
-            spacing: 6,
-            runSpacing: 6,
-            children: [
-              _UnitChip(
-                label: 'ha',
-                selected: areaUnit == AreaDisplayUnit.hectare,
-                onTap: () => onAreaUnit(AreaDisplayUnit.hectare),
-              ),
-              _UnitChip(
-                label: 'm²',
-                selected: areaUnit == AreaDisplayUnit.squareMeter,
-                onTap: () => onAreaUnit(AreaDisplayUnit.squareMeter),
-              ),
-              _UnitChip(
-                label: 'alq GO/MG',
-                selected: areaUnit == AreaDisplayUnit.alqueire,
-                onTap: () => onAreaUnit(AreaDisplayUnit.alqueire),
-              ),
-              _UnitChip(
-                label: 'km',
-                selected: distanceUnit == DistanceDisplayUnit.kilometer,
-                onTap: () => onDistanceUnit(DistanceDisplayUnit.kilometer),
-              ),
-              _UnitChip(
-                label: 'm',
-                selected: distanceUnit == DistanceDisplayUnit.meter,
-                onTap: () => onDistanceUnit(DistanceDisplayUnit.meter),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _UnitChip extends StatelessWidget {
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  const _UnitChip({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        decoration: BoxDecoration(
-          color: selected ? const Color(0xFF34C759) : Colors.white12,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Text(
-          label,
-          style: const TextStyle(color: Colors.white, fontSize: 12),
-        ),
       ),
     );
   }

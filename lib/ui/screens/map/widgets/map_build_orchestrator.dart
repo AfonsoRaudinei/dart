@@ -200,6 +200,9 @@ class MapBuildOrchestrator extends ConsumerWidget {
         children: [
           MapCanvas(
             mapController: mapController,
+            interactionOptions: drawingState == DrawingState.editing
+                ? const InteractionOptions(flags: InteractiveFlag.none)
+                : null,
             onMapReady: () {
               // ADR-032 F1: _isMapReady → mapReadyStateProvider
               ref.read(mapReadyStateProvider.notifier).state = true;
