@@ -1046,6 +1046,11 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
     final area = widget.controller.liveAreaHa;
     final perimeter = widget.controller.livePerimeterKm;
     final f = NumberFormat("##0.##", "pt_BR");
+    const sectionLabelStyle = TextStyle(
+      color: SoloForteSheetTokens.sectionLabel,
+      fontSize: SoloForteSheetTokens.sectionFontSize,
+      fontWeight: SoloForteSheetTokens.sectionWeight,
+    );
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -1057,7 +1062,11 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
             const Text(
               'Salvar Polígono',
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                color: SoloForteSheetTokens.titleColor,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
             ),
             const SizedBox(height: 8),
             Container(
@@ -1080,7 +1089,10 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
                   const Expanded(
                     child: Text(
                       'Revise os dados e toque em salvar para criar o desenho no mapa.',
-                      style: TextStyle(fontSize: 13.5),
+                      style: TextStyle(
+                        fontSize: 13.5,
+                        color: SoloForteSheetTokens.sectionLabel,
+                      ),
                     ),
                   ),
                   const SizedBox(width: 10),
@@ -1113,9 +1125,9 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.grey[50],
+                color: SoloForteSheetTokens.inputBackground,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey[200]!),
+                border: Border.all(color: SoloForteSheetTokens.divider),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -1125,7 +1137,11 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
                     value: '${f.format(area)} ha',
                     label: 'Área',
                   ),
-                  Container(width: 1, height: 40, color: Colors.grey[300]),
+                  Container(
+                    width: 1,
+                    height: 40,
+                    color: SoloForteSheetTokens.divider,
+                  ),
                   _BigMetric(
                     icon: Icons.straighten,
                     value: '${f.format(perimeter)} km',
@@ -1138,11 +1154,8 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
 
             // 1. Selecionar Cliente
             const Text(
-              '👤 Cliente',
-              style: TextStyle(
-                fontWeight: FontWeight.w600,
-                color: Colors.black54,
-              ),
+              'Cliente',
+              style: sectionLabelStyle,
             ),
             const SizedBox(height: 8),
             _buildClientField(),
@@ -1150,11 +1163,8 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
 
             // 2. Selecionar Fazenda
             const Text(
-              '🚜 Fazenda / Grupo',
-              style: TextStyle(
-                fontWeight: FontWeight.w600,
-                color: Colors.black54,
-              ),
+              'Fazenda / Grupo',
+              style: sectionLabelStyle,
             ),
             const SizedBox(height: 8),
             _buildFarmField(),
@@ -1162,24 +1172,43 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
 
             // 3. Nome do Talhão
             const Text(
-              '🏷️ Nome do Talhão',
-              style: TextStyle(
-                fontWeight: FontWeight.w600,
-                color: Colors.black54,
-              ),
+              'Nome do Talhão',
+              style: sectionLabelStyle,
             ),
             const SizedBox(height: 8),
             TextFormField(
               controller: _nomeController,
+              style: const TextStyle(
+                color: SoloForteSheetTokens.inputText,
+              ),
               decoration: InputDecoration(
                 hintText: 'Ex: Talhão Norte',
+                hintStyle: const TextStyle(
+                  color: SoloForteSheetTokens.inputHint,
+                ),
                 suffixText: '${f.format(area)} ha',
+                suffixStyle: const TextStyle(
+                  color: SoloForteSheetTokens.inputHint,
+                ),
+                filled: true,
+                fillColor: SoloForteSheetTokens.inputBackground,
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: 16,
                   vertical: 12,
                 ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide.none,
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide.none,
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(
+                    color: PremiumTokens.brandGreen,
+                  ),
                 ),
               ),
               validator: (v) =>
@@ -1404,28 +1433,30 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
           clientState.preSelectedClientName ??
           'Cliente selecionado';
       return InputDecorator(
-        decoration: InputDecoration(
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 12,
+        decoration: _sheetFieldDecoration(
+          suffixIcon: const Icon(
+            Icons.lock_outline,
+            size: 18,
+            color: SoloForteSheetTokens.inputHint,
           ),
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-          suffixIcon: const Icon(Icons.lock_outline, size: 18),
         ),
-        child: Text(name),
+        child: Text(
+          name,
+          style: const TextStyle(color: SoloForteSheetTokens.inputText),
+        ),
       );
     }
 
     return DropdownButtonFormField<Client>(
       initialValue: _selectedClient,
-      decoration: InputDecoration(
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 12,
-        ),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+      decoration: _sheetFieldDecoration(),
+      dropdownColor: SoloForteSheetTokens.inputBackground,
+      style: const TextStyle(color: SoloForteSheetTokens.inputText),
+      iconEnabledColor: SoloForteSheetTokens.inputHint,
+      hint: const Text(
+        'Selecione o cliente...',
+        style: TextStyle(color: SoloForteSheetTokens.inputHint),
       ),
-      hint: const Text('Selecione o cliente...'),
       items: clientState.clients.map((c) {
         return DropdownMenuItem(value: c, child: Text(c.name));
       }).toList(),
@@ -1450,28 +1481,30 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
           clientState.preSelectedFarmName ??
           'Fazenda selecionada';
       return InputDecorator(
-        decoration: InputDecoration(
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 12,
+        decoration: _sheetFieldDecoration(
+          suffixIcon: const Icon(
+            Icons.lock_outline,
+            size: 18,
+            color: SoloForteSheetTokens.inputHint,
           ),
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-          suffixIcon: const Icon(Icons.lock_outline, size: 18),
         ),
-        child: Text(name),
+        child: Text(
+          name,
+          style: const TextStyle(color: SoloForteSheetTokens.inputText),
+        ),
       );
     }
 
     return DropdownButtonFormField<dynamic>(
       initialValue: _selectedFarm,
-      decoration: InputDecoration(
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 12,
-        ),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+      decoration: _sheetFieldDecoration(),
+      dropdownColor: SoloForteSheetTokens.inputBackground,
+      style: const TextStyle(color: SoloForteSheetTokens.inputText),
+      iconEnabledColor: SoloForteSheetTokens.inputHint,
+      hint: const Text(
+        'Selecione a fazenda...',
+        style: TextStyle(color: SoloForteSheetTokens.inputHint),
       ),
-      hint: const Text('Selecione a fazenda...'),
       items: [
         ...clientState.farms.map(
           (f) => DropdownMenuItem(value: f, child: Text(f.name)),
@@ -1517,6 +1550,27 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
       if (!preserveContextFarm) _selectedFarm = null;
       _selectedColor = PremiumTokens.brandGreen;
     });
+  }
+
+  InputDecoration _sheetFieldDecoration({Widget? suffixIcon}) {
+    return InputDecoration(
+      filled: true,
+      fillColor: SoloForteSheetTokens.inputBackground,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      suffixIcon: suffixIcon,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8),
+        borderSide: BorderSide.none,
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8),
+        borderSide: BorderSide.none,
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8),
+        borderSide: const BorderSide(color: PremiumTokens.brandGreen),
+      ),
+    );
   }
 
   Future<void> _exportSelected(
