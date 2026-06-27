@@ -22,14 +22,24 @@ class MapFirstQueryHandler {
   }) {
     final modo = uri.queryParameters['modo'];
     final clienteId = uri.queryParameters['clienteId'];
+    final clienteNome = uri.queryParameters['clienteNome'];
+    final fazendaId = uri.queryParameters['fazendaId'];
+    final fazendaNome = uri.queryParameters['fazendaNome'];
     final drawingId = uri.queryParameters['drawingId'];
 
     if ((modo == 'desenho' || modo == 'editar') && clienteId != null) {
       AppLogger.debug(
-        'MAP-FIRST: recebido modo=$modo clienteId=$clienteId drawingId=$drawingId',
+        'MAP-FIRST: recebido modo=$modo clienteId=$clienteId fazendaId=$fazendaId drawingId=$drawingId',
         tag: 'PrivateMap',
       );
-      ref.read(drawingClientProvider.notifier).setClienteAtivo(clienteId);
+      ref
+          .read(drawingClientProvider.notifier)
+          .setClienteAtivo(
+            clienteId,
+            clientName: clienteNome,
+            farmId: fazendaId,
+            farmName: fazendaNome,
+          );
       setSheetState(
         const MapSheetState(type: MapSheetType.draw),
         'query_param_modo_desenho',
@@ -44,11 +54,18 @@ class MapFirstQueryHandler {
 
     if (modo == 'importar') {
       AppLogger.debug(
-        'MAP-FIRST: recebido modo=importar clienteId=$clienteId',
+        'MAP-FIRST: recebido modo=importar clienteId=$clienteId fazendaId=$fazendaId',
         tag: 'PrivateMap',
       );
       if (clienteId != null) {
-        ref.read(drawingClientProvider.notifier).setClienteAtivo(clienteId);
+        ref
+            .read(drawingClientProvider.notifier)
+            .setClienteAtivo(
+              clienteId,
+              clientName: clienteNome,
+              farmId: fazendaId,
+              farmName: fazendaNome,
+            );
       }
       setSheetState(
         const MapSheetState(type: MapSheetType.draw),

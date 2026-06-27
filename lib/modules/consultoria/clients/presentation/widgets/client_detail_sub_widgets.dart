@@ -1,9 +1,10 @@
 // ignore_for_file: use_build_context_synchronously
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:go_router/go_router.dart';
 import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
+import '../../domain/client.dart';
+import 'farm_map_entry_sheet.dart';
 
 // ── Sub-widgets públicos de ClientDetailScreen ────────────────────────────
 // Extraídos para manter client_detail_screen.dart abaixo de 900 linhas.
@@ -243,7 +244,7 @@ class ClientModalOption extends StatelessWidget {
 // ── Helper: modal de nova fazenda ────────────────────────────────────────
 // Função livre para evitar dependência do state — chamada com context+client.
 
-void showNovaFazendaModal(BuildContext context, dynamic client) {
+void showNovaFazendaModal(BuildContext context, Client client) {
   HapticFeedback.lightImpact();
   showSoloForteSheet<void>(
     context: context,
@@ -289,10 +290,10 @@ void showNovaFazendaModal(BuildContext context, dynamic client) {
             onTap: () {
               Navigator.of(context).pop();
               HapticFeedback.selectionClick();
-              context.go(
-                '/map?modo=desenho'
-                '&clienteId=${client.id}'
-                '&clienteNome=${Uri.encodeComponent(client.name as String)}',
+              showFarmMapEntrySheet(
+                context,
+                client: client,
+                mode: FarmMapEntryMode.draw,
               );
             },
           ),
@@ -305,10 +306,10 @@ void showNovaFazendaModal(BuildContext context, dynamic client) {
             onTap: () {
               Navigator.of(context).pop();
               HapticFeedback.selectionClick();
-              context.go(
-                '/map?modo=importar'
-                '&clienteId=${client.id}'
-                '&clienteNome=${Uri.encodeComponent(client.name as String)}',
+              showFarmMapEntrySheet(
+                context,
+                client: client,
+                mode: FarmMapEntryMode.import,
               );
             },
           ),
