@@ -56,6 +56,49 @@ function bboxFromGeometry(geometry: GeoJsonGeometry): number[] | null {
   return [minLon, minLat, maxLon, maxLat];
 }
 
+// ── Evalscript amostra NDVI (UINT8) para estatísticas ───────────────────────
+const NDVI_STATS_SAMPLE_EVALSCRIPT = `
+//VERSION=3
+function setup() {
+  return { input: ["B04", "B08", "dataMask"], output: { bands: 1 } };
+}
+function evaluatePixel(sample) {
+  if (sample.dataMask === 0) return [255];
+  const denom = sample.B08 + sample.B04;
+  if (denom === 0) return [255];
+  let ndvi = (sample.B08 - sample.B04) / denom;
+  ndvi = Math.max(-0.2, Math.min(1, ndvi));
+  return [Math.round(((ndvi + 0.2) / 1.2) * 254)];
+}
+`;
+
+type NdviStats = {
+  ndviMin: number;
+  ndviMax: number;
+  ndviMean: number;
+};
+
+function decodeNdviFromEncodedByte(encoded: number): number | null {
+  if (encoded >= 255) return null;
+  return (encoded / 254) * 1.2 - 0.2;
+}
+
+function statsFromSamplePixels(data: Uint8Array): NdviStats | null {
+  const values: number[] = [];
+  for (let i = 0; i < data.length; i += 4) {
+    const ndvi = decodeNdviFromEncodedByte(data[i]);
+    if (ndvi == null) continue;
+    values.push(ndvi);
+  }
+  if (values.length === 0) return null;
+  const sum = values.reduce((acc, value) => acc + value, 0);
+  return {
+    ndviMin: Math.min(...values),
+    ndviMax: Math.max(...values),
+    ndviMean: sum / values.length,
+  };
+}
+
 // ── Evalscript NDVI com colormap RdYlGn (Sentinel Hub) ──────────────────────
 const NDVI_EVALSCRIPT = `
 //VERSION=3
@@ -187,6 +230,79 @@ async function fetchSentinelImage(
   const base64 = btoa(binary);
 
   return { base64, cloudCoverage: 0 };
+}
+
+async function fetchSentinelNdviStats(
+  bbox: number[],
+  token: string,
+  date: string,
+  geometry?: GeoJsonGeometry,
+  cloudCoverageMax = 80
+): Promise<NdviStats | null> {
+  const bounds = geometry
+    ? {
+        geometry,
+        properties: {
+          crs: "http://www.opengis.net/def/crs/EPSG/0/4326",
+        },
+      }
+    : {
+        bbox,
+        properties: {
+          crs: "http://www.opengis.net/def/crs/EPSG/0/4326",
+        },
+      };
+
+  const body = {
+    input: {
+      bounds,
+      data: [
+        {
+          type: "sentinel-2-l2a",
+          dataFilter: {
+            timeRange: {
+              from: `${date}T00:00:00Z`,
+              to: `${date}T23:59:59Z`,
+            },
+            maxCloudCoverage: cloudCoverageMax,
+          },
+        },
+      ],
+    },
+    output: {
+      width: 48,
+      height: 48,
+      responses: [
+        {
+          identifier: "default",
+          format: { type: "image/png" },
+        },
+      ],
+    },
+    evalscript: NDVI_STATS_SAMPLE_EVALSCRIPT,
+  };
+
+  const res = await fetch(
+    "https://services.sentinel-hub.com/api/v1/process",
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+    }
+  );
+
+  if (!res.ok) {
+    console.error("Sentinel Hub stats error:", await res.text());
+    return null;
+  }
+
+  const bytes = new Uint8Array(await res.arrayBuffer());
+  const { PNG } = await import("npm:pngjs@7.0.0");
+  const png = PNG.sync.read(bytes);
+  return statsFromSamplePixels(png.data);
 }
 
 // ── Planet: buscar datas disponíveis ────────────────────────────────────────
@@ -387,6 +503,9 @@ serve(async (req) => {
     let cloudCoverage = 0;
     let availableDates: string[] = [];
     let finalDate = requestedDate ?? toDate;
+    let ndviMin = 0;
+    let ndviMax = 0;
+    let ndviMean = 0;
 
     // ── 4. Sentinel Hub (primária) ─────────────────────────────────────────
     if ((source === "sentinel" || source === "auto") && sentinelToken) {
@@ -402,13 +521,24 @@ serve(async (req) => {
           imageBase64 = result.base64;
           cloudCoverage = result.cloudCoverage;
           usedSource = "sentinel";
+          const stats = await fetchSentinelNdviStats(
+            bbox,
+            sentinelToken,
+            finalDate,
+            geometry,
+          );
+          if (stats) {
+            ndviMin = stats.ndviMin;
+            ndviMax = stats.ndviMax;
+            ndviMean = stats.ndviMean;
+          }
         }
       }
     }
 
-    // ── 5. Fallback: Planet ─────────────────────────────────────────────────
+    // ── 5. Fallback: Planet (preview RGB — nao e NDVI) ─────────────────────
     if (!imageBase64 && (source === "planet" || source === "auto") && planetApiKey) {
-      usedSource = "planet";
+      usedSource = "planet_preview";
       const planetDates = await fetchPlanetDates(bbox, planetApiKey, fromDate, toDate);
 
       if (availableDates.length === 0) availableDates = planetDates;
@@ -439,9 +569,13 @@ serve(async (req) => {
       area_id: areaId,
       date: finalDate,
       source: usedSource,
+      is_ndvi: usedSource === "sentinel",
       image_base64: imageBase64,
       available_dates: availableDates,
       cloud_coverage: cloudCoverage,
+      ndvi_min: ndviMin,
+      ndvi_max: ndviMax,
+      ndvi_mean: ndviMean,
     };
 
     return new Response(JSON.stringify(responseBody), {
