@@ -52,6 +52,7 @@ class _ClientEditFormState extends State<ClientEditForm> {
   late TextEditingController _obsCtrl;
 
   late List<ClientCultura> _culturasEditadas;
+  late List<_AreaPropriedade> _areasPropriedadeEditadas;
   DateTime? _dataNascimentoEdit;
   String? _tipoPropriedadeEdit;
   String? _sistemaIrrigacaoEdit;
@@ -76,12 +77,14 @@ class _ClientEditFormState extends State<ClientEditForm> {
     _tecnicoCtrl = TextEditingController(text: c.tecnicoResponsavel ?? '');
     _obsCtrl = TextEditingController(text: c.observation ?? '');
     _culturasEditadas = List.from(widget.culturas);
+    _areasPropriedadeEditadas = _seedAreasFromClient(c);
     _dataNascimentoEdit = c.dataNascimento;
     _tipoPropriedadeEdit = c.tipoPropriedade;
     _sistemaIrrigacaoEdit = c.sistemaIrrigacao;
     _soloTipoEdit = c.soloTipo;
     _usaAssistenciaEdit = c.usaAssistenciaTecnica ?? false;
     _fotoPathEdit = c.photoPath;
+    _sincronizarResumoAreas();
   }
 
   @override
@@ -116,7 +119,7 @@ class _ClientEditFormState extends State<ClientEditForm> {
           ? null
           : _cpfCnpjCtrl.text.replaceAll(RegExp(r'\D'), ''),
       dataNascimento: _dataNascimentoEdit,
-      areaTotal: double.tryParse(_areaTotalCtrl.text),
+      areaTotal: _parseArea(_areaTotalCtrl.text),
       tipoPropriedade: _tipoPropriedadeEdit,
       sistemaIrrigacao: _sistemaIrrigacaoEdit,
       soloTipo: _soloTipoEdit,
@@ -139,6 +142,30 @@ class _ClientEditFormState extends State<ClientEditForm> {
         .toList();
 
     widget.onSave(clienteAtualizado, culturasComId);
+  }
+
+  List<_AreaPropriedade> _seedAreasFromClient(Client client) {
+    final total = client.areaTotal;
+    final tipo = client.tipoPropriedade;
+    if (total == null || total <= 0) return [];
+    if (tipo == 'propria' || tipo == 'arrendada') {
+      return [_AreaPropriedade(areaHa: total, tipo: tipo!)];
+    }
+    return [];
+  }
+
+  double? _parseArea(String? value) =>
+      double.tryParse((value ?? '').trim().replaceAll(',', '.'));
+
+  void _sincronizarResumoAreas() {
+    if (_areasPropriedadeEditadas.isEmpty) return;
+    final total = _areasPropriedadeEditadas.fold<double>(
+      0,
+      (sum, area) => sum + area.areaHa,
+    );
+    final tipos = _areasPropriedadeEditadas.map((area) => area.tipo).toSet();
+    _areaTotalCtrl.text = total.toString();
+    _tipoPropriedadeEdit = tipos.length > 1 ? 'mista' : tipos.firstOrNull;
   }
 
   Future<void> _pickImage() async {
@@ -296,6 +323,100 @@ class _ClientEditFormState extends State<ClientEditForm> {
     );
   }
 
+  Future<void> _abrirBottomSheetArea() async {
+    final formKey = GlobalKey<FormState>();
+    final areaCtrl = TextEditingController();
+    String? tipoSelecionado;
+
+    await showSoloForteSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: false,
+      useSafeArea: false,
+      preserveMaterialDefaults: true,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setModalState) => Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(ctx).viewInsets.bottom,
+          ),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(20),
+            child: Form(
+              key: formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Adicionar Área',
+                    style: Theme.of(ctx).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: areaCtrl,
+                    decoration: _deco('Tamanho da área (ha) *'),
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    validator: (value) {
+                      final area = _parseArea(value);
+                      if (area == null || area <= 0) return 'Informe área > 0';
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<String>(
+                    decoration: _deco('Tipo da área *'),
+                    items: const [
+                      DropdownMenuItem(
+                        value: 'propria',
+                        child: Text('Própria'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'arrendada',
+                        child: Text('Arrendada'),
+                      ),
+                    ],
+                    onChanged: (value) =>
+                        setModalState(() => tipoSelecionado = value),
+                    validator: (value) =>
+                        value == null ? 'Selecione o tipo da área' : null,
+                  ),
+                  const SizedBox(height: 20),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: PremiumTokens.brandGreen,
+                        foregroundColor: Colors.white,
+                      ),
+                      onPressed: () {
+                        if (formKey.currentState?.validate() != true) return;
+                        setState(() {
+                          _areasPropriedadeEditadas.add(
+                            _AreaPropriedade(
+                              areaHa: _parseArea(areaCtrl.text)!,
+                              tipo: tipoSelecionado!,
+                            ),
+                          );
+                          _sincronizarResumoAreas();
+                        });
+                        Navigator.of(ctx).pop();
+                      },
+                      child: const Text('Adicionar'),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   String _formatDate(DateTime d) =>
       '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
 
@@ -370,6 +491,82 @@ class _ClientEditFormState extends State<ClientEditForm> {
       ),
     ],
   );
+
+  Widget _buildResumoAreas() {
+    final total = _areasPropriedadeEditadas.fold<double>(
+      0,
+      (sum, area) => sum + area.areaHa,
+    );
+    final propria = _areasPropriedadeEditadas
+        .where((area) => area.tipo == 'propria')
+        .fold<double>(0, (sum, area) => sum + area.areaHa);
+    final arrendada = total - propria;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.grey[50],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[200]!),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Área cultivada total: ${_formatArea(total)} ha',
+            style: const TextStyle(fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 6),
+          Text('Própria: ${_formatPercentual(propria, total)}'),
+          Text('Arrendada: ${_formatPercentual(arrendada, total)}'),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildResumoLegadoArea() {
+    final totalLegacy = _parseArea(_areaTotalCtrl.text);
+    if (totalLegacy == null || totalLegacy <= 0) {
+      return Text(
+        'Nenhuma área adicionada',
+        style: TextStyle(color: Colors.grey[600]),
+      );
+    }
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.grey[50],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[200]!),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Área total registrada: ${_formatArea(totalLegacy)} ha',
+            style: const TextStyle(fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            widget.client.tipoPropriedade == 'mista'
+                ? 'Detalhe própria/arrendada ainda não foi preenchido neste cadastro antigo.'
+                : 'Toque em "Adicionar Área" para detalhar própria/arrendada e recalcular o percentual final.',
+            style: TextStyle(color: Colors.grey[700], fontSize: 12),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatArea(double value) => value == value.truncateToDouble()
+      ? value.toStringAsFixed(0)
+      : value.toStringAsFixed(2).replaceFirst(RegExp(r'0+$'), '');
+
+  String _formatPercentual(double area, double total) =>
+      '${total == 0 ? '0' : (area / total * 100).toStringAsFixed(1)}%';
 
   @override
   Widget build(BuildContext context) {
@@ -523,20 +720,49 @@ class _ClientEditFormState extends State<ClientEditForm> {
                   ),
                   const SizedBox(height: 28),
                   _sectionTitle('Propriedade'),
-                  _field(
-                    _areaTotalCtrl,
-                    'Área Total (ha)',
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true,
+                  if (_areasPropriedadeEditadas.isEmpty)
+                    _buildResumoLegadoArea()
+                  else ...[
+                    ...List.generate(_areasPropriedadeEditadas.length, (i) {
+                      final area = _areasPropriedadeEditadas[i];
+                      return ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        leading: const Icon(
+                          Icons.landscape_outlined,
+                          color: PremiumTokens.brandGreen,
+                        ),
+                        title: Text('${_formatArea(area.areaHa)} ha'),
+                        subtitle: Text(area.tipoLabel),
+                        trailing: IconButton(
+                          tooltip: 'Remover área',
+                          icon: const Icon(Icons.delete_outline),
+                          onPressed: () => setState(() {
+                            _areasPropriedadeEditadas.removeAt(i);
+                            if (_areasPropriedadeEditadas.isEmpty) {
+                              _areaTotalCtrl.text =
+                                  widget.client.areaTotal?.toString() ?? '';
+                              _tipoPropriedadeEdit =
+                                  widget.client.tipoPropriedade;
+                            } else {
+                              _sincronizarResumoAreas();
+                            }
+                          }),
+                        ),
+                      );
+                    }),
+                    const SizedBox(height: 8),
+                    _buildResumoAreas(),
+                  ],
+                  TextButton.icon(
+                    onPressed: _abrirBottomSheetArea,
+                    icon: const Icon(
+                      Icons.add,
+                      color: PremiumTokens.brandGreen,
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  _chipRow(
-                    'Tipo',
-                    const ['propria', 'arrendada', 'mista'],
-                    const ['Própria', 'Arrendada', 'Mista'],
-                    _tipoPropriedadeEdit,
-                    (v) => setState(() => _tipoPropriedadeEdit = v),
+                    label: const Text(
+                      'Adicionar Área',
+                      style: TextStyle(color: PremiumTokens.brandGreen),
+                    ),
                   ),
                   const SizedBox(height: 16),
                   _chipRow(
@@ -636,4 +862,13 @@ class _ClientEditFormState extends State<ClientEditForm> {
       ],
     );
   }
+}
+
+class _AreaPropriedade {
+  final double areaHa;
+  final String tipo;
+
+  const _AreaPropriedade({required this.areaHa, required this.tipo});
+
+  String get tipoLabel => tipo == 'propria' ? 'Própria' : 'Arrendada';
 }
