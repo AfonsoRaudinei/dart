@@ -29,6 +29,27 @@ jobs:
         run: ./tool/arch_check.sh
         # Exit 0 → aprovado | Exit 1 → PR bloqueado
 
+  ndvi-regression:
+    name: NDVI Regression Gate (ADR-042)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout do repositório
+        uses: actions/checkout@v4
+
+      - name: Configurar Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Instalar dependências Flutter
+        run: flutter pub get
+
+      - name: Executar suite NDVI obrigatória
+        run: |
+          flutter test test/modules/ndvi/ test/supabase/ndvi_fetch_contract_test.dart
+
   coverage:
     name: Coverage Flutter Ratchet
     runs-on: ubuntu-latest

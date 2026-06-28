@@ -12,6 +12,7 @@
 #   REGRA 1 — core/ não pode importar modules/
 #   REGRA 2 — Acoplamentos laterais proibidos entre módulos
 #   REGRA 3 — Arquivos novos não podem ultrapassar 900 linhas
+#   REGRA-NDVI — Invariants ADR-042 (lookup chain, fronteira, testes)
 # =============================================================================
 
 set -uo pipefail
@@ -190,6 +191,26 @@ check_lateral \
   "lib/modules/marketing/" \
   "\(modules/consultoria/\|modules/agenda/\|modules/drawing/\)" \
   "marketing/ não importa módulos core de negócio (consultoria, agenda, drawing)"
+
+check_lateral \
+  "lib/modules/produtor/" \
+  "\(modules/consultoria/\|modules/drawing/\|modules/agenda/\|modules/visitas/\)" \
+  "produtor/ não importa outros módulos de domínio (ADR-040)"
+
+check_lateral \
+  "lib/modules/consultoria/" \
+  "modules/produtor/" \
+  "consultoria/ não importa produtor/ (ADR-039/040)"
+
+check_lateral \
+  "lib/modules/ndvi/" \
+  "modules/consultoria/" \
+  "ndvi/ não importa consultoria/ (ADR-042 — usar IFieldLookup)"
+
+check_lateral \
+  "lib/modules/ndvi/" \
+  "modules/drawing/" \
+  "ndvi/ não importa drawing/ (ADR-042 — usar IFieldLookup)"
 
 # =============================================================================
 # REGRA 2 (ADR-023) — visitas/ não pode importar consultoria/ nem drawing/
@@ -524,6 +545,90 @@ if [ "${#CROSS_MODULE_WHITELIST[@]}" -gt 0 ]; then
   echo "      DT-025-3 — map -> visitas direto"
   echo "      DT-035 — ui/components/map -> marketing direto"
   echo ""
+fi
+
+echo ""
+
+# =============================================================================
+# REGRA-NDVI (ADR-042) — blindagem do modulo NDVI
+#
+# Fundamento: recuperacao NDVI depende de lookup encadeado em main.dart,
+#             fronteira sem import de consultoria/drawing e suite de regressao.
+# =============================================================================
+echo -e "── ${CYAN}REGRA-NDVI${NC}: invariants ADR-042 (lookup chain + regressao) ───"
+echo ""
+
+# ── REGRA-NDVI-1: main.dart registra ChainedFieldLookup no iFieldLookupProvider
+if [ ! -f "lib/main.dart" ]; then
+  fail "REGRA-NDVI-1: lib/main.dart ausente"
+else
+  MAIN_CHAIN=$(grep -n "ChainedFieldLookup" lib/main.dart | grep -v "^\s*//" || true)
+  MAIN_OVERRIDE=$(grep -n "iFieldLookupProvider.overrideWith" lib/main.dart | grep -v "^\s*//" || true)
+  if [ -z "$MAIN_CHAIN" ] || [ -z "$MAIN_OVERRIDE" ]; then
+    fail "REGRA-NDVI-1: main.dart deve registrar ChainedFieldLookup em iFieldLookupProvider (ADR-042)"
+  else
+    pass "main.dart registra ChainedFieldLookup em iFieldLookupProvider (ADR-042)"
+  fi
+fi
+
+# ── REGRA-NDVI-2: artefatos obrigatorios do modulo
+NDVI_REQUIRED_FILES=(
+  "lib/modules/ndvi/infra/chained_field_lookup.dart"
+  "lib/modules/ndvi/data/ndvi_cache_policy.dart"
+  "lib/modules/ndvi/domain/ndvi_image_utils.dart"
+)
+
+NDVI_MISSING_FILES=0
+for ndvi_file in "${NDVI_REQUIRED_FILES[@]}"; do
+  if [ ! -f "$ndvi_file" ]; then
+    fail "REGRA-NDVI-2: arquivo obrigatorio ausente: $ndvi_file"
+    NDVI_MISSING_FILES=$((NDVI_MISSING_FILES + 1))
+  fi
+done
+
+if [ "$NDVI_MISSING_FILES" -eq 0 ]; then
+  pass "artefatos NDVI obrigatorios presentes (lookup chain, cache, source utils)"
+fi
+
+# ── REGRA-NDVI-3: suite de regressao obrigatoria
+NDVI_REQUIRED_TESTS=(
+  "test/modules/ndvi/chained_field_lookup_test.dart"
+  "test/modules/ndvi/ndvi_phase1_integration_test.dart"
+  "test/modules/ndvi/ndvi_phase2_test.dart"
+  "test/modules/ndvi/ndvi_phase3_widget_test.dart"
+  "test/supabase/ndvi_fetch_contract_test.dart"
+)
+
+NDVI_MISSING_TESTS=0
+for ndvi_test in "${NDVI_REQUIRED_TESTS[@]}"; do
+  if [ ! -f "$ndvi_test" ]; then
+    fail "REGRA-NDVI-3: teste de regressao ausente: $ndvi_test"
+    NDVI_MISSING_TESTS=$((NDVI_MISSING_TESTS + 1))
+  fi
+done
+
+if [ "$NDVI_MISSING_TESTS" -eq 0 ]; then
+  pass "suite de regressao NDVI presente (fases 1-3 + contrato edge)"
+fi
+
+# ── REGRA-NDVI-4: ndvi_providers usa IFieldLookup via core/contracts
+if [ -f "lib/modules/ndvi/presentation/providers/ndvi_providers.dart" ]; then
+  NDVI_PROVIDER_CONTRACT=$(grep -n "iFieldLookupProvider" \
+    lib/modules/ndvi/presentation/providers/ndvi_providers.dart \
+    | grep -v "^\s*//" || true)
+  NDVI_PROVIDER_DRAWING=$(grep -nE "import.*modules/drawing/" \
+    lib/modules/ndvi/presentation/providers/ndvi_providers.dart \
+    | grep -v "^\s*//" || true)
+
+  if [ -z "$NDVI_PROVIDER_CONTRACT" ]; then
+    fail "REGRA-NDVI-4: ndvi_providers.dart deve consumir iFieldLookupProvider (core/contracts)"
+  elif [ -n "$NDVI_PROVIDER_DRAWING" ]; then
+    fail "REGRA-NDVI-4: ndvi_providers.dart nao pode importar drawing/ diretamente"
+  else
+    pass "ndvi_providers.dart consome iFieldLookupProvider sem import de drawing/"
+  fi
+else
+  fail "REGRA-NDVI-4: ndvi_providers.dart ausente"
 fi
 
 echo ""

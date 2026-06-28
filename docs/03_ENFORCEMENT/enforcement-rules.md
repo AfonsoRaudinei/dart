@@ -100,6 +100,27 @@ find lib/ -name "*.dart" -newer .baseline_marker | xargs wc -l | awk '$1 > 900'
 
 ---
 
+## REGRA-NDVI — Blindagem modulo NDVI (ADR-042)
+
+**Fundamento:** NDVI depende de lookup encadeado registrado em `main.dart`, fronteira
+sem import direto de `consultoria/` ou `drawing/`, e suite de regressao fixa.
+
+| Invariant | Verificacao |
+|---|---|
+| `ChainedFieldLookup` em `main.dart` | grep bloqueante |
+| `ndvi/` nao importa `consultoria/` nem `drawing/` | REGRA 2 lateral |
+| Artefatos obrigatorios presentes | `chained_field_lookup`, `ndvi_cache_policy`, `ndvi_image_utils` |
+| Suite regressao presente | fases 1–3 + `ndvi_fetch_contract_test` |
+| `ndvi_providers` usa `iFieldLookupProvider` | grep bloqueante |
+
+**CI adicional:** job `ndvi-regression` em `.github/workflows/architecture.yml`.
+
+```bash
+flutter test test/modules/ndvi/ test/supabase/ndvi_fetch_contract_test.dart
+```
+
+---
+
 ## Como Executar Localmente
 
 ```bash
@@ -130,6 +151,7 @@ chmod +x tool/arch_check.sh
 | REGRA 1 | CRÍTICA | PR bloqueado automaticamente |
 | REGRA 2 | CRÍTICA | PR bloqueado automaticamente |
 | REGRA 3 | ALERTA | Aviso em PR — revisão manual obrigatória |
+| REGRA-NDVI | CRÍTICA | PR bloqueado + job `ndvi-regression` |
 
 ---
 

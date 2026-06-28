@@ -104,7 +104,7 @@ Comunicação cross-module **APENAS** via `lib/core/contracts/`:
 |---|---|---|---|
 | `IClientLookup` | 015 | consultoria | drawing, agenda, marketing, carteira, visitas, dashboard |
 | `IFarmLookup` | — | consultoria | drawing, ndvi, marketing |
-| `IFieldLookup` | 022 | consultoria | drawing, ndvi |
+| `IFieldLookup` | 022 | consultoria + drawing via `ChainedFieldLookup` em `main.dart` (ADR-042) | drawing, ndvi |
 | `IVisitSessionLookup` | 020 | visitas | agenda, consultoria, dashboard |
 | `IVisitClientLookup` | 020 | visitas | map |
 | `IReportWriter` | 013 | consultoria/relatorios | visitas |
@@ -219,7 +219,7 @@ lib/
 
 -----
 
-## ADRs ATIVOS (008–041)
+## ADRs ATIVOS (008–042)
 
 | ADR | Decisão |
 |---|---|
@@ -251,6 +251,7 @@ lib/
 | 039 | IProducerInviteWriter contract |
 | 040 | IProducerPropertyGateway |
 | 041 | IOccurrenceAccessReader |
+| 042 | NDVI ChainedFieldLookup + cache + fetch lazy |
 
 Detalhes: `docs/02_ARQUITETURA_ATIVA/ADR-*.md`
 
