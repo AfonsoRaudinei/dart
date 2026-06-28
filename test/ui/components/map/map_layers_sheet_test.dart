@@ -1,6 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:soloforte_app/core/contracts/i_radar_overlay_controller_provider.dart';
+import 'package:soloforte_app/core/domain/map_models.dart';
+import 'package:soloforte_app/core/infra/preferences_service.dart';
+import 'package:soloforte_app/core/state/map_state.dart';
+import 'package:soloforte_app/modules/clima/infra/radar_overlay_controller_adapter.dart';
+import 'package:soloforte_app/modules/clima/presentation/providers/radar_providers.dart';
 import 'package:soloforte_app/ui/components/map/map_layers_sheet.dart';
 
 void main() {
@@ -39,6 +46,50 @@ void main() {
       expect(find.text('Ir para coordenada'), findsNothing);
       expect(find.text('Baixar área offline'), findsNothing);
     });
+
+    testWidgets('ativa chuva e troca para satélite quando estava em relevo', (
+      tester,
+    ) async {
+      SharedPreferences.setMockInitialValues({});
+      final preferencesService = PreferencesService(
+        await SharedPreferences.getInstance(),
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            preferencesServiceProvider.overrideWithValue(preferencesService),
+            radarOverlayControllerProvider.overrideWith((ref) {
+              return RadarOverlayControllerAdapter(ref);
+            }),
+          ],
+          child: MaterialApp(
+            home: Scaffold(
+              body: SizedBox(
+                height: 800,
+                child: LayersSheet(onClose: () {}, renderTilePreviews: false),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(LayersSheet)),
+      );
+      container.read(activeLayerProvider.notifier).setLayer(LayerType.relevo);
+      await tester.pump();
+
+      expect(container.read(activeLayerProvider), LayerType.relevo);
+      expect(container.read(climaRadarEnabledProvider), isFalse);
+
+      await tester.tap(find.text('Chuva'));
+      await tester.pump();
+
+      expect(container.read(climaRadarEnabledProvider), isTrue);
+      expect(container.read(activeLayerProvider), LayerType.satellite);
+    });
   });
 }
 
@@ -47,8 +98,19 @@ Future<void> _pumpLayersSheet(
   Future<void> Function()? onCoordinateSearch,
   Future<void> Function()? onDownloadOfflineArea,
 }) async {
+  SharedPreferences.setMockInitialValues({});
+  final preferencesService = PreferencesService(
+    await SharedPreferences.getInstance(),
+  );
+
   await tester.pumpWidget(
     ProviderScope(
+      overrides: [
+        preferencesServiceProvider.overrideWithValue(preferencesService),
+        radarOverlayControllerProvider.overrideWith((ref) {
+          return RadarOverlayControllerAdapter(ref);
+        }),
+      ],
       child: MaterialApp(
         home: Scaffold(
           body: SizedBox(
