@@ -1,10 +1,23 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:soloforte_app/core/utils/app_logger.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:soloforte_app/modules/ndvi/data/models/ndvi_image_model.dart';
+import 'package:soloforte_app/modules/ndvi/domain/ndvi_image_utils.dart';
+
+/// Resultado bruto da Edge Function `ndvi-fetch`.
+class NdviRemoteFetchResult {
+  const NdviRemoteFetchResult({
+    this.image,
+    this.availableDates = const [],
+  });
+
+  final NdviImageModel? image;
+  final List<String> availableDates;
+}
 
 class NdviRemoteDatasource {
   final SupabaseClient _client;
@@ -15,35 +28,52 @@ class NdviRemoteDatasource {
     NdviImageFileStore fileStore = const NdviImageFileStore(),
   }) : _fileStore = fileStore;
 
-  Future<NdviImageModel?> fetchNdvi({
+  Future<NdviRemoteFetchResult?> fetchNdvi({
     required String fieldId,
     List<double>? bbox,
     String? geometry,
     String? date,
     String source = 'auto',
   }) async {
-    try {
-      final body = <String, dynamic>{'area_id': fieldId, 'source': source};
-      if (bbox != null) body['bbox'] = bbox;
-      final geometryJson = _decodeGeometry(geometry);
-      if (geometryJson != null) body['geometry'] = geometryJson;
-      if (date != null) body['date'] = date;
+    final body = <String, dynamic>{'area_id': fieldId, 'source': source};
+    if (bbox != null) body['bbox'] = bbox;
+    final geometryJson = _decodeGeometry(geometry);
+    if (geometryJson != null) body['geometry'] = geometryJson;
+    if (date != null) body['date'] = date;
 
-      final response = await _client.functions.invoke('ndvi-fetch', body: body);
+    final response = await _client.functions.invoke('ndvi-fetch', body: body);
 
-      if (response.status == 404) return null;
-
-      if (response.status != 200) {
-        throw Exception(
-          'ndvi-fetch retornou HTTP ${response.status}: ${response.data}',
-        );
-      }
-
-      final data = response.data as Map<String, dynamic>;
-      return modelFromFunctionData(data: data, fieldId: fieldId);
-    } catch (e) {
+    if (response.status == 404) {
+      AppLogger.debug(
+        'ndvi-fetch sem imagens para area_id=$fieldId date=${date ?? 'latest'}',
+        tag: 'NDVI.Remote',
+      );
       return null;
     }
+
+    if (response.status != 200) {
+      AppLogger.warning(
+        'ndvi-fetch HTTP ${response.status} para area_id=$fieldId',
+        tag: 'NDVI.Remote',
+        error: response.data,
+      );
+      throw Exception(
+        'ndvi-fetch retornou HTTP ${response.status}: ${response.data}',
+      );
+    }
+
+    final data = response.data as Map<String, dynamic>;
+    final availableDates =
+        (data['available_dates'] as List<dynamic>?)
+            ?.map((value) => value.toString())
+            .toList() ??
+        const <String>[];
+    final image = await modelFromFunctionData(data: data, fieldId: fieldId);
+
+    return NdviRemoteFetchResult(
+      image: image,
+      availableDates: availableDates,
+    );
   }
 
   Future<NdviImageModel> modelFromFunctionData({
@@ -52,7 +82,8 @@ class NdviRemoteDatasource {
   }) async {
     final imageDate =
         data['date'] as String? ?? data['image_date'] as String? ?? '';
-    final source = data['source'] as String? ?? 'auto';
+    final rawSource = data['source'] as String? ?? 'auto';
+    final source = normalizeNdviSource(rawSource);
     final id = data['id'] as String? ?? '${fieldId}_$imageDate';
     final imageBase64 = data['image_base64'] as String?;
     final localPath = imageBase64 == null || imageBase64.isEmpty

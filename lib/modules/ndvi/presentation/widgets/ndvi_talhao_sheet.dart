@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:soloforte_app/core/constants/layout_constants.dart';
 import 'package:soloforte_app/modules/ndvi/domain/entities/ndvi_image.dart';
+import 'package:soloforte_app/modules/ndvi/domain/ndvi_image_utils.dart';
 import 'package:soloforte_app/modules/ndvi/presentation/providers/ndvi_providers.dart';
 import 'package:soloforte_app/modules/ndvi/presentation/providers/ndvi_date_nav_provider.dart';
 import 'package:soloforte_app/modules/ndvi/presentation/providers/ndvi_display_mode_provider.dart';
@@ -22,6 +23,7 @@ class NdviTalhaoSheet extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(ndviEnsureCurrentDateProvider(fieldId));
     final ndviAsync = ref.watch(ndviImagesProvider(fieldId));
 
     return Container(
@@ -106,7 +108,7 @@ class NdviTalhaoSheet extends ConsumerWidget {
                             ),
                             _InfoPill(
                               icon: Icons.cloud_outlined,
-                              label: _sourceLabel(current.source),
+                              label: ndviSourceLabel(current.source),
                             ),
                             _InfoPill(
                               icon: Icons.storage_outlined,
@@ -147,29 +149,49 @@ class NdviTalhaoSheet extends ConsumerWidget {
                           const SizedBox(height: 12),
                         ],
 
-                        SegmentedButton<NdviDisplayMode>(
-                          segments: const [
-                            ButtonSegment(
-                              value: NdviDisplayMode.color,
-                              icon: Icon(Icons.palette_outlined),
-                              label: Text('NDVI'),
+                        if (ndviPreviewDisclaimer(current.source) != null) ...[
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: Colors.amber.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: Colors.amber.withValues(alpha: 0.35),
+                              ),
                             ),
-                            ButtonSegment(
-                              value: NdviDisplayMode.greenMask,
-                              icon: Icon(Icons.filter_b_and_w_outlined),
-                              label: Text('Máscara verde'),
+                            child: Text(
+                              ndviPreviewDisclaimer(current.source)!,
+                              style: Theme.of(context).textTheme.bodySmall,
                             ),
-                          ],
-                          selected: {displayMode},
-                          onSelectionChanged: (selection) {
-                            ref
-                                .read(ndviDisplayModeProvider(modeKey).notifier)
-                                .state = selection
-                                .first;
-                          },
-                        ),
+                          ),
+                          const SizedBox(height: 12),
+                        ],
 
-                        const SizedBox(height: 12),
+                        if (ndviSupportsGreenMask(current.source)) ...[
+                          SegmentedButton<NdviDisplayMode>(
+                            segments: const [
+                              ButtonSegment(
+                                value: NdviDisplayMode.color,
+                                icon: Icon(Icons.palette_outlined),
+                                label: Text('NDVI'),
+                              ),
+                              ButtonSegment(
+                                value: NdviDisplayMode.greenMask,
+                                icon: Icon(Icons.filter_b_and_w_outlined),
+                                label: Text('Máscara verde'),
+                              ),
+                            ],
+                            selected: {displayMode},
+                            onSelectionChanged: (selection) {
+                              ref
+                                  .read(ndviDisplayModeProvider(modeKey).notifier)
+                                  .state = selection
+                                  .first;
+                            },
+                          ),
+                          const SizedBox(height: 12),
+                        ],
 
                         // Imagem
                         ClipRRect(
@@ -277,7 +299,8 @@ class NdviTalhaoSheet extends ConsumerWidget {
     NdviImage current,
     NdviDisplayMode displayMode,
   ) {
-    if (displayMode == NdviDisplayMode.greenMask) {
+    if (displayMode == NdviDisplayMode.greenMask &&
+        ndviSupportsGreenMask(current.source)) {
       return _buildGreenMaskImage(ref, current);
     }
 
@@ -326,14 +349,6 @@ class NdviTalhaoSheet extends ConsumerWidget {
   String _shortDate(DateTime date) {
     return '${date.day.toString().padLeft(2, '0')}/'
         '${date.month.toString().padLeft(2, '0')}';
-  }
-
-  String _sourceLabel(String source) {
-    return switch (source.toLowerCase()) {
-      'sentinel' => 'Sentinel',
-      'planet' => 'Planet',
-      _ => 'Auto',
-    };
   }
 
   String _imageStatusLabel(NdviImage image) {

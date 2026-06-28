@@ -21,6 +21,21 @@ class NdviLocalDatasource {
     return NdviImageModel.fromMap(rows.first);
   }
 
+  Future<NdviImageModel?> getByFieldIdAndDate(
+    String fieldId,
+    String imageDate,
+  ) async {
+    final db = await _db;
+    final rows = await db.query(
+      _table,
+      where: 'field_id = ? AND image_date = ?',
+      whereArgs: [fieldId, imageDate],
+      limit: 1,
+    );
+    if (rows.isEmpty) return null;
+    return NdviImageModel.fromMap(rows.first);
+  }
+
   Future<List<NdviImageModel>> getAll(String fieldId) async {
     final db = await _db;
     final rows = await db.query(
