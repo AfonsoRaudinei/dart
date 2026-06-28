@@ -255,7 +255,7 @@ void main() {
         ndviMin: 0.1,
         ndviMax: 0.8,
         ndviMean: 0.6,
-        source: 'planet',
+        source: 'planet_preview',
         fetchedAt: DateTime.now(),
         syncStatus: 0,
         imageUrl: 'https://example.com/test.png',
@@ -277,12 +277,12 @@ void main() {
 
     expect(find.text('01/03'), findsOneWidget);
     expect(find.text('01/02'), findsOneWidget);
-    expect(find.text('Sentinel'), findsOneWidget);
+      expect(find.text('Sentinel NDVI'), findsOneWidget);
 
     await tester.tap(find.text('01/02'));
     await tester.pump();
 
-    expect(find.text('Planet'), findsOneWidget);
+    expect(find.text('Preview RGB (Planet)'), findsOneWidget);
     expect(find.text('Online'), findsOneWidget);
     expect(find.text('01/02/2026'), findsOneWidget);
   });

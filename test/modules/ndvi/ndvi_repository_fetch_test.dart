@@ -10,20 +10,38 @@ class FakeLocalDataSource implements NdviLocalDatasource {
   NdviImageModel? lastSaved;
   NdviImageModel? nextReturn;
   List<NdviImageModel> nextList = const [];
+  final Map<String, NdviImageModel> _saved = {};
 
   @override
   Future<NdviImageModel?> getLatest(String fieldId) async => nextReturn;
 
   @override
-  Future<List<NdviImageModel>> getAll(String fieldId) async => nextList;
-
-  @override
-  Future<void> save(NdviImage image) async {
-    lastSaved = NdviImageModel.fromEntity(image);
+  Future<NdviImageModel?> getByFieldIdAndDate(
+    String fieldId,
+    String imageDate,
+  ) async {
+    return _saved['$fieldId|$imageDate'];
   }
 
   @override
-  Future<void> deleteAll(String fieldId) async {}
+  Future<List<NdviImageModel>> getAll(String fieldId) async {
+    if (nextList.isNotEmpty) return nextList;
+    return _saved.values.where((m) => m.fieldId == fieldId).toList()
+      ..sort((a, b) => b.imageDate.compareTo(a.imageDate));
+  }
+
+  @override
+  Future<void> save(NdviImage image) async {
+    final model = NdviImageModel.fromEntity(image);
+    lastSaved = model;
+    _saved['${model.fieldId}|${model.imageDate}'] = model;
+  }
+
+  @override
+  Future<void> deleteAll(String fieldId) async {
+    _saved.removeWhere((_, model) => model.fieldId == fieldId);
+    nextList = const [];
+  }
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
@@ -31,11 +49,13 @@ class FakeLocalDataSource implements NdviLocalDatasource {
 
 class FakeRemoteDataSource implements NdviRemoteDatasource {
   NdviImageModel? nextReturn;
+  NdviRemoteFetchResult? nextResult;
   bool called = false;
   bool throwOnFetch = false;
+  String? lastDate;
 
   @override
-  Future<NdviImageModel?> fetchNdvi({
+  Future<NdviRemoteFetchResult?> fetchNdvi({
     required String fieldId,
     List<double>? bbox,
     String? geometry,
@@ -45,8 +65,13 @@ class FakeRemoteDataSource implements NdviRemoteDatasource {
     called = true;
     lastBbox = bbox;
     lastGeometry = geometry;
+    lastDate = date;
     if (throwOnFetch) throw Exception('remote unavailable');
-    return nextReturn;
+    if (nextResult != null) return nextResult;
+    if (nextReturn != null) {
+      return NdviRemoteFetchResult(image: nextReturn);
+    }
+    return null;
   }
 
   List<double>? lastBbox;
@@ -308,7 +333,7 @@ void main() {
     expect(local.lastSaved, isNull);
   });
 
-  test('getByFieldId: falha remota degrada para lista vazia', () async {
+  test('getByFieldId: falha remota propaga exceção para UI', () async {
     const fieldId = 'F1';
     lookup.nextReturn = const FieldSummary(
       id: fieldId,
@@ -318,10 +343,9 @@ void main() {
     );
     remote.throwOnFetch = true;
 
-    final result = await repository.getByFieldId(fieldId);
-
-    expect(result, isEmpty);
-    expect(remote.called, isTrue);
-    expect(local.lastSaved, isNull);
+    expect(
+      () => repository.getByFieldId(fieldId),
+      throwsA(isA<Exception>()),
+    );
   });
 }

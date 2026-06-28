@@ -59,6 +59,7 @@ void main() {
 
       expect(model.localPath, isNull);
       expect(model.imageUrl, 'https://cdn.example.com/ndvi.png');
+      expect(model.source, 'planet_preview');
     },
   );
 
@@ -85,5 +86,35 @@ void main() {
     expect(saved.getPixel(1, 0).g.toInt(), 255);
     expect(saved.getPixel(2, 0).r.toInt(), 0);
     expect(saved.getPixel(2, 0).g.toInt(), 180);
+  });
+
+  test('modelFromFunctionData preserva estatísticas NDVI da Edge Function', () async {
+    final model = await datasource.modelFromFunctionData(
+      fieldId: 'talhao-01',
+      data: {
+        'date': '2026-06-01',
+        'source': 'sentinel',
+        'ndvi_min': 0.12,
+        'ndvi_max': 0.88,
+        'ndvi_mean': 0.55,
+      },
+    );
+
+    expect(model.ndviMin, 0.12);
+    expect(model.ndviMax, 0.88);
+    expect(model.ndviMean, 0.55);
+  });
+
+  test('modelFromFunctionData normaliza planet legado para planet_preview', () async {
+    final model = await datasource.modelFromFunctionData(
+      fieldId: 'talhao-01',
+      data: {
+        'date': '2026-06-01',
+        'source': 'planet',
+        'image_url': 'https://cdn.example.com/preview.png',
+      },
+    );
+
+    expect(model.source, 'planet_preview');
   });
 }
