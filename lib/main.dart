@@ -15,6 +15,7 @@ import 'core/contracts/i_visit_session_lookup_provider.dart';
 import 'core/contracts/i_active_visit_context_lookup_provider.dart';
 import 'core/contracts/i_occurrence_read_provider.dart';
 import 'core/contracts/i_occurrence_access_reader_provider.dart';
+import 'core/contracts/i_radar_overlay_controller_provider.dart';
 import 'core/contracts/i_visit_photo_read_provider.dart';
 import 'core/contracts/i_agenda_session_bridge_provider.dart';
 import 'core/contracts/i_drawing_field_writer_provider.dart';
@@ -63,6 +64,7 @@ import 'modules/ndvi/infra/chained_field_lookup.dart';
 import 'modules/produtor/data/producer_link_repository.dart';
 import 'modules/produtor/infra/producer_invite_writer_adapter.dart';
 import 'modules/produtor/infra/occurrence_access_reader_adapter.dart';
+import 'modules/clima/infra/radar_overlay_controller_adapter.dart';
 import 'modules/map/presentation/providers/visit_completion_observer.dart';
 import 'modules/settings/data/settings_repository.dart';
 import 'modules/settings/presentation/providers/settings_providers.dart';
@@ -175,6 +177,9 @@ Future<void> main() async {
                 return OccurrenceAccessReaderAdapter(
                   ref.watch(producerLinkRepositoryProvider),
                 );
+              }),
+              radarOverlayControllerProvider.overrideWith((ref) {
+                return RadarOverlayControllerAdapter(ref);
               }),
               visitPhotoReadProvider.overrideWithValue(
                 QuickPhotoReadAdapter(QuickPhotoRepository()),
