@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:device_preview/device_preview.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -13,8 +14,12 @@ import 'core/contracts/i_visit_client_lookup_provider.dart';
 import 'core/contracts/i_visit_session_lookup_provider.dart';
 import 'core/contracts/i_active_visit_context_lookup_provider.dart';
 import 'core/contracts/i_occurrence_read_provider.dart';
+import 'core/contracts/i_occurrence_access_reader_provider.dart';
 import 'core/contracts/i_visit_photo_read_provider.dart';
 import 'core/contracts/i_agenda_session_bridge_provider.dart';
+import 'core/contracts/i_drawing_field_writer_provider.dart';
+import 'core/contracts/i_producer_invite_writer_provider.dart';
+import 'core/contracts/i_producer_property_gateway_provider.dart';
 import 'core/contracts/i_field_lookup_provider.dart';
 import 'core/contracts/i_field_lookup_geofence_provider.dart';
 import 'core/contracts/i_opportunity_lookup_provider.dart';
@@ -32,7 +37,9 @@ import 'app/sync_registration.dart';
 import 'modules/consultoria/clients/data/clients_repository.dart';
 import 'modules/consultoria/clients/infra/client_lookup_adapter.dart';
 import 'modules/consultoria/clients/infra/farm_lookup_adapter.dart';
+import 'modules/consultoria/clients/infra/producer_property_gateway_adapter.dart';
 import 'modules/consultoria/clients/infra/visit_client_lookup_adapter.dart';
+import 'modules/consultoria/farms/data/repositories/farm_repository.dart';
 import 'modules/consultoria/clients/infra/active_visit_context_lookup_adapter.dart';
 import 'modules/consultoria/fields/data/repositories/field_repository.dart';
 import 'modules/consultoria/fields/infra/field_lookup_geofence_adapter.dart';
@@ -49,12 +56,22 @@ import 'modules/carteira/data/opportunity_lookup_impl.dart';
 import 'modules/carteira/data/repositories/carteira_repository_impl.dart';
 import 'modules/visitas/data/repositories/visit_repository.dart';
 import 'modules/visitas/infra/visit_session_lookup_adapter.dart';
+import 'modules/drawing/infra/drawing_field_writer_adapter.dart';
 import 'modules/drawing/infra/field_lookup_adapter.dart';
 import 'modules/drawing/presentation/providers/drawing_provider.dart';
+import 'modules/ndvi/infra/chained_field_lookup.dart';
+import 'modules/produtor/data/producer_link_repository.dart';
+import 'modules/produtor/infra/producer_invite_writer_adapter.dart';
+import 'modules/produtor/infra/occurrence_access_reader_adapter.dart';
 import 'modules/map/presentation/providers/visit_completion_observer.dart';
 import 'modules/settings/data/settings_repository.dart';
 import 'modules/settings/presentation/providers/settings_providers.dart';
 import 'ui/theme/premium/premium_app_theme.dart';
+
+const bool _kEnableDevicePreview = bool.fromEnvironment(
+  'ENABLE_DEVICE_PREVIEW',
+  defaultValue: false,
+);
 
 Future<void> main() async {
   // ✅ ensureInitialized() dentro do runZonedGuarded resolve zone mismatch.
@@ -154,6 +171,11 @@ Future<void> main() async {
               occurrenceReadProvider.overrideWithValue(
                 OccurrenceReadAdapter(OccurrenceRepository()),
               ),
+              occurrenceAccessReaderProvider.overrideWith((ref) {
+                return OccurrenceAccessReaderAdapter(
+                  ref.watch(producerLinkRepositoryProvider),
+                );
+              }),
               visitPhotoReadProvider.overrideWithValue(
                 QuickPhotoReadAdapter(QuickPhotoRepository()),
               ),
@@ -165,9 +187,33 @@ Future<void> main() async {
               iFieldLookupGeofenceProvider.overrideWithValue(
                 FieldLookupGeofenceAdapter(fieldRepository),
               ),
-              // ADR-022: IFieldLookup para NDVI via DrawingLocalStore.
+              // ADR-022: NDVI — drawing primeiro, consultoria/fields como fallback.
               iFieldLookupProvider.overrideWith((ref) {
-                return FieldLookupAdapter(ref.watch(drawingLocalStoreProvider));
+                return ChainedFieldLookup(
+                  primary: FieldLookupAdapter(
+                    ref.watch(drawingLocalStoreProvider),
+                  ),
+                  fallback: FieldLookupGeofenceAdapter(fieldRepository),
+                );
+              }),
+              // Contrato neutro para comandos sobre talhoes do mapa.
+              iDrawingFieldWriterProvider.overrideWith((ref) {
+                return DrawingFieldWriterAdapter(
+                  ref.watch(drawingRepositoryProvider),
+                );
+              }),
+              producerInviteWriterProvider.overrideWith((ref) {
+                return ProducerInviteWriterAdapter(
+                  ref.watch(producerLinkRepositoryProvider),
+                );
+              }),
+              producerPropertyGatewayProvider.overrideWith((ref) {
+                return ProducerPropertyGatewayAdapter(
+                  supabase: Supabase.instance.client,
+                  clientsRepository: clientsRepository,
+                  farmRepository: FarmRepository(),
+                  fieldRepository: fieldRepository,
+                );
               }),
               // ADR-025: AgendaObservableState neutro para visit_completion_observer
               agendaObservableProvider.overrideWith((ref) {
@@ -236,6 +282,9 @@ class SoloForteApp extends ConsumerStatefulWidget {
 }
 
 class _SoloForteAppState extends ConsumerState<SoloForteApp> {
+  bool get _useDevicePreview =>
+      !const bool.fromEnvironment('dart.vm.product') && _kEnableDevicePreview;
+
   @override
   void initState() {
     super.initState();
@@ -268,20 +317,27 @@ class _SoloForteAppState extends ConsumerState<SoloForteApp> {
       darkTheme: PremiumAppTheme.darkTheme,
       themeMode: PremiumAppTheme.themeModeFor(themeMode),
       routerConfig: router,
+      locale: _useDevicePreview ? DevicePreview.locale(context) : null,
       debugShowCheckedModeBanner: false,
       // Fallback para erro crítico durante build do router
       builder: (context, child) {
-        if (child == null) {
-          return const Scaffold(
-            // 🛡 IPA-123: background branco explícito no fallback do builder
-            backgroundColor: Colors.white,
-            body: Center(
-              child: Text(
-                'Erro ao carregar aplicativo',
-                style: TextStyle(color: Colors.red),
+        final appChild =
+            child ??
+            const Scaffold(
+              // 🛡 IPA-123: background branco explícito no fallback do builder
+              backgroundColor: Colors.white,
+              body: Center(
+                child: Text(
+                  'Erro ao carregar aplicativo',
+                  style: TextStyle(color: Colors.red),
+                ),
               ),
-            ),
-          );
+            );
+        if (_useDevicePreview) {
+          return DevicePreview.appBuilder(context, appChild);
+        }
+        if (child == null) {
+          return appChild;
         }
         return child;
       },
