@@ -30,8 +30,8 @@ class DrawingStateIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Não exibir se estiver em idle
-    if (state == DrawingState.idle) {
+    // Os próprios vértices já comunicam visualmente o desenho em andamento.
+    if (state == DrawingState.idle || state == DrawingState.drawing) {
       return const SizedBox.shrink();
     }
 

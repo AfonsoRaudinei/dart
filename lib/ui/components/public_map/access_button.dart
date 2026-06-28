@@ -87,7 +87,7 @@ class AccessSoloForteButton extends StatelessWidget {
                       ],
                     ),
                   ),
-                  // Chevron com fundo verde
+                  // Logo SoloForte no destaque à direita
                   Container(
                     width: 32,
                     height: 32,
@@ -95,10 +95,12 @@ class AccessSoloForteButton extends StatelessWidget {
                       color: Theme.of(context).primaryColor,
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: const Icon(
-                      Icons.arrow_forward_ios_rounded,
-                      color: Colors.white,
-                      size: 14,
+                    child: Padding(
+                      padding: const EdgeInsets.all(5),
+                      child: Image.asset(
+                        'assets/images/soloforte_logo.png',
+                        fit: BoxFit.contain,
+                      ),
                     ),
                   ),
                 ],

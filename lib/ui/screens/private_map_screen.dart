@@ -164,14 +164,6 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
       tag: 'PrivateMap',
     );
 
-    // 🔧 FIX-DRAW-SYNC: Sincronizar DrawingController com MapSheetState
-    // Se está SAINDO do modo desenho, cancelar desenho automaticamente
-    if (currentSheet?.type == MapSheetType.draw &&
-        state?.type != MapSheetType.draw) {
-      AppLogger.debug('AUTO-CANCEL: Saindo do modo desenho', tag: 'PrivateMap');
-      ref.read(drawingControllerProvider).selectTool('none');
-    }
-
     // 🐛 BUGFIX: Fechar modal branco (layers/checkIn) antes de renderizar
     // sheet escuro no Stack. Sem isso, o modal fica vivo atrás e reaparece
     // ao fechar o MapBottomSheet. Padrão idêntico ao onTabSelected do orchestrator.

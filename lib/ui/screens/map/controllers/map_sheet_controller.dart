@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/state/map_ui_providers.dart';
 import '../../../../core/ui/sheets/sheet_tokens.dart';
 import '../../../../core/ui/sheets/soloforte_sheet.dart';
+import '../../../../modules/drawing/presentation/coordinators/drawing_close_coordinator.dart';
 import '../../../../modules/drawing/presentation/providers/drawing_provider.dart';
 import '../../../../modules/drawing/domain/drawing_state.dart';
 import '../../../../ui/components/map/map_sheet_state.dart';
@@ -139,11 +140,11 @@ class MapSheetController {
   ///
   /// Reuso intencional de [mapSheetStateProvider] como estado de abertura do
   /// DrawingSheet — não há drawingSheetOpenProvider separado.
-  static void toggleDrawMode(
+  static Future<void> toggleDrawMode(
     BuildContext context,
     WidgetRef ref,
     void Function(MapSheetState? s, String reason) setSheetState,
-  ) {
+  ) async {
     HapticFeedback.mediumImpact();
     final controller = ref.read(drawingControllerProvider);
     final currentSheet = ref.read(mapSheetStateProvider);
@@ -151,11 +152,18 @@ class MapSheetController {
     // Toggle explícito: se draw já está aberto, fecha.
     if (currentSheet?.type == MapSheetType.draw) {
       final wasDrawing = controller.currentState != DrawingState.idle;
-      // Mantém comportamento anterior: cancelar operação ativa ao fechar.
-      controller.cancelOperation();
+      final decision = await DrawingCloseCoordinator.handle(
+        context,
+        controller: controller,
+        intent: DrawingCloseIntent.dismissSheet,
+      );
+      if (!decision.shouldCloseSheet) {
+        return;
+      }
       setSheetState(null, 'ToggleDrawMode: Closing draw sheet');
 
       if (wasDrawing) {
+        if (!context.mounted) return;
         ScaffoldMessenger.of(context).hideCurrentSnackBar();
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(

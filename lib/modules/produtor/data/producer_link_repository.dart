@@ -13,7 +13,11 @@ final producerLinkRepositoryProvider = Provider<ProducerLinkRepository>((ref) {
   return ProducerLinkRepository(Supabase.instance.client);
 });
 
-class ProducerLinkRepository {
+abstract interface class ProducerLinkReader {
+  Future<List<ProducerLinkedClient>> loadLinkedConsultantData();
+}
+
+class ProducerLinkRepository implements ProducerLinkReader {
   ProducerLinkRepository(this._client);
 
   final SupabaseClient _client;
@@ -57,6 +61,7 @@ class ProducerLinkRepository {
     );
   }
 
+  @override
   Future<List<ProducerLinkedClient>> loadLinkedConsultantData() async {
     final links = await _loadActiveLinks();
     final clients = <ProducerLinkedClient>[];
@@ -67,6 +72,35 @@ class ProducerLinkRepository {
     }
 
     return clients;
+  }
+
+  Future<List<String>> loadActiveProducerClientIds() async {
+    final links = await _loadActiveLinks();
+    return links.map((link) => link.clientId).toList(growable: false);
+  }
+
+  /// Resolucao de autorizacao para dados compartilhados: falha fechada.
+  Future<List<String>> loadAuthorizedClientIds() async {
+    final userId = _currentUserId();
+    try {
+      final rows = await _client
+          .from(_linkTable)
+          .select()
+          .eq('producer_user_id', userId)
+          .eq('status', 'active')
+          .gt('expires_at', DateTime.now().toUtc().toIso8601String())
+          .order('updated_at', ascending: false);
+      final links = (rows as List)
+          .map((row) => ProducerClientLink.fromRemote(row))
+          .toList();
+      for (final link in links) {
+        await _cacheLink(link, syncStatus: 0);
+      }
+      await _removeStaleCachedProducerLinks(userId, links);
+      return links.map((link) => link.clientId).toList(growable: false);
+    } catch (_) {
+      return const [];
+    }
   }
 
   Future<List<ProducerClientLink>> _loadActiveLinks() async {
@@ -84,6 +118,7 @@ class ProducerLinkRepository {
       for (final link in links) {
         await _cacheLink(link, syncStatus: 0);
       }
+      await _removeStaleCachedProducerLinks(userId, links);
       return links;
     } catch (_) {
       return _loadCachedActiveLinks(userId);
@@ -197,7 +232,31 @@ class ProducerLinkRepository {
       whereArgs: [userId, 'active'],
       orderBy: 'updated_at DESC',
     );
-    return rows.map(ProducerClientLink.fromCache).toList();
+    final now = DateTime.now().toUtc();
+    return rows
+        .map(ProducerClientLink.fromCache)
+        .where((link) => link.expiresAt.toUtc().isAfter(now))
+        .toList();
+  }
+
+  Future<void> _removeStaleCachedProducerLinks(
+    String userId,
+    List<ProducerClientLink> remoteLinks,
+  ) async {
+    final db = await DatabaseHelper.instance.database;
+    final activeIds = remoteLinks.map((link) => link.id).toSet();
+    final cached = await db.query(
+      _linkTable,
+      columns: ['id'],
+      where: 'producer_user_id = ? AND status = ?',
+      whereArgs: [userId, 'active'],
+    );
+    for (final row in cached) {
+      final id = row['id'] as String;
+      if (!activeIds.contains(id)) {
+        await db.delete(_linkTable, where: 'id = ?', whereArgs: [id]);
+      }
+    }
   }
 
   String _currentUserId() {

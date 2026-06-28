@@ -16,7 +16,6 @@ import '../providers/user_profile_provider.dart';
 import '../../domain/settings_models.dart';
 import '../../domain/entities/user_profile.dart';
 import '../widgets/audit_trail_widget.dart';
-import 'edit_profile_screen.dart';
 import 'report_branding_screen.dart';
 
 class SettingsScreen extends ConsumerWidget {
@@ -521,12 +520,7 @@ class SettingsScreen extends ConsumerWidget {
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton.icon(
-                  onPressed: () => Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) =>
-                          EditProfileScreen(initialProfile: profile),
-                    ),
-                  ),
+                  onPressed: () => context.push(AppRoutes.settingsEditProfile),
                   icon: const Icon(Icons.edit_outlined, size: 16),
                   label: const Text('Editar perfil'),
                   style: OutlinedButton.styleFrom(

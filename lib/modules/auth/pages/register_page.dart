@@ -175,9 +175,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                       Align(
                         alignment: Alignment.centerLeft,
                         child: TextButton.icon(
-                          onPressed: () => context.canPop()
-                              ? context.pop()
-                              : context.go(AppRoutes.publicMap),
+                          onPressed: () => context.go(AppRoutes.publicMap),
                           icon: const Icon(
                             Icons.arrow_back_ios,
                             size: 16,

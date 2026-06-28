@@ -68,7 +68,7 @@ class _RecoverPasswordPageState extends ConsumerState<RecoverPasswordPage> {
               Align(
                 alignment: Alignment.centerLeft,
                 child: TextButton.icon(
-                  onPressed: () => context.pop(),
+                  onPressed: () => context.go(AppRoutes.login),
                   icon: const Icon(
                     Icons.arrow_back_ios,
                     size: 16,

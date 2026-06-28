@@ -114,6 +114,13 @@ class Occurrence {
   final String syncStatus;
   final String? category;
   final String? status;
+  final String? remoteId;
+  final String? ownerUserId;
+  final String? cachedByUserId;
+  final String? externalSource;
+  final String? externalAnalysisId;
+  final String? analysisPayloadJson;
+  final String? deletedAt;
 
   // ── Campos agronômicos (Schema v14) ─────────────────────────────────
   final String? cultivar;
@@ -143,6 +150,13 @@ class Occurrence {
     this.syncStatus = 'local',
     this.category,
     this.status = 'draft',
+    this.remoteId,
+    this.ownerUserId,
+    this.cachedByUserId,
+    this.externalSource,
+    this.externalAnalysisId,
+    this.analysisPayloadJson,
+    this.deletedAt,
     // v14 agronômico
     this.cultivar,
     this.dataPlantio,
@@ -182,6 +196,13 @@ class Occurrence {
       syncStatus: map['sync_status'] ?? 'local',
       category: category,
       status: map['status'] ?? 'draft',
+      remoteId: map['remote_id'] as String?,
+      ownerUserId: map['user_id'] as String?,
+      cachedByUserId: map['cached_by_user_id'] as String?,
+      externalSource: map['external_source'] as String?,
+      externalAnalysisId: map['external_analysis_id'] as String?,
+      analysisPayloadJson: map['analysis_payload_json'] as String?,
+      deletedAt: map['deleted_at'] as String?,
       // v14 agronômico
       cultivar: map['cultivar'],
       dataPlantio: map['data_plantio'],
@@ -221,6 +242,12 @@ class Occurrence {
       'sync_status': syncStatus,
       'category': category,
       'status': status,
+      'remote_id': remoteId,
+      'cached_by_user_id': cachedByUserId,
+      'external_source': externalSource,
+      'external_analysis_id': externalAnalysisId,
+      'analysis_payload_json': analysisPayloadJson,
+      'deleted_at': deletedAt,
       // v14 agronômico
       'cultivar': cultivar,
       'data_plantio': dataPlantio,
@@ -254,6 +281,13 @@ class Occurrence {
     String? syncStatus,
     String? category,
     String? status,
+    String? remoteId,
+    String? ownerUserId,
+    String? cachedByUserId,
+    String? externalSource,
+    String? externalAnalysisId,
+    String? analysisPayloadJson,
+    String? deletedAt,
     // v14 agronômico
     String? cultivar,
     String? dataPlantio,
@@ -282,6 +316,13 @@ class Occurrence {
       syncStatus: syncStatus ?? this.syncStatus,
       category: category ?? this.category,
       status: status ?? this.status,
+      remoteId: remoteId ?? this.remoteId,
+      ownerUserId: ownerUserId ?? this.ownerUserId,
+      cachedByUserId: cachedByUserId ?? this.cachedByUserId,
+      externalSource: externalSource ?? this.externalSource,
+      externalAnalysisId: externalAnalysisId ?? this.externalAnalysisId,
+      analysisPayloadJson: analysisPayloadJson ?? this.analysisPayloadJson,
+      deletedAt: deletedAt ?? this.deletedAt,
       // v14 agronômico
       cultivar: cultivar ?? this.cultivar,
       dataPlantio: dataPlantio ?? this.dataPlantio,
@@ -298,16 +339,21 @@ class Occurrence {
   }
 
   Map<String, double>? getCoordinates() {
+    if (_validCoordinates(lat, long)) {
+      return {'lat': lat!, 'long': long!};
+    }
+
     if (geometry != null) {
       try {
         final decoded = jsonDecode(geometry!);
         if (decoded['type'] == 'Point' && decoded['coordinates'] != null) {
           final coords = decoded['coordinates'] as List;
           if (coords.length >= 2) {
-            return {
-              'lat': (coords[1] as num).toDouble(),
-              'long': (coords[0] as num).toDouble(),
-            };
+            final geometryLat = (coords[1] as num).toDouble();
+            final geometryLong = (coords[0] as num).toDouble();
+            if (_validCoordinates(geometryLat, geometryLong)) {
+              return {'lat': geometryLat, 'long': geometryLong};
+            }
           }
         }
       } catch (e) {
@@ -318,10 +364,14 @@ class Occurrence {
       }
     }
 
-    if (lat != null && long != null) {
-      return {'lat': lat!, 'long': long!};
-    }
-
     return null;
+  }
+
+  static bool _validCoordinates(double? latitude, double? longitude) {
+    if (latitude == null || longitude == null) return false;
+    if (!latitude.isFinite || !longitude.isFinite) return false;
+    if (latitude < -90 || latitude > 90) return false;
+    if (longitude < -180 || longitude > 180) return false;
+    return latitude != 0 || longitude != 0;
   }
 }

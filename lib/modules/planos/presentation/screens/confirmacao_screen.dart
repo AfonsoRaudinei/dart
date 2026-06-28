@@ -5,10 +5,12 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 import 'package:soloforte_app/core/constants/layout_constants.dart';
+import 'package:soloforte_app/core/router/app_routes.dart';
 
 import '../providers/plano_providers.dart';
 
@@ -36,6 +38,10 @@ class _ConfirmacaoScreenState extends ConsumerState<ConfirmacaoScreen>
       duration: const Duration(milliseconds: 600),
     );
     _scaleAnim = CurvedAnimation(parent: _controller, curve: Curves.elasticOut);
+
+    if (defaultTargetPlatform == TargetPlatform.iOS) {
+      return;
+    }
 
     // Observa Realtime para detectar plano ativado
     _observarPlano();
@@ -70,7 +76,7 @@ class _ConfirmacaoScreenState extends ConsumerState<ConfirmacaoScreen>
         HapticFeedback.heavyImpact();
         // Redireciona para meu-plano após 2s
         Future.delayed(const Duration(seconds: 2), () {
-          if (mounted) context.go('/planos/meu-plano');
+          if (mounted) context.go(AppRoutes.meuPlano);
         });
       });
     });
@@ -84,6 +90,10 @@ class _ConfirmacaoScreenState extends ConsumerState<ConfirmacaoScreen>
 
   @override
   Widget build(BuildContext context) {
+    if (defaultTargetPlatform == TargetPlatform.iOS) {
+      return _buildIosUnavailable(context);
+    }
+
     return Scaffold(
       backgroundColor: const Color(0xFF000000),
       body: SafeArea(
@@ -91,6 +101,66 @@ class _ConfirmacaoScreenState extends ConsumerState<ConfirmacaoScreen>
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 32),
             child: _confirmado ? _buildConfirmado() : _buildAguardando(),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildIosUnavailable(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF000000),
+      body: SafeArea(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 32),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(
+                  Icons.lock_outline_rounded,
+                  color: Color(0xFF32D74B),
+                  size: 56,
+                ),
+                const SizedBox(height: 24),
+                const Text(
+                  'Checkout indisponivel no iOS',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'Este app nao abre checkout externo no iOS. Planos ativos na conta continuam sendo sincronizados normalmente.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 14,
+                    color: Color(0xFF8E8E93),
+                  ),
+                ),
+                const SizedBox(height: 32),
+                TextButton(
+                  onPressed: () {
+                    HapticFeedback.lightImpact();
+                    context.go(AppRoutes.planos);
+                  },
+                  child: const Text(
+                    'Voltar aos planos',
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 15,
+                      color: Color(0xFF32D74B),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: kFabSafeArea),
+              ],
+            ),
           ),
         ),
       ),
@@ -129,7 +199,7 @@ class _ConfirmacaoScreenState extends ConsumerState<ConfirmacaoScreen>
         TextButton(
           onPressed: () {
             HapticFeedback.lightImpact();
-            context.go('/map');
+            context.go(AppRoutes.map);
           },
           child: const Text(
             'Verificar depois',
@@ -192,7 +262,7 @@ class _ConfirmacaoScreenState extends ConsumerState<ConfirmacaoScreen>
             child: GestureDetector(
               onTap: () {
                 HapticFeedback.mediumImpact();
-                context.go('/planos/meu-plano');
+                context.go(AppRoutes.meuPlano);
               },
               child: DecoratedBox(
                 decoration: BoxDecoration(

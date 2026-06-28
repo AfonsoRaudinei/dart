@@ -24,12 +24,14 @@ class AppRoutes {
 
   // Privadas — L1 (Módulos raiz que voltam direto para o mapa)
   static const String settings = '/settings';
+  static const String settingsEditProfile = '/settings/profile/edit';
   static const String agenda = '/agenda';
   static const String feedback = '/feedback';
   static const String clima = '/clima';
   static const String carteira = '/carteira';
   static const String reports = '/consultoria/relatorios';
   static const String clients = '/consultoria/clientes';
+  static const String producerProperty = '/produtor/propriedade';
 
   // Módulo planos/ — ADR-012
   static const String planos = '/planos';
@@ -55,6 +57,12 @@ class AppRoutes {
   static String carteiraCliente(String clienteId) =>
       '/carteira/cliente/$clienteId';
 
+  // Agenda L2+ — navegação declarativa (Fase 7, sem context.pop)
+  static String agendaDay(DateTime date) =>
+      '$agenda/day?date=${date.toIso8601String()}';
+
+  static String agendaEvent(String eventId) => '$agenda/event/$eventId';
+
   // ════════════════════════════════════════════════════════════════════
   // CLASSIFICAÇÃO DETERMINÍSTICA DE NÍVEL DE ROTA
   // ════════════════════════════════════════════════════════════════════
@@ -79,6 +87,7 @@ class AppRoutes {
     carteira,
     reports,
     clients,
+    producerProperty,
     planos, // ADR-012
     meuPlano, // ADR-012
   };

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:latlong2/latlong.dart';
@@ -19,6 +20,8 @@ import 'drawing_gps_orchestrator.dart';
 import 'drawing_import_orchestrator.dart';
 // ─────────────────────────────────────────────────────────────────────────────
 import '../../../../core/utils/app_logger.dart';
+
+part 'drawing_controller_vertex.dart';
 
 /// Controller de orquestração do módulo Drawing.
 ///
@@ -173,6 +176,7 @@ class DrawingController extends ChangeNotifier {
     _isDisposed = true;
     _gpsOrchestrator.dispose();
     _validationDebounce?.cancel();
+    _notifyThrottleTimer?.cancel();
     super.dispose();
   }
 
@@ -252,10 +256,12 @@ class DrawingController extends ChangeNotifier {
   // Performance State
   bool _isHighComplexity = false;
   Timer? _validationDebounce;
+  Timer? _notifyThrottleTimer;
   bool _isDraggingVertex = false; // RT-DRAW-DRAG
   int? _draggedVertexIndex;
   static const int _complexityThreshold = 2000;
   static const int _validationDebounceMs = 300;
+  static const int _notifyThrottleMs = 16;
 
   List<DrawingFeature> get features =>
       List.unmodifiable(_features.where((f) => f.properties.ativo));
@@ -271,6 +277,7 @@ class DrawingController extends ChangeNotifier {
       _multiSelectEnabled ||
       _stateMachine.currentState == DrawingState.selected;
   bool get isHighComplexity => _isHighComplexity;
+  List<LatLng> get currentPoints => List.unmodifiable(_currentPoints);
 
   bool get isDraggingVertex => _isDraggingVertex;
   int? get draggedVertexIndex => _draggedVertexIndex;
@@ -421,6 +428,7 @@ class DrawingController extends ChangeNotifier {
 
   // Editing State
   DrawingGeometry? _editGeometry;
+  String? _editGeometrySnapshotJson;
   final DrawingHistory _history = DrawingHistory();
 
   // ─── Getters de Undo/Redo (Sprint 2) ──────────────────────────────────
@@ -434,6 +442,12 @@ class DrawingController extends ChangeNotifier {
 
   /// `true` quando há estados futuros que podem ser refeitos (só em editing).
   bool get canRedo => _history.canRedo;
+  bool get hasPendingEditChanges {
+    if (_editGeometry == null || _editGeometrySnapshotJson == null) {
+      return false;
+    }
+    return _serializeGeometry(_editGeometry!) != _editGeometrySnapshotJson;
+  }
   // ──────────────────────────────────────────────────────────────────────
 
   // Metrics Getters
@@ -1233,29 +1247,7 @@ class DrawingController extends ChangeNotifier {
   // ===========================================================================
 
   void cancelOperation() {
-    if (_isDisposed) return;
-
-    _gpsOrchestrator
-        .cancelTracking(); // Cancela GPS se ativo antes de limpar estado
-    _selectedFeature = null;
-    _selectedFeatureIds.clear();
-    _multiSelectEnabled = false;
-    _editGeometry = null;
-    _history.clear();
-    _interactionMode = DrawingInteraction.normal;
-    _booleanOpsOrchestrator.clear();
-    _previewGeometry = null;
-    _reviewGeometrySnapshot = null;
-    _reviewAreaHa = 0.0;
-    _reviewPerimeterKm = 0.0;
-    _manualSketch = null;
-    _importOrchestrator.clearPendingImportOrigin();
-    _gpsOrchestrator.clearReviewOrigin();
-    _errorMessage = null;
-    _intersectionWarningMessage = null;
-    _currentPoints.clear(); // 🔧 FIX-DRAW-FLOW-02: Limpar pontos ao cancelar
-    _stateMachine.cancel(); // Use state machine cancel
-    notifyListeners();
+    exitDrawingContext();
   }
 
   void clearSelection({bool disableMultiSelect = true}) {
@@ -1270,6 +1262,46 @@ class DrawingController extends ChangeNotifier {
     if (_stateMachine.currentState == DrawingState.selected) {
       _stateMachine.exitSelected();
     }
+    notifyListeners();
+  }
+
+  /// Sai completamente do contexto de desenho atual e volta ao estado idle.
+  ///
+  /// Fonte única de verdade para:
+  /// - cancelar operações transitórias
+  /// - limpar seleção simples e multi-seleção
+  /// - descartar edição temporária e preview
+  /// - resetar a state machine para idle
+  void exitDrawingContext() {
+    if (_isDisposed) return;
+
+    _gpsOrchestrator.cancelTracking();
+    _gpsOrchestrator.clearReviewOrigin();
+    _booleanOpsOrchestrator.clear();
+    _importOrchestrator.clearPendingImportOrigin();
+
+    _selectedFeature = null;
+    _selectedFeatureIds.clear();
+    _multiSelectEnabled = false;
+    _editGeometry = null;
+    _editGeometrySnapshotJson = null;
+    _history.clear();
+    _previewGeometry = null;
+    _reviewGeometrySnapshot = null;
+    _reviewAreaHa = 0.0;
+    _reviewPerimeterKm = 0.0;
+    _manualSketch = null;
+    _currentPoints.clear();
+    _interactionMode = DrawingInteraction.normal;
+    _errorMessage = null;
+    _intersectionWarningMessage = null;
+    _validationResult = const DrawingValidationResult.valid();
+    _hasSelfIntersection = false;
+    _intersectingSegmentIndices = {};
+    _isSnapping = false;
+    _isDraggingVertex = false;
+    _draggedVertexIndex = null;
+    _stateMachine.cancel();
     notifyListeners();
   }
 
@@ -1355,6 +1387,7 @@ class DrawingController extends ChangeNotifier {
 
     // Delega deep copy ao DrawingVertexEditService
     _editGeometry = _vertexService.cloneGeometry(_selectedFeature!.geometry);
+    _editGeometrySnapshotJson = _serializeGeometry(_editGeometry!);
     _history.clear();
     _history.push(_geomToVertices(_editGeometry!));
 
@@ -1381,6 +1414,7 @@ class DrawingController extends ChangeNotifier {
 
   void cancelEdit() {
     _editGeometry = null;
+    _editGeometrySnapshotJson = null;
     _history.clear();
     _interactionMode = DrawingInteraction.normal;
     // 🔧 FASE3: Se feature ainda selecionada, volta para selected em vez de idle
@@ -1397,7 +1431,7 @@ class DrawingController extends ChangeNotifier {
     notifyListeners();
   }
 
-  void saveEdit() {
+  bool saveEdit() {
     // Force FULL validation on save
     if (_editGeometry != null) {
       validateGeometry(_editGeometry, forceFull: true);
@@ -1408,7 +1442,7 @@ class DrawingController extends ChangeNotifier {
         } else {
           _errorMessage = _validationResult.message;
           notifyListeners();
-          return;
+          return false;
         }
       }
     }
@@ -1422,6 +1456,7 @@ class DrawingController extends ChangeNotifier {
       );
     }
     cancelEdit();
+    return true;
   }
 
   void undoEdit() {
@@ -1516,161 +1551,6 @@ class DrawingController extends ChangeNotifier {
       }
     }
     return null;
-  }
-
-  // ===========================================================================
-  // VERTEX EDITING (RT-DRAW-06)
-  // ===========================================================================
-
-  void _throttledValidate() {
-    // Logic from old updateEditGeometry
-    final count = DrawingUtils.getVertexCount(_editGeometry);
-    final isComplex = count > _complexityThreshold;
-
-    if (isComplex) {
-      _validationDebounce?.cancel();
-      _validationDebounce = Timer(
-        const Duration(milliseconds: _validationDebounceMs),
-        () {
-          if (_isDisposed) return;
-          validateGeometry(_editGeometry, forceFull: false);
-          notifyListeners();
-        },
-      );
-      // Immediate basic check?
-      // validateGeometry(_editGeometry, forceFull: false); // maybe too heavy?
-    } else {
-      validateGeometry(_editGeometry);
-    }
-  }
-
-  /// Moves a single vertex to a new position.
-  /// Delega para [DrawingVertexEditService.moveVertex].
-  void moveVertex(int ringIndex, int pointIndex, LatLng newPos) {
-    if (_editGeometry is! DrawingPolygon) return;
-
-    final updated = _vertexService.moveVertex(
-      _editGeometry as DrawingPolygon,
-      ringIndex,
-      pointIndex,
-      newPos,
-    );
-    if (updated == null) return;
-
-    _editGeometry = updated;
-    _updateRealTimeIntersection();
-    _throttledValidate();
-    notifyListeners();
-  }
-
-  /// Persiste a nova posição do vértice ao finalizar o arraste.
-  ///
-  /// Fluxo esperado:
-  /// - Durante o drag, a UI mantém estado local (sem persistir)
-  /// - Ao soltar, este método aplica o ponto final no _editGeometry
-  /// - Atualiza validações/interseções e persiste na feature selecionada
-  void updateVertexPosition(int ringIndex, int pointIndex, LatLng newPos) {
-    if (_editGeometry is! DrawingPolygon) return;
-
-    final updated = _vertexService.moveVertex(
-      _editGeometry as DrawingPolygon,
-      ringIndex,
-      pointIndex,
-      newPos,
-    );
-    if (updated == null) return;
-
-    _editGeometry = updated;
-    _updateRealTimeIntersection();
-    validateGeometry(_editGeometry);
-
-    if (_selectedFeature != null) {
-      updateFeature(
-        _selectedFeature!.id,
-        newGeometry: _editGeometry,
-        editorId: "sistema",
-        editorType: AuthorType.sistema,
-      );
-    }
-
-    notifyListeners();
-  }
-
-  /// Call this when starting a drag operation to save state for Undo
-  void onDragStart([int? index]) {
-    _isDraggingVertex = true;
-    _draggedVertexIndex = index;
-    if (_editGeometry != null) {
-      _history.push(_geomToVertices(_editGeometry!));
-    }
-    notifyListeners();
-  }
-
-  /// Call this when ending a drag operation.
-  /// [persist] mantém compatibilidade com fluxo legado:
-  /// - true: persiste _editGeometry ao fim do arraste
-  /// - false: apenas encerra estado de drag (quando já persistido externamente)
-  void onDragEnd({bool persist = true}) {
-    _isDraggingVertex = false;
-    _draggedVertexIndex = null;
-
-    if (persist && _editGeometry != null && _selectedFeature != null) {
-      updateFeature(
-        _selectedFeature!.id,
-        newGeometry: _editGeometry,
-        editorId: "sistema",
-        editorType: AuthorType.sistema,
-      );
-    }
-
-    notifyListeners();
-  }
-
-  /// Inserts a new vertex after the specified segment index.
-  /// Delega para [DrawingVertexEditService.insertVertex].
-  void insertVertex(int ringIndex, int segmentIndex, LatLng point) {
-    if (_editGeometry is! DrawingPolygon) return;
-
-    onDragStart(); // salva estado para undo
-
-    final updated = _vertexService.insertVertex(
-      _editGeometry as DrawingPolygon,
-      ringIndex,
-      segmentIndex,
-      point,
-    );
-    if (updated == null) return;
-
-    _editGeometry = updated;
-    _updateRealTimeIntersection();
-    validateGeometry(_editGeometry);
-    notifyListeners();
-  }
-
-  /// Removes a vertex at the specified index.
-  /// Delega para [DrawingVertexEditService.removeVertex].
-  void removeVertex(int ringIndex, int pointIndex) {
-    if (_editGeometry is! DrawingPolygon) return;
-
-    final result = _vertexService.removeVertex(
-      _editGeometry as DrawingPolygon,
-      ringIndex,
-      pointIndex,
-    );
-
-    if (result.error != null) {
-      _errorMessage = result.error;
-      notifyListeners();
-      return;
-    }
-
-    if (result.geometry == null) return;
-
-    onDragStart(); // salva estado para undo
-    _editGeometry = result.geometry;
-    _updateRealTimeIntersection();
-    validateGeometry(_editGeometry);
-    notifyListeners();
   }
 
   // ===========================================================================
@@ -1806,5 +1686,12 @@ class DrawingController extends ChangeNotifier {
     }
 
     return [snapped.longitude, snapped.latitude];
+  }
+
+  String _serializeGeometry(DrawingGeometry geometry) {
+    final normalized = DrawingUtils.normalizeGeometry(
+      _vertexService.cloneGeometry(geometry),
+    );
+    return jsonEncode(normalized.toJson());
   }
 }

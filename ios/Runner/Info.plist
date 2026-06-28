@@ -30,9 +30,7 @@
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>O SoloForte usa sua localização para posicionar ocorrências, talhões e rotas de visita no mapa da propriedade.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>O SoloForte usa sua localização para posicionar ocorrências, talhões e rotas de visita no mapa da propriedade, inclusive em segundo plano durante visitas ativas.</string>
-	<key>NSLocationAlwaysUsageDescription</key>
-	<string>O SoloForte usa sua localização para posicionar ocorrências, talhões e rotas de visita no mapa da propriedade, inclusive em segundo plano durante visitas ativas.</string>
+	<string>O SoloForte usa sua localização para acompanhar a posição do usuário no mapa durante navegação, medições e rotas de trabalho no campo.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

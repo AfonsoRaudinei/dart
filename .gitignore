@@ -65,6 +65,7 @@ macos/Flutter/GeneratedPluginRegistrant.swift
 **/android/app/src/main/res/drawable-xxxhdpi/launch_background.png
 
 # Coverage
+coverage/
 doc/api/
 ios/Flutter/.last_build_id
 .dart_tool/

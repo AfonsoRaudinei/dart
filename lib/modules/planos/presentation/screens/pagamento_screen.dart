@@ -11,6 +11,7 @@ import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:soloforte_app/core/constants/layout_constants.dart';
+import 'package:soloforte_app/core/router/app_routes.dart';
 import '../../data/services/mercadopago_service.dart';
 
 class PagamentoScreen extends ConsumerStatefulWidget {
@@ -26,16 +27,6 @@ class _PagamentoScreenState extends ConsumerState<PagamentoScreen> {
   String _metodo = 'pix'; // 'pix' | 'cartao'
   bool _loading = false;
   String? _erro;
-
-  @override
-  void initState() {
-    super.initState();
-    if (defaultTargetPlatform == TargetPlatform.iOS) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) context.go('/planos');
-      });
-    }
-  }
 
   String get _planoLabel {
     switch (widget.plano) {
@@ -67,7 +58,7 @@ class _PagamentoScreenState extends ConsumerState<PagamentoScreen> {
       if (!mounted) return;
       // Navega para confirmação passando a URL de checkout
       context.go(
-        '/planos/confirmacao',
+        AppRoutes.planosConfirmacao,
         extra: {'plano': widget.plano, 'checkoutUrl': checkoutUrl},
       );
     } catch (e) {
@@ -81,6 +72,10 @@ class _PagamentoScreenState extends ConsumerState<PagamentoScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (defaultTargetPlatform == TargetPlatform.iOS) {
+      return _buildIosUnavailable(context);
+    }
+
     return Scaffold(
       backgroundColor: const Color(0xFF000000),
       body: SafeArea(
@@ -174,6 +169,66 @@ class _PagamentoScreenState extends ConsumerState<PagamentoScreen> {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildIosUnavailable(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF000000),
+      body: SafeArea(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 32),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(
+                  Icons.lock_outline_rounded,
+                  color: Color(0xFF32D74B),
+                  size: 56,
+                ),
+                const SizedBox(height: 24),
+                const Text(
+                  'Pagamento indisponivel no iOS',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'Este app nao inicia compras externas no iOS. Se houver plano ativo na conta, ele sera aplicado automaticamente.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 14,
+                    color: Color(0xFF8E8E93),
+                  ),
+                ),
+                const SizedBox(height: 32),
+                TextButton(
+                  onPressed: () {
+                    HapticFeedback.lightImpact();
+                    context.go(AppRoutes.planos);
+                  },
+                  child: const Text(
+                    'Voltar aos planos',
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 15,
+                      color: Color(0xFF32D74B),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: kFabSafeArea),
+              ],
+            ),
+          ),
         ),
       ),
     );

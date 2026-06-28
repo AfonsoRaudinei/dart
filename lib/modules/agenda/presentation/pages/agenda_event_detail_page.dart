@@ -48,7 +48,9 @@ class AgendaEventDetailPage extends ConsumerWidget {
         automaticallyImplyLeading: false,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new),
-          onPressed: () => context.pop(),
+          onPressed: () => context.go(
+            AppRoutes.agendaDay(event.dataInicioPlanejada),
+          ),
           tooltip: 'Voltar',
         ),
         actions: [
@@ -389,7 +391,7 @@ class AgendaEventDetailPage extends ConsumerWidget {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Evento excluído.')),
                   );
-                  context.pop();
+                  context.go(AppRoutes.agendaDay(event.dataInicioPlanejada));
                 }
               } catch (e) {
                 if (context.mounted) {

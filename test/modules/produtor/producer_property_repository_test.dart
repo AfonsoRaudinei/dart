@@ -1,45 +1,106 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:soloforte_app/core/contracts/i_producer_property_gateway.dart';
+import 'package:soloforte_app/modules/produtor/data/producer_link_models.dart';
+import 'package:soloforte_app/modules/produtor/data/producer_link_repository.dart';
 import 'package:soloforte_app/modules/produtor/data/producer_property_repository.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 void main() {
   group('ProducerPropertyRepository', () {
-    test('usa o id do usuário como client próprio do produtor', () {
-      expect(
-        ProducerPropertyRepository.ownClientIdForUser(
-          '8c7a7a4a-1111-4222-8333-123456789abc',
-        ),
-        '8c7a7a4a-1111-4222-8333-123456789abc',
+    late _FakePropertyGateway gateway;
+    late ProducerPropertyRepository repository;
+
+    setUp(() {
+      gateway = _FakePropertyGateway();
+      repository = ProducerPropertyRepository(
+        propertyGateway: gateway,
+        linkRepository: _FakeLinkReader(),
       );
     });
 
-    test('resolve nome do produtor por metadata antes do email', () {
-      final user = User(
-        id: 'user-1',
-        appMetadata: const {},
-        userMetadata: const {'full_name': 'Produtor Teste'},
-        aud: 'authenticated',
-        createdAt: DateTime.utc(2026).toIso8601String(),
-        email: 'produtor@soloforte.app',
-      );
+    test('mapeia snapshots neutros sem expor domínio de consultoria', () async {
+      final property = await repository.loadOwnProperty();
 
-      expect(ProducerPropertyRepository.ownClientName(user), 'Produtor Teste');
+      expect(property.clientId, 'producer-1');
+      expect(property.farms.single.name, 'Retiro');
+      expect(property.farms.single.fields.single.hasGeometry, true);
     });
 
-    test('usa email quando metadata não tem nome', () {
-      final user = User(
-        id: 'user-1',
-        appMetadata: const {},
-        userMetadata: const {},
-        aud: 'authenticated',
-        createdAt: DateTime.utc(2026).toIso8601String(),
-        email: 'produtor@soloforte.app',
+    test('delega comandos de fazenda ao gateway', () async {
+      await repository.saveOwnFarm(
+        name: 'Retiro',
+        city: 'Gurupi',
+        state: 'to',
+        areaHa: 42,
       );
 
-      expect(
-        ProducerPropertyRepository.ownClientName(user),
-        'produtor@soloforte.app',
-      );
+      expect(gateway.savedFarmName, 'Retiro');
+    });
+
+    test('combina propriedade própria e vínculos no dashboard', () async {
+      final dashboard = await repository.loadDashboard();
+
+      expect(dashboard.ownProperty.clientId, 'producer-1');
+      expect(dashboard.linkedClients, isEmpty);
     });
   });
+}
+
+class _FakePropertyGateway implements IProducerPropertyGateway {
+  String? savedFarmName;
+
+  @override
+  Future<ProducerPropertySnapshot> loadOwnProperty() async {
+    return const ProducerPropertySnapshot(
+      clientId: 'producer-1',
+      name: 'Produtor Teste',
+      email: 'produtor@soloforte.app',
+      farms: [
+        ProducerFarmSnapshot(
+          id: 'farm-1',
+          name: 'Retiro',
+          city: 'Gurupi',
+          state: 'TO',
+          areaHa: 42,
+          fields: [
+            ProducerFieldSnapshot(
+              id: 'field-1',
+              name: 'Talhão 1',
+              areaHa: 12,
+              hasGeometry: true,
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  @override
+  Future<void> saveOwnFarm({
+    String? farmId,
+    required String name,
+    required String city,
+    required String state,
+    required double areaHa,
+  }) async {
+    savedFarmName = name;
+  }
+
+  @override
+  Future<void> saveOwnField({
+    String? fieldId,
+    required String farmId,
+    required String name,
+    required double areaHa,
+  }) async {}
+
+  @override
+  Future<void> deleteOwnFarm(String farmId) async {}
+
+  @override
+  Future<void> deleteOwnField(String fieldId) async {}
+}
+
+class _FakeLinkReader implements ProducerLinkReader {
+  @override
+  Future<List<ProducerLinkedClient>> loadLinkedConsultantData() async => [];
 }

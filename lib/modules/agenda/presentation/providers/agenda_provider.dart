@@ -1,152 +1,54 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:uuid/uuid.dart';
+import '../../data/repositories/agenda_repository.dart';
+import '../../data/services/agenda_notification_service.dart';
 import '../../domain/entities/event.dart';
 import '../../domain/entities/visit.dart';
 import '../../domain/entities/visit_session.dart';
 import '../../domain/enums/event_status.dart';
 import '../../domain/enums/event_type.dart';
-import '../../domain/repositories/i_agenda_repository.dart';
-import '../../domain/services/i_agenda_notification_service.dart';
-import '../../domain/use_cases/create_event_use_case.dart';
-import '../../domain/use_cases/update_event_use_case.dart';
-import '../../domain/use_cases/delete_event_use_case.dart';
 import '../../domain/rules/event_rules.dart';
-import '../../data/repositories/agenda_repository.dart';
-import '../../data/services/agenda_notification_service.dart';
+import '../../domain/use_cases/create_event_use_case.dart';
+import '../../domain/use_cases/delete_event_use_case.dart';
+import '../../domain/use_cases/update_event_use_case.dart';
+import '../../infra/agenda_domain_adapters.dart';
 import '../widgets/distance_warning_dialog.dart';
+import 'agenda_state.dart';
 
-class _AgendaRepositoryAdapter implements IAgendaRepository {
-  final AgendaRepository _repository;
+part 'agenda_provider.g.dart';
 
-  _AgendaRepositoryAdapter(this._repository);
-
-  @override
-  Future<void> deleteEvent(String id) => _repository.deleteEvent(id);
-
-  @override
-  Future<List<Event>> getAllEvents() => _repository.getAllEvents();
-
-  @override
-  Future<List<VisitSession>> getAllSessions() => _repository.getAllSessions();
-
-  @override
-  Future<List<Event>> getEventsByDateRange(DateTime start, DateTime end) =>
-      _repository.getEventsByDateRange(start, end);
-
-  @override
-  Future<List<Event>> getEventsByDay(DateTime day) =>
-      _repository.getEventsByDay(day);
-
-  @override
-  Future<Event?> getEventById(String id) => _repository.getEventById(id);
-
-  @override
-  Future<Event?> getEventBySessionId(String sessionId) =>
-      _repository.getEventBySessionId(sessionId);
-
-  @override
-  Future<List<VisitSession>> getActiveSessions() =>
-      _repository.getActiveSessions();
-
-  @override
-  Future<List<Event>> getPendingSyncEvents() =>
-      _repository.getPendingSyncEvents();
-
-  @override
-  Future<VisitSession?> getSessionById(String id) =>
-      _repository.getSessionById(id);
-
-  @override
-  Future<List<VisitSession>> getSessionsByEventId(String eventId) =>
-      _repository.getSessionsByEventId(eventId);
-
-  @override
-  Future<void> markEventAsSynced(String id) =>
-      _repository.markEventAsSynced(id);
-
-  @override
-  Future<void> saveEvent(Event event) => _repository.saveEvent(event);
-
-  @override
-  Future<void> saveSession(VisitSession session) =>
-      _repository.saveSession(session);
-
-  @override
-  Future<void> updateEvent(Event event) => _repository.updateEvent(event);
-
-  @override
-  Future<void> updateSession(VisitSession session) =>
-      _repository.updateSession(session);
+@Riverpod(keepAlive: true)
+AgendaRepository agendaRepository(AgendaRepositoryRef ref) {
+  return AgendaRepository();
 }
 
-class _AgendaNotificationServiceAdapter implements IAgendaNotificationService {
-  final AgendaNotificationService _service;
-
-  _AgendaNotificationServiceAdapter(this._service);
-
-  @override
-  Future<void> cancelEventNotifications(String eventId) =>
-      _service.cancelEventNotifications(eventId);
-
-  @override
-  Future<void> scheduleEventNotifications(Event event) =>
-      _service.scheduleEventNotifications(event);
+@Riverpod(keepAlive: true)
+AgendaNotificationService agendaNotificationService(
+  AgendaNotificationServiceRef ref,
+) {
+  return AgendaNotificationService();
 }
 
-/// Estado da Agenda
-class AgendaState {
-  final List<Event> events;
-  final List<VisitSession> sessions;
-  final List<Event> conflicts;
-  final bool isLoading;
-  final String? error;
+/// Provider global da agenda — ADR-008 (Fase 4: @riverpod, substitui StateNotifier).
+@Riverpod(keepAlive: true)
+class Agenda extends _$Agenda {
+  static const _uuid = Uuid();
 
-  const AgendaState({
-    this.events = const [],
-    this.sessions = const [],
-    this.conflicts = const [],
-    this.isLoading = false,
-    this.error,
-  });
+  AgendaRepository get _repository => ref.read(agendaRepositoryProvider);
 
-  AgendaState copyWith({
-    List<Event>? events,
-    List<VisitSession>? sessions,
-    List<Event>? conflicts,
-    bool? isLoading,
-    String? error,
-  }) {
-    return AgendaState(
-      events: events ?? this.events,
-      sessions: sessions ?? this.sessions,
-      conflicts: conflicts ?? this.conflicts,
-      isLoading: isLoading ?? this.isLoading,
-      error: error,
-    );
-  }
-}
+  AgendaNotificationService get _notificationService =>
+      ref.read(agendaNotificationServiceProvider);
 
-/// Provider da Agenda - gerencia eventos e sessões de visita
-class AgendaNotifier extends StateNotifier<AgendaState> {
-  final AgendaRepository _repository;
-  final AgendaNotificationService _notificationService;
-  final _uuid = const Uuid();
-
-  AgendaNotifier(this._repository, this._notificationService)
-    : super(const AgendaState()) {
-    _loadFromDatabase();
-    _initializeNotifications();
+  @override
+  AgendaState build() {
+    Future.microtask(_loadFromDatabase);
+    Future.microtask(() => _notificationService.initialize());
+    return const AgendaState();
   }
 
-  /// Inicializa serviço de notificações
-  Future<void> _initializeNotifications() async {
-    await _notificationService.initialize();
-  }
-
-  /// Carrega eventos e sessões do banco de dados
   Future<void> _loadFromDatabase() async {
     state = state.copyWith(isLoading: true);
 
@@ -167,12 +69,10 @@ class AgendaNotifier extends StateNotifier<AgendaState> {
     }
   }
 
-  /// Recarrega dados do banco
   Future<void> reload() async {
     await _loadFromDatabase();
   }
 
-  /// Cria um novo evento
   Future<Event> createEvent({
     required EventType tipo,
     required String clienteId,
@@ -190,8 +90,8 @@ class AgendaNotifier extends StateNotifier<AgendaState> {
   }) async {
     final result =
         await CreateEventUseCase(
-          _AgendaRepositoryAdapter(_repository),
-          _AgendaNotificationServiceAdapter(_notificationService),
+          AgendaRepositoryAdapter(_repository),
+          AgendaNotificationServiceAdapter(_notificationService),
         ).execute(
           tipo: tipo,
           clienteId: clienteId,
@@ -209,7 +109,6 @@ class AgendaNotifier extends StateNotifier<AgendaState> {
           currentEvents: state.events,
         );
 
-    // Adiciona o evento
     state = state.copyWith(
       events: [...state.events, result.event],
       conflicts: result.conflicts,
@@ -218,7 +117,6 @@ class AgendaNotifier extends StateNotifier<AgendaState> {
     return result.event;
   }
 
-  /// Atualiza um evento existente
   Future<Event> updateEvent({
     required String eventId,
     String? titulo,
@@ -237,8 +135,8 @@ class AgendaNotifier extends StateNotifier<AgendaState> {
 
     final updatedEvent =
         await UpdateEventUseCase(
-          _AgendaRepositoryAdapter(_repository),
-          _AgendaNotificationServiceAdapter(_notificationService),
+          AgendaRepositoryAdapter(_repository),
+          AgendaNotificationServiceAdapter(_notificationService),
         ).execute(
           currentEvent: currentEvent,
           titulo: titulo,
@@ -363,7 +261,6 @@ class AgendaNotifier extends StateNotifier<AgendaState> {
     return null;
   }
 
-  /// Inicia um evento (AGENDADO → EM_ANDAMENTO)
   Future<VisitSession> startEvent(String eventId, String currentUserId) async {
     final event = state.events.firstWhere(
       (e) => e.id == eventId,
@@ -378,7 +275,6 @@ class AgendaNotifier extends StateNotifier<AgendaState> {
 
     final now = DateTime.now();
 
-    // Cria a VisitSession
     final session = VisitSession(
       id: _uuid.v4(),
       eventoId: eventId,
@@ -388,7 +284,6 @@ class AgendaNotifier extends StateNotifier<AgendaState> {
       syncStatus: 'pending',
     );
 
-    // Atualiza o evento
     final updatedEvent = event.copyWith(
       status: EventStatus.emAndamento,
       visitSessionId: session.id,
@@ -396,18 +291,15 @@ class AgendaNotifier extends StateNotifier<AgendaState> {
       syncStatus: 'pending',
     );
 
-    // Salva no banco
     await _repository.updateEvent(updatedEvent);
     await _repository.saveSession(session);
 
-    // Atualiza estado
     _updateEvent(updatedEvent);
     state = state.copyWith(sessions: [...state.sessions, session]);
 
     return session;
   }
 
-  /// Finaliza um evento (EM_ANDAMENTO → FINALIZANDO)
   Future<Event> finalizeEvent(String eventId) async {
     final event = state.events.firstWhere(
       (e) => e.id == eventId,
@@ -432,7 +324,6 @@ class AgendaNotifier extends StateNotifier<AgendaState> {
     return updatedEvent;
   }
 
-  /// Completa um evento (FINALIZANDO → CONCLUIDO)
   Future<Event> completeEvent(String eventId, {String? notasFinais}) async {
     final event = state.events.firstWhere(
       (e) => e.id == eventId,
@@ -447,14 +338,12 @@ class AgendaNotifier extends StateNotifier<AgendaState> {
 
     final now = DateTime.now();
 
-    // Atualiza o evento
     final updatedEvent = event.copyWith(
       status: EventStatus.concluido,
       updatedAt: now,
       syncStatus: 'pending',
     );
 
-    // Fecha a sessão se existir
     if (event.visitSessionId != null) {
       final session = state.sessions.firstWhere(
         (s) => s.id == event.visitSessionId,
@@ -478,7 +367,6 @@ class AgendaNotifier extends StateNotifier<AgendaState> {
     return updatedEvent;
   }
 
-  /// Cancela um evento
   Future<Event> cancelEvent(String eventId) async {
     final event = state.events.firstWhere(
       (e) => e.id == eventId,
@@ -493,7 +381,6 @@ class AgendaNotifier extends StateNotifier<AgendaState> {
 
     final now = DateTime.now();
 
-    // Cancela sessão se estiver ativa
     if (event.visitSessionId != null) {
       final session = state.sessions.firstWhere(
         (s) => s.id == event.visitSessionId,
@@ -519,7 +406,6 @@ class AgendaNotifier extends StateNotifier<AgendaState> {
       syncStatus: 'pending',
     );
 
-    // Cancela notificações
     await _notificationService.cancelEventNotifications(eventId);
 
     await _repository.updateEvent(updatedEvent);
@@ -528,24 +414,16 @@ class AgendaNotifier extends StateNotifier<AgendaState> {
     return updatedEvent;
   }
 
-  /// Soft delete de um evento — sync_status = 'deleted'.
-  ///
-  /// O evento é removido do estado em memória imediatamente.
-  /// [SyncOrchestrator] processa a deletão remota com conectividade.
-  ///
-  /// Lança [StateError] se o evento estiver em andamento com sessão ativa.
   Future<void> deleteEvent(String eventId) async {
     await DeleteEventUseCase(
-      _AgendaRepositoryAdapter(_repository),
+      AgendaRepositoryAdapter(_repository),
     ).execute(eventId);
 
-    // Remove do estado em memória para somêr da listagem imediatamente
     state = state.copyWith(
       events: state.events.where((e) => e.id != eventId).toList(),
     );
   }
 
-  /// Retorna eventos de um período específico
   List<Event> getEventsByDateRange(DateTime start, DateTime end) {
     return state.events.where((event) {
       return event.dataInicioPlanejada.isBefore(end) &&
@@ -553,14 +431,12 @@ class AgendaNotifier extends StateNotifier<AgendaState> {
     }).toList();
   }
 
-  /// Retorna eventos de um dia específico
   List<Event> getEventsByDay(DateTime day) {
     final start = DateTime(day.year, day.month, day.day);
     final end = start.add(const Duration(days: 1));
     return getEventsByDateRange(start, end);
   }
 
-  /// Retorna evento por ID
   Event? getEventById(String id) {
     try {
       return state.events.firstWhere((e) => e.id == id);
@@ -569,7 +445,6 @@ class AgendaNotifier extends StateNotifier<AgendaState> {
     }
   }
 
-  /// Retorna sessão por ID
   VisitSession? getSessionById(String id) {
     try {
       return state.sessions.firstWhere((s) => s.id == id);
@@ -578,12 +453,14 @@ class AgendaNotifier extends StateNotifier<AgendaState> {
     }
   }
 
-  /// Retorna sessões ativas
   List<VisitSession> getActiveSessions() {
     return state.sessions.where((s) => s.isActive).toList();
   }
 
-  /// Atualiza um evento na lista
+  void clearConflicts() {
+    state = state.copyWith(conflicts: []);
+  }
+
   void _updateEvent(Event event) {
     final index = state.events.indexWhere((e) => e.id == event.id);
     if (index != -1) {
@@ -593,7 +470,6 @@ class AgendaNotifier extends StateNotifier<AgendaState> {
     }
   }
 
-  /// Atualiza uma sessão na lista
   void _updateSession(VisitSession session) {
     final index = state.sessions.indexWhere((s) => s.id == session.id);
     if (index != -1) {
@@ -601,11 +477,6 @@ class AgendaNotifier extends StateNotifier<AgendaState> {
       updatedSessions[index] = session;
       state = state.copyWith(sessions: updatedSessions);
     }
-  }
-
-  /// Limpa conflitos detectados
-  void clearConflicts() {
-    state = state.copyWith(conflicts: []);
   }
 
   Event? _resolveDistanceWarningEvent({
@@ -669,21 +540,3 @@ class AgendaNotifier extends StateNotifier<AgendaState> {
 
   double _toRadians(double degrees) => degrees * math.pi / 180;
 }
-
-/// Provider do repositório
-final agendaRepositoryProvider = Provider<AgendaRepository>(
-  (ref) => AgendaRepository(),
-);
-
-/// Provider do serviço de notificações
-final agendaNotificationServiceProvider = Provider<AgendaNotificationService>(
-  (ref) => AgendaNotificationService(),
-);
-
-/// Provider global da Agenda
-final agendaProvider = StateNotifierProvider<AgendaNotifier, AgendaState>(
-  (ref) => AgendaNotifier(
-    ref.watch(agendaRepositoryProvider),
-    ref.watch(agendaNotificationServiceProvider),
-  ),
-);

@@ -209,13 +209,15 @@ class _RoiBlocoWidgetState extends State<RoiBlocoWidget> {
                 decimal: true,
               ),
               style: const TextStyle(
-                color: Colors.white,
+                color: Colors.black87,
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
               ),
               decoration: InputDecoration(
                 hintText: label,
-                hintStyle: const TextStyle(fontSize: 12, color: Colors.white38),
+                hintStyle: const TextStyle(fontSize: 12, color: Colors.black38),
+                filled: true,
+                fillColor: Colors.white,
                 border: InputBorder.none,
                 isDense: true,
                 contentPadding: const EdgeInsets.symmetric(vertical: 8),

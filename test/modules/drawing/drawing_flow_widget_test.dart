@@ -138,6 +138,43 @@ void main() {
       controller.dispose();
     });
 
+    testWidgets(
+      '✅ DrawingSheet anexa ao ScrollController externo quando fornecido',
+      (WidgetTester tester) async {
+        tester.view.physicalSize = const Size(800, 1200);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        final controller = DrawingController(
+          repository: MockDrawingRepository(),
+        );
+        final scrollController = ScrollController();
+        addTearDown(scrollController.dispose);
+
+        await tester.pumpWidget(
+          ProviderScope(
+            child: MaterialApp(
+              home: Scaffold(
+                body: SizedBox(
+                  height: 700,
+                  child: DrawingSheet(
+                    controller: controller,
+                    scrollController: scrollController,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(scrollController.hasClients, isTrue);
+
+        controller.dispose();
+      },
+    );
+
     testWidgets('🚪 Bottom Sheet permanece aberto ao selecionar ferramenta', (
       WidgetTester tester,
     ) async {
@@ -362,7 +399,7 @@ void main() {
       controller.dispose();
     });
 
-    testWidgets('✏️ Edição expõe botão salvar e retorna para seleção', (
+    testWidgets('✏️ Edição salva, limpa seleção e fecha o fluxo', (
       WidgetTester tester,
     ) async {
       tester.view.physicalSize = const Size(800, 2000);
@@ -372,6 +409,7 @@ void main() {
 
       final repository = MockDrawingRepository();
       final controller = DrawingController(repository: repository);
+      var closeCount = 0;
 
       final feature = DrawingFeature(
         id: 'field-edit',
@@ -411,7 +449,10 @@ void main() {
           child: MaterialApp(
             home: Scaffold(
               body: SingleChildScrollView(
-                child: DrawingSheet(controller: controller),
+                child: DrawingSheet(
+                  controller: controller,
+                  onClose: () => closeCount++,
+                ),
               ),
             ),
           ),
@@ -425,8 +466,9 @@ void main() {
       await tester.tap(find.byKey(const Key('drawing_edit_save_button')));
       await tester.pumpAndSettle();
 
-      expect(controller.currentState, DrawingState.selected);
-      expect(find.text('Sair da seleção'), findsOneWidget);
+      expect(controller.currentState, DrawingState.idle);
+      expect(controller.selectedFeature, isNull);
+      expect(closeCount, 1);
 
       controller.dispose();
     });

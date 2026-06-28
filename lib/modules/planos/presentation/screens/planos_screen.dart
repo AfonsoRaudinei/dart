@@ -8,21 +8,14 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import 'package:soloforte_app/core/constants/layout_constants.dart';
+import 'package:soloforte_app/core/router/app_routes.dart';
 import '../../domain/enums/plano_tipo.dart';
 import '../providers/plano_providers.dart';
 
 class PlanosScreen extends StatelessWidget {
   const PlanosScreen({super.key});
-
-  Future<void> _abrirSite() async {
-    final uri = Uri.parse('https://soloforte.com/planos');
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -48,10 +41,14 @@ class PlanosScreen extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.open_in_browser, size: 64, color: Color(0xFF32D74B)),
+                const Icon(
+                  Icons.workspace_premium_rounded,
+                  size: 64,
+                  color: Color(0xFF32D74B),
+                ),
                 const SizedBox(height: 24),
                 const Text(
-                  'Gerencie seu plano em',
+                  'Plano SoloForte',
                   style: TextStyle(
                     fontFamily: 'Inter',
                     fontSize: 18,
@@ -61,7 +58,7 @@ class PlanosScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 const Text(
-                  'soloforte.com/planos',
+                  'Status da assinatura',
                   style: TextStyle(
                     fontFamily: 'Inter',
                     fontSize: 22,
@@ -71,7 +68,7 @@ class PlanosScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 32),
                 const Text(
-                  'Acesse pelo navegador para assinar ou renovar seu plano.',
+                  'No iOS, este app nao inicia pagamentos externos. Planos ativos continuam sendo aplicados automaticamente na conta.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontFamily: 'Inter',
@@ -79,30 +76,18 @@ class PlanosScreen extends StatelessWidget {
                     color: Color(0xFF8E8E93),
                   ),
                 ),
-                const SizedBox(height: 40),
-                FilledButton.icon(
-                  icon: const Icon(Icons.open_in_browser),
-                  label: const Text('Abrir soloforte.com'),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: const Color(0xFF32D74B),
-                    foregroundColor: Colors.black,
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                    textStyle: const TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  onPressed: _abrirSite,
-                ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 24),
                 Consumer(
                   builder: (context, ref, _) {
                     final planoAsync = ref.watch(planoAtivoProvider);
                     final plano = planoAsync.valueOrNull;
                     if (plano != null && plano.ativo) {
-                      final planoNome = plano.plano.name[0].toUpperCase() + plano.plano.name.substring(1);
-                      final dias = plano.expiraEm.difference(DateTime.now()).inDays;
+                      final planoNome =
+                          plano.plano.name[0].toUpperCase() +
+                          plano.plano.name.substring(1);
+                      final dias = plano.expiraEm
+                          .difference(DateTime.now())
+                          .inDays;
                       return Text(
                         'Plano atual: $planoNome · ${dias > 0 ? '$dias dias restantes' : 'Expira hoje'}',
                         style: const TextStyle(
@@ -115,6 +100,21 @@ class PlanosScreen extends StatelessWidget {
                     }
                     return const SizedBox.shrink();
                   },
+                ),
+                const SizedBox(height: 32),
+                TextButton(
+                  onPressed: () {
+                    HapticFeedback.lightImpact();
+                    context.go(AppRoutes.map);
+                  },
+                  child: const Text(
+                    'Voltar ao mapa',
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 15,
+                      color: Color(0xFF32D74B),
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -179,7 +179,7 @@ class PlanosScreen extends StatelessWidget {
     return GestureDetector(
       onTap: () {
         HapticFeedback.lightImpact();
-        context.go('/planos/indicacoes');
+        context.go(AppRoutes.planosIndicacoes);
       },
       child: Container(
         padding: const EdgeInsets.all(20),
@@ -254,7 +254,7 @@ class _PlanCard extends StatelessWidget {
     return GestureDetector(
       onTap: () {
         HapticFeedback.selectionClick();
-        context.go('/planos/pagamento', extra: {'plano': plano.name});
+        context.go(AppRoutes.planosPagamento, extra: {'plano': plano.name});
       },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),

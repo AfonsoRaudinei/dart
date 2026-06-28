@@ -1,18 +1,21 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../../core/infra/preferences_service.dart';
 import '../../../../core/utils/app_logger.dart';
 import '../../domain/enums/agenda_view.dart';
 import '../../domain/enums/event_type.dart';
 import '../../domain/enums/event_status.dart';
 
-/// Filtros disponíveis para a agenda
-class AgendaFilters {
+part 'agenda_filters_provider.g.dart';
+
+/// Critérios de filtro da agenda (DTO imutável).
+class AgendaFilterCriteria {
   final Set<EventType> types;
   final Set<EventStatus> statuses;
   final String? clienteId;
   final String? fazendaId;
 
-  const AgendaFilters({
+  const AgendaFilterCriteria({
     this.types = const {},
     this.statuses = const {},
     this.clienteId,
@@ -25,7 +28,7 @@ class AgendaFilters {
       clienteId != null ||
       fazendaId != null;
 
-  AgendaFilters copyWith({
+  AgendaFilterCriteria copyWith({
     Set<EventType>? types,
     Set<EventStatus>? statuses,
     String? clienteId,
@@ -33,7 +36,7 @@ class AgendaFilters {
     bool clearCliente = false,
     bool clearFazenda = false,
   }) {
-    return AgendaFilters(
+    return AgendaFilterCriteria(
       types: types ?? this.types,
       statuses: statuses ?? this.statuses,
       clienteId: clearCliente ? null : (clienteId ?? this.clienteId),
@@ -41,11 +44,8 @@ class AgendaFilters {
     );
   }
 
-  AgendaFilters clear() {
-    return const AgendaFilters();
-  }
+  AgendaFilterCriteria clear() => const AgendaFilterCriteria();
 
-  // Serialização para SharedPreferences
   Map<String, dynamic> toJson() {
     return {
       'types': types.map((t) => t.name).toList(),
@@ -55,8 +55,8 @@ class AgendaFilters {
     };
   }
 
-  factory AgendaFilters.fromJson(Map<String, dynamic> json) {
-    return AgendaFilters(
+  factory AgendaFilterCriteria.fromJson(Map<String, dynamic> json) {
+    return AgendaFilterCriteria(
       types:
           (json['types'] as List<dynamic>?)
               ?.map((t) => EventType.values.byName(t as String))
@@ -73,16 +73,19 @@ class AgendaFilters {
   }
 }
 
-/// Notifier para gerenciar filtros
-class AgendaFiltersNotifier extends StateNotifier<AgendaFilters> {
-  AgendaFiltersNotifier(this._prefs) : super(const AgendaFilters()) {
-    _loadFromPreferences();
-  }
-
-  final PreferencesService _prefs;
+/// Filtros persistidos da agenda — ADR-008 (Fase 4: @riverpod).
+@Riverpod(keepAlive: true)
+class AgendaFilters extends _$AgendaFilters {
   static const _prefsKey = 'agenda_filters';
 
-  /// Carrega filtros salvos
+  PreferencesService get _prefs => ref.read(preferencesServiceProvider);
+
+  @override
+  AgendaFilterCriteria build() {
+    Future.microtask(_loadFromPreferences);
+    return const AgendaFilterCriteria();
+  }
+
   Future<void> _loadFromPreferences() async {
     try {
       final json = _prefs.getString(_prefsKey);
@@ -101,10 +104,8 @@ class AgendaFiltersNotifier extends StateNotifier<AgendaFilters> {
     }
   }
 
-  /// Salva filtros
   Future<void> _saveToPreferences() async {
     try {
-      // TODO: Serialize and save
       await _prefs.setString(_prefsKey, '{}');
     } catch (e) {
       AppLogger.warning(
@@ -115,7 +116,6 @@ class AgendaFiltersNotifier extends StateNotifier<AgendaFilters> {
     }
   }
 
-  /// Toggle tipo
   void toggleType(EventType type) {
     final newTypes = Set<EventType>.from(state.types);
     if (newTypes.contains(type)) {
@@ -127,7 +127,6 @@ class AgendaFiltersNotifier extends StateNotifier<AgendaFilters> {
     _saveToPreferences();
   }
 
-  /// Toggle status
   void toggleStatus(EventStatus status) {
     final newStatuses = Set<EventStatus>.from(state.statuses);
     if (newStatuses.contains(status)) {
@@ -139,7 +138,6 @@ class AgendaFiltersNotifier extends StateNotifier<AgendaFilters> {
     _saveToPreferences();
   }
 
-  /// Filtrar por cliente
   void setCliente(String? clienteId) {
     state = state.copyWith(
       clienteId: clienteId,
@@ -148,7 +146,6 @@ class AgendaFiltersNotifier extends StateNotifier<AgendaFilters> {
     _saveToPreferences();
   }
 
-  /// Filtrar por fazenda
   void setFazenda(String? fazendaId) {
     state = state.copyWith(
       fazendaId: fazendaId,
@@ -157,18 +154,11 @@ class AgendaFiltersNotifier extends StateNotifier<AgendaFilters> {
     _saveToPreferences();
   }
 
-  /// Limpar todos os filtros
   void clearAll() {
     state = state.clear();
     _saveToPreferences();
   }
 }
-
-/// Provider de filtros
-final agendaFiltersProvider =
-    StateNotifierProvider<AgendaFiltersNotifier, AgendaFilters>(
-      (ref) => AgendaFiltersNotifier(ref.read(preferencesServiceProvider)),
-    );
 
 final agendaViewProvider = StateProvider<AgendaView>(
   (ref) => AgendaView.calendario,

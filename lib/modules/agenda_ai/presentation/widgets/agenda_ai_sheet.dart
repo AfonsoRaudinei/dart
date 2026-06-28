@@ -2,15 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import 'package:soloforte_app/core/contracts/i_client_lookup_provider.dart';
+import 'package:soloforte_app/core/contracts/agenda_ai_recommendation_context.dart';
+import 'package:soloforte_app/core/contracts/i_agenda_ai_recommendation_context_lookup_provider.dart';
+import 'package:soloforte_app/core/contracts/i_agenda_ai_visit_writer_provider.dart';
 import 'package:soloforte_app/core/feature_flags/feature_flag_analytics.dart';
 import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
-import 'package:soloforte_app/modules/agenda/domain/enums/event_type.dart';
-import 'package:soloforte_app/modules/agenda/domain/entities/visit.dart';
-import 'package:soloforte_app/modules/agenda/presentation/providers/agenda_provider.dart';
 import 'package:soloforte_app/modules/agenda_ai/data/services/agenda_ai_service.dart';
-import 'package:soloforte_app/modules/carteira/domain/entities/carteira_meta.dart';
-import 'package:soloforte_app/modules/carteira/presentation/providers/carteira_providers.dart';
 
 Future<void> showAgendaAiSheet(BuildContext context) {
   return showSoloForteSheet<void>(
@@ -108,6 +105,12 @@ class _AgendaAiSheetState extends ConsumerState<_AgendaAiSheet> {
         });
         return;
       }
+      if (e is StateError) {
+        setState(() {
+          _error = e.message;
+        });
+        return;
+      }
 
       FeatureFlagAnalytics.trackAgendaAiError(
         errorType: 'recommendation_load_error',
@@ -134,70 +137,32 @@ class _AgendaAiSheetState extends ConsumerState<_AgendaAiSheet> {
       );
     }
 
-    final repo = ref.read(carteiraRepositoryProvider);
-    final safra = await ref.read(safraAtivaProvider.future);
-    if (safra == null) {
-      throw const _AgendaAiUserMessageException(
-        'Crie uma safra ativa para habilitar sugestões da IA.',
-      );
-    }
+    final contextSnapshot = await ref
+        .read(agendaAiRecommendationContextLookupProvider)
+        .buildForUser(userId);
 
-    final clients = await ref.read(clientLookupProvider).listAtivos();
-    if (clients.isEmpty) {
-      throw const _AgendaAiUserMessageException(
-        'Cadastre ao menos 1 cliente para receber sugestões da IA.',
-      );
-    }
-
-    final metas = await repo.getMetasBySafra(safra.id, userId);
-    if (metas.isEmpty) {
-      throw const _AgendaAiUserMessageException(
-        'Configure metas da carteira para liberar recomendações da IA.',
-      );
-    }
-
-    final target = await _selectTargetMeta(repo, metas, safra.id, userId);
-    final targetAchieved = await repo.getRealizadoBySafraCategoria(
-      safra.id,
-      target.categoriaId,
-      userId,
-    );
-
-    final registros = await ref.read(todosRegistrosProvider(userId).future);
-    final targetRegistros = registros
-        .where((r) => r.categoriaId == target.categoriaId)
-        .where((r) => r.percentualFechado < 100)
-        .toList(growable: false);
-
-    final byId = {for (final c in clients) c.id: c};
-
-    final events = ref.read(agendaProvider).events;
-
-    final opportunities = targetRegistros
-        .map((r) {
-          final client = byId[r.clienteId];
-          final lastVisit = _lastVisitAt(events, r.clienteId);
-          return {
-            'clientId': r.clienteId,
-            'clientName': client?.name ?? 'Cliente',
+    final opportunities = contextSnapshot.opportunities
+        .map(
+          (item) => {
+            'clientId': item.clientId,
+            'clientName': item.clientName,
             'city': '',
             'location': null,
-            'categoryId': r.categoriaId,
-            'categoryProgressPercent': r.percentualFechado,
-            'categoryAchievedValue':
-                (target.quantidade * r.percentualFechado) / 100.0,
-            'lastVisitAt': lastVisit?.toUtc().toIso8601String(),
-          };
-        })
+            'categoryId': item.categoryId,
+            'categoryProgressPercent': item.categoryProgressPercent,
+            'categoryAchievedValue': item.categoryAchievedValue,
+            'lastVisitAt': item.lastVisitAt?.toUtc().toIso8601String(),
+          },
+        )
         .toList(growable: false);
 
     return {
       'consultantId': userId,
       'currentCity': null,
       'currentLocation': null,
-      'targetCategoryId': target.categoriaId,
-      'annualTargetValue': target.quantidade,
-      'annualAchievedValue': targetAchieved,
+      'targetCategoryId': contextSnapshot.targetCategoryId,
+      'annualTargetValue': contextSnapshot.annualTargetValue,
+      'annualAchievedValue': contextSnapshot.annualAchievedValue,
       'opportunities': opportunities,
       'policy': {
         'topN': 1,
@@ -209,43 +174,6 @@ class _AgendaAiSheetState extends ConsumerState<_AgendaAiSheet> {
       if (chatMessage != null && chatMessage.trim().isNotEmpty)
         'chatMessage': chatMessage.trim(),
     };
-  }
-
-  Future<CarteiraMeta> _selectTargetMeta(
-    dynamic repo,
-    List<CarteiraMeta> metas,
-    String safraId,
-    String userId,
-  ) async {
-    CarteiraMeta? selected;
-    double maxGap = -1;
-
-    for (final m in metas) {
-      final achieved = await repo.getRealizadoBySafraCategoria(
-        safraId,
-        m.categoriaId,
-        userId,
-      );
-      final gap = (m.quantidade - achieved).clamp(0, double.infinity);
-      if (gap > maxGap) {
-        maxGap = gap.toDouble();
-        selected = m;
-      }
-    }
-
-    return selected ?? metas.first;
-  }
-
-  DateTime? _lastVisitAt(List<dynamic> events, String clienteId) {
-    DateTime? last;
-    for (final e in events) {
-      if (e.clienteId != clienteId) continue;
-      final dt = e.dataInicioPlanejada as DateTime;
-      if (last == null || dt.isAfter(last)) {
-        last = dt;
-      }
-    }
-    return last;
   }
 
   Future<void> _sendChat() async {
@@ -298,17 +226,16 @@ class _AgendaAiSheetState extends ConsumerState<_AgendaAiSheet> {
       final start = now.add(const Duration(hours: 1));
       final end = start.add(const Duration(hours: 1));
 
-      await ref
-          .read(agendaProvider.notifier)
-          .createEvent(
-            tipo: EventType.visitaTecnica,
-            clienteId: rec['clientId'] as String,
-            titulo: 'Visita sugerida IA • ${rec['clientName'] ?? 'Cliente'}',
-            dataInicioPlanejada: start,
-            dataFimPlanejada: end,
-            currentUserId: Supabase.instance.client.auth.currentUser?.id,
-            priority: VisitPriority.normal,
-          );
+      await ref.read(agendaAiVisitWriterProvider).createSuggestedVisit(
+        AgendaAiSuggestedVisitRequest(
+          clientId: rec['clientId'] as String,
+          clientName: rec['clientName'] as String? ?? 'Cliente',
+          titulo: 'Visita sugerida IA • ${rec['clientName'] ?? 'Cliente'}',
+          dataInicioPlanejada: start,
+          dataFimPlanejada: end,
+          currentUserId: Supabase.instance.client.auth.currentUser?.id,
+        ),
+      );
 
       if (!mounted) return;
       final userId = Supabase.instance.client.auth.currentUser?.id;

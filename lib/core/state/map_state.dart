@@ -77,13 +77,17 @@ class ActiveLayer extends _$ActiveLayer {
 // State for markers toggle
 @Riverpod(keepAlive: true)
 class ShowMarkers extends _$ShowMarkers {
+  static const _kKey = 'map_show_markers_v1';
+
   @override
   bool build() {
-    return true;
+    final prefs = ref.read(preferencesServiceProvider);
+    return prefs.getBool(_kKey) ?? true;
   }
 
   void toggle() {
     state = !state;
+    ref.read(preferencesServiceProvider).setBool(_kKey, state);
   }
 }
 

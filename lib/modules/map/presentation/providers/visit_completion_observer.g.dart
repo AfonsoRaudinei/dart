@@ -7,7 +7,7 @@ part of 'visit_completion_observer.dart';
 // **************************************************************************
 
 String _$visitCompletionObserverHash() =>
-    r'de533540a1c4ff74de31220546eb6e6c15a0d1f9';
+    r'fd14dfe6906b34ea2a99f6e15c456af366913353';
 
 /// Orquestrador: VisitSession finalizada → RelatórioTécnico gerado — ADR-009
 ///

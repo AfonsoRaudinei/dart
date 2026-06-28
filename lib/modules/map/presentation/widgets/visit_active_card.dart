@@ -1,20 +1,23 @@
 import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:soloforte_app/modules/consultoria/clients/domain/agronomic_models.dart';
-import 'package:soloforte_app/modules/consultoria/clients/domain/client.dart';
-import 'package:soloforte_app/modules/consultoria/clients/presentation/providers/clients_providers.dart';
-import 'package:soloforte_app/modules/ndvi/presentation/widgets/ndvi_talhao_sheet.dart';
-import 'package:soloforte_app/modules/visitas/presentation/controllers/visit_controller.dart';
+import 'package:soloforte_app/core/contracts/i_ndvi_field_presenter_provider.dart';
+import 'package:soloforte_app/core/contracts/i_visit_client_lookup_provider.dart';
+import 'package:soloforte_app/core/contracts/visit_client_hierarchy.dart';
 import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
+import 'package:soloforte_app/modules/visitas/presentation/controllers/visit_controller.dart';
 import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
+
+final _visitClientHierarchyProvider = FutureProvider.autoDispose
+    .family<VisitClientHierarchy?, String>((ref, clientId) {
+      return ref.watch(visitClientLookupProvider).getClientHierarchy(clientId);
+    });
 
 /// Card compacto de visita ativa — canto superior esquerdo do mapa.
 ///
-/// Exibe: Produtor (fixo) · Fazenda (editável) · Talhão (editável).
-/// Visível apenas enquanto houver sessão ativa.
-/// Design: glassmorphism premium iOS — minimalista, sem ocupar a tela.
+/// ADR-045: dados de cliente via IVisitClientLookup; NDVI via INdviFieldPresenter.
 class VisitActiveCard extends ConsumerWidget {
   const VisitActiveCard({super.key});
 
@@ -23,23 +26,23 @@ class VisitActiveCard extends ConsumerWidget {
     final sessionAsync = ref.watch(visitControllerProvider);
     final session = sessionAsync.valueOrNull;
 
-    // Sem sessão → widget invisível (nada renderizado)
     if (session == null) return const SizedBox.shrink();
 
-    final clientAsync = ref.watch(clientDetailProvider(session.producerId));
+    final hierarchyAsync = ref.watch(
+      _visitClientHierarchyProvider(session.producerId),
+    );
 
-    return clientAsync.when(
+    return hierarchyAsync.when(
       loading: () => _GlassChip(child: _LoadingRow()),
       error: (_, __) => const SizedBox.shrink(),
-      data: (client) {
-        if (client == null) return const SizedBox.shrink();
+      data: (hierarchy) {
+        if (hierarchy == null) return const SizedBox.shrink();
 
-        // Resolve fazenda e talhão a partir do areaId atual
-        Farm? currentFarm = client.farms
+        VisitFarmDetailSummary? currentFarm = hierarchy.farms
             .where((farm) => farm.id == session.farmId)
             .firstOrNull;
-        Talhao? currentTalhao;
-        for (final farm in client.farms) {
+        VisitFieldDetailSummary? currentTalhao;
+        for (final farm in hierarchy.farms) {
           for (final talhao in farm.fields) {
             if (talhao.id == session.areaId) {
               currentFarm = farm;
@@ -59,7 +62,6 @@ class VisitActiveCard extends ConsumerWidget {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // ── Linha 1: ponto verde + nome do produtor (fixo) ──
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -83,7 +85,7 @@ class VisitActiveCard extends ConsumerWidget {
                     const SizedBox(width: 6),
                     Flexible(
                       child: Text(
-                        client.name,
+                        hierarchy.name,
                         style: const TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
@@ -96,8 +98,6 @@ class VisitActiveCard extends ConsumerWidget {
                     ),
                   ],
                 ),
-
-                // ── Divider fio de cabelo ──
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 5),
                   child: Container(
@@ -105,23 +105,18 @@ class VisitActiveCard extends ConsumerWidget {
                     color: Colors.black.withValues(alpha: 0.08),
                   ),
                 ),
-
-                // ── Linha 2: Fazenda (editável) ──
                 _EditableRow(
                   label: currentFarm?.name ?? '—',
                   icon: Icons.landscape_outlined,
                   onTap: () => _showFarmSheet(
                     context,
                     ref,
-                    client,
+                    hierarchy,
                     currentFarm,
                     currentTalhao,
                   ),
                 ),
-
                 const SizedBox(height: 3),
-
-                // ── Linha 3: Talhão (editável) ──
                 _EditableRow(
                   label: currentTalhao?.name ?? '—',
                   icon: Icons.grid_view_rounded,
@@ -134,29 +129,18 @@ class VisitActiveCard extends ConsumerWidget {
                           currentTalhao,
                         ),
                 ),
-
-                // ── Botão NDVI (condicional) ──
                 if (session.areaId != null)
                   Padding(
                     padding: const EdgeInsets.only(top: 8),
                     child: OutlinedButton.icon(
-                      onPressed: () => showSoloForteSheet(
-                        context: context,
-                        isScrollControlled: true,
-                        backgroundColor: Theme.of(context).colorScheme.surface,
-                        showDragHandle: false,
-                        useSafeArea: false,
-                        shape: const RoundedRectangleBorder(
-                          borderRadius: BorderRadius.vertical(
-                            top: Radius.circular(16),
+                      onPressed: () => ref
+                          .read(ndviFieldPresenterProvider)
+                          .showTalhaoSheet(
+                            context,
+                            fieldId: session.areaId!,
+                            fieldName: currentTalhao?.name ?? session.areaId!,
+                            areaHa: currentTalhao?.areaHa,
                           ),
-                        ),
-                        builder: (_) => NdviTalhaoSheet(
-                          fieldId: session.areaId!,
-                          fieldName: currentTalhao?.name ?? session.areaId!,
-                          areaHa: currentTalhao?.areaHa,
-                        ),
-                      ),
                       icon: const Icon(Icons.satellite_alt_outlined, size: 16),
                       label: const Text('NDVI'),
                     ),
@@ -169,14 +153,12 @@ class VisitActiveCard extends ConsumerWidget {
     );
   }
 
-  // ── Bottom sheet: selecionar fazenda ─────────────────────────────────────
-
   void _showFarmSheet(
     BuildContext context,
     WidgetRef ref,
-    Client client,
-    Farm? currentFarm,
-    Talhao? currentTalhao,
+    VisitClientHierarchy hierarchy,
+    VisitFarmDetailSummary? currentFarm,
+    VisitFieldDetailSummary? currentTalhao,
   ) {
     HapticFeedback.lightImpact();
     showSoloForteSheet(
@@ -189,15 +171,14 @@ class VisitActiveCard extends ConsumerWidget {
       clipBehavior: Clip.none,
       builder: (_) => _SelectionSheet(
         title: 'Selecionar Fazenda',
-        items: client.farms.map((f) => f.name).toList(),
+        items: hierarchy.farms.map((f) => f.name).toList(),
         selectedIndex: currentFarm == null
             ? null
-            : client.farms.indexWhere((f) => f.id == currentFarm.id),
+            : hierarchy.farms.indexWhere((f) => f.id == currentFarm.id),
         onSelect: (index) async {
-          final newFarm = client.farms[index];
+          final newFarm = hierarchy.farms[index];
           final controller = ref.read(visitControllerProvider.notifier);
           await controller.updateFarm(newFarm.id);
-          // Seleciona o primeiro talhão da nova fazenda automaticamente
           if (newFarm.fields.isNotEmpty) {
             await controller.updateArea(
               newFarm.fields.first.id,
@@ -209,13 +190,11 @@ class VisitActiveCard extends ConsumerWidget {
     );
   }
 
-  // ── Bottom sheet: selecionar talhão ──────────────────────────────────────
-
   void _showTalhaoSheet(
     BuildContext context,
     WidgetRef ref,
-    Farm farm,
-    Talhao? currentTalhao,
+    VisitFarmDetailSummary farm,
+    VisitFieldDetailSummary? currentTalhao,
   ) {
     HapticFeedback.lightImpact();
     showSoloForteSheet(
@@ -242,8 +221,6 @@ class VisitActiveCard extends ConsumerWidget {
     );
   }
 }
-
-// ── Componente: card de vidro compacto ────────────────────────────────────
 
 class _GlassChip extends StatelessWidget {
   final Widget child;
@@ -279,8 +256,6 @@ class _GlassChip extends StatelessWidget {
     );
   }
 }
-
-// ── Componente: linha com texto e ícone de edição ────────────────────────
 
 class _EditableRow extends StatelessWidget {
   final String label;
@@ -332,8 +307,6 @@ class _EditableRow extends StatelessWidget {
   }
 }
 
-// ── Componente: indicador de carregamento ────────────────────────────────
-
 class _LoadingRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -361,8 +334,6 @@ class _LoadingRow extends StatelessWidget {
   }
 }
 
-// ── Bottom sheet de seleção compacto ─────────────────────────────────────
-
 class _SelectionSheet extends StatelessWidget {
   final String title;
   final List<String> items;
@@ -388,7 +359,6 @@ class _SelectionSheet extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Handle
             Center(
               child: Container(
                 margin: const EdgeInsets.only(top: 10, bottom: 8),
@@ -400,7 +370,6 @@ class _SelectionSheet extends StatelessWidget {
                 ),
               ),
             ),
-            // Título
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
               child: Text(
@@ -412,7 +381,6 @@ class _SelectionSheet extends StatelessWidget {
                 ),
               ),
             ),
-            // Lista de opções
             ListView.separated(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),

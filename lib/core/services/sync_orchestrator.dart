@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:soloforte_app/core/services/connectivity_service.dart';
+import 'package:soloforte_app/core/services/sync_module_runner.dart';
 import 'package:soloforte_app/core/utils/app_logger.dart';
 
 enum SyncPriority {
@@ -13,37 +14,43 @@ enum SyncPriority {
 abstract class SyncModule {
   String get name;
   Future<void> sync();
+
+  /// Tier 0 executa antes dos demais (ex.: clientes/fazendas).
+  /// Tiers > 0 rodam em paralelo dentro do mesmo tier (Fase 6).
+  int get syncTier => 1;
 }
 
 class SyncOrchestrator extends ChangeNotifier {
+  SyncOrchestrator(this._ref, {bool enableObservers = true}) {
+    if (enableObservers) {
+      _initObservers();
+    }
+  }
+
   final Ref _ref;
   final List<SyncModule> _modules = [];
   bool _isSyncing = false;
+  bool _pendingImmediateSync = false;
   Timer? _periodicTimer;
 
   // 🛡 LIFECYCLE: Flag para evitar notifyListeners() após dispose().
-  // Future.delayed(3s) no finally de triggerSync() pode executar
-  // depois que o ChangeNotifier foi descartado, causando StateError.
   bool _isDisposed = false;
 
   // Monitoring
   double _progress = 0;
   String? _lastError;
-
-  SyncOrchestrator(this._ref) {
-    _initObservers();
-  }
+  List<SyncModuleResult> _lastResults = const [];
 
   bool get isSyncing => _isSyncing;
   double get progress => _progress;
   String? get lastError => _lastError;
+  List<SyncModuleResult> get lastResults => _lastResults;
 
   void registerModule(SyncModule module) {
     _modules.add(module);
   }
 
   void _initObservers() {
-    // Listen to connectivity changes
     _ref.listen<AsyncValue<bool>>(connectivityStateProvider, (previous, next) {
       next.whenData((isConnected) {
         if (isConnected) {
@@ -52,66 +59,81 @@ class SyncOrchestrator extends ChangeNotifier {
       });
     });
 
-    // periodic background sync
     _periodicTimer = Timer.periodic(const Duration(minutes: 15), (_) {
       triggerSync(SyncPriority.background);
     });
   }
 
-  Future<void> triggerSync(SyncPriority priority) async {
-    if (_isSyncing && priority != SyncPriority.immediate) return;
+  void _notifyIfAlive() {
+    if (!_isDisposed) {
+      notifyListeners();
+    }
+  }
 
-    // Connectivity check
+  Future<void> triggerSync(SyncPriority priority) async {
+    if (_isSyncing) {
+      if (priority == SyncPriority.immediate) {
+        _pendingImmediateSync = true;
+      }
+      return;
+    }
+
     final connectivity = _ref.read(connectivityServiceProvider);
     final isConnected = await connectivity.isConnected;
-    if (!isConnected) return;
+    if (!isConnected || _isDisposed) return;
 
     _isSyncing = true;
     _progress = 0;
     _lastError = null;
-    notifyListeners();
+    _lastResults = const [];
+    _notifyIfAlive();
 
     try {
-      // Execute registered modules
-      int completed = 0;
       if (_modules.isEmpty) return;
 
-      for (final module in _modules) {
-        try {
-          await module.sync();
-        } catch (e) {
-          AppLogger.warning(
-            'Sync Error in ${module.name}',
-            tag: 'SyncOrchestrator',
-            error: e,
-          );
-          _lastError = 'Erro em ${module.name}: $e';
-        }
-        completed++;
-        _progress = completed / _modules.length;
-        notifyListeners();
+      _lastResults = await runSyncModulesByTier(
+        List<SyncModule>.unmodifiable(_modules),
+        onProgress: (completed, total) {
+          if (_isDisposed) return;
+          _progress = completed / total;
+          _notifyIfAlive();
+        },
+      );
+
+      if (_isDisposed) return;
+
+      final failures = _lastResults.where((result) => !result.success);
+      if (failures.isNotEmpty) {
+        final first = failures.first;
+        AppLogger.warning(
+          'Sync Error in ${first.name}',
+          tag: 'SyncOrchestrator',
+          error: first.error,
+        );
+        _lastError = 'Erro em ${first.name}: ${first.error}';
       }
     } finally {
+      if (_isDisposed) return;
+
       _isSyncing = false;
       _progress = 1.0;
-      notifyListeners();
+      _notifyIfAlive();
 
-      // Reset progress after a delay
       Future.delayed(const Duration(seconds: 3), () {
-        // 🛡 LIFECYCLE GUARD: ChangeNotifier pode ter sido descartado
-        // antes do delay completar. Chamar notifyListeners() após
-        // dispose() lanca StateError.
         if (_isDisposed || _isSyncing) return;
         _progress = 0;
-        notifyListeners();
+        _notifyIfAlive();
       });
+
+      if (_pendingImmediateSync) {
+        _pendingImmediateSync = false;
+        scheduleMicrotask(() => triggerSync(SyncPriority.immediate));
+      }
     }
   }
 
   @override
   void dispose() {
-    // 🛡 Marcar como disposed ANTES de cancelar o timer
-    // para que qualquer callback pendente seja descartado.
     _isDisposed = true;
     _periodicTimer?.cancel();
     super.dispose();

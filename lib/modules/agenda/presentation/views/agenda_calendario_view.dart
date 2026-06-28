@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:soloforte_app/core/router/app_routes.dart';
 import '../../domain/entities/event.dart';
 import '../providers/agenda_provider.dart';
 import '../providers/agenda_filters_provider.dart';
@@ -55,9 +56,7 @@ class _AgendaCalendarioViewState extends ConsumerState<AgendaCalendarioView> {
                         month: _currentMonth,
                         eventsByDay: eventsByDay,
                         onDayTap: (day) {
-                          context.push(
-                            '/agenda/day?date=${day.toIso8601String()}',
-                          );
+                          context.push(AppRoutes.agendaDay(day));
                         },
                       ),
                       const SizedBox(height: 24),
@@ -253,7 +252,7 @@ class _AgendaCalendarioViewState extends ConsumerState<AgendaCalendarioView> {
     return grouped;
   }
 
-  List<Event> _applyFilters(List<Event> events, AgendaFilters filters) {
+  List<Event> _applyFilters(List<Event> events, AgendaFilterCriteria filters) {
     if (!filters.hasActiveFilters) return events;
     return events.where((event) {
       if (filters.types.isNotEmpty && !filters.types.contains(event.tipo)) {

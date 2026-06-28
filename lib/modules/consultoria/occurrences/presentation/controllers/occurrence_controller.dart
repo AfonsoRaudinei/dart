@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:convert';
 import 'package:soloforte_app/core/contracts/i_visit_session_lookup_provider.dart';
+import 'package:soloforte_app/core/contracts/i_occurrence_access_reader_provider.dart';
 import '../../domain/occurrence.dart';
 import '../../data/occurrence_repository.dart';
 import 'package:uuid/uuid.dart';
@@ -13,7 +14,11 @@ final occurrencesListProvider = FutureProvider.autoDispose<List<Occurrence>>((
   ref,
 ) async {
   final repo = ref.watch(occurrenceRepositoryProvider);
-  return repo.getAllOccurrences();
+  final activeClientIds = await ref
+      .watch(occurrenceAccessReaderProvider)
+      .loadActiveClientIds();
+  if (activeClientIds.isEmpty) return repo.getAllOccurrences();
+  return repo.getAllAuthorizedOccurrences(authorizedClientIds: activeClientIds);
 });
 
 class OccurrenceController {

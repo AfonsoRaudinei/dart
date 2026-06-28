@@ -10,6 +10,7 @@ import 'map_layers_sheet.dart';
 import '../../../modules/drawing/presentation/widgets/drawing_sheet.dart';
 import '../../../modules/drawing/presentation/widgets/drawing_disabled_widget.dart';
 import '../../../modules/drawing/presentation/controllers/drawing_controller.dart';
+import '../../../modules/drawing/presentation/coordinators/drawing_close_coordinator.dart';
 import '../../../modules/drawing/domain/models/drawing_models.dart';
 import '../../../modules/map/presentation/widgets/visit_sheet.dart';
 import '../../../modules/visitas/presentation/controllers/visit_controller.dart';
@@ -118,9 +119,18 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
     }
   }
 
-  void _dismissCurrentSheet() {
+  Future<void> _dismissCurrentSheet({
+    DrawingCloseIntent intent = DrawingCloseIntent.dismissSheet,
+  }) async {
     if (widget.state.type == MapSheetType.draw) {
-      widget.drawingController.cancelOperation();
+      final decision = await DrawingCloseCoordinator.handle(
+        context,
+        controller: widget.drawingController,
+        intent: intent,
+      );
+      if (!mounted || !decision.shouldCloseSheet) {
+        return;
+      }
     }
     widget.onClose();
   }
@@ -181,6 +191,11 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
         }
       } else {
         // Flick para baixo → retrair ou fechar
+        if (_currentDetent == SheetDetent.medium &&
+            widget.state.type == MapSheetType.draw) {
+          _dismissCurrentSheet();
+          return;
+        }
         if (_currentDetent == SheetDetent.expanded) {
           _animateToDetent(SheetDetent.medium);
         } else if (_currentDetent == SheetDetent.medium) {
@@ -271,6 +286,7 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
         return snapshot.data!
             ? DrawingSheet(
                 controller: widget.drawingController,
+                scrollController: _scrollController,
                 onFocusFeature: widget.onFocusDrawingFeature,
                 onGpsMeasureStarted: _dismissCurrentSheet,
                 onSaved: _dismissCurrentSheet,
@@ -545,12 +561,16 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
       tag: 'MapSheet',
     );
     return GestureDetector(
+      key: const Key('map_bottom_sheet_root'),
       onVerticalDragStart: _handleDragStart,
       onVerticalDragUpdate: _handleVerticalDrag,
       onVerticalDragEnd: _handleDragEnd,
       child: AnimatedBuilder(
         animation: _heightAnimation,
         builder: (context, child) {
+          final showContent =
+              _heightAnimation.value >
+              (_getDetentHeight(SheetDetent.compact) + 96);
           return SizedBox(
             height: _heightAnimation.value,
             child: PremiumGlassPanel(
@@ -576,6 +596,7 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
                   children: [
                     // Handle (alça) - área de drag expandida
                     GestureDetector(
+                      key: const Key('map_bottom_sheet_handle'),
                       onTap: _handleHandleTap,
                       child: Container(
                         padding: const EdgeInsets.only(
@@ -600,7 +621,7 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
                     ),
 
                     // Conteúdo da tab selecionada com cross-fade
-                    if (_currentDetent != SheetDetent.compact)
+                    if (showContent)
                       Expanded(
                         child: AnimatedSwitcher(
                           duration: const Duration(milliseconds: 200),
@@ -624,7 +645,6 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
                           ),
                         ),
                       ),
-
                     // Navegação agora no FloatingDockWidget externo
                   ],
                 ),

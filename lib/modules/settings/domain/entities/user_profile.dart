@@ -36,42 +36,52 @@ class UserProfile {
     String? phone,
     String? photoUrl,
     String? creaNumber,
+    bool clearFullName = false,
+    bool clearPhone = false,
+    bool clearPhotoUrl = false,
+    bool clearCreaNumber = false,
     DateTime? updatedAt,
-  }) =>
-      UserProfile(
-        id: id,
-        email: email,
-        fullName: fullName ?? this.fullName,
-        phone: phone ?? this.phone,
-        role: role,
-        photoUrl: photoUrl ?? this.photoUrl,
-        creaNumber: creaNumber ?? this.creaNumber,
-        createdAt: createdAt,
-        updatedAt: updatedAt ?? this.updatedAt,
-      );
+  }) {
+    assert(!clearFullName || fullName == null);
+    assert(!clearPhone || phone == null);
+    assert(!clearPhotoUrl || photoUrl == null);
+    assert(!clearCreaNumber || creaNumber == null);
+
+    return UserProfile(
+      id: id,
+      email: email,
+      fullName: clearFullName ? null : fullName ?? this.fullName,
+      phone: clearPhone ? null : phone ?? this.phone,
+      role: role,
+      photoUrl: clearPhotoUrl ? null : photoUrl ?? this.photoUrl,
+      creaNumber: clearCreaNumber ? null : creaNumber ?? this.creaNumber,
+      createdAt: createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
 
   Map<String, dynamic> toCache() => {
-        'id': id,
-        'email': email,
-        'full_name': fullName,
-        'phone': phone,
-        'role': role,
-        'photo_url': photoUrl,
-        'crea_number': creaNumber,
-        'created_at': createdAt.toUtc().toIso8601String(),
-        'updated_at': updatedAt.toUtc().toIso8601String(),
-        'sync_status': 0,
-      };
+    'id': id,
+    'email': email,
+    'full_name': fullName,
+    'phone': phone,
+    'role': role,
+    'photo_url': photoUrl,
+    'crea_number': creaNumber,
+    'created_at': createdAt.toUtc().toIso8601String(),
+    'updated_at': updatedAt.toUtc().toIso8601String(),
+    'sync_status': 0,
+  };
 
   factory UserProfile.fromCache(Map<String, dynamic> map) => UserProfile(
-        id: map['id'] as String,
-        email: map['email'] as String,
-        fullName: map['full_name'] as String?,
-        phone: map['phone'] as String?,
-        role: map['role'] as String?,
-        photoUrl: map['photo_url'] as String?,
-        creaNumber: map['crea_number'] as String?,
-        createdAt: DateTime.parse(map['created_at'] as String).toLocal(),
-        updatedAt: DateTime.parse(map['updated_at'] as String).toLocal(),
-      );
+    id: map['id'] as String,
+    email: map['email'] as String,
+    fullName: map['full_name'] as String?,
+    phone: map['phone'] as String?,
+    role: map['role'] as String?,
+    photoUrl: map['photo_url'] as String?,
+    creaNumber: map['crea_number'] as String?,
+    createdAt: DateTime.parse(map['created_at'] as String).toLocal(),
+    updatedAt: DateTime.parse(map['updated_at'] as String).toLocal(),
+  );
 }

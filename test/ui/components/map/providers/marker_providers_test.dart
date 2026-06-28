@@ -15,7 +15,7 @@ void main() {
 
       // Provider base não configurado, deve retornar lista vazia
       final markers = container.read(publicationMarkersProvider);
-      
+
       expect(markers, isEmpty);
       expect(markers, isA<List<Marker>>());
     });
@@ -29,7 +29,7 @@ void main() {
       final markers = container.read(
         localPublicationMarkersProvider(const <Publicacao>[]),
       );
-      
+
       expect(markers, isEmpty);
     });
 
@@ -61,7 +61,7 @@ void main() {
       final markers = container.read(
         localPublicationMarkersProvider(publicacoes),
       );
-      
+
       expect(markers, hasLength(2));
       expect(markers.first.point.latitude, equals(-23.5505));
       expect(markers.first.point.longitude, equals(-46.6333));
@@ -88,7 +88,7 @@ void main() {
       final markers = container.read(
         localPublicationMarkersProvider(publicacoes),
       );
-      
+
       final marker = markers.first;
       expect(marker.key.toString(), contains('pub_123'));
     });
@@ -112,7 +112,7 @@ void main() {
       final markers = container.read(
         localPublicationMarkersProvider(publicacoes),
       );
-      
+
       // Lista não-vazia com tamanho correto
       expect(markers, hasLength(1));
       expect(markers.first, isA<Marker>());
@@ -153,8 +153,7 @@ void main() {
                 id: 'geometry-only',
                 type: 'Média',
                 description: 'Com geometry',
-                geometry:
-                    '{"type":"Point","coordinates":[-46.6333,-23.5505]}',
+                geometry: '{"type":"Point","coordinates":[-46.6333,-23.5505]}',
                 createdAt: now,
               ),
             ],
@@ -171,27 +170,77 @@ void main() {
       expect(markers.first.point.longitude, equals(-46.6333));
       expect(markers.first.alignment, equals(Alignment.center));
     });
+
+    test('deve criar marker com latitude e longitude explicitas', () async {
+      final container = ProviderContainer(
+        overrides: [
+          occurrencesListProvider.overrideWith(
+            (ref) async => [
+              Occurrence(
+                id: 'explicit-coordinates',
+                type: 'Média',
+                description: 'Com coordenadas',
+                lat: -10.25,
+                long: -48.32,
+                createdAt: DateTime.now(),
+              ),
+            ],
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await container.read(occurrencesListProvider.future);
+      final markers = container.read(occurrenceMarkersProvider((occ) {}));
+
+      expect(markers, hasLength(1));
+      expect(markers.single.point.latitude, -10.25);
+      expect(markers.single.point.longitude, -48.32);
+    });
+
+    test('nao cria pin em zero zero', () async {
+      final container = ProviderContainer(
+        overrides: [
+          occurrencesListProvider.overrideWith(
+            (ref) async => [
+              Occurrence(
+                id: 'zero-zero',
+                type: 'Média',
+                description: 'Sem localização real',
+                lat: 0,
+                long: 0,
+                createdAt: DateTime.now(),
+              ),
+            ],
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await container.read(occurrencesListProvider.future);
+      expect(container.read(occurrenceMarkersProvider((occ) {})), isEmpty);
+    });
   });
 
   group('Isolamento de Rebuilds', () {
-    test('publicationMarkersProvider não deve rebuildar por outros providers', () {
-      final container = ProviderContainer();
-      addTearDown(container.dispose);
+    test(
+      'publicationMarkersProvider não deve rebuildar por outros providers',
+      () {
+        final container = ProviderContainer();
+        addTearDown(container.dispose);
 
-      var buildCount = 0;
-      
-      // Listener para contar rebuilds
-      container.listen(
-        publicationMarkersProvider,
-        (previous, next) {
+        var buildCount = 0;
+
+        // Listener para contar rebuilds
+        container.listen(publicationMarkersProvider, (previous, next) {
           buildCount++;
-        },
-      );
+        });
 
-      // Primeira leitura
-      container.read(publicationMarkersProvider);
-      expect(buildCount, equals(0)); // Não deve notificar na primeira leitura
-    });
+        // Primeira leitura
+        container.read(publicationMarkersProvider);
+        expect(buildCount, equals(0)); // Não deve notificar na primeira leitura
+      },
+    );
   });
 
   group('Otimizações', () {
@@ -210,9 +259,7 @@ void main() {
       expect(localMarkers, isA<List<Marker>>());
 
       // occurrenceMarkersProvider
-      final occMarkers = container.read(
-        occurrenceMarkersProvider((occ) {}),
-      );
+      final occMarkers = container.read(occurrenceMarkersProvider((occ) {}));
       expect(occMarkers, isA<List<Marker>>());
     });
   });

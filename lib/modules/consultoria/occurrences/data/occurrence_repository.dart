@@ -19,6 +19,9 @@ class OccurrenceRepository {
   }
 
   Future<void> updateOccurrence(Occurrence occurrence) async {
+    if (occurrence.cachedByUserId != null) {
+      throw StateError('Ocorrencia compartilhada e somente leitura.');
+    }
     final db = await _databaseHelper.database;
     final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
     final map = occurrence
@@ -35,11 +38,13 @@ class OccurrenceRepository {
   Future<void> softDeleteOccurrence(String id) async {
     final db = await _databaseHelper.database;
     final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
+    final deletedAt = DateTime.now().toUtc().toIso8601String();
     await db.update(
       'occurrences',
       {
-        'sync_status': 'deleted',
-        'updated_at': DateTime.now().toIso8601String(),
+        'sync_status': 'deleted_local',
+        'deleted_at': deletedAt,
+        'updated_at': deletedAt,
       },
       where: 'id = ? AND user_id = ?',
       whereArgs: [id, userId],
@@ -52,21 +57,40 @@ class OccurrenceRepository {
     final List<Map<String, dynamic>> maps = await db.query(
       'occurrences',
       where:
-          "visit_session_id = ? AND user_id = ? AND sync_status != 'deleted'",
+          "visit_session_id = ? AND user_id = ? "
+          "AND sync_status NOT IN ('deleted', 'deleted_local') "
+          'AND deleted_at IS NULL',
       whereArgs: [sessionId, userId],
     );
     return List.generate(maps.length, (i) => Occurrence.fromMap(maps[i]));
   }
 
-  Future<List<Occurrence>> getAllOccurrences() async {
+  Future<List<Occurrence>> getAllOccurrences() {
+    return getAllAuthorizedOccurrences();
+  }
+
+  Future<List<Occurrence>> getAllAuthorizedOccurrences({
+    Set<String> authorizedClientIds = const {},
+  }) async {
     final db = await _databaseHelper.database;
     final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
+    final placeholders = List.filled(authorizedClientIds.length, '?').join(',');
+    final sharedClause = authorizedClientIds.isEmpty
+        ? ''
+        : ' OR (cached_by_user_id = ? AND client_id IN ($placeholders))';
+    final args = <Object?>[
+      userId,
+      if (authorizedClientIds.isNotEmpty) userId,
+      ...authorizedClientIds,
+    ];
     final List<Map<String, dynamic>> maps = await db.query(
       'occurrences',
-      where: "user_id = ? AND sync_status != 'deleted'",
-      whereArgs: [userId],
+      where:
+          '(user_id = ?$sharedClause) '
+          "AND sync_status NOT IN ('deleted', 'deleted_local') "
+          'AND deleted_at IS NULL',
+      whereArgs: args,
       orderBy: 'created_at DESC',
-      limit: 50, // Safety limit
     );
     return List.generate(maps.length, (i) => Occurrence.fromMap(maps[i]));
   }
@@ -74,7 +98,9 @@ class OccurrenceRepository {
   Future<Map<String, int>> getStats({DateTime? start, DateTime? end}) async {
     final db = await _databaseHelper.database;
     final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
-    String where = "WHERE user_id = ? AND sync_status != 'deleted'";
+    String where =
+        "WHERE user_id = ? AND sync_status NOT IN ('deleted', 'deleted_local') "
+        'AND deleted_at IS NULL';
     List<dynamic> args = [userId];
 
     if (start != null && end != null) {

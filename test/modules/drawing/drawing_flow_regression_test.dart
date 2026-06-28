@@ -189,6 +189,43 @@ void main() {
 
       expect(controller.currentState, equals(DrawingState.idle));
     });
+
+    test(
+      '❌ exitDrawingContext limpa seleção, edição temporária e volta para idle',
+      () async {
+        final repository = MockDrawingRepository();
+        final feature = _feature(id: 'field-exit');
+        repository.features.add(feature);
+
+        final localController = DrawingController(repository: repository);
+        addTearDown(localController.dispose);
+        await localController.loadFeatures();
+
+        expect(localController.features, isNotEmpty);
+
+        localController.selectFeature(localController.features.first);
+        localController.setMultiSelectEnabled(true);
+        localController.startEditMode();
+
+        expect(localController.selectedFeature, isNotNull);
+        expect(localController.isMultiSelectEnabled, isTrue);
+        expect(localController.selectedFeatureIds, contains('field-exit'));
+        expect(localController.currentState, equals(DrawingState.editing));
+        expect(localController.liveGeometry, isNotNull);
+
+        localController.exitDrawingContext();
+
+        expect(localController.currentState, equals(DrawingState.idle));
+        expect(localController.currentTool, equals(DrawingTool.none));
+        expect(localController.selectedFeature, isNull);
+        expect(localController.isMultiSelectEnabled, isFalse);
+        expect(localController.selectedFeatureIds, isEmpty);
+        expect(localController.liveGeometry, isNull);
+        expect(localController.errorMessage, isNull);
+        expect(localController.validationResult.isValid, isTrue);
+        expect(localController.validationResult.message, isNull);
+      },
+    );
   });
 
   group('FIX-DRAW-FLOW-02 — Regressão: Tap Behaviors', () {
@@ -596,4 +633,36 @@ void main() {
       expect(repository.lastSavedFeature?.geometry, isA<DrawingPolygon>());
     });
   });
+}
+
+DrawingFeature _feature({String id = 'field-1'}) {
+  final now = DateTime(2026);
+  return DrawingFeature(
+    id: id,
+    geometry: DrawingPolygon(
+      coordinates: const [
+        [
+          [-0.01, -0.01],
+          [0.01, -0.01],
+          [0.01, 0.01],
+          [-0.01, 0.01],
+          [-0.01, -0.01],
+        ],
+      ],
+    ),
+    properties: DrawingProperties(
+      nome: 'Talhao teste',
+      tipo: DrawingType.talhao,
+      origem: DrawingOrigin.desenho_manual,
+      status: DrawingStatus.rascunho,
+      autorId: 'user-1',
+      autorTipo: AuthorType.consultor,
+      areaHa: 1,
+      versao: 1,
+      ativo: true,
+      createdAt: now,
+      updatedAt: now,
+      syncStatus: SyncStatus.synced,
+    ),
+  );
 }

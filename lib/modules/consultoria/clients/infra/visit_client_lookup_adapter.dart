@@ -1,4 +1,5 @@
 import 'package:soloforte_app/core/contracts/i_visit_client_lookup.dart';
+import 'package:soloforte_app/core/contracts/visit_client_hierarchy.dart';
 import '../data/clients_repository.dart';
 import '../../fields/data/repositories/field_repository.dart';
 
@@ -31,5 +32,39 @@ class VisitClientLookupAdapter implements IVisitClientLookup {
     return fields
         .map((f) => VisitFieldSummary(id: f.id, name: f.name))
         .toList();
+  }
+
+  @override
+  Future<VisitClientHierarchy?> getClientHierarchy(String clientId) async {
+    final client = await _clientsRepository.getClientById(clientId);
+    if (client == null) return null;
+
+    final farms = await _clientsRepository.getFarms(clientId);
+    final farmSummaries = <VisitFarmDetailSummary>[];
+
+    for (final farm in farms) {
+      final fields = await _fieldRepository.getFieldsByFarmId(farm.id);
+      farmSummaries.add(
+        VisitFarmDetailSummary(
+          id: farm.id,
+          name: farm.name,
+          fields: fields
+              .map(
+                (field) => VisitFieldDetailSummary(
+                  id: field.id,
+                  name: field.name,
+                  areaHa: field.areaHa,
+                ),
+              )
+              .toList(growable: false),
+        ),
+      );
+    }
+
+    return VisitClientHierarchy(
+      id: client.id,
+      name: client.name,
+      farms: farmSummaries,
+    );
   }
 }

@@ -1,3 +1,5 @@
+import 'visit_client_hierarchy.dart';
+
 /// DTO mínimo de cliente para início de visita.
 class VisitClientSummary {
   final String id;
@@ -30,4 +32,7 @@ abstract interface class IVisitClientLookup {
   Future<List<VisitFarmSummary>> listFarmsByClient(String clientId);
 
   Future<List<VisitFieldSummary>> listFieldsByFarm(String farmId);
+
+  /// Hierarquia completa para cards de visita ativa (map/).
+  Future<VisitClientHierarchy?> getClientHierarchy(String clientId);
 }

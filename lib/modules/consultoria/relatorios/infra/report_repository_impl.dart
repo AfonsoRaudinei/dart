@@ -16,6 +16,7 @@ class ReportRepositoryImpl implements IReportRepository {
     await db.execute('''
       CREATE TABLE IF NOT EXISTS $_tableName (
         id TEXT PRIMARY KEY,
+        client_id TEXT NOT NULL,
         titulo TEXT NOT NULL,
         descricao TEXT NOT NULL,
         created_at TEXT NOT NULL,
@@ -27,6 +28,11 @@ class ReportRepositoryImpl implements IReportRepository {
         occurrence_ids TEXT
       )
     ''');
+    try {
+      await db.execute('ALTER TABLE $_tableName ADD COLUMN client_id TEXT');
+    } catch (_) {
+      // Coluna já existe em bancos locais atualizados.
+    }
   }
 
   @override
@@ -59,6 +65,7 @@ class ReportRepositoryImpl implements IReportRepository {
   @override
   Future<void> save(Relatorio relatorio) async {
     await _ensureTable();
+    _validateClientId(relatorio);
     final db = await _db;
     final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
     final relatorioToSave = relatorio.createdBy.isEmpty
@@ -104,5 +111,11 @@ class ReportRepositoryImpl implements IReportRepository {
   Future<void> _notifyWatchers() async {
     final list = await getAll();
     _controller.add(list);
+  }
+
+  void _validateClientId(Relatorio relatorio) {
+    if (relatorio.clientId?.trim().isEmpty ?? true) {
+      throw ArgumentError('Relatório técnico exige client_id.');
+    }
   }
 }

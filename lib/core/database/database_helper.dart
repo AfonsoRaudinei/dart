@@ -4,6 +4,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:io';
 import '../utils/app_logger.dart';
+import 'database_migrations.dart';
 
 class DatabaseHelper {
   static final DatabaseHelper instance = DatabaseHelper._privateConstructor();
@@ -23,7 +24,7 @@ class DatabaseHelper {
 
     final db = await openDatabase(
       path,
-      version: 35,
+      version: 38,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -65,605 +66,130 @@ class DatabaseHelper {
       if (kDebugMode) AppLogger.debug('Aplicando migração: v$v', tag: 'DB');
       switch (v) {
         case 1:
-          await _migrateToV1(db);
+          await DatabaseMigrations.migrateToV1(db);
           break;
         case 2:
-          await _migrateToV2(db);
+          await DatabaseMigrations.migrateToV2(db);
           break;
         case 3:
-          await _migrateToV3(db);
+          await DatabaseMigrations.migrateToV3(db);
           break;
         case 4:
-          await _migrateToV4(db);
+          await DatabaseMigrations.migrateToV4(db);
           break;
         case 5:
-          await _migrateToV5(db);
+          await DatabaseMigrations.migrateToV5(db);
           break;
         case 6:
-          await _migrateToV6(db);
+          await DatabaseMigrations.migrateToV6(db);
           break;
         case 7:
-          await _migrateToV7(db);
+          await DatabaseMigrations.migrateToV7(db);
           break;
         case 8:
-          await _migrateToV8(db);
+          await DatabaseMigrations.migrateToV8(db);
           break;
         case 9:
-          await _migrateToV9(db);
+          await DatabaseMigrations.migrateToV9(db);
           break;
         case 10:
-          await _migrateToV10(db);
+          await DatabaseMigrations.migrateToV10(db);
           break;
         case 11:
-          await _migrateToV11(db);
+          await DatabaseMigrations.migrateToV11(db);
           break;
         case 12:
-          await _migrateToV12(db);
+          await DatabaseMigrations.migrateToV12(db);
           break;
         case 13:
-          await _migrateToV13(db);
+          await DatabaseMigrations.migrateToV13(db);
           break;
         case 14:
-          await _migrateToV14(db);
+          await DatabaseMigrations.migrateToV14(db);
           break;
         case 15:
-          await _migrateToV15(db);
+          await DatabaseMigrations.migrateToV15(db);
           break;
         case 16:
-          await _migrateToV16(db);
+          await DatabaseMigrations.migrateToV16(db);
           break;
         case 17:
-          await _migrateToV17(db);
+          await DatabaseMigrations.migrateToV17(db);
           break;
         case 18:
-          await _migrateToV18(db);
+          await DatabaseMigrations.migrateToV18(db);
           break;
         case 19:
-          await _migrateToV19(db);
+          await DatabaseMigrations.migrateToV19(db);
           break;
         case 20:
-          await _migrateToV20(db);
+          await DatabaseMigrations.migrateToV20(db);
           break;
         case 21:
-          await _migrateToV21(db);
+          await DatabaseMigrations.migrateToV21(db);
           break;
         case 22:
-          await _migrateToV22(db);
+          await DatabaseMigrations.migrateToV22(db);
           break;
         case 23:
-          await _migrateToV23(db);
+          await DatabaseMigrations.migrateToV23(db);
           break;
         case 24:
-          await _migrateToV24(db);
+          await DatabaseMigrations.migrateToV24(db);
           break;
         case 25:
-          await _migrateToV25(db);
+          await DatabaseMigrations.migrateToV25(db);
           break;
         case 26:
-          await _migrateToV26(db);
+          await DatabaseMigrations.migrateToV26(db);
           break;
         case 27:
-          await _migrateToV27(db);
+          await DatabaseMigrations.migrateToV27(db);
           break;
         case 28:
-          await _migrateToV28(db);
+          await DatabaseMigrations.migrateToV28(db);
           break;
         case 29:
-          await _migrateToV29(db);
+          await DatabaseMigrations.migrateToV29(db);
           break;
         case 30:
-          await _migrateToV30(db);
+          await DatabaseMigrations.migrateToV30(db);
           break;
         case 31:
-          await _migrateToV31(db);
+          await DatabaseMigrations.migrateToV31(db);
           break;
         case 32:
-          await _migrateToV32(db);
+          await DatabaseMigrations.migrateToV32(db);
           break;
         case 33:
-          await _migrateToV33(db);
+          await DatabaseMigrations.migrateToV33(db);
           break;
         case 34:
-          await _migrateToV34(db);
+          await DatabaseMigrations.migrateToV34(db);
           break;
         case 35:
-          await _migrateToV35(db);
+          await DatabaseMigrations.migrateToV35(db);
+          break;
+        case 36:
+          await DatabaseMigrations.migrateToV36(db);
+          break;
+        case 37:
+          await DatabaseMigrations.migrateToV37(db);
+          break;
+        case 38:
+          await DatabaseMigrations.migrateToV38(db);
           break;
       }
     }
   }
 
-  Future<bool> _tableExists(Database db, String tableName) async {
-    final rows = await db.rawQuery(
-      "SELECT name FROM sqlite_master WHERE type = 'table' AND name = ? LIMIT 1",
-      [tableName],
-    );
-    return rows.isNotEmpty;
-  }
-
-  Future<void> _renameTableIfExists(
+  @visibleForTesting
+  Future<void> runMigrationsForTesting(
     Database db,
-    String tableName,
-    String backupName,
-  ) async {
-    final exists = await _tableExists(db, tableName);
-    final backupExists = await _tableExists(db, backupName);
-    if (exists && !backupExists) {
-      await db.execute('ALTER TABLE $tableName RENAME TO $backupName');
-    }
-  }
-
-  // ════════════════════════════════════════════════════════════════════
-  // MÉTODOS DE MIGRAÇÃO (ISOLADOS E INCREMENTAIS)
-  // ════════════════════════════════════════════════════════════════════
-
-  Future<void> _migrateToV1(Database db) async {
-    await db.execute('''
-      CREATE TABLE IF NOT EXISTS clients (
-        id TEXT PRIMARY KEY,
-        user_id TEXT NOT NULL DEFAULT '',
-        nome TEXT NOT NULL,
-        documento TEXT,
-        telefone TEXT,
-        email TEXT,
-        created_at TEXT NOT NULL,
-        updated_at TEXT NOT NULL,
-        deleted_at TEXT
-      )
-    ''');
-    await db.execute('''
-      CREATE TABLE IF NOT EXISTS farms (
-        id TEXT PRIMARY KEY,
-        user_id TEXT NOT NULL DEFAULT '',
-        cliente_id TEXT NOT NULL,
-        nome TEXT NOT NULL,
-        area_total REAL,
-        municipio TEXT,
-        uf TEXT,
-        created_at TEXT NOT NULL,
-        updated_at TEXT NOT NULL,
-        deleted_at TEXT,
-        FOREIGN KEY (cliente_id) REFERENCES clients (id)
-      )
-    ''');
-    await db.execute('''
-      CREATE TABLE IF NOT EXISTS fields (
-        id TEXT PRIMARY KEY,
-        user_id TEXT NOT NULL DEFAULT '',
-        fazenda_id TEXT NOT NULL,
-        codigo TEXT,
-        nome TEXT NOT NULL,
-        area_produtiva REAL,
-        bordadura_geo TEXT,
-        centro_geo TEXT,
-        created_at TEXT NOT NULL,
-        updated_at TEXT NOT NULL,
-        deleted_at TEXT,
-        FOREIGN KEY (fazenda_id) REFERENCES farms (id)
-      )
-    ''');
-  }
-
-  Future<void> _migrateToV2(Database db) async {
-    // Adição de colunas de sync e índices para performance
-    try {
-      await db.execute(
-        'ALTER TABLE clients ADD COLUMN sync_status INTEGER DEFAULT 1',
-      );
-    } catch (e) {
-      AppLogger.debug(
-        'V2: sync_status em clients já existe — $e',
-        tag: 'DB.Migration',
-      );
-    }
-    try {
-      await db.execute(
-        'ALTER TABLE farms ADD COLUMN sync_status INTEGER DEFAULT 1',
-      );
-    } catch (e) {
-      AppLogger.debug(
-        'V2: sync_status em farms já existe — $e',
-        tag: 'DB.Migration',
-      );
-    }
-    try {
-      await db.execute(
-        'ALTER TABLE fields ADD COLUMN sync_status INTEGER DEFAULT 1',
-      );
-    } catch (e) {
-      AppLogger.debug(
-        'V2: sync_status em fields já existe — $e',
-        tag: 'DB.Migration',
-      );
-    }
-
-    await db.execute(
-      'CREATE INDEX IF NOT EXISTS idx_clients_nome ON clients(nome)',
-    );
-    await db.execute(
-      'CREATE INDEX IF NOT EXISTS idx_clients_sync ON clients(sync_status)',
-    );
-    await db.execute(
-      'CREATE INDEX IF NOT EXISTS idx_farms_sync ON farms(sync_status)',
-    );
-    await db.execute(
-      'CREATE INDEX IF NOT EXISTS idx_fields_sync ON fields(sync_status)',
-    );
-  }
-
-  Future<void> _migrateToV3(Database db) async {
-    await db.execute('''
-      CREATE TABLE IF NOT EXISTS visit_sessions (
-        id TEXT PRIMARY KEY,
-        user_id TEXT NOT NULL DEFAULT '',
-        producer_id TEXT NOT NULL,
-        area_id TEXT NOT NULL,
-        activity_type TEXT NOT NULL,
-        start_time TEXT NOT NULL,
-        end_time TEXT,
-        initial_lat REAL,
-        initial_long REAL,
-        status TEXT NOT NULL,
-        created_at TEXT NOT NULL,
-        updated_at TEXT NOT NULL,
-        sync_status INTEGER DEFAULT 1
-      )
-    ''');
-    await db.execute(
-      'CREATE INDEX IF NOT EXISTS idx_visit_sessions_status ON visit_sessions(status)',
-    );
-  }
-
-  Future<void> _migrateToV4(Database db) async {
-    await db.execute('''
-      CREATE TABLE IF NOT EXISTS occurrences (
-        id TEXT PRIMARY KEY,
-        user_id TEXT NOT NULL DEFAULT '',
-        visit_session_id TEXT,
-        type TEXT NOT NULL,
-        description TEXT,
-        photo_path TEXT,
-        lat REAL,
-        long REAL,
-        geometry TEXT,
-        created_at TEXT NOT NULL,
-        updated_at TEXT NOT NULL,
-        sync_status TEXT DEFAULT 'local',
-        category TEXT,
-        status TEXT DEFAULT 'draft',
-        FOREIGN KEY (visit_session_id) REFERENCES visit_sessions (id)
-      )
-    ''');
-    await db.execute(
-      'CREATE INDEX IF NOT EXISTS idx_occurrences_session ON occurrences(visit_session_id)',
-    );
-  }
-
-  Future<void> _migrateToV5(Database db) async {
-    // Tabela legada da agenda (será destruída na v10)
-    await db.execute('''
-      CREATE TABLE IF NOT EXISTS agenda_events (
-        id TEXT PRIMARY KEY,
-        user_id TEXT NOT NULL DEFAULT '',
-        producer_id TEXT NOT NULL,
-        area_id TEXT NOT NULL,
-        activity_type TEXT NOT NULL,
-        scheduled_date TEXT NOT NULL,
-        description TEXT,
-        visit_session_id TEXT,
-        status TEXT NOT NULL,
-        realized_at TEXT,
-        created_at TEXT NOT NULL,
-        sync_status INTEGER DEFAULT 1,
-        FOREIGN KEY (visit_session_id) REFERENCES visit_sessions (id)
-      )
-    ''');
-  }
-
-  Future<void> _migrateToV6(Database db) async {
-    try {
-      await db.execute('ALTER TABLE occurrences ADD COLUMN updated_at TEXT');
-    } catch (e) {
-      AppLogger.debug(
-        'V6: updated_at em occurrences já existe — $e',
-        tag: 'DB.Migration',
-      );
-    }
-    try {
-      await db.execute('ALTER TABLE occurrences ADD COLUMN category TEXT');
-    } catch (e) {
-      AppLogger.debug(
-        'V6: category em occurrences já existe — $e',
-        tag: 'DB.Migration',
-      );
-    }
-    try {
-      await db.execute('ALTER TABLE occurrences ADD COLUMN status TEXT');
-    } catch (e) {
-      AppLogger.debug(
-        'V6: status em occurrences já existe — $e',
-        tag: 'DB.Migration',
-      );
-    }
-    await db.execute(
-      "UPDATE occurrences SET status = 'draft' WHERE status IS NULL",
-    );
-  }
-
-  Future<void> _migrateToV7(Database db) async {
-    try {
-      await db.execute('ALTER TABLE occurrences ADD COLUMN geometry TEXT');
-    } catch (e) {
-      AppLogger.debug(
-        'V7: geometry em occurrences já existe — $e',
-        tag: 'DB.Migration',
-      );
-    }
-  }
-
-  Future<void> _migrateToV8(Database db) async {
-    await db.execute('''
-      CREATE TABLE IF NOT EXISTS drawings (
-        id TEXT PRIMARY KEY,
-        user_id TEXT NOT NULL DEFAULT '',
-        nome TEXT NOT NULL,
-        tipo TEXT NOT NULL,
-        origem TEXT NOT NULL,
-        status TEXT NOT NULL,
-        geojson TEXT NOT NULL,
-        area_ha REAL,
-        autor_id TEXT NOT NULL,
-        autor_tipo TEXT NOT NULL,
-        sync_status TEXT NOT NULL,
-        versao INTEGER,
-        subtipo TEXT,
-        raio_metros REAL,
-        created_at TEXT NOT NULL,
-        updated_at TEXT NOT NULL,
-        deleted_at TEXT,
-        versao_anterior_id TEXT,
-        referencia_id TEXT,
-        ativo INTEGER DEFAULT 1
-      )
-    ''');
-    await db.execute(
-      'CREATE INDEX IF NOT EXISTS idx_drawings_sync ON drawings(sync_status)',
-    );
-    await db.execute(
-      'CREATE INDEX IF NOT EXISTS idx_drawings_ativo ON drawings(ativo)',
-    );
-  }
-
-  Future<void> _migrateToV9(Database db) async {
-    try {
-      await db.execute('ALTER TABLE drawings ADD COLUMN cliente_id TEXT');
-    } catch (e) {
-      AppLogger.debug(
-        'V9: cliente_id em drawings já existe — $e',
-        tag: 'DB.Migration',
-      );
-    }
-    try {
-      await db.execute('ALTER TABLE drawings ADD COLUMN fazenda_id TEXT');
-    } catch (e) {
-      AppLogger.debug(
-        'V9: fazenda_id em drawings já existe — $e',
-        tag: 'DB.Migration',
-      );
-    }
-    await db.execute(
-      'CREATE INDEX IF NOT EXISTS idx_drawings_cliente_id ON drawings(cliente_id)',
-    );
-    await db.execute(
-      'CREATE INDEX IF NOT EXISTS idx_drawings_fazenda_id ON drawings(fazenda_id)',
-    );
-  }
-
-  Future<void> _migrateToV10(Database db) async {
-    // 🎯 RECONSTRUÇÃO DA AGENDA (Incompatibilidade com schema v5)
-    await _renameTableIfExists(db, 'agenda_events', 'agenda_events_v5_legacy');
-
-    await db.execute('''
-      CREATE TABLE IF NOT EXISTS agenda_events (
-        id TEXT PRIMARY KEY,
-        user_id TEXT NOT NULL DEFAULT '',
-        tipo TEXT NOT NULL,
-        cliente_id TEXT NOT NULL,
-        fazenda_id TEXT,
-        talhao_id TEXT,
-        titulo TEXT NOT NULL,
-        data_inicio_planejada TEXT NOT NULL,
-        data_fim_planejada TEXT NOT NULL,
-        status TEXT NOT NULL,
-        visit_session_id TEXT,
-        serie_id TEXT,
-        created_at TEXT NOT NULL,
-        updated_at TEXT NOT NULL,
-        sync_status TEXT NOT NULL DEFAULT 'pending'
-      )
-    ''');
-
-    await db.execute('''
-      CREATE TABLE IF NOT EXISTS agenda_visit_sessions (
-        id TEXT PRIMARY KEY,
-        user_id TEXT NOT NULL DEFAULT '',
-        evento_id TEXT NOT NULL,
-        start_at_real TEXT NOT NULL,
-        end_at_real TEXT,
-        duracao_min INTEGER,
-        notas_finais TEXT,
-        checklist_snapshot TEXT,
-        created_by TEXT NOT NULL,
-        created_at TEXT NOT NULL,
-        sync_status TEXT NOT NULL DEFAULT 'pending',
-        FOREIGN KEY (evento_id) REFERENCES agenda_events (id)
-      )
-    ''');
-
-    await db.execute(
-      'CREATE INDEX IF NOT EXISTS idx_agenda_events_cliente ON agenda_events(cliente_id)',
-    );
-    await db.execute(
-      'CREATE INDEX IF NOT EXISTS idx_agenda_events_status ON agenda_events(status)',
-    );
-    await db.execute(
-      'CREATE INDEX IF NOT EXISTS idx_agenda_events_data ON agenda_events(data_inicio_planejada)',
-    );
-    await db.execute(
-      'CREATE INDEX IF NOT EXISTS idx_agenda_sessions_evento ON agenda_visit_sessions(evento_id)',
-    );
-
-    if (await _tableExists(db, 'agenda_events_v5_legacy')) {
-      await db.execute('''
-        INSERT OR IGNORE INTO agenda_events (
-          id,
-          user_id,
-          tipo,
-          cliente_id,
-          talhao_id,
-          titulo,
-          data_inicio_planejada,
-          data_fim_planejada,
-          status,
-          visit_session_id,
-          created_at,
-          updated_at,
-          sync_status
-        )
-          SELECT
-            id,
-            user_id,
-            activity_type,
-            producer_id,
-            area_id,
-            COALESCE(NULLIF(description, ''), activity_type),
-            scheduled_date,
-            scheduled_date,
-            status,
-            visit_session_id,
-            created_at,
-            COALESCE(realized_at, created_at),
-            CAST(sync_status AS TEXT)
-          FROM agenda_events_v5_legacy
-      ''');
-    }
-  }
-
-  // ── V11, V12, V13: reservadas para próximas features ──────────────────
-  Future<void> _migrateToV11(Database db) async {
-    // Reservada — sem alterações nesta versão
-    AppLogger.debug('V11: reservada (no-op)', tag: 'DB.Migration');
-  }
-
-  Future<void> _migrateToV12(Database db) async {
-    // Reservada — sem alterações nesta versão
-    AppLogger.debug('V12: reservada (no-op)', tag: 'DB.Migration');
-  }
-
-  Future<void> _migrateToV13(Database db) async {
-    // Reservada — sem alterações nesta versão
-    AppLogger.debug('V13: reservada (no-op)', tag: 'DB.Migration');
-  }
-
-  /// V14 — Schema agronômico de ocorrências (ADR-014)
-  ///
-  /// Adiciona 11 colunas opcionais à tabela [occurrences].
-  /// Usa try/catch por coluna: idempotente em caso de re-execução.
-  Future<void> _migrateToV14(Database db) async {
-    final columns = <String, String>{
-      'cultivar': 'TEXT',
-      'data_plantio': 'TEXT',
-      'estadio_fenologico': 'TEXT',
-      'tipo_ocorrencia': 'TEXT',
-      'amostra_solo': 'INTEGER DEFAULT 0',
-      'recomendacoes': 'TEXT',
-      'metricas_json': 'TEXT',
-      'nutrientes_json': 'TEXT',
-      'categorias_json': 'TEXT',
-      'notas_categorias_json': 'TEXT',
-      'fotos_categorias_json': 'TEXT',
-    };
-    for (final entry in columns.entries) {
-      try {
-        await db.execute(
-          'ALTER TABLE occurrences ADD COLUMN ${entry.key} ${entry.value}',
-        );
-        AppLogger.debug(
-          'V14: coluna ${entry.key} adicionada',
-          tag: 'DB.Migration',
-        );
-      } catch (e) {
-        AppLogger.debug(
-          'V14: ${entry.key} já existe — $e',
-          tag: 'DB.Migration',
-        );
-      }
-    }
-  }
-
-  // ════════════════════════════════════════════════════════════════════
-
-  /// V15 — Expansão da tabela clients com campos pessoais, agronômicos e foto.
-  /// Cria tabela client_culturas (sub-entidade).
-  /// Idempotente: cada ALTER TABLE é envolvido em try/catch individual.
-  Future<void> _migrateToV15(Database db) async {
-    final Map<String, String> newClientColumns = {
-      'cidade': 'TEXT',
-      'uf': 'TEXT',
-      'foto_path': 'TEXT',
-      'observacoes': 'TEXT',
-      'data_nascimento': 'TEXT',
-      'cpf_cnpj': 'TEXT',
-      'area_total': 'REAL',
-      'tipo_propriedade': 'TEXT',
-      'sistema_irrigacao': 'TEXT',
-      'solo_tipo': 'TEXT',
-      'regiao_agricola': 'TEXT',
-      'safra_atual': 'TEXT',
-      'usa_assistencia_tecnica': 'INTEGER',
-      'tecnico_responsavel': 'TEXT',
-      'ativo': 'INTEGER NOT NULL DEFAULT 1',
-    };
-
-    for (final entry in newClientColumns.entries) {
-      try {
-        await db.execute(
-          'ALTER TABLE clients ADD COLUMN ${entry.key} ${entry.value}',
-        );
-        AppLogger.debug(
-          'V15: coluna ${entry.key} adicionada em clients',
-          tag: 'DB.Migration',
-        );
-      } catch (_) {
-        AppLogger.debug(
-          'V15: ${entry.key} já existe em clients — ignorado',
-          tag: 'DB.Migration',
-        );
-      }
-    }
-
-    await db.execute('''
-      CREATE TABLE IF NOT EXISTS client_culturas (
-        id           TEXT PRIMARY KEY,
-        user_id      TEXT NOT NULL DEFAULT '',
-        client_id    TEXT NOT NULL,
-        cultura      TEXT NOT NULL,
-        area_ha      REAL NOT NULL,
-        variedade    TEXT,
-        safra        TEXT,
-        observacao   TEXT,
-        created_at   TEXT NOT NULL,
-        updated_at   TEXT NOT NULL,
-        FOREIGN KEY (client_id) REFERENCES clients(id) ON DELETE CASCADE
-      )
-    ''');
-
-    await db.execute(
-      'CREATE INDEX IF NOT EXISTS idx_client_culturas_client ON client_culturas(client_id)',
-    );
-  }
-
-  // ════════════════════════════════════════════════════════════════════
+    int fromVersion,
+    int toVersion,
+  ) =>
+      _runMigrations(db, fromVersion, toVersion);
 
   Future<void> _validateSchema(Database db) async {
     if (!kDebugMode) return;
@@ -685,235 +211,21 @@ class DatabaseHelper {
     }
   }
 
-  /// V16 — Adiciona producer_id em agenda_visit_sessions (WS-3 / ADR-017)
-  /// Idempotente: envolve ALTER TABLE em try/catch.
-  Future<void> _migrateToV16(Database db) async {
-    try {
-      await db.execute(
-        'ALTER TABLE agenda_visit_sessions ADD COLUMN producer_id TEXT',
-      );
-      AppLogger.debug(
-        'V16: producer_id adicionado em agenda_visit_sessions',
-        tag: 'DB.Migration',
-      );
-    } catch (_) {
-      AppLogger.debug(
-        'V16: producer_id já existe em agenda_visit_sessions — ignorado',
-        tag: 'DB.Migration',
-      );
-    }
-  }
-
-  /// V17 — Campos agronômicos em drawings (Sprint 6)
-  ///
-  /// Adiciona: cultura, safra, soil_sampling_scheme, rec_by_nutrient.
-  /// Idempotente: cada ALTER TABLE é envolvido em try/catch individual.
-  Future<void> _migrateToV17(Database db) async {
-    final columns = <String, String>{
-      'cultura': 'TEXT',
-      'safra': 'TEXT',
-      'soil_sampling_scheme': 'TEXT',
-      'rec_by_nutrient': 'TEXT', // JSON Map<String, double>
-    };
-    for (final entry in columns.entries) {
-      try {
-        await db.execute(
-          'ALTER TABLE drawings ADD COLUMN ${entry.key} ${entry.value}',
-        );
-        AppLogger.debug(
-          'V17: coluna ${entry.key} adicionada em drawings',
-          tag: 'DB.Migration',
-        );
-      } catch (e) {
-        AppLogger.debug(
-          'V17: ${entry.key} já existe em drawings — $e',
-          tag: 'DB.Migration',
-        );
-      }
-    }
-  }
-
-  /// V18 — Remove NOT NULL de area_id e activity_type em visit_sessions
-  ///
-  /// Contexto: check-in agora exige apenas producer_id. Fazenda/Talhão/Atividade
-  /// passaram a ser opcionais na criação da sessão (podem ser preenchidos depois).
-  ///
-  /// SQLite não suporta ALTER COLUMN — reconstrução de tabela via:
-  /// 1. Criar visit_sessions_v18 com colunas nullable
-  /// 2. Copiar todos os dados existentes
-  /// 3. Drop visit_sessions original
-  /// 4. Renomear visit_sessions_v18
-  /// 5. Recriar índice
-  ///
-  /// Idempotente: IF NOT EXISTS + DROP IF EXISTS garantem segurança em re-execução.
-  Future<void> _migrateToV18(Database db) async {
-    await db.execute('''
-      CREATE TABLE IF NOT EXISTS visit_sessions_v18 (
-        id TEXT PRIMARY KEY,
-        user_id TEXT NOT NULL DEFAULT '',
-        producer_id TEXT NOT NULL,
-        area_id TEXT,
-        activity_type TEXT,
-        start_time TEXT NOT NULL,
-        end_time TEXT,
-        initial_lat REAL,
-        initial_long REAL,
-        status TEXT NOT NULL,
-        created_at TEXT NOT NULL,
-        updated_at TEXT NOT NULL,
-        sync_status INTEGER DEFAULT 1
-      )
-    ''');
-
-    // Copia dados existentes. Linhas com area_id='' (workaround anterior)
-    // são convertidas para NULL para consistência semântica.
-    await db.execute('''
-      INSERT INTO visit_sessions_v18 (
-        id,
-        user_id,
-        producer_id,
-        area_id,
-        activity_type,
-        start_time,
-        end_time,
-        initial_lat,
-        initial_long,
-        status,
-        created_at,
-        updated_at,
-        sync_status
-      )
-        SELECT
-          id,
-          user_id,
-          producer_id,
-          NULLIF(area_id, ''),
-          NULLIF(activity_type, ''),
-          start_time,
-          end_time,
-          initial_lat,
-          initial_long,
-          status,
-          created_at,
-          updated_at,
-          sync_status
-        FROM visit_sessions
-    ''');
-
-    await _renameTableIfExists(
-      db,
-      'visit_sessions',
-      'visit_sessions_v17_legacy',
-    );
-    await db.execute('ALTER TABLE visit_sessions_v18 RENAME TO visit_sessions');
-    await db.execute(
-      'CREATE INDEX IF NOT EXISTS idx_visit_sessions_status ON visit_sessions(status)',
-    );
-
-    AppLogger.debug(
-      'V18: visit_sessions reconstruída — area_id e activity_type agora nullable',
-      tag: 'DB.Migration',
-    );
-  }
-
-  // ════════════════════════════════════════════════════════════════
-
-  /// V20 — Cache local de dados climáticos (módulo clima/).
-  ///
-  /// Cria 3 tabelas com TTL de 15 minutos (gerenciado pelo ClimaLocalDatasource):
-  ///   - [clima_atual_cache]   → condição atual por coordenada
-  ///   - [clima_horaria_cache] → previsão horária (payload JSON)
-  ///   - [clima_diaria_cache]  → previsão semanal (payload JSON)
-  /// Idempotente: CREATE TABLE IF NOT EXISTS.
-  Future<void> _migrateToV20(Database db) async {
-    await db.execute('''
-      CREATE TABLE IF NOT EXISTS clima_atual_cache (
-        cache_key        TEXT PRIMARY KEY,
-        user_id          TEXT NOT NULL DEFAULT '',
-        temperatura      REAL NOT NULL,
-        sensacao_termica REAL NOT NULL,
-        condicao         TEXT NOT NULL,
-        condicao_codigo  TEXT NOT NULL,
-        vento_velocidade REAL NOT NULL,
-        vento_direcao    TEXT NOT NULL,
-        umidade          INTEGER NOT NULL,
-        precipitacao     REAL NOT NULL,
-        pressao          REAL NOT NULL,
-        visibilidade     REAL NOT NULL,
-        cobertura_nuvens INTEGER NOT NULL,
-        indice_uv        INTEGER NOT NULL,
-        nascer_sol       TEXT NOT NULL,
-        por_sol          TEXT NOT NULL,
-        latitude         REAL NOT NULL,
-        longitude        REAL NOT NULL,
-        cidade           TEXT NOT NULL,
-        atualizado_em    TEXT NOT NULL,
-        cached_at        TEXT NOT NULL
-      )
-    ''');
-
-    await db.execute('''
-      CREATE TABLE IF NOT EXISTS clima_horaria_cache (
-        cache_key TEXT PRIMARY KEY,
-        user_id   TEXT NOT NULL DEFAULT '',
-        payload   TEXT NOT NULL,
-        cached_at TEXT NOT NULL
-      )
-    ''');
-
-    await db.execute('''
-      CREATE TABLE IF NOT EXISTS clima_diaria_cache (
-        cache_key TEXT PRIMARY KEY,
-        user_id   TEXT NOT NULL DEFAULT '',
-        payload   TEXT NOT NULL,
-        cached_at TEXT NOT NULL
-      )
-    ''');
-
-    AppLogger.debug('V20: tabelas de cache clima criadas', tag: 'DB.Migration');
-  }
-
   Future<void> close() async {
-    final db = await instance.database;
-    db.close();
+    final db = await database;
+    await db.close();
   }
 
-  // ════════════════════════════════════════════════════════════════════
+  /// Remove registros locais do usuário ao excluir a conta.
+  Future<void> clearUserLocalData(String userId) async {
+    if (userId.isEmpty) return;
 
-  /// V19 — Cache local de imagens NDVI (módulo ndvi/).
-  ///
-  /// Cria tabela [ndvi_cache] para armazenar a última imagem NDVI por talhão
-  /// (area_id + date), com validade de 24h.
-  /// Idempotente: CREATE TABLE IF NOT EXISTS.
-  Future<void> _migrateToV19(Database db) async {
-    await db.execute('''
-      CREATE TABLE IF NOT EXISTS ndvi_cache (
-        id           TEXT PRIMARY KEY,
-        user_id      TEXT NOT NULL DEFAULT '',
-        area_id      TEXT NOT NULL,
-        date         TEXT NOT NULL,
-        source       TEXT NOT NULL,
-        image_path   TEXT NOT NULL,
-        cloud_coverage REAL,
-        available_dates TEXT NOT NULL,
-        cached_at    TEXT NOT NULL,
-        UNIQUE(area_id, date)
-      )
-    ''');
-
-    await db.execute(
-      'CREATE INDEX IF NOT EXISTS idx_ndvi_cache_area ON ndvi_cache(area_id)',
-    );
-
-    AppLogger.debug('V19: tabela ndvi_cache criada', tag: 'DB.Migration');
+    final db = await database;
+    await db.transaction((txn) => _clearUserLocalData(txn, userId));
   }
 
-  /// V21 — Isolamento local por usuário autenticado.
-  ///
-  /// Adiciona a coluna `user_id` em todas as tabelas locais persistidas.
-  /// Idempotente: cada ALTER TABLE é envolvido em try/catch individual.
-  Future<void> _migrateToV21(Database db) async {
-    const tables = [
+  Future<void> _clearUserLocalData(DatabaseExecutor db, String userId) async {
+    const tablesWithUserId = [
       'clients',
       'farms',
       'fields',
@@ -931,433 +243,51 @@ class DatabaseHelper {
       'publicacoes_tecnicas',
       'relatorios',
       'relatorios_v2',
+      'carteira_categorias',
+      'carteira_cliente_categorias',
+      'carteira_safras',
+      'carteira_metas',
+      'carteira_lancamentos',
+      'quick_photos',
+      'user_profile_edits',
     ];
 
-    for (final table in tables) {
+    for (final table in tablesWithUserId) {
       try {
-        await db.execute(
-          "ALTER TABLE $table ADD COLUMN user_id TEXT NOT NULL DEFAULT ''",
-        );
-        AppLogger.debug(
-          'V21: user_id adicionado em $table',
-          tag: 'DB.Migration',
-        );
-      } catch (_) {
-        AppLogger.debug(
-          'V21: user_id já existe em $table ou tabela ausente — ignorado',
-          tag: 'DB.Migration',
-        );
-      }
-    }
-  }
-
-  /// V22 — Módulo carteira (categorias e percentual por cliente).
-  ///
-  /// Cria tabelas locais do bounded context carteira/.
-  /// Idempotente: CREATE TABLE/INDEX IF NOT EXISTS.
-  Future<void> _migrateToV22(Database db) async {
-    await db.execute('''
-      CREATE TABLE IF NOT EXISTS carteira_categorias (
-        id          TEXT PRIMARY KEY,
-        user_id     TEXT NOT NULL DEFAULT '',
-        nome        TEXT NOT NULL,
-        cor         TEXT NOT NULL DEFAULT '#4ADE80',
-        ativo       INTEGER NOT NULL DEFAULT 1,
-        ordem       INTEGER NOT NULL DEFAULT 0,
-        valor_real  REAL,
-        valor_dolar REAL,
-        sacas_por_ha REAL,
-        created_at  TEXT NOT NULL,
-        updated_at  TEXT NOT NULL
-      )
-    ''');
-
-    await db.execute('''
-      CREATE TABLE IF NOT EXISTS carteira_cliente_categorias (
-        id                  TEXT PRIMARY KEY,
-        user_id             TEXT NOT NULL DEFAULT '',
-        cliente_id          TEXT NOT NULL,
-        categoria_id        TEXT NOT NULL,
-        percentual_fechado  INTEGER NOT NULL DEFAULT 0,
-        observacao          TEXT,
-        updated_at          TEXT NOT NULL,
-        FOREIGN KEY (categoria_id) REFERENCES carteira_categorias(id)
-      )
-    ''');
-
-    await db.execute('''
-      CREATE INDEX IF NOT EXISTS idx_carteira_cliente_user
-        ON carteira_cliente_categorias(user_id, cliente_id)
-    ''');
-
-    await db.execute('''
-      CREATE INDEX IF NOT EXISTS idx_carteira_cat_user
-        ON carteira_categorias(user_id, ativo)
-    ''');
-
-    AppLogger.debug(
-      'V22: tabelas do módulo carteira criadas',
-      tag: 'DB.Migration',
-    );
-  }
-
-  /// V23 — Carteira: valores opcionais por categoria.
-  ///
-  /// Adiciona colunas opcionais em `carteira_categorias`.
-  /// Idempotente: cada ALTER TABLE é envolvido em try/catch individual.
-  Future<void> _migrateToV23(Database db) async {
-    const statements = <String>[
-      'ALTER TABLE carteira_categorias ADD COLUMN valor_real REAL',
-      'ALTER TABLE carteira_categorias ADD COLUMN valor_dolar REAL',
-      'ALTER TABLE carteira_categorias ADD COLUMN sacas_por_ha REAL',
-    ];
-
-    for (final sql in statements) {
-      try {
-        await db.execute(sql);
-        AppLogger.debug('V23: executado "$sql"', tag: 'DB.Migration');
-      } catch (_) {
-        AppLogger.debug(
-          'V23: coluna já existe ou tabela ausente — ignorado',
-          tag: 'DB.Migration',
-        );
-      }
-    }
-  }
-
-  /// V24 — ADR-022: Sistema de Metas, Safra e Lançamentos.
-  /// Cria tabelas: carteira_config, carteira_safras,
-  ///               carteira_metas, carteira_lancamentos.
-  /// Adiciona colunas em carteira_categorias: unidade, valor_referencia.
-  Future<void> _migrateToV24(Database db) async {
-    // Config global do usuário (valor do grão)
-    await db.execute('''
-      CREATE TABLE IF NOT EXISTS carteira_config (
-        user_id    TEXT PRIMARY KEY,
-        valor_grao REAL NOT NULL DEFAULT 0.0,
-        updated_at TEXT NOT NULL
-      )
-    ''');
-
-    // Safras
-    await db.execute('''
-      CREATE TABLE IF NOT EXISTS carteira_safras (
-        id          TEXT PRIMARY KEY,
-        user_id     TEXT NOT NULL DEFAULT '',
-        nome        TEXT NOT NULL,
-        data_inicio TEXT NOT NULL,
-        data_fim    TEXT NOT NULL,
-        ativa       INTEGER NOT NULL DEFAULT 1,
-        created_at  TEXT NOT NULL,
-        updated_at  TEXT NOT NULL
-      )
-    ''');
-    await db.execute('''
-      CREATE INDEX IF NOT EXISTS idx_carteira_safras_user
-        ON carteira_safras(user_id, ativa)
-    ''');
-
-    // Metas por categoria × safra
-    await db.execute('''
-      CREATE TABLE IF NOT EXISTS carteira_metas (
-        id           TEXT PRIMARY KEY,
-        user_id      TEXT NOT NULL DEFAULT '',
-        safra_id     TEXT NOT NULL,
-        categoria_id TEXT NOT NULL,
-        quantidade   REAL NOT NULL DEFAULT 0.0,
-        created_at   TEXT NOT NULL,
-        updated_at   TEXT NOT NULL,
-        UNIQUE(user_id, safra_id, categoria_id)
-      )
-    ''');
-
-    // Lançamentos de realizado
-    await db.execute('''
-      CREATE TABLE IF NOT EXISTS carteira_lancamentos (
-        id               TEXT PRIMARY KEY,
-        user_id          TEXT NOT NULL DEFAULT '',
-        safra_id         TEXT NOT NULL,
-        categoria_id     TEXT NOT NULL,
-        cliente_id       TEXT NOT NULL,
-        quantidade       REAL NOT NULL,
-        observacao       TEXT,
-        data_lancamento  TEXT NOT NULL,
-        created_at       TEXT NOT NULL
-      )
-    ''');
-    await db.execute('''
-      CREATE INDEX IF NOT EXISTS idx_carteira_lancamentos_safra_cat
-        ON carteira_lancamentos(user_id, safra_id, categoria_id)
-    ''');
-    await db.execute('''
-      CREATE INDEX IF NOT EXISTS idx_carteira_lancamentos_cliente
-        ON carteira_lancamentos(user_id, cliente_id, safra_id)
-    ''');
-
-    // Adicionar unidade em carteira_categorias (idempotente)
-    try {
-      await db.execute(
-        'ALTER TABLE carteira_categorias '
-        'ADD COLUMN unidade TEXT NOT NULL DEFAULT "realPorHa"',
-      );
-    } catch (_) {
-      AppLogger.debug('V24: coluna unidade já existente', tag: 'DB.Migration');
-    }
-
-    // Adicionar valor_referencia em carteira_categorias (idempotente)
-    try {
-      await db.execute(
-        'ALTER TABLE carteira_categorias '
-        'ADD COLUMN valor_referencia REAL',
-      );
-    } catch (_) {
-      AppLogger.debug(
-        'V24: coluna valor_referencia já existente',
-        tag: 'DB.Migration',
-      );
-    }
-
-    // Migrar dados existentes: valor_real → valor_referencia
-    await db.execute('''
-      UPDATE carteira_categorias
-      SET valor_referencia = valor_real
-      WHERE valor_referencia IS NULL AND valor_real IS NOT NULL
-    ''');
-
-    AppLogger.debug(
-      'V24: carteira_config, carteira_safras, carteira_metas, '
-      'carteira_lancamentos criadas. carteira_categorias atualizada.',
-      tag: 'DB',
-    );
-  }
-
-  /// V25 — Carteira: tipo de fechamento em lançamentos.
-  ///
-  /// Adiciona colunas opcionais em `carteira_lancamentos`:
-  /// - tipo_fechamento
-  /// - nome_concorrente
-  /// - motivo_fechamento
-  ///
-  /// Idempotente: cada ALTER TABLE é envolvido em try/catch individual.
-  Future<void> _migrateToV25(Database db) async {
-    const statements = <String>[
-      'ALTER TABLE carteira_lancamentos ADD COLUMN tipo_fechamento TEXT',
-      'ALTER TABLE carteira_lancamentos ADD COLUMN nome_concorrente TEXT',
-      'ALTER TABLE carteira_lancamentos ADD COLUMN motivo_fechamento TEXT',
-    ];
-
-    for (final sql in statements) {
-      try {
-        await db.execute(sql);
-        AppLogger.debug('V25: executado "$sql"', tag: 'DB.Migration');
-      } catch (_) {
-        AppLogger.debug(
-          'V25: coluna já existe ou tabela ausente — ignorado',
-          tag: 'DB.Migration',
-        );
-      }
-    }
-  }
-
-  /// V26 — Carteira: data de fechamento opcional em lançamentos.
-  ///
-  /// Adiciona coluna opcional em `carteira_lancamentos`:
-  /// - data_fechamento
-  ///
-  /// Idempotente: ALTER TABLE envolvido em try/catch.
-  Future<void> _migrateToV26(Database db) async {
-    try {
-      await db.execute(
-        'ALTER TABLE carteira_lancamentos ADD COLUMN data_fechamento TEXT',
-      );
-      AppLogger.debug(
-        'V26: executado "ALTER TABLE carteira_lancamentos ADD COLUMN data_fechamento TEXT"',
-        tag: 'DB.Migration',
-      );
-    } catch (_) {
-      AppLogger.debug(
-        'V26: coluna já existe ou tabela ausente — ignorado',
-        tag: 'DB.Migration',
-      );
-    }
-  }
-
-  /// V27 — NDVI: recria ndvi_cache com novo schema.
-  ///
-  /// A tabela antiga (V19) usava area_id, date, image_path, available_dates.
-  /// O novo schema usa field_id, image_date, ndvi_min, ndvi_max, ndvi_mean,
-  /// sync_status — alinhado com o contrato NdviImage.
-  ///
-  /// Estratégia: DROP + CREATE (dados são cache efêmero, regeneráveis).
-  /// Idempotente: CREATE TABLE IF NOT EXISTS garante segurança em re-execução.
-  Future<void> _migrateToV27(Database db) async {
-    try {
-      await _renameTableIfExists(db, 'ndvi_cache', 'ndvi_cache_v19_legacy');
-      AppLogger.debug(
-        'V27: ndvi_cache antiga preservada como ndvi_cache_v19_legacy',
-        tag: 'DB.Migration',
-      );
-    } catch (_) {
-      AppLogger.debug('V27: backup ndvi_cache — ignorado', tag: 'DB.Migration');
-    }
-    try {
-      await db.execute('''
-        CREATE TABLE IF NOT EXISTS ndvi_cache (
-          id           TEXT PRIMARY KEY,
-          user_id      TEXT NOT NULL DEFAULT '',
-          field_id     TEXT NOT NULL,
-          image_date   TEXT NOT NULL,
-          ndvi_min     REAL NOT NULL DEFAULT 0.0,
-          ndvi_max     REAL NOT NULL DEFAULT 0.0,
-          ndvi_mean    REAL NOT NULL DEFAULT 0.0,
-          image_url    TEXT,
-          local_path   TEXT,
-          source       TEXT NOT NULL,
-          fetched_at   TEXT NOT NULL,
-          sync_status  INTEGER NOT NULL DEFAULT 0,
-          UNIQUE(field_id, image_date)
-        )
-      ''');
-      await db.execute(
-        'CREATE INDEX IF NOT EXISTS idx_ndvi_cache_field ON ndvi_cache(field_id)',
-      );
-      if (await _tableExists(db, 'ndvi_cache_v19_legacy')) {
-        await db.execute('''
-          INSERT OR IGNORE INTO ndvi_cache (
-            id,
-            user_id,
-            field_id,
-            image_date,
-            ndvi_min,
-            ndvi_max,
-            ndvi_mean,
-            local_path,
-            source,
-            fetched_at,
-            sync_status
-          )
-            SELECT
-              id,
-              user_id,
-              area_id,
-              date,
-              0.0,
-              0.0,
-              0.0,
-              image_path,
-              source,
-              cached_at,
-              0
-            FROM ndvi_cache_v19_legacy
-        ''');
-      }
-      AppLogger.debug(
-        'V27: ndvi_cache recriada com novo schema',
-        tag: 'DB.Migration',
-      );
-    } catch (_) {
-      AppLogger.debug(
-        'V27: criação ndvi_cache — ignorado',
-        tag: 'DB.Migration',
-      );
-    }
-  }
-
-  /// V28 — Occurrences: vínculo opcional com cliente (ADR-014/ADR-015).
-  ///
-  /// Adiciona coluna nullable `client_id` em `occurrences`.
-  /// Idempotente: ALTER TABLE envolvido em try/catch.
-  Future<void> _migrateToV28(Database db) async {
-    try {
-      await db.execute('ALTER TABLE occurrences ADD COLUMN client_id TEXT');
-      AppLogger.debug(
-        'V28: client_id adicionado em occurrences',
-        tag: 'DB.Migration',
-      );
-    } catch (_) {
-      AppLogger.debug(
-        'V28: client_id já existe em occurrences — ignorado',
-        tag: 'DB.Migration',
-      );
-    }
-  }
-
-  /// V29 — Carteira: adiciona closed_percent em carteira_lancamentos.
-  Future<void> _migrateToV29(Database db) async {
-    try {
-      await db.execute('''
-        ALTER TABLE carteira_lancamentos
-        ADD COLUMN closed_percent REAL NOT NULL DEFAULT 0.0
-      ''');
-      AppLogger.debug(
-        'V29: closed_percent adicionado em carteira_lancamentos',
-        tag: 'DB.Migration',
-      );
-    } catch (_) {
-      AppLogger.debug(
-        'V29: closed_percent já existe em carteira_lancamentos — ignorado',
-        tag: 'DB.Migration',
-      );
-    }
-  }
-
-  Future<void> _migrateToV30(Database db) async {
-    await db.execute('''
-      CREATE TABLE IF NOT EXISTS user_profile_cache (
-        id TEXT PRIMARY KEY,
-        email TEXT NOT NULL,
-        full_name TEXT,
-        phone TEXT,
-        role TEXT,
-        photo_url TEXT,
-        crea_number TEXT,
-        created_at TEXT NOT NULL,
-        updated_at TEXT NOT NULL,
-        sync_status INTEGER NOT NULL DEFAULT 0
-      )
-    ''');
-
-    await db.execute('''
-      CREATE TABLE IF NOT EXISTS user_profile_edits (
-        id TEXT PRIMARY KEY,
-        user_id TEXT NOT NULL,
-        field_changed TEXT NOT NULL,
-        old_value TEXT,
-        new_value TEXT NOT NULL,
-        changed_at TEXT NOT NULL
-      )
-    ''');
-
-    AppLogger.debug(
-      'V30: user_profile_cache e user_profile_edits criadas',
-      tag: 'DB.Migration',
-    );
-  }
-
-  /// Remove registros locais não sincronizados do usuário ao excluir a conta.
-  Future<void> clearUserLocalData(String userId) async {
-    if (userId.isEmpty) return;
-
-    final db = await database;
-
-    const tablesWithSync = [
-      'occurrences',
-      'drawings',
-      'publicacoes_tecnicas',
-      'relatorios',
-      'relatorios_v2',
-    ];
-
-    for (final table in tablesWithSync) {
-      try {
-        await db.delete(
-          table,
-          where: "user_id = ? AND sync_status IN ('local_only', 'local')",
-          whereArgs: [userId],
-        );
+        await db.delete(table, where: 'user_id = ?', whereArgs: [userId]);
       } catch (_) {
         // Tabela ausente ou sem coluna esperada — ignorar no logout.
       }
+    }
+
+    try {
+      await db.delete(
+        'occurrences',
+        where: 'cached_by_user_id = ?',
+        whereArgs: [userId],
+      );
+    } catch (_) {
+      // Coluna disponivel apenas a partir da v38.
+    }
+
+    try {
+      await db.delete(
+        'producer_client_links',
+        where: 'producer_user_id = ? OR consultor_user_id = ?',
+        whereArgs: [userId, userId],
+      );
+    } catch (_) {
+      // Tabela de vínculo pode não existir em bancos legados.
+    }
+
+    try {
+      await db.delete(
+        'user_profile_cache',
+        where: 'id = ?',
+        whereArgs: [userId],
+      );
+    } catch (_) {
+      // Tabela ausente — ignorar no logout.
     }
   }
 
@@ -1408,105 +338,5 @@ class DatabaseHelper {
         debugPrint('[DB] repairOrphanUserIds erro em $table: $e');
       }
     }
-  }
-
-  // ADR-034: Limpeza do legado reports/ (visit_reports)
-  Future<void> _migrateToV31(Database db) async {
-    debugPrint('[DB] Migrando para V31: arquivar tabela visit_reports');
-    await _renameTableIfExists(db, 'visit_reports', 'visit_reports_legacy_v31');
-  }
-
-  Future<void> _migrateToV32(Database db) async {
-    await db.execute('''
-      CREATE TABLE IF NOT EXISTS relatorios (
-        id TEXT PRIMARY KEY,
-        visit_session_id TEXT NOT NULL,
-        client_id TEXT NOT NULL,
-        agronomist_id TEXT NOT NULL,
-        farm_name TEXT NOT NULL,
-        period_start TEXT NOT NULL,
-        period_end TEXT NOT NULL,
-        status TEXT NOT NULL,
-        sync_status TEXT NOT NULL,
-        created_at TEXT NOT NULL,
-        updated_at TEXT NOT NULL,
-        deleted_at TEXT,
-        title TEXT,
-        custom_notes TEXT,
-        publicacoes_refs TEXT NOT NULL DEFAULT '[]',
-        ocorrencias TEXT NOT NULL DEFAULT '[]',
-        talhoes TEXT NOT NULL DEFAULT '[]',
-        fotos TEXT NOT NULL DEFAULT '[]',
-        monitoramentos TEXT NOT NULL DEFAULT '[]',
-        user_id TEXT NOT NULL DEFAULT ''
-      )
-    ''');
-  }
-
-  /// Mantém a fazenda escolhida no check-in mesmo quando não há talhão.
-  Future<void> _migrateToV33(Database db) async {
-    try {
-      await db.execute('ALTER TABLE visit_sessions ADD COLUMN farm_id TEXT');
-      AppLogger.debug(
-        'V33: farm_id adicionado em visit_sessions',
-        tag: 'DB.Migration',
-      );
-    } catch (e) {
-      AppLogger.debug(
-        'V33: farm_id já existe em visit_sessions — $e',
-        tag: 'DB.Migration',
-      );
-    }
-  }
-
-  Future<void> _migrateToV34(Database db) async {
-    final columns = <String, String>{
-      'report_brand_name': 'TEXT',
-      'report_logo_url': 'TEXT',
-    };
-    for (final entry in columns.entries) {
-      try {
-        await db.execute(
-          'ALTER TABLE user_profile_cache ADD COLUMN ${entry.key} ${entry.value}',
-        );
-        AppLogger.debug(
-          'V34: coluna ${entry.key} adicionada em user_profile_cache',
-          tag: 'DB.Migration',
-        );
-      } catch (e) {
-        AppLogger.debug(
-          'V34: ${entry.key} já existe em user_profile_cache — $e',
-          tag: 'DB.Migration',
-        );
-      }
-    }
-  }
-
-  Future<void> _migrateToV35(Database db) async {
-    await db.execute('''
-      CREATE TABLE IF NOT EXISTS quick_photos (
-        id TEXT PRIMARY KEY,
-        user_id TEXT NOT NULL DEFAULT '',
-        visit_session_id TEXT,
-        local_path TEXT NOT NULL,
-        storage_path TEXT,
-        public_url TEXT,
-        lat REAL,
-        lng REAL,
-        photo_type TEXT NOT NULL DEFAULT 'normal',
-        created_at TEXT NOT NULL,
-        sync_status INTEGER NOT NULL DEFAULT 1,
-        FOREIGN KEY (visit_session_id) REFERENCES visit_sessions (id)
-      )
-    ''');
-    await db.execute(
-      'CREATE INDEX IF NOT EXISTS idx_quick_photos_visit_session '
-      'ON quick_photos(visit_session_id)',
-    );
-    await db.execute(
-      'CREATE INDEX IF NOT EXISTS idx_quick_photos_sync '
-      'ON quick_photos(sync_status)',
-    );
-    AppLogger.debug('V35: tabela quick_photos criada', tag: 'DB.Migration');
   }
 }

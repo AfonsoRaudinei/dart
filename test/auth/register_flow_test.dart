@@ -12,10 +12,12 @@ class FakeAuthService extends AuthService {
   bool shouldThrow = false;
   Duration delay = Duration.zero;
   int callCount = 0;
+  RegisterDto? lastDto;
 
   @override
   Future<AuthResponse> register(RegisterDto dto) async {
     callCount++;
+    lastDto = dto;
     if (shouldThrow) {
       throw Exception('Falha na conexão');
     }
@@ -115,6 +117,52 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(fakeAuthService.callCount, 1);
+  });
+
+  testWidgets('Should send consultor role when selected', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(390, 844));
+
+    await tester.pumpWidget(createWidget());
+
+    await tester.enterText(
+      find.byKey(const Key('register_name_field')),
+      'Ana Consultora',
+    );
+    await tester.enterText(
+      find.byKey(const Key('register_email_field')),
+      'ana@teste.com',
+    );
+    await tester.enterText(
+      find.byKey(const Key('register_phone_field')),
+      '11999999999',
+    );
+
+    final roleField = find.byKey(const Key('register_role_field'));
+    await tester.ensureVisible(roleField);
+    await tester.tap(roleField);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Consultor').last);
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.byKey(const Key('register_password_field')),
+      'SoloForte2025!',
+    );
+    await tester.enterText(
+      find.byKey(const Key('register_confirm_password_field')),
+      'SoloForte2025!',
+    );
+
+    await tester.pumpAndSettle();
+
+    final buttonFinder = find.byKey(const Key('register_submit_button'));
+    await tester.ensureVisible(buttonFinder);
+    await tester.pumpAndSettle();
+    await tester.tap(buttonFinder);
+    await tester.pumpAndSettle();
+
+    expect(fakeAuthService.callCount, 1);
+    expect(fakeAuthService.lastDto?.role, 'consultor');
   });
 
   testWidgets('Should handle backend error', (tester) async {

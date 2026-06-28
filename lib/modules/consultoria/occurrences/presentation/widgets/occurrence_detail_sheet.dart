@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
@@ -122,15 +124,19 @@ class OccurrenceDetailSheet extends StatelessWidget {
       'pt_BR',
     ).format(occurrence.createdAt);
 
-    final lat = occurrence.lat;
-    final lng = occurrence.long;
-    final coordsText = (lat != null && lng != null)
-        ? '${lat.toStringAsFixed(5)}, ${lng.toStringAsFixed(5)}'
+    final coordinates = occurrence.getCoordinates();
+    final coordsText = coordinates != null
+        ? '${coordinates['lat']!.toStringAsFixed(5)}, '
+              '${coordinates['long']!.toStringAsFixed(5)}'
         : 'Sem coordenadas';
+    final analysisPayload = _formatPayload(occurrence.analysisPayloadJson);
 
     return SafeArea(
       top: false,
       child: Container(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.sizeOf(context).height * 0.9,
+        ),
         decoration: BoxDecoration(
           color: isDark
               ? PremiumTokens.surfaceDark
@@ -140,181 +146,216 @@ class OccurrenceDetailSheet extends StatelessWidget {
           ),
           boxShadow: PremiumTokens.premiumShadow,
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // ── Drag pill ─────────────────────────────────────────────────
-            const SizedBox(height: 12),
-            Center(
-              child: Container(
-                width: 36,
-                height: 5,
-                decoration: BoxDecoration(
-                  color: isDark
-                      ? const Color(0xFF545458)
-                      : const Color(0xFFC5C5C7),
-                  borderRadius: BorderRadius.circular(10),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // ── Drag pill ─────────────────────────────────────────────────
+              const SizedBox(height: 12),
+              Center(
+                child: Container(
+                  width: 36,
+                  height: 5,
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? const Color(0xFF545458)
+                        : const Color(0xFFC5C5C7),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: 16),
+              const SizedBox(height: 16),
 
-            // ── Header com ícone + categoria + urgência ───────────────────
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Row(
-                children: [
-                  Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color: urgencyColor.withValues(alpha: 0.14),
-                      shape: BoxShape.circle,
+              // ── Header com ícone + categoria + urgência ───────────────────
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: urgencyColor.withValues(alpha: 0.14),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(categoryIcon, color: urgencyColor, size: 22),
                     ),
-                    child: Icon(categoryIcon, color: urgencyColor, size: 22),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          categoryLabel,
-                          style: TextStyle(
-                            fontSize: 17,
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: -0.4,
-                            color: isDark
-                                ? PremiumTokens.textPrimaryDark
-                                : PremiumTokens.textPrimaryLight,
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            categoryLabel,
+                            style: TextStyle(
+                              fontSize: 17,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: -0.4,
+                              color: isDark
+                                  ? PremiumTokens.textPrimaryDark
+                                  : PremiumTokens.textPrimaryLight,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 2),
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: urgencyColor.withValues(alpha: 0.14),
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: Text(
-                                'Urgência $urgencyLabel',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w500,
-                                  color: urgencyColor,
+                          const SizedBox(height: 2),
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: urgencyColor.withValues(alpha: 0.14),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  'Urgência $urgencyLabel',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                    color: urgencyColor,
+                                  ),
                                 ),
                               ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 20),
-
-            // ── Divisor ───────────────────────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Divider(
-                thickness: PremiumTokens.hairlineThickness,
-                color: isDark
-                    ? PremiumTokens.hairlineDark
-                    : PremiumTokens.hairlineLight,
-                height: 1,
-              ),
-            ),
-
-            const SizedBox(height: 16),
-
-            // ── Dados em lista Inset ──────────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: isDark
-                      ? const Color(0xFF2C2C2E)
-                      : PremiumTokens.backgroundLight,
-                  borderRadius: BorderRadius.circular(
-                    PremiumTokens.borderRadiusSm,
-                  ),
-                ),
-                child: Column(
-                  children: [
-                    _DetailRow(
-                      isDark: isDark,
-                      icon: SFIcons.description,
-                      label: 'Descrição',
-                      value: occurrence.description.isNotEmpty
-                          ? occurrence.description
-                          : 'Sem descrição',
-                      showDivider: true,
-                    ),
-                    _DetailRow(
-                      isDark: isDark,
-                      icon: SFIcons.locationOn,
-                      label: 'Coordenadas',
-                      value: coordsText,
-                      showDivider: true,
-                    ),
-                    if (occurrence.cultivar != null &&
-                        occurrence.cultivar!.isNotEmpty)
-                      _DetailRow(
-                        isDark: isDark,
-                        icon: SFIcons.agriculture,
-                        label: 'Cultivar',
-                        value: occurrence.cultivar!,
-                        showDivider: true,
+                            ],
+                          ),
+                        ],
                       ),
-                    if (occurrence.dataPlantio != null &&
-                        occurrence.dataPlantio!.isNotEmpty)
-                      _DetailRow(
-                        isDark: isDark,
-                        icon: SFIcons.calendar,
-                        label: 'Data de Plantio',
-                        value: occurrence.dataPlantio!,
-                        showDivider: true,
-                      ),
-                    _DetailRow(
-                      isDark: isDark,
-                      icon: SFIcons.calendar,
-                      label: 'Registrada em',
-                      value: formattedDate,
-                      showDivider: false,
                     ),
                   ],
                 ),
               ),
-            ),
 
-            const SizedBox(height: 24),
+              const SizedBox(height: 20),
 
-            // ── Botão fechar ──────────────────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: SizedBox(
-                width: double.infinity,
-                height: 50,
-                child: CupertinoCloseButton(
-                  isDark: isDark,
-                  onTap: () => Navigator.of(context).pop(),
+              // ── Divisor ───────────────────────────────────────────────────
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Divider(
+                  thickness: PremiumTokens.hairlineThickness,
+                  color: isDark
+                      ? PremiumTokens.hairlineDark
+                      : PremiumTokens.hairlineLight,
+                  height: 1,
                 ),
               ),
-            ),
 
-            const SizedBox(height: 16),
-          ],
+              const SizedBox(height: 16),
+
+              // ── Dados em lista Inset ──────────────────────────────────────
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? const Color(0xFF2C2C2E)
+                        : PremiumTokens.backgroundLight,
+                    borderRadius: BorderRadius.circular(
+                      PremiumTokens.borderRadiusSm,
+                    ),
+                  ),
+                  child: Column(
+                    children: [
+                      _DetailRow(
+                        isDark: isDark,
+                        icon: SFIcons.description,
+                        label: 'Descrição',
+                        value: occurrence.description.isNotEmpty
+                            ? occurrence.description
+                            : 'Sem descrição',
+                        showDivider: true,
+                      ),
+                      if (occurrence.externalSource != null)
+                        _DetailRow(
+                          isDark: isDark,
+                          icon: SFIcons.science,
+                          label: 'Origem externa',
+                          value: occurrence.externalSource!,
+                          showDivider: true,
+                        ),
+                      if (occurrence.externalAnalysisId != null)
+                        _DetailRow(
+                          isDark: isDark,
+                          icon: SFIcons.description,
+                          label: 'ID da análise',
+                          value: occurrence.externalAnalysisId!,
+                          showDivider: true,
+                        ),
+                      if (analysisPayload != null)
+                        _DetailRow(
+                          isDark: isDark,
+                          icon: SFIcons.science,
+                          label: 'Dados completos da análise',
+                          value: analysisPayload,
+                          showDivider: true,
+                        ),
+                      _DetailRow(
+                        isDark: isDark,
+                        icon: SFIcons.locationOn,
+                        label: 'Coordenadas',
+                        value: coordsText,
+                        showDivider: true,
+                      ),
+                      if (occurrence.cultivar != null &&
+                          occurrence.cultivar!.isNotEmpty)
+                        _DetailRow(
+                          isDark: isDark,
+                          icon: SFIcons.agriculture,
+                          label: 'Cultivar',
+                          value: occurrence.cultivar!,
+                          showDivider: true,
+                        ),
+                      if (occurrence.dataPlantio != null &&
+                          occurrence.dataPlantio!.isNotEmpty)
+                        _DetailRow(
+                          isDark: isDark,
+                          icon: SFIcons.calendar,
+                          label: 'Data de Plantio',
+                          value: occurrence.dataPlantio!,
+                          showDivider: true,
+                        ),
+                      _DetailRow(
+                        isDark: isDark,
+                        icon: SFIcons.calendar,
+                        label: 'Registrada em',
+                        value: formattedDate,
+                        showDivider: false,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 24),
+
+              // ── Botão fechar ──────────────────────────────────────────────
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: CupertinoCloseButton(
+                    isDark: isDark,
+                    onTap: () => Navigator.of(context).pop(),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 16),
+            ],
+          ),
         ),
       ),
     );
+  }
+
+  static String? _formatPayload(String? payload) {
+    if (payload == null || payload.trim().isEmpty) return null;
+    try {
+      return const JsonEncoder.withIndent('  ').convert(jsonDecode(payload));
+    } catch (_) {
+      return payload;
+    }
   }
 }
 

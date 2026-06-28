@@ -84,8 +84,11 @@ class _ResetPasswordPageState extends ConsumerState<ResetPasswordPage> {
     if (lower.contains('weak password')) {
       return 'Senha muito fraca. Use letras, números e símbolos.';
     }
-    if (lower.contains('network') || lower.contains('socket')) {
-      return 'Erro de conexão. Verifique sua internet.';
+    if (lower.contains('network') ||
+        lower.contains('socket') ||
+        lower.contains('host lookup') ||
+        lower.contains('connection')) {
+      return 'Não foi possível conectar ao servidor. Verifique sua conexão e tente novamente.';
     }
     return 'Não foi possível redefinir a senha. Tente novamente.';
   }

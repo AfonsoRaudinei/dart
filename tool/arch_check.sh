@@ -13,6 +13,7 @@
 #   REGRA 2 — Acoplamentos laterais proibidos entre módulos
 #   REGRA 3 — Arquivos novos não podem ultrapassar 900 linhas
 #   REGRA-NDVI — Invariants ADR-042 (lookup chain, fronteira, testes)
+#   REGRA-NAV-1 — context.pop()/canPop() proibidos (Map-First)
 # =============================================================================
 
 set -uo pipefail
@@ -330,11 +331,8 @@ echo ""
 # Exceções legadas — arquivos da baseline que excedem 900 linhas.
 # Remover desta lista quando o arquivo for decomposto.
 LEGACY_EXCEPTIONS=(
-  "modules/drawing/presentation/controllers/drawing_controller.dart"  # 1344 — decomposição planejada
-  "modules/drawing/presentation/widgets/drawing_sheet.dart"            # 1177 — decomposição planejada
-  "ui/components/map/map_occurrence_sheet.dart"                        # 1064 — decomposição planejada
+  "modules/drawing/presentation/controllers/drawing_controller.dart"  # 1697 — vertex em part; CRUD/orchestrators pendentes
   "modules/drawing/domain/drawing_utils.dart"                          # 1010 — utilitário puro, candidato a split
-  "core/database/database_helper.dart"                                 # 1128 — legado pré-baseline v1.1, decomposição planejada
   "ui/screens/private_map_screen.dart"                                 # 900+ — DT-025-5: God Object com comentário de governança ADR-025
 )
 
@@ -522,7 +520,7 @@ add_cross_whitelist \
 if [ "${#CROSS_MODULE_VIOLATIONS[@]}" -gt 0 ]; then
   warn "REGRA-CROSS-MODULE-2: $CROSS_MODULE_GROUPS grupo(s) de acoplamento lateral detectado(s)"
   echo "      Ocorrencias de import: ${#CROSS_MODULE_VIOLATIONS[@]}"
-  echo "      MODO WARNING-ONLY — nao bloqueia CI nesta versao v1.1"
+  echo "      MODO FAIL — bloqueia CI (v1.2 Fase 2)"
   echo ""
   for violation in "${CROSS_MODULE_VIOLATIONS[@]}"; do
     IFS="|" read -r label location suggestion <<< "$violation"
@@ -532,10 +530,9 @@ if [ "${#CROSS_MODULE_VIOLATIONS[@]}" -gt 0 ]; then
   done
   echo ""
   echo "      Solucao: usar contratos em core/contracts/ para comunicacao entre modulos."
-  echo "      Enforcement rigido planejado para v1.2 apos migracao."
+  echo "      Enforcement v1.2 — bloqueia CI após migração Fase 2."
   echo ""
-  # v1.1 warning-only: nao incrementar VIOLATIONS ainda.
-  # VIOLATIONS=$((VIOLATIONS + ${#CROSS_MODULE_VIOLATIONS[@]}))
+  VIOLATIONS=$((VIOLATIONS + ${#CROSS_MODULE_VIOLATIONS[@]}))
 else
   pass "REGRA-CROSS-MODULE-2: nenhum acoplamento lateral detectado"
 fi
@@ -732,6 +729,35 @@ if grep -q "tag: 'Radar'" lib/modules/clima/domain/radar_overlay_logger.dart && 
   pass "telemetria radar usa AppLogger sanitizado"
 else
   fail "REGRA-CLIMA-RADAR-7: datasource/logger do radar devem usar AppLogger (tag Radar)"
+fi
+
+echo ""
+
+# =============================================================================
+# REGRA-NAV-1 — context.pop()/canPop() proibidos (Map-First, Fase 7)
+#
+# Fundamento: navegação declarativa via context.go()/push() com AppRoutes.
+#             pop() cria stack implícita e quebra contrato SmartButton L1/L2+.
+#
+# Exceções: comentários em smart_button.dart (documentação do contrato).
+# =============================================================================
+echo -e "── ${CYAN}REGRA-NAV-1${NC}: context.pop()/canPop() proibidos ───────────────"
+echo ""
+
+NAV_VIOLATIONS=$(grep -rn "context\.pop()\|context\.canPop()" lib/ --include="*.dart" \
+  | grep -v "lib/ui/components/smart_button.dart" \
+  | grep -v "^\s*//" \
+  || true)
+
+if [ -n "$NAV_VIOLATIONS" ]; then
+  fail "REGRA-NAV-1: context.pop()/canPop() detectados (usar context.go + AppRoutes):"
+  echo ""
+  echo "$NAV_VIOLATIONS" | while IFS= read -r line; do
+    echo -e "      ${RED}→${NC} $line"
+  done
+  echo ""
+else
+  pass "nenhum context.pop()/canPop() fora de documentação"
 fi
 
 echo ""

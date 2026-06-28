@@ -65,6 +65,31 @@ void main() {
     expect(polygonLayer.polygons, hasLength(2));
   });
 
+  testWidgets('primeiro toque renderiza imediatamente o ponto inicial', (
+    tester,
+  ) async {
+    final controller = DrawingController(repository: _Repository([]));
+    addTearDown(controller.dispose);
+
+    controller.selectTool('polygon');
+    controller.appendDrawingPoint(const LatLng(-10.0, -48.0));
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: FlutterMap(
+            options: const MapOptions(initialCenter: LatLng(-10, -48)),
+            children: [DrawingLayerWidget(controller: controller)],
+          ),
+        ),
+      ),
+    );
+
+    expect(find.byKey(const Key('drawing_point_0')), findsOneWidget);
+    final markerLayer = tester.widget<MarkerLayer>(find.byType(MarkerLayer));
+    expect(markerLayer.markers.single.point, const LatLng(-10.0, -48.0));
+  });
+
   testWidgets(
     'desenho manual em andamento renderiza halo e traço contrastante',
     (tester) async {

@@ -252,6 +252,10 @@ void main() {
     expect(find.text('alq GO/MG'), findsOneWidget);
     expect(find.text('km'), findsNothing);
     expect(find.byKey(const Key('measurement_details_card')), findsNothing);
+    expect(
+      tester.getSize(find.byKey(const Key('measurement_area_card'))).height,
+      lessThan(105),
+    );
   });
 
   testWidgets('detalhes da medição abrem em painel auxiliar', (tester) async {

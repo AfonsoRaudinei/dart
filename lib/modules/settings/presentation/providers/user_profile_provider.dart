@@ -9,6 +9,9 @@
 //   ref.invalidate(currentUserProfileProvider) após edição
 
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import '../../../../core/session/session_controller.dart';
+import '../../../../core/session/session_models.dart';
+import '../../../../core/session/user_role.dart';
 import '../../data/repositories/user_profile_repository_impl.dart';
 import '../../domain/entities/user_profile.dart';
 import '../../domain/repositories/i_user_profile_repository.dart';
@@ -47,3 +50,25 @@ Future<List<UserProfileAuditEntry>> profileAuditTrail(
   final repo = ref.watch(userProfileRepositoryProvider);
   return repo.getAuditTrail(limit: 20);
 }
+
+// ─── Papel atual ─────────────────────────────────────────────
+
+final currentUserRoleProvider = Provider<UserRole>((ref) {
+  final profile = ref.watch(currentUserProfileProvider).asData?.value;
+  final profileRole = profile?.role.toUserRole();
+  if (profileRole != null && !profileRole.isUnknown) {
+    return profileRole;
+  }
+
+  final session = ref.watch(sessionControllerProvider);
+  if (session is SessionAuthenticated) {
+    final sessionRole =
+        session.user.userMetadata?['role']?.toString().toUserRole() ??
+        UserRole.unknown;
+    if (!sessionRole.isUnknown) {
+      return sessionRole;
+    }
+  }
+
+  return UserRole.unknown;
+});

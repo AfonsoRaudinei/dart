@@ -43,7 +43,7 @@ final feedbackStatsProvider = AutoDisposeFutureProvider<FeedbackStats>.internal(
 // ignore: unused_element
 typedef FeedbackStatsRef = AutoDisposeFutureProviderRef<FeedbackStats>;
 String _$feedbackControllerHash() =>
-    r'a429ebd82a62ddb45a1abdde1b64c1daa67b20be';
+    r'bad868b56deb1232f1d50e7ffebef6751c1ed049';
 
 /// See also [FeedbackController].
 @ProviderFor(FeedbackController)

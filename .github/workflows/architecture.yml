@@ -116,6 +116,11 @@ jobs:
           chmod +x tool/coverage_by_module.sh
           ./tool/coverage_by_module.sh coverage/lcov.info coverage/coverage_by_module.md
 
+      - name: Matriz de testes por setor (Fase 5 — warning only)
+        run: |
+          chmod +x tool/test_matrix_gate.sh
+          ./tool/test_matrix_gate.sh coverage/lcov.info
+
       - name: Upload do relatório de coverage
         uses: actions/upload-artifact@v4
         if: always()

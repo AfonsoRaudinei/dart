@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:soloforte_app/core/session/profile_role_resolver.dart';
 
 /// Testes unitários para o fluxo de completude de perfil.
 ///
@@ -58,10 +59,7 @@ void main() {
 
   group('ProfileCompletion — Idempotência', () {
     test('Updates devem conter apenas campos vazios', () {
-      final metadata = {
-        'full_name': 'João Silva',
-        'role': 'consultor',
-      };
+      final metadata = {'full_name': 'João Silva', 'role': 'consultor'};
 
       // Cenário 1: perfil totalmente vazio → atualiza tudo
       final perfilVazio = {'name': null, 'role': null};
@@ -75,21 +73,24 @@ void main() {
       expect(updates2, isNot(contains('name'))); // Não sobrescrever
       expect(updates2, containsPair('role', 'consultor'));
 
-      // Cenário 3: perfil com role preenchido → atualiza só nome
+      // Cenário 3: perfil válido é autoritativo sobre metadata
       final perfilComRole = {'name': null, 'role': 'produtor'};
       final updates3 = _computeUpdates(perfilComRole, metadata);
       expect(updates3, containsPair('name', 'João Silva'));
-      expect(updates3, isNot(contains('role'))); // Não sobrescrever
+      expect(updates3, isNot(contains('role')));
 
-      // Cenário 4: perfil completo → nenhum update (noop)
+      // Cenário 4: perfil completo e consistente → nenhum update (noop)
       final perfilCompleto = {'name': 'Maria', 'role': 'produtor'};
-      final updates4 = _computeUpdates(perfilCompleto, metadata);
+      final updates4 = _computeUpdates(perfilCompleto, {
+        'full_name': 'João Silva',
+        'role': 'produtor',
+      });
       expect(updates4, isEmpty); // Idempotente!
     });
 
     test('Reexecução em perfil completo não gera updates', () {
       final metadata = {'full_name': 'João', 'role': 'consultor'};
-      final perfilCompleto = {'name': 'Maria', 'role': 'produtor'};
+      final perfilCompleto = {'name': 'Maria', 'role': 'consultor'};
 
       // Primeira execução
       final updates1 = _computeUpdates(perfilCompleto, metadata);
@@ -104,15 +105,12 @@ void main() {
       expect(updates3, isEmpty);
     });
 
-    test('Nunca sobrescreve role existente com metadata diferente', () {
-      // Usuário editou role para 'consultor' via settings.
-      // Metadata ainda tem 'produtor' do cadastro original.
-      // ensureProfileComplete() NÃO deve reverter.
-      final metadata = {'full_name': 'João', 'role': 'produtor'};
-      final perfil = {'name': 'João', 'role': 'consultor'};
+    test('Preserva produtor remoto quando metadata diz consultor', () {
+      final metadata = {'full_name': 'João', 'role': 'consultor'};
+      final perfil = {'name': 'João', 'role': 'produtor'};
 
       final updates = _computeUpdates(perfil, metadata);
-      expect(updates, isEmpty); // Não sobrescrever role válido!
+      expect(updates, isNot(contains('role')));
     });
 
     test('String vazia é tratada como null (campo incompleto)', () {
@@ -149,6 +147,79 @@ void main() {
       // Nenhuma operação executada — teste passa se não lançar.
     });
   });
+
+  group('ProfileCompletion — Resolução de role', () {
+    test('Perfil produtor prevalece sobre metadata consultor', () {
+      final role = ProfileRoleResolver.resolve(
+        metadataRole: 'consultor',
+        profileRole: 'produtor',
+      );
+
+      expect(role, 'produtor');
+      expect(
+        ProfileRoleResolver.shouldUpdateProfileRole(
+          metadataRole: 'consultor',
+          profileRole: 'produtor',
+        ),
+        isFalse,
+      );
+    });
+
+    test('Perfil remoto prevalece sobre papel pendente local', () {
+      final role = ProfileRoleResolver.resolve(
+        pendingSignupRole: 'consultor',
+        metadataRole: null,
+        profileRole: 'produtor',
+      );
+
+      expect(role, 'produtor');
+      expect(
+        ProfileRoleResolver.shouldUpdateProfileRole(
+          pendingSignupRole: 'consultor',
+          metadataRole: null,
+          profileRole: 'produtor',
+        ),
+        isFalse,
+      );
+    });
+
+    test('Perfil ausente usa role vindo de metadata', () {
+      final role = ProfileRoleResolver.resolve(
+        metadataRole: 'consultor',
+        profileRole: null,
+      );
+
+      expect(role, 'consultor');
+    });
+
+    test('Perfil e metadata ausentes usam papel pendente local', () {
+      final role = ProfileRoleResolver.resolve(
+        pendingSignupRole: 'consultor',
+        metadataRole: null,
+        profileRole: null,
+      );
+
+      expect(role, 'consultor');
+    });
+
+    test('Metadata inválido usa fallback restritivo', () {
+      final role = ProfileRoleResolver.resolve(
+        metadataRole: 'admin',
+        profileRole: null,
+      );
+
+      expect(role, 'produtor');
+    });
+
+    test('Perfil válido é preservado quando metadata está ausente', () {
+      final role = ProfileRoleResolver.resolve(
+        metadataRole: null,
+        profileRole: 'consultor',
+      );
+
+      expect(role, 'consultor');
+    });
+  });
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -166,8 +237,8 @@ bool _isMinimallyFunctional(Map<String, dynamic> profile) {
 
 /// Computa quais campos precisam ser atualizados.
 /// Replica a lógica exata de ensureProfileComplete():
-/// - Só preenche campos vazios (null ou '')
-/// - Nunca sobrescreve dados válidos
+/// - Preenche campos vazios (null ou '')
+/// - Corrige role remoto quando metadata tem papel válido divergente
 Map<String, dynamic> _computeUpdates(
   Map<String, dynamic> currentProfile,
   Map<String, dynamic> userMetadata,
@@ -180,8 +251,14 @@ Map<String, dynamic> _computeUpdates(
   if (currentName == null || currentName.isEmpty) {
     updates['name'] = userMetadata['full_name'] ?? '';
   }
-  if (currentRole == null || currentRole.isEmpty) {
-    updates['role'] = userMetadata['role'] ?? 'produtor';
+  if (ProfileRoleResolver.shouldUpdateProfileRole(
+    metadataRole: userMetadata['role'] as String?,
+    profileRole: currentRole,
+  )) {
+    updates['role'] = ProfileRoleResolver.resolve(
+      metadataRole: userMetadata['role'] as String?,
+      profileRole: currentRole,
+    );
   }
 
   return updates;

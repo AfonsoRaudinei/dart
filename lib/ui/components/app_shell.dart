@@ -33,6 +33,7 @@ import 'package:go_router/go_router.dart';
 import 'package:app_links/app_links.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/router/app_routes.dart';
+import '../../core/session/auth_deep_link.dart';
 import '../../core/session/session_controller.dart';
 import '../../core/session/session_models.dart';
 import '../../core/utils/app_logger.dart';
@@ -67,6 +68,7 @@ class _AppShellState extends ConsumerState<AppShell> {
   late final AppLinks _appLinks;
   StreamSubscription<AuthState>? _authSubscription;
   StreamSubscription<Uri>? _deepLinkSubscription;
+  String? _pendingDeepLinkType;
 
   @override
   void initState() {
@@ -100,6 +102,43 @@ class _AppShellState extends ConsumerState<AppShell> {
         if (mounted) {
           context.go(AppRoutes.resetPassword);
         }
+        _pendingDeepLinkType = null;
+        return;
+      }
+
+      if (_pendingDeepLinkType == 'signup' &&
+          data.event == AuthChangeEvent.signedIn) {
+        _pendingDeepLinkType = null;
+        Supabase.instance.client.auth
+            .signOut()
+            .then((_) {
+              if (!mounted) return;
+              context.go(AppRoutes.login);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text(
+                    'Email confirmado com sucesso! Faça login para continuar.',
+                  ),
+                  duration: Duration(seconds: 4),
+                ),
+              );
+            })
+            .catchError((e) {
+              AppLogger.error(
+                'Erro ao finalizar fluxo de signup',
+                tag: 'DeepLink',
+                error: e,
+              );
+              if (!mounted) return;
+              context.go(AppRoutes.login);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text(
+                    'Confirmação realizada. Faça login para continuar.',
+                  ),
+                ),
+              );
+            });
       }
     });
   }
@@ -145,101 +184,84 @@ class _AppShellState extends ConsumerState<AppShell> {
       tag: 'DeepLink',
     );
 
-    // Fallback: tentar fragment primeiro, depois query params
-    final rawParams = uri.fragment.isNotEmpty ? uri.fragment : uri.query;
-
-    if (rawParams.isEmpty) {
-      AppLogger.debug('Sem parâmetros — ignorando.', tag: 'DeepLink');
-      return;
-    }
-
-    final params = Uri.splitQueryString(rawParams);
-    final type = params['type'];
-    final accessToken = params['access_token'];
-    final refreshToken = params['refresh_token'];
+    final intent = AuthDeepLinkIntent.parse(uri);
 
     AppLogger.debug(
-      'type=$type, hasToken=${accessToken != null}',
+      'type=${intent.type.name}, hasCredentials=${intent.hasCredentials}',
       tag: 'DeepLink',
     );
 
-    if (accessToken == null || refreshToken == null) {
-      AppLogger.debug('Tokens ausentes — ignorando.', tag: 'DeepLink');
+    if (intent.hasError) {
+      _pendingDeepLinkType = null;
+      AppLogger.error('Deep link de autenticação rejeitado', tag: 'DeepLink');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Não foi possível validar este link. Solicite um novo email.',
+            ),
+          ),
+        );
+      }
       return;
     }
 
-    switch (type) {
-      case 'recovery':
-        // Reset de senha — estabelecer sessão e navegar para tela de nova senha.
-        // gotrue 2.18.0: setSession(refreshToken) — apenas o refreshToken.
-        // O onAuthStateChange também dispara passwordRecovery, mas manter
-        // ambos garante cobertura em cold start e foreground.
-        Supabase.instance.client.auth
-            .setSession(refreshToken)
-            .then((_) {
-              AppLogger.debug('Recovery: sessão estabelecida', tag: 'DeepLink');
-              if (mounted) {
-                context.go(AppRoutes.resetPassword);
-              }
-            })
-            .catchError((e) {
-              AppLogger.error('Erro no recovery', tag: 'DeepLink', error: e);
-              if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text(
-                      'Link expirado ou inválido. Solicite uma nova recuperação de senha.',
-                    ),
-                  ),
-                );
-              }
-            });
+    if (intent.type == AuthDeepLinkType.unknown) {
+      _pendingDeepLinkType = null;
+      AppLogger.debug('Sem tipo de auth — ignorando.', tag: 'DeepLink');
+      return;
+    }
 
-      case 'signup':
-        // Confirmação de cadastro — o Supabase já ativou o usuário.
-        // Estabelecer sessão, fazer signOut limpo e navegar para login.
-        // signOut garante que ensureProfileComplete rode no próximo login.
-        Supabase.instance.client.auth
-            .setSession(refreshToken)
-            .then((_) {
-              AppLogger.debug(
-                'Signup confirmado — fazendo signOut limpo',
-                tag: 'DeepLink',
-              );
-              return Supabase.instance.client.auth.signOut();
-            })
-            .then((_) {
-              if (mounted) {
-                context.go(AppRoutes.login);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text(
-                      'Email confirmado com sucesso! Faça login para continuar.',
-                    ),
-                    duration: Duration(seconds: 4),
-                  ),
-                );
-              }
-            })
-            .catchError((e) {
-              AppLogger.error('Erro no signup', tag: 'DeepLink', error: e);
-              if (mounted) {
-                context.go(AppRoutes.login);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text(
-                      'Confirmação realizada. Faça login para continuar.',
-                    ),
-                  ),
-                );
-              }
-            });
+    _pendingDeepLinkType = intent.type.name;
 
-      default:
-        AppLogger.debug(
-          'Tipo desconhecido: $type — ignorando.',
-          tag: 'DeepLink',
-        );
+    switch (intent.type) {
+      case AuthDeepLinkType.recovery:
+        // O SDK do Supabase Flutter já detecta a sessão no deep link
+        // (detectSessionInUri=true por padrão). Não consumir o refresh_token
+        // manualmente evita corrida com refresh token rotation.
+        if (!intent.hasCredentials) {
+          _pendingDeepLinkType = null;
+          AppLogger.debug(
+            'Recovery sem token/código — aguardando SDK ou exibindo erro.',
+            tag: 'DeepLink',
+          );
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text(
+                  'Link de recuperação inválido. Solicite um novo email.',
+                ),
+              ),
+            );
+          }
+        }
+        return;
+
+      case AuthDeepLinkType.signup:
+        // Mesma lógica do recovery: o SDK estabelece a sessão a partir do link.
+        // O signOut final ocorre no listener de auth ao receber signedIn.
+        if (!intent.hasCredentials) {
+          AppLogger.debug(
+            'Signup sem token/código — aguardando SDK ou exibindo fallback.',
+            tag: 'DeepLink',
+          );
+          if (mounted) {
+            context.go(AppRoutes.login);
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text(
+                  'Confirmação realizada. Faça login para continuar.',
+                ),
+              ),
+            );
+          }
+          _pendingDeepLinkType = null;
+        }
+        return;
+
+      case AuthDeepLinkType.unknown:
+        _pendingDeepLinkType = null;
+        return;
     }
   }
 

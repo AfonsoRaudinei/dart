@@ -23,11 +23,13 @@ final climaRepositoryProvider = AutoDisposeProvider<IClimaRepository>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef ClimaRepositoryRef = AutoDisposeProviderRef<IClimaRepository>;
-String _$climaLocationHash() => r'07988fdf3828290685869781d431f3ff106f4a54';
+String _$climaLocationHash() => r'aed933ca243e629ca414b096dd447c8d2fe71227';
 
 /// Obtém coordenadas para o clima.
-/// Prioridade 1: userPositionProvider (já populado pelo mapa).
-/// Prioridade 2: GPS direto (usuário ainda não navegou no mapa).
+/// Prioridade 1: cidade escolhida manualmente.
+/// Prioridade 2: posição obtida pelo botão "minha localização".
+/// Prioridade 3: localização já conhecida pelo mapa.
+/// Prioridade 4: GPS direto (usuário ainda não navegou no mapa).
 /// Fallback: Brasília-DF com estado de erro exposto na UI.
 ///
 /// Copied from [climaLocation].
@@ -45,7 +47,7 @@ final climaLocationProvider = AutoDisposeFutureProvider<ClimaLatLon>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef ClimaLocationRef = AutoDisposeFutureProviderRef<ClimaLatLon>;
-String _$climaAtualHash() => r'93f17942d52fb5b7a6e3791224990c23b199c46d';
+String _$climaAtualHash() => r'8ff98ebfd9b6455cf6be84c9fd2ae0c0f770ac8d';
 
 /// See also [climaAtual].
 @ProviderFor(climaAtual)
@@ -62,7 +64,7 @@ final climaAtualProvider = AutoDisposeFutureProvider<ClimaAtual>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef ClimaAtualRef = AutoDisposeFutureProviderRef<ClimaAtual>;
-String _$previsaoHorariaHash() => r'e8c2946c6fc2c9dbe0b7df6f490f97dcfbdee8b1';
+String _$previsaoHorariaHash() => r'5c23fde4dc2fca2d37d5abc2c47b842b1ea25a94';
 
 /// See also [previsaoHoraria].
 @ProviderFor(previsaoHoraria)
@@ -81,7 +83,7 @@ final previsaoHorariaProvider =
 // ignore: unused_element
 typedef PrevisaoHorariaRef =
     AutoDisposeFutureProviderRef<List<PrevisaoHoraria>>;
-String _$previsaoSemanalHash() => r'eb9bfd01f8a9d9877ae5c21171579cf330a39237';
+String _$previsaoSemanalHash() => r'6842a09aa2f29ce3bcc932b552b99695660b139d';
 
 /// See also [previsaoSemanal].
 @ProviderFor(previsaoSemanal)
@@ -99,7 +101,7 @@ final previsaoSemanalProvider =
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef PrevisaoSemanalRef = AutoDisposeFutureProviderRef<List<PrevisaoDiaria>>;
-String _$alertasClimaHash() => r'81e7bb594bdce72a4b131551d60c337a8bba5a12';
+String _$alertasClimaHash() => r'90e3c015656c938be52353420f83ba26723e4038';
 
 /// See also [alertasClima].
 @ProviderFor(alertasClima)

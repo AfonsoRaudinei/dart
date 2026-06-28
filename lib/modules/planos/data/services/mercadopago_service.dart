@@ -6,6 +6,7 @@
 //
 // Por ora: método initCheckout retorna URL de pagamento gerada via backend.
 
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Serviço de pagamento via Mercado Pago.
@@ -29,6 +30,10 @@ class MercadoPagoService {
     required String plano,
     required String metodo,
   }) async {
+    if (defaultTargetPlatform == TargetPlatform.iOS) {
+      throw UnsupportedError('Pagamentos externos desabilitados no iOS.');
+    }
+
     final response = await _client.functions.invoke(
       'mercadopago-criar-preferencia',
       body: {'plano': plano, 'metodo': metodo},
@@ -41,6 +46,11 @@ class MercadoPagoService {
     }
 
     final data = response.data as Map<String, dynamic>;
-    return data['checkout_url'] as String;
+    final checkoutUrl =
+        data['checkout_url'] as String? ?? data['init_point'] as String?;
+    if (checkoutUrl == null || checkoutUrl.isEmpty) {
+      throw Exception('URL de checkout Mercado Pago ausente na resposta.');
+    }
+    return checkoutUrl;
   }
 }

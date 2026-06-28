@@ -23,7 +23,7 @@ final mapRepositoryProvider = Provider<MapRepository>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef MapRepositoryRef = ProviderRef<MapRepository>;
-String _$activeLayerHash() => r'c45e24f26361ca39381aaeaf589c0dbf7bf0e39b';
+String _$activeLayerHash() => r'80c735e2a8737380e203615ab19b89c80bb434d7';
 
 /// See also [ActiveLayer].
 @ProviderFor(ActiveLayer)
@@ -38,7 +38,7 @@ final activeLayerProvider = NotifierProvider<ActiveLayer, LayerType>.internal(
 );
 
 typedef _$ActiveLayer = Notifier<LayerType>;
-String _$showMarkersHash() => r'172e4b678910ab6babcac283d33d1cbb568d52ff';
+String _$showMarkersHash() => r'c034ba9ac1b5bfd3b079f7bc8e5a015dcd3ec678';
 
 /// See also [ShowMarkers].
 @ProviderFor(ShowMarkers)

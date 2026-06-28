@@ -69,6 +69,16 @@ class AppConfig {
   /// Verdadeiro quando rodando em produção.
   static const bool isProduction = env == 'production';
 
+  static bool get hasPlaceholderSupabaseUrl =>
+      supabaseUrl.isEmpty ||
+      supabaseUrl.contains('seu-projeto.supabase.co') ||
+      supabaseUrl.contains('example.supabase.co');
+
+  static bool get hasPlaceholderSupabaseAnonKey =>
+      supabaseAnonKey.isEmpty ||
+      supabaseAnonKey.contains('sua-chave') ||
+      supabaseAnonKey.contains('your-anon-key');
+
   // ═══════════════════════════════════════════════════════════════════
   // VALIDAÇÃO (falha rápida se configuração inválida)
   // ═══════════════════════════════════════════════════════════════════
@@ -78,16 +88,16 @@ class AppConfig {
   /// Chamado uma única vez no `main()` antes de qualquer inicialização.
   /// Lança [StateError] com mensagem clara se estiver faltando algo.
   static void validate() {
-    if (supabaseUrl.isEmpty) {
+    if (hasPlaceholderSupabaseUrl) {
       throw StateError(
-        '[AppConfig] SUPABASE_URL não configurada.\n'
-        'Execute com: flutter run --dart-define=SUPABASE_URL=https://...',
+        '[AppConfig] SUPABASE_URL ausente ou placeholder.\n'
+        'Configure uma URL real do Supabase via --dart-define=SUPABASE_URL=https://...',
       );
     }
-    if (supabaseAnonKey.isEmpty) {
+    if (hasPlaceholderSupabaseAnonKey) {
       throw StateError(
-        '[AppConfig] SUPABASE_ANON_KEY não configurada.\n'
-        'Execute com: flutter run --dart-define=SUPABASE_ANON_KEY=...',
+        '[AppConfig] SUPABASE_ANON_KEY ausente ou placeholder.\n'
+        'Configure uma anon key real via --dart-define=SUPABASE_ANON_KEY=...',
       );
     }
   }

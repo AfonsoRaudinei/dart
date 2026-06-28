@@ -23,6 +23,7 @@ void main() {
       expect(map['tipo_fechamento'], 'vendido');
       expect(map['nome_concorrente'], isNull);
       expect(map['motivo_fechamento'], isNull);
+      expect(map.containsKey('percentual_fechado'), isFalse);
     });
 
     test('toMap mantém perdido com concorrente e motivo', () {
@@ -126,6 +127,34 @@ void main() {
       });
 
       expect(lancamento.dataFechamento, isNull);
+    });
+
+    test('percentualFechado clamp limita entre 0 e 100', () {
+      final negativo = CarteiraLancamento(
+        id: 'l7',
+        userId: 'u1',
+        safraId: 's1',
+        categoriaId: 'c1',
+        clienteId: 'cl1',
+        quantidade: 1,
+        closedPercent: -12.4,
+        dataLancamento: DateTime(2026, 3, 21),
+        createdAt: DateTime(2026, 3, 21, 10),
+      );
+      final acima = CarteiraLancamento(
+        id: 'l8',
+        userId: 'u1',
+        safraId: 's1',
+        categoriaId: 'c1',
+        clienteId: 'cl1',
+        quantidade: 1,
+        closedPercent: 140.6,
+        dataLancamento: DateTime(2026, 3, 21),
+        createdAt: DateTime(2026, 3, 21, 10),
+      );
+
+      expect(negativo.percentualFechado, 0);
+      expect(acima.percentualFechado, 100);
     });
   });
 }

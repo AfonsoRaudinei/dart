@@ -39,6 +39,7 @@ class _DrawingLayerWidgetState extends State<DrawingLayerWidget> {
   String? _lastSelectedId;
   Set<String>? _lastSelectedIds;
   DrawingGeometry? _lastLiveGeo;
+  List<LatLng>? _lastCurrentPoints;
   Set<int>? _lastIntersectingIndices;
 
   @override
@@ -50,6 +51,7 @@ class _DrawingLayerWidgetState extends State<DrawingLayerWidget> {
         final selectedId = widget.controller.selectedFeature?.id;
         final selectedIds = widget.controller.selectedFeatureIds;
         final liveGeo = widget.controller.liveGeometry;
+        final currentPoints = widget.controller.currentPoints;
         final intersectingIndices =
             widget.controller.intersectingSegmentIndices;
 
@@ -59,6 +61,7 @@ class _DrawingLayerWidgetState extends State<DrawingLayerWidget> {
             _lastSelectedId != selectedId ||
             !_sameIds(_lastSelectedIds, selectedIds) ||
             _lastLiveGeo != liveGeo ||
+            !_samePoints(_lastCurrentPoints, currentPoints) ||
             _lastIntersectingIndices != intersectingIndices;
 
         if (!needsRebuild &&
@@ -80,6 +83,7 @@ class _DrawingLayerWidgetState extends State<DrawingLayerWidget> {
         _lastSelectedId = selectedId;
         _lastSelectedIds = Set.from(selectedIds);
         _lastLiveGeo = liveGeo;
+        _lastCurrentPoints = List.of(currentPoints);
         _lastIntersectingIndices = Set.from(intersectingIndices);
 
         final polygons = <Polygon>[];
@@ -117,6 +121,10 @@ class _DrawingLayerWidgetState extends State<DrawingLayerWidget> {
         }
 
         // 2. Renderiza sketch em progresso (manual ou GPS Walk)
+        if (liveGeo == null && currentPoints.length == 1) {
+          markers.add(_vertexMarker(currentPoints.single, index: 0));
+        }
+
         if (liveGeo is DrawingPolygon || liveGeo is DrawingMultiPolygon) {
           // GPS Walk usa estilo vermelho; desenho manual usa branco
           final isGpsWalk =
@@ -195,42 +203,7 @@ class _DrawingLayerWidgetState extends State<DrawingLayerWidget> {
                 );
               }
 
-              markers.add(
-                Marker(
-                  point: point,
-                  width: size,
-                  height: size,
-                  child: GestureDetector(
-                    onTap: (isStart && !widget.controller.hasSelfIntersection)
-                        ? widget.onDrawingComplete
-                        : null,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: isStart && widget.controller.hasSelfIntersection
-                            ? Colors.red.withValues(alpha: 0.5)
-                            : Colors.white,
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: isStart
-                              ? (widget.controller.hasSelfIntersection
-                                    ? Colors.red
-                                    : Colors.green)
-                              : Colors.black26,
-                          width: isStart ? 2 : 1,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.3),
-                            blurRadius: 2,
-                            offset: const Offset(0, 1),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  alignment: Alignment.center,
-                ),
-              );
+              markers.add(_vertexMarker(point, index: i, size: size));
             }
           }
         }
@@ -255,6 +228,54 @@ class _DrawingLayerWidgetState extends State<DrawingLayerWidget> {
     return previous != null &&
         previous.length == current.length &&
         previous.containsAll(current);
+  }
+
+  bool _samePoints(List<LatLng>? previous, List<LatLng> current) {
+    if (previous == null || previous.length != current.length) return false;
+    for (var i = 0; i < current.length; i++) {
+      if (previous[i] != current[i]) return false;
+    }
+    return true;
+  }
+
+  Marker _vertexMarker(LatLng point, {required int index, double? size}) {
+    final isStart = index == 0;
+    final markerSize = size ?? (isStart ? 18.0 : 14.0);
+    return Marker(
+      point: point,
+      width: markerSize,
+      height: markerSize,
+      child: GestureDetector(
+        key: Key('drawing_point_$index'),
+        onTap: (isStart && !widget.controller.hasSelfIntersection)
+            ? widget.onDrawingComplete
+            : null,
+        child: Container(
+          decoration: BoxDecoration(
+            color: isStart && widget.controller.hasSelfIntersection
+                ? Colors.red.withValues(alpha: 0.5)
+                : Colors.white,
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: isStart
+                  ? (widget.controller.hasSelfIntersection
+                        ? Colors.red
+                        : Colors.green)
+                  : Colors.black26,
+              width: isStart ? 2 : 1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.3),
+                blurRadius: 2,
+                offset: const Offset(0, 1),
+              ),
+            ],
+          ),
+        ),
+      ),
+      alignment: Alignment.center,
+    );
   }
 
   Polygon _polygonFromRings(

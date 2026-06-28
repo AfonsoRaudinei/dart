@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:soloforte_app/core/router/app_routes.dart';
 import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../domain/entities/event.dart';
@@ -39,7 +40,7 @@ class DayEventCard extends ConsumerWidget {
       child: InkWell(
         onTap: () {
           // Navegar para detalhes do evento
-          context.push('/agenda/event/${event.id}');
+          context.push(AppRoutes.agendaEvent(event.id));
         },
         borderRadius: BorderRadius.circular(12),
         child: Padding(

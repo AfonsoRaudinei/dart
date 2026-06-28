@@ -2,6 +2,7 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'router_notifier.dart';
+import '../access/app_access.dart';
 import '../../core/session/session_controller.dart';
 import '../../core/session/session_models.dart';
 import '../../ui/components/app_shell.dart';
@@ -18,6 +19,7 @@ import '../../modules/carteira/presentation/screens/carteira_cliente_screen.dart
 import '../../modules/carteira/presentation/screens/carteira_screen.dart';
 import '../../ui/screens/publicacao_editor_screen.dart';
 import '../../../modules/settings/presentation/screens/settings_screen.dart';
+import '../../../modules/settings/presentation/screens/edit_profile_screen.dart';
 import '../../../modules/consultoria/clients/presentation/screens/client_list_screen.dart';
 import '../../../modules/consultoria/clients/presentation/screens/client_form_screen.dart';
 import '../../../modules/consultoria/clients/presentation/screens/client_detail_screen.dart';
@@ -28,6 +30,7 @@ import '../../../modules/consultoria/relatorios/presentation/relatorio_form_scre
 import '../../../modules/consultoria/clients/presentation/screens/farm_detail_screen.dart';
 import '../../../modules/consultoria/clients/presentation/screens/field_detail_screen.dart';
 import '../../../modules/feedback/presentation/screens/feedback_screen.dart';
+import '../../../modules/produtor/presentation/screens/producer_property_screen.dart';
 import '../../modules/clima/presentation/screens/clima_screen.dart';
 // ADR-012 — Módulo planos/
 import '../../../modules/planos/presentation/screens/planos_screen.dart';
@@ -64,6 +67,9 @@ GoRouter router(Ref ref) {
       final session = ref.read(sessionControllerProvider);
       final isAuth = notifier.isAuthenticated;
       final isRecovery = session is SessionPasswordRecovery;
+      final role = session is SessionAuthenticated
+          ? (session.user.userMetadata?['role']?.toString())
+          : null;
 
       final path = state.uri.path;
       final isPublicRoute =
@@ -81,6 +87,10 @@ GoRouter router(Ref ref) {
       // Recovery: forçar /reset-password em qualquer outra rota
       if (isRecovery && path != AppRoutes.resetPassword) {
         return AppRoutes.resetPassword;
+      }
+
+      if (isAuth && !isRecovery && !AppAccess.canAccessPath(role, path)) {
+        return AppRoutes.map;
       }
 
       // Autenticado normal: redirecionar rotas públicas para map
@@ -122,6 +132,10 @@ GoRouter router(Ref ref) {
           GoRoute(
             path: AppRoutes.settings,
             builder: (_, __) => const SettingsScreen(),
+          ),
+          GoRoute(
+            path: AppRoutes.settingsEditProfile,
+            builder: (_, __) => const EditProfileScreen(),
           ),
           GoRoute(
             path: AppRoutes.reports,
@@ -220,6 +234,10 @@ GoRouter router(Ref ref) {
           GoRoute(
             path: AppRoutes.clima,
             builder: (_, __) => const ClimaScreen(),
+          ),
+          GoRoute(
+            path: AppRoutes.producerProperty,
+            builder: (_, __) => const ProducerPropertyScreen(),
           ),
           // ════════════════════════════════════════════════════════════════
           // MÓDULO PLANOS — ADR-012

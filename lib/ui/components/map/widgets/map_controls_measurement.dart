@@ -30,8 +30,8 @@ class _FieldMeasurementCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       key: const Key('measurement_area_card'),
-      width: 168,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      width: 200,
+      padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         color: Colors.black.withValues(alpha: 0.72),
         borderRadius: BorderRadius.circular(14),
@@ -39,57 +39,58 @@ class _FieldMeasurementCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Align(
-            alignment: Alignment.topRight,
-            child: GestureDetector(
-              key: const Key('measurement_details_toggle'),
-              behavior: HitTestBehavior.opaque,
-              onTap: onToggleDetails,
-              child: Container(
-                width: 24,
-                height: 24,
-                decoration: BoxDecoration(
-                  color: Colors.white12,
-                  borderRadius: BorderRadius.circular(999),
-                ),
-                child: Icon(
-                  showDetails ? Icons.expand_less : Icons.info_outline,
-                  size: 16,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            _formatArea(),
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Wrap(
-            spacing: 6,
-            runSpacing: 6,
+          Row(
             children: [
-              _UnitChip(
-                label: 'ha',
-                selected: areaUnit == AreaDisplayUnit.hectare,
-                onTap: () => onAreaUnit(AreaDisplayUnit.hectare),
+              Expanded(
+                child: Text(
+                  _formatArea(),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
               ),
-              _UnitChip(
-                label: 'm²',
-                selected: areaUnit == AreaDisplayUnit.squareMeter,
-                onTap: () => onAreaUnit(AreaDisplayUnit.squareMeter),
-              ),
-              _UnitChip(
-                label: 'alq GO/MG',
-                selected: areaUnit == AreaDisplayUnit.alqueire,
-                onTap: () => onAreaUnit(AreaDisplayUnit.alqueire),
+              GestureDetector(
+                key: const Key('measurement_details_toggle'),
+                behavior: HitTestBehavior.opaque,
+                onTap: onToggleDetails,
+                child: Padding(
+                  padding: const EdgeInsets.all(2),
+                  child: Icon(
+                    showDetails ? Icons.expand_less : Icons.info_outline,
+                    size: 20,
+                    color: Colors.white,
+                  ),
+                ),
               ),
             ],
+          ),
+          const SizedBox(height: 8),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Row(
+              children: [
+                _UnitChip(
+                  label: 'ha',
+                  selected: areaUnit == AreaDisplayUnit.hectare,
+                  onTap: () => onAreaUnit(AreaDisplayUnit.hectare),
+                ),
+                const SizedBox(width: 6),
+                _UnitChip(
+                  label: 'm²',
+                  selected: areaUnit == AreaDisplayUnit.squareMeter,
+                  onTap: () => onAreaUnit(AreaDisplayUnit.squareMeter),
+                ),
+                const SizedBox(width: 6),
+                _UnitChip(
+                  label: 'alq GO/MG',
+                  selected: areaUnit == AreaDisplayUnit.alqueire,
+                  onTap: () => onAreaUnit(AreaDisplayUnit.alqueire),
+                ),
+              ],
+            ),
           ),
         ],
       ),

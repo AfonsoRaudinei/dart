@@ -34,7 +34,11 @@ import 'core/infra/preferences_service.dart';
 import 'core/router/app_router.dart';
 import 'core/services/sync_orchestrator.dart';
 import 'core/utils/app_logger.dart';
-import 'app/sync_registration.dart';
+import 'core/contracts/i_agenda_ai_recommendation_context_lookup_provider.dart';
+import 'core/contracts/i_agenda_ai_visit_writer_provider.dart';
+import 'core/contracts/i_ndvi_field_presenter_provider.dart';
+import 'core/contracts/i_ndvi_latest_lookup_provider.dart';
+import 'app/adapters/agenda_ai_recommendation_context_adapter.dart';
 import 'modules/consultoria/clients/data/clients_repository.dart';
 import 'modules/consultoria/clients/infra/client_lookup_adapter.dart';
 import 'modules/consultoria/clients/infra/farm_lookup_adapter.dart';
@@ -50,6 +54,11 @@ import 'modules/consultoria/quick_photo/data/quick_photo_repository.dart';
 import 'modules/consultoria/quick_photo/infra/quick_photo_read_adapter.dart';
 import 'modules/agenda/data/repositories/agenda_repository.dart';
 import 'modules/agenda/infra/agenda_session_bridge_adapter.dart';
+import 'modules/agenda/infra/agenda_ai_visit_writer_adapter.dart';
+import 'modules/ndvi/infra/ndvi_field_presenter_adapter.dart';
+import 'modules/ndvi/infra/ndvi_latest_lookup_adapter.dart';
+import 'modules/ndvi/presentation/providers/ndvi_providers.dart';
+import 'app/sync_registration.dart';
 import 'modules/agenda/presentation/providers/agenda_provider.dart';
 import 'modules/agenda_ai/infra/agenda_ai_launcher_adapter.dart';
 import 'modules/consultoria/relatorios/infra/report_writer_adapter.dart';
@@ -129,6 +138,8 @@ Future<void> main() async {
         final preferencesService = PreferencesService(prefs);
         final clientsRepository = ClientsRepository();
         final fieldRepository = FieldRepository();
+        final agendaRepository = AgendaRepository();
+        final carteiraRepository = CarteiraRepositoryImpl();
         final visitSessionLookup = VisitSessionLookupAdapter(VisitRepository());
 
         // 5. App principal
@@ -146,9 +157,25 @@ Future<void> main() async {
               agendaAiLauncherProvider.overrideWithValue(
                 const AgendaAiLauncherAdapter(),
               ),
+              agendaAiRecommendationContextLookupProvider.overrideWithValue(
+                AgendaAiRecommendationContextAdapter(
+                  carteiraRepository: carteiraRepository,
+                  agendaRepository: agendaRepository,
+                  clientLookup: ClientLookupAdapter(clientsRepository),
+                ),
+              ),
+              agendaAiVisitWriterProvider.overrideWithValue(
+                AgendaAiVisitWriterAdapter(agendaRepository),
+              ),
+              ndviFieldPresenterProvider.overrideWithValue(
+                const NdviFieldPresenterAdapter(),
+              ),
+              ndviLatestLookupProvider.overrideWith((ref) {
+                return NdviLatestLookupAdapter(ref.watch(ndviRepositoryProvider));
+              }),
               opportunityLookupProvider.overrideWith((ref) {
                 return OpportunityLookupImpl(
-                  repository: CarteiraRepositoryImpl(),
+                  repository: carteiraRepository,
                   db: DatabaseHelper.instance,
                 );
               }),
@@ -186,7 +213,7 @@ Future<void> main() async {
               ),
               // ADR-024: implementação concreta de IAgendaSessionBridge
               agendaSessionBridgeProvider.overrideWithValue(
-                AgendaSessionBridgeAdapter(AgendaRepository()),
+                AgendaSessionBridgeAdapter(agendaRepository),
               ),
               // ADR-024: IFieldLookup para geofence_controller (consultoria/fields)
               iFieldLookupGeofenceProvider.overrideWithValue(

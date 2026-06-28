@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../data/settings_repository.dart';
 import '../../domain/settings_models.dart';
+import 'user_profile_provider.dart';
 
 // --- Repository Provider ---
 final settingsRepositoryProvider = Provider<SettingsRepository>((ref) {
@@ -13,8 +14,9 @@ final settingsRepositoryProvider = Provider<SettingsRepository>((ref) {
 // --- Profile Provider ---
 class ProfileNotifier extends StateNotifier<ProfileState> {
   final SettingsRepository _repository;
+  final Ref _ref;
 
-  ProfileNotifier(this._repository) : super(const ProfileState()) {
+  ProfileNotifier(this._repository, this._ref) : super(const ProfileState()) {
     _load();
   }
 
@@ -28,7 +30,20 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
       final newState = state.copyWith(imagePath: newPath);
       state = newState;
       await _repository.saveProfile(newState);
-      await _repository.syncProfilePhoto(newPath);
+      final publicUrl = await _repository.syncProfilePhoto(newPath);
+      if (publicUrl != null && publicUrl.trim().isNotEmpty) {
+        final userProfile = await _ref.read(currentUserProfileProvider.future);
+        if (userProfile != null && userProfile.photoUrl != publicUrl) {
+          await _ref
+              .read(userProfileRepositoryProvider)
+              .updateProfile(
+                updated: userProfile.copyWith(photoUrl: publicUrl),
+                changedFields: {'photoUrl': userProfile.photoUrl},
+              );
+        }
+        _ref.invalidate(currentUserProfileProvider);
+        _ref.invalidate(profileAuditTrailProvider);
+      }
     }
   }
 
@@ -43,7 +58,7 @@ final profileProvider = StateNotifierProvider<ProfileNotifier, ProfileState>((
   ref,
 ) {
   final repo = ref.watch(settingsRepositoryProvider);
-  return ProfileNotifier(repo);
+  return ProfileNotifier(repo, ref);
 });
 
 class ReportBrandingNotifier extends StateNotifier<ReportBrandingState> {

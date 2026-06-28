@@ -3,11 +3,11 @@ import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:soloforte_app/core/contracts/i_drawing_field_writer_provider.dart';
 import 'package:soloforte_app/core/router/app_routes.dart';
 import 'package:soloforte_app/modules/consultoria/farms/data/repositories/farm_repository.dart';
 import 'package:soloforte_app/modules/consultoria/clients/presentation/providers/field_providers.dart';
 import 'package:soloforte_app/modules/consultoria/clients/presentation/widgets/talhao_map_preview.dart';
-import 'package:soloforte_app/modules/drawing/presentation/providers/drawing_provider.dart';
 
 final farmDetailProvider = FutureProvider.family.autoDispose<dynamic, String>((
   ref,
@@ -288,10 +288,12 @@ class FarmDetailScreen extends ConsumerWidget {
 
     if (confirmed != true || !context.mounted) return;
 
-    final repository = ref.read(drawingRepositoryProvider);
-    await repository.deleteFeature(field.id);
-    final totalAreaHa = await repository.getTotalAreaByClienteId(clientId);
-    await repository.updateClientAreaTotal(clientId, totalAreaHa);
+    await ref
+        .read(iDrawingFieldWriterProvider)
+        .deleteFieldAndRecalculateClientArea(
+          fieldId: field.id,
+          clientId: clientId,
+        );
 
     ref.invalidate(farmLinkedFieldsProvider(farmId));
     ref.invalidate(clientDrawingFieldsProvider(clientId));

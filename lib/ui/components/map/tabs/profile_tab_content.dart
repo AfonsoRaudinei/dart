@@ -5,7 +5,9 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/router/app_routes.dart';
 import '../../../../core/session/session_controller.dart';
 import '../../../../core/session/session_models.dart';
+import '../../../../core/session/user_role.dart';
 import '../../../../core/design/sf_icons.dart';
+import '../../../../modules/settings/presentation/providers/user_profile_provider.dart';
 import 'package:flutter/services.dart';
 
 /// Tab 4 — PERFIL
@@ -16,6 +18,7 @@ class ProfileTabContent extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final session = ref.watch(sessionControllerProvider);
+    final currentRole = ref.watch(currentUserRoleProvider);
 
     String displayName = 'Usuário';
     String displayRole = '';
@@ -28,11 +31,10 @@ class ProfileTabContent extends ConsumerWidget {
           ? user.userMetadata!['full_name'] as String
           : user.email ?? 'Usuário';
 
-      final role = user.userMetadata?['role'] as String?;
-      displayRole = switch (role) {
-        'produtor' => 'Produtor Rural',
-        'consultor' => 'Consultor Agronômico',
-        _ => '',
+      displayRole = switch (currentRole) {
+        UserRole.produtor => 'Produtor Rural',
+        UserRole.consultor => 'Consultor Agronômico',
+        UserRole.unknown => '',
       };
     }
 
@@ -62,9 +64,9 @@ class ProfileTabContent extends ConsumerWidget {
                   children: [
                     Text(
                       displayName,
-                      style: Theme.of(context).textTheme.titleMedium!.copyWith(fontWeight: FontWeight.w600).copyWith(
-                        fontSize: 18,
-                      ),
+                      style: Theme.of(context).textTheme.titleMedium!
+                          .copyWith(fontWeight: FontWeight.w600)
+                          .copyWith(fontSize: 18),
                     ),
                     if (displayRole.isNotEmpty) ...[
                       const SizedBox(height: 4),
@@ -116,7 +118,7 @@ class ProfileTabContent extends ConsumerWidget {
       builder: (ctx) => AlertDialog(
         title: const Text('Sair da conta'),
         content: const Text(
-          'Deseja mesmo sair? Seus dados locais serão mantidos.',
+          'Deseja mesmo sair? Seus dados locais serão mantidos. Para criar outra conta, saia e use Cadastrar na tela de login.',
         ),
         actions: [
           TextButton(
@@ -128,6 +130,9 @@ class ProfileTabContent extends ConsumerWidget {
             onPressed: () async {
               Navigator.of(ctx).pop();
               await ref.read(sessionControllerProvider.notifier).logout();
+              if (context.mounted) {
+                context.go(AppRoutes.login);
+              }
             },
             child: const Text('Sair'),
           ),

@@ -1,15 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:soloforte_app/modules/ndvi/domain/entities/ndvi_image.dart';
-import 'package:soloforte_app/modules/ndvi/domain/ndvi_image_utils.dart';
-import 'package:soloforte_app/modules/ndvi/presentation/providers/ndvi_providers.dart';
-import 'package:soloforte_app/modules/ndvi/presentation/widgets/ndvi_talhao_sheet.dart';
+import 'package:soloforte_app/core/contracts/i_ndvi_field_presenter_provider.dart';
+import 'package:soloforte_app/core/contracts/i_ndvi_latest_lookup_provider.dart';
+import 'package:soloforte_app/core/contracts/ndvi_latest_summary.dart';
 import 'package:soloforte_app/core/constants/layout_constants.dart';
-import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 
+/// Detalhe de talhão — NDVI via contratos neutros (ADR-045).
 class FieldDetailScreen extends ConsumerWidget {
   final String farmId;
-  final String fieldId; // Talhao
+  final String fieldId;
 
   const FieldDetailScreen({
     super.key,
@@ -23,7 +22,6 @@ class FieldDetailScreen extends ConsumerWidget {
       body: SafeArea(
         child: Column(
           children: [
-            // Header
             Padding(
               padding: const EdgeInsets.symmetric(
                 horizontal: 16.0,
@@ -56,7 +54,7 @@ class FieldDetailScreen extends ConsumerWidget {
                   children: [
                     _buildInfoSection(context),
                     const SizedBox(height: 24),
-                    _buildNdviSection(context, ref),
+                    _NdviPreviewSection(fieldId: fieldId),
                     const SizedBox(height: kFabSafeArea),
                   ],
                 ),
@@ -81,9 +79,21 @@ class FieldDetailScreen extends ConsumerWidget {
       ),
     );
   }
+}
 
-  Widget _buildNdviSection(BuildContext context, WidgetRef ref) {
-    final latestAsync = ref.watch(ndviLatestProvider(fieldId));
+final _fieldNdviLatestProvider = FutureProvider.autoDispose
+    .family<NdviLatestSummary?, String>((ref, fieldId) {
+      return ref.watch(ndviLatestLookupProvider).getLatest(fieldId);
+    });
+
+class _NdviPreviewSection extends ConsumerWidget {
+  const _NdviPreviewSection({required this.fieldId});
+
+  final String fieldId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final latestAsync = ref.watch(_fieldNdviLatestProvider(fieldId));
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -98,16 +108,16 @@ class FieldDetailScreen extends ConsumerWidget {
               child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
             ),
             error: (_, __) => const SizedBox.shrink(),
-            data: (image) => image == null
-                ? _buildNdviEmpty(context)
-                : _buildNdviPreviewCard(context, image),
+            data: (summary) => summary == null
+                ? _buildEmpty(context)
+                : _buildPreviewCard(context, ref, summary),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildNdviEmpty(BuildContext context) {
+  Widget _buildEmpty(BuildContext context) {
     return Text(
       'NDVI não disponível para este talhão',
       style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -116,7 +126,11 @@ class FieldDetailScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildNdviPreviewCard(BuildContext context, NdviImage image) {
+  Widget _buildPreviewCard(
+    BuildContext context,
+    WidgetRef ref,
+    NdviLatestSummary summary,
+  ) {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(12),
@@ -128,12 +142,12 @@ class FieldDetailScreen extends ConsumerWidget {
                 const Icon(Icons.satellite_alt_outlined, size: 16),
                 const SizedBox(width: 6),
                 Text(
-                  'Última imagem: ${_formatDate(image.imageDate)}',
+                  'Última imagem: ${_formatDate(summary.imageDate)}',
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
                 const Spacer(),
                 Text(
-                  ndviSourceLabel(image.source),
+                  summary.sourceLabel,
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
                     color: Theme.of(context).colorScheme.outline,
                   ),
@@ -144,15 +158,15 @@ class FieldDetailScreen extends ConsumerWidget {
             Row(
               children: [
                 Text(
-                  'NDVI médio: ${image.ndviMean.toStringAsFixed(2)}',
+                  'NDVI médio: ${summary.ndviMean.toStringAsFixed(2)}',
                   style: Theme.of(
                     context,
                   ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  'Mín: ${image.ndviMin.toStringAsFixed(2)}  '
-                  'Máx: ${image.ndviMax.toStringAsFixed(2)}',
+                  'Mín: ${summary.ndviMin.toStringAsFixed(2)}  '
+                  'Máx: ${summary.ndviMax.toStringAsFixed(2)}',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: Theme.of(context).colorScheme.outline,
                   ),
@@ -163,21 +177,10 @@ class FieldDetailScreen extends ConsumerWidget {
             SizedBox(
               width: double.infinity,
               child: OutlinedButton.icon(
-                onPressed: () => showSoloForteSheet(
-                  context: context,
-                  isScrollControlled: true,
-                  backgroundColor: Theme.of(context).colorScheme.surface,
-                  showDragHandle: false,
-                  useSafeArea: false,
-                  shape: const RoundedRectangleBorder(
-                    borderRadius: BorderRadius.vertical(
-                      top: Radius.circular(16),
-                    ),
-                  ),
-                  builder: (_) => NdviTalhaoSheet(
-                    fieldId: fieldId,
-                    fieldName: 'Talhão $fieldId',
-                  ),
+                onPressed: () => ref.read(ndviFieldPresenterProvider).showTalhaoSheet(
+                  context,
+                  fieldId: fieldId,
+                  fieldName: 'Talhão $fieldId',
                 ),
                 icon: const Icon(Icons.history, size: 16),
                 label: const Text('Ver histórico'),

@@ -570,7 +570,7 @@ class _AgendaMonthPageState extends ConsumerState<AgendaMonthPage> {
     return grouped;
   }
 
-  List<Event> _applyFilters(List<Event> events, AgendaFilters filters) {
+  List<Event> _applyFilters(List<Event> events, AgendaFilterCriteria filters) {
     if (!filters.hasActiveFilters) return events;
     return events.where((event) {
       if (filters.types.isNotEmpty && !filters.types.contains(event.tipo)) {
@@ -590,7 +590,7 @@ class _AgendaMonthPageState extends ConsumerState<AgendaMonthPage> {
     }).toList();
   }
 
-  int _countActiveFilters(AgendaFilters filters) {
+  int _countActiveFilters(AgendaFilterCriteria filters) {
     int count = 0;
     if (filters.types.isNotEmpty) count++;
     if (filters.statuses.isNotEmpty) count++;

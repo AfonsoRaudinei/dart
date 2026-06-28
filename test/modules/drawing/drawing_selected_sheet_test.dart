@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:soloforte_app/modules/drawing/data/repositories/drawing_repository.dart';
@@ -100,6 +101,58 @@ void main() {
     },
   );
 
+  testWidgets('edicao de dados usa voltar e mantem o desenho selecionado', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(800, 2000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final repository = _DrawingRepository(_feature());
+    final controller = DrawingController(repository: repository);
+    addTearDown(controller.dispose);
+    await controller.loadFeatures();
+    controller.selectFeature(controller.features.single);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          drawingClientsRepositoryProvider.overrideWithValue(
+            _ClientsRepository(),
+          ),
+        ],
+        child: MaterialApp(
+          home: Scaffold(
+            body: SizedBox(
+              height: 1000,
+              child: DrawingSheet(controller: controller),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Vincular / editar dados'));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('drawing_sheet_back')), findsOneWidget);
+    expect(find.text('Cliente'), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('drawing_sheet_back')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('drawing_sheet_back')), findsNothing);
+    expect(find.text('Cliente'), findsNothing);
+    expect(controller.selectedFeature, isNotNull);
+    expect(controller.currentState, DrawingState.selected);
+    expect(
+      find.byKey(const Key('drawing_selected_sticky_footer')),
+      findsOneWidget,
+    );
+  });
+
   testWidgets('acao explicita sai da selecao e fecha o painel', (tester) async {
     tester.view.physicalSize = const Size(800, 2000);
     tester.view.devicePixelRatio = 1;
@@ -135,14 +188,264 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.ensureVisible(find.text('Sair da seleção'));
-    await tester.tap(find.text('Sair da seleção'));
+    expect(
+      find.byKey(const Key('drawing_selected_sticky_footer')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const Key('drawing_selected_exit_button')),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.byKey(const Key('drawing_selected_exit_button')));
     await tester.pumpAndSettle();
 
     expect(closeCount, 1);
     expect(controller.selectedFeature, isNull);
     expect(controller.currentState, DrawingState.idle);
   });
+
+  testWidgets('x durante edicao de dados encerra o contexto inteiro', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(800, 2000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final repository = _DrawingRepository(_feature());
+    final controller = DrawingController(repository: repository);
+    addTearDown(controller.dispose);
+    await controller.loadFeatures();
+    controller.selectFeature(controller.features.single);
+    var closeCount = 0;
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          drawingClientsRepositoryProvider.overrideWithValue(
+            _ClientsRepository(),
+          ),
+        ],
+        child: MaterialApp(
+          home: Scaffold(
+            body: SizedBox(
+              height: 1000,
+              child: DrawingSheet(
+                controller: controller,
+                onClose: () => closeCount++,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Vincular / editar dados'));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('drawing_sheet_back')), findsOneWidget);
+    expect(find.text('Cliente'), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('drawing_sheet_close')));
+    await tester.pumpAndSettle();
+
+    expect(closeCount, 1);
+    expect(controller.selectedFeature, isNull);
+    expect(controller.currentState, DrawingState.idle);
+    expect(find.text('Cliente'), findsNothing);
+  });
+
+  testWidgets(
+    'rodape fixo permanece visivel mesmo com rolagem no modo selecionado',
+    (tester) async {
+      tester.view.physicalSize = const Size(800, 1200);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final repository = _DrawingRepository(_feature());
+      final controller = DrawingController(repository: repository);
+      addTearDown(controller.dispose);
+      await controller.loadFeatures();
+      controller.selectFeature(controller.features.single);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            drawingClientsRepositoryProvider.overrideWithValue(
+              _ClientsRepository(),
+            ),
+          ],
+          child: MaterialApp(
+            home: Scaffold(
+              body: SizedBox(
+                height: 700,
+                child: DrawingSheet(controller: controller),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(const Key('drawing_selected_sticky_footer')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const Key('drawing_selected_edit_button')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const Key('drawing_selected_exit_button')),
+        findsOneWidget,
+      );
+
+      await tester.drag(
+        find.byType(SingleChildScrollView).first,
+        const Offset(0, -600),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(const Key('drawing_selected_sticky_footer')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const Key('drawing_selected_edit_button')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const Key('drawing_selected_exit_button')),
+        findsOneWidget,
+      );
+    },
+  );
+
+  testWidgets(
+    'cancelar edicao descarta alteracoes e retorna ao talhao selecionado',
+    (tester) async {
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final repository = _DrawingRepository(_feature());
+      final controller = DrawingController(repository: repository);
+      addTearDown(controller.dispose);
+      await controller.loadFeatures();
+      controller.selectFeature(controller.features.single);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            drawingClientsRepositoryProvider.overrideWithValue(
+              _ClientsRepository(),
+            ),
+          ],
+          child: MaterialApp(
+            home: Scaffold(
+              body: SizedBox(
+                height: 900,
+                child: DrawingSheet(controller: controller),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('drawing_selected_edit_button')));
+      await tester.pumpAndSettle();
+
+      expect(controller.currentState, DrawingState.editing);
+      expect(
+        find.byKey(const Key('drawing_edit_cancel_button')),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.byKey(const Key('drawing_edit_cancel_button')));
+      await tester.pumpAndSettle();
+
+      expect(controller.currentState, DrawingState.selected);
+      expect(controller.selectedFeature, isNotNull);
+      expect(
+        find.byKey(const Key('drawing_selected_sticky_footer')),
+        findsOneWidget,
+      );
+    },
+  );
+
+  testWidgets(
+    'fechar com alteracoes pendentes pede confirmacao antes de descartar',
+    (tester) async {
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final repository = _DrawingRepository(_feature());
+      final controller = DrawingController(repository: repository);
+      addTearDown(controller.dispose);
+      await controller.loadFeatures();
+      controller.selectFeature(controller.features.single);
+      var closeCount = 0;
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            drawingClientsRepositoryProvider.overrideWithValue(
+              _ClientsRepository(),
+            ),
+          ],
+          child: MaterialApp(
+            home: Scaffold(
+              body: SizedBox(
+                height: 900,
+                child: DrawingSheet(
+                  controller: controller,
+                  onClose: () => closeCount++,
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('drawing_selected_edit_button')));
+      await tester.pumpAndSettle();
+
+      controller.moveVertex(0, 0, const LatLng(-9.995, -47.995));
+      await tester.pumpAndSettle();
+      expect(controller.hasPendingEditChanges, isTrue);
+
+      await tester.tap(find.byKey(const Key('drawing_sheet_close')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Descartar alterações?'), findsOneWidget);
+      expect(closeCount, 0);
+      expect(controller.currentState, DrawingState.editing);
+
+      await tester.tap(find.text('Continuar editando'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Descartar alterações?'), findsNothing);
+      expect(controller.currentState, DrawingState.editing);
+      expect(closeCount, 0);
+
+      await tester.tap(find.byKey(const Key('drawing_sheet_close')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Descartar'));
+      await tester.pumpAndSettle();
+
+      expect(closeCount, 1);
+      expect(controller.currentState, DrawingState.idle);
+      expect(controller.selectedFeature, isNull);
+    },
+  );
 }
 
 class _DrawingRepository extends DrawingRepository {

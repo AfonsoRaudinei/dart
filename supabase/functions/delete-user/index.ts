@@ -72,6 +72,12 @@ Deno.serve(async (req: Request) => {
   try {
       await supabaseAdmin.from('referrals').delete().eq('referred_id', userId)
   } catch (e) {}
+  try {
+      await supabaseAdmin.from('producer_client_links').delete().eq('consultor_user_id', userId)
+  } catch (e) {}
+  try {
+      await supabaseAdmin.from('producer_client_links').delete().eq('producer_user_id', userId)
+  } catch (e) {}
 
   // Deletar dados de todas as tabelas mapeadas
   for (const table of TABLES_TO_DELETE) {

@@ -201,16 +201,15 @@ class SettingsRepository {
     return savedImage.path;
   }
 
-  Future<void> syncProfilePhoto(String localPath) async {
+  Future<String?> syncProfilePhoto(String localPath) async {
     try {
       final client = Supabase.instance.client;
       final user = client.auth.currentUser;
-      if (user == null) return;
+      if (user == null) return null;
 
       final ext = localPath.contains('.') ? localPath.split('.').last : 'jpg';
-      final fileName =
-          '${user.id}_${DateTime.now().millisecondsSinceEpoch}.$ext';
-      final storagePath = 'avatars/$fileName';
+      final fileName = '${DateTime.now().millisecondsSinceEpoch}.$ext';
+      final storagePath = '${user.id}/$fileName';
 
       await client.storage
           .from('avatars')
@@ -231,12 +230,15 @@ class SettingsRepository {
             'updated_at': DateTime.now().toUtc().toIso8601String(),
           })
           .eq('id', user.id);
+
+      return publicUrl;
     } catch (e) {
       AppLogger.warning(
         'Erro ao sincronizar foto de perfil',
         tag: 'Settings',
         error: e,
       );
+      return null;
     }
   }
 

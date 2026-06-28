@@ -6,6 +6,8 @@ import '../modules/consultoria/occurrences/data/occurrence_sync_service.dart';
 import '../modules/visitas/data/repositories/visit_sync_service.dart';
 import '../modules/agenda/data/services/agenda_sync_service.dart';
 import '../modules/agenda/data/repositories/agenda_repository.dart';
+import '../modules/produtor/data/producer_link_repository.dart';
+import '../modules/produtor/infra/occurrence_access_reader_adapter.dart';
 
 void registerSyncModules(SyncOrchestrator orchestrator) {
   final supabase = Supabase.instance.client;
@@ -21,6 +23,8 @@ class AgronomicSyncModule implements SyncModule {
   AgronomicSyncModule(this.supabase);
   @override
   String get name => 'Dados Agronômicos';
+  @override
+  int get syncTier => 0;
   @override
   Future<void> sync() => AgronomicSyncService(supabase).syncNow();
 }
@@ -38,7 +42,10 @@ class OccurrenceSyncModule implements SyncModule {
   @override
   String get name => 'Ocorrências';
   @override
-  Future<void> sync() => OccurrenceSyncService(supabase).syncOccurrences();
+  Future<void> sync() => OccurrenceSyncService(
+    supabase,
+    OccurrenceAccessReaderAdapter(ProducerLinkRepository(supabase)),
+  ).syncOccurrences();
 }
 
 class VisitSyncModule implements SyncModule {

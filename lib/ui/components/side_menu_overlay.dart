@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:soloforte_app/core/router/app_routes.dart';
+import 'package:soloforte_app/core/session/user_role.dart';
 import 'package:soloforte_app/core/services/connectivity_service.dart';
 import 'package:soloforte_app/core/services/sync_service.dart';
 import 'package:soloforte_app/core/state/side_menu_state.dart';
@@ -35,6 +36,8 @@ class SideMenuOverlay extends ConsumerWidget {
     final isOpen = ref.watch(sideMenuOpenProvider);
 
     if (!isOpen) return const SizedBox.shrink();
+
+    final role = ref.watch(currentUserRoleProvider);
 
     final drawerWidth = math.min(
       MediaQuery.of(context).size.width * 0.88,
@@ -86,82 +89,10 @@ class SideMenuOverlay extends ConsumerWidget {
               child: Column(
                 children: [
                   _buildHeader(context, ref),
-                  const Expanded(
+                  Expanded(
                     child: SingleChildScrollView(
-                      padding: EdgeInsets.fromLTRB(14, 14, 14, 18),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          _SectionTitle('Menu principal'),
-                          SizedBox(height: 6),
-                          _MenuPanel(
-                            children: [
-                              _MenuItem(
-                                icon: Icons.calendar_today_outlined,
-                                label: 'Agenda',
-                                subtitle: 'Próximas visitas',
-                                route: AppRoutes.agenda,
-                              ),
-                              _MenuItem(
-                                icon: Icons.people_outline_rounded,
-                                label: 'Clientes',
-                                subtitle: 'Gerenciar carteira',
-                                route: AppRoutes.clients,
-                              ),
-                              _MenuItem(
-                                icon: Icons.analytics_outlined,
-                                label: 'Relatórios',
-                                subtitle: 'Análises e KPIs',
-                                route: AppRoutes.reports,
-                              ),
-                              _MenuItem(
-                                icon: Icons.chat_bubble_outline_rounded,
-                                label: 'Feedback',
-                                subtitle: 'Envie sua opinião',
-                                route: AppRoutes.feedback,
-                              ),
-                              _MenuItem(
-                                icon: Icons.wb_sunny_outlined,
-                                label: 'Clima',
-                                subtitle: 'Previsão para o campo',
-                                route: AppRoutes.clima,
-                              ),
-                              _MenuItem(
-                                icon: Icons.account_balance_wallet_outlined,
-                                label: 'Carteira',
-                                subtitle: 'Acompanhamento de mercado',
-                                route: AppRoutes.carteira,
-                              ),
-                              _MenuItem(
-                                icon: Icons.settings_outlined,
-                                label: 'Configurações',
-                                subtitle: 'Ajustes do aplicativo',
-                                route: AppRoutes.settings,
-                                showDivider: false,
-                              ),
-                            ],
-                          ),
-                          SizedBox(height: 18),
-                          _SectionTitle('Conta'),
-                          SizedBox(height: 6),
-                          _MenuPanel(
-                            children: [
-                              _MenuPlanoBadgeItem(),
-                              _ManualSyncItem(),
-                            ],
-                          ),
-                          SizedBox(height: 18),
-                          _SectionTitle('Acesso rápido'),
-                          SizedBox(height: 8),
-                          _QuickActionsGrid(),
-                          SizedBox(height: 18),
-                          _SectionTitle('Resumo de hoje'),
-                          SizedBox(height: 8),
-                          _DailySummary(),
-                          SizedBox(height: 16),
-                          _MotivationalCard(),
-                        ],
-                      ),
+                      padding: const EdgeInsets.fromLTRB(14, 14, 14, 18),
+                      child: _SideMenuContent(role: role),
                     ),
                   ),
                   _buildFooter(context, ref),
@@ -182,7 +113,7 @@ class SideMenuOverlay extends ConsumerWidget {
     final displayName = (profile?.fullName?.trim().isNotEmpty ?? false)
         ? profile!.fullName!
         : 'Usuário';
-    final displayRole = _formatRole(profile?.role ?? '');
+    final displayRole = _formatRole(ref.watch(currentUserRoleProvider).value);
     final displayEmail = profile?.email.trim() ?? '';
 
     ImageProvider<Object>? avatarImage;
@@ -388,13 +319,7 @@ class SideMenuOverlay extends ConsumerWidget {
   }
 
   String _formatRole(String role) {
-    final normalized = role.trim().toLowerCase();
-    return switch (normalized) {
-      'consultor' => 'Consultor',
-      'produtor' => 'Produtor',
-      '' || 'não informado' => 'Conta',
-      _ => role,
-    };
+    return role.toUserRole().label;
   }
 }
 
