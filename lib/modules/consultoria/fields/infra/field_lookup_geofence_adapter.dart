@@ -53,9 +53,49 @@ class FieldLookupGeofenceAdapter implements IFieldLookup {
       areaHa: talhao.areaHa,
       crop: talhao.crop,
       harvest: talhao.harvest,
+      bbox: _bboxFromGeometry(talhao.geometry),
       // Serializa geometry de Map<String,dynamic> para String (GeoJSON)
       // para compatibilidade com FieldSummary.geometry: String?
       geometry: talhao.geometry != null ? jsonEncode(talhao.geometry) : null,
     );
+  }
+
+  /// [minLon, minLat, maxLon, maxLat] a partir de GeoJSON em Map.
+  List<double>? _bboxFromGeometry(Map<String, dynamic>? geometry) {
+    if (geometry == null || geometry.isEmpty) return null;
+
+    final values = <double>[];
+    void walk(dynamic node) {
+      if (node is List) {
+        if (node.length >= 2 && node[0] is num && node[1] is num) {
+          values.add((node[0] as num).toDouble());
+          values.add((node[1] as num).toDouble());
+          return;
+        }
+        for (final child in node) {
+          walk(child);
+        }
+      }
+    }
+
+    walk(geometry['coordinates']);
+    if (values.length < 4) return null;
+
+    var minLon = double.infinity;
+    var minLat = double.infinity;
+    var maxLon = double.negativeInfinity;
+    var maxLat = double.negativeInfinity;
+
+    for (var i = 0; i < values.length; i += 2) {
+      final lon = values[i];
+      final lat = values[i + 1];
+      if (lon < minLon) minLon = lon;
+      if (lat < minLat) minLat = lat;
+      if (lon > maxLon) maxLon = lon;
+      if (lat > maxLat) maxLat = lat;
+    }
+
+    if (minLon == double.infinity) return null;
+    return [minLon, minLat, maxLon, maxLat];
   }
 }
