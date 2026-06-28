@@ -4,9 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:go_router/go_router.dart';
 
 import 'package:soloforte_app/core/constants/layout_constants.dart';
+import 'package:soloforte_app/core/contracts/i_radar_overlay_controller_provider.dart';
 import 'package:soloforte_app/core/permissions/location_permission_gate.dart';
+import 'package:soloforte_app/core/router/app_routes.dart';
 import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 import 'package:soloforte_app/modules/clima/domain/entities/alerta_meteorologico.dart';
 import 'package:soloforte_app/modules/clima/domain/entities/clima_atual.dart';
@@ -238,6 +241,7 @@ class _CurrentView extends ConsumerWidget {
                 ),
                 ClimaCurrentWeatherCard(clima: clima, unidade: unidade),
                 ClimaDetailsCard(clima: clima),
+                const _ClimaMapRadarButton(),
               ],
             ),
             loading: () => const ClimaLoadingCenter(),
@@ -269,6 +273,43 @@ class _CurrentView extends ConsumerWidget {
 
         const SliverToBoxAdapter(child: SizedBox(height: kFabSafeArea)),
       ],
+    );
+  }
+}
+
+class _ClimaMapRadarButton extends ConsumerWidget {
+  const _ClimaMapRadarButton();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+      child: SizedBox(
+        width: double.infinity,
+        child: OutlinedButton.icon(
+          style: OutlinedButton.styleFrom(
+            foregroundColor: kClimaTint,
+            side: const BorderSide(color: kClimaDivider),
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+            ),
+          ),
+          onPressed: () {
+            HapticFeedback.lightImpact();
+            ref.read(radarOverlayControllerProvider).setEnabled(
+              true,
+              preferSatelliteLayer: true,
+            );
+            context.go(AppRoutes.map);
+          },
+          icon: const Icon(Icons.map_outlined, size: 20),
+          label: const Text(
+            'Ver chuva no mapa',
+            style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600),
+          ),
+        ),
+      ),
     );
   }
 }
