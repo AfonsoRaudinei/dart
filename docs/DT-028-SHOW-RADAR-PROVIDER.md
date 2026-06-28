@@ -1,35 +1,24 @@
 # DT-028 — showRadarProvider como proxy de MapContext.clima
 
 **Data:** 22/04/2026
-**Status:** ENCERRADO — migrado para `ArmedMode.clima`
+**Status:** ENCERRADO DEFINITIVAMENTE — ADR-043 (Jun/2026)
 **Originado em:** ADR-028 (RainViewer Radar Overlay)
-**Tipo:** Desvio de contrato arquitetural (não-bloqueante)
-**Bloqueante?** NÃO
-**Prioridade:** BAIXA
-**Encerrado em:** Mai/2026
+**Encerrado em:** Jun/2026 via migração para `clima/` + `IRadarOverlayController`
 
 ---
 
-## Contexto
+## Resolução final (ADR-043)
 
-### Estado atual — Mai/2026
+- Radar vive em `lib/modules/clima/` (`radar_providers.dart`, `ClimaRadarLayerWidget`)
+- Toggle: `climaRadarEnabledProvider` (nao `ArmedMode`, nao `showRadarProvider`)
+- Fronteira mapa ↔ clima: `IRadarOverlayController` em `core/contracts/`
+- `ArmedMode.clima` **nunca existiu** no codebase — docs corrigidos
 
-O desvio foi encerrado. O codebase real não possui mais um `showRadarProvider`
-ativo; a única ocorrência do termo está em comentário histórico no topo de
-`radar_layer_widget.dart`.
-
-O radar agora usa:
-
-- `ArmedMode.clima` em `lib/ui/screens/map/providers/map_armed_mode_provider.dart`
-- `armedModeProvider == ArmedMode.clima` em `RadarLayerWidget`
-- toggle de chuva em `LayersSheet` alternando `ArmedMode.none`/`ArmedMode.clima`
-
-Esta foi a decisão compatível com o estado real do projeto, onde o enum
-operacional do mapa é `ArmedMode`, não `MapContext`.
+Ver: `docs/02_ARQUITETURA_ATIVA/ADR-043-RADAR-OVERLAY-CONTRACT.md`
 
 ---
 
-## Contexto Histórico
+## Contexto Histórico (arquivo)
 
 Durante a execução do ADR-028, o agente verificou que `MapContext.clima`
 não existe como valor no enum `MapContext` do codebase atual.

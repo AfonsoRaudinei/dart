@@ -631,6 +631,109 @@ else
   fail "REGRA-NDVI-4: ndvi_providers.dart ausente"
 fi
 
+# ── REGRA-CLIMA-RADAR-1: radar RainViewer vive em clima/
+CLIMA_RADAR_REQUIRED_FILES=(
+  "lib/modules/clima/presentation/providers/radar_providers.dart"
+  "lib/modules/clima/presentation/widgets/radar_layer_widget.dart"
+  "lib/modules/clima/data/datasources/rainviewer_radar_datasource.dart"
+  "lib/modules/clima/domain/radar_overlay_state.dart"
+  "lib/modules/clima/domain/entities/radar_fetch_result.dart"
+  "lib/core/contracts/i_radar_overlay_controller.dart"
+  "docs/02_ARQUITETURA_ATIVA/ADR-043-RADAR-OVERLAY-CONTRACT.md"
+  "test/fixtures/rainviewer_manifest_v2.json"
+)
+
+CLIMA_RADAR_MISSING=0
+for clima_radar_file in "${CLIMA_RADAR_REQUIRED_FILES[@]}"; do
+  if [ ! -f "$clima_radar_file" ]; then
+    fail "REGRA-CLIMA-RADAR-1: arquivo obrigatorio ausente: $clima_radar_file"
+    CLIMA_RADAR_MISSING=$((CLIMA_RADAR_MISSING + 1))
+  fi
+done
+
+if [ "$CLIMA_RADAR_MISSING" -eq 0 ]; then
+  pass "artefatos radar clima/ presentes (providers, widget, contrato ADR-043)"
+fi
+
+# ── REGRA-CLIMA-RADAR-2: providers legados em ui/ proibidos
+if [ -f "lib/ui/components/map/providers/rainviewer_provider.dart" ]; then
+  fail "REGRA-CLIMA-RADAR-2: rainviewer_provider.dart legado ainda existe em ui/"
+elif rg -n "radarEnabledProvider|RainviewerRadarFrame" lib/ui/components/map/ 2>/dev/null | grep -v "^\s*//" | grep -q .; then
+  fail "REGRA-CLIMA-RADAR-2: ui/components/map ainda referencia providers legados de radar"
+else
+  pass "ui/components/map sem providers RainViewer legados"
+fi
+
+# ── REGRA-CLIMA-RADAR-3: testes de regressao obrigatorios
+CLIMA_RADAR_REQUIRED_TESTS=(
+  "test/modules/clima/radar_providers_test.dart"
+  "test/modules/clima/radar_layer_widget_test.dart"
+  "test/modules/clima/radar_overlay_controller_test.dart"
+  "test/modules/clima/radar_layer_order_test.dart"
+  "test/modules/clima/radar_persistence_test.dart"
+  "test/modules/clima/radar_overlay_states_test.dart"
+  "test/modules/clima/rainviewer_contract_test.dart"
+  "test/architecture/clima_radar_boundary_test.dart"
+)
+
+CLIMA_RADAR_TEST_MISSING=0
+for clima_radar_test in "${CLIMA_RADAR_REQUIRED_TESTS[@]}"; do
+  if [ ! -f "$clima_radar_test" ]; then
+    fail "REGRA-CLIMA-RADAR-3: teste de regressao ausente: $clima_radar_test"
+    CLIMA_RADAR_TEST_MISSING=$((CLIMA_RADAR_TEST_MISSING + 1))
+  fi
+done
+
+if [ "$CLIMA_RADAR_TEST_MISSING" -eq 0 ]; then
+  pass "suite de regressao radar clima presente"
+fi
+
+# ── REGRA-CLIMA-RADAR-4: main.dart registra IRadarOverlayController
+if grep -q "radarOverlayControllerProvider.overrideWith" lib/main.dart; then
+  pass "main.dart registra RadarOverlayControllerAdapter (ADR-043)"
+else
+  fail "REGRA-CLIMA-RADAR-4: main.dart deve registrar radarOverlayControllerProvider"
+fi
+
+# ── REGRA-CLIMA-RADAR-5: z-order canonico no map_build_orchestrator
+if [ -f "lib/ui/screens/map/widgets/map_build_orchestrator.dart" ]; then
+  RADAR_POS=$(grep -n "const ClimaRadarLayerWidget()" lib/ui/screens/map/widgets/map_build_orchestrator.dart | head -1 | cut -d: -f1)
+  DRAWING_POS=$(grep -n "DrawingEditLayer(" lib/ui/screens/map/widgets/map_build_orchestrator.dart | head -1 | cut -d: -f1)
+  MARKERS_POS=$(grep -n "const MapMarkersWidget()" lib/ui/screens/map/widgets/map_build_orchestrator.dart | head -1 | cut -d: -f1)
+
+  if [ -z "$RADAR_POS" ] || [ -z "$DRAWING_POS" ] || [ -z "$MARKERS_POS" ]; then
+    fail "REGRA-CLIMA-RADAR-5: map_build_orchestrator.dart deve conter radar, desenho e markers"
+  elif [ "$RADAR_POS" -le "$DRAWING_POS" ] || [ "$MARKERS_POS" -le "$RADAR_POS" ]; then
+    fail "REGRA-CLIMA-RADAR-5: ClimaRadarLayerWidget deve ficar apos DrawingEditLayer e antes de MapMarkersWidget"
+  else
+    pass "z-order radar valido (desenho < radar < markers)"
+  fi
+else
+  fail "REGRA-CLIMA-RADAR-5: map_build_orchestrator.dart ausente"
+fi
+
+# ── REGRA-CLIMA-RADAR-6: toggle persistido e estados UX diferenciados
+if grep -q "clima_radar_enabled_v1" lib/modules/clima/presentation/providers/radar_providers.dart; then
+  pass "toggle climaRadarEnabled persistido em SharedPreferences"
+else
+  fail "REGRA-CLIMA-RADAR-6: climaRadarEnabled deve persistir via clima_radar_enabled_v1"
+fi
+
+if grep -q "ClimaRadarOverlayMessages.noPrecipitation" lib/modules/clima/domain/radar_overlay_state.dart && \
+   grep -q "radar_offline_banner" lib/modules/clima/presentation/widgets/radar_layer_widget.dart; then
+  pass "estados UX diferenciados do radar (offline, vazio, erro)"
+else
+  fail "REGRA-CLIMA-RADAR-6: radar_overlay_state.dart e widget devem diferenciar estados UX"
+fi
+
+# ── REGRA-CLIMA-RADAR-7: telemetria sanitizada via AppLogger
+if grep -q "tag: 'Radar'" lib/modules/clima/domain/radar_overlay_logger.dart && \
+   grep -q "AppLogger" lib/modules/clima/data/datasources/rainviewer_radar_datasource.dart; then
+  pass "telemetria radar usa AppLogger sanitizado"
+else
+  fail "REGRA-CLIMA-RADAR-7: datasource/logger do radar devem usar AppLogger (tag Radar)"
+fi
+
 echo ""
 
 # =============================================================================

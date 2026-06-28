@@ -117,6 +117,7 @@ Comunicação cross-module **APENAS** via `lib/core/contracts/`:
 | `IProducerInviteWriter` | 039 | produtor | auth/settings |
 | `IProducerPropertyGateway` | 040 | consultoria | produtor |
 | `IOccurrenceAccessReader` | 041 | produtor | map |
+| `IRadarOverlayController` | 043 | clima | ui/map |
 
 **Dependências proibidas (diretas):**
 
@@ -219,7 +220,7 @@ lib/
 
 -----
 
-## ADRs ATIVOS (008–042)
+## ADRs ATIVOS (008–043)
 
 | ADR | Decisão |
 |---|---|
@@ -252,6 +253,7 @@ lib/
 | 040 | IProducerPropertyGateway |
 | 041 | IOccurrenceAccessReader |
 | 042 | NDVI ChainedFieldLookup + cache + fetch lazy |
+| 043 | IRadarOverlayController (radar RainViewer) |
 
 Detalhes: `docs/02_ARQUITETURA_ATIVA/ADR-*.md`
 

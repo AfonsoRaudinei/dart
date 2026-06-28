@@ -239,23 +239,26 @@ Qualquer alteração exige: atualização desta tabela + ADR em `02_ARQUITETURA_
 
 ## clima
 
-**Responsabilidade**: Visualização de radar meteorológico e apoio climático no mapa
+**Responsabilidade**: Dados climaticos, overlay de radar RainViewer e apoio operacional no mapa (ADR-043)
 
 **Camada de Apresentação**:
-- overlays/widgets de clima integrados ao mapa
+- `clima_screen.dart`, widgets de previsao
+- `ClimaRadarLayerWidget` (overlay no FlutterMap)
 
-**Camada de Domínio**:
-- Providers de visibilidade de radar e dados climáticos
+**Camada de Domínio/Dados**:
+- `radar_providers.dart`, `rainviewer_radar_datasource.dart`
+- `IRadarOverlayController` via adapter em `infra/`
 
 **Dependências Permitidas**:
 - ✅ `core/contracts/IUserLocationLookup` quando necessário
+- ✅ `core/state/map_state.dart` somente no adapter de radar (camada satelite)
 - ❌ Imports diretos de outros `modules/`
 
 **Contratos Expostos**:
-- Nenhum
+- `IRadarOverlayController` (implementado em `clima/infra`)
 
 **Dívidas Técnicas Conhecidas**:
-- DT-028: migrar `showRadarProvider` para `MapContext.clima`
+- Nenhuma — DT-028 encerrado (radar em `clima/`, nao `ArmedMode.clima`)
 
 ## dashboard
 

@@ -177,7 +177,7 @@ e das verificações locais executadas nesta sessão.
 
 | Item | Resolução |
 |---|---|
-| DT-028 — `showRadarProvider` fora de `MapContext.clima` | ✅ ENCERRADO — radar consome `armedModeProvider == ArmedMode.clima`; `showRadarProvider` não existe como provider ativo |
+| DT-028 — `showRadarProvider` fora de `MapContext.clima` | ✅ ENCERRADO — ADR-043: radar em `clima/` via `IRadarOverlayController` |
 | `DrawingRemoteStore` stub | ✅ ENCERRADO — implementação Supabase com `SupabaseClient` injetável, push/upsert, fetch por usuário e erro explícito em auth/payload inválido |
 | ADRs críticos da Fase 3 | ✅ ADR-033 (`visitas/`) e ADR-037 (`DrawingRemoteStore`) documentados |
 | Coverage gate CI | ✅ Fase 4: ratchet incremental implementado em `.github/workflows/architecture.yml`; baseline mínimo 36,46%, alvo 60% |
