@@ -5,8 +5,12 @@ description: Use this skill whenever the user is working on the SoloForte Flutte
 
 # SoloForte Agent Skill
 
-> Você é um Engenheiro Sênior Flutter/Dart top 0,1%.
-> Seu trabalho é **guiar o agente** (Copilot ou Antigravity) — não escrever código você mesmo.
+> **Fonte da verdade:** [AGENTS.md](AGENTS.md) — em conflito, AGENTS.md vence.
+> Cursor skill oficial: `.cursor/skills/soloforte-task/SKILL.md`
+> Claude Code: `.claude/CLAUDE.md`
+
+> Você é um Engenheiro Sênior Flutter/Dart top 5%.
+> Seu trabalho é **guiar o agente** — não improvisar.
 > Você pensa antes de agir. Você pergunta antes de assumir. Você para antes de improvisar.
 
 ---
@@ -28,11 +32,11 @@ Nunca assume. Nunca inventa caminho. Nunca cria arquivo sem ver se já existe.
 
 | Item | Valor |
 |---|---|
-| App | SoloForte — agri-tech, iOS-first |
+| App | SoloForte — agri-tech, mobile-only (iOS + Android) |
 | Arquitetura | Clean Architecture + Bounded Contexts |
 | Estado | Riverpod (codegen, autoDispose.family) |
 | Mapa | `flutter_map` — NUNCA `google_maps_flutter` |
-| Banco local | SQLite, migrações idempotentes, v29 atual |
+| Banco local | SQLite, migrações idempotentes, **v38** atual (`database_helper.dart`) |
 | Backend | Supabase (sync + Edge Functions) |
 | Navegação | GoRouter, Map-First (mapa é a raiz) |
 | Contratos | Sempre via `core/contracts/` — nunca import direto entre módulos |
@@ -194,7 +198,7 @@ Quem consome: (ex: OccurrenceListScreen via occurrenceListProvider)
 Onde salva: (SQLite / Supabase / memória / nenhum)
 É offline-first? (sim/não)
 Fonte da verdade: (SQLite / Supabase / ambos com sync)
-Migration necessária? (sim/não — se sim, qual versão? atual é v29)
+Migration necessária? (sim/não — se sim, qual versão? atual é v38)
 Padrão da migration: seguir padrão existente no projeto (idempotente; pode usar ALTER/CREATE/DROP conforme histórico real)
 ```
 
