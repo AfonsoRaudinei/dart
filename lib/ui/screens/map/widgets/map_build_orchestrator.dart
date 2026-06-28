@@ -18,6 +18,7 @@ import '../../../../core/session/user_role.dart';
 import '../../../../core/utils/map_logger.dart';
 import '../../../../modules/drawing/presentation/providers/drawing_provider.dart';
 import '../../../../modules/drawing/presentation/providers/gps_walk_providers.dart';
+import '../../../../modules/drawing/presentation/coordinators/drawing_close_coordinator.dart';
 import '../../../../modules/drawing/domain/drawing_state.dart';
 import '../../../../modules/drawing/domain/models/gps_walk_session.dart';
 import '../../../../modules/drawing/domain/models/drawing_models.dart';
@@ -40,7 +41,7 @@ import '../../../../modules/visitas/presentation/controllers/visit_controller.da
 import '../../../components/map/map_bottom_sheet.dart';
 import '../../../components/map/widgets/map_canvas.dart';
 import '../../../components/map/widgets/map_layers.dart';
-import '../../../components/map/widgets/radar_layer_widget.dart';
+import '../../../../modules/clima/presentation/widgets/radar_layer_widget.dart';
 import '../../../components/map/widgets/map_markers.dart';
 import '../../../components/map/widgets/map_controls_overlay.dart';
 import '../../../components/map/widgets/isolated_marker_layers.dart';
@@ -332,9 +333,6 @@ class MapBuildOrchestrator extends ConsumerWidget {
               // Layer base de tiles
               const MapLayersWidget(),
 
-              // ADR-028 — Overlay de radar de precipitação (RainViewer)
-              const RadarLayerWidget(),
-
               // Polígonos de talhões
               // ADR-030 F3: extraído para TalhaoPolygonLayer
               const TalhaoPolygonLayer(),
@@ -355,6 +353,9 @@ class MapBuildOrchestrator extends ConsumerWidget {
                 controller: ref.read(drawingControllerProvider),
                 mapController: mapController,
               ),
+
+              // ADR-043 — Radar acima de talhões/desenho, abaixo de markers
+              const ClimaRadarLayerWidget(),
 
               // 🔒 MARKERS ISOLADOS: Não rebuildam por GPS/zoom/pan
               const MapMarkersWidget(),
@@ -479,7 +480,7 @@ class MapBuildOrchestrator extends ConsumerWidget {
                   ? mapController.camera.center
                   : const LatLng(0, 0),
               currentZoom: isMapReady ? mapController.camera.zoom : 13.0,
-              onTabSelected: (index, source) {
+              onTabSelected: (index, source) async {
                 // 🛡 REFATORAÇÃO: Mapear index para MapSheetType
                 final sheetTypeMap = {
                   2: MapSheetType.occurrences,
@@ -489,6 +490,21 @@ class MapBuildOrchestrator extends ConsumerWidget {
 
                 final currentType = sheetState?.type;
                 final newType = sheetTypeMap[index];
+
+                if (currentType == MapSheetType.draw &&
+                    currentType != newType) {
+                  final decision = await DrawingCloseCoordinator.handle(
+                    context,
+                    controller: ref.read(drawingControllerProvider),
+                    intent: DrawingCloseIntent.switchPanel,
+                  );
+                  if (!decision.shouldCloseSheet) {
+                    return;
+                  }
+                  if (!context.mounted) {
+                    return;
+                  }
+                }
 
                 if (currentType == newType) {
                   // Toggle: fechar modal se aberto

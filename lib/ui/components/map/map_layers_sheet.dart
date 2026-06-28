@@ -11,10 +11,11 @@ import '../../../core/constants/layout_constants.dart';
 import '../../../core/design/sf_icons.dart';
 import '../../../core/domain/map_models.dart';
 import '../../../core/services/local_geotiff_service.dart';
+import '../../../core/contracts/i_radar_overlay_controller_provider.dart';
 import '../../../core/state/map_state.dart';
 import '../../../core/ui/sheets/sheet_tokens.dart';
 import '../../theme/premium/design_tokens.dart';
-import 'providers/rainviewer_provider.dart';
+import '../../../modules/clima/presentation/providers/radar_providers.dart';
 
 class LayersSheet extends ConsumerWidget {
   static const _accent = PremiumTokens.brandGreenDark;
@@ -36,7 +37,7 @@ class LayersSheet extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final currentLayer = ref.watch(activeLayerProvider);
     final showMarkers = ref.watch(showMarkersProvider);
-    final showRadar = ref.watch(radarEnabledProvider);
+    final showRadar = ref.watch(climaRadarEnabledProvider);
     final wms = ref.watch(externalWmsLayerProvider);
     final raster = ref.watch(externalRasterLayerProvider);
 
@@ -147,8 +148,11 @@ class LayersSheet extends ConsumerWidget {
                           inactiveAsset: _LayerAssets.rainInactive,
                           onTap: () {
                             HapticFeedback.lightImpact();
-                            ref.read(radarEnabledProvider.notifier).state =
-                                !showRadar;
+                            final enabling = !showRadar;
+                            ref.read(radarOverlayControllerProvider).setEnabled(
+                              enabling,
+                              preferSatelliteLayer: enabling,
+                            );
                           },
                         ),
                       ],
@@ -169,6 +173,7 @@ class LayersSheet extends ConsumerWidget {
                       Expanded(
                         child: Text(
                           'Mostra a chuva em tempo real (áreas em azul). '
+                          'Use a camada Satélite para melhor contraste. '
                           'Pode não haver chuva na sua região agora.',
                           style: TextStyle(color: Colors.white60, fontSize: 11),
                         ),
