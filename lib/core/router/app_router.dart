@@ -9,7 +9,8 @@ import '../../ui/screens/private_map_screen.dart';
 import '../../ui/screens/login_screen.dart';
 import '../../ui/screens/signup_screen.dart';
 import '../../ui/screens/misc_screens.dart'
-    hide SettingsScreen, ClientesScreen, RelatoriosScreen, AgendaScreen;
+    hide SettingsScreen, ClientesScreen, RelatoriosScreen, AgendaScreen, FeedbackScreen;
+import '../../../modules/feedback/presentation/screens/feedback_screen.dart';
 import '../../../modules/consultoria/agenda/presentation/screens/agenda_screen.dart';
 import '../../../modules/settings/presentation/screens/settings_screen.dart';
 import '../../../modules/consultoria/clients/presentation/screens/client_list_screen.dart';
@@ -33,6 +34,10 @@ GoRouter router(Ref ref) {
   return GoRouter(
     initialLocation: AppRoutes.publicMap,
     redirect: (context, state) {
+      if (session is SessionUnknown) {
+        return null;
+      }
+
       final isAuth = session is SessionAuthenticated;
 
       final path = state.uri.path;

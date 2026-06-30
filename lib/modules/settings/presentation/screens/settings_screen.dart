@@ -1,8 +1,10 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../../core/auth/auth_exception.dart';
+import '../../../../core/router/app_routes.dart';
 import '../../../../core/session/session_controller.dart';
 import '../../../../core/utils/legal_links.dart';
 import '../../../../ui/theme/soloforte_theme.dart';
@@ -149,7 +151,7 @@ class SettingsScreen extends ConsumerWidget {
                           context,
                           title: 'Relatórios & Exportação',
                           icon: Icons.bar_chart,
-                          onTap: () {},
+                          onTap: () => context.go(AppRoutes.reports),
                         ),
                         _buildTile(
                           context,
