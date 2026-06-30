@@ -1,0 +1,400 @@
+// ADR-012 — planos/presentation/screens/meu_plano_screen.dart
+//
+// Rota: /planos/meu-plano — exibe info do plano ativo com dias restantes.
+
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+
+import 'package:soloforte_app/core/constants/layout_constants.dart';
+import 'package:soloforte_app/core/router/app_routes.dart';
+
+import '../providers/plano_providers.dart';
+import '../../domain/entities/user_plan.dart';
+import '../../domain/enums/plano_tipo.dart';
+
+class MeuPlanoScreen extends ConsumerWidget {
+  const MeuPlanoScreen({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final planoAsync = ref.watch(planoAtivoProvider);
+
+    return Scaffold(
+      backgroundColor: const Color(0xFF000000),
+      body: SafeArea(
+        child: Column(
+          children: [
+            _buildHeader(context),
+            Expanded(
+              child: planoAsync.when(
+                data: (plano) => _PlanoAtivoContent(plano: plano),
+                loading: () => const Center(
+                  child: CircularProgressIndicator(color: Color(0xFF32D74B)),
+                ),
+                error: (e, _) => _ErrorContent(error: e.toString()),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeader(BuildContext context) {
+    return const Padding(
+      padding: EdgeInsets.fromLTRB(20, 16, 20, 8),
+      child: Row(
+        children: [
+          SizedBox(width: 40),
+          Text(
+            'Meu Plano',
+            style: TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 22,
+              fontWeight: FontWeight.w700,
+              color: Colors.white,
+              letterSpacing: 0.37,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// CONTEÚDO: PLANO ATIVO
+// ─────────────────────────────────────────────────────────────
+
+class _PlanoAtivoContent extends ConsumerWidget {
+  final UserPlan plano;
+
+  const _PlanoAtivoContent({required this.plano});
+
+  Color get _accentColor {
+    switch (plano.plano) {
+      case PlanoTipo.bronze:
+        return const Color(0xFFCD7F32);
+      case PlanoTipo.prata:
+        return const Color(0xFFC0C0C0);
+      case PlanoTipo.ouro:
+        return const Color(0xFFFFD700);
+    }
+  }
+
+  String get _emoji {
+    switch (plano.plano) {
+      case PlanoTipo.bronze:
+        return '🥉';
+      case PlanoTipo.prata:
+        return '🥈';
+      case PlanoTipo.ouro:
+        return '🥇';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final dias = plano.diasRestantes;
+    final expiraEmBreve = plano.expiraEmBreve;
+    final codigoAsync = ref.watch(meuCodigoIndicacaoProvider);
+
+    return ListView(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      children: [
+        const SizedBox(height: 16),
+        // Badge principal
+        Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: const Color(0xFF1C1C1E),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: _accentColor.withAlpha(80)),
+          ),
+          child: Column(
+            children: [
+              Text(_emoji, style: const TextStyle(fontSize: 48)),
+              const SizedBox(height: 12),
+              Text(
+                'Plano ${plano.plano.label}',
+                style: TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 28,
+                  fontWeight: FontWeight.w700,
+                  color: _accentColor,
+                  letterSpacing: -0.4,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'via ${plano.origem.label}',
+                style: const TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 14,
+                  color: Color(0xFF8E8E93),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        // Dias restantes
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: const Color(0xFF1C1C1E),
+            borderRadius: BorderRadius.circular(16),
+            border: expiraEmBreve
+                ? Border.all(color: Colors.red.withAlpha(120))
+                : null,
+          ),
+          child: Row(
+            children: [
+              Icon(
+                expiraEmBreve
+                    ? Icons.warning_amber_rounded
+                    : Icons.calendar_today_rounded,
+                color: expiraEmBreve ? Colors.red : const Color(0xFF32D74B),
+                size: 24,
+              ),
+              const SizedBox(width: 16),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    expiraEmBreve
+                        ? '⚠️ Expira em $dias dias'
+                        : '$dias dias restantes',
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: expiraEmBreve ? Colors.red : Colors.white,
+                    ),
+                  ),
+                  Text(
+                    'Expira em ${_formatDate(plano.expiraEm)}',
+                    style: const TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 13,
+                      color: Color(0xFF8E8E93),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        // Info de limite
+        _InfoRow(
+          icon: Icons.location_on_rounded,
+          label: 'Cases ativos no mapa',
+          value: '${plano.limiteCases} case${plano.limiteCases > 1 ? 's' : ''}',
+        ),
+        if (plano.plano != PlanoTipo.ouro) ...[
+          const SizedBox(height: 16),
+          _NavigationRow(
+            icon: Icons.group_add_outlined,
+            label: 'Indicações',
+            value: _buildIndicacaoSubtitle(
+              plano,
+              codigoAsync.asData?.value?.indicacoesValidadas ?? 0,
+            ),
+            route: AppRoutes.planosIndicacoes,
+          ),
+        ],
+        const SizedBox(height: 32),
+        if (plano.plano != PlanoTipo.ouro)
+          SizedBox(
+            width: double.infinity,
+            height: 52,
+            child: GestureDetector(
+              onTap: () {
+                HapticFeedback.lightImpact();
+                context.go('/planos');
+              },
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: const Color(0xFF32D74B),
+                  borderRadius: BorderRadius.circular(50),
+                ),
+                child: const Center(
+                  child: Text(
+                    'Ver planos superiores',
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black,
+                      letterSpacing: -0.4,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        const SizedBox(height: kFabSafeArea),
+      ],
+    );
+  }
+
+  String _formatDate(DateTime date) {
+    return '${date.day.toString().padLeft(2, '0')}/'
+        '${date.month.toString().padLeft(2, '0')}/'
+        '${date.year}';
+  }
+
+  String _buildIndicacaoSubtitle(UserPlan plano, int indicacoesValidadas) {
+    switch (plano.plano) {
+      case PlanoTipo.bronze:
+        return '$indicacoesValidadas/5 para Prata';
+      case PlanoTipo.prata:
+        return '$indicacoesValidadas/10 para Ouro';
+      case PlanoTipo.ouro:
+        return '';
+    }
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// CONTEÚDO: SEM PLANO
+// ─────────────────────────────────────────────────────────────
+// CONTEÚDO: ERRO
+// ─────────────────────────────────────────────────────────────
+
+class _ErrorContent extends StatelessWidget {
+  final String error;
+
+  const _ErrorContent({required this.error});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Text(
+          'Erro ao carregar plano: $error',
+          textAlign: TextAlign.center,
+          style: const TextStyle(color: Colors.red, fontFamily: 'Inter'),
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// WIDGET auxiliar: Info Row
+// ─────────────────────────────────────────────────────────────
+
+class _InfoRow extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+
+  const _InfoRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1C1C1E),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: const Color(0xFF32D74B), size: 20),
+          const SizedBox(width: 12),
+          Text(
+            label,
+            style: const TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 15,
+              color: Color(0xFFE5E5EA),
+            ),
+          ),
+          const Spacer(),
+          Text(
+            value,
+            style: const TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+              color: Colors.white,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _NavigationRow extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+  final String route;
+
+  const _NavigationRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.route,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: const Color(0xFF1C1C1E),
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: () {
+          HapticFeedback.lightImpact();
+          context.go(route);
+        },
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          child: Row(
+            children: [
+              Icon(icon, color: const Color(0xFF32D74B), size: 22),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  label,
+                  style: const TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 15,
+                    color: Color(0xFFE5E5EA),
+                  ),
+                ),
+              ),
+              Text(
+                value,
+                style: const TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(width: 8),
+              const Icon(
+                Icons.chevron_right_rounded,
+                color: Color(0xFF8E8E93),
+                size: 22,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

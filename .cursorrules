@@ -1,0 +1,33 @@
+# SoloForte — Cursor Rules (legado)
+
+> **Fonte da verdade:** `AGENTS.md` (raiz) + `.cursor/rules/soloforte-engineer.mdc`
+> Este arquivo mantém apenas ativação contextual. Não duplicar versões aqui.
+
+Perfil: Engenheiro Sênior Flutter/Dart — Arquitetura > Rapidez | Contrato > UI | Zero Improviso
+
+## Verdade rápida (sincronizada com AGENTS.md)
+
+- Mobile-only (iOS/Android) · Map-First · Riverpod ADR-008
+- DB schema **v38** · Baseline doc v1.1 · Release v1.2
+- `./tool/arch_check.sh` → Exit 0 obrigatório
+- Nunca `pop()` · nunca sub-rotas em `/map` · nunca `google_maps_flutter`
+
+## MÓDULOS CONTEXTUAIS — ATIVAR SOB DEMANDA
+
+Declare no chat para regras extras do módulo:
+
+| Declaração | Quando usar |
+|---|---|
+| `@MÓDULO: ALTERACAO_ESTRUTURAL` | Novo módulo, bounded context, ADR novo |
+| `@MÓDULO: NAVEGACAO_MAP_FIRST` | Rota nova ou mudança de navegação |
+| `@MÓDULO: ESTADO_RIVERPOD` | Novo provider ou estado global |
+| `@MÓDULO: PERSISTENCIA_OFFLINE` | SQLite, sync_status, Supabase |
+
+Nunca ativar todos ao mesmo tempo. Budget ideal: 600–1.200 tokens por sessão.
+
+## Antes de codar
+
+1. `find`/`rg` para localizar arquivo
+2. Ler `lib/modules/<modulo>/AGENTS.md`
+3. Declarar módulo, objetivo, arquivos tocados
+4. Skill de workflow: `.cursor/skills/soloforte-task/SKILL.md`

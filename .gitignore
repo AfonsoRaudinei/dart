@@ -51,6 +51,7 @@ android/app/release/
 **/ios/Flutter/App.framework.dSYM/
 **/macos/Pods/
 **/macos/Runner.xcworkspace/xcuserdata/
+macos/Flutter/GeneratedPluginRegistrant.swift
 
 # Symbols and splashes
 **/ios/Runner/Assets.xcassets/LaunchImage.imageset/Contents.json
@@ -64,6 +65,7 @@ android/app/release/
 **/android/app/src/main/res/drawable-xxxhdpi/launch_background.png
 
 # Coverage
+coverage/
 doc/api/
 ios/Flutter/.last_build_id
 .dart_tool/
@@ -74,3 +76,22 @@ ios/Flutter/.last_build_id
 .pub/
 build/
 API_KEYS_MASTER.md
+
+# Scripts locais com credenciais reais (nunca versionar)
+scripts/*.local.sh
+
+# Arquivos de defines locais (dart-define)
+*.define.local
+
+# Variáveis de ambiente locais (nunca commitar)
+.env.local
+*.env
+
+# Secrets de API do mapa (nunca commitar chaves reais)
+lib/core/config/map_secrets.dart
+API
+anon
+.env.local.json
+analyze_output.txt
+edit_private_map.dart
+soloforte.db

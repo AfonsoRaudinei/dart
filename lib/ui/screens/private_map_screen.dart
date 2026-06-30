@@ -1,29 +1,47 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:soloforte_app/ui/theme/soloforte_theme.dart';
-import 'package:soloforte_app/ui/components/map/map_sheets.dart';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/state/map_ui_providers.dart';
 import '../../core/state/map_state.dart';
-import '../../core/domain/map_models.dart';
-
-import 'package:flutter_map_marker_cluster/flutter_map_marker_cluster.dart';
-import '../../core/utils/map_logger.dart';
-import '../../core/utils/debouncer.dart';
-import '../../modules/consultoria/clients/presentation/providers/field_providers.dart';
-import '../../modules/consultoria/services/talhao_map_adapter.dart';
-import '../../modules/dashboard/pages/map/drawing/drawing_sheet.dart';
-import '../../modules/dashboard/pages/map/drawing/drawing_controller.dart';
-import '../../modules/dashboard/controllers/location_controller.dart';
-import '../../modules/dashboard/domain/location_state.dart';
-import '../../modules/visitas/presentation/controllers/visit_controller.dart';
-import '../../modules/visitas/presentation/widgets/visit_sheet.dart';
-import '../../modules/visitas/presentation/controllers/geofence_controller.dart';
-import '../../modules/consultoria/occurrences/presentation/controllers/occurrence_controller.dart';
+import '../../core/config/map_config.dart';
+import '../../core/config/map_secrets.dart';
+import '../../core/services/offline_tile_cache_service.dart';
+import '../../core/utils/coordinate_parser.dart';
+import '../../modules/auth/services/auth_service.dart';
+import '../../core/utils/app_logger.dart';
+import '../../modules/drawing/presentation/providers/drawing_provider.dart';
+import '../../modules/drawing/domain/drawing_state.dart';
+import '../../modules/drawing/domain/models/drawing_models.dart';
+import '../../modules/dashboard/providers/location_providers.dart';
 import '../../modules/consultoria/occurrences/domain/occurrence.dart' as occ;
-import '../components/map/occurrence_pins.dart';
+import '../../modules/marketing/domain/enums/case_tipo.dart';
+import '../components/map/map_sheet_state.dart';
+// 🔧 MODAL: imports para sheets dos tipos não-draw
+// (conteúdo migrado para map_sheet_content_builder.dart — ADR-031 F3)
+import '../../modules/consultoria/occurrences/presentation/widgets/occurrence_detail_sheet.dart';
+import 'map/providers/map_armed_mode_provider.dart';
+import 'map/providers/map_ready_state_provider.dart';
+import '../../modules/map/presentation/providers/map_location_mode_provider.dart';
+import 'map/widgets/map_build_orchestrator.dart';
+import 'map/handlers/map_location_handler.dart';
+import 'map/controllers/map_viewport_controller.dart';
+import 'map/controllers/map_sheet_controller.dart';
+import 'map/handlers/novo_case_modal_launcher.dart';
+import 'map/handlers/map_first_query_handler.dart';
 
+// ADR-032 F1: _isMapReady migrado → mapReadyStateProvider (autoDispose).
+// Bloqueador restante: _setSheetState (modal state).
+
+// ════════════════════════════════════════════════════════════════
+// GOVERNANCE ADR-025 — DT-025-5
+// Este arquivo está em ~900 linhas. PROIBIDO adicionar código inline.
+// Toda nova funcionalidade DEVE ser extraída para widget separado em
+// lib/ui/components/map/ e apenas referenciada aqui. Ver ADR-025 §6.
+// ════════════════════════════════════════════════════════════════
 class PrivateMapScreen extends ConsumerStatefulWidget {
   const PrivateMapScreen({super.key});
 
@@ -31,818 +49,575 @@ class PrivateMapScreen extends ConsumerStatefulWidget {
   ConsumerState<PrivateMapScreen> createState() => _PrivateMapScreenState();
 }
 
-// Enum para rastrear o modo armado
-enum ArmedMode { none, occurrences }
-
 class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
   final MapController _mapController = MapController();
-  final DrawingController _drawingController =
-      DrawingController(); // Local Drawing Controller
-  final _mapEventDebouncer = Debouncer(
-    delay: const Duration(milliseconds: 300),
-  );
-
-  bool _hasInitialFocused = false;
-  // bool _isDrawMode = false; // Removed legacy mode
-  // bool _isCheckedIn = false; // Replaced by VisitController
-  String? _activeSheetName;
-  late LocationController _locationController;
-  ArmedMode _armedMode = ArmedMode.none; // Estado do modo armado
+  // 🔧 LIFECYCLE: Referência cacheada do DrawingController.
+  // Capturada no build() para uso seguro no dispose() SEM ref.read().
+  // ref é invalidado em deactivate() (antes de dispose()) — ADR-008.
+  dynamic _drawingController;
+  CaseTipo? _pendingMarketingCaseTipo;
+  String? _handledMapFirstUri;
 
   @override
   void initState() {
     super.initState();
-    _locationController = LocationController(ref);
     // Inicializar GPS ao carregar a tela
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _locationController.init();
-      ref.read(geofenceControllerProvider); // Start Geofence Monitoring
+      // 🛡 LIFECYCLE GUARD: Se o widget foi disposed durante a transição
+      // de rota (duplo evento onAuthStateChange do Supabase), o ref já
+      // está invalidado. Sem este guard → BadState crash na inicialização.
+      if (!mounted) return;
+
+      ref.read(locationStateProvider.notifier).init();
+      _requestLocationPermission();
+
+      // Bootstrap silencioso: garantir perfil completo.
+      // Fire-and-forget — sem await, sem loading, sem rebuild.
+      // Cobre edge case de perfil eternamente vazio após email confirmation.
+      ref.read(authServiceProvider.notifier).ensureProfileComplete().catchError(
+        (e) {
+          // 🛡 LIFECYCLE GUARD: callback async pode executar após dispose
+          if (!mounted) return;
+          AppLogger.debug(
+            'Profile bootstrap silencioso falhou (não-crítico): $e',
+            tag: 'MapBootstrap',
+          );
+        },
+      );
     });
+  }
+
+  void _scheduleMapFirstQueryHandling(Uri uri) {
+    final key = uri.toString();
+    if (_handledMapFirstUri == key) return;
+    _handledMapFirstUri = key;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      MapFirstQueryHandler.handle(
+        uri: uri,
+        ref: ref,
+        setSheetState: _setSheetState,
+        armOccurrenceMode: _armOccurrenceMode,
+        focusDrawing: _focusDrawingFromQuery,
+      );
+    });
+  }
+
+  Future<void> _focusDrawingFromQuery(
+    String drawingId, {
+    required bool edit,
+  }) async {
+    final controller = ref.read(drawingControllerProvider);
+    await controller.loadFeatures();
+    if (!mounted) return;
+
+    DrawingFeature? feature;
+    for (final item in controller.features) {
+      if (item.id == drawingId) {
+        feature = item;
+        break;
+      }
+    }
+
+    if (feature == null) {
+      AppLogger.warning(
+        'Drawing informado na rota não foi encontrado: $drawingId',
+        tag: 'PrivateMap',
+      );
+      return;
+    }
+
+    controller.selectFeature(feature);
+    MapViewportController.focusDrawingFeature(
+      mapController: _mapController,
+      feature: feature,
+    );
+
+    if (edit) {
+      controller.startEditMode();
+    }
   }
 
   @override
   void dispose() {
-    _mapEventDebouncer.dispose();
-    _drawingController.dispose();
+    // 🔧 LIFECYCLE EXPLÍCITO: Reset do DrawingController ao sair da tela
+    // Provider SEM autoDispose → controle manual obrigatório
+    // cancelOperation() limpa: estado, geometria, pontos, preview e volta para idle
+    //
+    // 🛡 ADR-008: ref é invalidado em deactivate() (antes de dispose()).
+    // Usar referência cacheada em _drawingController, capturada no build().
+    // NUNCA usar ref.read() aqui — causa BadState crash.
+    _drawingController?.cancelOperation();
+    MapLocationHandler.stopFollowing();
+
     super.dispose();
   }
 
-  void _showSheet(BuildContext context, Widget sheet, String name) async {
-    setState(() => _activeSheetName = name);
-    await showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => DraggableScrollableSheet(
-        initialChildSize: 0.5,
-        minChildSize: 0.3,
-        maxChildSize: 0.9,
-        builder: (_, controller) => sheet,
-      ),
+  // 🔎 INSTRUMENTATION: Rastrear quem altera o estado
+  void _setSheetState(MapSheetState? state, String reason) {
+    if (state != null) {
+      _pendingMarketingCaseTipo = null;
+    }
+    final currentSheet = ref.read(mapSheetStateProvider);
+    AppLogger.debug(
+      'SHEET CHANGE | old=${currentSheet?.type} | new=${state?.type} | reason=$reason',
+      tag: 'PrivateMap',
     );
-    if (mounted) {
-      setState(() => _activeSheetName = null);
+
+    // 🐛 BUGFIX: Fechar modal branco (layers/checkIn) antes de renderizar
+    // sheet escuro no Stack. Sem isso, o modal fica vivo atrás e reaparece
+    // ao fechar o MapBottomSheet. Padrão idêntico ao onTabSelected do orchestrator.
+    // R-1: rootNavigator: false garante que o pop nunca escala até o GoRouter raiz,
+    // mesmo se isModalOpenProvider dessincronizar por swipe dismiss.
+    if (ref.read(isModalOpenProvider) && context.mounted) {
+      Navigator.of(context, rootNavigator: false).pop();
+      ref.read(modalGenerationProvider.notifier).state++;
+      ref.read(isModalOpenProvider.notifier).state = false;
     }
-  }
 
-  String _getLayerUrl(LayerType type) {
-    switch (type) {
-      case LayerType.satellite:
-        return 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
-      case LayerType.terrain:
-        return 'https://b.tile.opentopomap.org/{z}/{x}/{y}.png';
-      case LayerType.standard:
-        return 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
-    }
-  }
+    ref.read(mapSheetStateProvider.notifier).state = state;
 
-  void _handleAutoZoom(List<Publication>? pubs) {
-    if (_hasInitialFocused || pubs == null || pubs.isEmpty) return;
-
-    // "Contexto Inicial Inteligente" - First Load Only
-    _hasInitialFocused = true;
-
-    try {
-      final points = pubs.map((e) => e.location).toList();
-      if (points.isNotEmpty) {
-        final bounds = LatLngBounds.fromPoints(points);
-        // Slightly delay to allow map to render size
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          _mapController.fitCamera(
-            CameraFit.bounds(bounds: bounds, padding: const EdgeInsets.all(50)),
-          );
-        });
-      }
-    } catch (_) {}
-  }
-
-  void _openDrawingMode() {
-    // 🚫 Bloqueio: GPS obrigatório para desenhar
-    if (!_locationController.isAvailable) {
-      _showGPSRequiredMessage();
+    // 🔧 MODAL: draw e occurrences permanecem no Stack;
+    // demais tipos abrem como sheet modal padronizado
+    if (state == null ||
+        state.type == MapSheetType.draw ||
+        state.type == MapSheetType.occurrences) {
       return;
     }
-
-    HapticFeedback.lightImpact();
-    // Open Drawing Sheet
-    _showSheet(
-      context,
-      DrawingSheet(controller: _drawingController),
-      'drawing',
-    );
-  }
-
-  void _toggleOccurrenceMode() {
-    // 🚫 Bloqueio: GPS obrigatório para ocorrências
-    if (!_locationController.isAvailable) {
-      _showGPSRequiredMessage();
-      return;
-    }
-
-    HapticFeedback.lightImpact();
-
-    setState(() {
-      if (_armedMode == ArmedMode.occurrences) {
-        // Desarmar modo (toggle off)
-        _armedMode = ArmedMode.none;
-        ScaffoldMessenger.of(context).hideCurrentSnackBar();
-      } else {
-        // Armar modo (toggle on)
-        _armedMode = ArmedMode.occurrences;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('📍 Toque no mapa para registrar a ocorrência'),
-            backgroundColor: SoloForteColors.greenIOS,
-            duration: const Duration(seconds: 30),
-            action: SnackBarAction(
-              label: 'CANCELAR',
-              textColor: Colors.white,
-              onPressed: () {
-                setState(() => _armedMode = ArmedMode.none);
-              },
-            ),
-          ),
-        );
-      }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _openSheetAsModal(context, state);
     });
   }
 
-  void _toggleCheckIn() async {
-    // 🚫 Bloqueio: GPS obrigatório para check-in
-    if (!_locationController.isAvailable) {
-      _showGPSRequiredMessage();
+  void _setModalOpen(bool value) {
+    if (!mounted) return;
+    ref.read(isModalOpenProvider.notifier).state = value;
+  }
+
+  // ── _handleMapLongPress ── delegate ADR-031 F5 ─────────────────────────
+  void _handleMapLongPress(TapPosition tapPos, LatLng latLng) {
+    final initialTipo = _pendingMarketingCaseTipo;
+    _pendingMarketingCaseTipo = null;
+    NovoCaseModalLauncher.launch(
+      position: latLng,
+      context: context,
+      ref: ref,
+      initialTipo: initialTipo,
+    );
+  }
+
+  // ── _openSheetAsModal ── delegate ADR-031 F4 ───────────────────────────
+  void _openSheetAsModal(BuildContext ctx, MapSheetState state) {
+    MapSheetController.openSheet(
+      ctx,
+      ref,
+      state,
+      _armOccurrenceMode,
+      _setSheetState,
+      _setModalOpen,
+    );
+  }
+
+  // ── _finishDrawing ─────────────────────────────────────────────────────
+  Future<void> _finishDrawing() async {
+    final controller = ref.read(drawingControllerProvider);
+    if (controller.currentState != DrawingState.drawing) return;
+    if (controller.liveGeometry == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Adicione pelo menos 3 pontos para criar um polígono'),
+          duration: Duration(seconds: 2),
+        ),
+      );
       return;
     }
+    controller.completeDrawing();
+    if (controller.currentState != DrawingState.reviewing) return;
+    _setSheetState(
+      const MapSheetState(type: MapSheetType.draw),
+      'FinishDrawing: Opening draw review sheet',
+    );
+  }
 
-    HapticFeedback.lightImpact();
+  // ── _toggleDrawMode ── delegate ADR-031 F4 ────────────────────────────
+  void _toggleDrawMode() {
+    MapSheetController.toggleDrawMode(context, ref, _setSheetState);
+  }
 
-    final visitState = ref.read(visitControllerProvider);
-    final isActive = visitState.value?.status == 'active';
+  // HARDENING DEFINITIVO: Máquina de Decisão de Viewport
+  // Determinístico. Idempotente. Sem race loops.
+  // ADR-030 F6: lógica extraída para MapViewportController
+  void _applyInitialViewport() async {
+    await MapViewportController.apply(
+      ref: ref,
+      mapController: _mapController,
+      isMapReady: ref.read(mapReadyStateProvider),
+      isMounted: mounted,
+    );
+  }
 
-    if (isActive) {
-      // Ending Check-in (Protection)
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Encerrar Visita em Campo?'),
-          action: SnackBarAction(
-            label: 'ENCERRAR',
-            textColor: Colors.redAccent,
-            onPressed: () {
-              ref.read(visitControllerProvider.notifier).endSession();
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Visita encerrada com sucesso.')),
-              );
-            },
-          ),
-          duration: const Duration(seconds: 5),
-        ),
-      );
-    } else {
-      // Starting - Show Visit Sheet
-      // Need location first
-      final position = await _locationController.getCurrentPosition();
-      if (position == null) {
-        _showGPSRequiredMessage();
-        return;
-      }
+  Future<void> _requestLocationPermission() async {
+    await MapLocationHandler.requestPermission(
+      ref: ref,
+      context: context,
+      mapController: _mapController,
+      isMapReady: ref.read(mapReadyStateProvider),
+    );
+  }
 
-      if (!mounted) return;
+  void _centerOnUser() async {
+    await MapLocationHandler.centerOnUser(
+      ref: ref,
+      context: context,
+      mapController: _mapController,
+      isMapReady: ref.read(mapReadyStateProvider),
+    );
+  }
 
-      _showSheet(
-        context,
-        VisitSheet(
-          onConfirm: (clientId, areaId, activity) {
-            ref
-                .read(visitControllerProvider.notifier)
-                .startSession(
-                  clientId,
-                  areaId,
-                  activity,
-                  position.latitude,
-                  position.longitude,
-                );
-
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Visita iniciada. Bom trabalho!'),
-                backgroundColor: SoloForteColors.greenDark,
-              ),
-            );
-          },
-        ),
-        'visit_sheet',
-      );
+  void _handleLocationModeChanged(MapLocationMode mode) {
+    switch (mode) {
+      case MapLocationMode.idle:
+        MapLocationHandler.stopFollowing();
+        break;
+      case MapLocationMode.following:
+      case MapLocationMode.northLocked:
+        MapLocationHandler.startFollowing(
+          // Riverpod 2.x exposes the provider stream; this keeps the existing
+          // GPS source and avoids creating another location pipeline.
+          // ignore: deprecated_member_use
+          locationStream: ref.read(locationStreamProvider.stream),
+          mapController: _mapController,
+          isMapReady: ref.read(mapReadyStateProvider),
+        );
+        break;
     }
   }
 
-  void _showGPSRequiredMessage() {
-    final state = _locationController.currentState;
-    String message;
+  void _armOccurrenceMode() {
+    // FIX 1: Entrar em modo seleção — usuário toca no mapa para capturar LatLng
+    _pendingMarketingCaseTipo = null;
+    ref.read(armedModeProvider.notifier).state = ArmedMode.occurrences;
+    HapticFeedback.lightImpact();
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Toque no mapa para marcar o ponto da ocorrência'),
+        duration: Duration(seconds: 10),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
 
-    switch (state) {
-      case LocationState.permissionDenied:
-        message =
-            'GPS indisponível: permissão negada. Habilite nas configurações do app.';
-        break;
-      case LocationState.serviceDisabled:
-        message =
-            'GPS desligado. Ative o GPS nas configurações do dispositivo.';
-        break;
-      case LocationState.checking:
-        message = 'Aguardando verificação do GPS...';
-        break;
-      default:
-        message = 'GPS indisponível. Funções geográficas bloqueadas.';
+  Future<void> _openCoordinateSearch() async {
+    final controller = TextEditingController();
+    final value = await showDialog<String>(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          title: const Text('Ir para coordenada'),
+          content: TextField(
+            controller: controller,
+            autofocus: true,
+            decoration: const InputDecoration(
+              hintText: 'Ex: -10.1823,-48.3331 | 22K 788000 8872000',
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('Cancelar'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(ctx).pop(controller.text.trim()),
+              child: const Text('Ir'),
+            ),
+          ],
+        );
+      },
+    );
+    if (!mounted || value == null || value.isEmpty) return;
+
+    final parsed = CoordinateParser.parse(value);
+    if (parsed == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Formato inválido. Use decimal, DMS/DDM (com hemisfério) ou UTM.',
+          ),
+        ),
+      );
+      return;
     }
 
+    _mapController.move(parsed, 17.0);
+    ref.read(destinationCoordinateMarkerProvider.notifier).state = parsed;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.orange.shade700,
+        content: Text(
+          'Destino: ${parsed.latitude.toStringAsFixed(6)}, '
+          '${parsed.longitude.toStringAsFixed(6)}',
+        ),
         duration: const Duration(seconds: 3),
       ),
     );
   }
 
-  void _centerOnUser() {
-    // 🚫 Bloqueio: GPS obrigatório para centralizar
-    if (!_locationController.isAvailable) {
-      _showGPSRequiredMessage();
+  Future<void> _downloadOfflineArea() async {
+    final minZoomController = TextEditingController(text: '12');
+    final maxZoomController = TextEditingController(text: '18');
+
+    final submitted = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Baixar área offline'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Será usada a área visível atual do mapa (bounding box).',
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: minZoomController,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(labelText: 'Zoom mínimo'),
+            ),
+            TextField(
+              controller: maxZoomController,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(labelText: 'Zoom máximo'),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Baixar'),
+          ),
+        ],
+      ),
+    );
+    if (!mounted || submitted != true) return;
+
+    final minZoom = int.tryParse(minZoomController.text) ?? 12;
+    final maxZoom = int.tryParse(maxZoomController.text) ?? 18;
+    final bounds = _mapController.camera.visibleBounds;
+    final south = bounds.south;
+    final north = bounds.north;
+    final west = bounds.west;
+    final east = bounds.east;
+
+    final activeLayer = ref.read(activeLayerProvider);
+    final tileConfig = MapConfig.tileConfigForLayer(
+      activeLayer,
+      mapTilerApiKey: kMapTilerApiKey,
+    );
+    final cacheService = ref.read(offlineTileCacheServiceProvider);
+    final layerKey = cacheService.layerKeyFromTemplate(tileConfig.urlTemplate);
+    late final int estimatedTiles;
+    try {
+      estimatedTiles = cacheService.estimateTileCount(
+        south: south,
+        west: west,
+        north: north,
+        east: east,
+        minZoom: minZoom,
+        maxZoom: maxZoom,
+      );
+      if (estimatedTiles > OfflineTileCacheService.maxTileDownloadCount) {
+        throw OfflineTileCacheException(
+          'Área excede o limite de '
+          '${OfflineTileCacheService.maxTileDownloadCount} tiles '
+          '($estimatedTiles solicitados). Reduza o zoom máximo ou aproxime o mapa.',
+        );
+      }
+    } on OfflineTileCacheException catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.message)));
       return;
     }
 
-    HapticFeedback.lightImpact();
-    // Centralizar na posição real do usuário
-    _locationController.getCurrentPosition().then((position) {
-      if (position != null) {
-        _mapController.move(
-          LatLng(position.latitude, position.longitude),
-          16.0,
-        );
-      }
-    });
-  }
-
-  void _openOccurrenceDialog(double lat, double lng) async {
-    if (!mounted) return;
-
-    final descriptionController = TextEditingController();
-    String selectedType = 'Aviso'; // Urgência
-    occ.OccurrenceCategory selectedCategory = occ.OccurrenceCategory.doenca;
-
-    await showDialog(
+    bool cancelRequested = false;
+    final progress = ValueNotifier(
+      OfflinePrefetchProgress(
+        total: estimatedTiles,
+        processed: 0,
+        downloaded: 0,
+        skipped: 0,
+        failed: 0,
+      ),
+    );
+    showDialog<void>(
       context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
-          title: const Text('Nova Ocorrência'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Categoria (tipo agronômico)
-                const Text(
-                  'Categoria',
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-                ),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: occ.OccurrenceCategory.values.map((category) {
-                    final isSelected = selectedCategory == category;
-                    return ChoiceChip(
-                      selected: isSelected,
-                      label: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(category.emoji),
-                          const SizedBox(width: 4),
-                          Text(
-                            category.label,
-                            style: const TextStyle(fontSize: 11),
-                          ),
-                        ],
-                      ),
-                      selectedColor: SoloForteColors.greenIOS,
-                      labelStyle: TextStyle(
-                        color: isSelected ? Colors.white : Colors.black87,
-                      ),
-                      onSelected: (selected) {
-                        if (selected) {
-                          setState(() => selectedCategory = category);
-                        }
-                      },
-                    );
-                  }).toList(),
-                ),
-                const SizedBox(height: 16),
-                // Urgência
-                DropdownButtonFormField<String>(
-                  initialValue: selectedType,
-                  items: ['Urgente', 'Aviso', 'Info']
-                      .map((t) => DropdownMenuItem(value: t, child: Text(t)))
-                      .toList(),
-                  onChanged: (v) => setState(() => selectedType = v!),
-                  decoration: const InputDecoration(labelText: 'Urgência'),
-                ),
-                const SizedBox(height: 16),
-                // Descrição
-                TextField(
-                  controller: descriptionController,
-                  decoration: const InputDecoration(labelText: 'Descrição'),
-                  maxLines: 3,
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  'Localização: ${lat.toStringAsFixed(6)}, ${lng.toStringAsFixed(6)}',
-                  style: SoloTextStyles.label,
-                ),
-              ],
-            ),
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Baixando área offline'),
+        content: ValueListenableBuilder<OfflinePrefetchProgress>(
+          valueListenable: progress,
+          builder: (_, value, _) => Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              LinearProgressIndicator(value: value.fraction),
+              const SizedBox(height: 12),
+              Text('${value.processed} de ${value.total} tiles'),
+              if (value.failed > 0) Text('Falhas: ${value.failed}'),
+            ],
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancelar'),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: SoloForteColors.greenIOS,
-              ),
-              onPressed: () {
-                ref
-                    .read(occurrenceControllerProvider)
-                    .createOccurrence(
-                      type: selectedType,
-                      description: descriptionController.text,
-                      lat: lat,
-                      long: lng,
-                      category: selectedCategory.name,
-                      status: 'draft',
-                    );
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Ocorrência registrada com sucesso!'),
-                    backgroundColor: SoloForteColors.greenIOS,
-                  ),
-                );
-              },
-              child: const Text(
-                'Salvar',
-                style: TextStyle(color: Colors.white),
-              ),
-            ),
-          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => cancelRequested = true,
+            child: const Text('Cancelar'),
+          ),
+        ],
+      ),
+    );
+
+    late final OfflinePrefetchResult result;
+    try {
+      result = await cacheService.prefetchArea(
+        layerKey: layerKey,
+        urlTemplate: tileConfig.urlTemplate,
+        subdomains: tileConfig.subdomains,
+        south: south,
+        west: west,
+        north: north,
+        east: east,
+        minZoom: minZoom,
+        maxZoom: maxZoom,
+        headers: {'User-Agent': MapConfig.userAgent},
+        onProgress: (value) => progress.value = value,
+        shouldCancel: () => cancelRequested,
+      );
+    } on OfflineTileCacheException catch (e) {
+      if (mounted) Navigator.of(context, rootNavigator: true).pop();
+      progress.dispose();
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.message)));
+      return;
+    }
+    if (mounted) Navigator.of(context, rootNavigator: true).pop();
+    progress.dispose();
+    if (!mounted) return;
+    if (!result.isComplete) {
+      final message = result.cancelled
+          ? 'Download offline cancelado.'
+          : 'Download incompleto: ${result.failed} tile(s) falharam. Tente novamente.';
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
+      return;
+    }
+
+    ref
+        .read(offlineMapAreasProvider.notifier)
+        .addArea(
+          OfflineMapAreaConfig(
+            id: DateTime.now().millisecondsSinceEpoch.toString(),
+            layerKey: layerKey,
+            south: south,
+            west: west,
+            north: north,
+            east: east,
+            minZoom: minZoom.toDouble(),
+            maxZoom: maxZoom.toDouble(),
+            createdAt: DateTime.now(),
+          ),
+        );
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Área offline baixada: ${result.downloaded} tile(s) novo(s), '
+          '${result.skipped} já existente(s)'
+          ' (${south.toStringAsFixed(4)},${west.toStringAsFixed(4)})'
+          ' → (${north.toStringAsFixed(4)},${east.toStringAsFixed(4)})',
         ),
       ),
     );
   }
 
-  void _handleOccurrencePinTap(occ.Occurrence occurrence) {
-    HapticFeedback.lightImpact();
-    // Implement what happens when an occurrence pin is tapped
-    // For example, show a detailed sheet or dialog for the occurrence
+  void _openOccurrenceSheet(double lat, double lng) async {
+    // 🛡 CONSOLIDATION: Redirect to MapBottomSheet
+    if (!mounted) return;
+
+    // O ponto precisa existir antes do sheet para evitar o primeiro frame em 0,0.
+    ref.read(pendingOccurrenceLocationProvider.notifier).state = LatLng(
+      lat,
+      lng,
+    );
+
+    // Usando setter instrumentado
+    _setSheetState(
+      const MapSheetState(
+        type: MapSheetType.occurrences,
+        isCreatingOccurrence: true,
+      ),
+      'OpenOccurrenceSheet (Create Mode)',
+    );
+  }
+
+  void _armMarketingMode(CaseTipo tipo) {
+    _pendingMarketingCaseTipo = tipo;
+    ref.read(armedModeProvider.notifier).state = ArmedMode.marketing;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Ocorrência: ${occurrence.description}'),
-        backgroundColor: SoloForteColors.greenIOS,
+        content: Text(
+          'Toque no mapa para localizar o case de ${_caseTipoLabel(tipo)}',
+        ),
         duration: const Duration(seconds: 2),
       ),
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final stopwatch = Stopwatch()..start();
-    final activeLayer = ref.watch(activeLayerProvider);
-    final showMarkers = ref.watch(showMarkersProvider);
-    final publications = ref.watch(publicationsDataProvider);
-    final mapFields = ref.watch(mapFieldsProvider);
-    final selectedTalhaoId = ref.watch(selectedTalhaoIdProvider);
-    final locationState = ref.watch(locationStateProvider);
-    final visitState = ref.watch(visitControllerProvider);
-    final isCheckedIn = visitState.value?.status == 'active';
-
-    // Auto-focus Logic
-    ref.listen(publicationsDataProvider, (prev, next) {
-      if (next.hasValue && !_hasInitialFocused) {
-        _handleAutoZoom(next.value);
-      }
-    });
-
-    List<Marker> markers = [];
-
-    try {
-      if (showMarkers && publications.hasValue) {
-        final pubs = publications.value!;
-        markers.addAll(
-          pubs.map(
-            (pub) => Marker(
-              point: pub.location,
-              width: 40,
-              height: 40,
-              child: const Icon(
-                Icons.location_on,
-                color: SoloForteColors.greenIOS,
-                size: 40,
-              ),
-            ),
-          ),
-        );
-
-        // Fallback for initial load if listen missed it (race condition)
-        if (!_hasInitialFocused) {
-          _handleAutoZoom(pubs);
-        }
-      }
-    } catch (e, s) {
-      MapLogger.logError('Failed to generate markers', s);
-    }
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      stopwatch.stop();
-      MapLogger.logRenderTime(stopwatch.elapsedMilliseconds);
-      MapLogger.logMarkerCount(markers.length);
-    });
-
-    return Stack(
-      children: [
-        FlutterMap(
-          mapController: _mapController,
-          options: MapOptions(
-            initialCenter: const LatLng(-23.5505, -46.6333),
-            initialZoom: 14.0,
-            minZoom: 4.0,
-            maxZoom: 19.0,
-            onTap: (tapPos, point) {
-              // 🎯 Prioridade 1: Verificar modo armado de ocorrências
-              if (_armedMode == ArmedMode.occurrences) {
-                final lat = point.latitude;
-                final lng = point.longitude;
-
-                // Desarmar imediatamente para evitar múltiplos taps
-                setState(() => _armedMode = ArmedMode.none);
-                ScaffoldMessenger.of(context).hideCurrentSnackBar();
-
-                // Abrir dialog de criação de ocorrência com coordenadas
-                _openOccurrenceDialog(lat, lng);
-                return; // Não processar lógica de talhão
-              }
-
-              // 🎯 Comportamento normal: Seleção de talhão
-              final fields = mapFields.valueOrNull ?? [];
-              bool hit = false;
-
-              for (final field in fields) {
-                if (field.geometry == null) continue;
-                // Lazy parse for hit test (optimization: cache parsed polygons if needed)
-                // Here purely for hit detection
-                final polygonPoints = TalhaoMapAdapter.toPolygon(field).points;
-
-                if (TalhaoMapAdapter.isPointInside(point, polygonPoints)) {
-                  ref.read(selectedTalhaoIdProvider.notifier).state = field.id;
-                  hit = true;
-                  HapticFeedback.selectionClick();
-
-                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Talhão: ${field.name}'),
-                      backgroundColor: SoloForteColors.greenIOS,
-                      duration: const Duration(seconds: 1),
-                    ),
-                  );
-                  break; // Stop on first hit
-                }
-              }
-
-              if (!hit) {
-                // Deselect if tapping empty space
-                if (selectedTalhaoId != null) {
-                  ref.read(selectedTalhaoIdProvider.notifier).state = null;
-                  HapticFeedback.lightImpact();
-                }
-              }
-            },
-            onPositionChanged: (pos, hasGesture) {
-              if (hasGesture) {
-                _mapEventDebouncer.run(() {
-                  MapLogger.logEvent(
-                    'Pan/Zoom: Center=${pos.center.latitude.toStringAsFixed(4)},${pos.center.longitude.toStringAsFixed(4)} Zoom=${pos.zoom.toStringAsFixed(1)}',
-                  );
-                  bool isClusteringActive = pos.zoom < 15;
-                  MapLogger.logEvent('Clustering Active: $isClusteringActive');
-                });
-              }
-            },
-            interactionOptions: const InteractionOptions(
-              flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
-            ),
-          ),
-          children: [
-            TileLayer(
-              urlTemplate: _getLayerUrl(activeLayer),
-              userAgentPackageName: 'com.soloforte.app',
-            ),
-            if (mapFields.hasValue)
-              PolygonLayer(
-                polygons: mapFields.value!.map((t) {
-                  return TalhaoMapAdapter.toPolygon(
-                    t,
-                    isSelected: t.id == selectedTalhaoId,
-                  );
-                }).toList(),
-              ),
-            if (markers.isNotEmpty)
-              MarkerClusterLayerWidget(
-                options: MarkerClusterLayerOptions(
-                  maxClusterRadius: 120,
-                  size: const Size(40, 40),
-                  alignment: Alignment.center,
-                  padding: const EdgeInsets.all(50),
-                  maxZoom: 15,
-                  markers: markers,
-                  builder: (context, markers) {
-                    return Container(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(20),
-                        color: SoloForteColors.greenIOS,
-                      ),
-                      child: Center(
-                        child: Text(
-                          markers.length.toString(),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-            // Layer de pins de ocorrências
-            if (ref.watch(occurrencesListProvider).hasValue)
-              MarkerLayer(
-                markers: OccurrencePinGenerator.generatePins(
-                  occurrences: ref.watch(occurrencesListProvider).value!,
-                  currentZoom: _mapController.camera.zoom,
-                  onPinTap: _handleOccurrencePinTap,
-                ),
-              ),
-          ],
-        ),
-
-        // 1. Header with Data Trust (Top Left)
-        Positioned(
-          top: 60,
-          left: 20,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(
-              color: SoloForteColors.white.withValues(alpha: 0.95),
-              borderRadius: SoloRadius.radiusMd,
-              boxShadow: [SoloShadows.shadowSm],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 8,
-                      height: 8,
-                      decoration: const BoxDecoration(
-                        color: SoloForteColors.greenIOS,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'SoloForte Privado',
-                      style: SoloTextStyles.headingMedium.copyWith(
-                        fontSize: 14,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 2),
-                Padding(
-                  padding: const EdgeInsets.only(left: 16),
-                  child: Text(
-                    'Atualizado agora', // Data Trust State
-                    style: SoloTextStyles.label.copyWith(fontSize: 10),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                // GPS Status Indicator
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      locationState == LocationState.available
-                          ? Icons.gps_fixed
-                          : Icons.gps_off,
-                      size: 12,
-                      color: locationState == LocationState.available
-                          ? SoloForteColors.greenIOS
-                          : Colors.orange.shade700,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      _getGPSStatusText(locationState),
-                      style: SoloTextStyles.label.copyWith(
-                        fontSize: 9,
-                        color: locationState == LocationState.available
-                            ? SoloForteColors.greenIOS
-                            : Colors.orange.shade700,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
-
-        // 2. Action Column (Right Side)
-        Positioned(
-          top: 100,
-          right: 20,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _MapActionButton(
-                icon: Icons.edit,
-                label: 'Desenhar',
-                isActive: _activeSheetName == 'drawing',
-                onTap: _openDrawingMode,
-              ),
-              const SizedBox(height: 12),
-
-              _MapActionButton(
-                icon: Icons.my_location,
-                label: 'Eu',
-                onTap: _centerOnUser,
-              ),
-              const SizedBox(height: 12),
-
-              _MapActionButton(
-                icon: Icons.layers,
-                label: 'Camadas',
-                isActive: _activeSheetName == 'layers',
-                onTap: () => _showSheet(context, const LayersSheet(), 'layers'),
-              ),
-              const SizedBox(height: 12),
-              _MapActionButton(
-                icon: Icons.warning_amber_rounded,
-                label: 'Ocorrências',
-                isActive: _armedMode == ArmedMode.occurrences,
-                onTap: _toggleOccurrenceMode, // ✅ Spec: Clique arma modo
-              ),
-              const SizedBox(height: 12),
-              _MapActionButton(
-                icon: Icons.article_outlined,
-                label: 'Publicações',
-                isActive: _activeSheetName == 'publications',
-                onTap: () => _showSheet(
-                  context,
-                  const PublicationsSheet(),
-                  'publications',
-                ),
-              ),
-            ],
-          ),
-        ),
-
-        // 3. Check-in Context Button (Bottom Right)
-        Positioned(
-          bottom: 120,
-          right: 20,
-          child: GestureDetector(
-            onTap: _toggleCheckIn,
-            child: _buildCheckInStartButton(
-              isCheckedIn: isCheckedIn,
-              label: isCheckedIn ? 'Em Campo' : 'Check-in',
-              color: isCheckedIn
-                  ? SoloForteColors.greenIOS
-                  : SoloForteColors.white,
-              textColor: isCheckedIn ? Colors.white : SoloForteColors.greenIOS,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  // Helper widget to avoid rebuilding entire map for button
-  Widget _buildCheckInStartButton({
-    required bool isCheckedIn,
-    required String label,
-    required Color color,
-    required Color textColor,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: color,
-        borderRadius: BorderRadius.circular(30),
-        boxShadow: SoloShadows.shadowButton,
-        border: Border.all(color: SoloForteColors.greenIOS, width: 2),
-      ),
-      child: Row(
-        children: [
-          Icon(isCheckedIn ? Icons.check : Icons.sync_alt, color: textColor),
-          const SizedBox(width: 8),
-          Text(
-            label,
-            style: SoloTextStyles.body.copyWith(
-              color: textColor,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  String _getGPSStatusText(LocationState state) {
-    switch (state) {
-      case LocationState.available:
-        return 'GPS OK';
-      case LocationState.permissionDenied:
-        return 'GPS: Sem permissão';
-      case LocationState.serviceDisabled:
-        return 'GPS: Desligado';
-      case LocationState.checking:
-        return 'GPS: Verificando...';
+  String _caseTipoLabel(CaseTipo tipo) {
+    switch (tipo) {
+      case CaseTipo.resultado:
+        return 'resultado';
+      case CaseTipo.antesDepois:
+        return 'antes/depois';
+      case CaseTipo.avaliacao:
+        return 'avaliação';
     }
   }
-}
 
-class _MapActionButton extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-  final bool isActive;
-
-  const _MapActionButton({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-    this.isActive = false,
-  });
+  void _handleOccurrencePinTap(occ.Occurrence occurrence) {
+    if (!mounted) return;
+    OccurrenceDetailSheet.show(context, occurrence);
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        GestureDetector(
-          onTap: onTap,
-          child: Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: isActive
-                  ? SoloForteColors.greenIOS
-                  : SoloForteColors.white,
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: isActive
-                      ? SoloForteColors.greenIOS.withValues(alpha: 0.4)
-                      : Colors.black.withValues(alpha: 0.1),
-                  blurRadius: 8,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Icon(
-              icon,
-              color: isActive ? Colors.white : SoloForteColors.textPrimary,
-            ),
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: SoloTextStyles.label.copyWith(
-            color: Colors.black,
-            fontWeight: FontWeight.bold,
-            shadows: [
-              Shadow(
-                offset: const Offset(0, 1),
-                blurRadius: 2,
-                color: Colors.white.withValues(alpha: 0.8),
-              ),
-            ],
-          ),
-        ),
-      ],
+    // 🛡 LIFECYCLE: Cachear referência do DrawingController para uso
+    // seguro no dispose() — ref é invalidado antes de dispose() ser chamado.
+    _drawingController = ref.read(drawingControllerProvider);
+    _scheduleMapFirstQueryHandling(GoRouterState.of(context).uri);
+
+    // ADR-032 F3: Build orchestrado por MapBuildOrchestrator.
+    // Todo o conteúdo do Stack (canvas, layers, overlays, controls, sheet)
+    // vive em map/widgets/map_build_orchestrator.dart.
+    return MapBuildOrchestrator(
+      mapController: _mapController,
+      setSheetState: _setSheetState,
+      openOccurrenceSheet: _openOccurrenceSheet,
+      handleMapLongPress: _handleMapLongPress,
+      finishDrawing: _finishDrawing,
+      toggleDrawMode: _toggleDrawMode,
+      centerOnUser: _centerOnUser,
+      onLocationModeChanged: _handleLocationModeChanged,
+      stopFollowing: MapLocationHandler.stopFollowing,
+      armOccurrenceMode: _armOccurrenceMode,
+      armMarketingMode: _armMarketingMode,
+      handleOccurrencePinTap: _handleOccurrencePinTap,
+      applyInitialViewport: _applyInitialViewport,
+      openCoordinateSearch: _openCoordinateSearch,
+      downloadOfflineArea: _downloadOfflineArea,
     );
   }
 }

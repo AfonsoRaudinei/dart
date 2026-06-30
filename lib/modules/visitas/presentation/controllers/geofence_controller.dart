@@ -1,13 +1,14 @@
 import 'dart:async';
+import 'dart:convert'; // para jsonDecode do GeoJSON — ADR-024
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:geolocator/geolocator.dart';
 import '../../../../core/services/notification_service.dart';
 import 'package:soloforte_app/modules/visitas/domain/models/geofence_state.dart';
+import 'package:soloforte_app/modules/dashboard/providers/location_providers.dart';
 import '../controllers/visit_controller.dart';
-import '../../../consultoria/clients/presentation/providers/field_providers.dart';
-import '../../../consultoria/services/talhao_map_adapter.dart';
-import '../../../consultoria/clients/domain/agronomic_models.dart';
+import 'package:soloforte_app/core/contracts/i_field_lookup.dart';
+import 'package:soloforte_app/core/contracts/i_field_lookup_geofence_provider.dart';
 import 'package:latlong2/latlong.dart';
+import '../../../../core/utils/app_logger.dart';
 
 // State Provider for Geofence
 final geofenceStateProvider = StateProvider<GeofenceState>((ref) {
@@ -17,75 +18,86 @@ final geofenceStateProvider = StateProvider<GeofenceState>((ref) {
 class GeofenceController {
   final Ref _ref;
   final NotificationService _notificationService = NotificationService();
-  Timer? _checkTimer;
   Timer? _durationTimer; // Timer for 4h alert
+  bool _isDisposed = false;
+  bool _isChecking = false;
+  DateTime? _lastEvaluationAt;
+
+  static const _evaluationThrottle = Duration(seconds: 15);
 
   GeofenceController(this._ref) {
     _init();
   }
 
   void _init() {
-    // 1. Listen to location changes (using same stream as LocationController if exposed, or periodic check)
-    // For simplicity and to avoid stream conflicts, we'll run a periodic check every 30-60 seconds
-    // or when location updates if available.
-    // The LocationController in Dashboard handles the stream for the map.
-    // We can just listen to the locationStateProvider's last known position if it stored it?
-    // Actually LocationController doesn't expose position stream globally as a provider yet, just `locationStateProvider`.
-    // Let's create a periodic check which is battery friendly enough for "Assistant".
-
-    _checkTimer = Timer.periodic(const Duration(seconds: 45), (timer) {
-      _checkGeofence();
-    });
+    _ref.listen<AsyncValue<LatLng>>(locationStreamProvider, (previous, next) {
+      next.whenData(_handlePosition);
+    }, fireImmediately: true);
 
     _durationTimer = Timer.periodic(const Duration(minutes: 15), (timer) {
       _checkDuration();
     });
   }
 
-  void dispose() {
-    _checkTimer?.cancel();
+  void _cancelAllTimers() {
     _durationTimer?.cancel();
+    _durationTimer = null;
   }
 
-  Future<void> _checkGeofence() async {
-    final visitState = _ref.read(visitControllerProvider);
-    final fieldsAsync = _ref.read(mapFieldsProvider);
+  void dispose() {
+    if (_isDisposed) return;
+    _isDisposed = true;
+    _cancelAllTimers();
+  }
 
-    // Only proceed if we have valid fields data and GPS permission
-    if (!fieldsAsync.hasValue) return;
-
-    // Get current position (single request)
-    Position? position;
-    try {
-      // Check permission without asking
-      final permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.always ||
-          permission == LocationPermission.whileInUse) {
-        position = await Geolocator.getLastKnownPosition();
-        if (position == null ||
-            DateTime.now().difference(position.timestamp) >
-                const Duration(minutes: 5)) {
-          // If old, try fresh but with timeout
-          position = await Geolocator.getCurrentPosition(
-            timeLimit: const Duration(seconds: 10),
-          );
-        }
-      }
-    } catch (_) {
-      return; // Fail silently
+  void _handlePosition(LatLng userPoint) {
+    if (_isDisposed || _isChecking) return;
+    final now = DateTime.now();
+    final lastEvaluationAt = _lastEvaluationAt;
+    if (lastEvaluationAt != null &&
+        now.difference(lastEvaluationAt) < _evaluationThrottle) {
+      return;
     }
+    _lastEvaluationAt = now;
+    _isChecking = true;
+    unawaited(
+      _checkGeofence(userPoint)
+          .catchError((Object error) {
+            AppLogger.warning(
+              'Falha ao avaliar geofence',
+              tag: 'Geofence',
+              error: error,
+            );
+          })
+          .whenComplete(() => _isChecking = false),
+    );
+  }
 
-    if (position == null) return;
-    final userPoint = LatLng(position.latitude, position.longitude);
+  Future<void> _checkGeofence(LatLng userPoint) async {
+    if (_isDisposed) return;
+
+    final visitState = _ref.read(visitControllerProvider);
+
+    final fieldLookup = _ref.read(iFieldLookupGeofenceProvider);
+    List<FieldSummary> fields;
+    try {
+      fields = await fieldLookup.listAll();
+    } catch (e) {
+      AppLogger.warning(
+        'Falha ao carregar talhões para geofence',
+        tag: 'Geofence',
+        error: e,
+      );
+      return;
+    }
+    if (fields.isEmpty) return;
 
     final currentGeofenceState = _ref.read(geofenceStateProvider);
     final activeSession = visitState.value;
 
     if (activeSession != null) {
       // --- Scenario: Active Session -> Check Exit ---
-      // Get the field (talhao) for the active session
-      // Assuming visit_sessions stores areaId which corresponds to field.id
-      final activeField = fieldsAsync.value!.cast<Talhao?>().firstWhere(
+      final FieldSummary? activeField = fields.cast<FieldSummary?>().firstWhere(
         (f) => f?.id == activeSession.areaId,
         orElse: () => null,
       );
@@ -113,11 +125,9 @@ class GeofenceController {
       }
     } else {
       // --- Scenario: No Session -> Check Entry ---
-      // Iterate all fields to find if inside one
-      // Optimization: nearest first? just loop all for now (usually < 100 fields loaded)
-      Talhao? enteredField;
+      FieldSummary? enteredField;
 
-      for (final field in fieldsAsync.value!) {
+      for (final field in fields) {
         if (_isInsideOrClose(userPoint, field)) {
           enteredField = field;
           break; // Assume first match
@@ -151,25 +161,24 @@ class GeofenceController {
     }
   }
 
-  bool _isInsideOrClose(LatLng userPoint, Talhao field) {
+  /// Verifica se o ponto está dentro ou a menos de 300m do talhão.
+  /// ADR-024: usa FieldSummary.geometry (GeoJSON String) em vez de Talhao.
+  bool _isInsideOrClose(LatLng userPoint, FieldSummary field) {
     if (field.geometry == null) return false;
 
-    // 1. Check strict polygon contain
-    final poly = TalhaoMapAdapter.toPolygon(field);
-    bool inside = TalhaoMapAdapter.isPointInside(userPoint, poly.points);
+    // 1. Parse GeoJSON string → pontos do polígono
+    final points = _geoJsonToLatLngs(field.geometry!);
+    if (points.isEmpty) return false;
 
+    // 2. Contenção estrita via ray-casting
+    bool inside = _isPointInPolygon(userPoint, points);
     if (inside) return true;
 
-    // 2. If valid center, check radius (e.g. 300m buffer)
-    // We don't have explicit center in Talhao model easily accessible without parsing
-    // But we can check standard distance to polygon points (simple approach: min distance to any vertex < 300m)
-    // For "Assistant", a simple radius from centroid is cheaper if we pre-calc centroid,
-    // but here let's use the Polygon points we already parsed.
-
+    // 3. Buffer de 300m — distância mínima a qualquer vértice
     const double bufferMeters = 300.0;
     const Distance distance = Distance();
 
-    for (final point in poly.points) {
+    for (final point in points) {
       if (distance.as(LengthUnit.Meter, userPoint, point) < bufferMeters) {
         return true;
       }
@@ -177,7 +186,67 @@ class GeofenceController {
     return false;
   }
 
+  /// Converte GeoJSON serializado como String em lista de pontos LatLng.
+  /// Suporta Polygon (anel externo). Algoritmo inlinado de TalhaoMapAdapter — ADR-024.
+  static List<LatLng> _geoJsonToLatLngs(String geoJsonStr) {
+    try {
+      final geometry = jsonDecode(geoJsonStr) as Map<String, dynamic>;
+      final type = geometry['type'];
+      if (type == 'Polygon') {
+        final coordinates = geometry['coordinates'] as List;
+        if (coordinates.isNotEmpty) {
+          final ring = coordinates[0] as List;
+          return ring.map((coord) {
+            // GeoJSON é [lon, lat]
+            final double lng = (coord[0] as num).toDouble();
+            final double lat = (coord[1] as num).toDouble();
+            return LatLng(lat, lng);
+          }).toList();
+        }
+      }
+    } catch (e) {
+      AppLogger.warning(
+        'Erro ao parsear geometry do talhão',
+        tag: 'Geofence',
+        error: e,
+      );
+    }
+    return [];
+  }
+
+  /// Ray-casting algorithm — ponto dentro do polígono?
+  static bool _isPointInPolygon(LatLng point, List<LatLng> polygon) {
+    int intersectCount = 0;
+    for (int j = 0; j < polygon.length - 1; j++) {
+      if (_rayCastIntersect(point, polygon[j], polygon[j + 1])) {
+        intersectCount++;
+      }
+    }
+    return (intersectCount % 2) == 1;
+  }
+
+  static bool _rayCastIntersect(LatLng point, LatLng vertA, LatLng vertB) {
+    double aY = vertA.latitude;
+    double bY = vertB.latitude;
+    double aX = vertA.longitude;
+    double bX = vertB.longitude;
+    double pY = point.latitude;
+    double pX = point.longitude;
+
+    if ((aY > pY && bY > pY) || (aY < pY && bY < pY) || (aX < pX && bX < pX)) {
+      return false;
+    }
+    if (aY == bY) return false;
+
+    double m = (bX - aX) / (bY - aY);
+    double bee = -aY * m + aX;
+    double x = pY * m + bee;
+    return x > pX;
+  }
+
   Future<void> _checkDuration() async {
+    if (_isDisposed) return;
+
     final visitState = _ref.read(visitControllerProvider);
     final activeSession = visitState.value;
 
@@ -197,7 +266,11 @@ class GeofenceController {
   }
 }
 
-// Provider to keep it alive
-final geofenceControllerProvider = Provider<GeofenceController>((ref) {
-  return GeofenceController(ref);
+// AutoDispose com teardown explícito dos timers para evitar vazamento fora da tela.
+final geofenceControllerProvider = Provider.autoDispose<GeofenceController>((
+  ref,
+) {
+  final controller = GeofenceController(ref);
+  ref.onDispose(controller.dispose);
+  return controller;
 });

@@ -28,5 +28,9 @@
 	<string>MainMenu</string>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>SoloForte precisa da sua localização para centralizar o mapa na sua posição atual.</string>
+	<key>NSLocationUsageDescription</key>
+	<string>SoloForte precisa da sua localização para centralizar o mapa na sua posição atual.</string>
 </dict>
 </plist>

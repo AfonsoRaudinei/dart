@@ -1,46 +1,50 @@
+// lib/modules/visitas/presentation/controllers/visit_controller.dart
+// ADR-024: imports de consultoria/ e agenda/ removidos — substituídos por contratos neutros.
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/models/visit_session.dart';
 import '../../data/repositories/visit_repository.dart';
-import '../../../consultoria/occurrences/data/occurrence_repository.dart';
-import '../../../consultoria/reports/data/sqlite_report_repository.dart';
-import '../../../consultoria/reports/domain/report_model.dart';
-import '../../../consultoria/occurrences/presentation/controllers/occurrence_controller.dart';
-import '../../../consultoria/agenda/data/repositories/agenda_repository.dart';
-import '../../../consultoria/agenda/presentation/controllers/agenda_controller.dart';
-import '../../../consultoria/agenda/domain/models/agenda_event.dart';
+import 'package:soloforte_app/core/contracts/i_agenda_session_bridge.dart';
+import 'package:soloforte_app/core/contracts/i_agenda_session_bridge_provider.dart';
 import 'package:uuid/uuid.dart';
 
 final visitRepositoryProvider = Provider<VisitRepository>((ref) {
   return VisitRepository();
 });
 
-final sqliteReportRepositoryProvider = Provider<SQLiteReportRepository>((ref) {
-  return SQLiteReportRepository();
-});
-
 final visitControllerProvider =
     StateNotifierProvider<VisitController, AsyncValue<VisitSession?>>((ref) {
       return VisitController(
         ref.watch(visitRepositoryProvider),
-        ref.watch(occurrenceRepositoryProvider),
-        ref.watch(sqliteReportRepositoryProvider),
-        ref.watch(agendaRepositoryProvider),
+        ref.watch(
+          agendaSessionBridgeProvider,
+        ), // IAgendaSessionBridge — ADR-024
       );
     });
 
 class VisitController extends StateNotifier<AsyncValue<VisitSession?>> {
   final VisitRepository _repository;
-  final OccurrenceRepository _occurrenceRepository;
-  final SQLiteReportRepository _reportRepository;
-  final AgendaRepository _agendaRepository;
+  final IAgendaSessionBridge _agendaBridge; // ADR-024
 
-  VisitController(
-    this._repository,
-    this._occurrenceRepository,
-    this._reportRepository,
-    this._agendaRepository,
-  ) : super(const AsyncValue.loading()) {
+  VisitController(this._repository, this._agendaBridge)
+    : super(const AsyncValue.loading()) {
     checkActiveSession();
+  }
+
+  /// Decide a ação do Check-in baseado no estado atual.
+  /// Centraliza a lógica de negócio fora do overlay.
+  void handleCheckInTap({
+    required void Function() onShowStartSheet,
+    required void Function() onShowEndConfirmation,
+  }) {
+    if (state.isLoading) return;
+
+    final isActive = state.valueOrNull != null;
+
+    if (isActive) {
+      onShowEndConfirmation();
+    } else {
+      onShowStartSheet();
+    }
   }
 
   Future<void> checkActiveSession() async {
@@ -54,10 +58,11 @@ class VisitController extends StateNotifier<AsyncValue<VisitSession?>> {
 
   Future<void> startSession(
     String producerId,
-    String areaId,
-    String activityType,
+    String? areaId,
+    String? activityType,
     double lat,
     double long, {
+    String? farmId,
     String? agendaEventId,
   }) async {
     state = const AsyncValue.loading();
@@ -72,6 +77,7 @@ class VisitController extends StateNotifier<AsyncValue<VisitSession?>> {
       final newSession = VisitSession(
         id: const Uuid().v4(),
         producerId: producerId,
+        farmId: farmId,
         areaId: areaId,
         activityType: activityType,
         startTime: now,
@@ -84,17 +90,12 @@ class VisitController extends StateNotifier<AsyncValue<VisitSession?>> {
 
       await _repository.saveSession(newSession);
 
-      // Agenda Linkage
+      // Agenda Linkage — via contrato neutro IAgendaSessionBridge (ADR-024)
       if (agendaEventId != null) {
-        final event = await _agendaRepository.getEvent(agendaEventId);
-        if (event != null) {
-          await _agendaRepository.saveEvent(
-            event.copyWith(
-              visitSessionId: newSession.id,
-              status: AgendaStatus.in_progress,
-            ),
-          );
-        }
+        await _agendaBridge.linkSessionToEvent(
+          agendaEventId: agendaEventId,
+          sessionId: newSession.id,
+        );
       }
 
       state = AsyncValue.data(newSession);
@@ -103,62 +104,53 @@ class VisitController extends StateNotifier<AsyncValue<VisitSession?>> {
     }
   }
 
+  /// Atualiza a fazenda e limpa o talhão anterior sem encerrar a sessão.
+  Future<void> updateFarm(String newFarmId) async {
+    final currentSession = state.valueOrNull;
+    if (currentSession == null) return;
+    try {
+      await _repository.updateFarm(currentSession.id, newFarmId);
+      state = AsyncValue.data(
+        currentSession.copyWith(farmId: newFarmId, clearAreaId: true),
+      );
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+    }
+  }
+
+  /// Atualiza o talhão da visita ativa sem encerrar a sessão.
+  Future<void> updateArea(String newAreaId, {String? farmId}) async {
+    final currentSession = state.valueOrNull;
+    if (currentSession == null) return;
+    try {
+      await _repository.updateArea(
+        currentSession.id,
+        newAreaId,
+        farmId: farmId,
+      );
+      state = AsyncValue.data(
+        currentSession.copyWith(areaId: newAreaId, farmId: farmId),
+      );
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+    }
+  }
+
   Future<void> endSession() async {
-    final currentSession = state.value;
+    // Bug fix: state.valueOrNull pode ser null se state for AsyncLoading/AsyncError
+    // (ex: após restart do app). Fallback para SQLite garante que a sessão ativa
+    // seja encontrada mesmo com estado em memória desatualizado.
+    VisitSession? currentSession = state.valueOrNull;
+    currentSession ??= await _repository.getActiveSession();
     if (currentSession == null) return;
 
     state = const AsyncValue.loading();
     try {
       final now = DateTime.now();
 
-      // 1. Fetch Occurrences linked to session
-      final occurrences = await _occurrenceRepository.getOccurrencesBySession(
-        currentSession.id,
-      );
-
-      // 2. Generate Report Content (Snapshot)
-      final duration = now.difference(currentSession.startTime);
-      final reportContent =
-          '''
-Relatório Automático de Visita
-------------------------------
-Produtor ID: ${currentSession.producerId}
-Área ID: ${currentSession.areaId}
-Atividade: ${currentSession.activityType}
-Início: ${currentSession.startTime}
-Fim: $now
-Duração: ${duration.inMinutes} minutos
-Ocorrências: ${occurrences.length}
-
-Resumo de Ocorrências:
-${occurrences.map((o) => '- [${o.type}] ${o.description}').join('\n')}
-''';
-
-      final report = Report(
-        id: const Uuid().v4(),
-        title: 'Visita Técnica - ${currentSession.activityType}',
-        type: ReportType.semanal, // Defaulting to simple report type for now
-        clientId: currentSession.producerId,
-        startDate: currentSession.startTime,
-        endDate: now,
-        content: reportContent,
-        createdAt: now,
-        author: 'Consultor (Auto)', // Should get current user
-        observations: 'Gerado automaticamente ao encerrar sessão.',
-      );
-
-      // 3. Save Report
-      await _reportRepository.saveReport(report, currentSession.id);
-
-      // 4. Update Agenda Event
-      final linkedEvent = await _agendaRepository.getEventBySessionId(
-        currentSession.id,
-      );
-      if (linkedEvent != null) {
-        await _agendaRepository.saveEvent(
-          linkedEvent.copyWith(status: AgendaStatus.realized, realizedAt: now),
-        );
-      }
+      // 1. Fetch Occurrences — via contrato neutro IOccurrenceRead (ADR-024)
+      // 4. Update Agenda Event — via contrato neutro IAgendaSessionBridge (ADR-024)
+      await _agendaBridge.markEventAsDone(currentSession.id);
 
       // 5. End Session
       await _repository.endSession(currentSession.id, now);

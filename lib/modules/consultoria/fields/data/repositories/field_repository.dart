@@ -2,37 +2,45 @@ import 'dart:convert';
 import 'package:sqflite/sqflite.dart';
 import 'package:soloforte_app/core/database/database_helper.dart';
 import 'package:soloforte_app/modules/consultoria/clients/domain/agronomic_models.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class FieldRepository {
   Future<Database> get _db async => await DatabaseHelper.instance.database;
 
   Future<List<Talhao>> getAllFields() async {
+    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
+    if (userId.isEmpty) return [];
     final db = await _db;
     final maps = await db.query(
       'fields',
-      where: 'deleted_at IS NULL',
+      where: 'user_id = ? AND deleted_at IS NULL',
+      whereArgs: [userId],
       orderBy: 'nome ASC',
     );
     return maps.map((e) => _fromMap(e)).toList();
   }
 
   Future<List<Talhao>> getFieldsByFarmId(String farmId) async {
+    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
+    if (userId.isEmpty) return [];
     final db = await _db;
     final maps = await db.query(
       'fields',
-      where: 'fazenda_id = ? AND deleted_at IS NULL',
-      whereArgs: [farmId],
+      where: 'fazenda_id = ? AND user_id = ? AND deleted_at IS NULL',
+      whereArgs: [farmId, userId],
       orderBy: 'nome ASC',
     );
     return maps.map((e) => _fromMap(e)).toList();
   }
 
   Future<Talhao?> getFieldById(String id) async {
+    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
+    if (userId.isEmpty) return null;
     final db = await _db;
     final maps = await db.query(
       'fields',
-      where: 'id = ? AND deleted_at IS NULL',
-      whereArgs: [id],
+      where: 'id = ? AND user_id = ? AND deleted_at IS NULL',
+      whereArgs: [id, userId],
     );
     if (maps.isNotEmpty) {
       return _fromMap(maps.first);
@@ -41,23 +49,25 @@ class FieldRepository {
   }
 
   Future<void> saveField(Talhao field, String farmId) async {
+    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
+    if (userId.isEmpty) return;
     final db = await _db;
 
     final exists = await db.query(
       'fields',
       columns: ['id'],
-      where: 'id = ?',
-      whereArgs: [field.id],
+      where: 'id = ? AND user_id = ?',
+      whereArgs: [field.id, userId],
     );
 
-    final data = _toMap(field, farmId);
+    final data = _toMap(field, farmId, userId);
 
     if (exists.isNotEmpty) {
       await db.update(
         'fields',
         data..remove('created_at'),
-        where: 'id = ?',
-        whereArgs: [field.id],
+        where: 'id = ? AND user_id = ?',
+        whereArgs: [field.id, userId],
       );
     } else {
       await db.insert('fields', data);
@@ -65,12 +75,14 @@ class FieldRepository {
   }
 
   Future<void> deleteField(String id) async {
+    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
+    if (userId.isEmpty) return;
     final db = await _db;
     await db.update(
       'fields',
       {'deleted_at': DateTime.now().toIso8601String(), 'sync_status': 1},
-      where: 'id = ?',
-      whereArgs: [id],
+      where: 'id = ? AND user_id = ?',
+      whereArgs: [id, userId],
     );
   }
 
@@ -88,12 +100,16 @@ class FieldRepository {
       geometry: map['bordadura_geo'] != null
           ? jsonDecode(map['bordadura_geo'] as String)
           : null,
+      syncStatus: map['sync_status'] as int?,
+      perimeter: null, // Property not supported in DB schema
+      thumbnailPath: null, // Property not supported in DB schema
     );
   }
 
-  Map<String, Object?> _toMap(Talhao field, String farmId) {
+  Map<String, Object?> _toMap(Talhao field, String farmId, String userId) {
     return {
       'id': field.id,
+      'user_id': userId,
       'fazenda_id': farmId,
       'codigo': null,
       'nome': field.name,

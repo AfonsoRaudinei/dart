@@ -1,0 +1,45 @@
+{
+  "environment": "staging",
+  "server": {
+    "port": 8080,
+    "host": "0.0.0.0"
+  },
+  "auth": {
+    "admin_token": "staging-admin-token-2026",
+    "app_client_token": "staging-app-client-token-2026"
+  },
+  "rate_limit": {
+    "max_requests": 100,
+    "window_seconds": 60
+  },
+  "feature_flags": [
+    {
+      "key": "drawing_v1",
+      "enabled": true,
+      "rollout_percentage": 50,
+      "allowed_roles": ["consultor", "produtor"],
+      "version": 1,
+      "min_app_version": "1.1.0",
+      "description": "Drawing module - Staged rollout (50%)",
+      "created_at": "2026-02-12T10:00:00.000Z"
+    },
+    {
+      "key": "new_sync_engine_v2",
+      "enabled": true,
+      "rollout_percentage": 25,
+      "allowed_roles": ["consultor"],
+      "version": 1,
+      "min_app_version": "1.2.0",
+      "description": "New sync engine - Early testing (consultors only, 25%)",
+      "created_at": "2026-02-12T10:00:00.000Z"
+    }
+  ],
+  "logging": {
+    "level": "info",
+    "include_request_body": true
+  },
+  "storage": {
+    "type": "json",
+    "path": "data/feature_flags.staging.json"
+  }
+}

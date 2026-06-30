@@ -1,24 +1,43 @@
+import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:soloforte_app/ui/theme/soloforte_theme.dart';
+
 import '../../domain/occurrence.dart';
 import '../../presentation/controllers/occurrence_controller.dart';
-import '../../../../visitas/presentation/controllers/visit_controller.dart';
+import 'package:soloforte_app/core/contracts/i_visit_session_lookup.dart';
+import 'package:soloforte_app/core/contracts/i_visit_session_lookup_provider.dart';
 import './occurrence_filters.dart';
+import './occurrence_fenologia_data.dart';
+
+final _activeVisitSessionProvider =
+    FutureProvider.autoDispose<VisitSessionSummary?>(
+      (ref) => ref.watch(visitSessionLookupProvider).getActiveSession(),
+    );
 
 /// Bottom Sheet com lista de ocorrências filtrada por viewport
 class OccurrenceListSheet extends ConsumerStatefulWidget {
   final LatLngBounds? mapBounds;
   final VoidCallback? onClose;
   final Function(Occurrence)? onOccurrenceTap;
+  final VoidCallback? onRequestNewOccurrence;
+  // R1+R2: parâmetros para uso encapsulado em DraggableScrollableSheet
+  final ScrollController? scrollController;
+  final bool showHandle;
+  final bool showDecoration;
 
   const OccurrenceListSheet({
     super.key,
     this.mapBounds,
     this.onClose,
     this.onOccurrenceTap,
+    this.onRequestNewOccurrence,
+    this.scrollController,
+    this.showHandle = true,
+    this.showDecoration = true,
   });
 
   @override
@@ -33,193 +52,211 @@ class _OccurrenceListSheetState extends ConsumerState<OccurrenceListSheet> {
   @override
   Widget build(BuildContext context) {
     final occurrencesAsync = ref.watch(occurrencesListProvider);
-    final visitState = ref.watch(visitControllerProvider);
-    final activeVisitId = visitState.value?.status == 'active'
+    final visitState = ref.watch(_activeVisitSessionProvider);
+    final activeVisitId = visitState.value?.isActive == true
         ? visitState.value!.id
         : null;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: SoloForteColors.white,
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(SoloRadius.lg),
-          topRight: Radius.circular(SoloRadius.lg),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.15),
-            blurRadius: 20,
-            offset: const Offset(0, -5),
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Drag handle
-          Container(
-            margin: const EdgeInsets.only(top: 12),
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: SoloForteColors.grayLight,
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-          const SizedBox(height: 16),
-          // Header
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    'Ocorrências',
-                    style: SoloTextStyles.headingMedium,
+    return Stack(
+      children: [
+        Container(
+          decoration: widget.showDecoration
+              ? BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(16.0),
+                    topRight: Radius.circular(16.0),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.15),
+                      blurRadius: 20,
+                      offset: const Offset(0, -5),
+                    ),
+                  ],
+                )
+              : null,
+          child: Column(
+            mainAxisSize: widget.showDecoration
+                ? MainAxisSize.min
+                : MainAxisSize.max,
+            children: [
+              // Drag handle — suprimido quando encapsulado em modal
+              if (widget.showHandle) ...[
+                Container(
+                  margin: const EdgeInsets.only(top: 12),
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: PremiumTokens.surfaceLight,
+                    borderRadius: BorderRadius.circular(2),
                   ),
                 ),
-                IconButton(
-                  icon: const Icon(
-                    Icons.close,
-                    color: SoloForteColors.textSecondary,
-                  ),
-                  onPressed: widget.onClose ?? () => Navigator.pop(context),
-                ),
+                const SizedBox(height: 16),
               ],
-            ),
-          ),
-          const Divider(height: 1, color: SoloForteColors.borderLight),
-          // Filtros
-          OccurrenceFilterSelector(
-            filters: _filters,
-            activeVisitId: activeVisitId,
-            onChanged: (newFilters) {
-              setState(() => _filters = newFilters);
-            },
-          ),
-          const Divider(height: 1, color: SoloForteColors.borderLight),
-          // Lista
-          Flexible(
-            child: occurrencesAsync.when(
-              data: (allOccurrences) {
-                // Filtrar por viewport
-                final inViewport = widget.mapBounds != null
-                    ? allOccurrences.where((occ) {
-                        if (occ.lat == null || occ.long == null) return false;
-                        final point = LatLng(occ.lat!, occ.long!);
-                        return widget.mapBounds!.contains(point);
-                      }).toList()
-                    : allOccurrences;
-
-                // Aplicar filtros
-                final filtered = inViewport
-                    .where(
-                      (occ) =>
-                          _filters.matches(occ, activeVisitId: activeVisitId),
-                    )
-                    .toList();
-
-                // Ordenar: visita ativa primeiro, depois mais recentes
-                filtered.sort((a, b) {
-                  // Primeiro: ocorrências da visita ativa
-                  if (activeVisitId != null) {
-                    final aInVisit = a.visitSessionId == activeVisitId;
-                    final bInVisit = b.visitSessionId == activeVisitId;
-                    if (aInVisit && !bInVisit) return -1;
-                    if (!aInVisit && bInVisit) return 1;
-                  }
-                  // Depois: mais recentes primeiro
-                  return b.createdAt.compareTo(a.createdAt);
-                });
-
-                if (filtered.isEmpty) {
-                  return Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(40),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.warning_amber_rounded,
-                            size: 48,
-                            color: SoloForteColors.textTertiary,
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            _filters.hasAnyFilter
-                                ? 'Nenhuma ocorrência com os filtros ativos'
-                                : 'Nenhuma ocorrência nesta área',
-                            style: SoloTextStyles.body.copyWith(
-                              color: SoloForteColors.textSecondary,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                          if (_filters.hasAnyFilter) ...[
-                            const SizedBox(height: 12),
-                            TextButton(
-                              onPressed: () {
-                                setState(() => _filters = _filters.clear());
-                              },
-                              child: const Text('Limpar filtros'),
-                            ),
-                          ],
-                        ],
+              // Header
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Ocorrências',
+                        style: Theme.of(context).textTheme.titleMedium!
+                            .copyWith(fontWeight: FontWeight.w600),
                       ),
                     ),
-                  );
-                }
+                    IconButton(
+                      icon: const Icon(
+                        Icons.close,
+                        color: PremiumTokens.textSecondaryLight,
+                      ),
+                      onPressed: widget.onClose ?? () => Navigator.pop(context),
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(height: 1, color: PremiumTokens.hairlineLight),
+              // Filtros
+              OccurrenceFilterSelector(
+                filters: _filters,
+                activeVisitId: activeVisitId,
+                onChanged: (newFilters) {
+                  setState(() => _filters = newFilters);
+                },
+              ),
+              const Divider(height: 1, color: PremiumTokens.hairlineLight),
+              // Lista
+              Flexible(
+                child: occurrencesAsync.when(
+                  data: (allOccurrences) {
+                    final inViewport = widget.mapBounds != null
+                        ? allOccurrences.where((occ) {
+                            final coords = occ.getCoordinates();
+                            if (coords == null) return false;
+                            final point = LatLng(
+                              coords['lat']!,
+                              coords['long']!,
+                            );
+                            return widget.mapBounds!.contains(point);
+                          }).toList()
+                        : allOccurrences;
 
-                return ListView.separated(
-                  shrinkWrap: true,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 16,
-                  ),
-                  itemCount: filtered.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 12),
-                  itemBuilder: (context, index) {
-                    final occ = filtered[index];
-                    final isSelected = _selectedOccurrence?.id == occ.id;
-                    return _OccurrenceListItem(
-                      occurrence: occ,
-                      isSelected: isSelected,
-                      activeVisitId: activeVisitId,
-                      onTap: () {
-                        if (isSelected) {
-                          // Segundo tap: notificar para abrir editor
-                          widget.onOccurrenceTap?.call(occ);
-                        } else {
-                          // Primeiro tap: marcar como selecionado
-                          setState(() => _selectedOccurrence = occ);
-                          // Notificar para centralizar no mapa
-                          widget.onOccurrenceTap?.call(occ);
-                        }
+                    // Aplicar filtros
+                    final filtered = inViewport
+                        .where(
+                          (occ) => _filters.matches(
+                            occ,
+                            activeVisitId: activeVisitId,
+                          ),
+                        )
+                        .toList();
+
+                    // Ordenar: visita ativa primeiro, depois mais recentes
+                    filtered.sort((a, b) {
+                      // Primeiro: ocorrências da visita ativa
+                      if (activeVisitId != null) {
+                        final aInVisit = a.visitSessionId == activeVisitId;
+                        final bInVisit = b.visitSessionId == activeVisitId;
+                        if (aInVisit && !bInVisit) return -1;
+                        if (!aInVisit && bInVisit) return 1;
+                      }
+                      // Depois: mais recentes primeiro
+                      return b.createdAt.compareTo(a.createdAt);
+                    });
+
+                    if (filtered.isEmpty) {
+                      return Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(40),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.warning_amber_rounded,
+                                size: 48,
+                                color: PremiumTokens.textTertiaryLight,
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                _filters.hasAnyFilter
+                                    ? 'Nenhuma ocorrência com os filtros ativos'
+                                    : 'Nenhuma ocorrência nesta área',
+                                style: Theme.of(context).textTheme.bodyMedium!
+                                    .copyWith(
+                                      color: PremiumTokens.textSecondaryLight,
+                                    ),
+                                textAlign: TextAlign.center,
+                              ),
+                              if (_filters.hasAnyFilter) ...[
+                                const SizedBox(height: 12),
+                                TextButton(
+                                  onPressed: () {
+                                    setState(() => _filters = _filters.clear());
+                                  },
+                                  child: const Text('Limpar filtros'),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      );
+                    }
+
+                    return ListView.separated(
+                      controller: widget.scrollController,
+                      shrinkWrap: widget.scrollController == null,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 16,
+                      ),
+                      itemCount: filtered.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 12),
+                      itemBuilder: (context, index) {
+                        final occ = filtered[index];
+                        final isSelected = _selectedOccurrence?.id == occ.id;
+                        return _OccurrenceListItem(
+                          occurrence: occ,
+                          isSelected: isSelected,
+                          activeVisitId: activeVisitId,
+                          onTap: () {
+                            if (isSelected) {
+                              // Segundo tap: notificar para abrir editor
+                              widget.onOccurrenceTap?.call(occ);
+                            } else {
+                              // Primeiro tap: marcar como selecionado
+                              setState(() => _selectedOccurrence = occ);
+                              // Notificar para centralizar no mapa
+                              widget.onOccurrenceTap?.call(occ);
+                            }
+                          },
+                        );
                       },
                     );
                   },
-                );
-              },
-              loading: () => const Center(
-                child: Padding(
-                  padding: EdgeInsets.all(40),
-                  child: CircularProgressIndicator(
-                    color: SoloForteColors.greenIOS,
+                  loading: () => const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(40),
+                      child: CircularProgressIndicator(
+                        color: PremiumTokens.brandGreen,
+                      ),
+                    ),
+                  ),
+                  error: (err, stack) => const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(40),
+                      child: Text(
+                        'Erro ao carregar ocorrências',
+                        style: TextStyle(color: Color(0xFFFF3B30)),
+                      ),
+                    ),
                   ),
                 ),
               ),
-              error: (err, stack) => Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(40),
-                  child: Text(
-                    'Erro ao carregar ocorrências',
-                    style: TextStyle(color: SoloForteColors.error),
-                  ),
-                ),
-              ),
-            ),
+            ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
@@ -237,172 +274,339 @@ class _OccurrenceListItem extends StatelessWidget {
     this.activeVisitId,
   });
 
-  Color _getCategoryColor() {
-    final category = OccurrenceCategory.fromString(occurrence.category);
-    switch (category) {
+  // ── Helpers ──────────────────────────────────────────────────
+
+  Color _catColor(OccurrenceCategory cat) {
+    switch (cat) {
       case OccurrenceCategory.doenca:
-        return Colors.blue.shade700;
+        return const Color(0xFF34C759);
       case OccurrenceCategory.insetos:
-        return Colors.red.shade700;
+        return const Color(0xFFFF2D55);
       case OccurrenceCategory.daninhas:
-        return Colors.orange.shade700;
+        return const Color(0xFFFF9500);
       case OccurrenceCategory.nutricional:
-        return Colors.grey.shade600;
+        return const Color(0xFF8E8E93);
       case OccurrenceCategory.agua:
-        return Colors.cyan.shade700;
+        return const Color(0xFF30B0C7);
+      case OccurrenceCategory.amostraSolo:
+        return const Color(0xFF8B5CF6);
     }
+  }
+
+  List<OccurrenceCategory> _activeCategories() {
+    if (occurrence.categoriasJson != null) {
+      try {
+        final list = jsonDecode(occurrence.categoriasJson!) as List;
+        return list
+            .map((s) => OccurrenceCategory.fromString(s as String))
+            .toList();
+      } catch (_) {
+        // JSON legado inválido: usa category simples como fallback.
+      }
+    }
+    if (occurrence.category != null) {
+      return [OccurrenceCategory.fromString(occurrence.category)];
+    }
+    return [];
+  }
+
+  String? _firstMetricLabel() {
+    if (occurrence.metricasJson == null) return null;
+    try {
+      final map = jsonDecode(occurrence.metricasJson!) as Map<String, dynamic>;
+      for (final catEntry in map.entries) {
+        final metrics = catEntry.value as Map<String, dynamic>;
+        for (final m in metrics.entries) {
+          final v = m.value as int;
+          if (v > 0) {
+            return '${_metricDisplayName(m.key)}: ${kSliderLabels[v.clamp(0, 3)]}';
+          }
+        }
+      }
+    } catch (_) {
+      // Métrica opcional inválida: omite o resumo sem bloquear a lista.
+    }
+    return null;
+  }
+
+  String _metricDisplayName(String key) {
+    switch (key) {
+      case 'incidencia':
+        return 'Incidência';
+      case 'severidade':
+        return 'Severidade';
+      case 'desfolha':
+        return 'Desfolha';
+      case 'infestacao':
+        return 'Infestação';
+      case 'acamamento':
+        return 'Acamamento';
+      case 'status':
+        return 'Status Hídrico';
+      default:
+        return key;
+    }
+  }
+
+  Color _syncColor() {
+    switch (occurrence.syncStatus) {
+      case 'synced':
+        return const Color(0xFF34C759);
+      case 'updated':
+        return const Color(0xFF30B0C7);
+      case 'deleted':
+        return const Color(0xFFFF3B30);
+      default:
+        return const Color(0xFFFF9500); // local
+    }
+  }
+
+  String _syncLabel() {
+    switch (occurrence.syncStatus) {
+      case 'synced':
+        return 'Sincronizado';
+      case 'updated':
+        return 'Atualizado';
+      case 'deleted':
+        return 'Excluído';
+      default:
+        return 'Local';
+    }
+  }
+
+  String _formatDate(DateTime date) {
+    final d = date.day.toString().padLeft(2, '0');
+    final mo = date.month.toString().padLeft(2, '0');
+    final h = date.hour.toString().padLeft(2, '0');
+    final mi = date.minute.toString().padLeft(2, '0');
+    return '$d/$mo/${date.year} $h:$mi';
   }
 
   @override
   Widget build(BuildContext context) {
-    final category = OccurrenceCategory.fromString(occurrence.category);
-    final color = _getCategoryColor();
+    final cats = _activeCategories();
+    final primaryCat = cats.isNotEmpty
+        ? cats.first
+        : OccurrenceCategory.fromString(occurrence.category);
+    final color = _catColor(primaryCat);
     final isDraft = occurrence.status == 'draft';
-    final isFromVisit = occurrence.visitSessionId == activeVisitId;
+    final isFromVisit =
+        occurrence.visitSessionId == activeVisitId && activeVisitId != null;
+    final firstMetric = _firstMetricLabel();
+    final syncColor = _syncColor();
+    final hasPhoto =
+        occurrence.photoPath != null && occurrence.photoPath!.isNotEmpty;
 
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: isSelected
-              ? SoloForteColors.greenIOS.withValues(alpha: 0.1)
-              : SoloForteColors.grayLight,
+              ? color.withValues(alpha: .08)
+              : const Color(0xFF1C1C1E),
           border: Border.all(
-            color: isSelected
-                ? SoloForteColors.greenIOS
-                : SoloForteColors.borderLight,
-            width: isSelected ? 2 : 1,
+            color: isSelected ? color : Colors.white12,
+            width: isSelected ? 1.5 : 1,
           ),
-          borderRadius: BorderRadius.circular(SoloRadius.md),
+          borderRadius: BorderRadius.circular(12),
         ),
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Ícone da categoria
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.1),
-                shape: BoxShape.circle,
+            // ── Thumbnail ou ícone ──────────────────────────────────
+            ClipRRect(
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(12),
+                bottomLeft: Radius.circular(12),
               ),
-              child: Center(
-                child: Text(
-                  category.emoji,
-                  style: const TextStyle(fontSize: 24),
-                ),
-              ),
+              child: hasPhoto
+                  ? Image.file(
+                      File(occurrence.photoPath!),
+                      width: 60,
+                      height: 80,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) =>
+                          _CategoryIcon(cat: primaryCat, color: color),
+                    )
+                  : _CategoryIcon(cat: primaryCat, color: color),
             ),
-            const SizedBox(width: 12),
-            // Conteúdo
+            const SizedBox(width: 10),
+
+            // ── Conteúdo ─────────────────────────────────────────
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          category.label,
-                          style: SoloTextStyles.headingMedium.copyWith(
-                            fontSize: 14,
-                            color: color,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(0, 10, 10, 10),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Linha 1: categorias + badges
+                    Row(
+                      children: [
+                        // Emojis das categorias ativas
+                        ...cats
+                            .take(3)
+                            .map(
+                              (c) => Padding(
+                                padding: const EdgeInsets.only(right: 2),
+                                child: Text(
+                                  c.emoji,
+                                  style: const TextStyle(fontSize: 14),
+                                ),
+                              ),
+                            ),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            cats.map((c) => c.label).join(' + '),
+                            style: TextStyle(
+                              color: color,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                            ),
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
+                        if (isDraft)
+                          const _MiniChip(
+                            label: 'Rascunho',
+                            color: Color(0xFFFF9500),
+                          ),
+                      ],
+                    ),
+
+                    // Linha 2: estádio + cultivar
+                    if (occurrence.estadioFenologico != null ||
+                        occurrence.cultivar != null) ...[
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          if (occurrence.estadioFenologico != null)
+                            _MiniChip(
+                              label: '📊 ${occurrence.estadioFenologico}',
+                              color: PremiumTokens.brandGreen,
+                            ),
+                          if (occurrence.cultivar != null) ...[
+                            const SizedBox(width: 4),
+                            Text(
+                              occurrence.cultivar!,
+                              style: const TextStyle(
+                                color: Colors.white54,
+                                fontSize: 11,
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
-                      if (isDraft)
+                    ],
+
+                    // Linha 3: description
+                    if (occurrence.description.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        occurrence.description,
+                        style: const TextStyle(
+                          color: Colors.white54,
+                          fontSize: 12,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+
+                    // Linha 4: primeira métrica
+                    if (firstMetric != null) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        firstMetric,
+                        style: TextStyle(
+                          color: color.withValues(alpha: .8),
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+
+                    // Linha 5: data + badges
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        if (isFromVisit)
+                          const _MiniChip(
+                            label: '✓ Em Visita',
+                            color: PremiumTokens.brandGreen,
+                          ),
+                        const Spacer(),
+                        // Sync badge
                         Container(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
+                            horizontal: 5,
                             vertical: 2,
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.orange.withValues(alpha: 0.1),
+                            color: syncColor.withValues(alpha: .15),
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(
-                            'Rascunho',
+                            _syncLabel(),
                             style: TextStyle(
-                              color: Colors.orange.shade700,
+                              color: syncColor,
                               fontSize: 9,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
                         ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    occurrence.description.length > 60
-                        ? '${occurrence.description.substring(0, 60)}...'
-                        : occurrence.description,
-                    style: SoloTextStyles.body.copyWith(fontSize: 12),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      if (isFromVisit)
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 4,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: SoloForteColors.greenIOS.withValues(
-                              alpha: 0.1,
-                            ),
-                            borderRadius: BorderRadius.circular(3),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.check_circle,
-                                size: 10,
-                                color: SoloForteColors.greenIOS,
-                              ),
-                              const SizedBox(width: 2),
-                              Text(
-                                'Em Visita',
-                                style: TextStyle(
-                                  color: SoloForteColors.greenIOS,
-                                  fontSize: 9,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
+                        const SizedBox(width: 6),
+                        Text(
+                          _formatDate(occurrence.createdAt),
+                          style: const TextStyle(
+                            color: Colors.white24,
+                            fontSize: 10,
                           ),
                         ),
-                      const Spacer(),
-                      Text(
-                        _formatDate(occurrence.createdAt),
-                        style: SoloTextStyles.label,
-                      ),
-                    ],
-                  ),
-                ],
+                      ],
+                    ),
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(width: 8),
-            Icon(
-              isSelected ? Icons.open_in_new : Icons.chevron_right,
-              color: SoloForteColors.textSecondary,
-              size: 20,
             ),
           ],
         ),
       ),
     );
   }
+}
 
-  String _formatDate(DateTime date) {
-    final now = DateTime.now();
-    final diff = now.difference(date);
-    if (diff.inMinutes < 60) return 'Há ${diff.inMinutes}min';
-    if (diff.inHours < 24) return 'Há ${diff.inHours}h';
-    if (diff.inDays < 7) return 'Há ${diff.inDays}d';
-    return '${date.day}/${date.month}';
-  }
+// ── Widgets auxiliares do card ──────────────────────────────────────────────────
+
+class _CategoryIcon extends StatelessWidget {
+  final OccurrenceCategory cat;
+  final Color color;
+  const _CategoryIcon({required this.cat, required this.color});
+
+  @override
+  Widget build(BuildContext context) => Container(
+    width: 60,
+    height: 80,
+    color: color.withValues(alpha: .1),
+    child: Center(child: Text(cat.emoji, style: const TextStyle(fontSize: 28))),
+  );
+}
+
+class _MiniChip extends StatelessWidget {
+  final String label;
+  final Color color;
+  const _MiniChip({required this.label, required this.color});
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+    decoration: BoxDecoration(
+      color: color.withValues(alpha: .15),
+      borderRadius: BorderRadius.circular(4),
+    ),
+    child: Text(
+      label,
+      style: TextStyle(color: color, fontSize: 9, fontWeight: FontWeight.bold),
+    ),
+  );
 }

@@ -11,3 +11,21 @@ class ProfileState {
     );
   }
 }
+
+class ReportBrandingState {
+  final String? brandName;
+  final String? logoPath;
+
+  const ReportBrandingState({this.brandName, this.logoPath});
+
+  bool get hasCustomBrandName => (brandName ?? '').trim().isNotEmpty;
+  bool get hasCustomLogo => (logoPath ?? '').trim().isNotEmpty;
+  bool get isCustomized => hasCustomBrandName || hasCustomLogo;
+
+  ReportBrandingState copyWith({String? brandName, String? logoPath}) {
+    return ReportBrandingState(
+      brandName: brandName ?? this.brandName,
+      logoPath: logoPath ?? this.logoPath,
+    );
+  }
+}

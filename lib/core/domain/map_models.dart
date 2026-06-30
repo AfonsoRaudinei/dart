@@ -1,6 +1,6 @@
 import 'package:latlong2/latlong.dart';
 
-enum LayerType { standard, satellite, terrain }
+enum LayerType { standard, satellite, relevo }
 
 enum SyncStatus { pending, synced, error }
 
@@ -40,6 +40,10 @@ class MapLayer {
   }
 }
 
+/// Legacy entity mantida apenas para backward-compatibility de cache.
+/// Use [Publicacao] de `core/domain/publicacao.dart` em vez desta.
+/// Será removida em versão futura.
+@Deprecated('Use Publicacao from core/domain/publicacao.dart — ADR-007')
 class Publication {
   final String id;
   final String userName;

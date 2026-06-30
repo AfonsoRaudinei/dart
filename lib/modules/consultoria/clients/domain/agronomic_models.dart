@@ -6,6 +6,9 @@ class Talhao {
   final String harvest; // Safra (ex: 2024/2025)
   final DateTime? updatedAt;
   final Map<String, dynamic>? geometry; // GeoJSON
+  final double? perimeter;
+  final String? thumbnailPath;
+  final int? syncStatus;
 
   Talhao({
     required this.id,
@@ -15,6 +18,9 @@ class Talhao {
     required this.harvest,
     this.updatedAt,
     this.geometry,
+    this.perimeter,
+    this.thumbnailPath,
+    this.syncStatus,
   });
 
   Talhao copyWith({
@@ -25,6 +31,9 @@ class Talhao {
     String? harvest,
     DateTime? updatedAt,
     Map<String, dynamic>? geometry,
+    double? perimeter,
+    String? thumbnailPath,
+    int? syncStatus,
   }) {
     return Talhao(
       id: id ?? this.id,
@@ -34,6 +43,9 @@ class Talhao {
       harvest: harvest ?? this.harvest,
       updatedAt: updatedAt ?? this.updatedAt,
       geometry: geometry ?? this.geometry,
+      perimeter: perimeter ?? this.perimeter,
+      thumbnailPath: thumbnailPath ?? this.thumbnailPath,
+      syncStatus: syncStatus ?? this.syncStatus,
     );
   }
 }

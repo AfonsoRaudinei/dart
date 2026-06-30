@@ -1,0 +1,144 @@
+name: Enforcement Arquitetural
+
+# Dispara em Pull Request para qualquer branch protegida
+# e em push direto para main e release/* (fallback de segurança)
+on:
+  pull_request:
+    branches:
+      - main
+      - "release/**"
+      - develop
+  push:
+    branches:
+      - main
+      - "release/**"
+
+jobs:
+  architecture:
+    name: Verificação de Fronteiras Arquiteturais
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout do repositório
+        uses: actions/checkout@v4
+
+      - name: Tornar script executável
+        run: chmod +x tool/arch_check.sh
+
+      - name: Executar enforcement arquitetural
+        run: ./tool/arch_check.sh
+        # Exit 0 → aprovado | Exit 1 → PR bloqueado
+
+  ndvi-regression:
+    name: NDVI Regression Gate (ADR-042)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout do repositório
+        uses: actions/checkout@v4
+
+      - name: Configurar Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Instalar dependências Flutter
+        run: flutter pub get
+
+      - name: Executar suite NDVI obrigatória
+        run: |
+          flutter test test/modules/ndvi/ test/supabase/ndvi_fetch_contract_test.dart
+
+  clima-radar-regression:
+    name: Clima Radar Regression Gate (ADR-043)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout do repositório
+        uses: actions/checkout@v4
+
+      - name: Configurar Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Instalar dependências Flutter
+        run: flutter pub get
+
+      - name: Executar suite radar clima obrigatória
+        run: |
+          flutter test \
+            test/modules/clima/radar_providers_test.dart \
+            test/modules/clima/radar_layer_widget_test.dart \
+            test/modules/clima/radar_overlay_controller_test.dart \
+            test/modules/clima/radar_layer_order_test.dart \
+            test/modules/clima/radar_persistence_test.dart \
+            test/modules/clima/radar_overlay_states_test.dart \
+            test/modules/clima/rainviewer_contract_test.dart \
+            test/architecture/clima_radar_boundary_test.dart
+
+  coverage:
+    name: Coverage Flutter Ratchet
+    runs-on: ubuntu-latest
+    env:
+      COVERAGE_MIN: "36.46"
+      COVERAGE_TARGET: "60"
+
+    steps:
+      - name: Checkout do repositório
+        uses: actions/checkout@v4
+
+      - name: Configurar Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Instalar lcov
+        run: sudo apt-get update && sudo apt-get install -y lcov
+
+      - name: Instalar dependências Flutter
+        run: flutter pub get
+
+      - name: Executar testes com coverage
+        run: flutter test --coverage
+
+      - name: Gerar relatório HTML
+        run: genhtml coverage/lcov.info -o coverage/html
+
+      - name: Validar threshold de coverage
+        run: tool/coverage_gate.sh coverage/lcov.info
+
+      - name: Coverage segmentado por módulo (Fase 0)
+        run: |
+          chmod +x tool/coverage_by_module.sh
+          ./tool/coverage_by_module.sh coverage/lcov.info coverage/coverage_by_module.md
+
+      - name: Matriz de testes por setor (Fase 5 — warning only)
+        run: |
+          chmod +x tool/test_matrix_gate.sh
+          ./tool/test_matrix_gate.sh coverage/lcov.info
+
+      - name: Upload do relatório de coverage
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: flutter-coverage-html
+          path: |
+            coverage/html
+            coverage/coverage_by_module.md
+
+  baseline-metrics:
+    name: Baseline Performance (Fase 0 — warning only)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout do repositório
+        uses: actions/checkout@v4
+
+      - name: Executar perf baseline
+        run: |
+          chmod +x tool/perf_baseline.sh
+          ./tool/perf_baseline.sh

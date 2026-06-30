@@ -1,7 +1,10 @@
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:flutter/foundation.dart';
 import 'dart:io';
+import '../utils/app_logger.dart';
+import 'database_migrations.dart';
 
 class DatabaseHelper {
   static final DatabaseHelper instance = DatabaseHelper._privateConstructor();
@@ -18,271 +21,322 @@ class DatabaseHelper {
   Future<Database> _initDatabase() async {
     Directory documentsDirectory = await getApplicationDocumentsDirectory();
     String path = join(documentsDirectory.path, 'soloforte.db');
-    return await openDatabase(
+
+    final db = await openDatabase(
       path,
-      version: 5,
+      version: 38,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
+
+    // 🎯 Validação de integridade pós-boot
+    await _validateSchema(db);
+
+    return db;
   }
 
+  // ════════════════════════════════════════════════════════════════════
+  // ORQUESTRADOR DE SCHEMA
+  // ════════════════════════════════════════════════════════════════════
+
   Future<void> _onCreate(Database db, int version) async {
-    await db.execute('''
-      CREATE TABLE clients (
-        id TEXT PRIMARY KEY,
-        nome TEXT NOT NULL,
-        documento TEXT,
-        telefone TEXT,
-        email TEXT,
-        created_at TEXT NOT NULL,
-        updated_at TEXT NOT NULL,
-        deleted_at TEXT,
-        sync_status INTEGER DEFAULT 1
-      )
-    ''');
-
-    await db.execute('''
-      CREATE INDEX idx_clients_nome ON clients(nome);
-    ''');
-
-    await db.execute('''
-      CREATE INDEX idx_clients_sync ON clients(sync_status);
-    ''');
-
-    await db.execute('''
-      CREATE TABLE farms (
-        id TEXT PRIMARY KEY,
-        cliente_id TEXT NOT NULL,
-        nome TEXT NOT NULL,
-        area_total REAL,
-        municipio TEXT,
-        uf TEXT,
-        created_at TEXT NOT NULL,
-        updated_at TEXT NOT NULL,
-        deleted_at TEXT,
-        sync_status INTEGER DEFAULT 1,
-        FOREIGN KEY (cliente_id) REFERENCES clients (id)
-      )
-    ''');
-
-    await db.execute('''
-      CREATE INDEX idx_farms_cliente_id ON farms(cliente_id);
-    ''');
-
-    await db.execute('''
-      CREATE INDEX idx_farms_sync ON farms(sync_status);
-    ''');
-
-    await db.execute('''
-      CREATE TABLE fields (
-        id TEXT PRIMARY KEY,
-        fazenda_id TEXT NOT NULL,
-        codigo TEXT,
-        nome TEXT NOT NULL,
-        area_produtiva REAL,
-        bordadura_geo TEXT,
-        centro_geo TEXT,
-        created_at TEXT NOT NULL,
-        updated_at TEXT NOT NULL,
-        deleted_at TEXT,
-        sync_status INTEGER DEFAULT 1,
-        FOREIGN KEY (fazenda_id) REFERENCES farms (id)
-      )
-    ''');
-
-    await db.execute('''
-      CREATE INDEX idx_fields_fazenda_id ON fields(fazenda_id);
-    ''');
-
-    await db.execute('''
-      CREATE INDEX idx_fields_sync ON fields(sync_status);
-    ''');
-
-    await db.execute('''
-      CREATE TABLE visit_sessions (
-        id TEXT PRIMARY KEY,
-        producer_id TEXT NOT NULL,
-        area_id TEXT NOT NULL,
-        activity_type TEXT NOT NULL,
-        start_time TEXT NOT NULL,
-        end_time TEXT,
-        initial_lat REAL,
-        initial_long REAL,
-        status TEXT NOT NULL,
-        created_at TEXT NOT NULL,
-        updated_at TEXT NOT NULL,
-        sync_status INTEGER DEFAULT 1
-      )
-    ''');
-
-    await db.execute('''
-      CREATE INDEX idx_visit_sessions_status ON visit_sessions(status);
-    ''');
-
-    await db.execute('''
-      CREATE TABLE occurrences (
-        id TEXT PRIMARY KEY,
-        visit_session_id TEXT,
-        type TEXT NOT NULL,
-        description TEXT,
-        photo_path TEXT,
-        lat REAL,
-        long REAL,
-        created_at TEXT NOT NULL,
-        sync_status INTEGER DEFAULT 1,
-        FOREIGN KEY (visit_session_id) REFERENCES visit_sessions (id)
-      )
-    ''');
-    await db.execute(
-      'CREATE INDEX idx_occurrences_session ON occurrences(visit_session_id)',
-    );
-
-    await db.execute('''
-      CREATE TABLE visit_reports (
-        id TEXT PRIMARY KEY,
-        visit_session_id TEXT NOT NULL UNIQUE,
-        content TEXT NOT NULL,
-        created_at TEXT NOT NULL,
-        sync_status INTEGER DEFAULT 1,
-        FOREIGN KEY (visit_session_id) REFERENCES visit_sessions (id)
-      )
-    ''');
-    await db.execute(
-      'CREATE INDEX idx_visit_reports_session ON visit_reports(visit_session_id)',
-    );
-
-    await db.execute('''
-      CREATE TABLE agenda_events (
-        id TEXT PRIMARY KEY,
-        producer_id TEXT NOT NULL,
-        area_id TEXT NOT NULL,
-        activity_type TEXT NOT NULL,
-        scheduled_date TEXT NOT NULL,
-        description TEXT,
-        visit_session_id TEXT,
-        status TEXT NOT NULL,
-        realized_at TEXT,
-        created_at TEXT NOT NULL,
-        sync_status INTEGER DEFAULT 1,
-        FOREIGN KEY (visit_session_id) REFERENCES visit_sessions (id)
-      )
-    ''');
-    await db.execute(
-      'CREATE INDEX idx_agenda_date ON agenda_events(scheduled_date)',
-    );
-    await db.execute(
-      'CREATE INDEX idx_agenda_producer ON agenda_events(producer_id)',
-    );
+    if (kDebugMode) {
+      AppLogger.debug('Database: Instalação limpa (v0 → v$version)', tag: 'DB');
+    }
+    await _runMigrations(db, 0, version);
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
-    if (oldVersion < 2) {
-      await db.execute(
-        'ALTER TABLE clients ADD COLUMN sync_status INTEGER DEFAULT 1',
-      );
-      await db.execute('CREATE INDEX idx_clients_sync ON clients(sync_status)');
-
-      await db.execute(
-        'ALTER TABLE farms ADD COLUMN sync_status INTEGER DEFAULT 1',
-      );
-      await db.execute('CREATE INDEX idx_farms_sync ON farms(sync_status)');
-
-      await db.execute(
-        'ALTER TABLE fields ADD COLUMN sync_status INTEGER DEFAULT 1',
-      );
-      await db.execute('CREATE INDEX idx_fields_sync ON fields(sync_status)');
-      await db.execute(
-        'ALTER TABLE fields ADD COLUMN sync_status INTEGER DEFAULT 1',
-      );
-      await db.execute('CREATE INDEX idx_fields_sync ON fields(sync_status)');
-    }
-
-    if (oldVersion < 3) {
-      await db.execute('''
-        CREATE TABLE visit_sessions (
-          id TEXT PRIMARY KEY,
-          producer_id TEXT NOT NULL,
-          area_id TEXT NOT NULL,
-          activity_type TEXT NOT NULL,
-          start_time TEXT NOT NULL,
-          end_time TEXT,
-          initial_lat REAL,
-          initial_long REAL,
-          status TEXT NOT NULL,
-          created_at TEXT NOT NULL,
-          updated_at TEXT NOT NULL,
-          sync_status INTEGER DEFAULT 1
-        )
-      ''');
-
-      await db.execute('''
-        CREATE INDEX idx_visit_sessions_status ON visit_sessions(status);
-      ''');
-    }
-
-    if (oldVersion < 4) {
-      await db.execute('''
-        CREATE TABLE occurrences (
-          id TEXT PRIMARY KEY,
-          visit_session_id TEXT,
-          type TEXT NOT NULL,
-          description TEXT,
-          photo_path TEXT,
-          lat REAL,
-          long REAL,
-          created_at TEXT NOT NULL,
-          sync_status INTEGER DEFAULT 1,
-          FOREIGN KEY (visit_session_id) REFERENCES visit_sessions (id)
-        )
-      ''');
-      await db.execute(
-        'CREATE INDEX idx_occurrences_session ON occurrences(visit_session_id)',
-      );
-
-      await db.execute('''
-        CREATE TABLE visit_reports (
-          id TEXT PRIMARY KEY,
-          visit_session_id TEXT NOT NULL UNIQUE,
-          content TEXT NOT NULL,
-          created_at TEXT NOT NULL,
-          sync_status INTEGER DEFAULT 1,
-          FOREIGN KEY (visit_session_id) REFERENCES visit_sessions (id)
-        )
-      ''');
-      await db.execute(
-        'CREATE INDEX idx_visit_reports_session ON visit_reports(visit_session_id)',
+    if (kDebugMode) {
+      AppLogger.debug(
+        'Database Upgrade: v$oldVersion → v$newVersion',
+        tag: 'DB',
       );
     }
+    await _runMigrations(db, oldVersion, newVersion);
+  }
 
-    if (oldVersion < 5) {
-      await db.execute('''
-        CREATE TABLE agenda_events (
-          id TEXT PRIMARY KEY,
-          producer_id TEXT NOT NULL,
-          area_id TEXT NOT NULL,
-          activity_type TEXT NOT NULL,
-          scheduled_date TEXT NOT NULL,
-          description TEXT,
-          visit_session_id TEXT,
-          status TEXT NOT NULL,
-          realized_at TEXT,
-          created_at TEXT NOT NULL,
-          sync_status INTEGER DEFAULT 1,
-          FOREIGN KEY (visit_session_id) REFERENCES visit_sessions (id)
-        )
-      ''');
-      await db.execute(
-        'CREATE INDEX idx_agenda_date ON agenda_events(scheduled_date)',
-      );
-      await db.execute(
-        'CREATE INDEX idx_agenda_producer ON agenda_events(producer_id)',
-      );
+  /// 🔁 Orquestrador Determinístico de Migrações
+  Future<void> _runMigrations(
+    Database db,
+    int fromVersion,
+    int toVersion,
+  ) async {
+    for (int v = fromVersion + 1; v <= toVersion; v++) {
+      if (kDebugMode) AppLogger.debug('Aplicando migração: v$v', tag: 'DB');
+      switch (v) {
+        case 1:
+          await DatabaseMigrations.migrateToV1(db);
+          break;
+        case 2:
+          await DatabaseMigrations.migrateToV2(db);
+          break;
+        case 3:
+          await DatabaseMigrations.migrateToV3(db);
+          break;
+        case 4:
+          await DatabaseMigrations.migrateToV4(db);
+          break;
+        case 5:
+          await DatabaseMigrations.migrateToV5(db);
+          break;
+        case 6:
+          await DatabaseMigrations.migrateToV6(db);
+          break;
+        case 7:
+          await DatabaseMigrations.migrateToV7(db);
+          break;
+        case 8:
+          await DatabaseMigrations.migrateToV8(db);
+          break;
+        case 9:
+          await DatabaseMigrations.migrateToV9(db);
+          break;
+        case 10:
+          await DatabaseMigrations.migrateToV10(db);
+          break;
+        case 11:
+          await DatabaseMigrations.migrateToV11(db);
+          break;
+        case 12:
+          await DatabaseMigrations.migrateToV12(db);
+          break;
+        case 13:
+          await DatabaseMigrations.migrateToV13(db);
+          break;
+        case 14:
+          await DatabaseMigrations.migrateToV14(db);
+          break;
+        case 15:
+          await DatabaseMigrations.migrateToV15(db);
+          break;
+        case 16:
+          await DatabaseMigrations.migrateToV16(db);
+          break;
+        case 17:
+          await DatabaseMigrations.migrateToV17(db);
+          break;
+        case 18:
+          await DatabaseMigrations.migrateToV18(db);
+          break;
+        case 19:
+          await DatabaseMigrations.migrateToV19(db);
+          break;
+        case 20:
+          await DatabaseMigrations.migrateToV20(db);
+          break;
+        case 21:
+          await DatabaseMigrations.migrateToV21(db);
+          break;
+        case 22:
+          await DatabaseMigrations.migrateToV22(db);
+          break;
+        case 23:
+          await DatabaseMigrations.migrateToV23(db);
+          break;
+        case 24:
+          await DatabaseMigrations.migrateToV24(db);
+          break;
+        case 25:
+          await DatabaseMigrations.migrateToV25(db);
+          break;
+        case 26:
+          await DatabaseMigrations.migrateToV26(db);
+          break;
+        case 27:
+          await DatabaseMigrations.migrateToV27(db);
+          break;
+        case 28:
+          await DatabaseMigrations.migrateToV28(db);
+          break;
+        case 29:
+          await DatabaseMigrations.migrateToV29(db);
+          break;
+        case 30:
+          await DatabaseMigrations.migrateToV30(db);
+          break;
+        case 31:
+          await DatabaseMigrations.migrateToV31(db);
+          break;
+        case 32:
+          await DatabaseMigrations.migrateToV32(db);
+          break;
+        case 33:
+          await DatabaseMigrations.migrateToV33(db);
+          break;
+        case 34:
+          await DatabaseMigrations.migrateToV34(db);
+          break;
+        case 35:
+          await DatabaseMigrations.migrateToV35(db);
+          break;
+        case 36:
+          await DatabaseMigrations.migrateToV36(db);
+          break;
+        case 37:
+          await DatabaseMigrations.migrateToV37(db);
+          break;
+        case 38:
+          await DatabaseMigrations.migrateToV38(db);
+          break;
+      }
     }
   }
 
-  // Future helpers to close DB if needed
+  @visibleForTesting
+  Future<void> runMigrationsForTesting(
+    Database db,
+    int fromVersion,
+    int toVersion,
+  ) =>
+      _runMigrations(db, fromVersion, toVersion);
+
+  Future<void> _validateSchema(Database db) async {
+    if (!kDebugMode) return;
+
+    final criticalTables = ['clients', 'drawings', 'agenda_events'];
+    for (final table in criticalTables) {
+      final res = await db.rawQuery(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name=?",
+        [table],
+      );
+      if (res.isEmpty) {
+        AppLogger.error(
+          'ERRO CRÍTICO: Tabela "$table" não encontrada após boot.',
+          tag: 'DB',
+        );
+      } else {
+        AppLogger.debug('Database: Tabela "$table" validada.', tag: 'DB');
+      }
+    }
+  }
+
   Future<void> close() async {
-    final db = await instance.database;
-    db.close();
+    final db = await database;
+    await db.close();
+  }
+
+  /// Remove registros locais do usuário ao excluir a conta.
+  Future<void> clearUserLocalData(String userId) async {
+    if (userId.isEmpty) return;
+
+    final db = await database;
+    await db.transaction((txn) => _clearUserLocalData(txn, userId));
+  }
+
+  Future<void> _clearUserLocalData(DatabaseExecutor db, String userId) async {
+    const tablesWithUserId = [
+      'clients',
+      'farms',
+      'fields',
+      'visit_sessions',
+      'occurrences',
+      'visit_reports',
+      'agenda_events',
+      'agenda_visit_sessions',
+      'drawings',
+      'client_culturas',
+      'clima_atual_cache',
+      'clima_horaria_cache',
+      'clima_diaria_cache',
+      'ndvi_cache',
+      'publicacoes_tecnicas',
+      'relatorios',
+      'relatorios_v2',
+      'carteira_categorias',
+      'carteira_cliente_categorias',
+      'carteira_safras',
+      'carteira_metas',
+      'carteira_lancamentos',
+      'quick_photos',
+      'user_profile_edits',
+    ];
+
+    for (final table in tablesWithUserId) {
+      try {
+        await db.delete(table, where: 'user_id = ?', whereArgs: [userId]);
+      } catch (_) {
+        // Tabela ausente ou sem coluna esperada — ignorar no logout.
+      }
+    }
+
+    try {
+      await db.delete(
+        'occurrences',
+        where: 'cached_by_user_id = ?',
+        whereArgs: [userId],
+      );
+    } catch (_) {
+      // Coluna disponivel apenas a partir da v38.
+    }
+
+    try {
+      await db.delete(
+        'producer_client_links',
+        where: 'producer_user_id = ? OR consultor_user_id = ?',
+        whereArgs: [userId, userId],
+      );
+    } catch (_) {
+      // Tabela de vínculo pode não existir em bancos legados.
+    }
+
+    try {
+      await db.delete(
+        'user_profile_cache',
+        where: 'id = ?',
+        whereArgs: [userId],
+      );
+    } catch (_) {
+      // Tabela ausente — ignorar no logout.
+    }
+  }
+
+  /// Repara registros órfãos criados sem user_id.
+  ///
+  /// Atualiza apenas linhas com `user_id` vazio ou nulo para o usuário atual.
+  /// Idempotente e tolerante a tabelas ausentes.
+  Future<void> repairOrphanUserIds(String userId) async {
+    if (userId.isEmpty) return;
+
+    final db = await database;
+
+    const tablesWithUserId = <String>[
+      'clients',
+      'farms',
+      'fields',
+      'visit_sessions',
+      'occurrences',
+      'visit_reports',
+      'agenda_events',
+      'agenda_visit_sessions',
+      'drawings',
+      'client_culturas',
+      'clima_atual_cache',
+      'clima_horaria_cache',
+      'clima_diaria_cache',
+      'ndvi_cache',
+      'publicacoes_tecnicas',
+      'relatorios',
+      'relatorios_v2',
+      'carteira_categorias',
+      'carteira_cliente_categorias',
+      'carteira_safras',
+      'carteira_metas',
+      'carteira_lancamentos',
+    ];
+
+    for (final table in tablesWithUserId) {
+      try {
+        final count = await db.rawUpdate(
+          "UPDATE $table SET user_id = ? WHERE user_id = '' OR user_id IS NULL",
+          [userId],
+        );
+        if (count > 0) {
+          debugPrint('[DB] repairOrphanUserIds: $count linhas em $table');
+        }
+      } catch (e) {
+        debugPrint('[DB] repairOrphanUserIds erro em $table: $e');
+      }
+    }
   }
 }

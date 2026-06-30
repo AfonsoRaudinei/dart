@@ -1,0 +1,3 @@
+// Screens do módulo clima.
+// A tela principal (ClimaScreen) reside em lib/ui/screens/clima_screen.dart.
+// Subtelas específicas do módulo serão adicionadas aqui nos steps seguintes.

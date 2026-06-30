@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:soloforte_app/ui/theme/soloforte_theme.dart';
+
+import '../../../core/utils/app_logger.dart';
 import '../clients/domain/agronomic_models.dart';
 
 class TalhaoMapAdapter {
@@ -16,11 +18,10 @@ class TalhaoMapAdapter {
     return Polygon(
       points: points,
       color: isSelected
-          ? SoloForteColors.greenIOS.withValues(alpha: 0.4)
-          : SoloForteColors.greenIOS.withValues(alpha: 0.15),
-      borderColor: isSelected ? Colors.white : SoloForteColors.greenDark,
+          ? PremiumTokens.brandGreen.withValues(alpha: 0.4)
+          : PremiumTokens.brandGreen.withValues(alpha: 0.15),
+      borderColor: isSelected ? Colors.white : const Color(0xFF248A3D),
       borderStrokeWidth: isSelected ? 3.0 : 1.5,
-      isFilled: true,
       label: talhao.name,
       labelStyle: TextStyle(
         color: Colors.black,
@@ -52,7 +53,11 @@ class TalhaoMapAdapter {
         }
       }
     } catch (e) {
-      print('Error parsing geometry: $e');
+      AppLogger.warning(
+        'Erro ao parsear geometry do talhão',
+        tag: 'TalhaoMap',
+        error: e,
+      );
     }
     return [];
   }

@@ -1,24 +1,43 @@
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import '../session/session_controller.dart';
-import '../session/session_models.dart';
+import 'router_notifier.dart';
+import '../access/app_access.dart';
+import '../../core/session/session_controller.dart';
+import '../../core/session/session_models.dart';
 import '../../ui/components/app_shell.dart';
 import '../../ui/screens/public_map_screen.dart';
-import '../../ui/screens/private_map_screen.dart';
+import '../../ui/screens/private_map_bootstrap_screen.dart';
 import '../../ui/screens/login_screen.dart';
-import '../../ui/screens/signup_screen.dart';
-import '../../ui/screens/misc_screens.dart'
-    hide SettingsScreen, ClientesScreen, RelatoriosScreen;
+import '../../modules/auth/pages/register_page.dart';
+import '../../modules/auth/pages/recover_password_page.dart';
+import '../../modules/auth/pages/reset_password_page.dart';
+import '../../modules/agenda/presentation/pages/agenda_month_page.dart';
+import '../../modules/agenda/presentation/pages/agenda_day_page.dart';
+import '../../modules/agenda/presentation/pages/agenda_event_detail_page.dart';
+import '../../modules/carteira/presentation/screens/carteira_cliente_screen.dart';
+import '../../modules/carteira/presentation/screens/carteira_screen.dart';
+import '../../ui/screens/publicacao_editor_screen.dart';
 import '../../../modules/settings/presentation/screens/settings_screen.dart';
+import '../../../modules/settings/presentation/screens/edit_profile_screen.dart';
 import '../../../modules/consultoria/clients/presentation/screens/client_list_screen.dart';
 import '../../../modules/consultoria/clients/presentation/screens/client_form_screen.dart';
 import '../../../modules/consultoria/clients/presentation/screens/client_detail_screen.dart';
-import '../../../modules/consultoria/reports/presentation/screens/report_list_screen.dart';
-import '../../../modules/consultoria/reports/presentation/screens/report_form_screen.dart';
-import '../../../modules/consultoria/reports/presentation/screens/report_detail_screen.dart';
+import '../../../modules/consultoria/relatorios/presentation/relatorios_page.dart';
+import '../../../modules/consultoria/relatorios/presentation/relatorio_detail_screen.dart';
+import '../../../modules/consultoria/relatorios/presentation/relatorio_form_screen.dart';
+// import '../../../modules/consultoria/reports/presentation/screens/report_detail_screen.dart';
 import '../../../modules/consultoria/clients/presentation/screens/farm_detail_screen.dart';
 import '../../../modules/consultoria/clients/presentation/screens/field_detail_screen.dart';
+import '../../../modules/feedback/presentation/screens/feedback_screen.dart';
+import '../../../modules/produtor/presentation/screens/producer_property_screen.dart';
+import '../../modules/clima/presentation/screens/clima_screen.dart';
+// ADR-012 — Módulo planos/
+import '../../../modules/planos/presentation/screens/planos_screen.dart';
+import '../../../modules/planos/presentation/screens/pagamento_screen.dart';
+import '../../../modules/planos/presentation/screens/confirmacao_screen.dart';
+import '../../../modules/planos/presentation/screens/meu_plano_screen.dart';
+import '../../../modules/planos/presentation/screens/indicacoes_screen.dart';
 
 import 'app_routes.dart';
 
@@ -26,27 +45,57 @@ part 'app_router.g.dart';
 
 @Riverpod(keepAlive: true)
 GoRouter router(Ref ref) {
-  // Watch session to rebuild router on auth change
-  final session = ref.watch(sessionControllerProvider);
+  // RouterNotifier lido com ref.read (não ref.watch) para garantir que
+  // o GoRouter seja instanciado uma única vez e nunca recriado.
+  // Mudanças de auth disparam notifyListeners() via refreshListenable
+  // → GoRouter re-avalia apenas o redirect, sem destruir a navigation stack.
+  final notifier = ref.read(routerNotifierProvider);
 
   return GoRouter(
     initialLocation: AppRoutes.publicMap,
+    refreshListenable: notifier,
     redirect: (context, state) {
-      final isAuth = session is SessionAuthenticated;
+      // 🛡 IPA-109: aguarda bootstrap de autenticação concluir antes de
+      // redirecionar. Enquanto _isInitializing==true o Supabase ainda pode
+      // estar restaurando a sessão do storage local. Sem este guard o router
+      // renderizava PublicMapScreen ou /map prematuramente, causando frame
+      // branco/preto enquanto o SessionUnknown ainda estava ativo.
+      if (notifier.isInitializing) {
+        return AppRoutes.publicMap; // seguro: já é a initialLocation
+      }
+
+      final session = ref.read(sessionControllerProvider);
+      final isAuth = notifier.isAuthenticated;
+      final isRecovery = session is SessionPasswordRecovery;
+      final role = session is SessionAuthenticated
+          ? (session.user.userMetadata?['role']?.toString())
+          : null;
 
       final path = state.uri.path;
       final isPublicRoute =
           path == AppRoutes.publicMap ||
           path == AppRoutes.login ||
-          path == AppRoutes.signup;
+          path == AppRoutes.register ||
+          path == AppRoutes.recoverPassword ||
+          path == AppRoutes.resetPassword;
 
+      // Sem sessão: redirecionar rotas privadas para mapa público
       if (!isAuth && !isPublicRoute) {
         return AppRoutes.publicMap;
       }
 
-      // If auth, redirect login/signup/public-map to dashboard
-      if (isAuth && isPublicRoute) {
-        return AppRoutes.dashboard;
+      // Recovery: forçar /reset-password em qualquer outra rota
+      if (isRecovery && path != AppRoutes.resetPassword) {
+        return AppRoutes.resetPassword;
+      }
+
+      if (isAuth && !isRecovery && !AppAccess.canAccessPath(role, path)) {
+        return AppRoutes.map;
+      }
+
+      // Autenticado normal: redirecionar rotas públicas para map
+      if (isAuth && !isRecovery && isPublicRoute) {
+        return AppRoutes.map;
       }
 
       return null;
@@ -64,40 +113,87 @@ GoRouter router(Ref ref) {
             builder: (_, __) => const LoginScreen(),
           ),
           GoRoute(
-            path: AppRoutes.signup,
-            builder: (_, __) => const SignupScreen(),
+            path: AppRoutes.register,
+            builder: (_, __) => const RegisterPage(),
           ),
           GoRoute(
-            path: AppRoutes.dashboard,
-            builder: (_, __) => const PrivateMapScreen(),
+            path: AppRoutes.recoverPassword,
+            builder: (_, __) => const RecoverPasswordPage(),
           ),
-          // Redirect legado /map -> /dashboard
-          GoRoute(path: '/map', redirect: (_, __) => AppRoutes.dashboard),
+          GoRoute(
+            path: AppRoutes.resetPassword,
+            builder: (_, __) => const ResetPasswordPage(),
+          ),
+          GoRoute(
+            path: AppRoutes.map,
+            builder: (_, __) => const PrivateMapBootstrapScreen(),
+          ),
+
           GoRoute(
             path: AppRoutes.settings,
             builder: (_, __) => const SettingsScreen(),
+          ),
+          GoRoute(
+            path: AppRoutes.settingsEditProfile,
+            builder: (_, __) => const EditProfileScreen(),
           ),
           GoRoute(
             path: AppRoutes.reports,
             builder: (_, __) => const RelatoriosScreen(),
             routes: [
               GoRoute(
-                path: 'novo',
-                builder: (_, __) => const ReportFormScreen(),
-              ),
-              GoRoute(
                 path: ':id',
-                builder: (_, state) =>
-                    ReportDetailScreen(reportId: state.pathParameters['id']!),
+                builder: (_, state) {
+                  final id = state.pathParameters['id']!;
+                  return RelatorioDetailScreen(relatorioId: id);
+                },
+                routes: [
+                  GoRoute(
+                    path: 'edit',
+                    builder: (context, state) {
+                      final id = state.pathParameters['id']!;
+                      return RelatorioFormScreen(relatorioId: id);
+                    },
+                  ),
+                ],
               ),
             ],
           ),
           GoRoute(
             path: AppRoutes.agenda,
-            builder: (_, __) => const AgendaScreen(),
+            builder: (_, __) => const AgendaMonthPage(),
+            routes: [
+              GoRoute(
+                path: 'day',
+                builder: (_, state) {
+                  final dateStr = state.uri.queryParameters['date'];
+                  final parsedDate = dateStr != null
+                      ? DateTime.tryParse(dateStr)
+                      : null;
+                  final date = parsedDate ?? DateTime.now();
+                  return AgendaDayPage(selectedDate: date);
+                },
+              ),
+              GoRoute(
+                path: 'event/:id',
+                builder: (_, state) =>
+                    AgendaEventDetailPage(eventId: state.pathParameters['id']!),
+              ),
+            ],
           ),
-          // Redirect mantido temporariamente por compatibilidade com Side Menu legado.
-          GoRoute(path: '/clientes', redirect: (_, __) => AppRoutes.clients),
+          GoRoute(
+            path: AppRoutes.carteira,
+            builder: (_, __) => const CarteiraScreen(),
+            routes: [
+              GoRoute(
+                path: 'cliente/:clienteId',
+                builder: (_, state) => CarteiraClienteScreen(
+                  clienteId: state.pathParameters['clienteId']!,
+                ),
+              ),
+            ],
+          ),
+
           GoRoute(
             path: AppRoutes.clients,
             builder: (_, __) => const ClientListScreen(),
@@ -134,6 +230,57 @@ GoRouter router(Ref ref) {
           GoRoute(
             path: AppRoutes.feedback,
             builder: (_, __) => const FeedbackScreen(),
+          ),
+          GoRoute(
+            path: AppRoutes.clima,
+            builder: (_, __) => const ClimaScreen(),
+          ),
+          GoRoute(
+            path: AppRoutes.producerProperty,
+            builder: (_, __) => const ProducerPropertyScreen(),
+          ),
+          // ════════════════════════════════════════════════════════════════
+          // MÓDULO PLANOS — ADR-012
+          // ════════════════════════════════════════════════════════════════
+          GoRoute(
+            path: AppRoutes.planos,
+            builder: (_, __) => const PlanosScreen(),
+          ),
+          GoRoute(
+            path: AppRoutes.meuPlano,
+            builder: (_, __) => const MeuPlanoScreen(),
+          ),
+          GoRoute(
+            path: AppRoutes.planosPagamento,
+            builder: (_, state) {
+              final extra = state.extra as Map<String, dynamic>?;
+              final plano = extra?['plano'] as String? ?? 'bronze';
+              return PagamentoScreen(plano: plano);
+            },
+          ),
+          GoRoute(
+            path: AppRoutes.planosConfirmacao,
+            builder: (_, state) {
+              final extra = state.extra as Map<String, dynamic>?;
+              final plano = extra?['plano'] as String? ?? 'bronze';
+              final checkoutUrl = extra?['checkoutUrl'] as String?;
+              return ConfirmacaoScreen(plano: plano, checkoutUrl: checkoutUrl);
+            },
+          ),
+          GoRoute(
+            path: AppRoutes.planosIndicacoes,
+            builder: (_, __) => const IndicacoesScreen(),
+          ),
+          // ════════════════════════════════════════════════════════════════
+          // PUBLICAÇÕES — ADR-007
+          // Rota top-level fora do namespace /map (contrato Map-First)
+          // ════════════════════════════════════════════════════════════════
+          GoRoute(
+            path: '/publicacoes/edit',
+            builder: (_, state) {
+              final id = state.uri.queryParameters['id'] ?? '';
+              return PublicacaoEditorScreen(publicacaoId: id);
+            },
           ),
         ],
       ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/design/sf_icons.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import '../../../modules/consultoria/occurrences/domain/occurrence.dart';
@@ -12,23 +13,24 @@ class OccurrencePinGenerator {
     required Function(Occurrence) onPinTap,
   }) {
     return occurrences
-        .where((occ) {
-          return occ.lat != null && occ.long != null;
-        })
         .map((occ) {
+          final coords = occ.getCoordinates();
+          if (coords == null) return null;
+
           return Marker(
-            point: LatLng(occ.lat!, occ.long!),
+            point: LatLng(coords['lat']!, coords['long']!),
             width: 32,
             height: 32,
             child: GestureDetector(
               onTap: () => onPinTap(occ),
               child: _OccurrencePin(
                 occurrence: occ,
-                showIcon: currentZoom >= 13, // Ícone aparece em zoom médio
+                showIcon: currentZoom >= 13,
               ),
             ),
           );
         })
+        .whereType<Marker>()
         .toList();
   }
 }
@@ -42,33 +44,24 @@ class _OccurrencePin extends StatelessWidget {
 
   Color _getCategoryColor() {
     final category = OccurrenceCategory.fromString(occurrence.category);
-    switch (category) {
-      case OccurrenceCategory.doenca:
-        return Colors.blue.shade700;
-      case OccurrenceCategory.insetos:
-        return Colors.red.shade700;
-      case OccurrenceCategory.daninhas:
-        return Colors.orange.shade700;
-      case OccurrenceCategory.nutricional:
-        return Colors.grey.shade600;
-      case OccurrenceCategory.agua:
-        return Colors.cyan.shade700;
-    }
+    return category.markerColor;
   }
 
   IconData _getCategoryIcon() {
     final category = OccurrenceCategory.fromString(occurrence.category);
     switch (category) {
       case OccurrenceCategory.doenca:
-        return Icons.coronavirus_outlined; // 🦠
+        return SFIcons.coronavirus; // 🦠
       case OccurrenceCategory.insetos:
-        return Icons.bug_report_outlined; // 🐛
+        return SFIcons.bugReport; // 🐛
       case OccurrenceCategory.daninhas:
-        return Icons.grass_outlined; // 🌿
+        return SFIcons.grass; // 🌿
       case OccurrenceCategory.nutricional:
-        return Icons.science_outlined; // ⚗️
+        return SFIcons.science; // ⚗️
       case OccurrenceCategory.agua:
-        return Icons.water_drop_outlined; // 💧
+        return SFIcons.waterDrop; // 💧
+      case OccurrenceCategory.amostraSolo:
+        return Icons.biotech_outlined; // 🧪
     }
   }
 

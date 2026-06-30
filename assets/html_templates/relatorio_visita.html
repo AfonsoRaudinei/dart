@@ -1,0 +1,892 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>SoloForte — Relatório de Visita</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --sf-navy:       #2C5564;
+    --sf-navy-light: #3A6B7D;
+    --sf-green:      #2E7D32;
+    --sf-green-leaf: #8BC34A;
+    --sf-amber:      #F5B935;
+    --sf-amber-pale: #FEF3C7;
+    --sf-cream:      #F7F5F0;
+    --sf-stone:      #E8E4DC;
+    --sf-text:       #1A1A1A;
+    --sf-text-muted: #6B7280;
+    --sf-white:      #FFFFFF;
+    --sf-shadow:     rgba(44, 85, 100, 0.12);
+    --sf-shadow-md:  rgba(44, 85, 100, 0.20);
+
+    /* Status */
+    --status-pendente:  #F59E0B;
+    --status-publicado: #16A34A;
+    --status-arquivado: #6B7280;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    width: 100%;
+    overflow-x: hidden;
+    background: var(--sf-white);
+  }
+
+  body {
+    font-family: 'DM Sans', system-ui, sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+    background: var(--sf-cream);
+    color: var(--sf-text);
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+  }
+
+  .page {
+    max-width: 860px;
+    margin: 0 auto;
+    background: var(--sf-white);
+    min-height: 100vh;
+    width: 100%;
+    overflow-x: hidden;
+  }
+
+  /* ═══ HEADER ═══ */
+  .header {
+    background: var(--sf-navy);
+    padding: 28px 32px 24px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .header::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+      radial-gradient(circle at 80% 20%, rgba(139,195,74,0.15) 0%, transparent 50%),
+      radial-gradient(circle at 10% 80%, rgba(245,185,53,0.10) 0%, transparent 40%);
+    pointer-events: none;
+  }
+
+  .header-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .logo-area { display: flex; align-items: center; gap: 10px; }
+
+  .logo-img {
+    width: 38px; height: 38px;
+    object-fit: contain;
+    filter: brightness(0) invert(1);
+    opacity: 0.92;
+  }
+
+  .logo-name {
+    font-family: 'DM Serif Display', serif;
+    font-size: 20px;
+    color: var(--sf-white);
+    letter-spacing: 0.02em;
+  }
+
+  .status-badge-header {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 4px 12px;
+    border-radius: 100px;
+    white-space: nowrap;
+  }
+
+  .status-badge-header.pendente_revisao { background: var(--status-pendente); color: white; }
+  .status-badge-header.publicado        { background: var(--status-publicado); color: white; }
+  .status-badge-header.arquivado        { background: var(--sf-stone); color: var(--sf-text-muted); }
+
+  .header-meta { position: relative; z-index: 1; }
+
+  .header-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 26px;
+    color: var(--sf-white);
+    line-height: 1.2;
+    margin-bottom: 6px;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+  }
+
+  .header-farm {
+    font-size: 13px;
+    color: var(--sf-green-leaf);
+    font-weight: 500;
+    margin-bottom: 14px;
+    letter-spacing: 0.02em;
+    word-break: break-word;
+  }
+
+  .header-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.18);
+    border-radius: 100px;
+    padding: 4px 12px;
+    font-size: 11.5px;
+    color: rgba(255,255,255,0.85);
+  }
+
+  .pill-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--sf-amber);
+    flex-shrink: 0;
+  }
+
+  /* ═══ CONTENT ═══ */
+  .content { padding: 28px 32px; }
+
+  .section-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .section-label-bar {
+    width: 3px; height: 20px;
+    background: var(--sf-amber);
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+
+  .section-label-text {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.10em;
+    text-transform: uppercase;
+    color: var(--sf-text-muted);
+  }
+
+  /* ═══ BLOCO DE CONTEXTO (cabeçalho técnico) ═══ */
+  .contexto-block {
+    background: linear-gradient(135deg, var(--sf-navy) 0%, var(--sf-navy-light) 100%);
+    border-radius: 16px;
+    padding: 22px 24px;
+    margin-bottom: 28px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .contexto-block::before {
+    content: '';
+    position: absolute;
+    top: -40%; right: -10%;
+    width: 60%; height: 180%;
+    background: radial-gradient(ellipse, rgba(139,195,74,0.12) 0%, transparent 60%);
+    pointer-events: none;
+  }
+
+  .contexto-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 16px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .contexto-item-label {
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.50);
+    margin-bottom: 4px;
+  }
+
+  .contexto-item-value {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--sf-white);
+    word-break: break-word;
+    overflow-wrap: anywhere;
+  }
+
+  /* ═══ PERÍODO ═══ */
+  .periodo-block {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: var(--sf-cream);
+    border: 1px solid var(--sf-stone);
+    border-radius: 12px;
+    padding: 14px 18px;
+    margin-bottom: 28px;
+    flex-wrap: wrap;
+  }
+
+  .periodo-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .periodo-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--sf-text-muted);
+  }
+
+  .periodo-value {
+    font-family: 'DM Serif Display', serif;
+    font-size: 18px;
+    color: var(--sf-navy);
+  }
+
+  .periodo-arrow {
+    font-size: 20px;
+    color: var(--sf-stone);
+    font-weight: 300;
+    align-self: flex-end;
+    padding-bottom: 2px;
+  }
+
+  /* ═══ CUSTOM NOTES ═══ */
+  .notes-block {
+    background: var(--sf-cream);
+    border-left: 3px solid var(--sf-navy);
+    border-radius: 0 12px 12px 0;
+    padding: 16px 20px;
+    margin-bottom: 28px;
+    font-size: 13.5px;
+    color: var(--sf-text);
+    line-height: 1.7;
+    font-style: italic;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+  }
+
+  /* ═══ TALHÕES VISITADOS (TalhaoVisitado[]) ═══ */
+  .talhao-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 28px;
+  }
+
+  .talhao-card {
+    background: var(--sf-white);
+    border: 1px solid var(--sf-stone);
+    border-radius: 14px;
+    padding: 14px 18px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 12px;
+    align-items: center;
+    box-shadow: 0 1px 4px var(--sf-shadow);
+  }
+
+  .talhao-nome {
+    font-family: 'DM Serif Display', serif;
+    font-size: 16px;
+    color: var(--sf-navy);
+    margin-bottom: 4px;
+    word-break: break-word;
+  }
+
+  .talhao-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .talhao-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    color: var(--sf-text-muted);
+    background: var(--sf-cream);
+    border-radius: 100px;
+    padding: 3px 10px;
+    border: 1px solid var(--sf-stone);
+  }
+
+  .talhao-area {
+    background: var(--sf-navy);
+    color: var(--sf-white);
+    font-family: 'DM Serif Display', serif;
+    font-size: 15px;
+    border-radius: 10px;
+    padding: 8px 14px;
+    text-align: center;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .talhao-area-unit {
+    display: block;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 9.5px;
+    color: rgba(255,255,255,0.55);
+    margin-top: 1px;
+  }
+
+  /* ═══ OCORRÊNCIAS (OcorrenciaSnapshot[]) ═══ */
+  .ocorrencia-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 28px;
+  }
+
+  .ocorrencia-card {
+    background: var(--sf-white);
+    border: 1px solid var(--sf-stone);
+    border-radius: 14px;
+    overflow: hidden;
+    display: grid;
+    grid-template-columns: 90px 1fr;
+    box-shadow: 0 1px 4px var(--sf-shadow);
+  }
+
+  .ocorrencia-foto {
+    background: var(--sf-stone);
+    aspect-ratio: 1/1;
+    overflow: hidden;
+  }
+
+  .ocorrencia-foto img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .ocorrencia-foto-placeholder {
+    width: 100%; height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--sf-stone);
+  }
+
+  .ocorrencia-foto-placeholder svg {
+    width: 22px; height: 22px;
+    opacity: 0.30;
+    fill: var(--sf-text-muted);
+  }
+
+  .ocorrencia-info {
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    min-width: 0;
+  }
+
+  .ocorrencia-tipo {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.10em;
+    text-transform: uppercase;
+    color: var(--sf-navy);
+    background: var(--sf-amber-pale);
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 100px;
+    align-self: flex-start;
+  }
+
+  .ocorrencia-descricao {
+    font-size: 13px;
+    color: var(--sf-text);
+    line-height: 1.5;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .ocorrencia-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    font-size: 11px;
+    color: var(--sf-text-muted);
+    margin-top: 2px;
+  }
+
+  .ocorrencia-meta-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .ocorrencia-meta-item svg {
+    width: 11px; height: 11px;
+    fill: var(--sf-text-muted);
+  }
+
+  /* ═══ MONITORAMENTOS (MonitoramentoSnapshot[]) ═══ */
+  .monitoramento-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 28px;
+  }
+
+  .monitoramento-card {
+    background: var(--sf-white);
+    border: 1px solid var(--sf-stone);
+    border-radius: 14px;
+    padding: 14px 18px;
+    box-shadow: 0 1px 4px var(--sf-shadow);
+  }
+
+  .monitoramento-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+  }
+
+  .monitoramento-tipo {
+    font-family: 'DM Serif Display', serif;
+    font-size: 15px;
+    color: var(--sf-navy);
+  }
+
+  .monitoramento-data {
+    font-size: 11px;
+    color: var(--sf-text-muted);
+    white-space: nowrap;
+  }
+
+  /* dados: Map<String,dynamic> renderizado como tabela de chave/valor */
+  .monitoramento-dados {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 8px;
+  }
+
+  .dado-item {
+    background: var(--sf-cream);
+    border-radius: 8px;
+    padding: 8px 10px;
+  }
+
+  .dado-chave {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--sf-text-muted);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    margin-bottom: 2px;
+  }
+
+  .dado-valor {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--sf-navy);
+    word-break: break-word;
+  }
+
+  /* ═══ FOTOS GERAIS ═══ */
+  .fotos-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 8px;
+    margin-bottom: 28px;
+  }
+
+  .foto-item {
+    border-radius: 10px;
+    overflow: hidden;
+    aspect-ratio: 1/1;
+    background: var(--sf-stone);
+  }
+
+  .foto-item img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  /* ═══ PUBLICAÇÕES (publicacoes_refs[]) ═══ */
+  .publicacoes-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 28px;
+  }
+
+  .publicacao-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--sf-cream);
+    border: 1px solid var(--sf-stone);
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-size: 12px;
+    color: var(--sf-navy);
+    font-weight: 500;
+    word-break: break-word;
+  }
+
+  .publicacao-badge svg {
+    width: 13px; height: 13px;
+    fill: var(--sf-navy);
+    opacity: 0.6;
+    flex-shrink: 0;
+  }
+
+  /* ═══ ESTADO VAZIO ═══ */
+  .empty-section {
+    background: var(--sf-cream);
+    border-radius: 12px;
+    padding: 24px;
+    text-align: center;
+    color: var(--sf-text-muted);
+    font-size: 13px;
+    margin-bottom: 28px;
+    border: 1px dashed var(--sf-stone);
+  }
+
+  /* ═══ FOOTER ═══ */
+  .footer {
+    background: var(--sf-cream);
+    border-top: 1px solid var(--sf-stone);
+    padding: 18px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .footer-brand {
+    font-family: 'DM Serif Display', serif;
+    font-size: 13px;
+    color: var(--sf-navy);
+    opacity: 0.7;
+    white-space: nowrap;
+  }
+
+  .footer-meta {
+    font-size: 11px;
+    color: var(--sf-text-muted);
+    text-align: right;
+    line-height: 1.5;
+    white-space: nowrap;
+  }
+
+  /* ═══ PRINT ═══ */
+  @media print {
+    body { background: white; }
+    .page { box-shadow: none; max-width: 100%; }
+    .header, .contexto-block, .status-badge-header {
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .ocorrencia-card,
+    .talhao-card,
+    .monitoramento-card { page-break-inside: avoid; }
+  }
+
+  /* ═══ MOBILE ═══ */
+  @media (max-width: 600px) {
+    .header { padding: 22px 20px 20px; }
+    .content { padding: 22px 20px; }
+    .header-title { font-size: 21px; }
+    .footer { padding: 16px 20px; }
+    .header-pills { gap: 6px; }
+    .pill { font-size: 10.5px; padding: 3px 9px; }
+    .contexto-grid { grid-template-columns: 1fr 1fr; }
+    .ocorrencia-card { grid-template-columns: 72px 1fr; }
+    .talhao-card { grid-template-columns: 1fr; }
+    .fotos-grid { grid-template-columns: repeat(3, 1fr); }
+    .monitoramento-dados { grid-template-columns: 1fr 1fr; }
+  }
+
+  @media (max-width: 380px) {
+    .header-title { font-size: 18px; }
+    .contexto-grid { grid-template-columns: 1fr; }
+    .ocorrencia-card { grid-template-columns: 1fr; }
+    .fotos-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- ══════════ HEADER ══════════ -->
+  <header class="header">
+    <div class="header-top">
+      <div class="logo-area">
+        {{report_header_signature}}
+      </div>
+      <!-- status: pendente_revisao | publicado | arquivado -->
+      <span class="status-badge-header {{status}}">{{status_label}}</span>
+    </div>
+
+    <div class="header-meta">
+      <!-- title (editável) ou fallback farm_name -->
+      <div class="header-title">{{title_ou_farm_name}}</div>
+      <!-- farm_name (ADR-010: proxy de event.titulo) -->
+      <div class="header-farm">{{farm_name}} · {{cliente_nome}}</div>
+      <div class="header-pills">
+        <span class="pill"><span class="pill-dot"></span>{{period_start_formatado}}</span>
+        <span class="pill"><span class="pill-dot"></span>{{agronomist_nome}}</span>
+        <!-- {{#if ocorrencias_count > 0}} -->
+        <span class="pill"><span class="pill-dot"></span>{{ocorrencias_count}} ocorrências</span>
+        <!-- {{/if}} -->
+      </div>
+    </div>
+  </header>
+
+  <!-- ══════════ CONTEÚDO ══════════ -->
+  <main class="content">
+
+    <!-- CONTEXTO TÉCNICO -->
+    <div class="section-label">
+      <div class="section-label-bar"></div>
+      <span class="section-label-text">Dados da Visita</span>
+    </div>
+
+    <div class="contexto-block">
+      <div class="contexto-grid">
+        <div>
+          <div class="contexto-item-label">Agrônomo</div>
+          <!-- agronomist_id → lookup nome -->
+          <div class="contexto-item-value">{{agronomist_nome}}</div>
+        </div>
+        <div>
+          <div class="contexto-item-label">Cliente</div>
+          <!-- client_id → lookup nome -->
+          <div class="contexto-item-value">{{cliente_nome}}</div>
+        </div>
+        <div>
+          <div class="contexto-item-label">Fazenda</div>
+          <!-- farm_name direto -->
+          <div class="contexto-item-value">{{farm_name}}</div>
+        </div>
+        <div>
+          <div class="contexto-item-label">Status</div>
+          <div class="contexto-item-value">{{status_label}}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PERÍODO (period_start + period_end) -->
+    <div class="section-label">
+      <div class="section-label-bar"></div>
+      <span class="section-label-text">Período</span>
+    </div>
+
+    <div class="periodo-block">
+      <div class="periodo-item">
+        <div class="periodo-label">Início</div>
+        <div class="periodo-value">{{period_start_formatado}}</div>
+      </div>
+      <div class="periodo-arrow">→</div>
+      <div class="periodo-item">
+        <div class="periodo-label">Fim</div>
+        <div class="periodo-value">{{period_end_formatado}}</div>
+      </div>
+    </div>
+
+    <!-- NOTAS DO AGRÔNOMO (custom_notes) -->
+    <!-- {{#if custom_notes}} -->
+    <div class="section-label">
+      <div class="section-label-bar"></div>
+      <span class="section-label-text">Notas do Agrônomo</span>
+    </div>
+    <div class="notes-block">{{custom_notes}}</div>
+    <!-- {{/if}} -->
+
+    <!-- TALHÕES VISITADOS (talhoes: TalhaoVisitado[]) -->
+    <div class="section-label">
+      <div class="section-label-bar"></div>
+      <span class="section-label-text">Talhões Visitados</span>
+    </div>
+
+    <!-- {{#if talhoes.length > 0}} -->
+    <div class="talhao-list">
+      <!-- {{#each talhoes}} -->
+      <div class="talhao-card">
+        <div>
+          <!-- TalhaoVisitado.nomeTalhao -->
+          <div class="talhao-nome">{{nomeTalhao}}</div>
+          <div class="talhao-meta">
+            <!-- {{#if cultura}} -->
+            <span class="talhao-chip">🌱 {{cultura}}</span>
+            <!-- {{/if}} -->
+            <!-- {{#if safra}} -->
+            <span class="talhao-chip">📅 {{safra}}</span>
+            <!-- {{/if}} -->
+          </div>
+        </div>
+        <!-- {{#if areaHectares}} -->
+        <div class="talhao-area">
+          {{areaHectares_formatado}}
+          <span class="talhao-area-unit">ha</span>
+        </div>
+        <!-- {{/if}} -->
+      </div>
+      <!-- {{/each}} -->
+    </div>
+    <!-- {{else}} -->
+    <div class="empty-section">Nenhum talhão registrado nesta visita.</div>
+    <!-- {{/if}} -->
+
+    <!-- OCORRÊNCIAS (ocorrencias: OcorrenciaSnapshot[]) -->
+    <!-- {{#if ocorrencias.length > 0}} -->
+    <div class="section-label">
+      <div class="section-label-bar"></div>
+      <span class="section-label-text">Ocorrências Registradas</span>
+    </div>
+
+    <div class="ocorrencia-list">
+      <!-- {{#each ocorrencias}} -->
+      <div class="ocorrencia-card">
+        <div class="ocorrencia-foto">
+          <!-- OcorrenciaSnapshot.fotoPath → base64 convertido no Dart -->
+          <!-- {{#if foto_base64}} -->
+          <img src="{{foto_base64}}" alt="Foto" loading="lazy">
+          <!-- {{else}} -->
+          <div class="ocorrencia-foto-placeholder">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>
+            </svg>
+          </div>
+          <!-- {{/if}} -->
+        </div>
+        <div class="ocorrencia-info">
+          <!-- OcorrenciaSnapshot.tipo -->
+          <span class="ocorrencia-tipo">{{tipo}}</span>
+          <!-- OcorrenciaSnapshot.descricao -->
+          <div class="ocorrencia-descricao">{{descricao}}</div>
+          <div class="ocorrencia-meta">
+            <!-- OcorrenciaSnapshot.registradaEm -->
+            <span class="ocorrencia-meta-item">
+              <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm.5 11H8v-2h2.5V7H13v6z"/>
+              </svg>
+              {{registradaEm_formatado}}
+            </span>
+            <!-- {{#if lat && lng}} -->
+            <span class="ocorrencia-meta-item">
+              <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+              </svg>
+              Georreferenciada
+            </span>
+            <!-- {{/if}} -->
+          </div>
+        </div>
+      </div>
+      <!-- {{/each}} -->
+    </div>
+    <!-- {{/if}} -->
+
+    <!-- MONITORAMENTOS (monitoramentos: MonitoramentoSnapshot[]) -->
+    <!-- {{#if monitoramentos.length > 0}} -->
+    <div class="section-label">
+      <div class="section-label-bar"></div>
+      <span class="section-label-text">Monitoramentos</span>
+    </div>
+
+    <div class="monitoramento-list">
+      <!-- {{#each monitoramentos}} -->
+      <div class="monitoramento-card">
+        <div class="monitoramento-header">
+          <!-- MonitoramentoSnapshot.tipo -->
+          <div class="monitoramento-tipo">{{tipo}}</div>
+          <!-- MonitoramentoSnapshot.coletadoEm -->
+          <div class="monitoramento-data">{{coletadoEm_formatado}}</div>
+        </div>
+        <!-- MonitoramentoSnapshot.dados (Map<String,dynamic>) -->
+        <div class="monitoramento-dados">
+          <!-- {{#each dados_entries}} -->
+          <div class="dado-item">
+            <div class="dado-chave">{{chave}}</div>
+            <div class="dado-valor">{{valor}}</div>
+          </div>
+          <!-- {{/each}} -->
+        </div>
+      </div>
+      <!-- {{/each}} -->
+    </div>
+    <!-- {{/if}} -->
+
+    <!-- FOTOS GERAIS (fotos: List<String> → base64 no Dart) -->
+    <!-- {{#if fotos.length > 0}} -->
+    <div class="section-label">
+      <div class="section-label-bar"></div>
+      <span class="section-label-text">Registro Fotográfico</span>
+    </div>
+
+    <div class="fotos-grid">
+      <!-- {{#each fotos_base64}} -->
+      <div class="foto-item">
+        <img src="{{base64}}" alt="Foto da visita" loading="lazy">
+      </div>
+      <!-- {{/each}} -->
+    </div>
+    <!-- {{/if}} -->
+
+    <!-- PUBLICAÇÕES (publicacoes_refs: List<UUID>) -->
+    <!-- {{#if publicacoes_refs.length > 0}} -->
+    <div class="section-label">
+      <div class="section-label-bar"></div>
+      <span class="section-label-text">Publicações Técnicas</span>
+    </div>
+
+    <div class="publicacoes-list">
+      <!-- {{#each publicacoes}} -->
+      <!-- publicacoes_refs são UUIDs → Dart faz lookup do título -->
+      <div class="publicacao-badge">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>
+        </svg>
+        {{titulo}}
+      </div>
+      <!-- {{/each}} -->
+    </div>
+    <!-- {{/if}} -->
+
+  </main>
+
+  <!-- ══════════ FOOTER ══════════ -->
+  <footer class="footer">
+    {{report_footer_signature}}
+    <div class="footer-meta">
+      ID: {{id_curto}}<br>
+      Gerado em {{gerado_em_formatado}}
+    </div>
+  </footer>
+
+</div>
+</body>
+</html>

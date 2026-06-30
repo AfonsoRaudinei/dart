@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>SoloForte — Resumo da Propriedade</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --sf-navy:       #2C5564;
+    --sf-navy-light: #3A6B7D;
+    --sf-green:      #2E7D32;
+    --sf-green-leaf: #8BC34A;
+    --sf-amber:      #F5B935;
+    --sf-amber-pale: #FEF3C7;
+    --sf-cream:      #F7F5F0;
+    --sf-stone:      #E8E4DC;
+    --sf-text:       #1A1A1A;
+    --sf-text-muted: #6B7280;
+    --sf-white:      #FFFFFF;
+    --sf-shadow:     rgba(44, 85, 100, 0.12);
+    --sf-shadow-md:  rgba(44, 85, 100, 0.20);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    width: 100%;
+    overflow-x: hidden;
+    background: var(--sf-white);
+  }
+
+  body {
+    font-family: 'DM Sans', system-ui, sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+    background: var(--sf-cream);
+    color: var(--sf-text);
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+  }
+
+  .page {
+    max-width: 860px;
+    margin: 0 auto;
+    background: var(--sf-white);
+    min-height: 100vh;
+    width: 100%;
+    overflow-x: hidden;
+  }
+
+  /* ═══ HEADER ═══ */
+  .header {
+    background: var(--sf-navy);
+    padding: 28px 32px 24px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .header::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+      radial-gradient(circle at 80% 20%, rgba(139,195,74,0.15) 0%, transparent 50%),
+      radial-gradient(circle at 10% 80%, rgba(245,185,53,0.10) 0%, transparent 40%);
+    pointer-events: none;
+  }
+
+  .header-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .logo-area { display: flex; align-items: center; gap: 10px; }
+
+  .logo-img {
+    width: 38px; height: 38px;
+    object-fit: contain;
+    filter: brightness(0) invert(1);
+    opacity: 0.92;
+  }
+
+  .logo-name {
+    font-family: 'DM Serif Display', serif;
+    font-size: 20px;
+    color: var(--sf-white);
+    letter-spacing: 0.02em;
+  }
+
+  .tipo-badge {
+    background: var(--sf-amber);
+    color: var(--sf-navy);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 4px 12px;
+    border-radius: 100px;
+    white-space: nowrap;
+  }
+
+  .header-meta { position: relative; z-index: 1; }
+
+  .header-fazenda {
+    font-family: 'DM Serif Display', serif;
+    font-size: 26px;
+    color: var(--sf-white);
+    line-height: 1.2;
+    margin-bottom: 6px;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+  }
+
+  .header-cliente {
+    font-size: 13px;
+    color: var(--sf-green-leaf);
+    font-weight: 500;
+    margin-bottom: 14px;
+    letter-spacing: 0.02em;
+    word-break: break-word;
+  }
+
+  .header-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.18);
+    border-radius: 100px;
+    padding: 4px 12px;
+    font-size: 11.5px;
+    color: rgba(255,255,255,0.85);
+  }
+
+  .pill-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--sf-amber);
+    flex-shrink: 0;
+  }
+
+  /* ═══ CONTENT ═══ */
+  .content { padding: 28px 32px; }
+
+  .section-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .section-label-bar {
+    width: 3px; height: 20px;
+    background: var(--sf-amber);
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+
+  .section-label-text {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.10em;
+    text-transform: uppercase;
+    color: var(--sf-text-muted);
+  }
+
+  /* ═══ KPIs DA FAZENDA ═══ */
+  .kpi-strip {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 12px;
+    margin-bottom: 28px;
+  }
+
+  .kpi-card {
+    background: var(--sf-cream);
+    border: 1px solid var(--sf-stone);
+    border-radius: 14px;
+    padding: 18px 20px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .kpi-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: var(--sf-amber);
+    border-radius: 14px 14px 0 0;
+  }
+
+  .kpi-label {
+    font-size: 10.5px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--sf-text-muted);
+    margin-bottom: 6px;
+  }
+
+  .kpi-value {
+    font-family: 'DM Serif Display', serif;
+    font-size: 26px;
+    color: var(--sf-navy);
+    line-height: 1;
+    margin-bottom: 2px;
+    word-break: break-word;
+  }
+
+  .kpi-unit {
+    font-size: 11px;
+    color: var(--sf-text-muted);
+    font-weight: 400;
+  }
+
+  /* ═══ INFO FAZENDA (municipio + uf) ═══ */
+  .fazenda-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--sf-cream);
+    border: 1px solid var(--sf-stone);
+    border-radius: 12px;
+    padding: 14px 18px;
+    margin-bottom: 28px;
+  }
+
+  .fazenda-info-icon {
+    flex-shrink: 0;
+    width: 36px; height: 36px;
+    background: var(--sf-navy);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .fazenda-info-icon svg {
+    width: 16px; height: 16px;
+    fill: white;
+  }
+
+  .fazenda-info-text {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .fazenda-info-local {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--sf-text);
+    word-break: break-word;
+  }
+
+  .fazenda-info-uf {
+    font-size: 11.5px;
+    color: var(--sf-text-muted);
+    margin-top: 1px;
+  }
+
+  /* ═══ LISTA DE TALHÕES (fields) ═══ */
+  .field-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 28px;
+  }
+
+  .field-card {
+    background: var(--sf-white);
+    border: 1px solid var(--sf-stone);
+    border-radius: 14px;
+    padding: 16px 18px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 10px;
+    align-items: start;
+    box-shadow: 0 1px 4px var(--sf-shadow);
+  }
+
+  .field-left { min-width: 0; }
+
+  .field-nome {
+    font-family: 'DM Serif Display', serif;
+    font-size: 17px;
+    color: var(--sf-navy);
+    margin-bottom: 4px;
+    word-break: break-word;
+  }
+
+  .field-codigo {
+    font-size: 11px;
+    color: var(--sf-text-muted);
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    letter-spacing: 0.04em;
+  }
+
+  .field-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 8px;
+  }
+
+  .field-meta-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    color: var(--sf-text-muted);
+    background: var(--sf-cream);
+    border-radius: 100px;
+    padding: 3px 10px;
+    border: 1px solid var(--sf-stone);
+  }
+
+  .field-meta-chip svg {
+    width: 11px; height: 11px;
+    fill: var(--sf-text-muted);
+    flex-shrink: 0;
+  }
+
+  .field-area-badge {
+    background: var(--sf-navy);
+    color: var(--sf-white);
+    font-family: 'DM Serif Display', serif;
+    font-size: 15px;
+    border-radius: 10px;
+    padding: 8px 14px;
+    text-align: center;
+    white-space: nowrap;
+    align-self: start;
+  }
+
+  .field-area-badge-unit {
+    display: block;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 9.5px;
+    font-weight: 400;
+    color: rgba(255,255,255,0.55);
+    margin-top: 1px;
+    letter-spacing: 0.04em;
+  }
+
+  /* ═══ ESTADO VAZIO ═══ */
+  .empty-state {
+    text-align: center;
+    padding: 40px 24px;
+    background: var(--sf-cream);
+    border-radius: 16px;
+    border: 1px dashed var(--sf-stone);
+    margin-bottom: 28px;
+  }
+
+  .empty-state-emoji {
+    font-size: 40px;
+    margin-bottom: 10px;
+    opacity: 0.5;
+  }
+
+  .empty-state-text {
+    font-size: 13px;
+    color: var(--sf-text-muted);
+  }
+
+  /* ═══ HISTÓRICO (created_at / updated_at) ═══ */
+  .timestamps {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 28px;
+  }
+
+  .timestamp-item {
+    background: var(--sf-cream);
+    border-radius: 10px;
+    padding: 10px 14px;
+    border-left: 2px solid var(--sf-amber);
+  }
+
+  .timestamp-label {
+    font-size: 10px;
+    color: var(--sf-text-muted);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 2px;
+  }
+
+  .timestamp-value {
+    font-size: 13px;
+    color: var(--sf-text);
+    font-weight: 500;
+    word-break: break-word;
+  }
+
+  /* ═══ FOOTER ═══ */
+  .footer {
+    background: var(--sf-cream);
+    border-top: 1px solid var(--sf-stone);
+    padding: 18px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .footer-brand {
+    font-family: 'DM Serif Display', serif;
+    font-size: 13px;
+    color: var(--sf-navy);
+    opacity: 0.7;
+    white-space: nowrap;
+  }
+
+  .footer-meta {
+    font-size: 11px;
+    color: var(--sf-text-muted);
+    text-align: right;
+    line-height: 1.5;
+    white-space: nowrap;
+  }
+
+  /* ═══ PRINT ═══ */
+  @media print {
+    body { background: white; }
+    .page { box-shadow: none; max-width: 100%; }
+    .header {
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .field-card { page-break-inside: avoid; }
+  }
+
+  /* ═══ MOBILE ═══ */
+  @media (max-width: 600px) {
+    .header { padding: 22px 20px 20px; }
+    .content { padding: 22px 20px; }
+    .header-fazenda { font-size: 21px; }
+    .footer { padding: 16px 20px; }
+    .header-pills { gap: 6px; }
+    .pill { font-size: 10.5px; padding: 3px 9px; }
+    .kpi-strip { grid-template-columns: 1fr 1fr; }
+    .kpi-value { font-size: 22px; }
+    .timestamps { grid-template-columns: 1fr; }
+  }
+
+  @media (max-width: 380px) {
+    .header-fazenda { font-size: 18px; }
+    .kpi-strip { grid-template-columns: 1fr; }
+    .field-card { grid-template-columns: 1fr; }
+    .field-area-badge { justify-self: start; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- ══════════ HEADER ══════════ -->
+  <header class="header">
+    <div class="header-top">
+      <div class="logo-area">
+        {{report_header_signature}}
+      </div>
+      <span class="tipo-badge">Propriedade</span>
+    </div>
+
+    <div class="header-meta">
+      <!-- farm.nome -->
+      <div class="header-fazenda">{{nome}}</div>
+      <!-- lookup cliente via cliente_id -->
+      <div class="header-cliente">{{cliente_nome}}</div>
+      <div class="header-pills">
+        <!-- {{#if municipio}} -->
+        <span class="pill"><span class="pill-dot"></span>{{municipio}}{{#if uf}} · {{uf}}{{/if}}</span>
+        <!-- {{/if}} -->
+        <!-- {{#if area_total}} -->
+        <span class="pill"><span class="pill-dot"></span>{{area_total_formatado}} ha</span>
+        <!-- {{/if}} -->
+        <span class="pill"><span class="pill-dot"></span>{{total_fields}} talhões</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ══════════ CONTEÚDO ══════════ -->
+  <main class="content">
+
+    <!-- KPIs DA FAZENDA -->
+    <div class="section-label">
+      <div class="section-label-bar"></div>
+      <span class="section-label-text">Resumo</span>
+    </div>
+
+    <div class="kpi-strip">
+      <!-- {{#if area_total}} -->
+      <div class="kpi-card">
+        <div class="kpi-label">Área Total</div>
+        <div class="kpi-value">{{area_total_formatado}}</div>
+        <div class="kpi-unit">hectares</div>
+      </div>
+      <!-- {{/if}} -->
+
+      <div class="kpi-card">
+        <div class="kpi-label">Talhões</div>
+        <div class="kpi-value">{{total_fields}}</div>
+        <div class="kpi-unit">cadastrados</div>
+      </div>
+
+      <!-- {{#if area_produtiva_total}} -->
+      <div class="kpi-card">
+        <div class="kpi-label">Área Produtiva</div>
+        <div class="kpi-value">{{area_produtiva_total_formatado}}</div>
+        <div class="kpi-unit">hectares</div>
+      </div>
+      <!-- {{/if}} -->
+    </div>
+
+    <!-- LOCALIZAÇÃO -->
+    <!-- {{#if municipio}} -->
+    <div class="section-label">
+      <div class="section-label-bar"></div>
+      <span class="section-label-text">Localização</span>
+    </div>
+
+    <div class="fazenda-info">
+      <div class="fazenda-info-icon">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+        </svg>
+      </div>
+      <div class="fazenda-info-text">
+        <div class="fazenda-info-local">{{municipio}}</div>
+        <!-- {{#if uf}} -->
+        <div class="fazenda-info-uf">{{uf}} · Brasil</div>
+        <!-- {{/if}} -->
+      </div>
+    </div>
+    <!-- {{/if}} -->
+
+    <!-- TALHÕES (fields) -->
+    <div class="section-label">
+      <div class="section-label-bar"></div>
+      <span class="section-label-text">Talhões</span>
+    </div>
+
+    <!-- {{#if fields.length > 0}} -->
+    <div class="field-list">
+      <!-- {{#each fields}} -->
+      <div class="field-card">
+        <div class="field-left">
+          <!-- field.nome -->
+          <div class="field-nome">{{nome}}</div>
+          <!-- {{#if codigo}} -->
+          <div class="field-codigo">#{{codigo}}</div>
+          <!-- {{/if}} -->
+          <div class="field-meta">
+            <!-- centro_geo: ponto central do talhão (se existir) -->
+            <!-- {{#if centro_geo}} -->
+            <span class="field-meta-chip">
+              <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+              </svg>
+              Georeferenciado
+            </span>
+            <!-- {{/if}} -->
+            <!-- bordadura_geo: polígono do talhão (se existir) -->
+            <!-- {{#if bordadura_geo}} -->
+            <span class="field-meta-chip">
+              <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path d="M20.5 3l-.16.03L15 5.1 9 3 3.36 4.9c-.21.07-.36.25-.36.48V20.5c0 .28.22.5.5.5l.16-.03L9 18.9l6 2.1 5.64-1.9c.21-.07.36-.25.36-.48V3.5c0-.28-.22-.5-.5-.5zM15 19l-6-2.11V5l6 2.11V19z"/>
+              </svg>
+              Com bordadura
+            </span>
+            <!-- {{/if}} -->
+          </div>
+        </div>
+
+        <!-- field.area_produtiva -->
+        <!-- {{#if area_produtiva}} -->
+        <div class="field-area-badge">
+          {{area_produtiva_formatado}}
+          <span class="field-area-badge-unit">ha</span>
+        </div>
+        <!-- {{/if}} -->
+      </div>
+      <!-- {{/each}} -->
+    </div>
+    <!-- {{else}} -->
+    <div class="empty-state">
+      <div class="empty-state-emoji">🗺️</div>
+      <div class="empty-state-text">Nenhum talhão cadastrado para esta fazenda.</div>
+    </div>
+    <!-- {{/if}} -->
+
+    <!-- HISTÓRICO -->
+    <div class="section-label">
+      <div class="section-label-bar"></div>
+      <span class="section-label-text">Histórico</span>
+    </div>
+
+    <div class="timestamps">
+      <div class="timestamp-item">
+        <div class="timestamp-label">Cadastrado em</div>
+        <!-- farm.created_at formatado -->
+        <div class="timestamp-value">{{created_at_formatado}}</div>
+      </div>
+      <div class="timestamp-item">
+        <div class="timestamp-label">Atualizado em</div>
+        <!-- farm.updated_at formatado -->
+        <div class="timestamp-value">{{updated_at_formatado}}</div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- ══════════ FOOTER ══════════ -->
+  <footer class="footer">
+    {{report_footer_signature}}
+    <div class="footer-meta">
+      ID: {{id_curto}}<br>
+      {{gerado_em_formatado}}
+    </div>
+  </footer>
+
+</div>
+</body>
+</html>

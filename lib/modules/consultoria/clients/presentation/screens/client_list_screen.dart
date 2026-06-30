@@ -1,71 +1,109 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:soloforte_app/core/services/sync_orchestrator.dart';
 import '../providers/clients_providers.dart';
 import '../../../../../core/router/app_routes.dart';
+import '../../../../../ui/theme/premium/design_tokens.dart';
+import 'package:soloforte_app/core/design/sf_icons.dart';
+import '../widgets/client_avatar_widget.dart';
+import 'dart:ui' as ui;
 
 class ClientListScreen extends ConsumerWidget {
   const ClientListScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.listen(syncOrchestratorProvider, (_, orchestrator) {
+      if (!orchestrator.isSyncing) {
+        ref.invalidate(clientsListProvider);
+      }
+    });
+
     final clientsAsync = ref.watch(filteredClientsProvider);
     final filter = ref.watch(clientFilterProvider);
 
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Header & Search
-            Padding(
-              padding: const EdgeInsets.all(16.0),
+      backgroundColor: PremiumTokens.backgroundLight,
+      body: CustomScrollView(
+        slivers: [
+          SliverAppBar(
+            pinned: true,
+            expandedHeight: 176.0,
+            backgroundColor: PremiumTokens.backgroundLight.withValues(
+              alpha: 0.8,
+            ),
+            surfaceTintColor: Colors.transparent,
+            flexibleSpace: ClipRect(
+              child: BackdropFilter(
+                filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                child: Container(color: Colors.transparent),
+              ),
+            ),
+            actions: [
+              IconButton(
+                onPressed: () => context.go(AppRoutes.clientNew),
+                icon: const Icon(
+                  SFIcons.add,
+                  color: PremiumTokens.brandGreen,
+                  size: 28,
+                ),
+              ),
+              const SizedBox(width: 8),
+            ],
+            bottom: PreferredSize(
+              preferredSize: const Size.fromHeight(176),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
                         'Clientes',
-                        style: TextStyle(
-                          fontSize: 32,
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.bold,
                           letterSpacing: -0.5,
-                          color: Colors.black,
+                          color: PremiumTokens.textPrimaryLight,
                         ),
-                      ),
-                      IconButton(
-                        onPressed: () => context.push(AppRoutes.clientNew),
-                        icon: const Icon(Icons.add, size: 30),
-                        color: Colors.black,
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  // Search Bar
-                  TextField(
-                    onChanged: (value) =>
-                        ref.read(clientSearchProvider.notifier).state = value,
-                    decoration: InputDecoration(
-                      prefixIcon: const Icon(Icons.search, color: Colors.grey),
-                      hintText: 'Buscar por nome',
-                      filled: true,
-                      fillColor: Colors.grey[100],
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide.none,
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
                       ),
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
+                  // Search Bar
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    child: TextField(
+                      onChanged: (value) =>
+                          ref.read(clientSearchProvider.notifier).state = value,
+                      decoration: InputDecoration(
+                        prefixIcon: const Icon(
+                          SFIcons.search,
+                          color: PremiumTokens.textSecondaryLight,
+                          size: 20,
+                        ),
+                        hintText: 'Buscar por nome',
+                        filled: true,
+                        fillColor: PremiumTokens.surfaceLight, // White Inset
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(
+                            PremiumTokens.borderRadiusSm,
+                          ),
+                          borderSide: BorderSide.none,
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
                   // Filters
-                  SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
+                  SizedBox(
+                    height: 40,
+                    child: ListView(
+                      scrollDirection: Axis.horizontal,
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
                       children: ['Todos', 'Ativos', 'Inativos'].map((f) {
                         final isSelected = filter == f;
                         return Padding(
@@ -75,23 +113,31 @@ class ClientListScreen extends ConsumerWidget {
                                 ref.read(clientFilterProvider.notifier).state =
                                     f,
                             child: Container(
+                              alignment: Alignment.center,
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 16,
-                                vertical: 8,
                               ),
                               decoration: BoxDecoration(
                                 color: isSelected
-                                    ? Colors.black
-                                    : Colors.grey[200],
+                                    ? PremiumTokens.brandGreen
+                                    : PremiumTokens.surfaceLight,
                                 borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: isSelected
+                                      ? PremiumTokens.brandGreen
+                                      : PremiumTokens.hairlineLight,
+                                ),
                               ),
                               child: Text(
                                 f,
                                 style: TextStyle(
                                   color: isSelected
                                       ? Colors.white
-                                      : Colors.black,
-                                  fontWeight: FontWeight.w600,
+                                      : PremiumTokens.textPrimaryLight,
+                                  fontWeight: isSelected
+                                      ? FontWeight.w600
+                                      : FontWeight.normal,
+                                  fontSize: 14,
                                 ),
                               ),
                             ),
@@ -100,59 +146,110 @@ class ClientListScreen extends ConsumerWidget {
                       }).toList(),
                     ),
                   ),
+                  const SizedBox(height: 12),
+                  const Divider(height: 1, color: PremiumTokens.hairlineLight),
                 ],
               ),
             ),
-            // List
-            Expanded(
-              child: clientsAsync.when(
-                data: (clients) {
-                  if (clients.isEmpty) {
-                    return Center(
+          ),
+
+          // List
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+            sliver: clientsAsync.when(
+              data: (clients) {
+                if (clients.isEmpty) {
+                  return SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: Center(
                       child: Text(
                         'Nenhum cliente encontrado',
-                        style: TextStyle(color: Colors.grey[400]),
+                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          color: PremiumTokens.textSecondaryLight,
+                        ),
                       ),
-                    );
-                  }
-                  return ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    itemCount: clients.length,
-                    itemBuilder: (context, index) {
-                      final client = clients[index];
-                      return GestureDetector(
+                    ),
+                  );
+                }
+                return SliverList(
+                  delegate: SliverChildBuilderDelegate((context, index) {
+                    final client = clients[index];
+                    return Dismissible(
+                      key: ValueKey(client.id),
+                      direction: DismissDirection.endToStart,
+                      background: Container(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        alignment: Alignment.centerRight,
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        decoration: BoxDecoration(
+                          color: Colors.red[400],
+                          borderRadius: BorderRadius.circular(
+                            PremiumTokens.borderRadiusMd,
+                          ),
+                        ),
+                        child: const Icon(
+                          Icons.delete_outline,
+                          color: Colors.white,
+                          size: 28,
+                        ),
+                      ),
+                      confirmDismiss: (_) async {
+                        return await showDialog<bool>(
+                              context: context,
+                              builder: (ctx) => AlertDialog(
+                                title: const Text('Excluir cliente'),
+                                content: Text(
+                                  'Deseja excluir "${client.name}"?\nEsta ação não pode ser desfeita.',
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () =>
+                                        Navigator.of(ctx).pop(false),
+                                    child: const Text('Cancelar'),
+                                  ),
+                                  TextButton(
+                                    onPressed: () =>
+                                        Navigator.of(ctx).pop(true),
+                                    child: const Text(
+                                      'Excluir',
+                                      style: TextStyle(color: Colors.red),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ) ??
+                            false;
+                      },
+                      onDismissed: (_) {
+                        ref
+                            .read(clientsControllerProvider)
+                            .deleteClient(client.id);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('"${client.name}" excluído'),
+                            duration: const Duration(seconds: 3),
+                          ),
+                        );
+                      },
+                      child: GestureDetector(
                         onTap: () =>
-                            context.push(AppRoutes.clientDetail(client.id)),
+                            context.go(AppRoutes.clientDetail(client.id)),
                         child: Container(
                           margin: const EdgeInsets.only(bottom: 12),
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(16),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.05),
-                                blurRadius: 10,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
-                            border: Border.all(color: Colors.grey[100]!),
+                            color: PremiumTokens.surfaceLight,
+                            borderRadius: BorderRadius.circular(
+                              PremiumTokens.borderRadiusMd,
+                            ),
+                            boxShadow: PremiumTokens.tightShadow,
                           ),
                           child: Row(
                             children: [
-                              CircleAvatar(
+                              ClientAvatarWidget(
+                                fotoPath: client.photoPath,
+                                nome: client.name,
                                 radius: 24,
-                                backgroundColor: Colors.grey[200],
-                                foregroundImage: client.photoPath != null
-                                    ? NetworkImage(client.photoPath!)
-                                    : null,
-                                child: Text(
-                                  client.name.substring(0, 1).toUpperCase(),
-                                  style: const TextStyle(
-                                    color: Colors.black,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
                               ),
                               const SizedBox(width: 16),
                               Expanded(
@@ -161,47 +258,62 @@ class ClientListScreen extends ConsumerWidget {
                                   children: [
                                     Text(
                                       client.name,
-                                      style: const TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.bold,
-                                      ),
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodyLarge
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.w600,
+                                          ),
                                     ),
                                     const SizedBox(height: 4),
                                     Text(
                                       '${client.city} - ${client.state}',
-                                      style: TextStyle(
-                                        color: Colors.grey[600],
-                                        fontSize: 14,
-                                      ),
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodyMedium
+                                          ?.copyWith(
+                                            color: PremiumTokens
+                                                .textSecondaryLight,
+                                          ),
                                     ),
                                     const SizedBox(height: 4),
                                     Text(
                                       client.phone,
-                                      style: TextStyle(
-                                        color: Colors.grey[500],
-                                        fontSize: 12,
-                                      ),
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .labelMedium
+                                          ?.copyWith(
+                                            color:
+                                                PremiumTokens.textTertiaryLight,
+                                          ),
                                     ),
                                   ],
                                 ),
                               ),
-                              Icon(
-                                Icons.chevron_right,
-                                color: Colors.grey[400],
+                              const Icon(
+                                SFIcons.chevronRight,
+                                color: PremiumTokens.textTertiaryLight,
                               ),
                             ],
                           ),
                         ),
-                      );
-                    },
-                  );
-                },
-                loading: () => const Center(child: CircularProgressIndicator()),
-                error: (err, stack) => Center(child: Text('Erro: $err')),
+                      ),
+                    );
+                  }, childCount: clients.length),
+                );
+              },
+              loading: () => const SliverFillRemaining(
+                child: Center(
+                  child: CircularProgressIndicator(
+                    color: PremiumTokens.brandGreen,
+                  ),
+                ),
               ),
+              error: (err, stack) =>
+                  SliverFillRemaining(child: Center(child: Text('Erro: $err'))),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

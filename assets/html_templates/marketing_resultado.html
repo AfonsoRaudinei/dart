@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>SoloForte — Relatório de Resultado</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  /* ═══════════════════════════════════════════
+     TOKENS — Paleta oficial SoloForte (do logo)
+  ═══════════════════════════════════════════ */
+  :root {
+    --sf-navy:       #2C5564;
+    --sf-navy-light: #3A6B7D;
+    --sf-green:      #2E7D32;
+    --sf-green-leaf: #8BC34A;
+    --sf-amber:      #F5B935;
+    --sf-amber-pale: #FEF3C7;
+    --sf-cream:      #F7F5F0;
+    --sf-stone:      #E8E4DC;
+    --sf-text:       #1A1A1A;
+    --sf-text-muted: #6B7280;
+    --sf-white:      #FFFFFF;
+    --sf-shadow:     rgba(44, 85, 100, 0.12);
+    --sf-shadow-md:  rgba(44, 85, 100, 0.20);
+
+    /* Semântica ROI */
+    --roi-positive: #16A34A;
+    --roi-neutral:  #6B7280;
+    --roi-warn:     #DC2626;
+  }
+
+  /* ═══════════════════════════════════════════
+     RESET + BASE
+  ═══════════════════════════════════════════ */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    width: 100%;
+    overflow-x: hidden;
+    background: var(--sf-white);
+  }
+
+  body {
+    font-family: 'DM Sans', system-ui, sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+    background: var(--sf-cream);
+    color: var(--sf-text);
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+  }
+
+  .page {
+    max-width: 860px;
+    margin: 0 auto;
+    background: var(--sf-white);
+    min-height: 100vh;
+    width: 100%;
+    overflow-x: hidden;
+  }
+
+  /* ═══════════════════════════════════════════
+     HEADER
+  ═══════════════════════════════════════════ */
+  .header {
+    background: var(--sf-navy);
+    padding: 28px 32px 24px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .header::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+      radial-gradient(circle at 80% 20%, rgba(139,195,74,0.15) 0%, transparent 50%),
+      radial-gradient(circle at 10% 80%, rgba(245,185,53,0.10) 0%, transparent 40%);
+    pointer-events: none;
+  }
+
+  .header-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .logo-area {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .logo-img {
+    width: 38px;
+    height: 38px;
+    object-fit: contain;
+    filter: brightness(0) invert(1);
+    opacity: 0.92;
+  }
+
+  .logo-name {
+    font-family: 'DM Serif Display', serif;
+    font-size: 20px;
+    color: var(--sf-white);
+    letter-spacing: 0.02em;
+  }
+
+  .tipo-badge {
+    background: var(--sf-amber);
+    color: var(--sf-navy);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 4px 12px;
+    border-radius: 100px;
+  }
+
+  .header-meta {
+    position: relative;
+    z-index: 1;
+  }
+
+  .header-fazenda {
+    font-family: 'DM Serif Display', serif;
+    font-size: 26px;
+    color: var(--sf-white);
+    line-height: 1.2;
+    margin-bottom: 6px;
+  }
+
+  .header-produto {
+    font-size: 13px;
+    color: var(--sf-green-leaf);
+    font-weight: 500;
+    margin-bottom: 14px;
+    letter-spacing: 0.02em;
+  }
+
+  .header-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.18);
+    border-radius: 100px;
+    padding: 4px 12px;
+    font-size: 11.5px;
+    color: rgba(255,255,255,0.85);
+  }
+
+  .pill-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--sf-amber);
+    flex-shrink: 0;
+  }
+
+  /* ═══════════════════════════════════════════
+     BODY CONTENT
+  ═══════════════════════════════════════════ */
+  .content {
+    padding: 28px 32px;
+  }
+
+  /* ═══════════════════════════════════════════
+     SECTION LABEL
+  ═══════════════════════════════════════════ */
+  .section-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .section-label-bar {
+    width: 3px;
+    height: 20px;
+    background: var(--sf-amber);
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+
+  .section-label-text {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.10em;
+    text-transform: uppercase;
+    color: var(--sf-text-muted);
+  }
+
+  /* ═══════════════════════════════════════════
+     FOTO PRINCIPAL (única, em destaque)
+  ═══════════════════════════════════════════ */
+  .photo-hero {
+    border-radius: 16px;
+    overflow: hidden;
+    position: relative;
+    aspect-ratio: 16/10;
+    background: var(--sf-stone);
+    box-shadow: 0 4px 24px var(--sf-shadow);
+    margin-bottom: 28px;
+  }
+
+  .photo-hero img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  /* overlay gradiente sutil no rodapé da foto */
+  .photo-hero::after {
+    content: '';
+    position: absolute;
+    inset: auto 0 0 0;
+    height: 40%;
+    background: linear-gradient(to top, rgba(44,85,100,0.55), transparent);
+    pointer-events: none;
+  }
+
+  .photo-caption {
+    position: absolute;
+    bottom: 14px;
+    left: 16px;
+    right: 16px;
+    z-index: 1;
+    color: var(--sf-white);
+    font-size: 12.5px;
+    font-weight: 500;
+    letter-spacing: 0.03em;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .photo-caption svg {
+    width: 14px;
+    height: 14px;
+    fill: var(--sf-amber);
+    flex-shrink: 0;
+  }
+
+  .photo-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    color: var(--sf-text-muted);
+    font-size: 13px;
+    background: var(--sf-stone);
+  }
+
+  .photo-placeholder svg {
+    opacity: 0.35;
+  }
+
+  /* ═══════════════════════════════════════════
+     RESULTADO / KPIs
+  ═══════════════════════════════════════════ */
+  .kpi-strip {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px;
+    margin-bottom: 28px;
+  }
+
+  .kpi-card {
+    background: var(--sf-cream);
+    border: 1px solid var(--sf-stone);
+    border-radius: 14px;
+    padding: 18px 20px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .kpi-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: var(--sf-amber);
+    border-radius: 14px 14px 0 0;
+  }
+
+  .kpi-label {
+    font-size: 10.5px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--sf-text-muted);
+    margin-bottom: 6px;
+  }
+
+  .kpi-value {
+    font-family: 'DM Serif Display', serif;
+    font-size: 26px;
+    color: var(--sf-navy);
+    line-height: 1;
+    margin-bottom: 2px;
+  }
+
+  .kpi-unit {
+    font-size: 11px;
+    color: var(--sf-text-muted);
+    font-weight: 400;
+  }
+
+  /* ═══════════════════════════════════════════
+     BLOCO ROI (destaque especial)
+     Condicional — só renderiza se roi_calculado existir
+  ═══════════════════════════════════════════ */
+  .roi-block {
+    background: linear-gradient(135deg, var(--sf-navy) 0%, var(--sf-navy-light) 100%);
+    border-radius: 16px;
+    padding: 24px 24px 22px;
+    margin-bottom: 28px;
+    position: relative;
+    overflow: hidden;
+    color: var(--sf-white);
+  }
+
+  .roi-block::before {
+    content: '';
+    position: absolute;
+    top: -40%;
+    right: -10%;
+    width: 60%;
+    height: 180%;
+    background: radial-gradient(ellipse, rgba(245,185,53,0.18) 0%, transparent 60%);
+    pointer-events: none;
+  }
+
+  .roi-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 18px;
+    position: relative;
+    z-index: 1;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .roi-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .roi-title-icon {
+    width: 28px;
+    height: 28px;
+    background: var(--sf-amber);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .roi-title-icon svg {
+    width: 16px;
+    height: 16px;
+    fill: var(--sf-navy);
+  }
+
+  .roi-title-text {
+    font-family: 'DM Serif Display', serif;
+    font-size: 18px;
+    color: var(--sf-white);
+    letter-spacing: 0.02em;
+  }
+
+  .roi-badge {
+    background: rgba(245,185,53,0.20);
+    border: 1px solid rgba(245,185,53,0.40);
+    color: var(--sf-amber);
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 4px 11px;
+    border-radius: 100px;
+    white-space: nowrap;
+  }
+
+  .roi-main {
+    position: relative;
+    z-index: 1;
+    margin-bottom: 18px;
+  }
+
+  .roi-main-label {
+    font-size: 10.5px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.55);
+    margin-bottom: 4px;
+  }
+
+  .roi-main-value {
+    font-family: 'DM Serif Display', serif;
+    font-size: 44px;
+    color: var(--sf-amber);
+    line-height: 1;
+    letter-spacing: -0.01em;
+  }
+
+  .roi-main-unit {
+    display: inline-block;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    color: rgba(255,255,255,0.6);
+    margin-left: 4px;
+    font-weight: 400;
+  }
+
+  .roi-breakdown {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    position: relative;
+    z-index: 1;
+    padding-top: 16px;
+    border-top: 1px solid rgba(255,255,255,0.12);
+  }
+
+  .roi-item-label {
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.55);
+    margin-bottom: 4px;
+  }
+
+  .roi-item-value {
+    font-family: 'DM Serif Display', serif;
+    font-size: 18px;
+    color: var(--sf-white);
+    line-height: 1.2;
+  }
+
+  /* ═══════════════════════════════════════════
+     DESCRIÇÃO
+  ═══════════════════════════════════════════ */
+  .descricao-block {
+    background: var(--sf-cream);
+    border-left: 3px solid var(--sf-navy);
+    border-radius: 0 12px 12px 0;
+    padding: 16px 20px;
+    margin-bottom: 28px;
+    font-size: 13.5px;
+    color: var(--sf-text);
+    line-height: 1.7;
+    font-style: italic;
+  }
+
+  /* ═══════════════════════════════════════════
+     LOCALIZAÇÃO
+  ═══════════════════════════════════════════ */
+  .localizacao-block {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    background: var(--sf-cream);
+    border: 1px solid var(--sf-stone);
+    border-radius: 12px;
+    padding: 14px 18px;
+    margin-bottom: 28px;
+  }
+
+  .localizacao-icon {
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    background: var(--sf-navy);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 1px;
+  }
+
+  .localizacao-icon svg {
+    width: 15px;
+    height: 15px;
+    fill: white;
+  }
+
+  .localizacao-text {
+    font-size: 13px;
+    color: var(--sf-text);
+    line-height: 1.5;
+  }
+
+  .localizacao-coords {
+    font-size: 11px;
+    color: var(--sf-text-muted);
+    margin-top: 2px;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+  }
+
+  /* ═══════════════════════════════════════════
+     VENDEDOR
+  ═══════════════════════════════════════════ */
+  .vendedor-block {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: var(--sf-navy);
+    border-radius: 14px;
+    padding: 18px 20px;
+    margin-bottom: 28px;
+  }
+
+  .vendedor-avatar {
+    width: 44px;
+    height: 44px;
+    background: var(--sf-amber);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'DM Serif Display', serif;
+    font-size: 18px;
+    color: var(--sf-navy);
+    flex-shrink: 0;
+  }
+
+  .vendedor-info { flex: 1; min-width: 0; overflow: hidden; }
+
+  .vendedor-label {
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.55);
+    margin-bottom: 2px;
+  }
+
+  .vendedor-nome {
+    font-size: 14px;
+    font-weight: 600;
+    color: white;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+  }
+
+  .vendedor-tel {
+    font-size: 12px;
+    color: var(--sf-green-leaf);
+    margin-top: 1px;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+  }
+
+  /* ═══════════════════════════════════════════
+     FOOTER
+  ═══════════════════════════════════════════ */
+  .footer {
+    background: var(--sf-cream);
+    border-top: 1px solid var(--sf-stone);
+    padding: 18px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .footer-brand {
+    font-family: 'DM Serif Display', serif;
+    font-size: 13px;
+    color: var(--sf-navy);
+    opacity: 0.7;
+    white-space: nowrap;
+  }
+
+  .footer-meta {
+    font-size: 11px;
+    color: var(--sf-text-muted);
+    text-align: right;
+    line-height: 1.5;
+    white-space: nowrap;
+  }
+
+  /* ═══════════════════════════════════════════
+     PRINT
+  ═══════════════════════════════════════════ */
+  @media print {
+    body { background: white; }
+    .page { box-shadow: none; max-width: 100%; }
+    .header,
+    .roi-block,
+    .vendedor-block {
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .photo-hero img { page-break-inside: avoid; }
+  }
+
+  /* ═══════════════════════════════════════════
+     MOBILE
+  ═══════════════════════════════════════════ */
+  @media (max-width: 600px) {
+    .header { padding: 22px 20px 20px; }
+    .content { padding: 22px 20px; }
+    .header-fazenda { font-size: 21px; }
+    .kpi-strip { grid-template-columns: 1fr 1fr; }
+    .footer { padding: 16px 20px; }
+    .header-pills { gap: 6px; }
+    .pill { font-size: 10.5px; padding: 3px 9px; }
+    .kpi-value { font-size: 22px; }
+
+    .roi-block { padding: 20px; }
+    .roi-main-value { font-size: 36px; }
+    .roi-item-value { font-size: 16px; }
+    .photo-hero { aspect-ratio: 4/3; }
+  }
+
+  @media (max-width: 380px) {
+    .header-fazenda { font-size: 18px; }
+    .kpi-strip { grid-template-columns: 1fr; }
+    .roi-breakdown { grid-template-columns: 1fr; gap: 10px; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- ══════════ HEADER ══════════ -->
+  <header class="header">
+    <div class="header-top">
+      <div class="logo-area">
+        {{report_header_signature}}
+      </div>
+      <span class="tipo-badge">Resultado</span>
+    </div>
+
+    <div class="header-meta">
+      <div class="header-fazenda">{{produtor_fazenda}}</div>
+      <div class="header-produto">{{produto_utilizado}}</div>
+      <div class="header-pills">
+        <span class="pill"><span class="pill-dot"></span>{{localizacao_texto}}</span>
+        <!-- {{#if quantidade_produzida}} -->
+        <span class="pill"><span class="pill-dot"></span>{{quantidade_produzida}} {{produtividade_unidade}}</span>
+        <!-- {{/if}} -->
+        <span class="pill"><span class="pill-dot"></span>{{visibilidade}}</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ══════════ CONTEÚDO ══════════ -->
+  <main class="content">
+
+    <!-- FOTO PRINCIPAL (única, hero) -->
+    <div class="section-label">
+      <div class="section-label-bar"></div>
+      <span class="section-label-text">Registro Visual</span>
+    </div>
+
+    <div class="photo-hero">
+      <!-- {{#if foto_principal_url}} -->
+      <img
+        src="{{foto_principal_url}}"
+        alt="Foto do Resultado"
+        loading="lazy"
+        onerror="this.parentElement.innerHTML='<div class=\'photo-placeholder\'><svg width=\'48\' height=\'48\' viewBox=\'0 0 24 24\' fill=\'#9CA3AF\'><path d=\'M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z\'/></svg><span>Sem foto</span></div>'"
+      >
+      <!-- {{else}} -->
+      <!-- placeholder via onerror -->
+      <!-- {{/if}} -->
+
+      <div class="photo-caption">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+        </svg>
+        <span>{{localizacao_texto}}</span>
+      </div>
+    </div>
+
+    <!-- KPIs de Produtividade -->
+    <!-- {{#if produtividade_valor || quantidade_produzida || economia_gerada}} -->
+    <div class="section-label">
+      <div class="section-label-bar"></div>
+      <span class="section-label-text">Indicadores</span>
+    </div>
+
+    <div class="kpi-strip">
+      <!-- {{#if produtividade_valor}} -->
+      <div class="kpi-card">
+        <div class="kpi-label">Produtividade</div>
+        <div class="kpi-value">{{produtividade_valor}}</div>
+        <div class="kpi-unit">{{produtividade_unidade}}</div>
+      </div>
+      <!-- {{/if}} -->
+
+      <!-- {{#if quantidade_produzida}} -->
+      <div class="kpi-card">
+        <div class="kpi-label">Quantidade Produzida</div>
+        <div class="kpi-value">{{quantidade_produzida}}</div>
+        <div class="kpi-unit">{{produtividade_unidade}}</div>
+      </div>
+      <!-- {{/if}} -->
+
+      <!-- {{#if economia_gerada}} -->
+      <div class="kpi-card">
+        <div class="kpi-label">Economia Gerada</div>
+        <div class="kpi-value">{{economia_gerada}}</div>
+        <div class="kpi-unit">estimado</div>
+      </div>
+      <!-- {{/if}} -->
+    </div>
+    <!-- {{/if}} -->
+
+    <!-- BLOCO ROI — só renderiza se roi_calculado existir -->
+    <!-- {{#if roi_calculado}} -->
+    <div class="section-label">
+      <div class="section-label-bar"></div>
+      <span class="section-label-text">Retorno sobre Investimento</span>
+    </div>
+
+    <div class="roi-block">
+      <div class="roi-header">
+        <div class="roi-title">
+          <div class="roi-title-icon">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6h-6z"/>
+            </svg>
+          </div>
+          <span class="roi-title-text">ROI Calculado</span>
+        </div>
+        <span class="roi-badge">Análise Financeira</span>
+      </div>
+
+      <div class="roi-main">
+        <div class="roi-main-label">Retorno sobre o investimento</div>
+        <div>
+          <span class="roi-main-value">{{roi_calculado}}</span><span class="roi-main-unit">x</span>
+        </div>
+      </div>
+
+      <div class="roi-breakdown">
+        <div>
+          <div class="roi-item-label">Investimento</div>
+          <div class="roi-item-value">R$ {{roi_investimento}}</div>
+        </div>
+        <div>
+          <div class="roi-item-label">Retorno</div>
+          <div class="roi-item-value">R$ {{roi_retorno}}</div>
+        </div>
+      </div>
+    </div>
+    <!-- {{/if}} -->
+
+    <!-- DESCRIÇÃO -->
+    <!-- {{#if descricao}} -->
+    <div class="section-label">
+      <div class="section-label-bar"></div>
+      <span class="section-label-text">Observações</span>
+    </div>
+    <div class="descricao-block">
+      {{descricao}}
+    </div>
+    <!-- {{/if}} -->
+
+    <!-- LOCALIZAÇÃO -->
+    <div class="section-label">
+      <div class="section-label-bar"></div>
+      <span class="section-label-text">Localização</span>
+    </div>
+    <div class="localizacao-block">
+      <div class="localizacao-icon">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+        </svg>
+      </div>
+      <div>
+        <div class="localizacao-text">{{localizacao_texto}}</div>
+        <!-- {{#if lat && lng}} -->
+        <div class="localizacao-coords">{{lat}}, {{lng}}</div>
+        <!-- {{/if}} -->
+      </div>
+    </div>
+
+    <!-- VENDEDOR -->
+    <!-- {{#if nome_vendedor}} -->
+    <div class="section-label">
+      <div class="section-label-bar"></div>
+      <span class="section-label-text">Responsável Comercial</span>
+    </div>
+    <div class="vendedor-block">
+      <div class="vendedor-avatar">{{nome_vendedor_inicial}}</div>
+      <div class="vendedor-info">
+        <div class="vendedor-label">Vendedor / Responsável</div>
+        <div class="vendedor-nome">{{nome_vendedor}}</div>
+        <!-- {{#if telefone_vendedor}} -->
+        <div class="vendedor-tel">{{telefone_vendedor}}</div>
+        <!-- {{/if}} -->
+      </div>
+    </div>
+    <!-- {{/if}} -->
+
+  </main>
+
+  <!-- ══════════ FOOTER ══════════ -->
+  <footer class="footer">
+    {{report_footer_signature}}
+    <div class="footer-meta">
+      Criado em {{criado_em_formatado}}<br>
+      Status: {{status}}
+    </div>
+  </footer>
+
+</div>
+</body>
+</html>

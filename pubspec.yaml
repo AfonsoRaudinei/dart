@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 1.0.0+1
+version: 1.34.0+150
 
 environment:
   sdk: ^3.10.8
@@ -31,45 +31,64 @@ dependencies:
   flutter:
     sdk: flutter
   cupertino_icons: ^1.0.8
-  shared_preferences: ^2.3.2
+  shared_preferences: ^2.5.4
   flutter_riverpod: ^2.6.1
   riverpod_annotation: ^2.6.1
+  device_preview: ^1.3.1
   flutter_map: ^7.0.0
   latlong2: ^0.9.1
   go_router: ^14.6.0
   google_fonts: ^6.2.1
   flutter_map_marker_cluster: ^1.4.0
   image_picker: ^1.2.1
+  image: ^4.1.7
   path_provider: ^2.1.5
   url_launcher: ^6.3.2
-  uuid: ^4.5.2
+  uuid: ^4.5.3
   pdf: ^3.11.3
   printing: ^5.14.2
   intl: ^0.20.2
   sqflite: ^2.4.2
   path: ^1.9.1
+  equatable: ^2.0.5
+  timezone: ^0.10.1
   supabase_flutter: ^2.12.0
   geolocator: ^13.0.2
+  geocoding: ^3.0.0
   permission_handler: ^11.3.1
   flutter_local_notifications: ^20.0.0
   connectivity_plus: ^6.1.2
+  file_picker: ^10.3.10
+  xml: ^6.6.1
+  archive: ^4.0.7
+  crypto: ^3.0.7
+  share_plus: ^10.0.3
+  fl_chart: ^1.1.1
+  http: ^1.6.0
+  cached_network_image: ^3.4.1
+  app_links: ^6.4.1
+  webview_flutter: ^4.10.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^5.0.0
-  build_runner: ^2.4.13
+  build_runner: ^2.5.4
   riverpod_generator: ^2.6.3
   flutter_launcher_icons: ^0.13.1
+  sqflite_common_ffi: ^2.3.0
+  mockito: ^5.4.6
+  golden_toolkit: ^0.15.0
+  permission_handler_platform_interface: ^4.3.0
 
 flutter_launcher_icons:
-  android: "launcher_icon"
+  android: true
   ios: true
-  image_path: "assets/images/app_icon.png"
+  image_path: "assets/icone1.png"
   min_sdk_android: 21 # android min sdk min:16, default 21
   web:
     generate: true
-    image_path: "assets/images/app_icon.png"
+    image_path: "assets/icone1.png"
     backgroundColor: "#ffffff"
     themeColor: "#4CAF50"
 
@@ -85,7 +104,16 @@ flutter:
   uses-material-design: true
 
   assets:
+    - assets/ia.png
     - assets/images/
+    - assets/html_templates/marketing_resultado.html
+    - assets/html_templates/marketing_antes_depois.html
+    - assets/html_templates/marketing_avaliacao.html
+    - assets/html_templates/ocorrencia_detalhada.html
+    - assets/html_templates/ocorrencias_lista.html
+    - assets/html_templates/resumo_propriedade.html
+    - assets/html_templates/historico_visitas.html
+    - assets/html_templates/relatorio_visita.html
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

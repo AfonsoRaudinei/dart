@@ -2,10 +2,12 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>CADisableMinimumFrameDurationOnPhone</key>
+	<true/>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Soloforte App</string>
+	<string>SoloForte</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -24,8 +26,36 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<!-- Localização em uso -->
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>O SoloForte usa sua localização para posicionar ocorrências, talhões e rotas de visita no mapa da propriedade.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>O SoloForte usa sua localização para acompanhar a posição do usuário no mapa durante navegação, medições e rotas de trabalho no campo.</string>
+	<key>UIApplicationSceneManifest</key>
+	<dict>
+		<key>UIApplicationSupportsMultipleScenes</key>
+		<false/>
+		<key>UISceneConfigurations</key>
+		<dict>
+			<key>UIWindowSceneSessionRoleApplication</key>
+			<array>
+				<dict>
+					<key>UISceneClassName</key>
+					<string>UIWindowScene</string>
+					<key>UISceneConfigurationName</key>
+					<string>flutter</string>
+					<key>UISceneDelegateClassName</key>
+					<string>FlutterSceneDelegate</string>
+					<key>UISceneStoryboardFile</key>
+					<string>Main</string>
+				</dict>
+			</array>
+		</dict>
+	</dict>
+	<key>UIApplicationSupportsIndirectInputEvents</key>
+	<true/>
 	<key>UILaunchStoryboardName</key>
-	<string>LaunchScreen</string>
+	<string>Main.storyboard</string>
 	<key>UIMainStoryboardFile</key>
 	<string>Main</string>
 	<key>UISupportedInterfaceOrientations</key>
@@ -41,13 +71,29 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
-	<key>CADisableMinimumFrameDurationOnPhone</key>
-	<true/>
-	<key>UIApplicationSupportsIndirectInputEvents</key>
-	<true/>
-	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>SoloForte precisa acessar sua localização para exibir sua posição no mapa e habilitar funções de campo.</string>
-	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>SoloForte precisa acessar sua localização para registrar atividades de campo mesmo em segundo plano.</string>
+	<!-- Galeria (leitura) -->
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>O SoloForte acessa suas fotos para anexar registros de campo e laudos técnicos aos relatórios de visita.</string>
+	<!-- Câmera -->
+	<key>NSCameraUsageDescription</key>
+	<string>O SoloForte usa a câmera para registrar fotos de campo, documentar ocorrências e comparativos Antes/Depois das culturas.</string>
+	<!-- Galeria (escrita) -->
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>O SoloForte salva fotos de campo diretamente na sua galeria para facilitar o compartilhamento de relatórios.</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>com.soloforte.soloforteApp</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>soloforte</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

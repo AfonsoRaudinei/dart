@@ -1,8 +1,10 @@
 class VisitSession {
   final String id;
   final String producerId;
-  final String areaId;
-  final String activityType;
+  // Nullable: check-in pode ser feito apenas com produtor.
+  final String? farmId;
+  final String? areaId;
+  final String? activityType;
   final DateTime startTime;
   final DateTime? endTime;
   final double initialLat;
@@ -15,8 +17,9 @@ class VisitSession {
   VisitSession({
     required this.id,
     required this.producerId,
-    required this.areaId,
-    required this.activityType,
+    this.farmId,
+    this.areaId,
+    this.activityType,
     required this.startTime,
     this.endTime,
     required this.initialLat,
@@ -31,8 +34,9 @@ class VisitSession {
     return VisitSession(
       id: map['id'],
       producerId: map['producer_id'],
-      areaId: map['area_id'],
-      activityType: map['activity_type'],
+      farmId: map['farm_id'] as String?,
+      areaId: map['area_id'] as String?,
+      activityType: map['activity_type'] as String?,
       startTime: DateTime.parse(map['start_time']),
       endTime: map['end_time'] != null ? DateTime.parse(map['end_time']) : null,
       initialLat: map['initial_lat'],
@@ -48,6 +52,7 @@ class VisitSession {
     return {
       'id': id,
       'producer_id': producerId,
+      'farm_id': farmId,
       'area_id': areaId,
       'activity_type': activityType,
       'start_time': startTime.toIso8601String(),
@@ -64,7 +69,9 @@ class VisitSession {
   VisitSession copyWith({
     String? id,
     String? producerId,
+    String? farmId,
     String? areaId,
+    bool clearAreaId = false,
     String? activityType,
     DateTime? startTime,
     DateTime? endTime,
@@ -78,7 +85,8 @@ class VisitSession {
     return VisitSession(
       id: id ?? this.id,
       producerId: producerId ?? this.producerId,
-      areaId: areaId ?? this.areaId,
+      farmId: farmId ?? this.farmId,
+      areaId: clearAreaId ? null : (areaId ?? this.areaId),
       activityType: activityType ?? this.activityType,
       startTime: startTime ?? this.startTime,
       endTime: endTime ?? this.endTime,

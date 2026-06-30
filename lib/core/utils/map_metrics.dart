@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'dart:developer' as developer;
-import 'package:shared_preferences/shared_preferences.dart';
+import '../infra/preferences_service.dart';
 import 'dart:convert';
 
 class MapMetrics {
@@ -23,11 +23,9 @@ class MapMetrics {
   static bool _initialized = false;
 
   /// Loads persisted metrics from disk (called on app start)
-  static Future<void> loadMetrics() async {
+  static Future<void> loadMetrics(PreferencesService prefs) async {
     if (_initialized) return;
     try {
-      final prefs = await SharedPreferences.getInstance();
-
       // Load Snapshot
       final snapshotJson = prefs.getString(_kKeySnapshot);
       if (snapshotJson != null) {
@@ -62,10 +60,8 @@ class MapMetrics {
   }
 
   /// Persists current aggregated metrics to disk (called on cycle end)
-  static Future<void> persistMetrics() async {
+  static Future<void> persistMetrics(PreferencesService prefs) async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-
       // Snapshot
       final snapshot = {
         'attempts': _syncAttempts,

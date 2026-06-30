@@ -7,11 +7,11 @@ O aplicativo SoloForte é **mobile-first e mobile-only**.
 Plataformas suportadas:
 - iOS
 - Android
+- macOS (Desenvolvimento e Testes)
 
 Plataformas NÃO suportadas neste projeto:
 - Web
 - Windows
-- macOS
 - Linux
 
 As pastas dessas plataformas existem apenas por padrão do Flutter

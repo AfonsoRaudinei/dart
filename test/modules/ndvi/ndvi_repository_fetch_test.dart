@@ -1,0 +1,351 @@
+import 'package:flutter_test/flutter_test.dart';
+import 'package:soloforte_app/core/contracts/i_field_lookup.dart';
+import 'package:soloforte_app/modules/ndvi/data/datasources/ndvi_local_datasource.dart';
+import 'package:soloforte_app/modules/ndvi/data/datasources/ndvi_remote_datasource.dart';
+import 'package:soloforte_app/modules/ndvi/data/models/ndvi_image_model.dart';
+import 'package:soloforte_app/modules/ndvi/data/repositories/ndvi_repository_impl.dart';
+import 'package:soloforte_app/modules/ndvi/domain/entities/ndvi_image.dart';
+
+class FakeLocalDataSource implements NdviLocalDatasource {
+  NdviImageModel? lastSaved;
+  NdviImageModel? nextReturn;
+  List<NdviImageModel> nextList = const [];
+  final Map<String, NdviImageModel> _saved = {};
+
+  @override
+  Future<NdviImageModel?> getLatest(String fieldId) async => nextReturn;
+
+  @override
+  Future<NdviImageModel?> getByFieldIdAndDate(
+    String fieldId,
+    String imageDate,
+  ) async {
+    return _saved['$fieldId|$imageDate'];
+  }
+
+  @override
+  Future<List<NdviImageModel>> getAll(String fieldId) async {
+    if (nextList.isNotEmpty) return nextList;
+    return _saved.values.where((m) => m.fieldId == fieldId).toList()
+      ..sort((a, b) => b.imageDate.compareTo(a.imageDate));
+  }
+
+  @override
+  Future<void> save(NdviImage image) async {
+    final model = NdviImageModel.fromEntity(image);
+    lastSaved = model;
+    _saved['${model.fieldId}|${model.imageDate}'] = model;
+  }
+
+  @override
+  Future<void> deleteAll(String fieldId) async {
+    _saved.removeWhere((_, model) => model.fieldId == fieldId);
+    nextList = const [];
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+class FakeRemoteDataSource implements NdviRemoteDatasource {
+  NdviImageModel? nextReturn;
+  NdviRemoteFetchResult? nextResult;
+  bool called = false;
+  bool throwOnFetch = false;
+  String? lastDate;
+
+  @override
+  Future<NdviRemoteFetchResult?> fetchNdvi({
+    required String fieldId,
+    List<double>? bbox,
+    String? geometry,
+    String? date,
+    String source = 'auto',
+  }) async {
+    called = true;
+    lastBbox = bbox;
+    lastGeometry = geometry;
+    lastDate = date;
+    if (throwOnFetch) throw Exception('remote unavailable');
+    if (nextResult != null) return nextResult;
+    if (nextReturn != null) {
+      return NdviRemoteFetchResult(image: nextReturn);
+    }
+    return null;
+  }
+
+  List<double>? lastBbox;
+  String? lastGeometry;
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+class FakeFieldLookup implements IFieldLookup {
+  FieldSummary? nextReturn;
+
+  @override
+  Future<FieldSummary?> findById(String fieldId) async => nextReturn;
+
+  @override
+  Future<List<FieldSummary>> listByFarmId(String farmId) async => [];
+
+  @override
+  Future<List<FieldSummary>> listAll() async => [];
+}
+
+void main() {
+  late NdviRepositoryImpl repository;
+  late FakeLocalDataSource local;
+  late FakeRemoteDataSource remote;
+  late FakeFieldLookup lookup;
+
+  setUp(() {
+    local = FakeLocalDataSource();
+    remote = FakeRemoteDataSource();
+    lookup = FakeFieldLookup();
+    repository = NdviRepositoryImpl(local, remote, lookup);
+  });
+
+  test(
+    'Cenário 1: cache vazio + bbox disponível → chama remote e salva',
+    () async {
+      const fieldId = 'F1';
+      lookup.nextReturn = const FieldSummary(
+        id: fieldId,
+        name: 'Teste',
+        farmId: 'FAZ1',
+        bbox: [-50.0, -20.0, -49.0, -19.0],
+      );
+      remote.nextReturn = const NdviImageModel(
+        id: 'IMG1',
+        fieldId: fieldId,
+        imageDate: '2026-01-01',
+        ndviMin: 0.1,
+        ndviMax: 0.8,
+        ndviMean: 0.5,
+        source: 'sentinel',
+        fetchedAt: '2026-01-01',
+        syncStatus: 0,
+      );
+
+      final result = await repository.getLatestByFieldId(fieldId);
+
+      expect(result, isNotNull);
+      expect(remote.called, isTrue);
+      expect(local.lastSaved?.id, 'IMG1');
+    },
+  );
+
+  test(
+    'getByFieldId: cache vazio + bbox disponível → chama remote, salva e retorna lista',
+    () async {
+      const fieldId = 'F1';
+      lookup.nextReturn = const FieldSummary(
+        id: fieldId,
+        name: 'Teste',
+        farmId: 'FAZ1',
+        bbox: [-50.0, -20.0, -49.0, -19.0],
+      );
+      remote.nextReturn = const NdviImageModel(
+        id: 'IMG1',
+        fieldId: fieldId,
+        imageDate: '2026-01-01',
+        ndviMin: 0.1,
+        ndviMax: 0.8,
+        ndviMean: 0.5,
+        source: 'sentinel',
+        fetchedAt: '2026-01-01',
+        syncStatus: 0,
+      );
+
+      final result = await repository.getByFieldId(fieldId);
+
+      expect(result, hasLength(1));
+      expect(result.single.id, 'IMG1');
+      expect(remote.called, isTrue);
+      expect(remote.lastBbox, [-50.0, -20.0, -49.0, -19.0]);
+      expect(local.lastSaved?.id, 'IMG1');
+    },
+  );
+
+  test(
+    'Cenário 2: cache vazio + bbox e geometry null → retorna null, não chama remote',
+    () async {
+      const fieldId = 'F1';
+      lookup.nextReturn = const FieldSummary(
+        id: fieldId,
+        name: 'Teste',
+        farmId: 'FAZ1',
+        bbox: null,
+      );
+
+      final result = await repository.getLatestByFieldId(fieldId);
+
+      expect(result, isNull);
+      expect(remote.called, isFalse);
+    },
+  );
+
+  test(
+    'Cenário 3: cache vazio + geometry disponível → chama remote com geometry',
+    () async {
+      const fieldId = 'F1';
+      const geometry =
+          '{"type":"Polygon","coordinates":[[[-50,-20],[-49,-20],[-49,-19],[-50,-19],[-50,-20]]]}';
+      lookup.nextReturn = const FieldSummary(
+        id: fieldId,
+        name: 'Teste',
+        farmId: 'FAZ1',
+        geometry: geometry,
+      );
+      remote.nextReturn = const NdviImageModel(
+        id: 'IMG1',
+        fieldId: fieldId,
+        imageDate: '2026-01-01',
+        ndviMin: 0.1,
+        ndviMax: 0.8,
+        ndviMean: 0.5,
+        source: 'sentinel',
+        fetchedAt: '2026-01-01',
+        syncStatus: 0,
+      );
+
+      final result = await repository.getLatestByFieldId(fieldId);
+
+      expect(result, isNotNull);
+      expect(remote.called, isTrue);
+      expect(remote.lastBbox, isNull);
+      expect(remote.lastGeometry, geometry);
+    },
+  );
+
+  test(
+    'getByFieldId: cache vazio + geometry disponível → chama remote com geometry',
+    () async {
+      const fieldId = 'F1';
+      const geometry =
+          '{"type":"Polygon","coordinates":[[[-50,-20],[-49,-20],[-49,-19],[-50,-19],[-50,-20]]]}';
+      lookup.nextReturn = const FieldSummary(
+        id: fieldId,
+        name: 'Teste',
+        farmId: 'FAZ1',
+        geometry: geometry,
+      );
+      remote.nextReturn = const NdviImageModel(
+        id: 'IMG1',
+        fieldId: fieldId,
+        imageDate: '2026-01-01',
+        ndviMin: 0.1,
+        ndviMax: 0.8,
+        ndviMean: 0.5,
+        source: 'sentinel',
+        fetchedAt: '2026-01-01',
+        syncStatus: 0,
+      );
+
+      final result = await repository.getByFieldId(fieldId);
+
+      expect(result, hasLength(1));
+      expect(remote.called, isTrue);
+      expect(remote.lastBbox, isNull);
+      expect(remote.lastGeometry, geometry);
+    },
+  );
+
+  test('Cenário 4: cache presente → retorna cache, NÃO chama remote', () async {
+    const fieldId = 'F1';
+    local.nextList = const [
+      NdviImageModel(
+        id: 'IMG_CACHE',
+        fieldId: fieldId,
+        imageDate: '2026-01-01',
+        ndviMin: 0.1,
+        ndviMax: 0.8,
+        ndviMean: 0.5,
+        source: 'sentinel',
+        fetchedAt: '2026-01-01',
+        syncStatus: 0,
+      ),
+    ];
+
+    final result = await repository.getLatestByFieldId(fieldId);
+
+    expect(result?.id, 'IMG_CACHE');
+    expect(remote.called, isFalse);
+  });
+
+  test(
+    'getByFieldId: cache presente → retorna cache, NÃO chama remote',
+    () async {
+      const fieldId = 'F1';
+      local.nextList = const [
+        NdviImageModel(
+          id: 'IMG_CACHE',
+          fieldId: fieldId,
+          imageDate: '2026-01-01',
+          ndviMin: 0.1,
+          ndviMax: 0.8,
+          ndviMean: 0.5,
+          source: 'sentinel',
+          fetchedAt: '2026-01-01',
+          syncStatus: 0,
+        ),
+      ];
+
+      final result = await repository.getByFieldId(fieldId);
+
+      expect(result.single.id, 'IMG_CACHE');
+      expect(remote.called, isFalse);
+    },
+  );
+
+  test(
+    'getByFieldId: sem bbox/geometry → retorna lista vazia e não chama remote',
+    () async {
+      const fieldId = 'F1';
+      lookup.nextReturn = const FieldSummary(
+        id: fieldId,
+        name: 'Teste',
+        farmId: 'FAZ1',
+      );
+
+      final result = await repository.getByFieldId(fieldId);
+
+      expect(result, isEmpty);
+      expect(remote.called, isFalse);
+    },
+  );
+
+  test('getByFieldId: retorno remoto null degrada para lista vazia', () async {
+    const fieldId = 'F1';
+    lookup.nextReturn = const FieldSummary(
+      id: fieldId,
+      name: 'Teste',
+      farmId: 'FAZ1',
+      bbox: [-50.0, -20.0, -49.0, -19.0],
+    );
+
+    final result = await repository.getByFieldId(fieldId);
+
+    expect(result, isEmpty);
+    expect(remote.called, isTrue);
+    expect(local.lastSaved, isNull);
+  });
+
+  test('getByFieldId: falha remota propaga exceção para UI', () async {
+    const fieldId = 'F1';
+    lookup.nextReturn = const FieldSummary(
+      id: fieldId,
+      name: 'Teste',
+      farmId: 'FAZ1',
+      bbox: [-50.0, -20.0, -49.0, -19.0],
+    );
+    remote.throwOnFetch = true;
+
+    expect(
+      () => repository.getByFieldId(fieldId),
+      throwsA(isA<Exception>()),
+    );
+  });
+}

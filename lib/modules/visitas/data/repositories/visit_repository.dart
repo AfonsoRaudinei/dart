@@ -1,4 +1,5 @@
 import 'package:sqflite/sqflite.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/database/database_helper.dart';
 import '../../domain/models/visit_session.dart';
 import '../../domain/models/visit_stats.dart';
@@ -8,10 +9,11 @@ class VisitRepository {
 
   Future<VisitSession?> getActiveSession() async {
     final db = await _databaseHelper.database;
+    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
     final List<Map<String, dynamic>> maps = await db.query(
       'visit_sessions',
-      where: 'status = ?',
-      whereArgs: ['active'],
+      where: 'status = ? AND user_id = ?',
+      whereArgs: ['active', userId],
       limit: 1,
     );
 
@@ -21,17 +23,71 @@ class VisitRepository {
     return null;
   }
 
+  /// Busca sessão de visita por ID. Retorna null se não encontrada.
+  /// Adicionado em ADR-023 — DT-023-2 (suporte a IVisitSessionLookup.findById)
+  Future<VisitSession?> getById(String sessionId) async {
+    final db = await _databaseHelper.database;
+    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
+    final List<Map<String, dynamic>> maps = await db.query(
+      'visit_sessions',
+      where: 'id = ? AND user_id = ?',
+      whereArgs: [sessionId, userId],
+      limit: 1,
+    );
+    if (maps.isNotEmpty) {
+      return VisitSession.fromMap(maps.first);
+    }
+    return null;
+  }
+
   Future<void> saveSession(VisitSession session) async {
     final db = await _databaseHelper.database;
-    await db.insert(
+    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
+    await db.insert('visit_sessions', {
+      ...session.toMap(),
+      'user_id': userId,
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  Future<void> updateFarm(String sessionId, String newFarmId) async {
+    final db = await _databaseHelper.database;
+    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
+    await db.update(
       'visit_sessions',
-      session.toMap(),
-      conflictAlgorithm: ConflictAlgorithm.replace,
+      {
+        'farm_id': newFarmId,
+        'area_id': null,
+        'updated_at': DateTime.now().toIso8601String(),
+        'sync_status': 1,
+      },
+      where: 'id = ? AND user_id = ?',
+      whereArgs: [sessionId, userId],
+    );
+  }
+
+  Future<void> updateArea(
+    String sessionId,
+    String newAreaId, {
+    String? farmId,
+  }) async {
+    final db = await _databaseHelper.database;
+    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
+    await db.update(
+      'visit_sessions',
+      {
+        if (farmId != null) 'farm_id': farmId,
+        'area_id': newAreaId,
+        'updated_at': DateTime.now().toIso8601String(),
+        'sync_status': 1,
+      },
+      where: 'id = ? AND user_id = ?',
+      whereArgs: [sessionId, userId],
     );
   }
 
   Future<void> endSession(String sessionId, DateTime endTime) async {
     final db = await _databaseHelper.database;
+    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
     await db.update(
       'visit_sessions',
       {
@@ -40,8 +96,8 @@ class VisitRepository {
         'updated_at': DateTime.now().toIso8601String(),
         'sync_status': 1,
       },
-      where: 'id = ?',
-      whereArgs: [sessionId],
+      where: 'id = ? AND user_id = ?',
+      whereArgs: [sessionId, userId],
     );
   }
 
@@ -59,6 +115,8 @@ class VisitRepository {
       59,
     ).toIso8601String();
 
+    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
+
     // 1. Finished visits today
     // Calc duration in seconds: strftime('%s', end) - strftime('%s', start)
     final finishedResult = await db.rawQuery(
@@ -67,17 +125,18 @@ class VisitRepository {
         COUNT(*) as count,
         SUM(strftime('%s', end_time) - strftime('%s', start_time)) as total_seconds
       FROM visit_sessions
-      WHERE status = 'finished' 
+      WHERE status = 'finished'
+        AND user_id = ?
         AND start_time BETWEEN ? AND ?
     ''',
-      [todayStart, todayEnd],
+      [userId, todayStart, todayEnd],
     );
 
     final finishedCount = Sqflite.firstIntValue(finishedResult) ?? 0;
     final finishedSeconds =
         (finishedResult.first['total_seconds'] as int?) ?? 0;
 
-    // 2. Active visit
+    // 2. Active visit (já filtrado por user_id internamente)
     final activeSession = await getActiveSession();
     int activeDuration = 0;
     if (activeSession != null) {
@@ -103,16 +162,19 @@ class VisitRepository {
         .subtract(const Duration(seconds: 1))
         .toIso8601String();
 
+    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
+
     final result = await db.rawQuery(
       '''
       SELECT 
         COUNT(*) as count,
         SUM(strftime('%s', end_time) - strftime('%s', start_time)) as total_seconds
       FROM visit_sessions
-      WHERE status = 'finished' 
+      WHERE status = 'finished'
+        AND user_id = ?
         AND start_time BETWEEN ? AND ?
     ''',
-      [startStr, endStr],
+      [userId, startStr, endStr],
     );
 
     final count = Sqflite.firstIntValue(result) ?? 0;
@@ -123,10 +185,10 @@ class VisitRepository {
       '''
       SELECT producer_id, COUNT(*) as count
       FROM visit_sessions
-      WHERE status = 'finished' AND start_time BETWEEN ? AND ?
+      WHERE status = 'finished' AND user_id = ? AND start_time BETWEEN ? AND ?
       GROUP BY producer_id
     ''',
-      [startStr, endStr],
+      [userId, startStr, endStr],
     );
 
     final byProducer = {
@@ -139,10 +201,10 @@ class VisitRepository {
       '''
       SELECT activity_type, COUNT(*) as count
       FROM visit_sessions
-      WHERE status = 'finished' AND start_time BETWEEN ? AND ?
+      WHERE status = 'finished' AND user_id = ? AND start_time BETWEEN ? AND ?
       GROUP BY activity_type
     ''',
-      [startStr, endStr],
+      [userId, startStr, endStr],
     );
 
     final byActivity = {
@@ -175,8 +237,11 @@ class VisitRepository {
         .subtract(const Duration(seconds: 1))
         .toIso8601String();
 
-    String whereClause = 'status = ? AND start_time BETWEEN ? AND ?';
-    List<dynamic> args = ['finished', startStr, endStr];
+    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
+
+    String whereClause =
+        'status = ? AND user_id = ? AND start_time BETWEEN ? AND ?';
+    List<dynamic> args = ['finished', userId, startStr, endStr];
 
     if (producerId != null) {
       whereClause += ' AND producer_id = ?';

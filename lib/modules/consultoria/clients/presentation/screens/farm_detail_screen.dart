@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:soloforte_app/ui/theme/soloforte_theme.dart';
+
+import 'package:soloforte_app/core/contracts/i_drawing_field_writer_provider.dart';
+import 'package:soloforte_app/core/router/app_routes.dart';
 import 'package:soloforte_app/modules/consultoria/farms/data/repositories/farm_repository.dart';
 import 'package:soloforte_app/modules/consultoria/clients/presentation/providers/field_providers.dart';
+import 'package:soloforte_app/modules/consultoria/clients/presentation/widgets/talhao_map_preview.dart';
 
 final farmDetailProvider = FutureProvider.family.autoDispose<dynamic, String>((
   ref,
@@ -29,10 +33,8 @@ class FarmDetailScreen extends ConsumerWidget {
     // 1. Fetch Farm
     final farmAsync = ref.watch(farmDetailProvider(farmId));
 
-    // 2. Fetch Fields
-    final fieldsFuture = ref
-        .watch(fieldRepositoryProvider)
-        .getFieldsByFarmId(farmId);
+    // 2. Fetch fields + map drawings linked to this farm.
+    final linkedFieldsAsync = ref.watch(farmLinkedFieldsProvider(farmId));
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -41,6 +43,11 @@ class FarmDetailScreen extends ConsumerWidget {
           if (farm == null) {
             return const Center(child: Text('Fazenda não encontrada'));
           }
+
+          final linkedFields = linkedFieldsAsync.asData?.value;
+          final totalAreaHa = linkedFields == null
+              ? farm.totalAreaHa
+              : totalFarmLinkedAreaHa(linkedFields);
 
           return SafeArea(
             child: Column(
@@ -54,8 +61,8 @@ class FarmDetailScreen extends ConsumerWidget {
                   child: Row(
                     children: [
                       IconButton(
-                        icon: const Icon(Icons.arrow_back, color: Colors.black),
-                        onPressed: () => context.pop(),
+                        icon: const Icon(Icons.arrow_back),
+                        onPressed: () => Navigator.of(context).pop(),
                       ),
                       Expanded(
                         child: Text(
@@ -95,7 +102,7 @@ class FarmDetailScreen extends ConsumerWidget {
                                 style: TextStyle(color: Colors.grey[600]),
                               ),
                               Text(
-                                '${farm.totalAreaHa} ha',
+                                '${_formatAreaHa(totalAreaHa)} ha',
                                 style: const TextStyle(
                                   fontSize: 24,
                                   fontWeight: FontWeight.bold,
@@ -124,20 +131,16 @@ class FarmDetailScreen extends ConsumerWidget {
                             ),
                             TextButton.icon(
                               onPressed: () {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Adicionar Talhão: Em breve'),
-                                  ),
-                                );
+                                context.go(_mapCreateUri());
                               },
                               icon: const Icon(
                                 Icons.add,
-                                color: SoloForteColors.greenIOS,
+                                color: PremiumTokens.brandGreen,
                               ),
                               label: const Text(
                                 'Novo',
                                 style: TextStyle(
-                                  color: SoloForteColors.greenIOS,
+                                  color: PremiumTokens.brandGreen,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
@@ -146,16 +149,8 @@ class FarmDetailScreen extends ConsumerWidget {
                         ),
                         const SizedBox(height: 16),
 
-                        FutureBuilder(
-                          future: fieldsFuture,
-                          builder: (context, snapshot) {
-                            if (!snapshot.hasData) {
-                              return const Center(
-                                child: CircularProgressIndicator(),
-                              );
-                            }
-                            final fields = snapshot.data as List;
-
+                        linkedFieldsAsync.when(
+                          data: (fields) {
                             if (fields.isEmpty) {
                               return Container(
                                 padding: const EdgeInsets.all(24),
@@ -171,55 +166,30 @@ class FarmDetailScreen extends ConsumerWidget {
                             }
 
                             return Column(
-                              children: fields
-                                  .map(
-                                    (field) => Container(
-                                      margin: const EdgeInsets.only(bottom: 12),
-                                      child: ListTile(
-                                        contentPadding:
-                                            const EdgeInsets.symmetric(
-                                              horizontal: 16,
-                                              vertical: 8,
-                                            ),
-                                        tileColor: Colors.white,
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(
-                                            12,
-                                          ),
-                                          side: BorderSide(
-                                            color: Colors.grey[200]!,
-                                          ),
-                                        ),
-                                        title: Text(
-                                          field.name,
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                        ),
-                                        subtitle: Text(
-                                          '${field.areaHa} ha • ${field.crop ?? '-'}',
-                                        ),
-                                        trailing: const Icon(
-                                          Icons.chevron_right,
-                                          color: Colors.grey,
-                                        ),
-                                        onTap: () {
-                                          ScaffoldMessenger.of(
-                                            context,
-                                          ).showSnackBar(
-                                            SnackBar(
-                                              content: Text(
-                                                'Talhão: ${field.name}',
-                                              ),
-                                            ),
-                                          );
-                                        },
-                                      ),
-                                    ),
-                                  )
-                                  .toList(),
+                              children: fields.map((field) {
+                                return TalhaoMapPreviewWidget(
+                                  vertices: field.vertices,
+                                  nome: field.name,
+                                  areaHa: field.areaHa,
+                                  subtitle: _fieldSubtitle(field),
+                                  onTap: () => _openField(context, field),
+                                  actions: _fieldActions(context, ref, field),
+                                );
+                              }).toList(),
                             );
                           },
+                          loading: () {
+                            if ((linkedFieldsAsync.asData?.value ?? const [])
+                                .isEmpty) {
+                              return const Center(
+                                child: CircularProgressIndicator(),
+                              );
+                            }
+                            return const SizedBox.shrink();
+                          },
+                          error: (e, s) => Center(
+                            child: Text('Erro ao carregar talhões: $e'),
+                          ),
                         ),
                       ],
                     ),
@@ -233,5 +203,139 @@ class FarmDetailScreen extends ConsumerWidget {
         error: (e, s) => Center(child: Text('Erro: $e')),
       ),
     );
+  }
+
+  String _fieldSubtitle(FarmLinkedFieldSummary field) {
+    final parts = <String>['${_formatAreaHa(field.areaHa)} ha'];
+
+    if (field.isDrawing) {
+      parts.add('Talhão do mapa');
+    }
+
+    if (field.crop != null && field.crop!.trim().isNotEmpty) {
+      parts.add(field.crop!.trim());
+    }
+
+    return parts.join(' • ');
+  }
+
+  String _formatAreaHa(double areaHa) {
+    return areaHa.toStringAsFixed(areaHa >= 100 ? 1 : 2);
+  }
+
+  List<Widget> _fieldActions(
+    BuildContext context,
+    WidgetRef ref,
+    FarmLinkedFieldSummary field,
+  ) {
+    final actions = <Widget>[
+      IconButton(
+        tooltip: 'Abrir no mapa',
+        icon: const Icon(Icons.open_in_full, size: 20),
+        onPressed: () => _openField(context, field),
+      ),
+    ];
+
+    if (field.isDrawing) {
+      actions.addAll([
+        IconButton(
+          tooltip: 'Editar no mapa',
+          icon: const Icon(Icons.edit_outlined, size: 20),
+          onPressed: () => context.go(_mapEditUri(field.id)),
+        ),
+        IconButton(
+          tooltip: 'Excluir talhão',
+          icon: const Icon(Icons.delete_outline, size: 20, color: Colors.red),
+          onPressed: () => _confirmDeleteDrawing(context, ref, field),
+        ),
+      ]);
+    }
+
+    return actions;
+  }
+
+  void _openField(BuildContext context, FarmLinkedFieldSummary field) {
+    if (field.isDrawing) {
+      context.go(_mapViewUri(field.id));
+      return;
+    }
+
+    context.go(AppRoutes.fieldDetail(clientId, farmId, field.id));
+  }
+
+  Future<void> _confirmDeleteDrawing(
+    BuildContext context,
+    WidgetRef ref,
+    FarmLinkedFieldSummary field,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Excluir talhão?'),
+        content: Text('O talhão "${field.name}" será removido do mapa.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Excluir', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !context.mounted) return;
+
+    await ref
+        .read(iDrawingFieldWriterProvider)
+        .deleteFieldAndRecalculateClientArea(
+          fieldId: field.id,
+          clientId: clientId,
+        );
+
+    ref.invalidate(farmLinkedFieldsProvider(farmId));
+    ref.invalidate(clientDrawingFieldsProvider(clientId));
+
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Talhão excluído.')));
+  }
+
+  String _mapCreateUri() {
+    return Uri(
+      path: AppRoutes.map,
+      queryParameters: {
+        'modo': 'desenho',
+        'clienteId': clientId,
+        'fazendaId': farmId,
+      },
+    ).toString();
+  }
+
+  String _mapViewUri(String drawingId) {
+    return Uri(
+      path: AppRoutes.map,
+      queryParameters: {
+        'modo': 'desenho',
+        'clienteId': clientId,
+        'fazendaId': farmId,
+        'drawingId': drawingId,
+      },
+    ).toString();
+  }
+
+  String _mapEditUri(String drawingId) {
+    return Uri(
+      path: AppRoutes.map,
+      queryParameters: {
+        'modo': 'editar',
+        'clienteId': clientId,
+        'fazendaId': farmId,
+        'drawingId': drawingId,
+      },
+    ).toString();
   }
 }

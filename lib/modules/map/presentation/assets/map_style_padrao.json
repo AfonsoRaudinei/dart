@@ -1,0 +1,111 @@
+[
+  {
+    "_comment": "Paleta natural (verde/terrestre) — referência visual para flutter_map.",
+    "_note": "Este arquivo documenta as cores-alvo do estilo padrão do SoloForte.",
+    "_provider": "Stadia Stamen Terrain (equivalente raster ao estilo abaixo)",
+    "_url": "https://tiles.stadiamaps.com/tiles/stamen_terrain/{z}/{x}/{y}{r}.png"
+  },
+  { "elementType": "geometry", "stylers": [{ "color": "#e8f0d8" }] },
+  { "elementType": "labels.text.fill", "stylers": [{ "color": "#4a5c3a" }] },
+  { "elementType": "labels.text.stroke", "stylers": [{ "color": "#f5f5f5" }] },
+  {
+    "featureType": "administrative",
+    "elementType": "geometry.stroke",
+    "stylers": [{ "color": "#b0c4a0" }]
+  },
+  {
+    "featureType": "administrative.land_parcel",
+    "elementType": "labels.text.fill",
+    "stylers": [{ "color": "#6b8c5a" }]
+  },
+  {
+    "featureType": "landscape.natural",
+    "elementType": "geometry",
+    "stylers": [{ "color": "#c8ddb0" }]
+  },
+  {
+    "featureType": "landscape.man_made",
+    "elementType": "geometry",
+    "stylers": [{ "color": "#dde8cc" }]
+  },
+  {
+    "featureType": "poi",
+    "elementType": "geometry",
+    "stylers": [{ "color": "#b8d498" }]
+  },
+  {
+    "featureType": "poi",
+    "elementType": "labels.text.fill",
+    "stylers": [{ "color": "#4a6b3a" }]
+  },
+  {
+    "featureType": "poi.park",
+    "elementType": "geometry",
+    "stylers": [{ "color": "#a8cc88" }]
+  },
+  {
+    "featureType": "poi.park",
+    "elementType": "labels.text.fill",
+    "stylers": [{ "color": "#3d6b2e" }]
+  },
+  {
+    "featureType": "road",
+    "elementType": "geometry",
+    "stylers": [{ "color": "#ffffff" }]
+  },
+  {
+    "featureType": "road",
+    "elementType": "geometry.stroke",
+    "stylers": [{ "color": "#d0d8c0" }]
+  },
+  {
+    "featureType": "road.arterial",
+    "elementType": "labels.text.fill",
+    "stylers": [{ "color": "#5a6b4a" }]
+  },
+  {
+    "featureType": "road.highway",
+    "elementType": "geometry",
+    "stylers": [{ "color": "#f5d98a" }]
+  },
+  {
+    "featureType": "road.highway",
+    "elementType": "geometry.stroke",
+    "stylers": [{ "color": "#e0c070" }]
+  },
+  {
+    "featureType": "road.highway",
+    "elementType": "labels.text.fill",
+    "stylers": [{ "color": "#5a4a2a" }]
+  },
+  {
+    "featureType": "road.local",
+    "elementType": "labels.text.fill",
+    "stylers": [{ "color": "#6b7a5a" }]
+  },
+  {
+    "featureType": "transit.line",
+    "elementType": "geometry",
+    "stylers": [{ "color": "#c8d8b0" }]
+  },
+  {
+    "featureType": "transit.station",
+    "elementType": "geometry",
+    "stylers": [{ "color": "#b8cc98" }]
+  },
+  {
+    "featureType": "water",
+    "elementType": "geometry",
+    "stylers": [{ "color": "#8ab4d4" }]
+  },
+  {
+    "featureType": "water",
+    "elementType": "labels.text.fill",
+    "stylers": [{ "color": "#3a6080" }]
+  },
+  {
+    "featureType": "water",
+    "elementType": "labels.text.stroke",
+    "stylers": [{ "color": "#ddeeff" }]
+  }
+]
