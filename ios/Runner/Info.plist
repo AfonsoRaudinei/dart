@@ -5,7 +5,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Soloforte App</string>
+	<string>SoloForte</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -13,7 +13,7 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>soloforte_app</string>
+	<string>SoloForte</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
@@ -45,9 +45,13 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>SoloForte precisa acessar sua localização para exibir sua posição no mapa e habilitar funções de campo.</string>
-	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>SoloForte precisa acessar sua localização para registrar atividades de campo mesmo em segundo plano.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>SoloForte usa a câmera para registrar fotos de ocorrências e do seu perfil.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>SoloForte acessa sua galeria para anexar fotos a ocorrências e ao perfil.</string>
 </dict>
 </plist>

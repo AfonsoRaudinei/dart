@@ -1,92 +1,74 @@
-# Build Release — SoloForte
+# Build de Release — SoloForte App
 
-Guia para gerar builds de release para Android e iOS.
+## Pré-requisitos
 
-## Pré-requisito: Supabase configurado
+- Flutter SDK estável
+- Xcode 15+ (iOS)
+- Android Studio / JDK 17 (Android)
+- Conta Apple Developer e Google Play Console
 
-Antes de gerar qualquer build de release, o banco de dados Supabase deve estar
-completamente configurado com os 3 scripts SQL.
+## Variáveis de ambiente (`--dart-define`)
 
-**→ [docs/SUPABASE_MANUAL.md](SUPABASE_MANUAL.md) — Guia completo de configuração Supabase**
+```bash
+flutter run \
+  --dart-define=SUPABASE_URL=https://SEU_PROJETO.supabase.co \
+  --dart-define=SUPABASE_ANON_KEY=SUA_ANON_KEY \
+  --dart-define=PRIVACY_POLICY_URL=https://SEU_DOMINIO/politica-de-privacidade \
+  --dart-define=TERMS_URL=https://SEU_DOMINIO/termos-de-servico \
+  --dart-define=LGPD_CONTACT_EMAIL=privacidade@soloforte.app
+```
 
----
+> Nunca commitar `SUPABASE_ANON_KEY` em arquivos versionados.
 
-## Android
+## Supabase — exclusão de conta
 
-### 1. Gerar keystore
+Execute `supabase/auth_delete_account.sql` no SQL Editor do projeto Supabase antes de liberar a funcionalidade de exclusão in-app.
+
+## Android — assinatura release
+
+1. Gere o keystore:
 
 ```bash
 keytool -genkey -v \
-  -keystore android/app/soloforte-release.jks \
-  -keyalg RSA -keysize 2048 -validity 10000 \
-  -alias soloforte
+  -keystore android/keystore/soloforte-release.jks \
+  -alias soloforte \
+  -keyalg RSA -keysize 2048 -validity 10000
 ```
 
-### 2. Configurar `key.properties`
-
-Copie o template e preencha com seus dados:
+2. Copie `android/key.properties.example` para `android/key.properties` e preencha os valores.
+3. Build:
 
 ```bash
-cp android/key.properties.example android/key.properties
+flutter build appbundle \
+  --dart-define=SUPABASE_URL=... \
+  --dart-define=SUPABASE_ANON_KEY=...
 ```
 
-Edite `android/key.properties`:
+O `build.gradle.kts` usa `key.properties` quando presente; caso contrário, fallback para debug (apenas desenvolvimento local).
 
-```properties
-storePassword=SUA_SENHA_KEYSTORE
-keyPassword=SUA_SENHA_KEY
-keyAlias=soloforte
-storeFile=soloforte-release.jks
-```
+## iOS — distribuição
 
-> ⚠️ O arquivo `key.properties` está no `.gitignore` — nunca commite credenciais.
-
-### 3. Build release
+1. Abra `ios/Runner.xcworkspace` no Xcode.
+2. Confirme **Bundle Identifier:** `com.soloforte.app`
+3. Selecione certificado **Apple Distribution** e provisioning profile App Store.
+4. Build:
 
 ```bash
-flutter build apk --release \
-  --dart-define=SUPABASE_URL=https://pyoejhhkjlrjijiviryq.supabase.co \
-  --dart-define=SUPABASE_ANON_KEY=SUA_ANON_KEY
-
-# Ou AAB para Google Play
-flutter build appbundle --release \
-  --dart-define=SUPABASE_URL=https://pyoejhhkjlrjijiviryq.supabase.co \
-  --dart-define=SUPABASE_ANON_KEY=SUA_ANON_KEY
+flutter build ipa \
+  --dart-define=SUPABASE_URL=... \
+  --dart-define=SUPABASE_ANON_KEY=...
 ```
 
----
+## Bundle ID unificado
 
-## iOS
+- **iOS:** `com.soloforte.app`
+- **Android:** `com.soloforte.app`
 
-### 1. Certificado Apple Distribution
+## Checklist pós-build
 
-1. Abra o Xcode → **Signing & Capabilities**
-2. Selecione o **Team** correto (Apple Developer Program)
-3. Certifique-se de ter o certificado **Apple Distribution** instalado no Keychain
-
-### 2. Build release
-
-```bash
-flutter build ipa --release \
-  --dart-define=SUPABASE_URL=https://pyoejhhkjlrjijiviryq.supabase.co \
-  --dart-define=SUPABASE_ANON_KEY=SUA_ANON_KEY
-```
-
-> O processo de assinatura e upload para a App Store Connect deve ser feito
-> pelo Xcode (**Product → Archive**) ou pelo Transporter.
-
----
-
-## Variáveis de ambiente de produção
-
-Ver seção 8 de [docs/SUPABASE_MANUAL.md](SUPABASE_MANUAL.md) para a lista completa
-de `--dart-define` disponíveis (`PRIVACY_POLICY_URL`, `TERMS_URL`, `LGPD_CONTACT_EMAIL`).
-
----
-
-## Referências
-
-- [SUPABASE_MANUAL.md](SUPABASE_MANUAL.md) — Configuração do banco de dados
-- [store/GUIA_SUBMISSAO.md](store/GUIA_SUBMISSAO.md) — Submissão às lojas
-- [Documentação Flutter — Build iOS](https://docs.flutter.dev/deployment/ios)
-- [Documentação Flutter — Build Android](https://docs.flutter.dev/deployment/android)
+- [ ] Login com conta real Supabase
+- [ ] Cadastro com confirmação de e-mail (se habilitada)
+- [ ] Exclusão de conta em Configurações
+- [ ] Links de Política e Termos abrem no navegador
+- [ ] Permissões GPS, câmera, galeria e notificações solicitadas corretamente
+- [ ] Mapa, visitas e ocorrências offline inalterados
