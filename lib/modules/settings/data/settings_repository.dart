@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:image_picker/image_picker.dart';
+import '../../../core/database/database_helper.dart';
 import '../domain/settings_models.dart';
 
 class SettingsRepository {
@@ -11,8 +12,9 @@ class SettingsRepository {
 
   static const _keyProfileImage = 'profile_image_path';
   static const _keyUseAsAppIcon = 'profile_use_as_icon';
-  // Theme keys
-  static const _keyTheme = 'app_theme_mode'; // 'green', 'blue', 'black'
+  static const _keyTheme = 'app_theme_mode';
+  static const _keyOfflineMode = 'offline_mode_forced';
+  static const _keyNotificationsEnabled = 'notifications_enabled';
 
   ProfileState loadProfile() {
     final path = _prefs.getString(_keyProfileImage);
@@ -35,6 +37,23 @@ class SettingsRepository {
 
   Future<void> saveTheme(String theme) async {
     await _prefs.setString(_keyTheme, theme);
+  }
+
+  bool loadOfflineMode() => _prefs.getBool(_keyOfflineMode) ?? false;
+
+  Future<void> saveOfflineMode(bool value) async {
+    await _prefs.setBool(_keyOfflineMode, value);
+  }
+
+  bool loadNotificationsEnabled() =>
+      _prefs.getBool(_keyNotificationsEnabled) ?? true;
+
+  Future<void> saveNotificationsEnabled(bool value) async {
+    await _prefs.setBool(_keyNotificationsEnabled, value);
+  }
+
+  Future<void> clearLocalData() async {
+    await DatabaseHelper.instance.deleteDatabaseFile();
   }
 
   Future<String?> pickAndSaveImage(ImageSource source) async {

@@ -20,7 +20,7 @@ class DatabaseHelper {
     String path = join(documentsDirectory.path, 'soloforte.db');
     return await openDatabase(
       path,
-      version: 5,
+      version: 6,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -129,6 +129,9 @@ class DatabaseHelper {
         lat REAL,
         long REAL,
         created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        category TEXT,
+        status TEXT DEFAULT 'draft',
         sync_status INTEGER DEFAULT 1,
         FOREIGN KEY (visit_session_id) REFERENCES visit_sessions (id)
       )
@@ -143,6 +146,7 @@ class DatabaseHelper {
         visit_session_id TEXT NOT NULL UNIQUE,
         content TEXT NOT NULL,
         created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
         sync_status INTEGER DEFAULT 1,
         FOREIGN KEY (visit_session_id) REFERENCES visit_sessions (id)
       )
@@ -163,6 +167,7 @@ class DatabaseHelper {
         status TEXT NOT NULL,
         realized_at TEXT,
         created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
         sync_status INTEGER DEFAULT 1,
         FOREIGN KEY (visit_session_id) REFERENCES visit_sessions (id)
       )
@@ -273,12 +278,45 @@ class DatabaseHelper {
       await db.execute(
         'CREATE INDEX idx_agenda_producer ON agenda_events(producer_id)',
       );
+    if (oldVersion < 6) {
+      await db.execute('ALTER TABLE occurrences ADD COLUMN updated_at TEXT');
+      await db.execute('ALTER TABLE occurrences ADD COLUMN category TEXT');
+      await db.execute(
+        "ALTER TABLE occurrences ADD COLUMN status TEXT DEFAULT 'draft'",
+      );
+      await db.execute(
+        'UPDATE occurrences SET updated_at = created_at WHERE updated_at IS NULL',
+      );
+      await db.execute('ALTER TABLE visit_reports ADD COLUMN updated_at TEXT');
+      await db.execute(
+        'UPDATE visit_reports SET updated_at = created_at WHERE updated_at IS NULL',
+      );
+      await db.execute('ALTER TABLE agenda_events ADD COLUMN updated_at TEXT');
+      await db.execute(
+        'UPDATE agenda_events SET updated_at = created_at WHERE updated_at IS NULL',
+      );
+    }
+  }
+
+  Future<void> closeDatabase() async {
+    if (_database != null) {
+      await _database!.close();
+      _database = null;
+    }
+  }
+
+  Future<void> deleteDatabaseFile() async {
+    await closeDatabase();
+    final documentsDirectory = await getApplicationDocumentsDirectory();
+    final path = join(documentsDirectory.path, 'soloforte.db');
+    final file = File(path);
+    if (await file.exists()) {
+      await file.delete();
     }
   }
 
   // Future helpers to close DB if needed
   Future<void> close() async {
-    final db = await instance.database;
-    db.close();
+    await closeDatabase();
   }
 }

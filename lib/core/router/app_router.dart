@@ -9,7 +9,8 @@ import '../../ui/screens/private_map_screen.dart';
 import '../../ui/screens/login_screen.dart';
 import '../../ui/screens/signup_screen.dart';
 import '../../ui/screens/misc_screens.dart'
-    hide SettingsScreen, ClientesScreen, RelatoriosScreen;
+    hide SettingsScreen, ClientesScreen, RelatoriosScreen, AgendaScreen;
+import '../../../modules/consultoria/agenda/presentation/screens/agenda_screen.dart';
 import '../../../modules/settings/presentation/screens/settings_screen.dart';
 import '../../../modules/consultoria/clients/presentation/screens/client_list_screen.dart';
 import '../../../modules/consultoria/clients/presentation/screens/client_form_screen.dart';

@@ -65,6 +65,40 @@ final themeProvider = StateNotifierProvider<ThemeNotifier, String>((ref) {
   return ThemeNotifier(repo);
 });
 
+class OfflineModeNotifier extends StateNotifier<bool> {
+  final SettingsRepository _repository;
+
+  OfflineModeNotifier(this._repository) : super(_repository.loadOfflineMode());
+
+  Future<void> setOfflineMode(bool value) async {
+    state = value;
+    await _repository.saveOfflineMode(value);
+  }
+}
+
+final offlineModeProvider = StateNotifierProvider<OfflineModeNotifier, bool>((
+  ref,
+) {
+  return OfflineModeNotifier(ref.watch(settingsRepositoryProvider));
+});
+
+class NotificationsNotifier extends StateNotifier<bool> {
+  final SettingsRepository _repository;
+
+  NotificationsNotifier(this._repository)
+    : super(_repository.loadNotificationsEnabled());
+
+  Future<void> setEnabled(bool value) async {
+    state = value;
+    await _repository.saveNotificationsEnabled(value);
+  }
+}
+
+final notificationsEnabledProvider =
+    StateNotifierProvider<NotificationsNotifier, bool>((ref) {
+      return NotificationsNotifier(ref.watch(settingsRepositoryProvider));
+    });
+
 // --- Storage Provider ---
 final storageUsageProvider = FutureProvider.autoDispose<Map<String, String>>((
   ref,

@@ -6,6 +6,7 @@ import '../../../../core/auth/auth_exception.dart';
 import '../../../../core/session/session_controller.dart';
 import '../../../../core/utils/legal_links.dart';
 import '../../../../ui/theme/soloforte_theme.dart';
+import '../../../../core/services/sync_service.dart';
 import '../providers/settings_providers.dart';
 import '../../domain/settings_models.dart';
 
@@ -20,6 +21,9 @@ class SettingsScreen extends ConsumerWidget {
     final theme = Theme.of(context);
     final userProfile = ref.watch(profileProvider);
     final currentThemeMode = ref.watch(themeProvider);
+    final offlineMode = ref.watch(offlineModeProvider);
+    final notificationsEnabled = ref.watch(notificationsEnabledProvider);
+    final pendingSync = ref.watch(pendingSyncCountProvider);
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
@@ -85,19 +89,39 @@ class SettingsScreen extends ConsumerWidget {
                           context,
                           title: 'Modo Offline',
                           subtitle:
-                              'Baixar mapas e dados para uso sem internet.',
-                          value: false, // Placeholder
-                          onChanged: (val) {},
+                              'Pausa sincronização automática com o servidor.',
+                          value: offlineMode,
+                          onChanged: (val) => ref
+                              .read(offlineModeProvider.notifier)
+                              .setOfflineMode(val),
                           icon: Icons.offline_pin_outlined,
                         ),
-                        // Storage Usage
+                        pendingSync.when(
+                          data: (count) => _buildTile(
+                            context,
+                            title: 'Pendentes de sync',
+                            icon: Icons.sync,
+                            onTap: () => ref.invalidate(manualSyncProvider),
+                            trailingText: '$count',
+                          ),
+                          loading: () => const SizedBox.shrink(),
+                          error: (_, __) => const SizedBox.shrink(),
+                        ),
                         _buildStorageUsageTile(context, ref),
                         _buildActionTile(
                           context,
                           title: 'Limpar cache',
                           icon: Icons.cleaning_services_outlined,
                           onTap: () async {
-                            // Placeholder action
+                            await ref
+                                .read(settingsRepositoryProvider)
+                                .clearCache();
+                            ref.invalidate(storageUsageProvider);
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Cache limpo.')),
+                              );
+                            }
                           },
                         ),
                         _buildActionTile(
@@ -105,7 +129,7 @@ class SettingsScreen extends ConsumerWidget {
                           title: 'Limpar dados locais',
                           icon: Icons.delete_outline,
                           isDestructive: true,
-                          onTap: () => _showClearConfirmation(context),
+                          onTap: () => _showClearConfirmation(context, ref),
                         ),
                       ]),
 
@@ -115,8 +139,10 @@ class SettingsScreen extends ConsumerWidget {
                         _buildSwitchTile(
                           context,
                           title: 'Notificações',
-                          value: true,
-                          onChanged: (val) {},
+                          value: notificationsEnabled,
+                          onChanged: (val) => ref
+                              .read(notificationsEnabledProvider.notifier)
+                              .setEnabled(val),
                           icon: Icons.notifications_none,
                         ),
                         _buildTile(
@@ -475,6 +501,7 @@ class SettingsScreen extends ConsumerWidget {
     required String title,
     required IconData icon,
     required VoidCallback onTap,
+    String? trailingText,
   }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
@@ -493,7 +520,9 @@ class SettingsScreen extends ConsumerWidget {
           color: isDark ? Colors.white : const Color(0xFF1D1D1F),
         ),
       ),
-      trailing: const Icon(Icons.chevron_right, color: Color(0xFFC7C7CC)),
+      trailing: trailingText != null
+          ? Text(trailingText, style: SoloTextStyles.label)
+          : const Icon(Icons.chevron_right, color: Color(0xFFC7C7CC)),
       onTap: onTap,
       dense: true,
     );
@@ -574,7 +603,7 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 
-  void _showClearConfirmation(BuildContext context) {
+  void _showClearConfirmation(BuildContext context, WidgetRef ref) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -588,9 +617,16 @@ class SettingsScreen extends ConsumerWidget {
             child: const Text('Cancelar'),
           ),
           TextButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(context);
-              // Call clear action
+              await ref.read(settingsRepositoryProvider).clearLocalData();
+              ref.invalidate(storageUsageProvider);
+              ref.invalidate(pendingSyncCountProvider);
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Dados locais removidos.')),
+                );
+              }
             },
             child: const Text('Limpar', style: TextStyle(color: Colors.red)),
           ),

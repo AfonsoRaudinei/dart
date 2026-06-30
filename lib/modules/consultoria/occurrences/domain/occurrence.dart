@@ -1,3 +1,5 @@
+import '../../../../core/sync/occurrence_sync_mapper.dart';
+
 // 🔄 Estados de sincronização offline-first
 enum SyncStatus {
   local, // Criado offline, nunca sincronizado
@@ -111,7 +113,7 @@ class Occurrence {
       updatedAt: map['updated_at'] != null
           ? DateTime.parse(map['updated_at'])
           : null,
-      syncStatus: map['sync_status'] ?? 'local',
+      syncStatus: OccurrenceSyncMapper.fromDb(map['sync_status']),
       category: map['category'],
       status: map['status'] ?? 'draft',
     );
@@ -128,7 +130,7 @@ class Occurrence {
       'long': long,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
-      'sync_status': syncStatus,
+      'sync_status': OccurrenceSyncMapper.toDb(syncStatus),
       'category': category,
       'status': status,
     };

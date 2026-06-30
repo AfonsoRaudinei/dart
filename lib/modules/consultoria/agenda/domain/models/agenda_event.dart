@@ -11,6 +11,7 @@ class AgendaEvent {
   final AgendaStatus status;
   final DateTime? realizedAt;
   final DateTime createdAt;
+  final DateTime updatedAt;
   final int syncStatus;
 
   AgendaEvent({
@@ -24,8 +25,9 @@ class AgendaEvent {
     this.status = AgendaStatus.planned,
     this.realizedAt,
     required this.createdAt,
+    DateTime? updatedAt,
     this.syncStatus = 1,
-  });
+  }) : updatedAt = updatedAt ?? createdAt;
 
   Map<String, dynamic> toMap() {
     return {
@@ -39,6 +41,7 @@ class AgendaEvent {
       'status': status.name,
       'realized_at': realizedAt?.toIso8601String(),
       'created_at': createdAt.toIso8601String(),
+      'updated_at': updatedAt.toIso8601String(),
       'sync_status': syncStatus,
     };
   }
@@ -60,6 +63,9 @@ class AgendaEvent {
           ? DateTime.parse(map['realized_at'])
           : null,
       createdAt: DateTime.parse(map['created_at']),
+      updatedAt: map['updated_at'] != null
+          ? DateTime.parse(map['updated_at'])
+          : DateTime.parse(map['created_at']),
       syncStatus: map['sync_status'] ?? 1,
     );
   }
@@ -75,6 +81,7 @@ class AgendaEvent {
     AgendaStatus? status,
     DateTime? realizedAt,
     DateTime? createdAt,
+    DateTime? updatedAt,
     int? syncStatus,
   }) {
     return AgendaEvent(
@@ -88,6 +95,7 @@ class AgendaEvent {
       status: status ?? this.status,
       realizedAt: realizedAt ?? this.realizedAt,
       createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
       syncStatus: syncStatus ?? this.syncStatus,
     );
   }
