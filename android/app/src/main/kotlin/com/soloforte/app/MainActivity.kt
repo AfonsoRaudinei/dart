@@ -1,4 +1,4 @@
-package com.soloforte.soloforte_app
+package com.soloforte.app
 
 import io.flutter.embedding.android.FlutterActivity
 

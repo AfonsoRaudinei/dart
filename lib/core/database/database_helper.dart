@@ -191,10 +191,6 @@ class DatabaseHelper {
         'ALTER TABLE fields ADD COLUMN sync_status INTEGER DEFAULT 1',
       );
       await db.execute('CREATE INDEX idx_fields_sync ON fields(sync_status)');
-      await db.execute(
-        'ALTER TABLE fields ADD COLUMN sync_status INTEGER DEFAULT 1',
-      );
-      await db.execute('CREATE INDEX idx_fields_sync ON fields(sync_status)');
     }
 
     if (oldVersion < 3) {

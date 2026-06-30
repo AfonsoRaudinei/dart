@@ -1,4 +1,7 @@
+import 'dart:io';
+
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class NotificationService {
   static final NotificationService _instance = NotificationService._();
@@ -7,11 +10,18 @@ class NotificationService {
 
   final FlutterLocalNotificationsPlugin _localNotifications =
       FlutterLocalNotificationsPlugin();
+  bool _initialized = false;
+
+  bool get isInitialized => _initialized;
 
   Future<void> init() async {
-    const androidSettings = AndroidInitializationSettings(
-      '@mipmap/ic_launcher',
-    );
+    if (_initialized) return;
+
+    if (Platform.isAndroid) {
+      await Permission.notification.request();
+    }
+
+    const androidSettings = AndroidInitializationSettings('launcher_icon');
     const iosSettings = DarwinInitializationSettings(
       requestAlertPermission: true,
       requestBadgePermission: true,
@@ -22,10 +32,13 @@ class NotificationService {
       android: androidSettings,
       iOS: iosSettings,
     );
+
     await _localNotifications.initialize(
       settings: settings,
       onDidReceiveNotificationResponse: (details) {},
     );
+
+    _initialized = true;
   }
 
   Future<void> showNotification({
@@ -34,10 +47,15 @@ class NotificationService {
     required String body,
     String? payload,
   }) async {
+    if (!_initialized) {
+      await init();
+    }
+
     const androidDetails = AndroidNotificationDetails(
       'geofence_channel',
       'Geofence Notifications',
-      channelDescription: 'Notifications for arrival and departure suggestions',
+      channelDescription:
+          'Notifications for arrival and departure suggestions',
       importance: Importance.high,
       priority: Priority.high,
     );

@@ -2,8 +2,10 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
-import '../../../../ui/theme/soloforte_theme.dart';
+import '../../../../core/auth/auth_exception.dart';
 import '../../../../core/session/session_controller.dart';
+import '../../../../core/utils/legal_links.dart';
+import '../../../../ui/theme/soloforte_theme.dart';
 import '../providers/settings_providers.dart';
 import '../../domain/settings_models.dart';
 
@@ -125,9 +127,21 @@ class SettingsScreen extends ConsumerWidget {
                         ),
                         _buildTile(
                           context,
+                          title: 'Política de Privacidade',
+                          icon: Icons.privacy_tip_outlined,
+                          onTap: () => openPrivacyPolicy(),
+                        ),
+                        _buildTile(
+                          context,
                           title: 'Termos de Serviço',
                           icon: Icons.description_outlined,
-                          onTap: () {},
+                          onTap: () => openTermsOfService(),
+                        ),
+                        _buildTile(
+                          context,
+                          title: 'Contato LGPD',
+                          icon: Icons.mail_outline,
+                          onTap: () => openLgpdContact(),
                         ),
                       ]),
 
@@ -144,6 +158,13 @@ class SettingsScreen extends ConsumerWidget {
                                 .read(sessionControllerProvider.notifier)
                                 .logout();
                           },
+                        ),
+                        _buildActionTile(
+                          context,
+                          title: 'Excluir minha conta',
+                          icon: Icons.person_remove_outlined,
+                          isDestructive: true,
+                          onTap: () => _showDeleteAccountConfirmation(context, ref),
                         ),
                       ]),
 
@@ -509,6 +530,47 @@ class SettingsScreen extends ConsumerWidget {
       ),
       onTap: onTap,
       dense: true,
+    );
+  }
+
+  void _showDeleteAccountConfirmation(BuildContext context, WidgetRef ref) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Excluir conta?'),
+        content: const Text(
+          'Esta ação é permanente e remove seu acesso ao SoloForte. '
+          'Dados locais no dispositivo permanecem até você limpá-los.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              try {
+                await ref
+                    .read(sessionControllerProvider.notifier)
+                    .deleteAccount();
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Conta excluída com sucesso.')),
+                  );
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(mapAuthError(e))),
+                  );
+                }
+              }
+            },
+            child: const Text('Excluir', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
     );
   }
 

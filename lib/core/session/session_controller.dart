@@ -1,5 +1,9 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+import '../auth/auth_exception.dart';
 import '../auth/auth_service.dart';
+import '../config/app_config.dart';
 import 'session_models.dart';
 import 'session_storage.dart';
 
@@ -7,26 +11,33 @@ part 'session_controller.g.dart';
 
 @Riverpod(keepAlive: true)
 class SessionController extends _$SessionController {
+  AuthService? _authService;
+
+  AuthService get authService => _authService ??= AuthService();
+
   @override
   SessionState build() {
-    // Initial state check
-    // We can't use async in build easily for sync state unless we return AsyncValue usually.
-    // But typical riverpod pattern for auth is AsyncValue<SessionState> or handling loading.
-    // However, prompt mandated states: unknown, public, authenticated.
-    // We will start 'unknown' and then check storage.
-
     _initialize();
     return const SessionUnknown();
   }
 
   Future<void> _initialize() async {
-    // Artificial delay to show splash or check usage
-    await Future.delayed(Duration.zero);
-
     final storage = ref.read(sessionStorageProvider);
-    final token = storage.getToken();
+    if (!storage.isInitialized) {
+      await storage.init();
+    }
 
-    if (token != null) {
+    if (AppConfig.hasSupabaseConfig) {
+      final supabaseSession = Supabase.instance.client.auth.currentSession;
+      if (supabaseSession != null) {
+        await storage.saveToken(supabaseSession.accessToken);
+        state = SessionAuthenticated(supabaseSession.accessToken);
+        return;
+      }
+    }
+
+    final token = storage.getToken();
+    if (token != null && token.isNotEmpty) {
       state = SessionAuthenticated(token);
     } else {
       state = const SessionPublic();
@@ -35,33 +46,39 @@ class SessionController extends _$SessionController {
 
   Future<void> login(String email, String password) async {
     try {
-      final authService = AuthService(); // We could inject this too
       final token = await authService.login(email, password);
-
       final storage = ref.read(sessionStorageProvider);
       await storage.saveToken(token);
-
       state = SessionAuthenticated(token);
-    } catch (e) {
+    } on AuthException {
       rethrow;
+    } catch (e) {
+      throw AuthException(mapAuthError(e));
     }
   }
 
   Future<void> signup(String name, String email, String password) async {
     try {
-      final authService = AuthService();
       final token = await authService.signup(name, email, password);
-
       final storage = ref.read(sessionStorageProvider);
       await storage.saveToken(token);
-
       state = SessionAuthenticated(token);
-    } catch (e) {
+    } on AuthException {
       rethrow;
+    } catch (e) {
+      throw AuthException(mapAuthError(e));
     }
   }
 
   Future<void> logout() async {
+    await authService.signOut();
+    final storage = ref.read(sessionStorageProvider);
+    await storage.clearToken();
+    state = const SessionPublic();
+  }
+
+  Future<void> deleteAccount() async {
+    await authService.deleteAccount();
     final storage = ref.read(sessionStorageProvider);
     await storage.clearToken();
     state = const SessionPublic();
