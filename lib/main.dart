@@ -35,6 +35,7 @@ Future<void> main() async {
       overrides: [
         sessionStorageProvider.overrideWith((ref) => sessionStorage),
         settingsRepositoryProvider.overrideWithValue(SettingsRepository(prefs)),
+        sharedPreferencesProvider.overrideWithValue(prefs),
       ],
       child: const AppBootstrap(child: SoloForteApp()),
     ),

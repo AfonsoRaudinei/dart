@@ -21,8 +21,9 @@ class SQLiteReportRepository {
         'content': report.content,
         'author': report.author,
         'observations': report.observations,
-      }), // Snapshot
+      }),
       'created_at': DateTime.now().toIso8601String(),
+      'updated_at': DateTime.now().toIso8601String(),
       'sync_status': 1,
     }, conflictAlgorithm: ConflictAlgorithm.replace);
   }

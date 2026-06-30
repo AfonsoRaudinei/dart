@@ -30,7 +30,6 @@ class OccurrenceController {
     String? category,
     String? status,
   }) async {
-    // 1. Get active session ID if any
     final visitState = ref.read(visitControllerProvider);
     final String? sessionId = (visitState.value?.status == 'active')
         ? visitState.value!.id
@@ -38,7 +37,7 @@ class OccurrenceController {
 
     final occurrence = Occurrence(
       id: const Uuid().v4(),
-      visitSessionId: sessionId, // Auto-bind
+      visitSessionId: sessionId,
       type: type,
       description: description,
       photoPath: photoPath,
@@ -50,8 +49,23 @@ class OccurrenceController {
     );
 
     await _repository.saveOccurrence(occurrence);
+    ref.invalidate(occurrencesListProvider);
+  }
 
-    // Refresh list
+  Future<void> updateOccurrence({
+    required Occurrence occurrence,
+    required String type,
+    required String description,
+    String? category,
+    String? status,
+  }) async {
+    final updated = occurrence.copyWith(
+      type: type,
+      description: description,
+      category: category,
+      status: status ?? occurrence.status,
+    );
+    await _repository.updateOccurrence(updated);
     ref.invalidate(occurrencesListProvider);
   }
 }

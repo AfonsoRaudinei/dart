@@ -402,13 +402,129 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
 
   void _handleOccurrencePinTap(occ.Occurrence occurrence) {
     HapticFeedback.lightImpact();
-    // Implement what happens when an occurrence pin is tapped
-    // For example, show a detailed sheet or dialog for the occurrence
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Ocorrência: ${occurrence.description}'),
-        backgroundColor: SoloForteColors.greenIOS,
-        duration: const Duration(seconds: 2),
+    _openOccurrenceEditDialog(occurrence);
+  }
+
+  Future<void> _openOccurrenceEditDialog(occ.Occurrence occurrence) async {
+    if (!mounted) return;
+
+    final descriptionController = TextEditingController(
+      text: occurrence.description,
+    );
+    var selectedType = occurrence.type;
+    var selectedCategory = occ.OccurrenceCategory.fromString(
+      occurrence.category,
+    );
+    var selectedStatus = occurrence.status ?? 'draft';
+
+    await showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: const Text('Editar Ocorrência'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Categoria',
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: occ.OccurrenceCategory.values.map((category) {
+                    final isSelected = selectedCategory == category;
+                    return ChoiceChip(
+                      selected: isSelected,
+                      label: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(category.emoji),
+                          const SizedBox(width: 4),
+                          Text(
+                            category.label,
+                            style: const TextStyle(fontSize: 11),
+                          ),
+                        ],
+                      ),
+                      selectedColor: SoloForteColors.greenIOS,
+                      labelStyle: TextStyle(
+                        color: isSelected ? Colors.white : Colors.black87,
+                      ),
+                      onSelected: (selected) {
+                        if (selected) {
+                          setState(() => selectedCategory = category);
+                        }
+                      },
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: 16),
+                DropdownButtonFormField<String>(
+                  initialValue: selectedType,
+                  items: ['Urgente', 'Aviso', 'Info']
+                      .map((t) => DropdownMenuItem(value: t, child: Text(t)))
+                      .toList(),
+                  onChanged: (v) => setState(() => selectedType = v!),
+                  decoration: const InputDecoration(labelText: 'Urgência'),
+                ),
+                const SizedBox(height: 16),
+                DropdownButtonFormField<String>(
+                  initialValue: selectedStatus,
+                  items: const [
+                    DropdownMenuItem(value: 'draft', child: Text('Rascunho')),
+                    DropdownMenuItem(
+                      value: 'confirmed',
+                      child: Text('Confirmada'),
+                    ),
+                  ],
+                  onChanged: (v) => setState(() => selectedStatus = v!),
+                  decoration: const InputDecoration(labelText: 'Status'),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: descriptionController,
+                  decoration: const InputDecoration(labelText: 'Descrição'),
+                  maxLines: 3,
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancelar'),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: SoloForteColors.greenIOS,
+              ),
+              onPressed: () {
+                ref.read(occurrenceControllerProvider).updateOccurrence(
+                      occurrence: occurrence,
+                      type: selectedType,
+                      description: descriptionController.text,
+                      category: selectedCategory.name,
+                      status: selectedStatus,
+                    );
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Ocorrência atualizada.'),
+                    backgroundColor: SoloForteColors.greenIOS,
+                  ),
+                );
+              },
+              child: const Text(
+                'Salvar',
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

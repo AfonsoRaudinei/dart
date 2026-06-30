@@ -14,6 +14,32 @@ class OccurrenceRepository {
     );
   }
 
+  Future<Occurrence?> getOccurrenceById(String id) async {
+    final db = await _databaseHelper.database;
+    final maps = await db.query(
+      'occurrences',
+      where: 'id = ?',
+      whereArgs: [id],
+      limit: 1,
+    );
+    if (maps.isEmpty) return null;
+    return Occurrence.fromMap(maps.first);
+  }
+
+  Future<void> updateOccurrence(Occurrence occurrence) async {
+    final db = await _databaseHelper.database;
+    final updated = occurrence.copyWith(
+      updatedAt: DateTime.now(),
+      syncStatus: occurrence.syncStatus == 'synced' ? 'updated' : occurrence.syncStatus,
+    );
+    await db.update(
+      'occurrences',
+      updated.toMap(),
+      where: 'id = ?',
+      whereArgs: [occurrence.id],
+    );
+  }
+
   Future<List<Occurrence>> getOccurrencesBySession(String sessionId) async {
     final db = await _databaseHelper.database;
     final List<Map<String, dynamic>> maps = await db.query(
@@ -29,7 +55,7 @@ class OccurrenceRepository {
     final List<Map<String, dynamic>> maps = await db.query(
       'occurrences',
       orderBy: 'created_at DESC',
-      limit: 50, // Safety limit
+      limit: 50,
     );
     return List.generate(maps.length, (i) => Occurrence.fromMap(maps[i]));
   }

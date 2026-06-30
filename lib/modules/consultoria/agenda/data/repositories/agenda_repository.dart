@@ -78,6 +78,30 @@ class AgendaRepository {
     return List.generate(maps.length, (i) => AgendaEvent.fromMap(maps[i]));
   }
 
+  Future<List<AgendaEvent>> getAllEvents({int limit = 100}) async {
+    final db = await _databaseHelper.database;
+    final maps = await db.query(
+      'agenda_events',
+      orderBy: 'scheduled_date ASC',
+      limit: limit,
+    );
+    return List.generate(maps.length, (i) => AgendaEvent.fromMap(maps[i]));
+  }
+
+  Future<void> updateEvent(AgendaEvent event) async {
+    final db = await _databaseHelper.database;
+    final updated = event.copyWith(
+      updatedAt: DateTime.now(),
+      syncStatus: event.syncStatus == 0 ? 1 : event.syncStatus,
+    );
+    await db.update(
+      'agenda_events',
+      updated.toMap(),
+      where: 'id = ?',
+      whereArgs: [event.id],
+    );
+  }
+
   Future<List<AgendaEvent>> getEvents({
     required DateTime start,
     required DateTime end,
