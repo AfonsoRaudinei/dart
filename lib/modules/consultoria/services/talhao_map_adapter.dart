@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:soloforte_app/core/utils/app_logger.dart';
 import 'package:soloforte_app/ui/theme/soloforte_theme.dart';
 import '../clients/domain/agronomic_models.dart';
 
@@ -52,7 +53,7 @@ class TalhaoMapAdapter {
         }
       }
     } catch (e) {
-      print('Error parsing geometry: $e');
+      appLog('Error parsing geometry: $e');
     }
     return [];
   }

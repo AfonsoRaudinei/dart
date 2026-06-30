@@ -18,7 +18,8 @@ class GeofenceController {
   final Ref _ref;
   final NotificationService _notificationService = NotificationService();
   Timer? _checkTimer;
-  Timer? _durationTimer; // Timer for 4h alert
+  Timer? _durationTimer;
+  String? _longVisitAlertSessionId;
 
   GeofenceController(this._ref) {
     _init();
@@ -183,16 +184,17 @@ class GeofenceController {
 
     if (activeSession != null && activeSession.status == 'active') {
       final duration = DateTime.now().difference(activeSession.startTime);
-      if (duration.inHours >= 4) {
-        // Check if we already notified recently?
-        // Implementation detail: NotificationService handles dedupe by ID if we reuse ID 300
-        // Or we can check lastTransition. For now, just notify.
+      if (duration.inHours >= 4 &&
+          _longVisitAlertSessionId != activeSession.id) {
+        _longVisitAlertSessionId = activeSession.id;
         _notificationService.showNotification(
           id: 300,
           title: 'Visita Longa',
           body: 'Sua visita já dura ${duration.inHours} horas. Tudo certo?',
         );
       }
+    } else {
+      _longVisitAlertSessionId = null;
     }
   }
 }
