@@ -74,3 +74,4 @@ ios/Flutter/.last_build_id
 .pub/
 build/
 API_KEYS_MASTER.md
+dart_defines.json

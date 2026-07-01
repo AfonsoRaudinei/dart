@@ -2,6 +2,9 @@
 
 > **Guia passo a passo** para configurar o banco de dados Supabase do SoloForte Dart
 > diretamente pelo Dashboard, sem precisar abrir arquivos do repositório.
+>
+> **Especificação completa de tabelas, colunas e RLS:**
+> [docs/SUPABASE_RELATORIO_COMPLETO.md](SUPABASE_RELATORIO_COMPLETO.md)
 
 ---
 
@@ -10,11 +13,18 @@
 | Campo | Valor |
 |---|---|
 | **Project URL** | `https://pyoejhhkjlrjijiviryq.supabase.co` |
-| **Anon Key** | **Project Settings → API Keys → Legacy anon** → copiar `anon public` |
+| **Chave pública (app)** | **Project Settings → API Keys → Publishable key** → Copy |
 | **Repositório SQL** | https://github.com/AfonsoRaudinei/dart (branch `main`) |
 
-> ⚠️ A **anon key** é pública e segura no mobile (protegida pelo RLS).
-> Use via `--dart-define`. **Nunca use `service_role` no Flutter.**
+> **Qual chave usar no Flutter**
+>
+> | Prioridade | Onde no Dashboard | Valor em `SUPABASE_ANON_KEY` |
+> |------------|-------------------|------------------------------|
+> | **Recomendado** | **API Keys → Publishable key** | Cole a Publishable key |
+> | Alternativa | API Keys *(Legacy)* → `anon` `public` | Ainda funciona; Supabase desaconselha para projetos novos |
+>
+> A chave é **pública** e segura no mobile (protegida pelo RLS).
+> Use via `--dart-define` ou `dart_defines.json`. **Nunca use `service_role` no Flutter.**
 
 ---
 
@@ -256,10 +266,14 @@ WHERE table_name = 'clients' AND column_name = 'user_id';
 
 ---
 
-## 7. Auth + Anon Key
+## 7. Auth + chave pública (Publishable key)
 
-1. **Authentication → Providers → Email** — desabilitar "Confirm email" (dev)
-2. **Project Settings → API Keys → Legacy anon** → copiar **anon public**
+1. **Authentication → Providers → Email** — desabilitar "Confirm email" (dev) ou confirmar usuários manualmente (prod)
+2. **Project Settings → API Keys**
+   - **Recomendado:** aba **API Keys** → **Publishable key** → **Copy**
+   - *Alternativa:* aba **API Keys (Legacy)** → `anon` `public` (funciona, mas legacy)
+
+Cole o valor em `SUPABASE_ANON_KEY` no app (nome da variável mantido por compatibilidade com o código Flutter).
 
 ---
 
@@ -268,7 +282,7 @@ WHERE table_name = 'clients' AND column_name = 'user_id';
 ```bash
 flutter run \
   --dart-define=SUPABASE_URL=https://pyoejhhkjlrjijiviryq.supabase.co \
-  --dart-define=SUPABASE_ANON_KEY=COLE_SUA_ANON_KEY
+  --dart-define=SUPABASE_ANON_KEY=COLE_SUA_PUBLISHABLE_KEY
 ```
 
 ---
