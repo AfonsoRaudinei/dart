@@ -28,10 +28,12 @@ flutter run \
 
 # Opção B — arquivo (recomendado para release)
 cp dart_defines.example.json dart_defines.json
-# edite dart_defines.json com a anon key real
+# edite dart_defines.json: API Keys → Publishable key → SUPABASE_ANON_KEY
 flutter run --dart-define-from-file=dart_defines.json
 ```
 
+> **Chave Supabase:** use **Publishable key** (Project Settings → API Keys). Legacy `anon public` ainda funciona.
+>
 > **Importante:** sem `SUPABASE_URL` e `SUPABASE_ANON_KEY` em tempo de compilação, o Supabase **não inicializa** (causa comum de IPA “sem banco”).
 
 ## Supabase
@@ -49,7 +51,7 @@ Scripts SQL (ordem):
 
 ```bash
 cp dart_defines.example.json dart_defines.json
-# preencher SUPABASE_ANON_KEY
+# preencher SUPABASE_ANON_KEY com a Publishable key (API Keys no Dashboard)
 
 # iOS (macOS + Xcode)
 ./scripts/build_ipa.sh 153

@@ -1,6 +1,6 @@
 {
   "SUPABASE_URL": "https://pyoejhhkjlrjijiviryq.supabase.co",
-  "SUPABASE_ANON_KEY": "COLE_SUA_ANON_KEY_AQUI",
+  "SUPABASE_ANON_KEY": "COLE_SUA_PUBLISHABLE_KEY_AQUI",
   "PRIVACY_POLICY_URL": "https://raw.githubusercontent.com/AfonsoRaudinei/dart/main/docs/legal/politica-de-privacidade.md",
   "TERMS_URL": "https://raw.githubusercontent.com/AfonsoRaudinei/dart/main/docs/legal/termos-de-servico.md",
   "LGPD_CONTACT_EMAIL": "privacidade@soloforte.app"

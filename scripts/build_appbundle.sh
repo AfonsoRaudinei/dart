@@ -13,8 +13,9 @@ if [[ ! -f "$DEFINES" ]]; then
   exit 1
 fi
 
-if grep -q "COLE_SUA_ANON_KEY" "$DEFINES"; then
-  echo "ERRO: substitua a anon key placeholder em dart_defines.json."
+if grep -q "COLE_SUA_PUBLISHABLE_KEY" "$DEFINES"; then
+  echo "ERRO: substitua a Publishable key placeholder em dart_defines.json."
+  echo "Use: Project Settings → API Keys → Publishable key"
   exit 1
 fi
 

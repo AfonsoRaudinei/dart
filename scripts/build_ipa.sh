@@ -11,13 +11,14 @@ cd "$ROOT"
 
 if [[ ! -f "$DEFINES" ]]; then
   echo "ERRO: arquivo dart_defines.json não encontrado."
-  echo "Copie o template e preencha a anon key:"
+  echo "Copie o template e preencha a Publishable key (API Keys no Supabase):"
   echo "  cp dart_defines.example.json dart_defines.json"
   exit 1
 fi
 
-if grep -q "COLE_SUA_ANON_KEY" "$DEFINES"; then
-  echo "ERRO: substitua COLE_SUA_ANON_KEY_AQUI em dart_defines.json pela anon key real."
+if grep -q "COLE_SUA_PUBLISHABLE_KEY" "$DEFINES"; then
+  echo "ERRO: substitua COLE_SUA_PUBLISHABLE_KEY_AQUI em dart_defines.json."
+  echo "Use: Project Settings → API Keys → Publishable key"
   exit 1
 fi
 

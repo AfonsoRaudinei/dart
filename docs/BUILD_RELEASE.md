@@ -25,9 +25,12 @@ Edite `dart_defines.json`:
 ```json
 {
   "SUPABASE_URL": "https://pyoejhhkjlrjijiviryq.supabase.co",
-  "SUPABASE_ANON_KEY": "SUA_ANON_KEY_REAL"
+  "SUPABASE_ANON_KEY": "SUA_PUBLISHABLE_KEY"
 }
 ```
+
+> **Onde obter a chave:** Project Settings → **API Keys → Publishable key** (recomendado).
+> Legacy `anon public` ainda funciona, mas prefira a Publishable key.
 
 > Nunca commitar `dart_defines.json` — já está no `.gitignore`.
 

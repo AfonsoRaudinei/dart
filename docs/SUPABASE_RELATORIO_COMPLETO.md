@@ -319,16 +319,23 @@ erDiagram
 | Conta demo review | `review@soloforte.app` confirmada no Dashboard | Para App Store / Play review |
 | JWT / sessão | Gerenciado pelo Supabase | Refresh automático no app |
 
-**Variáveis Flutter** (`--dart-define`):
+**Chave pública do app** (Dashboard):
+
+| Prioridade | Caminho | Uso no Flutter |
+|------------|---------|----------------|
+| **Recomendado** | Project Settings → **API Keys → Publishable key** | Valor de `SUPABASE_ANON_KEY` |
+| Alternativa | API Keys *(Legacy)* → `anon` `public` | Ainda funciona; prefira Publishable |
+
+**Variáveis Flutter** (`--dart-define` ou `dart_defines.json`):
 
 ```bash
 flutter run \
   --dart-define=SUPABASE_URL=https://pyoejhhkjlrjijiviryq.supabase.co \
-  --dart-define=SUPABASE_ANON_KEY=SUA_ANON_KEY
+  --dart-define=SUPABASE_ANON_KEY=SUA_PUBLISHABLE_KEY
 ```
 
 Definidas em [`lib/core/config/app_config.dart`](../lib/core/config/app_config.dart).  
-**Nunca** commitar a anon key. **Nunca** usar `service_role` no app mobile.
+**Nunca** commitar a chave. **Nunca** usar `service_role` no app mobile.
 
 ---
 
@@ -437,7 +444,7 @@ Este schema **não é compatível** com o app de release. Não executar.
 
 | Sintoma | Causa provável | Solução |
 |---------|----------------|---------|
-| `Supabase não configurado` | Faltam `--dart-define` | Passar URL + anon key no `flutter run` |
+| `Supabase não configurado` | Faltam `--dart-define` | Passar URL + Publishable key em `SUPABASE_ANON_KEY` |
 | `column "user_id" does not exist` | Schema antigo no banco | Reset + Script 1 correto |
 | `column "category" does not exist` | Feedback com schema antigo | Reset feedback + Script 3 |
 | `new row violates row-level security` | `user_id` nulo ou errado | App deve enviar `auth.uid()` no insert |
