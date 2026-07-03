@@ -42,6 +42,13 @@ class MapViewportController {
       return;
     }
 
+    // 🔒 Gate 0b: Query param pede foco em drawing — não mover para GPS.
+    if (ref.read(prioritizeDrawingFocusProvider)) {
+      ref.read(viewportStateProvider.notifier).state =
+          InitialViewportState.applied;
+      return;
+    }
+
     // 🔒 Gate 1: Map Ready
     if (!isMapReady) {
       ref.read(viewportStateProvider.notifier).state =

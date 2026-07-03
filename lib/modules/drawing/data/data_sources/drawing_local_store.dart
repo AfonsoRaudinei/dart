@@ -117,6 +117,37 @@ class DrawingLocalStore {
     );
   }
 
+  /// Soma area_ha dos drawings ativos vinculados a [fazendaId].
+  Future<double> getTotalAreaByFarmId(String fazendaId) async {
+    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
+    if (userId.isEmpty || fazendaId.isEmpty) return 0.0;
+    final db = await _dbHelper.database;
+    final result = await db.rawQuery(
+      'SELECT COALESCE(SUM(area_ha), 0.0) AS total '
+      'FROM drawings '
+      'WHERE user_id = ? AND fazenda_id = ? AND deleted_at IS NULL AND ativo = 1',
+      [userId, fazendaId],
+    );
+    return (result.first['total'] as num?)?.toDouble() ?? 0.0;
+  }
+
+  /// Atualiza area_total da fazenda no banco local.
+  Future<void> updateFarmAreaTotal(String farmId, double areaTotal) async {
+    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
+    if (userId.isEmpty || farmId.isEmpty) return;
+    final db = await _dbHelper.database;
+    await db.update(
+      'farms',
+      {
+        'area_total': areaTotal,
+        'updated_at': DateTime.now().toIso8601String(),
+        'sync_status': 1,
+      },
+      where: 'id = ? AND user_id = ?',
+      whereArgs: [farmId, userId],
+    );
+  }
+
   Map<String, dynamic> _toRow(DrawingFeature f) {
     return {
       'id': f.id,

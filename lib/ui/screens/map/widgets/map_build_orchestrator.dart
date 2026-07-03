@@ -178,7 +178,14 @@ class MapBuildOrchestrator extends ConsumerWidget {
                     drawCtrl.selectFeature(drawingFeature);
                   }
                   HapticFeedback.selectionClick();
-                  // 🔧 FIX-DRAW-SYNC: Reutilizar MapBottomSheet existente
+                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Talhão: ${drawingFeature.properties.nome}'),
+                      backgroundColor: PremiumTokens.brandGreen,
+                      duration: const Duration(seconds: 2),
+                    ),
+                  );
                   setSheetState(
                     const MapSheetState(type: MapSheetType.draw),
                     'Feature tap: editing existing drawing',

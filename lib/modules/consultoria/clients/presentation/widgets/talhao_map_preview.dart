@@ -9,17 +9,28 @@ class TalhaoMapPreviewWidget extends StatelessWidget {
     required this.vertices,
     required this.nome,
     required this.areaHa,
+    this.polygons = const [],
     this.subtitle,
     this.onTap,
     this.actions = const [],
   });
 
   final List<LatLng> vertices;
+  final List<List<LatLng>> polygons;
   final String nome;
   final double areaHa;
   final String? subtitle;
   final VoidCallback? onTap;
   final List<Widget> actions;
+
+  List<List<LatLng>> get _renderPolygons {
+    if (polygons.isNotEmpty) return polygons;
+    if (vertices.length >= 3) return [vertices];
+    return const [];
+  }
+
+  List<LatLng> get _boundsPoints =>
+      _renderPolygons.expand((ring) => ring).toList(growable: false);
 
   @override
   Widget build(BuildContext context) {
@@ -35,7 +46,9 @@ class TalhaoMapPreviewWidget extends StatelessWidget {
           children: [
             SizedBox(
               height: 160,
-              child: vertices.length < 3 ? _buildPlaceholder() : _buildMap(),
+              child: _boundsPoints.length < 3
+                  ? _buildPlaceholder()
+                  : _buildMap(),
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
@@ -102,10 +115,11 @@ class TalhaoMapPreviewWidget extends StatelessWidget {
   }
 
   Widget _buildMap() {
+    final boundsPoints = _boundsPoints;
     return FlutterMap(
       options: MapOptions(
         initialCameraFit: CameraFit.bounds(
-          bounds: LatLngBounds.fromPoints(vertices),
+          bounds: LatLngBounds.fromPoints(boundsPoints),
           padding: const EdgeInsets.all(16),
         ),
         interactionOptions: const InteractionOptions(
@@ -121,14 +135,16 @@ class TalhaoMapPreviewWidget extends StatelessWidget {
           userAgentPackageName: MapConfig.userAgent,
         ),
         PolygonLayer(
-          polygons: [
-            Polygon(
-              points: vertices,
-              color: Colors.blue.withAlpha(77),
-              borderColor: Colors.blue,
-              borderStrokeWidth: 2,
-            ),
-          ],
+          polygons: _renderPolygons
+              .map(
+                (ring) => Polygon(
+                  points: ring,
+                  color: Colors.blue.withAlpha(77),
+                  borderColor: Colors.blue,
+                  borderStrokeWidth: 2,
+                ),
+              )
+              .toList(),
         ),
       ],
     );

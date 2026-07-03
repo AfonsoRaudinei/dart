@@ -727,6 +727,8 @@ class DrawingController extends ChangeNotifier {
       persistFeature: _repository.saveFeature,
       getTotalAreaByClienteId: _repository.getTotalAreaByClienteId,
       onClientAreaUpdate: _onClientAreaUpdate,
+      getTotalAreaByFarmId: _repository.getTotalAreaByFarmId,
+      onFarmAreaUpdate: _repository.updateFarmAreaTotal,
       subtipo: subtipo,
       raioMetros: raioMetros,
       clienteId: clienteId,
@@ -931,6 +933,8 @@ class DrawingController extends ChangeNotifier {
         persistFeature: _repository.saveFeature,
         getTotalAreaByClienteId: _repository.getTotalAreaByClienteId,
         onClientAreaUpdate: _onClientAreaUpdate,
+        getTotalAreaByFarmId: _repository.getTotalAreaByFarmId,
+        onFarmAreaUpdate: _repository.updateFarmAreaTotal,
         subtipo: feature.properties.subtipo,
         raioMetros: feature.properties.raioMetros,
         clienteId: feature.properties.clienteId,
@@ -1098,7 +1102,11 @@ class DrawingController extends ChangeNotifier {
       _features.removeAt(index);
     }
 
-    _deleteFeatureAndUpdateClientArea(id, feature.properties.clienteId);
+    _deleteFeatureAndUpdateAreas(
+      id,
+      clienteId: feature.properties.clienteId,
+      fazendaId: feature.properties.fazendaId,
+    );
 
     if (_selectedFeature?.id == id) {
       _selectedFeature = null;
@@ -1107,11 +1115,20 @@ class DrawingController extends ChangeNotifier {
     notifyListeners();
   }
 
-  void _deleteFeatureAndUpdateClientArea(String id, String? clienteId) async {
+  void _deleteFeatureAndUpdateAreas(
+    String id, {
+    String? clienteId,
+    String? fazendaId,
+  }) async {
     await _repository.deleteFeature(id);
-    if (clienteId == null || clienteId.isEmpty) return;
-    final totalAreaHa = await _repository.getTotalAreaByClienteId(clienteId);
-    await _onClientAreaUpdate(clienteId, totalAreaHa);
+    if (clienteId != null && clienteId.isNotEmpty) {
+      final totalAreaHa = await _repository.getTotalAreaByClienteId(clienteId);
+      await _onClientAreaUpdate(clienteId, totalAreaHa);
+    }
+    if (fazendaId != null && fazendaId.isNotEmpty) {
+      final farmAreaHa = await _repository.getTotalAreaByFarmId(fazendaId);
+      await _repository.updateFarmAreaTotal(fazendaId, farmAreaHa);
+    }
   }
 
   /// Restaura uma feature excluída (Undo action)
@@ -1530,27 +1547,41 @@ class DrawingController extends ChangeNotifier {
       final f = _features[i];
       if (!f.properties.ativo) continue;
 
-      if (f.geometry is DrawingPolygon) {
-        final poly = f.geometry as DrawingPolygon;
-        if (poly.coordinates.isEmpty) continue;
-
-        // Check outer ring
-        if (DrawingUtils.isPointInPolygon(point, poly.coordinates.first)) {
-          // Check holes
-          bool inHole = false;
-          if (poly.coordinates.length > 1) {
-            for (var j = 1; j < poly.coordinates.length; j++) {
-              if (DrawingUtils.isPointInPolygon(point, poly.coordinates[j])) {
-                inHole = true;
-                break;
-              }
-            }
-          }
-          if (!inHole) return f;
-        }
+      if (_isPointInsideFeature(point, f.geometry)) {
+        return f;
       }
     }
     return null;
+  }
+
+  bool _isPointInsideFeature(LatLng point, DrawingGeometry geometry) {
+    if (geometry is DrawingPolygon) {
+      return _isPointInsidePolygon(point, geometry.coordinates);
+    }
+    if (geometry is DrawingMultiPolygon) {
+      for (final polygon in geometry.coordinates) {
+        if (_isPointInsidePolygon(point, polygon)) return true;
+      }
+    }
+    return false;
+  }
+
+  bool _isPointInsidePolygon(
+    LatLng point,
+    List<List<List<double>>> coordinates,
+  ) {
+    if (coordinates.isEmpty) return false;
+
+    if (!DrawingUtils.isPointInPolygon(point, coordinates.first)) {
+      return false;
+    }
+
+    for (var j = 1; j < coordinates.length; j++) {
+      if (DrawingUtils.isPointInPolygon(point, coordinates[j])) {
+        return false;
+      }
+    }
+    return true;
   }
 
   // ===========================================================================
