@@ -33,6 +33,26 @@ class AgendaAiRecommendationContext {
   final List<AgendaAiClientOpportunity> opportunities;
 }
 
+/// GPS/cidade capturados no mapa antes de abrir o assistente. ADR-046.
+class AgendaAiLaunchContext {
+  const AgendaAiLaunchContext({
+    this.latitude,
+    this.longitude,
+    this.city,
+  });
+
+  final double? latitude;
+  final double? longitude;
+  final String? city;
+
+  bool get hasLocation => latitude != null && longitude != null;
+
+  Map<String, dynamic>? get locationPayload {
+    if (!hasLocation) return null;
+    return {'lat': latitude, 'lon': longitude};
+  }
+}
+
 class AgendaAiSuggestedVisitRequest {
   const AgendaAiSuggestedVisitRequest({
     required this.clientId,

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:soloforte_app/core/contracts/agenda_ai_recommendation_context.dart';
+import 'package:soloforte_app/core/contracts/i_agenda_ai_launcher_provider.dart';
 import 'package:soloforte_app/core/contracts/i_agenda_ai_recommendation_context_lookup_provider.dart';
 import 'package:soloforte_app/core/contracts/i_agenda_ai_visit_writer_provider.dart';
 import 'package:soloforte_app/core/feature_flags/feature_flag_analytics.dart';
@@ -141,6 +142,8 @@ class _AgendaAiSheetState extends ConsumerState<_AgendaAiSheet> {
         .read(agendaAiRecommendationContextLookupProvider)
         .buildForUser(userId);
 
+    final launchContext = ref.read(agendaAiLaunchContextProvider);
+
     final opportunities = contextSnapshot.opportunities
         .map(
           (item) => {
@@ -158,8 +161,8 @@ class _AgendaAiSheetState extends ConsumerState<_AgendaAiSheet> {
 
     return {
       'consultantId': userId,
-      'currentCity': null,
-      'currentLocation': null,
+      'currentCity': launchContext?.city,
+      'currentLocation': launchContext?.locationPayload,
       'targetCategoryId': contextSnapshot.targetCategoryId,
       'annualTargetValue': contextSnapshot.annualTargetValue,
       'annualAchievedValue': contextSnapshot.annualAchievedValue,

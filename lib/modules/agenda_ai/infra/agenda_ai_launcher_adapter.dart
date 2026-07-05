@@ -1,12 +1,21 @@
 import 'package:flutter/widgets.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:soloforte_app/core/contracts/agenda_ai_recommendation_context.dart';
 import 'package:soloforte_app/core/contracts/i_agenda_ai_launcher.dart';
+import 'package:soloforte_app/core/contracts/i_agenda_ai_launcher_provider.dart';
 import 'package:soloforte_app/modules/agenda_ai/presentation/widgets/agenda_ai_sheet.dart';
 
 class AgendaAiLauncherAdapter implements IAgendaAiLauncher {
   const AgendaAiLauncherAdapter();
 
   @override
-  Future<void> showSheet(BuildContext context) {
+  Future<void> showSheet(
+    BuildContext context, {
+    AgendaAiLaunchContext? launchContext,
+  }) {
+    final container = ProviderScope.containerOf(context, listen: false);
+    container.read(agendaAiLaunchContextProvider.notifier).state =
+        launchContext;
     return showAgendaAiSheet(context);
   }
 }
