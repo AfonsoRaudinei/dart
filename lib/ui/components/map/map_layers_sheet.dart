@@ -6,7 +6,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 
 import '../../../core/config/map_config.dart';
-import '../../../core/config/map_secrets.dart';
 import '../../../core/constants/layout_constants.dart';
 import '../../../core/design/sf_icons.dart';
 import '../../../core/domain/map_models.dart';
@@ -104,7 +103,7 @@ class LayersSheet extends ConsumerWidget {
                           height: itemHeight,
                           tileConfig: MapConfig.tileConfigForLayer(
                             LayerType.satellite,
-                            mapTilerApiKey: kMapTilerApiKey,
+                            mapTilerApiKey: MapConfig.kMapTilerApiKey,
                           ),
                           label: 'Satélite',
                           isSelected: currentLayer == LayerType.satellite,
@@ -118,7 +117,7 @@ class LayersSheet extends ConsumerWidget {
                           height: itemHeight,
                           tileConfig: MapConfig.tileConfigForLayer(
                             LayerType.relevo,
-                            mapTilerApiKey: kMapTilerApiKey,
+                            mapTilerApiKey: MapConfig.kMapTilerApiKey,
                           ),
                           label: 'Relevo',
                           isSelected: currentLayer == LayerType.relevo,

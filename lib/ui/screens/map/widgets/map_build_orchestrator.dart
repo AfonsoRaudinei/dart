@@ -13,7 +13,6 @@ import '../../../../ui/theme/premium/design_tokens.dart';
 import '../../../../core/state/map_ui_providers.dart';
 import '../../../../core/state/map_state.dart';
 import '../../../../core/config/map_config.dart';
-import '../../../../core/config/map_secrets.dart';
 import '../../../../core/session/user_role.dart';
 import '../../../../core/utils/map_logger.dart';
 import '../../../../modules/drawing/presentation/providers/drawing_provider.dart';
@@ -102,7 +101,7 @@ class MapBuildOrchestrator extends ConsumerWidget {
     final activeLayer = ref.watch(activeLayerProvider);
     final tileConfig = MapConfig.tileConfigForLayer(
       activeLayer,
-      mapTilerApiKey: kMapTilerApiKey,
+      mapTilerApiKey: MapConfig.kMapTilerApiKey,
     );
 
     WidgetsBinding.instance.addPostFrameCallback((_) {

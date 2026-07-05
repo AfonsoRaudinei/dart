@@ -8,7 +8,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/state/map_ui_providers.dart';
 import '../../core/state/map_state.dart';
 import '../../core/config/map_config.dart';
-import '../../core/config/map_secrets.dart';
 import '../../core/services/offline_tile_cache_service.dart';
 import '../../core/utils/coordinate_parser.dart';
 import '../../modules/auth/services/auth_service.dart';
@@ -413,7 +412,7 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
     final activeLayer = ref.read(activeLayerProvider);
     final tileConfig = MapConfig.tileConfigForLayer(
       activeLayer,
-      mapTilerApiKey: kMapTilerApiKey,
+      mapTilerApiKey: MapConfig.kMapTilerApiKey,
     );
     final cacheService = ref.read(offlineTileCacheServiceProvider);
     final layerKey = cacheService.layerKeyFromTemplate(tileConfig.urlTemplate);

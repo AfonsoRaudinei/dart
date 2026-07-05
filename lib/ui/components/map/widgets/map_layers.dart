@@ -6,7 +6,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 import '../../../../core/state/map_state.dart';
 import '../../../../core/config/map_config.dart';
-import '../../../../core/config/map_secrets.dart';
 import '../../../../core/utils/map_logger.dart';
 import '../../../../core/providers/connectivity_provider.dart';
 
@@ -25,7 +24,7 @@ class MapLayersWidget extends ConsumerWidget {
     final cacheService = ref.watch(offlineTileCacheServiceProvider);
     final tileConfig = MapConfig.tileConfigForLayer(
       activeLayer,
-      mapTilerApiKey: kMapTilerApiKey,
+      mapTilerApiKey: MapConfig.kMapTilerApiKey,
     );
     final layerKey = cacheService.layerKeyFromTemplate(tileConfig.urlTemplate);
     final offlineTemplate = offlineRoot == null

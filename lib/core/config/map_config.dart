@@ -161,7 +161,20 @@ class MapConfig {
   /// True se a key foi injetada no build.
   static bool get hasStadiaApiKey => _stadiaApiKey.isNotEmpty;
 
+  /// Chave MapTiler — injetada via --dart-define=MAPTILER_API_KEY=[key]
+  /// Free tier: https://www.maptiler.com/cloud/
+  static const String mapTilerApiKey = String.fromEnvironment(
+    'MAPTILER_API_KEY',
+    defaultValue: '',
+  );
+
+  /// Alias legado usado pelos widgets de mapa.
+  static const String kMapTilerApiKey = mapTilerApiKey;
+
   /// True se a key MapTiler foi injetada no build.
+  static bool get hasMapTilerApiKeyFromEnvironment => mapTilerApiKey.isNotEmpty;
+
+  /// True se a key foi injetada no build.
   static bool hasMapTilerApiKey(String apiKey) => apiKey.isNotEmpty;
 
   /// URL do Stamen Terrain com API key quando disponível.
