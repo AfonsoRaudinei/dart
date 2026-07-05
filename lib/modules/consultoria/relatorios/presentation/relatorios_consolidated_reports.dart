@@ -65,7 +65,6 @@ class _ConsolidatedReportsSection extends ConsumerWidget {
       child: Column(
         children: [
           _GeneratedReportCard(
-            icon: Icons.list_alt_outlined,
             title: 'Lista de Ocorrências',
             subtitle: '${occurrences.length} ocorrência(s)',
             date: nowLabel,
@@ -73,7 +72,6 @@ class _ConsolidatedReportsSection extends ConsumerWidget {
             buildPayload: () => _buildOccurrenceListPayload(ref, occurrences),
           ),
           _GeneratedReportCard(
-            icon: Icons.agriculture_outlined,
             title: 'Resumo da Propriedade',
             subtitle: _propertySubtitle(relatorios),
             date: nowLabel,
@@ -81,7 +79,6 @@ class _ConsolidatedReportsSection extends ConsumerWidget {
             buildPayload: () => _buildPropertySummaryPayload(ref, relatorios),
           ),
           _GeneratedReportCard(
-            icon: Icons.history_outlined,
             title: 'Histórico de Visitas',
             subtitle: '${relatorios.length} visita(s)',
             date: nowLabel,
@@ -135,7 +132,6 @@ class _MarketingCasesReportsSection extends ConsumerWidget {
             children: visible
                 .map(
                   (item) => _GeneratedReportCard(
-                    icon: Icons.campaign_outlined,
                     title: item.produtorFazenda,
                     subtitle: _marketingSubtitle(item),
                     date: dateFormat.format(item.criadoEm.toLocal()),
@@ -176,7 +172,6 @@ class _MarketingCasesReportsSection extends ConsumerWidget {
 }
 
 class _GeneratedReportCard extends StatelessWidget {
-  final IconData icon;
   final String title;
   final String subtitle;
   final String date;
@@ -184,7 +179,6 @@ class _GeneratedReportCard extends StatelessWidget {
   final Future<_GeneratedReportPayload> Function() buildPayload;
 
   const _GeneratedReportCard({
-    required this.icon,
     required this.title,
     required this.subtitle,
     required this.date,
@@ -195,7 +189,6 @@ class _GeneratedReportCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _DataCard(
-      leading: Icon(icon, size: 20),
       title: title,
       subtitle: enabled ? subtitle : '$subtitle • sem dados',
       date: date,
@@ -276,7 +269,11 @@ class _GeneratedReportCard extends StatelessWidget {
     ReportExportFormat format,
     _GeneratedReportPayload payload,
   ) async {
-    await const ReportExportService().export(format, payload.toExportPayload());
+    await const ReportExportService().export(
+      format,
+      payload.toExportPayload(),
+      sharePositionOrigin: sharePositionOriginFor(context),
+    );
     if (!context.mounted) return;
     ScaffoldMessenger.of(
       context,

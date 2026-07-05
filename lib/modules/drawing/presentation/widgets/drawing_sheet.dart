@@ -15,6 +15,7 @@ import '../providers/drawing_export_provider.dart';
 import '../../../dashboard/providers/location_providers.dart';
 import '../../../../core/constants/layout_constants.dart';
 import '../../../../core/ui/sheets/soloforte_sheet.dart';
+import '../../../../core/utils/share_position.dart';
 import 'components/drawing_tool_selector.dart';
 import 'components/drawing_actions_bar.dart';
 import 'drawing_info_edit_sheet.dart';

@@ -6,6 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../core/contracts/i_client_lookup_provider.dart';
 import '../../../../core/html_templates/html_report_viewer.dart';
+import '../../../../core/utils/share_position.dart';
 import '../../../../core/html_templates/marketing_html_renderer.dart';
 import '../../../../core/html_templates/ocorrencia_html_renderer.dart';
 import '../../../../core/html_templates/propriedade_html_renderer.dart';
@@ -206,7 +207,6 @@ class _RelatorioCard extends ConsumerWidget {
       onTap: () => context.go('/consultoria/relatorios/${relatorio.id}'),
       borderRadius: BorderRadius.circular(12),
       child: _DataCard(
-        leading: const Icon(Icons.description_outlined, size: 20),
         title: relatorio.title?.isNotEmpty == true
             ? relatorio.title!
             : relatorio.farmName,
@@ -317,7 +317,11 @@ class _RelatorioCard extends ConsumerWidget {
       json: ConsultoriaReportExportData.reportJson(relatorio),
       csv: ConsultoriaReportExportData.reportCsv(relatorio),
     );
-    await const ReportExportService().export(format, payload);
+    await const ReportExportService().export(
+      format,
+      payload,
+      sharePositionOrigin: sharePositionOriginFor(context),
+    );
     if (!context.mounted) return;
     ScaffoldMessenger.of(
       context,
@@ -540,7 +544,6 @@ class _OccurrenciaCard extends ConsumerWidget {
       onTap: () => OccurrenceDetailSheet.show(context, occurrence),
       borderRadius: BorderRadius.circular(12),
       child: _DataCard(
-        leading: const Icon(Icons.warning_amber_rounded, size: 20),
         title: occurrence.type,
         subtitle: categoryLabel != occurrence.type ? categoryLabel : null,
         date: dateFormat.format(occurrence.createdAt.toLocal()),
@@ -650,6 +653,7 @@ class _OccurrenciaCard extends ConsumerWidget {
         json: ConsultoriaReportExportData.occurrenceJson(occurrence),
         csv: ConsultoriaReportExportData.occurrenceCsv(occurrence),
       ),
+      sharePositionOrigin: sharePositionOriginFor(context),
     );
     if (!context.mounted) return;
     ScaffoldMessenger.of(

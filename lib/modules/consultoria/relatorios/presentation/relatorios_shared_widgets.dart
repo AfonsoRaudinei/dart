@@ -123,7 +123,7 @@ class _SectionContainer extends StatelessWidget {
 }
 
 class _DataCard extends StatelessWidget {
-  final Widget leading;
+  final Widget? leading;
   final String title;
   final String? subtitle;
   final String date;
@@ -132,7 +132,7 @@ class _DataCard extends StatelessWidget {
   final Widget? trailing;
 
   const _DataCard({
-    required this.leading,
+    this.leading,
     required this.title,
     this.subtitle,
     required this.date,
@@ -155,13 +155,14 @@ class _DataCard extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Padding(
-            padding: const EdgeInsets.only(top: 1, right: 10),
-            child: IconTheme(
-              data: IconThemeData(color: theme.colorScheme.onSurfaceVariant),
-              child: leading,
+          if (leading != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 1, right: 10),
+              child: IconTheme(
+                data: IconThemeData(color: theme.colorScheme.onSurfaceVariant),
+                child: leading!,
+              ),
             ),
-          ),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
