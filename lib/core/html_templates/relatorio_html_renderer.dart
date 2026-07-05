@@ -183,48 +183,29 @@ abstract class RelatorioHtmlRenderer {
     String? consultantRole,
   }) async {
     final soloforteLogo = await assetImageToBase64(_soloforteLogoAsset);
-    final customLogo = await photoPathToBase64(customLogoPath);
-    final activeBrandName = _safeBrandName(customBrandName);
-    final escapedBrandName = escapeHtml(activeBrandName);
     final escapedConsultant = escapeHtml(consultantName);
     final escapedRole = escapeHtml(consultantRole);
-    final activeLogo = customLogo ?? soloforteLogo;
-    final issuerCaption = escapedConsultant.isNotEmpty
-        ? escapedRole.isNotEmpty
-              ? 'Responsável: $escapedConsultant · $escapedRole'
-              : 'Responsável: $escapedConsultant'
-        : customLogo != null || activeBrandName != 'SoloForte'
-        ? 'Identidade visual personalizada'
-        : 'Relatório técnico oficial';
-    final headerSubtitle = customLogo != null || activeBrandName != 'SoloForte'
-        ? 'Relatório técnico via SoloForte'
-        : 'Relatórios técnicos e exportação';
+    final footerLines = <String>['Plataforma oficial de relatórios e exportação'];
+    if (escapedConsultant.isNotEmpty) {
+      footerLines.insert(
+        0,
+        escapedRole.isNotEmpty
+            ? 'Responsável: $escapedConsultant · $escapedRole'
+            : 'Responsável: $escapedConsultant',
+      );
+    }
+    final footerCaption = footerLines.join(' · ');
 
     return {
-      'report_header_signature':
-          '''
-<img class="logo-img" src="$activeLogo" alt="$escapedBrandName" style="filter:none;opacity:1;background:rgba(255,255,255,0.14);border-radius:10px;padding:4px;box-sizing:border-box;">
-<div style="display:flex;flex-direction:column;gap:2px;min-width:0;">
-  <span class="logo-name" style="display:block;">$escapedBrandName</span>
-  <span style="display:block;font-size:11px;line-height:1.3;color:rgba(255,255,255,0.82);letter-spacing:0.02em;">$headerSubtitle</span>
-</div>
-''',
+      // Branding SoloForte fica exclusivamente no rodapé (regra de design).
+      'report_header_signature': '',
       'report_footer_signature':
           '''
-<div style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex:1 1 100%;flex-wrap:wrap;">
-  <div style="display:flex;align-items:center;gap:10px;min-width:0;">
-    <img class="logo-img" src="$activeLogo" alt="$escapedBrandName" style="width:32px;height:32px;filter:none;opacity:1;background:#FFFFFF;border-radius:8px;padding:4px;border:1px solid rgba(15,23,42,0.08);box-sizing:border-box;">
-    <div style="min-width:0;">
-      <div class="footer-brand" style="opacity:1;">$escapedBrandName</div>
-      <div style="font-size:11px;line-height:1.4;color:#667085;">$issuerCaption</div>
-    </div>
-  </div>
-  <div style="display:flex;align-items:center;gap:10px;min-width:0;">
-    <img class="logo-img" src="$soloforteLogo" alt="SoloForte" style="width:28px;height:28px;filter:none;opacity:1;background:#FFFFFF;border-radius:8px;padding:4px;border:1px solid rgba(15,23,42,0.08);box-sizing:border-box;">
-    <div style="min-width:0;">
-      <div class="footer-brand" style="opacity:1;">SoloForte</div>
-      <div style="font-size:11px;line-height:1.4;color:#667085;">Plataforma oficial de relatórios e exportação</div>
-    </div>
+<div style="display:flex;align-items:center;gap:10px;min-width:0;flex:1 1 auto;">
+  <img class="logo-img" src="$soloforteLogo" alt="SoloForte" style="width:32px;height:32px;filter:none;opacity:1;background:#FFFFFF;border-radius:8px;padding:4px;border:1px solid rgba(15,23,42,0.08);box-sizing:border-box;">
+  <div style="min-width:0;">
+    <div class="footer-brand" style="opacity:1;">SoloForte</div>
+    <div style="font-size:11px;line-height:1.4;color:#667085;">$footerCaption</div>
   </div>
 </div>
 ''',
@@ -304,12 +285,6 @@ abstract class RelatorioHtmlRenderer {
   /// Formata data atual para exibição no footer.
   static String geradoEm() {
     return DateFormat("dd/MM/yyyy 'às' HH:mm", 'pt_BR').format(DateTime.now());
-  }
-
-  static String _safeBrandName(String? value) {
-    final trimmed = value?.trim();
-    if (trimmed == null || trimmed.isEmpty) return 'SoloForte';
-    return trimmed;
   }
 }
 
