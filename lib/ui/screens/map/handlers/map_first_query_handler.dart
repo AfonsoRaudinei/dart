@@ -2,7 +2,9 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../components/map/map_sheet_state.dart';
+import '../../../../core/state/map_ui_providers.dart';
 import '../../../../core/utils/app_logger.dart';
+import '../../../../modules/consultoria/clients/presentation/providers/field_providers.dart';
 import '../../../../modules/drawing/presentation/providers/drawing_provider.dart';
 
 /// Aplica comandos contextuais recebidos por `/map?...`.
@@ -28,6 +30,14 @@ class MapFirstQueryHandler {
     final drawingId = uri.queryParameters['drawingId'];
 
     if ((modo == 'desenho' || modo == 'editar') && clienteId != null) {
+      if (drawingId != null && drawingId.isNotEmpty) {
+        ref.read(prioritizeDrawingFocusProvider.notifier).state = true;
+        ref.read(viewportStateProvider.notifier).state =
+            InitialViewportState.applied;
+      }
+      if (fazendaId != null && fazendaId.isNotEmpty) {
+        ref.read(selectedFarmIdProvider.notifier).state = fazendaId;
+      }
       AppLogger.debug(
         'MAP-FIRST: recebido modo=$modo clienteId=$clienteId fazendaId=$fazendaId drawingId=$drawingId',
         tag: 'PrivateMap',

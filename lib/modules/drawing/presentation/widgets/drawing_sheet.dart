@@ -404,6 +404,7 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
     if (geometry == null) return;
 
     setState(() => _isSaving = true);
+    final clientState = ref.read(drawingClientProvider);
     final DrawingFeature? savedFeature;
     try {
       savedFeature = await widget.controller.addFeature(
@@ -415,9 +416,10 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
             DrawingOrigin.desenho_manual,
         autorId: 'current_user',
         autorTipo: _isConsultant ? AuthorType.consultor : AuthorType.cliente,
-        clienteId: _selectedClient?.id ?? 'SELF',
-        fazendaId: _selectedFarm?.id,
-        grupo: _selectedFarm?.name,
+        clienteId:
+            _selectedClient?.id ?? clientState.preSelectedClientId ?? 'SELF',
+        fazendaId: _selectedFarm?.id ?? clientState.preSelectedFarmId,
+        grupo: _selectedFarm?.name ?? clientState.preSelectedFarmName,
         cor: _selectedColor.toARGB32(),
       );
     } finally {

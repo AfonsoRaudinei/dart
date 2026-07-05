@@ -16,6 +16,7 @@ import '../../core/utils/app_logger.dart';
 import '../../modules/drawing/presentation/providers/drawing_provider.dart';
 import '../../modules/drawing/domain/drawing_state.dart';
 import '../../modules/drawing/domain/models/drawing_models.dart';
+import '../../modules/consultoria/clients/presentation/providers/field_providers.dart';
 import '../../modules/dashboard/providers/location_providers.dart';
 import '../../modules/consultoria/occurrences/domain/occurrence.dart' as occ;
 import '../../modules/marketing/domain/enums/case_tipo.dart';
@@ -91,6 +92,21 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
     final key = uri.toString();
     if (_handledMapFirstUri == key) return;
     _handledMapFirstUri = key;
+
+    final modo = uri.queryParameters['modo'];
+    final drawingId = uri.queryParameters['drawingId'];
+    if (drawingId != null &&
+        drawingId.isNotEmpty &&
+        (modo == 'editar' || modo == 'desenho')) {
+      ref.read(prioritizeDrawingFocusProvider.notifier).state = true;
+      ref.read(viewportStateProvider.notifier).state =
+          InitialViewportState.applied;
+    }
+    final fazendaId = uri.queryParameters['fazendaId'];
+    if (fazendaId != null && fazendaId.isNotEmpty) {
+      ref.read(selectedFarmIdProvider.notifier).state = fazendaId;
+    }
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       MapFirstQueryHandler.handle(
@@ -124,18 +140,32 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
         'Drawing informado na rota não foi encontrado: $drawingId',
         tag: 'PrivateMap',
       );
+      ref.read(prioritizeDrawingFocusProvider.notifier).state = false;
       return;
     }
 
     controller.selectFeature(feature);
-    MapViewportController.focusDrawingFeature(
-      mapController: _mapController,
-      feature: feature,
-    );
+    _applyDrawingFocus(feature);
 
     if (edit) {
       controller.startEditMode();
     }
+
+    // Reaplica foco após frames para vencer race com viewport GPS assíncrono.
+    for (final delay in [const Duration(milliseconds: 50), const Duration(milliseconds: 200)]) {
+      await Future<void>.delayed(delay);
+      if (!mounted) return;
+      _applyDrawingFocus(feature);
+    }
+
+    ref.read(prioritizeDrawingFocusProvider.notifier).state = false;
+  }
+
+  void _applyDrawingFocus(DrawingFeature feature) {
+    MapViewportController.focusDrawingFeature(
+      mapController: _mapController,
+      feature: feature,
+    );
   }
 
   @override

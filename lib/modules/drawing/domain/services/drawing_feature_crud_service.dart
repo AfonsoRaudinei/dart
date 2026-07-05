@@ -21,6 +21,8 @@ class DrawingFeatureCrudService {
     Future<double> Function(String clienteId)? getTotalAreaByClienteId,
     Future<void> Function(String clienteId, double totalAreaHa)?
     onClientAreaUpdate,
+    Future<double> Function(String farmId)? getTotalAreaByFarmId,
+    Future<void> Function(String farmId, double totalAreaHa)? onFarmAreaUpdate,
     String? subtipo,
     double? raioMetros,
     String? clienteId,
@@ -51,6 +53,14 @@ class DrawingFeatureCrudService {
         onClientAreaUpdate != null) {
       final total = await getTotalAreaByClienteId(clienteId);
       await onClientAreaUpdate(clienteId, total);
+    }
+
+    if (fazendaId != null &&
+        fazendaId.isNotEmpty &&
+        getTotalAreaByFarmId != null &&
+        onFarmAreaUpdate != null) {
+      final farmTotal = await getTotalAreaByFarmId(fazendaId);
+      await onFarmAreaUpdate(fazendaId, farmTotal);
     }
 
     return feature;

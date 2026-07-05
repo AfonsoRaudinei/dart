@@ -14,6 +14,7 @@ class ClientDrawingFieldSummary {
     required this.name,
     required this.areaHa,
     required this.vertices,
+    this.polygons = const [],
     this.farmId,
     this.updatedAt,
     this.syncStatus,
@@ -23,6 +24,7 @@ class ClientDrawingFieldSummary {
   final String name;
   final double areaHa;
   final List<LatLng> vertices;
+  final List<List<LatLng>> polygons;
   final String? farmId;
   final DateTime? updatedAt;
   final int? syncStatus;
@@ -37,6 +39,7 @@ class FarmLinkedFieldSummary {
     required this.areaHa,
     required this.source,
     this.vertices = const [],
+    this.polygons = const [],
     this.crop,
     this.harvest,
     this.updatedAt,
@@ -50,6 +53,7 @@ class FarmLinkedFieldSummary {
   final double areaHa;
   final FarmLinkedFieldSource source;
   final List<LatLng> vertices;
+  final List<List<LatLng>> polygons;
   final String? crop;
   final String? harvest;
   final DateTime? updatedAt;
@@ -135,6 +139,7 @@ final clientDrawingFieldsProvider = FutureProvider.family
           name: row['nome'] as String? ?? 'Talhão sem nome',
           areaHa: (row['area_ha'] as num?)?.toDouble() ?? 0,
           vertices: _verticesFromGeoJson(row['geojson'] as String?),
+          polygons: _polygonsFromGeoJson(row['geojson'] as String?),
           farmId: row['fazenda_id'] as String?,
           updatedAt: row['updated_at'] != null
               ? DateTime.tryParse(row['updated_at'] as String)
@@ -170,6 +175,7 @@ FarmLinkedFieldSummary _linkedSummaryFromField(Talhao field) {
     areaHa: field.areaHa,
     source: FarmLinkedFieldSource.field,
     vertices: _verticesFromGeometry(field.geometry),
+    polygons: _polygonsFromGeometry(field.geometry),
     crop: field.crop.isEmpty ? null : field.crop,
     harvest: field.harvest.isEmpty ? null : field.harvest,
     updatedAt: field.updatedAt,
@@ -211,6 +217,7 @@ Future<List<FarmLinkedFieldSummary>> _loadDrawingFieldsByFarmId(
       areaHa: (row['area_ha'] as num?)?.toDouble() ?? 0,
       source: FarmLinkedFieldSource.drawing,
       vertices: _verticesFromGeoJson(row['geojson'] as String?),
+      polygons: _polygonsFromGeoJson(row['geojson'] as String?),
       crop: row['cultura'] as String?,
       harvest: row['safra'] as String?,
       updatedAt: row['updated_at'] != null
@@ -232,7 +239,18 @@ List<LatLng> _verticesFromGeometry(Map<String, dynamic>? geometry) {
   return _verticesFromGeoJson(jsonEncode(geometry));
 }
 
+List<List<LatLng>> _polygonsFromGeometry(Map<String, dynamic>? geometry) {
+  if (geometry == null || geometry.isEmpty) return const [];
+  return _polygonsFromGeoJson(jsonEncode(geometry));
+}
+
 List<LatLng> _verticesFromGeoJson(String? rawGeoJson) {
+  final polygons = _polygonsFromGeoJson(rawGeoJson);
+  if (polygons.isEmpty) return const [];
+  return polygons.expand((ring) => ring).toList(growable: false);
+}
+
+List<List<LatLng>> _polygonsFromGeoJson(String? rawGeoJson) {
   if (rawGeoJson == null || rawGeoJson.isEmpty) return const [];
 
   try {
@@ -241,12 +259,18 @@ List<LatLng> _verticesFromGeoJson(String? rawGeoJson) {
     final coordinates = json['coordinates'];
 
     if (type == 'Polygon') {
-      return _ringToLatLngs((coordinates as List).first as List);
+      final ring = _ringToLatLngs((coordinates as List).first as List);
+      return ring.length >= 3 ? [ring] : const [];
     }
 
     if (type == 'MultiPolygon') {
-      final firstPolygon = (coordinates as List).first as List;
-      return _ringToLatLngs(firstPolygon.first as List);
+      final polygons = <List<LatLng>>[];
+      for (final polygon in coordinates as List) {
+        if (polygon is! List || polygon.isEmpty) continue;
+        final ring = _ringToLatLngs(polygon.first as List);
+        if (ring.length >= 3) polygons.add(ring);
+      }
+      return polygons;
     }
   } catch (_) {
     return const [];

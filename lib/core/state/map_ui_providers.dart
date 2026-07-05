@@ -41,6 +41,12 @@ final viewportStateProvider = StateProvider.autoDispose<InitialViewportState>(
   (ref) => InitialViewportState.idle,
 );
 
+/// Bloqueia o viewport GPS inicial quando a rota pede foco em um drawing
+/// (`/map?drawingId=...`). Evita race onde GPS sobrescreve fitCamera do talhão.
+final prioritizeDrawingFocusProvider = StateProvider.autoDispose<bool>(
+  (ref) => false,
+);
+
 // ── ADR-031 F1: migrados de setState em private_map_screen.dart ──────────────
 
 /// Guard de modal aberto — impede abertura simultânea de dois modais.

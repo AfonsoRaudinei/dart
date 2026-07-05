@@ -108,7 +108,10 @@ class DrawingImportOrchestrator {
     }
 
     _setErrorMessage(null);
-    _setPreviewGeometry(_finalizeGeometry(preview));
+    final geometry = _isSelfIntersectionMessage(validation.message)
+        ? DrawingUtils.normalizeGeometry(preview)
+        : _finalizeGeometry(preview);
+    _setPreviewGeometry(geometry);
     _setInteractionMode(DrawingInteraction.normal);
     _confirmImportState();
     _notifyHost();
