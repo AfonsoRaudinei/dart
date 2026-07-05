@@ -33,6 +33,8 @@ class DrawingSyncModule implements SyncModule {
   @override
   String get name => 'Desenhos e Mapas';
   @override
+  int get syncTier => 1;
+  @override
   Future<void> sync() => DrawingSyncService().synchronize();
 }
 
@@ -41,6 +43,8 @@ class OccurrenceSyncModule implements SyncModule {
   OccurrenceSyncModule(this.supabase);
   @override
   String get name => 'Ocorrências';
+  @override
+  int get syncTier => 1;
   @override
   Future<void> sync() => OccurrenceSyncService(
     supabase,
@@ -54,6 +58,8 @@ class VisitSyncModule implements SyncModule {
   @override
   String get name => 'Visitas Técnicas';
   @override
+  int get syncTier => 1;
+  @override
   Future<void> sync() => VisitSyncService(supabase).syncVisits();
 }
 
@@ -62,6 +68,8 @@ class AgendaSyncModule implements SyncModule {
   AgendaSyncModule(this.supabase);
   @override
   String get name => 'Agenda e Visitas';
+  @override
+  int get syncTier => 1;
   @override
   Future<void> sync() {
     final repository = AgendaRepository();
