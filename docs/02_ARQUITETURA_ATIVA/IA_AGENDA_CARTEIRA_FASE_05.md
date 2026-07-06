@@ -17,7 +17,7 @@ Endurecer a operação da IA Agenda + Carteira para produção com:
 - rollout no app por feature flag `agenda_ai_v1`:
   - [feature_flag_providers.dart](../../../lib/core/feature_flags/feature_flag_providers.dart)
   - [feature_flag_backend_adapter.dart](../../../lib/core/feature_flags/feature_flag_backend_adapter.dart)
-  - [agenda_month_page.dart](../../../lib/modules/agenda/presentation/pages/agenda_month_page.dart)
+  - [agenda_month_page.dart](../../../lib/modules/agenda/presentation/pages/agenda_month_page.dart) (histórico — ícone migrado para o mapa em Fase 06)
 
 - telemetria de produto para IA:
   - [feature_flag_analytics.dart](../../../lib/core/feature_flags/feature_flag_analytics.dart)

@@ -7,7 +7,7 @@ Data: 2026-04-15
 
 Conectar a UX no app Flutter ao backend da Fase 3:
 
-- tocar no ícone IA da Agenda
+- tocar no ícone IA (inicialmente na Agenda; migrado para o mapa em Fase 06)
 - abrir lista de recomendação + chat
 - permitir criar visita com confirmação
 
@@ -19,12 +19,12 @@ Conectar a UX no app Flutter ao backend da Fase 3:
 - bottom sheet da IA (lista + chat + criar visita):
   - [agenda_ai_sheet.dart](../../../lib/modules/agenda_ai/presentation/widgets/agenda_ai_sheet.dart)
 
-- vínculo do ícone IA na Agenda para abrir o sheet:
-  - [agenda_month_page.dart](../../../lib/modules/agenda/presentation/pages/agenda_month_page.dart)
+- vínculo do ícone IA (inicialmente na Agenda; migrado para o mapa em Fase 06 via `MapAgendaAiButton` em `map_controls_overlay.dart`):
+  - [agenda_month_page.dart](../../../lib/modules/agenda/presentation/pages/agenda_month_page.dart) (histórico)
 
 ## Funcionalidades entregues
 
-1. Ícone IA na Agenda abre o sheet de assistente.
+1. Ícone IA (inicialmente na Agenda; migrado para o mapa em Fase 06) abre o sheet de assistente.
 2. Carrega recomendação top 1 do backend (`agenda-ai-recommend`).
 3. Exibe motivo curto de recomendação.
 4. Exibe chat rápido (pergunta do usuário + resposta IA curta).
