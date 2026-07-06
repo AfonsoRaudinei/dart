@@ -54,15 +54,25 @@ final isDrawingEnabledProvider = FutureProvider.family<bool, FeatureFlagUser>((
 
 /// Provider para verificar se IA da Agenda está habilitada para usuário atual
 final isAgendaAiEnabledProvider = FutureProvider.family<bool, FeatureFlagUser>(
-(
-  ref,
-  user,
-) async {
-  final flag = await ref.watch(agendaAiFlagProvider.future);
-  final resolver = ref.watch(featureFlagResolverProvider);
+  (ref, user) async {
+    final flag = await ref.watch(agendaAiFlagProvider.future);
+    final resolver = ref.watch(featureFlagResolverProvider);
 
-  return resolver.isFeatureEnabled(flag, user);
-});
+    if (resolver.isFeatureEnabled(flag, user)) {
+      return true;
+    }
+
+    // Fallback: backend de flags indisponível ou flag ausente (IPA/TestFlight).
+    if (!flag.enabled && flag.version == 0) {
+      return const FeatureFlagResolver().isFeatureEnabled(
+        FeatureFlag.fullyEnabled(agendaAiFeatureKey),
+        user,
+      );
+    }
+
+    return false;
+  },
+);
 
 /// Provider para iniciar background updates do FeatureFlagService
 ///

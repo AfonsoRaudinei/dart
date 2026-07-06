@@ -4,6 +4,19 @@ Todas as tags e marcos técnicos notáveis deste projeto serão documentados aqu
 
 ---
 
+## release/v1.1 — build 151 (2026-07-06)
+
+### Agente IA no mapa (estratégia semanal de visitas)
+- Ícone `assets/ia.png` **somente no mapa** (`MapAgendaAiButton`)
+- Removido da Agenda (`agenda_month_page.dart`)
+- GPS enriquecido via `AgendaAiLaunchContext` no payload da Edge Function
+- Agendamento de visitas via `IAgendaAiVisitWriter`
+- Fix IPA: `APP_VERSION` real na feature flag + fallback quando backend de flags indisponível
+- Fix build: `kMapTilerApiKey` em `MapConfig` (sem `map_secrets.dart` gitignored)
+- Fix sync: `syncTier` explícito em todos os módulos
+
+---
+
 ## draw-stable-v1
 **Data:** 2026-02-11  
 **Branch:** `release/v1.1`

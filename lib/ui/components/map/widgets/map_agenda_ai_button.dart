@@ -12,6 +12,16 @@ import '../../../../core/feature_flags/feature_flag_resolver.dart';
 import '../../../../modules/dashboard/domain/location_state.dart';
 import '../../../../modules/dashboard/providers/location_providers.dart';
 
+const _appBuildVersion = String.fromEnvironment(
+  'APP_VERSION',
+  defaultValue: '1.34.0+150',
+);
+
+String _featureFlagAppVersion() {
+  final raw = _appBuildVersion.split('+').first.trim();
+  return raw.isEmpty ? '1.34.0' : raw;
+}
+
 /// Único ponto de entrada do agente de agenda no app (mapa).
 class MapAgendaAiButton extends ConsumerWidget {
   const MapAgendaAiButton({super.key});
@@ -27,7 +37,7 @@ class MapAgendaAiButton extends ConsumerWidget {
     final ffUser = FeatureFlagUser(
       userId: user.id,
       role: role,
-      appVersion: '1.1.0',
+      appVersion: _featureFlagAppVersion(),
     );
 
     final enabledAsync = ref.watch(isAgendaAiEnabledProvider(ffUser));
