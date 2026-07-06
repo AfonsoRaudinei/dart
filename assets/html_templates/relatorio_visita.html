@@ -7,7 +7,8 @@
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
   :root {
-    --sf-navy:       #2C5564;
+    --sf-samsung:    #1428A0; /* azul Samsung */
+    --sf-navy:       #2C5564; /* azul petróleo */
     --sf-navy-light: #3A6B7D;
     --sf-green:      #2E7D32;
     --sf-green-leaf: #8BC34A;
@@ -75,7 +76,7 @@
   .header-top {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-end;
     margin-bottom: 20px;
     position: relative;
     z-index: 1;
@@ -153,7 +154,7 @@
   .pill-dot {
     width: 6px; height: 6px;
     border-radius: 50%;
-    background: var(--sf-amber);
+    background: var(--sf-samsung);
     flex-shrink: 0;
   }
 
@@ -169,7 +170,7 @@
 
   .section-label-bar {
     width: 3px; height: 20px;
-    background: var(--sf-amber);
+    background: var(--sf-samsung);
     border-radius: 2px;
     flex-shrink: 0;
   }
@@ -464,7 +465,7 @@
   .monitoramento-header {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-end;
     gap: 10px;
     margin-bottom: 10px;
     flex-wrap: wrap;
@@ -580,7 +581,7 @@
     padding: 18px 32px;
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-end;
     gap: 12px;
     flex-wrap: wrap;
   }
@@ -643,9 +644,6 @@
   <!-- ══════════ HEADER ══════════ -->
   <header class="header">
     <div class="header-top">
-      <div class="logo-area">
-        {{report_header_signature}}
-      </div>
       <!-- status: pendente_revisao | publicado | arquivado -->
       <span class="status-badge-header {{status}}">{{status_label}}</span>
     </div>

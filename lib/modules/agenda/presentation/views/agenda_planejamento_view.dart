@@ -6,6 +6,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'dart:io';
 import '../../../../core/html_templates/html_report_viewer.dart';
+import '../../../../core/utils/share_position.dart';
 import '../../../../core/contracts/i_client_lookup_provider.dart';
 import '../../../../core/contracts/i_farm_lookup_provider.dart';
 import '../../../../core/contracts/i_field_lookup_provider.dart';
@@ -174,9 +175,11 @@ class _AgendaPlanejamentoViewState
       final file = File('${dir.path}/$fileName');
       await file.writeAsBytes(bytes);
 
-      await Share.shareXFiles([
-        XFile(file.path, mimeType: 'application/pdf'),
-      ], subject: 'Planejamento Semanal SoloForte');
+      await Share.shareXFiles(
+        [XFile(file.path, mimeType: 'application/pdf')],
+        subject: 'Planejamento Semanal SoloForte',
+        sharePositionOrigin: sharePositionOriginFor(context),
+      );
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(

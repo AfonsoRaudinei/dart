@@ -10,6 +10,7 @@ import '../providers/agenda_export_provider.dart';
 import '../providers/agenda_provider.dart';
 import '../widgets/day_event_card.dart';
 import '../../../../core/constants/layout_constants.dart';
+import '../../../../core/utils/share_position.dart';
 
 /// Página de visualização dos eventos de um dia específico
 class AgendaDayPage extends ConsumerStatefulWidget {
@@ -116,6 +117,7 @@ class _AgendaDayPageState extends ConsumerState<AgendaDayPage> {
         [XFile(file.path, mimeType: 'text/html')],
         subject:
             'Agenda SoloForte - ${DateFormat('dd/MM/yyyy').format(widget.selectedDate)}',
+        sharePositionOrigin: sharePositionOriginFor(context),
       );
     } catch (_) {
       if (!context.mounted) return;

@@ -1,10 +1,13 @@
 import 'dart:io';
+import 'dart:ui';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:share_plus/share_plus.dart';
+import '../../../../core/utils/share_position.dart';
 import '../../domain/models/drawing_models.dart';
 import '../../domain/services/geojson_exporter_service.dart';
 
@@ -75,6 +78,7 @@ class DrawingExportNotifier extends Notifier<ExportState> {
   Future<void> exportFeature(
     DrawingFeature feature, {
     DrawingExportFormat format = DrawingExportFormat.geojson,
+    Rect? sharePositionOrigin,
   }) async {
     state = const ExportLoading();
     try {
@@ -84,6 +88,7 @@ class DrawingExportNotifier extends Notifier<ExportState> {
         content: exported.content,
         fileName: exported.fileName,
         mimeType: exported.mimeType,
+        sharePositionOrigin: sharePositionOrigin,
       );
       final fileName = exported.fileName;
       state = ExportSuccess(fileName);
@@ -99,6 +104,7 @@ class DrawingExportNotifier extends Notifier<ExportState> {
   Future<void> exportAll(
     List<DrawingFeature> features, {
     DrawingExportFormat format = DrawingExportFormat.geojson,
+    Rect? sharePositionOrigin,
   }) async {
     if (features.isEmpty) {
       state = const ExportError('Nenhum talhão disponível para exportar.');
@@ -112,6 +118,7 @@ class DrawingExportNotifier extends Notifier<ExportState> {
         content: exported.content,
         fileName: exported.fileName,
         mimeType: exported.mimeType,
+        sharePositionOrigin: sharePositionOrigin,
       );
       final fileName = exported.fileName;
       state = ExportSuccess(fileName);
@@ -397,6 +404,7 @@ class DrawingExportNotifier extends Notifier<ExportState> {
     String? content,
     required String fileName,
     required String mimeType,
+    Rect? sharePositionOrigin,
   }) async {
     final dir = await getTemporaryDirectory();
     final file = File('${dir.path}/$fileName');
@@ -407,9 +415,11 @@ class DrawingExportNotifier extends Notifier<ExportState> {
     } else {
       throw Exception('Payload de exportação inválido');
     }
-    await Share.shareXFiles([
-      XFile(file.path, mimeType: mimeType),
-    ], subject: fileName);
+    await Share.shareXFiles(
+      [XFile(file.path, mimeType: mimeType)],
+      subject: fileName,
+      sharePositionOrigin: sharePositionOrigin,
+    );
   }
 }
 

@@ -1,0 +1,38 @@
+---
+description: Agente de design SoloForte — relatórios HTML, tokens visuais e consistência de marca
+alwaysApply: false
+---
+
+# SoloForte — Agente de Design
+
+**Fonte da verdade visual:** templates em `assets/html_templates/` + `lib/core/html_templates/relatorio_html_renderer.dart`
+
+## Paleta preferencial (relatórios e exportações)
+
+| Token | Hex | Uso |
+|---|---|---|
+| **Azul Samsung** | `#1428A0` | `--sf-samsung` — acentos, badges, barras de seção |
+| **Azul petróleo** | `#2C5564` | `--sf-navy` — header, ícones de localização, títulos |
+| **Azul petróleo claro** | `#3A6B7D` | `--sf-navy-light` — gradientes e blocos destacados |
+| Âmbar | `#F5B935` | `--sf-amber` — alertas e destaques secundários (não substituir urgência) |
+
+## Regras de relatório HTML (obrigatórias)
+
+1. **Marca SoloForte somente no rodapé** — `report_header_signature` vazio; logo + nome + legenda únicos em `report_footer_signature`.
+2. **Sem ícones genéricos decorativos** — remover emojis/ícones de cards de visão geral (categoria, urgência, cultivar etc.).
+3. **Localização compacta** — apenas ícone circular de pin; sem texto “Coordenadas registradas” nem coordenadas visíveis no layout.
+4. **Rodapé único** — uma linha de marca (SoloForte) + legenda combinada (responsável + plataforma); nunca duplicar blocos de logo/texto.
+5. **Aplicar em todos os templates** — `relatorio_visita`, `ocorrencia_detalhada`, `ocorrencias_lista`, `resumo_propriedade`, `historico_visitas`, `marketing_*`.
+
+## Lista Flutter (tela Relatórios)
+
+- Cards de ocorrência/visita/consolidado **sem ícone leading** genérico.
+- Menu Exportar HTML/PDF/JSON/CSV deve usar `sharePositionOrigin` no iPad.
+
+## Checklist rápido antes de merge
+
+- [ ] Header sem logo SoloForte
+- [ ] Footer com um único bloco de marca
+- [ ] Localização = só ícone
+- [ ] Cores Samsung + petróleo nos `:root`
+- [ ] Testes HTML (`report_renderers_placeholder_test`) passando

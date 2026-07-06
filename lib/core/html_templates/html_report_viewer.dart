@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
+import '../utils/share_position.dart';
 import 'report_export_service.dart';
 
 /// Widget genérico para exibir qualquer relatório HTML gerado pelos renderers.
@@ -119,6 +120,7 @@ class _HtmlReportViewerState extends State<HtmlReportViewer> {
           json: widget.jsonData,
           csv: widget.csvData,
         ),
+        sharePositionOrigin: sharePositionOriginFor(context),
       );
       if (mounted) {
         ScaffoldMessenger.of(

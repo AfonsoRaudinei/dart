@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:ui';
 
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
@@ -47,17 +48,18 @@ class ReportExportService {
 
   Future<ReportExportResult> export(
     ReportExportFormat format,
-    ReportExportPayload payload,
-  ) async {
+    ReportExportPayload payload, {
+    Rect? sharePositionOrigin,
+  }) async {
     switch (format) {
       case ReportExportFormat.pdf:
         return exportPdf(payload);
       case ReportExportFormat.html:
-        return exportHtml(payload);
+        return exportHtml(payload, sharePositionOrigin: sharePositionOrigin);
       case ReportExportFormat.json:
-        return exportJson(payload);
+        return exportJson(payload, sharePositionOrigin: sharePositionOrigin);
       case ReportExportFormat.csv:
-        return exportCsv(payload);
+        return exportCsv(payload, sharePositionOrigin: sharePositionOrigin);
     }
   }
 
@@ -72,17 +74,24 @@ class ReportExportService {
     return const ReportExportResult(format: ReportExportFormat.pdf);
   }
 
-  Future<ReportExportResult> exportHtml(ReportExportPayload payload) {
+  Future<ReportExportResult> exportHtml(
+    ReportExportPayload payload, {
+    Rect? sharePositionOrigin,
+  }) {
     return _writeAndShare(
       format: ReportExportFormat.html,
       payload: payload,
       extension: 'html',
       content: payload.html,
       mimeType: 'text/html',
+      sharePositionOrigin: sharePositionOrigin,
     );
   }
 
-  Future<ReportExportResult> exportJson(ReportExportPayload payload) {
+  Future<ReportExportResult> exportJson(
+    ReportExportPayload payload, {
+    Rect? sharePositionOrigin,
+  }) {
     final data = payload.json;
     if (data == null) {
       throw StateError('Dados JSON indisponiveis para este relatorio.');
@@ -93,10 +102,14 @@ class ReportExportService {
       extension: 'json',
       content: const JsonEncoder.withIndent('  ').convert(data),
       mimeType: 'application/json',
+      sharePositionOrigin: sharePositionOrigin,
     );
   }
 
-  Future<ReportExportResult> exportCsv(ReportExportPayload payload) {
+  Future<ReportExportResult> exportCsv(
+    ReportExportPayload payload, {
+    Rect? sharePositionOrigin,
+  }) {
     final data = payload.csv;
     if (data == null || data.trim().isEmpty) {
       throw StateError('Dados CSV indisponiveis para este relatorio.');
@@ -107,6 +120,7 @@ class ReportExportService {
       extension: 'csv',
       content: data,
       mimeType: 'text/csv',
+      sharePositionOrigin: sharePositionOrigin,
     );
   }
 
@@ -128,15 +142,18 @@ class ReportExportService {
     required String extension,
     required String content,
     required String mimeType,
+    Rect? sharePositionOrigin,
   }) async {
     final file = await writeTempFile(
       baseName: _baseName(payload),
       extension: extension,
       content: content,
     );
-    await Share.shareXFiles([
-      XFile(file.path, mimeType: mimeType),
-    ], subject: payload.title);
+    await Share.shareXFiles(
+      [XFile(file.path, mimeType: mimeType)],
+      subject: payload.title,
+      sharePositionOrigin: sharePositionOrigin,
+    );
     return ReportExportResult(format: format, path: file.path);
   }
 

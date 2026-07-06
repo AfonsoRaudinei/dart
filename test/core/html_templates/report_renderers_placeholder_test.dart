@@ -178,7 +178,7 @@ void main() {
   });
 
   test(
-    'render visita inclui branding customizado e assinatura SoloForte',
+    'render visita inclui branding SoloForte unico no rodape',
     () async {
       await initializeDateFormatting('pt_BR');
 
@@ -204,9 +204,11 @@ void main() {
         consultantRole: 'Consultoria',
       );
 
-      expect(html, contains('Agro Forte Consultoria'));
       expect(html, contains('SoloForte'));
       expect(html, contains('Plataforma oficial de relatórios e exportação'));
+      expect(html, contains('Responsável: Agronomo Teste'));
+      expect(html, isNot(contains('Agro Forte Consultoria')));
+      expect(html.split('Plataforma oficial de relatórios e exportação').length, 2);
     },
   );
 }
