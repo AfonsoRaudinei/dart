@@ -103,6 +103,36 @@ class QuickPhotoRepository {
     return rows.map(QuickPhotoRecord.fromMap).toList();
   }
 
+  /// Lista fotos do usuário autenticado, mais recentes primeiro.
+  Future<List<QuickPhotoRecord>> getRecentForCurrentUser({int limit = 100}) async {
+    final userId = _supabase.auth.currentUser?.id ?? '';
+    if (userId.isEmpty) return const [];
+
+    final db = await _databaseHelper.database;
+    final rows = await db.query(
+      _table,
+      where: 'user_id = ?',
+      whereArgs: [userId],
+      orderBy: 'created_at DESC',
+      limit: limit,
+    );
+
+    return rows
+        .map(QuickPhotoRecord.fromMap)
+        .where((photo) => photo.imagePath?.isNotEmpty == true)
+        .toList();
+  }
+
+  static String typeLabel(String type) {
+    switch (type) {
+      case 'vegetal_filter':
+        return 'Inversão vegetal';
+      case 'normal':
+      default:
+        return 'Foto rápida';
+    }
+  }
+
   Future<void> _insertLocal({
     required String id,
     required String userId,
