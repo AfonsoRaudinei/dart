@@ -14,7 +14,7 @@ class LocationLookupAdapter implements IUserLocationLookup {
 
   @override
   LatLng? getUserLatLng() {
-    return _ref.read(locationStreamProvider).valueOrNull ??
-        _ref.read(initialLocationProvider).valueOrNull;
+    return _ref.read(locationStreamProvider).valueOrNull?.position ??
+        _ref.read(initialLocationProvider).valueOrNull?.position;
   }
 }

@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:soloforte_app/core/permissions/location_permission_gate.dart';
+import 'package:soloforte_app/modules/dashboard/domain/user_location_fix.dart';
 
 typedef PositionStreamFactory =
     Stream<Position> Function(LocationSettings locationSettings);
@@ -17,14 +18,14 @@ typedef PositionStreamFactory =
 ///
 /// Performance:
 /// - distanceFilter: 5m (ideal para agro)
-/// - accuracy: high (quando necessário)
+/// - accuracy: best (GNSS multi-constelação via OS)
 /// - Stream único (singleton pattern)
 class LocationService {
   static LocationService? _instance;
   static PositionStreamFactory _positionStreamFactory = (locationSettings) =>
       Geolocator.getPositionStream(locationSettings: locationSettings);
 
-  StreamController<LatLng>? _controller;
+  StreamController<UserLocationFix>? _controller;
   StreamSubscription<Position>? _subscription;
 
   // Singleton pattern para evitar múltiplos streams
@@ -41,10 +42,10 @@ class LocationService {
   /// - Atualiza apenas quando movimento > 5m
   /// - Precisão alta para desenho de talhão
   /// - Não rebuilda se parado
-  Stream<LatLng> get locationStream {
+  Stream<UserLocationFix> get locationStream {
     // Criar stream apenas uma vez
     if (_controller == null || _controller!.isClosed) {
-      _controller = StreamController<LatLng>.broadcast(onCancel: _onCancel);
+      _controller = StreamController<UserLocationFix>.broadcast(onCancel: _onCancel);
       _startListening();
     }
 
@@ -54,16 +55,19 @@ class LocationService {
   void _startListening() {
     // Configuração de stream do sistema
     const locationSettings = LocationSettings(
-      accuracy: LocationAccuracy.high,
+      accuracy: LocationAccuracy.best,
       distanceFilter: 5, // 5 metros (campo parado = zero rebuild)
-      // timeLimit não usado (stream contínuo)
     );
 
     _subscription = _positionStreamFactory(locationSettings).listen(
       (Position position) {
-        // Converter Position para LatLng e emitir
         if (_controller != null && !_controller!.isClosed) {
-          _controller!.add(LatLng(position.latitude, position.longitude));
+          _controller!.add(
+            UserLocationFix(
+              position: LatLng(position.latitude, position.longitude),
+              accuracyM: position.accuracy,
+            ),
+          );
         }
       },
       onError: (error) {
@@ -114,15 +118,17 @@ class LocationService {
 
   /// Obter posição atual uma vez (sem stream)
   /// Útil para centralizar mapa na primeira vez
-  Future<LatLng?> getCurrentPosition() async {
+  Future<UserLocationFix?> getCurrentPosition() async {
     try {
       final position = await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.high,
+          accuracy: LocationAccuracy.best,
         ),
-        // 🛡 IPA-124: timeout para evitar bloqueio indefinido em GPS frio
       ).timeout(const Duration(seconds: 10));
-      return LatLng(position.latitude, position.longitude);
+      return UserLocationFix(
+        position: LatLng(position.latitude, position.longitude),
+        accuracyM: position.accuracy,
+      );
     } catch (e) {
       return null;
     }

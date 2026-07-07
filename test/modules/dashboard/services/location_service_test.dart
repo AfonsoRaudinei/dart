@@ -3,10 +3,10 @@ import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:soloforte_app/modules/dashboard/domain/user_location_fix.dart';
 import 'package:soloforte_app/modules/dashboard/services/location_service.dart';
 
 void main() {
-  // Inicializar binding para testes que usam platform channels
   TestWidgetsFlutterBinding.ensureInitialized();
 
   setUp(LocationService.debugReset);
@@ -20,10 +20,10 @@ void main() {
       expect(instance1, equals(instance2));
     });
 
-    test('deve expor stream de localização', () {
+    test('deve expor stream de localização com precisão GNSS', () {
       final locationService = LocationService();
 
-      expect(locationService.locationStream, isA<Stream<LatLng>>());
+      expect(locationService.locationStream, isA<Stream<UserLocationFix>>());
     });
 
     test('stream deve ser broadcast (múltiplos listeners)', () {
@@ -31,6 +31,39 @@ void main() {
       final stream = locationService.locationStream;
 
       expect(stream.isBroadcast, isTrue);
+    });
+
+    test('propaga accuracyM do Position no stream', () async {
+      final positions = StreamController<Position>();
+      LocationService.debugSetPositionStreamFactory((_) => positions.stream);
+
+      final locationService = LocationService();
+      final fixes = <UserLocationFix>[];
+      final sub = locationService.locationStream.listen(fixes.add);
+
+      positions.add(
+        Position(
+          latitude: -10,
+          longitude: -48,
+          timestamp: DateTime.utc(2026, 7, 6),
+          accuracy: 4.2,
+          altitude: 0,
+          altitudeAccuracy: 0,
+          heading: 0,
+          headingAccuracy: 0,
+          speed: 0,
+          speedAccuracy: 0,
+        ),
+      );
+      await Future<void>.delayed(Duration.zero);
+
+      expect(fixes, hasLength(1));
+      expect(fixes.single.position, const LatLng(-10, -48));
+      expect(fixes.single.accuracyM, 4.2);
+      expect(fixes.single.effectiveAccuracyM, 4.2);
+
+      await sub.cancel();
+      await positions.close();
     });
 
     test('cancela assinatura nativa quando último listener sai', () async {
@@ -69,41 +102,24 @@ void main() {
       final stream1 = locationService.locationStream;
       final stream2 = locationService.locationStream;
 
-      // Mesmo controller (não criar duplicado)
-      // Nota: Streams podem ser diferentes instâncias mas compartilham controller
-      expect(stream1, isA<Stream<LatLng>>());
-      expect(stream2, isA<Stream<LatLng>>());
+      expect(stream1, isA<Stream<UserLocationFix>>());
+      expect(stream2, isA<Stream<UserLocationFix>>());
     });
 
     test('dispose deve executar sem erro', () {
       final locationService = LocationService();
-
-      // Obter stream para criar subscription
       locationService.locationStream;
-
-      // Dispose deve limpar recursos
       expect(() => locationService.dispose(), returnsNormally);
     });
   });
 
-  group('LocationService - Documentação', () {
-    test('estrutura do serviço está documentada', () {
-      // Este teste serve como documentação viva da estrutura
-      final locationService = LocationService();
-
-      // ✅ Singleton pattern
-      expect(locationService, equals(LocationService()));
-
-      // ✅ Stream broadcast
-      expect(locationService.locationStream.isBroadcast, isTrue);
-
-      // ✅ Tipo correto
-      expect(locationService.locationStream, isA<Stream<LatLng>>());
-
-      // ✅ Métodos disponíveis
-      expect(locationService.getCurrentPosition, isA<Function>());
-      expect(locationService.checkAvailability, isA<Function>());
-      expect(locationService.dispose, isA<Function>());
+  group('UserLocationFix', () {
+    test('effectiveAccuracyM usa fallback 12m quando accuracy inválida', () {
+      const fix = UserLocationFix(
+        position: LatLng(-10, -48),
+        accuracyM: 0,
+      );
+      expect(fix.effectiveAccuracyM, 12.0);
     });
   });
 }

@@ -161,7 +161,7 @@ class MapLocationHandler {
     final position = await locationService.getCurrentPosition();
 
     if (position != null && isMapReady && context.mounted) {
-      mapController.move(position, 16.0);
+      mapController.move(position.position, 16.0);
     }
   }
 

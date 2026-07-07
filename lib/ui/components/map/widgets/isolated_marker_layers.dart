@@ -253,16 +253,17 @@ class IsolatedUserLocationLayer extends ConsumerWidget {
     final locationAsync = ref.watch(locationStreamProvider);
 
     return locationAsync.when(
-      data: (userPosition) {
-        // Stream emitiu nova posição
+      data: (userFix) {
         return MarkerLayer(
           markers: [
             Marker(
               key: const ValueKey('user_location'),
-              point: userPosition,
+              point: userFix.position,
               width: 64,
               height: 64,
-              child: _buildLocationMarker(accuracy: 12),
+              child: _buildLocationMarker(
+                accuracy: userFix.effectiveAccuracyM,
+              ),
             ),
           ],
         );

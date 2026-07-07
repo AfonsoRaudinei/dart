@@ -16,6 +16,7 @@ import '../../modules/drawing/presentation/providers/drawing_provider.dart';
 import '../../modules/drawing/domain/drawing_state.dart';
 import '../../modules/drawing/domain/models/drawing_models.dart';
 import '../../modules/dashboard/providers/location_providers.dart';
+import '../../modules/dashboard/services/location_service.dart';
 import '../../modules/consultoria/occurrences/domain/occurrence.dart' as occ;
 import '../../modules/marketing/domain/enums/case_tipo.dart';
 import '../components/map/map_sheet_state.dart';
@@ -221,11 +222,11 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
   Future<void> _finishDrawing() async {
     final controller = ref.read(drawingControllerProvider);
     if (controller.currentState != DrawingState.drawing) return;
-    if (controller.liveGeometry == null) {
+    if (!controller.canFinishDrawing || controller.liveGeometry == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Adicione pelo menos 3 pontos para criar um polígono'),
-          duration: Duration(seconds: 2),
+        SnackBar(
+          content: Text(controller.finishDrawingHint),
+          duration: const Duration(seconds: 2),
         ),
       );
       return;
@@ -281,10 +282,9 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
       case MapLocationMode.following:
       case MapLocationMode.northLocked:
         MapLocationHandler.startFollowing(
-          // Riverpod 2.x exposes the provider stream; this keeps the existing
-          // GPS source and avoids creating another location pipeline.
-          // ignore: deprecated_member_use
-          locationStream: ref.read(locationStreamProvider.stream),
+          locationStream: LocationService().locationStream.map(
+            (fix) => fix.position,
+          ),
           mapController: _mapController,
           isMapReady: ref.read(mapReadyStateProvider),
         );

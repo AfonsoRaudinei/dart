@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:latlong2/latlong.dart';
+import '../domain/user_location_fix.dart';
 import '../services/location_service.dart';
 import '../domain/location_state.dart';
 
@@ -19,11 +19,8 @@ import '../domain/location_state.dart';
 /// - Campo parado: 0 rebuilds
 /// - Movimento <5m: 0 rebuilds
 /// - Movimento >5m: 1 rebuild (somente pin do usuário)
-final locationStreamProvider = StreamProvider.autoDispose<LatLng>((ref) {
+final locationStreamProvider = StreamProvider.autoDispose<UserLocationFix>((ref) {
   final locationService = LocationService();
-
-  // Retornar stream do serviço
-  // Stream é broadcast, então múltiplos listeners podem observar
   return locationService.locationStream;
 });
 
@@ -72,7 +69,7 @@ class LocationStateNotifier extends StateNotifier<LocationState> {
 ///
 /// Usado para centralizar mapa na primeira vez
 /// Não é stream - apenas valor único
-final initialLocationProvider = FutureProvider.autoDispose<LatLng?>((
+final initialLocationProvider = FutureProvider.autoDispose<UserLocationFix?>((
   ref,
 ) async {
   final locationService = LocationService();
