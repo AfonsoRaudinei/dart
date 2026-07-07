@@ -7,9 +7,6 @@ import '../../domain/models/drawing_visual_style.dart';
 import '../controllers/drawing_controller.dart';
 
 /// Widget responsável por renderizar as camadas de desenho no mapa.
-/// Ele escuta o controller e atualiza os polígonos conforme o estado.
-///
-/// ⚡ OTIMIZADO: Usa cache para evitar reconstrução de polígonos
 class DrawingLayerWidget extends StatefulWidget {
   final DrawingController controller;
   final Function(DrawingFeature)? onFeatureTap;
@@ -31,7 +28,6 @@ class _DrawingLayerWidgetState extends State<DrawingLayerWidget> {
   static const Color _manualOutlineHalo = Color(0xCC111111);
   static const Color _gpsOutlineHalo = Color(0xB3000000);
 
-  // ⚡ CACHE: Evita reconstruir polígonos quando features não mudaram
   List<Polygon>? _cachedPolygons;
   List<Polyline>? _cachedPolylines;
   List<Marker>? _cachedMarkers;
@@ -40,6 +36,11 @@ class _DrawingLayerWidgetState extends State<DrawingLayerWidget> {
   Set<String>? _lastSelectedIds;
   DrawingGeometry? _lastLiveGeo;
   List<LatLng>? _lastCurrentPoints;
+  List<LatLng>? _lastFreehandTrail;
+  LatLng? _lastPivotCenter;
+  LatLng? _lastPivotEdge;
+  bool? _lastFreehandActive;
+  DrawingTool? _lastTool;
   Set<int>? _lastIntersectingIndices;
 
   @override
@@ -52,17 +53,26 @@ class _DrawingLayerWidgetState extends State<DrawingLayerWidget> {
         final selectedIds = widget.controller.selectedFeatureIds;
         final liveGeo = widget.controller.liveGeometry;
         final currentPoints = widget.controller.currentPoints;
+        final freehandTrail = widget.controller.freehandTrail;
+        final currentTool = widget.controller.currentTool;
+        final pivotCenter = widget.controller.pivotCenter;
+        final pivotEdge = widget.controller.pivotEdgePoint;
+        final isFreehandStrokeActive = widget.controller.isFreehandStrokeActive;
         final intersectingIndices =
             widget.controller.intersectingSegmentIndices;
 
-        // ⚡ CACHE CHECK: Só reconstrói se algo mudou
         final needsRebuild =
             _lastFeatures != features ||
             _lastSelectedId != selectedId ||
             !_sameIds(_lastSelectedIds, selectedIds) ||
             _lastLiveGeo != liveGeo ||
             !_samePoints(_lastCurrentPoints, currentPoints) ||
-            _lastIntersectingIndices != intersectingIndices;
+            _lastIntersectingIndices != intersectingIndices ||
+            _lastTool != currentTool ||
+            !_samePoints(_lastFreehandTrail, freehandTrail) ||
+            _lastPivotCenter != pivotCenter ||
+            _lastPivotEdge != pivotEdge ||
+            _lastFreehandActive != isFreehandStrokeActive;
 
         if (!needsRebuild &&
             _cachedPolygons != null &&
@@ -78,19 +88,22 @@ class _DrawingLayerWidgetState extends State<DrawingLayerWidget> {
           );
         }
 
-        // Atualizar cache vars
         _lastFeatures = features;
         _lastSelectedId = selectedId;
         _lastSelectedIds = Set.from(selectedIds);
         _lastLiveGeo = liveGeo;
         _lastCurrentPoints = List.of(currentPoints);
+        _lastFreehandTrail = List.of(freehandTrail);
+        _lastPivotCenter = pivotCenter;
+        _lastPivotEdge = pivotEdge;
+        _lastFreehandActive = isFreehandStrokeActive;
+        _lastTool = currentTool;
         _lastIntersectingIndices = Set.from(intersectingIndices);
 
         final polygons = <Polygon>[];
         final polylines = <Polyline>[];
         final markers = <Marker>[];
 
-        // 1. Renderiza features salvas
         for (final feature in features) {
           final geometry = feature.geometry;
           final parts = geometry is DrawingPolygon
@@ -120,13 +133,45 @@ class _DrawingLayerWidgetState extends State<DrawingLayerWidget> {
           }
         }
 
-        // 2. Renderiza sketch em progresso (manual ou GPS Walk)
-        if (liveGeo == null && currentPoints.length == 1) {
+        if (currentTool == DrawingTool.polygon &&
+            liveGeo == null &&
+            currentPoints.length == 1) {
           markers.add(_vertexMarker(currentPoints.single, index: 0));
         }
 
+        if (currentTool == DrawingTool.pivot && pivotCenter != null) {
+          markers.add(_pivotCenterMarker(pivotCenter));
+          if (pivotEdge != null) {
+            markers.add(_pivotEdgeMarker(pivotEdge));
+            polylines.add(
+              Polyline(
+                points: [pivotCenter, pivotEdge],
+                color: Colors.orange,
+                strokeWidth: 2,
+                pattern: StrokePattern.dashed(segments: const [8, 6]),
+              ),
+            );
+          }
+        }
+
+        if (currentTool == DrawingTool.freehand && freehandTrail.length >= 2) {
+          polylines.add(
+            Polyline(
+              points: freehandTrail,
+              color: _manualOutlineHalo,
+              strokeWidth: 8,
+            ),
+          );
+          polylines.add(
+            Polyline(
+              points: freehandTrail,
+              color: _manualOutlineColor,
+              strokeWidth: 4,
+            ),
+          );
+        }
+
         if (liveGeo is DrawingPolygon || liveGeo is DrawingMultiPolygon) {
-          // GPS Walk usa estilo vermelho; desenho manual usa branco
           final isGpsWalk =
               widget.controller.currentState == DrawingState.gpsTracking;
           final isImportPreview =
@@ -179,9 +224,8 @@ class _DrawingLayerWidgetState extends State<DrawingLayerWidget> {
             );
           }
 
-          // Renderizar vértices apenas no desenho manual/GPS.
-          // Em importPreview exibimos somente o polígono para evitar "pontos soltos".
           if (!isImportPreview &&
+              currentTool == DrawingTool.polygon &&
               liveGeo is DrawingPolygon &&
               liveGeo.coordinates.isNotEmpty) {
             final outerRing = _toLatLngRing(liveGeo.coordinates.first);
@@ -190,7 +234,6 @@ class _DrawingLayerWidgetState extends State<DrawingLayerWidget> {
               final isStart = i == 0;
               final size = isStart ? 18.0 : 14.0;
 
-              // Desenhar linha de erro para segmentos que cruzam
               if (intersectingIndices.contains(i)) {
                 final nextPoint =
                     outerRing[i < outerRing.length - 1 ? i + 1 : 0];
@@ -208,7 +251,6 @@ class _DrawingLayerWidgetState extends State<DrawingLayerWidget> {
           }
         }
 
-        // ⚡ Salvar cache
         _cachedPolygons = polygons;
         _cachedPolylines = polylines;
         _cachedMarkers = markers;
@@ -238,16 +280,50 @@ class _DrawingLayerWidgetState extends State<DrawingLayerWidget> {
     return true;
   }
 
+  Marker _pivotCenterMarker(LatLng point) {
+    return Marker(
+      point: point,
+      width: 20,
+      height: 20,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.orange,
+          shape: BoxShape.circle,
+          border: Border.all(color: Colors.white, width: 2),
+        ),
+      ),
+      alignment: Alignment.center,
+    );
+  }
+
+  Marker _pivotEdgeMarker(LatLng point) {
+    return Marker(
+      point: point,
+      width: 16,
+      height: 16,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          shape: BoxShape.circle,
+          border: Border.all(color: Colors.orange, width: 2),
+        ),
+      ),
+      alignment: Alignment.center,
+    );
+  }
+
   Marker _vertexMarker(LatLng point, {required int index, double? size}) {
     final isStart = index == 0;
     final markerSize = size ?? (isStart ? 18.0 : 14.0);
+    final allowClose =
+        widget.controller.currentTool == DrawingTool.polygon && isStart;
     return Marker(
       point: point,
       width: markerSize,
       height: markerSize,
       child: GestureDetector(
         key: Key('drawing_point_$index'),
-        onTap: (isStart && !widget.controller.hasSelfIntersection)
+        onTap: (allowClose && !widget.controller.hasSelfIntersection)
             ? widget.onDrawingComplete
             : null,
         child: Container(
