@@ -36,13 +36,13 @@ class MapAgendaAiButton extends ConsumerWidget {
       data: (enabled) {
         if (!enabled) return const SizedBox.shrink();
         return Tooltip(
-          message: 'Assistente de visitas',
+          message: 'Agente de Visitas',
           child: GestureDetector(
             onTap: () => _openAgendaAi(context, ref, user.id),
             behavior: HitTestBehavior.opaque,
             child: Container(
-              width: 48,
-              height: 48,
+              width: 44,
+              height: 44,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 boxShadow: [
@@ -67,7 +67,7 @@ class MapAgendaAiButton extends ConsumerWidget {
           ),
         );
       },
-      loading: () => const SizedBox(width: 48, height: 48),
+      loading: () => const SizedBox(width: 44, height: 44),
       error: (_, __) => const SizedBox.shrink(),
     );
   }
