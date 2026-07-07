@@ -67,13 +67,13 @@ Widget buildSheetContent(
             onConfirm: (clientId, farmId, areaId, activity) async {
               final locationService = LocationService();
               final isAvailable = await locationService.checkAvailability();
-              final position = isAvailable
+              final fix = isAvailable
                   ? await locationService.getCurrentPosition()
                   : null;
 
               if (!context.mounted) return;
 
-              if (position == null) {
+              if (fix == null) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
                     content: Text('Não foi possível obter sua posição GPS.'),
@@ -89,8 +89,8 @@ Widget buildSheetContent(
                     clientId,
                     areaId,
                     activity,
-                    position.latitude,
-                    position.longitude,
+                    fix.position.latitude,
+                    fix.position.longitude,
                     farmId: farmId,
                   );
 

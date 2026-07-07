@@ -389,13 +389,13 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
       onConfirm: (clientId, farmId, areaId, activity) async {
         final locationService = LocationService();
         final isAvailable = await locationService.checkAvailability();
-        final position = isAvailable
+        final fix = isAvailable
             ? await locationService.getCurrentPosition()
             : null;
 
         if (!mounted) return;
 
-        if (position == null) {
+        if (fix == null) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Não foi possível obter sua posição GPS.'),
@@ -411,8 +411,8 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
               clientId,
               areaId,
               activity,
-              position.latitude,
-              position.longitude,
+              fix.position.latitude,
+              fix.position.longitude,
               farmId: farmId,
             );
 
@@ -469,15 +469,14 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
         final selectedLocation =
             creationLocation ??
             ((lat != 0 || lng != 0) ? LatLng(lat, lng) : null);
-        final saveLocation =
-            selectedLocation ??
-            await () async {
+        final saveFix = await () async {
               final locationService = LocationService();
               final isAvailable = await locationService.checkAvailability();
               return isAvailable
                   ? await locationService.getCurrentPosition()
                   : null;
             }();
+        final saveLocation = selectedLocation ?? saveFix?.position;
 
         if (!mounted) return;
 

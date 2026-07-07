@@ -3,6 +3,7 @@ import 'dart:convert'; // para jsonDecode do GeoJSON — ADR-024
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/services/notification_service.dart';
 import 'package:soloforte_app/modules/visitas/domain/models/geofence_state.dart';
+import 'package:soloforte_app/modules/dashboard/domain/user_location_fix.dart';
 import 'package:soloforte_app/modules/dashboard/providers/location_providers.dart';
 import '../controllers/visit_controller.dart';
 import 'package:soloforte_app/core/contracts/i_field_lookup.dart';
@@ -30,8 +31,11 @@ class GeofenceController {
   }
 
   void _init() {
-    _ref.listen<AsyncValue<LatLng>>(locationStreamProvider, (previous, next) {
-      next.whenData(_handlePosition);
+    _ref.listen<AsyncValue<UserLocationFix>>(locationStreamProvider, (
+      previous,
+      next,
+    ) {
+      next.whenData((fix) => _handlePosition(fix.position));
     }, fireImmediately: true);
 
     _durationTimer = Timer.periodic(const Duration(minutes: 15), (timer) {

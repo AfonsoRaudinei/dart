@@ -134,7 +134,8 @@ extension _DrawingSheetBuildersA on _DrawingSheetState {
             .toSet()
             .toList()
           ..sort();
-    final currentPosition = await ref.read(initialLocationProvider.future);
+    final currentFix = await ref.read(initialLocationProvider.future);
+    final currentPosition = currentFix?.position;
     final distance = const Distance();
     String query = '';
     String selectedGroup = 'Todos';

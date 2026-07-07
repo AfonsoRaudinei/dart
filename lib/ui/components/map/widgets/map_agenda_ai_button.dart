@@ -103,8 +103,8 @@ class MapAgendaAiButton extends ConsumerWidget {
       return null;
     }
 
-    LatLng? position = ref.read(locationStreamProvider).valueOrNull;
-    position ??= await ref.read(initialLocationProvider.future);
+    LatLng? position = ref.read(locationStreamProvider).valueOrNull?.position;
+    position ??= (await ref.read(initialLocationProvider.future))?.position;
 
     if (position == null) return null;
 

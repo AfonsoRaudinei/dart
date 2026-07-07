@@ -127,7 +127,7 @@ class MapViewportController {
         final position = await locationService.getCurrentPosition();
 
         if (position != null && isMounted) {
-          mapController.move(position, 16.0);
+          mapController.move(position.position, 16.0);
           ref.read(viewportStateProvider.notifier).state =
               InitialViewportState.applied; // ✅ FINALIZADO
         } else if (isMounted) {
