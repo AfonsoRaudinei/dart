@@ -11,6 +11,7 @@ import 'package:soloforte_app/modules/consultoria/relatorios/providers/relatorio
 import 'package:soloforte_app/modules/consultoria/relatorios/providers/relatorio_repository_provider.dart'
     as publish_repo;
 import 'package:soloforte_app/modules/consultoria/relatorios/models/visit_session_snapshot.dart';
+import 'package:soloforte_app/modules/consultoria/quick_photo/presentation/providers/quick_photo_list_provider.dart';
 import 'package:soloforte_app/modules/marketing/data/repositories/i_marketing_case_repository.dart';
 import 'package:soloforte_app/modules/marketing/domain/entities/marketing_case.dart';
 import 'package:soloforte_app/modules/marketing/presentation/providers/marketing_providers.dart';
@@ -25,7 +26,7 @@ void main() {
     await initializeDateFormatting('pt_BR');
   });
 
-  testWidgets('ações reais de relatório publicam, arquivam e excluem', (
+  testWidgets('ações reais de relatório publicam e excluem', (
     tester,
   ) async {
     final relatorioRepository = FakeRelatorioRepository();
@@ -52,11 +53,9 @@ void main() {
     expect(find.text('Fazenda Rascunho'), findsWidgets);
 
     await _openReportMenu(tester, index: 0);
-    expect(find.text('Exportar dados'), findsOneWidget);
-    expect(find.text('PDF'), findsOneWidget);
-    expect(find.text('HTML'), findsOneWidget);
-    expect(find.text('JSON'), findsOneWidget);
-    expect(find.text('CSV'), findsOneWidget);
+    expect(find.text('Pré-visualizar HTML'), findsOneWidget);
+    expect(find.text('Exportar'), findsOneWidget);
+    expect(find.text('Publicar'), findsOneWidget);
     await tester.tap(find.text('Publicar'));
     await _pumpActionFrame(tester);
     expect(find.text('Publicar relatório?'), findsOneWidget);
@@ -70,19 +69,6 @@ void main() {
     expect(
       relatorioRepository.get('rel-draft')?.syncStatus,
       RelatorioSyncStatus.pending_sync,
-    );
-
-    await _openReportMenu(tester, index: 0);
-    expect(find.text('Arquivar'), findsOneWidget);
-    await tester.tap(find.text('Arquivar'));
-    await _pumpActionFrame(tester);
-    expect(find.text('Arquivar relatório?'), findsOneWidget);
-    await tester.tap(find.widgetWithText(FilledButton, 'Arquivar'));
-    await _pumpActionFrame(tester);
-
-    expect(
-      relatorioRepository.get('rel-draft')?.status,
-      RelatorioStatus.arquivado,
     );
 
     await _openReportMenu(tester, index: 0);
@@ -121,7 +107,6 @@ void main() {
     expect(find.text('Média'), findsWidgets);
 
     await _openOccurrenceMenu(tester, index: 0);
-    expect(find.text('Exportar dados'), findsOneWidget);
     expect(find.text('Confirmar'), findsOneWidget);
     await tester.tap(find.text('Confirmar'));
     await _pumpActionFrame(tester);
@@ -192,14 +177,26 @@ void main() {
     expect(find.text('Marketing Cases'), findsOneWidget);
     expect(find.text('Produtor Teste - Fazenda Marketing'), findsOneWidget);
 
+    await tester.drag(find.byType(ListView), const Offset(0, -700));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Fotos da visita'), findsOneWidget);
+    expect(find.text('Nenhuma foto registrada. Use o botão + no mapa.'), findsOneWidget);
+    expect(find.text('Todas'), findsOneWidget);
+    expect(find.text('Foto rápida'), findsWidgets);
+    expect(find.text('Inversão vegetal'), findsOneWidget);
+    expect(find.text('Órfãs'), findsOneWidget);
+
+    await tester.drag(find.byType(ListView), const Offset(0, 700));
+    await tester.pumpAndSettle();
+
+    await tester.ensureVisible(
+      find.byTooltip('Ações do relatório consolidado').first,
+    );
     await tester.tap(find.byTooltip('Ações do relatório consolidado').first);
     await tester.pumpAndSettle();
     expect(find.text('Pré-visualizar HTML'), findsOneWidget);
-    expect(find.text('Exportar dados'), findsOneWidget);
-    expect(find.text('PDF'), findsOneWidget);
-    expect(find.text('HTML'), findsOneWidget);
-    expect(find.text('JSON'), findsOneWidget);
-    expect(find.text('CSV'), findsOneWidget);
+    expect(find.text('Exportar'), findsOneWidget);
   });
 }
 
@@ -218,6 +215,7 @@ Future<void> _pumpScreen(
     marketingCaseRepositoryProvider.overrideWithValue(
       FakeMarketingCaseRepository(marketingCases ?? const []),
     ),
+    quickPhotoListProvider.overrideWith((ref) async => const []),
   ];
 
   await tester.pumpWidget(

@@ -1,0 +1,72 @@
+---
+description: Regras canônicas de design SoloForte para relatórios HTML e UI de exportação
+globs:
+  - assets/html_templates/**
+  - lib/core/html_templates/**
+  - lib/modules/consultoria/relatorios/**
+alwaysApply: false
+---
+
+# SoloForte Designer Rules
+
+## Paleta
+
+- `--sf-samsung: #1428A0` — azul Samsung (primário forte)
+- `--sf-navy: #2C5564` — azul petróleo (secundário)
+- `--sf-white: #FFFFFF`
+- `--sf-gray: #F5F5F7`
+- `--sf-text: #1D1D1F`
+
+Header: gradiente `linear-gradient(135deg, var(--sf-samsung) 0%, var(--sf-navy) 100%)`.
+
+## Header
+
+- SEM logo SoloForte
+- SEM ícones genéricos
+- Apenas título do relatório + data/contexto
+- `{{report_header_signature}}` deve permanecer vazio
+
+## Localização
+
+- Apenas ícone de pin (`📍` / `.sf-location`)
+- SEM texto de coordenadas ou endereço
+- SEM pills de localização no header
+
+## Rodapé
+
+- UM único bloco: ícone 🌱 + "SoloForte" + tagline
+- SEM duplicação de marca (consultor + SoloForte separados)
+- Tagline pode incluir responsável técnico
+
+## Branding customizado (Settings)
+
+- Logo/nome do consultor em Settings **não** aparece no header HTML
+- `brandingPlaceholders()` ignora `customBrandName` / `customLogoPath` de propósito
+- Responsável técnico vai só na tagline do rodapé SoloForte
+
+## Ocorrências HTML (export)
+
+- Emojis de **categoria** (🐛 🦠 🌿…) são permitidos — taxonomia agronômica no relatório
+- 📍 reservado **somente** para localização (`.sf-location`)
+- Categoria default sem tipo: 🌾 (nunca 📍 — conflita com pin de GPS)
+- Cards Flutter da lista Relatórios: sem emojis (regra separada abaixo)
+
+## Cards (Flutter — lista Relatórios)
+
+- SEM emojis/ícones genéricos na visão geral
+- SEM ícone `leading` nos cards de lista
+- SoloForte branding SOMENTE no rodapé HTML
+
+## Export (iPad)
+
+- `Share.shareXFiles` exige `sharePositionOrigin` não-zero
+- Usar `resolveSharePositionOrigin()` de `lib/core/utils/share_position.dart`
+
+## Checklist rápido
+
+- [ ] Header limpo (sem logo)
+- [ ] Localização = só pin
+- [ ] Rodapé = 1 bloco SoloForte
+- [ ] Cores: samsung + petróleo
+- [ ] Sem ícones genéricos nos cards Flutter
+- [ ] Export passa `sharePositionOrigin`

@@ -280,7 +280,7 @@ class OcorrenciaHtmlRenderer {
                 <svg viewBox="0 0 24 24"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm.5 11H8v-2h2.5V7H13v6z"/></svg>
                 ${RelatorioHtmlRenderer.formatTime(createdAt)}
               </span>
-              ${hasLoc ? '<span class="ocorrencia-meta-item"><svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>Georreferenciada</span>' : ''}
+              ${hasLoc ? '<span class="ocorrencia-meta-item sf-location" aria-label="Localização">📍</span>' : ''}
               ${_isAmostraSolo(data) ? '<span class="ocorrencia-meta-item">🪨 Amostra coletada</span>' : ''}
             </div>
           </div>
@@ -520,7 +520,7 @@ class OcorrenciaHtmlRenderer {
       case 'amostra_solo':
         return const _CatInfo('🪨', 'Solo');
       default:
-        return const _CatInfo('📍', 'Ocorrência');
+        return const _CatInfo('🌾', 'Ocorrência');
     }
   }
 }

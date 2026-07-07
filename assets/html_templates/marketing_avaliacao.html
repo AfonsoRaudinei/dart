@@ -10,6 +10,7 @@
      TOKENS — Paleta oficial SoloForte (do logo)
   ═══════════════════════════════════════════ */
   :root {
+    --sf-samsung:    #1428A0;
     --sf-navy:       #2C5564;
     --sf-navy-light: #3A6B7D;
     --sf-green:      #2E7D32;
@@ -18,9 +19,10 @@
     --sf-amber-pale: #FEF3C7;
     --sf-cream:      #F7F5F0;
     --sf-stone:      #E8E4DC;
-    --sf-text:       #1A1A1A;
+    --sf-text:       #1D1D1F;
     --sf-text-muted: #6B7280;
     --sf-white:      #FFFFFF;
+    --sf-gray:       #F5F5F7;
     --sf-shadow:     rgba(44, 85, 100, 0.12);
     --sf-shadow-md:  rgba(44, 85, 100, 0.20);
 
@@ -63,7 +65,7 @@
      HEADER
   ═══════════════════════════════════════════ */
   .header {
-    background: var(--sf-navy);
+    background: linear-gradient(135deg, var(--sf-samsung) 0%, var(--sf-navy) 100%);
     padding: 28px 32px 24px;
     position: relative;
     overflow: hidden;
@@ -672,13 +674,6 @@
     line-height: 1.5;
   }
 
-  .localizacao-coords {
-    font-size: 11px;
-    color: var(--sf-text-muted);
-    margin-top: 2px;
-    font-family: 'SF Mono', 'Fira Code', monospace;
-  }
-
   /* ═══════════════════════════════════════════
      VENDEDOR
   ═══════════════════════════════════════════ */
@@ -812,6 +807,42 @@
     .talhao-card { grid-template-columns: 1fr; }
     .roi-breakdown { grid-template-columns: 1fr; gap: 10px; }
   }
+
+  .logo-area:empty { display: none; }
+
+  .sf-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 1 1 100%;
+    min-width: 0;
+  }
+
+  .sf-brand-icon { font-size: 20px; line-height: 1; }
+
+  .sf-brand-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  .sf-brand-copy strong {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--sf-text, #1D1D1F);
+  }
+
+  .sf-brand-tagline {
+    font-size: 11px;
+    line-height: 1.4;
+    color: #667085;
+  }
+
+  .sf-location {
+    font-size: 16px;
+    line-height: 1;
+  }
 </style>
 </head>
 <body>
@@ -830,7 +861,6 @@
       <div class="header-fazenda">{{produtor_fazenda}}</div>
       <div class="header-produto">{{produto_utilizado}}</div>
       <div class="header-pills">
-        <span class="pill"><span class="pill-dot"></span>{{localizacao_texto}}</span>
         <!-- {{#if nome_talhao}} -->
         <span class="pill"><span class="pill-dot"></span>Talhão: {{nome_talhao}}</span>
         <!-- {{/if}} -->
@@ -1053,19 +1083,7 @@
       <div class="section-label-bar"></div>
       <span class="section-label-text">Localização</span>
     </div>
-    <div class="localizacao-block">
-      <div class="localizacao-icon">
-        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-          <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
-        </svg>
-      </div>
-      <div>
-        <div class="localizacao-text">{{localizacao_texto}}</div>
-        <!-- {{#if lat && lng}} -->
-        <div class="localizacao-coords">{{lat}}, {{lng}}</div>
-        <!-- {{/if}} -->
-      </div>
-    </div>
+    <div class="localizacao-block"><span class="sf-location" aria-label="Localização">📍</span></div>
 
     <!-- VENDEDOR -->
     <!-- {{#if nome_vendedor}} -->

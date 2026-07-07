@@ -673,17 +673,27 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
   ) async {
     final format = await _selectExportFormat(context);
     if (format == null || !mounted) return;
+    final shareOrigin = resolveSharePositionOrigin(context);
     await ref
         .read(drawingExportProvider.notifier)
-        .exportFeature(feature, format: format);
+        .exportFeature(
+          feature,
+          format: format,
+          sharePositionOrigin: shareOrigin,
+        );
   }
 
   Future<void> _exportAll(BuildContext context) async {
     final format = await _selectExportFormat(context);
     if (format == null || !mounted) return;
+    final shareOrigin = resolveSharePositionOrigin(context);
     await ref
         .read(drawingExportProvider.notifier)
-        .exportAll(widget.controller.features, format: format);
+        .exportAll(
+          widget.controller.features,
+          format: format,
+          sharePositionOrigin: shareOrigin,
+        );
   }
 
   Future<DrawingExportFormat?> _selectExportFormat(BuildContext context) async {

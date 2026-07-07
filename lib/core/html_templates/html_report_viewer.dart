@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
+import '../utils/share_position.dart';
 import 'report_export_service.dart';
 
 /// Widget genérico para exibir qualquer relatório HTML gerado pelos renderers.
@@ -39,6 +40,7 @@ class HtmlReportViewer extends StatefulWidget {
 class _HtmlReportViewerState extends State<HtmlReportViewer> {
   late final WebViewController _controller;
   bool _loading = true;
+  final GlobalKey _exportButtonKey = GlobalKey();
 
   @override
   void initState() {
@@ -69,30 +71,11 @@ class _HtmlReportViewerState extends State<HtmlReportViewer> {
           ),
         ),
         actions: [
-          PopupMenuButton<ReportExportFormat>(
-            tooltip: 'Exportar dados',
+          IconButton(
+            key: _exportButtonKey,
+            tooltip: 'Exportar',
             icon: const Icon(Icons.ios_share_outlined),
-            onSelected: _export,
-            itemBuilder: (context) => [
-              const PopupMenuItem(
-                value: ReportExportFormat.pdf,
-                child: Text('Exportar PDF'),
-              ),
-              const PopupMenuItem(
-                value: ReportExportFormat.html,
-                child: Text('Exportar HTML'),
-              ),
-              if (widget.jsonData != null)
-                const PopupMenuItem(
-                  value: ReportExportFormat.json,
-                  child: Text('Exportar JSON'),
-                ),
-              if (widget.csvData != null)
-                const PopupMenuItem(
-                  value: ReportExportFormat.csv,
-                  child: Text('Exportar CSV'),
-                ),
-            ],
+            onPressed: _exportHtml,
           ),
         ],
       ),
@@ -108,16 +91,20 @@ class _HtmlReportViewerState extends State<HtmlReportViewer> {
     );
   }
 
-  Future<void> _export(ReportExportFormat format) async {
+  Future<void> _exportHtml() async {
     try {
       await widget.exportService.export(
-        format,
+        ReportExportFormat.html,
         ReportExportPayload(
           title: widget.title,
           html: widget.htmlContent,
           fileBaseName: widget.fileBaseName,
           json: widget.jsonData,
           csv: widget.csvData,
+        ),
+        sharePositionOrigin: resolveSharePositionOrigin(
+          context,
+          anchorKey: _exportButtonKey,
         ),
       );
       if (mounted) {

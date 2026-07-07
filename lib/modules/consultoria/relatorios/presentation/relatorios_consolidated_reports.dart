@@ -195,7 +195,6 @@ class _GeneratedReportCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _DataCard(
-      leading: Icon(icon, size: 20),
       title: title,
       subtitle: enabled ? subtitle : '$subtitle • sem dados',
       date: date,
@@ -209,27 +208,10 @@ class _GeneratedReportCard extends StatelessWidget {
             enabled: enabled,
             child: const Text('Pré-visualizar HTML'),
           ),
-          const PopupMenuDivider(),
-          const PopupMenuItem(enabled: false, child: Text('Exportar dados')),
           PopupMenuItem(
-            value: 'export_pdf',
+            value: 'export',
             enabled: enabled,
-            child: const Text('PDF'),
-          ),
-          PopupMenuItem(
-            value: 'export_html',
-            enabled: enabled,
-            child: const Text('HTML'),
-          ),
-          PopupMenuItem(
-            value: 'export_json',
-            enabled: enabled,
-            child: const Text('JSON'),
-          ),
-          PopupMenuItem(
-            value: 'export_csv',
-            enabled: enabled,
-            child: const Text('CSV'),
+            child: const Text('Exportar'),
           ),
         ],
         onSelected: (value) => _handleAction(context, value),
@@ -256,17 +238,8 @@ class _GeneratedReportCard extends StatelessWidget {
           ),
         );
         return;
-      case 'export_pdf':
-        await _export(context, ReportExportFormat.pdf, payload);
-        return;
-      case 'export_html':
+      case 'export':
         await _export(context, ReportExportFormat.html, payload);
-        return;
-      case 'export_json':
-        await _export(context, ReportExportFormat.json, payload);
-        return;
-      case 'export_csv':
-        await _export(context, ReportExportFormat.csv, payload);
         return;
     }
   }
@@ -276,7 +249,12 @@ class _GeneratedReportCard extends StatelessWidget {
     ReportExportFormat format,
     _GeneratedReportPayload payload,
   ) async {
-    await const ReportExportService().export(format, payload.toExportPayload());
+    final shareOrigin = resolveSharePositionOrigin(context);
+    await const ReportExportService().export(
+      format,
+      payload.toExportPayload(),
+      sharePositionOrigin: shareOrigin,
+    );
     if (!context.mounted) return;
     ScaffoldMessenger.of(
       context,

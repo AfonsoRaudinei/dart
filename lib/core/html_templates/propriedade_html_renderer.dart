@@ -155,7 +155,7 @@ class PropriedadeHtmlRenderer {
           <div class="field-nome">$nome</div>
           ${codigo != null ? '<div class="field-codigo">#${RelatorioHtmlRenderer.escapeHtml(codigo)}</div>' : ''}
           <div class="field-meta">
-            ${temCentro ? '<span class="field-meta-chip">📍 Georeferenciado</span>' : ''}
+            ${temCentro ? '<span class="field-meta-chip sf-location" aria-label="Localização">📍</span>' : ''}
             ${temBordadura ? '<span class="field-meta-chip">🗺️ Com bordadura</span>' : ''}
           </div>
         </div>

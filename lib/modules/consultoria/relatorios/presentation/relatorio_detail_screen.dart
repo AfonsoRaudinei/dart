@@ -4,15 +4,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
-import 'package:printing/printing.dart';
-import '../infra/relatorio_pdf_service.dart';
-
+import '../../../../core/constants/layout_constants.dart';
+import '../../../../core/html_templates/html_report_viewer.dart';
+import '../../../../core/html_templates/report_export_service.dart';
+import '../../../../core/utils/share_position.dart';
 import '../../../../core/router/app_routes.dart';
+import '../infra/consultoria_report_export_data.dart';
+import '../infra/relatorio_visit_html_builder.dart';
 import '../models/relatorio_status.dart';
 import '../models/relatorio_tecnico.dart';
 import '../providers/relatorio_providers.dart';
 import '../use_cases/publish_relatorio_use_case.dart';
-import '../../../../core/constants/layout_constants.dart';
 
 /// Tela de Detalhe do Relatório Técnico — PASSO 3
 ///
@@ -162,8 +164,10 @@ class _RelatorioDetailScreenState extends ConsumerState<RelatorioDetailScreen> {
             PopupMenuButton<String>(
               icon: const Icon(Icons.more_vert, color: Color(0xFF6B7280)),
               onSelected: (value) async {
-                if (value == 'pdf') {
-                  await _gerarPdf(context, ref, relatorio);
+                if (value == 'html') {
+                  await _openHtml(context, ref, relatorio);
+                } else if (value == 'export') {
+                  await _exportHtml(context, ref, relatorio);
                 } else if (value == 'edit') {
                   context.go('/consultoria/relatorios/${widget.relatorioId}/edit');
                 } else if (value == 'delete') {
@@ -198,12 +202,22 @@ class _RelatorioDetailScreenState extends ConsumerState<RelatorioDetailScreen> {
               },
               itemBuilder: (_) => [
                 const PopupMenuItem(
-                  value: 'pdf',
+                  value: 'html',
                   child: Row(
                     children: [
-                      Icon(Icons.picture_as_pdf_outlined, size: 18),
+                      Icon(Icons.preview_outlined, size: 18),
                       SizedBox(width: 8),
-                      Text('Gerar PDF'),
+                      Text('Pré-visualizar HTML'),
+                    ],
+                  ),
+                ),
+                const PopupMenuItem(
+                  value: 'export',
+                  child: Row(
+                    children: [
+                      Icon(Icons.ios_share_outlined, size: 18),
+                      SizedBox(width: 8),
+                      Text('Exportar'),
                     ],
                   ),
                 ),
@@ -469,28 +483,66 @@ class _RelatorioDetailScreenState extends ConsumerState<RelatorioDetailScreen> {
   // AÇÕES
   // ══════════════════════════════════════════════════════════════════════
 
-  Future<void> _gerarPdf(
+  Future<void> _openHtml(
     BuildContext context,
     WidgetRef ref,
     RelatorioTecnico relatorio,
   ) async {
-    if (!context.mounted) return;
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Gerando PDF...')),
-    );
-
     try {
-      final bytes = await RelatorioPdfService.generate(relatorio);
-
-      await Printing.sharePdf(
-        bytes: Uint8List.fromList(bytes),
-        filename: 'relatorio_${relatorio.id}.pdf',
+      final html = await buildRelatorioVisitHtml(ref, relatorio);
+      if (!context.mounted) return;
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => HtmlReportViewer(
+            title: relatorio.title ?? relatorio.farmName,
+            htmlContent: html,
+            fileBaseName: ConsultoriaReportExportData.reportFileBaseName(
+              relatorio,
+            ),
+            jsonData: ConsultoriaReportExportData.reportJson(relatorio),
+            csvData: ConsultoriaReportExportData.reportCsv(relatorio),
+          ),
+        ),
       );
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erro ao gerar PDF: $e')),
+          SnackBar(content: Text('Erro ao abrir relatório: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _exportHtml(
+    BuildContext context,
+    WidgetRef ref,
+    RelatorioTecnico relatorio,
+  ) async {
+    try {
+      final shareOrigin = resolveSharePositionOrigin(context);
+      final html = await buildRelatorioVisitHtml(ref, relatorio);
+      await const ReportExportService().export(
+        ReportExportFormat.html,
+        ReportExportPayload(
+          title: relatorio.title ?? relatorio.farmName,
+          html: html,
+          fileBaseName: ConsultoriaReportExportData.reportFileBaseName(
+            relatorio,
+          ),
+          json: ConsultoriaReportExportData.reportJson(relatorio),
+          csv: ConsultoriaReportExportData.reportCsv(relatorio),
+        ),
+        sharePositionOrigin: shareOrigin,
+      );
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Exportação iniciada.')),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erro ao exportar: $e')),
         );
       }
     }
