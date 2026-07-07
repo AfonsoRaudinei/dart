@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/repositories/drawing_repository.dart';
 import '../../data/data_sources/drawing_local_store.dart';
 import '../controllers/drawing_controller.dart';
+export '../controllers/drawing_controller.dart';
 import '../../domain/drawing_state.dart';
 import '../../domain/models/drawing_models.dart';
 import '../../domain/services/drawing_feature_crud_service.dart';
