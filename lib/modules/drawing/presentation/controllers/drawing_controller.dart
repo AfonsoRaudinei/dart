@@ -22,6 +22,7 @@ import 'drawing_import_orchestrator.dart';
 import '../../../../core/utils/app_logger.dart';
 
 part 'drawing_controller_vertex.dart';
+part 'drawing_controller_sketch.dart';
 
 /// Controller de orquestração do módulo Drawing.
 ///
@@ -251,7 +252,13 @@ class DrawingController extends ChangeNotifier {
   double _reviewPerimeterKm = 0.0;
   bool _isDirty = false;
   bool _isSnapping = false; // RT-DRAW-09 Feedback state
-  final List<LatLng> _currentPoints = []; // Pontos do desenho atual
+  final List<LatLng> _currentPoints = []; // Vértices — ferramenta polígono
+  final List<LatLng> _freehandPoints = []; // Trilha — ferramenta mão livre
+  bool _freehandStrokeActive = false;
+  LatLng? _pivotCenter;
+  LatLng? _pivotPreviewEdge;
+  bool _pivotRadiusFinalized = false;
+  double? _pivotRadiusMeters;
 
   // Performance State
   bool _isHighComplexity = false;
@@ -358,69 +365,25 @@ class DrawingController extends ChangeNotifier {
       if (_reviewGeometrySnapshot != null) return _reviewGeometrySnapshot;
     }
 
-    if (_currentPoints.isNotEmpty) {
-      if (_currentPoints.length < 2) return null;
-      final ring = _currentPoints
-          .map((p) => [p.longitude, p.latitude])
-          .toList();
-
-      final isPolygonTool =
-          currentTool == DrawingTool.polygon ||
-          currentTool == DrawingTool.freehand;
-      if (isPolygonTool && ring.length > 2) {
-        final first = ring.first;
-        final last = ring.last;
-        final needsClosure =
-            (first[0] - last[0]).abs() > 1e-9 ||
-            (first[1] - last[1]).abs() > 1e-9;
-        if (needsClosure) {
-          ring.add(first);
-        }
-        return DrawingPolygon(coordinates: [ring]);
-      }
-      return DrawingPolygon(coordinates: [ring]);
-    }
+    final sketch = buildSketchLiveGeometry();
+    if (sketch != null) return sketch;
 
     return _manualSketch;
   }
 
   void appendDrawingPoint(LatLng point) {
-    if (_isDisposed) return;
-
-    // 🔧 FIX: Validação explícita de estado antes de adicionar pontos
-    // Se não estiver em armed ou drawing, não processar
-    if (currentState != DrawingState.armed &&
-        currentState != DrawingState.drawing) {
-      // Se está em idle, significa que a ferramenta não foi selecionada corretamente
-      if (currentState == DrawingState.idle) {
-        if (kDebugMode) {
-          AppLogger.debug(
-            'DRAW-ERROR: appendDrawingPoint em estado idle.',
-            tag: 'DrawingController',
-          );
-        }
-      }
-      return;
+    switch (currentTool) {
+      case DrawingTool.polygon:
+      case DrawingTool.rectangle:
+      case DrawingTool.circle:
+        appendPolygonPoint(point);
+      case DrawingTool.pivot:
+        handlePivotTap(point);
+      case DrawingTool.freehand:
+        break;
+      default:
+        appendPolygonPoint(point);
     }
-
-    // 🔧 FIX-DRAW-REDSCREEN: Transicionar de armed -> drawing de forma segura
-    if (currentState == DrawingState.armed) {
-      final success = _stateMachine.beginAddingPoints();
-      if (!success) {
-        // Transição falhou (não devería acontecer pois já validamos acima)
-        if (kDebugMode) {
-          AppLogger.debug(
-            'DRAW-ERROR: Falha ao transicionar armed -> drawing',
-            tag: 'DrawingController',
-          );
-        }
-        return;
-      }
-    }
-
-    _currentPoints.add(point);
-    _updateRealTimeIntersection();
-    notifyListeners();
   }
 
   // Manual Sketch State
@@ -435,7 +398,15 @@ class DrawingController extends ChangeNotifier {
   /// `true` quando há vértices de desenho que podem ser desfeitos.
   bool get canUndo {
     if (_stateMachine.currentState == DrawingState.drawing) {
-      return _currentPoints.length > 1;
+      switch (_stateMachine.currentTool) {
+        case DrawingTool.freehand:
+          return _freehandPoints.isNotEmpty;
+        case DrawingTool.pivot:
+          return _pivotCenter != null;
+        case DrawingTool.polygon:
+        default:
+          return _currentPoints.length > 1;
+      }
     }
     return _history.canUndo;
   }
@@ -529,19 +500,13 @@ class DrawingController extends ChangeNotifier {
       case DrawingInteraction.normal:
         // 🔧 FIX-DRAW-FLOW-01: Consultar state machine para armed/drawing
         if (_stateMachine.currentState == DrawingState.armed) {
-          return "Toque no mapa para iniciar o desenho";
+          return _instructionForActiveTool();
         }
         if (_stateMachine.currentState == DrawingState.drawing ||
-            _currentPoints.isNotEmpty) {
-          final pointCount = _currentPoints.length;
-          if (pointCount == 0) {
-            return "Toque no mapa para iniciar o desenho";
-          }
-          if (_isSnapping) return "⚡ Ponto ajustado (snap)";
-          if (pointCount < 3) {
-            return "Continue tocando para desenhar a área";
-          }
-          return "Toque para continuar ou no ponto inicial para fechar";
+            _currentPoints.isNotEmpty ||
+            _freehandPoints.isNotEmpty ||
+            _pivotCenter != null) {
+          return _instructionForActiveTool();
         }
         // Manual Drawing Logic (legacy _manualSketch)
         if (_manualSketch == null) {
@@ -744,8 +709,7 @@ class DrawingController extends ChangeNotifier {
     _reviewAreaHa = 0.0;
     _reviewPerimeterKm = 0.0;
     _reviewGeometrySnapshot = null;
-    _currentPoints
-        .clear(); // 🔧 FIX-AUDIT: Evita vazamento de pontos para próximo desenho
+    _clearSketchState();
     _manualSketch = null;
     _previewGeometry = null;
     _interactionMode = DrawingInteraction.normal;
@@ -1193,8 +1157,7 @@ class DrawingController extends ChangeNotifier {
           );
         }
       }
-      // Limpar pontos de desenho anterior
-      _currentPoints.clear();
+      _clearSketchState();
       _manualSketch = null;
       _reviewGeometrySnapshot = null;
       _intersectionWarningMessage = null;
@@ -1228,7 +1191,7 @@ class DrawingController extends ChangeNotifier {
       }
     } else {
       _stateMachine.cancel();
-      _currentPoints.clear();
+      _clearSketchState();
       _manualSketch = null;
       _reviewGeometrySnapshot = null;
       _intersectionWarningMessage = null;
@@ -1291,7 +1254,7 @@ class DrawingController extends ChangeNotifier {
     _reviewAreaHa = 0.0;
     _reviewPerimeterKm = 0.0;
     _manualSketch = null;
-    _currentPoints.clear();
+    _clearSketchState();
     _interactionMode = DrawingInteraction.normal;
     _errorMessage = null;
     _intersectionWarningMessage = null;
@@ -1479,12 +1442,32 @@ class DrawingController extends ChangeNotifier {
   /// Desfaz o último vértice adicionado no modo de desenho livre.
   void undoDrawingPoint() {
     if (_isDisposed) return;
-    if (_currentPoints.isEmpty) return;
-    _currentPoints.removeLast();
-    // Se não há mais pontos, voltar para armed
-    if (_currentPoints.isEmpty &&
-        _stateMachine.currentState == DrawingState.drawing) {
-      // 🔧 FASE1-FIX-02: Verificar retorno — falha aqui é inesperada mas não deve crashar.
+
+    switch (_stateMachine.currentTool) {
+      case DrawingTool.freehand:
+        if (_freehandPoints.isEmpty) return;
+        _freehandPoints.clear();
+        _freehandStrokeActive = false;
+      case DrawingTool.pivot:
+        if (_pivotPreviewEdge != null) {
+          _pivotPreviewEdge = null;
+          _pivotRadiusMeters = null;
+          _pivotRadiusFinalized = false;
+        } else if (_pivotCenter != null) {
+          _pivotCenter = null;
+        } else {
+          return;
+        }
+      case DrawingTool.polygon:
+      default:
+        if (_currentPoints.isEmpty) return;
+        _currentPoints.removeLast();
+    }
+
+    final hasSketch = _currentPoints.isNotEmpty ||
+        _freehandPoints.isNotEmpty ||
+        _pivotCenter != null;
+    if (!hasSketch && _stateMachine.currentState == DrawingState.drawing) {
       final didRevert = _stateMachine.tryTransitionTo(DrawingState.armed);
       if (!didRevert && kDebugMode) {
         AppLogger.debug(

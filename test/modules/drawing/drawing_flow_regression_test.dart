@@ -380,7 +380,7 @@ void main() {
 
       expect(
         controller.instructionText,
-        equals('Toque no mapa para iniciar o desenho'),
+        equals('Toque no mapa para iniciar o polígono'),
       );
     });
   });

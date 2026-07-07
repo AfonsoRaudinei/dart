@@ -80,7 +80,7 @@ void main() {
         final instruction = controller.instructionText;
 
         // Assert
-        expect(instruction, equals('Toque no mapa para iniciar o desenho'));
+        expect(instruction, equals('Toque no mapa para iniciar o polígono'));
       },
     );
 
@@ -241,7 +241,7 @@ void main() {
       controller.selectTool('polygon');
       expect(
         controller.instructionText,
-        equals('Toque no mapa para iniciar o desenho'),
+        equals('Toque no mapa para iniciar o polígono'),
       );
     });
 
@@ -251,7 +251,7 @@ void main() {
 
       expect(
         controller.instructionText,
-        isNot(equals('Toque no mapa para iniciar o desenho')),
+        isNot(equals('Toque no mapa para iniciar o polígono')),
       );
     });
 
@@ -262,7 +262,7 @@ void main() {
 
       expect(
         controller.instructionText,
-        equals('Continue tocando para desenhar a área'),
+        equals('Continue tocando para fechar o polígono'),
       );
     });
 
@@ -353,9 +353,9 @@ void main() {
     }
 
     test(
-      '🛠️ Todas as ferramentas devem transicionar para drawing após ponto',
+      '🛠️ Ferramentas por clique transicionam para drawing após ponto',
       () {
-        for (final tool in ['polygon', 'freehand', 'rectangle', 'circle']) {
+        for (final tool in ['polygon', 'rectangle', 'circle']) {
           controller.selectTool(tool);
           controller.appendDrawingPoint(const LatLng(-15.7801, -47.9292));
           expect(
@@ -367,5 +367,17 @@ void main() {
         }
       },
     );
+
+    test('🛠️ freehand transiciona para drawing via gesto contínuo', () {
+      controller.selectTool('freehand');
+      controller.beginFreehandStroke(const LatLng(-15.7801, -47.9292));
+      expect(controller.currentState, equals(DrawingState.drawing));
+    });
+
+    test('🛠️ pivot transiciona para drawing após definir centro', () {
+      controller.selectTool('pivot');
+      controller.handlePivotTap(const LatLng(-15.7801, -47.9292));
+      expect(controller.currentState, equals(DrawingState.drawing));
+    });
   });
 }

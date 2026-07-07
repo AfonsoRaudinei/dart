@@ -19,6 +19,7 @@ import '../../../../modules/drawing/presentation/providers/drawing_provider.dart
 import '../../../../modules/drawing/presentation/coordinators/drawing_close_coordinator.dart';
 import '../../../../modules/drawing/domain/drawing_state.dart';
 import '../../../../modules/drawing/presentation/widgets/drawing_layers.dart';
+import '../../../../modules/drawing/presentation/widgets/drawing_map_gesture_overlay.dart';
 import '../../../../modules/drawing/presentation/widgets/drawing_state_indicator.dart';
 import '../../../../modules/drawing/presentation/widgets/drawing_edit_layer.dart';
 import '../../../../modules/consultoria/clients/presentation/providers/field_providers.dart';
@@ -104,6 +105,13 @@ class MapBuildOrchestrator extends ConsumerWidget {
       mapTilerApiKey: MapConfig.kMapTilerApiKey,
     );
 
+    final drawCtrlForInteraction = ref.watch(drawingControllerProvider);
+    final disableMapDrag =
+        drawCtrlForInteraction.currentTool == DrawingTool.freehand &&
+        (drawCtrlForInteraction.currentState == DrawingState.armed ||
+            drawCtrlForInteraction.currentState == DrawingState.drawing ||
+            drawCtrlForInteraction.isFreehandStrokeActive);
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       stopwatch.stop();
       MapLogger.logRenderTime(stopwatch.elapsedMilliseconds);
@@ -120,6 +128,12 @@ class MapBuildOrchestrator extends ConsumerWidget {
             mapController: mapController,
             interactionOptions: drawingMetrics.state == DrawingState.editing
                 ? const InteractionOptions(flags: InteractiveFlag.none)
+                : disableMapDrag
+                ? const InteractionOptions(
+                    flags: InteractiveFlag.all &
+                        ~InteractiveFlag.rotate &
+                        ~InteractiveFlag.drag,
+                  )
                 : null,
             onMapReady: () {
               // ADR-032 F1: _isMapReady → mapReadyStateProvider
@@ -161,6 +175,9 @@ class MapBuildOrchestrator extends ConsumerWidget {
               final drawCtrl = ref.read(drawingControllerProvider);
               if (drawCtrl.currentState == DrawingState.drawing ||
                   drawCtrl.currentState == DrawingState.armed) {
+                if (drawCtrl.currentTool == DrawingTool.freehand) {
+                  return;
+                }
                 drawCtrl.appendDrawingPoint(point);
                 return;
               }
@@ -323,6 +340,11 @@ class MapBuildOrchestrator extends ConsumerWidget {
                 popupBackgroundColor: Colors.black.withValues(alpha: 0.72),
               ),
             ],
+          ),
+
+          DrawingMapGestureOverlay(
+            mapController: mapController,
+            isMapReady: ref.watch(mapReadyStateProvider),
           ),
 
           RepaintBoundary(
