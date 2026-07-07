@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../../../core/design/sf_icons.dart';
@@ -16,18 +17,30 @@ import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 /// Fecha via [Navigator.of(context).pop()] interno — sem interferir no Map-First.
 class OccurrenceDetailSheet extends StatelessWidget {
   final Occurrence occurrence;
+  final String? backRoute;
 
-  const OccurrenceDetailSheet({super.key, required this.occurrence});
+  const OccurrenceDetailSheet({
+    super.key,
+    required this.occurrence,
+    this.backRoute,
+  });
 
   // ── API pública ──────────────────────────────────────────────────────────
 
-  static Future<void> show(BuildContext context, Occurrence occurrence) {
+  static Future<void> show(
+    BuildContext context,
+    Occurrence occurrence, {
+    String? backRoute,
+  }) {
     HapticFeedback.lightImpact();
     return showSoloForteSheet(
       context: context,
       isScrollControlled: true,
       showDragHandle: false,
-      builder: (_) => OccurrenceDetailSheet(occurrence: occurrence),
+      builder: (_) => OccurrenceDetailSheet(
+        occurrence: occurrence,
+        backRoute: backRoute,
+      ),
     );
   }
 
@@ -171,6 +184,25 @@ class OccurrenceDetailSheet extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: Row(
                   children: [
+                    if (backRoute != null) ...[
+                      IconButton(
+                        icon: const Icon(Icons.arrow_back_ios_new),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(
+                          minWidth: 40,
+                          minHeight: 40,
+                        ),
+                        onPressed: () {
+                          HapticFeedback.lightImpact();
+                          final router = GoRouter.of(context);
+                          final route = backRoute!;
+                          Navigator.of(context).pop();
+                          router.go(route);
+                        },
+                        tooltip: 'Voltar',
+                      ),
+                      const SizedBox(width: 4),
+                    ],
                     Container(
                       width: 48,
                       height: 48,

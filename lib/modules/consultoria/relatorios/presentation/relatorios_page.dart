@@ -1,24 +1,29 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../../../../core/contracts/i_client_lookup_provider.dart';
+import '../../../../core/constants/layout_constants.dart';
+import '../../../../core/router/app_routes.dart';
 import '../../../../core/html_templates/html_report_viewer.dart';
 import '../../../../core/html_templates/marketing_html_renderer.dart';
 import '../../../../core/html_templates/ocorrencia_html_renderer.dart';
 import '../../../../core/html_templates/propriedade_html_renderer.dart';
 import '../../../../core/html_templates/relatorio_html_renderer.dart';
 import '../../../../core/html_templates/report_export_service.dart';
-import '../../../../core/html_templates/visita_html_renderer.dart';
+import '../../../../core/utils/share_position.dart';
 import '../../../../core/ui/sheets/soloforte_sheet.dart';
+import '../../quick_photo/data/quick_photo_repository.dart';
+import '../../quick_photo/domain/quick_photo_record.dart';
+import '../../quick_photo/presentation/providers/quick_photo_list_provider.dart';
 import '../infra/consultoria_report_export_data.dart';
+import '../infra/relatorio_visit_html_builder.dart';
 import '../models/relatorio_status.dart';
 import '../models/relatorio_tecnico.dart';
 import '../providers/relatorio_providers.dart' as tech;
 import '../use_cases/publish_relatorio_use_case.dart';
-import '../../publicacoes/providers/publicacao_providers.dart';
 import '../../../settings/domain/entities/user_profile.dart';
 import '../../../settings/presentation/providers/settings_providers.dart';
 import '../../../settings/presentation/providers/user_profile_provider.dart';
@@ -34,6 +39,7 @@ import '../../../marketing/presentation/providers/marketing_providers.dart';
 
 part 'relatorios_consolidated_reports.dart';
 part 'relatorios_shared_widgets.dart';
+part 'relatorios_visit_photos_section.dart';
 
 final _relatoriosTecnicosListProvider =
     FutureProvider.autoDispose<List<RelatorioTecnico>>((ref) async {
@@ -129,6 +135,11 @@ class RelatoriosScreen extends ConsumerWidget {
 
                   // ── Seção 4: Marketing Cases ───────────────────────────────
                   _MarketingCasesReportsSection(dateFormat: _dateFormat),
+                  const SizedBox(height: 20),
+
+                  // ── Seção 5: Fotos da visita ───────────────────────────────
+                  _VisitPhotosSection(dateFormat: _dateFormat),
+                  const SizedBox(height: kFabSafeArea),
                 ],
               ),
             ),
@@ -206,7 +217,6 @@ class _RelatorioCard extends ConsumerWidget {
       onTap: () => context.go('/consultoria/relatorios/${relatorio.id}'),
       borderRadius: BorderRadius.circular(12),
       child: _DataCard(
-        leading: const Icon(Icons.description_outlined, size: 20),
         title: relatorio.title?.isNotEmpty == true
             ? relatorio.title!
             : relatorio.farmName,
@@ -217,25 +227,15 @@ class _RelatorioCard extends ConsumerWidget {
         trailing: _AsyncActionMenu(
           tooltip: 'Ações do relatório',
           itemBuilder: (context) => [
-            const PopupMenuItem(value: 'view', child: Text('Ver detalhes')),
             const PopupMenuItem(
               value: 'html',
               child: Text('Pré-visualizar HTML'),
             ),
-            const PopupMenuDivider(),
-            const PopupMenuItem(enabled: false, child: Text('Exportar dados')),
-            const PopupMenuItem(value: 'export_pdf', child: Text('PDF')),
-            const PopupMenuItem(value: 'export_html', child: Text('HTML')),
-            const PopupMenuItem(value: 'export_json', child: Text('JSON')),
-            const PopupMenuItem(value: 'export_csv', child: Text('CSV')),
-            const PopupMenuDivider(),
+            const PopupMenuItem(value: 'export', child: Text('Exportar')),
             if (relatorio.status == RelatorioStatus.pendente_revisao)
               const PopupMenuItem(value: 'edit', child: Text('Editar')),
             if (relatorio.status == RelatorioStatus.pendente_revisao)
               const PopupMenuItem(value: 'publish', child: Text('Publicar')),
-            if (relatorio.status == RelatorioStatus.publicado)
-              const PopupMenuItem(value: 'archive', child: Text('Arquivar')),
-            const PopupMenuDivider(),
             const PopupMenuItem(
               value: 'delete',
               child: Text('Excluir', style: TextStyle(color: Colors.red)),
@@ -253,32 +253,17 @@ class _RelatorioCard extends ConsumerWidget {
     String value,
   ) async {
     switch (value) {
-      case 'view':
-        context.go('/consultoria/relatorios/${relatorio.id}');
-        return;
       case 'edit':
         context.go('/consultoria/relatorios/${relatorio.id}/edit');
         return;
       case 'html':
-        await _openHtml(context);
+        await _openHtml(context, ref);
         return;
-      case 'export_pdf':
-        await _export(context, ref, ReportExportFormat.pdf);
-        return;
-      case 'export_html':
+      case 'export':
         await _export(context, ref, ReportExportFormat.html);
-        return;
-      case 'export_json':
-        await _export(context, ref, ReportExportFormat.json);
-        return;
-      case 'export_csv':
-        await _export(context, ref, ReportExportFormat.csv);
         return;
       case 'publish':
         await _publish(context, ref);
-        return;
-      case 'archive':
-        await _archive(context, ref);
         return;
       case 'delete':
         await _delete(context, ref);
@@ -286,8 +271,8 @@ class _RelatorioCard extends ConsumerWidget {
     }
   }
 
-  Future<void> _openHtml(BuildContext context) async {
-    final html = await _buildHtml(null);
+  Future<void> _openHtml(BuildContext context, WidgetRef ref) async {
+    final html = await buildRelatorioVisitHtml(ref, relatorio);
     if (!context.mounted) return;
     await Navigator.of(context).push(
       MaterialPageRoute(
@@ -309,7 +294,8 @@ class _RelatorioCard extends ConsumerWidget {
     WidgetRef ref,
     ReportExportFormat format,
   ) async {
-    final html = await _buildHtml(ref);
+    final shareOrigin = resolveSharePositionOrigin(context);
+    final html = await buildRelatorioVisitHtml(ref, relatorio);
     final payload = ReportExportPayload(
       title: 'Relatório de Visita',
       html: html,
@@ -317,75 +303,15 @@ class _RelatorioCard extends ConsumerWidget {
       json: ConsultoriaReportExportData.reportJson(relatorio),
       csv: ConsultoriaReportExportData.reportCsv(relatorio),
     );
-    await const ReportExportService().export(format, payload);
+    await const ReportExportService().export(
+      format,
+      payload,
+      sharePositionOrigin: shareOrigin,
+    );
     if (!context.mounted) return;
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(const SnackBar(content: Text('Exportação iniciada.')));
-  }
-
-  Future<String> _buildHtml(WidgetRef? ref) async {
-    final clienteNome = ref == null
-        ? relatorio.clientId
-        : await _resolveClienteNome(ref);
-    final publicacoesTitulos = ref == null
-        ? const <String, String>{}
-        : await _resolvePublicacoesTitulos(ref);
-    final branding = await _resolveReportBrandingContext(
-      ref,
-      fallbackConsultantName: _resolveAgronomistNome(),
-      fallbackConsultantRole: 'Consultoria',
-    );
-    return VisitaHtmlRenderer.render(
-      relatorio: relatorio.toJson(),
-      agronomistNome: branding.consultantName,
-      clienteNome: clienteNome,
-      publicacoesTitulos: publicacoesTitulos,
-      reportBrandName: branding.brandName,
-      reportLogoPath: branding.logoPath,
-      consultantRole: branding.consultantRole,
-    );
-  }
-
-  Future<String> _resolveClienteNome(WidgetRef ref) async {
-    try {
-      final client = await ref
-          .read(clientLookupProvider)
-          .findById(relatorio.clientId);
-      final name = client?.name.trim();
-      if (name != null && name.isNotEmpty) return name;
-    } catch (_) {
-      // Lookup pode não estar registrado em testes isolados.
-    }
-    return relatorio.clientId;
-  }
-
-  Future<Map<String, String>> _resolvePublicacoesTitulos(WidgetRef ref) async {
-    final titles = <String, String>{};
-    for (final id in relatorio.publicacoesRefs) {
-      try {
-        final publicacao = await ref.read(
-          publicacaoDetailProvider(id: id).future,
-        );
-        final title = publicacao?.titulo.trim();
-        titles[id] = title != null && title.isNotEmpty ? title : id;
-      } catch (_) {
-        titles[id] = id;
-      }
-    }
-    return titles;
-  }
-
-  String _resolveAgronomistNome() {
-    final user = Supabase.instance.client.auth.currentUser;
-    final metadata = user?.userMetadata ?? const <String, dynamic>{};
-    final fullName = metadata['full_name']?.toString().trim();
-    if (fullName != null && fullName.isNotEmpty) return fullName;
-    final name = metadata['name']?.toString().trim();
-    if (name != null && name.isNotEmpty) return name;
-    final email = user?.email?.trim();
-    if (email != null && email.isNotEmpty) return email;
-    return relatorio.agronomistId;
   }
 
   Future<void> _publish(BuildContext context, WidgetRef ref) async {
@@ -397,25 +323,6 @@ class _RelatorioCard extends ConsumerWidget {
     );
     if (confirm != true) return;
     await ref.read(publishRelatorioProvider(relatorio.id).future);
-    ref.invalidate(_relatoriosTecnicosListProvider);
-  }
-
-  Future<void> _archive(BuildContext context, WidgetRef ref) async {
-    final confirm = await _confirm(
-      context,
-      title: 'Arquivar relatório?',
-      message: 'O relatório será removido da fila ativa de revisão.',
-      action: 'Arquivar',
-    );
-    if (confirm != true) return;
-    await ref
-        .read(tech.relatorioRepositoryProvider)
-        .update(
-          relatorio.copyWith(
-            status: RelatorioStatus.arquivado,
-            syncStatus: RelatorioSyncStatus.pending_sync,
-          ),
-        );
     ref.invalidate(_relatoriosTecnicosListProvider);
   }
 
@@ -537,10 +444,13 @@ class _OccurrenciaCard extends ConsumerWidget {
     final categoryLabel = occurrence.category ?? occurrence.type;
 
     return InkWell(
-      onTap: () => OccurrenceDetailSheet.show(context, occurrence),
+      onTap: () => OccurrenceDetailSheet.show(
+        context,
+        occurrence,
+        backRoute: AppRoutes.reports,
+      ),
       borderRadius: BorderRadius.circular(12),
       child: _DataCard(
-        leading: const Icon(Icons.warning_amber_rounded, size: 20),
         title: occurrence.type,
         subtitle: categoryLabel != occurrence.type ? categoryLabel : null,
         date: dateFormat.format(occurrence.createdAt.toLocal()),
@@ -549,22 +459,14 @@ class _OccurrenciaCard extends ConsumerWidget {
         trailing: _AsyncActionMenu(
           tooltip: 'Ações da ocorrência',
           itemBuilder: (context) => [
-            const PopupMenuItem(value: 'view', child: Text('Ver detalhes')),
             const PopupMenuItem(
               value: 'html',
               child: Text('Pré-visualizar HTML'),
             ),
-            const PopupMenuDivider(),
-            const PopupMenuItem(enabled: false, child: Text('Exportar dados')),
-            const PopupMenuItem(value: 'export_pdf', child: Text('PDF')),
-            const PopupMenuItem(value: 'export_html', child: Text('HTML')),
-            const PopupMenuItem(value: 'export_json', child: Text('JSON')),
-            const PopupMenuItem(value: 'export_csv', child: Text('CSV')),
-            const PopupMenuDivider(),
+            const PopupMenuItem(value: 'export', child: Text('Exportar')),
             const PopupMenuItem(value: 'edit', child: Text('Editar')),
             if (occurrence.status != 'confirmed')
               const PopupMenuItem(value: 'confirm', child: Text('Confirmar')),
-            const PopupMenuDivider(),
             const PopupMenuItem(
               value: 'delete',
               child: Text('Excluir', style: TextStyle(color: Colors.red)),
@@ -582,23 +484,11 @@ class _OccurrenciaCard extends ConsumerWidget {
     String value,
   ) async {
     switch (value) {
-      case 'view':
-        await OccurrenceDetailSheet.show(context, occurrence);
-        return;
       case 'html':
         await _openHtml(context, ref);
         return;
-      case 'export_pdf':
-        await _export(context, ref, ReportExportFormat.pdf);
-        return;
-      case 'export_html':
+      case 'export':
         await _export(context, ref, ReportExportFormat.html);
-        return;
-      case 'export_json':
-        await _export(context, ref, ReportExportFormat.json);
-        return;
-      case 'export_csv':
-        await _export(context, ref, ReportExportFormat.csv);
         return;
       case 'edit':
         await _showEditSheet(context, ref);
@@ -638,6 +528,7 @@ class _OccurrenciaCard extends ConsumerWidget {
     WidgetRef ref,
     ReportExportFormat format,
   ) async {
+    final shareOrigin = resolveSharePositionOrigin(context);
     final html = await _buildHtml(ref);
     await const ReportExportService().export(
       format,
@@ -650,6 +541,7 @@ class _OccurrenciaCard extends ConsumerWidget {
         json: ConsultoriaReportExportData.occurrenceJson(occurrence),
         csv: ConsultoriaReportExportData.occurrenceCsv(occurrence),
       ),
+      sharePositionOrigin: shareOrigin,
     );
     if (!context.mounted) return;
     ScaffoldMessenger.of(
@@ -662,7 +554,7 @@ class _OccurrenciaCard extends ConsumerWidget {
     data['foto_base64'] =
         await RelatorioHtmlRenderer.photoPathToBase64(occurrence.photoPath) ??
         '';
-    final branding = await _resolveReportBrandingContext(
+    final branding = await resolveReportBrandingContext(
       ref,
       fallbackConsultantName: 'Equipe técnica',
       fallbackConsultantRole: 'Consultoria',
