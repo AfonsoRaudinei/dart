@@ -17,6 +17,7 @@ import '../../modules/dashboard/pages/map/drawing/drawing_sheet.dart';
 import '../../modules/dashboard/pages/map/drawing/drawing_controller.dart';
 import '../../modules/dashboard/controllers/location_controller.dart';
 import '../../modules/dashboard/domain/location_state.dart';
+import '../../modules/dashboard/domain/location_settings.dart';
 import '../../modules/visitas/presentation/controllers/visit_controller.dart';
 import '../../modules/visitas/presentation/widgets/visit_sheet.dart';
 import '../../modules/visitas/presentation/controllers/geofence_controller.dart';
@@ -207,6 +208,11 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
         return;
       }
 
+      if (!isGnssAccuracyAcceptableForCheckIn(position.accuracy)) {
+        _showGpsLowAccuracyMessage(position.accuracy);
+        return;
+      }
+
       if (!mounted) return;
 
       _showSheet(
@@ -261,6 +267,19 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
         content: Text(message),
         backgroundColor: Colors.orange.shade700,
         duration: const Duration(seconds: 3),
+      ),
+    );
+  }
+
+  void _showGpsLowAccuracyMessage(double accuracyMeters) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Precisão GPS insuficiente (±${accuracyMeters.round()}m). '
+          'Aguarde sinal melhor ou vá para área aberta para fazer check-in.',
+        ),
+        backgroundColor: Colors.red.shade700,
+        duration: const Duration(seconds: 4),
       ),
     );
   }

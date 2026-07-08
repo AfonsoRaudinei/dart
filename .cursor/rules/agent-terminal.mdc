@@ -1,0 +1,11 @@
+---
+description: Executar comandos no terminal do agente; nunca só instruir o usuário
+alwaysApply: true
+---
+
+# Terminal — executar sempre daqui
+
+- Executar todos os comandos de shell, git, build e testes no terminal do ambiente Cursor (`/workspace`).
+- Nunca responder apenas com "rode no MacBook" — fazer commit, push e merge na `main` remota quando a tarefa estiver pronta.
+- O MacBook do usuário não é acessível; deixar o remoto pronto com `git push origin main`.
+- Só pedir `git pull origin main` no Mac se o usuário precisar sincronizar máquina local.

@@ -10,6 +10,15 @@ const LocationSettings soloforteGnssLocationSettings = LocationSettings(
   distanceFilter: soloforteGnssDistanceFilter,
 );
 
+/// Precisão máxima (metros) aceita para check-in de visita em campo.
+const double soloforteGnssMaxCheckInAccuracyMeters = 30;
+
+/// Retorna true se a precisão GNSS é suficiente para check-in.
+bool isGnssAccuracyAcceptableForCheckIn(double? accuracyMeters) {
+  if (accuracyMeters == null) return false;
+  return accuracyMeters <= soloforteGnssMaxCheckInAccuracyMeters;
+}
+
 /// Settings para requisições pontuais com timeout (ex.: geofence).
 LocationSettings soloforteGnssLocationSettingsWithTimeout(Duration timeLimit) {
   return LocationSettings(
