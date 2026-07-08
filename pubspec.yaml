@@ -73,6 +73,9 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^5.0.0
+  # build_runner 2.x traz transitivas descontinuadas (build_resolvers,
+  # build_runner_core); subir para 3.x exige riverpod_generator 3.x —
+  # migração de codegen coordenada, planejar em sprint dedicada.
   build_runner: ^2.5.4
   riverpod_generator: ^2.6.3
   flutter_launcher_icons: ^0.13.1
