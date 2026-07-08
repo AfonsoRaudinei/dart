@@ -2,13 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../core/contracts/agenda_ai_recommendation_context.dart';
 import '../../../../core/contracts/i_agenda_ai_launcher_provider.dart';
 import '../../../../core/feature_flags/feature_flag_analytics.dart';
 import '../../../../core/feature_flags/feature_flag_providers.dart';
 import '../../../../core/feature_flags/feature_flag_resolver.dart';
+import '../../../../core/session/session_controller.dart';
+import '../../../../core/session/session_models.dart';
 import '../../../../modules/dashboard/domain/location_state.dart';
 import '../../../../modules/dashboard/providers/location_providers.dart';
 
@@ -18,10 +19,13 @@ class MapAgendaAiButton extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final user = Supabase.instance.client.auth.currentUser;
-    if (user == null) {
+    // Sessão via provider (ADR-008): nunca tocar Supabase.instance no build —
+    // quebra testes de widget e ignora o estado de bootstrap da sessão.
+    final session = ref.watch(sessionControllerProvider);
+    if (session is! SessionAuthenticated) {
       return const SizedBox.shrink();
     }
+    final user = session.user;
 
     final role = user.userMetadata?['role']?.toString() ?? 'produtor';
     final ffUser = FeatureFlagUser(
@@ -79,11 +83,13 @@ class MapAgendaAiButton extends ConsumerWidget {
   ) async {
     HapticFeedback.selectionClick();
 
+    final session = ref.read(sessionControllerProvider);
+    final userRole = session is SessionAuthenticated
+        ? (session.user.userMetadata?['role']?.toString() ?? 'produtor')
+        : 'produtor';
     FeatureFlagAnalytics.trackAgendaAiAccess(
       userId: userId,
-      userRole: Supabase.instance.client.auth.currentUser?.userMetadata?['role']
-              ?.toString() ??
-          'produtor',
+      userRole: userRole,
       wasEnabled: true,
     );
     FeatureFlagAnalytics.trackAgendaAiOpened(userId: userId);

@@ -7,6 +7,8 @@ import 'package:soloforte_app/core/contracts/i_agenda_session_bridge.dart';
 import 'package:soloforte_app/core/contracts/i_agenda_session_bridge_provider.dart';
 import 'package:soloforte_app/core/infra/preferences_service.dart';
 import 'package:soloforte_app/core/providers/connectivity_provider.dart';
+import 'package:soloforte_app/core/session/session_controller.dart';
+import 'package:soloforte_app/core/session/session_models.dart';
 import 'package:soloforte_app/modules/drawing/domain/drawing_state.dart';
 import 'package:soloforte_app/modules/settings/data/settings_repository.dart';
 import 'package:soloforte_app/modules/settings/presentation/providers/settings_providers.dart';
@@ -169,6 +171,8 @@ void main() {
           isOnlineProvider.overrideWith((ref) => Stream.value(true)),
           visitRepositoryProvider.overrideWithValue(_NoActiveVisitRepository()),
           agendaSessionBridgeProvider.overrideWithValue(_NoopAgendaBridge()),
+          // Sessão pública fake: MapAgendaAiButton não deve exigir Supabase.
+          sessionControllerProvider.overrideWith(_PublicSessionController.new),
         ],
         child: MaterialApp(
           home: Scaffold(
@@ -307,6 +311,8 @@ Future<void> _pumpMapControlsOverlay(
         isOnlineProvider.overrideWith((ref) => Stream.value(true)),
         visitRepositoryProvider.overrideWithValue(_NoActiveVisitRepository()),
         agendaSessionBridgeProvider.overrideWithValue(_NoopAgendaBridge()),
+        // Sessão pública fake: MapAgendaAiButton não deve exigir Supabase.
+        sessionControllerProvider.overrideWith(_PublicSessionController.new),
       ],
       child: MaterialApp(
         home: Scaffold(
@@ -352,4 +358,9 @@ class _NoopAgendaBridge implements IAgendaSessionBridge {
 
   @override
   Future<void> markEventAsDone(String sessionId) async {}
+}
+
+class _PublicSessionController extends SessionController {
+  @override
+  SessionState build() => const SessionPublic();
 }
