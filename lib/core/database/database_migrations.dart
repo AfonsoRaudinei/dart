@@ -1,8 +1,5 @@
-import 'package:flutter/foundation.dart';
 import 'package:sqflite/sqflite.dart';
 
-import '../utils/app_logger.dart';
-import 'database_schema_utils.dart';
 
 import 'database_migrations_v1_v23.dart';
 import 'database_migrations_v24_v38.dart';
