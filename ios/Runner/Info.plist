@@ -31,6 +31,11 @@
 	<string>O SoloForte usa sua localização para posicionar ocorrências, talhões e rotas de visita no mapa da propriedade.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>O SoloForte usa sua localização para acompanhar a posição do usuário no mapa durante navegação, medições e rotas de trabalho no campo.</string>
+	<!-- Geofence de visitas em segundo plano (paridade com FOREGROUND_SERVICE_LOCATION no Android) -->
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>location</string>
+	</array>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
