@@ -113,21 +113,22 @@ class SyncOrchestrator extends ChangeNotifier {
         _lastError = 'Erro em ${first.name}: ${first.error}';
       }
     } finally {
-      if (_isDisposed) return;
-
-      _isSyncing = false;
-      _progress = 1.0;
-      _notifyIfAlive();
-
-      Future.delayed(const Duration(seconds: 3), () {
-        if (_isDisposed || _isSyncing) return;
-        _progress = 0;
+      // Sem `return` dentro de finally: engoliria exceções vindas do try.
+      if (!_isDisposed) {
+        _isSyncing = false;
+        _progress = 1.0;
         _notifyIfAlive();
-      });
 
-      if (_pendingImmediateSync) {
-        _pendingImmediateSync = false;
-        scheduleMicrotask(() => triggerSync(SyncPriority.immediate));
+        Future.delayed(const Duration(seconds: 3), () {
+          if (_isDisposed || _isSyncing) return;
+          _progress = 0;
+          _notifyIfAlive();
+        });
+
+        if (_pendingImmediateSync) {
+          _pendingImmediateSync = false;
+          scheduleMicrotask(() => triggerSync(SyncPriority.immediate));
+        }
       }
     }
   }
