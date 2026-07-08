@@ -76,7 +76,7 @@ Nunca assumir onde um arquivo está. Sempre auditar primeiro.
 
 ### Estado
 
-- ❌ Não criar `StateNotifier` ou `ChangeNotifier` (exceto 3 casos já documentados)
+- ❌ Não criar `StateNotifier` ou `ChangeNotifier` (exceto os 10 casos legados whitelisted no ADR-044)
 - ❌ Não alterar providers compartilhados de `lib/core/` sem revisar impacto
 - ✅ Usar `@riverpod` (function ou `AsyncNotifier`)
 - ✅ `StateProvider<T>` para primitivos (bool, int, DateTime)
@@ -254,6 +254,7 @@ lib/
 | 041 | IOccurrenceAccessReader |
 | 042 | NDVI ChainedFieldLookup + cache + fetch lazy |
 | 043 | IRadarOverlayController (radar RainViewer) |
+| 044 | Whitelist oficial de StateNotifier/ChangeNotifier legados |
 
 Detalhes: `docs/02_ARQUITETURA_ATIVA/ADR-*.md`
 
