@@ -4,90 +4,71 @@
 
 O agente **DEVE executar todos os comandos de terminal no ambiente do Cursor** (`/workspace`), nunca apenas listar instruções para o usuário copiar.
 
-### Obrigatório em toda tarefa com Git
+---
+
+## MacBook — Serviço completo de sync
+
+### O que É possível daqui (Cloud Agent)
+
+O Cloud Agent roda em **Linux na nuvem** (`/workspace`). Ele **executa**:
 
 ```bash
 git fetch origin
-git checkout <branch>
-git pull origin <branch>
-# ... implementação ...
-git add ...
-git commit -m "..."
-git push -u origin <branch>
-# Entrega concluída — SEMPRE mergear na main:
 git checkout main
 git pull origin main
-git merge <branch>
-git push origin main
+git push origin main          # após merge
+git status && git log -1 --oneline
 ```
 
-### Proibido
+Isso mantém o **GitHub `main` atualizado** — pré-requisito para o MacBook receber o código.
 
-- Dizer "rode no seu MacBook" sem antes ter executado push/merge no remoto
-- Deixar alterações só locais sem commit/push
-- Parar para perguntar se deve executar comandos óbvios de entrega
-- Encerrar tarefa sem sincronizar (ver seção MacBook abaixo)
+### O que NÃO é possível daqui
+
+```bash
+# ❌ Cloud Agent NÃO consegue executar no MacBook:
+cd ~/Developer/SoloForte && git pull origin main
+```
+
+Motivo: o MacBook é outra máquina. O agente na nuvem **não acessa** o terminal/filesystem local do Mac.
+
+### O que É possível no MacBook
+
+Quando o **Cursor Desktop** abre o projeto localmente, o agente local **pode e deve** executar:
+
+```bash
+git fetch origin
+git checkout main
+git pull origin main
+git status && git log -1 --oneline
+```
+
+### Pipeline completo (obrigatório ao encerrar tarefa)
+
+| Etapa | Quem executa | Comando |
+|---|---|---|
+| 1. Commit + push branch | Cloud Agent ✅ | `git push -u origin <branch>` |
+| 2. Merge na main remota | Cloud Agent ✅ | `git merge && git push origin main` |
+| 3. Pull no MacBook | Cursor Desktop local ✅ / Cloud ❌ | `git pull origin main` |
+
+**Regra:** o agente **nunca encerra** sem completar etapas 1 e 2. Etapa 3: executar se workspace local; senão, informar SHA e comando único para o Mac.
 
 ---
 
-## MacBook — SEMPRE sincronizar
+## Memória persistente
 
-**Regra do Raudinei:** ao final de **toda** tarefa, o MacBook deve ficar sincronizado. O agente **executa** — não delega.
-
-### Pipeline obrigatório de encerramento (toda tarefa)
-
-```bash
-# 1. Remoto atualizado (agente executa sempre)
-git fetch origin
-git checkout main
-git pull origin main
-git push origin main
-
-# 2. Confirmar estado limpo
-git status
-git log -1 --oneline
-```
-
-Se houve implementação na tarefa, **antes** do passo 1:
-
-```bash
-git add .
-git commit -m "..."
-git push -u origin <branch>
-git checkout main
-git pull origin main
-git merge <branch>
-git push origin main
-```
-
-### MacBook local
-
-- O agente **não acessa** o terminal físico do MacBook quando roda na nuvem.
-- **Equivalente obrigatório na nuvem:** `main` remota 100% atualizada via push (passos acima).
-- Quando o workspace **for o MacBook local** (Cursor Desktop): executar também `git pull origin main` no diretório do projeto antes de encerrar.
-- **Nunca** encerrar resposta sem confirmar: branch, commit SHA e `main` remota sincronizada.
-
-### Checklist de encerramento (obrigatório)
-
-- [ ] Commit feito
-- [ ] Push da branch feito
-- [ ] Merge na `main` feito
-- [ ] `git push origin main` executado
-- [ ] `git status` limpo
-- [ ] Commit SHA informado ao usuário
+Ler também: `prompt/AGENT_MEMORIA.md`
 
 ---
 
 ## Diagnóstico vs Implementação
 
-- Prompts marcados como **DIAGNÓSTICO**: somente leitura, sem alterar código
-- Quando o usuário disser **"Pode executar"**: implementar, commitar, push, mergear e sincronizar
+- **DIAGNÓSTICO**: somente leitura
+- **"Pode executar"**: implementar + sync remoto completo
 
 ---
 
 ## GNSS / Localização
 
-- Pacote: `geolocator` — multi-constelação delegada ao OS/chipset
-- Settings unificados: `lib/modules/dashboard/domain/location_settings.dart`
-- Controller legado: `LocationController` (não reescrever para @riverpod sem ADR)
-- Check-in bloqueado se precisão > 30m (`soloforteGnssMaxCheckInAccuracyMeters`)
+- `geolocator` — multi-constelação via OS/chipset
+- Settings: `lib/modules/dashboard/domain/location_settings.dart`
+- Check-in bloqueado se precisão > 30m
