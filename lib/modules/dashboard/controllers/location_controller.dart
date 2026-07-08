@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
+import '../domain/location_settings.dart';
 import '../domain/location_state.dart';
 
 /// Provider do estado de localização
@@ -7,10 +10,14 @@ final locationStateProvider = StateProvider<LocationState>(
   (ref) => LocationState.checking,
 );
 
+/// Precisão horizontal da última posição GNSS (metros), quando disponível.
+final locationAccuracyProvider = StateProvider<double?>((ref) => null);
+
 /// Controller responsável por gerenciar o estado GPS/Localização
 /// Validação e dependência obrigatória do mapa
 class LocationController {
   final WidgetRef ref;
+  StreamSubscription<Position>? _positionSubscription;
 
   LocationController(this.ref);
 
@@ -18,6 +25,7 @@ class LocationController {
   /// Deve ser chamado ao carregar o PrivateMapScreen
   Future<void> init() async {
     ref.read(locationStateProvider.notifier).state = LocationState.checking;
+    ref.read(locationAccuracyProvider.notifier).state = null;
 
     // 1. Verificar se o serviço de localização está habilitado
     final serviceEnabled = await Geolocator.isLocationServiceEnabled();
@@ -47,8 +55,29 @@ class LocationController {
       return;
     }
 
-    // 3. Tudo OK
+    // 3. Tudo OK — iniciar stream GNSS e obter precisão inicial
     ref.read(locationStateProvider.notifier).state = LocationState.available;
+    _startPositionStream();
+    await _refreshAccuracy();
+  }
+
+  void _startPositionStream() {
+    _positionSubscription?.cancel();
+    _positionSubscription = Geolocator.getPositionStream(
+      locationSettings: soloforteGnssLocationSettings,
+    ).listen(
+      (position) {
+        ref.read(locationAccuracyProvider.notifier).state = position.accuracy;
+      },
+      onError: (_) {},
+    );
+  }
+
+  Future<void> _refreshAccuracy() async {
+    final position = await getCurrentPosition();
+    if (position != null) {
+      ref.read(locationAccuracyProvider.notifier).state = position.accuracy;
+    }
   }
 
   /// Verifica se GPS está disponível
@@ -68,15 +97,19 @@ class LocationController {
     if (!isAvailable) return null;
 
     try {
-      return await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.high,
-          distanceFilter: 10,
-        ),
+      final position = await Geolocator.getCurrentPosition(
+        locationSettings: soloforteGnssLocationSettings,
       );
+      ref.read(locationAccuracyProvider.notifier).state = position.accuracy;
+      return position;
     } catch (e) {
       // Em caso de erro, retorna null
       return null;
     }
+  }
+
+  void dispose() {
+    _positionSubscription?.cancel();
+    _positionSubscription = null;
   }
 }

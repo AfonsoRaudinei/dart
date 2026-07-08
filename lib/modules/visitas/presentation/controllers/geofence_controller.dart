@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
+import '../../../dashboard/domain/location_settings.dart';
 import '../../../../core/services/notification_service.dart';
 import 'package:soloforte_app/modules/visitas/domain/models/geofence_state.dart';
 import '../controllers/visit_controller.dart';
@@ -68,7 +69,9 @@ class GeofenceController {
                 const Duration(minutes: 5)) {
           // If old, try fresh but with timeout
           position = await Geolocator.getCurrentPosition(
-            timeLimit: const Duration(seconds: 10),
+            locationSettings: soloforteGnssLocationSettingsWithTimeout(
+              const Duration(seconds: 10),
+            ),
           );
         }
       }

@@ -62,6 +62,7 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
 
   @override
   void dispose() {
+    _locationController.dispose();
     _mapEventDebouncer.dispose();
     _drawingController.dispose();
     super.dispose();
@@ -538,6 +539,7 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
     final mapFields = ref.watch(mapFieldsProvider);
     final selectedTalhaoId = ref.watch(selectedTalhaoIdProvider);
     final locationState = ref.watch(locationStateProvider);
+    final locationAccuracy = ref.watch(locationAccuracyProvider);
     final visitState = ref.watch(visitControllerProvider);
     final isCheckedIn = visitState.value?.status == 'active';
 
@@ -764,18 +766,17 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
                           ? Icons.gps_fixed
                           : Icons.gps_off,
                       size: 12,
-                      color: locationState == LocationState.available
-                          ? SoloForteColors.greenIOS
-                          : Colors.orange.shade700,
+                      color: _getGpsStatusColor(locationState, locationAccuracy),
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      _getGPSStatusText(locationState),
+                      _getGPSStatusText(locationState, locationAccuracy),
                       style: SoloTextStyles.label.copyWith(
                         fontSize: 9,
-                        color: locationState == LocationState.available
-                            ? SoloForteColors.greenIOS
-                            : Colors.orange.shade700,
+                        color: _getGpsStatusColor(
+                          locationState,
+                          locationAccuracy,
+                        ),
                       ),
                     ),
                   ],
@@ -886,10 +887,29 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
     );
   }
 
-  String _getGPSStatusText(LocationState state) {
+  Color _getGpsStatusColor(LocationState state, double? accuracyMeters) {
+    if (state != LocationState.available) {
+      return Colors.orange.shade700;
+    }
+    if (accuracyMeters == null) {
+      return Colors.orange.shade700;
+    }
+    if (accuracyMeters <= 10) {
+      return SoloForteColors.greenIOS;
+    }
+    if (accuracyMeters <= 30) {
+      return Colors.amber.shade700;
+    }
+    return Colors.red.shade700;
+  }
+
+  String _getGPSStatusText(LocationState state, double? accuracyMeters) {
     switch (state) {
       case LocationState.available:
-        return 'GPS OK';
+        if (accuracyMeters == null) {
+          return 'GPS: Buscando sinal...';
+        }
+        return 'GPS ±${accuracyMeters.round()}m';
       case LocationState.permissionDenied:
         return 'GPS: Sem permissão';
       case LocationState.serviceDisabled:
