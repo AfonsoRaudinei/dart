@@ -22,12 +22,17 @@ void main() {
   });
 
   test('modulo agenda nao declara StateNotifier', () {
-    final result = Process.runSync('rg', [
-      '-l',
-      'extends StateNotifier|StateNotifierProvider',
-      'lib/modules/agenda/',
-    ]);
+    // Varredura em Dart puro: não depender de binários externos (rg)
+    // torna o teste portável para qualquer máquina/CI.
+    final pattern = RegExp('extends StateNotifier|StateNotifierProvider');
+    final offenders = Directory('lib/modules/agenda')
+        .listSync(recursive: true)
+        .whereType<File>()
+        .where((f) => f.path.endsWith('.dart'))
+        .where((f) => pattern.hasMatch(f.readAsStringSync()))
+        .map((f) => f.path)
+        .toList();
 
-    expect(result.exitCode, isNot(0));
+    expect(offenders, isEmpty);
   });
 }
