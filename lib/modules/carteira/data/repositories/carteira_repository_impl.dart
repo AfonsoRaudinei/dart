@@ -305,6 +305,8 @@ class CarteiraRepositoryImpl implements ICarteiraRepository {
     );
   }
 
+  // Hard delete permitido: `carteira_lancamentos` é local-only —
+  // sem sync_status nem espelho remoto.
   @override
   Future<void> deleteLancamento(String id, String userId) async {
     final db = await _dbHelper.database;

@@ -140,6 +140,8 @@ class VisitaDatabaseService {
         .toList();
   }
 
+  // Hard delete permitido: a tabela `visitas` (relatório de visita) é
+  // local-only — sem sync_status nem espelho remoto.
   Future<void> delete(String id) async {
     final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
     final db = await instance.database;

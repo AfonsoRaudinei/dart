@@ -254,6 +254,8 @@ class ProducerLinkRepository implements ProducerLinkReader {
     for (final row in cached) {
       final id = row['id'] as String;
       if (!activeIds.contains(id)) {
+        // Hard delete permitido: tabela é cache espelho do remoto (fonte da
+        // verdade é o Supabase) — evicção de cache, não dado sincronizável.
         await db.delete(_linkTable, where: 'id = ?', whereArgs: [id]);
       }
     }
