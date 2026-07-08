@@ -60,7 +60,21 @@ git status && git log -1 --oneline
 O agente **sempre informa**:
 - Commit SHA na `main`
 - Confirmação `git push origin main` executado
-- Instrução única para MacBook: `git pull origin main` (até existir worker local)
+- Próximo passo: **Cursor Desktop Mac** executa Fase 2 (ver fluxo oficial)
+
+---
+
+## Padrão oficial — Cursor Desktop MacBook
+
+**Documento canônico:** `prompt/FLUXO_OFICIAL_CURSOR_DESKTOP.md`
+
+| Fase | Ambiente | Ação |
+|---|---|---|
+| 1 | Cloud Agent | Implementar + push/merge `main` remota |
+| 2 | **Cursor Desktop Mac** | `git pull origin main` + `flutter pub get` |
+| 3 | Cursor Desktop Mac | Validar (`flutter run`, testes) |
+
+**Adotado Jul/2026** como padrão oficial SoloForte para serviço completo de sync.
 
 ---
 
@@ -80,3 +94,4 @@ O agente **sempre informa**:
 | Jul/2026 | Check-in bloqueado se precisão > 30m |
 | Jul/2026 | Agente sempre executa terminal; sync remoto obrigatório |
 | Jul/2026 | MacBook pull local **não acessível** via Cloud Agent — documentado |
+| Jul/2026 | **Fluxo oficial Cursor Desktop** adotado — `prompt/FLUXO_OFICIAL_CURSOR_DESKTOP.md` |

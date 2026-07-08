@@ -50,7 +50,9 @@ git status && git log -1 --oneline
 | 2. Merge na main remota | Cloud Agent ✅ | `git merge && git push origin main` |
 | 3. Pull no MacBook | Cursor Desktop local ✅ / Cloud ❌ | `git pull origin main` |
 
-**Regra:** o agente **nunca encerra** sem completar etapas 1 e 2. Etapa 3: executar se workspace local; senão, informar SHA e comando único para o Mac.
+**Regra:** o agente **nunca encerra** sem completar etapas 1 e 2. Etapa 3: executar se workspace local; senão, indicar Fase 2 no Cursor Desktop Mac.
+
+**Fluxo oficial completo:** `prompt/FLUXO_OFICIAL_CURSOR_DESKTOP.md`
 
 ---
 
