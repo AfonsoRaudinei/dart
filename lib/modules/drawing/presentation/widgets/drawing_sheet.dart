@@ -54,6 +54,10 @@ class DrawingSheet extends ConsumerStatefulWidget {
 }
 
 class _DrawingSheetState extends ConsumerState<DrawingSheet> {
+  /// Ponte para os builders em `part` files: `setState` é @protected e o
+  /// analyzer não reconhece extensões como "dentro" da State.
+  void _rebuild(VoidCallback fn) => setState(fn);
+
   String? _selectedToolKey;
   bool _isSaving = false;
   bool _isEditingMetadata = false;

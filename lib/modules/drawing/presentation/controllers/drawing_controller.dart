@@ -38,6 +38,11 @@ part 'drawing_controller_sketch.dart';
 /// - DrawingBooleanOpsService    → operações booleanas
 /// - DrawingImportService        → importação KML/KMZ
 class DrawingController extends ChangeNotifier {
+  /// Ponte para as extensões em `part` files (sketch/vertex):
+  /// `notifyListeners` é @protected/@visibleForTesting e o analyzer não
+  /// reconhece extensões como "dentro" da classe.
+  void _notify() => notifyListeners();
+
   final DrawingRepository _repository;
   final DrawingStateMachine _stateMachine = DrawingStateMachine();
   late final Future<void> Function(String clienteId, double totalAreaHa)

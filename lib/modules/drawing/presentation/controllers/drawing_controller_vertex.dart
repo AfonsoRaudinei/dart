@@ -17,7 +17,7 @@ extension DrawingControllerVertexEditing on DrawingController {
         () {
           if (_isDisposed) return;
           validateGeometry(_editGeometry, forceFull: false);
-          notifyListeners();
+          _notify();
         },
       );
       // Immediate basic check?
@@ -30,11 +30,11 @@ extension DrawingControllerVertexEditing on DrawingController {
   void _notifyHost() {
     if (_isDisposed) return;
     if (!_isDraggingVertex) {
-      notifyListeners();
+      _notify();
       return;
     }
     if (_notifyThrottleTimer?.isActive ?? false) return;
-    notifyListeners();
+    _notify();
     _notifyThrottleTimer = Timer(
       const Duration(milliseconds: DrawingController._notifyThrottleMs),
       () {},
@@ -90,7 +90,7 @@ extension DrawingControllerVertexEditing on DrawingController {
       );
     }
 
-    notifyListeners();
+    _notify();
   }
 
   /// Call this when starting a drag operation to save state for Undo
@@ -100,7 +100,7 @@ extension DrawingControllerVertexEditing on DrawingController {
     if (_editGeometry != null) {
       _history.push(_geomToVertices(_editGeometry!));
     }
-    notifyListeners();
+    _notify();
   }
 
   /// Call this when ending a drag operation.
@@ -120,7 +120,7 @@ extension DrawingControllerVertexEditing on DrawingController {
       );
     }
 
-    notifyListeners();
+    _notify();
   }
 
   /// Inserts a new vertex after the specified segment index.
@@ -141,7 +141,7 @@ extension DrawingControllerVertexEditing on DrawingController {
     _editGeometry = updated;
     _updateRealTimeIntersection();
     validateGeometry(_editGeometry);
-    notifyListeners();
+    _notify();
   }
 
   /// Removes a vertex at the specified index.
@@ -157,7 +157,7 @@ extension DrawingControllerVertexEditing on DrawingController {
 
     if (result.error != null) {
       _errorMessage = result.error;
-      notifyListeners();
+      _notify();
       return;
     }
 
@@ -167,7 +167,7 @@ extension DrawingControllerVertexEditing on DrawingController {
     _editGeometry = result.geometry;
     _updateRealTimeIntersection();
     validateGeometry(_editGeometry);
-    notifyListeners();
+    _notify();
   }
 
 }

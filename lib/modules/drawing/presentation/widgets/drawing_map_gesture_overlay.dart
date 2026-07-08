@@ -6,7 +6,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 
 import '../../domain/drawing_state.dart';
-import '../controllers/drawing_controller.dart';
 import '../providers/drawing_provider.dart';
 
 /// Captura gestos contínuos para freehand e preview de raio do pivô.

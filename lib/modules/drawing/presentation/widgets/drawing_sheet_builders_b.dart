@@ -9,9 +9,9 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
         feature: feature,
         controller: widget.controller,
         embedded: true,
-        onCancel: () => setState(() => _isEditingMetadata = false),
+        onCancel: () => _rebuild(() => _isEditingMetadata = false),
         onSaved: () {
-          setState(() => _isEditingMetadata = false);
+          _rebuild(() => _isEditingMetadata = false);
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Dados do talhão salvos')),
           );
@@ -22,7 +22,7 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
     return DrawingActionsBar(
       selectedFeature: feature,
       onEditGeometry: widget.controller.startEditMode,
-      onEditMetadata: () => setState(() => _isEditingMetadata = true),
+      onEditMetadata: () => _rebuild(() => _isEditingMetadata = true),
       onUnion: widget.controller.startUnionMode,
       onDifference: widget.controller.startDifferenceMode,
       onIntersection: widget.controller.startIntersectionMode,
@@ -328,7 +328,7 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
                           selected: _selectedColor,
                           onTap: (c) {
                             HapticFeedback.selectionClick();
-                            setState(() => _selectedColor = c);
+                            _rebuild(() => _selectedColor = c);
                           },
                         ),
                         _ColorOption(
@@ -336,7 +336,7 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
                           selected: _selectedColor,
                           onTap: (c) {
                             HapticFeedback.selectionClick();
-                            setState(() => _selectedColor = c);
+                            _rebuild(() => _selectedColor = c);
                           },
                         ),
                         _ColorOption(
@@ -344,7 +344,7 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
                           selected: _selectedColor,
                           onTap: (c) {
                             HapticFeedback.selectionClick();
-                            setState(() => _selectedColor = c);
+                            _rebuild(() => _selectedColor = c);
                           },
                         ),
                         _ColorOption(
@@ -352,7 +352,7 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
                           selected: _selectedColor,
                           onTap: (c) {
                             HapticFeedback.selectionClick();
-                            setState(() => _selectedColor = c);
+                            _rebuild(() => _selectedColor = c);
                           },
                         ),
                       ],
@@ -501,7 +501,7 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
                     _parseArea(areaController.text),
                   );
               if (newFarm != null && mounted) {
-                setState(() => _selectedFarm = newFarm);
+                _rebuild(() => _selectedFarm = newFarm);
               }
               if (context.mounted) {
                 Navigator.of(context, rootNavigator: false).pop();
@@ -555,7 +555,7 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
         return DropdownMenuItem(value: c, child: Text(c.name));
       }).toList(),
       onChanged: (client) {
-        setState(() {
+        _rebuild(() {
           _selectedClient = client;
           _selectedFarm = null;
         });
@@ -625,7 +625,7 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
           _showCreateFarmDialog();
           return;
         }
-        setState(() => _selectedFarm = getValue as Farm?);
+        _rebuild(() => _selectedFarm = getValue as Farm?);
       },
       validator: (v) =>
           v == null && _selectedFarm == null ? 'Selecione uma fazenda' : null,
@@ -639,7 +639,7 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
     final clientState = ref.read(drawingClientProvider);
     final preserveContextClient = clientState.preSelectedClientId != null;
     final preserveContextFarm = clientState.preSelectedFarmId != null;
-    setState(() {
+    _rebuild(() {
       if (!preserveContextClient) _selectedClient = null;
       if (!preserveContextFarm) _selectedFarm = null;
       _selectedColor = PremiumTokens.brandGreen;
@@ -672,7 +672,7 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
     DrawingFeature feature,
   ) async {
     final format = await _selectExportFormat(context);
-    if (format == null || !mounted) return;
+    if (format == null || !context.mounted) return;
     final shareOrigin = resolveSharePositionOrigin(context);
     await ref
         .read(drawingExportProvider.notifier)
@@ -685,7 +685,7 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
 
   Future<void> _exportAll(BuildContext context) async {
     final format = await _selectExportFormat(context);
-    if (format == null || !mounted) return;
+    if (format == null || !context.mounted) return;
     final shareOrigin = resolveSharePositionOrigin(context);
     await ref
         .read(drawingExportProvider.notifier)

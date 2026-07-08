@@ -187,7 +187,7 @@ extension DrawingControllerSketch on DrawingController {
 
     _currentPoints.add(point);
     _updateRealTimeIntersection();
-    notifyListeners();
+    _notify();
   }
 
   void handlePivotTap(LatLng point) {
@@ -198,7 +198,7 @@ extension DrawingControllerSketch on DrawingController {
     if (_pivotCenter == null) {
       if (!_ensureDrawingStarted()) return;
       _pivotCenter = point;
-      notifyListeners();
+      _notify();
       return;
     }
 
@@ -233,7 +233,7 @@ extension DrawingControllerSketch on DrawingController {
       return;
     }
 
-    notifyListeners();
+    _notify();
   }
 
   void beginFreehandStroke(LatLng point) {
@@ -245,7 +245,7 @@ extension DrawingControllerSketch on DrawingController {
     _freehandPoints.clear();
     _freehandStrokeActive = true;
     _freehandPoints.add(point);
-    notifyListeners();
+    _notify();
   }
 
   void extendFreehandStroke(LatLng point) {
@@ -254,7 +254,7 @@ extension DrawingControllerSketch on DrawingController {
     if (!_freehandStrokeActive) return;
 
     _appendPointWithMinDistance(_freehandPoints, point);
-    notifyListeners();
+    _notify();
   }
 
   void endFreehandStroke() {
@@ -270,12 +270,12 @@ extension DrawingControllerSketch on DrawingController {
       if (_stateMachine.currentState == DrawingState.drawing) {
         _stateMachine.tryTransitionTo(DrawingState.armed);
       }
-      notifyListeners();
+      _notify();
       return;
     }
 
     _updateRealTimeIntersection();
-    notifyListeners();
+    _notify();
   }
 
   bool _canAcceptSketchInput() {
