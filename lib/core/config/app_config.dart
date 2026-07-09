@@ -1,4 +1,6 @@
 /// Configuração de runtime via `--dart-define`.
+/// SUPABASE_ANON_KEY: use a Publishable key (Project Settings → API Keys).
+/// Legacy anon public ainda funciona no mesmo campo.
 /// Nunca commitar secrets reais no repositório.
 class AppConfig {
   static const supabaseUrl = String.fromEnvironment('SUPABASE_URL');
