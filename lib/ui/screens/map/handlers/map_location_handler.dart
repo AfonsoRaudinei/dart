@@ -12,7 +12,6 @@ import 'package:latlong2/latlong.dart';
 import '../../../../core/permissions/location_permission_gate.dart';
 import '../../../../core/permissions/permission_provider.dart';
 import '../../../../modules/dashboard/domain/location_state.dart';
-import '../../../../modules/dashboard/domain/location_settings.dart';
 import '../../../../modules/dashboard/providers/location_providers.dart';
 import '../../../../modules/dashboard/services/location_service.dart';
 
