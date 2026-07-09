@@ -1,0 +1,37 @@
+---
+description: Terminal daqui; sync remoto completo; MacBook pull só em workspace local
+alwaysApply: true
+---
+
+# Sync — serviço completo
+
+## Executar sempre daqui (Cloud Agent)
+
+```bash
+git fetch origin && git checkout main && git pull origin main
+# após implementação:
+git push -u origin <branch>
+git merge <branch> && git push origin main
+git status && git log -1 --oneline
+```
+
+## MacBook — limitação e solução
+
+- **Cloud Agent (Linux `/workspace`):** NÃO acessa MacBook. Não consegue `git pull` na pasta local do Mac.
+- **Cursor Desktop (MacBook):** PODE executar `git pull origin main` no projeto local — fazer quando workspace for local.
+- **Serviço completo:** Cloud Agent garante `main` remota atualizada; MacBook recebe via pull local.
+
+## Memória
+
+Ler `prompt/AGENT_MEMORIA.md` e `prompt/FLUXO_OFICIAL_CURSOR_DESKTOP.md`.
+
+## Padrão oficial SoloForte
+
+Serviço completo = Cloud Agent (push main) + Cursor Desktop Mac (`git pull origin main`).
+Ver `.cursor/rules/cursor-desktop-sync.mdc`.
+
+## Proibido
+
+- Encerrar sem push/merge na `main` remota
+- Dizer "não dá" sem executar o que é possível daqui
+- Delegar git remoto ao usuário

@@ -30,6 +30,9 @@ import '../../../../modules/consultoria/occurrences/domain/occurrence.dart'
 import '../../../../modules/marketing/domain/enums/case_tipo.dart';
 import '../../../../modules/settings/presentation/providers/user_profile_provider.dart';
 import '../../../../modules/visitas/presentation/controllers/visit_controller.dart';
+import '../../../../modules/dashboard/domain/location_settings.dart';
+import '../../../../modules/dashboard/providers/location_providers.dart';
+import '../handlers/map_location_handler.dart';
 import '../../../components/map/widgets/map_canvas.dart';
 import '../../../components/map/widgets/map_layers.dart';
 import '../../../../modules/clima/presentation/widgets/radar_layer_widget.dart';
@@ -532,6 +535,30 @@ class _MapControlsHost extends ConsumerWidget {
           }
           setSheetState(null, 'MapControlsOverlay: Toggle Close (Source: $source)');
         } else {
+          if (newType == MapSheetType.checkIn) {
+            final isActive =
+                ref.read(visitControllerProvider).valueOrNull?.status == 'active';
+            if (!isActive) {
+              final locationFix =
+                  ref.read(locationStreamProvider).valueOrNull;
+              final accuracyM = locationFix?.accuracyM;
+              if (!isGnssAccuracyAcceptableForCheckIn(accuracyM)) {
+                if (accuracyM != null) {
+                  MapLocationHandler.showGpsLowAccuracyMessage(
+                    context: context,
+                    accuracyMeters: locationFix!.effectiveAccuracyM,
+                  );
+                } else {
+                  MapLocationHandler.showGPSRequiredMessage(
+                    ref: ref,
+                    context: context,
+                  );
+                }
+                return;
+              }
+            }
+          }
+
           if (ref.read(isModalOpenProvider)) {
             Navigator.of(context).pop();
             ref.read(modalGenerationProvider.notifier).state++;

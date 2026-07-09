@@ -12,6 +12,7 @@ import 'package:latlong2/latlong.dart';
 import '../../../../core/permissions/location_permission_gate.dart';
 import '../../../../core/permissions/permission_provider.dart';
 import '../../../../modules/dashboard/domain/location_state.dart';
+import '../../../../modules/dashboard/domain/location_settings.dart';
 import '../../../../modules/dashboard/providers/location_providers.dart';
 import '../../../../modules/dashboard/services/location_service.dart';
 
@@ -109,6 +110,22 @@ class MapLocationHandler {
         content: Text(message),
         backgroundColor: Colors.orange.shade700,
         duration: const Duration(seconds: 3),
+      ),
+    );
+  }
+
+  static void showGpsLowAccuracyMessage({
+    required BuildContext context,
+    required double accuracyMeters,
+  }) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Precisão GPS insuficiente (±${accuracyMeters.round()}m). '
+          'Aguarde sinal melhor ou vá para área aberta para fazer check-in.',
+        ),
+        backgroundColor: Colors.red.shade700,
+        duration: const Duration(seconds: 4),
       ),
     );
   }

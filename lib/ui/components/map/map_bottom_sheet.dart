@@ -20,6 +20,8 @@ import '../../../core/feature_flags/feature_flag_analytics.dart';
 import '../../../../modules/consultoria/occurrences/presentation/widgets/occurrence_list_sheet.dart';
 import '../../../../modules/consultoria/occurrences/presentation/widgets/occurrence_creation_sheet.dart';
 import '../../../modules/dashboard/services/location_service.dart';
+import '../../../modules/dashboard/domain/location_settings.dart';
+import '../../screens/map/handlers/map_location_handler.dart';
 import 'map_sheet_state.dart'; // 🛡 REFATORAÇÃO: Modelo compartilhado
 import '../../../core/utils/app_logger.dart';
 import '../../../../core/contracts/i_visit_session_lookup.dart';
@@ -401,6 +403,14 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
               content: Text('Não foi possível obter sua posição GPS.'),
               backgroundColor: PremiumTokens.alertError,
             ),
+          );
+          return;
+        }
+
+        if (!isGnssAccuracyAcceptableForCheckIn(fix.accuracyM)) {
+          MapLocationHandler.showGpsLowAccuracyMessage(
+            context: context,
+            accuracyMeters: fix.effectiveAccuracyM,
           );
           return;
         }

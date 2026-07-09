@@ -1,0 +1,36 @@
+---
+description: Padrão oficial SoloForte — sync MacBook via Cursor Desktop local
+alwaysApply: true
+---
+
+# Cursor Desktop — padrão oficial de sync local
+
+Documentação completa: `prompt/FLUXO_OFICIAL_CURSOR_DESKTOP.md`
+
+## Quando workspace é local (MacBook)
+
+Ao encerrar tarefa ou quando usuário pedir sync, executar:
+
+```bash
+git fetch origin
+git checkout main
+git pull origin main
+flutter pub get
+git status && git log -1 --oneline
+```
+
+Confirmar SHA local = SHA remoto do Cloud Agent.
+
+## Quando workspace é cloud (Linux /workspace)
+
+Executar sync remoto completo:
+
+```bash
+git fetch origin && git checkout main && git pull origin main
+git merge <branch> && git push origin main
+git status && git log -1 --oneline
+```
+
+Informar SHA e indicar Fase 2 no Cursor Desktop Mac.
+
+## Serviço completo = Fase 1 (cloud) + Fase 2 (desktop local)

@@ -4,6 +4,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:soloforte_app/core/permissions/location_permission_gate.dart';
 import 'package:soloforte_app/modules/dashboard/domain/user_location_fix.dart';
+import 'package:soloforte_app/modules/dashboard/domain/location_settings.dart';
 
 typedef PositionStreamFactory =
     Stream<Position> Function(LocationSettings locationSettings);
@@ -18,7 +19,7 @@ typedef PositionStreamFactory =
 ///
 /// Performance:
 /// - distanceFilter: 5m (ideal para agro)
-/// - accuracy: best (GNSS multi-constelação via OS)
+/// - accuracy: bestForNavigation (GNSS multi-constelação via OS)
 /// - Stream único (singleton pattern)
 class LocationService {
   static LocationService? _instance;
@@ -53,13 +54,7 @@ class LocationService {
   }
 
   void _startListening() {
-    // Configuração de stream do sistema
-    const locationSettings = LocationSettings(
-      accuracy: LocationAccuracy.best,
-      distanceFilter: 5, // 5 metros (campo parado = zero rebuild)
-    );
-
-    _subscription = _positionStreamFactory(locationSettings).listen(
+    _subscription = _positionStreamFactory(soloforteGnssLocationSettings).listen(
       (Position position) {
         if (_controller != null && !_controller!.isClosed) {
           _controller!.add(
@@ -121,9 +116,7 @@ class LocationService {
   Future<UserLocationFix?> getCurrentPosition() async {
     try {
       final position = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.best,
-        ),
+        locationSettings: soloforteGnssLocationSettings,
       ).timeout(const Duration(seconds: 10));
       return UserLocationFix(
         position: LatLng(position.latitude, position.longitude),
