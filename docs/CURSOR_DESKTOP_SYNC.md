@@ -10,11 +10,14 @@ Documento espelho do fluxo oficial. Ver detalhes completos em [`prompt/FLUXO_OFI
 ## Sync rápido no Mac
 
 ```bash
-cd ~/Developer/SoloForte
-git fetch origin && git checkout main && git pull origin main
+cd ~/appdart
+git fetch origin && git checkout release/build-156 && git pull origin release/build-156
 flutter pub get
 git log -1 --oneline && git status
 ```
+
+> **Não mergear `origin/main` diretamente** — arquiteturas divergentes.  
+> Ver: `prompt/PROMPT_CODEX_RESOLVER_MERGE_BUILD156.md`
 
 ## Quando usar Desktop
 

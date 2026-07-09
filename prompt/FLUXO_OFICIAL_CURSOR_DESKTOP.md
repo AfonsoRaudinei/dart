@@ -65,17 +65,24 @@ Garantir **serviço completo de sync**: código implementado pelo agente chega a
 - Download: https://cursor.com
 - macOS Apple Silicon ou Intel
 
-### 2. Clonar o repositório
+### 2. Clonar ou usar o repositório existente
+
+**Caminho real no MacBook (Raudinei):** `~/appdart`  
+**Branch de trabalho:** `release/build-156` (não `main`)
 
 ```bash
-mkdir -p ~/Developer
-cd ~/Developer
-git clone https://github.com/AfonsoRaudinei/dart.git SoloForte
-cd SoloForte
-git checkout main
+cd ~/appdart
+git fetch origin
+git checkout release/build-156
+git pull origin release/build-156
 ```
 
-> Ajuste o caminho se preferir outra pasta (ex.: `~/Projects/SoloForte`).
+> Se ainda não clonou:
+> ```bash
+> git clone https://github.com/AfonsoRaudinei/dart.git appdart
+> cd appdart
+> git checkout release/build-156
+> ```
 
 ### 3. Abrir no Cursor Desktop
 

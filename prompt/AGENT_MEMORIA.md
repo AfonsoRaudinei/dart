@@ -43,17 +43,18 @@ git merge <branch> && git push origin main
 git status && git log -1 --oneline
 ```
 
-### Parte B — MacBook (quando agente local OU usuário)
+### Parte B — MacBook (`~/appdart`, branch `release/build-156`)
 
 ```bash
-cd ~/Developer/SoloForte   # ou caminho real do clone no Mac
+cd ~/appdart
 git fetch origin
-git checkout main
-git pull origin main
+git checkout release/build-156
+git pull origin release/build-156
 git status && git log -1 --oneline
 ```
 
-> **Cloud Agent não consegue executar Parte B** — não há acesso ao filesystem do Mac.
+> **Não mergear `origin/main`** — usar port cirúrgico GNSS.  
+> Ver `prompt/PROMPT_CODEX_RESOLVER_MERGE_BUILD156.md`
 
 ### Parte C — Encerramento obrigatório na resposta
 
@@ -94,4 +95,5 @@ O agente **sempre informa**:
 | Jul/2026 | Check-in bloqueado se precisão > 30m |
 | Jul/2026 | Agente sempre executa terminal; sync remoto obrigatório |
 | Jul/2026 | MacBook pull local **não acessível** via Cloud Agent — documentado |
-| Jul/2026 | **Fluxo oficial Cursor Desktop** adotado — `prompt/FLUXO_OFICIAL_CURSOR_DESKTOP.md` |
+| Jul/2026 | MacBook: pasta `~/appdart`, branch `release/build-156` — NÃO mergear main |
+| Jul/2026 | Prompt Codex merge: `prompt/PROMPT_CODEX_RESOLVER_MERGE_BUILD156.md` |
