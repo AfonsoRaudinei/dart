@@ -57,39 +57,35 @@ class _ConsolidatedReportsSection extends ConsumerWidget {
     final occurrences = occurrencesAsync.valueOrNull ?? const <Occurrence>[];
     final nowLabel = dateFormat.format(DateTime.now());
 
-    return _SectionContainer(
-      title: 'Relatórios Consolidados',
-      count: 3,
-      emptyMessage: 'Nenhum relatório consolidado disponível.',
-      isEmpty: false,
-      child: Column(
-        children: [
-          _GeneratedReportCard(
-            icon: Icons.list_alt_outlined,
-            title: 'Lista de Ocorrências',
-            subtitle: '${occurrences.length} ocorrência(s)',
-            date: nowLabel,
-            enabled: occurrences.isNotEmpty,
-            buildPayload: () => _buildOccurrenceListPayload(ref, occurrences),
-          ),
-          _GeneratedReportCard(
-            icon: Icons.agriculture_outlined,
-            title: 'Resumo da Propriedade',
-            subtitle: _propertySubtitle(relatorios),
-            date: nowLabel,
-            enabled: relatorios.any((report) => report.talhoes.isNotEmpty),
-            buildPayload: () => _buildPropertySummaryPayload(ref, relatorios),
-          ),
-          _GeneratedReportCard(
-            icon: Icons.history_outlined,
-            title: 'Histórico de Visitas',
-            subtitle: '${relatorios.length} visita(s)',
-            date: nowLabel,
-            enabled: relatorios.isNotEmpty,
-            buildPayload: () => _buildVisitHistoryPayload(ref, relatorios),
-          ),
-        ],
-      ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const _InsetGroupHeader(title: 'Relatórios Consolidados', count: 3),
+        _GeneratedReportCard(
+          eyebrow: 'Gerado sob demanda',
+          title: 'Lista de Ocorrências',
+          subtitle: '${occurrences.length} ocorrência(s)',
+          date: nowLabel,
+          enabled: occurrences.isNotEmpty,
+          buildPayload: () => _buildOccurrenceListPayload(ref, occurrences),
+        ),
+        _GeneratedReportCard(
+          eyebrow: 'Gerado sob demanda',
+          title: 'Resumo da Propriedade',
+          subtitle: _propertySubtitle(relatorios),
+          date: nowLabel,
+          enabled: relatorios.any((report) => report.talhoes.isNotEmpty),
+          buildPayload: () => _buildPropertySummaryPayload(ref, relatorios),
+        ),
+        _GeneratedReportCard(
+          eyebrow: 'Gerado sob demanda',
+          title: 'Histórico de Visitas',
+          subtitle: '${relatorios.length} visita(s)',
+          date: nowLabel,
+          enabled: relatorios.isNotEmpty,
+          buildPayload: () => _buildVisitHistoryPayload(ref, relatorios),
+        ),
+      ],
     );
   }
 
@@ -126,25 +122,28 @@ class _MarketingCasesReportsSection extends ConsumerWidget {
     return casesAsync.when(
       data: (cases) {
         final visible = cases.where((item) => item.deletadoEm == null).toList();
-        return _SectionContainer(
-          title: 'Marketing Cases',
-          count: visible.length,
-          emptyMessage: 'Nenhum case publicado.',
-          isEmpty: visible.isEmpty,
-          child: Column(
-            children: visible
-                .map(
-                  (item) => _GeneratedReportCard(
-                    icon: Icons.campaign_outlined,
-                    title: item.produtorFazenda,
-                    subtitle: _marketingSubtitle(item),
-                    date: dateFormat.format(item.criadoEm.toLocal()),
-                    enabled: true,
-                    buildPayload: () => _buildMarketingPayload(ref, item),
-                  ),
-                )
-                .toList(),
-          ),
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _InsetGroupHeader(title: 'Marketing Cases', count: visible.length),
+            if (visible.isEmpty)
+              _PremiumEmptyState(
+                message: 'Nenhum case publicado.',
+                ctaLabel: 'Abrir mapa',
+                onCta: () => context.go(AppRoutes.map),
+              )
+            else
+              ...visible.map(
+                (item) => _GeneratedReportCard(
+                  eyebrow: 'Marketing',
+                  title: item.produtorFazenda,
+                  subtitle: _marketingSubtitle(item),
+                  date: dateFormat.format(item.criadoEm.toLocal()),
+                  enabled: true,
+                  buildPayload: () => _buildMarketingPayload(ref, item),
+                ),
+              ),
+          ],
         );
       },
       loading: () => const _SectionLoading(title: 'Marketing Cases'),
@@ -176,7 +175,7 @@ class _MarketingCasesReportsSection extends ConsumerWidget {
 }
 
 class _GeneratedReportCard extends StatelessWidget {
-  final IconData icon;
+  final String eyebrow;
   final String title;
   final String subtitle;
   final String date;
@@ -184,7 +183,7 @@ class _GeneratedReportCard extends StatelessWidget {
   final Future<_GeneratedReportPayload> Function() buildPayload;
 
   const _GeneratedReportCard({
-    required this.icon,
+    required this.eyebrow,
     required this.title,
     required this.subtitle,
     required this.date,
@@ -195,11 +194,12 @@ class _GeneratedReportCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _DataCard(
+      eyebrow: eyebrow,
       title: title,
       subtitle: enabled ? subtitle : '$subtitle • sem dados',
       date: date,
       statusLabel: enabled ? 'Disponível' : 'Vazio',
-      statusColor: enabled ? const Color(0xFF34C759) : Colors.grey,
+      statusColor: enabled ? PremiumTokens.brandGreen : Colors.grey,
       trailing: _AsyncActionMenu(
         tooltip: 'Ações do relatório consolidado',
         itemBuilder: (context) => [

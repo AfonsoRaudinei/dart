@@ -70,6 +70,8 @@ class QuickPhotoRepository {
         lat: lat,
         lng: lng,
         createdAt: createdAt,
+        type: type,
+        visitSessionId: visitSessionId,
       );
       syncStatus = remoteSynced ? 0 : 1;
     }
@@ -164,8 +166,10 @@ class QuickPhotoRepository {
     required String userId,
     required Uint8List bytes,
     required DateTime createdAt,
+    required QuickPhotoType type,
     double? lat,
     double? lng,
+    String? visitSessionId,
   }) async {
     try {
       final storagePath = '$userId/$id.jpg';
@@ -192,6 +196,8 @@ class QuickPhotoRepository {
         'public_url': publicUrl,
         'lat': lat,
         'lng': lng,
+        'photo_type': type.value,
+        'visit_session_id': visitSessionId,
         'created_at': createdAt.toIso8601String(),
       });
 

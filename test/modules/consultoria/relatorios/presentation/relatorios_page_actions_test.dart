@@ -103,8 +103,10 @@ void main() {
       occurrenceRepository: occurrenceRepository,
     );
 
+    await _selectSegment(tester, 'Ocorrências');
     expect(find.text('Ocorrências Registradas'), findsOneWidget);
-    expect(find.text('Média'), findsWidgets);
+    expect(find.textContaining('Insetos'), findsWidgets);
+    expect(find.text('Urgência: Média'), findsOneWidget);
 
     await _openOccurrenceMenu(tester, index: 0);
     expect(find.text('Confirmar'), findsOneWidget);
@@ -166,30 +168,31 @@ void main() {
       marketingCases: [_marketingCase()],
     );
 
+    await _selectSegment(tester, 'Gerados');
     expect(find.text('Relatórios Consolidados'), findsOneWidget);
     expect(find.text('Lista de Ocorrências'), findsOneWidget);
     expect(find.text('Resumo da Propriedade'), findsOneWidget);
     expect(find.text('Histórico de Visitas'), findsOneWidget);
+    expect(find.text('Gerado sob demanda'), findsWidgets);
 
-    await tester.drag(find.byType(ListView), const Offset(0, -500));
+    await tester.drag(find.byType(ListView), const Offset(0, -400));
     await tester.pumpAndSettle();
 
     expect(find.text('Marketing Cases'), findsOneWidget);
     expect(find.text('Produtor Teste - Fazenda Marketing'), findsOneWidget);
 
-    await tester.drag(find.byType(ListView), const Offset(0, -700));
-    await tester.pumpAndSettle();
-
+    await _selectSegment(tester, 'Mídia');
     expect(find.text('Fotos da visita'), findsOneWidget);
-    expect(find.text('Nenhuma foto registrada. Use o botão + no mapa.'), findsOneWidget);
+    expect(
+      find.text('Nenhuma foto registrada. Use o botão + no mapa.'),
+      findsOneWidget,
+    );
     expect(find.text('Todas'), findsOneWidget);
     expect(find.text('Foto rápida'), findsWidgets);
     expect(find.text('Inversão vegetal'), findsOneWidget);
     expect(find.text('Órfãs'), findsOneWidget);
 
-    await tester.drag(find.byType(ListView), const Offset(0, 700));
-    await tester.pumpAndSettle();
-
+    await _selectSegment(tester, 'Gerados');
     await tester.ensureVisible(
       find.byTooltip('Ações do relatório consolidado').first,
     );
@@ -198,6 +201,35 @@ void main() {
     expect(find.text('Pré-visualizar HTML'), findsOneWidget);
     expect(find.text('Exportar'), findsOneWidget);
   });
+
+  testWidgets('ocorrência com snake_case exibe label legível', (tester) async {
+    final occurrenceRepository = FakeOccurrenceRepository()
+      ..seed([
+        Occurrence(
+          id: 'occ-snake',
+          type: 'Média',
+          description: 'Ervas',
+          category: 'ervas_daninhas',
+          status: 'draft',
+          createdAt: DateTime.utc(2026, 6, 20, 12),
+        ),
+      ]);
+
+    await _pumpScreen(
+      tester,
+      relatorioRepository: FakeRelatorioRepository(),
+      occurrenceRepository: occurrenceRepository,
+    );
+
+    await _selectSegment(tester, 'Ocorrências');
+    expect(find.textContaining('Ervas Daninhas'), findsOneWidget);
+    expect(find.text('ervas_daninhas'), findsNothing);
+  });
+}
+
+Future<void> _selectSegment(WidgetTester tester, String label) async {
+  await tester.tap(find.text(label).first);
+  await tester.pumpAndSettle();
 }
 
 Future<void> _pumpScreen(

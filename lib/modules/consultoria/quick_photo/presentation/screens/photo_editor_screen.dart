@@ -144,6 +144,14 @@ class _PhotoEditorScreenState extends State<PhotoEditorScreen> {
       );
       if (!mounted) return;
       Navigator.of(context).pop(true);
+    } on VegetalFilterException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.message),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -167,8 +175,8 @@ class _PhotoEditorScreenState extends State<PhotoEditorScreen> {
   ) async {
     final outputBaseImage = await _buildOutputBaseImage(baseBytes, baseImage);
     final outputSize = Size(
-      baseImage.width.toDouble(),
-      baseImage.height.toDouble(),
+      outputBaseImage.width.toDouble(),
+      outputBaseImage.height.toDouble(),
     );
     final recorder = ui.PictureRecorder();
     final canvas = Canvas(recorder);
@@ -183,11 +191,18 @@ class _PhotoEditorScreenState extends State<PhotoEditorScreen> {
     canvas.restore();
 
     final picture = recorder.endRecording();
-    final uiImage = await picture.toImage(baseImage.width, baseImage.height);
+    final uiImage = await picture.toImage(
+      outputBaseImage.width,
+      outputBaseImage.height,
+    );
     final byteData = await uiImage.toByteData(format: ui.ImageByteFormat.png);
     final pngBytes = byteData!.buffer.asUint8List();
     final decoded = img.decodeImage(pngBytes);
-    if (decoded == null) return pngBytes;
+    if (decoded == null) {
+      throw const VegetalFilterException(
+        'Não foi possível finalizar a imagem. Tente novamente.',
+      );
+    }
 
     return Uint8List.fromList(img.encodeJpg(decoded, quality: 85));
   }
@@ -198,11 +213,13 @@ class _PhotoEditorScreenState extends State<PhotoEditorScreen> {
   ) async {
     if (!_filterActive) return baseImage;
 
-    final source = img.decodeImage(baseBytes);
-    if (source == null) return baseImage;
-
-    final filtered = await compute(applyVegetalFilter, source);
-    return _decodeUiImage(Uint8List.fromList(img.encodePng(filtered)));
+    final filteredJpeg = await compute(encodeVegetalFilteredJpeg, baseBytes);
+    if (filteredJpeg == null) {
+      throw const VegetalFilterException(
+        'Falha ao aplicar inversão vegetal. A foto não foi salva.',
+      );
+    }
+    return _decodeUiImage(filteredJpeg);
   }
 
   Rect _containedRect(Size imageSize, Size bounds) {

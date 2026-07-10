@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:image/image.dart' as img;
 
 img.Image applyVegetalFilter(img.Image src) {
@@ -14,6 +16,31 @@ img.Image applyVegetalFilter(img.Image src) {
     }
   }
   return output;
+}
+
+/// Aplica o filtro vegetal em bytes de imagem e retorna JPEG.
+/// Retorna `null` se o decode falhar — o chamador NÃO deve gravar
+/// `vegetal_filter` com os bytes originais nesse caso.
+Uint8List? encodeVegetalFilteredJpeg(
+  Uint8List sourceBytes, {
+  int quality = 85,
+}) {
+  try {
+    final source = img.decodeImage(sourceBytes);
+    if (source == null) return null;
+    final filtered = applyVegetalFilter(source);
+    return Uint8List.fromList(img.encodeJpg(filtered, quality: quality));
+  } catch (_) {
+    return null;
+  }
+}
+
+class VegetalFilterException implements Exception {
+  final String message;
+  const VegetalFilterException(this.message);
+
+  @override
+  String toString() => message;
 }
 
 bool isVegetalGreen({required int red, required int green, required int blue}) {

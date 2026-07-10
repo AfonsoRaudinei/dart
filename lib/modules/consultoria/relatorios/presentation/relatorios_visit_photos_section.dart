@@ -44,65 +44,63 @@ class _VisitPhotosSectionState extends ConsumerState<_VisitPhotosSection> {
     return photosAsync.when(
       data: (photos) {
         final filtered = _filterVisitPhotos(photos, _filter);
-        return _SectionContainer(
-          title: 'Fotos da visita',
-          count: filtered.length,
-          emptyMessage: _emptyMessage(_filter),
-          isEmpty: false,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _VisitPhotoFilterBar(
-                selected: _filter,
-                onSelected: (value) => setState(() => _filter = value),
-              ),
-              const SizedBox(height: 8),
-              if (photos.isEmpty)
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  child: Center(
-                    child: Text(
-                      _emptyMessage(_VisitPhotoFilter.all),
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ),
-                )
-              else if (filtered.isEmpty)
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  child: Center(
-                    child: Text(
-                      _emptyMessage(_filter),
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ),
-                )
-              else
-                ...filtered.map(
-                  (photo) => _VisitPhotoCard(
-                    photo: photo,
-                    dateFormat: widget.dateFormat,
-                    onTap: () => _openPreview(context, photo),
-                  ),
+        return ListView.builder(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+          itemCount: 3 + (filtered.isEmpty ? 1 : filtered.length),
+          itemBuilder: (context, index) {
+            if (index == 0) {
+              return _InsetGroupHeader(
+                title: 'Fotos da visita',
+                count: filtered.length,
+              );
+            }
+            if (index == 1) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: _VisitPhotoFilterBar(
+                  selected: _filter,
+                  onSelected: (value) => setState(() => _filter = value),
                 ),
-            ],
-          ),
+              );
+            }
+            if (filtered.isEmpty) {
+              if (index == 2) {
+                return _PremiumEmptyState(
+                  message: photos.isEmpty
+                      ? _emptyMessage(_VisitPhotoFilter.all)
+                      : _emptyMessage(_filter),
+                  ctaLabel: 'Abrir mapa',
+                  onCta: () => context.go(AppRoutes.map),
+                );
+              }
+              return const SizedBox(height: kFabSafeArea);
+            }
+            if (index == filtered.length + 2) {
+              return const SizedBox(height: kFabSafeArea);
+            }
+            final photo = filtered[index - 2];
+            return _VisitPhotoCard(
+              photo: photo,
+              dateFormat: widget.dateFormat,
+              onTap: () => _openPreview(context, photo),
+            );
+          },
         );
       },
-      loading: () => const _SectionLoading(title: 'Fotos da visita'),
+      loading: () => const Padding(
+        padding: EdgeInsets.all(16),
+        child: _SectionLoading(title: 'Fotos da visita'),
+      ),
       error: (error, stack) {
         debugPrint(
           '[RelatoriosScreen] quickPhotoListProvider ERROR: $error\n$stack',
         );
-        return _SectionError(
-          title: 'Fotos da visita',
-          onRetry: () => ref.invalidate(quickPhotoListProvider),
+        return Padding(
+          padding: const EdgeInsets.all(16),
+          child: _SectionError(
+            title: 'Fotos da visita',
+            onRetry: () => ref.invalidate(quickPhotoListProvider),
+          ),
         );
       },
     );
@@ -121,7 +119,10 @@ class _VisitPhotosSectionState extends ConsumerState<_VisitPhotosSection> {
     }
   }
 
-  Future<void> _openPreview(BuildContext context, QuickPhotoRecord photo) async {
+  Future<void> _openPreview(
+    BuildContext context,
+    QuickPhotoRecord photo,
+  ) async {
     final path = photo.imagePath;
     if (path == null || path.isEmpty) return;
 
@@ -135,34 +136,65 @@ class _VisitPhotosSectionState extends ConsumerState<_VisitPhotosSection> {
     }
 
     if (!context.mounted) return;
-    await showDialog<void>(
+    final isVegetal = photo.type == QuickPhotoType.vegetalFilter.value;
+    await showSoloForteSheet<void>(
       context: context,
-      builder: (context) => Dialog(
-        insetPadding: const EdgeInsets.all(16),
+      maxHeightFraction: 0.88,
+      builder: (sheetContext) => SafeArea(
         child: Column(
-          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 8, 8),
+              padding: const EdgeInsets.fromLTRB(20, 8, 12, 8),
               child: Row(
                 children: [
                   Expanded(
-                    child: Text(
-                      QuickPhotoRepository.typeLabel(photo.type),
-                      style: Theme.of(context).textTheme.titleSmall,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          QuickPhotoRepository.typeLabel(photo.type),
+                          style: const TextStyle(
+                            fontSize: SoloForteSheetTokens.titleFontSize,
+                            fontWeight: SoloForteSheetTokens.titleWeight,
+                            color: SoloForteSheetTokens.titleColor,
+                          ),
+                        ),
+                        if (isVegetal)
+                          const Padding(
+                            padding: EdgeInsets.only(top: 4),
+                            child: Text(
+                              'Inversão vegetal aplicada no arquivo',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Color(0xFFAEAEB2),
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
                   ),
-                  IconButton(
-                    tooltip: 'Fechar',
-                    onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.close),
+                  TextButton(
+                    onPressed: () => Navigator.of(sheetContext).pop(),
+                    child: const Text(
+                      'Fechar',
+                      style: TextStyle(
+                        color: PremiumTokens.brandGreenDark,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ),
                 ],
               ),
             ),
-            Flexible(
+            const Divider(height: 1, color: SoloForteSheetTokens.divider),
+            Expanded(
               child: InteractiveViewer(
-                child: Image.file(file, fit: BoxFit.contain),
+                child: Image.file(
+                  file,
+                  fit: BoxFit.contain,
+                  cacheWidth: 1200,
+                ),
               ),
             ),
             const SizedBox(height: 12),
@@ -186,7 +218,7 @@ class _VisitPhotoFilterBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Wrap(
       spacing: 8,
-      runSpacing: 4,
+      runSpacing: 6,
       children: [
         _filterChip('Todas', _VisitPhotoFilter.all),
         _filterChip('Foto rápida', _VisitPhotoFilter.normal),
@@ -197,10 +229,31 @@ class _VisitPhotoFilterBar extends StatelessWidget {
   }
 
   Widget _filterChip(String label, _VisitPhotoFilter value) {
-    return FilterChip(
-      label: Text(label),
-      selected: selected == value,
-      onSelected: (_) => onSelected(value),
+    final isSelected = selected == value;
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => onSelected(value),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 140),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        decoration: BoxDecoration(
+          color: isSelected ? PremiumTokens.brandGreen : Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected
+                ? PremiumTokens.brandGreen
+                : const Color(0xFFD1D1D6),
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: isSelected ? Colors.white : PremiumTokens.textPrimaryLight,
+          ),
+        ),
+      ),
     );
   }
 }
@@ -220,50 +273,102 @@ class _VisitPhotoCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final linked = photo.visitSessionId?.isNotEmpty == true;
     final path = photo.imagePath;
-    final theme = Theme.of(context);
+    final isVegetal = photo.type == QuickPhotoType.vegetalFilter.value;
 
-    return InkWell(
+    return _DataCard(
+      leading: _VisitPhotoThumbnail(path: path, isVegetal: isVegetal),
+      eyebrow: isVegetal ? 'Inversão vegetal' : 'Foto rápida',
+      title: QuickPhotoRepository.typeLabel(photo.type),
+      subtitle: linked
+          ? 'Visita ${RelatorioHtmlRenderer.shortId(photo.visitSessionId!)}'
+          : 'Sem visita vinculada',
+      date: dateFormat.format(photo.createdAt.toLocal()),
+      statusLabel: linked ? 'Vinculada' : 'Órfã',
+      statusColor: linked ? PremiumTokens.brandGreen : const Color(0xFFFF9500),
       onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: _DataCard(
-        leading: _VisitPhotoThumbnail(path: path),
-        title: QuickPhotoRepository.typeLabel(photo.type),
-        subtitle: linked
-            ? 'Visita ${RelatorioHtmlRenderer.shortId(photo.visitSessionId!)}'
-            : 'Sem visita vinculada',
-        date: dateFormat.format(photo.createdAt.toLocal()),
-        statusLabel: linked ? 'Vinculada' : 'Órfã',
-        statusColor: linked ? const Color(0xFF34C759) : const Color(0xFFFF9500),
-        trailing: Icon(
-          Icons.chevron_right,
-          color: theme.colorScheme.onSurfaceVariant,
-        ),
-      ),
     );
   }
 }
 
 class _VisitPhotoThumbnail extends StatelessWidget {
   final String? path;
+  final bool isVegetal;
 
-  const _VisitPhotoThumbnail({required this.path});
+  const _VisitPhotoThumbnail({required this.path, required this.isVegetal});
 
   @override
   Widget build(BuildContext context) {
+    final dpr = MediaQuery.devicePixelRatioOf(context);
+    final cacheSize = (48 * dpr).round();
+
+    Widget image;
     if (path == null || path!.isEmpty) {
-      return const Icon(Icons.image_not_supported_outlined, size: 20);
+      image = Container(
+        width: 48,
+        height: 48,
+        alignment: Alignment.center,
+        color: const Color(0xFFE5E5EA),
+        child: const Text(
+          'Sem\narq.',
+          textAlign: TextAlign.center,
+          style: TextStyle(fontSize: 9, color: PremiumTokens.textSecondaryLight),
+        ),
+      );
+    } else {
+      final file = File(path!);
+      image = Image.file(
+        file,
+        width: 48,
+        height: 48,
+        fit: BoxFit.cover,
+        cacheWidth: cacheSize,
+        cacheHeight: cacheSize,
+        errorBuilder: (_, __, ___) => Container(
+          width: 48,
+          height: 48,
+          alignment: Alignment.center,
+          color: const Color(0xFFE5E5EA),
+          child: const Text(
+            'Indisp.',
+            style: TextStyle(
+              fontSize: 9,
+              color: PremiumTokens.textSecondaryLight,
+            ),
+          ),
+        ),
+      );
     }
 
-    final file = File(path!);
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(8),
-      child: Image.file(
-        file,
-        width: 40,
-        height: 40,
-        fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) =>
-            const Icon(Icons.broken_image_outlined, size: 20),
+    return SizedBox(
+      width: 48,
+      height: 48,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: image,
+          ),
+          if (isVegetal)
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 1),
+                color: Colors.black.withValues(alpha: 0.55),
+                child: const Text(
+                  'Inversão',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 8,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }

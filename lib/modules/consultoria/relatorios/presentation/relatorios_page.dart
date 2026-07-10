@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -15,6 +16,8 @@ import '../../../../core/html_templates/relatorio_html_renderer.dart';
 import '../../../../core/html_templates/report_export_service.dart';
 import '../../../../core/utils/share_position.dart';
 import '../../../../core/ui/sheets/soloforte_sheet.dart';
+import '../../../../core/ui/sheets/sheet_tokens.dart';
+import '../../../../ui/theme/premium/design_tokens.dart';
 import '../../quick_photo/data/quick_photo_repository.dart';
 import '../../quick_photo/domain/quick_photo_record.dart';
 import '../../quick_photo/presentation/providers/quick_photo_list_provider.dart';
@@ -98,74 +101,84 @@ Future<_ReportBrandingContext> _resolveReportBrandingContext(
   );
 }
 
-/// Tela de Relatórios com duas seções de dados reais do SQLite local:
+/// Tela de Relatórios — Premium iOS com segmentos tipados.
 ///
-/// 1. Relatórios de Visita  → tabela técnica `relatorios`
-/// 2. Ocorrências Registradas → [occurrencesListProvider]
-class RelatoriosScreen extends ConsumerWidget {
+/// Segmentos: Visitas | Ocorrências | Gerados | Mídia
+class RelatoriosScreen extends ConsumerStatefulWidget {
   const RelatoriosScreen({super.key});
 
+  @override
+  ConsumerState<RelatoriosScreen> createState() => _RelatoriosScreenState();
+}
+
+class _RelatoriosScreenState extends ConsumerState<RelatoriosScreen> {
   static final _dateFormat = DateFormat('dd/MM/yyyy', 'pt_BR');
+  _RelatoriosSegment _segment = _RelatoriosSegment.visitas;
+
+  void _selectSegment(_RelatoriosSegment value) {
+    if (_segment == value) return;
+    HapticFeedback.selectionClick();
+    setState(() => _segment = value);
+  }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
-
-    return Container(
-      color: theme.colorScheme.surface,
+  Widget build(BuildContext context) {
+    return ColoredBox(
+      color: PremiumTokens.backgroundLight,
       child: SafeArea(
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _buildHeader(context),
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-                children: [
-                  // ── Seção 1: Relatórios de Visita ──────────────────────────
-                  _RelatoriosSection(dateFormat: _dateFormat),
-                  const SizedBox(height: 20),
-
-                  // ── Seção 2: Ocorrências Registradas ───────────────────────
-                  _OccurrenciasSection(dateFormat: _dateFormat),
-                  const SizedBox(height: 20),
-
-                  // ── Seção 3: Relatórios consolidados ───────────────────────
-                  _ConsolidatedReportsSection(dateFormat: _dateFormat),
-                  const SizedBox(height: 20),
-
-                  // ── Seção 4: Marketing Cases ───────────────────────────────
-                  _MarketingCasesReportsSection(dateFormat: _dateFormat),
-                  const SizedBox(height: 20),
-
-                  // ── Seção 5: Fotos da visita ───────────────────────────────
-                  _VisitPhotosSection(dateFormat: _dateFormat),
-                  const SizedBox(height: kFabSafeArea),
-                ],
+            const Padding(
+              padding: EdgeInsets.fromLTRB(16, 12, 16, 4),
+              child: Text(
+                'Relatórios',
+                style: TextStyle(
+                  fontSize: 34,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.37,
+                  color: PremiumTokens.textPrimaryLight,
+                ),
               ),
             ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+              child: _RelatoriosSegmentBar(
+                selected: _segment,
+                onSelected: _selectSegment,
+              ),
+            ),
+            Expanded(child: _buildSegmentBody()),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
-    return const Padding(
-      padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
-      child: Row(
-        children: [
-          Text(
-            'Relatórios',
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-          ),
-        ],
-      ),
-    );
+  Widget _buildSegmentBody() {
+    switch (_segment) {
+      case _RelatoriosSegment.visitas:
+        return _RelatoriosSection(dateFormat: _dateFormat);
+      case _RelatoriosSegment.ocorrencias:
+        return _OccurrenciasSection(dateFormat: _dateFormat);
+      case _RelatoriosSegment.gerados:
+        return ListView(
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+          children: [
+            _ConsolidatedReportsSection(dateFormat: _dateFormat),
+            const SizedBox(height: 20),
+            _MarketingCasesReportsSection(dateFormat: _dateFormat),
+            const SizedBox(height: kFabSafeArea),
+          ],
+        );
+      case _RelatoriosSegment.midia:
+        return _VisitPhotosSection(dateFormat: _dateFormat);
+    }
   }
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-// SEÇÃO 1 — Relatórios de Visita
+// SEÇÃO — Relatórios de Visita
 // ══════════════════════════════════════════════════════════════════════════════
 
 class _RelatoriosSection extends ConsumerWidget {
@@ -177,25 +190,55 @@ class _RelatoriosSection extends ConsumerWidget {
     final relatoriosAsync = ref.watch(_relatoriosTecnicosListProvider);
 
     return relatoriosAsync.when(
-      data: (list) => _SectionContainer(
-        title: 'Relatórios de Visita',
-        count: list.length,
-        emptyMessage: 'Nenhum relatório gerado ainda.',
-        isEmpty: list.isEmpty,
-        child: Column(
-          children: list
-              .map((r) => _RelatorioCard(relatorio: r, dateFormat: dateFormat))
-              .toList(),
-        ),
+      data: (list) {
+        if (list.isEmpty) {
+          return ListView(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+            children: [
+              const _InsetGroupHeader(title: 'Relatórios de Visita', count: 0),
+              _PremiumEmptyState(
+                message: 'Nenhum relatório gerado ainda.',
+                ctaLabel: 'Abrir mapa',
+                onCta: () => context.go(AppRoutes.map),
+              ),
+              const SizedBox(height: kFabSafeArea),
+            ],
+          );
+        }
+        return ListView.builder(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+          itemCount: list.length + 2,
+          itemBuilder: (context, index) {
+            if (index == 0) {
+              return _InsetGroupHeader(
+                title: 'Relatórios de Visita',
+                count: list.length,
+              );
+            }
+            if (index == list.length + 1) {
+              return const SizedBox(height: kFabSafeArea);
+            }
+            return _RelatorioCard(
+              relatorio: list[index - 1],
+              dateFormat: dateFormat,
+            );
+          },
+        );
+      },
+      loading: () => const Padding(
+        padding: EdgeInsets.all(16),
+        child: _SectionLoading(title: 'Relatórios de Visita'),
       ),
-      loading: () => const _SectionLoading(title: 'Relatórios de Visita'),
       error: (e, stack) {
         debugPrint(
           '[RelatoriosScreen] relatoriosListProvider ERROR: $e\n$stack',
         );
-        return _SectionError(
-          title: 'Relatórios de Visita',
-          onRetry: () => ref.invalidate(_relatoriosTecnicosListProvider),
+        return Padding(
+          padding: const EdgeInsets.all(16),
+          child: _SectionError(
+            title: 'Relatórios de Visita',
+            onRetry: () => ref.invalidate(_relatoriosTecnicosListProvider),
+          ),
         );
       },
     );
@@ -212,37 +255,36 @@ class _RelatorioCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final statusLabel = _statusLabel(relatorio.status);
     final statusColor = _statusColor(relatorio.status);
+    final title = relatorio.title?.isNotEmpty == true
+        ? relatorio.title!
+        : relatorio.farmName;
 
-    return InkWell(
+    return _DataCard(
+      eyebrow: 'Visita técnica',
+      title: title,
+      subtitle: title == relatorio.farmName ? null : relatorio.farmName,
+      date: dateFormat.format(relatorio.createdAt.toLocal()),
+      statusLabel: statusLabel,
+      statusColor: statusColor,
       onTap: () => context.go('/consultoria/relatorios/${relatorio.id}'),
-      borderRadius: BorderRadius.circular(12),
-      child: _DataCard(
-        title: relatorio.title?.isNotEmpty == true
-            ? relatorio.title!
-            : relatorio.farmName,
-        subtitle: relatorio.farmName,
-        date: dateFormat.format(relatorio.createdAt.toLocal()),
-        statusLabel: statusLabel,
-        statusColor: statusColor,
-        trailing: _AsyncActionMenu(
-          tooltip: 'Ações do relatório',
-          itemBuilder: (context) => [
-            const PopupMenuItem(
-              value: 'html',
-              child: Text('Pré-visualizar HTML'),
-            ),
-            const PopupMenuItem(value: 'export', child: Text('Exportar')),
-            if (relatorio.status == RelatorioStatus.pendente_revisao)
-              const PopupMenuItem(value: 'edit', child: Text('Editar')),
-            if (relatorio.status == RelatorioStatus.pendente_revisao)
-              const PopupMenuItem(value: 'publish', child: Text('Publicar')),
-            const PopupMenuItem(
-              value: 'delete',
-              child: Text('Excluir', style: TextStyle(color: Colors.red)),
-            ),
-          ],
-          onSelected: (value) => _handleAction(context, ref, value),
-        ),
+      trailing: _AsyncActionMenu(
+        tooltip: 'Ações do relatório',
+        itemBuilder: (context) => [
+          const PopupMenuItem(
+            value: 'html',
+            child: Text('Pré-visualizar HTML'),
+          ),
+          const PopupMenuItem(value: 'export', child: Text('Exportar')),
+          if (relatorio.status == RelatorioStatus.pendente_revisao)
+            const PopupMenuItem(value: 'edit', child: Text('Editar')),
+          if (relatorio.status == RelatorioStatus.pendente_revisao)
+            const PopupMenuItem(value: 'publish', child: Text('Publicar')),
+          const PopupMenuItem(
+            value: 'delete',
+            child: Text('Excluir', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+        onSelected: (value) => _handleAction(context, ref, value),
       ),
     );
   }
@@ -382,7 +424,7 @@ class _RelatorioCard extends ConsumerWidget {
   Color _statusColor(RelatorioStatus status) {
     switch (status) {
       case RelatorioStatus.publicado:
-        return const Color(0xFF34C759);
+        return PremiumTokens.brandGreen;
       case RelatorioStatus.arquivado:
         return Colors.grey;
       case RelatorioStatus.pendente_revisao:
@@ -392,7 +434,7 @@ class _RelatorioCard extends ConsumerWidget {
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-// SEÇÃO 2 — Ocorrências Registradas
+// SEÇÃO — Ocorrências Registradas
 // ══════════════════════════════════════════════════════════════════════════════
 
 class _OccurrenciasSection extends ConsumerWidget {
@@ -404,27 +446,58 @@ class _OccurrenciasSection extends ConsumerWidget {
     final occAsync = ref.watch(occurrencesListProvider);
 
     return occAsync.when(
-      data: (list) => _SectionContainer(
-        title: 'Ocorrências Registradas',
-        count: list.length,
-        emptyMessage: 'Nenhuma ocorrência registrada.',
-        isEmpty: list.isEmpty,
-        child: Column(
-          children: list
-              .map(
-                (o) => _OccurrenciaCard(occurrence: o, dateFormat: dateFormat),
-              )
-              .toList(),
-        ),
+      data: (list) {
+        if (list.isEmpty) {
+          return ListView(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+            children: [
+              const _InsetGroupHeader(
+                title: 'Ocorrências Registradas',
+                count: 0,
+              ),
+              _PremiumEmptyState(
+                message: 'Nenhuma ocorrência registrada.',
+                ctaLabel: 'Abrir mapa',
+                onCta: () => context.go(AppRoutes.map),
+              ),
+              const SizedBox(height: kFabSafeArea),
+            ],
+          );
+        }
+        return ListView.builder(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+          itemCount: list.length + 2,
+          itemBuilder: (context, index) {
+            if (index == 0) {
+              return _InsetGroupHeader(
+                title: 'Ocorrências Registradas',
+                count: list.length,
+              );
+            }
+            if (index == list.length + 1) {
+              return const SizedBox(height: kFabSafeArea);
+            }
+            return _OccurrenciaCard(
+              occurrence: list[index - 1],
+              dateFormat: dateFormat,
+            );
+          },
+        );
+      },
+      loading: () => const Padding(
+        padding: EdgeInsets.all(16),
+        child: _SectionLoading(title: 'Ocorrências Registradas'),
       ),
-      loading: () => const _SectionLoading(title: 'Ocorrências Registradas'),
       error: (e, stack) {
         debugPrint(
           '[RelatoriosScreen] occurrencesListProvider ERROR: $e\n$stack',
         );
-        return _SectionError(
-          title: 'Ocorrências Registradas',
-          onRetry: () => ref.refresh(occurrencesListProvider),
+        return Padding(
+          padding: const EdgeInsets.all(16),
+          child: _SectionError(
+            title: 'Ocorrências Registradas',
+            onRetry: () => ref.refresh(occurrencesListProvider),
+          ),
         );
       },
     );
@@ -441,39 +514,36 @@ class _OccurrenciaCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final statusLabel = _occStatusLabel(occurrence.status);
     final statusColor = _occStatusColor(occurrence.status);
-    final categoryLabel = occurrence.category ?? occurrence.type;
 
-    return InkWell(
+    return _DataCard(
+      eyebrow: 'Ocorrência',
+      title: _occurrenceCardTitle(occurrence),
+      subtitle: _occurrenceCardSubtitle(occurrence),
+      date: dateFormat.format(occurrence.createdAt.toLocal()),
+      statusLabel: statusLabel,
+      statusColor: statusColor,
       onTap: () => OccurrenceDetailSheet.show(
         context,
         occurrence,
         backRoute: AppRoutes.reports,
       ),
-      borderRadius: BorderRadius.circular(12),
-      child: _DataCard(
-        title: occurrence.type,
-        subtitle: categoryLabel != occurrence.type ? categoryLabel : null,
-        date: dateFormat.format(occurrence.createdAt.toLocal()),
-        statusLabel: statusLabel,
-        statusColor: statusColor,
-        trailing: _AsyncActionMenu(
-          tooltip: 'Ações da ocorrência',
-          itemBuilder: (context) => [
-            const PopupMenuItem(
-              value: 'html',
-              child: Text('Pré-visualizar HTML'),
-            ),
-            const PopupMenuItem(value: 'export', child: Text('Exportar')),
-            const PopupMenuItem(value: 'edit', child: Text('Editar')),
-            if (occurrence.status != 'confirmed')
-              const PopupMenuItem(value: 'confirm', child: Text('Confirmar')),
-            const PopupMenuItem(
-              value: 'delete',
-              child: Text('Excluir', style: TextStyle(color: Colors.red)),
-            ),
-          ],
-          onSelected: (value) => _handleAction(context, ref, value),
-        ),
+      trailing: _AsyncActionMenu(
+        tooltip: 'Ações da ocorrência',
+        itemBuilder: (context) => [
+          const PopupMenuItem(
+            value: 'html',
+            child: Text('Pré-visualizar HTML'),
+          ),
+          const PopupMenuItem(value: 'export', child: Text('Exportar')),
+          const PopupMenuItem(value: 'edit', child: Text('Editar')),
+          if (occurrence.status != 'confirmed')
+            const PopupMenuItem(value: 'confirm', child: Text('Confirmar')),
+          const PopupMenuItem(
+            value: 'delete',
+            child: Text('Excluir', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+        onSelected: (value) => _handleAction(context, ref, value),
       ),
     );
   }
@@ -649,7 +719,7 @@ class _OccurrenciaCard extends ConsumerWidget {
 
   Color _occStatusColor(String? status) {
     return status == 'confirmed'
-        ? const Color(0xFF34C759)
+        ? PremiumTokens.brandGreen
         : const Color(0xFFFF9500);
   }
 }

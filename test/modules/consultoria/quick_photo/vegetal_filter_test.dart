@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image/image.dart' as img;
 import 'package:soloforte_app/modules/consultoria/quick_photo/data/vegetal_filter.dart';
@@ -32,6 +34,27 @@ void main() {
       for (var x = 0; x < filtered.width; x++) {
         _expectPixel(filtered, x, 0);
       }
+    });
+  });
+
+  group('encodeVegetalFilteredJpeg', () {
+    test('persiste pixels filtrados no JPEG final', () {
+      final source = img.Image(width: 2, height: 1)
+        ..setPixelRgb(0, 0, 0, 180, 0)
+        ..setPixelRgb(1, 0, 255, 0, 0);
+      final jpeg = Uint8List.fromList(img.encodeJpg(source, quality: 95));
+
+      final encoded = encodeVegetalFilteredJpeg(jpeg);
+      expect(encoded, isNotNull);
+
+      final decoded = img.decodeImage(encoded!);
+      expect(decoded, isNotNull);
+      _expectPixel(decoded!, 0, 255);
+      _expectPixel(decoded, 1, 0);
+    });
+
+    test('retorna null quando bytes são inválidos', () {
+      expect(encodeVegetalFilteredJpeg(Uint8List.fromList([1, 2, 3])), isNull);
     });
   });
 }
