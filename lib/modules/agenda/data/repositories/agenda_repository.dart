@@ -267,6 +267,15 @@ class AgendaRepository {
       'created_at': event.createdAt.toIso8601String(),
       'updated_at': event.updatedAt.toIso8601String(),
       'sync_status': event.syncStatus,
+      'start_time': event.startTime == null
+          ? null
+          : '${event.startTime!.hour.toString().padLeft(2, '0')}:${event.startTime!.minute.toString().padLeft(2, '0')}',
+      'end_time': event.endTime == null
+          ? null
+          : '${event.endTime!.hour.toString().padLeft(2, '0')}:${event.endTime!.minute.toString().padLeft(2, '0')}',
+      'priority': event.priority.name,
+      'latitude': event.latitude,
+      'longitude': event.longitude,
     };
   }
 
@@ -286,6 +295,11 @@ class AgendaRepository {
       'createdAt': map['created_at'],
       'updatedAt': map['updated_at'],
       'syncStatus': map['sync_status'],
+      'startTime': map['start_time'],
+      'endTime': map['end_time'],
+      'priority': map['priority'] ?? 'normal',
+      'latitude': map['latitude'],
+      'longitude': map['longitude'],
     }).toEntity();
   }
 

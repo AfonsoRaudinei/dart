@@ -1,4 +1,7 @@
+import 'package:flutter/material.dart';
+
 import '../../domain/entities/event.dart';
+import '../../domain/entities/visit.dart';
 import '../../domain/enums/event_status.dart';
 import '../../domain/enums/event_type.dart';
 
@@ -19,6 +22,11 @@ class EventModel extends Event {
     required super.createdAt,
     required super.updatedAt,
     super.syncStatus,
+    super.startTime,
+    super.endTime,
+    super.priority,
+    super.latitude,
+    super.longitude,
   });
 
   /// Cria EventModel a partir de uma entidade Event
@@ -38,6 +46,11 @@ class EventModel extends Event {
       createdAt: event.createdAt,
       updatedAt: event.updatedAt,
       syncStatus: event.syncStatus,
+      startTime: event.startTime,
+      endTime: event.endTime,
+      priority: event.priority,
+      latitude: event.latitude,
+      longitude: event.longitude,
     );
   }
 
@@ -60,6 +73,13 @@ class EventModel extends Event {
       createdAt: DateTime.parse(json['createdAt'] as String),
       updatedAt: DateTime.parse(json['updatedAt'] as String),
       syncStatus: json['syncStatus'] as String? ?? 'pending',
+      startTime: _parseTimeOfDay(json['startTime']),
+      endTime: _parseTimeOfDay(json['endTime']),
+      priority: VisitPriority.fromString(
+        json['priority'] as String? ?? 'normal',
+      ),
+      latitude: (json['latitude'] as num?)?.toDouble(),
+      longitude: (json['longitude'] as num?)?.toDouble(),
     );
   }
 
@@ -80,6 +100,11 @@ class EventModel extends Event {
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
       'syncStatus': syncStatus,
+      'startTime': _formatTimeOfDay(startTime),
+      'endTime': _formatTimeOfDay(endTime),
+      'priority': priority.name,
+      'latitude': latitude,
+      'longitude': longitude,
     };
   }
 
@@ -100,6 +125,31 @@ class EventModel extends Event {
       createdAt: createdAt,
       updatedAt: updatedAt,
       syncStatus: syncStatus,
+      startTime: startTime,
+      endTime: endTime,
+      priority: priority,
+      latitude: latitude,
+      longitude: longitude,
     );
+  }
+
+  static TimeOfDay? _parseTimeOfDay(dynamic value) {
+    if (value == null) return null;
+    final text = value.toString().trim();
+    if (text.isEmpty) return null;
+    final parts = text.split(':');
+    if (parts.length < 2) return null;
+    final hour = int.tryParse(parts[0]);
+    final minute = int.tryParse(parts[1]);
+    if (hour == null || minute == null) return null;
+    if (hour < 0 || hour > 23 || minute < 0 || minute > 59) return null;
+    return TimeOfDay(hour: hour, minute: minute);
+  }
+
+  static String? _formatTimeOfDay(TimeOfDay? time) {
+    if (time == null) return null;
+    final hh = time.hour.toString().padLeft(2, '0');
+    final mm = time.minute.toString().padLeft(2, '0');
+    return '$hh:$mm';
   }
 }

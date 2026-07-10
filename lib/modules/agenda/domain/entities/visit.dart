@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import '../entities/event.dart';
 import '../enums/event_status.dart';
 import 'package:flutter/material.dart';
@@ -168,60 +170,25 @@ extension VisitExtension on Event {
     double lon2,
   ) {
     const double earthRadiusKm = 6371.0;
-
-    // Converte graus para radianos
-    final double lat1Rad = _degreesToRadians(lat1);
-    final double lon1Rad = _degreesToRadians(lon1);
-    final double lat2Rad = _degreesToRadians(lat2);
-    final double lon2Rad = _degreesToRadians(lon2);
-
-    // Diferenças
-    final double dLat = lat2Rad - lat1Rad;
-    final double dLon = lon2Rad - lon1Rad;
-
-    // Fórmula Haversine
-    final double a =
-        _sin(dLat / 2) * _sin(dLat / 2) +
-        _cos(lat1Rad) * _cos(lat2Rad) * _sin(dLon / 2) * _sin(dLon / 2);
-    final double c = 2 * _atan2(_sqrt(a), _sqrt(1 - a));
-
+    final lat1Rad = _degreesToRadians(lat1);
+    final lon1Rad = _degreesToRadians(lon1);
+    final lat2Rad = _degreesToRadians(lat2);
+    final lon2Rad = _degreesToRadians(lon2);
+    final dLat = lat2Rad - lat1Rad;
+    final dLon = lon2Rad - lon1Rad;
+    final a =
+        math.sin(dLat / 2) * math.sin(dLat / 2) +
+        math.cos(lat1Rad) *
+            math.cos(lat2Rad) *
+            math.sin(dLon / 2) *
+            math.sin(dLon / 2);
+    final c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a));
     return earthRadiusKm * c;
   }
 
   /// Converte graus para radianos
   double _degreesToRadians(double degrees) {
-    return degrees * 3.141592653589793 / 180.0;
-  }
-
-  /// Funções matemáticas auxiliares
-  double _sin(double x) => x - (x * x * x) / 6 + (x * x * x * x * x) / 120;
-  double _cos(double x) => 1 - (x * x) / 2 + (x * x * x * x) / 24;
-  double _sqrt(double x) {
-    if (x == 0) return 0;
-    double z = x;
-    double result = 0;
-    for (int i = 0; i < 10; i++) {
-      result = (z + x / z) / 2;
-      if ((result - z).abs() < 0.0001) break;
-      z = result;
-    }
-    return result;
-  }
-
-  double _atan2(double y, double x) {
-    if (x > 0) return _atan(y / x);
-    if (x < 0 && y >= 0) return _atan(y / x) + 3.141592653589793;
-    if (x < 0 && y < 0) return _atan(y / x) - 3.141592653589793;
-    if (x == 0 && y > 0) return 3.141592653589793 / 2;
-    if (x == 0 && y < 0) return -3.141592653589793 / 2;
-    return 0;
-  }
-
-  double _atan(double x) {
-    return x -
-        (x * x * x) / 3 +
-        (x * x * x * x * x) / 5 -
-        (x * x * x * x * x * x * x) / 7;
+    return degrees * math.pi / 180.0;
   }
 
   /// Verifica se há possível conflito logístico com outra visita

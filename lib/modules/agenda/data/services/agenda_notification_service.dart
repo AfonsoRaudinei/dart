@@ -104,14 +104,14 @@ class AgendaNotificationService {
         : AndroidScheduleMode.inexactAllowWhileIdle;
   }
 
+  /// Callback global para tap em notificação (wired pelo Agenda provider).
+  static void Function(String eventId)? onEventTap;
+
   /// Callback quando notificação é tocada
   void _onNotificationTapped(NotificationResponse response) {
-    // TODO: Navegar para o evento
-    final eventId = response.payload;
-    if (eventId != null) {
-      // Implementar navegação via GoRouter
-      // context.push('/agenda/event/$eventId');
-    }
+    final eventId = response.payload?.trim();
+    if (eventId == null || eventId.isEmpty) return;
+    onEventTap?.call(eventId);
   }
 
   /// Agenda notificações para um evento

@@ -117,6 +117,7 @@ flutter:
     - assets/html_templates/resumo_propriedade.html
     - assets/html_templates/historico_visitas.html
     - assets/html_templates/relatorio_visita.html
+    - assets/html_templates/planejamento_semanal.html
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

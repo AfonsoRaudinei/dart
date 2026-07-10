@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../../core/infra/preferences_service.dart';
@@ -88,13 +90,11 @@ class AgendaFilters extends _$AgendaFilters {
 
   Future<void> _loadFromPreferences() async {
     try {
-      final json = _prefs.getString(_prefsKey);
-
-      if (json != null) {
-        // Parse JSON manually to avoid dependency issues
-        // For now, start with empty filters
-        // TODO: Implement proper JSON parsing
-      }
+      final raw = _prefs.getString(_prefsKey);
+      if (raw == null || raw.trim().isEmpty) return;
+      final decoded = jsonDecode(raw);
+      if (decoded is! Map<String, dynamic>) return;
+      state = AgendaFilterCriteria.fromJson(decoded);
     } catch (e) {
       AppLogger.warning(
         'Falha ao carregar filtros da agenda — usando padrão',
@@ -106,7 +106,7 @@ class AgendaFilters extends _$AgendaFilters {
 
   Future<void> _saveToPreferences() async {
     try {
-      await _prefs.setString(_prefsKey, '{}');
+      await _prefs.setString(_prefsKey, jsonEncode(state.toJson()));
     } catch (e) {
       AppLogger.warning(
         'Falha ao salvar filtros da agenda',

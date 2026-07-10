@@ -2,17 +2,20 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:uuid/uuid.dart';
+import '../../../../core/router/app_router.dart';
+import '../../../../core/router/app_routes.dart';
 import '../../data/repositories/agenda_repository.dart';
 import '../../data/services/agenda_notification_service.dart';
 import '../../domain/entities/event.dart';
 import '../../domain/entities/visit.dart';
 import '../../domain/entities/visit_session.dart';
-import '../../domain/enums/event_status.dart';
 import '../../domain/enums/event_type.dart';
-import '../../domain/rules/event_rules.dart';
+import '../../domain/use_cases/cancel_event_use_case.dart';
+import '../../domain/use_cases/complete_event_use_case.dart';
 import '../../domain/use_cases/create_event_use_case.dart';
 import '../../domain/use_cases/delete_event_use_case.dart';
+import '../../domain/use_cases/finalize_event_use_case.dart';
+import '../../domain/use_cases/start_event_use_case.dart';
 import '../../domain/use_cases/update_event_use_case.dart';
 import '../../infra/agenda_domain_adapters.dart';
 import '../widgets/distance_warning_dialog.dart';
@@ -35,8 +38,6 @@ AgendaNotificationService agendaNotificationService(
 /// Provider global da agenda — ADR-008 (Fase 4: @riverpod, substitui StateNotifier).
 @Riverpod(keepAlive: true)
 class Agenda extends _$Agenda {
-  static const _uuid = Uuid();
-
   AgendaRepository get _repository => ref.read(agendaRepositoryProvider);
 
   AgendaNotificationService get _notificationService =>
@@ -45,7 +46,12 @@ class Agenda extends _$Agenda {
   @override
   AgendaState build() {
     Future.microtask(_loadFromDatabase);
-    Future.microtask(() => _notificationService.initialize());
+    Future.microtask(() async {
+      await _notificationService.initialize();
+      AgendaNotificationService.onEventTap = (eventId) {
+        ref.read(routerProvider).go(AppRoutes.agendaEvent(eventId));
+      };
+    });
     return const AgendaState();
   }
 
@@ -267,37 +273,14 @@ class Agenda extends _$Agenda {
       orElse: () => throw ArgumentError('Evento não encontrado'),
     );
 
-    if (!EventRules.canTransitionTo(event.status, EventStatus.emAndamento)) {
-      throw StateError(
-        'Evento não pode ser iniciado no status ${event.status.label}',
-      );
-    }
+    final result = await StartEventUseCase(
+      AgendaRepositoryAdapter(_repository),
+    ).execute(event: event, currentUserId: currentUserId);
 
-    final now = DateTime.now();
+    _updateEvent(result.updatedEvent);
+    state = state.copyWith(sessions: [...state.sessions, result.session]);
 
-    final session = VisitSession(
-      id: _uuid.v4(),
-      eventoId: eventId,
-      startAtReal: now,
-      createdBy: currentUserId,
-      createdAt: now,
-      syncStatus: 'pending',
-    );
-
-    final updatedEvent = event.copyWith(
-      status: EventStatus.emAndamento,
-      visitSessionId: session.id,
-      updatedAt: now,
-      syncStatus: 'pending',
-    );
-
-    await _repository.updateEvent(updatedEvent);
-    await _repository.saveSession(session);
-
-    _updateEvent(updatedEvent);
-    state = state.copyWith(sessions: [...state.sessions, session]);
-
-    return session;
+    return result.session;
   }
 
   Future<Event> finalizeEvent(String eventId) async {
@@ -306,21 +289,11 @@ class Agenda extends _$Agenda {
       orElse: () => throw ArgumentError('Evento não encontrado'),
     );
 
-    if (!EventRules.canTransitionTo(event.status, EventStatus.finalizando)) {
-      throw StateError(
-        'Evento não pode ser finalizado no status ${event.status.label}',
-      );
-    }
+    final updatedEvent = await FinalizeEventUseCase(
+      AgendaRepositoryAdapter(_repository),
+    ).execute(event);
 
-    final updatedEvent = event.copyWith(
-      status: EventStatus.finalizando,
-      updatedAt: DateTime.now(),
-      syncStatus: 'pending',
-    );
-
-    await _repository.updateEvent(updatedEvent);
     _updateEvent(updatedEvent);
-
     return updatedEvent;
   }
 
@@ -330,41 +303,19 @@ class Agenda extends _$Agenda {
       orElse: () => throw ArgumentError('Evento não encontrado'),
     );
 
-    if (!EventRules.canTransitionTo(event.status, EventStatus.concluido)) {
-      throw StateError(
-        'Evento não pode ser concluído no status ${event.status.label}',
-      );
-    }
-
-    final now = DateTime.now();
-
-    final updatedEvent = event.copyWith(
-      status: EventStatus.concluido,
-      updatedAt: now,
-      syncStatus: 'pending',
+    final result = await CompleteEventUseCase(
+      AgendaRepositoryAdapter(_repository),
+    ).execute(
+      event: event,
+      sessions: state.sessions,
+      notasFinais: notasFinais,
     );
 
-    if (event.visitSessionId != null) {
-      final session = state.sessions.firstWhere(
-        (s) => s.id == event.visitSessionId,
-        orElse: () => throw ArgumentError('Sessão não encontrada'),
-      );
-
-      final updatedSession = session.copyWith(
-        endAtReal: now,
-        duracaoMin: now.difference(session.startAtReal).inMinutes,
-        notasFinais: notasFinais,
-        syncStatus: 'pending',
-      );
-
-      await _repository.updateSession(updatedSession);
-      _updateSession(updatedSession);
+    if (result.updatedSession != null) {
+      _updateSession(result.updatedSession!);
     }
-
-    await _repository.updateEvent(updatedEvent);
-    _updateEvent(updatedEvent);
-
-    return updatedEvent;
+    _updateEvent(result.updatedEvent);
+    return result.updatedEvent;
   }
 
   Future<Event> cancelEvent(String eventId) async {
@@ -373,45 +324,16 @@ class Agenda extends _$Agenda {
       orElse: () => throw ArgumentError('Evento não encontrado'),
     );
 
-    if (!EventRules.canCancel(event.status)) {
-      throw StateError(
-        'Evento não pode ser cancelado no status ${event.status.label}',
-      );
+    final result = await CancelEventUseCase(
+      AgendaRepositoryAdapter(_repository),
+      AgendaNotificationServiceAdapter(_notificationService),
+    ).execute(event: event, sessions: state.sessions);
+
+    if (result.updatedSession != null) {
+      _updateSession(result.updatedSession!);
     }
-
-    final now = DateTime.now();
-
-    if (event.visitSessionId != null) {
-      final session = state.sessions.firstWhere(
-        (s) => s.id == event.visitSessionId,
-        orElse: () => throw ArgumentError('Sessão não encontrada'),
-      );
-
-      if (session.isActive) {
-        final updatedSession = session.copyWith(
-          endAtReal: now,
-          duracaoMin: now.difference(session.startAtReal).inMinutes,
-          notasFinais: 'Cancelado',
-          syncStatus: 'pending',
-        );
-
-        await _repository.updateSession(updatedSession);
-        _updateSession(updatedSession);
-      }
-    }
-
-    final updatedEvent = event.copyWith(
-      status: EventStatus.cancelado,
-      updatedAt: now,
-      syncStatus: 'pending',
-    );
-
-    await _notificationService.cancelEventNotifications(eventId);
-
-    await _repository.updateEvent(updatedEvent);
-    _updateEvent(updatedEvent);
-
-    return updatedEvent;
+    _updateEvent(result.updatedEvent);
+    return result.updatedEvent;
   }
 
   Future<void> deleteEvent(String eventId) async {

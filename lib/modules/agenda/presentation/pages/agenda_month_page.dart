@@ -24,6 +24,7 @@ class AgendaMonthPage extends ConsumerStatefulWidget {
 class _AgendaMonthPageState extends ConsumerState<AgendaMonthPage> {
   late DateTime _currentMonth;
   String? _handledNewEventUri;
+  String? _handledClienteUri;
 
   @override
   void initState() {
@@ -33,7 +34,7 @@ class _AgendaMonthPageState extends ConsumerState<AgendaMonthPage> {
 
   @override
   Widget build(BuildContext context) {
-    _scheduleNewEventDialog(GoRouterState.of(context).uri);
+    _scheduleDeepLinks(GoRouterState.of(context).uri);
     final agendaState = ref.watch(agendaProvider);
     final filters = ref.watch(agendaFiltersProvider);
     final theme = Theme.of(context);
@@ -166,38 +167,26 @@ class _AgendaMonthPageState extends ConsumerState<AgendaMonthPage> {
           : const AgendaIndicadoresView(),
     );
 
-    final bottomOffset = kFabSafeArea + 16;
+    return scaffold;
+  }
 
-    return Stack(
-      children: [
-        scaffold,
-        if (currentView == AgendaView.calendario)
-          Positioned(
-            bottom: bottomOffset,
-            left: 16,
-            right: 16,
-            child: Align(
-              alignment: Alignment.centerRight,
-              child: FloatingActionButton.extended(
-                heroTag: 'agenda_novo_evento_fab',
-                onPressed: () {
-                  showDialog<void>(
-                    context: context,
-                    builder: (_) =>
-                        VisitFormDialog(initialDate: DateTime.now()),
-                  );
-                },
-                icon: const Icon(Icons.add, color: Colors.white),
-                label: const Text(
-                  'Novo evento',
-                  style: TextStyle(color: Colors.white),
-                ),
-                backgroundColor: const Color(0xFF4ADE80),
-              ),
-            ),
-          ),
-      ],
-    );
+  void _scheduleDeepLinks(Uri uri) {
+    _scheduleNewEventDialog(uri);
+    _scheduleClienteFilter(uri);
+  }
+
+  void _scheduleClienteFilter(Uri uri) {
+    final clienteId = uri.queryParameters['clienteId']?.trim();
+    if (clienteId == null || clienteId.isEmpty) return;
+
+    final key = 'cliente:$clienteId';
+    if (_handledClienteUri == key) return;
+    _handledClienteUri = key;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      ref.read(agendaFiltersProvider.notifier).setCliente(clienteId);
+    });
   }
 
   void _scheduleNewEventDialog(Uri uri) {

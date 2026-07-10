@@ -6,6 +6,10 @@ import 'package:soloforte_app/core/constants/layout_constants.dart';
 import 'package:soloforte_app/core/router/app_routes.dart';
 import 'package:soloforte_app/core/contracts/i_client_lookup.dart';
 import 'package:soloforte_app/core/contracts/i_client_lookup_provider.dart';
+import 'package:soloforte_app/core/contracts/i_farm_lookup.dart';
+import 'package:soloforte_app/core/contracts/i_farm_lookup_provider.dart';
+import 'package:soloforte_app/core/contracts/i_field_lookup.dart';
+import 'package:soloforte_app/core/contracts/i_field_lookup_provider.dart';
 import '../../domain/entities/event.dart';
 import '../../domain/enums/event_status.dart';
 import '../providers/agenda_provider.dart';
@@ -40,6 +44,24 @@ class AgendaEventDetailPage extends ConsumerWidget {
       data: (c) => c?.name ?? 'Cliente não encontrado',
       loading: () => '…',
       error: (_, __) => 'Cliente não encontrado',
+    );
+
+    final farmAsync = event.fazendaId == null
+        ? null
+        : ref.watch(_farmByIdProvider(event.fazendaId!));
+    final farmNome = farmAsync?.when(
+      data: (f) => f?.name ?? 'Fazenda não encontrada',
+      loading: () => '…',
+      error: (_, __) => 'Fazenda não encontrada',
+    );
+
+    final fieldAsync = event.talhaoId == null
+        ? null
+        : ref.watch(_fieldByIdProvider(event.talhaoId!));
+    final fieldNome = fieldAsync?.when(
+      data: (f) => f?.name ?? 'Talhão não encontrado',
+      loading: () => '…',
+      error: (_, __) => 'Talhão não encontrado',
     );
 
     return Scaffold(
@@ -91,10 +113,10 @@ class AgendaEventDetailPage extends ConsumerWidget {
             // Cliente/Fazenda/Talhão
             _buildInfoSection('Localização', [
               _buildInfoRow(Icons.person, 'Cliente', clientNome),
-              if (event.fazendaId != null)
-                _buildInfoRow(Icons.agriculture, 'Fazenda', event.fazendaId!),
-              if (event.talhaoId != null)
-                _buildInfoRow(Icons.landscape, 'Talhão', event.talhaoId!),
+              if (farmNome != null)
+                _buildInfoRow(Icons.agriculture, 'Fazenda', farmNome),
+              if (fieldNome != null)
+                _buildInfoRow(Icons.landscape, 'Talhão', fieldNome),
             ]),
             const SizedBox(height: 24),
 
@@ -452,4 +474,14 @@ class AgendaEventDetailPage extends ConsumerWidget {
 final _clientByIdProvider =
     FutureProvider.autoDispose.family<ClientSummary?, String>(
   (ref, id) => ref.watch(clientLookupProvider).findById(id),
+);
+
+final _farmByIdProvider =
+    FutureProvider.autoDispose.family<FarmSummary?, String>(
+  (ref, id) => ref.watch(iFarmLookupProvider).findById(id),
+);
+
+final _fieldByIdProvider =
+    FutureProvider.autoDispose.family<FieldSummary?, String>(
+  (ref, id) => ref.watch(iFieldLookupProvider).findById(id),
 );

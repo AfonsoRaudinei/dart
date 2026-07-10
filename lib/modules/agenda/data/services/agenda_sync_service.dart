@@ -1,8 +1,10 @@
+import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/network/network_policy.dart';
 import '../../../../core/utils/app_logger.dart';
 import '../repositories/agenda_repository.dart';
 import '../../domain/entities/event.dart';
+import '../../domain/entities/visit.dart';
 import '../../domain/entities/visit_session.dart';
 import '../../domain/enums/event_type.dart';
 import '../../domain/enums/event_status.dart';
@@ -66,6 +68,15 @@ class AgendaSyncService {
             'serie_id': event.serieId,
             'created_at': event.createdAt.toIso8601String(),
             'updated_at': event.updatedAt.toIso8601String(),
+            'start_time': event.startTime == null
+                ? null
+                : '${event.startTime!.hour.toString().padLeft(2, '0')}:${event.startTime!.minute.toString().padLeft(2, '0')}',
+            'end_time': event.endTime == null
+                ? null
+                : '${event.endTime!.hour.toString().padLeft(2, '0')}:${event.endTime!.minute.toString().padLeft(2, '0')}',
+            'priority': event.priority.name,
+            'latitude': event.latitude,
+            'longitude': event.longitude,
           }),
         );
 
@@ -196,6 +207,18 @@ class AgendaSyncService {
   // ═══════════════════════════════════════════════════════════════════
 
   Event _mapToEvent(Map<String, dynamic> map) {
+    TimeOfDay? parseTime(dynamic value) {
+      if (value == null) return null;
+      final text = value.toString().trim();
+      if (text.isEmpty) return null;
+      final parts = text.split(':');
+      if (parts.length < 2) return null;
+      final hour = int.tryParse(parts[0]);
+      final minute = int.tryParse(parts[1]);
+      if (hour == null || minute == null) return null;
+      return TimeOfDay(hour: hour, minute: minute);
+    }
+
     return Event(
       id: map['id'],
       tipo: EventType.values.byName(map['tipo']),
@@ -211,6 +234,13 @@ class AgendaSyncService {
       createdAt: DateTime.parse(map['created_at']),
       updatedAt: DateTime.parse(map['updated_at']),
       syncStatus: 'synced',
+      startTime: parseTime(map['start_time']),
+      endTime: parseTime(map['end_time']),
+      priority: VisitPriority.fromString(
+        map['priority']?.toString() ?? 'normal',
+      ),
+      latitude: (map['latitude'] as num?)?.toDouble(),
+      longitude: (map['longitude'] as num?)?.toDouble(),
     );
   }
 

@@ -1,12 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'dart:io';
 import '../../../../core/html_templates/html_report_viewer.dart';
-import '../../../../core/utils/share_position.dart';
 import '../../../../core/contracts/i_client_lookup_provider.dart';
 import '../../../../core/contracts/i_farm_lookup_provider.dart';
 import '../../../../core/contracts/i_field_lookup_provider.dart';
@@ -14,6 +10,7 @@ import '../../domain/entities/event.dart';
 import '../../domain/enums/event_status.dart';
 import '../providers/agenda_provider.dart';
 import '../services/agenda_pdf_service.dart';
+import '../services/agenda_planejamento_html_service.dart';
 import '../services/agenda_visit_html_service.dart';
 import '../widgets/day_event_card.dart';
 
@@ -136,9 +133,9 @@ class _AgendaPlanejamentoViewState
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : IconButton(
-                      icon: const Icon(Icons.picture_as_pdf),
-                      tooltip: 'Exportar PDF da semana',
-                      onPressed: _exportPdf,
+                      icon: const Icon(Icons.ios_share_outlined),
+                      tooltip: 'Exportar planejamento da semana',
+                      onPressed: _exportWeekHtml,
                     ),
             ],
           ),
@@ -147,12 +144,10 @@ class _AgendaPlanejamentoViewState
     );
   }
 
-  Future<void> _exportPdf() async {
-    final shareOrigin = resolveSharePositionOrigin(context);
+  Future<void> _exportWeekHtml() async {
     setState(() => _exportLoading = true);
     try {
       final weekEnd = _currentWeekStart.add(const Duration(days: 6));
-      // Usar apenas os dias visiveis/filtrados no PDF
       final visibleDayKeys = _filteredDays().map(_dayKey).toSet();
       final allWeekEvents = ref
           .read(agendaProvider.notifier)
@@ -163,29 +158,48 @@ class _AgendaPlanejamentoViewState
 
       final clientLookup = ref.read(clientLookupProvider);
       final farmLookup = ref.read(iFarmLookupProvider);
-      final service = AgendaPdfService(clientLookup, farmLookup);
-      final bytes = await service.generateWeekPdf(
-        filteredEvents,
-        _currentWeekStart,
+      final user = Supabase.instance.client.auth.currentUser;
+      final consultantName =
+          user?.userMetadata?['name']?.toString().trim().isNotEmpty == true
+          ? user!.userMetadata!['name'].toString()
+          : user?.email;
+
+      final htmlService = AgendaPlanejamentoHtmlService(
+        clientLookup,
+        farmLookup,
+      );
+      final html = await htmlService.renderWeekHtml(
+        events: filteredEvents,
+        weekStart: _currentWeekStart,
+        consultantName: consultantName,
       );
 
-      final dir = await getTemporaryDirectory();
       final fmt = DateFormat('yyyy-MM-dd');
-      final fileName =
-          'soloforte_agenda_${fmt.format(_currentWeekStart)}_${fmt.format(weekEnd)}.pdf';
-      final file = File('${dir.path}/$fileName');
-      await file.writeAsBytes(bytes);
+      final fileBaseName =
+          'soloforte_agenda_${fmt.format(_currentWeekStart)}_${fmt.format(weekEnd)}';
 
-      await Share.shareXFiles(
-        [XFile(file.path, mimeType: 'application/pdf')],
-        subject: 'Planejamento Semanal SoloForte',
-        sharePositionOrigin: shareOrigin,
+      if (!mounted) return;
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => HtmlReportViewer(
+            title: 'Planejamento Semanal',
+            htmlContent: html,
+            fileBaseName: fileBaseName,
+            pdfBytesProvider: () {
+              final pdfService = AgendaPdfService(clientLookup, farmLookup);
+              return pdfService.generateWeekPdf(
+                filteredEvents,
+                _currentWeekStart,
+              );
+            },
+          ),
+        ),
       );
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Erro ao gerar PDF: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erro ao gerar planejamento: $e')),
+        );
       }
     } finally {
       if (mounted) setState(() => _exportLoading = false);
