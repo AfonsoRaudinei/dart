@@ -427,13 +427,6 @@
     white-space: nowrap;
   }
 
-  .footer-meta {
-    font-size: 11px;
-    color: var(--sf-text-muted);
-    text-align: right;
-    line-height: 1.5;
-    white-space: nowrap;
-  }
 
   /* ═══ PRINT ═══ */
   @media print {
@@ -476,7 +469,12 @@
     min-width: 0;
   }
 
-  .sf-brand-icon { font-size: 20px; line-height: 1; }
+  .sf-brand-logo {
+    width: 22px;
+    height: 22px;
+    object-fit: contain;
+    flex-shrink: 0;
+  }
 
   .sf-brand-copy {
     display: flex;
@@ -574,10 +572,7 @@
 
     <div class="fazenda-info">
       <div class="fazenda-info-icon">
-        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-          <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
-        </svg>
-      </div>
+        </div>
       <div class="fazenda-info-text">
         <div class="fazenda-info-local">{{municipio}}</div>
         <!-- {{#if uf}} -->
@@ -607,18 +602,12 @@
             <!-- centro_geo: ponto central do talhão (se existir) -->
             <!-- {{#if centro_geo}} -->
             <span class="field-meta-chip">
-              <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
-              </svg>
               Georeferenciado
             </span>
             <!-- {{/if}} -->
             <!-- bordadura_geo: polígono do talhão (se existir) -->
             <!-- {{#if bordadura_geo}} -->
             <span class="field-meta-chip">
-              <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path d="M20.5 3l-.16.03L15 5.1 9 3 3.36 4.9c-.21.07-.36.25-.36.48V20.5c0 .28.22.5.5.5l.16-.03L9 18.9l6 2.1 5.64-1.9c.21-.07.36-.25.36-.48V3.5c0-.28-.22-.5-.5-.5zM15 19l-6-2.11V5l6 2.11V19z"/>
-              </svg>
               Com bordadura
             </span>
             <!-- {{/if}} -->
@@ -637,7 +626,6 @@
     </div>
     <!-- {{else}} -->
     <div class="empty-state">
-      <div class="empty-state-emoji">🗺️</div>
       <div class="empty-state-text">Nenhum talhão cadastrado para esta fazenda.</div>
     </div>
     <!-- {{/if}} -->
@@ -666,10 +654,6 @@
   <!-- ══════════ FOOTER ══════════ -->
   <footer class="footer">
     {{report_footer_signature}}
-    <div class="footer-meta">
-      ID: {{id_curto}}<br>
-      {{gerado_em_formatado}}
-    </div>
   </footer>
 
 </div>

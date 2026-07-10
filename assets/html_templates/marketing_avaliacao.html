@@ -636,42 +636,13 @@
     font-style: italic;
   }
 
-  /* ═══════════════════════════════════════════
-     LOCALIZAÇÃO
-  ═══════════════════════════════════════════ */
-  .localizacao-block {
-    display: flex;
-    align-items: flex-start;
-    gap: 10px;
-    background: var(--sf-cream);
-    border: 1px solid var(--sf-stone);
-    border-radius: 12px;
-    padding: 14px 18px;
-    margin-bottom: 28px;
-  }
-
-  .localizacao-icon {
-    flex-shrink: 0;
-    width: 32px;
-    height: 32px;
-    background: var(--sf-navy);
-    border-radius: 50%;
-    display: flex;
+  /* ═══ LOCALIZAÇÃO (inline resumido) ═══ */
+  .localizacao-inline {
+    display: inline-flex;
     align-items: center;
-    justify-content: center;
-    margin-top: 1px;
-  }
-
-  .localizacao-icon svg {
-    width: 15px;
-    height: 15px;
-    fill: white;
-  }
-
-  .localizacao-text {
-    font-size: 13px;
-    color: var(--sf-text);
-    line-height: 1.5;
+    gap: 8px;
+    margin-bottom: 28px;
+    padding: 6px 0;
   }
 
   /* ═══════════════════════════════════════════
@@ -753,13 +724,6 @@
     white-space: nowrap;
   }
 
-  .footer-meta {
-    font-size: 11px;
-    color: var(--sf-text-muted);
-    text-align: right;
-    line-height: 1.5;
-    white-space: nowrap;
-  }
 
   /* ═══════════════════════════════════════════
      PRINT
@@ -818,7 +782,12 @@
     min-width: 0;
   }
 
-  .sf-brand-icon { font-size: 20px; line-height: 1; }
+  .sf-brand-logo {
+    width: 22px;
+    height: 22px;
+    object-fit: contain;
+    flex-shrink: 0;
+  }
 
   .sf-brand-copy {
     display: flex;
@@ -937,16 +906,13 @@
               src="{{lado_a_foto_url}}"
               alt="Lado A"
               loading="lazy"
-              onerror="this.parentElement.innerHTML='<div class=\'lado-foto-placeholder\'><svg width=\'32\' height=\'32\' viewBox=\'0 0 24 24\' fill=\'#9CA3AF\'><path d=\'M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z\'/></svg><span>Sem foto</span></div>'"
+              onerror="this.parentElement.innerHTML='<div class=\'lado-foto-placeholder\'><span>Sem foto</span></div>'"
             >
             <!-- {{/if}} -->
           </div>
           <div class="lado-info">
             <!-- {{#if lado_a_cultura}} -->
             <span class="lado-cultura">
-              <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 2a7 7 0 0 1 7 7c0 3.5-3 7-7 13C8 16 5 12.5 5 9a7 7 0 0 1 7-7z"/>
-              </svg>
               {{lado_a_cultura}}
             </span>
             <!-- {{/if}} -->
@@ -968,16 +934,13 @@
               src="{{lado_b_foto_url}}"
               alt="Lado B"
               loading="lazy"
-              onerror="this.parentElement.innerHTML='<div class=\'lado-foto-placeholder\'><svg width=\'32\' height=\'32\' viewBox=\'0 0 24 24\' fill=\'#9CA3AF\'><path d=\'M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z\'/></svg><span>Sem foto</span></div>'"
+              onerror="this.parentElement.innerHTML='<div class=\'lado-foto-placeholder\'><span>Sem foto</span></div>'"
             >
             <!-- {{/if}} -->
           </div>
           <div class="lado-info">
             <!-- {{#if lado_b_cultura}} -->
             <span class="lado-cultura">
-              <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 2a7 7 0 0 1 7 7c0 3.5-3 7-7 13C8 16 5 12.5 5 9a7 7 0 0 1 7-7z"/>
-              </svg>
               {{lado_b_cultura}}
             </span>
             <!-- {{/if}} -->
@@ -1017,10 +980,7 @@
     <div class="conclusao-block">
       <div class="conclusao-header">
         <div class="conclusao-icon">
-          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
-          </svg>
-        </div>
+          </div>
         <span class="conclusao-title">Conclusão Técnica</span>
       </div>
       <div class="conclusao-text">{{conclusao}}</div>
@@ -1037,11 +997,6 @@
     <div class="roi-block">
       <div class="roi-header">
         <div class="roi-title">
-          <div class="roi-title-icon">
-            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6h-6z"/>
-            </svg>
-          </div>
           <span class="roi-title-text">ROI Calculado</span>
         </div>
         <span class="roi-badge">Análise Financeira</span>
@@ -1078,12 +1033,12 @@
     </div>
     <!-- {{/if}} -->
 
-    <!-- LOCALIZAÇÃO -->
-    <div class="section-label">
+    <!-- LOCALIZAÇÃO (inline resumido) -->
+    <div class="localizacao-inline">
       <div class="section-label-bar"></div>
       <span class="section-label-text">Localização</span>
+      <span class="sf-location" aria-label="Localização">📍</span>
     </div>
-    <div class="localizacao-block"><span class="sf-location" aria-label="Localização">📍</span></div>
 
     <!-- VENDEDOR -->
     <!-- {{#if nome_vendedor}} -->
@@ -1108,10 +1063,6 @@
   <!-- ══════════ FOOTER ══════════ -->
   <footer class="footer">
     {{report_footer_signature}}
-    <div class="footer-meta">
-      Criado em {{criado_em_formatado}}<br>
-      Status: {{status}}
-    </div>
   </footer>
 
 </div>

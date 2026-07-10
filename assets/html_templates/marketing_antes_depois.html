@@ -345,42 +345,13 @@
     font-style: italic;
   }
 
-  /* ═══════════════════════════════════════════
-     LOCALIZAÇÃO
-  ═══════════════════════════════════════════ */
-  .localizacao-block {
-    display: flex;
-    align-items: flex-start;
-    gap: 10px;
-    background: var(--sf-cream);
-    border: 1px solid var(--sf-stone);
-    border-radius: 12px;
-    padding: 14px 18px;
-    margin-bottom: 28px;
-  }
-
-  .localizacao-icon {
-    flex-shrink: 0;
-    width: 32px;
-    height: 32px;
-    background: var(--sf-navy);
-    border-radius: 50%;
-    display: flex;
+  /* ═══ LOCALIZAÇÃO (inline resumido) ═══ */
+  .localizacao-inline {
+    display: inline-flex;
     align-items: center;
-    justify-content: center;
-    margin-top: 1px;
-  }
-
-  .localizacao-icon svg {
-    width: 15px;
-    height: 15px;
-    fill: white;
-  }
-
-  .localizacao-text {
-    font-size: 13px;
-    color: var(--sf-text);
-    line-height: 1.5;
+    gap: 8px;
+    margin-bottom: 28px;
+    padding: 6px 0;
   }
 
   /* ═══════════════════════════════════════════
@@ -462,13 +433,6 @@
     white-space: nowrap;
   }
 
-  .footer-meta {
-    font-size: 11px;
-    color: var(--sf-text-muted);
-    text-align: right;
-    line-height: 1.5;
-    white-space: nowrap;
-  }
 
   /* ═══════════════════════════════════════════
      DIVIDER
@@ -541,7 +505,12 @@
     min-width: 0;
   }
 
-  .sf-brand-icon { font-size: 20px; line-height: 1; }
+  .sf-brand-logo {
+    width: 22px;
+    height: 22px;
+    object-fit: contain;
+    flex-shrink: 0;
+  }
 
   .sf-brand-copy {
     display: flex;
@@ -610,15 +579,10 @@
           src="{{foto_antes_url}}"
           alt="Foto Antes"
           loading="lazy"
-          onerror="this.parentElement.innerHTML='<div class=\'photo-placeholder\'><svg width=\'40\' height=\'40\' viewBox=\'0 0 24 24\'><path d=\'M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z\'/></svg><span>Sem foto</span></div>'"
+          onerror="this.parentElement.innerHTML='<div class=\'photo-placeholder\'><span>Sem foto</span></div>'"
         >
         <!-- {{else}} -->
-        <!-- <div class="photo-placeholder">
-          <svg width="40" height="40" viewBox="0 0 24 24" fill="#9CA3AF">
-            <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>
-          </svg>
-          <span>Sem foto</span>
-        </div> -->
+        <!-- <div class="photo-placeholder"><span>Sem foto</span></div> -->
         <!-- {{/if}} -->
         <div class="photo-label antes">Antes</div>
       </div>
@@ -630,7 +594,7 @@
           src="{{foto_depois_url}}"
           alt="Foto Depois"
           loading="lazy"
-          onerror="this.parentElement.innerHTML='<div class=\'photo-placeholder\'><svg width=\'40\' height=\'40\' viewBox=\'0 0 24 24\'><path d=\'M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z\'/></svg><span>Sem foto</span></div>'"
+          onerror="this.parentElement.innerHTML='<div class=\'photo-placeholder\'><span>Sem foto</span></div>'"
         >
         <!-- {{else}} -->
         <!-- placeholder já incluso acima via onerror -->
@@ -684,12 +648,12 @@
     </div>
     <!-- {{/if}} -->
 
-    <!-- LOCALIZAÇÃO -->
-    <div class="section-label">
+    <!-- LOCALIZAÇÃO (inline resumido) -->
+    <div class="localizacao-inline">
       <div class="section-label-bar"></div>
       <span class="section-label-text">Localização</span>
+      <span class="sf-location" aria-label="Localização">📍</span>
     </div>
-    <div class="localizacao-block"><span class="sf-location" aria-label="Localização">📍</span></div>
 
     <!-- VENDEDOR -->
     <!-- {{#if nome_vendedor}} -->
@@ -717,10 +681,6 @@
   <!-- ══════════ FOOTER ══════════ -->
   <footer class="footer">
     {{report_footer_signature}}
-    <div class="footer-meta">
-      Criado em {{criado_em_formatado}}<br>
-      Status: {{status}}
-    </div>
   </footer>
 
 </div>

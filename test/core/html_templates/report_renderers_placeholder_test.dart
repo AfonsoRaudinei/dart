@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:soloforte_app/core/html_templates/marketing_html_renderer.dart';
 import 'package:soloforte_app/core/html_templates/ocorrencia_html_renderer.dart';
+import 'package:soloforte_app/core/html_templates/planejamento_html_renderer.dart';
 import 'package:soloforte_app/core/html_templates/propriedade_html_renderer.dart';
 import 'package:soloforte_app/core/html_templates/visita_html_renderer.dart';
 
@@ -21,6 +22,36 @@ void main() {
 
   test('renderers oficiais nao vazam placeholders handlebars', () async {
     await initializeDateFormatting('pt_BR');
+
+    await expectNoTemplateTokens('planejamento semanal', () {
+      final weekStart = DateTime.utc(2026, 7, 6);
+      return PlanejamentoHtmlRenderer.render(
+        weekStart: weekStart,
+        weekEnd: weekStart.add(const Duration(days: 6)),
+        days: [
+          {
+            'weekday_label': 'segunda-feira',
+            'date_label': '6 jul 2026',
+            'is_sunday': false,
+            'events': [
+              {
+                'titulo': 'Visita tecnica',
+                'horario': '08:00 – 10:00',
+                'status': 'agendado',
+                'status_label': 'Agendado',
+                'cliente_nome': 'Cliente Teste',
+                'fazenda_nome': 'Fazenda Norte',
+                'tipo_label': 'Visita Técnica',
+              },
+            ],
+          },
+        ],
+        totalEventos: 1,
+        concluidos: 0,
+        clientesUnicos: 1,
+        consultantName: 'Agronomo Teste',
+      );
+    });
 
     await expectNoTemplateTokens('visita', () {
       return VisitaHtmlRenderer.render(
@@ -206,10 +237,42 @@ void main() {
 
       expect(html, isNot(contains('Agro Forte Consultoria')));
       expect(html, contains('SoloForte'));
+      expect(html, contains('logo-img'));
+      expect(html, contains('sf-brand-logo'));
       expect(html, contains('Responsável: Agronomo Teste · Consultoria'));
       expect(html, isNot(contains('Plataforma oficial de relatórios e exportação')));
+      expect(html, isNot(contains('footer-meta')));
+      expect(html, isNot(contains('🌱')));
     },
   );
+
+  test('ocorrencia detalhada: logo header, localizacao inline, sem meta rodape',
+      () async {
+    await initializeDateFormatting('pt_BR');
+
+    final html = await OcorrenciaHtmlRenderer.renderDetalhe({
+      'id': 'occ-brand',
+      'type': 'Média',
+      'description': 'Ervas no baixeiro',
+      'category': 'daninhas',
+      'status': 'draft',
+      'created_at': now.toIso8601String(),
+      'updated_at': now.toIso8601String(),
+      'sync_status': 'local',
+      'lat': -10.1,
+      'long': -48.2,
+    }, consultantName: 'perfil consultor', consultantRole: 'consultor');
+
+    expect(html, contains('logo-img'));
+    expect(html, contains('SoloForte'));
+    expect(html, contains('localizacao-inline'));
+    expect(html, isNot(contains('localizacao-block')));
+    expect(html, isNot(contains('footer-meta')));
+    expect(html, isNot(contains('ID: OCC-BRAN')));
+    expect(html, isNot(contains('Sync:')));
+    expect(html, isNot(contains('⚠')));
+    expect(html, isNot(contains('cat-emoji')));
+  });
 }
 
 Map<String, dynamic> _marketingBase(String tipo) {

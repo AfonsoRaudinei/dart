@@ -226,7 +226,7 @@ class MarketingHtmlRenderer {
   ) {
     final fotoHtml = (fotoUrl != null && fotoUrl.isNotEmpty)
         ? '<img src="$fotoUrl" alt="Lado ${lado.toUpperCase()}" loading="lazy">'
-        : '<div class="lado-foto-placeholder"><svg width="32" height="32" viewBox="0 0 24 24" fill="#9CA3AF"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg></div>';
+        : '<div class="lado-foto-placeholder"><span>Sem foto</span></div>';
 
     return '''
     <div class="lado">

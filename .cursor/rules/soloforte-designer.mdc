@@ -19,54 +19,51 @@ alwaysApply: false
 
 Header: gradiente `linear-gradient(135deg, var(--sf-samsung) 0%, var(--sf-navy) 100%)`.
 
-## Header
+## Header — OBRIGATÓRIO
 
-- SEM logo SoloForte
-- SEM ícones genéricos
-- Apenas título do relatório + data/contexto
-- `{{report_header_signature}}` deve permanecer vazio
+- **SEMPRE** logo oficial SoloForte (`assets/images/soloforte_logo.png`) via `{{report_header_signature}}`
+- Logo = imagem real (base64/data-URI), **nunca** emoji 🌱 / folha / ícone genérico no lugar da marca
+- Título do relatório + data/contexto ao lado/abaixo do logo
+- `brandingPlaceholders()` **deve** preencher `report_header_signature` com o logo SoloForte
+
+## Ícones — NUNCA genéricos (corrigir sempre)
+
+- ❌ Proibido: ⚠ ⚠️ 🌱 📊 🗺️ 📋 SVG decorativos de relógio/foto/check/documento como “ícone de card”
+- ❌ Proibido: folha/sprout genérico no header ou cards no lugar do logo SoloForte
+- ✅ Permitido: emojis de **taxonomia agronômica de categoria** (🐛 🦠 🌿 💧 🪨…) — só como rótulo de categoria, nunca como marca
+- ✅ Permitido: 📍 **somente** em localização (`.sf-location`), formato **inline resumido**
+- Cards Flutter da lista Relatórios: sem emojis/ícones genéricos
 
 ## Localização
 
-- Apenas ícone de pin (`📍` / `.sf-location`)
+- Formato **inline resumido** (label + pin na mesma linha)
+- SEM bloco gigante / caixa vazia com só o pin
 - SEM texto de coordenadas ou endereço
 - SEM pills de localização no header
 
 ## Rodapé
 
-- UM único bloco: ícone 🌱 + "SoloForte" + tagline
+- UM único bloco: logo SoloForte (imagem) + "SoloForte" + tagline (responsável técnico opcional)
+- SEM `footer-meta` (ID, Sync, Sessão, Status técnico, Gerado em)
 - SEM duplicação de marca (consultor + SoloForte separados)
-- Tagline pode incluir responsável técnico
+- SEM emoji 🌱 no rodapé — usar a mesma imagem do logo oficial
 
 ## Branding customizado (Settings)
 
-- Logo/nome do consultor em Settings **não** aparece no header HTML
+- Logo/nome do consultor em Settings **não** substitui o logo SoloForte no header HTML
 - `brandingPlaceholders()` ignora `customBrandName` / `customLogoPath` de propósito
 - Responsável técnico vai só na tagline do rodapé SoloForte
-
-## Ocorrências HTML (export)
-
-- Emojis de **categoria** (🐛 🦠 🌿…) são permitidos — taxonomia agronômica no relatório
-- 📍 reservado **somente** para localização (`.sf-location`)
-- Categoria default sem tipo: 🌾 (nunca 📍 — conflita com pin de GPS)
-- Cards Flutter da lista Relatórios: sem emojis (regra separada abaixo)
-
-## Cards (Flutter — lista Relatórios)
-
-- SEM emojis/ícones genéricos na visão geral
-- SEM ícone `leading` nos cards de lista
-- SoloForte branding SOMENTE no rodapé HTML
 
 ## Export (iPad)
 
 - `Share.shareXFiles` exige `sharePositionOrigin` não-zero
 - Usar `resolveSharePositionOrigin()` de `lib/core/utils/share_position.dart`
 
-## Checklist rápido
+## Checklist rápido (validar sempre)
 
-- [ ] Header limpo (sem logo)
-- [ ] Localização = só pin
-- [ ] Rodapé = 1 bloco SoloForte
+- [ ] Header com logo SoloForte oficial (imagem)
+- [ ] Zero ícones genéricos decorativos
+- [ ] Localização = inline resumido (só 📍)
+- [ ] Rodapé = 1 bloco SoloForte, sem meta ID/Sync
 - [ ] Cores: samsung + petróleo
-- [ ] Sem ícones genéricos nos cards Flutter
 - [ ] Export passa `sharePositionOrigin`

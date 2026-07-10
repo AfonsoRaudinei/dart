@@ -87,6 +87,15 @@ O agente **sempre informa**:
 
 ---
 
+## Relatórios HTML — branding (corrigir sempre)
+
+Fonte canônica: `.cursor/rules/soloforte-designer.mdc`
+
+1. **Logo SoloForte obrigatório** no header de **todos** os HTML (`{{report_header_signature}}` com `assets/images/soloforte_logo.png`)
+2. **Nunca** ícones genéricos (⚠ 🌱 📊 SVG decorativos) no lugar da marca ou em cards
+3. **Localização** sempre **inline resumida** (não bloco gigante vazio)
+4. **Rodapé** só marca SoloForte + tagline — excluir ID / Sync / meta técnica
+
 ## Histórico de decisões
 
 | Data | Decisão |
@@ -97,3 +106,4 @@ O agente **sempre informa**:
 | Jul/2026 | MacBook pull local **não acessível** via Cloud Agent — documentado |
 | Jul/2026 | MacBook: pasta `~/appdart`, branch `release/build-156` — NÃO mergear main |
 | Jul/2026 | Prompt Codex merge: `prompt/PROMPT_CODEX_RESOLVER_MERGE_BUILD156.md` |
+| Jul/2026 | HTML reports: logo SoloForte no header; zero ícones genéricos; localização inline; rodapé sem ID/Sync |

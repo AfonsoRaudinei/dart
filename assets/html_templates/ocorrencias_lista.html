@@ -536,13 +536,6 @@
     white-space: nowrap;
   }
 
-  .footer-meta {
-    font-size: 11px;
-    color: var(--sf-text-muted);
-    text-align: right;
-    line-height: 1.5;
-    white-space: nowrap;
-  }
 
   /* ═══ PRINT ═══ */
   @media print {
@@ -585,7 +578,12 @@
     min-width: 0;
   }
 
-  .sf-brand-icon { font-size: 20px; line-height: 1; }
+  .sf-brand-logo {
+    width: 22px;
+    height: 22px;
+    object-fit: contain;
+    flex-shrink: 0;
+  }
 
   .sf-brand-copy {
     display: flex;
@@ -762,11 +760,7 @@
           <!-- {{#if photo_base64}} -->
           <img src="{{photo_base64}}" alt="Foto" loading="lazy">
           <!-- {{else}} -->
-          <div class="ocorrencia-foto-placeholder">
-            <svg viewBox="0 0 24 24" fill="#9CA3AF" xmlns="http://www.w3.org/2000/svg">
-              <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>
-            </svg>
-          </div>
+          <div class="ocorrencia-foto-placeholder"><span>Sem foto</span></div>
           <!-- {{/if}} -->
         </div>
 
@@ -780,12 +774,7 @@
 
           <div class="ocorrencia-meta">
             <!-- {{#if created_at_hora}} -->
-            <span class="ocorrencia-meta-item">
-              <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm.5 11H8v-2h2.5V7H13v6z"/>
-              </svg>
-              {{created_at_hora}}
-            </span>
+            <span class="ocorrencia-meta-item">{{created_at_hora}}</span>
             <!-- {{/if}} -->
 
             <!-- {{#if has_location}} -->
@@ -793,12 +782,7 @@
             <!-- {{/if}} -->
 
             <!-- {{#if amostra_solo}} -->
-            <span class="ocorrencia-meta-item">
-              <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 2L4 7v10l8 5 8-5V7l-8-5zm0 2.4L17.6 8 12 11.6 6.4 8 12 4.4z"/>
-              </svg>
-              Amostra coletada
-            </span>
+            <span class="ocorrencia-meta-item">Amostra coletada</span>
             <!-- {{/if}} -->
           </div>
         </div>
@@ -808,7 +792,6 @@
     <!-- {{/each}} -->
     <!-- {{else}} -->
     <div class="empty-state">
-      <div class="empty-state-emoji">🌾</div>
       <div class="empty-state-text">Nenhuma ocorrência registrada nesta visita.</div>
     </div>
     <!-- {{/if}} -->
@@ -818,10 +801,6 @@
   <!-- ══════════ FOOTER ══════════ -->
   <footer class="footer">
     {{report_footer_signature}}
-    <div class="footer-meta">
-      Gerado em {{gerado_em_formatado}}<br>
-      Sessão: {{visit_session_id_curto}}
-    </div>
   </footer>
 
 </div>

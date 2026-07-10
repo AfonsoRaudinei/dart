@@ -215,7 +215,7 @@ class OcorrenciaHtmlRenderer {
       include: grupos.isNotEmpty,
       truthyHtml: grupos,
       falsyHtml:
-          '<div class="empty-state"><div class="empty-state-emoji">🌾</div><div class="empty-state-text">Nenhuma ocorrência registrada nesta visita.</div></div>',
+          '<div class="empty-state"><div class="empty-state-text">Nenhuma ocorrência registrada nesta visita.</div></div>',
     );
 
     return RelatorioHtmlRenderer.stripUnresolvedPlaceholders(tpl);
@@ -277,11 +277,10 @@ class OcorrenciaHtmlRenderer {
             <div class="ocorrencia-descricao">${RelatorioHtmlRenderer.escapeHtml(data['description'] as String?)}</div>
             <div class="ocorrencia-meta">
               <span class="ocorrencia-meta-item">
-                <svg viewBox="0 0 24 24"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm.5 11H8v-2h2.5V7H13v6z"/></svg>
                 ${RelatorioHtmlRenderer.formatTime(createdAt)}
               </span>
               ${hasLoc ? '<span class="ocorrencia-meta-item sf-location" aria-label="Localização">📍</span>' : ''}
-              ${_isAmostraSolo(data) ? '<span class="ocorrencia-meta-item">🪨 Amostra coletada</span>' : ''}
+              ${_isAmostraSolo(data) ? '<span class="ocorrencia-meta-item">Amostra coletada</span>' : ''}
             </div>
           </div>
         </div>
@@ -458,11 +457,7 @@ class OcorrenciaHtmlRenderer {
   }
 
   static String _svgPlaceholder() => '''
-    <div class="ocorrencia-foto-placeholder">
-      <svg viewBox="0 0 24 24" fill="#9CA3AF">
-        <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>
-      </svg>
-    </div>
+    <div class="ocorrencia-foto-placeholder"><span>Sem foto</span></div>
   ''';
 
   static String _urgenciaClass(String? type) {

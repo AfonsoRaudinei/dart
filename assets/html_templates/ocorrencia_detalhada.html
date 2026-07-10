@@ -119,24 +119,12 @@
 
   .header-meta { position: relative; z-index: 1; }
 
-  /* Categoria com emoji grande no header */
-  .header-categoria {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 8px;
-  }
-
-  .cat-emoji {
-    font-size: 32px;
-    line-height: 1;
-  }
-
   .header-titulo {
     font-family: 'DM Serif Display', serif;
     font-size: 26px;
     color: var(--sf-white);
     line-height: 1.2;
+    margin-bottom: 8px;
     word-break: break-word;
     overflow-wrap: anywhere;
   }
@@ -225,16 +213,6 @@
     padding: 14px 16px;
     position: relative;
     overflow: hidden;
-  }
-
-  .visao-card-icon {
-    width: 32px; height: 32px;
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 10px;
-    font-size: 16px;
   }
 
   .visao-card-label {
@@ -486,23 +464,6 @@
     z-index: 1;
   }
 
-  .recomendacoes-icon {
-    width: 28px;
-    height: 28px;
-    background: var(--sf-amber);
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-  }
-
-  .recomendacoes-icon svg {
-    width: 16px;
-    height: 16px;
-    fill: var(--sf-navy);
-  }
-
   .recomendacoes-title {
     font-family: 'DM Serif Display', serif;
     font-size: 18px;
@@ -520,43 +481,17 @@
     overflow-wrap: anywhere;
   }
 
-  /* ═══ LOCALIZAÇÃO ═══ */
-  .localizacao-block {
-    display: flex;
-    align-items: flex-start;
-    gap: 10px;
-    background: var(--sf-cream);
-    border: 1px solid var(--sf-stone);
-    border-radius: 12px;
-    padding: 14px 18px;
-    margin-bottom: 28px;
-  }
-
-  .localizacao-icon {
-    flex-shrink: 0;
-    width: 32px;
-    height: 32px;
-    background: var(--sf-navy);
-    border-radius: 50%;
-    display: flex;
+  /* ═══ LOCALIZAÇÃO (inline resumido) ═══ */
+  .localizacao-inline {
+    display: inline-flex;
     align-items: center;
-    justify-content: center;
-    margin-top: 1px;
+    gap: 8px;
+    margin-bottom: 28px;
+    padding: 6px 0;
   }
 
-  .localizacao-icon svg {
-    width: 15px;
-    height: 15px;
-    fill: white;
-  }
-
-  .localizacao-info { flex: 1; min-width: 0; overflow: hidden; }
-
-  .localizacao-text {
-    font-size: 13px;
-    color: var(--sf-text);
-    line-height: 1.5;
-    word-break: break-word;
+  .localizacao-inline .section-label-text {
+    margin: 0;
   }
 
   /* ═══ TIMESTAMPS ═══ */
@@ -608,14 +543,6 @@
     white-space: nowrap;
   }
 
-  .footer-meta {
-    font-size: 11px;
-    color: var(--sf-text-muted);
-    text-align: right;
-    line-height: 1.5;
-    white-space: nowrap;
-  }
-
   /* ═══ PRINT ═══ */
   @media print {
     body { background: white; }
@@ -632,7 +559,6 @@
     .header { padding: 22px 20px 20px; }
     .content { padding: 22px 20px; }
     .header-titulo { font-size: 21px; }
-    .cat-emoji { font-size: 28px; }
     .footer { padding: 16px 20px; }
     .header-pills { gap: 6px; }
     .pill { font-size: 10.5px; padding: 3px 9px; }
@@ -656,7 +582,12 @@
     min-width: 0;
   }
 
-  .sf-brand-icon { font-size: 20px; line-height: 1; }
+  .sf-brand-logo {
+    width: 22px;
+    height: 22px;
+    object-fit: contain;
+    flex-shrink: 0;
+  }
 
   .sf-brand-copy {
     display: flex;
@@ -696,10 +627,7 @@
     </div>
 
     <div class="header-meta">
-      <div class="header-categoria">
-        <span class="cat-emoji">{{categoria_emoji}}</span>
-        <div class="header-titulo">{{categoria_label}}</div>
-      </div>
+      <div class="header-titulo">{{categoria_label}}</div>
       <!-- {{#if cultivar}} -->
       <div class="header-subtitle">{{cultivar}} · {{estadio_fenologico}}</div>
       <!-- {{/if}} -->
@@ -727,22 +655,17 @@
 
     <div class="visao-grid">
       <div class="visao-card">
-        <div class="visao-card-icon" style="background: var(--cat-{{category}}); color: white;">
-          {{categoria_emoji}}
-        </div>
         <div class="visao-card-label">Categoria</div>
         <div class="visao-card-value">{{categoria_label}}</div>
       </div>
 
       <div class="visao-card">
-        <div class="visao-card-icon" style="background: var(--urg-{{urgencia_class}}); color: white;">⚠</div>
         <div class="visao-card-label">Urgência</div>
         <div class="visao-card-value">{{type}}</div>
       </div>
 
       <!-- {{#if cultivar}} -->
       <div class="visao-card">
-        <div class="visao-card-icon" style="background: var(--sf-green-leaf); color: var(--sf-navy);">🌱</div>
         <div class="visao-card-label">Cultivar</div>
         <div class="visao-card-value">{{cultivar}}</div>
       </div>
@@ -750,7 +673,6 @@
 
       <!-- {{#if estadio_fenologico}} -->
       <div class="visao-card">
-        <div class="visao-card-icon" style="background: var(--sf-amber); color: var(--sf-navy);">📊</div>
         <div class="visao-card-label">Estádio</div>
         <div class="visao-card-value">{{estadio_fenologico}}</div>
       </div>
@@ -758,7 +680,6 @@
 
       <!-- {{#if amostra_solo}} -->
       <div class="visao-card">
-        <div class="visao-card-icon" style="background: var(--cat-solo); color: white;">🪨</div>
         <div class="visao-card-label">Amostra de Solo</div>
         <div class="visao-card-value">Coletada</div>
       </div>
@@ -874,24 +795,19 @@
     <!-- {{#if recomendacoes}} -->
     <div class="recomendacoes-block">
       <div class="recomendacoes-header">
-        <div class="recomendacoes-icon">
-          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15l-5-5 1.41-1.41L11 14.17l7.59-7.59L20 8l-9 9z"/>
-          </svg>
-        </div>
         <span class="recomendacoes-title">Recomendações Técnicas</span>
       </div>
       <div class="recomendacoes-text">{{recomendacoes}}</div>
     </div>
     <!-- {{/if}} -->
 
-    <!-- LOCALIZAÇÃO -->
+    <!-- LOCALIZAÇÃO (inline resumido) -->
     <!-- {{#if lat && long}} -->
-    <div class="section-label">
+    <div class="localizacao-inline">
       <div class="section-label-bar"></div>
       <span class="section-label-text">Localização</span>
+      <span class="sf-location" aria-label="Localização">📍</span>
     </div>
-    <div class="localizacao-block"><span class="sf-location" aria-label="Localização">📍</span></div>
     <!-- {{/if}} -->
 
     <!-- TIMESTAMPS -->
@@ -915,10 +831,6 @@
   <!-- ══════════ FOOTER ══════════ -->
   <footer class="footer">
     {{report_footer_signature}}
-    <div class="footer-meta">
-      ID: {{id_curto}}<br>
-      Sync: {{sync_status}}
-    </div>
   </footer>
 
 </div>

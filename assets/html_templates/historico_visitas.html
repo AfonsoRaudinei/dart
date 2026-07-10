@@ -461,13 +461,6 @@
     white-space: nowrap;
   }
 
-  .footer-meta {
-    font-size: 11px;
-    color: var(--sf-text-muted);
-    text-align: right;
-    line-height: 1.5;
-    white-space: nowrap;
-  }
 
   /* ═══ PRINT ═══ */
   @media print {
@@ -511,7 +504,12 @@
     min-width: 0;
   }
 
-  .sf-brand-icon { font-size: 20px; line-height: 1; }
+  .sf-brand-logo {
+    width: 22px;
+    height: 22px;
+    object-fit: contain;
+    flex-shrink: 0;
+  }
 
   .sf-brand-copy {
     display: flex;
@@ -637,9 +635,6 @@
 
           <!-- period_start + period_end -->
           <div class="visita-periodo">
-            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path d="M9 11H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2zm2-7h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z"/>
-            </svg>
             <span class="visita-periodo-text">
               <strong>{{period_start_formatado}}</strong>
               <!-- {{#if period_end != period_start}} -->
@@ -651,15 +646,9 @@
           <!-- metadados: agronomist_id (lookup), farm_name -->
           <div class="visita-meta">
             <span class="visita-meta-item">
-              <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
-              </svg>
               <strong>{{agronomist_nome}}</strong>
             </span>
             <span class="visita-meta-item">
-              <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
-              </svg>
               {{farm_name}}
             </span>
           </div>
@@ -667,16 +656,16 @@
           <!-- contadores: ocorrencias[], talhoes[], fotos[], publicacoes_refs[] -->
           <div class="visita-counters">
             <!-- {{#if ocorrencias_count > 0}} -->
-            <span class="counter-chip">🔍 {{ocorrencias_count}} ocorrências</span>
+            <span class="counter-chip">{{ocorrencias_count}} ocorrências</span>
             <!-- {{/if}} -->
             <!-- {{#if talhoes_count > 0}} -->
-            <span class="counter-chip">🗺️ {{talhoes_count}} talhões</span>
+            <span class="counter-chip">{{talhoes_count}} talhões</span>
             <!-- {{/if}} -->
             <!-- {{#if fotos_count > 0}} -->
-            <span class="counter-chip">📷 {{fotos_count}} fotos</span>
+            <span class="counter-chip">{{fotos_count}} fotos</span>
             <!-- {{/if}} -->
             <!-- {{#if publicacoes_count > 0}} -->
-            <span class="counter-chip">📄 {{publicacoes_count}} publicações</span>
+            <span class="counter-chip">{{publicacoes_count}} publicações</span>
             <!-- {{/if}} -->
           </div>
 
@@ -691,7 +680,6 @@
     </div>
     <!-- {{else}} -->
     <div class="empty-state">
-      <div class="empty-state-emoji">📋</div>
       <div class="empty-state-text">Nenhuma visita registrada para este cliente.</div>
     </div>
     <!-- {{/if}} -->
@@ -701,10 +689,6 @@
   <!-- ══════════ FOOTER ══════════ -->
   <footer class="footer">
     {{report_footer_signature}}
-    <div class="footer-meta">
-      Gerado em {{gerado_em_formatado}}<br>
-      {{total_visitas}} visitas · {{cliente_nome}}
-    </div>
   </footer>
 
 </div>

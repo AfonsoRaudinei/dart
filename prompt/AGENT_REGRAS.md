@@ -74,3 +74,18 @@ Ler também: `prompt/AGENT_MEMORIA.md`
 - `geolocator` — multi-constelação via OS/chipset
 - Settings: `lib/modules/dashboard/domain/location_settings.dart`
 - Check-in bloqueado se precisão > 30m
+
+---
+
+## Relatórios HTML / Designer (corrigir sempre)
+
+Ao tocar `assets/html_templates/**` ou `lib/core/html_templates/**`, ler e obedecer `.cursor/rules/soloforte-designer.mdc`:
+
+| Regra | Ação |
+|---|---|
+| Logo SoloForte | Obrigatório no header de **todos** os HTML — imagem oficial, nunca emoji |
+| Ícones genéricos | **Proibido** (⚠ 🌱 📊 SVG decorativos) — corrigir sempre que aparecer |
+| Localização | Inline resumida (label + 📍), sem caixa gigante vazia |
+| Rodapé | Só SoloForte + tagline — excluir ID, Sync, Sessão, meta técnica |
+
+Validar após mudança: header com `logo-img` / `soloforte_logo`, zero `footer-meta` com ID/Sync, localização `.localizacao-inline`.

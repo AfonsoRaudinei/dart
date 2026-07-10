@@ -1,5 +1,10 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:webview_flutter/webview_flutter.dart';
+import 'dart:io';
 
 import '../utils/share_position.dart';
 import 'report_export_service.dart';
@@ -23,6 +28,9 @@ class HtmlReportViewer extends StatefulWidget {
   final String? csvData;
   final ReportExportService exportService;
 
+  /// Gerador opcional de PDF secundário (ex.: planejamento semanal).
+  final Future<Uint8List> Function()? pdfBytesProvider;
+
   const HtmlReportViewer({
     super.key,
     required this.title,
@@ -31,6 +39,7 @@ class HtmlReportViewer extends StatefulWidget {
     this.jsonData,
     this.csvData,
     this.exportService = const ReportExportService(),
+    this.pdfBytesProvider,
   });
 
   @override
@@ -71,12 +80,36 @@ class _HtmlReportViewerState extends State<HtmlReportViewer> {
           ),
         ),
         actions: [
-          IconButton(
-            key: _exportButtonKey,
-            tooltip: 'Exportar',
-            icon: const Icon(Icons.ios_share_outlined),
-            onPressed: _exportHtml,
-          ),
+          if (widget.pdfBytesProvider != null)
+            PopupMenuButton<String>(
+              key: _exportButtonKey,
+              tooltip: 'Exportar',
+              icon: const Icon(Icons.ios_share_outlined),
+              onSelected: (value) {
+                if (value == 'html') {
+                  _exportHtml();
+                } else if (value == 'pdf') {
+                  _exportPdf();
+                }
+              },
+              itemBuilder: (context) => const [
+                PopupMenuItem(
+                  value: 'html',
+                  child: Text('Compartilhar HTML'),
+                ),
+                PopupMenuItem(
+                  value: 'pdf',
+                  child: Text('Compartilhar PDF'),
+                ),
+              ],
+            )
+          else
+            IconButton(
+              key: _exportButtonKey,
+              tooltip: 'Exportar',
+              icon: const Icon(Icons.ios_share_outlined),
+              onPressed: _exportHtml,
+            ),
         ],
       ),
       body: Stack(
@@ -117,6 +150,36 @@ class _HtmlReportViewerState extends State<HtmlReportViewer> {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('Erro ao exportar: $e')));
+      }
+    }
+  }
+
+  Future<void> _exportPdf() async {
+    final provider = widget.pdfBytesProvider;
+    if (provider == null) return;
+    try {
+      final bytes = await provider();
+      final dir = await getTemporaryDirectory();
+      final base =
+          widget.fileBaseName?.trim().isNotEmpty == true
+          ? widget.fileBaseName!.trim()
+          : 'soloforte_relatorio';
+      final file = File('${dir.path}/$base.pdf');
+      await file.writeAsBytes(bytes);
+      if (!mounted) return;
+      await Share.shareXFiles(
+        [XFile(file.path, mimeType: 'application/pdf')],
+        subject: widget.title,
+        sharePositionOrigin: resolveSharePositionOrigin(
+          context,
+          anchorKey: _exportButtonKey,
+        ),
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Erro ao gerar PDF: $e')));
       }
     }
   }

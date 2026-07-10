@@ -175,15 +175,21 @@ abstract class RelatorioHtmlRenderer {
     return 'data:$mime;base64,$b64';
   }
 
+  static const soloForteLogoAsset = 'assets/images/soloforte_logo.png';
+
+  /// Placeholders de marca SoloForte para todos os HTML de relatório.
+  ///
+  /// Header: logo oficial obrigatório. Rodapé: mesma marca + tagline.
+  /// Branding customizado (Settings) é ignorado de propósito — ver
+  /// `.cursor/rules/soloforte-designer.mdc`.
   static Future<Map<String, String>> brandingPlaceholders({
     String? customBrandName,
     String? customLogoPath,
     String? consultantName,
     String? consultantRole,
   }) async {
-    // Branding customizado (logo/nome do consultor) permanece em Settings para
-    // sync futuro, mas os templates HTML usam header limpo + rodapé SoloForte
-    // único (soloforte-designer.mdc). Parâmetros custom* são ignorados de propósito.
+    // customBrandName / customLogoPath ignorados de propósito.
+    final logoSrc = await assetImageToBase64(soloForteLogoAsset);
     final escapedConsultant = escapeHtml(consultantName);
     final escapedRole = escapeHtml(consultantRole);
     final issuerCaption = escapedConsultant.isNotEmpty
@@ -193,11 +199,15 @@ abstract class RelatorioHtmlRenderer {
         : 'Agronomia inteligente · www.soloforte.app';
 
     return {
-      'report_header_signature': '',
+      'report_header_signature':
+          '''
+<img class="logo-img" src="$logoSrc" alt="SoloForte" width="38" height="38">
+<span class="logo-name">SoloForte</span>
+''',
       'report_footer_signature':
           '''
 <div class="sf-brand">
-  <span class="sf-brand-icon" aria-hidden="true">🌱</span>
+  <img class="sf-brand-logo" src="$logoSrc" alt="" width="22" height="22" aria-hidden="true">
   <div class="sf-brand-copy">
     <strong>SoloForte</strong>
     <span class="sf-brand-tagline">$issuerCaption</span>

@@ -595,13 +595,6 @@
     white-space: nowrap;
   }
 
-  .footer-meta {
-    font-size: 11px;
-    color: var(--sf-text-muted);
-    text-align: right;
-    line-height: 1.5;
-    white-space: nowrap;
-  }
 
   /* ═══ PRINT ═══ */
   @media print {
@@ -648,7 +641,12 @@
     min-width: 0;
   }
 
-  .sf-brand-icon { font-size: 20px; line-height: 1; }
+  .sf-brand-logo {
+    width: 22px;
+    height: 22px;
+    object-fit: contain;
+    flex-shrink: 0;
+  }
 
   .sf-brand-copy {
     display: flex;
@@ -778,10 +776,10 @@
           <div class="talhao-nome">{{nomeTalhao}}</div>
           <div class="talhao-meta">
             <!-- {{#if cultura}} -->
-            <span class="talhao-chip">🌱 {{cultura}}</span>
+            <span class="talhao-chip">{{cultura}}</span>
             <!-- {{/if}} -->
             <!-- {{#if safra}} -->
-            <span class="talhao-chip">📅 {{safra}}</span>
+            <span class="talhao-chip">{{safra}}</span>
             <!-- {{/if}} -->
           </div>
         </div>
@@ -813,11 +811,7 @@
           <!-- {{#if foto_base64}} -->
           <img src="{{foto_base64}}" alt="Foto" loading="lazy">
           <!-- {{else}} -->
-          <div class="ocorrencia-foto-placeholder">
-            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>
-            </svg>
-          </div>
+          <div class="ocorrencia-foto-placeholder"><span>Sem foto</span></div>
           <!-- {{/if}} -->
         </div>
         <div class="ocorrencia-info">
@@ -827,12 +821,7 @@
           <div class="ocorrencia-descricao">{{descricao}}</div>
           <div class="ocorrencia-meta">
             <!-- OcorrenciaSnapshot.registradaEm -->
-            <span class="ocorrencia-meta-item">
-              <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm.5 11H8v-2h2.5V7H13v6z"/>
-              </svg>
-              {{registradaEm_formatado}}
-            </span>
+            <span class="ocorrencia-meta-item">{{registradaEm_formatado}}</span>
             <!-- {{#if lat && lng}} -->
             <span class="ocorrencia-meta-item sf-location" aria-label="Localização">📍</span>
             <!-- {{/if}} -->
@@ -899,12 +888,7 @@
     <div class="publicacoes-list">
       <!-- {{#each publicacoes}} -->
       <!-- publicacoes_refs são UUIDs → Dart faz lookup do título -->
-      <div class="publicacao-badge">
-        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-          <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>
-        </svg>
-        {{titulo}}
-      </div>
+      <div class="publicacao-badge">{{titulo}}</div>
       <!-- {{/each}} -->
     </div>
     <!-- {{/if}} -->
@@ -914,10 +898,6 @@
   <!-- ══════════ FOOTER ══════════ -->
   <footer class="footer">
     {{report_footer_signature}}
-    <div class="footer-meta">
-      ID: {{id_curto}}<br>
-      Gerado em {{gerado_em_formatado}}
-    </div>
   </footer>
 
 </div>

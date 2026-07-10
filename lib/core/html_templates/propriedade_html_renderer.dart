@@ -55,7 +55,7 @@ class PropriedadeHtmlRenderer {
       include: fieldsHtml.isNotEmpty,
       truthyHtml: '<div class="field-list">$fieldsHtml</div>',
       falsyHtml:
-          '<div class="empty-state"><div class="empty-state-emoji">🗺️</div><div class="empty-state-text">Nenhum talhão cadastrado para esta fazenda.</div></div>',
+          '<div class="empty-state"><div class="empty-state-text">Nenhum talhão cadastrado para esta fazenda.</div></div>',
     );
 
     return RelatorioHtmlRenderer.stripUnresolvedPlaceholders(tpl);
@@ -133,7 +133,7 @@ class PropriedadeHtmlRenderer {
       include: timelineHtml.isNotEmpty,
       truthyHtml: '<div class="timeline">$timelineHtml</div>',
       falsyHtml:
-          '<div class="empty-state"><div class="empty-state-emoji">📋</div><div class="empty-state-text">Nenhuma visita registrada para este cliente.</div></div>',
+          '<div class="empty-state"><div class="empty-state-text">Nenhuma visita registrada para este cliente.</div></div>',
     );
 
     return RelatorioHtmlRenderer.stripUnresolvedPlaceholders(tpl);
@@ -156,7 +156,7 @@ class PropriedadeHtmlRenderer {
           ${codigo != null ? '<div class="field-codigo">#${RelatorioHtmlRenderer.escapeHtml(codigo)}</div>' : ''}
           <div class="field-meta">
             ${temCentro ? '<span class="field-meta-chip sf-location" aria-label="Localização">📍</span>' : ''}
-            ${temBordadura ? '<span class="field-meta-chip">🗺️ Com bordadura</span>' : ''}
+            ${temBordadura ? '<span class="field-meta-chip">Com bordadura</span>' : ''}
           </div>
         </div>
         ${area != null ? '<div class="field-area-badge">${RelatorioHtmlRenderer.formatHectares(area)}<span class="field-area-badge-unit">ha</span></div>' : ''}
@@ -207,21 +207,20 @@ class PropriedadeHtmlRenderer {
             <span class="status-badge $status">$statusLabel</span>
           </div>
           <div class="visita-periodo">
-            <svg viewBox="0 0 24 24"><path d="M9 11H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2zm2-7h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z"/></svg>
             <span class="visita-periodo-text">
               <strong>$pStart</strong>
               ${pEnd != pStart ? ' → <strong>$pEnd</strong>' : ''}
             </span>
           </div>
           <div class="visita-meta">
-            <span class="visita-meta-item"><svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg><strong>$agronomistNome</strong></span>
-            <span class="visita-meta-item"><svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>$farmName</span>
+            <span class="visita-meta-item"><strong>$agronomistNome</strong></span>
+            <span class="visita-meta-item">$farmName</span>
           </div>
           <div class="visita-counters">
-            ${ocCount > 0 ? '<span class="counter-chip">🔍 $ocCount ocorrências</span>' : ''}
-            ${talhCount > 0 ? '<span class="counter-chip">🗺️ $talhCount talhões</span>' : ''}
-            ${fotoCount > 0 ? '<span class="counter-chip">📷 $fotoCount fotos</span>' : ''}
-            ${pubCount > 0 ? '<span class="counter-chip">📄 $pubCount publicações</span>' : ''}
+            ${ocCount > 0 ? '<span class="counter-chip">$ocCount ocorrências</span>' : ''}
+            ${talhCount > 0 ? '<span class="counter-chip">$talhCount talhões</span>' : ''}
+            ${fotoCount > 0 ? '<span class="counter-chip">$fotoCount fotos</span>' : ''}
+            ${pubCount > 0 ? '<span class="counter-chip">$pubCount publicações</span>' : ''}
           </div>
           ${notes.isNotEmpty ? '<div class="visita-notes">$notes</div>' : ''}
         </div>

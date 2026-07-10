@@ -176,7 +176,6 @@ class VisitaHtmlRenderer {
           <div class="ocorrencia-descricao">$descricao</div>
           <div class="ocorrencia-meta">
             <span class="ocorrencia-meta-item">
-              <svg viewBox="0 0 24 24"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm.5 11H8v-2h2.5V7H13v6z"/></svg>
               $dataHora
             </span>
             ${hasLoc ? '<span class="ocorrencia-meta-item sf-location" aria-label="Localização">📍</span>' : ''}
@@ -252,7 +251,6 @@ class VisitaHtmlRenderer {
       );
       sb.write('''
       <div class="publicacao-badge">
-        <svg viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
         $titulo
       </div>
       ''');
@@ -261,11 +259,7 @@ class VisitaHtmlRenderer {
   }
 
   static String _fotoPlaceholder() => '''
-    <div class="ocorrencia-foto-placeholder">
-      <svg viewBox="0 0 24 24" fill="#9CA3AF">
-        <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>
-      </svg>
-    </div>
+    <div class="ocorrencia-foto-placeholder"><span>Sem foto</span></div>
   ''';
 
   static String _statusLabel(String status) {
