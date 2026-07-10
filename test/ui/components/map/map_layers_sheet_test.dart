@@ -78,6 +78,23 @@ void main() {
       expect(container.read(showMarkersProvider), isTrue);
     });
 
+    testWidgets('alterna camada ao tocar na miniatura, não só no rótulo', (
+      tester,
+    ) async {
+      await _pumpLayersSheet(tester);
+
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(LayersSheet)),
+      );
+      expect(container.read(activeLayerProvider), LayerType.satellite);
+
+      final relevoLabel = tester.getCenter(find.text('Relevo'));
+      await tester.tapAt(relevoLabel - const Offset(0, 28));
+      await tester.pump();
+
+      expect(container.read(activeLayerProvider), LayerType.relevo);
+    });
+
     testWidgets('ativa chuva e troca para satélite quando estava em relevo', (
       tester,
     ) async {
