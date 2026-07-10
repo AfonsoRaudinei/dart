@@ -143,74 +143,107 @@ class _PublicationPin extends StatelessWidget {
 
 /// Widget Pin de Ocorrência (leve e stateless)
 ///
-/// Ícone: reflete a categoria da ocorrência.
-/// Cor: reflete a urgência (campo `type`).
+/// Cor de fundo: categoria agronômica (diferencia doença, pragas, daninhas…).
+/// Bolinha no canto: urgência (alta/média/baixa).
 class _OccurrencePin extends StatelessWidget {
   final Occurrence occurrence;
 
   const _OccurrencePin({required this.occurrence});
 
-  // ── Cor por urgência (campo `type`) ─────────────────────────────────────
+  static Color _colorForCategory(String? category) {
+    return OccurrenceCategory.fromString(category).markerColor;
+  }
+
   static Color _colorForUrgency(String? type) {
     switch ((type ?? '').toLowerCase()) {
       case 'alta':
-        return const Color(0xFFFF3B30); // iOS Red
+        return const Color(0xFFFF3B30);
       case 'baixa':
-        return const Color(0xFF8E8E93); // iOS Gray
-      default: // 'média' ou outro
-        return Colors.orange;
+        return const Color(0xFF8E8E93);
+      default:
+        return const Color(0xFFF59E0B);
     }
   }
 
-  // ── Ícone por categoria (campo `category`) ──────────────────────────────
-  // ❌ SFIcons.warning proibido para marcadores de ocorrência
   static IconData _iconForCategory(String? category) {
     switch ((category ?? '').toLowerCase()) {
       case 'doenca':
       case 'doença':
-        return SFIcons.coronavirus;
+        return Icons.coronavirus_outlined;
       case 'insetos':
       case 'pragas':
-        return SFIcons.bugReport;
+        return Icons.bug_report_outlined;
       case 'daninhas':
       case 'ervas_daninhas':
       case 'ervas daninhas':
-        return SFIcons.grass;
+        return Icons.grass_outlined;
       case 'nutricional':
       case 'nutrientes':
-        return SFIcons.science;
+        return Icons.science_outlined;
       case 'agua':
       case 'água':
-        return SFIcons.waterDrop;
+        return Icons.water_drop_outlined;
       case 'amostra_solo':
       case 'amostra solo':
         return Icons.biotech_outlined;
       default:
-        return SFIcons.locationOn; // genérico — nunca warning
+        return Icons.place_outlined;
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final color = _colorForUrgency(occurrence.type);
+    final categoryColor = _colorForCategory(occurrence.category);
+    final urgencyColor = _colorForUrgency(occurrence.type);
     final icon = _iconForCategory(occurrence.category);
+    final isDraft = occurrence.status == 'draft';
+    final opacity = isDraft ? 0.65 : 1.0;
 
-    return Container(
+    return SizedBox(
       width: 40,
       height: 40,
-      decoration: BoxDecoration(
-        color: color,
-        shape: BoxShape.circle,
-        border: Border.all(color: Colors.white, width: 2),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.3),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: categoryColor.withValues(alpha: opacity),
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: Colors.white.withValues(alpha: opacity),
+                width: 2.5,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.28),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Icon(
+              icon,
+              color: Colors.white.withValues(alpha: opacity),
+              size: 18,
+            ),
+          ),
+          Positioned(
+            top: -1,
+            right: -1,
+            child: Container(
+              width: 12,
+              height: 12,
+              decoration: BoxDecoration(
+                color: urgencyColor,
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white, width: 1.5),
+              ),
+            ),
           ),
         ],
       ),
-      child: Icon(icon, color: Colors.white, size: 20),
     );
   }
 }

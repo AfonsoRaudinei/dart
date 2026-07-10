@@ -20,6 +20,7 @@ class ClientLookupAdapter implements IClientLookup {
             id: c.id,
             name: c.name,
             photoPath: c.photoPath,
+            phone: c.phone.isNotEmpty ? c.phone : null,
             active: c.active,
             areaTotal: c.areaTotal ?? 0.0,
           ),
@@ -35,6 +36,7 @@ class ClientLookupAdapter implements IClientLookup {
       id: client.id,
       name: client.name,
       photoPath: client.photoPath,
+      phone: client.phone.isNotEmpty ? client.phone : null,
       active: client.active,
       areaTotal: client.areaTotal ?? 0.0,
     );

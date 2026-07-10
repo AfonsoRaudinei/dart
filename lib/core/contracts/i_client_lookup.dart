@@ -5,6 +5,7 @@ class ClientSummary {
   final String id;
   final String name;
   final String? photoPath;
+  final String? phone;
   final bool active;
   final double areaTotal;
 
@@ -12,6 +13,7 @@ class ClientSummary {
     required this.id,
     required this.name,
     this.photoPath,
+    this.phone,
     required this.active,
     this.areaTotal = 0.0,
   });

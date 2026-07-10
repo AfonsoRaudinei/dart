@@ -331,8 +331,14 @@ class MapConfig {
   /// 0.75 = eco de chuva nítido sobre o satélite, mantendo o mapa base legível.
   static const double radarOverlayOpacity = 0.75;
 
-  /// Zoom máximo nativo confiável para tiles RainViewer.
-  static const int rainViewerMaxNativeZoom = 10;
+  /// Tamanho nativo dos tiles RainViewer (API aceita 256 ou 512).
+  static const double rainViewerTileSize = 512;
+
+  /// Compensa grade 512px no FlutterMap (-((512/256) - 1)).
+  static const double rainViewerZoomOffset = -1;
+
+  /// Zoom máximo nativo RainViewer para tiles 512px (limite da API pública).
+  static const int rainViewerMaxNativeZoom = 7;
 
   /// Zoom máximo visual do overlay; acima do nativo o FlutterMap faz overzoom.
   static const double rainViewerMaxZoom = satelliteMaxZoom;

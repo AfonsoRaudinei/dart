@@ -24,6 +24,13 @@ void main() {
         onDownloadOfflineArea: () async => offlineCalls++,
       );
 
+      final scrollable = find.byType(Scrollable);
+      await tester.scrollUntilVisible(
+        find.text('Baixar área offline'),
+        120,
+        scrollable: scrollable,
+      );
+
       expect(find.text('Ir para coordenada'), findsOneWidget);
       expect(find.text('Baixar área offline'), findsOneWidget);
 
@@ -45,6 +52,30 @@ void main() {
 
       expect(find.text('Ir para coordenada'), findsNothing);
       expect(find.text('Baixar área offline'), findsNothing);
+    });
+
+    testWidgets('exibe explicações para camadas avançadas WMS e Raster', (
+      tester,
+    ) async {
+      await _pumpLayersSheet(tester);
+
+      expect(
+        find.textContaining('servidor WMS'),
+        findsOneWidget,
+      );
+      expect(
+        find.textContaining('ortofoto, GeoTIFF'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('mantém pinos ativos por padrão', (tester) async {
+      await _pumpLayersSheet(tester);
+
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(LayersSheet)),
+      );
+      expect(container.read(showMarkersProvider), isTrue);
     });
 
     testWidgets('ativa chuva e troca para satélite quando estava em relevo', (
@@ -114,7 +145,7 @@ Future<void> _pumpLayersSheet(
       child: MaterialApp(
         home: Scaffold(
           body: SizedBox(
-            height: 800,
+            height: 1200,
             child: LayersSheet(
               onClose: () {},
               onCoordinateSearch: onCoordinateSearch,

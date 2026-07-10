@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:soloforte_app/core/infra/preferences_service.dart';
+import 'package:soloforte_app/core/state/map_state.dart';
 import 'package:soloforte_app/modules/consultoria/occurrences/domain/occurrence.dart';
 import 'package:soloforte_app/modules/consultoria/occurrences/presentation/controllers/occurrence_controller.dart';
 import 'package:soloforte_app/modules/consultoria/occurrences/presentation/widgets/occurrence_detail_sheet.dart';
@@ -13,6 +16,10 @@ void main() {
   testWidgets('marker abre detail e preserva payload externo exibido', (
     tester,
   ) async {
+    SharedPreferences.setMockInitialValues({});
+    final preferencesService = PreferencesService(
+      await SharedPreferences.getInstance(),
+    );
     final occurrence = Occurrence(
       id: 'external-1',
       type: 'Info',
@@ -42,12 +49,17 @@ void main() {
     );
 
     await tester.pumpWidget(
-      MaterialApp(
-        home: Builder(
-          builder: (context) {
-            sheetContext = context;
-            return Scaffold(body: Center(child: markers.single.child));
-          },
+      ProviderScope(
+        overrides: [
+          preferencesServiceProvider.overrideWithValue(preferencesService),
+        ],
+        child: MaterialApp(
+          home: Builder(
+            builder: (context) {
+              sheetContext = context;
+              return Scaffold(body: Center(child: markers.single.child));
+            },
+          ),
         ),
       ),
     );

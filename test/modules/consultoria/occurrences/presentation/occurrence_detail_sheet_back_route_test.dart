@@ -1,13 +1,32 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:soloforte_app/core/infra/preferences_service.dart';
+import 'package:soloforte_app/core/state/map_state.dart';
 import 'package:soloforte_app/core/router/app_routes.dart';
 import 'package:soloforte_app/modules/consultoria/occurrences/domain/occurrence.dart';
 import 'package:soloforte_app/modules/consultoria/occurrences/presentation/widgets/occurrence_detail_sheet.dart';
 
 void main() {
   setUpAll(() => initializeDateFormatting('pt_BR'));
+
+  Future<void> pumpWithProviders(WidgetTester tester, Widget child) async {
+    SharedPreferences.setMockInitialValues({});
+    final preferencesService = PreferencesService(
+      await SharedPreferences.getInstance(),
+    );
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          preferencesServiceProvider.overrideWithValue(preferencesService),
+        ],
+        child: child,
+      ),
+    );
+  }
 
   group('OccurrenceDetailSheet backRoute', () {
     testWidgets('exibe seta e navega para backRoute ao tocar', (tester) async {
@@ -42,7 +61,10 @@ void main() {
         ],
       );
 
-      await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+      await pumpWithProviders(
+        tester,
+        MaterialApp.router(routerConfig: router),
+      );
       await tester.pumpAndSettle();
 
       await tester.tap(find.text('abrir-sheet'));
@@ -59,6 +81,41 @@ void main() {
       expect(find.text('map-page'), findsNothing);
     });
 
+    testWidgets('exibe ações de editar e excluir no fluxo do mapa', (
+      tester,
+    ) async {
+      final occurrence = Occurrence(
+        id: 'occ-map-actions',
+        type: 'Média',
+        description: 'Ferrugem no talhão 3',
+        category: 'doenca',
+        lat: -10.69,
+        long: -48.38,
+        createdAt: DateTime.utc(2026, 6, 17),
+      );
+
+      await pumpWithProviders(
+        tester,
+        MaterialApp(
+          home: Builder(
+            builder: (context) => TextButton(
+              onPressed: () => OccurrenceDetailSheet.show(context, occurrence),
+              child: const Text('abrir-mapa'),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('abrir-mapa'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Editar'), findsOneWidget);
+      expect(find.text('Excluir'), findsOneWidget);
+      expect(find.text('Ferrugem no talhão 3'), findsOneWidget);
+      expect(find.text('Status'), findsOneWidget);
+    });
+
     testWidgets('sem backRoute não exibe seta contextual', (tester) async {
       final occurrence = Occurrence(
         id: 'occ-map-flow',
@@ -67,7 +124,8 @@ void main() {
         createdAt: DateTime.utc(2026, 7, 6),
       );
 
-      await tester.pumpWidget(
+      await pumpWithProviders(
+        tester,
         MaterialApp(
           home: Builder(
             builder: (context) => TextButton(

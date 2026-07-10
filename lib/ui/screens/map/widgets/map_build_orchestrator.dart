@@ -35,6 +35,7 @@ import '../../../../modules/dashboard/providers/location_providers.dart';
 import '../handlers/map_location_handler.dart';
 import '../../../components/map/widgets/map_canvas.dart';
 import '../../../components/map/widgets/map_layers.dart';
+import '../../../../modules/clima/presentation/widgets/clima_radar_zoom_guard.dart';
 import '../../../../modules/clima/presentation/widgets/radar_layer_widget.dart';
 import '../../../components/map/widgets/map_markers.dart';
 import '../../../components/map/widgets/map_controls_overlay.dart';
@@ -126,6 +127,7 @@ class MapBuildOrchestrator extends ConsumerWidget {
       child: Stack(
         children: [
           const MapGeofenceLifecycleHost(),
+          ClimaRadarZoomGuard(mapController: mapController),
           MapInitialViewportListener(applyInitialViewport: applyInitialViewport),
           MapCanvas(
             mapController: mapController,
@@ -294,7 +296,8 @@ class MapBuildOrchestrator extends ConsumerWidget {
               ),
 
               // ADR-043 — Radar acima de talhões/desenho, abaixo de markers
-              const ClimaRadarLayerWidget(),
+              const ClimaRadarTileLayerWidget(),
+              const ClimaRadarStatusOverlay(),
 
               // 🔒 MARKERS ISOLADOS: Não rebuildam por GPS/zoom/pan
               const MapMarkersWidget(),

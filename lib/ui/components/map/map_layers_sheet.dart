@@ -183,60 +183,50 @@ class LayersSheet extends ConsumerWidget {
                 const SizedBox(height: kFabSafeArea),
                 const Divider(color: SoloForteSheetTokens.divider),
                 const SizedBox(height: 8),
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: const Icon(SFIcons.layers, color: Colors.white70),
-                  title: const Text(
-                    'WMS Externa',
-                    style: TextStyle(color: Colors.white),
-                  ),
-                  subtitle: Text(
-                    wms.enabled
-                        ? (wms.layers.isEmpty
-                              ? 'Ativa'
-                              : 'Ativa: ${wms.layers}')
-                        : 'Desativada',
-                    style: const TextStyle(color: Colors.white60),
-                  ),
-                  trailing: Switch(
-                    value: wms.enabled,
-                    onChanged: (v) {
-                      ref
-                          .read(externalWmsLayerProvider.notifier)
-                          .update(wms.copyWith(enabled: v));
-                    },
-                  ),
-                  onTap: () => _showWmsConfigDialog(context, ref, wms),
+                _AdvancedLayerTile(
+                  icon: SFIcons.layers,
+                  title: 'WMS Externa',
+                  statusLabel: wms.enabled
+                      ? (wms.layers.isEmpty
+                            ? 'Ativa'
+                            : 'Ativa: ${wms.layers}')
+                      : 'Desativada',
+                  enabled: wms.enabled,
+                  hint: wms.enabled
+                      ? 'Sobrepõe um mapa técnico externo (limites, hidrografia, '
+                          'uso do solo). Toque no item para configurar a URL do servidor.'
+                      : 'Desativada: o mapa usa apenas as camadas padrão do SoloForte. '
+                          'Ative somente se você tiver a URL de um servidor WMS.',
+                  onToggle: (v) {
+                    ref
+                        .read(externalWmsLayerProvider.notifier)
+                        .update(wms.copyWith(enabled: v));
+                  },
+                  onConfigure: () => _showWmsConfigDialog(context, ref, wms),
                 ),
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: const Icon(
-                    SFIcons.photoLibrary,
-                    color: Colors.white70,
-                  ),
-                  title: const Text(
-                    'Raster Custom (XYZ/GeoTIFF)',
-                    style: TextStyle(color: Colors.white),
-                  ),
-                  subtitle: Text(
-                    raster.enabled
-                        ? (raster.hasLocalGeoTiff
-                              ? 'Ativo · GeoTIFF local'
-                              : raster.isGeoTiff
-                              ? 'Ativo · GeoTIFF remoto'
-                              : 'Ativo · XYZ')
-                        : 'Desativado',
-                    style: const TextStyle(color: Colors.white60),
-                  ),
-                  trailing: Switch(
-                    value: raster.enabled,
-                    onChanged: (v) {
-                      ref
-                          .read(externalRasterLayerProvider.notifier)
-                          .update(raster.copyWith(enabled: v));
-                    },
-                  ),
-                  onTap: () => _showRasterConfigDialog(context, ref, raster),
+                _AdvancedLayerTile(
+                  icon: SFIcons.photoLibrary,
+                  title: 'Raster Custom (XYZ/GeoTIFF)',
+                  statusLabel: raster.enabled
+                      ? (raster.hasLocalGeoTiff
+                            ? 'Ativo · GeoTIFF local'
+                            : raster.isGeoTiff
+                            ? 'Ativo · GeoTIFF remoto'
+                            : 'Ativo · XYZ')
+                      : 'Desativado',
+                  enabled: raster.enabled,
+                  hint: raster.enabled
+                      ? 'Sobrepõe uma imagem personalizada no mapa (ortofoto, NDVI, '
+                          'mapa XYZ). Toque no item para trocar a fonte ou a opacidade.'
+                      : 'Desativado: nenhuma imagem extra é exibida. Ative para '
+                          'importar ortofoto, GeoTIFF ou tiles XYZ configurados.',
+                  onToggle: (v) {
+                    ref
+                        .read(externalRasterLayerProvider.notifier)
+                        .update(raster.copyWith(enabled: v));
+                  },
+                  onConfigure: () =>
+                      _showRasterConfigDialog(context, ref, raster),
                 ),
                 if (onCoordinateSearch != null)
                   ListTile(
@@ -507,88 +497,53 @@ class _MapPreviewTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return _LayerGridTile(
+      width: width,
+      height: height,
+      label: label,
+      isSelected: isSelected,
       onTap: onTap,
-      child: Column(
-        children: [
-          Container(
-            width: width,
-            height: height,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: isSelected ? _accent : Colors.transparent,
-                width: 2.5,
+      child: renderTilePreview
+          ? FlutterMap(
+              options: const MapOptions(
+                initialCenter: LatLng(-10.69, -48.39),
+                initialZoom: 13.0,
+                interactionOptions: InteractionOptions(
+                  flags: InteractiveFlag.none,
+                ),
+              ),
+              children: [
+                TileLayer(
+                  urlTemplate: tileConfig.urlTemplate,
+                  fallbackUrl: tileConfig.fallbackUrl,
+                  subdomains: tileConfig.subdomains,
+                  maxZoom: tileConfig.maxZoom,
+                  maxNativeZoom: tileConfig.maxNativeZoom,
+                  retinaMode:
+                      tileConfig.retinaMode &&
+                      RetinaMode.isHighDensity(context),
+                ),
+              ],
+            )
+          : DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Colors.white.withValues(alpha: 0.18),
+                    _accent.withValues(alpha: 0.16),
+                  ],
+                ),
+              ),
+              child: const Center(
+                child: Icon(
+                  Icons.map_outlined,
+                  color: Colors.white54,
+                  size: 22,
+                ),
               ),
             ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(10),
-              child: Stack(
-                children: [
-                  IgnorePointer(
-                    child: renderTilePreview
-                        ? FlutterMap(
-                            options: const MapOptions(
-                              initialCenter: LatLng(-10.69, -48.39),
-                              initialZoom: 13.0,
-                              interactionOptions: InteractionOptions(
-                                flags: InteractiveFlag.none,
-                              ),
-                            ),
-                            children: [
-                              TileLayer(
-                                urlTemplate: tileConfig.urlTemplate,
-                                fallbackUrl: tileConfig.fallbackUrl,
-                                subdomains: tileConfig.subdomains,
-                                maxZoom: tileConfig.maxZoom,
-                                maxNativeZoom: tileConfig.maxNativeZoom,
-                                retinaMode:
-                                    tileConfig.retinaMode &&
-                                    RetinaMode.isHighDensity(context),
-                              ),
-                            ],
-                          )
-                        : DecoratedBox(
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                                colors: [
-                                  Colors.white.withValues(alpha: 0.18),
-                                  _accent.withValues(alpha: 0.16),
-                                ],
-                              ),
-                            ),
-                            child: const Center(
-                              child: Icon(
-                                Icons.map_outlined,
-                                color: Colors.white54,
-                                size: 22,
-                              ),
-                            ),
-                          ),
-                  ),
-                  if (isSelected)
-                    const Positioned(
-                      top: 4,
-                      right: 4,
-                      child: _LayerSelectedBadge(),
-                    ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            label,
-            style: TextStyle(
-              color: isSelected ? Colors.white : Colors.white60,
-              fontSize: 12,
-              fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-            ),
-          ),
-        ],
-      ),
     );
   }
 }
@@ -602,8 +557,6 @@ class _LayerAssets {
 
 /// Tile de toggle para Pinos e Radar de Chuva.
 class _OverlayToggleTile extends StatelessWidget {
-  static const _accent = PremiumTokens.brandGreenDark;
-
   final double width;
   final double height;
   final String label;
@@ -624,30 +577,70 @@ class _OverlayToggleTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return _LayerGridTile(
+      width: width,
+      height: height,
+      label: label,
+      isSelected: isSelected,
+      onTap: onTap,
+      child: Image.asset(
+        isSelected ? activeAsset : inactiveAsset,
+        fit: BoxFit.cover,
+        filterQuality: FilterQuality.medium,
+      ),
+    );
+  }
+}
+
+/// Moldura unificada dos quatro tiles da grade (satélite, relevo, pinos, chuva).
+///
+/// A borda de seleção é pintada por cima, sem alterar o tamanho do conteúdo —
+/// evita desalinhamento visual entre tiles com imagem e tiles com mapa.
+class _LayerGridTile extends StatelessWidget {
+  static const _accent = PremiumTokens.brandGreenDark;
+  static const _radius = 12.0;
+  static const _borderWidth = 2.0;
+
+  final double width;
+  final double height;
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
+  final Widget child;
+
+  const _LayerGridTile({
+    required this.width,
+    required this.height,
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+    required this.child,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
       child: Column(
         children: [
-          Container(
+          SizedBox(
             width: width,
             height: height,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: isSelected ? _accent : Colors.transparent,
-                width: 2.5,
-              ),
-            ),
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(_radius),
               child: Stack(
                 fit: StackFit.expand,
                 children: [
-                  Image.asset(
-                    isSelected ? activeAsset : inactiveAsset,
-                    fit: BoxFit.cover,
-                    filterQuality: FilterQuality.medium,
-                  ),
+                  IgnorePointer(child: child),
+                  if (isSelected)
+                    Positioned.fill(
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(_radius),
+                          border: Border.all(color: _accent, width: _borderWidth),
+                        ),
+                      ),
+                    ),
                   if (isSelected)
                     const Positioned(
                       top: 4,
@@ -659,18 +652,88 @@ class _OverlayToggleTile extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 6),
-          Text(
-            label,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: isSelected ? Colors.white : Colors.white60,
-              fontSize: 12,
-              fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+          SizedBox(
+            width: width,
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: isSelected ? Colors.white : Colors.white60,
+                fontSize: 12,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+              ),
             ),
           ),
         ],
       ),
+    );
+  }
+}
+
+class _AdvancedLayerTile extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String statusLabel;
+  final bool enabled;
+  final String hint;
+  final ValueChanged<bool> onToggle;
+  final VoidCallback onConfigure;
+
+  const _AdvancedLayerTile({
+    required this.icon,
+    required this.title,
+    required this.statusLabel,
+    required this.enabled,
+    required this.hint,
+    required this.onToggle,
+    required this.onConfigure,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        ListTile(
+          contentPadding: EdgeInsets.zero,
+          leading: Icon(icon, color: Colors.white70),
+          title: Text(
+            title,
+            style: const TextStyle(color: Colors.white),
+          ),
+          subtitle: Text(
+            statusLabel,
+            style: const TextStyle(color: Colors.white60),
+          ),
+          trailing: Switch(
+            value: enabled,
+            onChanged: onToggle,
+          ),
+          onTap: onConfigure,
+        ),
+        Padding(
+          padding: const EdgeInsets.only(left: 40, right: 8, bottom: 12),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(
+                Icons.info_outline,
+                size: 14,
+                color: Colors.white60,
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  hint,
+                  style: const TextStyle(color: Colors.white60, fontSize: 11),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

@@ -694,14 +694,14 @@ fi
 
 # ── REGRA-CLIMA-RADAR-5: z-order canonico no map_build_orchestrator
 if [ -f "lib/ui/screens/map/widgets/map_build_orchestrator.dart" ]; then
-  RADAR_POS=$(grep -n "const ClimaRadarLayerWidget()" lib/ui/screens/map/widgets/map_build_orchestrator.dart | head -1 | cut -d: -f1)
+  RADAR_POS=$(grep -n "const ClimaRadarTileLayerWidget()" lib/ui/screens/map/widgets/map_build_orchestrator.dart | head -1 | cut -d: -f1)
   DRAWING_POS=$(grep -n "DrawingEditLayer(" lib/ui/screens/map/widgets/map_build_orchestrator.dart | head -1 | cut -d: -f1)
   MARKERS_POS=$(grep -n "const MapMarkersWidget()" lib/ui/screens/map/widgets/map_build_orchestrator.dart | head -1 | cut -d: -f1)
 
   if [ -z "$RADAR_POS" ] || [ -z "$DRAWING_POS" ] || [ -z "$MARKERS_POS" ]; then
     fail "REGRA-CLIMA-RADAR-5: map_build_orchestrator.dart deve conter radar, desenho e markers"
   elif [ "$RADAR_POS" -le "$DRAWING_POS" ] || [ "$MARKERS_POS" -le "$RADAR_POS" ]; then
-    fail "REGRA-CLIMA-RADAR-5: ClimaRadarLayerWidget deve ficar apos DrawingEditLayer e antes de MapMarkersWidget"
+    fail "REGRA-CLIMA-RADAR-5: ClimaRadarTileLayerWidget deve ficar apos DrawingEditLayer e antes de MapMarkersWidget"
   else
     pass "z-order radar valido (desenho < radar < markers)"
   fi
