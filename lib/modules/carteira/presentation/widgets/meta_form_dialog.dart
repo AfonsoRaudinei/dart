@@ -113,7 +113,7 @@ class _MetaFormDialogState extends ConsumerState<MetaFormDialog> {
   @override
   Widget build(BuildContext context) {
     final cor = _parseCor(widget.categoria.cor);
-    final unidade = widget.categoria.unidade.label;
+    final unidade = widget.categoria.unidadeLabel;
 
     return AlertDialog(
       title: Row(

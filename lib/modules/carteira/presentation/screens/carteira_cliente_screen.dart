@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 
+import 'package:soloforte_app/modules/carteira/domain/entities/carteira_lancamento.dart';
 import 'package:soloforte_app/modules/carteira/domain/entities/categoria_global.dart';
 import 'package:soloforte_app/modules/carteira/domain/entities/cliente_categoria.dart';
 import 'package:soloforte_app/modules/carteira/presentation/providers/carteira_providers.dart';
@@ -155,7 +156,7 @@ class _CategoriaClienteItemState extends ConsumerState<_CategoriaClienteItem> {
   }
 
   Future<void> _abrirLancamento() async {
-    await showDialog<bool>(
+    final saved = await showDialog<bool>(
       context: context,
       builder: (_) => LancamentoFormDialog(
         categoria: widget.categoria,
@@ -164,12 +165,40 @@ class _CategoriaClienteItemState extends ConsumerState<_CategoriaClienteItem> {
         clientAreaHa: widget.clientAreaHa,
       ),
     );
+
+    if (!mounted || saved != true) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Lançamento registrado com sucesso.')),
+    );
+  }
+
+  String _rotuloLancamento(CarteiraLancamento lancamento) {
+    if (lancamento.quantidade > 0) {
+      final qtd = lancamento.quantidade % 1 == 0
+          ? lancamento.quantidade.toInt().toString()
+          : lancamento.quantidade.toStringAsFixed(2);
+      if (lancamento.closedPercent > 0) {
+        final pct = lancamento.closedPercent % 1 == 0
+            ? lancamento.closedPercent.toInt().toString()
+            : lancamento.closedPercent.toStringAsFixed(1);
+        return '$qtd ${widget.categoria.unidadeLabel} ($pct%)';
+      }
+      return '$qtd ${widget.categoria.unidadeLabel}';
+    }
+    if (lancamento.closedPercent > 0) {
+      final pct = lancamento.closedPercent % 1 == 0
+          ? lancamento.closedPercent.toInt().toString()
+          : lancamento.closedPercent.toStringAsFixed(1);
+      return '$pct% fechado';
+    }
+    return 'Em negociação';
   }
 
   @override
   Widget build(BuildContext context) {
     final cor = _parseCor(widget.categoria.cor);
-    final unidade = widget.categoria.unidade.label;
+    final unidade = widget.categoria.unidadeLabel;
 
     final metaAsync = ref.watch(metaCategoriaProvider(widget.categoria.id));
     final realizadoAsync = ref.watch(
@@ -328,12 +357,7 @@ class _CategoriaClienteItemState extends ConsumerState<_CategoriaClienteItem> {
                           final d = l.dataLancamento;
                           final fmt =
                               '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}';
-                          final qtd = l.quantidade % 1 == 0
-                              ? l.quantidade.toInt().toString()
-                              : l.quantidade.toStringAsFixed(1);
-                          final valorLabel = l.closedPercent == 0.0
-                              ? 'Em negociação'
-                              : '$qtd $unidade';
+                          final valorLabel = _rotuloLancamento(l);
                           return Padding(
                             padding: const EdgeInsets.only(bottom: 2),
                             child: Text(

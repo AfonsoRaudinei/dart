@@ -1,64 +1,54 @@
-/// Define a unidade de medida de uma categoria de carteira.
+import '../entities/carteira_tipo_produto.dart';
+
+/// Tipos de produto padrão e helpers de retrocompatibilidade.
 ///
-/// Determina como o custo/meta é interpretado e exibido.
-/// ADR-022 — SoloForte
-enum UnidadeCategoria {
-  /// Custo em R$ por hectare.
-  /// Conversão: valorReferencia / valorGrao = sacas/ha
-  realPorHa,
+/// A UI carrega tipos dinâmicos de `carteira_tipos_produto`; este arquivo
+/// mantém os seeds e fallbacks para categorias legadas.
+class UnidadeCategoria {
+  UnidadeCategoria._();
 
-  /// Meta em toneladas por hectare (fertilizantes).
-  /// Sem conversão para grão.
-  toneladaPorHa,
+  static const defaultCodigo = 'realPorHa';
+  static const defaultLabel = r'R$/ha';
 
-  /// Meta em big bags (unidade absoluta — sementes de soja).
-  /// 1 big bag = 5.000.000 sementes = 25 sacas de 200.000 sementes.
-  bigBag,
+  static const List<({String codigo, String label, bool converteSacasHa})>
+  seeds = [
+    (codigo: 'realPorHa', label: r'R$/ha', converteSacasHa: true),
+    (codigo: 'toneladaPorHa', label: 'ton/ha', converteSacasHa: false),
+    (codigo: 'bigBag', label: 'Big Bag', converteSacasHa: false),
+    (codigo: 'sacas60k', label: 'Sacas 60k', converteSacasHa: false),
+  ];
 
-  /// Meta em sacas de 60.000 sementes (sementes de milho).
-  /// Unidade absoluta — não relacionada à área.
-  sacas60k;
-
-  /// Rótulo de exibição para o usuário.
-  String get label {
-    switch (this) {
-      case UnidadeCategoria.realPorHa:
-        return 'R\$/ha';
-      case UnidadeCategoria.toneladaPorHa:
-        return 'ton/ha';
-      case UnidadeCategoria.bigBag:
-        return 'Big Bag';
-      case UnidadeCategoria.sacas60k:
-        return 'Sacas 60k';
+  static String labelForCodigo(String codigo) {
+    for (final seed in seeds) {
+      if (seed.codigo == codigo) return seed.label;
     }
+    return codigo;
   }
 
-  /// Valor para persistência no SQLite.
-  String get dbValue {
-    switch (this) {
-      case UnidadeCategoria.realPorHa:
-        return 'realPorHa';
-      case UnidadeCategoria.toneladaPorHa:
-        return 'toneladaPorHa';
-      case UnidadeCategoria.bigBag:
-        return 'bigBag';
-      case UnidadeCategoria.sacas60k:
-        return 'sacas60k';
+  static bool converteSacasHaForCodigo(String codigo) {
+    for (final seed in seeds) {
+      if (seed.codigo == codigo) return seed.converteSacasHa;
     }
+    return false;
   }
 
-  /// Reconstrói a partir do valor salvo no SQLite.
-  /// Retorna [realPorHa] como fallback seguro.
-  static UnidadeCategoria fromDb(String? value) {
-    switch (value) {
-      case 'toneladaPorHa':
-        return UnidadeCategoria.toneladaPorHa;
-      case 'bigBag':
-        return UnidadeCategoria.bigBag;
-      case 'sacas60k':
-        return UnidadeCategoria.sacas60k;
-      default:
-        return UnidadeCategoria.realPorHa;
-    }
+  static List<CarteiraTipoProduto> seedEntities({
+    required String userId,
+    required DateTime now,
+  }) {
+    return [
+      for (var i = 0; i < seeds.length; i++)
+        CarteiraTipoProduto(
+          id: 'seed-${seeds[i].codigo}-$userId',
+          userId: userId,
+          codigo: seeds[i].codigo,
+          label: seeds[i].label,
+          converteSacasHa: seeds[i].converteSacasHa,
+          sistema: true,
+          ordem: i,
+          createdAt: now,
+          updatedAt: now,
+        ),
+    ];
   }
 }

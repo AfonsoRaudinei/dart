@@ -8,7 +8,6 @@ import 'package:soloforte_app/core/constants/layout_constants.dart';
 import 'package:soloforte_app/core/router/app_routes.dart';
 import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 import 'package:soloforte_app/modules/carteira/domain/entities/categoria_global.dart';
-import 'package:soloforte_app/modules/carteira/domain/enums/unidade_categoria.dart';
 import 'package:soloforte_app/modules/carteira/presentation/providers/carteira_providers.dart';
 import 'package:soloforte_app/modules/carteira/presentation/widgets/carteira_metas_tab.dart';
 import 'package:soloforte_app/modules/carteira/presentation/widgets/categoria_form_dialog.dart';
@@ -150,7 +149,7 @@ class _CategoriasTab extends ConsumerWidget {
       useSafeArea: false,
       shape: const RoundedRectangleBorder(),
       clipBehavior: Clip.none,
-      builder: (_) => const CategoriaFormDialog(),
+      builder: (_) => CategoriaFormDialog(userId: userId),
     );
     if (result == null) return;
 
@@ -164,8 +163,10 @@ class _CategoriasTab extends ConsumerWidget {
       cor: result.corHex,
       ativo: true,
       ordem: categorias.length,
-      unidade: UnidadeCategoria.realPorHa,
-      valorReferencia: result.valorReal,
+      unidadeCodigo: result.unidadeCodigo,
+      unidadeLabel: result.unidadeLabel,
+      converteSacasHa: result.converteSacasHa,
+      valorReferencia: result.valorReferencia,
       createdAt: now,
       updatedAt: now,
     );
@@ -188,10 +189,14 @@ class _CategoriasTab extends ConsumerWidget {
       shape: const RoundedRectangleBorder(),
       clipBehavior: Clip.none,
       builder: (_) => CategoriaFormDialog(
+        userId: userId,
         title: 'Editar categoria',
         initialNome: categoria.nome,
         initialCorHex: categoria.cor,
         initialValorReal: categoria.valorReferencia ?? categoria.valorReal,
+        initialUnidadeCodigo: categoria.unidadeCodigo,
+        initialUnidadeLabel: categoria.unidadeLabel,
+        initialConverteSacasHa: categoria.converteSacasHa,
       ),
     );
     if (result == null) return;
@@ -202,8 +207,10 @@ class _CategoriasTab extends ConsumerWidget {
           categoria.copyWith(
             nome: result.nome,
             cor: result.corHex,
-            unidade: categoria.unidade,
-            valorReferencia: result.valorReal,
+            unidadeCodigo: result.unidadeCodigo,
+            unidadeLabel: result.unidadeLabel,
+            converteSacasHa: result.converteSacasHa,
+            valorReferencia: result.valorReferencia,
           ),
         );
 
@@ -275,7 +282,7 @@ class _CategoriasTab extends ConsumerWidget {
                         Padding(
                           padding: const EdgeInsets.only(top: 2),
                           child: Text(
-                            '${custoSacasHa.toStringAsFixed(3)} ${categoria.unidade.label}',
+                            '${custoSacasHa.toStringAsFixed(3)} sc/ha',
                             style: TextStyle(
                               fontSize: 11,
                               color: Theme.of(context).hintColor,

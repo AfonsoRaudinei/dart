@@ -1,14 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../domain/enums/unidade_categoria.dart';
+import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
+import 'package:soloforte_app/modules/carteira/domain/entities/carteira_tipo_produto.dart';
+import 'package:soloforte_app/modules/carteira/domain/enums/unidade_categoria.dart';
+import 'package:soloforte_app/modules/carteira/presentation/providers/carteira_providers.dart';
+import 'package:soloforte_app/modules/carteira/presentation/widgets/tipo_produto_form_dialog.dart';
 
 class CategoriaFormResult {
   const CategoriaFormResult({
     required this.nome,
     required this.corHex,
-    required this.unidade,
+    required this.unidadeCodigo,
+    required this.unidadeLabel,
+    required this.converteSacasHa,
     this.valorReferencia,
-    // Campos legados mantidos para compatibilidade dos call sites atuais.
     this.valorReal,
     this.valorDolar,
     this.sacasPorHa,
@@ -16,44 +22,53 @@ class CategoriaFormResult {
 
   final String nome;
   final String corHex;
-  final UnidadeCategoria unidade;
+  final String unidadeCodigo;
+  final String unidadeLabel;
+  final bool converteSacasHa;
   final double? valorReferencia;
   final double? valorReal;
   final double? valorDolar;
   final double? sacasPorHa;
 }
 
-class CategoriaFormDialog extends StatefulWidget {
+class CategoriaFormDialog extends ConsumerStatefulWidget {
   const CategoriaFormDialog({
     super.key,
+    required this.userId,
     this.initialNome,
     this.initialCorHex,
     this.initialValorReal,
     this.initialValorDolar,
     this.initialSacasPorHa,
-    this.initialUnidade,
-    this.initialValorReferencia,
+    this.initialUnidadeCodigo,
+    this.initialUnidadeLabel,
+    this.initialConverteSacasHa,
     this.title = 'Nova categoria',
   });
 
+  final String userId;
   final String? initialNome;
   final String? initialCorHex;
   final double? initialValorReal;
   final double? initialValorDolar;
   final double? initialSacasPorHa;
-  final UnidadeCategoria? initialUnidade;
-  final double? initialValorReferencia;
+  final String? initialUnidadeCodigo;
+  final String? initialUnidadeLabel;
+  final bool? initialConverteSacasHa;
   final String title;
 
   @override
-  State<CategoriaFormDialog> createState() => _CategoriaFormDialogState();
+  ConsumerState<CategoriaFormDialog> createState() =>
+      _CategoriaFormDialogState();
 }
 
-class _CategoriaFormDialogState extends State<CategoriaFormDialog> {
+class _CategoriaFormDialogState extends ConsumerState<CategoriaFormDialog> {
   late final TextEditingController _nomeController;
   late final TextEditingController _valorReferenciaController;
   late Color _selectedColor;
-  UnidadeCategoria _unidade = UnidadeCategoria.realPorHa;
+  late String _unidadeCodigo;
+  late String _unidadeLabel;
+  late bool _converteSacasHa;
 
   final _formKey = GlobalKey<FormState>();
   static const List<Color> _palette = [
@@ -76,12 +91,15 @@ class _CategoriaFormDialogState extends State<CategoriaFormDialog> {
     super.initState();
     _nomeController = TextEditingController(text: widget.initialNome ?? '');
     _selectedColor = _hexToColor(widget.initialCorHex ?? '#4ADE80');
-    _unidade = widget.initialUnidade ?? UnidadeCategoria.realPorHa;
+    _unidadeCodigo =
+        widget.initialUnidadeCodigo ?? UnidadeCategoria.defaultCodigo;
+    _unidadeLabel =
+        widget.initialUnidadeLabel ?? UnidadeCategoria.defaultLabel;
+    _converteSacasHa =
+        widget.initialConverteSacasHa ??
+        UnidadeCategoria.converteSacasHaForCodigo(_unidadeCodigo);
     _valorReferenciaController = TextEditingController(
-      text:
-          (widget.initialValorReferencia ?? widget.initialValorReal)
-              ?.toString() ??
-          '',
+      text: widget.initialValorReal?.toString() ?? '',
     );
   }
 
@@ -111,8 +129,42 @@ class _CategoriaFormDialogState extends State<CategoriaFormDialog> {
     return double.tryParse(text.replaceAll(',', '.'));
   }
 
+  void _selectTipo(CarteiraTipoProduto tipo) {
+    setState(() {
+      _unidadeCodigo = tipo.codigo;
+      _unidadeLabel = tipo.label;
+      _converteSacasHa = tipo.converteSacasHa;
+    });
+  }
+
+  Future<void> _adicionarTipo() async {
+    final result = await showSoloForteSheet<TipoProdutoFormResult>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      showDragHandle: false,
+      useSafeArea: false,
+      shape: const RoundedRectangleBorder(),
+      clipBehavior: Clip.none,
+      builder: (_) => const TipoProdutoFormDialog(),
+    );
+    if (result == null || !mounted) return;
+
+    final repo = ref.read(carteiraRepositoryProvider);
+    final novo = await repo.createTipoProdutoFromLabel(
+      userId: widget.userId,
+      label: result.label,
+      converteSacasHa: result.converteSacasHa,
+    );
+
+    ref.invalidate(tiposProdutoProvider(widget.userId));
+    _selectTipo(novo);
+  }
+
   @override
   Widget build(BuildContext context) {
+    final tiposAsync = ref.watch(tiposProdutoProvider(widget.userId));
+
     return Padding(
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom,
@@ -231,9 +283,36 @@ class _CategoriaFormDialogState extends State<CategoriaFormDialog> {
                         ),
                       ),
                       const SizedBox(height: 8),
-                      _UnidadeSelector(
-                        selected: _unidade,
-                        onChanged: (u) => setState(() => _unidade = u),
+                      tiposAsync.when(
+                        loading: () => const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 12),
+                          child: Center(
+                            child: SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                          ),
+                        ),
+                        error: (_, __) => Text(
+                          'Erro ao carregar tipos de produto.',
+                          style: TextStyle(color: Colors.red.shade700),
+                        ),
+                        data: (tipos) {
+                          if (tipos.isNotEmpty &&
+                              !tipos.any((t) => t.codigo == _unidadeCodigo)) {
+                            WidgetsBinding.instance.addPostFrameCallback((_) {
+                              if (!mounted) return;
+                              _selectTipo(tipos.first);
+                            });
+                          }
+                          return _UnidadeSelector(
+                            tipos: tipos,
+                            selectedCodigo: _unidadeCodigo,
+                            onChanged: _selectTipo,
+                            onAddNew: _adicionarTipo,
+                          );
+                        },
                       ),
                       const SizedBox(height: 16),
                       TextFormField(
@@ -243,7 +322,7 @@ class _CategoriaFormDialogState extends State<CategoriaFormDialog> {
                         ),
                         decoration: InputDecoration(
                           labelText: 'Custo / Referência (opcional)',
-                          suffixText: _unidade.label,
+                          suffixText: _unidadeLabel,
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -277,26 +356,30 @@ class _CategoriaFormDialogState extends State<CategoriaFormDialog> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: FilledButton(
-                      onPressed: () {
-                        if (!(_formKey.currentState?.validate() ?? false)) {
-                          return;
-                        }
-                        final valorRef = _parseNullableDouble(
-                          _valorReferenciaController.text,
-                        );
-                        Navigator.of(context).pop(
-                          CategoriaFormResult(
-                            nome: _nomeController.text.trim(),
-                            corHex: _colorToHex(_selectedColor),
-                            unidade: _unidade,
-                            valorReferencia: valorRef,
-                            // Compat: call sites atuais ainda usam valorReal.
-                            valorReal: valorRef,
-                            valorDolar: widget.initialValorDolar,
-                            sacasPorHa: widget.initialSacasPorHa,
-                          ),
-                        );
-                      },
+                      onPressed: tiposAsync.isLoading
+                          ? null
+                          : () {
+                              if (!(_formKey.currentState?.validate() ??
+                                  false)) {
+                                return;
+                              }
+                              final valorRef = _parseNullableDouble(
+                                _valorReferenciaController.text,
+                              );
+                              Navigator.of(context).pop(
+                                CategoriaFormResult(
+                                  nome: _nomeController.text.trim(),
+                                  corHex: _colorToHex(_selectedColor),
+                                  unidadeCodigo: _unidadeCodigo,
+                                  unidadeLabel: _unidadeLabel,
+                                  converteSacasHa: _converteSacasHa,
+                                  valorReferencia: valorRef,
+                                  valorReal: valorRef,
+                                  valorDolar: widget.initialValorDolar,
+                                  sacasPorHa: widget.initialSacasPorHa,
+                                ),
+                              );
+                            },
                       child: const Text('Salvar'),
                     ),
                   ),
@@ -311,46 +394,83 @@ class _CategoriaFormDialogState extends State<CategoriaFormDialog> {
 }
 
 class _UnidadeSelector extends StatelessWidget {
-  final UnidadeCategoria selected;
-  final ValueChanged<UnidadeCategoria> onChanged;
+  const _UnidadeSelector({
+    required this.tipos,
+    required this.selectedCodigo,
+    required this.onChanged,
+    required this.onAddNew,
+  });
 
-  const _UnidadeSelector({required this.selected, required this.onChanged});
+  final List<CarteiraTipoProduto> tipos;
+  final String selectedCodigo;
+  final ValueChanged<CarteiraTipoProduto> onChanged;
+  final VoidCallback onAddNew;
 
   @override
   Widget build(BuildContext context) {
-    final unidades = UnidadeCategoria.values;
+    final color = Theme.of(context).colorScheme.primary;
+
     return Wrap(
       spacing: 8,
       runSpacing: 8,
-      children: unidades.map((u) {
-        final isSelected = u == selected;
-        final color = Theme.of(context).colorScheme.primary;
-        return GestureDetector(
-          onTap: () => onChanged(u),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 150),
+      children: [
+        ...tipos.map((tipo) {
+          final isSelected = tipo.codigo == selectedCodigo;
+          return GestureDetector(
+            onTap: () => onChanged(tipo),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 150),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? color.withValues(alpha: 0.12)
+                    : Colors.transparent,
+                border: Border.all(
+                  color: isSelected ? color : Colors.grey.shade300,
+                  width: isSelected ? 1.5 : 1.0,
+                ),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                tipo.label,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                  color: isSelected ? color : Colors.grey.shade600,
+                ),
+              ),
+            ),
+          );
+        }),
+        GestureDetector(
+          onTap: onAddNew,
+          child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
             decoration: BoxDecoration(
-              color: isSelected
-                  ? color.withValues(alpha: 0.12)
-                  : Colors.transparent,
               border: Border.all(
-                color: isSelected ? color : Colors.grey.shade300,
-                width: isSelected ? 1.5 : 1.0,
+                color: color.withValues(alpha: 0.5),
+                width: 1.2,
               ),
               borderRadius: BorderRadius.circular(20),
             ),
-            child: Text(
-              u.label,
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                color: isSelected ? color : Colors.grey.shade600,
-              ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.add, size: 16, color: color),
+                const SizedBox(width: 4),
+                Text(
+                  'Adicionar',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: color,
+                  ),
+                ),
+              ],
             ),
           ),
-        );
-      }).toList(),
+        ),
+      ],
     );
   }
 }

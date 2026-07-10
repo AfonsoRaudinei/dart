@@ -58,6 +58,7 @@ Toda decisão estrutural deve ser comparada contra este documento.
 | `02_ARQUITETURA_ATIVA/arquitetura-namespaces-rotas.md` | Namespaces e estrutura de rotas |
 | `02_ARQUITETURA_ATIVA/arquitetura-persistencia.md` | Camada de persistência |
 | `02_ARQUITETURA_ATIVA/arquitetura-ocorrencias.md` | Módulo de ocorrências |
+| `02_ARQUITETURA_ATIVA/MODULO_CARTEIRA.md` | Módulo carteira — pipeline comercial, metas, lançamentos e cálculos de oportunidade |
 | `02_ARQUITETURA_ATIVA/relatorios-tipos-matriz.md` | Matriz oficial dos tipos de relatório, renderers, UI e exportações |
 | `02_ARQUITETURA_ATIVA/relatorios-contrato-final.md` | Contrato final do módulo de relatórios: tipos, formatos exportáveis e estados |
 | `02_ARQUITETURA_ATIVA/ADR-008-RIVERPOD-NORMALIZATION.md` | ADR: normalização Riverpod |

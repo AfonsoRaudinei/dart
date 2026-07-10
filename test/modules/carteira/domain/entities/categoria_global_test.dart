@@ -7,7 +7,9 @@ void main() {
     final baseDate = DateTime(2026, 3, 1, 12);
 
     CategoriaGlobal build({
-      UnidadeCategoria unidade = UnidadeCategoria.realPorHa,
+      String unidadeCodigo = UnidadeCategoria.defaultCodigo,
+      String unidadeLabel = UnidadeCategoria.defaultLabel,
+      bool converteSacasHa = true,
       double? valorReferencia = 1200,
     }) {
       return CategoriaGlobal(
@@ -19,12 +21,14 @@ void main() {
         ordem: 1,
         createdAt: baseDate,
         updatedAt: baseDate,
-        unidade: unidade,
+        unidadeCodigo: unidadeCodigo,
+        unidadeLabel: unidadeLabel,
+        converteSacasHa: converteSacasHa,
         valorReferencia: valorReferencia,
       );
     }
 
-    test('fromMap interpreta ativo como int e unidade via fromDb', () {
+    test('fromMap interpreta ativo como int e unidade via codigo', () {
       final categoria = CategoriaGlobal.fromMap({
         'id': 'cat-1',
         'user_id': 'u1',
@@ -42,29 +46,36 @@ void main() {
       });
 
       expect(categoria.ativo, isFalse);
-      expect(categoria.unidade, UnidadeCategoria.bigBag);
+      expect(categoria.unidadeCodigo, 'bigBag');
+      expect(categoria.unidadeLabel, 'Big Bag');
       expect(categoria.valorReal, 900.0);
       expect(categoria.sacasPorHa, 3.5);
     });
 
-    test('toMap persiste ativo como 0/1 e unidade dbValue', () {
-      final map = build(unidade: UnidadeCategoria.sacas60k).toMap();
+    test('toMap persiste ativo como 0/1 e unidade codigo', () {
+      final map = build(unidadeCodigo: 'sacas60k', unidadeLabel: 'Sacas 60k')
+          .toMap();
 
       expect(map['ativo'], 1);
       expect(map['unidade'], 'sacas60k');
       expect(map['valor_referencia'], 1200);
     });
 
-    test('custoSacasHa só aplica em realPorHa com valores válidos', () {
+    test('custoSacasHa só aplica quando converteSacasHa é true', () {
       final categoria = build(
-        unidade: UnidadeCategoria.realPorHa,
+        unidadeCodigo: 'realPorHa',
+        converteSacasHa: true,
         valorReferencia: 1000,
       );
 
       expect(categoria.custoSacasHa(100), closeTo(10, 0.001));
       expect(categoria.custoSacasHa(0), isNull);
       expect(
-        build(unidade: UnidadeCategoria.toneladaPorHa).custoSacasHa(100),
+        build(
+          unidadeCodigo: 'toneladaPorHa',
+          unidadeLabel: 'ton/ha',
+          converteSacasHa: false,
+        ).custoSacasHa(100),
         isNull,
       );
       expect(build(valorReferencia: null).custoSacasHa(100), isNull);

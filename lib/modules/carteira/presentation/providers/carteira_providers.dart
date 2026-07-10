@@ -11,6 +11,7 @@ import 'package:soloforte_app/modules/carteira/data/repositories/carteira_reposi
 import 'package:soloforte_app/modules/carteira/domain/entities/carteira_lancamento.dart';
 import 'package:soloforte_app/modules/carteira/domain/entities/carteira_meta.dart';
 import 'package:soloforte_app/modules/carteira/domain/entities/carteira_safra.dart';
+import 'package:soloforte_app/modules/carteira/domain/entities/carteira_tipo_produto.dart';
 import 'package:soloforte_app/modules/carteira/domain/entities/categoria_global.dart';
 import 'package:soloforte_app/modules/carteira/domain/entities/cliente_categoria.dart';
 import 'package:soloforte_app/modules/carteira/domain/repositories/i_carteira_repository.dart';
@@ -38,6 +39,13 @@ final categoriasGlobaisProvider = FutureProvider.autoDispose
     .family<List<CategoriaGlobal>, String>((ref, userId) async {
       final repo = ref.watch(carteiraRepositoryProvider);
       return repo.getCategorias(userId);
+    });
+
+final tiposProdutoProvider = FutureProvider.autoDispose
+    .family<List<CarteiraTipoProduto>, String>((ref, userId) async {
+      if (userId.isEmpty) return [];
+      final repo = ref.watch(carteiraRepositoryProvider);
+      return repo.getTiposProduto(userId);
     });
 
 final categoriasClienteProvider = FutureProvider.autoDispose

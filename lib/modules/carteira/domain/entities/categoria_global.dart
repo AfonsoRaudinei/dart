@@ -18,21 +18,19 @@ class CategoriaGlobal {
   final DateTime createdAt;
   final DateTime updatedAt;
 
-  /// Unidade de medida desta categoria.
-  /// Define como [valorReferencia] é interpretado.
-  final UnidadeCategoria unidade;
+  /// Código do tipo de produto (coluna `unidade` no SQLite).
+  final String unidadeCodigo;
+
+  /// Rótulo de exibição resolvido via [CarteiraTipoProduto].
+  final String unidadeLabel;
+
+  /// Indica se [custoSacasHa] se aplica a esta categoria.
+  final bool converteSacasHa;
 
   /// Valor de referência para cálculo de meta.
-  ///
-  /// Semântica depende de [unidade]:
-  /// - [UnidadeCategoria.realPorHa] → custo em R$/ha
-  /// - [UnidadeCategoria.toneladaPorHa] → toneladas por hectare
-  /// - [UnidadeCategoria.bigBag] → quantidade absoluta de meta
-  /// - [UnidadeCategoria.sacas60k] → quantidade absoluta de meta
   final double? valorReferencia;
 
   // ── Campos legados — mantidos apenas para leitura do banco ─────
-  // Não usar em lógica nova. Serão removidos na v25.
   final double? valorReal;
   final double? valorDolar;
   final double? sacasPorHa;
@@ -46,15 +44,21 @@ class CategoriaGlobal {
     required this.ordem,
     required this.createdAt,
     required this.updatedAt,
-    this.unidade = UnidadeCategoria.realPorHa,
+    this.unidadeCodigo = UnidadeCategoria.defaultCodigo,
+    this.unidadeLabel = UnidadeCategoria.defaultLabel,
+    this.converteSacasHa = true,
     this.valorReferencia,
-    // legados
     this.valorReal,
     this.valorDolar,
     this.sacasPorHa,
   });
 
-  factory CategoriaGlobal.fromMap(Map<String, Object?> map) {
+  factory CategoriaGlobal.fromMap(
+    Map<String, Object?> map, {
+    String? unidadeLabel,
+    bool? converteSacasHa,
+  }) {
+    final codigo = (map['unidade'] as String?) ?? UnidadeCategoria.defaultCodigo;
     return CategoriaGlobal(
       id: map['id'] as String,
       userId: map['user_id'] as String,
@@ -64,9 +68,11 @@ class CategoriaGlobal {
       ordem: map['ordem'] as int? ?? 0,
       createdAt: DateTime.parse(map['created_at'] as String),
       updatedAt: DateTime.parse(map['updated_at'] as String),
-      unidade: UnidadeCategoria.fromDb(map['unidade'] as String?),
+      unidadeCodigo: codigo,
+      unidadeLabel: unidadeLabel ?? UnidadeCategoria.labelForCodigo(codigo),
+      converteSacasHa:
+          converteSacasHa ?? UnidadeCategoria.converteSacasHaForCodigo(codigo),
       valorReferencia: (map['valor_referencia'] as num?)?.toDouble(),
-      // legados
       valorReal: (map['valor_real'] as num?)?.toDouble(),
       valorDolar: (map['valor_dolar'] as num?)?.toDouble(),
       sacasPorHa: (map['sacas_por_ha'] as num?)?.toDouble(),
@@ -83,9 +89,8 @@ class CategoriaGlobal {
       'ordem': ordem,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
-      'unidade': unidade.dbValue,
+      'unidade': unidadeCodigo,
       'valor_referencia': valorReferencia,
-      // legados — persistir para retrocompat
       'valor_real': valorReal,
       'valor_dolar': valorDolar,
       'sacas_por_ha': sacasPorHa,
@@ -93,11 +98,8 @@ class CategoriaGlobal {
   }
 
   /// Custo em sacas de grão por hectare.
-  ///
-  /// Só aplicável quando [unidade] == [UnidadeCategoria.realPorHa].
-  /// Retorna null para outras unidades ou se [valorGrao] <= 0.
   double? custoSacasHa(double valorGrao) {
-    if (unidade != UnidadeCategoria.realPorHa) return null;
+    if (!converteSacasHa) return null;
     if (valorReferencia == null || valorReferencia! <= 0) return null;
     if (valorGrao <= 0) return null;
     return valorReferencia! / valorGrao;
@@ -108,7 +110,9 @@ class CategoriaGlobal {
     String? cor,
     bool? ativo,
     int? ordem,
-    UnidadeCategoria? unidade,
+    String? unidadeCodigo,
+    String? unidadeLabel,
+    bool? converteSacasHa,
     double? valorReferencia,
   }) {
     return CategoriaGlobal(
@@ -120,9 +124,10 @@ class CategoriaGlobal {
       ordem: ordem ?? this.ordem,
       createdAt: createdAt,
       updatedAt: DateTime.now(),
-      unidade: unidade ?? this.unidade,
+      unidadeCodigo: unidadeCodigo ?? this.unidadeCodigo,
+      unidadeLabel: unidadeLabel ?? this.unidadeLabel,
+      converteSacasHa: converteSacasHa ?? this.converteSacasHa,
       valorReferencia: valorReferencia ?? this.valorReferencia,
-      // legados inalterados
       valorReal: valorReal,
       valorDolar: valorDolar,
       sacasPorHa: sacasPorHa,

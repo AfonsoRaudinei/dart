@@ -4,6 +4,8 @@
 
 `carteira/` gerencia clientes comerciais, oportunidades e pipeline de relacionamento.
 
+Documentação completa: `docs/02_ARQUITETURA_ATIVA/MODULO_CARTEIRA.md`
+
 ## Contratos e dependencias
 
 - Expoe/implementa lookup de cliente e oportunidade quando aplicavel.

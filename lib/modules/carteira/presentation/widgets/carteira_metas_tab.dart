@@ -353,7 +353,7 @@ class _MetaCategoriaItem extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final cor = _parseCor(categoria.cor);
-    final unidade = categoria.unidade.label;
+    final unidade = categoria.unidadeLabel;
     final pct = progressoAsync.valueOrNull ?? 0.0;
     final metaQtd = meta?.quantidade;
     final metaLabel = metaQtd == null

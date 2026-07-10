@@ -5,8 +5,10 @@ import 'package:soloforte_app/core/database/database_helper.dart';
 import 'package:soloforte_app/modules/carteira/domain/entities/carteira_lancamento.dart';
 import 'package:soloforte_app/modules/carteira/domain/entities/carteira_meta.dart';
 import 'package:soloforte_app/modules/carteira/domain/entities/carteira_safra.dart';
+import 'package:soloforte_app/modules/carteira/domain/entities/carteira_tipo_produto.dart';
 import 'package:soloforte_app/modules/carteira/domain/entities/categoria_global.dart';
 import 'package:soloforte_app/modules/carteira/domain/entities/cliente_categoria.dart';
+import 'package:soloforte_app/modules/carteira/domain/enums/unidade_categoria.dart';
 import 'package:soloforte_app/modules/carteira/domain/repositories/i_carteira_repository.dart';
 
 class CarteiraRepositoryImpl implements ICarteiraRepository {
@@ -28,13 +30,122 @@ class CarteiraRepositoryImpl implements ICarteiraRepository {
   @override
   Future<List<CategoriaGlobal>> getCategorias(String userId) async {
     final db = await _dbHelper.database;
+    final tipos = await getTiposProduto(userId);
+    final tiposByCodigo = {for (final t in tipos) t.codigo: t};
+
     final rows = await db.query(
       'carteira_categorias',
       where: 'user_id = ? AND ativo = 1',
       whereArgs: [userId],
       orderBy: 'ordem ASC',
     );
-    return rows.map(_categoriaFromMap).toList(growable: false);
+    return rows
+        .map((row) => _categoriaFromMap(row, tiposByCodigo: tiposByCodigo))
+        .toList(growable: false);
+  }
+
+  @override
+  Future<List<CarteiraTipoProduto>> getTiposProduto(String userId) async {
+    await ensureTiposProdutoIniciais(userId);
+
+    final db = await _dbHelper.database;
+    final rows = await db.query(
+      'carteira_tipos_produto',
+      where: 'user_id = ? AND ativo = 1',
+      whereArgs: [userId],
+      orderBy: 'ordem ASC, label ASC',
+    );
+    return rows.map(_tipoProdutoFromMap).toList(growable: false);
+  }
+
+  @override
+  Future<void> saveTipoProduto(CarteiraTipoProduto tipo) async {
+    final db = await _dbHelper.database;
+    await db.insert(
+      'carteira_tipos_produto',
+      tipo.toMap(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  @override
+  Future<void> ensureTiposProdutoIniciais(String userId) async {
+    final db = await _dbHelper.database;
+    final existing = Sqflite.firstIntValue(
+      await db.rawQuery(
+        'SELECT COUNT(*) FROM carteira_tipos_produto WHERE user_id = ?',
+        [userId],
+      ),
+    );
+    if ((existing ?? 0) > 0) return;
+
+    final now = DateTime.now();
+    final seeds = UnidadeCategoria.seedEntities(userId: userId, now: now);
+    for (final tipo in seeds) {
+      await db.insert(
+        'carteira_tipos_produto',
+        tipo.toMap(),
+        conflictAlgorithm: ConflictAlgorithm.ignore,
+      );
+    }
+  }
+
+  Future<String> _uniqueTipoCodigo(
+    Database db,
+    String userId,
+    String baseCodigo,
+  ) async {
+    var codigo = baseCodigo;
+    var suffix = 1;
+    while (true) {
+      final count = Sqflite.firstIntValue(
+        await db.rawQuery(
+          'SELECT COUNT(*) FROM carteira_tipos_produto '
+          'WHERE user_id = ? AND codigo = ?',
+          [userId, codigo],
+        ),
+      );
+      if ((count ?? 0) == 0) return codigo;
+      suffix++;
+      codigo = '${baseCodigo}_$suffix';
+    }
+  }
+
+  @override
+  Future<CarteiraTipoProduto> createTipoProdutoFromLabel({
+    required String userId,
+    required String label,
+    bool converteSacasHa = false,
+  }) async {
+    final db = await _dbHelper.database;
+    await ensureTiposProdutoIniciais(userId);
+
+    final baseCodigo = CarteiraTipoProduto.codigoFromLabel(label);
+    final codigo = await _uniqueTipoCodigo(db, userId, baseCodigo);
+
+    final tipos = await db.query(
+      'carteira_tipos_produto',
+      columns: ['ordem'],
+      where: 'user_id = ?',
+      whereArgs: [userId],
+      orderBy: 'ordem DESC',
+      limit: 1,
+    );
+    final nextOrdem = tipos.isEmpty ? 0 : ((tipos.first['ordem'] as int?) ?? 0) + 1;
+
+    final now = DateTime.now();
+    final tipo = CarteiraTipoProduto(
+      id: _uuid.v4(),
+      userId: userId,
+      codigo: codigo,
+      label: label.trim(),
+      converteSacasHa: converteSacasHa,
+      ordem: nextOrdem,
+      createdAt: now,
+      updatedAt: now,
+    );
+    await saveTipoProduto(tipo);
+    return tipo;
   }
 
   @override
@@ -229,6 +340,35 @@ class CarteiraRepositoryImpl implements ICarteiraRepository {
     });
   }
 
+  @override
+  Future<CarteiraSafra> ensureSafraAtiva(String userId) async {
+    final ativa = await getSafraAtiva(userId);
+    if (ativa != null) return ativa;
+
+    final safras = await getSafras(userId);
+    if (safras.isNotEmpty) {
+      await ativarSafra(safras.first.id, userId);
+      final reativada = await getSafraAtiva(userId);
+      if (reativada != null) return reativada;
+    }
+
+    final now = DateTime.now();
+    final inicioAno = now.month >= 9 ? now.year : now.year - 1;
+    final safra = CarteiraSafra(
+      id: _uuid.v4(),
+      userId: userId,
+      nome: 'Safra $inicioAno/${inicioAno + 1}',
+      dataInicio: DateTime(inicioAno, 9, 1),
+      dataFim: DateTime(inicioAno + 1, 8, 31),
+      ativa: true,
+      createdAt: now,
+      updatedAt: now,
+    );
+    await saveSafra(safra);
+    await ativarSafra(safra.id, userId);
+    return safra;
+  }
+
   // ── Metas ───────────────────────────────────────────────────────
 
   @override
@@ -361,7 +501,7 @@ class CarteiraRepositoryImpl implements ICarteiraRepository {
       'cor': categoria.cor,
       'ativo': categoria.ativo ? 1 : 0,
       'ordem': categoria.ordem,
-      'unidade': categoria.unidade.dbValue,
+      'unidade': categoria.unidadeCodigo,
       'valor_referencia': categoria.valorReferencia,
       'valor_real': categoria.valorReal,
       'valor_dolar': categoria.valorDolar,
@@ -371,22 +511,23 @@ class CarteiraRepositoryImpl implements ICarteiraRepository {
     };
   }
 
-  CategoriaGlobal _categoriaFromMap(Map<String, Object?> map) {
-    return CategoriaGlobal(
-      id: (map['id'] ?? '') as String,
-      userId: (map['user_id'] ?? '') as String,
-      nome: (map['nome'] ?? '') as String,
-      cor: (map['cor'] ?? '#4ADE80') as String,
-      ativo: ((map['ativo'] ?? 1) as int) == 1,
-      ordem: (map['ordem'] ?? 0) as int,
-      unidade: CategoriaGlobal.fromMap(map).unidade,
-      valorReferencia: (map['valor_referencia'] as num?)?.toDouble(),
-      valorReal: (map['valor_real'] as num?)?.toDouble(),
-      valorDolar: (map['valor_dolar'] as num?)?.toDouble(),
-      sacasPorHa: (map['sacas_por_ha'] as num?)?.toDouble(),
-      createdAt: DateTime.parse((map['created_at'] ?? '') as String),
-      updatedAt: DateTime.parse((map['updated_at'] ?? '') as String),
+  CategoriaGlobal _categoriaFromMap(
+    Map<String, Object?> map, {
+    Map<String, CarteiraTipoProduto>? tiposByCodigo,
+  }) {
+    final codigo =
+        (map['unidade'] as String?) ?? UnidadeCategoria.defaultCodigo;
+    final tipo = tiposByCodigo?[codigo];
+
+    return CategoriaGlobal.fromMap(
+      map,
+      unidadeLabel: tipo?.label,
+      converteSacasHa: tipo?.converteSacasHa,
     );
+  }
+
+  CarteiraTipoProduto _tipoProdutoFromMap(Map<String, Object?> map) {
+    return CarteiraTipoProduto.fromMap(map);
   }
 
   Map<String, Object?> _clienteCategoriaToMap(ClienteCategoria registro) {

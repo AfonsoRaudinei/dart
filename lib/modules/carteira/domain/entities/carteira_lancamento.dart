@@ -1,7 +1,10 @@
 /// Registro de venda realizada por cliente × categoria × safra.
 ///
 /// O histórico de lançamentos constitui o "realizado" de cada categoria.
-/// Progresso = SUM(lançamentos) / meta.quantidade × 100
+/// Progresso = SUM(lançamentos.quantidade) / meta.quantidade × 100
+///
+/// [quantidade] nunca é input do usuário — derivada via [derivarQuantidade].
+/// Ver `docs/CARTEIRA_CALCULOS.md` — Cálculo 3.
 /// ADR-022 — SoloForte
 enum TipoFechamento {
   vendido,
@@ -51,6 +54,28 @@ class CarteiraLancamento {
     if (rounded < 0) return 0;
     if (rounded > 100) return 100;
     return rounded;
+  }
+
+  /// Deriva volume realizado: `metaQuantidade × (closedPercent / 100)`.
+  static double derivarQuantidade({
+    required double metaQuantidade,
+    required double closedPercent,
+  }) {
+    if (metaQuantidade <= 0) return 0.0;
+    final pct = closedPercent.clamp(0.0, 100.0);
+    return metaQuantidade * (pct / 100.0);
+  }
+
+  /// Volume residual em aberto para a meta informada.
+  static double derivarOportunidadeVolume({
+    required double metaQuantidade,
+    required double closedPercent,
+  }) {
+    final realizado = derivarQuantidade(
+      metaQuantidade: metaQuantidade,
+      closedPercent: closedPercent,
+    );
+    return (metaQuantidade - realizado).clamp(0.0, double.infinity);
   }
 
   const CarteiraLancamento({

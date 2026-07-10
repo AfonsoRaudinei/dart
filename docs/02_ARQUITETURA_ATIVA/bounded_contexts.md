@@ -217,13 +217,16 @@ Qualquer alteração exige: atualização desta tabela + ADR em `02_ARQUITETURA_
 
 **Responsabilidade**: Gestão de carteira de clientes e oportunidades comerciais
 
+**Documentação detalhada**: [`MODULO_CARTEIRA.md`](MODULO_CARTEIRA.md)
+
 **Camada de Apresentação**:
-- `carteira_screen.dart`
-- `cliente_detail_screen.dart`
+- `carteira_screen.dart`, `carteira_cliente_screen.dart`, `oportunidades_detalhe_screen.dart`
+- Providers: `carteira_providers.dart`
 
 **Camada de Domínio**:
-- Entidades: `Cliente`, `Oportunidade`
-- Repositórios e providers de clientes/oportunidades
+- Entidades: `CategoriaGlobal`, `CarteiraSafra`, `CarteiraMeta`, `CarteiraLancamento`, `ClienteCategoria` (legado)
+- Repositório: `ICarteiraRepository` / `CarteiraRepositoryImpl`
+- Lookup ADR-029: `OpportunityLookupImpl` → `IOpportunityLookup`
 
 **Dependências Permitidas**:
 - ✅ `core/contracts/IClientLookup`

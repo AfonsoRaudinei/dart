@@ -3,6 +3,7 @@ import '../entities/cliente_categoria.dart';
 import '../entities/carteira_safra.dart';
 import '../entities/carteira_meta.dart';
 import '../entities/carteira_lancamento.dart';
+import '../entities/carteira_tipo_produto.dart';
 
 /// Interface do repositório de carteira.
 ///
@@ -15,6 +16,17 @@ abstract class ICarteiraRepository {
   Future<void> saveCategoria(CategoriaGlobal categoria);
   Future<void> updateCategoria(CategoriaGlobal categoria);
   Future<void> desativarCategoria(String id);
+
+  // ── Tipos de produto (unidades dinâmicas) ────────────────────────
+
+  Future<List<CarteiraTipoProduto>> getTiposProduto(String userId);
+  Future<void> saveTipoProduto(CarteiraTipoProduto tipo);
+  Future<void> ensureTiposProdutoIniciais(String userId);
+  Future<CarteiraTipoProduto> createTipoProdutoFromLabel({
+    required String userId,
+    required String label,
+    bool converteSacasHa = false,
+  });
 
   // ── ClienteCategoria (legado — retrocompat) ─────────────────────
 
@@ -37,6 +49,9 @@ abstract class ICarteiraRepository {
   Future<CarteiraSafra?> getSafraAtiva(String userId);
   Future<void> saveSafra(CarteiraSafra safra);
   Future<void> ativarSafra(String safraId, String userId);
+
+  /// Garante uma safra ativa — reativa a mais recente ou cria padrão.
+  Future<CarteiraSafra> ensureSafraAtiva(String userId);
 
   // ── Metas ───────────────────────────────────────────────────────
 
