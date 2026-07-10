@@ -503,4 +503,51 @@ class DatabaseMigrationsV24V38 {
       'ON occurrences(external_source, external_analysis_id)',
     );
   }
+
+  /// V39 — Carteira: tipos de produto dinâmicos por usuário.
+  static Future<void> migrateToV39(Database db) async {
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS carteira_tipos_produto (
+        id                 TEXT PRIMARY KEY,
+        user_id            TEXT NOT NULL,
+        codigo             TEXT NOT NULL,
+        label              TEXT NOT NULL,
+        converte_sacas_ha  INTEGER NOT NULL DEFAULT 0,
+        sistema            INTEGER NOT NULL DEFAULT 0,
+        ativo              INTEGER NOT NULL DEFAULT 1,
+        ordem              INTEGER NOT NULL DEFAULT 0,
+        created_at         TEXT NOT NULL,
+        updated_at         TEXT NOT NULL,
+        UNIQUE(user_id, codigo)
+      )
+    ''');
+
+    await db.execute('''
+      CREATE INDEX IF NOT EXISTS idx_carteira_tipos_produto_user
+        ON carteira_tipos_produto(user_id, ativo)
+    ''');
+  }
+
+  /// V40 — Agenda: persiste horário, prioridade e geo do evento.
+  static Future<void> migrateToV40(Database db) async {
+    const columns = <String, String>{
+      'start_time': 'TEXT',
+      'end_time': 'TEXT',
+      'priority': "TEXT NOT NULL DEFAULT 'normal'",
+      'latitude': 'REAL',
+      'longitude': 'REAL',
+    };
+
+    for (final entry in columns.entries) {
+      if (!await DatabaseSchemaUtils.columnExists(
+        db,
+        'agenda_events',
+        entry.key,
+      )) {
+        await db.execute(
+          'ALTER TABLE agenda_events ADD COLUMN ${entry.key} ${entry.value}',
+        );
+      }
+    }
+  }
 }

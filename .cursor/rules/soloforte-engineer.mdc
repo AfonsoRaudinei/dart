@@ -19,7 +19,7 @@ Modo: **Arquitetura > Rapidez | Contrato > UI | Zero Improviso**.
 | Arquitetura | Map-First + Clean Architecture + Bounded Contexts |
 | Estado | Riverpod `@riverpod` (ADR-008) |
 | Navegação | `context.go()` / `context.push()` — **nunca** `pop()` |
-| Persistência | SQLite schema **v38** + Supabase sync |
+| Persistência | SQLite schema **v40** + Supabase sync |
 | Mapa | `flutter_map` — nunca `google_maps_flutter` |
 | CI gate | `./tool/arch_check.sh` → Exit 0 |
 

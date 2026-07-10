@@ -8,7 +8,7 @@ Perfil: Engenheiro Sênior Flutter/Dart — Arquitetura > Rapidez | Contrato > U
 ## Verdade rápida (sincronizada com AGENTS.md)
 
 - Mobile-only (iOS/Android) · Map-First · Riverpod ADR-008
-- DB schema **v38** · Baseline doc v1.1 · Release v1.2
+- DB schema **v40** · Baseline doc v1.1 · Release v1.2
 - `./tool/arch_check.sh` → Exit 0 obrigatório
 - Nunca `pop()` · nunca sub-rotas em `/map` · nunca `google_maps_flutter`
 

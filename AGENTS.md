@@ -16,7 +16,7 @@
 | Arquitetura | Map-First + Clean Architecture + Bounded Contexts |
 | Estado | Riverpod `@riverpod` / `AsyncNotifier` (ADR-008) |
 | Navegação | `context.go()` / `context.push()` — **nunca** `pop()` |
-| Persistência | SQLite offline-first — schema **v38** (`database_helper.dart`) |
+| Persistência | SQLite offline-first — schema **v40** (`database_helper.dart`) |
 | Mapa | `flutter_map` — nunca `google_maps_flutter` |
 | CI gate | `./tool/arch_check.sh` → Exit 0 |
 | Coverage mínimo CI | 36.46% |
@@ -148,7 +148,7 @@ Se precisar cruzar fronteira → contrato em `core/contracts/` + ADR novo.
 lib/
 ├── core/
 │   ├── contracts/         ← contratos inter-módulos
-│   ├── database/          ← database_helper.dart (schema v38)
+│   ├── database/          ← database_helper.dart (schema v40)
 │   ├── router/            ← app_router.dart (única exceção core→modules)
 │   └── state/
 ├── modules/
