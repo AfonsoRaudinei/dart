@@ -10,20 +10,21 @@ import '../../../../core/providers/connectivity_provider.dart';
 import '../../domain/radar_overlay_logger.dart';
 import '../providers/radar_providers.dart';
 
-/// Camada de radar de precipitação em tempo real (RainViewer — ADR-043).
+/// Camada de tiles do radar RainViewer (ADR-043).
 ///
-/// Posicionamento: após polígonos/desenho e antes dos markers.
-class ClimaRadarLayerWidget extends ConsumerStatefulWidget {
+/// Deve ser filho direto do [FlutterMap], após polígonos/desenho e antes de markers.
+class ClimaRadarTileLayerWidget extends ConsumerStatefulWidget {
   final TileProvider? tileProvider;
 
-  const ClimaRadarLayerWidget({super.key, this.tileProvider});
+  const ClimaRadarTileLayerWidget({super.key, this.tileProvider});
 
   @override
-  ConsumerState<ClimaRadarLayerWidget> createState() =>
-      _ClimaRadarLayerWidgetState();
+  ConsumerState<ClimaRadarTileLayerWidget> createState() =>
+      _ClimaRadarTileLayerWidgetState();
 }
 
-class _ClimaRadarLayerWidgetState extends ConsumerState<ClimaRadarLayerWidget> {
+class _ClimaRadarTileLayerWidgetState
+    extends ConsumerState<ClimaRadarTileLayerWidget> {
   Timer? _animationTimer;
   int _animatedFrameCount = 0;
 
@@ -72,7 +73,7 @@ class _ClimaRadarLayerWidgetState extends ConsumerState<ClimaRadarLayerWidget> {
     if (!isOnline) {
       _stopAnimation();
       logClimaRadarOverlayState(ClimaRadarOverlayState.offline.name);
-      return _RadarStatusBanner.offline();
+      return const SizedBox.shrink();
     }
 
     final framesAsync = ref.watch(climaRadarFramesProvider);
@@ -89,11 +90,7 @@ class _ClimaRadarLayerWidgetState extends ConsumerState<ClimaRadarLayerWidget> {
 
         if (!result.hasFrames) {
           _stopAnimation();
-          return switch (overlayState) {
-            ClimaRadarOverlayState.noPrecipitation =>
-              _RadarStatusBanner.noPrecipitation(),
-            _ => _RadarStatusBanner.unavailable(),
-          };
+          return const SizedBox.shrink();
         }
 
         _syncAnimation(result.frames.length);
@@ -101,51 +98,90 @@ class _ClimaRadarLayerWidgetState extends ConsumerState<ClimaRadarLayerWidget> {
         final rawIndex = ref.watch(climaRadarFrameIndexProvider);
         final frameIndex = rawIndex.clamp(0, result.frames.length - 1);
         final activeFrame = result.frames[frameIndex];
-        final ageLabel = formatClimaRadarFrameAgeLabel(
-          activeFrame.time,
-          DateTime.now(),
-        );
 
-        return Stack(
-          children: [
-            Opacity(
-              opacity: MapConfig.radarOverlayOpacity,
-              child: TileLayer(
-                urlTemplate: activeFrame.urlTemplate,
-                userAgentPackageName: MapConfig.userAgent,
-                maxZoom: MapConfig.rainViewerMaxZoom,
-                maxNativeZoom: MapConfig.rainViewerMaxNativeZoom,
-                tileProvider: widget.tileProvider,
-                subdomains: const [],
-              ),
-            ),
-            _RadarStatusBanner.active(ageLabel: ageLabel),
-          ],
+        return Opacity(
+          opacity: MapConfig.radarOverlayOpacity,
+          child: TileLayer(
+            urlTemplate: activeFrame.urlTemplate,
+            userAgentPackageName: MapConfig.userAgent,
+            tileSize: MapConfig.rainViewerTileSize,
+            zoomOffset: MapConfig.rainViewerZoomOffset,
+            maxZoom: MapConfig.rainViewerMaxZoom,
+            maxNativeZoom: MapConfig.rainViewerMaxNativeZoom,
+            tileProvider: widget.tileProvider,
+            subdomains: const [],
+          ),
         );
       },
       loading: () {
         _stopAnimation();
         logClimaRadarOverlayState(ClimaRadarOverlayState.loading.name);
-        return _RadarStatusBanner.loading();
+        return const SizedBox.shrink();
       },
       error: (_, __) {
         _stopAnimation();
         logClimaRadarOverlayState(ClimaRadarOverlayState.unavailable.name);
-        return _RadarStatusBanner.unavailable();
+        return const SizedBox.shrink();
       },
     );
   }
 }
 
+/// Badge estático do radar — filho direto do [FlutterMap].
+class ClimaRadarStatusOverlay extends ConsumerWidget {
+  const ClimaRadarStatusOverlay({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final showRadar = ref.watch(climaRadarEnabledProvider);
+    final isOnline = ref.watch(isOnlineProvider).valueOrNull ?? true;
+
+    if (!showRadar) return const SizedBox.shrink();
+
+    if (!isOnline) {
+      return _RadarStatusBanner.offline();
+    }
+
+    final framesAsync = ref.watch(climaRadarFramesProvider);
+
+    return framesAsync.when(
+      data: (result) {
+        final overlayState = resolveClimaRadarOverlayState(
+          enabled: true,
+          isOnline: true,
+          isLoading: false,
+          result: result,
+        );
+
+        return switch (overlayState) {
+          ClimaRadarOverlayState.active => _RadarStatusBanner.active(),
+          ClimaRadarOverlayState.noPrecipitation =>
+            _RadarStatusBanner.noPrecipitation(),
+          _ => _RadarStatusBanner.unavailable(),
+        };
+      },
+      loading: () => _RadarStatusBanner.loading(),
+      error: (_, __) => _RadarStatusBanner.unavailable(),
+    );
+  }
+}
+
+/// Alias legado para testes e imports existentes.
+typedef ClimaRadarLayerWidget = ClimaRadarTileLayerWidget;
+
 class _RadarStatusBanner extends StatelessWidget {
-  final String message;
+  final String? message;
   final Color accentColor;
   final Key bannerKey;
+  final bool iconOnly;
+  final bool showLiveIndicator;
 
   const _RadarStatusBanner({
-    required this.message,
     required this.accentColor,
     required this.bannerKey,
+    this.message,
+    this.iconOnly = false,
+    this.showLiveIndicator = false,
   });
 
   factory _RadarStatusBanner.loading() {
@@ -156,14 +192,12 @@ class _RadarStatusBanner extends StatelessWidget {
     );
   }
 
-  factory _RadarStatusBanner.active({required String ageLabel}) {
-    return _RadarStatusBanner(
-      bannerKey: const Key('radar_active_banner'),
-      message: climaRadarBannerMessage(
-        state: ClimaRadarOverlayState.active,
-        activeAgeLabel: ageLabel,
-      ),
+  factory _RadarStatusBanner.active() {
+    return const _RadarStatusBanner(
+      bannerKey: Key('radar_active_banner'),
       accentColor: Colors.lightBlueAccent,
+      iconOnly: true,
+      showLiveIndicator: true,
     );
   }
 
@@ -200,24 +234,40 @@ class _RadarStatusBanner extends StatelessWidget {
           child: Container(
             key: bannerKey,
             margin: const EdgeInsets.only(top: 12, left: 16, right: 16),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            padding: EdgeInsets.symmetric(
+              horizontal: iconOnly ? 10 : 12,
+              vertical: iconOnly ? 10 : 8,
+            ),
             decoration: BoxDecoration(
               color: Colors.black.withValues(alpha: 0.72),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(iconOnly ? 20 : 8),
               border: Border.all(color: accentColor.withValues(alpha: 0.45)),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(Icons.water_drop_outlined, size: 16, color: accentColor),
-                const SizedBox(width: 8),
-                Flexible(
-                  child: Text(
-                    message,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(color: Colors.white, fontSize: 13),
+                if (!iconOnly && message != null) ...[
+                  const SizedBox(width: 8),
+                  Flexible(
+                    child: Text(
+                      message!,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(color: Colors.white, fontSize: 13),
+                    ),
                   ),
-                ),
+                ],
+                if (showLiveIndicator) ...[
+                  const SizedBox(width: 6),
+                  Container(
+                    width: 8,
+                    height: 8,
+                    decoration: const BoxDecoration(
+                      color: Colors.greenAccent,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ],
               ],
             ),
           ),

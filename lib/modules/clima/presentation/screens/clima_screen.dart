@@ -10,12 +10,13 @@ import 'package:soloforte_app/core/constants/layout_constants.dart';
 import 'package:soloforte_app/core/contracts/i_radar_overlay_controller_provider.dart';
 import 'package:soloforte_app/core/permissions/location_permission_gate.dart';
 import 'package:soloforte_app/core/router/app_routes.dart';
-import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 import 'package:soloforte_app/modules/clima/domain/entities/alerta_meteorologico.dart';
 import 'package:soloforte_app/modules/clima/domain/entities/clima_atual.dart';
 import 'package:soloforte_app/modules/clima/presentation/providers/clima_providers.dart';
 import 'package:soloforte_app/modules/clima/presentation/widgets/clima_current_widgets.dart';
 import 'package:soloforte_app/modules/clima/presentation/widgets/clima_forecast_widgets.dart';
+import 'package:soloforte_app/modules/clima/domain/clima_share_payload.dart';
+import 'package:soloforte_app/modules/clima/presentation/widgets/clima_city_selection_sheet.dart';
 import 'package:soloforte_app/modules/clima/presentation/widgets/clima_settings_sheet.dart';
 import 'package:soloforte_app/modules/clima/presentation/widgets/clima_shared_widgets.dart';
 import 'package:soloforte_app/modules/clima/presentation/widgets/clima_tokens.dart';
@@ -110,7 +111,7 @@ class _CurrentView extends ConsumerWidget {
 
   Future<void> _refreshCurrentLocation(WidgetRef ref) async {
     HapticFeedback.lightImpact();
-    ref.read(climaSelectedCityProvider.notifier).state = null;
+    await ref.read(climaSelectedCityProvider.notifier).clear();
 
     final serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
@@ -232,10 +233,13 @@ class _CurrentView extends ConsumerWidget {
                           cidade: clima.cidade,
                           atualizadoEm: clima.atualizadoEm,
                           padding: EdgeInsets.zero,
+                          onTap: () => showClimaCitySelection(context, ref),
                         ),
                       ),
                       const SizedBox(width: 10),
-                      _ClimaWhatsAppButton(clima: clima),
+                      ClimaShareButton(
+                        payload: ClimaSharePayloadAtual(clima),
+                      ),
                     ],
                   ),
                 ),
@@ -314,56 +318,6 @@ class _ClimaMapRadarButton extends ConsumerWidget {
   }
 }
 
-class _ClimaWhatsAppButton extends StatelessWidget {
-  const _ClimaWhatsAppButton({required this.clima});
-
-  final ClimaAtual clima;
-
-  @override
-  Widget build(BuildContext context) {
-    return Semantics(
-      button: true,
-      label: 'Compartilhar previsão no WhatsApp',
-      child: Tooltip(
-        message: 'Compartilhar no WhatsApp',
-        child: SizedBox(
-          width: 44,
-          height: 44,
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              color: kClimaCard,
-              borderRadius: BorderRadius.circular(14),
-              boxShadow: const [
-                BoxShadow(
-                  color: kClimaShadow,
-                  offset: Offset(0, 2),
-                  blurRadius: 8,
-                ),
-              ],
-            ),
-            child: IconButton(
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints.expand(),
-              icon: const Icon(
-                Icons.share_outlined,
-                color: Color(0xFF4ADE80),
-                size: 22,
-              ),
-              tooltip: 'Compartilhar no WhatsApp',
-              onPressed: () => showSoloForteSheet<void>(
-                context: context,
-                isScrollControlled: true,
-                showDragHandle: false,
-                builder: (_) => ClimaWhatsAppSheet(clima: clima),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 // ─── 24h View ─────────────────────────────────────────────────────────────────
 
 class _HoraryView extends ConsumerWidget {
@@ -372,6 +326,7 @@ class _HoraryView extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final previsaoAsync = ref.watch(previsaoHorariaProvider);
+    final climaAsync = ref.watch(climaAtualProvider);
     final unidade = ref.watch(climaUnidadeProvider);
 
     return CustomScrollView(
@@ -380,9 +335,28 @@ class _HoraryView extends ConsumerWidget {
       ),
       slivers: [
         SliverToBoxAdapter(
-          child: ClimaSubViewHeader(
-            title: 'Próximas 24 Horas',
-            onBack: () => ref.read(climaTabIndexProvider.notifier).state = 0,
+          child: climaAsync.when(
+            data: (clima) => ClimaSubViewHeader(
+              title: 'Próximas 24 Horas',
+              onBack: () => ref.read(climaTabIndexProvider.notifier).state = 0,
+              trailing: previsaoAsync.maybeWhen(
+                data: (previsoes) => ClimaShareButton(
+                  payload: ClimaSharePayloadHoraria(
+                    cidadeLabel: clima.cidade,
+                    previsoes: previsoes.take(24).toList(),
+                  ),
+                ),
+                orElse: () => null,
+              ),
+            ),
+            loading: () => ClimaSubViewHeader(
+              title: 'Próximas 24 Horas',
+              onBack: () => ref.read(climaTabIndexProvider.notifier).state = 0,
+            ),
+            error: (_, __) => ClimaSubViewHeader(
+              title: 'Próximas 24 Horas',
+              onBack: () => ref.read(climaTabIndexProvider.notifier).state = 0,
+            ),
           ),
         ),
         SliverToBoxAdapter(
@@ -409,6 +383,7 @@ class _WeeklyView extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final previsaoAsync = ref.watch(previsaoSemanalProvider);
+    final climaAsync = ref.watch(climaAtualProvider);
     final unidade = ref.watch(climaUnidadeProvider);
 
     return CustomScrollView(
@@ -417,9 +392,28 @@ class _WeeklyView extends ConsumerWidget {
       ),
       slivers: [
         SliverToBoxAdapter(
-          child: ClimaSubViewHeader(
-            title: 'Previsão Semanal',
-            onBack: () => ref.read(climaTabIndexProvider.notifier).state = 0,
+          child: climaAsync.when(
+            data: (clima) => ClimaSubViewHeader(
+              title: 'Previsão Semanal',
+              onBack: () => ref.read(climaTabIndexProvider.notifier).state = 0,
+              trailing: previsaoAsync.maybeWhen(
+                data: (previsoes) => ClimaShareButton(
+                  payload: ClimaSharePayloadSemanal(
+                    cidadeLabel: clima.cidade,
+                    previsoes: previsoes,
+                  ),
+                ),
+                orElse: () => null,
+              ),
+            ),
+            loading: () => ClimaSubViewHeader(
+              title: 'Previsão Semanal',
+              onBack: () => ref.read(climaTabIndexProvider.notifier).state = 0,
+            ),
+            error: (_, __) => ClimaSubViewHeader(
+              title: 'Previsão Semanal',
+              onBack: () => ref.read(climaTabIndexProvider.notifier).state = 0,
+            ),
           ),
         ),
         SliverToBoxAdapter(

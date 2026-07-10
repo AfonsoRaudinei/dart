@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import 'package:soloforte_app/core/database/database_helper.dart';
+import 'package:soloforte_app/core/contracts/i_client_lookup.dart';
+import 'package:soloforte_app/core/contracts/i_client_lookup_provider.dart';
 import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
-import 'package:soloforte_app/modules/clima/domain/entities/clima_atual.dart';
+import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
+import 'package:soloforte_app/modules/clima/domain/clima_share_payload.dart';
 import 'package:soloforte_app/modules/clima/presentation/widgets/clima_tokens.dart';
 
 // ─── Sub-View Header ──────────────────────────────────────────────────────────
@@ -13,11 +15,13 @@ import 'package:soloforte_app/modules/clima/presentation/widgets/clima_tokens.da
 class ClimaSubViewHeader extends StatelessWidget {
   final String title;
   final VoidCallback onBack;
+  final Widget? trailing;
 
   const ClimaSubViewHeader({
     super.key,
     required this.title,
     required this.onBack,
+    this.trailing,
   });
 
   @override
@@ -38,17 +42,72 @@ class ClimaSubViewHeader extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 12),
-          Text(
-            title,
-            style: const TextStyle(
-              fontFamily: 'Inter',
-              fontSize: 22,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0.37,
-              color: kClimaTextPrimary,
+          Expanded(
+            child: Text(
+              title,
+              style: const TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 22,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.37,
+                color: kClimaTextPrimary,
+              ),
             ),
           ),
+          if (trailing != null) trailing!,
         ],
+      ),
+    );
+  }
+}
+
+// ─── Share Button ─────────────────────────────────────────────────────────────
+
+class ClimaShareButton extends StatelessWidget {
+  const ClimaShareButton({super.key, required this.payload});
+
+  final ClimaSharePayload payload;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: 'Compartilhar previsão no WhatsApp',
+      child: Tooltip(
+        message: 'Compartilhar no WhatsApp',
+        child: SizedBox(
+          width: 44,
+          height: 44,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: kClimaCard,
+              borderRadius: BorderRadius.circular(14),
+              boxShadow: const [
+                BoxShadow(
+                  color: kClimaShadow,
+                  offset: Offset(0, 2),
+                  blurRadius: 8,
+                ),
+              ],
+            ),
+            child: IconButton(
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints.expand(),
+              icon: const Icon(
+                Icons.share_outlined,
+                color: Color(0xFF4ADE80),
+                size: 22,
+              ),
+              tooltip: 'Compartilhar no WhatsApp',
+              onPressed: () => showSoloForteSheet<void>(
+                context: context,
+                isScrollControlled: true,
+                showDragHandle: false,
+                builder: (_) => ClimaWhatsAppSheet(payload: payload),
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -141,17 +200,17 @@ class ClimaErrorState extends StatelessWidget {
 
 // ─── WhatsApp Sheet ───────────────────────────────────────────────────────────
 
-class ClimaWhatsAppSheet extends StatefulWidget {
-  final ClimaAtual clima;
+class ClimaWhatsAppSheet extends ConsumerStatefulWidget {
+  final ClimaSharePayload payload;
 
-  const ClimaWhatsAppSheet({super.key, required this.clima});
+  const ClimaWhatsAppSheet({super.key, required this.payload});
 
   @override
-  State<ClimaWhatsAppSheet> createState() => _ClimaWhatsAppSheetState();
+  ConsumerState<ClimaWhatsAppSheet> createState() => _ClimaWhatsAppSheetState();
 }
 
-class _ClimaWhatsAppSheetState extends State<ClimaWhatsAppSheet> {
-  List<Map<String, String>> _clientes = [];
+class _ClimaWhatsAppSheetState extends ConsumerState<ClimaWhatsAppSheet> {
+  List<ClientSummary> _clientes = [];
   final Set<String> _selecionados = {};
   bool _loading = true;
 
@@ -162,42 +221,17 @@ class _ClimaWhatsAppSheetState extends State<ClimaWhatsAppSheet> {
   }
 
   Future<void> _carregarClientes() async {
-    final db = await DatabaseHelper.instance.database;
-    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
-    final rows = await db.rawQuery(
-      'SELECT nome, telefone FROM clients '
-      'WHERE user_id = ? AND telefone IS NOT NULL AND telefone != "" '
-      'AND deleted_at IS NULL '
-      'ORDER BY nome ASC',
-      [userId],
-    );
+    final clientes = await ref.read(clientLookupProvider).listAtivos();
     if (!mounted) return;
     setState(() {
-      _clientes = rows
-          .map(
-            (r) => {
-              'nome': r['nome'] as String,
-              'telefone': r['telefone'] as String,
-            },
-          )
-          .toList();
+      _clientes = clientes;
       _loading = false;
     });
   }
 
-  String _buildMensagem(ClimaAtual clima) {
-    return '🌤 Previsão do tempo — ${clima.cidade}\n\n'
-        '🌡 ${clima.temperatura.toStringAsFixed(0)}°C — ${clima.condicao}\n'
-        '💧 Umidade: ${clima.umidade}%\n'
-        '🌧 Chuva: ${clima.precipitacao.toStringAsFixed(1)} mm\n'
-        '💨 Vento: ${clima.ventoVelocidade.toStringAsFixed(0)} km/h ${clima.ventoDirecao}\n'
-        '☀️ Índice UV: ${clima.indiceUV}\n\n'
-        'Enviado pelo SoloForte App';
-  }
-
   Future<void> _enviarWhatsApp(String telefone) async {
     final tel = telefone.replaceAll(RegExp(r'[^0-9]'), '');
-    final mensagem = _buildMensagem(widget.clima);
+    final mensagem = widget.payload.buildWhatsAppMessage();
     final url = 'https://wa.me/55$tel?text=${Uri.encodeComponent(mensagem)}';
     await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
   }
@@ -212,6 +246,7 @@ class _ClimaWhatsAppSheetState extends State<ClimaWhatsAppSheet> {
   @override
   Widget build(BuildContext context) {
     final total = _selecionados.length;
+    final payload = widget.payload;
 
     return SafeArea(
       top: false,
@@ -223,7 +258,6 @@ class _ClimaWhatsAppSheetState extends State<ClimaWhatsAppSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ── Handle ──────────────────────────────────────────────────────────
             Center(
               child: Container(
                 margin: const EdgeInsets.only(top: 12),
@@ -235,7 +269,6 @@ class _ClimaWhatsAppSheetState extends State<ClimaWhatsAppSheet> {
                 ),
               ),
             ),
-            // ── Header ──────────────────────────────────────────────────────────
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 16, 20, 4),
               child: Column(
@@ -254,7 +287,7 @@ class _ClimaWhatsAppSheetState extends State<ClimaWhatsAppSheet> {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    widget.clima.cidade,
+                    payload.cidade,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
@@ -267,9 +300,8 @@ class _ClimaWhatsAppSheetState extends State<ClimaWhatsAppSheet> {
               ),
             ),
             const Divider(color: SoloForteSheetTokens.divider, height: 1),
-            _ClimaWhatsAppPreview(clima: widget.clima),
+            _ClimaWhatsAppPreview(payload: payload),
             const Divider(color: SoloForteSheetTokens.divider, height: 1),
-            // ── Lista de clientes ────────────────────────────────────────────────
             ConstrainedBox(
               constraints: BoxConstraints(
                 maxHeight: MediaQuery.of(context).size.height * 0.45,
@@ -289,7 +321,7 @@ class _ClimaWhatsAppSheetState extends State<ClimaWhatsAppSheet> {
                       padding: EdgeInsets.all(32),
                       child: Center(
                         child: Text(
-                          'Nenhum cliente com telefone cadastrado.',
+                          'Nenhum cliente cadastrado.',
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontFamily: 'Inter',
@@ -308,32 +340,37 @@ class _ClimaWhatsAppSheetState extends State<ClimaWhatsAppSheet> {
                       ),
                       itemBuilder: (_, i) {
                         final cliente = _clientes[i];
-                        final tel = cliente['telefone']!;
+                        final tel = cliente.phone;
+                        final hasPhone = climaPhoneIsValid(tel);
                         return CheckboxListTile(
                           tileColor: const Color(0xFF2C2C2E),
                           activeColor: const Color(0xFF4ADE80),
                           checkColor: Colors.black,
-                          value: _selecionados.contains(tel),
-                          onChanged: (checked) {
-                            setState(() {
-                              if (checked == true) {
-                                _selecionados.add(tel);
-                              } else {
-                                _selecionados.remove(tel);
-                              }
-                            });
-                          },
+                          value: hasPhone && _selecionados.contains(tel),
+                          onChanged: hasPhone
+                              ? (checked) {
+                                  setState(() {
+                                    if (checked == true && tel != null) {
+                                      _selecionados.add(tel);
+                                    } else if (tel != null) {
+                                      _selecionados.remove(tel);
+                                    }
+                                  });
+                                }
+                              : null,
                           title: Text(
-                            cliente['nome']!,
-                            style: const TextStyle(
+                            cliente.name,
+                            style: TextStyle(
                               fontFamily: 'Inter',
                               fontSize: 15,
                               fontWeight: FontWeight.w500,
-                              color: SoloForteSheetTokens.inputText,
+                              color: hasPhone
+                                  ? SoloForteSheetTokens.inputText
+                                  : SoloForteSheetTokens.categoryLabel,
                             ),
                           ),
                           subtitle: Text(
-                            tel,
+                            hasPhone ? tel! : 'Sem telefone cadastrado',
                             style: const TextStyle(
                               fontFamily: 'Inter',
                               fontSize: 13,
@@ -345,7 +382,6 @@ class _ClimaWhatsAppSheetState extends State<ClimaWhatsAppSheet> {
                     ),
             ),
             const Divider(color: SoloForteSheetTokens.divider, height: 1),
-            // ── Botão de envio ──────────────────────────────────────────────────
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
               child: SizedBox(
@@ -391,9 +427,9 @@ class _ClimaWhatsAppSheetState extends State<ClimaWhatsAppSheet> {
 }
 
 class _ClimaWhatsAppPreview extends StatelessWidget {
-  const _ClimaWhatsAppPreview({required this.clima});
+  const _ClimaWhatsAppPreview({required this.payload});
 
-  final ClimaAtual clima;
+  final ClimaSharePayload payload;
 
   @override
   Widget build(BuildContext context) {
@@ -425,7 +461,7 @@ class _ClimaWhatsAppPreview extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  climaWeatherEmoji(clima.condicaoCodigo),
+                  payload.previewEmoji,
                   style: const TextStyle(fontSize: 28),
                 ),
                 const SizedBox(width: 10),
@@ -434,8 +470,8 @@ class _ClimaWhatsAppPreview extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        '${clima.temperatura.toStringAsFixed(0)}°C · ${clima.cidade}',
-                        maxLines: 1,
+                        payload.previewTitle,
+                        maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           fontFamily: 'Inter',
@@ -446,8 +482,8 @@ class _ClimaWhatsAppPreview extends StatelessWidget {
                       ),
                       const SizedBox(height: 3),
                       Text(
-                        clima.condicao,
-                        maxLines: 1,
+                        payload.previewSubtitle,
+                        maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           fontFamily: 'Inter',
@@ -464,17 +500,9 @@ class _ClimaWhatsAppPreview extends StatelessWidget {
             Wrap(
               spacing: 8,
               runSpacing: 8,
-              children: [
-                _PreviewChip(label: 'Umidade ${clima.umidade}%'),
-                _PreviewChip(
-                  label:
-                      'Vento ${clima.ventoVelocidade.toStringAsFixed(0)} km/h',
-                ),
-                _PreviewChip(
-                  label: 'Chuva ${clima.precipitacao.toStringAsFixed(1)} mm',
-                ),
-                _PreviewChip(label: 'UV ${clima.indiceUV}'),
-              ],
+              children: payload.previewChips
+                  .map((label) => _PreviewChip(label: label))
+                  .toList(),
             ),
           ],
         ),

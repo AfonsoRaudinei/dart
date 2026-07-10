@@ -28,6 +28,7 @@ void main() {
 
       expect(find.byType(TileLayer), findsOneWidget);
       expect(find.byKey(const Key('radar_active_banner')), findsOneWidget);
+      expect(find.textContaining('Chuva ativa'), findsNothing);
     });
 
     testWidgets('exibe banner de carregamento enquanto busca frames', (
@@ -48,8 +49,8 @@ void main() {
                   initialCenter: LatLng(-15.7801, -47.9292),
                   initialZoom: 5,
                 ),
-                children: [
-                  ClimaRadarLayerWidget(tileProvider: _MemoryTileProvider()),
+                children: const [
+                  ClimaRadarStatusOverlay(),
                 ],
               ),
             ),
@@ -78,8 +79,8 @@ void main() {
                   initialCenter: LatLng(-15.7801, -47.9292),
                   initialZoom: 5,
                 ),
-                children: [
-                  ClimaRadarLayerWidget(tileProvider: _MemoryTileProvider()),
+                children: const [
+                  ClimaRadarStatusOverlay(),
                 ],
               ),
             ),
@@ -160,7 +161,8 @@ Widget _buildRadarMap({
             initialZoom: 5,
           ),
           children: [
-            ClimaRadarLayerWidget(tileProvider: _MemoryTileProvider()),
+            ClimaRadarTileLayerWidget(tileProvider: _MemoryTileProvider()),
+            const ClimaRadarStatusOverlay(),
           ],
         ),
       ),

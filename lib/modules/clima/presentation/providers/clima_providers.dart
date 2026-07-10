@@ -7,7 +7,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:soloforte_app/core/config/clima_config.dart';
 import 'package:soloforte_app/core/contracts/i_user_location_lookup_provider.dart';
 import 'package:soloforte_app/core/permissions/location_permission_gate.dart';
-import 'package:soloforte_app/core/utils/app_logger.dart';
+import 'package:soloforte_app/core/infra/preferences_service.dart';
 
 import 'package:soloforte_app/modules/clima/data/datasources/clima_local_datasource.dart';
 import 'package:soloforte_app/modules/clima/data/datasources/google_weather_remote_datasource.dart';
@@ -18,6 +18,8 @@ import 'package:soloforte_app/modules/clima/domain/entities/clima_atual.dart';
 import 'package:soloforte_app/modules/clima/domain/entities/previsao_diaria.dart';
 import 'package:soloforte_app/modules/clima/domain/entities/previsao_horaria.dart';
 import 'package:soloforte_app/modules/clima/domain/repositories/i_clima_repository.dart';
+import 'package:soloforte_app/core/utils/app_logger.dart';
+
 import 'package:soloforte_app/modules/clima/presentation/widgets/clima_tokens.dart';
 
 part 'clima_providers.g.dart';
@@ -60,24 +62,7 @@ typedef ClimaSelectedCity = ({String nome, double lat, double lon});
 /// Brasília como fallback quando GPS não está disponível.
 const ClimaLatLon _kDefaultLocation = (lat: -15.7801, lon: -47.9292);
 
-const List<ClimaSelectedCity> climaCityOptions = [
-  (nome: 'Fortaleza, CE', lat: -3.7319, lon: -38.5267),
-  (nome: 'Brasília, DF', lat: -15.7801, lon: -47.9292),
-  (nome: 'São Paulo, SP', lat: -23.5505, lon: -46.6333),
-  (nome: 'Rio de Janeiro, RJ', lat: -22.9068, lon: -43.1729),
-  (nome: 'Belo Horizonte, MG', lat: -19.9167, lon: -43.9345),
-  (nome: 'Goiânia, GO', lat: -16.6869, lon: -49.2648),
-  (nome: 'Palmas, TO', lat: -10.1840, lon: -48.3336),
-  (nome: 'Porto Nacional, TO', lat: -10.7081, lon: -48.4172),
-  (nome: 'Teresina, PI', lat: -5.0892, lon: -42.8019),
-  (nome: 'São Luís, MA', lat: -2.5307, lon: -44.3068),
-  (nome: 'Natal, RN', lat: -5.7945, lon: -35.2110),
-  (nome: 'João Pessoa, PB', lat: -7.1195, lon: -34.8450),
-  (nome: 'Recife, PE', lat: -8.0476, lon: -34.8770),
-  (nome: 'Maceió, AL', lat: -9.6498, lon: -35.7089),
-  (nome: 'Aracaju, SE', lat: -10.9472, lon: -37.0731),
-  (nome: 'Salvador, BA', lat: -12.9777, lon: -38.5016),
-];
+const String kClimaSelectedCityPrefsKey = 'clima_selected_city_v1';
 
 // ─── Tab ─────────────────────────────────────────────────────────────────────
 
@@ -89,9 +74,40 @@ final climaUnidadeProvider = StateProvider<ClimaUnidade>(
   (ref) => ClimaUnidade.celsius,
 );
 
-/// Cidade escolhida manualmente pelo usuário.
-final climaSelectedCityProvider = StateProvider<ClimaSelectedCity?>(
-  (ref) => null,
+/// Cidade escolhida manualmente (IBGE) — persistida em SharedPreferences.
+class ClimaSelectedCityController extends StateNotifier<ClimaSelectedCity?> {
+  ClimaSelectedCityController(this._prefs) : super(_loadFromPrefs(_prefs));
+
+  final PreferencesService _prefs;
+
+  static ClimaSelectedCity? _loadFromPrefs(PreferencesService prefs) {
+    final raw = prefs.getString(kClimaSelectedCityPrefsKey);
+    if (raw == null) return null;
+    final parts = raw.split('|');
+    if (parts.length != 3) return null;
+    final lat = double.tryParse(parts[1]);
+    final lon = double.tryParse(parts[2]);
+    if (lat == null || lon == null) return null;
+    return (nome: parts[0], lat: lat, lon: lon);
+  }
+
+  Future<void> select(ClimaSelectedCity city) async {
+    state = city;
+    await _prefs.setString(
+      kClimaSelectedCityPrefsKey,
+      '${city.nome}|${city.lat}|${city.lon}',
+    );
+  }
+
+  Future<void> clear() async {
+    state = null;
+    await _prefs.remove(kClimaSelectedCityPrefsKey);
+  }
+}
+
+final climaSelectedCityProvider =
+    StateNotifierProvider<ClimaSelectedCityController, ClimaSelectedCity?>(
+  (ref) => ClimaSelectedCityController(ref.watch(preferencesServiceProvider)),
 );
 
 /// Posição obtida explicitamente pelo botão "minha localização".

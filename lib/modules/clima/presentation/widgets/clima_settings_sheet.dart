@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:soloforte_app/modules/clima/presentation/widgets/clima_city_selection_sheet.dart';
 import 'package:soloforte_app/modules/clima/presentation/providers/clima_providers.dart';
 import 'package:soloforte_app/modules/clima/presentation/widgets/clima_tokens.dart';
 import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
@@ -85,14 +86,14 @@ class ClimaSettingsSheet extends ConsumerWidget {
             ),
             child: Column(
               children: [
-                _SettingsRow(
+                ClimaSettingsOptionRow(
                   label: 'Usar localização atual',
                   selected: selectedCity == null,
-                  onTap: () {
+                  onTap: () async {
                     HapticFeedback.selectionClick();
-                    ref.read(climaSelectedCityProvider.notifier).state = null;
+                    await ref.read(climaSelectedCityProvider.notifier).clear();
                     ref.read(climaManualLocationProvider.notifier).state = null;
-                    _invalidateWeather(ref);
+                    invalidateClimaWeather(ref);
                   },
                 ),
                 const Padding(
@@ -103,13 +104,13 @@ class ClimaSettingsSheet extends ConsumerWidget {
                     color: kClimaDivider,
                   ),
                 ),
-                _SettingsRow(
+                ClimaSettingsOptionRow(
                   label: selectedCity?.nome ?? 'Selecionar cidade',
                   selected: selectedCity != null,
                   trailingIcon: Icons.chevron_right_rounded,
                   onTap: () {
                     HapticFeedback.selectionClick();
-                    _showCitySelection(context, ref);
+                    showClimaCitySelection(context, ref);
                   },
                 ),
               ],
@@ -136,7 +137,7 @@ class ClimaSettingsSheet extends ConsumerWidget {
             ),
             child: Column(
               children: [
-                _SettingsRow(
+                ClimaSettingsOptionRow(
                   label: 'Celsius (°C)',
                   selected: unidade == ClimaUnidade.celsius,
                   onTap: () {
@@ -153,7 +154,7 @@ class ClimaSettingsSheet extends ConsumerWidget {
                     color: kClimaDivider,
                   ),
                 ),
-                _SettingsRow(
+                ClimaSettingsOptionRow(
                   label: 'Fahrenheit (°F)',
                   selected: unidade == ClimaUnidade.fahrenheit,
                   onTap: () {
@@ -169,41 +170,18 @@ class ClimaSettingsSheet extends ConsumerWidget {
       ),
     );
   }
-
-  void _invalidateWeather(WidgetRef ref) {
-    ref.invalidate(climaLocationProvider);
-    ref.invalidate(climaAtualProvider);
-    ref.invalidate(alertasClimaProvider);
-    ref.invalidate(previsaoHorariaProvider);
-    ref.invalidate(previsaoSemanalProvider);
-  }
-
-  void _showCitySelection(BuildContext context, WidgetRef ref) {
-    showSoloForteSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      showDragHandle: false,
-      builder: (_) => _ClimaCitySelectionSheet(
-        selectedCity: ref.read(climaSelectedCityProvider),
-        onSelected: (city) {
-          ref.read(climaSelectedCityProvider.notifier).state = city;
-          ref.read(climaManualLocationProvider.notifier).state = null;
-          _invalidateWeather(ref);
-        },
-      ),
-    );
-  }
 }
 
 // ─── Linha de opção ───────────────────────────────────────────────────────────
 
-class _SettingsRow extends StatelessWidget {
+class ClimaSettingsOptionRow extends StatelessWidget {
   final String label;
   final bool selected;
   final IconData? trailingIcon;
   final VoidCallback onTap;
 
-  const _SettingsRow({
+  const ClimaSettingsOptionRow({
+    super.key,
     required this.label,
     required this.selected,
     this.trailingIcon,
@@ -233,96 +211,6 @@ class _SettingsRow extends StatelessWidget {
               Icon(trailingIcon, color: kClimaTextTertiary, size: 22)
             else if (selected)
               const Icon(Icons.check_rounded, color: kClimaTint, size: 20),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ClimaCitySelectionSheet extends StatelessWidget {
-  const _ClimaCitySelectionSheet({
-    required this.selectedCity,
-    required this.onSelected,
-  });
-
-  final ClimaSelectedCity? selectedCity;
-  final ValueChanged<ClimaSelectedCity> onSelected;
-
-  @override
-  Widget build(BuildContext context) {
-    final bottomPad = MediaQuery.of(context).viewPadding.bottom;
-
-    return Container(
-      padding: EdgeInsets.fromLTRB(20, 8, 20, 24 + bottomPad),
-      decoration: const BoxDecoration(
-        color: SoloForteSheetTokens.sheetBackground,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      child: SafeArea(
-        top: false,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 36,
-                height: 4,
-                margin: const EdgeInsets.only(top: 8, bottom: 20),
-                decoration: BoxDecoration(
-                  color: kClimaDivider,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            const Text(
-              'Selecionar cidade',
-              style: TextStyle(
-                fontFamily: 'Inter',
-                fontSize: 22,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 0.37,
-                color: kClimaTextPrimary,
-              ),
-            ),
-            const SizedBox(height: 16),
-            ConstrainedBox(
-              constraints: BoxConstraints(
-                maxHeight: MediaQuery.of(context).size.height * 0.58,
-              ),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: kClimaBg,
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: ListView.separated(
-                  shrinkWrap: true,
-                  itemCount: climaCityOptions.length,
-                  separatorBuilder: (_, __) => const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 16),
-                    child: Divider(
-                      height: 1,
-                      thickness: 0.5,
-                      color: kClimaDivider,
-                    ),
-                  ),
-                  itemBuilder: (context, index) {
-                    final city = climaCityOptions[index];
-                    final isSelected = selectedCity?.nome == city.nome;
-                    return _SettingsRow(
-                      label: city.nome,
-                      selected: isSelected,
-                      onTap: () {
-                        HapticFeedback.selectionClick();
-                        onSelected(city);
-                        Navigator.of(context).pop();
-                      },
-                    );
-                  },
-                ),
-              ),
-            ),
           ],
         ),
       ),

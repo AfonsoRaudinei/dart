@@ -13,12 +13,14 @@ class ClimaLocationRow extends StatelessWidget {
   final String cidade;
   final DateTime atualizadoEm;
   final EdgeInsetsGeometry padding;
+  final VoidCallback? onTap;
 
   const ClimaLocationRow({
     super.key,
     required this.cidade,
     required this.atualizadoEm,
     this.padding = const EdgeInsets.fromLTRB(20, 8, 20, 0),
+    this.onTap,
   });
 
   String get _tempoAtras {
@@ -30,35 +32,54 @@ class ClimaLocationRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: padding,
-      child: Row(
-        children: [
-          const Icon(Icons.location_on_rounded, size: 14, color: kClimaTint),
-          const SizedBox(width: 4),
-          Expanded(
-            child: Text(
-              cidade,
-              style: const TextStyle(
-                fontFamily: 'Inter',
-                fontSize: 15,
-                fontWeight: FontWeight.w500,
-                color: kClimaTextSecondary,
-              ),
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          Text(
-            'Atualizado $_tempoAtras',
+    final content = Row(
+      children: [
+        const Icon(Icons.location_on_rounded, size: 14, color: kClimaTint),
+        const SizedBox(width: 4),
+        Expanded(
+          child: Text(
+            cidade,
             style: const TextStyle(
               fontFamily: 'Inter',
-              fontSize: 13,
-              fontWeight: FontWeight.w400,
-              color: kClimaTextTertiary,
+              fontSize: 15,
+              fontWeight: FontWeight.w500,
+              color: kClimaTextSecondary,
             ),
+            overflow: TextOverflow.ellipsis,
           ),
+        ),
+        if (onTap != null) ...[
+          const Icon(
+            Icons.chevron_right_rounded,
+            size: 18,
+            color: kClimaTextTertiary,
+          ),
+          const SizedBox(width: 4),
         ],
-      ),
+        Text(
+          'Atualizado $_tempoAtras',
+          style: const TextStyle(
+            fontFamily: 'Inter',
+            fontSize: 13,
+            fontWeight: FontWeight.w400,
+            color: kClimaTextTertiary,
+          ),
+        ),
+      ],
+    );
+
+    return Padding(
+      padding: padding,
+      child: onTap == null
+          ? content
+          : GestureDetector(
+              onTap: () {
+                HapticFeedback.selectionClick();
+                onTap!();
+              },
+              behavior: HitTestBehavior.opaque,
+              child: content,
+            ),
     );
   }
 }

@@ -8,7 +8,7 @@ void main() {
       'lib/ui/screens/map/widgets/map_build_orchestrator.dart',
     ).readAsStringSync();
 
-    final radarIndex = source.indexOf('const ClimaRadarLayerWidget()');
+    final radarIndex = source.indexOf('const ClimaRadarTileLayerWidget()');
     final drawingEditIndex = source.indexOf('DrawingEditLayer(');
     final markersIndex = source.indexOf('const MapMarkersWidget()');
 
