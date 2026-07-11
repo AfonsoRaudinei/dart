@@ -29,10 +29,9 @@ class MapToolsBottomSheet extends StatefulWidget {
   }) {
     return showSoloForteSheet<void>(
       context: context,
-      showDragHandle: false,
+      showDragHandle: true,
       useSafeArea: true,
       maxHeightFraction: 0.78,
-      backgroundColor: Colors.transparent,
       barrierColor: Colors.black.withValues(alpha: 0.38),
       builder: (_) => MapToolsBottomSheet(
         drawingController: drawingController,
@@ -62,7 +61,9 @@ class _MapToolsBottomSheetState extends State<MapToolsBottomSheet> {
     return Container(
       decoration: const BoxDecoration(
         color: SoloForteSheetTokens.sheetBackground,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(SoloForteSheetTokens.borderRadius),
+        ),
       ),
       child: SafeArea(
         top: false,
@@ -71,16 +72,7 @@ class _MapToolsBottomSheetState extends State<MapToolsBottomSheet> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const SizedBox(height: 10),
-              Container(
-                width: 38,
-                height: 5,
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.28),
-                  borderRadius: BorderRadius.circular(99),
-                ),
-              ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 12),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 18),
                 child: _SegmentedHeader(
@@ -93,15 +85,12 @@ class _MapToolsBottomSheetState extends State<MapToolsBottomSheet> {
                 child: IndexedStack(
                   index: _selectedIndex,
                   children: [
-                    SingleChildScrollView(
-                      physics: const BouncingScrollPhysics(),
-                      child: DrawingSheet(
-                        controller: widget.drawingController,
-                        onClose: () =>
-                            Navigator.of(context, rootNavigator: false).pop(),
-                        onSaved: () =>
-                            Navigator.of(context, rootNavigator: false).pop(),
-                      ),
+                    DrawingSheet(
+                      controller: widget.drawingController,
+                      onClose: () =>
+                          Navigator.of(context, rootNavigator: false).pop(),
+                      onSaved: () =>
+                          Navigator.of(context, rootNavigator: false).pop(),
                     ),
                     LayersSheet(
                       onClose: () =>

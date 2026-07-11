@@ -22,13 +22,14 @@ class DrawingMapGestureOverlay extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final controller = ref.watch(drawingControllerProvider);
-    final captureFreehand = controller.currentTool == DrawingTool.freehand &&
+    final captureFreehand =
+        controller.currentTool == DrawingTool.freehand &&
         (controller.currentState == DrawingState.armed ||
             controller.currentState == DrawingState.drawing);
-    final capturePivotRadius = controller.currentTool == DrawingTool.pivot &&
+    final capturePivotRadius =
+        controller.currentTool == DrawingTool.pivot &&
         controller.currentState == DrawingState.drawing &&
-        controller.pivotCenter != null &&
-        !controller.pivotRadiusFinalized;
+        controller.pivotCenter != null;
 
     if (!captureFreehand && !capturePivotRadius) {
       return const SizedBox.shrink();

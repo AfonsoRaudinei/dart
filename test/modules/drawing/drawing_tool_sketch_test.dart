@@ -64,7 +64,7 @@ void main() {
       expect(controller.errorMessage, isNotNull);
     });
 
-    test('pivô: centro + raio gera círculo e metadados', () {
+    test('pivô: centro + raio gera círculo ajustável antes da revisão', () {
       controller.selectTool('pivot');
       controller.handlePivotTap(const LatLng(-15.0, -47.0));
       expect(controller.pivotCenter, isNotNull);
@@ -72,10 +72,44 @@ void main() {
 
       controller.finalizePivotEdge(const LatLng(-15.001, -47.0));
 
-      expect(controller.currentState, DrawingState.reviewing);
+      final firstRadius = controller.pivotRadiusMeters;
+      expect(controller.currentState, DrawingState.drawing);
       expect(controller.liveGeometry, isNotNull);
+      expect(controller.canFinishDrawing, isTrue);
+      expect(firstRadius, greaterThan(0));
+
+      controller.updatePivotEdge(const LatLng(-15.002, -47.0));
+
+      expect(controller.currentState, DrawingState.drawing);
+      expect(controller.pivotRadiusMeters, greaterThan(firstRadius!));
+
+      controller.completeDrawing();
+
+      expect(controller.currentState, DrawingState.reviewing);
       expect(controller.pendingDrawingSubtipo, 'pivo');
       expect(controller.pendingDrawingRaioMetros, greaterThan(0));
+    });
+
+    test('pivô: desfaz raio e centro sem entrar em edição', () {
+      controller.selectTool('pivot');
+      controller.handlePivotTap(const LatLng(-15.0, -47.0));
+      controller.finalizePivotEdge(const LatLng(-15.001, -47.0));
+
+      expect(controller.currentState, DrawingState.drawing);
+      expect(controller.pivotRadiusFinalized, isTrue);
+
+      controller.undoDrawingPoint();
+
+      expect(controller.currentState, DrawingState.drawing);
+      expect(controller.pivotCenter, isNotNull);
+      expect(controller.pivotEdgePoint, isNull);
+      expect(controller.pivotRadiusFinalized, isFalse);
+
+      controller.undoDrawingPoint();
+
+      expect(controller.pivotCenter, isNull);
+      expect(controller.pivotEdgePoint, isNull);
+      expect(controller.canFinishDrawing, isFalse);
     });
 
     test('polígono: continua exigindo vértices discretos', () {

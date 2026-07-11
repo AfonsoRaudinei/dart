@@ -57,7 +57,10 @@ extension DrawingControllerSketch on DrawingController {
         if (_pivotCenter == null) {
           return 'Toque no mapa para definir o centro do pivô';
         }
-        return 'Toque novamente para definir o raio';
+        if (_pivotPreviewEdge == null) {
+          return 'Toque novamente para definir o raio';
+        }
+        return 'Ajuste o raio ou toque em concluir para revisar';
       default:
         return 'Geometria inválida para finalizar';
     }
@@ -122,7 +125,8 @@ extension DrawingControllerSketch on DrawingController {
   DrawingGeometry? _buildPivotLiveGeometry() {
     if (_pivotCenter == null || _pivotPreviewEdge == null) return null;
     final radius =
-        _pivotRadiusMeters ?? _distanceMeters(_pivotCenter!, _pivotPreviewEdge!);
+        _pivotRadiusMeters ??
+        _distanceMeters(_pivotCenter!, _pivotPreviewEdge!);
     if (radius <= 0) return null;
     return DrawingUtils.createPivotPolygon(_pivotCenter!, radius);
   }
@@ -169,7 +173,7 @@ extension DrawingControllerSketch on DrawingController {
         if (_pivotPreviewEdge == null) {
           return 'Toque ou arraste para definir o raio';
         }
-        return 'Confirme o círculo do pivô';
+        return 'Ajuste o raio ou toque em concluir para revisar';
       default:
         return 'Toque no mapa para iniciar o desenho';
     }
@@ -210,7 +214,6 @@ extension DrawingControllerSketch on DrawingController {
     if (_stateMachine.currentTool != DrawingTool.pivot) return;
     if (_pivotCenter == null) return;
     if (_stateMachine.currentState != DrawingState.drawing) return;
-    if (_pivotRadiusFinalized) return;
 
     _setPivotPreview(point, finalize: false);
   }
@@ -218,7 +221,7 @@ extension DrawingControllerSketch on DrawingController {
   void finalizePivotEdge(LatLng point) {
     if (_isDisposed) return;
     if (_stateMachine.currentTool != DrawingTool.pivot) return;
-    if (_pivotCenter == null || _pivotRadiusFinalized) return;
+    if (_pivotCenter == null) return;
     _setPivotPreview(point, finalize: true);
   }
 
@@ -229,8 +232,6 @@ extension DrawingControllerSketch on DrawingController {
 
     if (finalize && _pivotRadiusMeters! > 0) {
       _pivotRadiusFinalized = true;
-      completeDrawing();
-      return;
     }
 
     _notify();
