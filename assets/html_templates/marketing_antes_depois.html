@@ -330,6 +330,64 @@
     font-weight: 400;
   }
 
+  .parametros-block {
+    background: var(--sf-white);
+    border: 1px solid var(--sf-stone);
+    border-radius: 16px;
+    padding: 18px;
+    margin-bottom: 28px;
+  }
+
+  .parametros-media {
+    font-family: 'DM Serif Display', serif;
+    font-size: 30px;
+    line-height: 1;
+    color: var(--sf-navy);
+    margin-bottom: 14px;
+  }
+
+  .parametros-media span {
+    display: block;
+    font-family: Inter, -apple-system, sans-serif;
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--sf-text-muted);
+    margin-bottom: 6px;
+  }
+
+  .param-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) auto auto;
+    gap: 10px;
+    align-items: center;
+    padding: 10px 0;
+    border-top: 1px solid var(--sf-stone);
+  }
+
+  .param-title {
+    font-weight: 700;
+    color: var(--sf-navy);
+    min-width: 0;
+    word-break: break-word;
+  }
+
+  .param-values {
+    font-size: 12px;
+    color: var(--sf-text-muted);
+    white-space: nowrap;
+  }
+
+  .param-delta {
+    font-size: 13px;
+    font-weight: 800;
+    white-space: nowrap;
+  }
+
+  .param-delta.positive { color: var(--sf-green); }
+  .param-delta.negative { color: #D92D20; }
+  .param-delta.neutral { color: var(--sf-text-muted); }
+
   /* ═══════════════════════════════════════════
      DESCRIÇÃO
   ═══════════════════════════════════════════ */
@@ -556,6 +614,9 @@
         <!-- {{#if ganho_produtividade}} -->
         <span class="pill"><span class="pill-dot"></span>Ganho: {{ganho_produtividade}}</span>
         <!-- {{/if}} -->
+        <!-- {{#if data_case}} -->
+        <span class="pill"><span class="pill-dot"></span>{{data_case_formatado}}</span>
+        <!-- {{/if}} -->
         <!-- visibilidade: ouro | prata | bronze -->
         <span class="pill"><span class="pill-dot"></span>{{visibilidade}}</span>
       </div>
@@ -603,8 +664,24 @@
       </div>
     </div>
 
-    <!-- KPIs -->
-    <!-- {{#if ganho_produtividade || produtividade_valor || economia_gerada}} -->
+    <!-- Parâmetros Comparativos -->
+    <!-- {{#if parametros_comparativos}} -->
+    <div class="section-label">
+      <div class="section-label-bar"></div>
+      <span class="section-label-text">Parâmetros Comparativos</span>
+    </div>
+
+    <div class="parametros-block">
+      <div class="parametros-media">
+        <span>Média de ganho</span>
+        {{media_ganho_percent}}%
+      </div>
+      {{parametros_comparativos_html}}
+    </div>
+    <!-- {{/if}} -->
+
+    <!-- KPIs legados -->
+    <!-- {{#if resultados_legados}} -->
     <div class="section-label">
       <div class="section-label-bar"></div>
       <span class="section-label-text">Resultados</span>

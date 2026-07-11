@@ -1,51 +1,45 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+
 import '../../../../ui/theme/premium/design_tokens.dart';
-import '../widgets/avaliacao_bloco_widget.dart';
-import '../widgets/conclusao_bloco_widget.dart';
-import '../widgets/roi_bloco_widget.dart';
+import '../../domain/entities/avaliacao_item.dart';
+import 'avaliacao_card.dart';
+import 'conclusao_bloco_widget.dart';
 import 'novo_case_form_helpers.dart';
 
-/// Seção de campos para o tipo [CaseTipo.avaliacao].
-/// Inclui lista dinâmica de avaliações, ROI e conclusão.
-/// Estado permanece no _NovoCaseSheetState — tudo via callbacks.
 class NovoCaseAvaliacaoSection extends StatelessWidget {
-  final List<AvaliacaoBlocoState> avaliacoes;
+  final List<AvaliacaoItem> avaliacoes;
+  final String? avaliacaoAbertaId;
   final TextEditingController nomeTalhaoCtrl;
   final TextEditingController tamanhoHaCtrl;
-  final bool hasRoi;
-  final TextEditingController roiInvestimentoCtrl;
-  final TextEditingController roiRetornoCtrl;
   final bool hasConclusao;
   final TextEditingController conclusaoCtrl;
   final VoidCallback onAddAvaliacao;
-  final void Function(int) onRemoveAvaliacao;
-  final VoidCallback onAddRoi;
-  final VoidCallback onRemoveRoi;
+  final ValueChanged<String> onToggleAvaliacao;
+  final ValueChanged<AvaliacaoItem> onAvaliacaoChanged;
+  final ValueChanged<String> onRemoveAvaliacao;
+  final ValueChanged<String> onDuplicateAvaliacao;
   final VoidCallback onAddConclusao;
   final VoidCallback onRemoveConclusao;
-  final VoidCallback onChanged;
 
   const NovoCaseAvaliacaoSection({
     super.key,
     required this.avaliacoes,
+    required this.avaliacaoAbertaId,
     required this.nomeTalhaoCtrl,
     required this.tamanhoHaCtrl,
-    required this.hasRoi,
-    required this.roiInvestimentoCtrl,
-    required this.roiRetornoCtrl,
     required this.hasConclusao,
     required this.conclusaoCtrl,
     required this.onAddAvaliacao,
+    required this.onToggleAvaliacao,
+    required this.onAvaliacaoChanged,
     required this.onRemoveAvaliacao,
-    required this.onAddRoi,
-    required this.onRemoveRoi,
+    required this.onDuplicateAvaliacao,
     required this.onAddConclusao,
     required this.onRemoveConclusao,
-    required this.onChanged,
   });
 
-  Widget _buildAddBlocoButton({
+  Widget _buildActionButton({
     required IconData icon,
     required String label,
     required Color color,
@@ -64,6 +58,7 @@ class NovoCaseAvaliacaoSection extends StatelessWidget {
           color: color.withValues(alpha: 0.05),
         ),
         child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(icon, color: color, size: 18),
             const SizedBox(width: 10),
@@ -106,76 +101,32 @@ class NovoCaseAvaliacaoSection extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 20),
-        if (avaliacoes.isNotEmpty) ...[
-          novoCaseSectionLabel('Avaliações (${avaliacoes.length})'),
-          const SizedBox(height: 10),
-          ...List.generate(avaliacoes.length, (i) {
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: AvaliacaoBlocoWidget(
-                key: ValueKey(avaliacoes[i].id),
-                state: avaliacoes[i],
-                index: i,
-                onRemove: () => onRemoveAvaliacao(i),
-                onChanged: onChanged,
-              ),
-            );
-          }),
-        ],
-        GestureDetector(
+        novoCaseSectionLabel('Avaliações (${avaliacoes.length})'),
+        const SizedBox(height: 10),
+        ...List.generate(avaliacoes.length, (index) {
+          final avaliacao = avaliacoes[index];
+          return AvaliacaoCard(
+            key: ValueKey(avaliacao.id),
+            avaliacao: avaliacao,
+            index: index,
+            expanded: avaliacaoAbertaId == avaliacao.id,
+            onToggleExpanded: () => onToggleAvaliacao(avaliacao.id),
+            onChanged: onAvaliacaoChanged,
+            onDelete: () => onRemoveAvaliacao(avaliacao.id),
+            onDuplicate: () => onDuplicateAvaliacao(avaliacao.id),
+          );
+        }),
+        _buildActionButton(
+          icon: Icons.add_circle_outline,
+          label: 'Adicionar Avaliação',
+          color: PremiumTokens.brandGreen,
           onTap: onAddAvaliacao,
-          child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 14),
-            decoration: BoxDecoration(
-              border: Border.all(
-                color: PremiumTokens.brandGreen.withValues(alpha: 0.5),
-                style: BorderStyle.solid,
-              ),
-              borderRadius: BorderRadius.circular(12),
-              color: PremiumTokens.brandGreen.withValues(alpha: 0.05),
-            ),
-            child: const Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.add_circle_outline,
-                  color: PremiumTokens.brandGreen,
-                  size: 18,
-                ),
-                SizedBox(width: 8),
-                Text(
-                  '+ Adicionar Avaliação',
-                  style: TextStyle(
-                    color: PremiumTokens.brandGreen,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 14,
-                  ),
-                ),
-              ],
-            ),
-          ),
         ),
         const SizedBox(height: 16),
-        if (!hasRoi)
-          _buildAddBlocoButton(
-            icon: Icons.trending_up_rounded,
-            label: '+ Adicionar Bloco de ROI',
-            color: const Color(0xFF34C759),
-            onTap: onAddRoi,
-          )
-        else ...[
-          RoiBlocoWidget(
-            investimentoCtrl: roiInvestimentoCtrl,
-            retornoCtrl: roiRetornoCtrl,
-            onRemove: onRemoveRoi,
-          ),
-          const SizedBox(height: 12),
-        ],
-        const SizedBox(height: 12),
         if (!hasConclusao)
-          _buildAddBlocoButton(
+          _buildActionButton(
             icon: Icons.notes_rounded,
-            label: '+ Adicionar Conclusão Técnica',
+            label: 'Adicionar Conclusão Técnica',
             color: const Color(0xFF0057FF),
             onTap: onAddConclusao,
           )

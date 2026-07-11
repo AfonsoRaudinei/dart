@@ -324,8 +324,8 @@
   }
 
   /* ═══════════════════════════════════════════
-     BLOCO ROI (destaque especial)
-     Condicional — só renderiza se roi_calculado existir
+     BLOCO ROI AGRONOMICO (destaque especial)
+     Condicional — só renderiza se roi_agronomico existir
   ═══════════════════════════════════════════ */
   .roi-block {
     background: linear-gradient(135deg, var(--sf-navy) 0%, var(--sf-navy-light) 100%);
@@ -442,6 +442,14 @@
     z-index: 1;
     padding-top: 16px;
     border-top: 1px solid rgba(255,255,255,0.12);
+  }
+
+  .roi-note {
+    margin-top: 12px;
+    font-size: 11px;
+    color: rgba(255,255,255,0.72);
+    position: relative;
+    z-index: 1;
   }
 
   .roi-item-label {
@@ -658,8 +666,14 @@
       <div class="header-fazenda">{{produtor_fazenda}}</div>
       <div class="header-produto">{{produto_utilizado}}</div>
       <div class="header-pills">
+        <!-- {{#if roi_agronomico}} -->
+        <span class="pill"><span class="pill-dot"></span>Ganho {{ganho_sc_ha}} {{unidade_produtividade}}</span>
+        <!-- {{/if}} -->
         <!-- {{#if quantidade_produzida}} -->
         <span class="pill"><span class="pill-dot"></span>{{quantidade_produzida}} {{produtividade_unidade}}</span>
+        <!-- {{/if}} -->
+        <!-- {{#if data_case}} -->
+        <span class="pill"><span class="pill-dot"></span>{{data_case_formatado}}</span>
         <!-- {{/if}} -->
         <span class="pill"><span class="pill-dot"></span>{{visibilidade}}</span>
       </div>
@@ -693,41 +707,35 @@
     </div>
 
     <!-- KPIs de Produtividade -->
-    <!-- {{#if produtividade_valor || quantidade_produzida || economia_gerada}} -->
+    <!-- {{#if roi_agronomico}} -->
     <div class="section-label">
       <div class="section-label-bar"></div>
-      <span class="section-label-text">Indicadores</span>
+      <span class="section-label-text">Produtividade</span>
     </div>
 
     <div class="kpi-strip">
-      <!-- {{#if produtividade_valor}} -->
       <div class="kpi-card">
-        <div class="kpi-label">Produtividade</div>
-        <div class="kpi-value">{{produtividade_valor}}</div>
-        <div class="kpi-unit">{{produtividade_unidade}}</div>
+        <div class="kpi-label">Testemunha</div>
+        <div class="kpi-value">{{prod_sem_produto}}</div>
+        <div class="kpi-unit">{{unidade_produtividade}}</div>
       </div>
-      <!-- {{/if}} -->
 
-      <!-- {{#if quantidade_produzida}} -->
       <div class="kpi-card">
-        <div class="kpi-label">Quantidade Produzida</div>
-        <div class="kpi-value">{{quantidade_produzida}}</div>
-        <div class="kpi-unit">{{produtividade_unidade}}</div>
+        <div class="kpi-label">Com Produto</div>
+        <div class="kpi-value">{{prod_com_produto}}</div>
+        <div class="kpi-unit">{{unidade_produtividade}}</div>
       </div>
-      <!-- {{/if}} -->
 
-      <!-- {{#if economia_gerada}} -->
       <div class="kpi-card">
-        <div class="kpi-label">Economia Gerada</div>
-        <div class="kpi-value">{{economia_gerada}}</div>
-        <div class="kpi-unit">estimado</div>
+        <div class="kpi-label">Ganho</div>
+        <div class="kpi-value">{{ganho_sc_ha}}</div>
+        <div class="kpi-unit">{{unidade_produtividade}}</div>
       </div>
-      <!-- {{/if}} -->
     </div>
     <!-- {{/if}} -->
 
-    <!-- BLOCO ROI — só renderiza se roi_calculado existir -->
-    <!-- {{#if roi_calculado}} -->
+    <!-- BLOCO ROI — só renderiza se roi_agronomico existir -->
+    <!-- {{#if roi_agronomico}} -->
     <div class="section-label">
       <div class="section-label-bar"></div>
       <span class="section-label-text">Retorno sobre Investimento</span>
@@ -742,22 +750,41 @@
       </div>
 
       <div class="roi-main">
-        <div class="roi-main-label">Retorno sobre o investimento</div>
+        <div class="roi-main-label">ROI líquido por hectare</div>
         <div>
-          <span class="roi-main-value">{{roi_calculado}}</span><span class="roi-main-unit">x</span>
+          <span class="roi-main-value">{{roi_liquido_rs_ha}}</span><span class="roi-main-unit">/ha</span>
         </div>
       </div>
 
       <div class="roi-breakdown">
         <div>
-          <div class="roi-item-label">Investimento</div>
-          <div class="roi-item-value">R$ {{roi_investimento}}</div>
+          <div class="roi-item-label">Custo Produto</div>
+          <div class="roi-item-value">{{custo_produto_por_ha}}/ha</div>
         </div>
         <div>
-          <div class="roi-item-label">Retorno</div>
-          <div class="roi-item-value">R$ {{roi_retorno}}</div>
+          <div class="roi-item-label">Valor do Grão</div>
+          <div class="roi-item-value">{{valor_grao}}/sc</div>
         </div>
+        <div>
+          <div class="roi-item-label">ROI em Sacas</div>
+          <div class="roi-item-value">{{roi_em_sacas_ha}} sc/ha</div>
+        </div>
+        <!-- {{#if roi_talhao}} -->
+        <div>
+          <div class="roi-item-label">No Talhão ({{tamanho_ha}} ha)</div>
+          <div class="roi-item-value">{{roi_sacas_talhao}} sc · {{roi_reais_talhao}}</div>
+        </div>
+        <!-- {{/if}} -->
+        <!-- {{#if roi_total}} -->
+        <div>
+          <div class="roi-item-label">Estimativa Área Total ({{area_total}} ha)</div>
+          <div class="roi-item-value">{{roi_sacas_total}} sc · {{roi_reais_total}}</div>
+        </div>
+        <!-- {{/if}} -->
       </div>
+      <!-- {{#if roi_total}} -->
+      <div class="roi-note">Estimativa baseada na área total do produtor.</div>
+      <!-- {{/if}} -->
     </div>
     <!-- {{/if}} -->
 

@@ -1,17 +1,19 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
 import 'package:uuid/uuid.dart';
 import '../../../../core/contracts/i_active_visit_context_lookup.dart';
+import '../../../../core/contracts/i_client_lookup.dart';
+import '../../../../core/contracts/i_client_lookup_provider.dart';
 import '../../../../ui/theme/premium/design_tokens.dart';
-import '../../domain/entities/avaliacao_bloco.dart';
-import '../../domain/entities/avaliacao_lado.dart';
+import '../../domain/entities/avaliacao_item.dart';
 import '../../domain/entities/marketing_case.dart';
-import '../../domain/entities/roi_bloco.dart';
-import '../../domain/enums/avaliacao_layout.dart';
+import '../../domain/entities/parametro_comparativo.dart';
 import '../../domain/enums/case_tipo.dart';
 import '../../domain/enums/plano_marketing.dart';
 import '../../domain/enums/produtividade_unidade.dart';
-import '../widgets/avaliacao_bloco_widget.dart';
 import '../widgets/case_selectors_widget.dart';
 import '../widgets/novo_case_antes_depois_section.dart';
 import '../widgets/novo_case_avaliacao_section.dart';
@@ -21,7 +23,7 @@ import '../widgets/novo_case_publicar_button.dart';
 import '../widgets/novo_case_resultado_section.dart';
 import '../../../../core/ui/sheets/sheet_tokens.dart';
 
-class NovoCaseSheet extends StatefulWidget {
+class NovoCaseSheet extends ConsumerStatefulWidget {
   final double lat;
   final double lng;
   final CaseTipo tipo;
@@ -40,10 +42,10 @@ class NovoCaseSheet extends StatefulWidget {
   });
 
   @override
-  State<NovoCaseSheet> createState() => _NovoCaseSheetState();
+  ConsumerState<NovoCaseSheet> createState() => _NovoCaseSheetState();
 }
 
-class _NovoCaseSheetState extends State<NovoCaseSheet> {
+class _NovoCaseSheetState extends ConsumerState<NovoCaseSheet> {
   final _formKey = GlobalKey<FormState>();
   final _uuid = const Uuid();
 
@@ -56,29 +58,32 @@ class _NovoCaseSheetState extends State<NovoCaseSheet> {
   final _nomeVendedorCtrl = TextEditingController();
   final _telefoneCtrl = TextEditingController();
   final _descricaoCtrl = TextEditingController();
+  DateTime? _dataCase;
+  Future<List<ClientSummary>>? _clientesFuture;
+  String? _clientId;
+  double? _clientAreaTotal;
 
   // ── Produtividade ──────────────────────────────────────────────
   final _produtividadeCtrl = TextEditingController();
   ProdutividadeUnidade _produtividadeUnidade = ProdutividadeUnidade.scHa;
 
   // ── Resultado ─────────────────────────────────────────────────
-  final _qtdProduzidaCtrl = TextEditingController();
-  final _economiaCtrl = TextEditingController();
+  final _prodSemProdutoCtrl = TextEditingController();
+  final _prodComProdutoCtrl = TextEditingController();
+  final _custoProdutoPorHaCtrl = TextEditingController();
+  final _valorGraoCtrl = TextEditingController();
 
   // ── Antes/Depois ──────────────────────────────────────────────
-  final _ganhoProdutividadeCtrl = TextEditingController();
+  final List<ParametroComparativo> _parametrosComparativos = [];
+  String? _parametroSelecionadoId;
 
   // ── Avaliação/Campo — Talhão ───────────────────────────────────
   final _nomeTalhaoCtrl = TextEditingController();
   final _tamanhoHaCtrl = TextEditingController();
 
-  // ── Avaliação — Blocos dinâmicos ───────────────────────────────
-  final List<AvaliacaoBlocoState> _avaliacoes = [];
-
-  // ── ROI (1 por case) ──────────────────────────────────────────
-  bool _hasRoi = false;
-  final _roiInvestimentoCtrl = TextEditingController();
-  final _roiRetornoCtrl = TextEditingController();
+  // ── Avaliação — Ensaios comparativos livres ───────────────────
+  final List<AvaliacaoItem> _avaliacoes = [];
+  String? _avaliacaoAbertaId;
 
   // ── Conclusão (1 por case) ────────────────────────────────────
   bool _hasConclusao = false;
@@ -95,8 +100,13 @@ class _NovoCaseSheetState extends State<NovoCaseSheet> {
   void initState() {
     super.initState();
     _tipo = widget.tipo;
+    _dataCase = DateTime.now();
+    if (_tipo == CaseTipo.resultado) {
+      _clientesFuture = ref.read(clientLookupProvider).listAtivos();
+    }
     final initialContext = widget.initialVisitContext;
     if (initialContext == null) return;
+    _clientId = initialContext.clientId;
     _produtorCtrl.text = initialContext.producerFarmLabel ?? '';
     _localizacaoCtrl.text = initialContext.locationLabel ?? '';
     _nomeTalhaoCtrl.text = initialContext.fieldName ?? '';
@@ -112,39 +122,69 @@ class _NovoCaseSheetState extends State<NovoCaseSheet> {
     _telefoneCtrl.dispose();
     _descricaoCtrl.dispose();
     _produtividadeCtrl.dispose();
-    _qtdProduzidaCtrl.dispose();
-    _economiaCtrl.dispose();
-    _ganhoProdutividadeCtrl.dispose();
+    _prodSemProdutoCtrl.dispose();
+    _prodComProdutoCtrl.dispose();
+    _custoProdutoPorHaCtrl.dispose();
+    _valorGraoCtrl.dispose();
     _nomeTalhaoCtrl.dispose();
     _tamanhoHaCtrl.dispose();
-    _roiInvestimentoCtrl.dispose();
-    _roiRetornoCtrl.dispose();
     _conclusaoCtrl.dispose();
-    for (final av in _avaliacoes) {
-      av.dispose();
-    }
     super.dispose();
   }
 
   void _addAvaliacao() {
+    final avaliacao = AvaliacaoItem(
+      id: _uuid.v4(),
+      titulo: 'Avaliação ${_avaliacoes.length + 1}',
+      nomeLadoA: 'Lado A',
+      nomeLadoB: 'Lado B',
+    );
     setState(() {
-      _avaliacoes.add(
-        AvaliacaoBlocoState(
-          id: _uuid.v4(),
-          ladoA: AvaliacaoLadoState(defaultLabel: 'Produto A'),
-          ladoB: AvaliacaoLadoState(defaultLabel: 'Produto B'),
-        ),
-      );
+      _avaliacoes.add(avaliacao);
+      _avaliacaoAbertaId = avaliacao.id;
     });
     HapticFeedback.lightImpact();
   }
 
-  void _removeAvaliacao(int index) {
+  void _removeAvaliacao(String id) {
     setState(() {
-      _avaliacoes[index].dispose();
-      _avaliacoes.removeAt(index);
+      _avaliacoes.removeWhere((item) => item.id == id);
+      if (_avaliacaoAbertaId == id) {
+        _avaliacaoAbertaId = _avaliacoes.isEmpty ? null : _avaliacoes.last.id;
+      }
     });
     HapticFeedback.selectionClick();
+  }
+
+  void _updateAvaliacao(AvaliacaoItem avaliacao) {
+    final index = _avaliacoes.indexWhere((item) => item.id == avaliacao.id);
+    if (index < 0) return;
+    setState(() => _avaliacoes[index] = avaliacao);
+  }
+
+  void _duplicateAvaliacao(String id) {
+    final index = _avaliacoes.indexWhere((item) => item.id == id);
+    if (index < 0) return;
+    final original = _avaliacoes[index];
+    final duplicated = original.copyWith(
+      id: _uuid.v4(),
+      titulo:
+          '${original.titulo.trim().isEmpty ? 'Avaliação' : original.titulo} (cópia)',
+      parametros: original.parametros
+          .map((parametro) => parametro.copyWith(id: _uuid.v4()))
+          .toList(),
+    );
+    setState(() {
+      _avaliacoes.insert(index + 1, duplicated);
+      _avaliacaoAbertaId = duplicated.id;
+    });
+    HapticFeedback.lightImpact();
+  }
+
+  void _toggleAvaliacao(String id) {
+    setState(() {
+      _avaliacaoAbertaId = _avaliacaoAbertaId == id ? null : id;
+    });
   }
 
   void _handlePublicar() {
@@ -164,12 +204,15 @@ class _NovoCaseSheetState extends State<NovoCaseSheet> {
       return;
     }
 
-    if (_tipo == CaseTipo.resultado && _qtdProduzidaCtrl.text.isEmpty) {
-      _showError('Preencha a quantidade produzida.');
+    if (_tipo == CaseTipo.resultado && !_hasResultadoRoiInputs) {
+      _showError('Preencha os dados de ROI do resultado.');
       return;
     }
-    if (_tipo == CaseTipo.antesDepois && _ganhoProdutividadeCtrl.text.isEmpty) {
-      _showError('Preencha o ganho de produtividade.');
+    if (_tipo == CaseTipo.antesDepois && !_validateParametrosComparativos()) {
+      return;
+    }
+    if (_dataCase == null) {
+      _showError('Selecione a data do case.');
       return;
     }
     if (_tipo == CaseTipo.avaliacao && _nomeTalhaoCtrl.text.trim().isEmpty) {
@@ -180,55 +223,7 @@ class _NovoCaseSheetState extends State<NovoCaseSheet> {
     setState(() => _isLoading = true);
     HapticFeedback.mediumImpact();
 
-    // Montar RoiBloco a partir dos controllers do widget dedicado
-    RoiBloco? roiBloco;
-    if (_hasRoi && _tipo == CaseTipo.avaliacao) {
-      final inv = double.tryParse(
-        _roiInvestimentoCtrl.text.replaceAll(',', '.'),
-      );
-      final ret = double.tryParse(_roiRetornoCtrl.text.replaceAll(',', '.'));
-      if (inv != null && ret != null && inv != 0) {
-        roiBloco = RoiBloco(
-          investimento: inv,
-          retorno: ret,
-          roiCalculado: ((ret - inv) / inv) * 100,
-        );
-      }
-    }
-
-    // Converter AvaliacaoBlocoState → AvaliacaoBloco (domínio)
     final String caseId = _uuid.v4();
-    final List<AvaliacaoBloco> avaliacoesDominio = _tipo == CaseTipo.avaliacao
-        ? _avaliacoes.asMap().entries.map((entry) {
-            final i = entry.key;
-            final av = entry.value;
-            return AvaliacaoBloco(
-              id: av.id,
-              caseId: caseId,
-              ordem: i,
-              layout: av.duasFotos
-                  ? AvaliacaoLayout.duasFotos
-                  : AvaliacaoLayout.umaFoto,
-              colapsado: av.colapsado,
-              ladoA: AvaliacaoLado(
-                label: av.ladoA.labelCtrl.text,
-                fotoUrl: av.ladoA.fotoUrl,
-                tipoCultura: av.ladoA.tipoCultura,
-                observacoes: av.ladoA.obsCtrl.text.trim().isEmpty
-                    ? null
-                    : av.ladoA.obsCtrl.text.trim(),
-              ),
-              ladoB: AvaliacaoLado(
-                label: av.ladoB.labelCtrl.text,
-                fotoUrl: av.ladoB.fotoUrl,
-                tipoCultura: av.ladoB.tipoCultura,
-                observacoes: av.ladoB.obsCtrl.text.trim().isEmpty
-                    ? null
-                    : av.ladoB.obsCtrl.text.trim(),
-              ),
-            );
-          }).toList()
-        : [];
 
     final now = DateTime.now();
     final newCase = MarketingCase(
@@ -240,8 +235,9 @@ class _NovoCaseSheetState extends State<NovoCaseSheet> {
       localizacaoTexto: _localizacaoCtrl.text.trim(),
       produtorFazenda: _produtorCtrl.text.trim(),
       produtoUtilizado: _produtoCtrl.text.trim(),
+      dataCase: _dataCase,
       produtividadeValor: _tipo != CaseTipo.avaliacao
-          ? double.tryParse(_produtividadeCtrl.text)
+          ? _parseDouble(_produtividadeCtrl.text)
           : null,
       produtividadeUnidade: _tipo != CaseTipo.avaliacao
           ? _produtividadeUnidade
@@ -256,26 +252,42 @@ class _NovoCaseSheetState extends State<NovoCaseSheet> {
           ? null
           : _descricaoCtrl.text.trim(),
       fotoPrincipalUrl: _tipo == CaseTipo.resultado ? _fotoPrincipalUrl : null,
-      quantidadeProduzida: _tipo == CaseTipo.resultado
-          ? double.tryParse(_qtdProduzidaCtrl.text)
+      quantidadeProduzida: null,
+      prodSemProduto: _tipo == CaseTipo.resultado
+          ? _parseDouble(_prodSemProdutoCtrl.text)
           : null,
+      prodComProduto: _tipo == CaseTipo.resultado
+          ? _parseDouble(_prodComProdutoCtrl.text)
+          : null,
+      unidadeProdutividade: _tipo == CaseTipo.resultado
+          ? _produtividadeUnidade.toValue()
+          : null,
+      custoProdutoPorHa: _tipo == CaseTipo.resultado
+          ? _parseDouble(_custoProdutoPorHaCtrl.text)
+          : null,
+      valorGrao: _tipo == CaseTipo.resultado
+          ? _parseDouble(_valorGraoCtrl.text)
+          : null,
+      clientId: _tipo == CaseTipo.resultado ? _clientId : null,
       fotoAntesUrl: _tipo == CaseTipo.antesDepois ? _fotoAntesUrl : null,
       fotoDepoisUrl: _tipo == CaseTipo.antesDepois ? _fotoDepoisUrl : null,
-      economiaGerada: _economiaCtrl.text.trim().isEmpty
-          ? null
-          : _economiaCtrl.text.trim(),
-      ganhoProdutividade: _tipo == CaseTipo.antesDepois
-          ? _ganhoProdutividadeCtrl.text.trim()
+      economiaGerada: null,
+      ganhoProdutividade: null,
+      parametrosJson:
+          _tipo == CaseTipo.antesDepois && _parametrosComparativos.isNotEmpty
+          ? jsonEncode(_parametrosComparativos.map((p) => p.toJson()).toList())
           : null,
       nomeTalhao: _tipo == CaseTipo.avaliacao
           ? _nomeTalhaoCtrl.text.trim()
           : null,
-      tamanhoHa: _tipo == CaseTipo.avaliacao
-          ? double.tryParse(_tamanhoHaCtrl.text)
+      tamanhoHa: _parseDouble(_tamanhoHaCtrl.text),
+      avaliacoes: const [],
+      avaliacoesJson: _tipo == CaseTipo.avaliacao && _avaliacoes.isNotEmpty
+          ? jsonEncode(_avaliacoes.map((item) => item.toJson()).toList())
           : null,
-      avaliacoes: avaliacoesDominio,
-      roi: roiBloco,
-      conclusao: (_hasConclusao && _conclusaoCtrl.text.trim().isNotEmpty)
+      roi: null,
+      conclusao: null,
+      conclusaoTecnica: (_hasConclusao && _conclusaoCtrl.text.trim().isNotEmpty)
           ? _conclusaoCtrl.text.trim()
           : null,
       ativo: true,
@@ -311,6 +323,65 @@ class _NovoCaseSheetState extends State<NovoCaseSheet> {
       case CaseTipo.avaliacao:
         return 'Avaliação';
     }
+  }
+
+  double? _parseDouble(String value) {
+    return double.tryParse(value.trim().replaceAll(',', '.'));
+  }
+
+  bool get _hasResultadoRoiInputs {
+    final semProduto = _parseDouble(_prodSemProdutoCtrl.text);
+    final comProduto = _parseDouble(_prodComProdutoCtrl.text);
+    final custo = _parseDouble(_custoProdutoPorHaCtrl.text);
+    final valor = _parseDouble(_valorGraoCtrl.text);
+    return semProduto != null &&
+        semProduto > 0 &&
+        comProduto != null &&
+        comProduto > 0 &&
+        custo != null &&
+        custo > 0 &&
+        valor != null &&
+        valor > 0;
+  }
+
+  bool _validateParametrosComparativos() {
+    for (final parametro in _parametrosComparativos) {
+      if (parametro.titulo.trim().isEmpty) {
+        _showError('Preencha o título do parâmetro comparativo.');
+        return false;
+      }
+    }
+    return true;
+  }
+
+  void _addParametroComparativo() {
+    setState(() {
+      final parametro = ParametroComparativo(
+        id: _uuid.v4(),
+        titulo: '',
+        testemunha: 0,
+        teste: 0,
+      );
+      _parametrosComparativos.add(parametro);
+      _parametroSelecionadoId = parametro.id;
+    });
+    HapticFeedback.lightImpact();
+  }
+
+  void _updateParametroComparativo(ParametroComparativo parametro) {
+    final index = _parametrosComparativos.indexWhere(
+      (p) => p.id == parametro.id,
+    );
+    if (index < 0) return;
+    setState(() => _parametrosComparativos[index] = parametro);
+  }
+
+  void _deleteParametroComparativo(String id) {
+    setState(() {
+      _parametrosComparativos.removeWhere((p) => p.id == id);
+      if (_parametroSelecionadoId == id) _parametroSelecionadoId = null;
+    });
+    HapticFeedback.selectionClick();
   }
 
   // ── Build ──────────────────────────────────────────────────────
@@ -352,6 +423,10 @@ class _NovoCaseSheetState extends State<NovoCaseSheet> {
                     'Produtor / Fazenda *',
                     required: true,
                   ),
+                  if (_tipo == CaseTipo.resultado) ...[
+                    const NovoCaseFDivider(),
+                    _buildClienteDropdown(),
+                  ],
                   const NovoCaseFDivider(),
                   novoCaseTextInput(
                     _produtoCtrl,
@@ -368,7 +443,11 @@ class _NovoCaseSheetState extends State<NovoCaseSheet> {
               ),
             ),
             const SizedBox(height: 20),
-            if (_tipo != CaseTipo.avaliacao) ...[
+            novoCaseSectionLabel('Data do Case'),
+            const SizedBox(height: 8),
+            _buildDataCasePicker(),
+            const SizedBox(height: 20),
+            if (_tipo == CaseTipo.antesDepois) ...[
               novoCaseSectionLabel('Produtividade'),
               const SizedBox(height: 8),
               novoCaseFieldBox(
@@ -393,8 +472,16 @@ class _NovoCaseSheetState extends State<NovoCaseSheet> {
               NovoCaseResultadoSection(
                 fotoPrincipalUrl: _fotoPrincipalUrl,
                 onFotoChanged: (url) => setState(() => _fotoPrincipalUrl = url),
-                qtdProduzidaCtrl: _qtdProduzidaCtrl,
-                economiaCtrl: _economiaCtrl,
+                prodSemProdutoCtrl: _prodSemProdutoCtrl,
+                prodComProdutoCtrl: _prodComProdutoCtrl,
+                custoProdutoPorHaCtrl: _custoProdutoPorHaCtrl,
+                valorGraoCtrl: _valorGraoCtrl,
+                unidade: _produtividadeUnidade,
+                tamanhoHa: _parseDouble(_tamanhoHaCtrl.text),
+                areaTotal: _clientAreaTotal,
+                onUnidadeChanged: (unidade) =>
+                    setState(() => _produtividadeUnidade = unidade),
+                onRoiChanged: () => setState(() {}),
               ),
             if (_tipo == CaseTipo.antesDepois)
               NovoCaseAntesDepoisSection(
@@ -404,33 +491,32 @@ class _NovoCaseSheetState extends State<NovoCaseSheet> {
                     setState(() => _fotoAntesUrl = url),
                 onFotoDepoisChanged: (url) =>
                     setState(() => _fotoDepoisUrl = url),
-                ganhoProdutividadeCtrl: _ganhoProdutividadeCtrl,
-                economiaCtrl: _economiaCtrl,
+                parametros: _parametrosComparativos,
+                parametroSelecionadoId: _parametroSelecionadoId,
+                onAddParametro: _addParametroComparativo,
+                onSelectParametro: (id) =>
+                    setState(() => _parametroSelecionadoId = id),
+                onParametroChanged: _updateParametroComparativo,
+                onDeleteParametro: _deleteParametroComparativo,
               ),
             if (_tipo == CaseTipo.avaliacao)
               NovoCaseAvaliacaoSection(
                 avaliacoes: _avaliacoes,
+                avaliacaoAbertaId: _avaliacaoAbertaId,
                 nomeTalhaoCtrl: _nomeTalhaoCtrl,
                 tamanhoHaCtrl: _tamanhoHaCtrl,
-                hasRoi: _hasRoi,
-                roiInvestimentoCtrl: _roiInvestimentoCtrl,
-                roiRetornoCtrl: _roiRetornoCtrl,
                 hasConclusao: _hasConclusao,
                 conclusaoCtrl: _conclusaoCtrl,
                 onAddAvaliacao: _addAvaliacao,
+                onToggleAvaliacao: _toggleAvaliacao,
+                onAvaliacaoChanged: _updateAvaliacao,
                 onRemoveAvaliacao: _removeAvaliacao,
-                onAddRoi: () => setState(() => _hasRoi = true),
-                onRemoveRoi: () => setState(() {
-                  _hasRoi = false;
-                  _roiInvestimentoCtrl.clear();
-                  _roiRetornoCtrl.clear();
-                }),
+                onDuplicateAvaliacao: _duplicateAvaliacao,
                 onAddConclusao: () => setState(() => _hasConclusao = true),
                 onRemoveConclusao: () => setState(() {
                   _hasConclusao = false;
                   _conclusaoCtrl.clear();
                 }),
-                onChanged: () => setState(() {}),
               ),
             novoCaseSectionLabel('Vendedor (opcional)'),
             const SizedBox(height: 8),
@@ -490,6 +576,124 @@ class _NovoCaseSheetState extends State<NovoCaseSheet> {
         style: Theme.of(context).textTheme.bodyMedium,
         dropdownColor: SoloForteSheetTokens.inputBackground,
       ),
+    );
+  }
+
+  Widget _buildDataCasePicker() {
+    final selected = _dataCase;
+    return GestureDetector(
+      onTap: _selectDataCase,
+      child: novoCaseFieldBox(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          child: Row(
+            children: [
+              const Icon(
+                Icons.calendar_today_outlined,
+                size: 18,
+                color: PremiumTokens.brandGreen,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  selected == null
+                      ? 'Selecionar data'
+                      : _formatDatePtBr(selected),
+                  style: const TextStyle(
+                    color: SoloForteSheetTokens.inputText,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              const Icon(
+                Icons.keyboard_arrow_down_rounded,
+                color: SoloForteSheetTokens.inputHint,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _selectDataCase() async {
+    final now = DateTime.now();
+    final initial = _dataCase ?? now;
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: initial,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(now.year + 5),
+    );
+    if (picked == null) return;
+    setState(() => _dataCase = picked);
+  }
+
+  static String _formatDatePtBr(DateTime date) {
+    final day = date.day.toString().padLeft(2, '0');
+    final month = date.month.toString().padLeft(2, '0');
+    return '$day/$month/${date.year}';
+  }
+
+  Widget _buildClienteDropdown() {
+    final future = _clientesFuture;
+    if (future == null) return const SizedBox.shrink();
+
+    return FutureBuilder<List<ClientSummary>>(
+      future: future,
+      builder: (context, snapshot) {
+        final clientes = snapshot.data ?? const <ClientSummary>[];
+        final selectedExists = clientes.any((c) => c.id == _clientId);
+        return InputDecorator(
+          decoration: const InputDecoration(
+            border: InputBorder.none,
+            contentPadding: EdgeInsets.zero,
+          ),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              value: selectedExists ? _clientId : null,
+              isExpanded: true,
+              hint: const Text(
+                'Buscar Produtor/Fazenda',
+                style: TextStyle(
+                  color: SoloForteSheetTokens.inputHint,
+                  fontSize: 14,
+                ),
+              ),
+              dropdownColor: SoloForteSheetTokens.inputBackground,
+              items: clientes.map((client) {
+                final subtitle = client.areaTotal > 0
+                    ? ' · ${client.areaTotal.toStringAsFixed(1)} ha'
+                    : '';
+                return DropdownMenuItem<String>(
+                  value: client.id,
+                  child: Text(
+                    '${client.name}$subtitle',
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: SoloForteSheetTokens.inputText,
+                      fontSize: 14,
+                    ),
+                  ),
+                );
+              }).toList(),
+              onChanged: clientes.isEmpty
+                  ? null
+                  : (id) {
+                      final client = clientes.firstWhere((c) => c.id == id);
+                      setState(() {
+                        _clientId = client.id;
+                        _clientAreaTotal = client.areaTotal > 0
+                            ? client.areaTotal
+                            : null;
+                        _produtorCtrl.text = client.name;
+                      });
+                    },
+            ),
+          ),
+        );
+      },
     );
   }
 }

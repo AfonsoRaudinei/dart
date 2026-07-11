@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:soloforte_app/core/contracts/i_active_visit_context_lookup.dart';
+import 'package:soloforte_app/core/contracts/i_client_lookup.dart';
+import 'package:soloforte_app/core/contracts/i_client_lookup_provider.dart';
 import 'package:soloforte_app/modules/marketing/domain/enums/case_tipo.dart';
 import 'package:soloforte_app/modules/marketing/presentation/screens/novo_case_sheet.dart';
 
@@ -9,26 +12,31 @@ void main() {
     tester,
   ) async {
     await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: NovoCaseSheet(
-            lat: -10.0,
-            lng: -48.0,
-            tipo: CaseTipo.avaliacao,
-            initialVisitContext: const ActiveVisitContext(
-              sessionId: 'visit-1',
-              clientId: 'client-1',
-              clientName: 'José Augusto Miranda',
-              farmId: 'farm-1',
-              farmName: 'Fazenda Boa Vista',
-              fieldId: 'field-1',
-              fieldName: 'Talhão Norte',
-              fieldAreaHa: 42.5,
-              city: 'Porto Nacional',
-              state: 'TO',
+      ProviderScope(
+        overrides: [
+          clientLookupProvider.overrideWithValue(_FakeClientLookup()),
+        ],
+        child: MaterialApp(
+          home: Scaffold(
+            body: NovoCaseSheet(
+              lat: -10.0,
+              lng: -48.0,
+              tipo: CaseTipo.avaliacao,
+              initialVisitContext: const ActiveVisitContext(
+                sessionId: 'visit-1',
+                clientId: 'client-1',
+                clientName: 'José Augusto Miranda',
+                farmId: 'farm-1',
+                farmName: 'Fazenda Boa Vista',
+                fieldId: 'field-1',
+                fieldName: 'Talhão Norte',
+                fieldAreaHa: 42.5,
+                city: 'Porto Nacional',
+                state: 'TO',
+              ),
+              onClose: () {},
+              onPublicar: (_) {},
             ),
-            onClose: () {},
-            onPublicar: (_) {},
           ),
         ),
       ),
@@ -51,4 +59,16 @@ void main() {
       'Nome ajustado',
     );
   });
+}
+
+class _FakeClientLookup implements IClientLookup {
+  @override
+  Future<ClientSummary?> findById(String id) async {
+    return const ClientSummary(id: 'client-1', name: 'Cliente', active: true);
+  }
+
+  @override
+  Future<List<ClientSummary>> listAtivos() async => const [
+    ClientSummary(id: 'client-1', name: 'Cliente', active: true),
+  ];
 }

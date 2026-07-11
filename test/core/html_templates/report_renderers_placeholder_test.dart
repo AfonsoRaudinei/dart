@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:soloforte_app/core/html_templates/marketing_html_renderer.dart';
@@ -192,18 +194,25 @@ void main() {
         ..._marketingBase('avaliacao'),
         'nome_talhao': 'Talhao Norte',
         'tamanho_ha': 42.0,
-        'conclusao': 'Produto aprovado',
-        'avaliacoes': const [
+        'conclusao_tecnica': 'Produto aprovado',
+        'avaliacoes_json': jsonEncode([
           {
-            'layout': 'duas_fotos',
-            'lado_a_label': 'Antes',
-            'lado_b_label': 'Depois',
-            'lado_a_cultura': 'Soja',
-            'lado_b_cultura': 'Soja',
-            'lado_a_obs': 'Sem tratamento',
-            'lado_b_obs': 'Com tratamento',
+            'id': 'av-1',
+            'titulo': 'Avaliação 1',
+            'nome_lado_a': 'Testemunha',
+            'nome_lado_b': 'Produto A',
+            'cultura': 'Soja',
+            'observacoes': 'Boa diferença visual.',
+            'parametros': [
+              {
+                'id': 'p1',
+                'titulo': 'Número de Grãos',
+                'testemunha': 10,
+                'teste': 12,
+              },
+            ],
           },
-        ],
+        ]),
       });
     });
   });
@@ -240,39 +249,48 @@ void main() {
       expect(html, contains('logo-img'));
       expect(html, contains('sf-brand-logo'));
       expect(html, contains('Responsável: Agronomo Teste · Consultoria'));
-      expect(html, isNot(contains('Plataforma oficial de relatórios e exportação')));
+      expect(
+        html,
+        isNot(contains('Plataforma oficial de relatórios e exportação')),
+      );
       expect(html, isNot(contains('footer-meta')));
       expect(html, isNot(contains('🌱')));
     },
   );
 
-  test('ocorrencia detalhada: logo header, localizacao inline, sem meta rodape',
-      () async {
-    await initializeDateFormatting('pt_BR');
+  test(
+    'ocorrencia detalhada: logo header, localizacao inline, sem meta rodape',
+    () async {
+      await initializeDateFormatting('pt_BR');
 
-    final html = await OcorrenciaHtmlRenderer.renderDetalhe({
-      'id': 'occ-brand',
-      'type': 'Média',
-      'description': 'Ervas no baixeiro',
-      'category': 'daninhas',
-      'status': 'draft',
-      'created_at': now.toIso8601String(),
-      'updated_at': now.toIso8601String(),
-      'sync_status': 'local',
-      'lat': -10.1,
-      'long': -48.2,
-    }, consultantName: 'perfil consultor', consultantRole: 'consultor');
+      final html = await OcorrenciaHtmlRenderer.renderDetalhe(
+        {
+          'id': 'occ-brand',
+          'type': 'Média',
+          'description': 'Ervas no baixeiro',
+          'category': 'daninhas',
+          'status': 'draft',
+          'created_at': now.toIso8601String(),
+          'updated_at': now.toIso8601String(),
+          'sync_status': 'local',
+          'lat': -10.1,
+          'long': -48.2,
+        },
+        consultantName: 'perfil consultor',
+        consultantRole: 'consultor',
+      );
 
-    expect(html, contains('logo-img'));
-    expect(html, contains('SoloForte'));
-    expect(html, contains('localizacao-inline'));
-    expect(html, isNot(contains('localizacao-block')));
-    expect(html, isNot(contains('footer-meta')));
-    expect(html, isNot(contains('ID: OCC-BRAN')));
-    expect(html, isNot(contains('Sync:')));
-    expect(html, isNot(contains('⚠')));
-    expect(html, isNot(contains('cat-emoji')));
-  });
+      expect(html, contains('logo-img'));
+      expect(html, contains('SoloForte'));
+      expect(html, contains('localizacao-inline'));
+      expect(html, isNot(contains('localizacao-block')));
+      expect(html, isNot(contains('footer-meta')));
+      expect(html, isNot(contains('ID: OCC-BRAN')));
+      expect(html, isNot(contains('Sync:')));
+      expect(html, isNot(contains('⚠')));
+      expect(html, isNot(contains('cat-emoji')));
+    },
+  );
 }
 
 Map<String, dynamic> _marketingBase(String tipo) {
@@ -289,12 +307,36 @@ Map<String, dynamic> _marketingBase(String tipo) {
     'roi_calculado': 2.5,
     'roi_investimento': 10000,
     'roi_retorno': 25000,
+    'prod_sem_produto': 60,
+    'prod_com_produto': 64,
+    'unidade_produtividade': 'sc/ha',
+    'custo_produto_por_ha': 90,
+    'valor_grao': 110,
+    'tamanho_ha': 12.5,
+    'area_total': 900,
+    'parametros_json': jsonEncode([
+      {
+        'id': 'param-1',
+        'titulo': 'Número de Grãos',
+        'testemunha': 10,
+        'teste': 12,
+        'unidade': 'grãos/vagem',
+      },
+      {
+        'id': 'param-2',
+        'titulo': 'Vagens por Planta',
+        'testemunha': 38,
+        'teste': 47,
+        'unidade': 'vagens/planta',
+      },
+    ]),
     'ganho_produtividade': '+12%',
     'descricao': 'Resultado validado em campo.',
     'lat': -10.1,
     'lng': -48.2,
     'nome_vendedor': 'Vendedor Teste',
     'telefone_vendedor': '(63) 99999-0000',
+    'data_case': '2026-07-11T00:00:00.000Z',
     'criado_em': '2026-06-03T12:00:00.000Z',
     'status': 'publicado',
   };

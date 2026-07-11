@@ -3,9 +3,12 @@ import 'package:flutter/services.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 import '../../../../ui/theme/premium/design_tokens.dart';
+import '../../domain/entities/avaliacao_item.dart';
 import '../../domain/entities/marketing_case.dart';
 import '../../domain/enums/case_tipo.dart';
 import '../../domain/enums/plano_marketing.dart';
+import 'comparativo_chart.dart';
+import 'marketing_comparativo_read_only_section.dart';
 import '../../../../core/ui/sheets/sheet_tokens.dart';
 
 /// Bottom Sheet de visualização detalhada de um Case de Marketing
@@ -57,6 +60,19 @@ class MarketingCaseSheet extends StatelessWidget {
       case CaseTipo.avaliacao:
         return 'Avaliação';
     }
+  }
+
+  String _formatMoney(double value) {
+    return 'R\$ ${value.toStringAsFixed(2).replaceAll('.', ',')}';
+  }
+
+  String _formatNumber(double value) {
+    return value.toStringAsFixed(1).replaceAll('.', ',');
+  }
+
+  String _formatSigned(double value) {
+    final formatted = _formatNumber(value);
+    return value >= 0 ? '+$formatted' : formatted;
   }
 
   @override
@@ -181,6 +197,26 @@ class MarketingCaseSheet extends StatelessWidget {
                         ),
                       ],
                     ),
+                    if (marketingCase.dataCase != null) ...[
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.calendar_today_outlined,
+                            size: 14,
+                            color: PremiumTokens.textSecondaryLight,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            _formatDatePtBr(marketingCase.dataCase!),
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(
+                                  color: PremiumTokens.textSecondaryLight,
+                                ),
+                          ),
+                        ],
+                      ),
+                    ],
                     const SizedBox(height: 20),
 
                     // ── Foto principal ─────────────────────────
@@ -207,34 +243,30 @@ class MarketingCaseSheet extends StatelessWidget {
 
                     // ── Tipo Resultado: específico ─────────────
                     if (marketingCase.tipo == CaseTipo.resultado) ...[
-                      if (marketingCase.quantidadeProduzida != null)
-                        _buildInfoSection(
-                          context,
-                          'Quantidade Produzida',
-                          '${marketingCase.quantidadeProduzida!.toStringAsFixed(1)} ${marketingCase.produtividadeUnidade?.toValue() ?? ''}',
-                        ),
-                      if (marketingCase.economiaGerada != null)
-                        _buildInfoSection(
-                          context,
-                          'Economia Gerada',
-                          marketingCase.economiaGerada!,
-                        ),
+                      _buildResultadoRoiSection(context),
                     ],
 
                     // ── Tipo Antes/Depois ──────────────────────
                     if (marketingCase.tipo == CaseTipo.antesDepois) ...[
-                      if (marketingCase.ganhoProdutividade != null)
-                        _buildInfoSection(
-                          context,
-                          'Ganho de Produtividade',
-                          marketingCase.ganhoProdutividade!,
-                        ),
-                      if (marketingCase.economiaGerada != null)
-                        _buildInfoSection(
-                          context,
-                          'Economia Gerada',
-                          marketingCase.economiaGerada!,
-                        ),
+                      if (marketingCase.parametros.isNotEmpty)
+                        MarketingComparativoReadOnlySection(
+                          parametros: marketingCase.parametros,
+                          mediaGanhoPercent: marketingCase.mediaGanhoPercent,
+                        )
+                      else ...[
+                        if (marketingCase.ganhoProdutividade != null)
+                          _buildInfoSection(
+                            context,
+                            'Ganho de Produtividade',
+                            marketingCase.ganhoProdutividade!,
+                          ),
+                        if (marketingCase.economiaGerada != null)
+                          _buildInfoSection(
+                            context,
+                            'Economia Gerada',
+                            marketingCase.economiaGerada!,
+                          ),
+                      ],
                       if (marketingCase.fotoAntesUrl != null ||
                           marketingCase.fotoDepoisUrl != null)
                         _buildAntesDepoisFotos(context),
@@ -249,15 +281,11 @@ class MarketingCaseSheet extends StatelessWidget {
                           '${marketingCase.nomeTalhao!}${marketingCase.tamanhoHa != null ? ' — ${marketingCase.tamanhoHa!.toStringAsFixed(1)} ha' : ''}',
                         ),
                       ],
-                      if (marketingCase.avaliacoes.isNotEmpty) ...[
+                      if (marketingCase.avaliacoesLivres.isNotEmpty) ...[
                         const SizedBox(height: 12),
-                        _buildAvaliacoesList(context),
+                        _buildAvaliacoesLivresList(context),
                       ],
-                      if (marketingCase.roi != null) ...[
-                        const SizedBox(height: 12),
-                        _buildRoiCard(context),
-                      ],
-                      if (marketingCase.conclusao != null) ...[
+                      if (marketingCase.conclusaoTecnica != null) ...[
                         const SizedBox(height: 12),
                         _buildConclusaoCard(context),
                       ],
@@ -307,7 +335,17 @@ class MarketingCaseSheet extends StatelessWidget {
   Widget _buildMetricasRow(BuildContext context) {
     final items = <_MetricaItem>[];
 
-    if (marketingCase.produtividadeValor != null) {
+    final resultadoRoi = marketingCase.computeRoi();
+    if (resultadoRoi != null) {
+      items.add(
+        _MetricaItem(
+          label: 'ROI/ha',
+          value: _formatMoney(resultadoRoi.roiLiquidoRsHa),
+          icon: Icons.trending_up_rounded,
+          color: const Color(0xFF34C759),
+        ),
+      );
+    } else if (marketingCase.produtividadeValor != null) {
       items.add(
         _MetricaItem(
           label: 'Produtividade',
@@ -315,17 +353,6 @@ class MarketingCaseSheet extends StatelessWidget {
               '${marketingCase.produtividadeValor!.toStringAsFixed(1)} ${marketingCase.produtividadeUnidade?.toValue() ?? ''}',
           icon: Icons.bar_chart_rounded,
           color: PremiumTokens.brandGreen,
-        ),
-      );
-    }
-    if (marketingCase.roi != null) {
-      items.add(
-        _MetricaItem(
-          label: 'ROI',
-          value:
-              '${marketingCase.roi!.roiCalculado >= 0 ? '+' : ''}${marketingCase.roi!.roiCalculado.toStringAsFixed(1)}%',
-          icon: Icons.trending_up_rounded,
-          color: const Color(0xFF34C759),
         ),
       );
     }
@@ -382,6 +409,80 @@ class MarketingCaseSheet extends StatelessWidget {
             ),
           )
           .toList(),
+    );
+  }
+
+  Widget _buildResultadoRoiSection(BuildContext context) {
+    final roi = marketingCase.computeRoi();
+    if (roi == null) return const SizedBox.shrink();
+    final input = roi.input;
+
+    return Container(
+      margin: const EdgeInsets.only(top: 4),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: SoloForteSheetTokens.inputBackground,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: PremiumTokens.hairlineLight),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'PRODUTIVIDADE',
+            style: TextStyle(
+              color: PremiumTokens.textSecondaryLight,
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            'Testemunha: ${_formatNumber(input.prodSemProduto)} ${input.unidadeProdutividade}   →   Com produto: ${_formatNumber(input.prodComProduto)} ${input.unidadeProdutividade}',
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Ganho: ${_formatSigned(roi.ganhoScHa)} ${input.unidadeProdutividade}',
+            style: const TextStyle(
+              fontSize: 14,
+              color: PremiumTokens.brandGreen,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            'ROI / RETORNO',
+            style: TextStyle(
+              color: PremiumTokens.textSecondaryLight,
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            'Custo do produto: ${_formatMoney(input.custoProdutoPorHa)}/ha',
+            style: const TextStyle(fontSize: 13),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Valor do grão: ${_formatMoney(input.valorGrao)}/sc',
+            style: const TextStyle(fontSize: 13),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'ROI líquido: ${_formatMoney(roi.roiLiquidoRsHa)}/ha (${_formatNumber(roi.roiEmSacasHa)} sc/ha)',
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800),
+          ),
+          if (roi.roiSacasTalhao != null && roi.roiReaisTalhao != null) ...[
+            const SizedBox(height: 8),
+            Text(
+              'No talhão (${marketingCase.tamanhoHa!.toStringAsFixed(1)} ha): ${_formatNumber(roi.roiSacasTalhao!)} sc · ${_formatMoney(roi.roiReaisTalhao!)}',
+              style: const TextStyle(fontSize: 13),
+            ),
+          ],
+        ],
+      ),
     );
   }
 
@@ -471,176 +572,6 @@ class MarketingCaseSheet extends StatelessWidget {
     );
   }
 
-  Widget _buildAvaliacoesList(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Text(
-          'AVALIAÇÕES (${marketingCase.avaliacoes.length})',
-          style: const TextStyle(
-            color: PremiumTokens.textSecondaryLight,
-            fontSize: 10,
-            fontWeight: FontWeight.w600,
-            letterSpacing: 0.6,
-          ),
-        ),
-        const SizedBox(height: 8),
-        ...marketingCase.avaliacoes.map(
-          (av) => Container(
-            margin: const EdgeInsets.only(bottom: 10),
-            decoration: BoxDecoration(
-              border: Border.all(color: const Color(0xFFE5E5EA)),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 10,
-                  ),
-                  decoration: const BoxDecoration(
-                    color: Color(0xFF3A3F5C),
-                    borderRadius: BorderRadius.vertical(
-                      top: Radius.circular(11),
-                    ),
-                  ),
-                  child: Text(
-                    '${av.ladoA.label} vs ${av.ladoB.label}',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 13,
-                    ),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(14),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: _buildLadoInfo(
-                          av.ladoA.label,
-                          av.ladoA.tipoCultura,
-                          av.ladoA.observacoes,
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: _buildLadoInfo(
-                          av.ladoB.label,
-                          av.ladoB.tipoCultura,
-                          av.ladoB.observacoes,
-                          isB: true,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildLadoInfo(
-    String label,
-    String? cultura,
-    String? obs, {
-    bool isB = false,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontWeight: FontWeight.w700,
-            fontSize: 12,
-            color: isB ? PremiumTokens.brandGreen : null,
-          ),
-        ),
-        if (cultura != null && cultura.isNotEmpty) ...[
-          const SizedBox(height: 2),
-          Text(
-            cultura,
-            style: const TextStyle(
-              fontSize: 11,
-              color: PremiumTokens.textSecondaryLight,
-            ),
-          ),
-        ],
-        if (obs != null && obs.isNotEmpty) ...[
-          const SizedBox(height: 4),
-          Text(obs, style: const TextStyle(fontSize: 11, height: 1.3)),
-        ],
-      ],
-    );
-  }
-
-  Widget _buildRoiCard(BuildContext context) {
-    final roi = marketingCase.roi!;
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF27AE60), Color(0xFF34C759)],
-        ),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.trending_up_rounded, color: Colors.white, size: 32),
-          const SizedBox(width: 16),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'ROI Calculado',
-                style: TextStyle(
-                  color: Colors.white70,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              Text(
-                '${roi.roiCalculado >= 0 ? '+' : ''}${roi.roiCalculado.toStringAsFixed(1)}%',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w900,
-                  fontSize: 28,
-                ),
-              ),
-            ],
-          ),
-          const Spacer(),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                'R\$ ${roi.investimento.toStringAsFixed(0)}',
-                style: const TextStyle(color: Colors.white60, fontSize: 11),
-              ),
-              Text(
-                '→ R\$ ${roi.retorno.toStringAsFixed(0)}',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildConclusaoCard(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -671,7 +602,7 @@ class MarketingCaseSheet extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           Text(
-            marketingCase.conclusao!,
+            marketingCase.conclusaoTecnica!,
             style: Theme.of(
               context,
             ).textTheme.bodyMedium?.copyWith(height: 1.5),
@@ -734,6 +665,154 @@ class MarketingCaseSheet extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  Widget _buildAvaliacoesLivresList(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          'AVALIAÇÕES (${marketingCase.avaliacoesLivres.length})',
+          style: const TextStyle(
+            color: PremiumTokens.textSecondaryLight,
+            fontSize: 10,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.6,
+          ),
+        ),
+        const SizedBox(height: 8),
+        ...marketingCase.avaliacoesLivres.map(
+          (avaliacao) => _AvaliacaoLivreReadOnlyCard(avaliacao: avaliacao),
+        ),
+      ],
+    );
+  }
+
+  static String _formatDatePtBr(DateTime date) {
+    final day = date.day.toString().padLeft(2, '0');
+    final month = date.month.toString().padLeft(2, '0');
+    return '$day/$month/${date.year}';
+  }
+}
+
+class _AvaliacaoLivreReadOnlyCard extends StatefulWidget {
+  final AvaliacaoItem avaliacao;
+
+  const _AvaliacaoLivreReadOnlyCard({required this.avaliacao});
+
+  @override
+  State<_AvaliacaoLivreReadOnlyCard> createState() =>
+      _AvaliacaoLivreReadOnlyCardState();
+}
+
+class _AvaliacaoLivreReadOnlyCardState
+    extends State<_AvaliacaoLivreReadOnlyCard> {
+  String? _selectedParametroId;
+
+  @override
+  Widget build(BuildContext context) {
+    final avaliacao = widget.avaliacao;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: SoloForteSheetTokens.inputBackground,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: PremiumTokens.hairlineLight),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            '${avaliacao.titulo.isEmpty ? 'Avaliação' : avaliacao.titulo} — ${avaliacao.nomeLadoA} vs ${avaliacao.nomeLadoB}',
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Média de ganho: ${_formatSigned(avaliacao.mediaGanhoPercent)}%',
+            style: const TextStyle(
+              color: PremiumTokens.brandGreen,
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          if (avaliacao.cultura != null && avaliacao.cultura!.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(
+              'Cultura: ${avaliacao.cultura}',
+              style: const TextStyle(
+                color: PremiumTokens.textSecondaryLight,
+                fontSize: 12,
+              ),
+            ),
+          ],
+          const SizedBox(height: 10),
+          ...avaliacao.parametros.map(
+            (parametro) => Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      parametro.titulo,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  Text(
+                    '${_formatValue(parametro.testemunha)} -> ${_formatValue(parametro.teste)}',
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    parametro.testemunha == 0
+                        ? '--'
+                        : '${_formatSigned(parametro.deltaPercent)}%',
+                    style: TextStyle(
+                      color: parametro.isNegativo
+                          ? PremiumTokens.alertError
+                          : PremiumTokens.brandGreen,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          if (avaliacao.parametros.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            ComparativoChart(
+              parametros: avaliacao.parametros,
+              selecionadoId: _selectedParametroId,
+              onSelect: (id) => setState(() => _selectedParametroId = id),
+              testemunhaLabel: avaliacao.nomeLadoA,
+              testeLabel: avaliacao.nomeLadoB,
+            ),
+          ],
+          if (avaliacao.observacoes != null &&
+              avaliacao.observacoes!.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Text(
+              avaliacao.observacoes!,
+              style: const TextStyle(fontSize: 12, height: 1.35),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  static String _formatValue(double value) {
+    return value.toStringAsFixed(1).replaceAll('.', ',');
+  }
+
+  static String _formatSigned(double value) {
+    final formatted = value.toStringAsFixed(1).replaceAll('.', ',');
+    return value >= 0 ? '+$formatted' : formatted;
   }
 }
 
