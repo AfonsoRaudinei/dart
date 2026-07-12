@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:sqflite/sqflite.dart';
 
 import '../utils/app_logger.dart';
@@ -315,7 +314,7 @@ class DatabaseMigrationsV24V38 {
 
   // ADR-034: Limpeza do legado reports/ (visit_reports)
   static Future<void> migrateToV31(Database db) async {
-    debugPrint('[DB] Migrando para V31: arquivar tabela visit_reports');
+    AppLogger.debug('Migrando para V31: arquivar tabela visit_reports', tag: 'DB');
     await DatabaseSchemaUtils.renameTableIfExists(db, 'visit_reports', 'visit_reports_legacy_v31');
   }
 

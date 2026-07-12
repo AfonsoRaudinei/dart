@@ -340,10 +340,10 @@ class DatabaseHelper {
           [userId],
         );
         if (count > 0) {
-          debugPrint('[DB] repairOrphanUserIds: $count linhas em $table');
+          AppLogger.debug('repairOrphanUserIds: $count linhas em $table', tag: 'DB');
         }
       } catch (e) {
-        debugPrint('[DB] repairOrphanUserIds erro em $table: $e');
+        AppLogger.error('repairOrphanUserIds erro em $table', tag: 'DB', error: e);
       }
     }
   }

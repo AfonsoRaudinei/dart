@@ -110,8 +110,11 @@ class _MarketingCasesReportsSection extends ConsumerWidget {
     try {
       casesAsync = ref.watch(marketingCasesProvider);
     } catch (e, st) {
-      debugPrint(
-        '[RelatoriosScreen] marketingCasesProvider falhou na criação: $e\n$st',
+      AppLogger.error(
+        'marketingCasesProvider falhou na criação',
+        tag: 'RelatoriosScreen',
+        error: e,
+        stackTrace: st,
       );
       return _SectionError(
         title: 'Marketing Cases',
@@ -148,7 +151,7 @@ class _MarketingCasesReportsSection extends ConsumerWidget {
       },
       loading: () => const _SectionLoading(title: 'Marketing Cases'),
       error: (e, st) {
-        debugPrint('[RelatoriosScreen] marketingCasesProvider ERROR: $e\n$st');
+        AppLogger.error('marketingCasesProvider ERROR', tag: 'RelatoriosScreen', error: e, stackTrace: st);
         return _SectionError(
           title: 'Marketing Cases',
           onRetry: () => ref.invalidate(marketingCasesProvider),

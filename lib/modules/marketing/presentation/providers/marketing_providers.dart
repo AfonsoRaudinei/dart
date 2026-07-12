@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/services/connectivity_service.dart';
@@ -8,6 +7,7 @@ import '../../data/repositories/marketing_case_repository_impl.dart';
 import '../../data/services/marketing_sync_service.dart';
 import '../../domain/entities/marketing_case.dart';
 import '../../domain/enums/marketing_case_status.dart';
+import 'package:soloforte_app/core/utils/app_logger.dart';
 
 // ── Repositório ────────────────────────────────────────────────
 final marketingCaseRepositoryProvider = Provider<IMarketingCaseRepository>((
@@ -60,7 +60,7 @@ class MarketingCasesNotifier
 
       return savedCase;
     } catch (e, st) {
-      debugPrint('Erro ao publicar case: $e\n$st');
+      AppLogger.error('Erro ao publicar case', error: e, stackTrace: st);
       // Rollback: remover da lista em caso de falha remota mas manter no cache local
       final updatedCases = state.valueOrNull ?? [];
       // Marcar como pending_sync em vez de remover (offline-first)
@@ -95,7 +95,7 @@ class MarketingCasesNotifier
 
       return draftCase;
     } catch (e, st) {
-      debugPrint('Erro ao salvar rascunho: $e\n$st');
+      AppLogger.error('Erro ao salvar rascunho', error: e, stackTrace: st);
       rethrow;
     }
   }
@@ -138,7 +138,7 @@ class MarketingCasesNotifier
         }
         anyUpdated = true;
       } catch (e) {
-        debugPrint('Falha ao re-tentar upload do case ${pending.id}: $e');
+        AppLogger.error('Falha ao re-tentar upload do case ${pending.id}', error: e);
       }
     }
 

@@ -7,7 +7,6 @@
 // - referralsProvider: @riverpod autoDispose — usado só nas telas de planos/
 // - meuCodigoIndicacaoProvider: @riverpod autoDispose — usado só em indicacoes_screen
 
-import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -18,6 +17,7 @@ import '../../data/services/referral_service.dart';
 import '../../domain/entities/user_plan.dart';
 import '../../domain/entities/referral.dart';
 import '../../domain/entities/referral_code.dart';
+import 'package:soloforte_app/core/utils/app_logger.dart';
 
 part 'plano_providers.g.dart';
 
@@ -64,7 +64,7 @@ Future<UserPlan> planoAtivo(PlanoAtivoRef ref) async {
   } on AuthException {
     rethrow; // propagar como AsyncError para a UI tratar
   } catch (e, st) {
-    debugPrint('[planoAtivoProvider] erro: $e\n$st');
+    AppLogger.error('erro', tag: 'planoAtivoProvider', error: e, stackTrace: st);
     rethrow;
   }
 }

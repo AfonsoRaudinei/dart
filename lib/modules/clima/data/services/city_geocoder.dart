@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:geocoding/geocoding.dart';
 
 import 'package:soloforte_app/modules/clima/presentation/providers/clima_providers.dart';
+import 'package:soloforte_app/core/utils/app_logger.dart';
 
 /// Forward geocoding: município + UF → coordenadas para previsão climática.
 class CityGeocoder {
@@ -34,10 +35,10 @@ class CityGeocoder {
       _cache[cacheKey] = result;
       return result;
     } on TimeoutException {
-      debugPrint('[CityGeocoder] timeout para $municipio, $uf');
+      AppLogger.debug('timeout para $municipio, $uf', tag: 'CityGeocoder');
       return null;
     } catch (e) {
-      debugPrint('[CityGeocoder] falha para $municipio, $uf: $e');
+      AppLogger.error('falha para $municipio, $uf', tag: 'CityGeocoder', error: e);
       return null;
     }
   }

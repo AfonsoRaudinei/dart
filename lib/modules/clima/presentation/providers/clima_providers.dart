@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -37,8 +36,9 @@ class ClimaForecastUnavailableException implements Exception {
 Future<T> _loadClimaData<T>(Future<T> Function() load) async {
   if (ClimaConfig.googleWeatherApiKey.isEmpty &&
       ClimaConfig.openWeatherApiKey.isEmpty) {
-    debugPrint(
-      '[Clima] GOOGLE_WEATHER_API_KEY e OPENWEATHER_API_KEY ausentes.',
+    AppLogger.warning(
+      'GOOGLE_WEATHER_API_KEY e OPENWEATHER_API_KEY ausentes.',
+      tag: 'Clima',
     );
     throw const ClimaForecastUnavailableException();
   }
@@ -46,7 +46,7 @@ Future<T> _loadClimaData<T>(Future<T> Function() load) async {
   try {
     return await load();
   } catch (e, stackTrace) {
-    debugPrint('[Clima] Falha ao carregar previsão: $e');
+    AppLogger.error('Falha ao carregar previsão', tag: 'Clima', error: e);
     Error.throwWithStackTrace(
       const ClimaForecastUnavailableException(),
       stackTrace,

@@ -92,8 +92,11 @@ class _VisitPhotosSectionState extends ConsumerState<_VisitPhotosSection> {
         child: _SectionLoading(title: 'Fotos da visita'),
       ),
       error: (error, stack) {
-        debugPrint(
-          '[RelatoriosScreen] quickPhotoListProvider ERROR: $error\n$stack',
+        AppLogger.error(
+          'quickPhotoListProvider ERROR',
+          tag: 'RelatoriosScreen',
+          error: error,
+          stackTrace: stack,
         );
         return Padding(
           padding: const EdgeInsets.all(16),

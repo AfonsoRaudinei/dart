@@ -5,6 +5,7 @@ import 'package:path/path.dart' as p;
 import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
+import 'package:soloforte_app/core/utils/app_logger.dart';
 
 /// Serviço de gerenciamento de fotos para Marketing Cases.
 ///
@@ -104,10 +105,10 @@ class MarketingPhotoService {
       final publicUrl = _supabase.storage.from(_bucket).getPublicUrl(path);
       return publicUrl;
     } on StorageException catch (e, st) {
-      debugPrint('MarketingPhotoService upload error: $e\n$st');
+      AppLogger.error('MarketingPhotoService upload error', error: e, stackTrace: st);
       rethrow;
     } catch (e) {
-      debugPrint('MarketingPhotoService unexpected error: $e');
+      AppLogger.error('MarketingPhotoService unexpected error', error: e);
       return null;
     }
   }

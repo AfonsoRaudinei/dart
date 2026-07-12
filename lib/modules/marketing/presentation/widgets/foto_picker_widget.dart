@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../data/services/marketing_photo_service.dart';
+import 'package:soloforte_app/core/utils/app_logger.dart';
 
 /// Widget reutilizável de seleção e preview de foto para Marketing Cases.
 ///
@@ -69,7 +70,7 @@ class _FotoPickerWidgetState extends State<FotoPickerWidget> {
         }
       }
     } catch (e, st) {
-      debugPrint('FotoPickerWidget upload error: $e\n$st');
+      AppLogger.error('FotoPickerWidget upload error', error: e, stackTrace: st);
       if (!mounted) return;
       setState(() => _loading = false);
       ScaffoldMessenger.of(context).showSnackBar(

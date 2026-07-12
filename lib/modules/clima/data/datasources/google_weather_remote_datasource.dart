@@ -1,6 +1,5 @@
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 import '../../../../core/config/clima_config.dart';
@@ -11,6 +10,7 @@ import '../../domain/entities/previsao_diaria.dart';
 import '../../domain/entities/previsao_horaria.dart';
 import '../services/reverse_geocoder.dart';
 import '../datasources/i_clima_remote_datasource.dart';
+import 'package:soloforte_app/core/utils/app_logger.dart';
 
 /// Implementação principal usando Google Maps Platform Weather API.
 ///
@@ -181,8 +181,9 @@ class GoogleWeatherRemoteDatasource implements IClimaRemoteDatasource {
   }) async {
     final apiKey = ClimaConfig.googleWeatherApiKey;
     if (apiKey.isEmpty) {
-      debugPrint(
-        '[Clima] GOOGLE_WEATHER_API_KEY ausente. Tentando OpenWeather...',
+      AppLogger.warning(
+        'GOOGLE_WEATHER_API_KEY ausente. Tentando OpenWeather...',
+        tag: 'Clima',
       );
       throw Exception(
         '[GoogleWeather] GOOGLE_WEATHER_API_KEY não configurada via --dart-define.',

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:geocoding/geocoding.dart';
+import 'package:soloforte_app/core/utils/app_logger.dart';
 
 /// Converte lat/lon em "Cidade, UF" usando os serviços nativos de
 /// reverse geocoding do iOS (CLGeocoder) e Android (Geocoder).
@@ -52,10 +53,10 @@ class ReverseGeocoder {
       _cache[cacheKey] = label;
       return label;
     } on TimeoutException {
-      debugPrint('[ReverseGeocoder] timeout em ($latitude, $longitude)');
+      AppLogger.debug('timeout em ($latitude, $longitude)', tag: 'ReverseGeocoder');
       return _fallbackLabel;
     } catch (e) {
-      debugPrint('[ReverseGeocoder] falha em ($latitude, $longitude): $e');
+      AppLogger.error('falha em ($latitude, $longitude)', tag: 'ReverseGeocoder', error: e);
       return _fallbackLabel;
     }
   }

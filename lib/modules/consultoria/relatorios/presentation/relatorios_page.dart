@@ -39,6 +39,7 @@ import '../../occurrences/presentation/widgets/occurrence_detail_sheet.dart';
 import '../../occurrences/domain/occurrence.dart' hide SyncStatus;
 import '../../../marketing/domain/entities/marketing_case.dart';
 import '../../../marketing/presentation/providers/marketing_providers.dart';
+import 'package:soloforte_app/core/utils/app_logger.dart';
 
 part 'relatorios_consolidated_reports.dart';
 part 'relatorios_shared_widgets.dart';
@@ -230,8 +231,11 @@ class _RelatoriosSection extends ConsumerWidget {
         child: _SectionLoading(title: 'Relatórios de Visita'),
       ),
       error: (e, stack) {
-        debugPrint(
-          '[RelatoriosScreen] relatoriosListProvider ERROR: $e\n$stack',
+        AppLogger.error(
+          'relatoriosListProvider ERROR',
+          tag: 'RelatoriosScreen',
+          error: e,
+          stackTrace: stack,
         );
         return Padding(
           padding: const EdgeInsets.all(16),
@@ -489,8 +493,11 @@ class _OccurrenciasSection extends ConsumerWidget {
         child: _SectionLoading(title: 'Ocorrências Registradas'),
       ),
       error: (e, stack) {
-        debugPrint(
-          '[RelatoriosScreen] occurrencesListProvider ERROR: $e\n$stack',
+        AppLogger.error(
+          'occurrencesListProvider ERROR',
+          tag: 'RelatoriosScreen',
+          error: e,
+          stackTrace: stack,
         );
         return Padding(
           padding: const EdgeInsets.all(16),

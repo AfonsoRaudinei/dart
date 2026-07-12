@@ -1,6 +1,6 @@
-import 'package:flutter/foundation.dart';
 import '../../domain/entities/marketing_case.dart';
 import '../repositories/i_marketing_case_repository.dart';
+import 'package:soloforte_app/core/utils/app_logger.dart';
 
 class MarketingSyncService {
   final IMarketingCaseRepository _repository;
@@ -27,7 +27,7 @@ class MarketingSyncService {
       _lastSync = DateTime.now();
       return remoteCases;
     } catch (e) {
-      debugPrint('Erro no Sync de MarketingCase, servindo Cache antigo: $e');
+      AppLogger.error('Erro no Sync de MarketingCase, servindo Cache antigo', error: e);
       return await _repository.getLocalCases();
     }
   }

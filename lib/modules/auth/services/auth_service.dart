@@ -1,6 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:flutter/foundation.dart';
 import '../../../core/config/app_config.dart';
 import '../../../core/infra/preferences_service.dart';
 import '../../../core/session/pending_signup_role_store.dart';
@@ -8,6 +7,7 @@ import '../../../core/session/profile_role_resolver.dart';
 import '../../../core/session/user_role.dart';
 import '../../../core/network/network_policy.dart';
 import '../models/register_dto.dart';
+import 'package:soloforte_app/core/utils/app_logger.dart';
 
 part 'auth_service.g.dart';
 
@@ -93,7 +93,7 @@ class AuthService extends _$AuthService {
       try {
         await _pendingSignupRoleStore().save(email: dto.email, role: dto.role);
       } catch (e) {
-        debugPrint('⚠️ [AuthService] cache local do papel falhou: $e');
+        AppLogger.error('cache local do papel falhou', tag: 'AuthService', error: e);
       }
 
       // Se sessão ativa (email-confirm desativado), completar perfil agora
@@ -103,7 +103,7 @@ class AuthService extends _$AuthService {
           await _completeProfile(userId: userId, dto: dto);
           await _pendingSignupRoleStore().clear(dto.email);
         } catch (e) {
-          debugPrint('⚠️ [AuthService] _completeProfile falhou: $e');
+          AppLogger.error('_completeProfile falhou', tag: 'AuthService', error: e);
           // Não bloquear cadastro por falha no perfil
         }
       }
@@ -207,7 +207,7 @@ class AuthService extends _$AuthService {
 
       if (profile == null) {
         // Perfil não existe (edge case — trigger falhou?) — criar via upsert
-        debugPrint('⚠️ [AuthService] Perfil não encontrado. Criando...');
+        AppLogger.debug('Perfil não encontrado. Criando...', tag: 'AuthService');
         await NetworkPolicy.withTimeout(
           () => _client.from('perfis').upsert({
             'id': user.id,
@@ -252,12 +252,12 @@ class AuthService extends _$AuthService {
         await _syncAuthRole(resolvedRole);
       }
       await _pendingSignupRoleStore().clear(user.email);
-      debugPrint('✅ [AuthService] Perfil completado: ${updates.keys}');
+      AppLogger.debug('Perfil completado: ${updates.keys}', tag: 'AuthService');
     } on PostgrestException catch (e) {
       // Não bloquear login por falha no perfil
-      debugPrint('⚠️ [AuthService] Erro ao completar perfil: ${e.message}');
+      AppLogger.error('Erro ao completar perfil', tag: 'AuthService', error: e);
     } catch (e) {
-      debugPrint('⚠️ [AuthService] Erro inesperado no perfil: $e');
+      AppLogger.error('Erro inesperado no perfil', tag: 'AuthService', error: e);
     }
   }
 
@@ -292,7 +292,7 @@ class AuthService extends _$AuthService {
 
         photoUrl = _client.storage.from('avatars').getPublicUrl(filePath);
       } catch (e) {
-        debugPrint('⚠️ [AuthService] Erro no upload de avatar: $e');
+        AppLogger.error('Erro no upload de avatar', tag: 'AuthService', error: e);
         photoUrl = null;
       }
     }
@@ -312,7 +312,7 @@ class AuthService extends _$AuthService {
       );
       await _syncAuthRole(dto.role);
     } on PostgrestException catch (e) {
-      debugPrint('⚠️ [AuthService] Erro ao atualizar perfil: ${e.message}');
+      AppLogger.error('Erro ao atualizar perfil', tag: 'AuthService', error: e);
       // Não bloquear cadastro por falha no update de perfil
     }
   }
@@ -328,7 +328,7 @@ class AuthService extends _$AuthService {
         ),
       );
     } catch (e) {
-      debugPrint('⚠️ [AuthService] Falha ao sincronizar role na sessão: $e');
+      AppLogger.error('Falha ao sincronizar role na sessão', tag: 'AuthService', error: e);
     }
   }
 

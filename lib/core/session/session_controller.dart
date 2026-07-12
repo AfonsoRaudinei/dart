@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -12,6 +11,7 @@ import 'pending_signup_role_store.dart';
 import 'profile_role_resolver.dart';
 import 'user_role.dart';
 import 'session_models.dart';
+import 'package:soloforte_app/core/utils/app_logger.dart';
 
 part 'session_controller.g.dart';
 
@@ -81,7 +81,7 @@ class SessionController extends _$SessionController {
             try {
               await DatabaseHelper.instance.repairOrphanUserIds(user.id);
             } catch (e, st) {
-              debugPrint('[SessionController] repairOrphanUserIds falhou: $e\n$st');
+              AppLogger.error('repairOrphanUserIds falhou', tag: 'SessionController', error: e, stackTrace: st);
             }
             try {
               await _ensureProfileComplete(loginEmail: user.email);
@@ -132,7 +132,7 @@ class SessionController extends _$SessionController {
       try {
         await DatabaseHelper.instance.repairOrphanUserIds(userId);
       } catch (e, st) {
-        debugPrint('[SessionController] repairOrphanUserIds falhou: $e\n$st');
+        AppLogger.error('repairOrphanUserIds falhou', tag: 'SessionController', error: e, stackTrace: st);
       }
     }
 
@@ -282,7 +282,7 @@ class SessionController extends _$SessionController {
         () => client.auth.updateUser(UserAttributes(data: {'role': role})),
       );
     } catch (e, st) {
-      debugPrint('[SessionController] sync role falhou: $e\n$st');
+      AppLogger.error('sync role falhou', tag: 'SessionController', error: e, stackTrace: st);
     }
   }
 
@@ -358,7 +358,7 @@ class SessionController extends _$SessionController {
     try {
       await _clearLocalUserData();
     } catch (e, st) {
-      debugPrint('[SessionController] clearLocalUserData falhou: $e\n$st');
+      AppLogger.error('clearLocalUserData falhou', tag: 'SessionController', error: e, stackTrace: st);
     }
 
     // 3. Invalidar providers
@@ -380,8 +380,11 @@ class SessionController extends _$SessionController {
       try {
         entry.value(ref);
       } catch (e, st) {
-        debugPrint(
-          '[SessionController] invalidate(${entry.key}) falhou: $e\n$st',
+        AppLogger.error(
+          'invalidate(${entry.key}) falhou',
+          tag: 'SessionController',
+          error: e,
+          stackTrace: st,
         );
       }
     }
@@ -398,7 +401,7 @@ class SessionController extends _$SessionController {
       try {
         ref.invalidate(provider);
       } catch (e, st) {
-        debugPrint('[SessionController] invalidate($provider) falhou: $e\n$st');
+        AppLogger.error('invalidate($provider) falhou', tag: 'SessionController', error: e, stackTrace: st);
       }
     }
   }

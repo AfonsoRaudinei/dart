@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../../../../core/config/clima_config.dart';
 import '../../../../core/network/network_policy.dart';
@@ -9,6 +8,7 @@ import '../../domain/entities/previsao_diaria.dart';
 import '../../domain/entities/alerta_meteorologico.dart';
 import '../services/reverse_geocoder.dart';
 import '../datasources/i_clima_remote_datasource.dart';
+import 'package:soloforte_app/core/utils/app_logger.dart';
 
 /// Implementação do datasource remoto usando OpenWeatherMap One Call API 3.0.
 ///
@@ -44,8 +44,9 @@ class OpenWeatherRemoteDatasource implements IClimaRemoteDatasource {
 
   Future<Map<String, dynamic>> _fetchRaw(double lat, double lon) async {
     if (ClimaConfig.openWeatherApiKey.isEmpty) {
-      debugPrint(
-        '[Clima] OPENWEATHER_API_KEY ausente. Ambas as fontes falharam.',
+      AppLogger.warning(
+        'OPENWEATHER_API_KEY ausente. Ambas as fontes falharam.',
+        tag: 'Clima',
       );
       throw Exception(
         '[OpenWeather] OPENWEATHER_API_KEY não configurada via --dart-define.',

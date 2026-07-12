@@ -1,7 +1,7 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../domain/models/drawing_models.dart';
+import 'package:soloforte_app/core/utils/app_logger.dart';
 
 /// Sincronização remota de [DrawingFeature] via Supabase.
 ///
@@ -29,7 +29,7 @@ class DrawingRemoteStore {
           .from('drawings')
           .upsert(_toRemoteRow(feature, userId: userId), onConflict: 'id');
     } catch (e, st) {
-      debugPrint('DrawingRemoteStore.push error [id=${feature.id}]: $e\n$st');
+      AppLogger.error('DrawingRemoteStore.push error [id=${feature.id}]', error: e, stackTrace: st);
       rethrow;
     }
   }
@@ -59,7 +59,7 @@ class DrawingRemoteStore {
 
       return rows.map((row) => _fromRemoteRow(row)).toList();
     } catch (e, st) {
-      debugPrint('DrawingRemoteStore.fetchUpdates error: $e\n$st');
+      AppLogger.error('DrawingRemoteStore.fetchUpdates error', error: e, stackTrace: st);
       rethrow;
     }
   }
@@ -175,8 +175,11 @@ class DrawingRemoteStore {
         properties: properties,
       );
     } catch (e, st) {
-      debugPrint(
-        'DrawingRemoteStore._fromRemoteRow parse error [id=${row['id']}]: $e\n$st',
+      AppLogger.error(
+        '_fromRemoteRow parse error [id=${row['id']}]',
+        tag: 'DrawingRemoteStore',
+        error: e,
+        stackTrace: st,
       );
       throw FormatException(
         'Invalid remote drawing row: ${row['id'] ?? '<missing-id>'}',

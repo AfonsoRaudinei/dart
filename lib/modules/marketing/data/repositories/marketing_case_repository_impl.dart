@@ -1,11 +1,11 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../domain/entities/marketing_case.dart';
 import '../../domain/enums/marketing_case_status.dart';
 import 'i_marketing_case_repository.dart';
+import 'package:soloforte_app/core/utils/app_logger.dart';
 
 class MarketingCaseRepositoryImpl implements IMarketingCaseRepository {
   final SupabaseClient _supabase;
@@ -65,21 +65,25 @@ class MarketingCaseRepositoryImpl implements IMarketingCaseRepository {
           await saveToCache(fallbackCases);
           return fallbackCases;
         } on PostgrestException catch (fallbackError) {
-          debugPrint(
-            '⚠️ [MarketingRepo] Erro remoto (fallback), servindo cache: ${fallbackError.message}',
+          AppLogger.error(
+            'Erro remoto (fallback), servindo cache',
+            tag: 'MarketingRepo',
+            error: fallbackError,
           );
           return getLocalCases();
         }
       }
 
       // Coluna ausente ou erro de schema → serve cache local
-      debugPrint(
-        '⚠️ [MarketingRepo] Erro remoto, servindo cache: ${e.message}',
+      AppLogger.error(
+        'Erro remoto, servindo cache',
+        tag: 'MarketingRepo',
+        error: e,
       );
       return getLocalCases();
     } catch (e) {
       // Erro de rede ou timeout → serve cache local
-      debugPrint('⚠️ [MarketingRepo] Erro inesperado, servindo cache: $e');
+      AppLogger.error('Erro inesperado, servindo cache', tag: 'MarketingRepo', error: e);
       return getLocalCases();
     }
   }
