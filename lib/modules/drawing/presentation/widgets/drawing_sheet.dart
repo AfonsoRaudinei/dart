@@ -9,6 +9,9 @@ import '../../domain/models/drawing_models.dart';
 import '../../domain/models/gps_walk_session.dart';
 import '../../domain/drawing_state.dart';
 import '../../domain/repositories/i_clients_repository.dart';
+import 'package:soloforte_app/core/session/session_controller.dart';
+import 'package:soloforte_app/core/session/session_models.dart';
+import 'package:soloforte_app/core/session/user_role.dart';
 import '../providers/drawing_client_provider.dart';
 import '../providers/gps_walk_providers.dart';
 import '../providers/drawing_export_provider.dart';
@@ -68,7 +71,18 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
   // Hierarquia: Cliente -> Fazenda -> Talhão
   Client? _selectedClient;
   Farm? _selectedFarm;
-  final bool _isConsultant = true; // TODO: Obter do AuthProvider
+
+  /// Papel real da sessão: produtor desenha como cliente e não carrega a
+  /// lista de clientes; papel desconhecido preserva o comportamento de
+  /// consultor (padrão histórico desta sheet).
+  bool get _isConsultant {
+    final session = ref.read(sessionControllerProvider);
+    String? role;
+    if (session is SessionAuthenticated) {
+      role = session.user.userMetadata?['role']?.toString();
+    }
+    return !role.toUserRole().isProdutor;
+  }
 
   Color _selectedColor = PremiumTokens.brandGreen;
 
@@ -442,5 +456,4 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
       preferSavedCallback: true,
     );
   }
-
 }
