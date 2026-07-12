@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:soloforte_app/core/config/map_config.dart';
+import 'package:soloforte_app/core/domain/map_models.dart';
 
 class TalhaoMapPreviewWidget extends StatelessWidget {
   const TalhaoMapPreviewWidget({
@@ -102,6 +103,12 @@ class TalhaoMapPreviewWidget extends StatelessWidget {
   }
 
   Widget _buildMap() {
+    // Mesma resolução de provedor da camada satélite do mapa principal
+    // (MapTiler com key; fallback licenciado sem key). Auditoria A-001.
+    final tileConfig = MapConfig.tileConfigForLayer(
+      LayerType.satellite,
+      mapTilerApiKey: MapConfig.mapTilerApiKey,
+    );
     return FlutterMap(
       options: MapOptions(
         initialCameraFit: CameraFit.bounds(
@@ -114,10 +121,10 @@ class TalhaoMapPreviewWidget extends StatelessWidget {
       ),
       children: [
         TileLayer(
-          urlTemplate: MapConfig.googleSatelliteUrl,
-          subdomains: MapConfig.googleSatelliteSubdomains,
-          maxZoom: MapConfig.satelliteMaxZoom,
-          maxNativeZoom: MapConfig.satelliteMaxNativeZoom,
+          urlTemplate: tileConfig.urlTemplate,
+          subdomains: tileConfig.subdomains,
+          maxZoom: tileConfig.maxZoom,
+          maxNativeZoom: tileConfig.maxNativeZoom,
           userAgentPackageName: MapConfig.userAgent,
         ),
         PolygonLayer(

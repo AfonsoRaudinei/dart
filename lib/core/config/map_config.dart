@@ -66,19 +66,10 @@ class MapConfig {
   static const String stadiaStamenTerrain =
       'https://tiles.stadiamaps.com/tiles/stamen_terrain/{z}/{x}/{y}.png';
 
-  /// Google Maps Satellite — tile endpoint público.
-  /// lyrs=s = satellite puro (sem labels), melhor para desenho/medição.
-  /// Evita textos no mapa e reduz poluição visual sobre polígonos.
-  ///
-  /// Observação: alguns servidores devolvem uma imagem "Zoom Level Not
-  /// Supported" em zooms nativos altos. Por isso o app limita o zoom nativo
-  /// abaixo e deixa o FlutterMap fazer overzoom visual.
-  /// Subdomínios 0-3 = load balancing automático entre servidores Google
-  static const String googleSatelliteUrl =
-      'https://mt{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}';
-
-  /// Subdomínios do Google Maps Tile Server (load balancing)
-  static const List<String> googleSatelliteSubdomains = ['0', '1', '2', '3'];
+  // Auditoria A-001 (2026-07-12): tiles diretos de mt{s}.google.com removidos —
+  // endpoint interno do Google Maps, sem licença fora do SDK oficial (violação
+  // de ToS + risco de bloqueio sem aviso). Satélite oficial: MapTiler
+  // Satellite (requer MAPTILER_API_KEY — obrigatória em produção).
 
   /// Esri World Imagery — mantido apenas como referência/compatibilidade.
   ///
@@ -230,12 +221,16 @@ class MapConfig {
             requiresApiKey: true,
           );
         }
+        // Sem MAPTILER_API_KEY (dev/CI): fallback licenciado sem imagem de
+        // satélite — produção sempre injeta a key via --dart-define.
         return const MapLayerTileConfig(
-          urlTemplate: googleSatelliteUrl,
-          attribution: googleAttribution,
-          subdomains: googleSatelliteSubdomains,
-          maxZoom: satelliteMaxZoom,
-          maxNativeZoom: satelliteMaxNativeZoom,
+          urlTemplate: cartoVoyagerRetina,
+          attribution: cartoAttribution,
+          subdomains: cartoSubdomains,
+          maxZoom: defaultLayerMaxZoom,
+          maxNativeZoom: defaultLayerMaxNativeZoom,
+          retinaMode: true,
+          isFallback: true,
         );
       case LayerType.relevo:
         if (!hasMapTilerApiKey(mapTilerApiKey)) {
@@ -301,9 +296,6 @@ class MapConfig {
   /// Atribuição do Stadia Maps
   static const String stadiaAttribution =
       '© Stadia Maps © OpenStreetMap contributors';
-
-  /// Atribuição do Google Maps (obrigatória pelos Termos de Serviço)
-  static const String googleAttribution = '© Google';
 
   /// Atribuição da Esri (obrigatória)
   static const String esriAttribution = '© Esri';
