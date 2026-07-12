@@ -219,10 +219,7 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
         Positioned(
           right: 16,
           bottom: kFabSafeArea + safeBottom + 200,
-          child: const SafeArea(
-            top: false,
-            child: MapAgendaAiButton(),
-          ),
+          child: const SafeArea(top: false, child: MapAgendaAiButton()),
         ),
 
         // 4. Ações verticais do mapa (direita)
@@ -358,51 +355,65 @@ class DrawingControlsCluster extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Material(
-            elevation: 4,
-            shape: const CircleBorder(),
-            color: hasSelfIntersection ? Colors.grey : primaryColor,
-            child: InkWell(
-              customBorder: const CircleBorder(),
-              onTap: hasSelfIntersection ? null : onFinishDrawing,
-              child: const Padding(
-                padding: EdgeInsets.all(16),
-                child: Icon(SFIcons.check, color: Colors.white, size: 24),
+          Semantics(
+            button: true,
+            enabled: !hasSelfIntersection,
+            label: 'Concluir desenho',
+            child: Material(
+              elevation: 4,
+              shape: const CircleBorder(),
+              color: hasSelfIntersection ? Colors.grey : primaryColor,
+              child: InkWell(
+                customBorder: const CircleBorder(),
+                onTap: hasSelfIntersection ? null : onFinishDrawing,
+                child: const Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Icon(SFIcons.check, color: Colors.white, size: 24),
+                ),
               ),
             ),
           ),
           const SizedBox(height: 12),
-          Opacity(
-            opacity: canUndo ? 1.0 : 0.4,
-            child: Material(
-              elevation: 4,
-              shape: const CircleBorder(),
-              color: Colors.white,
-              child: InkWell(
-                customBorder: const CircleBorder(),
-                onTap: canUndo ? onUndoDrawing : null,
-                child: const Padding(
-                  padding: EdgeInsets.all(12),
-                  child: Icon(
-                    Icons.undo_rounded,
-                    color: Colors.black87,
-                    size: 24,
+          Semantics(
+            button: true,
+            enabled: canUndo,
+            label: 'Desfazer último ponto',
+            child: Opacity(
+              opacity: canUndo ? 1.0 : 0.4,
+              child: Material(
+                elevation: 4,
+                shape: const CircleBorder(),
+                color: Colors.white,
+                child: InkWell(
+                  customBorder: const CircleBorder(),
+                  onTap: canUndo ? onUndoDrawing : null,
+                  child: const Padding(
+                    padding: EdgeInsets.all(12),
+                    child: Icon(
+                      Icons.undo_rounded,
+                      color: Colors.black87,
+                      size: 24,
+                    ),
                   ),
                 ),
               ),
             ),
           ),
           const SizedBox(height: 12),
-          Material(
-            elevation: 4,
-            shape: const CircleBorder(),
-            color: Colors.redAccent,
-            child: InkWell(
-              customBorder: const CircleBorder(),
-              onTap: onCancelDrawing,
-              child: const Padding(
-                padding: EdgeInsets.all(16),
-                child: Icon(SFIcons.close, color: Colors.white, size: 24),
+          Semantics(
+            button: true,
+            label: 'Cancelar desenho',
+            child: Material(
+              elevation: 4,
+              shape: const CircleBorder(),
+              color: Colors.redAccent,
+              child: InkWell(
+                customBorder: const CircleBorder(),
+                onTap: onCancelDrawing,
+                child: const Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Icon(SFIcons.close, color: Colors.white, size: 24),
+                ),
               ),
             ),
           ),
@@ -458,68 +469,52 @@ class EditingControlsCluster extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Material(
-                  elevation: 4,
-                  shape: const CircleBorder(),
-                  color: PremiumTokens.brandGreen,
-                  child: InkWell(
-                    key: const Key('editing_control_save'),
-                    customBorder: const CircleBorder(),
-                    onTap: onSave,
-                    child: const Padding(
-                      padding: EdgeInsets.all(16),
-                      child: Icon(SFIcons.check, color: Colors.white, size: 24),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Opacity(
-                  opacity: canUndo ? 1.0 : 0.4,
+                Semantics(
+                  button: true,
+                  label: 'Salvar edição',
                   child: Material(
                     elevation: 4,
                     shape: const CircleBorder(),
-                    color: Colors.white,
+                    color: PremiumTokens.brandGreen,
                     child: InkWell(
-                      key: const Key('editing_control_undo'),
+                      key: const Key('editing_control_save'),
                       customBorder: const CircleBorder(),
-                      onTap: canUndo
-                          ? () {
-                              HapticFeedback.lightImpact();
-                              onUndo();
-                            }
-                          : null,
+                      onTap: onSave,
                       child: const Padding(
-                        padding: EdgeInsets.all(12),
+                        padding: EdgeInsets.all(16),
                         child: Icon(
-                          Icons.undo_rounded,
-                          color: Colors.black87,
+                          SFIcons.check,
+                          color: Colors.white,
                           size: 24,
                         ),
                       ),
                     ),
                   ),
                 ),
-                if (onRedo != null) ...[
-                  const SizedBox(height: 12),
-                  Opacity(
-                    opacity: canRedo ? 1.0 : 0.4,
+                const SizedBox(height: 12),
+                Semantics(
+                  button: true,
+                  enabled: canUndo,
+                  label: 'Desfazer edição',
+                  child: Opacity(
+                    opacity: canUndo ? 1.0 : 0.4,
                     child: Material(
                       elevation: 4,
                       shape: const CircleBorder(),
                       color: Colors.white,
                       child: InkWell(
-                        key: const Key('editing_control_redo'),
+                        key: const Key('editing_control_undo'),
                         customBorder: const CircleBorder(),
-                        onTap: canRedo
+                        onTap: canUndo
                             ? () {
                                 HapticFeedback.lightImpact();
-                                onRedo!();
+                                onUndo();
                               }
                             : null,
                         child: const Padding(
                           padding: EdgeInsets.all(12),
                           child: Icon(
-                            Icons.redo_rounded,
+                            Icons.undo_rounded,
                             color: Colors.black87,
                             size: 24,
                           ),
@@ -527,19 +522,61 @@ class EditingControlsCluster extends StatelessWidget {
                       ),
                     ),
                   ),
+                ),
+                if (onRedo != null) ...[
+                  const SizedBox(height: 12),
+                  Semantics(
+                    button: true,
+                    enabled: canRedo,
+                    label: 'Refazer edição',
+                    child: Opacity(
+                      opacity: canRedo ? 1.0 : 0.4,
+                      child: Material(
+                        elevation: 4,
+                        shape: const CircleBorder(),
+                        color: Colors.white,
+                        child: InkWell(
+                          key: const Key('editing_control_redo'),
+                          customBorder: const CircleBorder(),
+                          onTap: canRedo
+                              ? () {
+                                  HapticFeedback.lightImpact();
+                                  onRedo!();
+                                }
+                              : null,
+                          child: const Padding(
+                            padding: EdgeInsets.all(12),
+                            child: Icon(
+                              Icons.redo_rounded,
+                              color: Colors.black87,
+                              size: 24,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
                 ],
                 const SizedBox(height: 12),
-                Material(
-                  elevation: 4,
-                  shape: const CircleBorder(),
-                  color: Colors.redAccent,
-                  child: InkWell(
-                    key: const Key('editing_control_cancel'),
-                    customBorder: const CircleBorder(),
-                    onTap: onCancel,
-                    child: const Padding(
-                      padding: EdgeInsets.all(16),
-                      child: Icon(SFIcons.close, color: Colors.white, size: 24),
+                Semantics(
+                  button: true,
+                  label: 'Cancelar edição',
+                  child: Material(
+                    elevation: 4,
+                    shape: const CircleBorder(),
+                    color: Colors.redAccent,
+                    child: InkWell(
+                      key: const Key('editing_control_cancel'),
+                      customBorder: const CircleBorder(),
+                      onTap: onCancel,
+                      child: const Padding(
+                        padding: EdgeInsets.all(16),
+                        child: Icon(
+                          SFIcons.close,
+                          color: Colors.white,
+                          size: 24,
+                        ),
+                      ),
                     ),
                   ),
                 ),

@@ -216,27 +216,31 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
             top: MediaQuery.of(context).padding.top + 12,
             left: 16,
             child: RepaintBoundary(
-              child: GestureDetector(
-                onTap: () => context.go('/public-map'),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: BackdropFilter(
-                    filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-                    child: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.25),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.4),
-                          width: 0.8,
+              child: Semantics(
+                button: true,
+                label: 'Voltar ao mapa público',
+                child: GestureDetector(
+                  onTap: () => context.go('/public-map'),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+                      child: Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.25),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.4),
+                            width: 0.8,
+                          ),
                         ),
-                      ),
-                      child: Icon(
-                        Icons.arrow_back_ios_new_rounded,
-                        size: 18,
-                        color: Colors.black.withValues(alpha: 0.75),
+                        child: Icon(
+                          Icons.arrow_back_ios_new_rounded,
+                          size: 18,
+                          color: Colors.black.withValues(alpha: 0.75),
+                        ),
                       ),
                     ),
                   ),
@@ -300,7 +304,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                             Align(
                               alignment: Alignment.centerLeft,
                               child: TextButton.icon(
-                                onPressed: () => context.go(AppRoutes.publicMap),
+                                onPressed: () =>
+                                    context.go(AppRoutes.publicMap),
                                 icon: const Icon(
                                   Icons.arrow_back_ios,
                                   size: 16,
