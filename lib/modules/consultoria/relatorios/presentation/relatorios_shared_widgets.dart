@@ -101,7 +101,7 @@ class _AsyncActionMenuState extends State<_AsyncActionMenu> {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('Erro na ação: $e')));
+        ).showSnackBar(SnackBar(content: Text(userFacingError(e, action: 'Erro na ação'))));
       }
     } finally {
       if (mounted) setState(() => _busy = false);

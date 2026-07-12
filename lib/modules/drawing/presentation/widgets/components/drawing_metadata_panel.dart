@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../domain/repositories/i_clients_repository.dart';
 import '../../../infra/clients/i_clients_repository_provider.dart';
 import '../../../domain/models/drawing_models.dart';
+import 'package:soloforte_app/core/utils/user_facing_error.dart';
 
 /// Widget responsável pelo formulário de metadados de uma feature de desenho.
 ///
@@ -125,7 +126,7 @@ class _DrawingMetadataPanelState extends ConsumerState<DrawingMetadataPanel> {
               );
             },
             loading: () => const LinearProgressIndicator(),
-            error: (error, stack) => Text('Erro ao carregar clientes: $error'),
+            error: (error, stack) => Text(userFacingError(error, action: 'Erro ao carregar clientes')),
           ),
           const SizedBox(height: 16),
 

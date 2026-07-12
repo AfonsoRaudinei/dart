@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/design/sf_icons.dart';
 import '../../../../ui/theme/premium/design_tokens.dart';
 import '../../../../modules/visitas/presentation/controllers/visit_controller.dart';
+import 'package:soloforte_app/core/utils/user_facing_error.dart';
 
 /// Widget independente que exibe a UI de visita ativa no checkIn sheet.
 ///
@@ -55,7 +56,7 @@ class ActiveVisitSheet extends ConsumerWidget {
               } catch (e) {
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Erro ao encerrar visita: $e')),
+                    SnackBar(content: Text(userFacingError(e, action: 'Erro ao encerrar visita'))),
                   );
                 }
               }

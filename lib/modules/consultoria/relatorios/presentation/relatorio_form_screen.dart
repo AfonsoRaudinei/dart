@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../providers/relatorio_providers.dart';
+import 'package:soloforte_app/core/utils/user_facing_error.dart';
 
 class RelatorioFormScreen extends ConsumerStatefulWidget {
   final String relatorioId;
@@ -68,7 +69,7 @@ class _RelatorioFormScreenState extends ConsumerState<RelatorioFormScreen> {
             child: CircularProgressIndicator(color: Color(0xFF1A56DB)),
           ),
           error: (error, _) => Center(
-            child: Text('Erro: $error',
+            child: Text(userFacingError(error, action: 'Erro'),
                 style: const TextStyle(color: Color(0xFF6B7280))),
           ),
           data: (relatorio) {

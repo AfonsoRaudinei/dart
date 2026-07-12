@@ -21,6 +21,7 @@ import '../widgets/client_hub_section.dart';
 import '../widgets/client_detail_sub_widgets.dart';
 import '../widgets/client_edit_form.dart';
 import '../widgets/talhao_map_preview.dart';
+import 'package:soloforte_app/core/utils/user_facing_error.dart';
 
 Future<bool> showClientDeleteConfirmation(
   BuildContext context,
@@ -129,7 +130,7 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen> {
           return _buildModoLeitura(client, culturas);
         },
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, _) => Center(child: Text('Erro: $err')),
+        error: (err, _) => Center(child: Text(userFacingError(err, action: 'Erro'))),
       ),
     );
   }

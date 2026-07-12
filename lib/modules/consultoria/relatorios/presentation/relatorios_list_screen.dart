@@ -12,6 +12,7 @@ import '../models/relatorio_tecnico.dart';
 import '../providers/relatorio_providers.dart';
 import '../use_cases/publish_relatorio_use_case.dart';
 import '../../../../core/constants/layout_constants.dart';
+import 'package:soloforte_app/core/utils/user_facing_error.dart';
 
 /// Tela de Listagem de Relatórios Técnicos — PASSO 3
 ///
@@ -136,7 +137,7 @@ class _RelatoriosListScreenState extends ConsumerState<RelatoriosListScreen>
         child: Padding(
           padding: const EdgeInsets.all(24),
           child: Text(
-            'Erro ao carregar relatórios:\n$error',
+            userFacingError(error, action: 'Erro ao carregar relatórios:\n'),
             textAlign: TextAlign.center,
             style: const TextStyle(color: Color(0xFF6B7280)),
           ),
@@ -422,7 +423,7 @@ class _ActionsSheet extends ConsumerWidget {
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text('Erro ao publicar: $e'),
+                      content: Text(userFacingError(e, action: 'Erro ao publicar')),
                       backgroundColor: Colors.red,
                     ),
                   );
@@ -479,7 +480,7 @@ class _ActionsSheet extends ConsumerWidget {
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text('Erro ao arquivar: $e'),
+                      content: Text(userFacingError(e, action: 'Erro ao arquivar')),
                       backgroundColor: Colors.red,
                     ),
                   );

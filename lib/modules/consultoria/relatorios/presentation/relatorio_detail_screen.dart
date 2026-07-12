@@ -15,6 +15,7 @@ import '../models/relatorio_status.dart';
 import '../models/relatorio_tecnico.dart';
 import '../providers/relatorio_providers.dart';
 import '../use_cases/publish_relatorio_use_case.dart';
+import 'package:soloforte_app/core/utils/user_facing_error.dart';
 
 /// Tela de Detalhe do Relatório Técnico — PASSO 3
 ///
@@ -98,7 +99,7 @@ class _RelatorioDetailScreenState extends ConsumerState<RelatorioDetailScreen> {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'Erro ao carregar relatório:\n$error',
+                    userFacingError(error, action: 'Erro ao carregar relatório:\n'),
                     style: const TextStyle(color: Color(0xFF6B7280)),
                     textAlign: TextAlign.center,
                   ),
@@ -507,7 +508,7 @@ class _RelatorioDetailScreenState extends ConsumerState<RelatorioDetailScreen> {
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erro ao abrir relatório: $e')),
+          SnackBar(content: Text(userFacingError(e, action: 'Erro ao abrir relatório'))),
         );
       }
     }
@@ -542,7 +543,7 @@ class _RelatorioDetailScreenState extends ConsumerState<RelatorioDetailScreen> {
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erro ao exportar: $e')),
+          SnackBar(content: Text(userFacingError(e, action: 'Erro ao exportar'))),
         );
       }
     }
@@ -576,7 +577,7 @@ class _RelatorioDetailScreenState extends ConsumerState<RelatorioDetailScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Erro ao salvar: $e'),
+            content: Text(userFacingError(e, action: 'Erro ao salvar')),
             backgroundColor: Colors.red,
           ),
         );
@@ -631,7 +632,7 @@ class _RelatorioDetailScreenState extends ConsumerState<RelatorioDetailScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Erro ao publicar: $e'),
+            content: Text(userFacingError(e, action: 'Erro ao publicar')),
             backgroundColor: Colors.red,
           ),
         );

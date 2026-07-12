@@ -16,6 +16,7 @@ import '../providers/agenda_provider.dart';
 import '../widgets/status_badge.dart';
 import '../widgets/event_type_badge.dart';
 import '../widgets/visit_edit_dialog.dart';
+import 'package:soloforte_app/core/utils/user_facing_error.dart';
 
 /// Página de detalhes expandida de um evento
 class AgendaEventDetailPage extends ConsumerWidget {
@@ -313,7 +314,7 @@ class AgendaEventDetailPage extends ConsumerWidget {
                 if (context.mounted) {
                   ScaffoldMessenger.of(
                     context,
-                  ).showSnackBar(SnackBar(content: Text('Erro: $e')));
+                  ).showSnackBar(SnackBar(content: Text(userFacingError(e, action: 'Erro'))));
                 }
               }
             },
@@ -339,7 +340,7 @@ class AgendaEventDetailPage extends ConsumerWidget {
                 if (context.mounted) {
                   ScaffoldMessenger.of(
                     context,
-                  ).showSnackBar(SnackBar(content: Text('Erro: $e')));
+                  ).showSnackBar(SnackBar(content: Text(userFacingError(e, action: 'Erro'))));
                 }
               }
             },
@@ -366,7 +367,7 @@ class AgendaEventDetailPage extends ConsumerWidget {
                 if (context.mounted) {
                   ScaffoldMessenger.of(
                     context,
-                  ).showSnackBar(SnackBar(content: Text('Erro: $e')));
+                  ).showSnackBar(SnackBar(content: Text(userFacingError(e, action: 'Erro'))));
                 }
               }
             },
@@ -418,7 +419,7 @@ class AgendaEventDetailPage extends ConsumerWidget {
               } catch (e) {
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Erro ao excluir: $e')),
+                    SnackBar(content: Text(userFacingError(e, action: 'Erro ao excluir'))),
                   );
                 }
               }

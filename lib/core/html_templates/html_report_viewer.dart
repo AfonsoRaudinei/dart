@@ -8,6 +8,7 @@ import 'dart:io';
 
 import '../utils/share_position.dart';
 import 'report_export_service.dart';
+import 'package:soloforte_app/core/utils/user_facing_error.dart';
 
 /// Widget genérico para exibir qualquer relatório HTML gerado pelos renderers.
 ///
@@ -149,7 +150,7 @@ class _HtmlReportViewerState extends State<HtmlReportViewer> {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('Erro ao exportar: $e')));
+        ).showSnackBar(SnackBar(content: Text(userFacingError(e, action: 'Erro ao exportar'))));
       }
     }
   }
@@ -179,7 +180,7 @@ class _HtmlReportViewerState extends State<HtmlReportViewer> {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('Erro ao gerar PDF: $e')));
+        ).showSnackBar(SnackBar(content: Text(userFacingError(e, action: 'Erro ao gerar PDF'))));
       }
     }
   }

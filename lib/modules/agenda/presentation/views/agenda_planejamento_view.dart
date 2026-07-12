@@ -13,6 +13,7 @@ import '../services/agenda_pdf_service.dart';
 import '../services/agenda_planejamento_html_service.dart';
 import '../services/agenda_visit_html_service.dart';
 import '../widgets/day_event_card.dart';
+import 'package:soloforte_app/core/utils/user_facing_error.dart';
 
 /// View de Planejamento Semanal (modelo da skill)
 class AgendaPlanejamentoView extends ConsumerStatefulWidget {
@@ -198,7 +199,7 @@ class _AgendaPlanejamentoViewState
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erro ao gerar planejamento: $e')),
+          SnackBar(content: Text(userFacingError(e, action: 'Erro ao gerar planejamento'))),
         );
       }
     } finally {
@@ -411,7 +412,7 @@ class _AgendaPlanejamentoViewState
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erro ao gerar HTML da visita: $e')),
+        SnackBar(content: Text(userFacingError(e, action: 'Erro ao gerar HTML da visita'))),
       );
     }
   }

@@ -8,6 +8,7 @@ import '../../../../../ui/theme/premium/design_tokens.dart';
 import 'package:soloforte_app/core/design/sf_icons.dart';
 import '../widgets/client_avatar_widget.dart';
 import 'dart:ui' as ui;
+import 'package:soloforte_app/core/utils/user_facing_error.dart';
 
 class ClientListScreen extends ConsumerWidget {
   const ClientListScreen({super.key});
@@ -310,7 +311,7 @@ class ClientListScreen extends ConsumerWidget {
                 ),
               ),
               error: (err, stack) =>
-                  SliverFillRemaining(child: Center(child: Text('Erro: $err'))),
+                  SliverFillRemaining(child: Center(child: Text(userFacingError(err, action: 'Erro')))),
             ),
           ),
         ],

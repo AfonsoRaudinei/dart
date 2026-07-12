@@ -16,6 +16,7 @@ import '../../../../core/router/app_routes.dart';
 import '../../../../core/session/user_role.dart';
 import '../../domain/entities/user_profile.dart';
 import '../providers/user_profile_provider.dart';
+import 'package:soloforte_app/core/utils/user_facing_error.dart';
 
 class EditProfileScreen extends ConsumerWidget {
   const EditProfileScreen({super.key});
@@ -191,7 +192,7 @@ class _EditProfileFormState extends ConsumerState<_EditProfileForm> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'Erro ao salvar perfil: ${e.toString().replaceAll('Exception: ', '')}',
+              userFacingError(e, action: 'Erro ao salvar perfil'),
             ),
             backgroundColor: const Color(0xFFFF3B30),
           ),

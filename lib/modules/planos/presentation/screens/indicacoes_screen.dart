@@ -12,6 +12,7 @@ import '../providers/plano_providers.dart';
 import '../../domain/entities/referral.dart';
 import '../../domain/entities/referral_code.dart';
 import '../../domain/enums/referral_status.dart';
+import 'package:soloforte_app/core/utils/user_facing_error.dart';
 
 class IndicacoesScreen extends ConsumerWidget {
   const IndicacoesScreen({super.key});
@@ -38,7 +39,7 @@ class IndicacoesScreen extends ConsumerWidget {
                 ),
                 error: (e, _) => Center(
                   child: Text(
-                    'Erro: $e',
+                    userFacingError(e, action: 'Erro'),
                     style: const TextStyle(
                       color: Colors.red,
                       fontFamily: 'Inter',
@@ -124,7 +125,7 @@ class _IndicacoesContent extends StatelessWidget {
             ),
           ),
           error: (e, _) => Text(
-            'Erro ao carregar indicações: $e',
+            userFacingError(e, action: 'Erro ao carregar indicações'),
             style: const TextStyle(color: Colors.red, fontFamily: 'Inter'),
           ),
         ),

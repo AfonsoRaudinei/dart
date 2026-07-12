@@ -10,6 +10,7 @@ import '../providers/agenda_provider.dart';
 import 'event_type_badge.dart';
 import 'status_badge.dart';
 import 'visit_edit_dialog.dart';
+import 'package:soloforte_app/core/utils/user_facing_error.dart';
 
 /// Card de evento para visualização no dia
 class DayEventCard extends ConsumerWidget {
@@ -355,7 +356,7 @@ class DayEventCard extends ConsumerWidget {
               if (context.mounted) {
                 ScaffoldMessenger.of(
                   context,
-                ).showSnackBar(SnackBar(content: Text('Erro: $e')));
+                ).showSnackBar(SnackBar(content: Text(userFacingError(e, action: 'Erro'))));
               }
             }
           },
@@ -377,7 +378,7 @@ class DayEventCard extends ConsumerWidget {
               if (context.mounted) {
                 ScaffoldMessenger.of(
                   context,
-                ).showSnackBar(SnackBar(content: Text('Erro: $e')));
+                ).showSnackBar(SnackBar(content: Text(userFacingError(e, action: 'Erro'))));
               }
             }
           },
@@ -399,7 +400,7 @@ class DayEventCard extends ConsumerWidget {
               if (context.mounted) {
                 ScaffoldMessenger.of(
                   context,
-                ).showSnackBar(SnackBar(content: Text('Erro: $e')));
+                ).showSnackBar(SnackBar(content: Text(userFacingError(e, action: 'Erro'))));
               }
             }
           },

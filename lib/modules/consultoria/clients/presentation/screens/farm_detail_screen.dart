@@ -8,6 +8,7 @@ import 'package:soloforte_app/core/router/app_routes.dart';
 import 'package:soloforte_app/modules/consultoria/farms/data/repositories/farm_repository.dart';
 import 'package:soloforte_app/modules/consultoria/clients/presentation/providers/field_providers.dart';
 import 'package:soloforte_app/modules/consultoria/clients/presentation/widgets/talhao_map_preview.dart';
+import 'package:soloforte_app/core/utils/user_facing_error.dart';
 
 final farmDetailProvider = FutureProvider.family.autoDispose<dynamic, String>((
   ref,
@@ -188,7 +189,7 @@ class FarmDetailScreen extends ConsumerWidget {
                             return const SizedBox.shrink();
                           },
                           error: (e, s) => Center(
-                            child: Text('Erro ao carregar talhões: $e'),
+                            child: Text(userFacingError(e, action: 'Erro ao carregar talhões')),
                           ),
                         ),
                       ],
@@ -200,7 +201,7 @@ class FarmDetailScreen extends ConsumerWidget {
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, s) => Center(child: Text('Erro: $e')),
+        error: (e, s) => Center(child: Text(userFacingError(e, action: 'Erro'))),
       ),
     );
   }

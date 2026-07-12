@@ -17,6 +17,7 @@ import '../../domain/settings_models.dart';
 import '../../domain/entities/user_profile.dart';
 import '../widgets/audit_trail_widget.dart';
 import 'report_branding_screen.dart';
+import 'package:soloforte_app/core/utils/user_facing_error.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -793,7 +794,7 @@ class SettingsScreen extends ConsumerWidget {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'Erro ao excluir conta: ${e.toString().replaceAll('Exception: ', '')}',
+              userFacingError(e, action: 'Erro ao excluir conta'),
             ),
             backgroundColor: Colors.red,
           ),
