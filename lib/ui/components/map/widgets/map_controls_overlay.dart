@@ -20,7 +20,6 @@ import '../../../../core/utils/app_logger.dart';
 import '../../../../modules/map/presentation/widgets/visit_active_card.dart';
 import '../../../theme/premium/design_tokens.dart';
 import 'map_action_fab_menu.dart';
-import 'map_agenda_ai_button.dart';
 
 part 'map_controls_location_button.dart';
 part 'map_controls_measurement.dart';
@@ -215,14 +214,7 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
             ),
           ),
 
-        // 3. Agente de agenda (único ícone IA do app)
-        Positioned(
-          right: 16,
-          bottom: kFabSafeArea + safeBottom + 200,
-          child: const SafeArea(top: false, child: MapAgendaAiButton()),
-        ),
-
-        // 4. Ações verticais do mapa (direita)
+        // 3. Ações verticais do mapa (direita)
         Positioned(
           right: 16,
           bottom: kFabSafeArea + safeBottom + 130,

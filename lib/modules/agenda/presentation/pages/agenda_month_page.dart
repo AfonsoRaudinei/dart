@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:soloforte_app/core/constants/layout_constants.dart';
+import 'package:soloforte_app/core/contracts/i_agenda_ai_launcher_provider.dart';
 import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 import '../../domain/entities/event.dart';
 import '../../domain/enums/agenda_view.dart';
@@ -68,6 +69,16 @@ class _AgendaMonthPageState extends ConsumerState<AgendaMonthPage> {
           child: AgendaSegmentedControl(),
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.event_available_outlined),
+            onPressed: _openCreateVisitDialog,
+            tooltip: 'Marcar visita',
+          ),
+          IconButton(
+            icon: const Icon(Icons.auto_awesome),
+            onPressed: _openAgendaAi,
+            tooltip: 'Assistente IA',
+          ),
           if (filters.hasActiveFilters)
             Padding(
               padding: const EdgeInsets.only(right: 8),
@@ -203,6 +214,19 @@ class _AgendaMonthPageState extends ConsumerState<AgendaMonthPage> {
         builder: (_) => VisitFormDialog(initialDate: DateTime.now()),
       );
     });
+  }
+
+  Future<void> _openCreateVisitDialog() async {
+    if (!mounted) return;
+    await showDialog<void>(
+      context: context,
+      builder: (_) => VisitFormDialog(initialDate: DateTime.now()),
+    );
+  }
+
+  Future<void> _openAgendaAi() async {
+    if (!mounted) return;
+    await ref.read(agendaAiLauncherProvider).showSheet(context);
   }
 
   Widget _buildProximoEventoCard(Event event, ThemeData theme) {
