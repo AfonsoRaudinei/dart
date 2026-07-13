@@ -59,6 +59,45 @@ void main() {
       'Nome ajustado',
     );
   });
+
+  testWidgets('Antes/Depois mantém valor digitado em Teste produto', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          clientLookupProvider.overrideWithValue(_FakeClientLookup()),
+        ],
+        child: MaterialApp(
+          home: Scaffold(
+            body: NovoCaseSheet(
+              lat: -10.0,
+              lng: -48.0,
+              tipo: CaseTipo.antesDepois,
+              onClose: () {},
+              onPublicar: (_) {},
+            ),
+          ),
+        ),
+      ),
+    );
+
+    final addParametroButton = find.widgetWithText(
+      OutlinedButton,
+      'Adicionar Parâmetro',
+    );
+    await tester.ensureVisible(addParametroButton);
+    await tester.tap(addParametroButton);
+    await tester.pump();
+
+    final fields = find.byType(TextFormField);
+    await tester.enterText(fields.at(4), 'Número de Grãos');
+    await tester.enterText(fields.at(5), '10');
+    await tester.enterText(fields.at(6), '12');
+    await tester.pump();
+
+    expect(tester.widget<TextFormField>(fields.at(6)).controller!.text, '12');
+  });
 }
 
 class _FakeClientLookup implements IClientLookup {

@@ -73,8 +73,10 @@ class _ParametroCardState extends State<ParametroCard> {
         ? PremiumTokens.alertError
         : SoloForteSheetTokens.inputHint;
 
-    return GestureDetector(
-      onTap: widget.onTap,
+    return Focus(
+      onFocusChange: (hasFocus) {
+        if (hasFocus && !widget.selected) widget.onTap();
+      },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 160),
         margin: const EdgeInsets.only(bottom: 12),
