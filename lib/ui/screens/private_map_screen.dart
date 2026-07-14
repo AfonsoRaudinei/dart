@@ -19,6 +19,7 @@ import '../../modules/dashboard/providers/location_providers.dart';
 import '../../modules/dashboard/services/location_service.dart';
 import '../../modules/consultoria/occurrences/domain/occurrence.dart' as occ;
 import '../../modules/marketing/domain/enums/case_tipo.dart';
+import '../../modules/marketing/presentation/providers/marketing_providers.dart';
 import '../components/map/map_sheet_state.dart';
 // 🔧 MODAL: imports para sheets dos tipos não-draw
 // (conteúdo migrado para map_sheet_content_builder.dart — ADR-031 F3)
@@ -68,6 +69,7 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
       // está invalidado. Sem este guard → BadState crash na inicialização.
       if (!mounted) return;
 
+      ref.read(marketingCasesProvider.notifier).load();
       ref.read(locationStateProvider.notifier).init();
       _requestLocationPermission();
 
@@ -106,7 +108,23 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
   Future<void> _focusDrawingFromQuery(
     String drawingId, {
     required bool edit,
+    int attempt = 0,
   }) async {
+    if (!ref.read(mapReadyStateProvider)) {
+      if (attempt >= 20) {
+        AppLogger.warning(
+          'Mapa não ficou pronto para focar drawing da rota: $drawingId',
+          tag: 'PrivateMap',
+        );
+        return;
+      }
+      Future<void>.delayed(const Duration(milliseconds: 50), () {
+        if (!mounted) return;
+        _focusDrawingFromQuery(drawingId, edit: edit, attempt: attempt + 1);
+      });
+      return;
+    }
+
     final controller = ref.read(drawingControllerProvider);
     await controller.loadFeatures();
     if (!mounted) return;
@@ -128,14 +146,23 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
     }
 
     controller.selectFeature(feature);
-    MapViewportController.focusDrawingFeature(
+    final focused = MapViewportController.focusDrawingFeature(
       mapController: _mapController,
       feature: feature,
     );
+    if (focused) {
+      ref.read(viewportStateProvider.notifier).state =
+          InitialViewportState.applied;
+    }
 
     if (edit) {
       controller.startEditMode();
     }
+
+    _setSheetState(
+      const MapSheetState(type: MapSheetType.draw),
+      edit ? 'query_param_modo_editar_drawing' : 'query_param_focus_drawing',
+    );
   }
 
   @override
@@ -546,17 +573,18 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
     // 🛡 CONSOLIDATION: Redirect to MapBottomSheet
     if (!mounted) return;
 
+    final occurrenceLocation = LatLng(lat, lng);
+
     // O ponto precisa existir antes do sheet para evitar o primeiro frame em 0,0.
-    ref.read(pendingOccurrenceLocationProvider.notifier).state = LatLng(
-      lat,
-      lng,
-    );
+    ref.read(pendingOccurrenceLocationProvider.notifier).state =
+        occurrenceLocation;
 
     // Usando setter instrumentado
     _setSheetState(
-      const MapSheetState(
+      MapSheetState(
         type: MapSheetType.occurrences,
         isCreatingOccurrence: true,
+        occurrenceCreationLocation: occurrenceLocation,
       ),
       'OpenOccurrenceSheet (Create Mode)',
     );

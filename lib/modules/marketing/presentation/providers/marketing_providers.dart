@@ -27,18 +27,59 @@ class MarketingCasesNotifier
     extends StateNotifier<AsyncValue<List<MarketingCase>>> {
   final IMarketingCaseRepository _repository;
   final MarketingSyncService _syncService;
+  Future<void>? _activeLoad;
 
   MarketingCasesNotifier(this._repository, this._syncService)
     : super(const AsyncLoading());
 
   /// Carrega os cases (cache local com fallback remoto)
   Future<void> load({bool forceSync = false}) async {
+    final activeLoad = _activeLoad;
+    if (activeLoad != null) return activeLoad;
+
+    final loadFuture = _loadLocalFirst(forceSync: forceSync);
+    _activeLoad = loadFuture;
+    return loadFuture.whenComplete(() {
+      _activeLoad = null;
+    });
+  }
+
+  Future<void> _loadLocalFirst({required bool forceSync}) async {
+    List<MarketingCase> localCases = const [];
+
     try {
-      state = const AsyncLoading();
-      final cases = await _syncService.getCases(forceSync: forceSync);
+      localCases = await _repository.getLocalCases();
+      if (localCases.isNotEmpty) {
+        state = AsyncData(localCases);
+      } else {
+        state = const AsyncLoading();
+      }
+
+      final cases = await _syncService.getCases(forceSync: true);
       state = AsyncData(cases);
     } catch (e, st) {
-      state = AsyncError(e, st);
+      if (localCases.isNotEmpty) {
+        AppLogger.error(
+          'Erro ao sincronizar MarketingCase; mantendo cache local',
+          tag: 'MarketingProvider',
+          error: e,
+          stackTrace: st,
+        );
+        state = AsyncData(localCases);
+        return;
+      }
+
+      if (forceSync) {
+        state = AsyncError(e, st);
+        return;
+      }
+
+      try {
+        final fallbackCases = await _syncService.getCases(forceSync: false);
+        state = AsyncData(fallbackCases);
+      } catch (_) {
+        state = AsyncError(e, st);
+      }
     }
   }
 
@@ -138,7 +179,10 @@ class MarketingCasesNotifier
         }
         anyUpdated = true;
       } catch (e) {
-        AppLogger.error('Falha ao re-tentar upload do case ${pending.id}', error: e);
+        AppLogger.error(
+          'Falha ao re-tentar upload do case ${pending.id}',
+          error: e,
+        );
       }
     }
 
