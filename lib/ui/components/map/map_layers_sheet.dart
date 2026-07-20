@@ -13,6 +13,7 @@ import '../../../core/services/local_geotiff_service.dart';
 import '../../../core/contracts/i_radar_overlay_controller_provider.dart';
 import '../../../core/state/map_state.dart';
 import '../../../core/ui/sheets/sheet_tokens.dart';
+import 'widgets/map_offline_widgets.dart';
 import '../../theme/premium/design_tokens.dart';
 import '../../../modules/clima/presentation/providers/radar_providers.dart';
 
@@ -148,10 +149,12 @@ class LayersSheet extends ConsumerWidget {
                           onTap: () {
                             HapticFeedback.lightImpact();
                             final enabling = !showRadar;
-                            ref.read(radarOverlayControllerProvider).setEnabled(
-                              enabling,
-                              preferSatelliteLayer: enabling,
-                            );
+                            ref
+                                .read(radarOverlayControllerProvider)
+                                .setEnabled(
+                                  enabling,
+                                  preferSatelliteLayer: enabling,
+                                );
                           },
                         ),
                       ],
@@ -163,11 +166,7 @@ class LayersSheet extends ConsumerWidget {
                   const Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(
-                        Icons.info_outline,
-                        size: 14,
-                        color: Colors.white60,
-                      ),
+                      Icon(Icons.info_outline, size: 14, color: Colors.white60),
                       SizedBox(width: 6),
                       Expanded(
                         child: Text(
@@ -180,6 +179,10 @@ class LayersSheet extends ConsumerWidget {
                     ],
                   ),
                 ],
+                const SizedBox(height: 16),
+                MapOfflineStatusCard(
+                  onDownloadOfflineArea: onDownloadOfflineArea,
+                ),
                 const SizedBox(height: kFabSafeArea),
                 const Divider(color: SoloForteSheetTokens.divider),
                 const SizedBox(height: 8),
@@ -187,16 +190,14 @@ class LayersSheet extends ConsumerWidget {
                   icon: SFIcons.layers,
                   title: 'WMS Externa',
                   statusLabel: wms.enabled
-                      ? (wms.layers.isEmpty
-                            ? 'Ativa'
-                            : 'Ativa: ${wms.layers}')
+                      ? (wms.layers.isEmpty ? 'Ativa' : 'Ativa: ${wms.layers}')
                       : 'Desativada',
                   enabled: wms.enabled,
                   hint: wms.enabled
                       ? 'Sobrepõe um mapa técnico externo (limites, hidrografia, '
-                          'uso do solo). Toque no item para configurar a URL do servidor.'
+                            'uso do solo). Toque no item para configurar a URL do servidor.'
                       : 'Desativada: o mapa usa apenas as camadas padrão do SoloForte. '
-                          'Ative somente se você tiver a URL de um servidor WMS.',
+                            'Ative somente se você tiver a URL de um servidor WMS.',
                   onToggle: (v) {
                     ref
                         .read(externalWmsLayerProvider.notifier)
@@ -217,9 +218,9 @@ class LayersSheet extends ConsumerWidget {
                   enabled: raster.enabled,
                   hint: raster.enabled
                       ? 'Sobrepõe uma imagem personalizada no mapa (ortofoto, NDVI, '
-                          'mapa XYZ). Toque no item para trocar a fonte ou a opacidade.'
+                            'mapa XYZ). Toque no item para trocar a fonte ou a opacidade.'
                       : 'Desativado: nenhuma imagem extra é exibida. Ative para '
-                          'importar ortofoto, GeoTIFF ou tiles XYZ configurados.',
+                            'importar ortofoto, GeoTIFF ou tiles XYZ configurados.',
                   onToggle: (v) {
                     ref
                         .read(externalRasterLayerProvider.notifier)
@@ -251,6 +252,10 @@ class LayersSheet extends ConsumerWidget {
                     title: const Text(
                       'Baixar área offline',
                       style: TextStyle(color: Colors.white),
+                    ),
+                    subtitle: const Text(
+                      'Use a área visível atual para preparar operação sem internet.',
+                      style: TextStyle(color: Colors.white60, fontSize: 12),
                     ),
                     onTap: onDownloadOfflineArea,
                   ),
@@ -638,7 +643,10 @@ class _LayerGridTile extends StatelessWidget {
                       child: DecoratedBox(
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(_radius),
-                          border: Border.all(color: _accent, width: _borderWidth),
+                          border: Border.all(
+                            color: _accent,
+                            width: _borderWidth,
+                          ),
                         ),
                       ),
                     ),
@@ -700,18 +708,12 @@ class _AdvancedLayerTile extends StatelessWidget {
         ListTile(
           contentPadding: EdgeInsets.zero,
           leading: Icon(icon, color: Colors.white70),
-          title: Text(
-            title,
-            style: const TextStyle(color: Colors.white),
-          ),
+          title: Text(title, style: const TextStyle(color: Colors.white)),
           subtitle: Text(
             statusLabel,
             style: const TextStyle(color: Colors.white60),
           ),
-          trailing: Switch(
-            value: enabled,
-            onChanged: onToggle,
-          ),
+          trailing: Switch(value: enabled, onChanged: onToggle),
           onTap: onConfigure,
         ),
         Padding(
@@ -719,11 +721,7 @@ class _AdvancedLayerTile extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Icon(
-                Icons.info_outline,
-                size: 14,
-                color: Colors.white60,
-              ),
+              const Icon(Icons.info_outline, size: 14, color: Colors.white60),
               const SizedBox(width: 6),
               Expanded(
                 child: Text(

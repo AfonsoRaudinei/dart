@@ -1,55 +1,172 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:sqflite/sqflite.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/database/database_helper.dart';
+import '../../../../core/infra/preferences_service.dart';
+import '../../../../core/utils/app_logger.dart';
 import '../../domain/models/drawing_models.dart';
+
+class DrawingOwnershipPolicy {
+  const DrawingOwnershipPolicy._();
+
+  static const orphanUserId = '';
+
+  static String normalizeSyncStatusForWrite({
+    required String persistedUserId,
+    required SyncStatus currentSyncStatus,
+  }) {
+    if (persistedUserId.isNotEmpty) return currentSyncStatus.toJson();
+    if (currentSyncStatus == SyncStatus.synced) {
+      return SyncStatus.local_only.toJson();
+    }
+    if (currentSyncStatus == SyncStatus.pending_sync) {
+      return SyncStatus.local_only.toJson();
+    }
+    return currentSyncStatus.toJson();
+  }
+
+  static String buildOwnedOrOrphanWhereClause(String scopedUserId) {
+    if (scopedUserId.isEmpty) {
+      return "user_id = '$orphanUserId'";
+    }
+    return "(user_id = ? OR user_id = '$orphanUserId')";
+  }
+
+  static List<Object?> buildOwnedOrOrphanWhereArgs(String scopedUserId) {
+    if (scopedUserId.isEmpty) return const <Object?>[];
+    return [scopedUserId];
+  }
+}
+
+class DrawingLocalIdentityStore {
+  DrawingLocalIdentityStore({PreferencesService? preferences})
+    : _preferences = preferences;
+
+  static const _lastKnownUserIdKey = 'drawing_last_known_user_id_v1';
+  static String? _ephemeralLastKnownUserId;
+
+  final PreferencesService? _preferences;
+
+  String resolveScopedUserId({required String? currentUserId}) {
+    final normalizedCurrent = currentUserId?.trim() ?? '';
+    if (normalizedCurrent.isNotEmpty) {
+      _persistLastKnownUserId(normalizedCurrent);
+      return normalizedCurrent;
+    }
+
+    final lastKnownUserId = _readLastKnownUserId();
+    if (lastKnownUserId.isNotEmpty) {
+      return lastKnownUserId;
+    }
+
+    return DrawingOwnershipPolicy.orphanUserId;
+  }
+
+  static void resetEphemeralStateForTest() {
+    _ephemeralLastKnownUserId = null;
+  }
+
+  String _readLastKnownUserId() {
+    final persisted =
+        _preferences?.getString(_lastKnownUserIdKey)?.trim() ?? '';
+    if (persisted.isNotEmpty) return persisted;
+    return _ephemeralLastKnownUserId?.trim() ?? '';
+  }
+
+  void _persistLastKnownUserId(String userId) {
+    _ephemeralLastKnownUserId = userId;
+    if (_preferences == null) return;
+    unawaited(_preferences.setString(_lastKnownUserIdKey, userId));
+  }
+}
 
 class DrawingLocalStore {
   final DatabaseHelper _dbHelper = DatabaseHelper.instance;
+  final DrawingLocalIdentityStore _identityStore;
+
+  DrawingLocalStore({DrawingLocalIdentityStore? identityStore})
+    : _identityStore = identityStore ?? DrawingLocalIdentityStore();
 
   Future<void> insert(DrawingFeature feature) async {
-    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
-    if (userId.isEmpty) return;
+    final userId = _resolveScopedUserId();
     final db = await _dbHelper.database;
     await db.insert('drawings', {
       ..._toRow(feature),
       'user_id': userId,
+      'sync_status': DrawingOwnershipPolicy.normalizeSyncStatusForWrite(
+        persistedUserId: userId,
+        currentSyncStatus: feature.properties.syncStatus,
+      ),
     }, conflictAlgorithm: ConflictAlgorithm.replace);
+    _logFallbackIdentityIfNeeded('insert', feature.id, userId);
   }
 
   Future<void> update(DrawingFeature feature) async {
-    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
-    if (userId.isEmpty) return;
+    final userId = _resolveScopedUserId();
     final db = await _dbHelper.database;
-    await db.update(
+    final payload = {
+      ..._toRow(feature),
+      'user_id': userId,
+      'sync_status': DrawingOwnershipPolicy.normalizeSyncStatusForWrite(
+        persistedUserId: userId,
+        currentSyncStatus: feature.properties.syncStatus,
+      ),
+    };
+    final affected = await db.update(
       'drawings',
-      {..._toRow(feature), 'user_id': userId},
-      where: 'id = ? AND user_id = ?',
-      whereArgs: [feature.id, userId],
+      payload,
+      where:
+          'id = ? AND ${DrawingOwnershipPolicy.buildOwnedOrOrphanWhereClause(userId)}',
+      whereArgs: [
+        feature.id,
+        ...DrawingOwnershipPolicy.buildOwnedOrOrphanWhereArgs(userId),
+      ],
     );
+    if (affected == 0) {
+      await db.insert(
+        'drawings',
+        payload,
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+    }
+    _logFallbackIdentityIfNeeded('update', feature.id, userId);
   }
 
   Future<void> delete(String id) async {
-    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
-    if (userId.isEmpty) return;
+    final userId = _resolveScopedUserId();
     final db = await _dbHelper.database;
     // Soft delete
-    await db.update(
+    final affected = await db.update(
       'drawings',
       {'deleted_at': DateTime.now().toIso8601String(), 'ativo': 0},
-      where: 'id = ? AND user_id = ?',
-      whereArgs: [id, userId],
+      where:
+          'id = ? AND ${DrawingOwnershipPolicy.buildOwnedOrOrphanWhereClause(userId)}',
+      whereArgs: [
+        id,
+        ...DrawingOwnershipPolicy.buildOwnedOrOrphanWhereArgs(userId),
+      ],
     );
+    if (affected == 0) {
+      AppLogger.warning(
+        'DrawingLocalStore.delete encontrou 0 registros [id=$id scopedUser=$userId]',
+        tag: 'DrawingLocalStore',
+      );
+    }
   }
 
   Future<DrawingFeature?> getById(String id) async {
-    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
-    if (userId.isEmpty) return null;
+    final userId = _resolveScopedUserId();
     final db = await _dbHelper.database;
     final List<Map<String, dynamic>> maps = await db.query(
       'drawings',
-      where: 'id = ? AND user_id = ? AND deleted_at IS NULL',
-      whereArgs: [id, userId],
+      where:
+          'id = ? AND ${DrawingOwnershipPolicy.buildOwnedOrOrphanWhereClause(userId)} '
+          'AND deleted_at IS NULL',
+      whereArgs: [
+        id,
+        ...DrawingOwnershipPolicy.buildOwnedOrOrphanWhereArgs(userId),
+      ],
     );
 
     if (maps.isNotEmpty) {
@@ -59,13 +176,14 @@ class DrawingLocalStore {
   }
 
   Future<List<DrawingFeature>> getAll() async {
-    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
-    if (userId.isEmpty) return [];
+    final userId = _resolveScopedUserId();
     final db = await _dbHelper.database;
     final List<Map<String, dynamic>> maps = await db.query(
       'drawings',
-      where: 'user_id = ? AND deleted_at IS NULL AND ativo = 1',
-      whereArgs: [userId],
+      where:
+          '${DrawingOwnershipPolicy.buildOwnedOrOrphanWhereClause(userId)} '
+          'AND deleted_at IS NULL AND ativo = 1',
+      whereArgs: DrawingOwnershipPolicy.buildOwnedOrOrphanWhereArgs(userId),
       orderBy: 'updated_at DESC',
     );
 
@@ -73,13 +191,14 @@ class DrawingLocalStore {
   }
 
   Future<List<DrawingFeature>> getPendingSync() async {
-    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
-    if (userId.isEmpty) return [];
+    final userId = _resolveScopedUserId();
     final db = await _dbHelper.database;
     final List<Map<String, dynamic>> maps = await db.query(
       'drawings',
-      where: "user_id = ? AND sync_status != 'synced'",
-      whereArgs: [userId],
+      where:
+          "${DrawingOwnershipPolicy.buildOwnedOrOrphanWhereClause(userId)} "
+          "AND sync_status != 'synced'",
+      whereArgs: DrawingOwnershipPolicy.buildOwnedOrOrphanWhereArgs(userId),
     );
     return maps.map((e) => _fromRow(e)).toList();
   }
@@ -88,32 +207,72 @@ class DrawingLocalStore {
   /// Drawings com area_ha NULL são ignorados na soma.
   /// Retorna 0.0 se não houver nenhum drawing vinculado.
   Future<double> getTotalAreaByClienteId(String clienteId) async {
-    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
-    if (userId.isEmpty) return 0.0;
+    final userId = _resolveScopedUserId();
     final db = await _dbHelper.database;
     final result = await db.rawQuery(
       'SELECT COALESCE(SUM(area_ha), 0.0) AS total '
       'FROM drawings '
-      'WHERE user_id = ? AND cliente_id = ? AND deleted_at IS NULL',
-      [userId, clienteId],
+      'WHERE ${DrawingOwnershipPolicy.buildOwnedOrOrphanWhereClause(userId)} '
+      'AND cliente_id = ? AND deleted_at IS NULL',
+      [
+        ...DrawingOwnershipPolicy.buildOwnedOrOrphanWhereArgs(userId),
+        clienteId,
+      ],
     );
     return (result.first['total'] as num?)?.toDouble() ?? 0.0;
   }
 
   /// Atualiza SOMENTE area_total do cliente no banco local.
   Future<void> updateClientAreaTotal(String clientId, double areaTotal) async {
-    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
-    if (userId.isEmpty) return;
+    final userId = _resolveScopedUserId();
     final db = await _dbHelper.database;
-    await db.update(
+    final affected = await db.update(
       'clients',
       {
         'area_total': areaTotal,
         'updated_at': DateTime.now().toIso8601String(),
         'sync_status': 1,
       },
-      where: 'id = ? AND user_id = ?',
-      whereArgs: [clientId, userId],
+      where:
+          'id = ? AND ${DrawingOwnershipPolicy.buildOwnedOrOrphanWhereClause(userId)}',
+      whereArgs: [
+        clientId,
+        ...DrawingOwnershipPolicy.buildOwnedOrOrphanWhereArgs(userId),
+      ],
+    );
+    if (affected == 0) {
+      AppLogger.warning(
+        'DrawingLocalStore.updateClientAreaTotal encontrou 0 clientes [clientId=$clientId scopedUser=$userId]',
+        tag: 'DrawingLocalStore',
+      );
+    }
+  }
+
+  String _resolveScopedUserId() {
+    return _identityStore.resolveScopedUserId(
+      currentUserId: Supabase.instance.client.auth.currentUser?.id,
+    );
+  }
+
+  void _logFallbackIdentityIfNeeded(
+    String action,
+    String featureId,
+    String userId,
+  ) {
+    final currentUserId = Supabase.instance.client.auth.currentUser?.id ?? '';
+    if (currentUserId.isNotEmpty || userId.isEmpty) {
+      if (userId.isEmpty) {
+        AppLogger.warning(
+          'DrawingLocalStore.$action persisted orphan local drawing [id=$featureId]',
+          tag: 'DrawingLocalStore',
+        );
+      }
+      return;
+    }
+    AppLogger.warning(
+      'DrawingLocalStore.$action usando last known user sem sessao hidratada '
+      '[id=$featureId scopedUser=$userId]',
+      tag: 'DrawingLocalStore',
     );
   }
 

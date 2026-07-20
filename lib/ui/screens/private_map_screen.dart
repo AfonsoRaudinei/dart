@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/state/map_ui_providers.dart';
 import '../../core/state/map_state.dart';
 import '../../core/config/map_config.dart';
+import '../../core/providers/connectivity_provider.dart';
 import '../../core/services/offline_tile_cache_service.dart';
 import '../../core/utils/coordinate_parser.dart';
 import '../../modules/auth/services/auth_service.dart';
@@ -174,7 +175,7 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
     // 🛡 ADR-008: ref é invalidado em deactivate() (antes de dispose()).
     // Usar referência cacheada em _drawingController, capturada no build().
     // NUNCA usar ref.read() aqui — causa BadState crash.
-    _drawingController?.cancelOperation();
+    _drawingController?.cancelOperation(notify: false);
     MapLocationHandler.stopFollowing();
 
     super.dispose();
@@ -388,6 +389,18 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
   }
 
   Future<void> _downloadOfflineArea() async {
+    final isOnline = ref.read(isOnlineProvider).asData?.value ?? false;
+    if (!isOnline) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Sem internet. Volte para uma área já baixada ou conecte-se para baixar a região visível.',
+          ),
+        ),
+      );
+      return;
+    }
+
     final minZoomController = TextEditingController(text: '12');
     final maxZoomController = TextEditingController(text: '18');
 
@@ -581,10 +594,9 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
 
     // Usando setter instrumentado
     _setSheetState(
-      MapSheetState(
+      const MapSheetState(
         type: MapSheetType.occurrences,
         isCreatingOccurrence: true,
-        occurrenceCreationLocation: occurrenceLocation,
       ),
       'OpenOccurrenceSheet (Create Mode)',
     );

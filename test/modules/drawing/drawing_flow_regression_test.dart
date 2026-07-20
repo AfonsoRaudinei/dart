@@ -455,6 +455,22 @@ void main() {
       expect(controller.currentState, equals(DrawingState.idle));
     });
 
+    test('⚡ teardown silencioso limpa estado sem notificar listeners', () {
+      var notifications = 0;
+      void listener() => notifications++;
+
+      controller.addListener(listener);
+      controller.selectTool('polygon');
+      controller.appendDrawingPoint(const LatLng(-15.7801, -47.9292));
+
+      notifications = 0;
+      controller.cancelOperation(notify: false);
+
+      expect(controller.currentState, equals(DrawingState.idle));
+      expect(controller.liveGeometry, isNull);
+      expect(notifications, equals(0));
+    });
+
     test('⚡ Simulação: desenhar, cancelar, redesenhar', () {
       // Primeiro desenho
       controller.selectTool('polygon');

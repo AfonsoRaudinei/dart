@@ -11,25 +11,37 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 class ConnectivityService {
   final Connectivity _connectivity = Connectivity();
   final _connectivityController = StreamController<bool>.broadcast();
+  StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
 
   ConnectivityService() {
     _init();
   }
 
   void _init() {
+    unawaited(_emitInitialState());
+
     // Listener de mudanças de conectividade
-    _connectivity.onConnectivityChanged.listen((
+    _connectivitySubscription = _connectivity.onConnectivityChanged.listen((
       List<ConnectivityResult> results,
     ) {
-      final isConnected = results.any(
-        (result) =>
-            result == ConnectivityResult.wifi ||
-            result == ConnectivityResult.mobile ||
-            result == ConnectivityResult.ethernet,
-      );
-
-      _connectivityController.add(isConnected);
+      _connectivityController.add(_hasNetwork(results));
     });
+  }
+
+  Future<void> _emitInitialState() async {
+    final initialState = await isConnected;
+    if (!_connectivityController.isClosed) {
+      _connectivityController.add(initialState);
+    }
+  }
+
+  bool _hasNetwork(List<ConnectivityResult> results) {
+    return results.any(
+      (result) =>
+          result == ConnectivityResult.wifi ||
+          result == ConnectivityResult.mobile ||
+          result == ConnectivityResult.ethernet,
+    );
   }
 
   /// Stream de conectividade (true = conectado, false = desconectado)
@@ -39,12 +51,7 @@ class ConnectivityService {
   Future<bool> get isConnected async {
     try {
       final results = await _connectivity.checkConnectivity();
-      return results.any(
-        (result) =>
-            result == ConnectivityResult.wifi ||
-            result == ConnectivityResult.mobile ||
-            result == ConnectivityResult.ethernet,
-      );
+      return _hasNetwork(results);
     } catch (e) {
       // Em caso de erro, assume desconectado (safe mode)
       return false;
@@ -52,6 +59,7 @@ class ConnectivityService {
   }
 
   void dispose() {
+    _connectivitySubscription?.cancel();
     _connectivityController.close();
   }
 }

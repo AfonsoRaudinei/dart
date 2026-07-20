@@ -1,3 +1,5 @@
+import 'package:soloforte_app/core/services/sync_retry_runner.dart';
+import 'package:soloforte_app/core/utils/app_logger.dart';
 import 'drawing_local_store.dart';
 import 'drawing_remote_store.dart';
 import '../../domain/models/drawing_models.dart';
@@ -34,88 +36,150 @@ class DrawingSyncService {
 
     for (var feature in pending) {
       try {
-        await _remoteStore.push(feature);
-
-        // Success: Mark synced
-        final synced = DrawingFeature(
-          id: feature.id,
-          geometry: feature.geometry,
-          properties: feature.properties.copyWith(
-            syncStatus: SyncStatus.synced,
-            updatedAt:
-                DateTime.now(), // Local update ts after sync? Usually backend returns new ts.
-          ),
+        await SyncRetryRunner.execute(
+          operation: () => _remoteStore.push(feature),
+          tag: 'DrawingSync',
+          stage: 'drawing_push_remote',
+          entityId: feature.id,
         );
-        await _localStore.update(synced);
-        resultUpdates.add(synced);
-      } catch (e) {
-        // Error: Keep pending or mark conflict if specific error?
-        // Simple error -> keep pending to retry later.
-        // If conflict error (409) -> mark conflict.
-        // Stub implementation marks conflict for demo sometimes, or just error.
+
+        try {
+          final synced = DrawingFeature(
+            id: feature.id,
+            geometry: feature.geometry,
+            properties: feature.properties.copyWith(
+              syncStatus: SyncStatus.synced,
+              updatedAt: DateTime.now(),
+            ),
+          );
+          await _localStore.update(synced);
+          resultUpdates.add(synced);
+          AppLogger.debug(
+            'Drawing push synced [id=${feature.id}]',
+            tag: 'DrawingSync',
+          );
+        } catch (error, stackTrace) {
+          errorCount++;
+          AppLogger.error(
+            'Drawing push remoto concluido, mas persistencia local falhou '
+            '[id=${feature.id}]',
+            tag: 'DrawingSync',
+            error: error,
+            stackTrace: stackTrace,
+          );
+        }
+      } catch (error) {
         errorCount++;
-        // If critical conflict logic needed on push:
-        // if (e is ConflictException) ...
+        AppLogger.warning(
+          'Drawing push falhou; pendencia local preservada [id=${feature.id}]',
+          tag: 'DrawingSync',
+          error: error,
+        );
       }
     }
 
     // 2. PULL: Fetch remote updates
-    // Assuming we track last sync timestamp
-    // final lastSync = await _localStore.getLastSyncTime();
-    final remoteUpdates = await _remoteStore.fetchUpdates(null);
+    List<DrawingFeature> remoteUpdates = const [];
+    try {
+      remoteUpdates = await SyncRetryRunner.execute(
+        operation: () => _remoteStore.fetchUpdates(null),
+        tag: 'DrawingSync',
+        stage: 'drawing_pull_remote',
+      );
+    } catch (error) {
+      errorCount++;
+      AppLogger.warning(
+        'Drawing pull skipped after recoverable error; estado local preservado',
+        tag: 'DrawingSync',
+        error: error,
+      );
+      return DrawingSyncResult(
+        updated: resultUpdates,
+        conflicts: resultConflicts,
+        errors: errorCount,
+      );
+    }
 
     for (var remote in remoteUpdates) {
       final local = await _localStore.getById(remote.id);
 
       if (local == null) {
-        // New remote feature -> Insert
-        final newLocal = DrawingFeature(
-          id: remote.id,
-          geometry: remote.geometry,
-          properties: remote.properties.copyWith(syncStatus: SyncStatus.synced),
-        );
-        await _localStore.insert(newLocal);
-        resultUpdates.add(newLocal);
+        try {
+          final newLocal = DrawingFeature(
+            id: remote.id,
+            geometry: remote.geometry,
+            properties: remote.properties.copyWith(
+              syncStatus: SyncStatus.synced,
+            ),
+          );
+          await _localStore.insert(newLocal);
+          resultUpdates.add(newLocal);
+        } catch (error, stackTrace) {
+          errorCount++;
+          AppLogger.error(
+            'Drawing pull persist failed on insert [id=${remote.id}]',
+            tag: 'DrawingSync',
+            error: error,
+            stackTrace: stackTrace,
+          );
+        }
       } else {
-        // Exists locally. Check for conflict.
-
-        // Conflict Condition:
-        // Local has changes not synced (pending) AND remote has changes (updated_at > local.last_synced_at?)
-        // OR simply: local version != remote version AND local status != synced?
-
         if (local.properties.syncStatus != SyncStatus.synced) {
-          // Local was edited and not pushed yet. Remote also changed.
-          // CONFLICT!
           final conflict = DrawingFeature(
             id: local.id,
-            geometry: local.geometry, // Keep local geometry accessible
+            geometry: local.geometry,
             properties: local.properties.copyWith(
               syncStatus: SyncStatus.conflict,
             ),
           );
-
-          // We do NOT overwrite local geometry. We just mark status.
-          // Maybe we store remote version aside?
-          // For now, simpler implementation: Mark conflict status on local item.
-          await _localStore.update(conflict);
-          resultConflicts.add(conflict);
-        } else {
-          // Local is synced (clean). Remote is newer.
-          // Safe auto-update
-          if (remote.properties.updatedAt.isAfter(local.properties.updatedAt)) {
-            final newLocal = DrawingFeature(
-              id: remote.id,
-              geometry: remote.geometry,
-              properties: remote.properties.copyWith(
-                syncStatus: SyncStatus.synced,
-              ),
+          try {
+            await _localStore.update(conflict);
+            resultConflicts.add(conflict);
+            AppLogger.warning(
+              'Drawing conflict detected [id=${local.id}]',
+              tag: 'DrawingSync',
             );
-            await _localStore.update(newLocal);
-            resultUpdates.add(newLocal);
+          } catch (error, stackTrace) {
+            errorCount++;
+            AppLogger.error(
+              'Drawing conflict persist failed [id=${local.id}]',
+              tag: 'DrawingSync',
+              error: error,
+              stackTrace: stackTrace,
+            );
+          }
+        } else {
+          if (remote.properties.updatedAt.isAfter(local.properties.updatedAt)) {
+            try {
+              final newLocal = DrawingFeature(
+                id: remote.id,
+                geometry: remote.geometry,
+                properties: remote.properties.copyWith(
+                  syncStatus: SyncStatus.synced,
+                ),
+              );
+              await _localStore.update(newLocal);
+              resultUpdates.add(newLocal);
+            } catch (error, stackTrace) {
+              errorCount++;
+              AppLogger.error(
+                'Drawing pull persist failed on update [id=${remote.id}]',
+                tag: 'DrawingSync',
+                error: error,
+                stackTrace: stackTrace,
+              );
+            }
           }
         }
       }
     }
+
+    AppLogger.debug(
+      'Drawing sync finished '
+      '[updated=${resultUpdates.length} conflicts=${resultConflicts.length} '
+      'errors=$errorCount]',
+      tag: 'DrawingSync',
+    );
 
     return DrawingSyncResult(
       updated: resultUpdates,

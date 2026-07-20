@@ -3,7 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:soloforte_app/core/router/app_routes.dart';
+import 'package:soloforte_app/core/session/session_controller.dart';
+import 'package:soloforte_app/core/session/session_models.dart';
 import 'package:soloforte_app/modules/settings/data/models/user_profile_audit_entry.dart';
 import 'package:soloforte_app/modules/settings/data/settings_repository.dart';
 import 'package:soloforte_app/modules/settings/domain/entities/user_profile.dart';
@@ -81,11 +84,19 @@ Future<GoRouter> _pumpEditProfile(
   WidgetTester tester, {
   required _FakeUserProfileRepository repo,
   Widget settings = const Scaffold(body: Text('settings-route')),
+  bool authenticated = true,
 }) async {
   final router = _router(settings: settings);
   await tester.pumpWidget(
     ProviderScope(
-      overrides: [userProfileRepositoryProvider.overrideWith((ref) => repo)],
+      overrides: [
+        userProfileRepositoryProvider.overrideWith((ref) => repo),
+        sessionControllerProvider.overrideWith(
+          authenticated
+              ? _AuthenticatedSessionController.new
+              : _PublicSessionController.new,
+        ),
+      ],
       child: MaterialApp.router(routerConfig: router),
     ),
   );
@@ -120,7 +131,7 @@ void main() {
 
   testWidgets('exibe perfil inexistente sem criar formulario', (tester) async {
     final repo = _FakeUserProfileRepository(null);
-    await _pumpEditProfile(tester, repo: repo);
+    await _pumpEditProfile(tester, repo: repo, authenticated: false);
 
     expect(find.text('Usuário não autenticado.'), findsOneWidget);
     expect(find.byType(TextFormField), findsNothing);
@@ -276,18 +287,23 @@ void main() {
             settingsRepositoryProvider.overrideWith(
               (ref) => SettingsRepository(prefs),
             ),
+            sessionControllerProvider.overrideWith(
+              _AuthenticatedSessionController.new,
+            ),
           ],
           child: MaterialApp.router(routerConfig: router),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       final editButton = find.widgetWithText(OutlinedButton, 'Editar perfil');
       await tester.ensureVisible(editButton);
       await tester.pump(const Duration(milliseconds: 500));
       expect(editButton, findsOneWidget);
       router.go(AppRoutes.settingsEditProfile);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
       expect(
         router.routeInformationProvider.value.uri.path,
         AppRoutes.settingsEditProfile,
@@ -298,7 +314,8 @@ void main() {
         'Nome Atualizado',
       );
       await tester.tap(find.text('Salvar'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(repo.updateCalls, 1);
       expect(
@@ -308,4 +325,23 @@ void main() {
       expect(find.text('Nome Atualizado'), findsWidgets);
     },
   );
+}
+
+class _AuthenticatedSessionController extends SessionController {
+  @override
+  SessionState build() => SessionAuthenticated(
+    User.fromJson(const {
+      'id': 'user-1',
+      'app_metadata': <String, dynamic>{},
+      'user_metadata': <String, dynamic>{'role': 'produtor'},
+      'aud': 'authenticated',
+      'created_at': '2026-07-20T12:00:00.000Z',
+      'email': 'raudyneyb@gmail.com',
+    })!,
+  );
+}
+
+class _PublicSessionController extends SessionController {
+  @override
+  SessionState build() => const SessionPublic();
 }

@@ -1,16 +1,69 @@
 import 'package:sqflite/sqflite.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/database/database_helper.dart';
+import '../../../../core/utils/app_logger.dart';
 import '../domain/occurrence.dart';
+
+class OccurrenceOwnershipPolicy {
+  const OccurrenceOwnershipPolicy._();
+
+  static const orphanUserId = '';
+
+  static String resolvePersistedUserId({
+    required String? currentUserId,
+    String? fallbackOwnerUserId,
+  }) {
+    final normalizedCurrent = currentUserId?.trim() ?? '';
+    if (normalizedCurrent.isNotEmpty) return normalizedCurrent;
+
+    final normalizedFallback = fallbackOwnerUserId?.trim() ?? '';
+    if (normalizedFallback.isNotEmpty) return normalizedFallback;
+
+    return orphanUserId;
+  }
+
+  static String normalizeSyncStatusForWrite({
+    required String persistedUserId,
+    required String currentSyncStatus,
+  }) {
+    if (persistedUserId.isEmpty && currentSyncStatus == 'local') {
+      return 'local_only';
+    }
+    return currentSyncStatus;
+  }
+
+  static String buildOwnedOrOrphanWhereClause() {
+    return "(user_id = ? OR user_id = '${OccurrenceOwnershipPolicy.orphanUserId}')";
+  }
+
+  static List<Object?> buildOwnedOrOrphanWhereArgs(String currentUserId) {
+    return [currentUserId];
+  }
+}
 
 class OccurrenceRepository {
   final DatabaseHelper _databaseHelper = DatabaseHelper.instance;
 
   Future<void> saveOccurrence(Occurrence occurrence) async {
     final db = await _databaseHelper.database;
-    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
-    final map = occurrence.toMap();
-    map['user_id'] = userId;
+    final persistedUserId = OccurrenceOwnershipPolicy.resolvePersistedUserId(
+      currentUserId: Supabase.instance.client.auth.currentUser?.id,
+      fallbackOwnerUserId: occurrence.ownerUserId,
+    );
+    final map = occurrence
+        .copyWith(
+          syncStatus: OccurrenceOwnershipPolicy.normalizeSyncStatusForWrite(
+            persistedUserId: persistedUserId,
+            currentSyncStatus: occurrence.syncStatus,
+          ),
+        )
+        .toMap();
+    _logOrphanBootstrapWriteIfNeeded(
+      action: 'saveOccurrence',
+      persistedUserId: persistedUserId,
+      occurrenceId: occurrence.id,
+    );
+    map['user_id'] = persistedUserId;
     await db.insert(
       'occurrences',
       map,
@@ -23,11 +76,22 @@ class OccurrenceRepository {
       throw StateError('Ocorrencia compartilhada e somente leitura.');
     }
     final db = await _databaseHelper.database;
-    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
+    final persistedUserId = OccurrenceOwnershipPolicy.resolvePersistedUserId(
+      currentUserId: Supabase.instance.client.auth.currentUser?.id,
+      fallbackOwnerUserId: occurrence.ownerUserId,
+    );
     final map = occurrence
-        .copyWith(updatedAt: DateTime.now(), syncStatus: 'updated')
+        .copyWith(
+          updatedAt: DateTime.now(),
+          syncStatus: persistedUserId.isEmpty ? 'local_only' : 'updated',
+        )
         .toMap();
-    map['user_id'] = userId;
+    _logOrphanBootstrapWriteIfNeeded(
+      action: 'updateOccurrence',
+      persistedUserId: persistedUserId,
+      occurrenceId: occurrence.id,
+    );
+    map['user_id'] = persistedUserId;
     await db.insert(
       'occurrences',
       map,
@@ -37,7 +101,7 @@ class OccurrenceRepository {
 
   Future<void> softDeleteOccurrence(String id) async {
     final db = await _databaseHelper.database;
-    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
+    final currentUserId = Supabase.instance.client.auth.currentUser?.id ?? '';
     final deletedAt = DateTime.now().toUtc().toIso8601String();
     await db.update(
       'occurrences',
@@ -46,21 +110,29 @@ class OccurrenceRepository {
         'deleted_at': deletedAt,
         'updated_at': deletedAt,
       },
-      where: 'id = ? AND user_id = ?',
-      whereArgs: [id, userId],
+      where:
+          'id = ? AND ${OccurrenceOwnershipPolicy.buildOwnedOrOrphanWhereClause()}',
+      whereArgs: [
+        id,
+        ...OccurrenceOwnershipPolicy.buildOwnedOrOrphanWhereArgs(currentUserId),
+      ],
     );
   }
 
   Future<List<Occurrence>> getOccurrencesBySession(String sessionId) async {
     final db = await _databaseHelper.database;
-    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
+    final currentUserId = Supabase.instance.client.auth.currentUser?.id ?? '';
     final List<Map<String, dynamic>> maps = await db.query(
       'occurrences',
       where:
-          "visit_session_id = ? AND user_id = ? "
+          'visit_session_id = ? AND '
+          '${OccurrenceOwnershipPolicy.buildOwnedOrOrphanWhereClause()} '
           "AND sync_status NOT IN ('deleted', 'deleted_local') "
           'AND deleted_at IS NULL',
-      whereArgs: [sessionId, userId],
+      whereArgs: [
+        sessionId,
+        ...OccurrenceOwnershipPolicy.buildOwnedOrOrphanWhereArgs(currentUserId),
+      ],
     );
     return List.generate(maps.length, (i) => Occurrence.fromMap(maps[i]));
   }
@@ -73,20 +145,20 @@ class OccurrenceRepository {
     Set<String> authorizedClientIds = const {},
   }) async {
     final db = await _databaseHelper.database;
-    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
+    final currentUserId = Supabase.instance.client.auth.currentUser?.id ?? '';
     final placeholders = List.filled(authorizedClientIds.length, '?').join(',');
     final sharedClause = authorizedClientIds.isEmpty
         ? ''
         : ' OR (cached_by_user_id = ? AND client_id IN ($placeholders))';
     final args = <Object?>[
-      userId,
-      if (authorizedClientIds.isNotEmpty) userId,
+      ...OccurrenceOwnershipPolicy.buildOwnedOrOrphanWhereArgs(currentUserId),
+      if (authorizedClientIds.isNotEmpty) currentUserId,
       ...authorizedClientIds,
     ];
     final List<Map<String, dynamic>> maps = await db.query(
       'occurrences',
       where:
-          '(user_id = ?$sharedClause) '
+          '(${OccurrenceOwnershipPolicy.buildOwnedOrOrphanWhereClause()}$sharedClause) '
           "AND sync_status NOT IN ('deleted', 'deleted_local') "
           'AND deleted_at IS NULL',
       whereArgs: args,
@@ -97,18 +169,25 @@ class OccurrenceRepository {
 
   Future<Map<String, int>> getStats({DateTime? start, DateTime? end}) async {
     final db = await _databaseHelper.database;
-    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
+    final currentUserId = Supabase.instance.client.auth.currentUser?.id ?? '';
     String where =
-        "WHERE user_id = ? AND sync_status NOT IN ('deleted', 'deleted_local') "
+        'WHERE ${OccurrenceOwnershipPolicy.buildOwnedOrOrphanWhereClause()} '
+        "AND sync_status NOT IN ('deleted', 'deleted_local') "
         'AND deleted_at IS NULL';
-    List<dynamic> args = [userId];
+    List<dynamic> args = [
+      ...OccurrenceOwnershipPolicy.buildOwnedOrOrphanWhereArgs(currentUserId),
+    ];
 
     if (start != null && end != null) {
       final endInclusive = end
           .add(const Duration(days: 1))
           .subtract(const Duration(seconds: 1));
       where += ' AND created_at BETWEEN ? AND ?';
-      args = [userId, start.toIso8601String(), endInclusive.toIso8601String()];
+      args = [
+        ...OccurrenceOwnershipPolicy.buildOwnedOrOrphanWhereArgs(currentUserId),
+        start.toIso8601String(),
+        endInclusive.toIso8601String(),
+      ];
     }
 
     final totalResult = await db.rawQuery(
@@ -138,5 +217,18 @@ class OccurrenceRepository {
       stats[row['type'] as String] = row['count'] as int;
     }
     return stats;
+  }
+
+  void _logOrphanBootstrapWriteIfNeeded({
+    required String action,
+    required String persistedUserId,
+    required String occurrenceId,
+  }) {
+    if (persistedUserId.isNotEmpty) return;
+    AppLogger.warning(
+      'Occurrence bootstrap write without hydrated user. '
+      'Saving orphan local record temporarily [action=$action id=$occurrenceId]',
+      tag: 'OccurrenceRepository',
+    );
   }
 }

@@ -34,6 +34,17 @@ IUserProfileRepository userProfileRepository(UserProfileRepositoryRef ref) {
 /// Retorna null se não houver usuário autenticado.
 @riverpod
 Future<UserProfile?> currentUserProfile(CurrentUserProfileRef ref) async {
+  final session = ref.watch(sessionControllerProvider);
+  SessionController.registerLogoutInvalidation(
+    key: 'currentUserProfileProvider',
+    invalidate: (ref) {
+      ref.invalidate(currentUserProfileProvider);
+      ref.invalidate(profileAuditTrailProvider);
+    },
+  );
+  if (session is! SessionAuthenticated && session is! SessionPasswordRecovery) {
+    return null;
+  }
   final repo = ref.watch(userProfileRepositoryProvider);
   return repo.getCurrentProfile();
 }

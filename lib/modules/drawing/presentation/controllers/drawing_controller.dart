@@ -1214,8 +1214,8 @@ class DrawingController extends ChangeNotifier {
   // BOOLEAN OPERATIONS FLOW (RT-DRAW-07)
   // ===========================================================================
 
-  void cancelOperation() {
-    exitDrawingContext();
+  void cancelOperation({bool notify = true}) {
+    exitDrawingContext(notify: notify);
   }
 
   void clearSelection({bool disableMultiSelect = true}) {
@@ -1240,7 +1240,7 @@ class DrawingController extends ChangeNotifier {
   /// - limpar seleção simples e multi-seleção
   /// - descartar edição temporária e preview
   /// - resetar a state machine para idle
-  void exitDrawingContext() {
+  void exitDrawingContext({bool notify = true}) {
     if (_isDisposed) return;
 
     _gpsOrchestrator.cancelTracking();
@@ -1270,7 +1270,9 @@ class DrawingController extends ChangeNotifier {
     _isDraggingVertex = false;
     _draggedVertexIndex = null;
     _stateMachine.cancel();
-    notifyListeners();
+    if (notify) {
+      notifyListeners();
+    }
   }
 
   // ===========================================================================

@@ -5,7 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:soloforte_app/core/contracts/i_occurrence_access_reader.dart';
 import 'package:soloforte_app/core/database/database_helper.dart';
-import 'package:soloforte_app/core/network/network_policy.dart';
+import 'package:soloforte_app/core/services/sync_retry_runner.dart';
 import 'package:soloforte_app/core/utils/app_logger.dart';
 
 import '../domain/occurrence.dart';
@@ -17,8 +17,27 @@ class OccurrenceSyncService {
   final IOccurrenceAccessReader _accessReader;
 
   Future<void> syncOccurrences() async {
-    await _syncOccurrencesPush();
-    await _syncOccurrencesPull();
+    try {
+      await _syncOccurrencesPush();
+    } catch (error, stackTrace) {
+      AppLogger.error(
+        'OccurrenceSync push stage aborted',
+        tag: 'OccurrenceSync',
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    try {
+      await _syncOccurrencesPull();
+    } catch (error, stackTrace) {
+      AppLogger.error(
+        'OccurrenceSync pull stage aborted',
+        tag: 'OccurrenceSync',
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
   }
 
   Future<void> _syncOccurrencesPush() async {
@@ -39,19 +58,37 @@ class OccurrenceSyncService {
       final occurrence = Occurrence.fromMap(row);
       try {
         final payload = OccurrenceRemoteMapper.toRemote(occurrence, userId);
-        await NetworkPolicy.withTimeout(
-          () => _supabase.from('occurrences').upsert(payload),
+        await SyncRetryRunner.execute(
+          operation: () => _supabase.from('occurrences').upsert(payload),
+          tag: 'OccurrenceSync',
+          stage: 'occurrence_push_remote',
+          entityId: occurrence.id,
         );
-        await db.update(
-          'occurrences',
-          {'sync_status': 'synced'},
-          where: 'id = ? AND user_id = ?',
-          whereArgs: [occurrence.id, userId],
-        );
+        try {
+          await db.update(
+            'occurrences',
+            {'sync_status': 'synced'},
+            where: 'id = ? AND user_id = ?',
+            whereArgs: [occurrence.id, userId],
+          );
+          AppLogger.debug(
+            'Occurrence push synced [id=${occurrence.id}]',
+            tag: 'OccurrenceSync',
+          );
+        } catch (error, stackTrace) {
+          AppLogger.error(
+            'Occurrence push remoto concluido, mas persistencia local falhou '
+            '[id=${occurrence.id}]',
+            tag: 'OccurrenceSync',
+            error: error,
+            stackTrace: stackTrace,
+          );
+        }
       } catch (error) {
         AppLogger.warning(
-          'Falha ao enviar ocorrencia ${occurrence.id}: $error',
+          'Falha ao enviar ocorrencia ${occurrence.id}; pendencia local preservada: $error',
           tag: 'OccurrenceSync',
+          error: error,
         );
       }
     }
@@ -68,22 +105,26 @@ class OccurrenceSyncService {
     }
 
     final activeClientIds = await _accessReader.loadActiveClientIds();
-    final ownRows = await NetworkPolicy.withTimeout(
-      () => _supabase
+    final ownRows = await SyncRetryRunner.execute(
+      operation: () => _supabase
           .from('occurrences')
           .select()
           .eq('user_id', userId)
           .order('updated_at'),
+      stage: 'occurrence_pull_owned',
+      tag: 'OccurrenceSync',
     );
 
     final sharedRows = activeClientIds.isEmpty
         ? const <Map<String, dynamic>>[]
-        : await NetworkPolicy.withTimeout(
-            () => _supabase
+        : await SyncRetryRunner.execute(
+            operation: () => _supabase
                 .from('occurrences')
                 .select()
                 .inFilter('client_id', activeClientIds.toList())
                 .order('updated_at'),
+            stage: 'occurrence_pull_shared',
+            tag: 'OccurrenceSync',
           );
 
     final rowsById = <String, Map<String, dynamic>>{};
@@ -96,9 +137,22 @@ class OccurrenceSyncService {
     await db.transaction((txn) async {
       await _removeRevokedCache(txn, userId, activeClientIds);
       for (final remote in rowsById.values) {
-        await _cacheRemote(txn, remote, userId);
+        try {
+          await _cacheRemote(txn, remote, userId);
+        } catch (error, stackTrace) {
+          AppLogger.error(
+            'Occurrence pull persist failed [id=${remote['id']}]',
+            tag: 'OccurrenceSync',
+            error: error,
+            stackTrace: stackTrace,
+          );
+        }
       }
     });
+    AppLogger.debug(
+      'Occurrence pull applied ${rowsById.length} row(s)',
+      tag: 'OccurrenceSync',
+    );
   }
 
   Future<void> _cacheRemote(
@@ -133,6 +187,11 @@ class OccurrenceSyncService {
             existing.single,
             remote,
           )) {
+        AppLogger.warning(
+          'Occurrence pull conflict avoided for owned local '
+          '[id=$localId sync_status=${existing.single['sync_status']}]',
+          tag: 'OccurrenceSync',
+        );
         return;
       }
     }

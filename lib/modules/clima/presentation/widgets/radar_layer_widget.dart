@@ -63,7 +63,7 @@ class _ClimaRadarTileLayerWidgetState
   @override
   Widget build(BuildContext context) {
     final showRadar = ref.watch(climaRadarEnabledProvider);
-    final isOnline = ref.watch(isOnlineProvider).valueOrNull ?? true;
+    final isOnline = ref.watch(isOnlineProvider).asData?.value ?? false;
 
     if (!showRadar) {
       _stopAnimation();
@@ -134,7 +134,7 @@ class ClimaRadarStatusOverlay extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final showRadar = ref.watch(climaRadarEnabledProvider);
-    final isOnline = ref.watch(isOnlineProvider).valueOrNull ?? true;
+    final isOnline = ref.watch(isOnlineProvider).asData?.value ?? false;
 
     if (!showRadar) return const SizedBox.shrink();
 

@@ -9,6 +9,16 @@ import '../../../../core/config/map_config.dart';
 import '../../../../core/utils/map_logger.dart';
 import '../../../../core/providers/connectivity_provider.dart';
 
+bool shouldUseOfflineTileLayer({
+  required bool hasOfflineCoverageForLayer,
+  required String? offlineTemplate,
+  required bool? isOnline,
+}) {
+  return offlineTemplate != null &&
+      hasOfflineCoverageForLayer &&
+      isOnline != true;
+}
+
 /// Widget que observa apenas activeLayerProvider e renderiza o TileLayer.
 /// Rebuild isolado quando a camada muda.
 class MapLayersWidget extends ConsumerWidget {
@@ -19,7 +29,7 @@ class MapLayersWidget extends ConsumerWidget {
     final activeLayer = ref.watch(activeLayerProvider);
     final wms = ref.watch(externalWmsLayerProvider);
     final raster = ref.watch(externalRasterLayerProvider);
-    final isOnline = ref.watch(isOnlineProvider).valueOrNull ?? true;
+    final isOnline = ref.watch(isOnlineProvider).asData?.value;
     final offlineRoot = ref.watch(offlineTileCacheRootPathProvider).valueOrNull;
     final cacheService = ref.watch(offlineTileCacheServiceProvider);
     final tileConfig = MapConfig.tileConfigForLayer(
@@ -27,14 +37,24 @@ class MapLayersWidget extends ConsumerWidget {
       mapTilerApiKey: MapConfig.kMapTilerApiKey,
     );
     final layerKey = cacheService.layerKeyFromTemplate(tileConfig.urlTemplate);
+    final hasOfflineCoverageForLayer = ref.watch(
+      offlineMapAreasProvider.select(
+        (areas) => areas.any((area) => area.layerKey == layerKey),
+      ),
+    );
     final offlineTemplate = offlineRoot == null
         ? null
         : '$offlineRoot/$layerKey/{z}/{x}/{y}.tile';
     final rasterTemplate = _resolveRasterTemplate(raster);
+    final shouldUseOfflineTiles = shouldUseOfflineTileLayer(
+      hasOfflineCoverageForLayer: hasOfflineCoverageForLayer,
+      offlineTemplate: offlineTemplate,
+      isOnline: isOnline,
+    );
 
     return Stack(
       children: [
-        if (!isOnline && offlineTemplate != null)
+        if (shouldUseOfflineTiles)
           TileLayer(
             urlTemplate: offlineTemplate,
             tileProvider: FileTileProvider(),

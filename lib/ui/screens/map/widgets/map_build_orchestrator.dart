@@ -39,6 +39,7 @@ import '../../../../modules/clima/presentation/widgets/clima_radar_zoom_guard.da
 import '../../../../modules/clima/presentation/widgets/radar_layer_widget.dart';
 import '../../../components/map/widgets/map_markers.dart';
 import '../../../components/map/widgets/map_controls_overlay.dart';
+import '../../../components/map/widgets/map_offline_widgets.dart';
 import '../../../components/map/widgets/isolated_marker_layers.dart';
 import '../../../components/map/widgets/map_tools_bottom_sheet.dart';
 import '../../../components/map/widgets/producer_map_context_card.dart';
@@ -128,14 +129,17 @@ class MapBuildOrchestrator extends ConsumerWidget {
         children: [
           const MapGeofenceLifecycleHost(),
           ClimaRadarZoomGuard(mapController: mapController),
-          MapInitialViewportListener(applyInitialViewport: applyInitialViewport),
+          MapInitialViewportListener(
+            applyInitialViewport: applyInitialViewport,
+          ),
           MapCanvas(
             mapController: mapController,
             interactionOptions: drawingMetrics.state == DrawingState.editing
                 ? const InteractionOptions(flags: InteractiveFlag.none)
                 : disableMapDrag
                 ? const InteractionOptions(
-                    flags: InteractiveFlag.all &
+                    flags:
+                        InteractiveFlag.all &
                         ~InteractiveFlag.rotate &
                         ~InteractiveFlag.drag,
                   )
@@ -274,6 +278,9 @@ class MapBuildOrchestrator extends ConsumerWidget {
               // Layer base de tiles
               const MapLayersWidget(),
 
+              // Cobertura offline baixada para a camada ativa
+              const MapOfflineCoverageLayer(),
+
               // Polígonos de talhões
               // ADR-030 F3: extraído para TalhaoPolygonLayer
               const TalhaoPolygonLayer(),
@@ -368,6 +375,7 @@ class MapBuildOrchestrator extends ConsumerWidget {
               finishDrawing: finishDrawing,
             ),
           ),
+          MapOfflineStatusOverlay(onDownloadOfflineArea: downloadOfflineArea),
 
           DrawingMapBehaviorListener(
             mapController: mapController,
@@ -451,7 +459,9 @@ class _MapControlsHost extends ConsumerWidget {
       isDrawMode: sheetState?.type == MapSheetType.draw,
       isOccurrenceMode: armedMode == ArmedMode.occurrences,
       isCheckInActive: ref.watch(
-        visitControllerProvider.select((v) => v.valueOrNull?.status == 'active'),
+        visitControllerProvider.select(
+          (v) => v.valueOrNull?.status == 'active',
+        ),
       ),
       showCheckInAction: !currentUserRole.isProdutor,
       topLeftCard: currentUserRole.isProdutor
@@ -497,7 +507,8 @@ class _MapControlsHost extends ConsumerWidget {
       onCancelEdit: () => ref.read(drawingControllerProvider).cancelEdit(),
       onUndoEdit: () => ref.read(drawingControllerProvider).undoEdit(),
       onRedoEdit: () => ref.read(drawingControllerProvider).redoEdit(),
-      onUndoDrawing: () => ref.read(drawingControllerProvider).undoDrawingPoint(),
+      onUndoDrawing: () =>
+          ref.read(drawingControllerProvider).undoDrawingPoint(),
       canUndo: drawingMetrics.canUndo,
       canRedo: drawingMetrics.canRedo,
       measurementAreaHa: drawingMetrics.measureAreaHa,
@@ -536,14 +547,17 @@ class _MapControlsHost extends ConsumerWidget {
           if (ref.read(isModalOpenProvider)) {
             Navigator.of(context).pop();
           }
-          setSheetState(null, 'MapControlsOverlay: Toggle Close (Source: $source)');
+          setSheetState(
+            null,
+            'MapControlsOverlay: Toggle Close (Source: $source)',
+          );
         } else {
           if (newType == MapSheetType.checkIn) {
             final isActive =
-                ref.read(visitControllerProvider).valueOrNull?.status == 'active';
+                ref.read(visitControllerProvider).valueOrNull?.status ==
+                'active';
             if (!isActive) {
-              final locationFix =
-                  ref.read(locationStreamProvider).valueOrNull;
+              final locationFix = ref.read(locationStreamProvider).valueOrNull;
               final accuracyM = locationFix?.accuracyM;
               if (!isGnssAccuracyAcceptableForCheckIn(accuracyM)) {
                 if (accuracyM != null) {

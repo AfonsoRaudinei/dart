@@ -55,35 +55,7 @@ class PrivateMapBootstrapScreen extends ConsumerWidget {
           onAction: () => ref.invalidate(_privateMapBootstrapProvider),
         );
       },
-      data: (result) {
-        final hasAnyLocalData =
-            result.clientsCount > 0 || result.agendaEventsCount > 0;
-
-        if (hasAnyLocalData) {
-          return const PrivateMapScreen();
-        }
-
-        // Primeira execução ou cache vazio: evita tela preta e orienta o usuário.
-        return _BootstrapScaffold(
-          title: 'Sem dados locais',
-          subtitle:
-              'Conecte-se à internet e sincronize para baixar seus dados.',
-          showProgress: orchestrator.isSyncing,
-          progress: orchestrator.progress,
-          actionLabel: orchestrator.isSyncing ? 'Sincronizando…' : 'Sincronizar agora',
-          onAction: orchestrator.isSyncing
-              ? null
-              : () async {
-                  try {
-                    await ref
-                        .read(syncOrchestratorProvider)
-                        .triggerSync(SyncPriority.immediate);
-                  } finally {
-                    ref.invalidate(_privateMapBootstrapProvider);
-                  }
-                },
-        );
-      },
+      data: (_) => const PrivateMapScreen(),
     );
   }
 }
@@ -186,4 +158,3 @@ class _BootstrapScaffold extends StatelessWidget {
     );
   }
 }
-

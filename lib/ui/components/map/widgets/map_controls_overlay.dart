@@ -771,7 +771,7 @@ class _MapButtonLabel extends StatelessWidget {
 class _ConnectivityDot extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isOnline = ref.watch(isOnlineProvider).valueOrNull ?? true;
+    final isOnline = ref.watch(isOnlineProvider).asData?.value ?? false;
     final color = isOnline ? const Color(0xFF34C759) : const Color(0xFFFF3B30);
 
     return Container(

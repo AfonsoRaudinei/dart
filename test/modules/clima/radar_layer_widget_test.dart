@@ -21,9 +21,11 @@ void main() {
       await tester.pumpWidget(
         _buildRadarMap(
           radarEnabled: true,
+          isOnline: true,
           result: _successResult(),
         ),
       );
+      await tester.pump();
       await tester.pump();
 
       expect(find.byType(TileLayer), findsOneWidget);
@@ -39,7 +41,10 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            climaRadarEnabledProvider.overrideWith(() => _PresetClimaRadarEnabled(true)),
+            climaRadarEnabledProvider.overrideWith(
+              () => _PresetClimaRadarEnabled(true),
+            ),
+            isOnlineProvider.overrideWith((ref) => Stream.value(true)),
             climaRadarFramesProvider.overrideWith((ref) => completer.future),
           ],
           child: MaterialApp(
@@ -49,14 +54,13 @@ void main() {
                   initialCenter: LatLng(-15.7801, -47.9292),
                   initialZoom: 5,
                 ),
-                children: const [
-                  ClimaRadarStatusOverlay(),
-                ],
+                children: const [ClimaRadarStatusOverlay()],
               ),
             ),
           ),
         ),
       );
+      await tester.pump();
       await tester.pump();
 
       expect(find.text(ClimaRadarOverlayMessages.loading), findsOneWidget);
@@ -66,7 +70,9 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            climaRadarEnabledProvider.overrideWith(() => _PresetClimaRadarEnabled(true)),
+            climaRadarEnabledProvider.overrideWith(
+              () => _PresetClimaRadarEnabled(true),
+            ),
             isOnlineProvider.overrideWith((ref) => Stream.value(false)),
             climaRadarFramesProvider.overrideWith(
               (ref) async => _successResult(),
@@ -79,14 +85,13 @@ void main() {
                   initialCenter: LatLng(-15.7801, -47.9292),
                   initialZoom: 5,
                 ),
-                children: const [
-                  ClimaRadarStatusOverlay(),
-                ],
+                children: const [ClimaRadarStatusOverlay()],
               ),
             ),
           ),
         ),
       );
+      await tester.pump();
       await tester.pump();
 
       expect(find.text(ClimaRadarOverlayMessages.offline), findsOneWidget);
@@ -99,11 +104,13 @@ void main() {
       await tester.pumpWidget(
         _buildRadarMap(
           radarEnabled: true,
+          isOnline: true,
           result: const ClimaRadarFetchResult(
             status: ClimaRadarFetchStatus.emptyManifest,
           ),
         ),
       );
+      await tester.pump();
       await tester.pump();
 
       expect(
@@ -117,12 +124,14 @@ void main() {
       await tester.pumpWidget(
         _buildRadarMap(
           radarEnabled: true,
+          isOnline: true,
           result: const ClimaRadarFetchResult(
             status: ClimaRadarFetchStatus.httpError,
             httpStatusCode: 503,
           ),
         ),
       );
+      await tester.pump();
       await tester.pump();
 
       expect(find.text(ClimaRadarOverlayMessages.unavailable), findsOneWidget);
@@ -146,11 +155,15 @@ ClimaRadarFetchResult _successResult() {
 
 Widget _buildRadarMap({
   required bool radarEnabled,
+  required bool isOnline,
   required ClimaRadarFetchResult result,
 }) {
   return ProviderScope(
     overrides: [
-      climaRadarEnabledProvider.overrideWith(() => _PresetClimaRadarEnabled(radarEnabled)),
+      climaRadarEnabledProvider.overrideWith(
+        () => _PresetClimaRadarEnabled(radarEnabled),
+      ),
+      isOnlineProvider.overrideWith((ref) => Stream.value(isOnline)),
       climaRadarFramesProvider.overrideWith((ref) async => result),
     ],
     child: MaterialApp(

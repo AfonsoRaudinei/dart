@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/infra/preferences_service.dart';
 import '../../data/repositories/drawing_repository.dart';
 import '../../data/data_sources/drawing_local_store.dart';
 import '../controllers/drawing_controller.dart';
@@ -15,7 +16,11 @@ import '../../infra/file_picker/file_picker_adapter.dart';
 export 'drawing_client_provider.dart';
 
 final drawingLocalStoreProvider = Provider<DrawingLocalStore>((ref) {
-  return DrawingLocalStore();
+  return DrawingLocalStore(
+    identityStore: DrawingLocalIdentityStore(
+      preferences: ref.watch(preferencesServiceProvider),
+    ),
+  );
 });
 
 final drawingRepositoryProvider = Provider<DrawingRepository>((ref) {

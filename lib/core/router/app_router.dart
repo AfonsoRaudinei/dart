@@ -18,6 +18,7 @@ import '../../modules/agenda/presentation/pages/agenda_event_detail_page.dart';
 import '../../modules/carteira/presentation/screens/carteira_cliente_screen.dart';
 import '../../modules/carteira/presentation/screens/carteira_screen.dart';
 import '../../ui/screens/publicacao_editor_screen.dart';
+import '../../modules/settings/presentation/providers/user_profile_provider.dart';
 import '../../../modules/settings/presentation/screens/settings_screen.dart';
 import '../../../modules/settings/presentation/screens/edit_profile_screen.dart';
 import '../../../modules/consultoria/clients/presentation/screens/client_list_screen.dart';
@@ -50,6 +51,7 @@ GoRouter router(Ref ref) {
   // Mudanças de auth disparam notifyListeners() via refreshListenable
   // → GoRouter re-avalia apenas o redirect, sem destruir a navigation stack.
   final notifier = ref.read(routerNotifierProvider);
+  final profileAsync = ref.watch(currentUserProfileProvider);
 
   return GoRouter(
     initialLocation: AppRoutes.publicMap,
@@ -67,9 +69,6 @@ GoRouter router(Ref ref) {
       final session = ref.read(sessionControllerProvider);
       final isAuth = notifier.isAuthenticated;
       final isRecovery = session is SessionPasswordRecovery;
-      final role = session is SessionAuthenticated
-          ? (session.user.userMetadata?['role']?.toString())
-          : null;
 
       final path = state.uri.path;
       final isPublicRoute =
@@ -89,13 +88,19 @@ GoRouter router(Ref ref) {
         return AppRoutes.resetPassword;
       }
 
-      if (isAuth && !isRecovery && !AppAccess.canAccessPath(role, path)) {
-        return AppRoutes.map;
-      }
+      if (isAuth && !isRecovery) {
+        if (profileAsync.isLoading || profileAsync.hasError) {
+          return null;
+        }
 
-      // Autenticado normal: redirecionar rotas públicas para map
-      if (isAuth && !isRecovery && isPublicRoute) {
-        return AppRoutes.map;
+        final role = profileAsync.asData?.value?.role;
+        if (!AppAccess.canAccessPath(role, path)) {
+          return AppRoutes.map;
+        }
+
+        if (isPublicRoute) {
+          return AppRoutes.map;
+        }
       }
 
       return null;
