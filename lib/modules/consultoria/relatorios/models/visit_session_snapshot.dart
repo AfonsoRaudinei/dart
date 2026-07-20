@@ -19,7 +19,7 @@ class OcorrenciaSnapshot {
   /// Identificador da ocorrência original (UUID).
   final String id;
 
-  /// Tipo/categoria da ocorrência (ex.: "praga", "doença").
+  /// Tipo bruto da ocorrência (ex.: "Alta", "Média", "Baixa" ou categoria legada).
   final String tipo;
 
   /// Descrição textual registrada pelo agrônomo.
@@ -34,8 +34,34 @@ class OcorrenciaSnapshot {
   /// Path local da foto vinculada (opcional).
   final String? fotoPath;
 
+  /// Paths locais adicionais de fotos da ocorrência (opcional).
+  final List<String>? fotoPaths;
+
+  /// Categoria agronômica da ocorrência (opcional).
+  final String? categoria;
+
+  /// Severidade/urgência normalizada (opcional).
+  final String? severity;
+
+  /// Geometria GeoJSON original (opcional).
+  final String? geometry;
+
+  /// Status operacional da ocorrência (opcional).
+  final String? status;
+
   /// Data/hora em que a ocorrência foi registrada (UTC).
   final DateTime registradaEm;
+
+  /// Campos agronômicos ricos da ocorrência (opcional).
+  final String? cultivar;
+  final String? estadioFenologico;
+  final String? tipoOcorrencia;
+  final String? recomendacoes;
+  final String? metricasJson;
+  final String? nutrientesJson;
+  final String? categoriasJson;
+  final String? notasCategoriasJson;
+  final String? fotosCategoriasJson;
 
   const OcorrenciaSnapshot({
     required this.id,
@@ -44,7 +70,21 @@ class OcorrenciaSnapshot {
     this.lat,
     this.lng,
     this.fotoPath,
+    this.fotoPaths,
+    this.categoria,
+    this.severity,
+    this.geometry,
+    this.status,
     required this.registradaEm,
+    this.cultivar,
+    this.estadioFenologico,
+    this.tipoOcorrencia,
+    this.recomendacoes,
+    this.metricasJson,
+    this.nutrientesJson,
+    this.categoriasJson,
+    this.notasCategoriasJson,
+    this.fotosCategoriasJson,
   });
 
   OcorrenciaSnapshot copyWith({
@@ -54,7 +94,21 @@ class OcorrenciaSnapshot {
     double? lat,
     double? lng,
     String? fotoPath,
+    List<String>? fotoPaths,
+    String? categoria,
+    String? severity,
+    String? geometry,
+    String? status,
     DateTime? registradaEm,
+    String? cultivar,
+    String? estadioFenologico,
+    String? tipoOcorrencia,
+    String? recomendacoes,
+    String? metricasJson,
+    String? nutrientesJson,
+    String? categoriasJson,
+    String? notasCategoriasJson,
+    String? fotosCategoriasJson,
   }) {
     return OcorrenciaSnapshot(
       id: id ?? this.id,
@@ -63,7 +117,21 @@ class OcorrenciaSnapshot {
       lat: lat ?? this.lat,
       lng: lng ?? this.lng,
       fotoPath: fotoPath ?? this.fotoPath,
+      fotoPaths: fotoPaths ?? this.fotoPaths,
+      categoria: categoria ?? this.categoria,
+      severity: severity ?? this.severity,
+      geometry: geometry ?? this.geometry,
+      status: status ?? this.status,
       registradaEm: registradaEm ?? this.registradaEm,
+      cultivar: cultivar ?? this.cultivar,
+      estadioFenologico: estadioFenologico ?? this.estadioFenologico,
+      tipoOcorrencia: tipoOcorrencia ?? this.tipoOcorrencia,
+      recomendacoes: recomendacoes ?? this.recomendacoes,
+      metricasJson: metricasJson ?? this.metricasJson,
+      nutrientesJson: nutrientesJson ?? this.nutrientesJson,
+      categoriasJson: categoriasJson ?? this.categoriasJson,
+      notasCategoriasJson: notasCategoriasJson ?? this.notasCategoriasJson,
+      fotosCategoriasJson: fotosCategoriasJson ?? this.fotosCategoriasJson,
     );
   }
 
@@ -74,7 +142,21 @@ class OcorrenciaSnapshot {
     'lat': lat,
     'lng': lng,
     'fotoPath': fotoPath,
+    'fotoPaths': fotoPaths,
+    'categoria': categoria,
+    'severity': severity,
+    'geometry': geometry,
+    'status': status,
     'registradaEm': registradaEm.toUtc().toIso8601String(),
+    'cultivar': cultivar,
+    'estadioFenologico': estadioFenologico,
+    'tipoOcorrencia': tipoOcorrencia,
+    'recomendacoes': recomendacoes,
+    'metricasJson': metricasJson,
+    'nutrientesJson': nutrientesJson,
+    'categoriasJson': categoriasJson,
+    'notasCategoriasJson': notasCategoriasJson,
+    'fotosCategoriasJson': fotosCategoriasJson,
   };
 
   factory OcorrenciaSnapshot.fromJson(Map<String, dynamic> json) =>
@@ -85,7 +167,21 @@ class OcorrenciaSnapshot {
         lat: (json['lat'] as num?)?.toDouble(),
         lng: (json['lng'] as num?)?.toDouble(),
         fotoPath: json['fotoPath'] as String?,
+        fotoPaths: (json['fotoPaths'] as List<dynamic>?)?.cast<String>(),
+        categoria: json['categoria'] as String?,
+        severity: json['severity'] as String?,
+        geometry: json['geometry'] as String?,
+        status: json['status'] as String?,
         registradaEm: DateTime.parse(json['registradaEm'] as String).toUtc(),
+        cultivar: json['cultivar'] as String?,
+        estadioFenologico: json['estadioFenologico'] as String?,
+        tipoOcorrencia: json['tipoOcorrencia'] as String?,
+        recomendacoes: json['recomendacoes'] as String?,
+        metricasJson: json['metricasJson'] as String?,
+        nutrientesJson: json['nutrientesJson'] as String?,
+        categoriasJson: json['categoriasJson'] as String?,
+        notasCategoriasJson: json['notasCategoriasJson'] as String?,
+        fotosCategoriasJson: json['fotosCategoriasJson'] as String?,
       );
 }
 
