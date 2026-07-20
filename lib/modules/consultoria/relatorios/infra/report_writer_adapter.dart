@@ -55,7 +55,21 @@ class ReportWriterAdapter implements IReportWriter {
       lat: o.lat,
       lng: o.lng,
       fotoPath: o.fotoPath,
+      fotoPaths: null,
+      categoria: null,
+      severity: null,
+      geometry: null,
+      status: null,
       registradaEm: o.registradaEm ?? DateTime.now().toUtc(),
+      cultivar: null,
+      estadioFenologico: null,
+      tipoOcorrencia: null,
+      recomendacoes: null,
+      metricasJson: null,
+      nutrientesJson: null,
+      categoriasJson: null,
+      notasCategoriasJson: null,
+      fotosCategoriasJson: null,
     );
   }
 
