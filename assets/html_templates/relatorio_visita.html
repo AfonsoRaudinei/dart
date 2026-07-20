@@ -363,8 +363,6 @@
     border: 1px solid var(--sf-stone);
     border-radius: 14px;
     overflow: hidden;
-    display: grid;
-    grid-template-columns: 90px 1fr;
     box-shadow: 0 1px 4px var(--sf-shadow);
   }
 
@@ -395,11 +393,18 @@
   }
 
   .ocorrencia-info {
-    padding: 12px 14px;
+    padding: 14px 16px;
     display: flex;
     flex-direction: column;
-    gap: 5px;
+    gap: 8px;
     min-width: 0;
+  }
+
+  .ocorrencia-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
   }
 
   .ocorrencia-tipo {
@@ -413,6 +418,33 @@
     padding: 2px 8px;
     border-radius: 100px;
     align-self: flex-start;
+  }
+
+  .ocorrencia-badge {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    padding: 3px 10px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .ocorrencia-badge-leve {
+    background: #E8F5E9;
+    color: #2E7D32;
+  }
+
+  .ocorrencia-badge-moderada {
+    background: #FFF3E0;
+    color: #E65100;
+  }
+
+  .ocorrencia-badge-grave {
+    background: #FFEBEE;
+    color: #C62828;
   }
 
   .ocorrencia-descricao {
@@ -445,6 +477,94 @@
   .ocorrencia-meta-item svg {
     width: 11px; height: 11px;
     fill: var(--sf-text-muted);
+  }
+
+  .ocorrencia-details {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 12px;
+    color: var(--sf-text-muted);
+  }
+
+  .ocorrencia-detail-item {
+    word-break: break-word;
+  }
+
+  .ocorrencia-summary {
+    background: var(--sf-cream);
+    border: 1px solid var(--sf-stone);
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-bottom: 16px;
+  }
+
+  .ocorrencia-summary-title {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.10em;
+    text-transform: uppercase;
+    color: var(--sf-navy);
+    margin-bottom: 6px;
+  }
+
+  .ocorrencia-summary-meta {
+    font-size: 13px;
+    color: var(--sf-text-muted);
+  }
+
+  .ocorrencia-section {
+    border-top: 1px solid var(--sf-stone);
+    padding-top: 10px;
+  }
+
+  .ocorrencia-section-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--sf-text-muted);
+    margin-bottom: 4px;
+  }
+
+  .ocorrencia-section-content {
+    font-size: 13px;
+    color: var(--sf-text);
+    line-height: 1.6;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+  }
+
+  .ocorrencia-location {
+    font-size: 12px;
+    color: var(--sf-text-muted);
+    word-break: break-word;
+  }
+
+  .ocorrencia-photos {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .ocorrencia-photo {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    border-radius: 8px;
+    object-fit: cover;
+    display: block;
+    background: var(--sf-stone);
+  }
+
+  .ocorrencia-empty {
+    background: var(--sf-cream);
+    border-radius: 12px;
+    padding: 20px;
+    color: var(--sf-text-muted);
+    font-size: 13px;
+    margin-bottom: 28px;
+    border: 1px dashed var(--sf-stone);
+    text-align: center;
   }
 
   /* ═══ MONITORAMENTOS (MonitoramentoSnapshot[]) ═══ */
@@ -618,7 +738,10 @@
     .header-pills { gap: 6px; }
     .pill { font-size: 10.5px; padding: 3px 9px; }
     .contexto-grid { grid-template-columns: 1fr 1fr; }
-    .ocorrencia-card { grid-template-columns: 72px 1fr; }
+    .ocorrencia-header {
+      flex-direction: column;
+      align-items: flex-start;
+    }
     .talhao-card { grid-template-columns: 1fr; }
     .fotos-grid { grid-template-columns: repeat(3, 1fr); }
     .monitoramento-dados { grid-template-columns: 1fr 1fr; }
@@ -627,7 +750,7 @@
   @media (max-width: 380px) {
     .header-title { font-size: 18px; }
     .contexto-grid { grid-template-columns: 1fr; }
-    .ocorrencia-card { grid-template-columns: 1fr; }
+    .ocorrencia-photos { grid-template-columns: 1fr; }
     .fotos-grid { grid-template-columns: repeat(2, 1fr); }
   }
 
