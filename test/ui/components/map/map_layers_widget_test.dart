@@ -4,11 +4,11 @@ import 'package:soloforte_app/ui/components/map/widgets/map_layers.dart';
 void main() {
   group('shouldUseOfflineTileLayer', () {
     test(
-      'prioriza cache local quando existe area offline e conectividade inicial nao confirmou online',
+      'prioriza cache local quando viewport offline esta coberta e conectividade inicial nao confirmou online',
       () {
         expect(
           shouldUseOfflineTileLayer(
-            hasOfflineCoverageForLayer: true,
+            hasOfflineCoverageForViewport: true,
             offlineTemplate: '/tmp/offline_tiles/{z}/{x}/{y}.tile',
             isOnline: null,
           ),
@@ -20,7 +20,7 @@ void main() {
     test('usa cache local quando o app inicia explicitamente offline', () {
       expect(
         shouldUseOfflineTileLayer(
-          hasOfflineCoverageForLayer: true,
+          hasOfflineCoverageForViewport: true,
           offlineTemplate: '/tmp/offline_tiles/{z}/{x}/{y}.tile',
           isOnline: false,
         ),
@@ -28,10 +28,10 @@ void main() {
       );
     });
 
-    test('nao usa cache local sem cobertura offline registrada', () {
+    test('nao usa cache local sem cobertura offline da viewport', () {
       expect(
         shouldUseOfflineTileLayer(
-          hasOfflineCoverageForLayer: false,
+          hasOfflineCoverageForViewport: false,
           offlineTemplate: '/tmp/offline_tiles/{z}/{x}/{y}.tile',
           isOnline: false,
         ),
@@ -42,7 +42,7 @@ void main() {
     test('nao usa cache local quando o app confirmou estado online', () {
       expect(
         shouldUseOfflineTileLayer(
-          hasOfflineCoverageForLayer: true,
+          hasOfflineCoverageForViewport: true,
           offlineTemplate: '/tmp/offline_tiles/{z}/{x}/{y}.tile',
           isOnline: true,
         ),

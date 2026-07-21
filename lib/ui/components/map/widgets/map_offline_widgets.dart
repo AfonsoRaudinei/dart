@@ -308,36 +308,33 @@ class MapOfflineStatusCard extends ConsumerWidget {
     final areasLabel = areasCount == 1
         ? '1 área salva'
         : '$areasCount áreas salvas';
+    final canDownload =
+        presentation.canDownloadCurrentArea && onDownloadOfflineArea != null;
+    final subtitle = '${mapLayerLabel(snapshot.activeLayer)} • $areasLabel';
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1A1D21),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: presentation.accentColor.withValues(alpha: 0.5),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+    return Semantics(
+      button: canDownload,
+      label: canDownload ? 'Baixar área visível' : presentation.title,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: canDownload ? onDownloadOfflineArea : null,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.06),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: presentation.accentColor.withValues(alpha: 0.28),
+            ),
+          ),
+          child: Row(
             children: [
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  color: presentation.accentColor.withValues(alpha: 0.18),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                alignment: Alignment.center,
-                child: Icon(
-                  presentation.icon,
-                  color: presentation.accentColor,
-                  size: 20,
-                ),
+              Icon(
+                presentation.icon,
+                color: presentation.accentColor,
+                size: 22,
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 10),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -350,75 +347,51 @@ class MapOfflineStatusCard extends ConsumerWidget {
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: 3),
                     Text(
-                      presentation.title,
+                      canDownload ? 'Baixar área visível' : presentation.title,
                       style: const TextStyle(
                         color: Colors.white,
-                        fontSize: 16,
+                        fontSize: 14,
                         fontWeight: FontWeight.w700,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.62),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ),
               ),
+              if (canDownload) ...[
+                const SizedBox(width: 8),
+                Container(
+                  width: 34,
+                  height: 34,
+                  decoration: BoxDecoration(
+                    color: presentation.accentColor.withValues(alpha: 0.18),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  alignment: Alignment.center,
+                  child: const Icon(
+                    Icons.download_rounded,
+                    color: Colors.white,
+                    size: 18,
+                  ),
+                ),
+              ],
             ],
           ),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              _OfflineMetaPill(
-                label: 'Camada ${mapLayerLabel(snapshot.activeLayer)}',
-              ),
-              _OfflineMetaPill(label: areasLabel),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(
-            presentation.message,
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.86),
-              fontSize: 13,
-              height: 1.32,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            'A moldura verde no mapa marca a cobertura já baixada da camada atual.',
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.62),
-              fontSize: 12,
-              height: 1.28,
-            ),
-          ),
-          if (onDownloadOfflineArea != null) ...[
-            const SizedBox(height: 14),
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton.icon(
-                onPressed: presentation.canDownloadCurrentArea
-                    ? onDownloadOfflineArea
-                    : null,
-                icon: const Icon(Icons.download_for_offline_rounded),
-                label: Text(
-                  presentation.canDownloadCurrentArea
-                      ? 'Baixar área visível'
-                      : 'Download indisponível sem internet',
-                ),
-                style: FilledButton.styleFrom(
-                  backgroundColor: presentation.canDownloadCurrentArea
-                      ? presentation.accentColor
-                      : Colors.white12,
-                  foregroundColor: Colors.white,
-                  disabledBackgroundColor: Colors.white10,
-                  disabledForegroundColor: Colors.white54,
-                ),
-              ),
-            ),
-          ],
-        ],
+        ),
       ),
     );
   }
@@ -480,31 +453,6 @@ class MapOfflineCoverageLayer extends ConsumerWidget {
               borderStrokeWidth: 2.2,
             ),
         ],
-      ),
-    );
-  }
-}
-
-class _OfflineMetaPill extends StatelessWidget {
-  final String label;
-
-  const _OfflineMetaPill({required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          color: Colors.white.withValues(alpha: 0.84),
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
-        ),
       ),
     );
   }

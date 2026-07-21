@@ -16,77 +16,69 @@ import 'package:soloforte_app/core/state/map_ui_providers.dart';
 import 'package:soloforte_app/ui/components/map/widgets/map_offline_widgets.dart';
 
 void main() {
-  testWidgets(
-    'mapa offline inicial sinaliza cobertura local ativa no cold start',
-    (tester) async {
-      SharedPreferences.setMockInitialValues({});
-      final prefs = PreferencesService(await SharedPreferences.getInstance());
-      const cacheService = _FakeOfflineTileCacheService(hasTiles: true);
+  testWidgets('sheet de camadas sinaliza cobertura local ativa no cold start', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = PreferencesService(await SharedPreferences.getInstance());
+    const cacheService = _FakeOfflineTileCacheService(hasTiles: true);
 
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            preferencesServiceProvider.overrideWithValue(prefs),
-            offlineTileCacheServiceProvider.overrideWithValue(cacheService),
-            connectivityServiceProvider.overrideWithValue(
-              const _FakeConnectivityService(initialValue: false),
-            ),
-          ],
-          child: const MaterialApp(
-            home: Scaffold(
-              body: Stack(
-                children: [SizedBox.expand(), MapOfflineStatusOverlay()],
-              ),
-            ),
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          preferencesServiceProvider.overrideWithValue(prefs),
+          offlineTileCacheServiceProvider.overrideWithValue(cacheService),
+          connectivityServiceProvider.overrideWithValue(
+            const _FakeConnectivityService(initialValue: false),
+          ),
+        ],
+        child: const MaterialApp(
+          home: Scaffold(
+            body: Stack(children: [SizedBox.expand(), MapOfflineStatusCard()]),
           ),
         ),
-      );
+      ),
+    );
 
-      final container = ProviderScope.containerOf(
-        tester.element(find.byType(MapOfflineStatusOverlay)),
-      );
-      final tileConfig = MapConfig.tileConfigForLayer(
-        LayerType.satellite,
-        mapTilerApiKey: MapConfig.kMapTilerApiKey,
-      );
-      final layerKey = cacheService.layerKeyFromTemplate(
-        tileConfig.urlTemplate,
-      );
-      container
-          .read(offlineMapAreasProvider.notifier)
-          .addArea(
-            OfflineMapAreaConfig(
-              id: 'offline-area-1',
-              layerKey: layerKey,
-              south: -10.2,
-              west: -48.2,
-              north: -9.8,
-              east: -47.8,
-              minZoom: 12,
-              maxZoom: 18,
-              createdAt: DateTime(2026, 7, 20),
-            ),
-          );
-      container
-          .read(mapCameraSnapshotProvider.notifier)
-          .state = MapCameraSnapshot(
-        center: const LatLng(-10.0, -48.0),
-        zoom: 14,
-        visibleBounds: LatLngBounds(
-          const LatLng(-10.1, -48.1),
-          const LatLng(-9.9, -47.9),
-        ),
-      );
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(MapOfflineStatusCard)),
+    );
+    final tileConfig = MapConfig.tileConfigForLayer(
+      LayerType.satellite,
+      mapTilerApiKey: MapConfig.kMapTilerApiKey,
+    );
+    final layerKey = cacheService.layerKeyFromTemplate(tileConfig.urlTemplate);
+    container
+        .read(offlineMapAreasProvider.notifier)
+        .addArea(
+          OfflineMapAreaConfig(
+            id: 'offline-area-1',
+            layerKey: layerKey,
+            south: -10.2,
+            west: -48.2,
+            north: -9.8,
+            east: -47.8,
+            minZoom: 12,
+            maxZoom: 18,
+            createdAt: DateTime(2026, 7, 20),
+          ),
+        );
+    container
+        .read(mapCameraSnapshotProvider.notifier)
+        .state = MapCameraSnapshot(
+      center: const LatLng(-10.0, -48.0),
+      zoom: 14,
+      visibleBounds: LatLngBounds(
+        const LatLng(-10.1, -48.1),
+        const LatLng(-9.9, -47.9),
+      ),
+    );
 
-      await tester.pumpAndSettle();
+    await tester.pumpAndSettle();
 
-      expect(find.text('Mapa offline ativo'), findsOneWidget);
-      expect(
-        find.text('A área visível está coberta pelo cache local.'),
-        findsOneWidget,
-      );
-    },
-  );
+    expect(find.text('Mapa offline ativo'), findsOneWidget);
+    expect(find.text('Satélite • 1 área salva'), findsOneWidget);
+  });
 }
 
 class _FakeOfflineTileCacheService extends OfflineTileCacheService {

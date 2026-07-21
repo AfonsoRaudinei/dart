@@ -5,17 +5,18 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 import '../../../../core/state/map_state.dart';
+import '../../../../core/state/map_ui_providers.dart';
 import '../../../../core/config/map_config.dart';
 import '../../../../core/utils/map_logger.dart';
 import '../../../../core/providers/connectivity_provider.dart';
 
 bool shouldUseOfflineTileLayer({
-  required bool hasOfflineCoverageForLayer,
+  required bool hasOfflineCoverageForViewport,
   required String? offlineTemplate,
   required bool? isOnline,
 }) {
   return offlineTemplate != null &&
-      hasOfflineCoverageForLayer &&
+      hasOfflineCoverageForViewport &&
       isOnline != true;
 }
 
@@ -37,17 +38,32 @@ class MapLayersWidget extends ConsumerWidget {
       mapTilerApiKey: MapConfig.kMapTilerApiKey,
     );
     final layerKey = cacheService.layerKeyFromTemplate(tileConfig.urlTemplate);
-    final hasOfflineCoverageForLayer = ref.watch(
-      offlineMapAreasProvider.select(
-        (areas) => areas.any((area) => area.layerKey == layerKey),
-      ),
-    );
+    final camera = ref.watch(mapCameraSnapshotProvider);
+    final offlineCoverageAsync = camera == null
+        ? null
+        : ref.watch(
+            offlineCoverageProvider(
+              OfflineCoverageQuery(
+                layerKey: layerKey,
+                lat: camera.center.latitude,
+                lng: camera.center.longitude,
+                south: camera.visibleBounds.south,
+                west: camera.visibleBounds.west,
+                north: camera.visibleBounds.north,
+                east: camera.visibleBounds.east,
+                zoom: camera.zoom.round(),
+              ),
+            ),
+          );
+    final hasOfflineCoverageForViewport = camera == null
+        ? false
+        : offlineCoverageAsync?.asData?.value ?? false;
     final offlineTemplate = offlineRoot == null
         ? null
         : '$offlineRoot/$layerKey/{z}/{x}/{y}.tile';
     final rasterTemplate = _resolveRasterTemplate(raster);
     final shouldUseOfflineTiles = shouldUseOfflineTileLayer(
-      hasOfflineCoverageForLayer: hasOfflineCoverageForLayer,
+      hasOfflineCoverageForViewport: hasOfflineCoverageForViewport,
       offlineTemplate: offlineTemplate,
       isOnline: isOnline,
     );

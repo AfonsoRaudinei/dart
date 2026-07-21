@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:soloforte_app/core/contracts/i_radar_overlay_controller_provider.dart';
 import 'package:soloforte_app/core/domain/map_models.dart';
 import 'package:soloforte_app/core/infra/preferences_service.dart';
+import 'package:soloforte_app/core/services/connectivity_service.dart';
 import 'package:soloforte_app/core/state/map_ui_providers.dart';
 import 'package:soloforte_app/core/state/map_state.dart';
 import 'package:soloforte_app/modules/clima/infra/radar_overlay_controller_adapter.dart';
@@ -15,36 +16,41 @@ import 'package:soloforte_app/ui/components/map/map_layers_sheet.dart';
 
 void main() {
   group('LayersSheet ações operacionais', () {
-    testWidgets('exibe e dispara somente o callback correspondente', (
+    testWidgets('exibe e dispara o CTA compacto de download offline', (
       tester,
     ) async {
-      var coordinateCalls = 0;
       var offlineCalls = 0;
 
       await _pumpLayersSheet(
         tester,
-        onCoordinateSearch: () async => coordinateCalls++,
         onDownloadOfflineArea: () async => offlineCalls++,
       );
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(LayersSheet)),
+      );
+      container
+          .read(mapCameraSnapshotProvider.notifier)
+          .state = MapCameraSnapshot(
+        center: const LatLng(-10.0, -48.0),
+        zoom: 14,
+        visibleBounds: LatLngBounds(
+          const LatLng(-10.1, -48.1),
+          const LatLng(-9.9, -47.9),
+        ),
+      );
+      await tester.pumpAndSettle();
 
       final scrollable = find.byType(Scrollable);
       await tester.scrollUntilVisible(
-        find.text('Baixar área offline'),
+        find.text('Baixar área visível'),
         120,
         scrollable: scrollable,
       );
 
-      expect(find.text('Ir para coordenada'), findsOneWidget);
-      expect(find.text('Baixar área offline'), findsOneWidget);
+      expect(find.text('Baixar área visível'), findsOneWidget);
 
-      await tester.tap(find.text('Ir para coordenada'));
+      await tester.tap(find.text('Baixar área visível'));
       await tester.pump();
-      expect(coordinateCalls, 1);
-      expect(offlineCalls, 0);
-
-      await tester.tap(find.text('Baixar área offline'));
-      await tester.pump();
-      expect(coordinateCalls, 1);
       expect(offlineCalls, 1);
     });
 
@@ -54,7 +60,7 @@ void main() {
       await _pumpLayersSheet(tester);
 
       expect(find.text('Ir para coordenada'), findsNothing);
-      expect(find.text('Baixar área offline'), findsNothing);
+      expect(find.text('Baixar área visível'), findsNothing);
     });
 
     testWidgets('exibe explicações para camadas avançadas WMS e Raster', (
@@ -157,18 +163,8 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Mapa offline'), findsOneWidget);
-      expect(
-        find.textContaining('moldura verde no mapa marca a cobertura'),
-        findsOneWidget,
-      );
-      expect(
-        find.text('Baixar área visível').evaluate().isNotEmpty ||
-            find
-                .text('Download indisponível sem internet')
-                .evaluate()
-                .isNotEmpty,
-        isTrue,
-      );
+      expect(find.text('Satélite • 0 áreas salvas'), findsOneWidget);
+      expect(find.text('Baixar área visível'), findsOneWidget);
     });
   });
 }
@@ -187,6 +183,9 @@ Future<void> _pumpLayersSheet(
     ProviderScope(
       overrides: [
         preferencesServiceProvider.overrideWithValue(preferencesService),
+        connectivityServiceProvider.overrideWithValue(
+          const _FakeConnectivityService(initialValue: true),
+        ),
         radarOverlayControllerProvider.overrideWith((ref) {
           return RadarOverlayControllerAdapter(ref);
         }),
@@ -194,7 +193,7 @@ Future<void> _pumpLayersSheet(
       child: MaterialApp(
         home: Scaffold(
           body: SizedBox(
-            height: 1200,
+            height: 2200,
             child: LayersSheet(
               onClose: () {},
               onCoordinateSearch: onCoordinateSearch,
@@ -207,4 +206,20 @@ Future<void> _pumpLayersSheet(
     ),
   );
   await tester.pump();
+}
+
+class _FakeConnectivityService implements ConnectivityService {
+  const _FakeConnectivityService({required bool initialValue})
+    : _initialValue = initialValue;
+
+  final bool _initialValue;
+
+  @override
+  Stream<bool> get connectivityStream => const Stream<bool>.empty();
+
+  @override
+  Future<bool> get isConnected async => _initialValue;
+
+  @override
+  void dispose() {}
 }

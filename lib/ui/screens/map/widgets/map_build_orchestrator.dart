@@ -375,8 +375,6 @@ class MapBuildOrchestrator extends ConsumerWidget {
               finishDrawing: finishDrawing,
             ),
           ),
-          MapOfflineStatusOverlay(onDownloadOfflineArea: downloadOfflineArea),
-
           DrawingMapBehaviorListener(
             mapController: mapController,
             isMapReady: ref.watch(mapReadyStateProvider),

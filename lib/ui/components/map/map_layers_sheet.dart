@@ -242,23 +242,6 @@ class LayersSheet extends ConsumerWidget {
                     ),
                     onTap: onCoordinateSearch,
                   ),
-                if (onDownloadOfflineArea != null)
-                  ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    leading: const Icon(
-                      Icons.download_for_offline_outlined,
-                      color: Colors.white70,
-                    ),
-                    title: const Text(
-                      'Baixar área offline',
-                      style: TextStyle(color: Colors.white),
-                    ),
-                    subtitle: const Text(
-                      'Use a área visível atual para preparar operação sem internet.',
-                      style: TextStyle(color: Colors.white60, fontSize: 12),
-                    ),
-                    onTap: onDownloadOfflineArea,
-                  ),
                 const SizedBox(height: kFabSafeArea),
               ],
             ),
