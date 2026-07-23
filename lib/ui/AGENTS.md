@@ -22,10 +22,16 @@
 - Criar sub-rotas sob `/map`; estados do mapa sao internos, nao rotas.
 - Usar `context.pop()`, `context.canPop()` ou `Navigator.pop()` para navegacao entre telas (rotas GoRouter).
 - `Navigator.pop()` em dialogs/sheets modais e permitido.
+- Criar bottom sheet fora do padrão global.
+
+## Padrão de bottom sheets
+
+- Usar `showSoloForteSheet` de `lib/core/ui/sheets/soloforte_sheet.dart`.
+- Usar `SoloForteSheetTokens` de `lib/core/ui/sheets/sheet_tokens.dart` para fundo, texto, inputs, chips e divisores.
+- Não duplicar handle, título, botão de fechar ou criar componentes brancos/Material padrão dentro de sheets escuros.
 
 ## Qualidade obrigatoria
 
 - Navegacao sempre via `context.go()` ou `context.push()` com rotas explicitas.
 - Componentes globais devem decidir comportamento por namespace, nao por tela visivel.
 - Rodar testes de UI afetados e `./tool/arch_check.sh`.
-

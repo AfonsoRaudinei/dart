@@ -36,9 +36,9 @@ class PanelSlider extends StatelessWidget {
             Text(label, style: const TextStyle(fontWeight: FontWeight.w500)),
             Text(
               '${value.toInt()}${suffix ?? ''}',
-              style: const TextStyle(
+              style: TextStyle(
                 fontWeight: FontWeight.bold,
-                color: PremiumTokens.textSecondaryLight,
+                color: context.premiumTextSecondary,
               ),
             ),
           ],
@@ -89,7 +89,7 @@ class PanelTextField extends StatelessWidget {
       decoration: InputDecoration(
         hintText: hint,
         filled: true,
-        fillColor: PremiumTokens.backgroundLight,
+        fillColor: context.premiumBackground,
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 12,
           vertical: 12,
@@ -291,7 +291,7 @@ class FisiologicoPanel extends StatelessWidget {
           initialValue: data['tipo'] as String?,
           decoration: InputDecoration(
             filled: true,
-            fillColor: PremiumTokens.backgroundLight,
+            fillColor: context.premiumBackground,
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 12,
               vertical: 8,
@@ -382,9 +382,9 @@ class NutricaoPanel extends StatelessWidget {
                 return Container(
                   padding: const EdgeInsets.all(4),
                   decoration: BoxDecoration(
-                    color: PremiumTokens.backgroundLight,
+                    color: context.premiumBackground,
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: PremiumTokens.hairlineLight),
+                    border: Border.all(color: context.premiumHairline),
                   ),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -550,7 +550,7 @@ class CategoryDetailPanel extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: PremiumTokens.hairlineLight.withValues(alpha: 0.5),
+          color: context.premiumHairline.withValues(alpha: 0.5),
         ),
         boxShadow: const [
           BoxShadow(
@@ -594,12 +594,12 @@ class CategoryDetailPanel extends StatelessWidget {
                 ),
                 InkWell(
                   onTap: onRemove,
-                  child: const Padding(
-                    padding: EdgeInsets.all(4.0),
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
                     child: Icon(
                       Icons.close,
                       size: 18,
-                      color: PremiumTokens.textTertiaryLight,
+                      color: context.premiumTextTertiary,
                     ),
                   ),
                 ),

@@ -31,19 +31,19 @@ class DemoModeCheckbox extends StatelessWidget {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(4),
                 ),
-                side: const BorderSide(
-                  color: PremiumTokens.hairlineLight,
+                side: BorderSide(
+                  color: context.premiumHairline,
                   width: 1.5,
                 ),
               ),
             ),
             const SizedBox(width: 10),
-            const Text(
+            Text(
               'Modo Demo (testar app)',
               style: TextStyle(
                 fontSize: 14.0,
                 fontWeight: FontWeight.w500,
-                color: PremiumTokens.textPrimaryLight,
+                color: context.premiumTextPrimary,
               ),
             ),
           ],

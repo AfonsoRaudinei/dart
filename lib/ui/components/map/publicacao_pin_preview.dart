@@ -82,7 +82,7 @@ class _PublicacaoPreviewSheet extends StatelessWidget {
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: PremiumTokens.surfaceLight,
+                    color: context.premiumSurface,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -123,7 +123,7 @@ class _CoverSection extends StatelessWidget {
       height: 160,
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: PremiumTokens.surfaceLight,
+        color: context.premiumSurface,
         borderRadius: BorderRadius.circular(10.0),
       ),
       child: ClipRRect(
@@ -133,19 +133,19 @@ class _CoverSection extends StatelessWidget {
                 imageUrl: cover.path,
                 fit: BoxFit.cover,
                 width: double.infinity,
-                errorWidget: (_, __, ___) => _placeholder(),
+                errorWidget: (_, __, ___) => _placeholder(context),
               )
-            : _placeholder(),
+            : _placeholder(context),
       ),
     );
   }
 
-  Widget _placeholder() {
-    return const Center(
+  Widget _placeholder(BuildContext context) {
+    return Center(
       child: Icon(
         SFIcons.image,
         size: 48,
-        color: PremiumTokens.textTertiaryLight,
+        color: context.premiumTextTertiary,
       ),
     );
   }
@@ -241,7 +241,7 @@ class _InfoSection extends StatelessWidget {
             Text(
               publicacao.description!,
               style: const TextStyle(fontSize: 14).copyWith(
-                color: PremiumTokens.textSecondaryLight,
+                color: context.premiumTextSecondary,
               ),
               maxLines: 3,
               overflow: TextOverflow.ellipsis,
@@ -254,16 +254,16 @@ class _InfoSection extends StatelessWidget {
             children: [
               // Cliente
               if (publicacao.clientName != null) ...[
-                const Icon(
+                Icon(
                   SFIcons.personOutline,
                   size: 14,
-                  color: PremiumTokens.textTertiaryLight,
+                  color: context.premiumTextTertiary,
                 ),
                 const SizedBox(width: 4),
                 Flexible(
                   child: Text(
                     publicacao.clientName!,
-                    style: const TextStyle(fontSize: 12, color: PremiumTokens.textSecondaryLight),
+                    style: TextStyle(fontSize: 12, color: context.premiumTextSecondary),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -272,16 +272,16 @@ class _InfoSection extends StatelessWidget {
               ],
               // Área
               if (publicacao.areaName != null) ...[
-                const Icon(
+                Icon(
                   SFIcons.place,
                   size: 14,
-                  color: PremiumTokens.textTertiaryLight,
+                  color: context.premiumTextTertiary,
                 ),
                 const SizedBox(width: 4),
                 Flexible(
                   child: Text(
                     publicacao.areaName!,
-                    style: const TextStyle(fontSize: 12, color: PremiumTokens.textSecondaryLight),
+                    style: TextStyle(fontSize: 12, color: context.premiumTextSecondary),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -294,26 +294,26 @@ class _InfoSection extends StatelessWidget {
           // Data + Mídias
           Row(
             children: [
-              const Icon(
+              Icon(
                 SFIcons.calendar,
                 size: 14,
-                color: PremiumTokens.textTertiaryLight,
+                color: context.premiumTextTertiary,
               ),
               const SizedBox(width: 4),
               Text(
                 DateFormat('dd/MM/yyyy').format(publicacao.createdAt),
-                style: const TextStyle(fontSize: 12, color: PremiumTokens.textSecondaryLight),
+                style: TextStyle(fontSize: 12, color: context.premiumTextSecondary),
               ),
               const SizedBox(width: 16),
-              const Icon(
+              Icon(
                 SFIcons.photoLibrary,
                 size: 14,
-                color: PremiumTokens.textTertiaryLight,
+                color: context.premiumTextTertiary,
               ),
               const SizedBox(width: 4),
               Text(
                 '${publicacao.media.length} ${publicacao.media.length == 1 ? 'foto' : 'fotos'}',
-                style: const TextStyle(fontSize: 12, color: PremiumTokens.textSecondaryLight),
+                style: TextStyle(fontSize: 12, color: context.premiumTextSecondary),
               ),
             ],
           ),

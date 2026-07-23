@@ -42,7 +42,7 @@ class _MarketingComparativoReadOnlySectionState
               const Text(
                 'PARÂMETROS COMPARATIVOS',
                 style: TextStyle(
-                  color: PremiumTokens.textSecondaryLight,
+                  color: SoloForteSheetTokens.inputHint,
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
                 ),
@@ -51,6 +51,7 @@ class _MarketingComparativoReadOnlySectionState
               Text(
                 'Média de ganho: ${_formatSigned(widget.mediaGanhoPercent)}%',
                 style: const TextStyle(
+                  color: SoloForteSheetTokens.inputText,
                   fontSize: 15,
                   fontWeight: FontWeight.w800,
                 ),
@@ -95,7 +96,7 @@ class _ParametroReadOnlyRow extends StatelessWidget {
         ? PremiumTokens.alertError
         : parametro.isPositivo
         ? PremiumTokens.brandGreen
-        : PremiumTokens.textSecondaryLight;
+        : SoloForteSheetTokens.inputHint;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
@@ -105,12 +106,19 @@ class _ParametroReadOnlyRow extends StatelessWidget {
             child: Text(
               parametro.titulo,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+              style: const TextStyle(
+                color: SoloForteSheetTokens.inputText,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
           Text(
             '${_formatValue(parametro.testemunha)} -> ${_formatValue(parametro.teste)}$unit',
-            style: const TextStyle(fontSize: 12),
+            style: const TextStyle(
+              color: SoloForteSheetTokens.inputText,
+              fontSize: 12,
+            ),
           ),
           const SizedBox(width: 8),
           Text(

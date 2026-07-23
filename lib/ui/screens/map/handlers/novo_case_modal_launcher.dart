@@ -4,14 +4,19 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 
+import '../../../../core/access/producer_create_context_resolver.dart';
 import '../../../../core/ui/sheets/soloforte_sheet.dart';
 import '../../../../core/contracts/i_active_visit_context_lookup.dart';
 import '../../../../core/contracts/i_active_visit_context_lookup_provider.dart';
+import '../../../../core/contracts/i_producer_property_gateway_provider.dart';
+import '../../../../core/session/user_role.dart';
 import '../../../../modules/marketing/domain/entities/marketing_case.dart';
 import '../../../../modules/marketing/domain/enums/case_tipo.dart';
 import '../../../../modules/marketing/presentation/providers/marketing_providers.dart';
 import '../../../../modules/marketing/presentation/screens/novo_case_type_sheets.dart';
 import '../../../../modules/planos/presentation/providers/plano_providers.dart';
+import '../../../../modules/settings/presentation/providers/user_profile_provider.dart';
+import '../../../../ui/components/map/widgets/producer_map_context_card.dart';
 import '../../widgets/plano_block_sheet.dart';
 
 /// Lança o fluxo completo de criação de novo case a partir de um long-press
@@ -157,11 +162,24 @@ class NovoCaseModalLauncher {
     WidgetRef ref,
   ) async {
     try {
-      return await ref
+      final visit = await ref
           .read(activeVisitContextLookupProvider)
           .getActiveContext();
+      if (visit != null) return visit;
     } catch (_) {
-      // O case continua disponível fora de visita ou com cadastro incompleto.
+      // Sem visita ativa — tenta contexto da propriedade do produtor.
+    }
+
+    final role = ref.read(currentUserRoleProvider);
+    if (!role.isProdutor) return null;
+
+    try {
+      return await ProducerCreateContextResolver.asVisitContext(
+        ref.read(producerPropertyGatewayProvider),
+        preferredFarmId: ref.read(producerMapSelectedFarmIdProvider),
+        preferredFieldId: ref.read(producerMapSelectedFieldIdProvider),
+      );
+    } catch (_) {
       return null;
     }
   }

@@ -86,11 +86,11 @@ class VisitActiveCard extends ConsumerWidget {
                     Flexible(
                       child: Text(
                         hierarchy.name,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
                           letterSpacing: -0.3,
-                          color: PremiumTokens.textPrimaryLight,
+                          color: context.premiumTextPrimary,
                         ),
                         overflow: TextOverflow.ellipsis,
                         maxLines: 1,
@@ -275,7 +275,7 @@ class _EditableRow extends StatelessWidget {
           Icon(
             icon,
             size: 11,
-            color: PremiumTokens.textPrimaryLight.withValues(alpha: 0.4),
+            color: context.premiumTextPrimary.withValues(alpha: 0.4),
           ),
           const SizedBox(width: 5),
           Flexible(
@@ -326,7 +326,7 @@ class _LoadingRow extends StatelessWidget {
           'Carregando...',
           style: TextStyle(
             fontSize: 12,
-            color: PremiumTokens.textPrimaryLight.withValues(alpha: 0.5),
+            color: context.premiumTextPrimary.withValues(alpha: 0.5),
           ),
         ),
       ],
@@ -404,7 +404,7 @@ class _SelectionSheet extends StatelessWidget {
                           : FontWeight.w400,
                       color: isSelected
                           ? PremiumTokens.brandGreen
-                          : PremiumTokens.textPrimaryLight,
+                          : context.premiumTextPrimary,
                       letterSpacing: -0.3,
                     ),
                   ),

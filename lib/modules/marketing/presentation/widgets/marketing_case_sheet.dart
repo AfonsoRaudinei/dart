@@ -175,7 +175,10 @@ class MarketingCaseSheet extends StatelessWidget {
                     Text(
                       marketingCase.produtoUtilizado,
                       style: Theme.of(context).textTheme.headlineSmall
-                          ?.copyWith(fontWeight: FontWeight.w800),
+                          ?.copyWith(
+                            color: SoloForteSheetTokens.inputText,
+                            fontWeight: FontWeight.w800,
+                          ),
                     ),
                     const SizedBox(height: 4),
                     Row(
@@ -183,7 +186,7 @@ class MarketingCaseSheet extends StatelessWidget {
                         const Icon(
                           Icons.location_on_outlined,
                           size: 14,
-                          color: PremiumTokens.textSecondaryLight,
+                          color: SoloForteSheetTokens.inputHint,
                         ),
                         const SizedBox(width: 4),
                         Expanded(
@@ -191,7 +194,7 @@ class MarketingCaseSheet extends StatelessWidget {
                             marketingCase.localizacaoTexto,
                             style: Theme.of(context).textTheme.bodySmall
                                 ?.copyWith(
-                                  color: PremiumTokens.textSecondaryLight,
+                                  color: SoloForteSheetTokens.inputHint,
                                 ),
                           ),
                         ),
@@ -204,14 +207,14 @@ class MarketingCaseSheet extends StatelessWidget {
                           const Icon(
                             Icons.calendar_today_outlined,
                             size: 14,
-                            color: PremiumTokens.textSecondaryLight,
+                            color: SoloForteSheetTokens.inputHint,
                           ),
                           const SizedBox(width: 4),
                           Text(
                             _formatDatePtBr(marketingCase.dataCase!),
                             style: Theme.of(context).textTheme.bodySmall
                                 ?.copyWith(
-                                  color: PremiumTokens.textSecondaryLight,
+                                  color: SoloForteSheetTokens.inputHint,
                                 ),
                           ),
                         ],
@@ -320,11 +323,13 @@ class MarketingCaseSheet extends StatelessWidget {
           fit: BoxFit.cover,
           errorWidget: (_, __, ___) => Container(
             height: 200,
-            decoration: const BoxDecoration(color: Color(0xFFE5E5EA)),
+            decoration: const BoxDecoration(
+              color: SoloForteSheetTokens.inputBackground,
+            ),
             child: const Icon(
               Icons.image_not_supported_outlined,
               size: 40,
-              color: Colors.grey,
+              color: SoloForteSheetTokens.inputHint,
             ),
           ),
         ),
@@ -431,7 +436,7 @@ class MarketingCaseSheet extends StatelessWidget {
           const Text(
             'PRODUTIVIDADE',
             style: TextStyle(
-              color: PremiumTokens.textSecondaryLight,
+              color: SoloForteSheetTokens.inputHint,
               fontSize: 11,
               fontWeight: FontWeight.w700,
             ),
@@ -439,7 +444,11 @@ class MarketingCaseSheet extends StatelessWidget {
           const SizedBox(height: 10),
           Text(
             'Testemunha: ${_formatNumber(input.prodSemProduto)} ${input.unidadeProdutividade}   →   Com produto: ${_formatNumber(input.prodComProduto)} ${input.unidadeProdutividade}',
-            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+            style: const TextStyle(
+              color: SoloForteSheetTokens.inputText,
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+            ),
           ),
           const SizedBox(height: 6),
           Text(
@@ -454,7 +463,7 @@ class MarketingCaseSheet extends StatelessWidget {
           const Text(
             'ROI / RETORNO',
             style: TextStyle(
-              color: PremiumTokens.textSecondaryLight,
+              color: SoloForteSheetTokens.inputHint,
               fontSize: 11,
               fontWeight: FontWeight.w700,
             ),
@@ -462,23 +471,36 @@ class MarketingCaseSheet extends StatelessWidget {
           const SizedBox(height: 10),
           Text(
             'Custo do produto: ${_formatMoney(input.custoProdutoPorHa)}/ha',
-            style: const TextStyle(fontSize: 13),
+            style: const TextStyle(
+              color: SoloForteSheetTokens.inputText,
+              fontSize: 13,
+            ),
           ),
           const SizedBox(height: 4),
           Text(
             'Valor do grão: ${_formatMoney(input.valorGrao)}/sc',
-            style: const TextStyle(fontSize: 13),
+            style: const TextStyle(
+              color: SoloForteSheetTokens.inputText,
+              fontSize: 13,
+            ),
           ),
           const SizedBox(height: 8),
           Text(
             'ROI líquido: ${_formatMoney(roi.roiLiquidoRsHa)}/ha (${_formatNumber(roi.roiEmSacasHa)} sc/ha)',
-            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800),
+            style: const TextStyle(
+              color: SoloForteSheetTokens.inputText,
+              fontSize: 14,
+              fontWeight: FontWeight.w800,
+            ),
           ),
           if (roi.roiSacasTalhao != null && roi.roiReaisTalhao != null) ...[
             const SizedBox(height: 8),
             Text(
               'No talhão (${marketingCase.tamanhoHa!.toStringAsFixed(1)} ha): ${_formatNumber(roi.roiSacasTalhao!)} sc · ${_formatMoney(roi.roiReaisTalhao!)}',
-              style: const TextStyle(fontSize: 13),
+              style: const TextStyle(
+                color: SoloForteSheetTokens.inputText,
+                fontSize: 13,
+              ),
             ),
           ],
         ],
@@ -495,7 +517,7 @@ class MarketingCaseSheet extends StatelessWidget {
           Text(
             label.toUpperCase(),
             style: const TextStyle(
-              color: PremiumTokens.textSecondaryLight,
+              color: SoloForteSheetTokens.inputHint,
               fontSize: 10,
               fontWeight: FontWeight.w600,
               letterSpacing: 0.6,
@@ -505,6 +527,7 @@ class MarketingCaseSheet extends StatelessWidget {
           Text(
             value,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: SoloForteSheetTokens.inputText,
               fontWeight: FontWeight.w500,
               height: 1.4,
             ),
@@ -525,7 +548,11 @@ class MarketingCaseSheet extends StatelessWidget {
                 const SizedBox(height: 4),
                 const Text(
                   'Antes',
-                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+                  style: TextStyle(
+                    color: SoloForteSheetTokens.inputText,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ],
             ),
@@ -562,10 +589,12 @@ class MarketingCaseSheet extends StatelessWidget {
         fit: BoxFit.cover,
         errorWidget: (_, __, ___) => Container(
           height: 130,
-          decoration: const BoxDecoration(color: Color(0xFFE5E5EA)),
+          decoration: const BoxDecoration(
+            color: SoloForteSheetTokens.inputBackground,
+          ),
           child: const Icon(
             Icons.image_not_supported_outlined,
-            color: Colors.grey,
+            color: SoloForteSheetTokens.inputHint,
           ),
         ),
       ),
@@ -603,9 +632,10 @@ class MarketingCaseSheet extends StatelessWidget {
           const SizedBox(height: 10),
           Text(
             marketingCase.conclusaoTecnica!,
-            style: Theme.of(
-              context,
-            ).textTheme.bodyMedium?.copyWith(height: 1.5),
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: SoloForteSheetTokens.inputText,
+              height: 1.5,
+            ),
           ),
         ],
       ),
@@ -642,15 +672,16 @@ class MarketingCaseSheet extends StatelessWidget {
               children: [
                 Text(
                   marketingCase.nomeVendedor!,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    color: SoloForteSheetTokens.inputText,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
                 if (marketingCase.telefoneVendedor != null)
                   Text(
                     marketingCase.telefoneVendedor!,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: PremiumTokens.textSecondaryLight,
+                      color: SoloForteSheetTokens.inputHint,
                     ),
                   ),
               ],
@@ -674,7 +705,7 @@ class MarketingCaseSheet extends StatelessWidget {
         Text(
           'AVALIAÇÕES (${marketingCase.avaliacoesLivres.length})',
           style: const TextStyle(
-            color: PremiumTokens.textSecondaryLight,
+            color: SoloForteSheetTokens.inputHint,
             fontSize: 10,
             fontWeight: FontWeight.w600,
             letterSpacing: 0.6,
@@ -725,7 +756,11 @@ class _AvaliacaoLivreReadOnlyCardState
         children: [
           Text(
             '${avaliacao.titulo.isEmpty ? 'Avaliação' : avaliacao.titulo} — ${avaliacao.nomeLadoA} vs ${avaliacao.nomeLadoB}',
-            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800),
+            style: const TextStyle(
+              color: SoloForteSheetTokens.inputText,
+              fontSize: 14,
+              fontWeight: FontWeight.w800,
+            ),
           ),
           const SizedBox(height: 4),
           Text(
@@ -741,7 +776,7 @@ class _AvaliacaoLivreReadOnlyCardState
             Text(
               'Cultura: ${avaliacao.cultura}',
               style: const TextStyle(
-                color: PremiumTokens.textSecondaryLight,
+                color: SoloForteSheetTokens.inputHint,
                 fontSize: 12,
               ),
             ),
@@ -757,6 +792,7 @@ class _AvaliacaoLivreReadOnlyCardState
                       parametro.titulo,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
+                        color: SoloForteSheetTokens.inputText,
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                       ),
@@ -764,7 +800,10 @@ class _AvaliacaoLivreReadOnlyCardState
                   ),
                   Text(
                     '${_formatValue(parametro.testemunha)} -> ${_formatValue(parametro.teste)}',
-                    style: const TextStyle(fontSize: 12),
+                    style: const TextStyle(
+                      color: SoloForteSheetTokens.inputText,
+                      fontSize: 12,
+                    ),
                   ),
                   const SizedBox(width: 8),
                   Text(
@@ -798,7 +837,11 @@ class _AvaliacaoLivreReadOnlyCardState
             const SizedBox(height: 10),
             Text(
               avaliacao.observacoes!,
-              style: const TextStyle(fontSize: 12, height: 1.35),
+              style: const TextStyle(
+                color: SoloForteSheetTokens.inputText,
+                fontSize: 12,
+                height: 1.35,
+              ),
             ),
           ],
         ],

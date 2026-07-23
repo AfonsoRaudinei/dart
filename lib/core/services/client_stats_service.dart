@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/session/local_session_identity.dart';
 import 'package:sqflite/sqflite.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import '../database/database_helper.dart';
 
 /// Dados agregados de um cliente — usado no Hub do Cliente (WS-4).
@@ -46,7 +46,7 @@ class ClientStatsService {
 
   Future<ClientStats> getStats(String clienteId) async {
     final userId =
-        Supabase.instance.client.auth.currentUser?.id ?? '';
+        LocalSessionIdentity.resolveUserId();
     return _db.transaction((txn) async {
       final totalVisitas =
           Sqflite.firstIntValue(

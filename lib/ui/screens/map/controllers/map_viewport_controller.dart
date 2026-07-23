@@ -75,9 +75,12 @@ class MapViewportController {
           !fieldsState.hasValue ||
           fieldsState.value == null ||
           fieldsState.value!.isEmpty) {
-        // Fallback: Sem fazenda → Abortar para usar GPS manual
-        ref.read(viewportStateProvider.notifier).state =
-            InitialViewportState.aborted;
+        // Sem talhão disponível no primeiro acesso do produtor: usar GPS.
+        await _applyGpsViewport(
+          ref: ref,
+          mapController: mapController,
+          isMounted: isMounted,
+        );
         return;
       }
 
@@ -96,45 +99,63 @@ class MapViewportController {
           ref.read(viewportStateProvider.notifier).state =
               InitialViewportState.applied; // ✅ FINALIZADO
         } catch (_) {
-          ref.read(viewportStateProvider.notifier).state =
-              InitialViewportState.aborted;
+          await _applyGpsViewport(
+            ref: ref,
+            mapController: mapController,
+            isMounted: isMounted,
+          );
         }
       } else {
-        ref.read(viewportStateProvider.notifier).state =
-            InitialViewportState.aborted;
+        await _applyGpsViewport(
+          ref: ref,
+          mapController: mapController,
+          isMounted: isMounted,
+        );
       }
     } else {
       // 👤 ESTRATÉGIA CONSUMIDOR (GPS)
-      final locationState = ref.read(locationStateProvider);
+      await _applyGpsViewport(
+        ref: ref,
+        mapController: mapController,
+        isMounted: isMounted,
+      );
+    }
+  }
 
-      if (locationState == LocationState.checking) {
-        // Ainda verificando → Aguardar
+  static Future<void> _applyGpsViewport({
+    required WidgetRef ref,
+    required MapController mapController,
+    required bool isMounted,
+  }) async {
+    final locationState = ref.read(locationStateProvider);
+
+    if (locationState == LocationState.checking) {
+      // Ainda verificando → Aguardar
+      ref.read(viewportStateProvider.notifier).state =
+          InitialViewportState.waitingForData;
+      return;
+    }
+
+    if (locationState == LocationState.permissionDenied ||
+        locationState == LocationState.serviceDisabled) {
+      // Erro permanente → Abortar (evita loop)
+      ref.read(viewportStateProvider.notifier).state =
+          InitialViewportState.aborted;
+      return;
+    }
+
+    if (locationState == LocationState.available) {
+      final locationService = LocationService();
+      final position = await locationService.getCurrentPosition();
+
+      if (position != null && isMounted) {
+        mapController.move(position.position, 16.0);
+        ref.read(viewportStateProvider.notifier).state =
+            InitialViewportState.applied; // ✅ FINALIZADO
+      } else if (isMounted) {
+        // Disponível mas posição nula? Aguardar.
         ref.read(viewportStateProvider.notifier).state =
             InitialViewportState.waitingForData;
-        return;
-      }
-
-      if (locationState == LocationState.permissionDenied ||
-          locationState == LocationState.serviceDisabled) {
-        // Erro permanente → Abortar (evita loop)
-        ref.read(viewportStateProvider.notifier).state =
-            InitialViewportState.aborted;
-        return;
-      }
-
-      if (locationState == LocationState.available) {
-        final locationService = LocationService();
-        final position = await locationService.getCurrentPosition();
-
-        if (position != null && isMounted) {
-          mapController.move(position.position, 16.0);
-          ref.read(viewportStateProvider.notifier).state =
-              InitialViewportState.applied; // ✅ FINALIZADO
-        } else if (isMounted) {
-          // Disponível mas posição nula? Aguardar.
-          ref.read(viewportStateProvider.notifier).state =
-              InitialViewportState.waitingForData;
-        }
       }
     }
   }

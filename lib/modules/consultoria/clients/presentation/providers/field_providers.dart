@@ -1,11 +1,11 @@
 import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:soloforte_app/core/session/local_session_identity.dart';
 import 'package:soloforte_app/core/database/database_helper.dart';
 import 'package:soloforte_app/modules/consultoria/fields/data/repositories/field_repository.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:sqflite/sqflite.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../domain/agronomic_models.dart';
 
 class ClientDrawingFieldSummary {
@@ -107,7 +107,7 @@ final clientDrawingFieldsProvider = FutureProvider.family
       ref,
       clientId,
     ) async {
-      final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
+      final userId = LocalSessionIdentity.resolveUserId();
       if (userId.isEmpty || clientId.isEmpty) return const [];
 
       final Database db = await DatabaseHelper.instance.database;
@@ -182,7 +182,7 @@ FarmLinkedFieldSummary _linkedSummaryFromField(Talhao field) {
 Future<List<FarmLinkedFieldSummary>> _loadDrawingFieldsByFarmId(
   String farmId,
 ) async {
-  final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
+  final userId = LocalSessionIdentity.resolveUserId();
   if (userId.isEmpty || farmId.isEmpty) return const [];
 
   final Database db = await DatabaseHelper.instance.database;

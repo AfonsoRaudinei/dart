@@ -177,7 +177,7 @@ class SectionCard extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: PremiumTokens.surfaceLight,
+        color: context.premiumSurface,
         borderRadius: BorderRadius.circular(12),
         // boxShadow: PremiumTokens.tightShadow,
       ),
@@ -188,10 +188,10 @@ class SectionCard extends StatelessWidget {
           children: [
             Text(
               title.toUpperCase(),
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
-                color: PremiumTokens.textSecondaryLight,
+                color: context.premiumTextSecondary,
                 letterSpacing: 0.8,
               ),
             ),
@@ -219,10 +219,10 @@ class FormFieldRow extends StatelessWidget {
         children: [
           Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
-              color: PremiumTokens.textPrimaryLight,
+              color: context.premiumTextPrimary,
             ),
           ),
           const SizedBox(height: 8),
@@ -245,22 +245,22 @@ class DapBadge extends StatelessWidget {
       decoration: BoxDecoration(
         color: dap > 0
             ? PremiumTokens.brandGreen.withValues(alpha: 0.1)
-            : PremiumTokens.backgroundLight,
+            : context.premiumBackground,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
           color: dap > 0
               ? PremiumTokens.brandGreen.withValues(alpha: 0.3)
-              : PremiumTokens.hairlineLight,
+              : context.premiumHairline,
         ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Text(
+          Text(
             'DAP: ',
             style: TextStyle(
               fontSize: 12,
-              color: PremiumTokens.textSecondaryLight,
+              color: context.premiumTextSecondary,
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -271,7 +271,7 @@ class DapBadge extends StatelessWidget {
               fontWeight: FontWeight.bold,
               color: dap > 0
                   ? PremiumTokens.brandGreen
-                  : PremiumTokens.textSecondaryLight,
+                  : context.premiumTextSecondary,
             ),
           ),
         ],
@@ -298,7 +298,7 @@ class StageSelector extends StatelessWidget {
       initialValue: selectedStageCode,
       decoration: InputDecoration(
         filled: true,
-        fillColor: PremiumTokens.backgroundLight,
+        fillColor: context.premiumBackground,
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 16,
           vertical: 12,
@@ -308,9 +308,9 @@ class StageSelector extends StatelessWidget {
           borderSide: BorderSide.none,
         ),
       ),
-      hint: const Text(
+      hint: Text(
         'Selecione o estádio',
-        style: TextStyle(color: PremiumTokens.textTertiaryLight),
+        style: TextStyle(color: context.premiumTextTertiary),
       ),
       items: estagiosSoja.map((stage) {
         return DropdownMenuItem(
@@ -376,7 +376,7 @@ class CategoryGrid extends StatelessWidget {
               border: Border.all(
                 color: isSelected
                     ? PremiumTokens.brandGreen
-                    : PremiumTokens.hairlineLight,
+                    : context.premiumHairline,
               ),
               boxShadow: [
                 if (!isSelected)
@@ -393,7 +393,7 @@ class CategoryGrid extends StatelessWidget {
                   cat['icon'] as IconData,
                   color: isSelected
                       ? Colors.white
-                      : PremiumTokens.textPrimaryLight,
+                      : context.premiumTextPrimary,
                 ),
                 const SizedBox(height: 8),
                 Text(
@@ -403,7 +403,7 @@ class CategoryGrid extends StatelessWidget {
                     fontWeight: FontWeight.w600,
                     color: isSelected
                         ? Colors.white
-                        : PremiumTokens.textPrimaryLight,
+                        : context.premiumTextPrimary,
                   ),
                 ),
                 if (count > 0) ...[
@@ -416,7 +416,7 @@ class CategoryGrid extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: isSelected
                           ? Colors.white.withValues(alpha: 0.2)
-                          : PremiumTokens.backgroundLight,
+                          : context.premiumBackground,
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
@@ -426,7 +426,7 @@ class CategoryGrid extends StatelessWidget {
                         fontWeight: FontWeight.bold,
                         color: isSelected
                             ? Colors.white
-                            : PremiumTokens.textSecondaryLight,
+                            : context.premiumTextSecondary,
                       ),
                     ),
                   ),

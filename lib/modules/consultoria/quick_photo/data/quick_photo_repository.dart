@@ -1,4 +1,5 @@
 import 'dart:typed_data';
+import '../../../../core/session/local_session_identity.dart';
 
 import 'package:sqflite/sqflite.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -41,13 +42,13 @@ class QuickPhotoRepository {
     String? visitSessionId,
     QuickPhotoType type = QuickPhotoType.normal,
   }) async {
-    final userId = _supabase.auth.currentUser?.id;
+    final userId = LocalSessionIdentity.resolveUserId();
     final id = _uuid.v4();
     final createdAt = DateTime.now().toUtc();
 
     await _insertLocal(
       id: id,
-      userId: userId ?? '',
+      userId: userId,
       localPath: localPath,
       lat: lat,
       lng: lng,
@@ -57,7 +58,7 @@ class QuickPhotoRepository {
     );
 
     var syncStatus = 1;
-    if (userId == null || userId.isEmpty) {
+    if (userId.isEmpty) {
       AppLogger.warning(
         'Foto rápida salva localmente sem usuário autenticado.',
         tag: 'QuickPhoto',
@@ -95,7 +96,7 @@ class QuickPhotoRepository {
 
   Future<List<QuickPhotoRecord>> getByVisitSessionId(String sessionId) async {
     final db = await _databaseHelper.database;
-    final userId = _supabase.auth.currentUser?.id ?? '';
+    final userId = LocalSessionIdentity.resolveUserId();
     final rows = await db.query(
       _table,
       where: 'visit_session_id = ? AND user_id = ?',
@@ -107,7 +108,7 @@ class QuickPhotoRepository {
 
   /// Lista fotos do usuário autenticado, mais recentes primeiro.
   Future<List<QuickPhotoRecord>> getRecentForCurrentUser({int limit = 100}) async {
-    final userId = _supabase.auth.currentUser?.id ?? '';
+    final userId = LocalSessionIdentity.resolveUserId();
     if (userId.isEmpty) return const [];
 
     final db = await _databaseHelper.database;

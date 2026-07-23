@@ -88,7 +88,7 @@ class _OccurrenceListSheetState extends ConsumerState<OccurrenceListSheet> {
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: PremiumTokens.surfaceLight,
+                    color: context.premiumSurface,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -107,16 +107,16 @@ class _OccurrenceListSheetState extends ConsumerState<OccurrenceListSheet> {
                       ),
                     ),
                     IconButton(
-                      icon: const Icon(
+                      icon: Icon(
                         Icons.close,
-                        color: PremiumTokens.textSecondaryLight,
+                        color: context.premiumTextSecondary,
                       ),
                       onPressed: widget.onClose ?? () => Navigator.pop(context),
                     ),
                   ],
                 ),
               ),
-              const Divider(height: 1, color: PremiumTokens.hairlineLight),
+              Divider(height: 1, color: context.premiumHairline),
               // Filtros
               OccurrenceFilterSelector(
                 filters: _filters,
@@ -125,7 +125,7 @@ class _OccurrenceListSheetState extends ConsumerState<OccurrenceListSheet> {
                   setState(() => _filters = newFilters);
                 },
               ),
-              const Divider(height: 1, color: PremiumTokens.hairlineLight),
+              Divider(height: 1, color: context.premiumHairline),
               // Lista
               Flexible(
                 child: occurrencesAsync.when(
@@ -172,10 +172,10 @@ class _OccurrenceListSheetState extends ConsumerState<OccurrenceListSheet> {
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(
+                              Icon(
                                 Icons.warning_amber_rounded,
                                 size: 48,
-                                color: PremiumTokens.textTertiaryLight,
+                                color: context.premiumTextTertiary,
                               ),
                               const SizedBox(height: 16),
                               Text(
@@ -184,7 +184,7 @@ class _OccurrenceListSheetState extends ConsumerState<OccurrenceListSheet> {
                                     : 'Nenhuma ocorrência nesta área',
                                 style: Theme.of(context).textTheme.bodyMedium!
                                     .copyWith(
-                                      color: PremiumTokens.textSecondaryLight,
+                                      color: context.premiumTextSecondary,
                                     ),
                                 textAlign: TextAlign.center,
                               ),

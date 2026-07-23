@@ -38,6 +38,9 @@ class MarketingCase {
   final double? valorGrao;
   final String? clientId;
 
+  /// Autoria remota (`marketing_cases.user_id`). Usado no ACL do produtor.
+  final String? ownerUserId;
+
   // Campos de Antes/Depois
   final String? fotoAntesUrl;
   final String? fotoDepoisUrl;
@@ -85,6 +88,7 @@ class MarketingCase {
     this.custoProdutoPorHa,
     this.valorGrao,
     this.clientId,
+    this.ownerUserId,
     this.fotoAntesUrl,
     this.fotoDepoisUrl,
     this.ganhoProdutividade,
@@ -135,6 +139,7 @@ class MarketingCase {
       custoProdutoPorHa: (json['custo_produto_por_ha'] as num?)?.toDouble(),
       valorGrao: (json['valor_grao'] as num?)?.toDouble(),
       clientId: json['client_id'] as String?,
+      ownerUserId: json['user_id'] as String?,
       fotoAntesUrl: json['foto_antes_url'] as String?,
       fotoDepoisUrl: json['foto_depois_url'] as String?,
       ganhoProdutividade: json['ganho_produtividade'] as String?,
@@ -188,6 +193,7 @@ class MarketingCase {
       'custo_produto_por_ha': custoProdutoPorHa,
       'valor_grao': valorGrao,
       'client_id': clientId,
+      if (ownerUserId != null) 'user_id': ownerUserId,
       'foto_antes_url': fotoAntesUrl,
       'foto_depois_url': fotoDepoisUrl,
       'ganho_produtividade': ganhoProdutividade,

@@ -258,11 +258,11 @@ class _ProducerLine extends StatelessWidget {
         Flexible(
           child: Text(
             name,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,
               letterSpacing: -0.3,
-              color: PremiumTokens.textPrimaryLight,
+              color: context.premiumTextPrimary,
             ),
             overflow: TextOverflow.ellipsis,
             maxLines: 1,
@@ -295,8 +295,8 @@ class _PickerLine<T> extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textColor = enabled
-        ? PremiumTokens.textPrimaryLight
-        : PremiumTokens.textSecondaryLight;
+        ? context.premiumTextPrimary
+        : context.premiumTextSecondary;
     final row = Row(
       mainAxisSize: MainAxisSize.min,
       children: [

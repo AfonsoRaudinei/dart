@@ -1,4 +1,5 @@
 import 'dart:convert';
+import '../../../core/session/local_session_identity.dart';
 import 'dart:math';
 
 import 'package:crypto/crypto.dart';
@@ -262,7 +263,7 @@ class ProducerLinkRepository implements ProducerLinkReader {
   }
 
   String _currentUserId() {
-    final userId = _client.auth.currentUser?.id ?? '';
+    final userId = LocalSessionIdentity.resolveUserId();
     if (userId.isEmpty) throw Exception('Usuário não autenticado.');
     return userId;
   }

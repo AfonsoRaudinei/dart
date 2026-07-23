@@ -76,8 +76,8 @@ class OccurrenceFilterSelector extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: PremiumTokens.surfaceLight.withValues(alpha: 0.5),
-        border: const Border(bottom: BorderSide(color: PremiumTokens.hairlineLight)),
+        color: context.premiumSurface.withValues(alpha: 0.5),
+        border: Border(bottom: BorderSide(color: context.premiumHairline)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -87,7 +87,7 @@ class OccurrenceFilterSelector extends StatelessWidget {
             children: [
               Text(
                 'Filtros',
-                style: Theme.of(context).textTheme.labelSmall!.copyWith(color: PremiumTokens.textSecondaryLight).copyWith(
+                style: Theme.of(context).textTheme.labelSmall!.copyWith(color: context.premiumTextSecondary).copyWith(
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -125,7 +125,7 @@ class OccurrenceFilterSelector extends StatelessWidget {
                         fontSize: 11,
                         color: isSelected
                             ? Colors.white
-                            : PremiumTokens.textSecondaryLight,
+                            : context.premiumTextSecondary,
                       ),
                     ),
                   ],

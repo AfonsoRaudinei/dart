@@ -14,6 +14,7 @@
 #   REGRA 3 — Arquivos novos não podem ultrapassar 900 linhas
 #   REGRA-NDVI — Invariants ADR-042 (lookup chain, fronteira, testes)
 #   REGRA-NAV-1 — context.pop()/canPop() proibidos (Map-First)
+#   REGRA-MARKETING — blindagem de pins, fronteiras e bottom sheets
 # =============================================================================
 
 set -uo pipefail
@@ -368,6 +369,83 @@ if [ "$SIZE_VIOLATIONS" -eq 0 ]; then
   if [ "$SIZE_WARNINGS" -gt 0 ]; then
     info "$SIZE_WARNINGS exceção(ões) legada(s) monitorada(s) — remover quando decompostas"
   fi
+fi
+
+echo ""
+
+# =============================================================================
+# REGRA-MARKETING — blindagem de pins, fronteiras e bottom sheets
+#
+# Fundamento: marketing publica pins no mapa e sheets de criacao/detalhe.
+#             Regressões aqui afetam legibilidade, poluição do mapa e padrão
+#             visual global de bottom sheets.
+# =============================================================================
+echo -e "── ${CYAN}REGRA-MARKETING${NC}: pins e bottom sheets padronizados ───────────"
+echo ""
+
+MARKETING_CASE_MARKER="lib/modules/marketing/presentation/widgets/marketing_case_marker.dart"
+ISOLATED_MARKER_LAYERS="lib/ui/components/map/widgets/isolated_marker_layers.dart"
+PUBLIC_MAP_SCREEN="lib/ui/screens/public_map_screen.dart"
+NOVO_CASE_SHEET="lib/modules/marketing/presentation/screens/novo_case_sheet.dart"
+
+if [ -f "$MARKETING_CASE_MARKER" ] \
+  && grep -q "PlanoMarketing.ouro => 10.0" "$MARKETING_CASE_MARKER" \
+  && grep -q "PlanoMarketing.prata => 12.0" "$MARKETING_CASE_MARKER" \
+  && grep -q "PlanoMarketing.bronze => 14.0" "$MARKETING_CASE_MARKER" \
+  && grep -q "isVisibleAtZoom" "$MARKETING_CASE_MARKER"; then
+  pass "REGRA-MARKETING-1: marker define visibilidade por zoom/plano"
+else
+  fail "REGRA-MARKETING-1: MarketingCaseMarker deve manter minZoom ouro=10, prata=12, bronze=14 e isVisibleAtZoom()"
+fi
+
+MARKETING_ZOOM_CONSUMERS=0
+if [ -f "$ISOLATED_MARKER_LAYERS" ] && grep -q "MarketingCaseMarker.isVisibleAtZoom" "$ISOLATED_MARKER_LAYERS"; then
+  MARKETING_ZOOM_CONSUMERS=$((MARKETING_ZOOM_CONSUMERS + 1))
+fi
+if [ -f "$PUBLIC_MAP_SCREEN" ] && grep -q "MarketingCaseMarker.isVisibleAtZoom" "$PUBLIC_MAP_SCREEN"; then
+  MARKETING_ZOOM_CONSUMERS=$((MARKETING_ZOOM_CONSUMERS + 1))
+fi
+
+if [ "$MARKETING_ZOOM_CONSUMERS" -eq 2 ]; then
+  pass "REGRA-MARKETING-2: camadas de mapa respeitam MarketingCaseMarker.isVisibleAtZoom()"
+else
+  fail "REGRA-MARKETING-2: mapa privado/publico devem filtrar pins via MarketingCaseMarker.isVisibleAtZoom()"
+fi
+
+RESULTADO_DUPLICATE_CLIENT=$(grep -rnE "Buscar Produtor/Fazenda|_buildClienteDropdown|clientLookupProvider" \
+  "$NOVO_CASE_SHEET" \
+  --include="*.dart" \
+  2>/dev/null \
+  | grep -v "^\s*//" \
+  || true)
+
+if [ -n "$RESULTADO_DUPLICATE_CLIENT" ]; then
+  fail "REGRA-MARKETING-3: Resultado nao pode reintroduzir seletor branco duplicado de Produtor/Fazenda:"
+  echo ""
+  echo "$RESULTADO_DUPLICATE_CLIENT" | while IFS= read -r line; do
+    echo -e "      ${RED}→${NC} $line"
+  done
+  echo ""
+else
+  pass "REGRA-MARKETING-3: Resultado sem seletor duplicado de Produtor/Fazenda"
+fi
+
+MARKETING_SHEET_DOCS_OK=0
+for agents_file in \
+  "lib/modules/marketing/AGENTS.md" \
+  "lib/modules/map/AGENTS.md" \
+  "lib/ui/AGENTS.md"; do
+  if [ -f "$agents_file" ] \
+    && grep -q "showSoloForteSheet" "$agents_file" \
+    && grep -q "SoloForteSheetTokens" "$agents_file"; then
+    MARKETING_SHEET_DOCS_OK=$((MARKETING_SHEET_DOCS_OK + 1))
+  fi
+done
+
+if [ "$MARKETING_SHEET_DOCS_OK" -eq 3 ]; then
+  pass "REGRA-MARKETING-4: AGENTS locais documentam showSoloForteSheet + SoloForteSheetTokens"
+else
+  fail "REGRA-MARKETING-4: marketing/map/ui AGENTS devem documentar o padrão de bottom sheets"
 fi
 
 echo ""

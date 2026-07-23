@@ -55,8 +55,8 @@ class _LoginInputFieldState extends State<LoginInputField> {
     final theme = Theme.of(context);
     final errorColor = theme.colorScheme.error;
     final primaryColor = PremiumTokens.brandGreen; // Verde
-    final secondaryColor = PremiumTokens.textSecondaryLight;
-    final tertiaryColor = PremiumTokens.textTertiaryLight;
+    final secondaryColor = context.premiumTextSecondary;
+    final tertiaryColor = context.premiumTextTertiary;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

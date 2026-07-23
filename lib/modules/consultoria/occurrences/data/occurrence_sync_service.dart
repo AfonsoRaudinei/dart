@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:sqflite/sqflite.dart';
+import 'package:soloforte_app/core/session/local_session_identity.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:soloforte_app/core/contracts/i_occurrence_access_reader.dart';
@@ -42,8 +43,8 @@ class OccurrenceSyncService {
 
   Future<void> _syncOccurrencesPush() async {
     final db = await DatabaseHelper.instance.database;
-    final userId = _supabase.auth.currentUser?.id;
-    if (userId == null) return;
+    final userId = LocalSessionIdentity.resolveUserId();
+    if (userId.isEmpty) return;
 
     final pending = await db.query(
       'occurrences',
@@ -95,8 +96,8 @@ class OccurrenceSyncService {
   }
 
   Future<void> _syncOccurrencesPull() async {
-    final userId = _supabase.auth.currentUser?.id;
-    if (userId == null) {
+    final userId = LocalSessionIdentity.resolveUserId();
+    if (userId.isEmpty) {
       AppLogger.warning(
         'Skipping occurrence pull: userId is null',
         tag: 'OccurrenceSync',

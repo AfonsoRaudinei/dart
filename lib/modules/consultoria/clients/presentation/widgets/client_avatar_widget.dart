@@ -42,7 +42,7 @@ class ClientAvatarWidget extends StatelessWidget {
     if (fotoPath != null) {
       return CircleAvatar(
         radius: radius,
-        backgroundColor: PremiumTokens.backgroundLight,
+        backgroundColor: context.premiumBackground,
         child: ClipOval(
           child: SizedBox.square(
             dimension: radius * 2,

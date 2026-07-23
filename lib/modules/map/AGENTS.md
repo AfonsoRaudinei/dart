@@ -16,6 +16,13 @@
 - Usar `google_maps_flutter`; o mapa oficial e `flutter_map`.
 - Criar FAB local ou alterar o SmartButton.
 - Fazer outro modulo importar `modules/map`.
+- Criar bottom sheet fora do padrão global.
+
+## Padrão de bottom sheets
+
+- Usar `showSoloForteSheet` de `lib/core/ui/sheets/soloforte_sheet.dart`.
+- Usar `SoloForteSheetTokens` de `lib/core/ui/sheets/sheet_tokens.dart` para fundo, texto, inputs e divisores.
+- Não duplicar handle, título, botão de fechar ou criar controles claros/brancos dentro de sheets escuros.
 
 ## Qualidade obrigatoria
 
@@ -23,4 +30,3 @@
 - Camadas devem ser isoladas, previsiveis e sem recomposicao desnecessaria.
 - Testes esperados: testes de mapa em `test/ui/components/map/` e modulo afetado.
 - Rodar `flutter analyze lib/modules/map/` e `./tool/arch_check.sh`.
-

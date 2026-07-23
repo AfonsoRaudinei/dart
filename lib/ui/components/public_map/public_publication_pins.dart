@@ -92,13 +92,13 @@ class _PublicationPin extends StatelessWidget {
                     memCacheWidth: 100,
                     memCacheHeight: 100,
                     errorWidget: (context, url, error) {
-                      return _buildPlaceholder();
+                      return _buildPlaceholder(context);
                     },
                     placeholder: (context, url) {
-                      return _buildPlaceholder();
+                      return _buildPlaceholder(context);
                     },
                   )
-                : _buildPlaceholder(),
+                : _buildPlaceholder(context),
           ),
         ),
 
@@ -125,12 +125,12 @@ class _PublicationPin extends StatelessWidget {
     );
   }
 
-  Widget _buildPlaceholder() {
+  Widget _buildPlaceholder(BuildContext context) {
     return Container(
-      color: PremiumTokens.surfaceLight,
-      child: const Icon(
+      color: context.premiumSurface,
+      child: Icon(
         Icons.image,
-        color: PremiumTokens.textSecondaryLight,
+        color: context.premiumTextSecondary,
         size: 24,
       ),
     );

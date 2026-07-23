@@ -4,6 +4,7 @@ import 'package:sqflite/sqflite.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/database/database_helper.dart';
 import '../../../../core/infra/preferences_service.dart';
+import '../../../../core/session/local_session_identity.dart';
 import '../../../../core/utils/app_logger.dart';
 import '../../domain/models/drawing_models.dart';
 
@@ -249,8 +250,9 @@ class DrawingLocalStore {
   }
 
   String _resolveScopedUserId() {
+    // Fonte única: LocalSessionIdentity (prefs + lastKnown no bootstrap).
     return _identityStore.resolveScopedUserId(
-      currentUserId: Supabase.instance.client.auth.currentUser?.id,
+      currentUserId: LocalSessionIdentity.resolveUserId(),
     );
   }
 
@@ -259,8 +261,9 @@ class DrawingLocalStore {
     String featureId,
     String userId,
   ) {
-    final currentUserId = Supabase.instance.client.auth.currentUser?.id ?? '';
-    if (currentUserId.isNotEmpty || userId.isEmpty) {
+    final hydratedUserId =
+        Supabase.instance.client.auth.currentUser?.id.trim() ?? '';
+    if (hydratedUserId.isNotEmpty || userId.isEmpty) {
       if (userId.isEmpty) {
         AppLogger.warning(
           'DrawingLocalStore.$action persisted orphan local drawing [id=$featureId]',

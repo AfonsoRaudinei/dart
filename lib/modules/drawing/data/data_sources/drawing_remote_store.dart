@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:soloforte_app/core/session/local_session_identity.dart';
 import '../../domain/models/drawing_models.dart';
 import 'package:soloforte_app/core/utils/app_logger.dart';
 
@@ -67,8 +68,8 @@ class DrawingRemoteStore {
   // ─── Serialização ──────────────────────────────────────────────────────────
 
   String _requireUserId() {
-    final userId = _supabase.auth.currentUser?.id;
-    if (userId == null || userId.isEmpty) {
+    final userId = LocalSessionIdentity.resolveUserId();
+    if (userId.isEmpty) {
       throw StateError('DrawingRemoteStore requires an authenticated user.');
     }
     return userId;

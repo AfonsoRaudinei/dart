@@ -198,7 +198,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                         style: Theme.of(context).textTheme.headlineMedium
                             ?.copyWith(
                               fontWeight: FontWeight.bold,
-                              color: PremiumTokens.textPrimaryLight,
+                              color: context.premiumTextPrimary,
                             ),
                         textAlign: TextAlign.center,
                       ),
@@ -206,7 +206,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                       Text(
                         'Preencha seus dados para começar',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: PremiumTokens.textSecondaryLight,
+                          color: context.premiumTextSecondary,
                         ),
                         textAlign: TextAlign.center,
                       ),
@@ -426,10 +426,10 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Text(
+                          Text(
                             'Já tem conta? ',
                             style: TextStyle(
-                              color: PremiumTokens.textSecondaryLight,
+                              color: context.premiumTextSecondary,
                             ),
                           ),
                           TextButton(

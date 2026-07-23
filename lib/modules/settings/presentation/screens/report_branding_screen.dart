@@ -46,9 +46,9 @@ class _ReportBrandingScreenState extends ConsumerState<ReportBrandingScreen> {
         : 'SoloForte';
 
     return Scaffold(
-      backgroundColor: PremiumTokens.backgroundLight,
+      backgroundColor: context.premiumBackground,
       appBar: AppBar(
-        backgroundColor: PremiumTokens.backgroundLight,
+        backgroundColor: context.premiumBackground,
         surfaceTintColor: Colors.transparent,
         title: const Text('Marca dos Relatórios'),
       ),
@@ -95,7 +95,7 @@ class _ReportBrandingScreenState extends ConsumerState<ReportBrandingScreen> {
           Text(
             'Use o logo do consultor ou da empresa. O rodapé continua assinando a plataforma SoloForte.',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: PremiumTokens.textSecondaryLight,
+              color: context.premiumTextSecondary,
             ),
           ),
           const SizedBox(height: 12),
@@ -220,7 +220,7 @@ class _PreviewCard extends StatelessWidget {
                           ? 'Cabeçalho com identidade personalizada'
                           : 'Cabeçalho padrão SoloForte',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: PremiumTokens.textSecondaryLight,
+                        color: context.premiumTextSecondary,
                       ),
                     ),
                   ],
@@ -311,7 +311,7 @@ class _FooterBrandPreview extends StatelessWidget {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: PremiumTokens.textSecondaryLight,
+                    color: context.premiumTextSecondary,
                   ),
                 ),
               ],

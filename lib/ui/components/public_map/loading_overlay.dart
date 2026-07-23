@@ -40,7 +40,7 @@ class PublicationsLoadingOverlay extends StatelessWidget {
               Text(
                 'Carregando publicações...',
                 style: const TextStyle(fontSize: 14).copyWith(
-                  color: PremiumTokens.textSecondaryLight,
+                  color: context.premiumTextSecondary,
                   fontSize: 13,
                 ),
               ),
@@ -95,9 +95,9 @@ class _PinSkeletonState extends State<PinSkeleton>
         width: 50,
         height: 50,
         decoration: BoxDecoration(
-          color: PremiumTokens.surfaceLight,
+          color: context.premiumSurface,
           shape: BoxShape.circle,
-          border: Border.all(color: PremiumTokens.hairlineLight, width: 3),
+          border: Border.all(color: context.premiumHairline, width: 3),
         ),
       ),
     );

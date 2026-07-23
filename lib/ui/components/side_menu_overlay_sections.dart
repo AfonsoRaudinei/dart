@@ -69,6 +69,12 @@ class _SideMenuContent extends StatelessWidget {
                     route: AppRoutes.producerProperty,
                   ),
                   _MenuItem(
+                    icon: Icons.analytics_outlined,
+                    label: 'Relatórios',
+                    subtitle: 'Análises e KPIs',
+                    route: AppRoutes.reports,
+                  ),
+                  _MenuItem(
                     icon: Icons.chat_bubble_outline_rounded,
                     label: 'Feedback',
                     subtitle: 'Envie sua opinião',

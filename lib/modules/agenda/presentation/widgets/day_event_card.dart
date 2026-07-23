@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/core/session/local_session_identity.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:soloforte_app/core/router/app_routes.dart';
 import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../domain/entities/event.dart';
 import '../../domain/enums/event_status.dart';
 import '../providers/agenda_provider.dart';
@@ -344,8 +344,8 @@ class DayEventCard extends ConsumerWidget {
         return ElevatedButton(
           onPressed: () async {
             try {
-              final userId = Supabase.instance.client.auth.currentUser?.id;
-              if (userId == null || userId.isEmpty) {
+              final userId = LocalSessionIdentity.resolveUserId();
+              if (userId.isEmpty) {
                 throw StateError('Usuário autenticado não encontrado.');
               }
 

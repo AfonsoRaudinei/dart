@@ -23,12 +23,12 @@ class PhotoGrid extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const SizedBox(height: 12),
-        const Text(
+        Text(
           'Evidências Fotográficas',
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w600,
-            color: PremiumTokens.textSecondaryLight,
+            color: context.premiumTextSecondary,
           ),
         ),
         const SizedBox(height: 8),

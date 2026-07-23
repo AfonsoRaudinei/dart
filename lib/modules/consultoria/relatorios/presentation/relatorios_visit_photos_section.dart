@@ -223,15 +223,15 @@ class _VisitPhotoFilterBar extends StatelessWidget {
       spacing: 8,
       runSpacing: 6,
       children: [
-        _filterChip('Todas', _VisitPhotoFilter.all),
-        _filterChip('Foto rápida', _VisitPhotoFilter.normal),
-        _filterChip('Inversão vegetal', _VisitPhotoFilter.vegetal),
-        _filterChip('Órfãs', _VisitPhotoFilter.orphan),
+        _filterChip(context, 'Todas', _VisitPhotoFilter.all),
+        _filterChip(context, 'Foto rápida', _VisitPhotoFilter.normal),
+        _filterChip(context, 'Inversão vegetal', _VisitPhotoFilter.vegetal),
+        _filterChip(context, 'Órfãs', _VisitPhotoFilter.orphan),
       ],
     );
   }
 
-  Widget _filterChip(String label, _VisitPhotoFilter value) {
+  Widget _filterChip(BuildContext context, String label, _VisitPhotoFilter value) {
     final isSelected = selected == value;
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
@@ -253,7 +253,7 @@ class _VisitPhotoFilterBar extends StatelessWidget {
           style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w600,
-            color: isSelected ? Colors.white : PremiumTokens.textPrimaryLight,
+            color: isSelected ? Colors.white : context.premiumTextPrimary,
           ),
         ),
       ),
@@ -311,10 +311,10 @@ class _VisitPhotoThumbnail extends StatelessWidget {
         height: 48,
         alignment: Alignment.center,
         color: const Color(0xFFE5E5EA),
-        child: const Text(
+        child: Text(
           'Sem\narq.',
           textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 9, color: PremiumTokens.textSecondaryLight),
+          style: TextStyle(fontSize: 9, color: context.premiumTextSecondary),
         ),
       );
     } else {
@@ -331,11 +331,11 @@ class _VisitPhotoThumbnail extends StatelessWidget {
           height: 48,
           alignment: Alignment.center,
           color: const Color(0xFFE5E5EA),
-          child: const Text(
+          child: Text(
             'Indisp.',
             style: TextStyle(
               fontSize: 9,
-              color: PremiumTokens.textSecondaryLight,
+              color: context.premiumTextSecondary,
             ),
           ),
         ),

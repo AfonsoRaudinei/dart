@@ -33,6 +33,7 @@ class _PublicMapScreenState extends ConsumerState<PublicMapScreen> {
   final MapController _mapController = MapController();
   static const double _defaultZoom = 13.0;
   static const double _userLocationZoom = 16.0;
+  double _currentZoom = _defaultZoom;
 
   @override
   void initState() {
@@ -53,14 +54,17 @@ class _PublicMapScreenState extends ConsumerState<PublicMapScreen> {
   }
 
   Future<void> _handlePermissionResult(LocationPermission permission) async {
-    if (permission == LocationPermission.whileInUse || permission == LocationPermission.always) {
+    if (permission == LocationPermission.whileInUse ||
+        permission == LocationPermission.always) {
       await ref.read(publicLocationNotifierProvider.notifier).requestLocation();
       _onLocationTap();
     } else if (permission == LocationPermission.deniedForever) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Permissão de localização negada permanentemente. Ative nas configurações do dispositivo.'),
+            content: Text(
+              'Permissão de localização negada permanentemente. Ative nas configurações do dispositivo.',
+            ),
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -73,6 +77,7 @@ class _PublicMapScreenState extends ConsumerState<PublicMapScreen> {
     if (currentZoom < 18.0) {
       final newZoom = (currentZoom + 1).clamp(3.0, 18.0);
       _mapController.move(_mapController.camera.center, newZoom);
+      setState(() => _currentZoom = newZoom);
     }
   }
 
@@ -81,6 +86,7 @@ class _PublicMapScreenState extends ConsumerState<PublicMapScreen> {
     if (currentZoom > 3.0) {
       final newZoom = (currentZoom - 1).clamp(3.0, 18.0);
       _mapController.move(_mapController.camera.center, newZoom);
+      setState(() => _currentZoom = newZoom);
     }
   }
 
@@ -107,7 +113,8 @@ class _PublicMapScreenState extends ConsumerState<PublicMapScreen> {
     } else {
       await ref.read(publicLocationNotifierProvider.notifier).requestLocation();
       final updatedState = ref.read(publicLocationNotifierProvider);
-      if (updatedState.status == PublicLocationStatus.available && updatedState.position != null) {
+      if (updatedState.status == PublicLocationStatus.available &&
+          updatedState.position != null) {
         _mapController.move(updatedState.position!, _userLocationZoom);
       }
     }
@@ -128,11 +135,15 @@ class _PublicMapScreenState extends ConsumerState<PublicMapScreen> {
           // Mapa como fundo
           FlutterMap(
             mapController: _mapController,
-            options: const MapOptions(
-              initialCenter: LatLng(-23.5505, -46.6333), // SP Default
+            options: MapOptions(
+              initialCenter: const LatLng(-23.5505, -46.6333), // SP Default
               initialZoom: _defaultZoom,
               minZoom: 3.0,
               maxZoom: 18.0,
+              onPositionChanged: (camera, _) {
+                if (camera.zoom == _currentZoom) return;
+                setState(() => _currentZoom = camera.zoom);
+              },
             ),
             children: [
               // TileLayer com estilo iOS
@@ -171,14 +182,25 @@ class _PublicMapScreenState extends ConsumerState<PublicMapScreen> {
                       .watch(marketingCasesProvider)
                       .value!
                       .where(
-                        (mCase) => mCase.visibilidade == PlanoMarketing.ouro,
+                        (mCase) =>
+                            mCase.visibilidade == PlanoMarketing.ouro &&
+                            MarketingCaseMarker.isVisibleAtZoom(
+                              mCase.visibilidade,
+                              _currentZoom,
+                            ),
                       )
                       .map((mCase) {
                         return Marker(
                           point: LatLng(mCase.lat, mCase.lng),
-                          width: 100,
-                          height: 100,
-                          alignment: Alignment.center,
+                          width: MarketingCaseMarker.pinWidth(
+                            mCase.visibilidade,
+                          ),
+                          height:
+                              MarketingCaseMarker.pinHeight(
+                                mCase.visibilidade,
+                              ) +
+                              10,
+                          alignment: Alignment.bottomCenter,
                           child: MarketingCaseMarker(
                             marketingCase: mCase,
                             onTap: () {
@@ -319,11 +341,7 @@ class _SoloForteWatermark extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          const Icon(
-            Icons.eco_outlined,
-            color: Colors.white,
-            size: 18,
-          ),
+          const Icon(Icons.eco_outlined, color: Colors.white, size: 18),
           const SizedBox(width: 6),
           Text(
             'SoloForte',

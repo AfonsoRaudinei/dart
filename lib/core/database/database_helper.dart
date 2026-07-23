@@ -222,12 +222,22 @@ class DatabaseHelper {
     await db.close();
   }
 
-  /// Remove registros locais do usuário ao excluir a conta.
+  /// Remove registros locais do usuário.
+  ///
+  /// 🛡 Somente exclusão de conta (`SessionController.deleteAccount`).
+  /// Logout **não** deve chamar este método — dados offline-first permanecem.
   Future<void> clearUserLocalData(String userId) async {
-    if (userId.isEmpty) return;
+    final normalized = userId.trim();
+    if (normalized.isEmpty) {
+      AppLogger.warning(
+        'clearUserLocalData ignorado: userId vazio',
+        tag: 'DB',
+      );
+      return;
+    }
 
     final db = await database;
-    await db.transaction((txn) => _clearUserLocalData(txn, userId));
+    await db.transaction((txn) => _clearUserLocalData(txn, normalized));
   }
 
   Future<void> _clearUserLocalData(DatabaseExecutor db, String userId) async {

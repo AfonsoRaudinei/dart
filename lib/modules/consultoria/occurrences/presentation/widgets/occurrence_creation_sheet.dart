@@ -5,11 +5,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:soloforte_app/core/access/producer_create_context_resolver.dart';
 import 'package:soloforte_app/core/contracts/i_client_lookup.dart';
 import 'package:soloforte_app/core/contracts/i_client_lookup_provider.dart';
 import 'package:soloforte_app/core/contracts/i_active_visit_context_lookup_provider.dart';
+import 'package:soloforte_app/core/contracts/i_producer_property_gateway_provider.dart';
+import 'package:soloforte_app/core/session/user_role.dart';
 import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 import 'package:soloforte_app/core/ui/sheets/widgets/sheet_section_header.dart';
+import 'package:soloforte_app/modules/settings/presentation/providers/user_profile_provider.dart';
 import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 
 import '../../domain/occurrence.dart';
@@ -65,13 +69,29 @@ class _OccurrenceCreationSheetState
   @override
   void initState() {
     super.initState();
-    _clientsFuture = ref.read(clientLookupProvider).listAtivos();
+    _clientsFuture = _loadClientsForCurrentRole();
     _hydrateInitialOccurrence();
     if (widget.initialOccurrence != null) {
       _prefillInitialClient();
     } else {
       _prefillActiveVisitClient();
     }
+  }
+
+  Future<List<ClientSummary>> _loadClientsForCurrentRole() async {
+    final lookup = ref.read(clientLookupProvider);
+    final clients = List<ClientSummary>.from(await lookup.listAtivos());
+    final role = ref.read(currentUserRoleProvider);
+    if (!role.isProdutor) return clients;
+
+    final own = await ProducerCreateContextResolver.asClientSummary(
+      ref.read(producerPropertyGatewayProvider),
+    );
+    if (own == null) return clients;
+    if (!clients.any((client) => client.id == own.id)) {
+      clients.insert(0, own);
+    }
+    return clients;
   }
 
   void _hydrateInitialOccurrence() {
@@ -123,15 +143,25 @@ class _OccurrenceCreationSheetState
       final activeContext = await ref
           .read(activeVisitContextLookupProvider)
           .getActiveContext();
-      if (!mounted || activeContext == null || _selectedClient != null) return;
+      if (!mounted || _selectedClient != null) return;
 
       final clients = await _clientsFuture;
       if (!mounted || _selectedClient != null) return;
 
-      final selected = clients
-          .where((client) => client.id == activeContext.clientId)
-          .firstOrNull;
-      if (selected != null) setState(() => _selectedClient = selected);
+      if (activeContext != null) {
+        final selected = clients
+            .where((client) => client.id == activeContext.clientId)
+            .firstOrNull;
+        if (selected != null) {
+          setState(() => _selectedClient = selected);
+          return;
+        }
+      }
+
+      final role = ref.read(currentUserRoleProvider);
+      if (role.isProdutor && clients.isNotEmpty) {
+        setState(() => _selectedClient = clients.first);
+      }
     } catch (_) {
       // Ocorrências continuam disponíveis fora de uma visita ativa.
     }

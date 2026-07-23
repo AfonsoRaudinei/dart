@@ -18,6 +18,14 @@ class LocalSessionIdentity {
     _preferences = preferences;
   }
 
+  /// Resolve o `user_id` para leitura/escrita SQLite offline-first.
+  ///
+  /// Ordem:
+  /// 1. Supabase `currentUser` hidratado
+  /// 2. Último user conhecido (prefs + efêmero), se permitido
+  ///
+  /// Retorna `''` apenas quando não há identidade utilizável — repositórios
+  /// **não** devem apagar dados locais nesse caso.
   static String resolveUserId({bool allowLastKnown = true}) {
     final currentUserId = _currentSupabaseUserId();
     if (currentUserId.isNotEmpty) {
@@ -28,6 +36,10 @@ class LocalSessionIdentity {
     if (!allowLastKnown || _sessionKnownPublic) return '';
     return _readLastKnownUserId();
   }
+
+  /// `true` quando ainda podemos usar lastKnown (bootstrap / SessionUnknown).
+  static bool get canUseLastKnownFallback =>
+      !_sessionKnownPublic && _readLastKnownUserId().isNotEmpty;
 
   static String _currentSupabaseUserId() {
     try {

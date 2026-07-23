@@ -44,6 +44,7 @@ class AppAccess {
     AppRoutes.feedback,
     AppRoutes.clima,
     AppRoutes.producerProperty,
+    AppRoutes.reports,
     AppRoutes.settings,
     AppRoutes.settingsEditProfile,
     AppRoutes.planos,

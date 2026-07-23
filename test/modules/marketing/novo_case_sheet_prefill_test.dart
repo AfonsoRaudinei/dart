@@ -98,6 +98,36 @@ void main() {
 
     expect(tester.widget<TextFormField>(fields.at(6)).controller!.text, '12');
   });
+
+  testWidgets('Resultado não exibe seletor branco duplicado de produtor', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          clientLookupProvider.overrideWithValue(_FakeClientLookup()),
+        ],
+        child: MaterialApp(
+          home: Scaffold(
+            body: NovoCaseSheet(
+              lat: -10.0,
+              lng: -48.0,
+              tipo: CaseTipo.resultado,
+              onClose: () {},
+              onPublicar: (_) {},
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('Buscar Produtor/Fazenda'), findsNothing);
+    expect(
+      find.widgetWithText(TextFormField, 'Produtor / Fazenda *'),
+      findsOneWidget,
+    );
+    expect(find.byType(DropdownButton<String>), findsNothing);
+  });
 }
 
 class _FakeClientLookup implements IClientLookup {

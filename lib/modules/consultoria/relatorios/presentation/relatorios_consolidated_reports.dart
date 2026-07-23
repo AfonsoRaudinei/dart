@@ -122,9 +122,25 @@ class _MarketingCasesReportsSection extends ConsumerWidget {
       );
     }
 
+    final role = ref.watch(currentUserRoleProvider);
+    final authorizedAsync = role.isProdutor
+        ? ref.watch(authorizedClientIdsProvider)
+        : const AsyncValue.data(<String>{});
+    final currentUserId = LocalSessionIdentity.resolveUserId();
+
     return casesAsync.when(
       data: (cases) {
-        final visible = cases.where((item) => item.deletadoEm == null).toList();
+        final authorized =
+            authorizedAsync.valueOrNull ?? const <String>{};
+        final visible = cases.where((item) {
+          if (item.deletadoEm != null) return false;
+          if (!role.isProdutor) return true;
+          return MarketingCaseVisibility.isVisibleInReports(
+            marketingCase: item,
+            currentUserId: currentUserId,
+            authorizedClientIds: authorized,
+          );
+        }).toList();
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

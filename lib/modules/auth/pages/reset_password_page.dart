@@ -107,7 +107,7 @@ class _ResetPasswordPageState extends ConsumerState<ResetPasswordPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: PremiumTokens.backgroundLight,
+      backgroundColor: context.premiumBackground,
       body: SafeArea(
         child: _success ? _buildSuccess() : _buildForm(),
       ),

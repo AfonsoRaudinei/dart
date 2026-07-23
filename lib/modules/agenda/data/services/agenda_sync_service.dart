@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/session/local_session_identity.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/network/network_policy.dart';
 import '../../../../core/utils/app_logger.dart';
@@ -36,8 +37,8 @@ class AgendaSyncService {
   // ═══════════════════════════════════════════════════════════════════
 
   Future<void> _pushEvents() async {
-    final userId = _supabase.auth.currentUser?.id;
-    if (userId == null) {
+    final userId = LocalSessionIdentity.resolveUserId();
+    if (userId.isEmpty) {
       AppLogger.warning('Skipping agenda event push: userId is null', tag: 'AgendaSync');
       return;
     }
@@ -93,8 +94,8 @@ class AgendaSyncService {
   }
 
   Future<void> _pushSessions() async {
-    final userId = _supabase.auth.currentUser?.id;
-    if (userId == null) {
+    final userId = LocalSessionIdentity.resolveUserId();
+    if (userId.isEmpty) {
       AppLogger.warning('Skipping agenda session push: userId is null', tag: 'AgendaSync');
       return;
     }
@@ -138,8 +139,8 @@ class AgendaSyncService {
   // ═══════════════════════════════════════════════════════════════════
 
   Future<void> _pullEvents() async {
-    final userId = _supabase.auth.currentUser?.id;
-    if (userId == null) {
+    final userId = LocalSessionIdentity.resolveUserId();
+    if (userId.isEmpty) {
       AppLogger.warning('Skipping agenda event pull: userId is null', tag: 'AgendaSync');
       return;
     }
@@ -174,8 +175,8 @@ class AgendaSyncService {
   }
 
   Future<void> _pullSessions() async {
-    final userId = _supabase.auth.currentUser?.id;
-    if (userId == null) {
+    final userId = LocalSessionIdentity.resolveUserId();
+    if (userId.isEmpty) {
       AppLogger.warning('Skipping agenda session pull: userId is null', tag: 'AgendaSync');
       return;
     }

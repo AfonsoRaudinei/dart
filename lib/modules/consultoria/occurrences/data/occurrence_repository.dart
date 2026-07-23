@@ -1,6 +1,6 @@
 import 'package:sqflite/sqflite.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/database/database_helper.dart';
+import '../../../../core/session/local_session_identity.dart';
 import '../../../../core/utils/app_logger.dart';
 import '../domain/occurrence.dart';
 
@@ -44,10 +44,12 @@ class OccurrenceOwnershipPolicy {
 class OccurrenceRepository {
   final DatabaseHelper _databaseHelper = DatabaseHelper.instance;
 
+  String _scopedUserId() => LocalSessionIdentity.resolveUserId();
+
   Future<void> saveOccurrence(Occurrence occurrence) async {
     final db = await _databaseHelper.database;
     final persistedUserId = OccurrenceOwnershipPolicy.resolvePersistedUserId(
-      currentUserId: Supabase.instance.client.auth.currentUser?.id,
+      currentUserId: _scopedUserId(),
       fallbackOwnerUserId: occurrence.ownerUserId,
     );
     final map = occurrence
@@ -77,7 +79,7 @@ class OccurrenceRepository {
     }
     final db = await _databaseHelper.database;
     final persistedUserId = OccurrenceOwnershipPolicy.resolvePersistedUserId(
-      currentUserId: Supabase.instance.client.auth.currentUser?.id,
+      currentUserId: _scopedUserId(),
       fallbackOwnerUserId: occurrence.ownerUserId,
     );
     final map = occurrence
@@ -101,7 +103,7 @@ class OccurrenceRepository {
 
   Future<void> softDeleteOccurrence(String id) async {
     final db = await _databaseHelper.database;
-    final currentUserId = Supabase.instance.client.auth.currentUser?.id ?? '';
+    final currentUserId = _scopedUserId();
     final deletedAt = DateTime.now().toUtc().toIso8601String();
     await db.update(
       'occurrences',
@@ -121,7 +123,7 @@ class OccurrenceRepository {
 
   Future<List<Occurrence>> getOccurrencesBySession(String sessionId) async {
     final db = await _databaseHelper.database;
-    final currentUserId = Supabase.instance.client.auth.currentUser?.id ?? '';
+    final currentUserId = _scopedUserId();
     final List<Map<String, dynamic>> maps = await db.query(
       'occurrences',
       where:
@@ -145,7 +147,7 @@ class OccurrenceRepository {
     Set<String> authorizedClientIds = const {},
   }) async {
     final db = await _databaseHelper.database;
-    final currentUserId = Supabase.instance.client.auth.currentUser?.id ?? '';
+    final currentUserId = _scopedUserId();
     final placeholders = List.filled(authorizedClientIds.length, '?').join(',');
     final sharedClause = authorizedClientIds.isEmpty
         ? ''
@@ -169,7 +171,7 @@ class OccurrenceRepository {
 
   Future<Map<String, int>> getStats({DateTime? start, DateTime? end}) async {
     final db = await _databaseHelper.database;
-    final currentUserId = Supabase.instance.client.auth.currentUser?.id ?? '';
+    final currentUserId = _scopedUserId();
     String where =
         'WHERE ${OccurrenceOwnershipPolicy.buildOwnedOrOrphanWhereClause()} '
         "AND sync_status NOT IN ('deleted', 'deleted_local') "

@@ -1,7 +1,7 @@
 import 'package:path/path.dart';
+import '../../../../core/session/local_session_identity.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'dart:convert';
 import '../../../../core/utils/app_logger.dart';
 import 'visita_model.dart';
@@ -113,7 +113,7 @@ class VisitaDatabaseService {
 
   Future<List<VisitaModel>> readAllVisitas() async {
     final db = await instance.database;
-    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
+    final userId = LocalSessionIdentity.resolveUserId();
     final result = await db.query(
       'visitas',
       where: 'user_id = ?',
@@ -128,7 +128,7 @@ class VisitaDatabaseService {
   /// Retorna visitas vinculadas a um cliente específico (Hub do Cliente — WS-6).
   Future<List<VisitaModel>> getByClientId(String clienteId) async {
     final db = await instance.database;
-    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
+    final userId = LocalSessionIdentity.resolveUserId();
     final result = await db.query(
       'visitas',
       where: 'cliente_id = ? AND user_id = ?',
@@ -143,7 +143,7 @@ class VisitaDatabaseService {
   // Hard delete permitido: a tabela `visitas` (relatório de visita) é
   // local-only — sem sync_status nem espelho remoto.
   Future<void> delete(String id) async {
-    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
+    final userId = LocalSessionIdentity.resolveUserId();
     final db = await instance.database;
     await db.delete(
       'visitas',

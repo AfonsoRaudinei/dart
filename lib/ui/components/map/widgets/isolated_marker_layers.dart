@@ -3,14 +3,19 @@ import 'package:flutter/services.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
+import '../../../../core/contracts/i_occurrence_access_reader_provider.dart';
+import '../../../../core/session/local_session_identity.dart';
+import '../../../../core/session/user_role.dart';
 import '../../../../core/state/map_state.dart';
 import '../../../../core/domain/publicacao.dart';
 import '../../../../modules/consultoria/occurrences/domain/occurrence.dart';
 import '../../../../modules/dashboard/providers/location_providers.dart';
+import '../../../../modules/marketing/domain/entities/marketing_case.dart';
+import '../../../../modules/marketing/domain/marketing_case_visibility.dart';
 import '../../../../modules/marketing/presentation/providers/marketing_providers.dart';
-import '../../../../modules/marketing/domain/enums/plano_marketing.dart';
 import '../../../../modules/marketing/presentation/widgets/marketing_case_marker.dart';
 import '../../../../modules/marketing/presentation/widgets/marketing_case_sheet.dart';
+import '../../../../modules/settings/presentation/providers/user_profile_provider.dart';
 import '../providers/marker_providers.dart';
 
 /// 🔒 WIDGET 100% ISOLADO: Markers de Publicações
@@ -99,10 +104,10 @@ class IsolatedLocalPublicationMarkersLayer extends ConsumerWidget {
 /// Sprint 8 — Performance: elimina duplo ref.watch(marketingCasesProvider)
 /// no build() do PrivateMapScreen (~420 linhas).
 ///
-/// Visibilidade por zoom (diâmetro de cobertura por tier):
-///   Ouro   → zoom ≥ 6.0  (500 km de diâmetro)
-///   Prata  → zoom ≥ 7.5  (300 km de diâmetro)
-///   Bronze → zoom ≥ 9.0  (200 km de diâmetro / raio 100 km)
+/// Visibilidade por zoom:
+///   Ouro   → zoom ≥ MarketingCaseMarker.minZoomForTier(ouro)
+///   Prata  → zoom ≥ MarketingCaseMarker.minZoomForTier(prata)
+///   Bronze → zoom ≥ MarketingCaseMarker.minZoomForTier(bronze)
 ///
 /// Otimizações:
 /// ✅ Observa SOMENTE marketingCasesProvider.select (published + ativo)
@@ -112,11 +117,6 @@ class IsolatedLocalPublicationMarkersLayer extends ConsumerWidget {
 class IsolatedMarketingMarkersLayer extends ConsumerWidget {
   const IsolatedMarketingMarkersLayer({super.key});
 
-  // Zoom mínimo por tier — calibrado para cobertura em tela ~400px de largura
-  static const double _zoomMinOuro   = 6.0;  // ~500 km visível
-  static const double _zoomMinPrata  = 7.5;  // ~300 km visível
-  static const double _zoomMinBronze = 9.0;  // ~200 km visível
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final showMarkers = ref.watch(showMarkersProvider);
@@ -124,10 +124,18 @@ class IsolatedMarketingMarkersLayer extends ConsumerWidget {
 
     // Zoom atual da câmera do mapa (causa rebuild ao cruzar threshold)
     final currentZoom = MapCamera.of(context).zoom;
+    final role = ref.watch(currentUserRoleProvider);
+    final isProdutor = role.isProdutor;
+    final currentUserId = LocalSessionIdentity.resolveUserId();
+    final authorized =
+        isProdutor
+            ? (ref.watch(authorizedClientIdsProvider).valueOrNull ??
+                  const <String>{})
+            : const <String>{};
 
-    final cases = ref.watch(
+    final publishedCases = ref.watch(
       marketingCasesProvider.select((async) {
-        if (!async.hasValue) return <dynamic>[];
+        if (!async.hasValue) return const <MarketingCase>[];
         return async.value!
             .where(
               (c) =>
@@ -135,24 +143,31 @@ class IsolatedMarketingMarkersLayer extends ConsumerWidget {
                   c.ativo &&
                   c.deletadoEm == null,
             )
-            .toList()
-          ..sort(
-            (a, b) => b.visibilidade.index.compareTo(a.visibilidade.index),
-          );
+            .toList(growable: false);
       }),
     );
+
+    final cases = (isProdutor
+            ? publishedCases.where(
+                (c) => MarketingCaseVisibility.isVisibleOnMapForProducer(
+                  marketingCase: c,
+                  currentUserId: currentUserId,
+                  authorizedClientIds: authorized,
+                ),
+              )
+            : publishedCases)
+        .toList()
+      ..sort((a, b) => b.visibilidade.index.compareTo(a.visibilidade.index));
 
     if (cases.isEmpty) return const SizedBox.shrink();
 
     // Filtro por zoom: cada tier tem um raio mínimo de visibilidade
-    final visibleCases = cases.where((c) {
-      final tier = (c.visibilidade as PlanoMarketing);
-      return switch (tier) {
-        PlanoMarketing.ouro   => currentZoom >= _zoomMinOuro,
-        PlanoMarketing.prata  => currentZoom >= _zoomMinPrata,
-        PlanoMarketing.bronze => currentZoom >= _zoomMinBronze,
-      };
-    }).toList(growable: false);
+    final visibleCases = cases
+        .where((c) {
+          final tier = c.visibilidade;
+          return MarketingCaseMarker.isVisibleAtZoom(tier, currentZoom);
+        })
+        .toList(growable: false);
 
     if (visibleCases.isEmpty) return const SizedBox.shrink();
 
@@ -261,9 +276,7 @@ class IsolatedUserLocationLayer extends ConsumerWidget {
               point: userFix.position,
               width: 64,
               height: 64,
-              child: _buildLocationMarker(
-                accuracy: userFix.effectiveAccuracyM,
-              ),
+              child: _buildLocationMarker(accuracy: userFix.effectiveAccuracyM),
             ),
           ],
         );

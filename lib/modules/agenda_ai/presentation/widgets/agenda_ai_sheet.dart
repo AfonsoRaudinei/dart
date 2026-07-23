@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/core/session/local_session_identity.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -91,8 +92,8 @@ class _AgendaAiSheetState extends ConsumerState<_AgendaAiSheet> {
         }
       });
 
-      final userId = Supabase.instance.client.auth.currentUser?.id;
-      if (userId != null && userId.isNotEmpty) {
+      final userId = LocalSessionIdentity.resolveUserId();
+      if (userId.isNotEmpty) {
         FeatureFlagAnalytics.trackAgendaAiRecommendationLoaded(
           userId: userId,
           recommendationCount: recs.length,
@@ -131,7 +132,7 @@ class _AgendaAiSheetState extends ConsumerState<_AgendaAiSheet> {
   }
 
   Future<Map<String, dynamic>> _buildPayload({String? chatMessage}) async {
-    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
+    final userId = LocalSessionIdentity.resolveUserId();
     if (userId.isEmpty) {
       throw const _AgendaAiUserMessageException(
         'Faça login novamente para usar o assistente IA.',
@@ -183,8 +184,8 @@ class _AgendaAiSheetState extends ConsumerState<_AgendaAiSheet> {
     final text = _chatController.text.trim();
     if (text.isEmpty || _loading) return;
 
-    final userId = Supabase.instance.client.auth.currentUser?.id;
-    if (userId != null && userId.isNotEmpty) {
+    final userId = LocalSessionIdentity.resolveUserId();
+    if (userId.isNotEmpty) {
       FeatureFlagAnalytics.trackAgendaAiChatAsked(
         userId: userId,
         messageLength: text.length,
@@ -236,13 +237,13 @@ class _AgendaAiSheetState extends ConsumerState<_AgendaAiSheet> {
           titulo: 'Visita sugerida IA • ${rec['clientName'] ?? 'Cliente'}',
           dataInicioPlanejada: start,
           dataFimPlanejada: end,
-          currentUserId: Supabase.instance.client.auth.currentUser?.id,
+          currentUserId: LocalSessionIdentity.resolveUserId(),
         ),
       );
 
       if (!mounted) return;
-      final userId = Supabase.instance.client.auth.currentUser?.id;
-      if (userId != null && userId.isNotEmpty) {
+      final userId = LocalSessionIdentity.resolveUserId();
+      if (userId.isNotEmpty) {
         FeatureFlagAnalytics.trackAgendaAiVisitCreated(
           userId: userId,
           success: true,
@@ -254,8 +255,8 @@ class _AgendaAiSheetState extends ConsumerState<_AgendaAiSheet> {
       );
     } catch (_) {
       if (!mounted) return;
-      final userId = Supabase.instance.client.auth.currentUser?.id;
-      if (userId != null && userId.isNotEmpty) {
+      final userId = LocalSessionIdentity.resolveUserId();
+      if (userId.isNotEmpty) {
         FeatureFlagAnalytics.trackAgendaAiVisitCreated(
           userId: userId,
           success: false,

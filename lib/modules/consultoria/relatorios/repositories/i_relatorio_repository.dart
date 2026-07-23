@@ -36,6 +36,14 @@ abstract class IRelatorioRepository {
   /// Retorna relatórios associados a um cliente específico.
   Future<List<RelatorioTecnico>> getByClientId(String clientId);
 
+  /// Relatórios visíveis ao produtor para os `client_id` autorizados.
+  ///
+  /// Filtra por status publicado/arquivado (ADR-009) sem restringir
+  /// `agronomist_id` — ownership permanece do consultor.
+  Future<List<RelatorioTecnico>> getVisibleForAuthorizedClients(
+    Set<String> authorizedClientIds,
+  );
+
   /// Retorna relatórios do agrônomo especificado.
   Future<List<RelatorioTecnico>> getByAgronomistId(String agronomistId);
 

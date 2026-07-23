@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/constants/layout_constants.dart';
+import '../../../../core/contracts/i_occurrence_access_reader_provider.dart';
 import '../../../../core/router/app_routes.dart';
 import '../../../../core/html_templates/html_report_viewer.dart';
 import '../../../../core/html_templates/marketing_html_renderer.dart';
@@ -14,6 +15,8 @@ import '../../../../core/html_templates/ocorrencia_html_renderer.dart';
 import '../../../../core/html_templates/propriedade_html_renderer.dart';
 import '../../../../core/html_templates/relatorio_html_renderer.dart';
 import '../../../../core/html_templates/report_export_service.dart';
+import '../../../../core/session/local_session_identity.dart';
+import '../../../../core/session/user_role.dart';
 import '../../../../core/utils/share_position.dart';
 import '../../../../core/ui/sheets/soloforte_sheet.dart';
 import '../../../../core/ui/sheets/sheet_tokens.dart';
@@ -38,6 +41,7 @@ import '../../occurrences/presentation/widgets/occurrence_detail_sheet.dart';
 // hide SyncStatus para evitar conflito com o enum de relatorio.dart
 import '../../occurrences/domain/occurrence.dart' hide SyncStatus;
 import '../../../marketing/domain/entities/marketing_case.dart';
+import '../../../marketing/domain/marketing_case_visibility.dart';
 import '../../../marketing/presentation/providers/marketing_providers.dart';
 import 'package:soloforte_app/core/utils/app_logger.dart';
 import 'package:soloforte_app/core/utils/user_facing_error.dart';
@@ -48,7 +52,13 @@ part 'relatorios_visit_photos_section.dart';
 
 final _relatoriosTecnicosListProvider =
     FutureProvider.autoDispose<List<RelatorioTecnico>>((ref) async {
-      return ref.watch(tech.relatorioRepositoryProvider).getAll();
+      final role = ref.watch(currentUserRoleProvider);
+      final repo = ref.watch(tech.relatorioRepositoryProvider);
+      if (!role.isProdutor) {
+        return repo.getAll();
+      }
+      final authorized = await ref.watch(authorizedClientIdsProvider.future);
+      return repo.getVisibleForAuthorizedClients(authorized);
     });
 
 class _ReportBrandingContext {
@@ -126,20 +136,20 @@ class _RelatoriosScreenState extends ConsumerState<RelatoriosScreen> {
   @override
   Widget build(BuildContext context) {
     return ColoredBox(
-      color: PremiumTokens.backgroundLight,
+      color: context.premiumBackground,
       child: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Padding(
-              padding: EdgeInsets.fromLTRB(16, 12, 16, 4),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
               child: Text(
                 'Relatórios',
                 style: TextStyle(
                   fontSize: 34,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 0.37,
-                  color: PremiumTokens.textPrimaryLight,
+                  color: context.premiumTextPrimary,
                 ),
               ),
             ),

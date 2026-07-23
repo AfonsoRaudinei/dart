@@ -79,7 +79,10 @@ class _GeneralChart extends StatelessWidget {
             ),
             TextButton(
               onPressed: () => onSelect(null),
-              child: const Text('Visão Geral'),
+              child: const Text(
+                'Visão Geral',
+                style: TextStyle(color: PremiumTokens.brandGreen),
+              ),
             ),
           ],
         ),
@@ -131,7 +134,7 @@ class _GeneralChart extends StatelessWidget {
                           textAlign: TextAlign.center,
                           style: const TextStyle(
                             fontSize: 10,
-                            color: SoloForteSheetTokens.inputHint,
+                            color: SoloForteSheetTokens.inputText,
                           ),
                         ),
                       );
@@ -208,7 +211,13 @@ class _SelectedChart extends StatelessWidget {
                 ),
               ),
             ),
-            TextButton(onPressed: onBack, child: const Text('Visão Geral')),
+            TextButton(
+              onPressed: onBack,
+              child: const Text(
+                'Visão Geral',
+                style: TextStyle(color: PremiumTokens.brandGreen),
+              ),
+            ),
           ],
         ),
         const SizedBox(height: 12),
@@ -244,7 +253,7 @@ class _SelectedChart extends StatelessWidget {
                               : _short(testeLabel),
                           style: const TextStyle(
                             fontSize: 11,
-                            color: SoloForteSheetTokens.inputHint,
+                            color: SoloForteSheetTokens.inputText,
                           ),
                         ),
                       );
@@ -318,12 +327,19 @@ class _LegendRow extends StatelessWidget {
               child: Text(
                 label,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 13),
+                style: const TextStyle(
+                  color: SoloForteSheetTokens.inputText,
+                  fontSize: 13,
+                ),
               ),
             ),
             Text(
               value,
-              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+              style: const TextStyle(
+                color: SoloForteSheetTokens.inputText,
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ],
         ),

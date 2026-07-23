@@ -10,6 +10,7 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../../core/session/local_session_identity.dart';
 import '../../../../core/session/session_controller.dart';
 import '../../../../core/session/session_models.dart';
 import '../../data/repositories/plano_repository_impl.dart';
@@ -84,8 +85,8 @@ final _planoLogoutInvalidationRegistration = () {
 
 @riverpod
 Future<List<Referral>> referrals(ReferralsRef ref) async {
-  final userId = Supabase.instance.client.auth.currentUser?.id;
-  if (userId == null) return [];
+  final userId = LocalSessionIdentity.resolveUserId();
+  if (userId.isEmpty) return [];
 
   final repo = ref.watch(planoRepositoryProvider);
   return repo.getReferrals(userId);
@@ -97,8 +98,8 @@ Future<List<Referral>> referrals(ReferralsRef ref) async {
 
 @riverpod
 Future<ReferralCode?> meuCodigoIndicacao(MeuCodigoIndicacaoRef ref) async {
-  final userId = Supabase.instance.client.auth.currentUser?.id;
-  if (userId == null) return null;
+  final userId = LocalSessionIdentity.resolveUserId();
+  if (userId.isEmpty) return null;
 
   final service = ref.watch(referralServiceProvider);
   return service.getOuCriarCodigo(userId);

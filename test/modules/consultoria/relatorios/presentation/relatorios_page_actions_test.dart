@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:soloforte_app/core/session/user_role.dart';
 import 'package:soloforte_app/modules/consultoria/occurrences/data/occurrence_repository.dart';
 import 'package:soloforte_app/modules/consultoria/occurrences/domain/occurrence.dart';
 import 'package:soloforte_app/modules/consultoria/occurrences/presentation/controllers/occurrence_controller.dart';
@@ -15,6 +16,7 @@ import 'package:soloforte_app/modules/consultoria/quick_photo/presentation/provi
 import 'package:soloforte_app/modules/marketing/data/repositories/i_marketing_case_repository.dart';
 import 'package:soloforte_app/modules/marketing/domain/entities/marketing_case.dart';
 import 'package:soloforte_app/modules/marketing/presentation/providers/marketing_providers.dart';
+import 'package:soloforte_app/modules/settings/presentation/providers/user_profile_provider.dart';
 
 import '../../helpers/consultoria_test_factories.dart';
 import '../../helpers/fake_relatorio_repository.dart';
@@ -239,6 +241,7 @@ Future<void> _pumpScreen(
   List<MarketingCase>? marketingCases,
 }) async {
   final overrides = <Override>[
+    currentUserRoleProvider.overrideWithValue(UserRole.consultor),
     relatorioRepositoryProvider.overrideWithValue(relatorioRepository),
     publish_repo.relatorioRepositoryProvider.overrideWithValue(
       relatorioRepository,

@@ -57,7 +57,7 @@ class PremiumTokens {
   static const Color textTertiaryLight = Color(0x4D3C3C43);
 
   static const Color textPrimaryDark = Color(0xFFFFFFFF);
-  static const Color textSecondaryDark = Color(0x00ebebf5); // Opacidade de 60%
+  static const Color textSecondaryDark = Color(0x99ebebf5); // Opacidade de 60%
   static const Color textTertiaryDark = Color(0x4DEBEBF5);
 
   // === GEOMETRIA (SQUIRCLES) E BORDAS ===
@@ -90,4 +90,32 @@ class PremiumTokens {
       spreadRadius: 0,
     ),
   ];
+}
+
+/// Resolve os tokens Premium (Light/Dark) conforme o brightness do tema
+/// ativo. Várias telas fixavam a variante "Light" direto no Scaffold/AppBar,
+/// ignorando o tema Black selecionado pelo usuário — use estes getters em
+/// vez de `PremiumTokens.xLight` quando o valor deve reagir ao tema.
+extension PremiumThemeAware on BuildContext {
+  bool get isPremiumDark => Theme.of(this).brightness == Brightness.dark;
+
+  Color get premiumBackground =>
+      isPremiumDark ? PremiumTokens.backgroundDark : PremiumTokens.backgroundLight;
+
+  Color get premiumSurface =>
+      isPremiumDark ? PremiumTokens.surfaceDark : PremiumTokens.surfaceLight;
+
+  Color get premiumTextPrimary =>
+      isPremiumDark ? PremiumTokens.textPrimaryDark : PremiumTokens.textPrimaryLight;
+
+  Color get premiumTextSecondary => isPremiumDark
+      ? PremiumTokens.textSecondaryDark
+      : PremiumTokens.textSecondaryLight;
+
+  Color get premiumTextTertiary => isPremiumDark
+      ? PremiumTokens.textTertiaryDark
+      : PremiumTokens.textTertiaryLight;
+
+  Color get premiumHairline =>
+      isPremiumDark ? PremiumTokens.hairlineDark : PremiumTokens.hairlineLight;
 }

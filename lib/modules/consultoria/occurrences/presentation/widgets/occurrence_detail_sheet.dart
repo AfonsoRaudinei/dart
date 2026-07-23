@@ -342,7 +342,7 @@ class OccurrenceDetailSheet extends ConsumerWidget {
         decoration: BoxDecoration(
           color: isDark
               ? PremiumTokens.surfaceDark
-              : PremiumTokens.surfaceLight,
+              : context.premiumSurface,
           borderRadius: const BorderRadius.vertical(
             top: Radius.circular(PremiumTokens.borderRadiusLg),
           ),
@@ -416,7 +416,7 @@ class OccurrenceDetailSheet extends ConsumerWidget {
                               letterSpacing: -0.4,
                               color: isDark
                                   ? PremiumTokens.textPrimaryDark
-                                  : PremiumTokens.textPrimaryLight,
+                                  : context.premiumTextPrimary,
                             ),
                           ),
                           const SizedBox(height: 4),
@@ -449,7 +449,7 @@ class OccurrenceDetailSheet extends ConsumerWidget {
                   thickness: PremiumTokens.hairlineThickness,
                   color: isDark
                       ? PremiumTokens.hairlineDark
-                      : PremiumTokens.hairlineLight,
+                      : context.premiumHairline,
                   height: 1,
                 ),
               ),
@@ -460,7 +460,7 @@ class OccurrenceDetailSheet extends ConsumerWidget {
                   decoration: BoxDecoration(
                     color: isDark
                         ? const Color(0xFF2C2C2E)
-                        : PremiumTokens.backgroundLight,
+                        : context.premiumBackground,
                     borderRadius: BorderRadius.circular(
                       PremiumTokens.borderRadiusSm,
                     ),
@@ -656,7 +656,7 @@ class _DetailRow extends StatelessWidget {
               thickness: PremiumTokens.hairlineThickness,
               color: isDark
                   ? PremiumTokens.hairlineDark
-                  : PremiumTokens.hairlineLight,
+                  : context.premiumHairline,
               height: 1,
             ),
           ),
@@ -702,7 +702,7 @@ class _CupertinoCloseButtonState extends State<CupertinoCloseButton> {
             decoration: BoxDecoration(
               color: widget.isDark
                   ? const Color(0xFF2C2C2E)
-                  : PremiumTokens.backgroundLight,
+                  : context.premiumBackground,
               borderRadius: BorderRadius.circular(PremiumTokens.borderRadiusMd),
             ),
             alignment: Alignment.center,
@@ -714,7 +714,7 @@ class _CupertinoCloseButtonState extends State<CupertinoCloseButton> {
                 letterSpacing: -0.4,
                 color: widget.isDark
                     ? PremiumTokens.textPrimaryDark
-                    : PremiumTokens.textPrimaryLight,
+                    : context.premiumTextPrimary,
               ),
             ),
           ),

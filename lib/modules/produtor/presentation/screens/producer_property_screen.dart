@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/constants/layout_constants.dart';
 import '../../../../core/router/app_routes.dart';
+import '../../../../ui/theme/premium/design_tokens.dart';
 import '../../data/producer_link_models.dart';
 import '../../data/producer_link_repository.dart';
 import '../../data/producer_property_repository.dart';
@@ -69,7 +70,14 @@ class _ProducerPropertyScreenState
           state: result.state,
           areaHa: result.areaHa,
         );
-    ref.invalidate(producerPropertyDashboardProvider);
+    // Adia o invalidate para depois do frame atual: chamá-lo em seguida ao
+    // Navigator.pop() do diálogo faz o rebuild colidir com a animação de
+    // transição da rota (Listenable.merge do framework tenta usar um
+    // AnimationController já disposed) e derruba o app com
+    // "_dependents.isEmpty: is not true".
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) ref.invalidate(producerPropertyDashboardProvider);
+    });
   }
 
   Future<void> _saveField(
@@ -87,7 +95,9 @@ class _ProducerPropertyScreenState
           name: result.name,
           areaHa: result.areaHa,
         );
-    ref.invalidate(producerPropertyDashboardProvider);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) ref.invalidate(producerPropertyDashboardProvider);
+    });
   }
 
   Future<void> _deleteFarm(ProducerOwnFarm farm) async {
@@ -100,7 +110,9 @@ class _ProducerPropertyScreenState
 
     try {
       await ref.read(producerPropertyRepositoryProvider).deleteOwnFarm(farm.id);
-      ref.invalidate(producerPropertyDashboardProvider);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) ref.invalidate(producerPropertyDashboardProvider);
+      });
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
@@ -122,7 +134,9 @@ class _ProducerPropertyScreenState
     if (confirmed != true) return;
 
     await ref.read(producerPropertyRepositoryProvider).deleteOwnField(field.id);
-    ref.invalidate(producerPropertyDashboardProvider);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) ref.invalidate(producerPropertyDashboardProvider);
+    });
     if (!mounted) return;
     ScaffoldMessenger.of(
       context,
@@ -147,7 +161,7 @@ class _ProducerPropertyScreenState
     final dashboardAsync = ref.watch(producerPropertyDashboardProvider);
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: context.premiumBackground,
       body: SafeArea(
         child: Column(
           children: [
@@ -370,9 +384,9 @@ class _OwnFarmTile extends StatelessWidget {
       padding: const EdgeInsets.only(top: 12),
       child: DecoratedBox(
         decoration: BoxDecoration(
-          color: const Color(0xFFF8FAF7),
+          color: context.premiumSurface,
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: const Color(0xFFE0E8DD)),
+          border: Border.all(color: context.premiumHairline),
         ),
         child: Padding(
           padding: const EdgeInsets.all(12),
@@ -522,9 +536,9 @@ class _Panel extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.premiumSurface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE5E5EA)),
+        border: Border.all(color: context.premiumHairline),
       ),
       child: child,
     );
@@ -547,9 +561,9 @@ class _TokenPanel extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFFF6F8F5),
+        color: context.premiumSurface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE0E8DD)),
+        border: Border.all(color: context.premiumHairline),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -627,9 +641,9 @@ class _ClientCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 14),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.premiumSurface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE5E5EA)),
+        border: Border.all(color: context.premiumHairline),
         boxShadow: const [
           BoxShadow(
             color: Color(0x11000000),

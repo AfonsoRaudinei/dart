@@ -58,7 +58,7 @@ class _RecoverPasswordPageState extends ConsumerState<RecoverPasswordPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: PremiumTokens.backgroundLight,
+      backgroundColor: context.premiumBackground,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
@@ -110,7 +110,7 @@ class _RecoverPasswordPageState extends ConsumerState<RecoverPasswordPage> {
             'Digite seu e-mail e enviaremos um link para redefinir sua senha.',
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: PremiumTokens.textSecondaryLight,
+              color: context.premiumTextSecondary,
               height: 1.5,
             ),
           ),
@@ -140,7 +140,7 @@ class _RecoverPasswordPageState extends ConsumerState<RecoverPasswordPage> {
               onPressed: _isLoading ? null : _handleRecover,
               style: ElevatedButton.styleFrom(
                 backgroundColor: PremiumTokens.brandGreen,
-                disabledBackgroundColor: PremiumTokens.backgroundLight,
+                disabledBackgroundColor: context.premiumBackground,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10.0),
                 ),
@@ -192,7 +192,7 @@ class _RecoverPasswordPageState extends ConsumerState<RecoverPasswordPage> {
           'Se este e-mail estiver cadastrado, você receberá um link de redefinição em alguns instantes.\n\nVerifique também sua pasta de spam.',
           textAlign: TextAlign.center,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: PremiumTokens.textSecondaryLight,
+            color: context.premiumTextSecondary,
             height: 1.5,
           ),
         ),

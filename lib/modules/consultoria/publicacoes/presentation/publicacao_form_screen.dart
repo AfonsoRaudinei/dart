@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import '../../../../core/session/local_session_identity.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../core/router/app_routes.dart';
 import '../models/publicacao_tema.dart';
@@ -312,7 +312,7 @@ class _PublicacaoFormScreenState extends ConsumerState<PublicacaoFormScreen> {
     });
 
     try {
-      final authorId = Supabase.instance.client.auth.currentUser?.id ?? '';
+      final authorId = LocalSessionIdentity.resolveUserId();
 
       if (authorId.isEmpty) {
         throw Exception('Usuário não autenticado');

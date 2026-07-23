@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../domain/entities/marketing_case.dart';
 import '../../domain/enums/marketing_case_status.dart';
 import 'i_marketing_case_repository.dart';
+import 'package:soloforte_app/core/session/local_session_identity.dart';
 import 'package:soloforte_app/core/utils/app_logger.dart';
 
 class MarketingCaseRepositoryImpl implements IMarketingCaseRepository {
@@ -12,6 +13,8 @@ class MarketingCaseRepositoryImpl implements IMarketingCaseRepository {
   Database? _db;
 
   MarketingCaseRepositoryImpl(this._supabase);
+
+  String _scopedUserId() => LocalSessionIdentity.resolveUserId();
 
   Future<Database> get _database async {
     if (_db != null) return _db!;
@@ -53,7 +56,19 @@ class MarketingCaseRepositoryImpl implements IMarketingCaseRepository {
     try {
       final cases = await _fetchRemoteCases();
 
-      // Atualiza cache local após fetch remoto bem-sucedido
+      // 🛡 Não sobrescrever cache local com lista remota vazia se ainda há
+      // cases locais (pending/local) — evita “sumiço” após login sem sync.
+      if (cases.isEmpty) {
+        final local = await getLocalCases();
+        if (local.isNotEmpty) {
+          AppLogger.warning(
+            'Remoto vazio; preservando ${local.length} case(s) locais',
+            tag: 'MarketingRepo',
+          );
+          return local;
+        }
+      }
+
       await saveToCache(cases);
       return cases;
     } on PostgrestException catch (e) {
@@ -62,6 +77,10 @@ class MarketingCaseRepositoryImpl implements IMarketingCaseRepository {
           e.message.contains('marketing_cases.deletado_em')) {
         try {
           final fallbackCases = await _fetchRemoteCasesCompatible();
+          if (fallbackCases.isEmpty) {
+            final local = await getLocalCases();
+            if (local.isNotEmpty) return local;
+          }
           await saveToCache(fallbackCases);
           return fallbackCases;
         } on PostgrestException catch (fallbackError) {
@@ -139,16 +158,21 @@ class MarketingCaseRepositoryImpl implements IMarketingCaseRepository {
   @override
   Future<List<MarketingCase>> getLocalCases() async {
     final db = await _database;
-    final userId = _supabase.auth.currentUser?.id;
-    // Filtra por user_id quando disponível — evita vazamento entre usuários no mesmo device
-    final List<Map<String, dynamic>> maps =
-        (userId != null && userId.isNotEmpty)
-        ? await db.query(
-            'marketing_cases_cache',
-            where: 'user_id = ?',
-            whereArgs: [userId],
-          )
-        : await db.query('marketing_cases_cache');
+    final userId = _scopedUserId();
+    // Sem user_id resolvido: não varrer o cache inteiro (evita vazamento e
+    // também evita “lista vazia” falsa quando o filtro seria impossível).
+    if (userId.isEmpty) {
+      AppLogger.warning(
+        'getLocalCases sem user_id — retornando vazio sem apagar cache',
+        tag: 'MarketingRepo',
+      );
+      return const [];
+    }
+    final List<Map<String, dynamic>> maps = await db.query(
+      'marketing_cases_cache',
+      where: 'user_id = ?',
+      whereArgs: [userId],
+    );
 
     return maps.map((map) {
       final data = jsonDecode(map['data'] as String);
@@ -159,21 +183,25 @@ class MarketingCaseRepositoryImpl implements IMarketingCaseRepository {
   @override
   Future<void> saveToCache(List<MarketingCase> cases) async {
     final db = await _database;
-    final userId = _supabase.auth.currentUser?.id ?? '';
-    Batch batch = db.batch();
+    final userId = _scopedUserId();
 
-    // Deleta apenas o cache do usuário atual (isolamento multi-usuário)
-    if (userId.isNotEmpty) {
-      batch.delete(
-        'marketing_cases_cache',
-        where: 'user_id = ?',
-        whereArgs: [userId],
+    // 🛡 Nunca delete-all sem user_id — isso apagava o cache de todos no device.
+    if (userId.isEmpty) {
+      AppLogger.warning(
+        'saveToCache ignorado: user_id vazio (bootstrap/logout)',
+        tag: 'MarketingRepo',
       );
-    } else {
-      batch.delete('marketing_cases_cache');
+      return;
     }
 
-    for (var mc in cases) {
+    final Batch batch = db.batch();
+    batch.delete(
+      'marketing_cases_cache',
+      where: 'user_id = ?',
+      whereArgs: [userId],
+    );
+
+    for (final mc in cases) {
       batch.insert('marketing_cases_cache', {
         'id': mc.id,
         'user_id': userId,
@@ -187,11 +215,18 @@ class MarketingCaseRepositoryImpl implements IMarketingCaseRepository {
   @override
   Future<MarketingCase> getById(String id) async {
     final db = await _database;
-    final maps = await db.query(
-      'marketing_cases_cache',
-      where: 'id = ?',
-      whereArgs: [id],
-    );
+    final userId = _scopedUserId();
+    final maps = userId.isEmpty
+        ? await db.query(
+            'marketing_cases_cache',
+            where: 'id = ?',
+            whereArgs: [id],
+          )
+        : await db.query(
+            'marketing_cases_cache',
+            where: 'id = ? AND user_id = ?',
+            whereArgs: [id, userId],
+          );
     if (maps.isNotEmpty) {
       final data = jsonDecode(maps.first['data'] as String);
       return MarketingCase.fromJson(data);
@@ -202,7 +237,14 @@ class MarketingCaseRepositoryImpl implements IMarketingCaseRepository {
   @override
   Future<void> saveSingleToCache(MarketingCase marketingCase) async {
     final db = await _database;
-    final userId = _supabase.auth.currentUser?.id ?? '';
+    final userId = _scopedUserId();
+    if (userId.isEmpty) {
+      AppLogger.warning(
+        'saveSingleToCache ignorado: user_id vazio',
+        tag: 'MarketingRepo',
+      );
+      return;
+    }
     await db.insert('marketing_cases_cache', {
       'id': marketingCase.id,
       'user_id': userId,
@@ -212,8 +254,8 @@ class MarketingCaseRepositoryImpl implements IMarketingCaseRepository {
 
   @override
   Future<MarketingCase> saveCase(MarketingCase marketingCase) async {
-    final userId = _supabase.auth.currentUser?.id;
-    if (userId == null || userId.isEmpty) {
+    final userId = _scopedUserId();
+    if (userId.isEmpty) {
       throw StateError('Usuario nao autenticado.');
     }
 
@@ -221,6 +263,7 @@ class MarketingCaseRepositoryImpl implements IMarketingCaseRepository {
     //    Garante que o case nao seja perdido se o app morrer durante o upload
     final pendingCase = MarketingCase.fromJson({
       ...marketingCase.toJson(),
+      'user_id': userId,
       'sync_status': 'pending_sync',
     });
     await saveSingleToCache(pendingCase);
@@ -283,9 +326,11 @@ class MarketingCaseRepositoryImpl implements IMarketingCaseRepository {
 
   @override
   Future<MarketingCase> saveAsDraft(MarketingCase marketingCase) async {
+    final userId = _scopedUserId();
     // Rascunho: salva apenas localmente, com status=draft e syncStatus=local_only
     final draftCase = MarketingCase.fromJson({
       ...marketingCase.toJson(),
+      if (userId.isNotEmpty) 'user_id': userId,
       'status': MarketingCaseStatus.draft.toValue(),
       'sync_status': 'local_only',
       'atualizado_em': DateTime.now().toIso8601String(),

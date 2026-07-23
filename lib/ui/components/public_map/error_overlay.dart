@@ -67,7 +67,7 @@ class PublicMapErrorOverlay extends StatelessWidget {
                       message,
                       style: const TextStyle(fontSize: 14).copyWith(
                         fontSize: 13,
-                        color: PremiumTokens.textSecondaryLight,
+                        color: context.premiumTextSecondary,
                       ),
                     ),
                   ],
@@ -157,7 +157,7 @@ class LocationPermissionDialog extends StatelessWidget {
           Text(
             'Para centralizar o mapa na sua localização, precisamos de permissão para acessar o GPS.',
             style: const TextStyle(fontSize: 14).copyWith(
-              color: PremiumTokens.textSecondaryLight,
+              color: context.premiumTextSecondary,
               height: 1.5,
             ),
           ),
@@ -165,15 +165,15 @@ class LocationPermissionDialog extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(16.0),
             decoration: BoxDecoration(
-              color: PremiumTokens.surfaceLight,
+              color: context.premiumSurface,
               borderRadius: BorderRadius.circular(8),
             ),
             child: Row(
               children: [
-                const Icon(
+                Icon(
                   Icons.info_outline,
                   size: 16,
-                  color: PremiumTokens.textSecondaryLight,
+                  color: context.premiumTextSecondary,
                 ),
                 const SizedBox(width: 12.0),
                 Expanded(
@@ -181,7 +181,7 @@ class LocationPermissionDialog extends StatelessWidget {
                     'Suas informações de localização são usadas apenas para melhorar sua experiência no app.',
                     style: const TextStyle(fontSize: 14).copyWith(
                       fontSize: 12,
-                      color: PremiumTokens.textSecondaryLight,
+                      color: context.premiumTextSecondary,
                     ),
                   ),
                 ),
@@ -196,7 +196,7 @@ class LocationPermissionDialog extends StatelessWidget {
           child: Text(
             'Não agora',
             style: const TextStyle(fontSize: 14).copyWith(
-              color: PremiumTokens.textSecondaryLight,
+              color: context.premiumTextSecondary,
             ),
           ),
         ),

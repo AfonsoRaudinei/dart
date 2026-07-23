@@ -22,10 +22,10 @@ class SocialAuthButton extends StatelessWidget {
     return OutlinedButton(
       onPressed: onPressed,
       style: OutlinedButton.styleFrom(
-        foregroundColor: PremiumTokens.textPrimaryLight,
+        foregroundColor: context.premiumTextPrimary,
         minimumSize: const Size.fromHeight(48),
         side: BorderSide(
-          color: borderColor ?? PremiumTokens.hairlineLight,
+          color: borderColor ?? context.premiumHairline,
           width: 1,
         ),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -35,14 +35,14 @@ class SocialAuthButton extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, color: iconColor ?? PremiumTokens.textPrimaryLight, size: 20),
+          Icon(icon, color: iconColor ?? context.premiumTextPrimary, size: 20),
           const SizedBox(width: 12),
           Text(
             text,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14.0,
               fontWeight: FontWeight.w500,
-              color: PremiumTokens.textPrimaryLight,
+              color: context.premiumTextPrimary,
             ),
           ),
         ],

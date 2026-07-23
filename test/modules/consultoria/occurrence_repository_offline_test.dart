@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:soloforte_app/core/database/database_helper.dart';
+import 'package:soloforte_app/core/session/local_session_identity.dart';
 import 'package:soloforte_app/modules/consultoria/occurrences/data/occurrence_repository.dart';
 import 'package:soloforte_app/modules/consultoria/occurrences/domain/occurrence.dart';
 
@@ -40,7 +41,10 @@ void main() {
     db = await DatabaseHelper.instance.database;
   });
 
+  setUp(LocalSessionIdentity.resetForTesting);
+
   tearDown(() async {
+    LocalSessionIdentity.resetForTesting();
     await db.delete('occurrences');
   });
 
@@ -97,6 +101,31 @@ void main() {
       expect(all.map((item) => item.id), contains('occ-offline-2'));
       expect(raw.single['user_id'], '');
       expect(raw.single['sync_status'], 'local_only');
+    },
+  );
+
+  test(
+    'com lastKnown preserva leitura apos gap de sessao (bootstrap)',
+    () async {
+      LocalSessionIdentity.remember('user-persist');
+      final repository = OccurrenceRepository();
+      final occurrence = Occurrence(
+        id: 'occ-persist-1',
+        visitSessionId: 'session-persist',
+        type: 'Info',
+        description: 'Deve sobreviver ao gap',
+        createdAt: DateTime.utc(2026, 7, 23, 12),
+      );
+
+      await repository.saveOccurrence(occurrence);
+
+      final reread = await OccurrenceRepository().getOccurrencesBySession(
+        'session-persist',
+      );
+
+      expect(reread, hasLength(1));
+      expect(reread.single.id, 'occ-persist-1');
+      expect(reread.single.ownerUserId, 'user-persist');
     },
   );
 }

@@ -25,13 +25,13 @@ class ClientListScreen extends ConsumerWidget {
     final filter = ref.watch(clientFilterProvider);
 
     return Scaffold(
-      backgroundColor: PremiumTokens.backgroundLight,
+      backgroundColor: context.premiumBackground,
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
             pinned: true,
             expandedHeight: 176.0,
-            backgroundColor: PremiumTokens.backgroundLight.withValues(
+            backgroundColor: context.premiumBackground.withValues(
               alpha: 0.8,
             ),
             surfaceTintColor: Colors.transparent,
@@ -65,7 +65,7 @@ class ClientListScreen extends ConsumerWidget {
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.bold,
                           letterSpacing: -0.5,
-                          color: PremiumTokens.textPrimaryLight,
+                          color: context.premiumTextPrimary,
                         ),
                       ),
                     ),
@@ -78,14 +78,14 @@ class ClientListScreen extends ConsumerWidget {
                       onChanged: (value) =>
                           ref.read(clientSearchProvider.notifier).state = value,
                       decoration: InputDecoration(
-                        prefixIcon: const Icon(
+                        prefixIcon: Icon(
                           SFIcons.search,
-                          color: PremiumTokens.textSecondaryLight,
+                          color: context.premiumTextSecondary,
                           size: 20,
                         ),
                         hintText: 'Buscar por nome',
                         filled: true,
-                        fillColor: PremiumTokens.surfaceLight, // White Inset
+                        fillColor: context.premiumSurface, // White Inset
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(
                             PremiumTokens.borderRadiusSm,
@@ -121,12 +121,12 @@ class ClientListScreen extends ConsumerWidget {
                               decoration: BoxDecoration(
                                 color: isSelected
                                     ? PremiumTokens.brandGreen
-                                    : PremiumTokens.surfaceLight,
+                                    : context.premiumSurface,
                                 borderRadius: BorderRadius.circular(20),
                                 border: Border.all(
                                   color: isSelected
                                       ? PremiumTokens.brandGreen
-                                      : PremiumTokens.hairlineLight,
+                                      : context.premiumHairline,
                                 ),
                               ),
                               child: Text(
@@ -134,7 +134,7 @@ class ClientListScreen extends ConsumerWidget {
                                 style: TextStyle(
                                   color: isSelected
                                       ? Colors.white
-                                      : PremiumTokens.textPrimaryLight,
+                                      : context.premiumTextPrimary,
                                   fontWeight: isSelected
                                       ? FontWeight.w600
                                       : FontWeight.normal,
@@ -148,7 +148,7 @@ class ClientListScreen extends ConsumerWidget {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  const Divider(height: 1, color: PremiumTokens.hairlineLight),
+                  Divider(height: 1, color: context.premiumHairline),
                 ],
               ),
             ),
@@ -166,7 +166,7 @@ class ClientListScreen extends ConsumerWidget {
                       child: Text(
                         'Nenhum cliente encontrado',
                         style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: PremiumTokens.textSecondaryLight,
+                          color: context.premiumTextSecondary,
                         ),
                       ),
                     ),
@@ -239,7 +239,7 @@ class ClientListScreen extends ConsumerWidget {
                           margin: const EdgeInsets.only(bottom: 12),
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
-                            color: PremiumTokens.surfaceLight,
+                            color: context.premiumSurface,
                             borderRadius: BorderRadius.circular(
                               PremiumTokens.borderRadiusMd,
                             ),

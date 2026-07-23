@@ -69,7 +69,7 @@ class ZoomControls extends StatelessWidget {
               child: _ZoomButton(icon: Icons.add, onTap: _zoomIn, isTop: true),
             ),
             // Divider
-            Container(height: 1, color: PremiumTokens.hairlineLight),
+            Container(height: 1, color: context.premiumHairline),
             // Botão Zoom Out (-)
             Semantics(
               label: 'Diminuir zoom',
@@ -112,7 +112,7 @@ class _ZoomButton extends StatelessWidget {
             top: isTop ? const Radius.circular(8) : Radius.zero,
             bottom: !isTop ? const Radius.circular(8) : Radius.zero,
           ),
-          child: Icon(icon, color: PremiumTokens.textPrimaryLight, size: 24),
+          child: Icon(icon, color: context.premiumTextPrimary, size: 24),
         ),
       ),
     );

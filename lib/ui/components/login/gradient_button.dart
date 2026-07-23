@@ -32,12 +32,12 @@ class GradientButton extends StatelessWidget {
     // Cores baseadas no estado
     final Color backgroundColor = isEnabled
         ? PremiumTokens.brandGreen
-        : PremiumTokens.backgroundLight; // Disabled
+        : context.premiumBackground; // Disabled
 
     final Color textColor = isEnabled
         ? Colors
               .white // Contraste no verde
-        : PremiumTokens.textTertiaryLight;
+        : context.premiumTextTertiary;
 
     final List<BoxShadow> effectiveShadow = isEnabled
         ? (boxShadow ??

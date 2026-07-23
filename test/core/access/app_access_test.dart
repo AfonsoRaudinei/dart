@@ -4,10 +4,9 @@ import 'package:soloforte_app/core/router/app_routes.dart';
 
 void main() {
   group('AppAccess', () {
-    test('produtor não acessa agenda, clientes, relatórios e carteira', () {
+    test('produtor não acessa agenda, clientes e carteira', () {
       expect(AppAccess.canAccessPath('produtor', AppRoutes.agenda), false);
       expect(AppAccess.canAccessPath('produtor', AppRoutes.clients), false);
-      expect(AppAccess.canAccessPath('produtor', AppRoutes.reports), false);
       expect(AppAccess.canAccessPath('produtor', AppRoutes.carteira), false);
     });
 
@@ -18,6 +17,7 @@ void main() {
         AppAccess.canAccessPath('produtor', AppRoutes.producerProperty),
         true,
       );
+      expect(AppAccess.canAccessPath('produtor', AppRoutes.reports), true);
       expect(AppAccess.canAccessPath('produtor', AppRoutes.settings), true);
       expect(
         AppAccess.canAccessPath('produtor', AppRoutes.settingsEditProfile),

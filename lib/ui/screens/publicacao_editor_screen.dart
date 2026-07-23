@@ -128,7 +128,7 @@ class _PublicacaoEditorScreenState
         appBar: AppBar(
           title: const Text('Editar Publicação'),
           backgroundColor: Colors.white,
-          foregroundColor: PremiumTokens.textPrimaryLight,
+          foregroundColor: context.premiumTextPrimary,
           elevation: 0,
           leading: IconButton(
             onPressed: () => context.go('/map'),
@@ -141,7 +141,7 @@ class _PublicacaoEditorScreenState
             child: Text(
               _errorMessage!,
               textAlign: TextAlign.center,
-              style: const TextStyle(color: PremiumTokens.textSecondaryLight),
+              style: TextStyle(color: context.premiumTextSecondary),
             ),
           ),
         ),
@@ -152,7 +152,7 @@ class _PublicacaoEditorScreenState
       appBar: AppBar(
         title: const Text('Editar Publicação'),
         backgroundColor: Colors.white,
-        foregroundColor: PremiumTokens.textPrimaryLight,
+        foregroundColor: context.premiumTextPrimary,
         elevation: 0,
         automaticallyImplyLeading: false,
         actions: [
@@ -186,23 +186,23 @@ class _PublicacaoEditorScreenState
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: PremiumTokens.surfaceLight,
+                color: context.premiumSurface,
                 borderRadius: BorderRadius.circular(6.0),
               ),
               child: Row(
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.info_outline,
                     size: 16,
-                    color: PremiumTokens.textTertiaryLight,
+                    color: context.premiumTextTertiary,
                   ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       'ID: ${widget.publicacaoId}',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
-                        color: PremiumTokens.textSecondaryLight,
+                        color: context.premiumTextSecondary,
                       ).copyWith(fontFamily: 'monospace'),
                     ),
                   ),
@@ -213,11 +213,11 @@ class _PublicacaoEditorScreenState
             const SizedBox(height: 20),
 
             // Título
-            const Text(
+            Text(
               'Título',
               style: TextStyle(
                 fontSize: 12,
-                color: PremiumTokens.textSecondaryLight,
+                color: context.premiumTextSecondary,
               ),
             ),
             const SizedBox(height: 8),
@@ -227,8 +227,8 @@ class _PublicacaoEditorScreenState
                 hintText: 'Título da publicação',
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10.0),
-                  borderSide: const BorderSide(
-                    color: PremiumTokens.hairlineLight,
+                  borderSide: BorderSide(
+                    color: context.premiumHairline,
                   ),
                 ),
                 focusedBorder: OutlineInputBorder(
@@ -244,11 +244,11 @@ class _PublicacaoEditorScreenState
             const SizedBox(height: 20),
 
             // Descrição
-            const Text(
+            Text(
               'Descrição',
               style: TextStyle(
                 fontSize: 12,
-                color: PremiumTokens.textSecondaryLight,
+                color: context.premiumTextSecondary,
               ),
             ),
             const SizedBox(height: 8),
@@ -259,8 +259,8 @@ class _PublicacaoEditorScreenState
                 hintText: 'Descrição da publicação',
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10.0),
-                  borderSide: const BorderSide(
-                    color: PremiumTokens.hairlineLight,
+                  borderSide: BorderSide(
+                    color: context.premiumHairline,
                   ),
                 ),
                 focusedBorder: OutlineInputBorder(
@@ -276,37 +276,37 @@ class _PublicacaoEditorScreenState
             const SizedBox(height: 20),
 
             // Fotos
-            const Text(
+            Text(
               'Fotos',
               style: TextStyle(
                 fontSize: 12,
-                color: PremiumTokens.textSecondaryLight,
+                color: context.premiumTextSecondary,
               ),
             ),
             const SizedBox(height: 8),
             Container(
               height: 120,
               decoration: BoxDecoration(
-                color: PremiumTokens.surfaceLight,
+                color: context.premiumSurface,
                 borderRadius: BorderRadius.circular(10.0),
-                border: Border.all(color: PremiumTokens.hairlineLight),
+                border: Border.all(color: context.premiumHairline),
               ),
               child: Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.add_photo_alternate_outlined,
                       size: 32,
-                      color: PremiumTokens.textTertiaryLight,
+                      color: context.premiumTextTertiary,
                     ),
                     const SizedBox(height: 8),
                     Text(
                       'Adicionar fotos',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
-                        color: PremiumTokens.textSecondaryLight,
-                      ).copyWith(color: PremiumTokens.textTertiaryLight),
+                        color: context.premiumTextSecondary,
+                      ).copyWith(color: context.premiumTextTertiary),
                     ),
                   ],
                 ),

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../../../core/session/local_session_identity.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../domain/entities/carteira_meta.dart';
 import '../../domain/entities/categoria_global.dart';
@@ -25,7 +25,7 @@ class _CarteiraMetasTabState extends ConsumerState<CarteiraMetasTab> {
   late final TextEditingController _valorGraoController;
   bool _salvandoGrao = false;
 
-  String get _userId => Supabase.instance.client.auth.currentUser?.id ?? '';
+  String get _userId => LocalSessionIdentity.resolveUserId();
 
   @override
   void initState() {

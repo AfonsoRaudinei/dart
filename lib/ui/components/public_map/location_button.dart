@@ -26,7 +26,7 @@ class LocationButton extends ConsumerWidget {
         width: 48,
         height: 48,
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: context.premiumSurface,
           borderRadius: BorderRadius.circular(24),
           boxShadow: [
             BoxShadow(
@@ -53,7 +53,7 @@ class LocationButton extends ConsumerWidget {
               }
             },
             borderRadius: BorderRadius.circular(24),
-            child: _buildIcon(locationState.status),
+            child: _buildIcon(context, locationState.status),
           ),
         ),
       ),
@@ -75,7 +75,7 @@ class LocationButton extends ConsumerWidget {
     }
   }
 
-  Widget _buildIcon(PublicLocationStatus status) {
+  Widget _buildIcon(BuildContext context, PublicLocationStatus status) {
     switch (status) {
       case PublicLocationStatus.loading:
         return const Center(
@@ -108,9 +108,9 @@ class LocationButton extends ConsumerWidget {
         );
 
       case PublicLocationStatus.initial:
-        return const Icon(
+        return Icon(
           Icons.location_searching,
-          color: PremiumTokens.textSecondaryLight,
+          color: context.premiumTextSecondary,
           size: 24,
         );
     }

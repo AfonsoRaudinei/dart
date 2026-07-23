@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/core/session/local_session_identity.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
 
@@ -125,7 +125,7 @@ class _RelatoriosListScreenState extends ConsumerState<RelatoriosListScreen>
   }
 
   Widget _buildMeusTab() {
-    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
+    final userId = LocalSessionIdentity.resolveUserId();
 
     final reportsAsync = ref.watch(relatoriosListProvider(clientId: userId));
 

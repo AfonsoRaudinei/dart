@@ -103,16 +103,35 @@ class SessionController extends _$SessionController {
               // Não bloquear autenticação por falha no bootstrap de perfil.
             }
           }());
-        } else {
-          if (data.event == AuthChangeEvent.signedOut) {
-            LocalSessionIdentity.clear();
-          } else {
-            LocalSessionIdentity.markSessionPublic();
-          }
-          state = const SessionPublic();
+          return;
         }
+
+        // Sem user na sessão:
+        // - signedOut → logout real: limpa identidade e vai a público
+        // - initialSession null → bootstrap ainda pode restaurar token;
+        //   NÃO bloquear lastKnown (senão o mapa carrega vazio e “some” dado)
+        // - demais eventos sem sessão → sessão pública sem apagar lastKnown
+        //   persistido (só clear() remove), mas bloqueia fallback em memória
+        if (data.event == AuthChangeEvent.signedOut) {
+          LocalSessionIdentity.clear();
+          state = const SessionPublic();
+          return;
+        }
+
+        if (data.event == AuthChangeEvent.initialSession) {
+          // Mantém SessionUnknown + lastKnown disponível até signedIn/signedOut.
+          if (state is! SessionAuthenticated) {
+            state = const SessionUnknown();
+          }
+          return;
+        }
+
+        LocalSessionIdentity.markSessionPublic();
+        state = const SessionPublic();
       },
       onError: (error) {
+        // Erro de stream ≠ logout explícito: não apagar lastKnown persistido.
+        LocalSessionIdentity.markSessionPublic();
         state = const SessionPublic();
       },
     );
@@ -349,6 +368,10 @@ class SessionController extends _$SessionController {
   }
 
   /// Logout real via Supabase Auth.
+  ///
+  /// 🛡 Preservação de dados: logout **não** chama [clearUserLocalData].
+  /// SQLite do usuário permanece no aparelho para o próximo login.
+  /// Wipe local só ocorre em [deleteAccount].
   Future<void> logout() async {
     _invalidateUserScopedProviders();
     LocalSessionIdentity.clear();

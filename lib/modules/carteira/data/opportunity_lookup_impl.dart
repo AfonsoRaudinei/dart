@@ -1,6 +1,6 @@
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:soloforte_app/core/contracts/i_opportunity_lookup.dart';
+import 'package:soloforte_app/core/session/local_session_identity.dart';
 import 'package:soloforte_app/core/contracts/opportunity_summary.dart';
 import 'package:soloforte_app/core/database/database_helper.dart';
 import 'package:soloforte_app/modules/carteira/domain/repositories/i_carteira_repository.dart';
@@ -24,7 +24,7 @@ class OpportunityLookupImpl implements IOpportunityLookup {
   final DatabaseHelper _db;
 
   String get _userId =>
-      Supabase.instance.client.auth.currentUser?.id ?? '';
+      LocalSessionIdentity.resolveUserId();
 
   @override
   Future<List<OpportunitySummary>> getOpenOpportunities(

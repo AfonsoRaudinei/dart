@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../../../core/session/local_session_identity.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../domain/entities/carteira_safra.dart';
@@ -28,7 +28,7 @@ class _SafraFormDialogState extends ConsumerState<SafraFormDialog> {
     super.dispose();
   }
 
-  String get _userId => Supabase.instance.client.auth.currentUser?.id ?? '';
+  String get _userId => LocalSessionIdentity.resolveUserId();
 
   Future<void> _pickData(bool isInicio) async {
     final initial = isInicio

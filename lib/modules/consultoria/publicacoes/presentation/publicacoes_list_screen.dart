@@ -32,13 +32,13 @@ class _PublicacoesListScreenState extends ConsumerState<PublicacoesListScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: PremiumTokens.backgroundLight,
+      backgroundColor: context.premiumBackground,
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
             pinned: true,
             expandedHeight: 120.0,
-            backgroundColor: PremiumTokens.backgroundLight.withValues(alpha: 0.8),
+            backgroundColor: context.premiumBackground.withValues(alpha: 0.8),
             surfaceTintColor: Colors.transparent,
             flexibleSpace: FlexibleSpaceBar(
               titlePadding: const EdgeInsets.only(left: 24, bottom: 16),
@@ -47,7 +47,7 @@ class _PublicacoesListScreenState extends ConsumerState<PublicacoesListScreen> {
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.bold,
                       letterSpacing: -0.5,
-                      color: PremiumTokens.textPrimaryLight,
+                      color: context.premiumTextPrimary,
                     ),
               ),
               background: ClipRect(
@@ -69,7 +69,7 @@ class _PublicacoesListScreenState extends ConsumerState<PublicacoesListScreen> {
               child: Column(
                 children: [
                    _buildFilterChips(),
-                   const Divider(height: 1, color: PremiumTokens.hairlineLight),
+                   Divider(height: 1, color: context.premiumHairline),
                 ],
               ),
             ),
@@ -150,19 +150,19 @@ class _PublicacoesListScreenState extends ConsumerState<PublicacoesListScreen> {
             child: Text(
               'Erro ao carregar publicações:\n$error',
               textAlign: TextAlign.center,
-              style: const TextStyle(color: PremiumTokens.textSecondaryLight),
+              style: TextStyle(color: context.premiumTextSecondary),
             ),
           ),
         ),
       ),
       data: (publicacoes) {
         if (publicacoes.isEmpty) {
-          return const SliverFillRemaining(
+          return SliverFillRemaining(
             hasScrollBody: false,
             child: Center(
               child: Text(
                 'Nenhuma publicação encontrada.',
-                style: TextStyle(color: PremiumTokens.textTertiaryLight),
+                style: TextStyle(color: context.premiumTextTertiary),
               ),
             ),
           );
@@ -206,9 +206,9 @@ class _FilterChip extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: selected ? PremiumTokens.brandGreen : PremiumTokens.surfaceLight,
+          color: selected ? PremiumTokens.brandGreen : context.premiumSurface,
           border: Border.all(
-            color: selected ? PremiumTokens.brandGreen : PremiumTokens.hairlineLight,
+            color: selected ? PremiumTokens.brandGreen : context.premiumHairline,
           ),
           borderRadius: BorderRadius.circular(20),
         ),
@@ -217,7 +217,7 @@ class _FilterChip extends StatelessWidget {
           style: TextStyle(
             fontSize: 14,
             fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
-            color: selected ? Colors.white : PremiumTokens.textPrimaryLight,
+            color: selected ? Colors.white : context.premiumTextPrimary,
           ),
         ),
       ),
@@ -238,7 +238,7 @@ class _PublicacaoCard extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: PremiumTokens.surfaceLight,
+          color: context.premiumSurface,
           borderRadius: BorderRadius.circular(PremiumTokens.borderRadiusMd),
           boxShadow: PremiumTokens.tightShadow,
         ),

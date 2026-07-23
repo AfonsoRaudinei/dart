@@ -1,7 +1,7 @@
 import 'dart:convert';
+import '../../../../core/session/local_session_identity.dart';
 
 import 'package:sqflite/sqflite.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../core/database/database_helper.dart';
 import '../data/publicacao_table.dart';
@@ -51,7 +51,7 @@ class PublicacaoRepositoryImpl implements IPublicacaoRepository {
   @override
   Future<PublicacaoTecnica?> getById(String id) async {
     final db = await _dbHelper.database;
-    final authorId = Supabase.instance.client.auth.currentUser?.id ?? '';
+    final authorId = LocalSessionIdentity.resolveUserId();
     final rows = await db.query(
       PublicacaoTable.tableName,
       where:
@@ -67,7 +67,7 @@ class PublicacaoRepositoryImpl implements IPublicacaoRepository {
   @override
   Future<List<PublicacaoTecnica>> getAll() async {
     final db = await _dbHelper.database;
-    final authorId = Supabase.instance.client.auth.currentUser?.id ?? '';
+    final authorId = LocalSessionIdentity.resolveUserId();
     final rows = await db.query(
       PublicacaoTable.tableName,
       where:
@@ -126,7 +126,7 @@ class PublicacaoRepositoryImpl implements IPublicacaoRepository {
   @override
   Future<List<PublicacaoTecnica>> getPendingSync() async {
     final db = await _dbHelper.database;
-    final authorId = Supabase.instance.client.auth.currentUser?.id ?? '';
+    final authorId = LocalSessionIdentity.resolveUserId();
     final statuses = [
       PublicacaoSyncStatus.local_only.name,
       PublicacaoSyncStatus.pending_sync.name,

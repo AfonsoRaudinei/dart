@@ -5,8 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
 import 'package:uuid/uuid.dart';
 import '../../../../core/contracts/i_active_visit_context_lookup.dart';
-import '../../../../core/contracts/i_client_lookup.dart';
-import '../../../../core/contracts/i_client_lookup_provider.dart';
 import '../../../../ui/theme/premium/design_tokens.dart';
 import '../../domain/entities/avaliacao_item.dart';
 import '../../domain/entities/marketing_case.dart';
@@ -59,9 +57,7 @@ class _NovoCaseSheetState extends ConsumerState<NovoCaseSheet> {
   final _telefoneCtrl = TextEditingController();
   final _descricaoCtrl = TextEditingController();
   DateTime? _dataCase;
-  Future<List<ClientSummary>>? _clientesFuture;
   String? _clientId;
-  double? _clientAreaTotal;
 
   // ── Produtividade ──────────────────────────────────────────────
   final _produtividadeCtrl = TextEditingController();
@@ -101,9 +97,6 @@ class _NovoCaseSheetState extends ConsumerState<NovoCaseSheet> {
     super.initState();
     _tipo = widget.tipo;
     _dataCase = DateTime.now();
-    if (_tipo == CaseTipo.resultado) {
-      _clientesFuture = ref.read(clientLookupProvider).listAtivos();
-    }
     final initialContext = widget.initialVisitContext;
     if (initialContext == null) return;
     _clientId = initialContext.clientId;
@@ -268,7 +261,9 @@ class _NovoCaseSheetState extends ConsumerState<NovoCaseSheet> {
       valorGrao: _tipo == CaseTipo.resultado
           ? _parseDouble(_valorGraoCtrl.text)
           : null,
-      clientId: _tipo == CaseTipo.resultado ? _clientId : null,
+      // Propaga clientId sempre que houver contexto (visita ou propriedade
+      // do produtor) para ACL de leitura por vínculo (ADR-041).
+      clientId: _clientId,
       fotoAntesUrl: _tipo == CaseTipo.antesDepois ? _fotoAntesUrl : null,
       fotoDepoisUrl: _tipo == CaseTipo.antesDepois ? _fotoDepoisUrl : null,
       economiaGerada: null,
@@ -423,10 +418,6 @@ class _NovoCaseSheetState extends ConsumerState<NovoCaseSheet> {
                     'Produtor / Fazenda *',
                     required: true,
                   ),
-                  if (_tipo == CaseTipo.resultado) ...[
-                    const NovoCaseFDivider(),
-                    _buildClienteDropdown(),
-                  ],
                   const NovoCaseFDivider(),
                   novoCaseTextInput(
                     _produtoCtrl,
@@ -478,7 +469,7 @@ class _NovoCaseSheetState extends ConsumerState<NovoCaseSheet> {
                 valorGraoCtrl: _valorGraoCtrl,
                 unidade: _produtividadeUnidade,
                 tamanhoHa: _parseDouble(_tamanhoHaCtrl.text),
-                areaTotal: _clientAreaTotal,
+                areaTotal: null,
                 onUnidadeChanged: (unidade) =>
                     setState(() => _produtividadeUnidade = unidade),
                 onRoiChanged: () => setState(() {}),
@@ -549,9 +540,9 @@ class _NovoCaseSheetState extends ConsumerState<NovoCaseSheet> {
             const SizedBox(height: 8),
             TextButton(
               onPressed: widget.onClose,
-              child: const Text(
+              child: Text(
                 'Cancelar',
-                style: TextStyle(color: PremiumTokens.textSecondaryLight),
+                style: TextStyle(color: context.premiumTextSecondary),
               ),
             ),
           ],
@@ -634,66 +625,5 @@ class _NovoCaseSheetState extends ConsumerState<NovoCaseSheet> {
     final day = date.day.toString().padLeft(2, '0');
     final month = date.month.toString().padLeft(2, '0');
     return '$day/$month/${date.year}';
-  }
-
-  Widget _buildClienteDropdown() {
-    final future = _clientesFuture;
-    if (future == null) return const SizedBox.shrink();
-
-    return FutureBuilder<List<ClientSummary>>(
-      future: future,
-      builder: (context, snapshot) {
-        final clientes = snapshot.data ?? const <ClientSummary>[];
-        final selectedExists = clientes.any((c) => c.id == _clientId);
-        return InputDecorator(
-          decoration: const InputDecoration(
-            border: InputBorder.none,
-            contentPadding: EdgeInsets.zero,
-          ),
-          child: DropdownButtonHideUnderline(
-            child: DropdownButton<String>(
-              value: selectedExists ? _clientId : null,
-              isExpanded: true,
-              hint: const Text(
-                'Buscar Produtor/Fazenda',
-                style: TextStyle(
-                  color: SoloForteSheetTokens.inputHint,
-                  fontSize: 14,
-                ),
-              ),
-              dropdownColor: SoloForteSheetTokens.inputBackground,
-              items: clientes.map((client) {
-                final subtitle = client.areaTotal > 0
-                    ? ' · ${client.areaTotal.toStringAsFixed(1)} ha'
-                    : '';
-                return DropdownMenuItem<String>(
-                  value: client.id,
-                  child: Text(
-                    '${client.name}$subtitle',
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: SoloForteSheetTokens.inputText,
-                      fontSize: 14,
-                    ),
-                  ),
-                );
-              }).toList(),
-              onChanged: clientes.isEmpty
-                  ? null
-                  : (id) {
-                      final client = clientes.firstWhere((c) => c.id == id);
-                      setState(() {
-                        _clientId = client.id;
-                        _clientAreaTotal = client.areaTotal > 0
-                            ? client.areaTotal
-                            : null;
-                        _produtorCtrl.text = client.name;
-                      });
-                    },
-            ),
-          ),
-        );
-      },
-    );
   }
 }

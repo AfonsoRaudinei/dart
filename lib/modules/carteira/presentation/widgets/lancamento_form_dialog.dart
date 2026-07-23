@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import '../../../../core/session/local_session_identity.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../domain/entities/carteira_lancamento.dart';
@@ -44,7 +44,7 @@ class _LancamentoFormDialogState extends ConsumerState<LancamentoFormDialog> {
   bool _salvando = false;
   String? _mensagemErro;
 
-  String get _userId => Supabase.instance.client.auth.currentUser?.id ?? '';
+  String get _userId => LocalSessionIdentity.resolveUserId();
 
   @override
   void dispose() {

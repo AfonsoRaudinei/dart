@@ -33,13 +33,13 @@ class PremiumDashboardAppBar extends StatelessWidget
             color:
                 (isDark
                         ? PremiumTokens.backgroundDark
-                        : PremiumTokens.backgroundLight)
+                        : context.premiumBackground)
                     .withValues(alpha: 0.8),
             border: Border(
               bottom: BorderSide(
                 color: isDark
                     ? PremiumTokens.hairlineDark
-                    : PremiumTokens.hairlineLight,
+                    : context.premiumHairline,
                 width: PremiumTokens.hairlineThickness,
               ),
             ),

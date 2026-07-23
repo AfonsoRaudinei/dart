@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:soloforte_app/ui/components/map/providers/marker_providers.dart';
+import 'package:soloforte_app/ui/components/map/occurrence_pins.dart';
 import 'package:soloforte_app/core/domain/publicacao.dart';
 import 'package:soloforte_app/modules/consultoria/occurrences/domain/occurrence.dart';
 import 'package:soloforte_app/modules/consultoria/occurrences/presentation/controllers/occurrence_controller.dart';
@@ -120,6 +121,28 @@ void main() {
   });
 
   group('occurrenceMarkersProvider', () {
+    test('projectOccurrences cria marker data para coordenada válida', () {
+      final result = OccurrencePinGenerator.projectOccurrences([
+        Occurrence(
+          id: 'valid-1',
+          type: 'Alta',
+          description: 'Com coordenadas válidas',
+          lat: -10.25,
+          long: -48.32,
+          category: 'doenca',
+          status: 'confirmed',
+          createdAt: DateTime.now(),
+        ),
+      ]);
+
+      expect(result.invalidCount, 0);
+      expect(result.duplicateCount, 0);
+      expect(result.markers, hasLength(1));
+      expect(result.markers.single.id, 'valid-1');
+      expect(result.markers.single.position.latitude, -10.25);
+      expect(result.markers.single.position.longitude, -48.32);
+    });
+
     test('deve filtrar ocorrências com lat/long null', () async {
       final now = DateTime.now();
       final container = ProviderContainer(
@@ -141,6 +164,21 @@ void main() {
       await container.read(occurrencesListProvider.future);
       final markers = container.read(occurrenceMarkersProvider((occ) {}));
       expect(markers, isEmpty);
+    });
+
+    test('projectOccurrences descarta longitude nula', () {
+      final result = OccurrencePinGenerator.projectOccurrences([
+        Occurrence(
+          id: 'lng-null',
+          type: 'Média',
+          description: 'Longitude nula',
+          lat: -10.25,
+          createdAt: DateTime.now(),
+        ),
+      ]);
+
+      expect(result.markers, isEmpty);
+      expect(result.invalidCount, 1);
     });
 
     test('deve criar marker quando só geometry estiver preenchida', () async {
@@ -198,6 +236,30 @@ void main() {
       expect(markers.single.point.longitude, -48.32);
     });
 
+    test('projectOccurrences descarta coordenadas NaN e infinitas', () {
+      final result = OccurrencePinGenerator.projectOccurrences([
+        Occurrence(
+          id: 'nan-lat',
+          type: 'Alta',
+          description: 'NaN',
+          lat: double.nan,
+          long: -48.32,
+          createdAt: DateTime.now(),
+        ),
+        Occurrence(
+          id: 'inf-lng',
+          type: 'Alta',
+          description: 'Infinita',
+          lat: -10.25,
+          long: double.infinity,
+          createdAt: DateTime.now(),
+        ),
+      ]);
+
+      expect(result.markers, isEmpty);
+      expect(result.invalidCount, 2);
+    });
+
     test('nao cria pin em zero zero', () async {
       final container = ProviderContainer(
         overrides: [
@@ -219,6 +281,84 @@ void main() {
 
       await container.read(occurrencesListProvider.future);
       expect(container.read(occurrenceMarkersProvider((occ) {})), isEmpty);
+    });
+
+    test('projectOccurrences descarta coordenada fora da faixa geográfica', () {
+      final result = OccurrencePinGenerator.projectOccurrences([
+        Occurrence(
+          id: 'out-of-range',
+          type: 'Média',
+          description: 'Latitude inválida',
+          lat: -100,
+          long: -48.32,
+          createdAt: DateTime.now(),
+        ),
+      ]);
+
+      expect(result.markers, isEmpty);
+      expect(result.invalidCount, 1);
+    });
+
+    test('projectOccurrences deduplica ocorrências por id', () {
+      final now = DateTime.now();
+      final result = OccurrencePinGenerator.projectOccurrences([
+        Occurrence(
+          id: 'dup-1',
+          type: 'Alta',
+          description: 'Primeira',
+          lat: -10.25,
+          long: -48.32,
+          createdAt: now,
+        ),
+        Occurrence(
+          id: 'dup-1',
+          type: 'Baixa',
+          description: 'Duplicada',
+          lat: -11.25,
+          long: -49.32,
+          createdAt: now,
+        ),
+      ]);
+
+      expect(result.markers, hasLength(1));
+      expect(result.duplicateCount, 1);
+      expect(result.markers.single.position.latitude, -10.25);
+      expect(result.markers.single.position.longitude, -48.32);
+    });
+
+    test('provider mantém keys estáveis por id e filtra inválidas', () async {
+      final now = DateTime.now();
+      final container = ProviderContainer(
+        overrides: [
+          occurrencesListProvider.overrideWith(
+            (ref) async => [
+              Occurrence(
+                id: 'stable-1',
+                type: 'Alta',
+                description: 'Válida',
+                lat: -10.25,
+                long: -48.32,
+                createdAt: now,
+              ),
+              Occurrence(
+                id: 'stable-2',
+                type: 'Alta',
+                description: 'Inválida',
+                lat: 0,
+                long: 0,
+                createdAt: now,
+              ),
+            ],
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await container.read(occurrencesListProvider.future);
+      final markers = container.read(occurrenceMarkersProvider((occ) {}));
+
+      expect(markers, hasLength(1));
+      expect(markers.single.key.toString(), contains('occ_stable-1'));
     });
   });
 

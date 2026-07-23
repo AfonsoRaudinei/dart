@@ -29,15 +29,13 @@ class SettingsScreen extends ConsumerWidget {
     final currentThemeMode = ref.watch(themeProvider);
 
     return Scaffold(
-      backgroundColor: PremiumTokens.backgroundLight,
+      backgroundColor: context.premiumBackground,
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
             pinned: true,
             expandedHeight: 120.0,
-            backgroundColor: PremiumTokens.backgroundLight.withValues(
-              alpha: 0.8,
-            ),
+            backgroundColor: context.premiumBackground.withValues(alpha: 0.8),
             surfaceTintColor: Colors.transparent,
             flexibleSpace: FlexibleSpaceBar(
               titlePadding: const EdgeInsets.only(left: 16, bottom: 16),
@@ -46,7 +44,7 @@ class SettingsScreen extends ConsumerWidget {
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.bold,
                   letterSpacing: -0.5,
-                  color: PremiumTokens.textPrimaryLight,
+                  color: context.premiumTextPrimary,
                 ),
               ),
               background: ClipRect(
@@ -207,7 +205,7 @@ class SettingsScreen extends ConsumerWidget {
                   style:
                       (Theme.of(context).textTheme.labelMedium ??
                               const TextStyle())
-                          .copyWith(color: PremiumTokens.textSecondaryLight),
+                          .copyWith(color: context.premiumTextSecondary),
                 ),
               ),
               const SizedBox(height: 20),
@@ -225,7 +223,7 @@ class SettingsScreen extends ConsumerWidget {
         builder: (ctx) => Text(
           title,
           style: (Theme.of(ctx).textTheme.labelMedium ?? const TextStyle())
-              .copyWith(color: PremiumTokens.textSecondaryLight),
+              .copyWith(color: ctx.premiumTextSecondary),
         ),
       ),
     );
@@ -334,7 +332,7 @@ class SettingsScreen extends ConsumerWidget {
                   style:
                       (Theme.of(context).textTheme.labelMedium ??
                               const TextStyle())
-                          .copyWith(color: PremiumTokens.textSecondaryLight),
+                          .copyWith(color: context.premiumTextSecondary),
                 ),
               ],
             ),
@@ -437,14 +435,14 @@ class SettingsScreen extends ConsumerWidget {
                   style: isSelected
                       ? (Theme.of(context).textTheme.labelMedium ??
                                 const TextStyle())
-                            .copyWith(color: PremiumTokens.textSecondaryLight)
+                            .copyWith(color: context.premiumTextSecondary)
                             .copyWith(
                               color: Theme.of(context).colorScheme.onSurface,
                               fontWeight: FontWeight.bold,
                             )
                       : (Theme.of(context).textTheme.labelMedium ??
                                 const TextStyle())
-                            .copyWith(color: PremiumTokens.textSecondaryLight),
+                            .copyWith(color: context.premiumTextSecondary),
                 ),
               ],
             ),
@@ -468,7 +466,7 @@ class SettingsScreen extends ConsumerWidget {
         child: Text(
           'Não foi possível carregar os dados cadastrais.',
           style: (Theme.of(context).textTheme.labelMedium ?? const TextStyle())
-              .copyWith(color: PremiumTokens.textSecondaryLight),
+              .copyWith(color: context.premiumTextSecondary),
         ),
       ),
       data: (profile) {
@@ -479,7 +477,7 @@ class SettingsScreen extends ConsumerWidget {
               'Usuário não autenticado.',
               style:
                   (Theme.of(context).textTheme.labelMedium ?? const TextStyle())
-                      .copyWith(color: PremiumTokens.textSecondaryLight),
+                      .copyWith(color: context.premiumTextSecondary),
             ),
           );
         }
@@ -554,7 +552,7 @@ class SettingsScreen extends ConsumerWidget {
             style:
                 (Theme.of(context).textTheme.labelMedium ?? const TextStyle())
                     .copyWith(
-                      color: PremiumTokens.textSecondaryLight,
+                      color: context.premiumTextSecondary,
                       fontWeight: FontWeight.w600,
                     ),
           ),
@@ -607,7 +605,7 @@ class SettingsScreen extends ConsumerWidget {
         Text(
           label,
           style: (Theme.of(context).textTheme.labelMedium ?? const TextStyle())
-              .copyWith(color: PremiumTokens.textSecondaryLight),
+              .copyWith(color: context.premiumTextSecondary),
         ),
       ],
     );
@@ -639,7 +637,7 @@ class SettingsScreen extends ConsumerWidget {
               subtitle,
               style:
                   (Theme.of(context).textTheme.labelMedium ?? const TextStyle())
-                      .copyWith(color: PremiumTokens.textSecondaryLight),
+                      .copyWith(color: context.premiumTextSecondary),
             )
           : null,
       secondary: icon != null

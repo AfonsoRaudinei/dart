@@ -232,7 +232,7 @@ class _BigMetric extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Icon(icon, color: PremiumTokens.textSecondaryLight, size: 20),
+        Icon(icon, color: context.premiumTextSecondary, size: 20),
         const SizedBox(height: 8),
         Text(
           value,

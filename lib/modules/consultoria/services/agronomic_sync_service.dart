@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
+import 'package:soloforte_app/core/session/local_session_identity.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:soloforte_app/core/database/database_helper.dart';
 import 'package:soloforte_app/core/network/network_policy.dart';
@@ -15,8 +16,8 @@ class AgronomicSyncService {
   static const int statusDirty = 1;
 
   Future<void> syncNow() async {
-    final userId = _supabase.auth.currentUser?.id;
-    if (userId == null || userId.isEmpty) {
+    final userId = LocalSessionIdentity.resolveUserId();
+    if (userId.isEmpty) {
       AppLogger.warning(
         'Sync agronomico ignorado: usuario nao autenticado',
         tag: 'AgronomicSync',

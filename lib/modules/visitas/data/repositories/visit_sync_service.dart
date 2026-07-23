@@ -1,5 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/foundation.dart';
+import 'package:soloforte_app/core/session/local_session_identity.dart';
 import 'package:soloforte_app/core/database/database_helper.dart';
 import 'package:soloforte_app/core/utils/app_logger.dart';
 import '../../../../core/network/network_policy.dart';
@@ -21,8 +22,8 @@ class VisitSyncService {
 
   Future<void> _syncVisitsPush() async {
     final db = await DatabaseHelper.instance.database;
-    final userId = _supabase.auth.currentUser?.id;
-    if (userId == null) {
+    final userId = LocalSessionIdentity.resolveUserId();
+    if (userId.isEmpty) {
       AppLogger.warning(
         'Skipping visit push: userId is null',
         tag: 'VisitSync',
@@ -73,8 +74,8 @@ class VisitSyncService {
 
   Future<void> _syncVisitsPull() async {
     final db = await DatabaseHelper.instance.database;
-    final userId = _supabase.auth.currentUser?.id;
-    if (userId == null) {
+    final userId = LocalSessionIdentity.resolveUserId();
+    if (userId.isEmpty) {
       AppLogger.warning(
         'Skipping visit pull: userId is null',
         tag: 'VisitSync',

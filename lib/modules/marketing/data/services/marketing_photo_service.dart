@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path/path.dart' as p;
+import 'package:soloforte_app/core/session/local_session_identity.dart';
 import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
@@ -67,8 +68,8 @@ class MarketingPhotoService {
   /// Faz upload do arquivo para o Supabase Storage.
   Future<String?> _upload(File file, {String? folder}) async {
     try {
-      final userId = _supabase.auth.currentUser?.id;
-      if (userId == null || userId.isEmpty) {
+      final userId = LocalSessionIdentity.resolveUserId();
+      if (userId.isEmpty) {
         throw StateError('Usuario nao autenticado.');
       }
 

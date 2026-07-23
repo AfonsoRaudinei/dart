@@ -2,11 +2,12 @@ import 'package:flutter/material.dart';
 import '../../../../core/design/sf_icons.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:latlong2/latlong.dart';
 import '../../../../core/state/map_state.dart';
 import '../../../../core/domain/publicacao.dart';
 import '../../../../modules/consultoria/occurrences/domain/occurrence.dart';
 import '../../../../modules/consultoria/occurrences/presentation/controllers/occurrence_controller.dart';
+import '../occurrence_pins.dart';
+import 'package:latlong2/latlong.dart';
 
 /// 🎯 PROVIDER DERIVADO: Markers de Publicações
 ///
@@ -66,27 +67,16 @@ final occurrenceMarkersProvider =
         return const [];
       }
 
-      final markers = occurrences
-          .map((occ) {
-            final coords = occ.getCoordinates();
-            if (coords == null) return null;
+      final projection = OccurrencePinGenerator.projectOccurrences(occurrences);
+      OccurrencePinGenerator.logProjectionDropCounts(
+        invalidCount: projection.invalidCount,
+        duplicateCount: projection.duplicateCount,
+      );
 
-            return Marker(
-              key: ValueKey('occ_${occ.id}'),
-              point: LatLng(coords['lat']!, coords['long']!),
-              width: 40,
-              height: 40,
-              alignment: Alignment.center,
-              child: GestureDetector(
-                onTap: () => onTap(occ),
-                child: _OccurrencePin(occurrence: occ),
-              ),
-            );
-          })
-          .whereType<Marker>()
-          .toList(growable: false);
-
-      return markers;
+      return OccurrencePinGenerator.buildMarkers(
+        markerData: projection.markers,
+        onPinTap: onTap,
+      );
     });
 
 /// 🎯 PROVIDER DERIVADO: Markers de Publicações Locais
@@ -137,113 +127,6 @@ class _PublicationPin extends StatelessWidget {
         ],
       ),
       child: const Icon(SFIcons.article, color: Colors.white, size: 20),
-    );
-  }
-}
-
-/// Widget Pin de Ocorrência (leve e stateless)
-///
-/// Cor de fundo: categoria agronômica (diferencia doença, pragas, daninhas…).
-/// Bolinha no canto: urgência (alta/média/baixa).
-class _OccurrencePin extends StatelessWidget {
-  final Occurrence occurrence;
-
-  const _OccurrencePin({required this.occurrence});
-
-  static Color _colorForCategory(String? category) {
-    return OccurrenceCategory.fromString(category).markerColor;
-  }
-
-  static Color _colorForUrgency(String? type) {
-    switch ((type ?? '').toLowerCase()) {
-      case 'alta':
-        return const Color(0xFFFF3B30);
-      case 'baixa':
-        return const Color(0xFF8E8E93);
-      default:
-        return const Color(0xFFF59E0B);
-    }
-  }
-
-  static IconData _iconForCategory(String? category) {
-    switch ((category ?? '').toLowerCase()) {
-      case 'doenca':
-      case 'doença':
-        return Icons.coronavirus_outlined;
-      case 'insetos':
-      case 'pragas':
-        return Icons.bug_report_outlined;
-      case 'daninhas':
-      case 'ervas_daninhas':
-      case 'ervas daninhas':
-        return Icons.grass_outlined;
-      case 'nutricional':
-      case 'nutrientes':
-        return Icons.science_outlined;
-      case 'agua':
-      case 'água':
-        return Icons.water_drop_outlined;
-      case 'amostra_solo':
-      case 'amostra solo':
-        return Icons.biotech_outlined;
-      default:
-        return Icons.place_outlined;
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final categoryColor = _colorForCategory(occurrence.category);
-    final urgencyColor = _colorForUrgency(occurrence.type);
-    final icon = _iconForCategory(occurrence.category);
-    final isDraft = occurrence.status == 'draft';
-    final opacity = isDraft ? 0.65 : 1.0;
-
-    return SizedBox(
-      width: 40,
-      height: 40,
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: categoryColor.withValues(alpha: opacity),
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: Colors.white.withValues(alpha: opacity),
-                width: 2.5,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.28),
-                  blurRadius: 4,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Icon(
-              icon,
-              color: Colors.white.withValues(alpha: opacity),
-              size: 18,
-            ),
-          ),
-          Positioned(
-            top: -1,
-            right: -1,
-            child: Container(
-              width: 12,
-              height: 12,
-              decoration: BoxDecoration(
-                color: urgencyColor,
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.white, width: 1.5),
-              ),
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

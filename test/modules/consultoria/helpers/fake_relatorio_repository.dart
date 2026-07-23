@@ -70,6 +70,22 @@ class FakeRelatorioRepository implements IRelatorioRepository {
   }
 
   @override
+  Future<List<RelatorioTecnico>> getVisibleForAuthorizedClients(
+    Set<String> authorizedClientIds,
+  ) async {
+    if (authorizedClientIds.isEmpty) return const [];
+    return _store.values
+        .where(
+          (r) =>
+              r.deletedAt == null &&
+              authorizedClientIds.contains(r.clientId) &&
+              (r.status == RelatorioStatus.publicado ||
+                  r.status == RelatorioStatus.arquivado),
+        )
+        .toList();
+  }
+
+  @override
   Future<List<RelatorioTecnico>> getByAgronomistId(String agronomistId) async {
     return _store.values
         .where((r) => r.agronomistId == agronomistId && r.deletedAt == null)

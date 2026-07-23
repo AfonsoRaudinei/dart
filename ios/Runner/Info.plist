@@ -29,6 +29,8 @@
 	<!-- Localização em uso -->
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>O SoloForte usa sua localização para posicionar ocorrências, talhões e rotas de visita no mapa da propriedade.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>O SoloForte usa sua localização para posicionar ocorrências, talhões e rotas de visita no mapa da propriedade, inclusive durante fluxos operacionais que exigem continuidade da referência geográfica.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

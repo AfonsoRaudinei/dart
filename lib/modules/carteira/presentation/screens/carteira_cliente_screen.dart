@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/core/session/local_session_identity.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 
 import 'package:soloforte_app/modules/carteira/domain/entities/carteira_lancamento.dart';
@@ -15,7 +15,7 @@ class CarteiraClienteScreen extends ConsumerWidget {
   final String clienteId;
   static const Uuid _uuid = Uuid();
 
-  String get _userId => Supabase.instance.client.auth.currentUser?.id ?? '';
+  String get _userId => LocalSessionIdentity.resolveUserId();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
