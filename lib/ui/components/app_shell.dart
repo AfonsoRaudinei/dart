@@ -109,8 +109,9 @@ class _AppShellState extends ConsumerState<AppShell> {
       if (_pendingDeepLinkType == 'signup' &&
           data.event == AuthChangeEvent.signedIn) {
         _pendingDeepLinkType = null;
-        Supabase.instance.client.auth
-            .signOut()
+        ref
+            .read(sessionControllerProvider.notifier)
+            .logout()
             .then((_) {
               if (!mounted) return;
               context.go(AppRoutes.login);

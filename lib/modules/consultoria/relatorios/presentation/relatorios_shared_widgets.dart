@@ -99,9 +99,9 @@ class _AsyncActionMenuState extends State<_AsyncActionMenu> {
       await widget.onSelected(value);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(userFacingError(e, action: 'Erro na ação'))));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(userFacingError(e, action: 'Erro na ação'))),
+        );
       }
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -133,16 +133,16 @@ class _RelatoriosSegmentBar extends StatelessWidget {
       ),
       child: Row(
         children: [
-          _seg('Visitas', _RelatoriosSegment.visitas),
-          _seg('Ocorrências', _RelatoriosSegment.ocorrencias),
-          _seg('Gerados', _RelatoriosSegment.gerados),
-          _seg('Mídia', _RelatoriosSegment.midia),
+          _seg(context, 'Visitas', _RelatoriosSegment.visitas),
+          _seg(context, 'Ocorrências', _RelatoriosSegment.ocorrencias),
+          _seg(context, 'Gerados', _RelatoriosSegment.gerados),
+          _seg(context, 'Mídia', _RelatoriosSegment.midia),
         ],
       ),
     );
   }
 
-  Widget _seg(String label, _RelatoriosSegment value) {
+  Widget _seg(BuildContext context, String label, _RelatoriosSegment value) {
     final isSelected = selected == value;
     return Expanded(
       child: GestureDetector(
@@ -173,8 +173,8 @@ class _RelatoriosSegmentBar extends StatelessWidget {
               fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
               letterSpacing: -0.2,
               color: isSelected
-                  ? PremiumTokens.textPrimaryLight
-                  : PremiumTokens.textSecondaryLight,
+                  ? context.premiumTextPrimary
+                  : context.premiumTextSecondary,
             ),
           ),
         ),
@@ -190,11 +190,7 @@ class _PremiumEmptyState extends StatelessWidget {
   final String? ctaLabel;
   final VoidCallback? onCta;
 
-  const _PremiumEmptyState({
-    required this.message,
-    this.ctaLabel,
-    this.onCta,
-  });
+  const _PremiumEmptyState({required this.message, this.ctaLabel, this.onCta});
 
   @override
   Widget build(BuildContext context) {
@@ -205,10 +201,10 @@ class _PremiumEmptyState extends StatelessWidget {
           Text(
             message,
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 15,
               height: 1.35,
-              color: PremiumTokens.textSecondaryLight,
+              color: context.premiumTextSecondary,
             ),
           ),
           if (ctaLabel != null && onCta != null) ...[
@@ -241,10 +237,10 @@ class _SectionLoading extends StatelessWidget {
       children: [
         Text(
           title,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 15,
             fontWeight: FontWeight.w600,
-            color: PremiumTokens.textPrimaryLight,
+            color: context.premiumTextPrimary,
           ),
         ),
         const Padding(
@@ -268,10 +264,10 @@ class _SectionError extends StatelessWidget {
       children: [
         Text(
           title,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 15,
             fontWeight: FontWeight.w600,
-            color: PremiumTokens.textPrimaryLight,
+            color: context.premiumTextPrimary,
           ),
         ),
         Padding(
@@ -330,7 +326,7 @@ class _DataCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.fromLTRB(14, 12, 8, 12),
       decoration: BoxDecoration(
-        color: PremiumTokens.surfaceLight,
+        color: context.premiumSurface,
         borderRadius: BorderRadius.circular(PremiumTokens.borderRadiusSm),
         boxShadow: PremiumTokens.premiumShadow,
       ),
@@ -349,22 +345,22 @@ class _DataCard extends StatelessWidget {
                 if (eyebrow != null) ...[
                   Text(
                     eyebrow!,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
                       letterSpacing: 0.2,
-                      color: PremiumTokens.textSecondaryLight,
+                      color: context.premiumTextSecondary,
                     ),
                   ),
                   const SizedBox(height: 2),
                 ],
                 Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
                     letterSpacing: -0.3,
-                    color: PremiumTokens.textPrimaryLight,
+                    color: context.premiumTextPrimary,
                   ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
@@ -373,9 +369,9 @@ class _DataCard extends StatelessWidget {
                   const SizedBox(height: 3),
                   Text(
                     subtitle!,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
-                      color: PremiumTokens.textSecondaryLight,
+                      color: context.premiumTextSecondary,
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
@@ -389,7 +385,7 @@ class _DataCard extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
-                        color: PremiumTokens.textSecondaryLight.withValues(
+                        color: context.premiumTextSecondary.withValues(
                           alpha: 0.85,
                         ),
                       ),
@@ -446,11 +442,11 @@ class _InsetGroupHeader extends StatelessWidget {
         children: [
           Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,
               letterSpacing: -0.1,
-              color: PremiumTokens.textSecondaryLight,
+              color: context.premiumTextSecondary,
             ),
           ),
           const SizedBox(width: 8),
@@ -462,10 +458,10 @@ class _InsetGroupHeader extends StatelessWidget {
             ),
             child: Text(
               '$count',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
-                color: PremiumTokens.textSecondaryLight,
+                color: context.premiumTextSecondary,
               ),
             ),
           ),

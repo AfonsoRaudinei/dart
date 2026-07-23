@@ -14,7 +14,6 @@ import '../../../core/utils/app_logger.dart';
 
 import 'map_occurrence_sheet_parts.dart';
 
-
 // ════════════════════════════════════════════════════════════════════
 // MAIN SCREEN
 // ════════════════════════════════════════════════════════════════════
@@ -183,9 +182,9 @@ class _MapOccurrenceSheetState extends ConsumerState<MapOccurrenceSheet> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text(
+            child: Text(
               'Voltar',
-              style: TextStyle(color: PremiumTokens.textSecondaryLight),
+              style: TextStyle(color: context.premiumTextSecondary),
             ),
           ),
           TextButton(
@@ -236,9 +235,9 @@ class _MapOccurrenceSheetState extends ConsumerState<MapOccurrenceSheet> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
-        color: PremiumTokens.backgroundLight, // Background scaffold color
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      decoration: BoxDecoration(
+        color: context.premiumBackground, // Background scaffold color
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
       ),
       child: Column(
         children: [
@@ -249,7 +248,7 @@ class _MapOccurrenceSheetState extends ConsumerState<MapOccurrenceSheet> {
               width: 48,
               height: 5,
               decoration: BoxDecoration(
-                color: PremiumTokens.hairlineLight,
+                color: context.premiumHairline,
                 borderRadius: BorderRadius.circular(2.5),
               ),
             ),
@@ -335,7 +334,7 @@ class _MapOccurrenceSheetState extends ConsumerState<MapOccurrenceSheet> {
                                 vertical: 12,
                               ),
                               decoration: BoxDecoration(
-                                color: PremiumTokens.backgroundLight,
+                                color: context.premiumBackground,
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Text(
@@ -358,7 +357,7 @@ class _MapOccurrenceSheetState extends ConsumerState<MapOccurrenceSheet> {
                               decoration: InputDecoration(
                                 hintText: '0',
                                 filled: true,
-                                fillColor: PremiumTokens.backgroundLight,
+                                fillColor: context.premiumBackground,
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
                                   borderSide: BorderSide.none,
@@ -391,7 +390,7 @@ class _MapOccurrenceSheetState extends ConsumerState<MapOccurrenceSheet> {
                               decoration: InputDecoration(
                                 hintText: 'Ex: Garra 63i64',
                                 filled: true,
-                                fillColor: PremiumTokens.backgroundLight,
+                                fillColor: context.premiumBackground,
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
                                   borderSide: BorderSide.none,
@@ -422,11 +421,11 @@ class _MapOccurrenceSheetState extends ConsumerState<MapOccurrenceSheet> {
                                   horizontal: 12,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: PremiumTokens.backgroundLight,
+                                  color: context.premiumBackground,
                                   borderRadius: BorderRadius.circular(12),
                                   border: Border.all(
                                     color: _draft.dataPlantio == null
-                                        ? PremiumTokens.hairlineLight
+                                        ? context.premiumHairline
                                         : Colors.transparent,
                                   ),
                                 ),
@@ -436,8 +435,8 @@ class _MapOccurrenceSheetState extends ConsumerState<MapOccurrenceSheet> {
                                       : _dateFormat.format(_draft.dataPlantio!),
                                   style: TextStyle(
                                     color: _draft.dataPlantio == null
-                                        ? PremiumTokens.textTertiaryLight
-                                        : PremiumTokens.textPrimaryLight,
+                                        ? context.premiumTextTertiary
+                                        : context.premiumTextPrimary,
                                   ),
                                 ),
                               ),
@@ -491,9 +490,9 @@ class _MapOccurrenceSheetState extends ConsumerState<MapOccurrenceSheet> {
                                   Expanded(
                                     child: Text(
                                       alerta,
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: 13,
-                                        color: PremiumTokens.textSecondaryLight,
+                                        color: context.premiumTextSecondary,
                                       ),
                                     ),
                                   ),
@@ -569,7 +568,7 @@ class _MapOccurrenceSheetState extends ConsumerState<MapOccurrenceSheet> {
                         hintText:
                             'Descreva o cenário encontrado, recomendações e observações relevantes...',
                         filled: true,
-                        fillColor: PremiumTokens.backgroundLight,
+                        fillColor: context.premiumBackground,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                           borderSide: BorderSide.none,
@@ -589,34 +588,30 @@ class _MapOccurrenceSheetState extends ConsumerState<MapOccurrenceSheet> {
                   children: [
                     Row(
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.person_outline,
                           size: 16,
-                          color: PremiumTokens.textTertiaryLight,
+                          color: context.premiumTextTertiary,
                         ),
                         const SizedBox(width: 8),
                         Text(
                           'Responsável: ${_draft.tecnico}',
-                          style: const TextStyle(
-                            color: PremiumTokens.textSecondaryLight,
-                          ),
+                          style: TextStyle(color: context.premiumTextSecondary),
                         ),
                       ],
                     ),
                     const SizedBox(height: 8),
                     Row(
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.location_on_outlined,
                           size: 16,
-                          color: PremiumTokens.textTertiaryLight,
+                          color: context.premiumTextTertiary,
                         ),
                         const SizedBox(width: 8),
                         Text(
                           'Coords: ${_draft.latitude.toStringAsFixed(6)}, ${_draft.longitude.toStringAsFixed(6)}',
-                          style: const TextStyle(
-                            color: PremiumTokens.textSecondaryLight,
-                          ),
+                          style: TextStyle(color: context.premiumTextSecondary),
                         ),
                       ],
                     ),

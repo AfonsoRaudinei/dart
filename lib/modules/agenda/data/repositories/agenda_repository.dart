@@ -1,6 +1,6 @@
 import 'package:sqflite/sqflite.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/database/database_helper.dart';
+import '../../../../core/session/local_session_identity.dart';
 import '../../domain/entities/event.dart';
 import '../../domain/entities/visit_session.dart';
 import '../models/event_model.dart';
@@ -16,7 +16,7 @@ class AgendaRepository {
 
   /// Salva um evento no banco de dados
   Future<void> saveEvent(Event event) async {
-    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
+    final userId = LocalSessionIdentity.resolveUserId();
     if (userId.isEmpty) return;
     final db = await _dbHelper.database;
     final model = EventModel.fromEntity(event);
@@ -29,7 +29,7 @@ class AgendaRepository {
 
   /// Atualiza um evento existente
   Future<void> updateEvent(Event event) async {
-    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
+    final userId = LocalSessionIdentity.resolveUserId();
     if (userId.isEmpty) return;
     final db = await _dbHelper.database;
     final model = EventModel.fromEntity(event);
@@ -44,7 +44,7 @@ class AgendaRepository {
 
   /// Busca um evento por ID
   Future<Event?> getEventById(String id) async {
-    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
+    final userId = LocalSessionIdentity.resolveUserId();
     if (userId.isEmpty) return null;
     final db = await _dbHelper.database;
     final results = await db.query(
@@ -60,7 +60,7 @@ class AgendaRepository {
 
   /// Busca um evento pelo visit_session_id vinculado
   Future<Event?> getEventBySessionId(String sessionId) async {
-    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
+    final userId = LocalSessionIdentity.resolveUserId();
     if (userId.isEmpty) return null;
     final db = await _dbHelper.database;
     final results = await db.query(
@@ -75,7 +75,7 @@ class AgendaRepository {
 
   /// Busca todos os eventos
   Future<List<Event>> getAllEvents() async {
-    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
+    final userId = LocalSessionIdentity.resolveUserId();
     if (userId.isEmpty) return [];
     final db = await _dbHelper.database;
     final results = await db.query(
@@ -90,7 +90,7 @@ class AgendaRepository {
 
   /// Busca eventos por range de datas
   Future<List<Event>> getEventsByDateRange(DateTime start, DateTime end) async {
-    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
+    final userId = LocalSessionIdentity.resolveUserId();
     if (userId.isEmpty) return [];
     final db = await _dbHelper.database;
     final results = await db.query(
@@ -113,7 +113,7 @@ class AgendaRepository {
 
   /// Busca eventos pendentes de sincronização
   Future<List<Event>> getPendingSyncEvents() async {
-    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
+    final userId = LocalSessionIdentity.resolveUserId();
     if (userId.isEmpty) return [];
     final db = await _dbHelper.database;
     final results = await db.query(
@@ -127,7 +127,7 @@ class AgendaRepository {
 
   /// Marca um evento como sincronizado
   Future<void> markEventAsSynced(String id) async {
-    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
+    final userId = LocalSessionIdentity.resolveUserId();
     if (userId.isEmpty) return;
     final db = await _dbHelper.database;
     await db.update(
@@ -140,7 +140,7 @@ class AgendaRepository {
 
   /// Deleta um evento (soft delete)
   Future<void> deleteEvent(String id) async {
-    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
+    final userId = LocalSessionIdentity.resolveUserId();
     if (userId.isEmpty) return;
     final db = await _dbHelper.database;
     await db.update(
@@ -160,7 +160,7 @@ class AgendaRepository {
 
   /// Salva uma sessão de visita
   Future<void> saveSession(VisitSession session) async {
-    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
+    final userId = LocalSessionIdentity.resolveUserId();
     if (userId.isEmpty) return;
     final db = await _dbHelper.database;
     final model = VisitSessionModel.fromEntity(session);
@@ -173,7 +173,7 @@ class AgendaRepository {
 
   /// Atualiza uma sessão existente
   Future<void> updateSession(VisitSession session) async {
-    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
+    final userId = LocalSessionIdentity.resolveUserId();
     if (userId.isEmpty) return;
     final db = await _dbHelper.database;
     final model = VisitSessionModel.fromEntity(session);
@@ -188,7 +188,7 @@ class AgendaRepository {
 
   /// Busca uma sessão por ID
   Future<VisitSession?> getSessionById(String id) async {
-    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
+    final userId = LocalSessionIdentity.resolveUserId();
     if (userId.isEmpty) return null;
     final db = await _dbHelper.database;
     final results = await db.query(
@@ -204,7 +204,7 @@ class AgendaRepository {
 
   /// Busca todas as sessões
   Future<List<VisitSession>> getAllSessions() async {
-    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
+    final userId = LocalSessionIdentity.resolveUserId();
     if (userId.isEmpty) return [];
     final db = await _dbHelper.database;
     final results = await db.query(
@@ -219,7 +219,7 @@ class AgendaRepository {
 
   /// Busca sessões por evento
   Future<List<VisitSession>> getSessionsByEventId(String eventId) async {
-    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
+    final userId = LocalSessionIdentity.resolveUserId();
     if (userId.isEmpty) return [];
     final db = await _dbHelper.database;
     final results = await db.query(
@@ -234,7 +234,7 @@ class AgendaRepository {
 
   /// Busca sessões ativas (não finalizadas)
   Future<List<VisitSession>> getActiveSessions() async {
-    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
+    final userId = LocalSessionIdentity.resolveUserId();
     if (userId.isEmpty) return [];
     final db = await _dbHelper.database;
     final results = await db.query(

@@ -23,7 +23,7 @@ class BaseMapSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: PremiumTokens.surfaceLight,
+        color: context.premiumSurface,
         borderRadius: const BorderRadius.only(
           topLeft: Radius.circular(24.0),
           topRight: Radius.circular(24.0),
@@ -39,7 +39,7 @@ class BaseMapSheet extends StatelessWidget {
             width: 40,
             height: 4,
             decoration: BoxDecoration(
-              color: PremiumTokens.backgroundLight,
+              color: context.premiumBackground,
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -72,7 +72,7 @@ class BaseMapSheet extends StatelessWidget {
               ],
             ),
           ),
-          const Divider(height: 1, color: PremiumTokens.hairlineLight),
+          Divider(height: 1, color: context.premiumHairline),
           Flexible(child: child),
         ],
       ),
@@ -151,24 +151,20 @@ class PublicacoesSheet extends ConsumerWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(
-              SFIcons.article,
-              size: 64,
-              color: PremiumTokens.textTertiaryLight,
-            ),
+            Icon(SFIcons.article, size: 64, color: context.premiumTextTertiary),
             const SizedBox(height: 16),
             Text(
               'Nenhuma publicação',
               style:
                   (Theme.of(context).textTheme.titleLarge ?? const TextStyle())
-                      .copyWith(color: PremiumTokens.textSecondaryLight),
+                      .copyWith(color: context.premiumTextSecondary),
             ),
             const SizedBox(height: 8),
             Text(
               'As publicações aparecerão aqui',
               style:
                   (Theme.of(context).textTheme.labelMedium ?? const TextStyle())
-                      .copyWith(color: PremiumTokens.textTertiaryLight),
+                      .copyWith(color: context.premiumTextTertiary),
             ),
           ],
         ),
@@ -190,15 +186,15 @@ class _PublicacaoCard extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: PremiumTokens.surfaceLight,
+        color: context.premiumSurface,
         borderRadius: BorderRadius.circular(16), // Radius padrão
-        border: Border.all(color: PremiumTokens.hairlineLight, width: 1),
+        border: Border.all(color: context.premiumHairline, width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // 🖼️ Imagem de capa
-          _buildCoverImage(),
+          _buildCoverImage(context),
 
           // 📝 Conteúdo
           Padding(
@@ -235,7 +231,7 @@ class _PublicacaoCard extends StatelessWidget {
                                 const TextStyle())
                             .copyWith(
                               fontSize: 14,
-                              color: PremiumTokens.textSecondaryLight,
+                              color: context.premiumTextSecondary,
                             ),
                     maxLines: 3,
                     overflow: TextOverflow.ellipsis,
@@ -255,14 +251,14 @@ class _PublicacaoCard extends StatelessWidget {
     );
   }
 
-  Widget _buildCoverImage() {
+  Widget _buildCoverImage(BuildContext context) {
     final cover = pub.coverMedia;
 
     return Container(
       height: 180,
-      decoration: const BoxDecoration(
-        color: PremiumTokens.backgroundLight,
-        borderRadius: BorderRadius.only(
+      decoration: BoxDecoration(
+        color: context.premiumBackground,
+        borderRadius: const BorderRadius.only(
           topLeft: Radius.circular(16),
           topRight: Radius.circular(16),
         ),
@@ -277,19 +273,19 @@ class _PublicacaoCard extends StatelessWidget {
                 cover.path,
                 fit: BoxFit.cover,
                 width: double.infinity,
-                errorBuilder: (_, __, ___) => _buildPlaceholder(),
+                errorBuilder: (_, __, ___) => _buildPlaceholder(context),
               ),
             )
-          : _buildPlaceholder(),
+          : _buildPlaceholder(context),
     );
   }
 
-  Widget _buildPlaceholder() {
+  Widget _buildPlaceholder(BuildContext context) {
     return Center(
       child: Icon(
         SFIcons.image,
         size: 48,
-        color: PremiumTokens.textTertiaryLight.withValues(alpha: 0.3),
+        color: context.premiumTextTertiary.withValues(alpha: 0.3),
       ),
     );
   }
@@ -325,11 +321,7 @@ class _PublicacaoCard extends StatelessWidget {
     return Row(
       children: [
         if (pub.clientName != null) ...[
-          const Icon(
-            SFIcons.person,
-            size: 14,
-            color: PremiumTokens.textTertiaryLight,
-          ),
+          Icon(SFIcons.person, size: 14, color: context.premiumTextTertiary),
           const SizedBox(width: 4),
           Text(
             pub.clientName!,
@@ -337,23 +329,23 @@ class _PublicacaoCard extends StatelessWidget {
                 (Theme.of(context).textTheme.labelMedium ?? const TextStyle())
                     .copyWith(
                       fontSize: 12,
-                      color: PremiumTokens.textSecondaryLight,
+                      color: context.premiumTextSecondary,
                     ),
           ),
         ],
         if (pub.clientName != null && pub.areaName != null)
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 8),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
             child: Text(
               '•',
-              style: TextStyle(color: PremiumTokens.textTertiaryLight),
+              style: TextStyle(color: context.premiumTextTertiary),
             ),
           ),
         if (pub.areaName != null) ...[
-          const Icon(
+          Icon(
             SFIcons.locationOn,
             size: 14,
-            color: PremiumTokens.textTertiaryLight,
+            color: context.premiumTextTertiary,
           ),
           const SizedBox(width: 4),
           Text(
@@ -362,7 +354,7 @@ class _PublicacaoCard extends StatelessWidget {
                 (Theme.of(context).textTheme.labelMedium ?? const TextStyle())
                     .copyWith(
                       fontSize: 12,
-                      color: PremiumTokens.textSecondaryLight,
+                      color: context.premiumTextSecondary,
                     ),
           ),
         ],

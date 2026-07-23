@@ -1,6 +1,6 @@
 import 'package:sqflite/sqflite.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/database/database_helper.dart';
+import '../../../../core/session/local_session_identity.dart';
 import '../../domain/models/visit_session.dart';
 import '../../domain/models/visit_stats.dart';
 
@@ -9,7 +9,7 @@ class VisitRepository {
 
   Future<VisitSession?> getActiveSession() async {
     final db = await _databaseHelper.database;
-    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
+    final userId = LocalSessionIdentity.resolveUserId();
     final List<Map<String, dynamic>> maps = await db.query(
       'visit_sessions',
       where: 'status = ? AND user_id = ?',
@@ -27,7 +27,7 @@ class VisitRepository {
   /// Adicionado em ADR-023 — DT-023-2 (suporte a IVisitSessionLookup.findById)
   Future<VisitSession?> getById(String sessionId) async {
     final db = await _databaseHelper.database;
-    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
+    final userId = LocalSessionIdentity.resolveUserId();
     final List<Map<String, dynamic>> maps = await db.query(
       'visit_sessions',
       where: 'id = ? AND user_id = ?',
@@ -42,7 +42,7 @@ class VisitRepository {
 
   Future<void> saveSession(VisitSession session) async {
     final db = await _databaseHelper.database;
-    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
+    final userId = LocalSessionIdentity.resolveUserId();
     await db.insert('visit_sessions', {
       ...session.toMap(),
       'user_id': userId,
@@ -51,7 +51,7 @@ class VisitRepository {
 
   Future<void> updateFarm(String sessionId, String newFarmId) async {
     final db = await _databaseHelper.database;
-    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
+    final userId = LocalSessionIdentity.resolveUserId();
     await db.update(
       'visit_sessions',
       {
@@ -71,7 +71,7 @@ class VisitRepository {
     String? farmId,
   }) async {
     final db = await _databaseHelper.database;
-    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
+    final userId = LocalSessionIdentity.resolveUserId();
     await db.update(
       'visit_sessions',
       {
@@ -87,7 +87,7 @@ class VisitRepository {
 
   Future<void> endSession(String sessionId, DateTime endTime) async {
     final db = await _databaseHelper.database;
-    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
+    final userId = LocalSessionIdentity.resolveUserId();
     await db.update(
       'visit_sessions',
       {
@@ -115,7 +115,7 @@ class VisitRepository {
       59,
     ).toIso8601String();
 
-    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
+    final userId = LocalSessionIdentity.resolveUserId();
 
     // 1. Finished visits today
     // Calc duration in seconds: strftime('%s', end) - strftime('%s', start)
@@ -162,7 +162,7 @@ class VisitRepository {
         .subtract(const Duration(seconds: 1))
         .toIso8601String();
 
-    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
+    final userId = LocalSessionIdentity.resolveUserId();
 
     final result = await db.rawQuery(
       '''
@@ -237,7 +237,7 @@ class VisitRepository {
         .subtract(const Duration(seconds: 1))
         .toIso8601String();
 
-    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
+    final userId = LocalSessionIdentity.resolveUserId();
 
     String whereClause =
         'status = ? AND user_id = ? AND start_time BETWEEN ? AND ?';

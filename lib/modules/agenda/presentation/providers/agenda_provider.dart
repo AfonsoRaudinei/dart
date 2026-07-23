@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../core/router/app_routes.dart';
+import '../../../../core/session/session_controller.dart';
+import '../../../../core/session/session_models.dart';
 import '../../data/repositories/agenda_repository.dart';
 import '../../data/services/agenda_notification_service.dart';
 import '../../domain/entities/event.dart';
@@ -45,7 +47,14 @@ class Agenda extends _$Agenda {
 
   @override
   AgendaState build() {
-    Future.microtask(_loadFromDatabase);
+    final session = ref.watch(sessionControllerProvider);
+    SessionController.registerLogoutInvalidation(
+      key: 'agendaProvider',
+      invalidate: (ref) => ref.invalidate(agendaProvider),
+    );
+    if (session is! SessionPublic) {
+      Future.microtask(_loadFromDatabase);
+    }
     Future.microtask(() async {
       await _notificationService.initialize();
       AgendaNotificationService.onEventTap = (eventId) {
@@ -305,11 +314,7 @@ class Agenda extends _$Agenda {
 
     final result = await CompleteEventUseCase(
       AgendaRepositoryAdapter(_repository),
-    ).execute(
-      event: event,
-      sessions: state.sessions,
-      notasFinais: notasFinais,
-    );
+    ).execute(event: event, sessions: state.sessions, notasFinais: notasFinais);
 
     if (result.updatedSession != null) {
       _updateSession(result.updatedSession!);

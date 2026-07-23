@@ -14,7 +14,7 @@ class CameraActionButton extends StatelessWidget {
         width: 80,
         height: 80,
         decoration: BoxDecoration(
-          color: PremiumTokens.surfaceLight,
+          color: context.premiumSurface,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: PremiumTokens.brandGreen.withValues(alpha: 0.3),
@@ -22,20 +22,20 @@ class CameraActionButton extends StatelessWidget {
             style: BorderStyle.solid,
           ),
         ),
-        child: const Column(
+        child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
+            const Icon(
               Icons.camera_alt_outlined,
               color: PremiumTokens.brandGreen,
               size: 28,
             ),
-            SizedBox(height: 4),
+            const SizedBox(height: 4),
             Text(
               'Foto',
               style: TextStyle(
                 fontSize: 10,
-                color: PremiumTokens.textSecondaryLight,
+                color: context.premiumTextSecondary,
                 fontWeight: FontWeight.w600,
               ),
             ),

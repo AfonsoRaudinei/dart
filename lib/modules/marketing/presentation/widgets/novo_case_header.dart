@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../../../ui/theme/premium/design_tokens.dart';
 
 /// Header do NovoCaseSheet com título e coordenadas.
 class NovoCaseHeader extends StatelessWidget {
@@ -42,7 +41,7 @@ class NovoCaseHeader extends StatelessWidget {
         IconButton(
           icon: const Icon(Icons.close),
           onPressed: onClose,
-          color: PremiumTokens.textSecondaryLight,
+          color: Colors.white,
         ),
       ],
     );

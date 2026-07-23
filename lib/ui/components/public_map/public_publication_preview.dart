@@ -47,7 +47,7 @@ class _PublicPublicationPreviewSheet extends StatelessWidget {
             width: 40,
             height: 4,
             decoration: BoxDecoration(
-              color: PremiumTokens.hairlineLight,
+              color: context.premiumHairline,
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -65,14 +65,17 @@ class _PublicPublicationPreviewSheet extends StatelessWidget {
                   const SizedBox(height: 20.0),
 
                   // Badge de tipo
-                  _buildTypeBadge(),
+                  _buildTypeBadge(context),
 
                   const SizedBox(height: 12.0),
 
                   // Título
                   Text(
                     publication.title ?? 'Sem título',
-                    style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold).copyWith(fontSize: 24),
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ).copyWith(fontSize: 24),
                   ),
 
                   const SizedBox(height: 12.0),
@@ -80,7 +83,7 @@ class _PublicPublicationPreviewSheet extends StatelessWidget {
                   // Informações do cliente/área
                   if (publication.clientName != null ||
                       publication.areaName != null)
-                    _buildClientInfo(),
+                    _buildClientInfo(context),
 
                   const SizedBox(height: 16.0),
 
@@ -89,7 +92,7 @@ class _PublicPublicationPreviewSheet extends StatelessWidget {
                     Text(
                       publication.description!,
                       style: const TextStyle(fontSize: 14).copyWith(
-                        color: PremiumTokens.textSecondaryLight,
+                        color: context.premiumTextSecondary,
                         height: 1.5,
                       ),
                     ),
@@ -97,7 +100,7 @@ class _PublicPublicationPreviewSheet extends StatelessWidget {
                   const SizedBox(height: 20.0),
 
                   // Data de publicação
-                  _buildPublicationDate(),
+                  _buildPublicationDate(context),
 
                   const SizedBox(height: 20.0),
 
@@ -122,17 +125,17 @@ class _PublicPublicationPreviewSheet extends StatelessWidget {
           fit: BoxFit.cover,
           errorWidget: (context, url, error) {
             return Container(
-              color: PremiumTokens.surfaceLight,
-              child: const Icon(
+              color: context.premiumSurface,
+              child: Icon(
                 Icons.image,
                 size: 64,
-                color: PremiumTokens.textSecondaryLight,
+                color: context.premiumTextSecondary,
               ),
             );
           },
           placeholder: (context, url) {
             return Container(
-              color: PremiumTokens.surfaceLight,
+              color: context.premiumSurface,
               child: const Center(
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
@@ -148,34 +151,28 @@ class _PublicPublicationPreviewSheet extends StatelessWidget {
     );
   }
 
-  Widget _buildTypeBadge() {
+  Widget _buildTypeBadge(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 12.0,
-        vertical: 4,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 4),
       decoration: BoxDecoration(
         color: _getTypeColor(publication.type).withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(
         _getTypeLabel(publication.type),
-        style: const TextStyle(fontSize: 12, color: PremiumTokens.textSecondaryLight).copyWith(
-          color: _getTypeColor(publication.type),
-          fontWeight: FontWeight.w500,
-        ),
+        style: TextStyle(fontSize: 12, color: context.premiumTextSecondary)
+            .copyWith(
+              color: _getTypeColor(publication.type),
+              fontWeight: FontWeight.w500,
+            ),
       ),
     );
   }
 
-  Widget _buildClientInfo() {
+  Widget _buildClientInfo(BuildContext context) {
     return Row(
       children: [
-        const Icon(
-          Icons.location_on,
-          size: 16,
-          color: PremiumTokens.textSecondaryLight,
-        ),
+        Icon(Icons.location_on, size: 16, color: context.premiumTextSecondary),
         const SizedBox(width: 4),
         Expanded(
           child: Text(
@@ -183,31 +180,25 @@ class _PublicPublicationPreviewSheet extends StatelessWidget {
               if (publication.clientName != null) publication.clientName,
               if (publication.areaName != null) publication.areaName,
             ].join(' • '),
-            style: const TextStyle(fontSize: 14).copyWith(
-              color: PremiumTokens.textSecondaryLight,
-              fontSize: 14,
-            ),
+            style: TextStyle(color: context.premiumTextSecondary, fontSize: 14),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildPublicationDate() {
+  Widget _buildPublicationDate(BuildContext context) {
     final formatter = DateFormat('dd/MM/yyyy • HH:mm');
     return Row(
       children: [
-        const Icon(
-          Icons.schedule,
-          size: 16,
-          color: PremiumTokens.textSecondaryLight,
-        ),
+        Icon(Icons.schedule, size: 16, color: context.premiumTextSecondary),
         const SizedBox(width: 4),
         Text(
           'Publicado em ${formatter.format(publication.createdAt)}',
-          style: const TextStyle(fontSize: 12, color: PremiumTokens.textSecondaryLight).copyWith(
-            color: PremiumTokens.textSecondaryLight,
-          ),
+          style: TextStyle(
+            fontSize: 12,
+            color: context.premiumTextSecondary,
+          ).copyWith(color: context.premiumTextSecondary),
         ),
       ],
     );
@@ -239,10 +230,10 @@ class _PublicPublicationPreviewSheet extends StatelessWidget {
                     fit: BoxFit.cover,
                     errorWidget: (context, url, error) {
                       return Container(
-                        color: PremiumTokens.surfaceLight,
-                        child: const Icon(
+                        color: context.premiumSurface,
+                        child: Icon(
                           Icons.image,
-                          color: PremiumTokens.textSecondaryLight,
+                          color: context.premiumTextSecondary,
                         ),
                       );
                     },

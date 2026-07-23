@@ -7,6 +7,7 @@ import '../infra/preferences_service.dart';
 import '../../core/network/network_policy.dart';
 import '../../core/state/map_state.dart';
 import '../database/database_helper.dart';
+import 'local_session_identity.dart';
 import 'pending_signup_role_store.dart';
 import 'profile_role_resolver.dart';
 import 'user_role.dart';
@@ -36,6 +37,12 @@ class SessionController extends _$SessionController {
 
   @override
   SessionState build() {
+    try {
+      LocalSessionIdentity.configure(ref.read(preferencesServiceProvider));
+    } catch (_) {
+      // Tests that do not initialize app bootstrap can still exercise session.
+    }
+
     // Inicia listener do stream de autenticação do Supabase.
     // O stream emite imediatamente com o estado atual e depois em cada mudança.
     _startListening();
@@ -47,6 +54,7 @@ class SessionController extends _$SessionController {
     try {
       final currentUser = Supabase.instance.client.auth.currentUser;
       if (currentUser != null) {
+        LocalSessionIdentity.remember(currentUser.id);
         return SessionAuthenticated(currentUser);
       }
     } catch (_) {
@@ -76,12 +84,18 @@ class SessionController extends _$SessionController {
 
         final user = data.session?.user;
         if (user != null) {
+          LocalSessionIdentity.remember(user.id);
           state = SessionAuthenticated(user);
           unawaited(() async {
             try {
               await DatabaseHelper.instance.repairOrphanUserIds(user.id);
             } catch (e, st) {
-              AppLogger.error('repairOrphanUserIds falhou', tag: 'SessionController', error: e, stackTrace: st);
+              AppLogger.error(
+                'repairOrphanUserIds falhou',
+                tag: 'SessionController',
+                error: e,
+                stackTrace: st,
+              );
             }
             try {
               await _ensureProfileComplete(loginEmail: user.email);
@@ -90,6 +104,11 @@ class SessionController extends _$SessionController {
             }
           }());
         } else {
+          if (data.event == AuthChangeEvent.signedOut) {
+            LocalSessionIdentity.clear();
+          } else {
+            LocalSessionIdentity.markSessionPublic();
+          }
           state = const SessionPublic();
         }
       },
@@ -132,7 +151,12 @@ class SessionController extends _$SessionController {
       try {
         await DatabaseHelper.instance.repairOrphanUserIds(userId);
       } catch (e, st) {
-        AppLogger.error('repairOrphanUserIds falhou', tag: 'SessionController', error: e, stackTrace: st);
+        AppLogger.error(
+          'repairOrphanUserIds falhou',
+          tag: 'SessionController',
+          error: e,
+          stackTrace: st,
+        );
       }
     }
 
@@ -282,7 +306,12 @@ class SessionController extends _$SessionController {
         () => client.auth.updateUser(UserAttributes(data: {'role': role})),
       );
     } catch (e, st) {
-      AppLogger.error('sync role falhou', tag: 'SessionController', error: e, stackTrace: st);
+      AppLogger.error(
+        'sync role falhou',
+        tag: 'SessionController',
+        error: e,
+        stackTrace: st,
+      );
     }
   }
 
@@ -322,6 +351,7 @@ class SessionController extends _$SessionController {
   /// Logout real via Supabase Auth.
   Future<void> logout() async {
     _invalidateUserScopedProviders();
+    LocalSessionIdentity.clear();
 
     await Supabase.instance.client.auth.signOut();
     // O stream onAuthStateChange seta state = SessionPublic() automaticamente.
@@ -358,11 +388,17 @@ class SessionController extends _$SessionController {
     try {
       await _clearLocalUserData();
     } catch (e, st) {
-      AppLogger.error('clearLocalUserData falhou', tag: 'SessionController', error: e, stackTrace: st);
+      AppLogger.error(
+        'clearLocalUserData falhou',
+        tag: 'SessionController',
+        error: e,
+        stackTrace: st,
+      );
     }
 
     // 3. Invalidar providers
     _invalidateUserScopedProviders();
+    LocalSessionIdentity.clear();
 
     // 4. SignOut (sessão já invalidada no servidor)
     try {
@@ -401,7 +437,12 @@ class SessionController extends _$SessionController {
       try {
         ref.invalidate(provider);
       } catch (e, st) {
-        AppLogger.error('invalidate($provider) falhou', tag: 'SessionController', error: e, stackTrace: st);
+        AppLogger.error(
+          'invalidate($provider) falhou',
+          tag: 'SessionController',
+          error: e,
+          stackTrace: st,
+        );
       }
     }
   }

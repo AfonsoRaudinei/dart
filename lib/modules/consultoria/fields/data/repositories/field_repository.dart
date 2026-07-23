@@ -1,14 +1,14 @@
 import 'dart:convert';
 import 'package:sqflite/sqflite.dart';
 import 'package:soloforte_app/core/database/database_helper.dart';
+import 'package:soloforte_app/core/session/local_session_identity.dart';
 import 'package:soloforte_app/modules/consultoria/clients/domain/agronomic_models.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 class FieldRepository {
   Future<Database> get _db async => await DatabaseHelper.instance.database;
 
   Future<List<Talhao>> getAllFields() async {
-    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
+    final userId = LocalSessionIdentity.resolveUserId();
     if (userId.isEmpty) return [];
     final db = await _db;
     final maps = await db.query(
@@ -21,7 +21,7 @@ class FieldRepository {
   }
 
   Future<List<Talhao>> getFieldsByFarmId(String farmId) async {
-    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
+    final userId = LocalSessionIdentity.resolveUserId();
     if (userId.isEmpty) return [];
     final db = await _db;
     final maps = await db.query(
@@ -34,7 +34,7 @@ class FieldRepository {
   }
 
   Future<Talhao?> getFieldById(String id) async {
-    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
+    final userId = LocalSessionIdentity.resolveUserId();
     if (userId.isEmpty) return null;
     final db = await _db;
     final maps = await db.query(
@@ -49,7 +49,7 @@ class FieldRepository {
   }
 
   Future<void> saveField(Talhao field, String farmId) async {
-    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
+    final userId = LocalSessionIdentity.resolveUserId();
     if (userId.isEmpty) return;
     final db = await _db;
 
@@ -75,7 +75,7 @@ class FieldRepository {
   }
 
   Future<void> deleteField(String id) async {
-    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
+    final userId = LocalSessionIdentity.resolveUserId();
     if (userId.isEmpty) return;
     final db = await _db;
     await db.update(

@@ -1,11 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:soloforte_app/core/contracts/i_client_lookup.dart';
 import 'package:soloforte_app/core/contracts/i_client_lookup_provider.dart';
 import 'package:soloforte_app/core/contracts/i_opportunity_lookup.dart';
 import 'package:soloforte_app/core/contracts/opportunity_summary.dart';
 import 'package:soloforte_app/core/database/database_helper.dart';
+import 'package:soloforte_app/core/session/local_session_identity.dart';
+import 'package:soloforte_app/core/session/session_controller.dart';
 import 'package:soloforte_app/modules/carteira/data/opportunity_lookup_impl.dart';
 import 'package:soloforte_app/modules/carteira/data/repositories/carteira_repository_impl.dart';
 import 'package:soloforte_app/modules/carteira/domain/entities/carteira_lancamento.dart';
@@ -73,10 +74,13 @@ final carteiraClienteByIdProvider = FutureProvider.autoDispose
       return ref.watch(clientLookupProvider).findById(clienteId);
     });
 
-String _currentUserId() => Supabase.instance.client.auth.currentUser?.id ?? '';
+String _currentUserId(Ref ref) {
+  ref.watch(sessionControllerProvider);
+  return LocalSessionIdentity.resolveUserId();
+}
 
 final valorGraoProvider = FutureProvider<double>((ref) async {
-  final userId = _currentUserId();
+  final userId = _currentUserId(ref);
   if (userId.isEmpty) return 0.0;
   final repo = ref.watch(carteiraRepositoryProvider);
   return repo.getValorGrao(userId);
@@ -85,14 +89,14 @@ final valorGraoProvider = FutureProvider<double>((ref) async {
 final safrasProvider = FutureProvider.autoDispose<List<CarteiraSafra>>((
   ref,
 ) async {
-  final userId = _currentUserId();
+  final userId = _currentUserId(ref);
   if (userId.isEmpty) return [];
   final repo = ref.watch(carteiraRepositoryProvider);
   return repo.getSafras(userId);
 });
 
 final safraAtivaProvider = FutureProvider<CarteiraSafra?>((ref) async {
-  final userId = _currentUserId();
+  final userId = _currentUserId(ref);
   if (userId.isEmpty) return null;
   final repo = ref.watch(carteiraRepositoryProvider);
   return repo.getSafraAtiva(userId);
@@ -103,7 +107,7 @@ final metasSafraAtivaProvider = FutureProvider.autoDispose<List<CarteiraMeta>>((
 ) async {
   final safra = await ref.watch(safraAtivaProvider.future);
   if (safra == null) return [];
-  final userId = _currentUserId();
+  final userId = _currentUserId(ref);
   if (userId.isEmpty) return [];
   final repo = ref.watch(carteiraRepositoryProvider);
   return repo.getMetasBySafra(safra.id, userId);
@@ -126,7 +130,7 @@ final lancamentosSafraProvider = FutureProvider.autoDispose
     >((ref, args) async {
       final safra = await ref.watch(safraAtivaProvider.future);
       if (safra == null) return [];
-      final userId = _currentUserId();
+      final userId = _currentUserId(ref);
       if (userId.isEmpty) return [];
       final repo = ref.watch(carteiraRepositoryProvider);
       return repo.getLancamentos(
@@ -141,7 +145,7 @@ final realizadoCategoriaProvider = FutureProvider.autoDispose
     .family<double, String>((ref, categoriaId) async {
       final safra = await ref.watch(safraAtivaProvider.future);
       if (safra == null) return 0.0;
-      final userId = _currentUserId();
+      final userId = _currentUserId(ref);
       if (userId.isEmpty) return 0.0;
       final repo = ref.watch(carteiraRepositoryProvider);
       return repo.getRealizadoBySafraCategoria(safra.id, categoriaId, userId);
@@ -153,8 +157,10 @@ final progressoCategoriaProvider = FutureProvider.autoDispose
       if (meta == null || meta.quantidade <= 0) return 0.0;
 
       final lancamentos = await ref.watch(
-        lancamentosSafraProvider((categoriaId: categoriaId, clienteId: null))
-            .future,
+        lancamentosSafraProvider((
+          categoriaId: categoriaId,
+          clienteId: null,
+        )).future,
       );
 
       final somaClosedPercent = lancamentos.fold<double>(
@@ -172,7 +178,7 @@ final realizadoClienteCategoriaProvider = FutureProvider.autoDispose
     ) async {
       final safra = await ref.watch(safraAtivaProvider.future);
       if (safra == null) return 0.0;
-      final userId = _currentUserId();
+      final userId = _currentUserId(ref);
       if (userId.isEmpty) return 0.0;
       final repo = ref.watch(carteiraRepositoryProvider);
       return repo.getRealizadoByClienteCategoriaSafra(
@@ -206,7 +212,7 @@ final oportunidadesClienteProvider = FutureProvider.autoDispose
     .family<List<OportunidadeCliente>, String>((ref, clienteId) async {
       final safra = await ref.watch(safraAtivaProvider.future);
       if (safra == null) return [];
-      final userId = _currentUserId();
+      final userId = _currentUserId(ref);
       if (userId.isEmpty) return [];
 
       final repo = ref.watch(carteiraRepositoryProvider);

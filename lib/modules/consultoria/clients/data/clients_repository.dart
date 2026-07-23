@@ -2,8 +2,8 @@ import '../domain/client.dart';
 import '../domain/agronomic_models.dart';
 import '../domain/client_cultura.dart';
 import 'package:sqflite/sqflite.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/database/database_helper.dart';
+import '../../../../core/session/local_session_identity.dart';
 
 class ClientsRepository {
   Future<Database> get _db async => await DatabaseHelper.instance.database;
@@ -11,7 +11,7 @@ class ClientsRepository {
   // ── Clientes ──────────────────────────────────────────────────────
 
   Future<List<Client>> getClients() async {
-    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
+    final userId = LocalSessionIdentity.resolveUserId();
     if (userId.isEmpty) return [];
     final db = await _db;
     final maps = await db.query(
@@ -24,7 +24,7 @@ class ClientsRepository {
   }
 
   Future<Client?> getClientById(String id) async {
-    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
+    final userId = LocalSessionIdentity.resolveUserId();
     if (userId.isEmpty) return null;
     final db = await _db;
     final maps = await db.query(
@@ -84,7 +84,7 @@ class ClientsRepository {
     Client client, {
     List<ClientCultura> culturas = const [],
   }) async {
-    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
+    final userId = LocalSessionIdentity.resolveUserId();
     if (userId.isEmpty) return;
     final db = await _db;
     await db.transaction((txn) async {
@@ -102,7 +102,7 @@ class ClientsRepository {
     Client client, {
     List<ClientCultura> culturas = const [],
   }) async {
-    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
+    final userId = LocalSessionIdentity.resolveUserId();
     if (userId.isEmpty) return;
     final db = await _db;
     await db.transaction((txn) async {
@@ -119,7 +119,7 @@ class ClientsRepository {
   /// Não toca em nenhum outro campo.
   /// Chamado pelo drawing/ via callback — nunca importado diretamente.
   Future<void> updateClientAreaTotal(String clientId, double areaTotal) async {
-    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
+    final userId = LocalSessionIdentity.resolveUserId();
     if (userId.isEmpty) return;
     final db = await _db;
     await db.update(
@@ -135,7 +135,7 @@ class ClientsRepository {
   }
 
   Future<void> deleteClient(String id) async {
-    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
+    final userId = LocalSessionIdentity.resolveUserId();
     if (userId.isEmpty) return;
     final db = await _db;
     await db.update(
@@ -153,7 +153,7 @@ class ClientsRepository {
   // ── Culturas ──────────────────────────────────────────────────────
 
   Future<List<ClientCultura>> getCulturas(String clientId) async {
-    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
+    final userId = LocalSessionIdentity.resolveUserId();
     if (userId.isEmpty) return [];
     final db = await _db;
     final rows = await db.query(
@@ -168,7 +168,7 @@ class ClientsRepository {
     DatabaseExecutor txn,
     List<ClientCultura> culturas,
   ) async {
-    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
+    final userId = LocalSessionIdentity.resolveUserId();
     if (userId.isEmpty) return;
     for (final c in culturas) {
       await txn.insert('client_culturas', {
@@ -179,7 +179,7 @@ class ClientsRepository {
   }
 
   Future<void> _deleteCulturas(DatabaseExecutor txn, String clientId) async {
-    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
+    final userId = LocalSessionIdentity.resolveUserId();
     if (userId.isEmpty) return;
     await txn.delete(
       'client_culturas',
@@ -191,7 +191,7 @@ class ClientsRepository {
   // ── Fazendas ──────────────────────────────────────────────────────
 
   Future<List<Farm>> getFarms(String clientId) async {
-    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
+    final userId = LocalSessionIdentity.resolveUserId();
     if (userId.isEmpty) return [];
     final db = await _db;
     final results = await db.query(
@@ -216,7 +216,7 @@ class ClientsRepository {
   }
 
   Future<void> saveFarm(Farm farm, String clientId) async {
-    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
+    final userId = LocalSessionIdentity.resolveUserId();
     if (userId.isEmpty) return;
     final db = await _db;
     final data = {

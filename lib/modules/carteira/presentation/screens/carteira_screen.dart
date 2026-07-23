@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 
 import 'package:soloforte_app/core/constants/layout_constants.dart';
+import 'package:soloforte_app/core/session/local_session_identity.dart';
+import 'package:soloforte_app/core/session/session_controller.dart';
 import 'package:soloforte_app/core/router/app_routes.dart';
 import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 import 'package:soloforte_app/modules/carteira/domain/entities/categoria_global.dart';
@@ -20,7 +21,8 @@ class CarteiraScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
+    ref.watch(sessionControllerProvider);
+    final userId = LocalSessionIdentity.resolveUserId();
 
     if (userId.isEmpty) {
       return const Scaffold(
