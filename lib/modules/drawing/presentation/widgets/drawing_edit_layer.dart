@@ -1,46 +1,175 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
-import 'dart:math' as math; // For Point
-import '../../presentation/controllers/drawing_controller.dart';
-import '../../domain/models/drawing_models.dart';
-import '../../domain/drawing_state.dart';
 
+import '../../domain/drawing_state.dart';
+import '../../domain/models/drawing_models.dart';
+import '../../presentation/controllers/drawing_controller.dart';
+import 'drawing_vertex_drag_handle.dart';
+
+/// Handles de vértice para edição e ajuste durante o desenho (sketch).
+///
+/// Em edição: geometria da feature selecionada.
+/// Em desenho: pontos do sketch (polígono/retângulo/círculo), freehand
+/// finalizado e pivô (centro/borda).
+///
+/// Durante o arraste, exibe o pingo d'água azul semi-transparente.
 class DrawingEditLayer extends StatefulWidget {
   final DrawingController controller;
   final MapController mapController;
+  final VoidCallback? onSketchClosePolygon;
 
   const DrawingEditLayer({
     super.key,
     required this.controller,
     required this.mapController,
+    this.onSketchClosePolygon,
   });
 
   @override
   State<DrawingEditLayer> createState() => _DrawingEditLayerState();
 }
 
+enum _HandleMode { edit, sketchPolygon, sketchFreehand, sketchPivot }
+
 class _DrawingEditLayerState extends State<DrawingEditLayer> {
   int? _draggingVertexIndex;
   int? _draggingRingIndex;
   LatLng? _draggingPosition;
+  _HandleMode? _dragMode;
+  bool _draggingPivotCenter = false;
+
+  /// Snapshot para restaurar geometria se o pan for cancelado.
+  List<LatLng>? _sketchPointsSnapshot;
+  LatLng? _pivotCenterSnapshot;
+  LatLng? _pivotEdgeSnapshot;
+  double? _pivotRadiusSnapshot;
+  bool _pivotFinalizedSnapshot = false;
 
   bool get _isDragging =>
-      _draggingVertexIndex != null &&
-      _draggingRingIndex != null &&
-      _draggingPosition != null;
+      _draggingPosition != null &&
+      (_draggingPivotCenter ||
+          (_draggingVertexIndex != null && _draggingRingIndex != null));
+
+  void _clearDragSnapshots() {
+    _sketchPointsSnapshot = null;
+    _pivotCenterSnapshot = null;
+    _pivotEdgeSnapshot = null;
+    _pivotRadiusSnapshot = null;
+    _pivotFinalizedSnapshot = false;
+  }
+
+  void _captureSketchSnapshot(_HandleMode mode) {
+    _clearDragSnapshots();
+    switch (mode) {
+      case _HandleMode.sketchPolygon:
+        _sketchPointsSnapshot = List.of(widget.controller.currentPoints);
+      case _HandleMode.sketchFreehand:
+        _sketchPointsSnapshot = List.of(widget.controller.freehandTrail);
+      case _HandleMode.sketchPivot:
+        _pivotCenterSnapshot = widget.controller.pivotCenter;
+        _pivotEdgeSnapshot = widget.controller.pivotEdgePoint;
+        _pivotRadiusSnapshot = widget.controller.pivotRadiusMeters;
+        _pivotFinalizedSnapshot = widget.controller.pivotRadiusFinalized;
+      case _HandleMode.edit:
+        break;
+    }
+  }
+
+  void _restoreSketchSnapshot() {
+    final mode = _dragMode;
+    final points = _sketchPointsSnapshot;
+    switch (mode) {
+      case _HandleMode.sketchPolygon:
+        if (points != null) {
+          widget.controller.restoreSketchPoints(points);
+        }
+      case _HandleMode.sketchFreehand:
+        if (points != null) {
+          widget.controller.restoreFreehandPoints(points);
+        }
+      case _HandleMode.sketchPivot:
+        widget.controller.restorePivotSketch(
+          center: _pivotCenterSnapshot,
+          edge: _pivotEdgeSnapshot,
+          radiusMeters: _pivotRadiusSnapshot,
+          radiusFinalized: _pivotFinalizedSnapshot,
+        );
+      case _HandleMode.edit:
+      case null:
+        break;
+    }
+  }
+
+  _HandleMode? _resolveMode() {
+    final state = widget.controller.currentState;
+    final tool = widget.controller.currentTool;
+
+    if (state == DrawingState.editing) return _HandleMode.edit;
+
+    final sketching =
+        state == DrawingState.drawing || state == DrawingState.armed;
+    if (!sketching) return null;
+
+    switch (tool) {
+      case DrawingTool.polygon:
+      case DrawingTool.rectangle:
+      case DrawingTool.circle:
+        if (widget.controller.currentPoints.isEmpty) return null;
+        return _HandleMode.sketchPolygon;
+      case DrawingTool.freehand:
+        if (widget.controller.isFreehandStrokeActive) return null;
+        if (widget.controller.freehandTrail.length < 3) return null;
+        return _HandleMode.sketchFreehand;
+      case DrawingTool.pivot:
+        if (widget.controller.pivotCenter == null) return null;
+        return _HandleMode.sketchPivot;
+      case DrawingTool.none:
+        return null;
+    }
+  }
 
   void _startVertexDrag({
+    required _HandleMode mode,
     required int ringIndex,
     required int pointIndex,
     required LatLng point,
   }) {
+    _captureSketchSnapshot(mode);
     setState(() {
+      _dragMode = mode;
       _draggingRingIndex = ringIndex;
       _draggingVertexIndex = pointIndex;
       _draggingPosition = point;
+      _draggingPivotCenter = false;
     });
     widget.controller.onDragStart(pointIndex);
+  }
+
+  void _startPivotCenterDrag(LatLng point) {
+    _captureSketchSnapshot(_HandleMode.sketchPivot);
+    setState(() {
+      _dragMode = _HandleMode.sketchPivot;
+      _draggingPivotCenter = true;
+      _draggingRingIndex = 0;
+      _draggingVertexIndex = 0;
+      _draggingPosition = point;
+    });
+    widget.controller.onDragStart(0);
+  }
+
+  void _startPivotEdgeDrag(LatLng point) {
+    _captureSketchSnapshot(_HandleMode.sketchPivot);
+    setState(() {
+      _dragMode = _HandleMode.sketchPivot;
+      _draggingPivotCenter = false;
+      _draggingRingIndex = 0;
+      _draggingVertexIndex = 1;
+      _draggingPosition = point;
+    });
+    widget.controller.onDragStart(1);
   }
 
   void _updateVertexDrag(DragUpdateDetails details, LatLng fallbackPoint) {
@@ -57,36 +186,78 @@ class _DrawingEditLayerState extends State<DrawingEditLayer> {
 
     final newLatLng = widget.mapController.camera.pointToLatLng(movedPoint);
     setState(() => _draggingPosition = newLatLng);
+
+    // Preview ao vivo no controller durante o sketch (sem persistir).
+    final mode = _dragMode;
+    if (mode == _HandleMode.sketchPolygon && _draggingVertexIndex != null) {
+      widget.controller.moveSketchVertex(_draggingVertexIndex!, newLatLng);
+    } else if (mode == _HandleMode.sketchFreehand &&
+        _draggingVertexIndex != null) {
+      widget.controller.moveFreehandVertex(_draggingVertexIndex!, newLatLng);
+    } else if (mode == _HandleMode.sketchPivot) {
+      if (_draggingPivotCenter) {
+        widget.controller.movePivotCenter(newLatLng);
+      } else {
+        widget.controller.updatePivotEdge(newLatLng);
+      }
+    }
   }
 
   void _endVertexDrag() {
+    final mode = _dragMode;
     final ringIndex = _draggingRingIndex;
     final pointIndex = _draggingVertexIndex;
     final position = _draggingPosition;
+    final pivotCenter = _draggingPivotCenter;
 
-    if (ringIndex != null && pointIndex != null && position != null) {
+    if (mode == _HandleMode.edit &&
+        ringIndex != null &&
+        pointIndex != null &&
+        position != null) {
       widget.controller.updateVertexPosition(ringIndex, pointIndex, position);
+    } else if (mode == _HandleMode.sketchPolygon &&
+        pointIndex != null &&
+        position != null) {
+      widget.controller.moveSketchVertex(pointIndex, position);
+    } else if (mode == _HandleMode.sketchFreehand &&
+        pointIndex != null &&
+        position != null) {
+      widget.controller.moveFreehandVertex(pointIndex, position);
+    } else if (mode == _HandleMode.sketchPivot && position != null) {
+      if (pivotCenter) {
+        widget.controller.movePivotCenter(position);
+      } else {
+        widget.controller.finalizePivotEdge(position);
+      }
     }
 
     widget.controller.onDragEnd(persist: false);
     setState(() {
+      _dragMode = null;
       _draggingRingIndex = null;
       _draggingVertexIndex = null;
       _draggingPosition = null;
+      _draggingPivotCenter = false;
     });
+    _clearDragSnapshots();
   }
 
   void _cancelVertexDrag() {
+    _restoreSketchSnapshot();
     widget.controller.onDragEnd(persist: false);
     setState(() {
+      _dragMode = null;
       _draggingRingIndex = null;
       _draggingVertexIndex = null;
       _draggingPosition = null;
+      _draggingPivotCenter = false;
     });
+    _clearDragSnapshots();
   }
 
   DrawingGeometry? _resolveDisplayGeometry(DrawingGeometry? original) {
     if (!_isDragging || original is! DrawingPolygon) return original;
+    if (_dragMode != _HandleMode.edit) return original;
 
     final ringIndex = _draggingRingIndex!;
     final pointIndex = _draggingVertexIndex!;
@@ -140,8 +311,8 @@ class _DrawingEditLayerState extends State<DrawingEditLayer> {
       Polygon(
         points: outer,
         holePointsList: holes,
-        color: const Color(0xFFFF6B00).withValues(alpha: 0.12),
-        borderColor: const Color(0xFFFF6B00),
+        color: const Color(0x990078D7).withValues(alpha: 0.12),
+        borderColor: const Color(0xFF0078D7),
         borderStrokeWidth: 3,
       ),
     ];
@@ -156,7 +327,7 @@ class _DrawingEditLayerState extends State<DrawingEditLayer> {
       lines.add(
         Polyline(
           points: ring.map((p) => LatLng(p[1], p[0])).toList(),
-          color: const Color(0xFFFF6B00),
+          color: const Color(0xFF0078D7),
           strokeWidth: 3,
         ),
       );
@@ -169,31 +340,227 @@ class _DrawingEditLayerState extends State<DrawingEditLayer> {
     return ListenableBuilder(
       listenable: widget.controller,
       builder: (context, _) {
-        final state = widget.controller.currentState;
-        final isEditing = state == DrawingState.editing;
+        final mode = _resolveMode();
+        if (mode == null) return const SizedBox.shrink();
 
-        // Only show handles if editing
-        if (!isEditing) return const SizedBox.shrink();
-
-        final geometry = widget.controller.liveGeometry;
-        final displayGeometry = _resolveDisplayGeometry(geometry);
-        final previewPolygons = _buildDragPreviewPolygons(displayGeometry);
-        final previewPolylines = _buildDragPreviewPolylines(displayGeometry);
-
-        return Stack(
-          children: [
-            if (previewPolygons.isNotEmpty)
-              PolygonLayer(polygons: previewPolygons),
-            if (previewPolylines.isNotEmpty)
-              PolylineLayer(polylines: previewPolylines),
-            MarkerLayer(markers: _buildMarkers(displayGeometry)),
-          ],
-        );
+        switch (mode) {
+          case _HandleMode.edit:
+            return _buildEditStack();
+          case _HandleMode.sketchPolygon:
+            return _buildSketchPolygonHandles();
+          case _HandleMode.sketchFreehand:
+            return _buildSketchFreehandHandles();
+          case _HandleMode.sketchPivot:
+            return _buildSketchPivotHandles();
+        }
       },
     );
   }
 
-  List<Marker> _buildMarkers(DrawingGeometry? geometry) {
+  Widget _buildEditStack() {
+    final geometry = widget.controller.liveGeometry;
+    final displayGeometry = _resolveDisplayGeometry(geometry);
+    final previewPolygons = _buildDragPreviewPolygons(displayGeometry);
+    final previewPolylines = _buildDragPreviewPolylines(displayGeometry);
+
+    return Stack(
+      children: [
+        if (previewPolygons.isNotEmpty)
+          PolygonLayer(polygons: previewPolygons),
+        if (previewPolylines.isNotEmpty)
+          PolylineLayer(polylines: previewPolylines),
+        MarkerLayer(markers: _buildEditMarkers(displayGeometry)),
+      ],
+    );
+  }
+
+  Widget _buildSketchPolygonHandles() {
+    final points = widget.controller.currentPoints;
+    return MarkerLayer(
+      markers: _buildPointHandles(
+        points: points,
+        mode: _HandleMode.sketchPolygon,
+        allowCloseOnFirst: widget.controller.currentTool == DrawingTool.polygon,
+      ),
+    );
+  }
+
+  Widget _buildSketchFreehandHandles() {
+    final points = widget.controller.freehandTrail;
+    final indices = <int>[];
+    if (points.length <= 28) {
+      for (var i = 0; i < points.length; i++) {
+        indices.add(i);
+      }
+    } else {
+      final step = (points.length / 24).ceil();
+      for (var i = 0; i < points.length; i += step) {
+        indices.add(i);
+      }
+      if (indices.last != points.length - 1) {
+        indices.add(points.length - 1);
+      }
+    }
+
+    final sampled = indices.map((i) => points[i]).toList(growable: false);
+    return MarkerLayer(
+      markers: _buildPointHandles(
+        points: sampled,
+        mode: _HandleMode.sketchFreehand,
+        allowCloseOnFirst: false,
+        indexMapper: (displayIndex) => indices[displayIndex],
+      ),
+    );
+  }
+
+  Widget _buildSketchPivotHandles() {
+    final center = widget.controller.pivotCenter;
+    final edge = widget.controller.pivotEdgePoint;
+    if (center == null) return const SizedBox.shrink();
+
+    final markers = <Marker>[];
+    final centerDragging =
+        _isDragging && _draggingPivotCenter && _dragMode == _HandleMode.sketchPivot;
+    final centerPos =
+        centerDragging && _draggingPosition != null ? _draggingPosition! : center;
+
+    markers.add(
+      Marker(
+        point: centerPos,
+        width: centerDragging ? 56 : 24,
+        height: centerDragging ? 56 : 24,
+        alignment: centerDragging ? Alignment.bottomCenter : Alignment.center,
+        child: _InteractiveVertexHandle(
+          keyId: 'drawing_sketch_pivot_center',
+          isDragging: centerDragging,
+          isStart: true,
+          onPanStart: () => _startPivotCenterDrag(center),
+          onPanUpdate: (d) => _updateVertexDrag(d, center),
+          onPanEnd: _endVertexDrag,
+          onPanCancel: _cancelVertexDrag,
+        ),
+      ),
+    );
+
+    if (edge != null) {
+      final edgeDragging =
+          _isDragging && !_draggingPivotCenter && _dragMode == _HandleMode.sketchPivot;
+      final edgePos =
+          edgeDragging && _draggingPosition != null ? _draggingPosition! : edge;
+      markers.add(
+        Marker(
+          point: edgePos,
+          width: edgeDragging ? 56 : 20,
+          height: edgeDragging ? 56 : 20,
+          alignment: edgeDragging ? Alignment.bottomCenter : Alignment.center,
+          child: _InteractiveVertexHandle(
+            keyId: 'drawing_sketch_pivot_edge',
+            isDragging: edgeDragging,
+            isStart: false,
+            onPanStart: () => _startPivotEdgeDrag(edge),
+            onPanUpdate: (d) => _updateVertexDrag(d, edge),
+            onPanEnd: _endVertexDrag,
+            onPanCancel: _cancelVertexDrag,
+          ),
+        ),
+      );
+    }
+
+    return MarkerLayer(markers: markers);
+  }
+
+  List<Marker> _buildPointHandles({
+    required List<LatLng> points,
+    required _HandleMode mode,
+    required bool allowCloseOnFirst,
+    int Function(int displayIndex)? indexMapper,
+  }) {
+    final markers = <Marker>[];
+    for (var i = 0; i < points.length; i++) {
+      final logicalIndex = indexMapper?.call(i) ?? i;
+      final p = points[i];
+      final isDragging =
+          _dragMode == mode &&
+          _draggingRingIndex == 0 &&
+          _draggingVertexIndex == logicalIndex;
+      final displayPoint =
+          isDragging && _draggingPosition != null ? _draggingPosition! : p;
+      final isStart = i == 0;
+
+      markers.add(
+        Marker(
+          point: displayPoint,
+          width: isDragging ? 56 : (isStart ? 22 : 18),
+          height: isDragging ? 56 : (isStart ? 22 : 18),
+          alignment: isDragging ? Alignment.bottomCenter : Alignment.center,
+          child: _InteractiveVertexHandle(
+            keyId: 'drawing_vertex_0_$logicalIndex',
+            isDragging: isDragging,
+            isStart: isStart,
+            onPanStart: () => _startVertexDrag(
+              mode: mode,
+              ringIndex: 0,
+              pointIndex: logicalIndex,
+              point: p,
+            ),
+            onPanUpdate: (d) => _updateVertexDrag(d, p),
+            onPanEnd: _endVertexDrag,
+            onPanCancel: _cancelVertexDrag,
+            onTap: allowCloseOnFirst &&
+                    isStart &&
+                    points.length >= 3 &&
+                    !widget.controller.hasSelfIntersection
+                ? widget.onSketchClosePolygon
+                : null,
+            onDoubleTap: mode == _HandleMode.edit
+                ? () => widget.controller.removeVertex(0, logicalIndex)
+                : null,
+          ),
+        ),
+      );
+
+      if (i < points.length - 1 || (allowCloseOnFirst && points.length >= 3)) {
+        final next = i < points.length - 1 ? points[i + 1] : points.first;
+        final mid = LatLng(
+          (p.latitude + next.latitude) / 2,
+          (p.longitude + next.longitude) / 2,
+        );
+        final dist = const Distance().as(LengthUnit.Meter, p, next);
+        final distText = dist >= 1000
+            ? '${(dist / 1000).toStringAsFixed(2)} km'
+            : '${dist.toStringAsFixed(0)} m';
+
+        markers.add(
+          Marker(
+            point: mid,
+            width: 80,
+            height: 24,
+            alignment: Alignment.topCenter,
+            child: IgnorePointer(
+              child: Transform.translate(
+                offset: const Offset(0, 8),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withAlpha(150),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    distText,
+                    style: const TextStyle(color: Colors.white, fontSize: 10),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      }
+    }
+    return markers;
+  }
+
+  List<Marker> _buildEditMarkers(DrawingGeometry? geometry) {
     if (geometry == null) return [];
 
     final markers = <Marker>[];
@@ -201,8 +568,6 @@ class _DrawingEditLayerState extends State<DrawingEditLayer> {
     if (geometry is DrawingPolygon) {
       for (int ringIdx = 0; ringIdx < geometry.coordinates.length; ringIdx++) {
         final ringRaw = geometry.coordinates[ringIdx];
-
-        // Convert raw to LatLng list for easier handling
         final ring = ringRaw.map((p) => LatLng(p[1], p[0])).toList();
 
         final isClosed =
@@ -214,19 +579,25 @@ class _DrawingEditLayerState extends State<DrawingEditLayer> {
         for (int i = 0; i < logicalLength; i++) {
           final p = ring[i];
           final isDragging =
-              _draggingRingIndex == ringIdx && _draggingVertexIndex == i;
+              _dragMode == _HandleMode.edit &&
+              _draggingRingIndex == ringIdx &&
+              _draggingVertexIndex == i;
+          final displayPoint =
+              isDragging && _draggingPosition != null ? _draggingPosition! : p;
 
-          // Vertex Handle
           markers.add(
             Marker(
-              point: p,
-              width: isDragging ? 28 : 20,
-              height: isDragging ? 28 : 20,
-              child: _VertexHandle(
-                index: i,
-                ringIndex: ringIdx,
+              point: displayPoint,
+              width: isDragging ? 56 : 20,
+              height: isDragging ? 56 : 20,
+              alignment:
+                  isDragging ? Alignment.bottomCenter : Alignment.center,
+              child: _InteractiveVertexHandle(
+                keyId: 'drawing_vertex_${ringIdx}_$i',
                 isDragging: isDragging,
+                isStart: false,
                 onPanStart: () => _startVertexDrag(
+                  mode: _HandleMode.edit,
                   ringIndex: ringIdx,
                   pointIndex: i,
                   point: p,
@@ -236,21 +607,13 @@ class _DrawingEditLayerState extends State<DrawingEditLayer> {
                 onPanCancel: _cancelVertexDrag,
                 onDoubleTap: () => widget.controller.removeVertex(ringIdx, i),
               ),
-              alignment: Alignment.center,
             ),
           );
 
-          // Midpoint Handle (Insertion point)
-          // Look ahead to next point (or wrap to first if closed)
           LatLng? nextP;
-
           if (i < logicalLength - 1) {
             nextP = ring[i + 1];
           } else if (isClosed) {
-            // If closed, the last point IS the first.
-            // So segment (last-1) -> (last) is effectively (last-1) -> (first).
-            // Since we skipped loop for 'last', the segment from 'last-1' needs coverage.
-            // i is last-1. next is last (which is same as first).
             nextP = ring.first;
           }
 
@@ -259,7 +622,6 @@ class _DrawingEditLayerState extends State<DrawingEditLayer> {
             final midLng = (p.longitude + nextP.longitude) / 2;
             final mid = LatLng(midLat, midLng);
 
-            // Midpoint Insert Handle
             markers.add(
               Marker(
                 point: mid,
@@ -275,7 +637,6 @@ class _DrawingEditLayerState extends State<DrawingEditLayer> {
               ),
             );
 
-            // Segment Distance Label
             final dist = const Distance().as(LengthUnit.Meter, p, nextP);
             final distText = dist >= 1000
                 ? '${(dist / 1000).toStringAsFixed(2)} km'
@@ -285,11 +646,11 @@ class _DrawingEditLayerState extends State<DrawingEditLayer> {
               Marker(
                 point: mid,
                 width: 80,
-                height: 30, // Enough for text
+                height: 30,
                 alignment: Alignment.topCenter,
                 child: IgnorePointer(
                   child: Transform.translate(
-                    offset: const Offset(0, 10), // Push below midpoint
+                    offset: const Offset(0, 10),
                     child: Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 4,
@@ -321,68 +682,63 @@ class _DrawingEditLayerState extends State<DrawingEditLayer> {
   }
 }
 
-class _VertexHandle extends StatelessWidget {
-  final int index;
-  final int ringIndex;
+class _InteractiveVertexHandle extends StatelessWidget {
+  final String keyId;
   final bool isDragging;
+  final bool isStart;
   final VoidCallback onPanStart;
   final ValueChanged<DragUpdateDetails> onPanUpdate;
   final VoidCallback onPanEnd;
   final VoidCallback onPanCancel;
-  final VoidCallback onDoubleTap;
+  final VoidCallback? onTap;
+  final VoidCallback? onDoubleTap;
 
-  const _VertexHandle({
-    required this.index,
-    required this.ringIndex,
+  const _InteractiveVertexHandle({
+    required this.keyId,
     required this.isDragging,
+    required this.isStart,
     required this.onPanStart,
     required this.onPanUpdate,
     required this.onPanEnd,
     required this.onPanCancel,
-    required this.onDoubleTap,
+    this.onTap,
+    this.onDoubleTap,
   });
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      key: Key('drawing_vertex_${ringIndex}_$index'),
-      // TODO(drawing): V2 bloquear pan/zoom do mapa durante drag de vértice.
-      // V1: GestureDetector do marker já permite arraste funcional.
+      key: Key(keyId),
       behavior: HitTestBehavior.opaque,
       onPanStart: (_) => onPanStart(),
       onPanUpdate: onPanUpdate,
       onPanEnd: (_) => onPanEnd(),
       onPanCancel: onPanCancel,
+      onTap: onTap,
       onDoubleTap: onDoubleTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        curve: Curves.easeOut,
-        width: isDragging ? 28 : 20,
-        height: isDragging ? 28 : 20,
-        decoration: BoxDecoration(
-          color: isDragging ? const Color(0xFFFF6B00) : Colors.white,
-          shape: BoxShape.circle,
-          border: Border.all(
-            color: isDragging ? const Color(0xFFCC5500) : Colors.grey.shade400,
-            width: isDragging ? 2.5 : 1.5,
-          ),
-          boxShadow: isDragging
-              ? [
-                  BoxShadow(
-                    color: const Color(0xFFFF6B00).withValues(alpha: 0.4),
-                    blurRadius: 8,
-                    spreadRadius: 2,
-                  ),
-                ]
-              : [
+      child: isDragging
+          ? const DrawingVertexDragHandle()
+          : AnimatedContainer(
+              duration: const Duration(milliseconds: 150),
+              curve: Curves.easeOut,
+              width: isStart ? 22 : 18,
+              height: isStart ? 22 : 18,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: isStart ? Colors.green : Colors.grey.shade400,
+                  width: isStart ? 2.5 : 1.5,
+                ),
+                boxShadow: [
                   BoxShadow(
                     color: Colors.black.withValues(alpha: 0.25),
                     blurRadius: 3,
                     offset: const Offset(0, 1),
                   ),
                 ],
-        ),
-      ),
+              ),
+            ),
     );
   }
 }

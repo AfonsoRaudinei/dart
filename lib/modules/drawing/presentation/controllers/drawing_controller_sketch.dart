@@ -155,9 +155,9 @@ extension DrawingControllerSketch on DrawingController {
         }
         if (_isSnapping) return '⚡ Ponto ajustado (snap)';
         if (pointCount < 3) {
-          return 'Continue tocando para fechar o polígono';
+          return 'Continue tocando ou arraste um ponto para ajustar';
         }
-        return 'Toque para continuar ou no ponto inicial para fechar';
+        return 'Arraste um ponto para ajustar ou toque no inicial para fechar';
       case DrawingTool.freehand:
         if (_freehandStrokeActive) {
           return 'Mantenha o dedo pressionado e trace a área';
@@ -187,9 +187,106 @@ extension DrawingControllerSketch on DrawingController {
       return;
     }
     if (!_canAcceptSketchInput()) return;
+    // Durante arraste de vértice, não adicionar ponto (gesto do handle).
+    if (_isDraggingVertex) return;
     if (!_ensureDrawingStarted()) return;
 
     _currentPoints.add(point);
+    _updateRealTimeIntersection();
+    _notify();
+  }
+
+  /// Move um vértice do sketch em andamento (polígono / retângulo / círculo).
+  ///
+  /// Permite ajustar pontos no meio do desenho, no padrão GPS Fields.
+  void moveSketchVertex(int index, LatLng newPos) {
+    if (_isDisposed) return;
+    if (_stateMachine.currentTool != DrawingTool.polygon &&
+        _stateMachine.currentTool != DrawingTool.rectangle &&
+        _stateMachine.currentTool != DrawingTool.circle) {
+      return;
+    }
+    if (_stateMachine.currentState != DrawingState.drawing &&
+        _stateMachine.currentState != DrawingState.armed) {
+      return;
+    }
+    if (index < 0 || index >= _currentPoints.length) return;
+
+    _currentPoints[index] = newPos;
+    _updateRealTimeIntersection();
+    _notifyHost();
+  }
+
+  /// Restaura todos os pontos do polígono sketch (cancel de drag).
+  void restoreSketchPoints(List<LatLng> points) {
+    if (_isDisposed) return;
+    if (_stateMachine.currentTool != DrawingTool.polygon &&
+        _stateMachine.currentTool != DrawingTool.rectangle &&
+        _stateMachine.currentTool != DrawingTool.circle) {
+      return;
+    }
+    _currentPoints
+      ..clear()
+      ..addAll(points);
+    _updateRealTimeIntersection();
+    _notify();
+  }
+
+  /// Move vértice da trilha freehand já finalizada (antes de concluir).
+  void moveFreehandVertex(int index, LatLng newPos) {
+    if (_isDisposed) return;
+    if (_stateMachine.currentTool != DrawingTool.freehand) return;
+    if (_freehandStrokeActive) return;
+    if (_stateMachine.currentState != DrawingState.drawing) return;
+    if (index < 0 || index >= _freehandPoints.length) return;
+
+    _freehandPoints[index] = newPos;
+    _updateRealTimeIntersection();
+    _notifyHost();
+  }
+
+  /// Restaura a trilha freehand (cancel de drag).
+  void restoreFreehandPoints(List<LatLng> points) {
+    if (_isDisposed) return;
+    if (_stateMachine.currentTool != DrawingTool.freehand) return;
+    _freehandPoints
+      ..clear()
+      ..addAll(points);
+    _updateRealTimeIntersection();
+    _notify();
+  }
+
+  /// Reposiciona o centro do pivô durante o desenho.
+  void movePivotCenter(LatLng newPos) {
+    if (_isDisposed) return;
+    if (_stateMachine.currentTool != DrawingTool.pivot) return;
+    if (_pivotCenter == null) return;
+    if (_stateMachine.currentState != DrawingState.drawing &&
+        _stateMachine.currentState != DrawingState.armed) {
+      return;
+    }
+
+    _pivotCenter = newPos;
+    if (_pivotPreviewEdge != null) {
+      _pivotRadiusMeters = _distanceMeters(_pivotCenter!, _pivotPreviewEdge!);
+    }
+    _updateRealTimeIntersection();
+    _notifyHost();
+  }
+
+  /// Restaura centro/borda/raio do pivô (cancel de drag).
+  void restorePivotSketch({
+    required LatLng? center,
+    required LatLng? edge,
+    required double? radiusMeters,
+    required bool radiusFinalized,
+  }) {
+    if (_isDisposed) return;
+    if (_stateMachine.currentTool != DrawingTool.pivot) return;
+    _pivotCenter = center;
+    _pivotPreviewEdge = edge;
+    _pivotRadiusMeters = radiusMeters;
+    _pivotRadiusFinalized = radiusFinalized;
     _updateRealTimeIntersection();
     _notify();
   }

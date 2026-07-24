@@ -4,9 +4,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:soloforte_app/modules/drawing/data/repositories/drawing_repository.dart';
+import 'package:soloforte_app/modules/drawing/domain/drawing_state.dart';
 import 'package:soloforte_app/modules/drawing/domain/models/drawing_models.dart';
 import 'package:soloforte_app/modules/drawing/presentation/controllers/drawing_controller.dart';
 import 'package:soloforte_app/modules/drawing/presentation/widgets/drawing_edit_layer.dart';
+import 'package:soloforte_app/modules/drawing/presentation/widgets/drawing_vertex_drag_handle.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 void main() {
@@ -90,6 +92,73 @@ void main() {
       persisted.coordinates.first.last,
       equals(persisted.coordinates.first.first),
     );
+  });
+
+  testWidgets('durante o desenho arrasta vértice sem sair do sketch', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(800, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final controller = DrawingController(
+      repository: _UpsertDrawingRepository(_feature()),
+    );
+    addTearDown(controller.dispose);
+
+    controller.selectTool('polygon');
+    controller.appendDrawingPoint(const LatLng(0.0, 0.0));
+    controller.appendDrawingPoint(const LatLng(0.01, 0.0));
+    controller.appendDrawingPoint(const LatLng(0.01, 0.01));
+
+    final mapController = MapController();
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: FlutterMap(
+            mapController: mapController,
+            options: const MapOptions(
+              initialCenter: LatLng(0, 0),
+              initialZoom: 13,
+              interactionOptions: InteractionOptions(
+                flags: InteractiveFlag.none,
+              ),
+            ),
+            children: [
+              DrawingEditLayer(
+                controller: controller,
+                mapController: mapController,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final handle = find.byKey(const Key('drawing_vertex_0_1'));
+    expect(handle, findsOneWidget);
+    final before = controller.currentPoints[1];
+
+    await tester.drag(handle, const Offset(36, 24));
+    await tester.pumpAndSettle();
+
+    expect(controller.currentPoints[1], isNot(equals(before)));
+    expect(controller.currentState, DrawingState.drawing);
+    expect(controller.currentPoints.length, 3);
+  });
+
+  testWidgets('DrawingVertexDragHandle renderiza pingo azul', (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(
+          body: Center(child: DrawingVertexDragHandle()),
+        ),
+      ),
+    );
+    expect(find.byType(DrawingVertexDragHandle), findsOneWidget);
+    expect(find.byType(CustomPaint), findsWidgets);
   });
 }
 

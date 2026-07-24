@@ -116,6 +116,9 @@ class MapBuildOrchestrator extends ConsumerWidget {
         (drawCtrlForInteraction.currentState == DrawingState.armed ||
             drawCtrlForInteraction.currentState == DrawingState.drawing ||
             drawCtrlForInteraction.isFreehandStrokeActive);
+    final freezeMapForVertexDrag =
+        drawCtrlForInteraction.isDraggingVertex ||
+        drawingMetrics.state == DrawingState.editing;
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       stopwatch.stop();
@@ -134,7 +137,7 @@ class MapBuildOrchestrator extends ConsumerWidget {
           ),
           MapCanvas(
             mapController: mapController,
-            interactionOptions: drawingMetrics.state == DrawingState.editing
+            interactionOptions: freezeMapForVertexDrag
                 ? const InteractionOptions(flags: InteractiveFlag.none)
                 : disableMapDrag
                 ? const InteractionOptions(
@@ -185,6 +188,10 @@ class MapBuildOrchestrator extends ConsumerWidget {
               if (drawCtrl.currentState == DrawingState.drawing ||
                   drawCtrl.currentState == DrawingState.armed) {
                 if (drawCtrl.currentTool == DrawingTool.freehand) {
+                  return;
+                }
+                // Não adicionar ponto enquanto arrasta vértice (handle azul).
+                if (drawCtrl.isDraggingVertex) {
                   return;
                 }
                 drawCtrl.appendDrawingPoint(point);
@@ -296,10 +303,11 @@ class MapBuildOrchestrator extends ConsumerWidget {
                 onDrawingComplete: finishDrawing,
               ),
 
-              // 🔧 Camada de Edição (Vertex Handles)
+              // 🔧 Camada de Edição + ajuste de vértices no desenho
               DrawingEditLayer(
                 controller: ref.read(drawingControllerProvider),
                 mapController: mapController,
+                onSketchClosePolygon: finishDrawing,
               ),
 
               // ADR-043 — Radar acima de talhões/desenho, abaixo de markers

@@ -30,7 +30,6 @@ class _DrawingLayerWidgetState extends State<DrawingLayerWidget> {
 
   List<Polygon>? _cachedPolygons;
   List<Polyline>? _cachedPolylines;
-  List<Marker>? _cachedMarkers;
   List<DrawingFeature>? _lastFeatures;
   String? _lastSelectedId;
   Set<String>? _lastSelectedIds;
@@ -76,14 +75,11 @@ class _DrawingLayerWidgetState extends State<DrawingLayerWidget> {
 
         if (!needsRebuild &&
             _cachedPolygons != null &&
-            _cachedPolylines != null &&
-            _cachedMarkers != null) {
+            _cachedPolylines != null) {
           return Stack(
             children: [
               PolygonLayer(polygons: _cachedPolygons!),
               PolylineLayer(polylines: _cachedPolylines!),
-              if (_cachedMarkers!.isNotEmpty)
-                MarkerLayer(markers: _cachedMarkers!),
             ],
           );
         }
@@ -102,7 +98,6 @@ class _DrawingLayerWidgetState extends State<DrawingLayerWidget> {
 
         final polygons = <Polygon>[];
         final polylines = <Polyline>[];
-        final markers = <Marker>[];
 
         for (final feature in features) {
           final geometry = feature.geometry;
@@ -133,25 +128,19 @@ class _DrawingLayerWidgetState extends State<DrawingLayerWidget> {
           }
         }
 
-        if (currentTool == DrawingTool.polygon &&
-            liveGeo == null &&
-            currentPoints.length == 1) {
-          markers.add(_vertexMarker(currentPoints.single, index: 0));
-        }
-
-        if (currentTool == DrawingTool.pivot && pivotCenter != null) {
-          markers.add(_pivotCenterMarker(pivotCenter));
-          if (pivotEdge != null) {
-            markers.add(_pivotEdgeMarker(pivotEdge));
-            polylines.add(
-              Polyline(
-                points: [pivotCenter, pivotEdge],
-                color: Colors.orange,
-                strokeWidth: 2,
-                pattern: StrokePattern.dashed(segments: const [8, 6]),
-              ),
-            );
-          }
+        // Vértices interativos (polígono/pivô) ficam em DrawingEditLayer
+        // para permitir arraste com handle azul durante o desenho.
+        if (currentTool == DrawingTool.pivot &&
+            pivotCenter != null &&
+            pivotEdge != null) {
+          polylines.add(
+            Polyline(
+              points: [pivotCenter, pivotEdge],
+              color: Colors.orange,
+              strokeWidth: 2,
+              pattern: StrokePattern.dashed(segments: const [8, 6]),
+            ),
+          );
         }
 
         if (currentTool == DrawingTool.freehand && freehandTrail.length >= 2) {
@@ -229,37 +218,29 @@ class _DrawingLayerWidgetState extends State<DrawingLayerWidget> {
               liveGeo is DrawingPolygon &&
               liveGeo.coordinates.isNotEmpty) {
             final outerRing = _toLatLngRing(liveGeo.coordinates.first);
+            // Segmentos com auto-interseção (vértices em DrawingEditLayer).
             for (int i = 0; i < outerRing.length; i++) {
+              if (!intersectingIndices.contains(i)) continue;
               final point = outerRing[i];
-              final isStart = i == 0;
-              final size = isStart ? 18.0 : 14.0;
-
-              if (intersectingIndices.contains(i)) {
-                final nextPoint =
-                    outerRing[i < outerRing.length - 1 ? i + 1 : 0];
-                polylines.add(
-                  Polyline(
-                    points: [point, nextPoint],
-                    color: Colors.red,
-                    strokeWidth: 4,
-                  ),
-                );
-              }
-
-              markers.add(_vertexMarker(point, index: i, size: size));
+              final nextPoint = outerRing[i < outerRing.length - 1 ? i + 1 : 0];
+              polylines.add(
+                Polyline(
+                  points: [point, nextPoint],
+                  color: Colors.red,
+                  strokeWidth: 4,
+                ),
+              );
             }
           }
         }
 
         _cachedPolygons = polygons;
         _cachedPolylines = polylines;
-        _cachedMarkers = markers;
 
         return Stack(
           children: [
             PolygonLayer(polygons: polygons),
             PolylineLayer(polylines: polylines),
-            if (markers.isNotEmpty) MarkerLayer(markers: markers),
           ],
         );
       },
@@ -278,80 +259,6 @@ class _DrawingLayerWidgetState extends State<DrawingLayerWidget> {
       if (previous[i] != current[i]) return false;
     }
     return true;
-  }
-
-  Marker _pivotCenterMarker(LatLng point) {
-    return Marker(
-      point: point,
-      width: 20,
-      height: 20,
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.orange,
-          shape: BoxShape.circle,
-          border: Border.all(color: Colors.white, width: 2),
-        ),
-      ),
-      alignment: Alignment.center,
-    );
-  }
-
-  Marker _pivotEdgeMarker(LatLng point) {
-    return Marker(
-      point: point,
-      width: 16,
-      height: 16,
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          shape: BoxShape.circle,
-          border: Border.all(color: Colors.orange, width: 2),
-        ),
-      ),
-      alignment: Alignment.center,
-    );
-  }
-
-  Marker _vertexMarker(LatLng point, {required int index, double? size}) {
-    final isStart = index == 0;
-    final markerSize = size ?? (isStart ? 18.0 : 14.0);
-    final allowClose =
-        widget.controller.currentTool == DrawingTool.polygon && isStart;
-    return Marker(
-      point: point,
-      width: markerSize,
-      height: markerSize,
-      child: GestureDetector(
-        key: Key('drawing_point_$index'),
-        onTap: (allowClose && !widget.controller.hasSelfIntersection)
-            ? widget.onDrawingComplete
-            : null,
-        child: Container(
-          decoration: BoxDecoration(
-            color: isStart && widget.controller.hasSelfIntersection
-                ? Colors.red.withValues(alpha: 0.5)
-                : Colors.white,
-            shape: BoxShape.circle,
-            border: Border.all(
-              color: isStart
-                  ? (widget.controller.hasSelfIntersection
-                        ? Colors.red
-                        : Colors.green)
-                  : Colors.black26,
-              width: isStart ? 2 : 1,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.3),
-                blurRadius: 2,
-                offset: const Offset(0, 1),
-              ),
-            ],
-          ),
-        ),
-      ),
-      alignment: Alignment.center,
-    );
   }
 
   Polygon _polygonFromRings(
