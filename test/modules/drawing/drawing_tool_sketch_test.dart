@@ -124,6 +124,66 @@ void main() {
       expect(controller.canFinishDrawing, isTrue);
     });
 
+    test('polígono: moveSketchVertex ajusta ponto durante o desenho', () {
+      controller.selectTool('polygon');
+      controller.appendDrawingPoint(const LatLng(-15.0, -47.0));
+      controller.appendDrawingPoint(const LatLng(-15.001, -47.0));
+      controller.appendDrawingPoint(const LatLng(-15.001, -47.001));
+
+      controller.onDragStart(1);
+      controller.moveSketchVertex(1, const LatLng(-15.002, -47.0));
+      controller.onDragEnd(persist: false);
+
+      expect(controller.isDraggingVertex, isFalse);
+      expect(controller.currentPoints[1], const LatLng(-15.002, -47.0));
+      expect(controller.currentPoints.length, 3);
+      expect(controller.canFinishDrawing, isTrue);
+    });
+
+    test('polígono: não adiciona ponto enquanto arrasta vértice', () {
+      controller.selectTool('polygon');
+      controller.appendDrawingPoint(const LatLng(-15.0, -47.0));
+      controller.appendDrawingPoint(const LatLng(-15.001, -47.0));
+
+      controller.onDragStart(0);
+      controller.appendDrawingPoint(const LatLng(-15.5, -47.5));
+      controller.onDragEnd(persist: false);
+
+      expect(controller.currentPoints.length, 2);
+    });
+
+    test('pivô: movePivotCenter reposiciona centro e recalcula raio', () {
+      controller.selectTool('pivot');
+      controller.handlePivotTap(const LatLng(-15.0, -47.0));
+      controller.finalizePivotEdge(const LatLng(-15.001, -47.0));
+      final radiusBefore = controller.pivotRadiusMeters!;
+
+      // Desloca o centro em longitude para alterar a distância ao edge.
+      controller.movePivotCenter(const LatLng(-15.0, -47.002));
+
+      expect(controller.pivotCenter, const LatLng(-15.0, -47.002));
+      expect(controller.pivotRadiusMeters, greaterThan(radiusBefore));
+      expect(controller.canFinishDrawing, isTrue);
+    });
+
+    test('freehand: moveFreehandVertex ajusta trilha após soltar', () {
+      controller.selectTool('freehand');
+      controller.beginFreehandStroke(const LatLng(-15.0, -47.0));
+      controller.extendFreehandStroke(const LatLng(-15.001, -47.0));
+      controller.extendFreehandStroke(const LatLng(-15.001, -47.001));
+      controller.extendFreehandStroke(const LatLng(-15.0, -47.001));
+      controller.endFreehandStroke();
+
+      final lastIndex = controller.freehandPointCount - 1;
+      controller.moveFreehandVertex(lastIndex, const LatLng(-15.0005, -47.0015));
+
+      expect(
+        controller.freehandTrail[lastIndex],
+        const LatLng(-15.0005, -47.0015),
+      );
+      expect(controller.canFinishDrawing, isTrue);
+    });
+
     test('instructionText diferencia ferramentas', () {
       controller.selectTool('freehand');
       expect(controller.instructionText, contains('arraste'));
