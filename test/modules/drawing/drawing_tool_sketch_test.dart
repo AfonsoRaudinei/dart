@@ -124,6 +124,24 @@ void main() {
       expect(controller.canFinishDrawing, isTrue);
     });
 
+    test('polígono: restoreSketchPoints reverte arraste cancelado', () {
+      controller.selectTool('polygon');
+      controller.appendDrawingPoint(const LatLng(-15.0, -47.0));
+      controller.appendDrawingPoint(const LatLng(-15.001, -47.0));
+      controller.appendDrawingPoint(const LatLng(-15.001, -47.001));
+
+      final snapshot = List<LatLng>.of(controller.currentPoints);
+      controller.onDragStart(1);
+      controller.moveSketchVertex(1, const LatLng(-15.5, -47.5));
+      expect(controller.currentPoints[1], const LatLng(-15.5, -47.5));
+
+      controller.restoreSketchPoints(snapshot);
+      controller.onDragEnd(persist: false);
+
+      expect(controller.currentPoints, snapshot);
+      expect(controller.isDraggingVertex, isFalse);
+    });
+
     test('polígono: moveSketchVertex ajusta ponto durante o desenho', () {
       controller.selectTool('polygon');
       controller.appendDrawingPoint(const LatLng(-15.0, -47.0));
