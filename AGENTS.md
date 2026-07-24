@@ -197,6 +197,36 @@ lib/
 
 -----
 
+## CHECKLIST DE CONCLUSÃO DE TAREFA (obrigatório antes de commit)
+
+O agente **DEVE** colar este bloco no chat ao encerrar a implementação,
+**antes** de `git commit` / `git push` / IPA. Marcar cada item com ✅ ou ❌
+e evidência (comando ou `arquivo:linha`). Se algum ❌ crítico (arch_check,
+analyze, testes do escopo, contrato), **parar e corrigir** — não commitar.
+
+```
+### Checklist de conclusão
+| # | Critério | Status | Evidência |
+|---|---|---|---|
+| 1 | Escopo declarado (módulo / BC / arquivos) respeitado | ✅/❌ | … |
+| 2 | PASSO 0 feito (find/rg) | ✅/❌ | … |
+| 3 | arch_check.sh Exit 0 | ✅/❌ | … |
+| 4 | flutter analyze sem erro novo no escopo | ✅/❌ | … |
+| 5 | Testes do escopo verdes | ✅/❌ | … |
+| 6 | Navegação Map-First intacta (sem pop/sub-rota /map) | ✅/❌ | … |
+| 7 | Sem google_maps_flutter / FAB local / smart_button | ✅/❌ | … |
+| 8 | Sem dados fictícios / hard delete sync | ✅/❌ | … |
+| 9 | Agentrevisor (DIFF) sem P0/P1 aberto | ✅/❌ | … |
+| 10 | Pronto para commit | ✅/❌ | … |
+| 11 | Pronto para IPA (só se pedido) | ✅/❌/N/A | … |
+
+Veredito: 🟢 COMMIT OK | 🟡 AJUSTAR | 🔴 BLOQUEADO
+```
+
+**Regra:** commit só com Veredito 🟢. IPA só se item 11 = ✅ e AGENTIPA seguido.
+
+-----
+
 ## CHECKLIST DE VALIDAÇÃO FINAL
 
 ```
@@ -208,6 +238,7 @@ lib/
 [ ] Tema mudou?                         NÃO
 [ ] Contrato de dados alterado?         NÃO (ou ADR criado)
 [ ] Apenas o módulo alvo foi afetado?   SIM
+[ ] Checklist de conclusão colado no chat antes do commit? SIM
 ```
 
 -----

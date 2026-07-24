@@ -6,6 +6,7 @@
 - Nunca gerar IPA com build number igual ou menor ao último IPA validado.
 - Sempre embutir corretamente os dados locais necessários ao boot do app antes de fechar a release.
 - Atualizar este arquivo após cada IPA com o número gerado e a evidência de validação.
+- **Antes do IPA:** Checklist de conclusão de `AGENTS.md` com Veredito 🟢 e item IPA ✅.
 
 ## Histórico
 
