@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'dart:math';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
@@ -6,18 +8,44 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/router/app_routes.dart';
 
+/// Frases rotativas do card público "Acessar SoloForte".
+const List<String> kAccessSoloForteTaglines = [
+  'Tecnologia com raiz.',
+  'Do campo. Para quem vive o campo.',
+  'Onde tradição encontra tecnologia.',
+  'Inteligência para quem planta o futuro.',
+  'O agro, do seu jeito.',
+  'Feito para quem vive a terra.',
+  'Simplicidade para produzir mais.',
+  'Tudo o que importa. Em um só lugar.',
+  'Seu campo. Mais inteligente.',
+  'A tecnologia que respeita o agro.',
+  'Crescendo junto com o produtor.',
+  'Porque toda lavoura tem uma história.',
+  'Raiz no campo. Olhar no futuro.',
+  'Quem vive o agro, merece o melhor.',
+];
+
 /// Card flutuante de acesso ao SoloForte no mapa público.
 ///
-/// Vidro fosco (glass) com entrada suave, microinteração de toque e
-/// retração discreta enquanto o mapa se move.
+/// Vidro fosco (glass) com entrada suave, microinteração de toque,
+/// retração discreta enquanto o mapa se move e tagline rotativa.
 class AccessSoloForteButton extends StatefulWidget {
   const AccessSoloForteButton({
     super.key,
     this.isMapMoving = false,
+    this.taglineInterval = const Duration(seconds: 4),
+    this.random,
   });
 
   /// Quando `true`, o card recolhe ~8% e desce alguns pixels.
   final bool isMapMoving;
+
+  /// Intervalo entre trocas de frase.
+  final Duration taglineInterval;
+
+  /// RNG injetável (testes). Em produção usa [Random] padrão.
+  final Random? random;
 
   @override
   State<AccessSoloForteButton> createState() => _AccessSoloForteButtonState();
@@ -33,12 +61,20 @@ class _AccessSoloForteButtonState extends State<AccessSoloForteButton>
   late final AnimationController _entranceController;
   late final Animation<double> _entranceFade;
   late final Animation<double> _entranceLift;
+  late final Random _random;
+
+  Timer? _taglineTimer;
+  late String _tagline;
+  int _taglineKey = 0;
 
   bool _pressed = false;
 
   @override
   void initState() {
     super.initState();
+    _random = widget.random ?? Random();
+    _tagline = _pickTagline(exclude: null);
+
     _entranceController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 550),
@@ -51,10 +87,29 @@ class _AccessSoloForteButtonState extends State<AccessSoloForteButton>
     // Sobe 20px (de +20 → 0) com easeOutCubic — sem deslize rápido.
     _entranceLift = Tween<double>(begin: 20, end: 0).animate(curved);
     _entranceController.forward();
+
+    _taglineTimer = Timer.periodic(widget.taglineInterval, (_) {
+      if (!mounted) return;
+      setState(() {
+        _tagline = _pickTagline(exclude: _tagline);
+        _taglineKey++;
+      });
+    });
+  }
+
+  String _pickTagline({required String? exclude}) {
+    final pool = kAccessSoloForteTaglines;
+    if (pool.length <= 1) return pool.first;
+    String next;
+    do {
+      next = pool[_random.nextInt(pool.length)];
+    } while (next == exclude);
+    return next;
   }
 
   @override
   void dispose() {
+    _taglineTimer?.cancel();
     _entranceController.dispose();
     super.dispose();
   }
@@ -219,14 +274,35 @@ class _AccessSoloForteButtonState extends State<AccessSoloForteButton>
                                         ),
                                       ),
                                       const SizedBox(height: 4),
-                                      const Text(
-                                        'Tecnologia com raiz.',
-                                        style: TextStyle(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.w400,
-                                          height: 1.25,
-                                          letterSpacing: -0.2,
-                                          color: _subtitleColor,
+                                      AnimatedSwitcher(
+                                        duration: const Duration(
+                                          milliseconds: 450,
+                                        ),
+                                        switchInCurve: Curves.easeOutCubic,
+                                        switchOutCurve: Curves.easeInCubic,
+                                        transitionBuilder: (child, animation) {
+                                          final offset = Tween<Offset>(
+                                            begin: const Offset(0, 0.25),
+                                            end: Offset.zero,
+                                          ).animate(animation);
+                                          return FadeTransition(
+                                            opacity: animation,
+                                            child: SlideTransition(
+                                              position: offset,
+                                              child: child,
+                                            ),
+                                          );
+                                        },
+                                        child: Text(
+                                          _tagline,
+                                          key: ValueKey<int>(_taglineKey),
+                                          style: const TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w400,
+                                            height: 1.25,
+                                            letterSpacing: -0.2,
+                                            color: _subtitleColor,
+                                          ),
                                         ),
                                       ),
                                     ],
