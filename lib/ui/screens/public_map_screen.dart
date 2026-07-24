@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -21,6 +22,8 @@ import '../../modules/marketing/presentation/widgets/marketing_case_sheet.dart';
 import '../../core/config/map_config.dart';
 import '../../core/permissions/permission_provider.dart';
 import '../../core/permissions/location_permission_gate.dart';
+import '../../core/session/session_controller.dart';
+import '../../core/session/session_models.dart';
 
 class PublicMapScreen extends ConsumerStatefulWidget {
   const PublicMapScreen({super.key});
@@ -34,12 +37,31 @@ class _PublicMapScreenState extends ConsumerState<PublicMapScreen> {
   static const double _defaultZoom = 13.0;
   static const double _userLocationZoom = 16.0;
   double _currentZoom = _defaultZoom;
+  bool _isMapMoving = false;
+  Timer? _mapIdleTimer;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _requestLocationPermission();
+    });
+  }
+
+  void _onMapPositionChanged(MapCamera camera, bool hasGesture) {
+    if (camera.zoom != _currentZoom) {
+      setState(() => _currentZoom = camera.zoom);
+    }
+    if (!hasGesture) return;
+
+    _mapIdleTimer?.cancel();
+    if (!_isMapMoving) {
+      setState(() => _isMapMoving = true);
+    }
+    // Após o gesto parar, o card volta com animação ~250ms no próprio widget.
+    _mapIdleTimer = Timer(const Duration(milliseconds: 140), () {
+      if (!mounted || !_isMapMoving) return;
+      setState(() => _isMapMoving = false);
     });
   }
 
@@ -92,6 +114,7 @@ class _PublicMapScreenState extends ConsumerState<PublicMapScreen> {
 
   @override
   void dispose() {
+    _mapIdleTimer?.cancel();
     _mapController.dispose();
     super.dispose();
   }
@@ -125,6 +148,10 @@ class _PublicMapScreenState extends ConsumerState<PublicMapScreen> {
     final locationState = ref.watch(publicLocationNotifierProvider);
     final mapStyle = ref.watch(publicMapStyleProvider);
     final publicationsAsync = ref.watch(publicPublicationsProvider);
+    // CTA só para visitante confirmado — oculto no bootstrap (SessionUnknown)
+    // e quando a sessão autenticada ainda não redirecionou para /map.
+    final session = ref.watch(sessionControllerProvider);
+    final showAccessCta = session is SessionPublic;
 
     return Scaffold(
       // 🛡 IPA-123: background branco — visível antes dos tiles do FlutterMap
@@ -140,10 +167,7 @@ class _PublicMapScreenState extends ConsumerState<PublicMapScreen> {
               initialZoom: _defaultZoom,
               minZoom: 3.0,
               maxZoom: 18.0,
-              onPositionChanged: (camera, _) {
-                if (camera.zoom == _currentZoom) return;
-                setState(() => _currentZoom = camera.zoom);
-              },
+              onPositionChanged: _onMapPositionChanged,
             ),
             children: [
               // TileLayer com estilo iOS
@@ -316,13 +340,16 @@ class _PublicMapScreenState extends ConsumerState<PublicMapScreen> {
           // Loading overlay para publicações
           if (publicationsAsync.isLoading) const PublicationsLoadingOverlay(),
 
-          // Botão "Acessar SoloForte" centralizado na parte inferior
-          const Positioned(
-            left: 0,
-            right: 0,
-            bottom: 40,
-            child: Center(child: AccessSoloForteButton()),
-          ),
+          // Card glass "Acessar SoloForte" — apenas visitante (SessionPublic)
+          if (showAccessCta)
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 40,
+              child: Center(
+                child: AccessSoloForteButton(isMapMoving: _isMapMoving),
+              ),
+            ),
         ],
       ),
     );

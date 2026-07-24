@@ -457,7 +457,46 @@ Se qualquer resposta divergir → relatório inválido, refazer.
 
 > Revisão `<DIFF|AUDIT>` do alvo `<NOME>` concluída em modo somente leitura.  
 > Nenhum arquivo de código do SoloForte foi alterado.  
-> Achados: N · Prompts: M (no chat / em prompt/ se solicitado) · Aguardando decisão.
+> Achados: N · Prompts: M (no chat / em prompt/ se solicitado) · Aguardando decisão.  
+> **Score escopo: X% · Score IPA: Y% · Veredito: ✅ / ⚠️ / 🛑** (obrigatório — ver §14)
+
+---
+
+## 1️⃣4️⃣ RETORNO EM % (obrigatório ao encerrar)
+
+Ao concluir **qualquer** revisão (DIFF ou AUDIT), o relatório **deve** terminar com um bloco de pontuação.  
+Se este bloco faltar, a revisão é **inválida**.
+
+```markdown
+## 10. Retorno em %
+
+| Critério | % | Evidência (arquivo:linha / comando) |
+|---|---:|---|
+| Correções pedidas aplicadas no código | _ | … |
+| arch_check Exit 0 | _ | … |
+| analyze sem erro novo no escopo | _ | … |
+| Testes do escopo verdes | _ | … |
+| Contratos AGENTS / ADR respeitados | _ | … |
+| Working tree limpa p/ release (sem WIP alheio) | _ | … |
+| Pronto para IPA (só se pedido) | _ | … |
+
+**Score composto (escopo da revisão):** _%  
+**Score composto (release/IPA):** _%  (N/A se IPA não pedido)
+
+### Régua
+- **100%** — todas as linhas ≥ 100 no escopo pedido; zero P0/P1 aberto; evidência citada
+- **90–99%** — escopo ok; falta só QA de device, doc ou limpeza WIP não-bloqueante
+- **70–89%** — correção principal ok; há P1 residual ou árvore suja
+- **<70%** — não liberar commit de release / IPA
+
+### Frase de fechamento (copiar)
+> Score escopo: X% · Score IPA: Y% · Veredito: ✅ / ⚠️ / 🛑
+```
+
+**Regras da %:**
+- Nunca inventar % sem medir (`arch_check`, `analyze`, `test`, `git status`, `rg`/`git show`)
+- Working tree com WIP de outro módulo → **Score IPA ≤ 70%** até stash/commit separado
+- `smart_button.dart` alterado sem pedido → Score escopo **0%** (violação absoluta)
 
 ---
 
@@ -466,4 +505,5 @@ Se qualquer resposta divergir → relatório inválido, refazer.
 > Zero achismo. Zero dado inventado. Zero refatoração oportunista.  
 > Arquitetura > rapidez. Contrato > UI. Estado previsível > mágica.  
 > **Revisor propõe. Executor executa. Raudinei decide.**  
-> Preferir silêncio honesto (`No findings.`) a relatório inchado.
+> Preferir silêncio honesto (`No findings.`) a relatório inchado.  
+> **Sempre fechar com Retorno em % (§14).**
