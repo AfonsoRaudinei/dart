@@ -22,6 +22,8 @@ import '../../modules/marketing/presentation/widgets/marketing_case_sheet.dart';
 import '../../core/config/map_config.dart';
 import '../../core/permissions/permission_provider.dart';
 import '../../core/permissions/location_permission_gate.dart';
+import '../../core/session/session_controller.dart';
+import '../../core/session/session_models.dart';
 
 class PublicMapScreen extends ConsumerStatefulWidget {
   const PublicMapScreen({super.key});
@@ -146,6 +148,10 @@ class _PublicMapScreenState extends ConsumerState<PublicMapScreen> {
     final locationState = ref.watch(publicLocationNotifierProvider);
     final mapStyle = ref.watch(publicMapStyleProvider);
     final publicationsAsync = ref.watch(publicPublicationsProvider);
+    // CTA só para visitante confirmado — oculto no bootstrap (SessionUnknown)
+    // e quando a sessão autenticada ainda não redirecionou para /map.
+    final session = ref.watch(sessionControllerProvider);
+    final showAccessCta = session is SessionPublic;
 
     return Scaffold(
       // 🛡 IPA-123: background branco — visível antes dos tiles do FlutterMap
@@ -334,15 +340,16 @@ class _PublicMapScreenState extends ConsumerState<PublicMapScreen> {
           // Loading overlay para publicações
           if (publicationsAsync.isLoading) const PublicationsLoadingOverlay(),
 
-          // Card glass "Acessar SoloForte" — reage ao movimento do mapa
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 40,
-            child: Center(
-              child: AccessSoloForteButton(isMapMoving: _isMapMoving),
+          // Card glass "Acessar SoloForte" — apenas visitante (SessionPublic)
+          if (showAccessCta)
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 40,
+              child: Center(
+                child: AccessSoloForteButton(isMapMoving: _isMapMoving),
+              ),
             ),
-          ),
         ],
       ),
     );

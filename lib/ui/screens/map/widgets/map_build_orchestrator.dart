@@ -348,7 +348,9 @@ class MapBuildOrchestrator extends ConsumerWidget {
                 attributions: [TextSourceAttribution(tileConfig.attribution)],
                 showFlutterMapAttribution: false,
                 alignment: AttributionAlignment.bottomLeft,
-                popupInitialDisplayDuration: const Duration(seconds: 2),
+                // Sem auto-expand: o popup preto (2s) parecia "sombra" no mapa.
+                // Atribuição continua acessível pelo botão info.
+                popupInitialDisplayDuration: Duration.zero,
                 popupBorderRadius: BorderRadius.circular(8),
                 popupBackgroundColor: Colors.black.withValues(alpha: 0.72),
               ),

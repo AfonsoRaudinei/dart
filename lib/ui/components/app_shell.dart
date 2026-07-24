@@ -269,10 +269,12 @@ class _AppShellState extends ConsumerState<AppShell> {
   @override
   Widget build(BuildContext context) {
     // ═══════════════════════════════════════════════════════════════
-    // 1. VERIFICAR AUTENTICAÇÃO
+    // 1. VERIFICAR AUTENTICAÇÃO + ROTA
     // ═══════════════════════════════════════════════════════════════
     final session = ref.watch(sessionControllerProvider);
     final isAuth = session is SessionAuthenticated;
+    final path = GoRouterState.of(context).uri.path;
+    final isPublicRoute = AppRoutes.publicRoutes.contains(path);
 
     // ═══════════════════════════════════════════════════════════════
     // 2. SCAFFOLD SIMPLES (SEM DRAWER)
@@ -286,20 +288,18 @@ class _AppShellState extends ConsumerState<AppShell> {
           // Camada 1: Conteúdo da tela (child)
           widget.child,
 
-          // Camada 2: SideMenu Overlay (apenas se autenticado)
+          // Camada 2: SideMenu Overlay (apenas se autenticado em rota privada)
           // Backdrop do menu NÃO bloqueia botão (z-index inferior)
-          if (isAuth) const SideMenuOverlay(),
+          if (isAuth && !isPublicRoute) const SideMenuOverlay(),
 
-          // Camada 3: SmartButton (sempre no topo)
-          // Z-index máximo garante:
-          // - Visível com menu aberto
-          // - Clicável com menu aberto
-          // - Não bloqueado por backdrop
-          // NÃO usar const — precisa rebuild a cada mudança de rota
+          // Camada 3: SmartButton (sempre no topo nas rotas privadas)
+          // CTA público fica em PublicMapScreen (AccessSoloForteButton).
+          // Evita FAB.extended "Acessar SoloForte" sobreposto ao card glass
+          // quando a sessão autentica ainda em /public-map.
           // bottom: MediaQuery.padding.bottom + 16 respeita SafeArea
           // dinâmica de cada dispositivo (iPhone gesture bar = 34px,
           // Android sem barra = 0px), garantindo posição correta em todos.
-          if (isAuth)
+          if (isAuth && !isPublicRoute)
             Positioned(
               bottom: MediaQuery.of(context).padding.bottom + 16,
               right: 16,

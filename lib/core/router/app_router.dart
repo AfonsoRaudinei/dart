@@ -89,16 +89,18 @@ GoRouter router(Ref ref) {
       }
 
       if (isAuth && !isRecovery) {
+        // Autenticado nunca permanece em rota pública (evita CTA duplicado
+        // AccessSoloForte + SmartButton.extended enquanto o perfil carrega).
+        if (isPublicRoute) {
+          return AppRoutes.map;
+        }
+
         if (profileAsync.isLoading || profileAsync.hasError) {
           return null;
         }
 
         final role = profileAsync.asData?.value?.role;
         if (!AppAccess.canAccessPath(role, path)) {
-          return AppRoutes.map;
-        }
-
-        if (isPublicRoute) {
           return AppRoutes.map;
         }
       }
