@@ -34,8 +34,8 @@ class PublicMapScreen extends ConsumerStatefulWidget {
 
 class _PublicMapScreenState extends ConsumerState<PublicMapScreen> {
   final MapController _mapController = MapController();
-  static const double _defaultZoom = 13.0;
-  static const double _userLocationZoom = 16.0;
+  /// Zoom overview — igual ao [MapConfig.defaultZoom] e ao viewport inicial.
+  static const double _defaultZoom = MapConfig.defaultZoom;
   double _currentZoom = _defaultZoom;
   bool _isMapMoving = false;
   Timer? _mapIdleTimer;
@@ -129,18 +129,52 @@ class _PublicMapScreenState extends ConsumerState<PublicMapScreen> {
 
     final locationState = ref.read(publicLocationNotifierProvider);
 
+    LatLng? userPos;
     if (locationState.status == PublicLocationStatus.available &&
         locationState.position != null) {
-      // Animação suave ao centralizar
-      _mapController.move(locationState.position!, _userLocationZoom);
+      userPos = locationState.position;
     } else {
       await ref.read(publicLocationNotifierProvider.notifier).requestLocation();
       final updatedState = ref.read(publicLocationNotifierProvider);
       if (updatedState.status == PublicLocationStatus.available &&
           updatedState.position != null) {
-        _mapController.move(updatedState.position!, _userLocationZoom);
+        userPos = updatedState.position;
       }
     }
+
+    if (userPos == null || !mounted) return;
+    _recenterPublicMap(userPos);
+  }
+
+  /// Centraliza no usuário com o mesmo zoom/estratégia da abertura:
+  /// fit nos pins públicos + marketing + usuário quando houver; senão zoom overview.
+  void _recenterPublicMap(LatLng userPos) {
+    final publications = ref.read(publicPublicationsProvider).asData?.value;
+    final marketingCases = ref.read(marketingCasesProvider).asData?.value;
+    final pinPoints = <LatLng>[
+      if (publications != null) ...publications.map((p) => p.location),
+      if (marketingCases != null)
+        ...marketingCases
+            .where((c) => c.visibilidade == PlanoMarketing.ouro)
+            .map((c) => LatLng(c.lat, c.lng)),
+      userPos,
+    ];
+
+    if (pinPoints.length >= 2) {
+      try {
+        _mapController.fitCamera(
+          CameraFit.bounds(
+            bounds: LatLngBounds.fromPoints(pinPoints),
+            padding: const EdgeInsets.all(50),
+          ),
+        );
+        return;
+      } catch (_) {
+        // fallback overview
+      }
+    }
+
+    _mapController.move(userPos, _defaultZoom);
   }
 
   @override

@@ -14,6 +14,7 @@ import '../../../../core/permissions/permission_provider.dart';
 import '../../../../modules/dashboard/domain/location_state.dart';
 import '../../../../modules/dashboard/providers/location_providers.dart';
 import '../../../../modules/dashboard/services/location_service.dart';
+import '../controllers/map_viewport_controller.dart';
 
 class MapLocationHandler {
   MapLocationHandler._();
@@ -177,7 +178,12 @@ class MapLocationHandler {
     final position = await locationService.getCurrentPosition();
 
     if (position != null && isMapReady && context.mounted) {
-      mapController.move(position.position, 16.0);
+      // Mesma estratégia do viewport inicial: fit talhões+user ou zoom overview.
+      MapViewportController.recenterOnUser(
+        ref: ref,
+        mapController: mapController,
+        userPosition: position.position,
+      );
     }
   }
 
