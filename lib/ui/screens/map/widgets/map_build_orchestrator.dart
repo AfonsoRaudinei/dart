@@ -116,6 +116,9 @@ class MapBuildOrchestrator extends ConsumerWidget {
         (drawCtrlForInteraction.currentState == DrawingState.armed ||
             drawCtrlForInteraction.currentState == DrawingState.drawing ||
             drawCtrlForInteraction.isFreehandStrokeActive);
+    final freezeMapForVertexDrag =
+        drawCtrlForInteraction.isDraggingVertex ||
+        drawingMetrics.state == DrawingState.editing;
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       stopwatch.stop();
@@ -134,7 +137,7 @@ class MapBuildOrchestrator extends ConsumerWidget {
           ),
           MapCanvas(
             mapController: mapController,
-            interactionOptions: drawingMetrics.state == DrawingState.editing
+            interactionOptions: freezeMapForVertexDrag
                 ? const InteractionOptions(flags: InteractiveFlag.none)
                 : disableMapDrag
                 ? const InteractionOptions(
