@@ -41,10 +41,67 @@ class _DrawingEditLayerState extends State<DrawingEditLayer> {
   _HandleMode? _dragMode;
   bool _draggingPivotCenter = false;
 
+  /// Snapshot para restaurar geometria se o pan for cancelado.
+  List<LatLng>? _sketchPointsSnapshot;
+  LatLng? _pivotCenterSnapshot;
+  LatLng? _pivotEdgeSnapshot;
+  double? _pivotRadiusSnapshot;
+  bool _pivotFinalizedSnapshot = false;
+
   bool get _isDragging =>
       _draggingPosition != null &&
       (_draggingPivotCenter ||
           (_draggingVertexIndex != null && _draggingRingIndex != null));
+
+  void _clearDragSnapshots() {
+    _sketchPointsSnapshot = null;
+    _pivotCenterSnapshot = null;
+    _pivotEdgeSnapshot = null;
+    _pivotRadiusSnapshot = null;
+    _pivotFinalizedSnapshot = false;
+  }
+
+  void _captureSketchSnapshot(_HandleMode mode) {
+    _clearDragSnapshots();
+    switch (mode) {
+      case _HandleMode.sketchPolygon:
+        _sketchPointsSnapshot = List.of(widget.controller.currentPoints);
+      case _HandleMode.sketchFreehand:
+        _sketchPointsSnapshot = List.of(widget.controller.freehandTrail);
+      case _HandleMode.sketchPivot:
+        _pivotCenterSnapshot = widget.controller.pivotCenter;
+        _pivotEdgeSnapshot = widget.controller.pivotEdgePoint;
+        _pivotRadiusSnapshot = widget.controller.pivotRadiusMeters;
+        _pivotFinalizedSnapshot = widget.controller.pivotRadiusFinalized;
+      case _HandleMode.edit:
+        break;
+    }
+  }
+
+  void _restoreSketchSnapshot() {
+    final mode = _dragMode;
+    final points = _sketchPointsSnapshot;
+    switch (mode) {
+      case _HandleMode.sketchPolygon:
+        if (points != null) {
+          widget.controller.restoreSketchPoints(points);
+        }
+      case _HandleMode.sketchFreehand:
+        if (points != null) {
+          widget.controller.restoreFreehandPoints(points);
+        }
+      case _HandleMode.sketchPivot:
+        widget.controller.restorePivotSketch(
+          center: _pivotCenterSnapshot,
+          edge: _pivotEdgeSnapshot,
+          radiusMeters: _pivotRadiusSnapshot,
+          radiusFinalized: _pivotFinalizedSnapshot,
+        );
+      case _HandleMode.edit:
+      case null:
+        break;
+    }
+  }
 
   _HandleMode? _resolveMode() {
     final state = widget.controller.currentState;
@@ -80,6 +137,7 @@ class _DrawingEditLayerState extends State<DrawingEditLayer> {
     required int pointIndex,
     required LatLng point,
   }) {
+    _captureSketchSnapshot(mode);
     setState(() {
       _dragMode = mode;
       _draggingRingIndex = ringIndex;
@@ -91,6 +149,7 @@ class _DrawingEditLayerState extends State<DrawingEditLayer> {
   }
 
   void _startPivotCenterDrag(LatLng point) {
+    _captureSketchSnapshot(_HandleMode.sketchPivot);
     setState(() {
       _dragMode = _HandleMode.sketchPivot;
       _draggingPivotCenter = true;
@@ -102,6 +161,7 @@ class _DrawingEditLayerState extends State<DrawingEditLayer> {
   }
 
   void _startPivotEdgeDrag(LatLng point) {
+    _captureSketchSnapshot(_HandleMode.sketchPivot);
     setState(() {
       _dragMode = _HandleMode.sketchPivot;
       _draggingPivotCenter = false;
@@ -179,9 +239,11 @@ class _DrawingEditLayerState extends State<DrawingEditLayer> {
       _draggingPosition = null;
       _draggingPivotCenter = false;
     });
+    _clearDragSnapshots();
   }
 
   void _cancelVertexDrag() {
+    _restoreSketchSnapshot();
     widget.controller.onDragEnd(persist: false);
     setState(() {
       _dragMode = null;
@@ -190,6 +252,7 @@ class _DrawingEditLayerState extends State<DrawingEditLayer> {
       _draggingPosition = null;
       _draggingPivotCenter = false;
     });
+    _clearDragSnapshots();
   }
 
   DrawingGeometry? _resolveDisplayGeometry(DrawingGeometry? original) {
@@ -313,11 +376,13 @@ class _DrawingEditLayerState extends State<DrawingEditLayer> {
 
   Widget _buildSketchPolygonHandles() {
     final points = widget.controller.currentPoints;
-    return MarkerLayer(markers: _buildPointHandles(
-      points: points,
-      mode: _HandleMode.sketchPolygon,
-      allowCloseOnFirst: true,
-    ));
+    return MarkerLayer(
+      markers: _buildPointHandles(
+        points: points,
+        mode: _HandleMode.sketchPolygon,
+        allowCloseOnFirst: widget.controller.currentTool == DrawingTool.polygon,
+      ),
+    );
   }
 
   Widget _buildSketchFreehandHandles() {
