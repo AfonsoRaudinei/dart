@@ -46,14 +46,17 @@ flutter test test/modules/<modulo>/
 ./tool/arch_check.sh
 ```
 
-### 5. Checklist final
+### 5. Checklist de conclusão (obrigatório no chat antes de commit)
+
+Colar no chat o bloco **Checklist de conclusão** de [AGENTS.md](../../AGENTS.md)
+(seção "CHECKLIST DE CONCLUSÃO DE TAREFA"). Não commitar com Veredito 🔴/🟡.
 
 ```
-[ ] Apenas módulo declarado alterado?
+[ ] Escopo respeitado?
 [ ] arch_check.sh → Exit 0?
-[ ] Testes afetados passando?
-[ ] Navegação Map-First intacta?
-[ ] Sem dados fictícios?
+[ ] analyze / testes do escopo OK?
+[ ] Agentrevisor sem P0/P1?
+[ ] Map-First / sem google_maps_flutter / sem FAB local?
 ```
 
 ## Contratos principais

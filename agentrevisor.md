@@ -467,6 +467,10 @@ Se qualquer resposta divergir → relatório inválido, refazer.
 Ao concluir **qualquer** revisão (DIFF ou AUDIT), o relatório **deve** terminar com um bloco de pontuação.  
 Se este bloco faltar, a revisão é **inválida**.
 
+Além do %: se a revisão for pré-commit / pré-IPA, o revisor deve espelhar o
+**Checklist de conclusão** de `AGENTS.md` (✅/❌ + evidência) e declarar
+`Veredito: 🟢 COMMIT OK | 🟡 AJUSTAR | 🔴 BLOQUEADO`.
+
 ```markdown
 ## 10. Retorno em %
 

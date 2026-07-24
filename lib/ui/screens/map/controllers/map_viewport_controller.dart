@@ -8,6 +8,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../../../core/config/map_config.dart';
 import '../../../../core/state/map_ui_providers.dart';
 import '../../../../modules/consultoria/clients/presentation/providers/field_providers.dart';
 import '../../../../modules/consultoria/services/talhao_map_adapter.dart';
@@ -149,7 +150,8 @@ class MapViewportController {
       final position = await locationService.getCurrentPosition();
 
       if (position != null && isMounted) {
-        mapController.move(position.position, 16.0);
+        // Mesmo zoom do mapa público / overview — pins permanecem no contexto.
+        mapController.move(position.position, MapConfig.defaultZoom);
         ref.read(viewportStateProvider.notifier).state =
             InitialViewportState.applied; // ✅ FINALIZADO
       } else if (isMounted) {
@@ -158,6 +160,39 @@ class MapViewportController {
             InitialViewportState.waitingForData;
       }
     }
+  }
+
+  /// Recentra no usuário com a mesma estratégia do viewport inicial:
+  /// - Com talhões: fitCamera nos polígonos + posição do usuário (pins/talhões visíveis)
+  /// - Sem talhões: move no usuário com [MapConfig.defaultZoom] (13)
+  static void recenterOnUser({
+    required WidgetRef ref,
+    required MapController mapController,
+    required LatLng userPosition,
+  }) {
+    final fieldsState = ref.read(mapFieldsProvider);
+    final fields = fieldsState.asData?.value;
+    if (fields != null && fields.isNotEmpty) {
+      final allPoints = fields
+          .expand((f) => TalhaoMapAdapter.toPolygon(f).points)
+          .toList(growable: true);
+      allPoints.add(userPosition);
+      if (allPoints.length >= 2) {
+        try {
+          mapController.fitCamera(
+            CameraFit.bounds(
+              bounds: LatLngBounds.fromPoints(allPoints),
+              padding: const EdgeInsets.all(50),
+            ),
+          );
+          return;
+        } catch (_) {
+          // fallback abaixo
+        }
+      }
+    }
+
+    mapController.move(userPosition, MapConfig.defaultZoom);
   }
 
   static bool focusDrawingFeature({
