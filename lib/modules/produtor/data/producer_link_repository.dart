@@ -1,13 +1,14 @@
 import 'dart:convert';
-import '../../../core/session/local_session_identity.dart';
 import 'dart:math';
 
 import 'package:crypto/crypto.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/database/database_helper.dart';
+import '../../../core/session/local_session_identity.dart';
 import 'producer_link_models.dart';
 
 final producerLinkRepositoryProvider = Provider<ProducerLinkRepository>((ref) {
@@ -28,24 +29,88 @@ class ProducerLinkRepository implements ProducerLinkReader {
   static const _tokenBytes = 6;
 
   Future<ProducerInvite> createInvite(String clientId) async {
-    final userId = _currentUserId();
+    // Convite exige JWT autenticado: LocalSessionIdentity.lastKnown não
+    // basta — a RLS de insert compara auth.uid() com consultor_user_id.
+    final userId = _authenticatedUserId();
+    await _assertConsultorCanInvite(userId, clientId);
+
     final token = generateInviteToken();
     final expiresAt = DateTime.now().toUtc().add(const Duration(days: 7));
 
-    final row = await _client
-        .from(_linkTable)
-        .insert({
-          'consultor_user_id': userId,
-          'client_id': clientId,
-          'token_hash': hashToken(token),
-          'status': 'pending',
-          'expires_at': expiresAt.toIso8601String(),
-        })
-        .select()
-        .single();
+    try {
+      final row = await _client
+          .from(_linkTable)
+          .insert({
+            'consultor_user_id': userId,
+            'client_id': clientId,
+            'token_hash': hashToken(token),
+            'status': 'pending',
+            'expires_at': expiresAt.toIso8601String(),
+          })
+          .select()
+          .single();
 
-    await _cacheLink(ProducerClientLink.fromRemote(row), syncStatus: 0);
-    return ProducerInvite(token: token, expiresAt: expiresAt);
+      await _cacheLink(ProducerClientLink.fromRemote(row), syncStatus: 0);
+      return ProducerInvite(token: token, expiresAt: expiresAt);
+    } on PostgrestException catch (error) {
+      throw Exception(mapCreateInviteError(error));
+    }
+  }
+
+  /// Garante sessão JWT + papel consultor + cliente remoto do próprio usuário.
+  Future<void> _assertConsultorCanInvite(String userId, String clientId) async {
+    final perfil = await _client
+        .from('perfis')
+        .select('role')
+        .eq('id', userId)
+        .maybeSingle();
+    final role = (perfil?['role'] as String?)?.trim().toLowerCase();
+    if (role != 'consultor') {
+      throw Exception(
+        'Seu perfil remoto não está como consultor. Atualize o perfil e tente novamente.',
+      );
+    }
+
+    final remoteClient = await _client
+        .from('clients')
+        .select('id')
+        .eq('id', clientId)
+        .eq('user_id', userId)
+        .isFilter('deleted_at', null)
+        .maybeSingle();
+    if (remoteClient == null) {
+      throw Exception(
+        'Cliente ainda não sincronizado com a nuvem. Toque em Sincronizar no menu e tente novamente.',
+      );
+    }
+  }
+
+  String _authenticatedUserId() {
+    final userId = _client.auth.currentUser?.id.trim() ?? '';
+    if (userId.isEmpty) {
+      throw Exception('Sessão expirada. Faça login novamente para gerar o token.');
+    }
+    return userId;
+  }
+
+  @visibleForTesting
+  static String mapCreateInviteError(PostgrestException error) {
+    final code = (error.code ?? '').trim();
+    final message = error.message.toLowerCase();
+
+    if (code == '42501' || message.contains('row-level security')) {
+      return 'Sem permissão para gerar o convite. Confirme que o cliente está sincronizado e que sua conta é de consultor.';
+    }
+    if (code == '23503' || message.contains('foreign key')) {
+      return 'Cliente ainda não sincronizado com a nuvem. Toque em Sincronizar no menu e tente novamente.';
+    }
+    if (code == '23505' || message.contains('duplicate')) {
+      return 'Já existe um convite pendente semelhante. Gere um novo token em instantes.';
+    }
+    if (message.contains('jwt') || message.contains('not authenticated')) {
+      return 'Sessão expirada. Faça login novamente para gerar o token.';
+    }
+    return 'Não foi possível gerar o convite agora. Verifique a conexão e tente novamente.';
   }
 
   Future<void> acceptToken(String token) async {
