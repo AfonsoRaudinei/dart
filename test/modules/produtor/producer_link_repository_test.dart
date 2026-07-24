@@ -2,8 +2,34 @@ import 'dart:math';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:soloforte_app/modules/produtor/data/producer_link_repository.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 void main() {
+  group('ProducerLinkRepository.createInvite error mapping', () {
+    test('mapeia violação de RLS para orientação de sync/papel', () {
+      final message = ProducerLinkRepository.mapCreateInviteError(
+        const PostgrestException(
+          message: 'new row violates row-level security policy',
+          code: '42501',
+        ),
+      );
+
+      expect(message, contains('sincronizado'));
+      expect(message, contains('consultor'));
+    });
+
+    test('mapeia FK ausente para cliente não sincronizado', () {
+      final message = ProducerLinkRepository.mapCreateInviteError(
+        const PostgrestException(
+          message: 'insert or update on table violates foreign key constraint',
+          code: '23503',
+        ),
+      );
+
+      expect(message, contains('Sincronizar'));
+    });
+  });
+
   group('ProducerLinkRepository token helpers', () {
     test('normaliza token removendo espaços e padronizando caixa', () {
       expect(
