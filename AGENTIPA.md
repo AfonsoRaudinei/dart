@@ -19,4 +19,4 @@
 - IPA 171: `build/ios/ipa/soloforte_app.ipa` | `CFBundleVersion=171` | `CFBundleShortVersionString=1.34.0` | `SUPABASE_URL` confirmada no binário | evidência: Info.plist do artefato local (2026-07-23)
 - IPA 172: `build/ios/ipa/soloforte_app.ipa` | `CFBundleVersion=172` | `CFBundleShortVersionString=1.34.0` | `SUPABASE_URL` confirmada no binário | glass card público + CTA reopen + taglines + atribuição sem auto-popup
 - IPA 173: `build/ios/ipa/soloforte_app.ipa` | `CFBundleVersion=173` | `CFBundleShortVersionString=1.34.0` | `SUPABASE_URL` confirmada no binário | sketch vertex drag + handle azul (pingo d'água) | evidência: Info.plist do artefato local (2026-07-24)
-- IPA 174: `build/ios/ipa/soloforte_app.ipa` | `CFBundleVersion=174` | `CFBundleShortVersionString=1.34.0` | location zoom = viewport inicial + checklist agents | pendente validação pós-build
+- IPA 174: `build/ios/ipa/soloforte_app.ipa` | `CFBundleVersion=174` | `CFBundleShortVersionString=1.34.0` | `SUPABASE_URL` confirmada no binário | location zoom = viewport inicial + checklist agents | evidência: Info.plist do artefato local (2026-07-24)
