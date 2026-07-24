@@ -187,6 +187,10 @@ class MapBuildOrchestrator extends ConsumerWidget {
                 if (drawCtrl.currentTool == DrawingTool.freehand) {
                   return;
                 }
+                // Não adicionar ponto enquanto arrasta vértice (handle azul).
+                if (drawCtrl.isDraggingVertex) {
+                  return;
+                }
                 drawCtrl.appendDrawingPoint(point);
                 return;
               }
@@ -296,10 +300,11 @@ class MapBuildOrchestrator extends ConsumerWidget {
                 onDrawingComplete: finishDrawing,
               ),
 
-              // 🔧 Camada de Edição (Vertex Handles)
+              // 🔧 Camada de Edição + ajuste de vértices no desenho
               DrawingEditLayer(
                 controller: ref.read(drawingControllerProvider),
                 mapController: mapController,
+                onSketchClosePolygon: finishDrawing,
               ),
 
               // ADR-043 — Radar acima de talhões/desenho, abaixo de markers
