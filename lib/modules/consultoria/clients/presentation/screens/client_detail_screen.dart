@@ -9,6 +9,9 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:soloforte_app/core/contracts/i_drawing_field_writer_provider.dart';
 import 'package:soloforte_app/core/contracts/i_producer_invite_writer_provider.dart';
 import 'package:soloforte_app/core/router/app_routes.dart';
+import 'package:soloforte_app/core/utils/user_facing_error.dart';
+import 'package:soloforte_app/modules/consultoria/services/agronomic_sync_service.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../providers/clients_providers.dart';
 import '../providers/field_providers.dart';
@@ -21,7 +24,6 @@ import '../widgets/client_hub_section.dart';
 import '../widgets/client_detail_sub_widgets.dart';
 import '../widgets/client_edit_form.dart';
 import '../widgets/talhao_map_preview.dart';
-import 'package:soloforte_app/core/utils/user_facing_error.dart';
 
 Future<bool> showClientDeleteConfirmation(
   BuildContext context,
@@ -512,6 +514,10 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen> {
               error = null;
             });
             try {
+              // RLS exige o client já existir em public.clients com user_id =
+              // auth.uid(). Sync direto (não via orchestrator) evita early-return
+              // quando outra sync já está em andamento.
+              await AgronomicSyncService(Supabase.instance.client).syncNow();
               final invite = await ref
                   .read(producerInviteWriterProvider)
                   .createInvite(client.id);
@@ -568,9 +574,12 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen> {
                 ],
                 if (error != null) ...[
                   const SizedBox(height: 8),
-                  const Text(
-                    'Não foi possível gerar o convite agora.',
-                    style: TextStyle(color: Color(0xFFFF3B30)),
+                  Text(
+                    userFacingError(
+                      error,
+                      action: 'Não foi possível gerar o convite',
+                    ),
+                    style: const TextStyle(color: Color(0xFFFF3B30)),
                   ),
                 ],
               ],
