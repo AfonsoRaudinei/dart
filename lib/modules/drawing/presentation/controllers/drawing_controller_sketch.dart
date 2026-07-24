@@ -214,6 +214,21 @@ extension DrawingControllerSketch on DrawingController {
 
     _currentPoints[index] = newPos;
     _updateRealTimeIntersection();
+    _notifyHost();
+  }
+
+  /// Restaura todos os pontos do polígono sketch (cancel de drag).
+  void restoreSketchPoints(List<LatLng> points) {
+    if (_isDisposed) return;
+    if (_stateMachine.currentTool != DrawingTool.polygon &&
+        _stateMachine.currentTool != DrawingTool.rectangle &&
+        _stateMachine.currentTool != DrawingTool.circle) {
+      return;
+    }
+    _currentPoints
+      ..clear()
+      ..addAll(points);
+    _updateRealTimeIntersection();
     _notify();
   }
 
@@ -226,6 +241,17 @@ extension DrawingControllerSketch on DrawingController {
     if (index < 0 || index >= _freehandPoints.length) return;
 
     _freehandPoints[index] = newPos;
+    _updateRealTimeIntersection();
+    _notifyHost();
+  }
+
+  /// Restaura a trilha freehand (cancel de drag).
+  void restoreFreehandPoints(List<LatLng> points) {
+    if (_isDisposed) return;
+    if (_stateMachine.currentTool != DrawingTool.freehand) return;
+    _freehandPoints
+      ..clear()
+      ..addAll(points);
     _updateRealTimeIntersection();
     _notify();
   }
@@ -244,6 +270,23 @@ extension DrawingControllerSketch on DrawingController {
     if (_pivotPreviewEdge != null) {
       _pivotRadiusMeters = _distanceMeters(_pivotCenter!, _pivotPreviewEdge!);
     }
+    _updateRealTimeIntersection();
+    _notifyHost();
+  }
+
+  /// Restaura centro/borda/raio do pivô (cancel de drag).
+  void restorePivotSketch({
+    required LatLng? center,
+    required LatLng? edge,
+    required double? radiusMeters,
+    required bool radiusFinalized,
+  }) {
+    if (_isDisposed) return;
+    if (_stateMachine.currentTool != DrawingTool.pivot) return;
+    _pivotCenter = center;
+    _pivotPreviewEdge = edge;
+    _pivotRadiusMeters = radiusMeters;
+    _pivotRadiusFinalized = radiusFinalized;
     _updateRealTimeIntersection();
     _notify();
   }
