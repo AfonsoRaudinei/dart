@@ -24,6 +24,7 @@ import '../../../../ui/theme/premium/design_tokens.dart';
 import '../../quick_photo/data/quick_photo_repository.dart';
 import '../../quick_photo/domain/quick_photo_record.dart';
 import '../../quick_photo/presentation/providers/quick_photo_list_provider.dart';
+import '../../quick_photo/presentation/quick_photo_flow.dart';
 import '../infra/consultoria_report_export_data.dart';
 import '../infra/relatorio_visit_html_builder.dart';
 import '../models/relatorio_status.dart';

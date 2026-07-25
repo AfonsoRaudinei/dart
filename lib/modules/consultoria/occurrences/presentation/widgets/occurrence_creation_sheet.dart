@@ -66,9 +66,15 @@ class _OccurrenceCreationSheetState
   final _recomCtrl = TextEditingController();
   final _picker = ImagePicker();
 
+  /// Pin imutável da abertura — ignora rebuild do pendingOccurrenceLocation.
+  late final double _pinLatitude;
+  late final double _pinLongitude;
+
   @override
   void initState() {
     super.initState();
+    _pinLatitude = widget.latitude;
+    _pinLongitude = widget.longitude;
     _clientsFuture = _loadClientsForCurrentRole();
     _hydrateInitialOccurrence();
     if (widget.initialOccurrence != null) {
@@ -349,10 +355,9 @@ class _OccurrenceCreationSheetState
       OccurrenceFormData(
         type: _urgency,
         description: desc,
-        // Blindagem anti-regressão: o pin é o ponto do formulário (tap no mapa),
-        // nunca GPS do dispositivo no momento do save.
-        latitude: widget.latitude,
-        longitude: widget.longitude,
+        // Pin imutável do initState — nunca GPS / nunca lat do provider mid-form.
+        latitude: _pinLatitude,
+        longitude: _pinLongitude,
         clientId: _selectedClient?.id,
         photoPath: firstPhoto,
         category: _selectedCategoryValue ?? primaryCat,

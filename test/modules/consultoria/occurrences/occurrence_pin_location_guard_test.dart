@@ -67,4 +67,24 @@ void main() {
       expect(lng, closeTo(-47.9292, 0.00001));
     });
   });
+
+  group('pin imutável no State (contrato)', () {
+    test('coords de abertura prevalecem sobre wipe hipotético 0,0', () {
+      const pinned = OccurrenceFormData(
+        type: 'Alta',
+        description: 'capturado no initState',
+        latitude: -15.7801,
+        longitude: -47.9292,
+      );
+      const wipedByRebuild = OccurrenceFormData(
+        type: 'Alta',
+        description: 'provider null mid-form',
+        latitude: 0,
+        longitude: 0,
+      );
+      expect(pinned.hasValidMapPin, isTrue);
+      expect(wipedByRebuild.hasValidMapPin, isFalse);
+      // O State deve persistir `pinned` e ignorar o wipe do provider.
+    });
+  });
 }

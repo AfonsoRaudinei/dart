@@ -189,6 +189,85 @@ class QuickPhotoRepository {
     AppLogger.debug('Foto rápida soft-deleted: $id', tag: 'QuickPhoto');
   }
 
+  /// Atualiza mídia existente in-place (reabrir editor de anotação).
+  /// Sobrescreve o arquivo local, atualiza tipo e marca pending_sync.
+  Future<QuickPhotoRecord> updateExisting({
+    required String id,
+    required Uint8List bytes,
+    required String localPath,
+    QuickPhotoType type = QuickPhotoType.normal,
+  }) async {
+    final userId = LocalSessionIdentity.resolveUserId();
+    if (userId.isEmpty || id.isEmpty) {
+      throw StateError('Usuário ou mídia inválidos para atualização.');
+    }
+
+    final db = await _databaseHelper.database;
+    final rows = await db.query(
+      _table,
+      where: 'id = ? AND user_id = ? AND sync_status != ?',
+      whereArgs: [id, userId, syncDeleted],
+      limit: 1,
+    );
+    if (rows.isEmpty) {
+      throw StateError('Mídia não encontrada para edição.');
+    }
+
+    final row = rows.first;
+    final previousStorage = row['storage_path'] as String?;
+
+    await File(localPath).writeAsBytes(bytes, flush: true);
+
+    await db.update(
+      _table,
+      {
+        'local_path': localPath,
+        'photo_type': type.value,
+        'sync_status': syncPending,
+        'storage_path': null,
+        'public_url': null,
+      },
+      where: 'id = ? AND user_id = ?',
+      whereArgs: [id, userId],
+    );
+
+    if (previousStorage != null && previousStorage.isNotEmpty) {
+      try {
+        await _supabase.storage.from(_bucket).remove([previousStorage]);
+      } catch (error) {
+        AppLogger.warning(
+          'Storage antigo da mídia editada não removido.',
+          tag: 'QuickPhoto',
+          error: error,
+        );
+      }
+    }
+
+    final remoteSynced = await _tryReuploadRemote(
+      id: id,
+      userId: userId,
+      bytes: bytes,
+      lat: (row['lat'] as num?)?.toDouble(),
+      lng: (row['lng'] as num?)?.toDouble(),
+      createdAt: DateTime.parse(row['created_at'] as String).toUtc(),
+      type: type,
+      visitSessionId: row['visit_session_id'] as String?,
+    );
+
+    AppLogger.debug('Foto rápida atualizada in-place: $id', tag: 'QuickPhoto');
+
+    return QuickPhotoRecord(
+      id: id,
+      imagePath: localPath,
+      latitude: (row['lat'] as num?)?.toDouble(),
+      longitude: (row['lng'] as num?)?.toDouble(),
+      createdAt: DateTime.parse(row['created_at'] as String).toUtc(),
+      visitSessionId: row['visit_session_id'] as String?,
+      type: type.value,
+      syncStatus: remoteSynced ? syncSynced : syncPending,
+    );
+  }
+
   static String typeLabel(String type) {
     switch (type) {
       case 'vegetal_filter':
@@ -282,6 +361,74 @@ class QuickPhotoRepository {
     } catch (error) {
       AppLogger.warning(
         'Foto rápida salva localmente; envio remoto pendente.',
+        tag: 'QuickPhoto',
+        error: error,
+      );
+      return false;
+    }
+  }
+
+  /// Reenvio após edição: storage com upsert + upsert na tabela remota.
+  Future<bool> _tryReuploadRemote({
+    required String id,
+    required String userId,
+    required Uint8List bytes,
+    required DateTime createdAt,
+    required QuickPhotoType type,
+    double? lat,
+    double? lng,
+    String? visitSessionId,
+  }) async {
+    try {
+      final storagePath = '$userId/$id.jpg';
+
+      await _supabase.storage
+          .from(_bucket)
+          .uploadBinary(
+            storagePath,
+            bytes,
+            fileOptions: const FileOptions(
+              contentType: 'image/jpeg',
+              upsert: true,
+            ),
+          );
+
+      final publicUrl = _supabase.storage
+          .from(_bucket)
+          .getPublicUrl(storagePath);
+
+      await _supabase.from(_table).upsert({
+        'id': id,
+        'user_id': userId,
+        'storage_path': storagePath,
+        'public_url': publicUrl,
+        'lat': lat,
+        'lng': lng,
+        'photo_type': type.value,
+        'visit_session_id': visitSessionId,
+        'created_at': createdAt.toIso8601String(),
+      });
+
+      final db = await _databaseHelper.database;
+      await db.update(
+        _table,
+        {
+          'storage_path': storagePath,
+          'public_url': publicUrl,
+          'sync_status': syncSynced,
+        },
+        where: 'id = ? AND user_id = ?',
+        whereArgs: [id, userId],
+      );
+
+      AppLogger.debug(
+        'Foto rápida reenviada após edição: $storagePath',
+        tag: 'QuickPhoto',
+      );
+      return true;
+    } catch (error) {
+      AppLogger.warning(
+        'Edição salva localmente; reenvio remoto pendente.',
         tag: 'QuickPhoto',
         error: error,
       );

@@ -18,6 +18,9 @@ class PhotoEditorScreen extends StatefulWidget {
   final String? visitSessionId;
   final bool initialFilterActive;
 
+  /// Quando setado, salva in-place (edição) em vez de criar novo registro.
+  final String? existingPhotoId;
+
   const PhotoEditorScreen({
     super.key,
     required this.imagePath,
@@ -25,6 +28,7 @@ class PhotoEditorScreen extends StatefulWidget {
     this.lng,
     this.visitSessionId,
     this.initialFilterActive = false,
+    this.existingPhotoId,
   });
 
   @override
@@ -132,16 +136,27 @@ class _PhotoEditorScreenState extends State<PhotoEditorScreen> {
         canvasSize,
       );
       await File(widget.imagePath).writeAsBytes(finalBytes, flush: true);
-      await _repository.uploadAndInsert(
-        bytes: finalBytes,
-        localPath: widget.imagePath,
-        lat: widget.lat,
-        lng: widget.lng,
-        visitSessionId: widget.visitSessionId,
-        type: _filterActive
-            ? QuickPhotoType.vegetalFilter
-            : QuickPhotoType.normal,
-      );
+      final existingId = widget.existingPhotoId;
+      final type = _filterActive
+          ? QuickPhotoType.vegetalFilter
+          : QuickPhotoType.normal;
+      if (existingId != null && existingId.isNotEmpty) {
+        await _repository.updateExisting(
+          id: existingId,
+          bytes: finalBytes,
+          localPath: widget.imagePath,
+          type: type,
+        );
+      } else {
+        await _repository.uploadAndInsert(
+          bytes: finalBytes,
+          localPath: widget.imagePath,
+          lat: widget.lat,
+          lng: widget.lng,
+          visitSessionId: widget.visitSessionId,
+          type: type,
+        );
+      }
       if (!mounted) return;
       Navigator.of(context).pop(true);
     } on VegetalFilterException catch (e) {

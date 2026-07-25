@@ -29,4 +29,30 @@ class QuickPhotoFlow {
       ),
     );
   }
+
+  /// Reabre o editor de anotação sobre uma mídia já existente.
+  static Future<bool> openExisting(
+    BuildContext context, {
+    required String photoId,
+    required String imagePath,
+    double? lat,
+    double? lng,
+    String? visitSessionId,
+    bool initialFilterActive = false,
+  }) async {
+    final result = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        fullscreenDialog: true,
+        builder: (_) => PhotoEditorScreen(
+          imagePath: imagePath,
+          lat: lat,
+          lng: lng,
+          visitSessionId: visitSessionId,
+          initialFilterActive: initialFilterActive,
+          existingPhotoId: photoId,
+        ),
+      ),
+    );
+    return result == true;
+  }
 }

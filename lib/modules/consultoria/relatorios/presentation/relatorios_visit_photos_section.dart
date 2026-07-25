@@ -138,12 +138,51 @@ class _VisitPhotosSectionState extends ConsumerState<_VisitPhotosSection> {
       case 'preview':
         await _openPreview(context, photo);
         return;
+      case 'edit':
+        await _openEditor(context, photo);
+        return;
       case 'map':
         _openOnMap(context, photo);
         return;
       case 'delete':
         await _confirmDelete(context, photo);
         return;
+    }
+  }
+
+  Future<void> _openEditor(
+    BuildContext context,
+    QuickPhotoRecord photo,
+  ) async {
+    final path = photo.imagePath;
+    if (path == null || path.isEmpty || !await File(path).exists()) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Arquivo da foto não encontrado. Exclua a mídia órfã ou capture outra.',
+          ),
+        ),
+      );
+      return;
+    }
+
+    if (!context.mounted) return;
+    final saved = await QuickPhotoFlow.openExisting(
+      context,
+      photoId: photo.id,
+      imagePath: path,
+      lat: photo.latitude,
+      lng: photo.longitude,
+      visitSessionId: photo.visitSessionId,
+      initialFilterActive: photo.type == QuickPhotoType.vegetalFilter.value,
+    );
+    if (!context.mounted) return;
+    if (saved) {
+      ref.invalidate(quickPhotoListProvider);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Mídia atualizada.')),
+      );
     }
   }
 
@@ -411,6 +450,10 @@ class _VisitPhotoCard extends StatelessWidget {
           const PopupMenuItem(
             value: 'preview',
             child: Text('Pré-visualizar'),
+          ),
+          const PopupMenuItem(
+            value: 'edit',
+            child: Text('Editar'),
           ),
           if (hasCoords)
             const PopupMenuItem(
