@@ -460,8 +460,7 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
     );
   }
 
-  // 🐛 BUGFIX: Substituído MapOccurrenceSheet (Relatório de Visita) por
-  // OccurrenceCreationSheet — formulário correto de criação de ocorrência.
+  // Criação de ocorrência: OccurrenceCreationSheet (pin = ponto do mapa).
   Widget _buildOccurrenceForm() {
     final creationLocation = widget.creationLocation;
     final lat = creationLocation?.latitude ?? 0;
