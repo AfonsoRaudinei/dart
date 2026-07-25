@@ -48,6 +48,7 @@ class ReportWriterAdapter implements IReportWriter {
   }
 
   OcorrenciaSnapshot _toOcorrenciaSnapshot(OccurrenceSummary o) {
+    // ADR-047 — campos ricos fluem do contrato; não inventar valores.
     return OcorrenciaSnapshot(
       id: o.id,
       tipo: o.type,
@@ -55,21 +56,21 @@ class ReportWriterAdapter implements IReportWriter {
       lat: o.lat,
       lng: o.lng,
       fotoPath: o.fotoPath,
-      fotoPaths: null,
-      categoria: null,
-      severity: null,
-      geometry: null,
-      status: null,
+      fotoPaths: o.fotoPaths,
+      categoria: o.categoria,
+      severity: o.severity,
+      geometry: o.geometry,
+      status: o.status,
       registradaEm: o.registradaEm ?? DateTime.now().toUtc(),
-      cultivar: null,
-      estadioFenologico: null,
-      tipoOcorrencia: null,
-      recomendacoes: null,
-      metricasJson: null,
-      nutrientesJson: null,
-      categoriasJson: null,
-      notasCategoriasJson: null,
-      fotosCategoriasJson: null,
+      cultivar: o.cultivar,
+      estadioFenologico: o.estadioFenologico,
+      tipoOcorrencia: o.tipoOcorrencia,
+      recomendacoes: o.recomendacoes,
+      metricasJson: o.metricasJson,
+      nutrientesJson: o.nutrientesJson,
+      categoriasJson: o.categoriasJson,
+      notasCategoriasJson: o.notasCategoriasJson,
+      fotosCategoriasJson: o.fotosCategoriasJson,
     );
   }
 

@@ -220,7 +220,7 @@ lib/
 
 -----
 
-## ADRs ATIVOS (008–043)
+## ADRs ATIVOS (008–047)
 
 | ADR | Decisão |
 |---|---|
@@ -255,6 +255,9 @@ lib/
 | 042 | NDVI ChainedFieldLookup + cache + fetch lazy |
 | 043 | IRadarOverlayController (radar RainViewer) |
 | 044 | Whitelist oficial de StateNotifier/ChangeNotifier legados |
+| 045 | Contratos NDVI e visita ativa |
+| 046 | Contratos Agenda AI |
+| 047 | OccurrenceSummary campos ricos (IReportWriter) |
 
 Detalhes: `docs/02_ARQUITETURA_ATIVA/ADR-*.md`
 
