@@ -46,7 +46,7 @@ class AgendaIndicadoresView extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 16),
-          _buildEfficiencyCard(theme, efficiency),
+          _buildEfficiencyCard(theme, efficiency, completedEvents > 0),
           const SizedBox(height: 24),
           Text(
             'Resumo',
@@ -91,7 +91,11 @@ class AgendaIndicadoresView extends ConsumerWidget {
     );
   }
 
-  Widget _buildEfficiencyCard(ThemeData theme, String efficiency) {
+  Widget _buildEfficiencyCard(
+    ThemeData theme,
+    String efficiency,
+    bool showPositiveTrend,
+  ) {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -134,7 +138,11 @@ class AgendaIndicadoresView extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: 8),
-          const Icon(Icons.trending_up, color: Color(0xFF4ADE80), size: 32),
+          Icon(
+            showPositiveTrend ? Icons.trending_up : Icons.trending_flat,
+            color: const Color(0xFF4ADE80),
+            size: 32,
+          ),
         ],
       ),
     );
