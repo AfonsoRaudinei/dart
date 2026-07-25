@@ -1,7 +1,6 @@
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
-import 'package:soloforte_app/core/session/local_session_identity.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:soloforte_app/core/database/database_helper.dart';
 import 'package:soloforte_app/core/network/network_policy.dart';
@@ -16,10 +15,12 @@ class AgronomicSyncService {
   static const int statusDirty = 1;
 
   Future<void> syncNow() async {
-    final userId = LocalSessionIdentity.resolveUserId();
+    // Push agronômico exige JWT: RLS compara auth.uid() com user_id.
+    // LocalSessionIdentity.lastKnown não basta para upsert remoto.
+    final userId = _authenticatedUserIdOrEmpty();
     if (userId.isEmpty) {
       AppLogger.warning(
-        'Sync agronomico ignorado: usuario nao autenticado',
+        'Sync agronomico ignorado: sessao JWT ausente',
         tag: 'AgronomicSync',
       );
       return;
@@ -29,6 +30,74 @@ class AgronomicSyncService {
     await _pushFarms(userId);
     await _pushFields(userId);
     await _pullDeltas(userId);
+  }
+
+  /// Garante que [clientId] existe em `public.clients` com `user_id = auth.uid()`.
+  ///
+  /// Usado antes de gerar token de convite (ADR-039 / RLS producer_client_links).
+  /// Faz push forçado (ignora sync_status local), verifica leitura remota e
+  /// propaga erro — diferente de [syncNow], que engole falhas por cliente.
+  Future<void> ensureClientRemote(String clientId) async {
+    final userId = _authenticatedUserIdOrEmpty();
+    if (userId.isEmpty) {
+      throw Exception(
+        'Sessão expirada. Faça login novamente para gerar o token.',
+      );
+    }
+
+    final db = await DatabaseHelper.instance.database;
+    final rows = await db.query(
+      'clients',
+      where: 'id = ? AND deleted_at IS NULL',
+      whereArgs: [clientId],
+      limit: 1,
+    );
+    if (rows.isEmpty) {
+      throw Exception('Cliente não encontrado no dispositivo.');
+    }
+
+    final row = Map<String, Object?>.from(rows.first);
+    final localUserId = (row['user_id'] as String?)?.trim() ?? '';
+    if (localUserId.isNotEmpty && localUserId != userId) {
+      throw Exception(
+        'Cliente pertence a outra conta. Faça login com a conta do consultor.',
+      );
+    }
+    // Repara user_id vazio legado antes do push (RLS exige auth.uid()).
+    row['user_id'] = userId;
+
+    try {
+      await _pushClientRow(row, userId: userId, markSynced: true);
+    } on PostgrestException catch (error) {
+      AppLogger.warning(
+        'ensureClientRemote falhou para $clientId',
+        tag: 'AgronomicSync',
+        error: error,
+      );
+      throw Exception(mapEnsureClientRemoteError(error));
+    } catch (error) {
+      AppLogger.warning(
+        'ensureClientRemote falhou para $clientId',
+        tag: 'AgronomicSync',
+        error: error,
+      );
+      rethrow;
+    }
+
+    final remoteClient = await NetworkPolicy.withTimeout(
+      () => _supabase
+          .from('clients')
+          .select('id')
+          .eq('id', clientId)
+          .eq('user_id', userId)
+          .isFilter('deleted_at', null)
+          .maybeSingle(),
+    );
+    if (remoteClient == null) {
+      throw Exception(
+        'Cliente ainda não sincronizado com a nuvem. Verifique a conexão e tente novamente.',
+      );
+    }
   }
 
   Future<void> _pushClients(String userId) async {
@@ -41,15 +110,10 @@ class AgronomicSyncService {
 
     for (final row in dirtyClients) {
       try {
-        await NetworkPolicy.withTimeout(
-          () => _supabase.from('clients').upsert(clientLocalToRemote(row)),
-        );
-        await _replaceRemoteClientCulturas(row['id'] as String, userId);
-        await db.update(
-          'clients',
-          {'sync_status': statusSynced},
-          where: 'id = ? AND user_id = ?',
-          whereArgs: [row['id'], userId],
+        await _pushClientRow(
+          Map<String, Object?>.from(row),
+          userId: userId,
+          markSynced: true,
         );
       } catch (e) {
         AppLogger.warning(
@@ -59,6 +123,50 @@ class AgronomicSyncService {
         );
       }
     }
+  }
+
+  /// Upsert remoto com verificação (`select`) + culturas best-effort.
+  Future<void> _pushClientRow(
+    Map<String, Object?> row, {
+    required String userId,
+    required bool markSynced,
+  }) async {
+    final clientId = row['id'] as String;
+    final payload = clientLocalToRemote(
+      row,
+      includeNullDeletedAt: true,
+    );
+
+    await NetworkPolicy.withRetry(
+      () => _supabase
+          .from('clients')
+          .upsert(payload, onConflict: 'id')
+          .select('id')
+          .single(),
+    );
+
+    try {
+      await _replaceRemoteClientCulturas(clientId, userId);
+    } catch (e) {
+      // Culturas não bloqueiam presença do client na nuvem (necessário p/ convite).
+      AppLogger.warning(
+        'Erro ao sincronizar culturas do client $clientId',
+        tag: 'AgronomicSync',
+        error: e,
+      );
+    }
+
+    if (!markSynced) return;
+    final db = await DatabaseHelper.instance.database;
+    await db.update(
+      'clients',
+      {
+        'sync_status': statusSynced,
+        'user_id': userId,
+      },
+      where: 'id = ?',
+      whereArgs: [clientId],
+    );
   }
 
   Future<void> _replaceRemoteClientCulturas(
@@ -85,8 +193,32 @@ class AgronomicSyncService {
     await NetworkPolicy.withTimeout(
       () => _supabase
           .from('client_culturas')
-          .upsert(culturas.map(clientCulturaLocalToRemote).toList()),
+          .upsert(
+            culturas.map(clientCulturaLocalToRemote).toList(),
+            onConflict: 'id',
+          ),
     );
+  }
+
+  String _authenticatedUserIdOrEmpty() {
+    return _supabase.auth.currentUser?.id.trim() ?? '';
+  }
+
+  @visibleForTesting
+  static String mapEnsureClientRemoteError(PostgrestException error) {
+    final code = (error.code ?? '').trim();
+    final message = error.message.toLowerCase();
+
+    if (code == '42501' || message.contains('row-level security')) {
+      return 'Sem permissão para sincronizar o cliente. Confirme o login de consultor e tente novamente.';
+    }
+    if (message.contains('jwt') || message.contains('not authenticated')) {
+      return 'Sessão expirada. Faça login novamente para gerar o token.';
+    }
+    if (code == 'PGRST204' || message.contains('could not find')) {
+      return 'Schema remoto desatualizado para clientes. Atualize o app/backend e tente novamente.';
+    }
+    return 'Não foi possível sincronizar o cliente com a nuvem. Verifique a conexão e tente novamente.';
   }
 
   Future<void> _pushFarms(String userId) async {
@@ -100,7 +232,9 @@ class AgronomicSyncService {
     for (final row in dirtyFarms) {
       try {
         await NetworkPolicy.withTimeout(
-          () => _supabase.from('farms').upsert(farmLocalToRemote(row)),
+          () => _supabase
+              .from('farms')
+              .upsert(farmLocalToRemote(row), onConflict: 'id'),
         );
         await db.update(
           'farms',
@@ -129,7 +263,9 @@ class AgronomicSyncService {
     for (final row in dirtyFields) {
       try {
         await NetworkPolicy.withTimeout(
-          () => _supabase.from('fields').upsert(fieldLocalToRemote(row)),
+          () => _supabase
+              .from('fields')
+              .upsert(fieldLocalToRemote(row), onConflict: 'id'),
         );
         await db.update(
           'fields',
@@ -265,14 +401,17 @@ class AgronomicSyncService {
   }
 
   @visibleForTesting
-  static Map<String, dynamic> clientLocalToRemote(Map<String, Object?> row) {
+  static Map<String, dynamic> clientLocalToRemote(
+    Map<String, Object?> row, {
+    bool includeNullDeletedAt = false,
+  }) {
     final nome = row['nome'];
     final telefone = row['telefone'];
     final documento = row['documento'] ?? row['cpf_cnpj'];
     final cidade = row['cidade'];
     final uf = row['uf'];
 
-    return _withoutNulls({
+    final payload = _withoutNulls({
       'id': row['id'],
       'user_id': row['user_id'],
       'nome': nome,
@@ -304,6 +443,13 @@ class AgronomicSyncService {
       'updated_at': row['updated_at'],
       'deleted_at': row['deleted_at'],
     });
+
+    // Upsert precisa enviar deleted_at=null para reativar soft-delete remoto;
+    // _withoutNulls remove null e deixaria o deleted_at antigo na nuvem.
+    if (includeNullDeletedAt && !payload.containsKey('deleted_at')) {
+      payload['deleted_at'] = null;
+    }
+    return payload;
   }
 
   @visibleForTesting
