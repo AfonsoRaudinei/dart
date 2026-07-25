@@ -15,6 +15,7 @@
 #   REGRA-NDVI — Invariants ADR-042 (lookup chain, fronteira, testes)
 #   REGRA-NAV-1 — context.pop()/canPop() proibidos (Map-First)
 #   REGRA-MARKETING — blindagem de pins, fronteiras e bottom sheets
+#   REGRA-UI-MAP-CTA — anti-regressão CTA fantasma + sombra de atribuição
 # =============================================================================
 
 set -uo pipefail
