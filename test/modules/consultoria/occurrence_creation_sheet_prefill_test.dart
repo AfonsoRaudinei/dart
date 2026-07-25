@@ -5,8 +5,10 @@ import 'package:soloforte_app/core/contracts/i_active_visit_context_lookup.dart'
 import 'package:soloforte_app/core/contracts/i_active_visit_context_lookup_provider.dart';
 import 'package:soloforte_app/core/contracts/i_client_lookup.dart';
 import 'package:soloforte_app/core/contracts/i_client_lookup_provider.dart';
+import 'package:soloforte_app/core/session/user_role.dart';
 import 'package:soloforte_app/modules/consultoria/occurrences/presentation/widgets/occurrence_client_selector.dart';
 import 'package:soloforte_app/modules/consultoria/occurrences/presentation/widgets/occurrence_creation_sheet.dart';
+import 'package:soloforte_app/modules/settings/presentation/providers/user_profile_provider.dart';
 
 class FakeClientLookup implements IClientLookup {
   @override
@@ -34,12 +36,14 @@ class FakeActiveVisitContextLookup implements IActiveVisitContextLookup {
 }
 
 void main() {
-  testWidgets('pré-seleciona cliente e exibe coordenada capturada', (
+  testWidgets('pré-seleciona cliente e exibe ponto definido no mapa', (
     tester,
   ) async {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          // Evita SessionController/Supabase no bootstrap do role.
+          currentUserRoleProvider.overrideWithValue(UserRole.consultor),
           clientLookupProvider.overrideWithValue(FakeClientLookup()),
           activeVisitContextLookupProvider.overrideWithValue(
             FakeActiveVisitContextLookup(),
@@ -62,6 +66,8 @@ void main() {
       find.byType(OccurrenceClientSelector),
     );
     expect(selector.selectedClient?.id, 'client-1');
-    expect(find.text('-10.12345, -48.54321'), findsOneWidget);
+    // UX pin-first: não exibe lat/long cru no header (regra designer).
+    expect(find.text('Ponto definido no mapa'), findsOneWidget);
+    expect(find.text('-10.12345, -48.54321'), findsNothing);
   });
 }
