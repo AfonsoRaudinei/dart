@@ -11,12 +11,15 @@ import 'package:soloforte_app/core/design/sf_icons.dart';
 import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 import 'dart:ui' as ui;
 import '../../../../core/session/session_controller.dart';
+import 'package:soloforte_app/core/database/database_helper.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../providers/settings_providers.dart';
 import '../providers/user_profile_provider.dart';
 import '../../domain/settings_models.dart';
 import '../../domain/entities/user_profile.dart';
 import '../widgets/audit_trail_widget.dart';
 import 'report_branding_screen.dart';
+import 'package:soloforte_app/core/constants/layout_constants.dart';
 import 'package:soloforte_app/core/utils/user_facing_error.dart';
 
 class SettingsScreen extends ConsumerWidget {
@@ -129,7 +132,7 @@ class SettingsScreen extends ConsumerWidget {
                   title: 'Limpar dados locais',
                   icon: SFIcons.delete,
                   isDestructive: true,
-                  onTap: () => _showClearConfirmation(context),
+                  onTap: () => _showClearConfirmation(context, ref),
                 ),
               ]),
 
@@ -198,7 +201,7 @@ class SettingsScreen extends ConsumerWidget {
                 ),
               ]),
 
-              const SizedBox(height: 40),
+              const SizedBox(height: kFabSafeArea),
               Center(
                 child: Text(
                   'SoloForte v1.1.0',
@@ -394,7 +397,7 @@ class SettingsScreen extends ConsumerWidget {
     ];
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+      padding: const EdgeInsets.fromLTRB(16, 12, kFabSafeArea, 12),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: themes.map((t) {
@@ -801,23 +804,57 @@ class SettingsScreen extends ConsumerWidget {
     }
   }
 
-  void _showClearConfirmation(BuildContext context) {
+  void _showClearConfirmation(BuildContext context, WidgetRef ref) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text('Limpar Dados Locais?'),
         content: const Text(
           'Isso removerá todos os dados baixados e mapas offline. Essa ação não pode ser desfeita.',
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: const Text('Cancelar'),
           ),
           TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              // Call clear action
+            onPressed: () async {
+              Navigator.pop(dialogContext);
+              final userId =
+                  (Supabase.instance.client.auth.currentUser?.id ?? '').trim();
+              if (userId.isEmpty) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                        'Faça login novamente para limpar dados locais.',
+                      ),
+                    ),
+                  );
+                }
+                return;
+              }
+              try {
+                await DatabaseHelper.instance.clearUserLocalData(userId);
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Dados locais removidos com sucesso.'),
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        userFacingError(e, action: 'Erro ao limpar dados'),
+                      ),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              }
             },
             child: const Text('Limpar', style: TextStyle(color: Colors.red)),
           ),
