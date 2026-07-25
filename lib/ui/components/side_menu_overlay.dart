@@ -482,7 +482,7 @@ class _MenuPlanoBadgeItem extends ConsumerWidget {
     } else if (plano.expiraEmBreve) {
       subtitle = '⚠️ Expira em ${plano.diasRestantes} dia(s)';
     } else {
-      subtitle = '${plano.plano.label} · ${plano.diasRestantes} dias restantes';
+      subtitle = '${plano.plano.label} · ${plano.diasRestantesLabel}';
     }
 
     return _MenuItem(
