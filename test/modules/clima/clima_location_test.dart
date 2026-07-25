@@ -32,11 +32,11 @@ void main() {
       );
       addTearDown(container.dispose);
 
-      container.read(climaSelectedCityProvider.notifier).state = (
+      await container.read(climaSelectedCityProvider.notifier).select((
         nome: 'Palmas, TO',
         lat: -10.18,
         lon: -48.33,
-      );
+      ));
 
       expect(await container.read(climaLocationProvider.future), (
         lat: -10.18,
