@@ -75,10 +75,17 @@ final climaUnidadeProvider = StateProvider<ClimaUnidade>(
 );
 
 /// Cidade escolhida manualmente (IBGE) — persistida em SharedPreferences.
-class ClimaSelectedCityController extends StateNotifier<ClimaSelectedCity?> {
-  ClimaSelectedCityController(this._prefs) : super(_loadFromPrefs(_prefs));
+/// ADR-008: Notifier (substitui StateNotifier fora da whitelist ADR-044).
+final climaSelectedCityProvider =
+    NotifierProvider<ClimaSelectedCityController, ClimaSelectedCity?>(
+  ClimaSelectedCityController.new,
+);
 
-  final PreferencesService _prefs;
+class ClimaSelectedCityController extends Notifier<ClimaSelectedCity?> {
+  @override
+  ClimaSelectedCity? build() {
+    return _loadFromPrefs(ref.read(preferencesServiceProvider));
+  }
 
   static ClimaSelectedCity? _loadFromPrefs(PreferencesService prefs) {
     final raw = prefs.getString(kClimaSelectedCityPrefsKey);
@@ -93,7 +100,7 @@ class ClimaSelectedCityController extends StateNotifier<ClimaSelectedCity?> {
 
   Future<void> select(ClimaSelectedCity city) async {
     state = city;
-    await _prefs.setString(
+    await ref.read(preferencesServiceProvider).setString(
       kClimaSelectedCityPrefsKey,
       '${city.nome}|${city.lat}|${city.lon}',
     );
@@ -101,14 +108,9 @@ class ClimaSelectedCityController extends StateNotifier<ClimaSelectedCity?> {
 
   Future<void> clear() async {
     state = null;
-    await _prefs.remove(kClimaSelectedCityPrefsKey);
+    await ref.read(preferencesServiceProvider).remove(kClimaSelectedCityPrefsKey);
   }
 }
-
-final climaSelectedCityProvider =
-    StateNotifierProvider<ClimaSelectedCityController, ClimaSelectedCity?>(
-  (ref) => ClimaSelectedCityController(ref.watch(preferencesServiceProvider)),
-);
 
 /// Posição obtida explicitamente pelo botão "minha localização".
 final climaManualLocationProvider = StateProvider<ClimaLatLon?>((ref) => null);
