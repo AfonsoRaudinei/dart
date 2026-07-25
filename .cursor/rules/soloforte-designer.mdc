@@ -1,13 +1,19 @@
 ---
-description: Regras canônicas de design SoloForte para relatórios HTML e UI de exportação
+description: Regras canônicas de design SoloForte (HTML, sheets Flutter, mapa). Sem agent separado — o agent normal aplica estas regras.
 globs:
   - assets/html_templates/**
   - lib/core/html_templates/**
   - lib/modules/consultoria/relatorios/**
+  - lib/modules/consultoria/occurrences/presentation/widgets/**
+  - lib/ui/components/map/**
+  - lib/ui/screens/map/**
 alwaysApply: false
 ---
 
 # SoloForte Designer Rules
+
+> **Não há agent de designer separado.** O agent executor normal aplica esta regra
+> sempre que tocar em relatórios HTML, sheets de ocorrência/mapa ou cards de Relatórios.
 
 ## Paleta
 
@@ -28,18 +34,24 @@ Header: gradiente `linear-gradient(135deg, var(--sf-samsung) 0%, var(--sf-navy) 
 
 ## Ícones — NUNCA genéricos (corrigir sempre)
 
-- ❌ Proibido: ⚠ ⚠️ 🌱 📊 🗺️ 📋 SVG decorativos de relógio/foto/check/documento como “ícone de card”
+Regra dura — aplicar em HTML **e** Flutter (sheets, cards, pins):
+
+- ❌ Proibido: ⚠ ⚠️ 🌱 📊 🗺️ 📋 e SVGs decorativos de relógio/foto/check/documento como “ícone de card”
 - ❌ Proibido: folha/sprout genérico no header ou cards no lugar do logo SoloForte
+- ❌ Proibido: ícones Material genéricos só para “encher” linhas de detalhe (ex.: vários `Icons.*` decorativos sem ação)
+- ❌ Proibido: mostrar lat/long crua como informação principal de localização
 - ✅ Permitido: emojis de **taxonomia agronômica de categoria** (🐛 🦠 🌿 💧 🪨…) — só como rótulo de categoria, nunca como marca
 - ✅ Permitido: 📍 **somente** em localização (`.sf-location`), formato **inline resumido**
-- Cards Flutter da lista Relatórios: sem emojis/ícones genéricos
+- ✅ Permitido: **um** ícone de pin acionável (`SFIcons.pinFill`) que ao tocar leva ao ponto no mapa (`/map?modo=foco&lat=&lng=`)
+- Cards Flutter da lista Relatórios: sem emojis/ícones genéricos decorativos
 
-## Localização
+## Localização (HTML + sheets Flutter)
 
-- Formato **inline resumido** (label + pin na mesma linha)
+- Formato **inline resumido** (label + pin na mesma linha) **ou** botão/ícone único “Ver no mapa”
 - SEM bloco gigante / caixa vazia com só o pin
-- SEM texto de coordenadas ou endereço
+- SEM texto de coordenadas ou endereço no sheet/card
 - SEM pills de localização no header
+- Em Relatórios → Mídia/Ocorrência: ação de localização = navegar para o pin no mapa
 
 ## Rodapé
 
@@ -63,7 +75,7 @@ Header: gradiente `linear-gradient(135deg, var(--sf-samsung) 0%, var(--sf-navy) 
 
 - [ ] Header com logo SoloForte oficial (imagem)
 - [ ] Zero ícones genéricos decorativos
-- [ ] Localização = inline resumido (só 📍)
+- [ ] Localização = inline resumido OU “Ver no mapa” (sem lat/long)
 - [ ] Rodapé = 1 bloco SoloForte, sem meta ID/Sync
 - [ ] Cores: samsung + petróleo
 - [ ] Export passa `sharePositionOrigin`
