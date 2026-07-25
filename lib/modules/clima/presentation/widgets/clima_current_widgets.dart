@@ -56,13 +56,17 @@ class ClimaLocationRow extends StatelessWidget {
           ),
           const SizedBox(width: 4),
         ],
-        Text(
-          'Atualizado $_tempoAtras',
-          style: const TextStyle(
-            fontFamily: 'Inter',
-            fontSize: 13,
-            fontWeight: FontWeight.w400,
-            color: kClimaTextTertiary,
+        Flexible(
+          child: Text(
+            'Atualizado $_tempoAtras',
+            style: const TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 13,
+              fontWeight: FontWeight.w400,
+              color: kClimaTextTertiary,
+            ),
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.end,
           ),
         ),
       ],
