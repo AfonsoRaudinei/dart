@@ -1,17 +1,13 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:soloforte_app/core/constants/layout_constants.dart';
 import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:soloforte_app/core/contracts/i_drawing_field_writer_provider.dart';
-import 'package:soloforte_app/core/contracts/i_producer_invite_writer_provider.dart';
 import 'package:soloforte_app/core/router/app_routes.dart';
 import 'package:soloforte_app/core/utils/user_facing_error.dart';
-import 'package:soloforte_app/modules/consultoria/services/agronomic_sync_service.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../providers/clients_providers.dart';
 import '../providers/field_providers.dart';
@@ -23,6 +19,7 @@ import '../widgets/cultura_item_widget.dart';
 import '../widgets/client_hub_section.dart';
 import '../widgets/client_detail_sub_widgets.dart';
 import '../widgets/client_edit_form.dart';
+import '../widgets/producer_invite_dialog.dart';
 import '../widgets/talhao_map_preview.dart';
 
 Future<bool> showClientDeleteConfirmation(
@@ -499,121 +496,10 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen> {
   }
 
   void _showProducerInviteDialog(BuildContext context, Client client) {
-    String? token;
-    DateTime? expiresAt;
-    Object? error;
-    var loading = false;
-
-    showDialog<void>(
-      context: context,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (context, setDialogState) {
-          Future<void> generateInvite() async {
-            setDialogState(() {
-              loading = true;
-              error = null;
-            });
-            try {
-              // RLS de producer_client_links exige o client em public.clients.
-              // ensureClientRemote faz push forçado + verificação (syncNow
-              // engolia falhas e podia marcar/pular cliente sem estar remoto).
-              await AgronomicSyncService(Supabase.instance.client)
-                  .ensureClientRemote(client.id);
-              final invite = await ref
-                  .read(producerInviteWriterProvider)
-                  .createInvite(client.id);
-              if (!dialogContext.mounted) return;
-              setDialogState(() {
-                token = invite.token;
-                expiresAt = invite.expiresAt.toLocal();
-              });
-            } catch (e) {
-              if (!dialogContext.mounted) return;
-              setDialogState(() => error = e);
-            } finally {
-              if (dialogContext.mounted) {
-                setDialogState(() => loading = false);
-              }
-            }
-          }
-
-          return AlertDialog(
-            title: const Text('Convite do produtor'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Gere um token para ${client.name} vincular a conta dele a este cadastro.',
-                ),
-                const SizedBox(height: 16),
-                if (token != null) ...[
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF2F8F2),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: SelectableText(
-                      token!,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 1.2,
-                      ),
-                    ),
-                  ),
-                  if (expiresAt != null) ...[
-                    const SizedBox(height: 8),
-                    Text(
-                      'Válido até ${_formatDate(expiresAt!)}',
-                      style: const TextStyle(color: Color(0xFF6B7280)),
-                    ),
-                  ],
-                ],
-                if (error != null) ...[
-                  const SizedBox(height: 8),
-                  Text(
-                    userFacingError(
-                      error,
-                      action: 'Não foi possível gerar o convite',
-                    ),
-                    style: const TextStyle(color: Color(0xFFFF3B30)),
-                  ),
-                ],
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(dialogContext).pop(),
-                child: const Text('Fechar'),
-              ),
-              if (token != null)
-                TextButton(
-                  onPressed: () {
-                    Clipboard.setData(ClipboardData(text: token!));
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Token copiado.')),
-                    );
-                  },
-                  child: const Text('Copiar'),
-                ),
-              FilledButton(
-                onPressed: loading ? null : generateInvite,
-                child: loading
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : Text(token == null ? 'Gerar token' : 'Gerar novo'),
-              ),
-            ],
-          );
-        },
-      ),
+    ProducerInviteDialog.show(
+      context,
+      clientId: client.id,
+      clientName: client.name,
     );
   }
 }
