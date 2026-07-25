@@ -15,3 +15,4 @@
 - IPA 168: `build/ios/ipa/soloforte_app.ipa` | `CFBundleVersion=168` | `CFBundleShortVersionString=1.34.0` | `SUPABASE_URL` confirmada no binário
 - IPA 169: `build/ios/ipa/soloforte_app.ipa` | `CFBundleVersion=169` | `CFBundleShortVersionString=1.34.0` | `SUPABASE_URL` confirmada no binário
 - IPA 170: `build/ios/ipa/soloforte_app.ipa` | `CFBundleVersion=170` | `CFBundleShortVersionString=1.34.0` | `SUPABASE_URL` confirmada no binário
+- IPA 175: **em geração** | `CFBundleVersion=175` | `CFBundleShortVersionString=1.34.0` | branch `cursor/audit-portfolio-fixes-9765` (inclui mídia/pins do dia)
