@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:soloforte_app/modules/consultoria/services/agronomic_sync_service.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 void main() {
   group('AgronomicSyncService mappers', () {
@@ -33,6 +34,47 @@ void main() {
       expect(payload['area_total'], 120.5);
       expect(payload['area_ha'], 120.5);
       expect(payload.containsKey('sync_status'), isFalse);
+    });
+
+    test('clientLocalToRemote pode enviar deleted_at null para reativar remoto', () {
+      final payload = AgronomicSyncService.clientLocalToRemote(
+        {
+          'id': 'client-1',
+          'user_id': 'user-1',
+          'nome': 'Raudinei teste',
+          'telefone': '',
+          'cidade': 'Porto nacional',
+          'uf': 'TO',
+          'created_at': '2026-07-24T10:00:00.000',
+          'updated_at': '2026-07-24T10:00:00.000',
+          'deleted_at': null,
+        },
+        includeNullDeletedAt: true,
+      );
+
+      expect(payload.containsKey('deleted_at'), isTrue);
+      expect(payload['deleted_at'], isNull);
+    });
+
+    test('mapEnsureClientRemoteError orienta RLS e sessão', () {
+      expect(
+        AgronomicSyncService.mapEnsureClientRemoteError(
+          const PostgrestException(
+            message: 'new row violates row-level security policy',
+            code: '42501',
+          ),
+        ),
+        contains('consultor'),
+      );
+      expect(
+        AgronomicSyncService.mapEnsureClientRemoteError(
+          const PostgrestException(
+            message: 'JWT expired',
+            code: 'PGRST301',
+          ),
+        ),
+        contains('Sessão expirada'),
+      );
     });
 
     test('clientRemoteToLocal aceita schema remoto legado', () {
