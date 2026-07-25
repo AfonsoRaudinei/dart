@@ -53,9 +53,14 @@ const _categories = [
 ];
 
 /// Empacota todos os campos coletados pelo formulário agronômico v14.
+///
+/// [latitude]/[longitude] são o ponto escolhido no mapa (tap/long-press).
+/// Nunca devem ser substituídos por GPS do dispositivo no save.
 class OccurrenceFormData {
   final String type; // urgência: "Baixa" | "Média" | "Alta"
   final String description;
+  final double latitude;
+  final double longitude;
   final String? clientId;
   final String? photoPath; // primeiro caminho de foto (se houver)
   final String? category; // categoria principal (1ª selecionada)
@@ -74,6 +79,8 @@ class OccurrenceFormData {
   const OccurrenceFormData({
     required this.type,
     required this.description,
+    required this.latitude,
+    required this.longitude,
     this.clientId,
     this.photoPath,
     this.category,
@@ -89,6 +96,14 @@ class OccurrenceFormData {
     this.notasCategoriasJson,
     this.fotosCategoriasJson,
   });
+
+  /// Coordenadas válidas para pin no mapa (rejeita NaN/∞/(0,0)).
+  bool get hasValidMapPin {
+    if (!latitude.isFinite || !longitude.isFinite) return false;
+    if (latitude < -90 || latitude > 90) return false;
+    if (longitude < -180 || longitude > 180) return false;
+    return latitude != 0 || longitude != 0;
+  }
 }
 
 typedef OccurrenceConfirmCallback = void Function(OccurrenceFormData data);

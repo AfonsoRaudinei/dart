@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:soloforte_app/core/contracts/i_client_lookup_provider.dart';
+import 'package:soloforte_app/core/router/app_routes.dart';
 import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 
 import '../../../../../../core/design/sf_icons.dart';
@@ -51,34 +52,26 @@ class OccurrenceDetailSheet extends ConsumerWidget {
 
   // ── Helpers de categoria ─────────────────────────────────────────────────
 
-  static IconData _iconForCategory(String? category) {
-    switch ((category ?? '').toLowerCase()) {
-      case 'doenca':
-      case 'doença':
-        return SFIcons.coronavirus;
-      case 'insetos':
-      case 'pragas':
-        return SFIcons.bugReport;
-      case 'daninhas':
-      case 'ervas_daninhas':
-      case 'ervas daninhas':
-        return SFIcons.grass;
-      case 'nutricional':
-      case 'nutrientes':
-        return SFIcons.science;
-      case 'agua':
-      case 'água':
-        return SFIcons.waterDrop;
-      case 'amostra_solo':
-      case 'amostra solo':
-        return Icons.biotech_outlined;
-      default:
-        return SFIcons.locationOn;
-    }
-  }
-
   static String _labelForCategory(String? category) {
     return OccurrenceCategory.fromString(category).label;
+  }
+
+  void _goToMapPin(BuildContext context) {
+    final coords = occurrence.getCoordinates();
+    if (coords == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Esta ocorrência não tem ponto no mapa.')),
+      );
+      return;
+    }
+    final lat = coords['lat']!;
+    final lng = coords['long']!;
+    HapticFeedback.selectionClick();
+    Navigator.of(context).pop();
+    context.go(
+      '${AppRoutes.map}?modo=foco&lat=${lat.toStringAsFixed(6)}'
+      '&lng=${lng.toStringAsFixed(6)}',
+    );
   }
 
   static Color _colorForCategory(String? category) {
@@ -226,22 +219,16 @@ class OccurrenceDetailSheet extends ConsumerWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final categoryColor = _colorForCategory(occurrence.category);
     final urgencyColor = _colorForUrgency(occurrence.type);
-    final categoryIcon = _iconForCategory(occurrence.category);
     final categoryLabel = _labelForCategory(occurrence.category);
     final urgencyLabel = _labelForUrgency(occurrence.type);
     final category = OccurrenceCategory.fromString(occurrence.category);
     final metricLabel = _firstMetricLabel(occurrence);
+    final hasMapPin = occurrence.getCoordinates() != null;
 
     final formattedDate = DateFormat(
       "dd 'de' MMMM 'de' yyyy 'às' HH:mm",
       'pt_BR',
     ).format(occurrence.createdAt);
-
-    final coordinates = occurrence.getCoordinates();
-    final coordsText = coordinates != null
-        ? '${coordinates['lat']!.toStringAsFixed(5)}, '
-              '${coordinates['long']!.toStringAsFixed(5)}'
-        : 'Sem coordenadas';
 
     final detailRows = <_DetailRowData>[
       if (occurrence.clientId != null && occurrence.clientId!.isNotEmpty)
@@ -290,11 +277,6 @@ class OccurrenceDetailSheet extends ConsumerWidget {
           label: 'Estádio fenológico',
           value: occurrence.estadioFenologico!,
         ),
-      _DetailRowData(
-        icon: SFIcons.locationOn,
-        label: 'Coordenadas',
-        value: coordsText,
-      ),
       if (occurrence.cultivar != null && occurrence.cultivar!.isNotEmpty)
         _DetailRowData(
           icon: SFIcons.agriculture,
@@ -438,7 +420,16 @@ class OccurrenceDetailSheet extends ConsumerWidget {
                         ],
                       ),
                     ),
-                    Icon(categoryIcon, color: categoryColor, size: 20),
+                    if (hasMapPin)
+                      IconButton(
+                        tooltip: 'Ver no mapa',
+                        icon: Icon(
+                          SFIcons.pinFill,
+                          color: categoryColor,
+                          size: 22,
+                        ),
+                        onPressed: () => _goToMapPin(context),
+                      ),
                   ],
                 ),
               ),
@@ -480,6 +471,25 @@ class OccurrenceDetailSheet extends ConsumerWidget {
                   ),
                 ),
               ),
+              if (hasMapPin) ...[
+                const SizedBox(height: 12),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: OutlinedButton.icon(
+                      onPressed: () => _goToMapPin(context),
+                      icon: Icon(
+                        SFIcons.pinFill,
+                        size: 18,
+                        color: categoryColor,
+                      ),
+                      label: const Text('Ver ponto no mapa'),
+                    ),
+                  ),
+                ),
+              ],
               const SizedBox(height: 20),
               if (!_isReadOnly)
                 Padding(

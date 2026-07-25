@@ -349,6 +349,10 @@ class _OccurrenceCreationSheetState
       OccurrenceFormData(
         type: _urgency,
         description: desc,
+        // Blindagem anti-regressão: o pin é o ponto do formulário (tap no mapa),
+        // nunca GPS do dispositivo no momento do save.
+        latitude: widget.latitude,
+        longitude: widget.longitude,
         clientId: _selectedClient?.id,
         photoPath: firstPhoto,
         category: _selectedCategoryValue ?? primaryCat,
@@ -417,9 +421,9 @@ class _OccurrenceCreationSheetState
                             fontWeight: FontWeight.w600,
                           ),
                         ),
-                        Text(
-                          '${widget.latitude.toStringAsFixed(5)}, ${widget.longitude.toStringAsFixed(5)}',
-                          style: const TextStyle(
+                        const Text(
+                          'Ponto definido no mapa',
+                          style: TextStyle(
                             color: Color(0xFF8E8E93),
                             fontSize: 12,
                           ),
