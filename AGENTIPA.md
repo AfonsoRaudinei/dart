@@ -15,5 +15,4 @@
 - IPA 168: `build/ios/ipa/soloforte_app.ipa` | `CFBundleVersion=168` | `CFBundleShortVersionString=1.34.0` | `SUPABASE_URL` confirmada no binário
 - IPA 169: `build/ios/ipa/soloforte_app.ipa` | `CFBundleVersion=169` | `CFBundleShortVersionString=1.34.0` | `SUPABASE_URL` confirmada no binário
 - IPA 170: `build/ios/ipa/soloforte_app.ipa` | `CFBundleVersion=170` | `CFBundleShortVersionString=1.34.0` | `SUPABASE_URL` confirmada no binário
-- IPA 175: **preparado + fixes nav/UX**, build bloqueado nesta máquina | `pubspec 1.34.0+175` | branch `cursor/fix-nav-ux-ipa175-9765` | falha: 0 identities codesign / sem Apple ID team `BA2BU25B78` | reexecutar `./build_testflight.sh` no Mac com Xcode logado após `gh auth` + certificados
-
+- IPA 175: **código pronto, archive falhou no codesign** | `pubspec 1.34.0+175` | branch `cursor/fix-nav-ux-ipa175-9765` @ `08a5ff2` | erro Xcode: certificado Apple Development do team `BA2BU25B78` existe na conta, mas a **private key não está no keychain** deste Mac | ação: Xcode → Settings → Accounts → Manage Certificates → Revoke órfão e gerar novo (ou restaurar `.p12` de outro Mac) → `./build_testflight.sh`
