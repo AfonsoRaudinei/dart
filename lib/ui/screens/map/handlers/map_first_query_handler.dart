@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:latlong2/latlong.dart';
 
 import '../../../components/map/map_sheet_state.dart';
 import '../../../../core/utils/app_logger.dart';
@@ -19,6 +20,7 @@ class MapFirstQueryHandler {
     required VoidCallback armOccurrenceMode,
     required Future<void> Function(String drawingId, {required bool edit})
     focusDrawing,
+    required void Function(LatLng point) focusCoordinate,
   }) {
     final modo = uri.queryParameters['modo'];
     final clienteId = uri.queryParameters['clienteId'];
@@ -95,6 +97,30 @@ class MapFirstQueryHandler {
     if (modo == 'ocorrencia') {
       AppLogger.debug('MAP-FIRST: recebido modo=ocorrencia', tag: 'PrivateMap');
       armOccurrenceMode();
+      return;
+    }
+
+    if (modo == 'foco') {
+      final lat = double.tryParse(uri.queryParameters['lat'] ?? '');
+      final lng = double.tryParse(uri.queryParameters['lng'] ?? '');
+      if (lat == null || lng == null) {
+        AppLogger.warning(
+          'MAP-FIRST: modo=foco sem lat/lng válidos',
+          tag: 'PrivateMap',
+        );
+        return;
+      }
+      if (!lat.isFinite || !lng.isFinite) return;
+      if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return;
+      if (lat == 0 && lng == 0) return;
+
+      AppLogger.debug(
+        'MAP-FIRST: recebido modo=foco lat=$lat lng=$lng',
+        tag: 'PrivateMap',
+      );
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        focusCoordinate(LatLng(lat, lng));
+      });
     }
   }
 }

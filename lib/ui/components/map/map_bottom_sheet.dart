@@ -476,24 +476,15 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
         widget.onClose();
       },
       onConfirm: (data) async {
-        final selectedLocation =
-            creationLocation ??
-            ((lat != 0 || lng != 0) ? LatLng(lat, lng) : null);
-        final saveFix = await () async {
-              final locationService = LocationService();
-              final isAvailable = await locationService.checkAvailability();
-              return isAvailable
-                  ? await locationService.getCurrentPosition()
-                  : null;
-            }();
-        final saveLocation = selectedLocation ?? saveFix?.position;
-
-        if (!mounted) return;
-
-        if (saveLocation == null) {
+        // Blindagem: pin da ocorrência = ponto do mapa (tap), NUNCA GPS.
+        // GPS aqui causava regressão recorrente (pin na localização do usuário).
+        if (!data.hasValidMapPin) {
+          if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Não foi possível obter sua posição GPS.'),
+              content: Text(
+                'Ponto do mapa inválido. Toque novamente no mapa para marcar a ocorrência.',
+              ),
               backgroundColor: PremiumTokens.alertError,
             ),
           );
@@ -509,8 +500,8 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
               description: data.description,
               clientId: data.clientId,
               photoPath: data.photoPath,
-              lat: saveLocation.latitude,
-              long: saveLocation.longitude,
+              lat: data.latitude,
+              long: data.longitude,
               category: data.category,
               status: 'draft',
               cultivar: data.cultivar,

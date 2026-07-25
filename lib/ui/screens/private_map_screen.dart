@@ -102,6 +102,7 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
         setSheetState: _setSheetState,
         armOccurrenceMode: _armOccurrenceMode,
         focusDrawing: _focusDrawingFromQuery,
+        focusCoordinate: _focusCoordinateFromQuery,
       );
     });
   }
@@ -164,6 +165,28 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
       const MapSheetState(type: MapSheetType.draw),
       edit ? 'query_param_modo_editar_drawing' : 'query_param_focus_drawing',
     );
+  }
+
+  void _focusCoordinateFromQuery(LatLng point, {int attempt = 0}) {
+    if (!ref.read(mapReadyStateProvider)) {
+      if (attempt >= 20) {
+        AppLogger.warning(
+          'Mapa não ficou pronto para focar coordenada da rota',
+          tag: 'PrivateMap',
+        );
+        return;
+      }
+      Future<void>.delayed(const Duration(milliseconds: 50), () {
+        if (!mounted) return;
+        _focusCoordinateFromQuery(point, attempt: attempt + 1);
+      });
+      return;
+    }
+
+    _mapController.move(point, 17.0);
+    ref.read(destinationCoordinateMarkerProvider.notifier).state = point;
+    ref.read(viewportStateProvider.notifier).state =
+        InitialViewportState.applied;
   }
 
   @override
