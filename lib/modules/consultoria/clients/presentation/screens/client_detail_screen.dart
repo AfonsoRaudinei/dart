@@ -514,10 +514,11 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen> {
               error = null;
             });
             try {
-              // RLS exige o client já existir em public.clients com user_id =
-              // auth.uid(). Sync direto (não via orchestrator) evita early-return
-              // quando outra sync já está em andamento.
-              await AgronomicSyncService(Supabase.instance.client).syncNow();
+              // RLS de producer_client_links exige o client em public.clients.
+              // ensureClientRemote faz push forçado + verificação (syncNow
+              // engolia falhas e podia marcar/pular cliente sem estar remoto).
+              await AgronomicSyncService(Supabase.instance.client)
+                  .ensureClientRemote(client.id);
               final invite = await ref
                   .read(producerInviteWriterProvider)
                   .createInvite(client.id);
