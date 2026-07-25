@@ -37,6 +37,25 @@ class ImageStorageService {
     }
   }
 
+  /// Copia um arquivo (ex.: path temporário do ImagePicker) para `documents/media`.
+  /// Necessário para ocorrências: paths temporários somem e quebram relatórios.
+  Future<String?> persistLocalCopy(String sourcePath) async {
+    try {
+      if (sourcePath.isEmpty) return null;
+      final source = File(sourcePath);
+      if (!await source.exists()) return null;
+      final saved = await _saveToAppDirectory(source);
+      return saved.path;
+    } catch (e) {
+      AppLogger.warning(
+        'Erro ao persistir cópia local da imagem',
+        tag: 'ImageStorage',
+        error: e,
+      );
+      return null;
+    }
+  }
+
   /// Salva uma cópia do arquivo no diretório de documentos da aplicação
   Future<File> _saveToAppDirectory(File sourceFile) async {
     final directory = await getApplicationDocumentsDirectory();

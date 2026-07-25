@@ -17,6 +17,7 @@ import 'package:soloforte_app/modules/settings/presentation/providers/user_profi
 import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 
 import '../../domain/occurrence.dart';
+import '../../../relatorio_visita/data/image_storage_service.dart';
 import 'occurrence_client_selector.dart';
 import 'occurrence_fenologia_data.dart';
 import 'occurrence_form_widgets.dart';
@@ -309,30 +310,6 @@ class _OccurrenceCreationSheetState
     }
   }
 
-  Future<void> _pickPhoto(OccurrenceCategory cat) async {
-    final src = await showSoloForteSheet<ImageSource>(
-      context: context,
-      backgroundColor: Colors.transparent,
-      showDragHandle: false,
-      useSafeArea: false,
-      shape: const RoundedRectangleBorder(),
-      clipBehavior: Clip.none,
-      builder: (_) =>
-          OccurrencePhotoSourceSheet(catEmoji: cat.emoji, catLabel: cat.label),
-    );
-    if (src == null) return;
-    final xFile = await _picker.pickImage(
-      source: src,
-      imageQuality: 80,
-      maxWidth: 1920,
-    );
-    if (xFile == null) return;
-    setState(() {
-      _fotos.putIfAbsent(cat.name, () => []);
-      _fotos[cat.name]!.add(xFile.path);
-    });
-  }
-
   void _submit() {
     final desc = _descCtrl.text.trim();
     if (_selectedCategoryValue == null && _cats.isEmpty && desc.isEmpty) {
@@ -385,12 +362,10 @@ class _OccurrenceCreationSheetState
     final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
     return Material(
       color: const Color(0xFF1C1C1E),
-      child: Stack(
+      child: ListView(
+        controller: widget.scrollController,
+        padding: EdgeInsets.fromLTRB(16, 12, 16, 32 + keyboardHeight),
         children: [
-          ListView(
-            controller: widget.scrollController,
-            padding: EdgeInsets.fromLTRB(16, 12, 16, 96 + keyboardHeight),
-            children: [
               // ── Header padrão ADR-027 (espelha NovoCaseHeader) ──────────
               Row(
                 children: [
@@ -697,7 +672,9 @@ class _OccurrenceCreationSheetState
                 hint: 'Ações sugeridas para correção…',
                 maxLines: 3,
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: 24),
+              _buildPhotoActionSection(),
+              const SizedBox(height: 20),
 
               Row(
                 children: [
@@ -752,38 +729,6 @@ class _OccurrenceCreationSheetState
               ),
             ],
           ),
-
-          if (_cats.isNotEmpty)
-            Positioned(
-              bottom: 12,
-              right: 16,
-              child: FloatingActionButton.extended(
-                heroTag: 'photo_fab',
-                backgroundColor: const Color(0xFF2C2C2E),
-                foregroundColor: Colors.white,
-                onPressed: () async {
-                  if (_cats.length == 1) {
-                    await _pickPhoto(_cats.first);
-                  } else {
-                    final cat = await showSoloForteSheet<OccurrenceCategory>(
-                      context: context,
-                      backgroundColor: Colors.transparent,
-                      showDragHandle: false,
-                      useSafeArea: false,
-                      shape: const RoundedRectangleBorder(),
-                      clipBehavior: Clip.none,
-                      builder: (_) =>
-                          OccurrenceCatPickerSheet(cats: _cats.toList()),
-                    );
-                    if (cat != null) await _pickPhoto(cat);
-                  }
-                },
-                icon: const Text('📷', style: TextStyle(fontSize: 18)),
-                label: const Text('Próxima Foto'),
-              ),
-            ),
-        ],
-      ),
     );
   }
 
@@ -844,7 +789,7 @@ class _OccurrenceCreationSheetState
             ),
             if (_fotos[cat.name]?.isNotEmpty == true)
               Padding(
-                padding: const EdgeInsets.fromLTRB(14, 0, 14, 12),
+                padding: const EdgeInsets.fromLTRB(14, 0, 14, 8),
                 child: SizedBox(
                   height: 72,
                   child: ListView.separated(
@@ -890,7 +835,20 @@ class _OccurrenceCreationSheetState
                   ),
                 ),
               ),
-            const SizedBox(height: 4),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 0, 14, 12),
+              child: TextButton.icon(
+                onPressed: () => _pickPhoto(cat),
+                icon: Icon(Icons.camera_alt_outlined, size: 18, color: color),
+                label: Text(
+                  'Adicionar foto',
+                  style: TextStyle(
+                    color: color,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
           ],
         ),
       ),

@@ -111,4 +111,151 @@ extension _OccurrenceCreationSheetUiHelpers on _OccurrenceCreationSheetState {
       ),
     );
   }
+
+  int get _totalFotosCount =>
+      _fotos.values.fold<int>(0, (sum, list) => sum + list.length);
+
+  Future<void> _pickPhoto(OccurrenceCategory cat) async {
+    final src = await showSoloForteSheet<ImageSource>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      showDragHandle: false,
+      useSafeArea: false,
+      shape: const RoundedRectangleBorder(),
+      clipBehavior: Clip.none,
+      builder: (_) =>
+          OccurrencePhotoSourceSheet(catEmoji: cat.emoji, catLabel: cat.label),
+    );
+    if (src == null) return;
+    final xFile = await _picker.pickImage(
+      source: src,
+      imageQuality: 80,
+      maxWidth: 1920,
+    );
+    if (xFile == null) return;
+
+    // Path do ImagePicker é temporário — persiste em documents/media
+    // para o relatório conseguir ler foto_base64 / galeria depois.
+    final persisted = await ImageStorageService().persistLocalCopy(xFile.path);
+    if (persisted == null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Não foi possível salvar a foto. Tente novamente.'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      _fotos.putIfAbsent(cat.name, () => []);
+      _fotos[cat.name]!.add(persisted);
+    });
+  }
+
+  Future<void> _onAddPhotoPressed() async {
+    if (_cats.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Selecione uma categoria antes de anexar foto.'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+      return;
+    }
+    HapticFeedback.selectionClick();
+    if (_cats.length == 1) {
+      await _pickPhoto(_cats.first);
+      return;
+    }
+    final cat = await showSoloForteSheet<OccurrenceCategory>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      showDragHandle: false,
+      useSafeArea: false,
+      shape: const RoundedRectangleBorder(),
+      clipBehavior: Clip.none,
+      builder: (_) => OccurrenceCatPickerSheet(cats: _cats.toList()),
+    );
+    if (cat != null) await _pickPhoto(cat);
+  }
+
+  Widget _buildPhotoActionSection() {
+    final total = _totalFotosCount;
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: PremiumTokens.brandGreen.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: PremiumTokens.brandGreen.withValues(alpha: 0.55),
+          width: 1.2,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const OccurrenceSectionHeader(
+            icon: '📷',
+            title: 'Fotos da ocorrência',
+          ),
+          const SizedBox(height: 6),
+          Text(
+            total == 0
+                ? 'Anexe foto para aparecer no relatório. Selecione a categoria e toque abaixo.'
+                : '$total foto(s) pronta(s) para o relatório.',
+            style: const TextStyle(color: Color(0xFFAEAEB2), fontSize: 12),
+          ),
+          if (total > 0) ...[
+            const SizedBox(height: 10),
+            SizedBox(
+              height: 56,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                children: [
+                  for (final entry in _fotos.entries)
+                    for (final path in entry.value)
+                      Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Image.file(
+                            File(path),
+                            width: 56,
+                            height: 56,
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                      ),
+                ],
+              ),
+            ),
+          ],
+          const SizedBox(height: 12),
+          SizedBox(
+            height: 48,
+            child: OutlinedButton.icon(
+              onPressed: _onAddPhotoPressed,
+              style: OutlinedButton.styleFrom(
+                foregroundColor: PremiumTokens.brandGreen,
+                side: const BorderSide(
+                  color: PremiumTokens.brandGreen,
+                  width: 1.5,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+              icon: const Icon(Icons.camera_alt_outlined, size: 20),
+              label: Text(
+                total == 0 ? 'Tirar ou escolher foto' : 'Adicionar outra foto',
+                style: const TextStyle(fontWeight: FontWeight.w700),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
