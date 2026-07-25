@@ -841,6 +841,56 @@ fi
 echo ""
 
 # =============================================================================
+# REGRA-UI-MAP-CTA — anti-regressão CTA fantasma + sombra de atribuição
+#
+# Fundamento (fix 2d72677 / reopen IPA):
+#   1) Popup de atribuição NÃO pode auto-expandir (parece sombra/bug).
+#   2) CTA AccessSoloForte e shell chrome usam políticas tipadas.
+#   3) Redirect de autenticado em rota pública ocorre ANTES do await de perfil.
+# =============================================================================
+echo -e "── ${CYAN}REGRA-UI-MAP-CTA${NC}: CTA fantasma + sombra atribuição ────────"
+echo ""
+
+if grep -q "kMapAttributionPopupInitialDuration" \
+  lib/ui/screens/map/widgets/map_build_orchestrator.dart && \
+   grep -q "const Duration kMapAttributionPopupInitialDuration = Duration.zero" \
+  lib/ui/components/map/map_attribution_policy.dart; then
+  pass "atribuição do mapa usa Duration.zero (sem popup preto na entrada)"
+else
+  fail "REGRA-UI-MAP-CTA: map_build_orchestrator deve usar kMapAttributionPopupInitialDuration=Duration.zero"
+fi
+
+if grep -q "popupInitialDisplayDuration: const Duration(seconds:" \
+  lib/ui/screens/map/widgets/map_build_orchestrator.dart; then
+  fail "REGRA-UI-MAP-CTA: popupInitialDisplayDuration com Duration(seconds:) reintroduz sombra preta"
+else
+  pass "nenhum auto-expand de atribuição com Duration(seconds:) no orchestrator"
+fi
+
+if grep -q "shouldShowPublicAccessCta" lib/ui/screens/public_map_screen.dart && \
+   grep -q "shouldShowShellChrome" lib/ui/components/app_shell.dart; then
+  pass "CTA público e shell chrome gated por política tipada"
+else
+  fail "REGRA-UI-MAP-CTA: public_map_screen/app_shell devem usar public_access_cta_policy"
+fi
+
+# Garante ordem: redirect de rota pública ANTES do early-return de perfil loading.
+# Sem isso, autenticado permanece em /public-map e o CTA fantasma reaparece.
+ROUTER_PUBLIC_REDIRECT_LINE=$(grep -n "if (isPublicRoute)" lib/core/router/app_router.dart \
+  | head -1 | cut -d: -f1 || true)
+ROUTER_PROFILE_LOADING_LINE=$(grep -n "profileAsync.isLoading" lib/core/router/app_router.dart \
+  | head -1 | cut -d: -f1 || true)
+
+if [ -n "$ROUTER_PUBLIC_REDIRECT_LINE" ] && [ -n "$ROUTER_PROFILE_LOADING_LINE" ] && \
+   [ "$ROUTER_PUBLIC_REDIRECT_LINE" -lt "$ROUTER_PROFILE_LOADING_LINE" ]; then
+  pass "router redireciona autenticado fora de rota pública antes do await de perfil"
+else
+  fail "REGRA-UI-MAP-CTA: em app_router.dart, if (isPublicRoute) deve vir ANTES de profileAsync.isLoading"
+fi
+
+echo ""
+
+# =============================================================================
 # RESULTADO FINAL
 # =============================================================================
 echo -e "${CYAN}═══════════════════════════════════════════════════════════════${NC}"

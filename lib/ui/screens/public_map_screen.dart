@@ -7,6 +7,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 
 import '../components/public_map/access_button.dart';
+import '../components/public_map/public_access_cta_policy.dart';
 import '../components/public_map/public_publication_pins.dart';
 import '../components/public_map/public_publication_preview.dart';
 import '../components/public_map/error_overlay.dart';
@@ -21,6 +22,7 @@ import '../../modules/marketing/presentation/widgets/marketing_case_sheet.dart';
 import '../../core/config/map_config.dart';
 import '../../core/permissions/permission_provider.dart';
 import '../../core/permissions/location_permission_gate.dart';
+import '../../core/session/session_controller.dart';
 
 class PublicMapScreen extends ConsumerStatefulWidget {
   const PublicMapScreen({super.key});
@@ -125,6 +127,10 @@ class _PublicMapScreenState extends ConsumerState<PublicMapScreen> {
     final locationState = ref.watch(publicLocationNotifierProvider);
     final mapStyle = ref.watch(publicMapStyleProvider);
     final publicationsAsync = ref.watch(publicPublicationsProvider);
+    // CTA só para visitante confirmado — oculto no bootstrap (SessionUnknown)
+    // e quando a sessão autenticada ainda não redirecionou para /map.
+    final session = ref.watch(sessionControllerProvider);
+    final showAccessCta = shouldShowPublicAccessCta(session);
 
     return Scaffold(
       // 🛡 IPA-123: background branco — visível antes dos tiles do FlutterMap
@@ -316,13 +322,15 @@ class _PublicMapScreenState extends ConsumerState<PublicMapScreen> {
           // Loading overlay para publicações
           if (publicationsAsync.isLoading) const PublicationsLoadingOverlay(),
 
-          // Botão "Acessar SoloForte" centralizado na parte inferior
-          const Positioned(
-            left: 0,
-            right: 0,
-            bottom: 40,
-            child: Center(child: AccessSoloForteButton()),
-          ),
+          // Card "Acessar SoloForte" — apenas visitante (SessionPublic).
+          // Função: login/criar conta. Oculto no reopen autenticado.
+          if (showAccessCta)
+            const Positioned(
+              left: 0,
+              right: 0,
+              bottom: 40,
+              child: Center(child: AccessSoloForteButton()),
+            ),
         ],
       ),
     );

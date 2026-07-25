@@ -33,6 +33,7 @@ import '../../../../modules/visitas/presentation/controllers/visit_controller.da
 import '../../../../modules/dashboard/domain/location_settings.dart';
 import '../../../../modules/dashboard/providers/location_providers.dart';
 import '../handlers/map_location_handler.dart';
+import '../../../components/map/map_attribution_policy.dart';
 import '../../../components/map/widgets/map_canvas.dart';
 import '../../../components/map/widgets/map_layers.dart';
 import '../../../../modules/clima/presentation/widgets/clima_radar_zoom_guard.dart';
@@ -358,7 +359,10 @@ class MapBuildOrchestrator extends ConsumerWidget {
                 attributions: [TextSourceAttribution(tileConfig.attribution)],
                 showFlutterMapAttribution: false,
                 alignment: AttributionAlignment.bottomLeft,
-                popupInitialDisplayDuration: const Duration(seconds: 2),
+                // Sem auto-expand: o popup preto parecia "sombra" no mapa.
+                // Atribuição continua acessível pelo botão info.
+                popupInitialDisplayDuration:
+                    kMapAttributionPopupInitialDuration,
                 popupBorderRadius: BorderRadius.circular(8),
                 popupBackgroundColor: Colors.black.withValues(alpha: 0.72),
               ),
