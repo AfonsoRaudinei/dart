@@ -105,17 +105,27 @@ class MapBuildOrchestrator extends ConsumerWidget {
 
     final drawingMetrics = ref.watch(drawingMapMetricsProvider);
     final activeLayer = ref.watch(activeLayerProvider);
+    final isMapReady = ref.watch(mapReadyStateProvider);
     final tileConfig = MapConfig.tileConfigForLayer(
       activeLayer,
       mapTilerApiKey: MapConfig.kMapTilerApiKey,
     );
 
-    final drawCtrlForInteraction = ref.watch(drawingControllerProvider);
+    // Seleciona só campos que afetam drag — evita rebuild do canvas no GPS/métricas.
+    final freehandInteraction = ref.watch(
+      drawingControllerProvider.select(
+        (c) => (
+          c.currentTool,
+          c.currentState,
+          c.isFreehandStrokeActive,
+        ),
+      ),
+    );
     final disableMapDrag =
-        drawCtrlForInteraction.currentTool == DrawingTool.freehand &&
-        (drawCtrlForInteraction.currentState == DrawingState.armed ||
-            drawCtrlForInteraction.currentState == DrawingState.drawing ||
-            drawCtrlForInteraction.isFreehandStrokeActive);
+        freehandInteraction.$1 == DrawingTool.freehand &&
+        (freehandInteraction.$2 == DrawingState.armed ||
+            freehandInteraction.$2 == DrawingState.drawing ||
+            freehandInteraction.$3);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       stopwatch.stop();
@@ -357,7 +367,7 @@ class MapBuildOrchestrator extends ConsumerWidget {
 
           DrawingMapGestureOverlay(
             mapController: mapController,
-            isMapReady: ref.watch(mapReadyStateProvider),
+            isMapReady: isMapReady,
           ),
 
           RepaintBoundary(
@@ -377,7 +387,7 @@ class MapBuildOrchestrator extends ConsumerWidget {
           ),
           DrawingMapBehaviorListener(
             mapController: mapController,
-            isMapReady: ref.watch(mapReadyStateProvider),
+            isMapReady: isMapReady,
             onCenterOnUser: centerOnUser,
           ),
           const MapGpsOverlaysHost(),
@@ -423,9 +433,13 @@ class _MapControlsHost extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final sheetState = ref.watch(mapSheetStateProvider);
+    final isDrawMode = ref.watch(
+      mapSheetStateProvider.select((s) => s?.type == MapSheetType.draw),
+    );
     final isMapReady = ref.watch(mapReadyStateProvider);
-    final currentUserRole = ref.watch(currentUserRoleProvider);
+    final isProdutor = ref.watch(
+      currentUserRoleProvider.select((r) => r.isProdutor),
+    );
     final armedMode = ref.watch(armedModeProvider);
 
     return MapControlsOverlay(
@@ -454,15 +468,15 @@ class _MapControlsHost extends ConsumerWidget {
       onCreateAntesDepoisCase: () => armMarketingMode(CaseTipo.antesDepois),
       onCreateAvaliacaoCase: () => armMarketingMode(CaseTipo.avaliacao),
       isMarketingMode: armedMode == ArmedMode.marketing,
-      isDrawMode: sheetState?.type == MapSheetType.draw,
+      isDrawMode: isDrawMode,
       isOccurrenceMode: armedMode == ArmedMode.occurrences,
       isCheckInActive: ref.watch(
         visitControllerProvider.select(
           (v) => v.valueOrNull?.status == 'active',
         ),
       ),
-      showCheckInAction: !currentUserRole.isProdutor,
-      topLeftCard: currentUserRole.isProdutor
+      showCheckInAction: !isProdutor,
+      topLeftCard: isProdutor
           ? ProducerMapContextCard(
               onFocusFarm: (fields) {
                 final points = fields
@@ -524,7 +538,7 @@ class _MapControlsHost extends ConsumerWidget {
           4: MapSheetType.layers,
         };
 
-        final currentType = sheetState?.type;
+        final currentType = ref.read(mapSheetStateProvider)?.type;
         final newType = sheetTypeMap[index];
 
         if (currentType == MapSheetType.draw && currentType != newType) {
