@@ -15,26 +15,15 @@ void main() {
     });
 
     test('false quando autenticado — evita CTA duplicado com SmartButton', () {
-      final user = User(
-        id: 'u1',
-        appMetadata: const {},
-        userMetadata: const {},
-        aud: 'authenticated',
-        createdAt: DateTime.utc(2024, 1, 1).toIso8601String(),
+      expect(
+        shouldShowPublicAccessCta(SessionAuthenticated(_testUser())),
+        isFalse,
       );
-      expect(shouldShowPublicAccessCta(SessionAuthenticated(user)), isFalse);
     });
 
     test('false em SessionPasswordRecovery', () {
-      final user = User(
-        id: 'u1',
-        appMetadata: const {},
-        userMetadata: const {},
-        aud: 'authenticated',
-        createdAt: DateTime.utc(2024, 1, 1).toIso8601String(),
-      );
       expect(
-        shouldShowPublicAccessCta(SessionPasswordRecovery(user)),
+        shouldShowPublicAccessCta(SessionPasswordRecovery(_testUser())),
         isFalse,
       );
     });
@@ -68,3 +57,12 @@ void main() {
     });
   });
 }
+
+User _testUser() => User.fromJson(const {
+      'id': 'user-cta-policy',
+      'app_metadata': <String, dynamic>{},
+      'user_metadata': <String, dynamic>{},
+      'aud': 'authenticated',
+      'created_at': '2026-07-20T12:00:00.000Z',
+    })!;
+
