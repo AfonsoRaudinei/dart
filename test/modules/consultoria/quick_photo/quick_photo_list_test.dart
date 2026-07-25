@@ -51,5 +51,11 @@ void main() {
       expect(filtered, hasLength(1));
       expect(filtered.first.id, '2');
     });
+
+    test('syncDeleted constante é 2 (soft-delete)', () {
+      expect(QuickPhotoRepository.syncDeleted, 2);
+      expect(QuickPhotoRepository.syncSynced, 0);
+      expect(QuickPhotoRepository.syncPending, 1);
+    });
   });
 }

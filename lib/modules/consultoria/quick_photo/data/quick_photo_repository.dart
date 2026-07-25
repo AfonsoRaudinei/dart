@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:typed_data';
 import '../../../../core/session/local_session_identity.dart';
 
@@ -21,6 +22,11 @@ enum QuickPhotoType {
 class QuickPhotoRepository {
   static const _bucket = 'quick-photos';
   static const _table = 'quick_photos';
+
+  /// sync_status: 0=synced, 1=pending, 2=deleted_local
+  static const syncSynced = 0;
+  static const syncPending = 1;
+  static const syncDeleted = 2;
 
   final SupabaseClient _supabase;
   final Uuid _uuid;
@@ -107,6 +113,7 @@ class QuickPhotoRepository {
   }
 
   /// Lista fotos do usuário autenticado, mais recentes primeiro.
+  /// Exclui soft-deleted (`sync_status = deleted_local`).
   Future<List<QuickPhotoRecord>> getRecentForCurrentUser({int limit = 100}) async {
     final userId = LocalSessionIdentity.resolveUserId();
     if (userId.isEmpty) return const [];
@@ -114,16 +121,72 @@ class QuickPhotoRepository {
     final db = await _databaseHelper.database;
     final rows = await db.query(
       _table,
-      where: 'user_id = ?',
-      whereArgs: [userId],
+      where: 'user_id = ? AND sync_status != ?',
+      whereArgs: [userId, syncDeleted],
       orderBy: 'created_at DESC',
       limit: limit,
     );
 
-    return rows
-        .map(QuickPhotoRecord.fromMap)
-        .where((photo) => photo.imagePath?.isNotEmpty == true)
-        .toList();
+    return rows.map(QuickPhotoRecord.fromMap).toList();
+  }
+
+  /// Soft-delete: marca `deleted_local`, remove arquivo local se existir e
+  /// tenta limpar remoto (best-effort). Nunca hard-delete sincronizável.
+  Future<void> softDelete(String id) async {
+    final userId = LocalSessionIdentity.resolveUserId();
+    if (userId.isEmpty || id.isEmpty) return;
+
+    final db = await _databaseHelper.database;
+    final rows = await db.query(
+      _table,
+      where: 'id = ? AND user_id = ?',
+      whereArgs: [id, userId],
+      limit: 1,
+    );
+    if (rows.isEmpty) return;
+
+    final row = rows.first;
+    final localPath = row['local_path'] as String?;
+    final storagePath = row['storage_path'] as String?;
+
+    if (localPath != null && localPath.isNotEmpty) {
+      try {
+        final file = File(localPath);
+        if (await file.exists()) {
+          await file.delete();
+        }
+      } catch (error) {
+        AppLogger.warning(
+          'Falha ao apagar arquivo local da foto rápida.',
+          tag: 'QuickPhoto',
+          error: error,
+        );
+      }
+    }
+
+    await db.update(
+      _table,
+      {
+        'sync_status': syncDeleted,
+        'local_path': '',
+      },
+      where: 'id = ? AND user_id = ?',
+      whereArgs: [id, userId],
+    );
+
+    if (storagePath != null && storagePath.isNotEmpty) {
+      try {
+        await _supabase.storage.from(_bucket).remove([storagePath]);
+      } catch (error) {
+        AppLogger.warning(
+          'Foto marcada localmente como excluída; limpeza remota de storage pendente.',
+          tag: 'QuickPhoto',
+          error: error,
+        );
+      }
+    }
+
+    AppLogger.debug('Foto rápida soft-deleted: $id', tag: 'QuickPhoto');
   }
 
   static String typeLabel(String type) {

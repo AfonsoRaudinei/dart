@@ -83,6 +83,7 @@ class _VisitPhotosSectionState extends ConsumerState<_VisitPhotosSection> {
               photo: photo,
               dateFormat: widget.dateFormat,
               onTap: () => _openPreview(context, photo),
+              onAction: (value) => _handleAction(context, photo, value),
             );
           },
         );
@@ -122,23 +123,105 @@ class _VisitPhotosSectionState extends ConsumerState<_VisitPhotosSection> {
     }
   }
 
+  Future<bool> _fileExists(QuickPhotoRecord photo) async {
+    final path = photo.imagePath;
+    if (path == null || path.isEmpty) return false;
+    return File(path).exists();
+  }
+
+  Future<void> _handleAction(
+    BuildContext context,
+    QuickPhotoRecord photo,
+    String value,
+  ) async {
+    switch (value) {
+      case 'preview':
+        await _openPreview(context, photo);
+        return;
+      case 'map':
+        _openOnMap(context, photo);
+        return;
+      case 'delete':
+        await _confirmDelete(context, photo);
+        return;
+    }
+  }
+
+  void _openOnMap(BuildContext context, QuickPhotoRecord photo) {
+    final lat = photo.latitude;
+    final lng = photo.longitude;
+    if (lat == null || lng == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Esta mídia não tem coordenadas.')),
+      );
+      return;
+    }
+    if (!lat.isFinite || !lng.isFinite || (lat == 0 && lng == 0)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Coordenadas da mídia inválidas.')),
+      );
+      return;
+    }
+    context.go(
+      '${AppRoutes.map}?modo=foco&lat=${lat.toStringAsFixed(6)}'
+      '&lng=${lng.toStringAsFixed(6)}',
+    );
+  }
+
+  Future<void> _confirmDelete(
+    BuildContext context,
+    QuickPhotoRecord photo,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Excluir mídia?'),
+        content: Text(
+          photo.visitSessionId?.isNotEmpty == true
+              ? 'A foto será removida da lista e marcada como excluída.'
+              : 'Mídia órfã (sem visita). Será removida da lista mesmo sem arquivo local.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Excluir'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+
+    await ref.read(quickPhotoRepositoryProvider).softDelete(photo.id);
+    ref.invalidate(quickPhotoListProvider);
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Mídia excluída.')),
+    );
+  }
+
   Future<void> _openPreview(
     BuildContext context,
     QuickPhotoRecord photo,
   ) async {
     final path = photo.imagePath;
-    if (path == null || path.isEmpty) return;
+    final hasFile = await _fileExists(photo);
 
-    final file = File(path);
-    if (!await file.exists()) {
-      if (!context.mounted) return;
+    if (!context.mounted) return;
+
+    if (!hasFile) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Arquivo da foto não encontrado.')),
       );
+      await _confirmDelete(context, photo);
       return;
     }
 
-    if (!context.mounted) return;
+    final file = File(path!);
     final isVegetal = photo.type == QuickPhotoType.vegetalFilter.value;
     await showSoloForteSheet<void>(
       context: context,
@@ -200,7 +283,37 @@ class _VisitPhotosSectionState extends ConsumerState<_VisitPhotosSection> {
                 ),
               ),
             ),
-            const SizedBox(height: 12),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+              child: Row(
+                children: [
+                  if (photo.latitude != null && photo.longitude != null)
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () {
+                          Navigator.of(sheetContext).pop();
+                          _openOnMap(context, photo);
+                        },
+                        child: const Text('Ver no mapa'),
+                      ),
+                    ),
+                  if (photo.latitude != null && photo.longitude != null)
+                    const SizedBox(width: 12),
+                  Expanded(
+                    child: FilledButton(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: Colors.red.shade700,
+                      ),
+                      onPressed: () async {
+                        Navigator.of(sheetContext).pop();
+                        await _confirmDelete(context, photo);
+                      },
+                      child: const Text('Excluir'),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
       ),
@@ -265,11 +378,13 @@ class _VisitPhotoCard extends StatelessWidget {
   final QuickPhotoRecord photo;
   final DateFormat dateFormat;
   final VoidCallback onTap;
+  final Future<void> Function(String value) onAction;
 
   const _VisitPhotoCard({
     required this.photo,
     required this.dateFormat,
     required this.onTap,
+    required this.onAction,
   });
 
   @override
@@ -277,6 +392,7 @@ class _VisitPhotoCard extends StatelessWidget {
     final linked = photo.visitSessionId?.isNotEmpty == true;
     final path = photo.imagePath;
     final isVegetal = photo.type == QuickPhotoType.vegetalFilter.value;
+    final hasCoords = photo.latitude != null && photo.longitude != null;
 
     return _DataCard(
       leading: _VisitPhotoThumbnail(path: path, isVegetal: isVegetal),
@@ -289,6 +405,25 @@ class _VisitPhotoCard extends StatelessWidget {
       statusLabel: linked ? 'Vinculada' : 'Órfã',
       statusColor: linked ? PremiumTokens.brandGreen : const Color(0xFFFF9500),
       onTap: onTap,
+      trailing: _AsyncActionMenu(
+        tooltip: 'Ações da mídia',
+        itemBuilder: (context) => [
+          const PopupMenuItem(
+            value: 'preview',
+            child: Text('Pré-visualizar'),
+          ),
+          if (hasCoords)
+            const PopupMenuItem(
+              value: 'map',
+              child: Text('Ver no mapa'),
+            ),
+          const PopupMenuItem(
+            value: 'delete',
+            child: Text('Excluir', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+        onSelected: onAction,
+      ),
     );
   }
 }
