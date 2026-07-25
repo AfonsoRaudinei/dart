@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
-import '../../../../core/design/sf_icons.dart';
 import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart';
+import 'package:soloforte_app/core/design/sf_icons.dart';
+import 'package:soloforte_app/core/router/app_routes.dart';
 
 /// Tab 3 — GESTÃO (Administrativo: Clientes, Performance, Relatórios)
 class ManagementTabContent extends StatelessWidget {
@@ -15,32 +17,29 @@ class ManagementTabContent extends StatelessWidget {
         children: [
           Text(
             'Gestão',
-            style: Theme.of(context).textTheme.titleMedium!.copyWith(fontWeight: FontWeight.w600).copyWith(fontSize: 18),
+            style: Theme.of(context).textTheme.titleMedium!.copyWith(
+              fontWeight: FontWeight.w600,
+              fontSize: 18,
+            ),
           ),
           const SizedBox(height: 16),
           _ManagementTile(
             icon: SFIcons.people,
             title: 'Clientes',
             subtitle: 'Gestão de propriedades',
-            onTap: () {
-              // TODO: Navegar para clientes
-            },
+            onTap: () => context.go(AppRoutes.clients),
           ),
           _ManagementTile(
             icon: SFIcons.barChart,
             title: 'Performance',
-            subtitle: 'Métricas e indicadores',
-            onTap: () {
-              // TODO: Navegar para performance
-            },
+            subtitle: 'Métricas na Agenda',
+            onTap: () => context.go(AppRoutes.agenda),
           ),
           _ManagementTile(
             icon: SFIcons.description,
             title: 'Relatórios',
             subtitle: 'Documentos e análises',
-            onTap: () {
-              // TODO: Navegar para relatórios
-            },
+            onTap: () => context.go(AppRoutes.reports),
           ),
         ],
       ),
@@ -63,6 +62,9 @@ class _ManagementTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final onSurface = Theme.of(context).colorScheme.onSurface;
+    final secondary = Theme.of(context).colorScheme.onSurfaceVariant;
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -91,26 +93,21 @@ class _ManagementTile extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
+                        color: onSurface,
                       ),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       subtitle,
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Colors.black.withValues(alpha: 0.5),
-                      ),
+                      style: TextStyle(fontSize: 13, color: secondary),
                     ),
                   ],
                 ),
               ),
-              Icon(
-                SFIcons.chevronRight,
-                color: Colors.black.withValues(alpha: 0.3),
-              ),
+              Icon(SFIcons.chevronRight, color: secondary),
             ],
           ),
         ),

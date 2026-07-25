@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
-import '../../../../core/design/sf_icons.dart';
 import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart';
+import 'package:soloforte_app/core/design/sf_icons.dart';
+import 'package:soloforte_app/core/router/app_routes.dart';
+import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 
-/// Tab 2 — OPERAÇÕES (Campo: Visitas, Ordens, Ocorrências)
+/// Tab 2 — OPERAÇÕES (Campo: Agenda, Ordens, Ocorrências)
 class OperationsTabContent extends StatelessWidget {
   const OperationsTabContent({super.key});
 
@@ -16,33 +18,38 @@ class OperationsTabContent extends StatelessWidget {
         children: [
           Text(
             'Operações de Campo',
-            style: Theme.of(context).textTheme.titleMedium!.copyWith(fontWeight: FontWeight.w600).copyWith(fontSize: 18),
+            style: Theme.of(context).textTheme.titleMedium!.copyWith(
+              fontWeight: FontWeight.w600,
+              fontSize: 18,
+            ),
           ),
           const SizedBox(height: 16),
           _OperationTile(
             icon: SFIcons.calendar,
             title: 'Agenda',
             subtitle: 'Visitas e compromissos',
-            badge: '3',
-            onTap: () {
-              // TODO: Navegar para agenda
-            },
+            onTap: () => context.go(AppRoutes.agenda),
           ),
           _OperationTile(
             icon: SFIcons.assignment,
             title: 'Ordens de Serviço',
-            subtitle: 'Tarefas e execuções',
+            subtitle: 'Em breve — use a Agenda',
             onTap: () {
-              // TODO: Navegar para ordens
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text(
+                    'Ordens de Serviço em breve. Abrindo Agenda.',
+                  ),
+                ),
+              );
+              context.go(AppRoutes.agenda);
             },
           ),
           _OperationTile(
             icon: SFIcons.warning,
             title: 'Ocorrências',
             subtitle: 'Alertas e registros',
-            onTap: () {
-              // TODO: Navegar para ocorrências
-            },
+            onTap: () => context.go('${AppRoutes.map}?modo=ocorrencia'),
           ),
         ],
       ),
@@ -54,19 +61,20 @@ class _OperationTile extends StatelessWidget {
   final IconData icon;
   final String title;
   final String subtitle;
-  final String? badge;
   final VoidCallback onTap;
 
   const _OperationTile({
     required this.icon,
     required this.title,
     required this.subtitle,
-    this.badge,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
+    final onSurface = Theme.of(context).colorScheme.onSurface;
+    final secondary = Theme.of(context).colorScheme.onSurfaceVariant;
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -95,46 +103,21 @@ class _OperationTile extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
+                        color: onSurface,
                       ),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       subtitle,
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Colors.black.withValues(alpha: 0.5),
-                      ),
+                      style: TextStyle(fontSize: 13, color: secondary),
                     ),
                   ],
                 ),
               ),
-              if (badge != null)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: PremiumTokens.brandGreen,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    badge!,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              const SizedBox(width: 8),
-              Icon(
-                SFIcons.chevronRight,
-                color: Colors.black.withValues(alpha: 0.3),
-              ),
+              Icon(SFIcons.chevronRight, color: secondary),
             ],
           ),
         ),
