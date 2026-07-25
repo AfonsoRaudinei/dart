@@ -5,21 +5,21 @@ import '../config/app_config.dart';
 
 /// Adapter para backend de feature flags.
 ///
-/// Em produção (`ENV=production` ou `ENV=staging`), conectará ao endpoint real.
+/// Em staging/production (`ENV=staging|production`), conecta ao endpoint real.
 /// Em desenvolvimento (`ENV=development`), usa mock local.
 class FeatureFlagBackendAdapter {
   static const String _backendUrl = 'https://api.soloforte.com/feature-flags';
   static const Duration _requestTimeout = Duration(seconds: 8);
 
-  /// Verdadeiro quando o ambiente não é produção — lido de [AppConfig].
-  static bool get _isDevelopment => !AppConfig.isProduction;
+  /// Mock apenas em `ENV=development` — staging usa backend real (sem mocks).
+  static bool get _useMockFlags => featureFlagsUseMock(AppConfig.env);
 
   /// Busca flags do backend.
   ///
   /// Em desenvolvimento, retorna mock.
-  /// Em produção, faz HTTP request.
+  /// Em staging/produção, faz HTTP request.
   Future<Map<String, dynamic>> fetchFlags() async {
-    if (_isDevelopment) {
+    if (_useMockFlags) {
       return _mockBackendResponse();
     }
 
@@ -159,3 +159,8 @@ class FeatureFlagBackendAdapter {
     return _mockRolloutPhase(0);
   }
 }
+
+/// Regra de ambiente para mock de feature flags.
+///
+/// `development` → mock; `staging` e `production` → backend real.
+bool featureFlagsUseMock(String env) => env == 'development';
