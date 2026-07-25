@@ -50,11 +50,25 @@ class UserPlan {
         criadoEm: DateTime.fromMillisecondsSinceEpoch(0),
       );
 
+  /// Plano free / sentinel sem data real de expiração (`DateTime(9999)`).
+  bool get isIndefinite =>
+      id == 'free' || expiraEm.year >= 9000 || diasRestantes > 3650;
+
   /// Dias restantes até expiração. Negativo = expirado.
   int get diasRestantes => expiraEm.difference(DateTime.now()).inDays;
 
+  /// Rótulo seguro para UI (evita "2911872 dias" do plano free).
+  String get diasRestantesLabel {
+    if (isIndefinite) return 'Sem expiração';
+    if (expirado) return 'Expirado';
+    if (diasRestantes <= 0) return 'Expira hoje';
+    if (diasRestantes == 1) return '1 dia restante';
+    return '$diasRestantes dias restantes';
+  }
+
   /// Verdadeiro se expira em até 7 dias (e ainda está ativo).
-  bool get expiraEmBreve => ativo && diasRestantes >= 0 && diasRestantes <= 7;
+  bool get expiraEmBreve =>
+      ativo && !isIndefinite && diasRestantes >= 0 && diasRestantes <= 7;
 
   /// Verdadeiro se já passou da data de expiração.
   bool get expirado => expiraEm.isBefore(DateTime.now());

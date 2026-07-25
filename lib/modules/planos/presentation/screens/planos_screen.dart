@@ -85,11 +85,8 @@ class PlanosScreen extends StatelessWidget {
                       final planoNome =
                           plano.plano.name[0].toUpperCase() +
                           plano.plano.name.substring(1);
-                      final dias = plano.expiraEm
-                          .difference(DateTime.now())
-                          .inDays;
                       return Text(
-                        'Plano atual: $planoNome · ${dias > 0 ? '$dias dias restantes' : 'Expira hoje'}',
+                        'Plano atual: $planoNome · ${plano.diasRestantesLabel}',
                         style: const TextStyle(
                           fontFamily: 'Inter',
                           fontSize: 14,

@@ -164,9 +164,11 @@ class _PlanoAtivoContent extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    expiraEmBreve
+                    plano.isIndefinite
+                        ? 'Sem expiração'
+                        : expiraEmBreve
                         ? '⚠️ Expira em $dias dias'
-                        : '$dias dias restantes',
+                        : plano.diasRestantesLabel,
                     style: TextStyle(
                       fontFamily: 'Inter',
                       fontSize: 16,
@@ -174,14 +176,15 @@ class _PlanoAtivoContent extends ConsumerWidget {
                       color: expiraEmBreve ? Colors.red : Colors.white,
                     ),
                   ),
-                  Text(
-                    'Expira em ${_formatDate(plano.expiraEm)}',
-                    style: const TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 13,
-                      color: Color(0xFF8E8E93),
+                  if (!plano.isIndefinite)
+                    Text(
+                      'Expira em ${_formatDate(plano.expiraEm)}',
+                      style: const TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 13,
+                        color: Color(0xFF8E8E93),
+                      ),
                     ),
-                  ),
                 ],
               ),
             ],
