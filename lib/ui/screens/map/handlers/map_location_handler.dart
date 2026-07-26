@@ -3,6 +3,7 @@
 // Classe estática — mantém somente a assinatura do follow contínuo.
 
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -19,6 +20,15 @@ class MapLocationHandler {
   MapLocationHandler._();
 
   static StreamSubscription<LatLng>? _followSubscription;
+  static bool _lockNorth = false;
+
+  /// Exposto para testes: se o follow atual força norte em 0°.
+  @visibleForTesting
+  static bool get debugLockNorth => _lockNorth;
+
+  /// Exposto para testes: se há subscription de follow ativa.
+  @visibleForTesting
+  static bool get debugIsFollowing => _followSubscription != null;
 
   /// Solicita permissão de localização e, se concedida, centraliza o mapa.
   static Future<void> requestPermission({
@@ -131,11 +141,14 @@ class MapLocationHandler {
 
   /// Centraliza o mapa na posição atual do usuário.
   /// Verifica [isMapReady] antes de operar no [mapController].
+  ///
+  /// Quando [lockNorth] é true, força rotação 0° (norte para cima).
   static Future<void> centerOnUser({
     required WidgetRef ref,
     required BuildContext context,
     required MapController mapController,
     required bool isMapReady,
+    bool lockNorth = false,
   }) async {
     // 🔒 Guard: Verificar se o mapa está pronto
     if (!isMapReady) return;
@@ -177,22 +190,53 @@ class MapLocationHandler {
     final position = await locationService.getCurrentPosition();
 
     if (position != null && isMapReady && context.mounted) {
-      mapController.move(position.position, 16.0);
+      if (lockNorth) {
+        mapController.moveAndRotate(position.position, 16.0, 0);
+      } else {
+        mapController.move(position.position, 16.0);
+      }
     }
   }
 
   /// Inicia follow contínuo da câmera usando o stream GPS existente.
+  ///
+  /// Com [lockNorth] true, cada atualização força rotação 0° (norte travado).
   static void startFollowing({
     required Stream<LatLng> locationStream,
     required MapController mapController,
     required bool isMapReady,
+    bool lockNorth = false,
   }) {
     _followSubscription?.cancel();
-    if (!isMapReady) return;
+    _followSubscription = null;
+
+    if (!isMapReady) {
+      _lockNorth = false;
+      return;
+    }
+
+    _lockNorth = lockNorth;
+
+    if (lockNorth) {
+      try {
+        mapController.rotate(0);
+      } catch (_) {
+        // MapController ainda sem câmera anexada — o 1º fix do stream aplica.
+      }
+    }
 
     _followSubscription = locationStream.listen(
       (position) {
-        mapController.move(position, mapController.camera.zoom);
+        try {
+          final zoom = mapController.camera.zoom;
+          if (_lockNorth) {
+            mapController.moveAndRotate(position, zoom, 0);
+          } else {
+            mapController.move(position, zoom);
+          }
+        } catch (_) {
+          // Ignora frames enquanto a câmera não está pronta.
+        }
       },
       onError: (_) {},
       cancelOnError: false,
@@ -203,5 +247,6 @@ class MapLocationHandler {
   static void stopFollowing() {
     _followSubscription?.cancel();
     _followSubscription = null;
+    _lockNorth = false;
   }
 }

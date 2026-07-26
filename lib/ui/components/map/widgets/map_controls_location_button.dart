@@ -1,7 +1,7 @@
 part of 'map_controls_overlay.dart';
 
 class _LocationButton extends ConsumerStatefulWidget {
-  final VoidCallback onCenterUser;
+  final void Function({bool lockNorth}) onCenterUser;
   final ValueChanged<MapLocationMode> onLocationModeChanged;
   final Color activeColor;
 
@@ -18,6 +18,7 @@ class _LocationButton extends ConsumerStatefulWidget {
 class _LocationButtonState extends ConsumerState<_LocationButton> {
   Timer? _labelTimer;
   bool _showLabel = false;
+  String _labelText = 'Localização';
 
   @override
   void dispose() {
@@ -25,9 +26,12 @@ class _LocationButtonState extends ConsumerState<_LocationButton> {
     super.dispose();
   }
 
-  void _showTemporaryLabel() {
+  void _showTemporaryLabel(String text) {
     _labelTimer?.cancel();
-    setState(() => _showLabel = true);
+    setState(() {
+      _labelText = text;
+      _showLabel = true;
+    });
     _labelTimer = Timer(const Duration(milliseconds: 1600), () {
       if (mounted) {
         setState(() => _showLabel = false);
@@ -35,21 +39,28 @@ class _LocationButtonState extends ConsumerState<_LocationButton> {
     });
   }
 
+  static String _labelForMode(MapLocationMode mode) {
+    return switch (mode) {
+      MapLocationMode.idle => 'Localização',
+      MapLocationMode.following => 'Minha localização',
+      MapLocationMode.northLocked => 'Norte travado',
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
     final locationMode = ref.watch(mapLocationModeProvider);
     final locationState = ref.watch(locationStateProvider);
-    const label = 'Localização';
     final isAvailable = locationState == LocationState.available;
     final isActive = locationMode != MapLocationMode.idle;
 
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        _MapButtonLabel(text: label, isVisible: _showLabel),
+        _MapButtonLabel(text: _labelText, isVisible: _showLabel),
         const SizedBox(width: 8),
         Tooltip(
-          message: label,
+          message: _labelForMode(locationMode),
           waitDuration: const Duration(milliseconds: 450),
           child: Material(
             color: Colors.transparent,
@@ -58,7 +69,6 @@ class _LocationButtonState extends ConsumerState<_LocationButton> {
               borderRadius: BorderRadius.circular(12),
               onTap: () {
                 HapticFeedback.selectionClick();
-                _showTemporaryLabel();
 
                 final nextMode = switch (locationMode) {
                   MapLocationMode.idle => MapLocationMode.following,
@@ -66,12 +76,15 @@ class _LocationButtonState extends ConsumerState<_LocationButton> {
                   MapLocationMode.northLocked => MapLocationMode.idle,
                 };
 
+                _showTemporaryLabel(_labelForMode(nextMode));
+
                 ref.read(mapLocationModeProvider.notifier).state = nextMode;
                 widget.onLocationModeChanged(nextMode);
 
-                if (nextMode == MapLocationMode.following ||
-                    nextMode == MapLocationMode.northLocked) {
+                if (nextMode == MapLocationMode.following) {
                   widget.onCenterUser();
+                } else if (nextMode == MapLocationMode.northLocked) {
+                  widget.onCenterUser(lockNorth: true);
                 }
 
                 AppLogger.debug(
@@ -79,7 +92,8 @@ class _LocationButtonState extends ConsumerState<_LocationButton> {
                   tag: 'MapControls',
                 );
               },
-              onLongPress: _showTemporaryLabel,
+              onLongPress: () =>
+                  _showTemporaryLabel(_labelForMode(locationMode)),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
                 curve: Curves.easeOutCubic,

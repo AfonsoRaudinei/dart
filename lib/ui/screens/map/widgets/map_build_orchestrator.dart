@@ -71,7 +71,7 @@ class MapBuildOrchestrator extends ConsumerWidget {
   final void Function(TapPosition tapPos, LatLng latLng) handleMapLongPress;
   final Future<void> Function() finishDrawing;
   final void Function() toggleDrawMode;
-  final void Function() centerOnUser;
+  final void Function({bool lockNorth}) centerOnUser;
   final ValueChanged<MapLocationMode> onLocationModeChanged;
   final VoidCallback stopFollowing;
   final void Function() armOccurrenceMode;
@@ -401,7 +401,7 @@ class MapBuildOrchestrator extends ConsumerWidget {
           const MapGpsOverlaysHost(),
           MapBottomSheetOverlayHost(
             setSheetState: setSheetState,
-            onLocationRequested: centerOnUser,
+            onLocationRequested: () => centerOnUser(),
             onFocusDrawingFeature: (feature) =>
                 focusDrawingFeatureOnMap(mapController, feature),
           ),
@@ -430,7 +430,7 @@ class _MapControlsHost extends ConsumerWidget {
   final MapController mapController;
   final DrawingMapMetrics drawingMetrics;
   final void Function(MapSheetState? state, String reason) setSheetState;
-  final VoidCallback centerOnUser;
+  final void Function({bool lockNorth}) centerOnUser;
   final ValueChanged<MapLocationMode> onLocationModeChanged;
   final VoidCallback toggleDrawMode;
   final Future<void> Function() openCoordinateSearch;

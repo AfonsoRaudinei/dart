@@ -316,12 +316,13 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
     );
   }
 
-  void _centerOnUser() async {
+  void _centerOnUser({bool lockNorth = false}) async {
     await MapLocationHandler.centerOnUser(
       ref: ref,
       context: context,
       mapController: _mapController,
       isMapReady: ref.read(mapReadyStateProvider),
+      lockNorth: lockNorth,
     );
   }
 
@@ -331,6 +332,15 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
         MapLocationHandler.stopFollowing();
         break;
       case MapLocationMode.following:
+        MapLocationHandler.startFollowing(
+          locationStream: LocationService().locationStream.map(
+            (fix) => fix.position,
+          ),
+          mapController: _mapController,
+          isMapReady: ref.read(mapReadyStateProvider),
+          lockNorth: false,
+        );
+        break;
       case MapLocationMode.northLocked:
         MapLocationHandler.startFollowing(
           locationStream: LocationService().locationStream.map(
@@ -338,6 +348,7 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
           ),
           mapController: _mapController,
           isMapReady: ref.read(mapReadyStateProvider),
+          lockNorth: true,
         );
         break;
     }

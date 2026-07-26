@@ -177,7 +177,7 @@ void main() {
         child: MaterialApp(
           home: Scaffold(
             body: MapControlsOverlay(
-              onCenterUser: _noop,
+              onCenterUser: ({bool lockNorth = false}) {},
               onLocationModeChanged: (_) {},
               onToggleDrawMode: _noop,
               onOpenMapTools: _noop,
@@ -317,7 +317,7 @@ Future<void> _pumpMapControlsOverlay(
       child: MaterialApp(
         home: Scaffold(
           body: MapControlsOverlay(
-            onCenterUser: _noop,
+            onCenterUser: ({bool lockNorth = false}) {},
             onLocationModeChanged: (_) {},
             onToggleDrawMode: _noop,
             onOpenMapTools: _noop,

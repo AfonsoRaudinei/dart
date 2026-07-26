@@ -52,7 +52,7 @@ Color _themeColor(String theme) {
 /// Overlay de controles do mapa (header, botões, check-in).
 /// Observa apenas locationStateProvider para status do GPS.
 class MapControlsOverlay extends ConsumerStatefulWidget {
-  final VoidCallback onCenterUser;
+  final void Function({bool lockNorth}) onCenterUser;
   final ValueChanged<MapLocationMode> onLocationModeChanged;
   final VoidCallback onToggleDrawMode;
   final VoidCallback onOpenMapTools;

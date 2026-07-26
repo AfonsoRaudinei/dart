@@ -9,6 +9,7 @@ enum MapLocationMode {
   following,
 
   /// Seguindo + norte travado — ícone bússola (explore)
+  /// Aplica mapController.rotate(0) / moveAndRotate(..., 0) continuamente.
   northLocked,
 }
 
