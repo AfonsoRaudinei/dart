@@ -5,6 +5,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'package:soloforte_app/core/router/app_routes.dart';
 import 'package:soloforte_app/core/session/user_role.dart';
@@ -18,6 +19,9 @@ import 'package:soloforte_app/modules/settings/presentation/providers/settings_p
 import 'package:soloforte_app/modules/settings/presentation/providers/user_profile_provider.dart';
 
 part 'side_menu_overlay_sections.dart';
+
+/// Dashboard externo de feedback (GitHub Pages).
+const _feedbackDashboardUrl = 'https://afonsoraudinei.github.io/Feedback/';
 
 const _menuGreen = Color(0xFF34C759);
 const _deepGreen = Color(0xFF1E3A2F);
@@ -637,8 +641,18 @@ class _AccountActionItem extends StatelessWidget {
 }
 
 void _closeAndNavigate(BuildContext context, WidgetRef ref, String route) {
-  final router = GoRouter.of(context);
   ref.read(sideMenuOpenProvider.notifier).state = false;
+
+  // Feedback: abre o dashboard externo (único vínculo alterado).
+  if (route == AppRoutes.feedback) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final uri = Uri.parse(_feedbackDashboardUrl);
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    });
+    return;
+  }
+
+  final router = GoRouter.of(context);
   WidgetsBinding.instance.addPostFrameCallback((_) {
     router.go(route);
   });
