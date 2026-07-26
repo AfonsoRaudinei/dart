@@ -311,6 +311,9 @@ class MapBuildOrchestrator extends ConsumerWidget {
               DrawingEditLayer(
                 controller: ref.read(drawingControllerProvider),
                 mapController: mapController,
+                onPolygonClose: () {
+                  finishDrawing();
+                },
               ),
 
               // ADR-043 — Radar acima de talhões/desenho, abaixo de markers

@@ -74,6 +74,58 @@ extension DrawingControllerSketch on DrawingController {
     _pivotPreviewEdge = null;
     _pivotRadiusFinalized = false;
     _pivotRadiusMeters = null;
+    _selectedSketchVertexIndex = null;
+    _isDraggingSketchVertex = false;
+  }
+
+  /// Seleciona vértice do polígono em andamento para ajuste mid-draw.
+  bool selectSketchVertex(int index) {
+    if (_isDisposed) return false;
+    if (_stateMachine.currentTool != DrawingTool.polygon) return false;
+    if (!_canAcceptSketchInput()) return false;
+    if (index < 0 || index >= _currentPoints.length) return false;
+
+    _selectedSketchVertexIndex = index;
+    _notify();
+    return true;
+  }
+
+  void clearSketchVertexSelection() {
+    if (_selectedSketchVertexIndex == null && !_isDraggingSketchVertex) {
+      return;
+    }
+    _selectedSketchVertexIndex = null;
+    _isDraggingSketchVertex = false;
+    _notify();
+  }
+
+  /// Move vértice do sketch (permanece em [DrawingState.drawing]).
+  bool moveSketchVertex(int index, LatLng newPos) {
+    if (_isDisposed) return false;
+    if (_stateMachine.currentTool != DrawingTool.polygon) return false;
+    if (_stateMachine.currentState != DrawingState.drawing &&
+        _stateMachine.currentState != DrawingState.armed) {
+      return false;
+    }
+    if (index < 0 || index >= _currentPoints.length) return false;
+
+    _currentPoints[index] = newPos;
+    _selectedSketchVertexIndex = index;
+    _updateRealTimeIntersection();
+    _notify();
+    return true;
+  }
+
+  void beginSketchVertexDrag(int index) {
+    if (!selectSketchVertex(index)) return;
+    _isDraggingSketchVertex = true;
+    _notify();
+  }
+
+  void endSketchVertexDrag() {
+    if (!_isDraggingSketchVertex) return;
+    _isDraggingSketchVertex = false;
+    _notify();
   }
 
   bool _ensureDrawingStarted() {
@@ -190,6 +242,8 @@ extension DrawingControllerSketch on DrawingController {
     if (!_ensureDrawingStarted()) return;
 
     _currentPoints.add(point);
+    _selectedSketchVertexIndex = null;
+    _isDraggingSketchVertex = false;
     _updateRealTimeIntersection();
     _notify();
   }

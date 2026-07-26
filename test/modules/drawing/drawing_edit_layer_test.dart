@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:soloforte_app/modules/drawing/data/repositories/drawing_repository.dart';
+import 'package:soloforte_app/modules/drawing/domain/drawing_state.dart';
 import 'package:soloforte_app/modules/drawing/domain/models/drawing_models.dart';
 import 'package:soloforte_app/modules/drawing/presentation/controllers/drawing_controller.dart';
 import 'package:soloforte_app/modules/drawing/presentation/widgets/drawing_edit_layer.dart';
@@ -90,6 +91,69 @@ void main() {
       persisted.coordinates.first.last,
       equals(persisted.coordinates.first.first),
     );
+  });
+
+  testWidgets('mid-draw: toque no vértice mostra gota e permite arrastar', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(800, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final controller = DrawingController(
+      repository: _UpsertDrawingRepository(_feature()),
+    );
+    addTearDown(controller.dispose);
+    controller.selectTool('polygon');
+    // Pontos bem espaçados para os markers 56x72 não se sobreporem no zoom do teste.
+    controller.appendDrawingPoint(const LatLng(-0.05, -0.05));
+    controller.appendDrawingPoint(const LatLng(0.05, -0.05));
+    controller.appendDrawingPoint(const LatLng(0.05, 0.05));
+
+    final mapController = MapController();
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: FlutterMap(
+            mapController: mapController,
+            options: const MapOptions(
+              initialCenter: LatLng(0, 0),
+              initialZoom: 11,
+              interactionOptions: InteractionOptions(
+                flags: InteractiveFlag.none,
+              ),
+            ),
+            children: [
+              DrawingEditLayer(
+                controller: controller,
+                mapController: mapController,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final vertex = find.byKey(const Key('drawing_sketch_vertex_1'));
+    expect(vertex, findsOneWidget);
+
+    await tester.tap(vertex);
+    await tester.pumpAndSettle();
+    expect(controller.selectedSketchVertexIndex, 1);
+
+    final before = controller.currentPoints[1];
+    await tester.timedDrag(
+      find.byKey(const Key('drawing_sketch_vertex_1')),
+      const Offset(64, 48),
+      const Duration(milliseconds: 300),
+    );
+    await tester.pumpAndSettle();
+
+    expect(controller.currentPoints[1], isNot(equals(before)));
+    expect(controller.selectedSketchVertexIndex, 1);
+    expect(controller.currentState, DrawingState.drawing);
   });
 }
 

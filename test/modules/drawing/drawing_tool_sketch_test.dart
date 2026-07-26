@@ -124,6 +124,35 @@ void main() {
       expect(controller.canFinishDrawing, isTrue);
     });
 
+    test('polígono: seleciona e move vértice mid-draw sem sair de drawing', () {
+      controller.selectTool('polygon');
+      controller.appendDrawingPoint(const LatLng(-15.0, -47.0));
+      controller.appendDrawingPoint(const LatLng(-15.001, -47.0));
+      controller.appendDrawingPoint(const LatLng(-15.001, -47.001));
+
+      expect(controller.selectSketchVertex(1), isTrue);
+      expect(controller.selectedSketchVertexIndex, 1);
+      expect(controller.currentState, DrawingState.drawing);
+
+      const moved = LatLng(-15.002, -47.0005);
+      expect(controller.moveSketchVertex(1, moved), isTrue);
+      expect(controller.currentPoints[1], moved);
+      expect(controller.currentState, DrawingState.drawing);
+      expect(controller.selectedSketchVertexIndex, 1);
+    });
+
+    test('polígono: novo ponto limpa seleção de vértice', () {
+      controller.selectTool('polygon');
+      controller.appendDrawingPoint(const LatLng(-15.0, -47.0));
+      controller.appendDrawingPoint(const LatLng(-15.001, -47.0));
+      controller.selectSketchVertex(0);
+
+      controller.appendDrawingPoint(const LatLng(-15.001, -47.001));
+
+      expect(controller.selectedSketchVertexIndex, isNull);
+      expect(controller.currentState, DrawingState.drawing);
+    });
+
     test('instructionText diferencia ferramentas', () {
       controller.selectTool('freehand');
       expect(controller.instructionText, contains('arraste'));

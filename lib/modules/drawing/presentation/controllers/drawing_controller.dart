@@ -271,6 +271,9 @@ class DrawingController extends ChangeNotifier {
   Timer? _notifyThrottleTimer;
   bool _isDraggingVertex = false; // RT-DRAW-DRAG
   int? _draggedVertexIndex;
+  /// Vértice selecionado durante sketch de polígono (mid-draw).
+  int? _selectedSketchVertexIndex;
+  bool _isDraggingSketchVertex = false;
   static const int _complexityThreshold = 2000;
   static const int _validationDebounceMs = 300;
   static const int _notifyThrottleMs = 16;
@@ -293,6 +296,8 @@ class DrawingController extends ChangeNotifier {
 
   bool get isDraggingVertex => _isDraggingVertex;
   int? get draggedVertexIndex => _draggedVertexIndex;
+  int? get selectedSketchVertexIndex => _selectedSketchVertexIndex;
+  bool get isDraggingSketchVertex => _isDraggingSketchVertex;
 
   /// ⚡ COMPUTED PROPERTY: Evita cálculo no build()
   int get pendingSyncCount => _features
@@ -1269,6 +1274,8 @@ class DrawingController extends ChangeNotifier {
     _isSnapping = false;
     _isDraggingVertex = false;
     _draggedVertexIndex = null;
+    _selectedSketchVertexIndex = null;
+    _isDraggingSketchVertex = false;
     _stateMachine.cancel();
     if (notify) {
       notifyListeners();
@@ -1469,6 +1476,11 @@ class DrawingController extends ChangeNotifier {
       default:
         if (_currentPoints.isEmpty) return;
         _currentPoints.removeLast();
+        if (_selectedSketchVertexIndex != null &&
+            _selectedSketchVertexIndex! >= _currentPoints.length) {
+          _selectedSketchVertexIndex = null;
+          _isDraggingSketchVertex = false;
+        }
     }
 
     final hasSketch = _currentPoints.isNotEmpty ||

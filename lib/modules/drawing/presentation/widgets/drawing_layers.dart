@@ -60,6 +60,12 @@ class _DrawingLayerWidgetState extends State<DrawingLayerWidget> {
         final isFreehandStrokeActive = widget.controller.isFreehandStrokeActive;
         final intersectingIndices =
             widget.controller.intersectingSegmentIndices;
+        final currentState = widget.controller.currentState;
+        final sketchVerticesOwnedByEditLayer =
+            currentTool == DrawingTool.polygon &&
+            (currentState == DrawingState.drawing ||
+                currentState == DrawingState.armed) &&
+            currentPoints.isNotEmpty;
 
         final needsRebuild =
             _lastFeatures != features ||
@@ -133,7 +139,8 @@ class _DrawingLayerWidgetState extends State<DrawingLayerWidget> {
           }
         }
 
-        if (currentTool == DrawingTool.polygon &&
+        if (!sketchVerticesOwnedByEditLayer &&
+            currentTool == DrawingTool.polygon &&
             liveGeo == null &&
             currentPoints.length == 1) {
           markers.add(_vertexMarker(currentPoints.single, index: 0));
@@ -246,7 +253,10 @@ class _DrawingLayerWidgetState extends State<DrawingLayerWidget> {
                 );
               }
 
-              markers.add(_vertexMarker(point, index: i, size: size));
+              // Vértices interativos mid-draw ficam no DrawingEditLayer.
+              if (!sketchVerticesOwnedByEditLayer) {
+                markers.add(_vertexMarker(point, index: i, size: size));
+              }
             }
           }
         }
