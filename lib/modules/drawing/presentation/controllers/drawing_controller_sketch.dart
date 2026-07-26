@@ -117,13 +117,17 @@ extension DrawingControllerSketch on DrawingController {
   }
 
   void beginSketchVertexDrag(int index) {
-    if (!selectSketchVertex(index)) return;
+    if (_isDisposed) return;
+    if (_stateMachine.currentTool != DrawingTool.polygon) return;
+    if (!_canAcceptSketchInput()) return;
+    if (index < 0 || index >= _currentPoints.length) return;
+    // Sem notify: o EditLayer usa setState local durante o pan.
+    _selectedSketchVertexIndex = index;
     _isDraggingSketchVertex = true;
-    _notify();
   }
 
   void endSketchVertexDrag() {
-    if (!_isDraggingSketchVertex) return;
+    if (!_isDraggingSketchVertex && _selectedSketchVertexIndex == null) return;
     _isDraggingSketchVertex = false;
     _notify();
   }
