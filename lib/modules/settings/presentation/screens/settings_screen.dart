@@ -20,6 +20,7 @@ import '../../domain/entities/user_profile.dart';
 import '../widgets/audit_trail_widget.dart';
 import 'report_branding_screen.dart';
 import 'package:soloforte_app/core/constants/layout_constants.dart';
+import 'package:soloforte_app/core/constants/external_links.dart';
 import 'package:soloforte_app/core/utils/user_facing_error.dart';
 
 class SettingsScreen extends ConsumerWidget {
@@ -166,9 +167,7 @@ class SettingsScreen extends ConsumerWidget {
                   context,
                   title: 'Termos de Serviço',
                   icon: SFIcons.info,
-                  onTap: () => _openUrl(
-                    'https://afonsoraudinei.github.io/SoloForte-Termos-de-Uso/',
-                  ),
+                  onTap: () => _openUrl(ExternalLinks.termsOfUse),
                 ),
                 _buildTile(
                   context,
