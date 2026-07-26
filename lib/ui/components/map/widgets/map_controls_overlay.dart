@@ -22,6 +22,9 @@ import '../../../../modules/map/presentation/widgets/visit_active_card.dart';
 import '../../../theme/premium/design_tokens.dart';
 import 'map_action_fab_menu.dart';
 
+part 'map_controls_location_button.dart';
+part 'map_controls_measurement.dart';
+
 /// Cor do indicador unificado do mapa (internet + radar de chuva).
 ///
 /// Prioridade: offline → vermelho; online + radar → azul Samsung; online → verde.
@@ -33,9 +36,6 @@ Color resolveMapStatusIndicatorColor({
   if (radarEnabled) return const Color(0xFF1428A0);
   return const Color(0xFF34C759);
 }
-
-part 'map_controls_location_button.dart';
-part 'map_controls_measurement.dart';
 
 Color _themeColor(String theme) {
   switch (theme) {
