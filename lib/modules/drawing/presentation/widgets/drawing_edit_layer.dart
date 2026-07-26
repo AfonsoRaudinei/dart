@@ -314,18 +314,21 @@ class _DrawingEditLayerState extends State<DrawingEditLayer> {
       final isDragging = _isSketchDrag && _draggingVertexIndex == i;
       final isStart = i == 0;
       final showGota = isSelected || isDragging;
+      // Mesmas dimensões do DrawingLayerWidget._vertexMarker (center = vértice).
+      final dotSize = isStart ? 20.0 : 16.0;
 
-      // Tamanho/alignment fixos: trocar layout no panStart cancela o gesto.
       markers.add(
         Marker(
           point: point,
-          width: 56,
-          height: 72,
-          alignment: Alignment.bottomCenter,
+          width: showGota ? 48 : dotSize,
+          height: showGota ? 56 : dotSize,
+          // Center: lat/lng do vértice coincide com o centro do ponto/gota.
+          alignment: Alignment.center,
           child: _SketchVertexHandle(
             index: i,
             isStart: isStart,
             isSelected: showGota,
+            dotSize: dotSize,
             hasSelfIntersection:
                 isStart && widget.controller.hasSelfIntersection,
             onTap: () => _onSketchVertexTap(i),
@@ -580,6 +583,7 @@ class _SketchVertexHandle extends StatelessWidget {
   final int index;
   final bool isStart;
   final bool isSelected;
+  final double dotSize;
   final bool hasSelfIntersection;
   final VoidCallback onTap;
   final VoidCallback onPanStart;
@@ -591,6 +595,7 @@ class _SketchVertexHandle extends StatelessWidget {
     required this.index,
     required this.isStart,
     required this.isSelected,
+    required this.dotSize,
     required this.hasSelfIntersection,
     required this.onTap,
     required this.onPanStart,
@@ -616,25 +621,21 @@ class _SketchVertexHandle extends StatelessWidget {
       onPanUpdate: onPanUpdate,
       onPanEnd: (_) => onPanEnd(),
       onPanCancel: onPanCancel,
-      child: SizedBox(
-        width: 56,
-        height: 72,
+      child: SizedBox.expand(
         child: Stack(
-          alignment: Alignment.bottomCenter,
+          alignment: Alignment.center,
           children: [
-            // Mesma árvore sempre — só opacidade muda (preserva gesto de pan).
             Opacity(
               opacity: isSelected ? 1 : 0,
               child: const IgnorePointer(
                 child: CustomPaint(
-                  size: Size(56, 72),
                   painter: _TeardropPainter(color: Color(0xE6E53935)),
                   child: Align(
-                    alignment: Alignment(0, -0.22),
+                    alignment: Alignment(0, -0.12),
                     child: Icon(
                       Icons.open_with,
                       color: Colors.white,
-                      size: 22,
+                      size: 20,
                     ),
                   ),
                 ),
@@ -642,26 +643,23 @@ class _SketchVertexHandle extends StatelessWidget {
             ),
             Opacity(
               opacity: isSelected ? 0 : 1,
-              child: Padding(
-                padding: const EdgeInsets.only(bottom: 2),
-                child: Container(
-                  width: isStart ? 20 : 16,
-                  height: isStart ? 20 : 16,
-                  decoration: BoxDecoration(
-                    color: dotColor,
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: borderColor,
-                      width: isStart ? 2 : 1,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.3),
-                        blurRadius: 2,
-                        offset: const Offset(0, 1),
-                      ),
-                    ],
+              child: Container(
+                width: dotSize,
+                height: dotSize,
+                decoration: BoxDecoration(
+                  color: dotColor,
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: borderColor,
+                    width: isStart ? 2 : 1,
                   ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.3),
+                      blurRadius: 2,
+                      offset: const Offset(0, 1),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -686,19 +684,21 @@ class _TeardropPainter extends CustomPainter {
     final w = size.width;
     final h = size.height;
     final cx = w / 2;
-    final r = w * 0.42;
-    final cy = h * 0.38;
+    final tipY = h / 2;
+    final r = w * 0.4;
+    final bubbleCy = tipY - r * 0.55;
 
+    // Ponta da gota no centro do marker (= vértice geográfico).
     final path = ui.Path()
-      ..moveTo(cx, h * 0.96)
-      ..quadraticBezierTo(cx + r * 0.15, cy + r * 0.85, cx + r, cy)
+      ..moveTo(cx, tipY)
+      ..quadraticBezierTo(cx + r * 0.12, tipY - r * 0.35, cx + r, bubbleCy)
       ..arcToPoint(
-        Offset(cx - r, cy),
+        Offset(cx - r, bubbleCy),
         radius: Radius.circular(r),
         largeArc: true,
         clockwise: true,
       )
-      ..quadraticBezierTo(cx - r * 0.15, cy + r * 0.85, cx, h * 0.96)
+      ..quadraticBezierTo(cx - r * 0.12, tipY - r * 0.35, cx, tipY)
       ..close();
 
     canvas.drawShadow(path, Colors.black54, 4, true);
