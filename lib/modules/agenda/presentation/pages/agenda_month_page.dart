@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:soloforte_app/core/constants/layout_constants.dart';
 import 'package:soloforte_app/core/contracts/i_agenda_ai_launcher_provider.dart';
+import 'package:soloforte_app/core/router/app_routes.dart';
 import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 import '../../domain/entities/event.dart';
 import '../../domain/enums/agenda_view.dart';
@@ -142,9 +143,15 @@ class _AgendaMonthPageState extends ConsumerState<AgendaMonthPage> {
                           month: _currentMonth,
                           eventsByDay: eventsByDay,
                           onDayTap: (day) {
+                            final dayEvents = eventsByDay[day.day] ?? [];
+                            if (dayEvents.isNotEmpty) {
+                              context.go(AppRoutes.agendaDay(day));
+                              return;
+                            }
                             showDialog<void>(
                               context: context,
-                              builder: (_) => VisitFormDialog(initialDate: day),
+                              builder: (_) =>
+                                  VisitFormDialog(initialDate: day),
                             );
                           },
                         ),

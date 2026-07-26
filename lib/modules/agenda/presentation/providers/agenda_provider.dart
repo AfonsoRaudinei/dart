@@ -352,9 +352,15 @@ class Agenda extends _$Agenda {
   }
 
   List<Event> getEventsByDateRange(DateTime start, DateTime end) {
+    final rangeStart = DateTime(start.year, start.month, start.day);
+    final rangeEndExclusive = DateTime(
+      end.year,
+      end.month,
+      end.day,
+    ).add(const Duration(days: 1));
     return state.events.where((event) {
-      return event.dataInicioPlanejada.isBefore(end) &&
-          event.dataFimPlanejada.isAfter(start);
+      return event.dataInicioPlanejada.isBefore(rangeEndExclusive) &&
+          event.dataFimPlanejada.isAfter(rangeStart);
     }).toList();
   }
 

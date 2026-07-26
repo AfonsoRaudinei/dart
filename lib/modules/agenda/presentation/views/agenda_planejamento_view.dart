@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/html_templates/html_report_viewer.dart';
@@ -13,6 +14,7 @@ import '../services/agenda_pdf_service.dart';
 import '../services/agenda_planejamento_html_service.dart';
 import '../services/agenda_visit_html_service.dart';
 import '../widgets/day_event_card.dart';
+import 'package:soloforte_app/core/router/app_routes.dart';
 import 'package:soloforte_app/core/utils/user_facing_error.dart';
 
 /// View de Planejamento Semanal (modelo da skill)
@@ -338,7 +340,11 @@ class _AgendaPlanejamentoViewState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildDayHeader(theme, day, events, isSunday),
+          InkWell(
+            onTap: () => context.go(AppRoutes.agendaDay(day)),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+            child: _buildDayHeader(theme, day, events, isSunday),
+          ),
           if (events.isEmpty)
             Padding(
               padding: const EdgeInsets.all(16),
