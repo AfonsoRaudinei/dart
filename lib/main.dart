@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:device_preview/device_preview.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/date_symbol_data_local.dart';
@@ -349,7 +350,15 @@ class _SoloForteAppState extends ConsumerState<SoloForteApp> {
       darkTheme: PremiumAppTheme.darkTheme,
       themeMode: PremiumAppTheme.themeModeFor(themeMode),
       routerConfig: router,
-      locale: _useDevicePreview ? DevicePreview.locale(context) : null,
+      locale: _useDevicePreview
+          ? DevicePreview.locale(context)
+          : const Locale('pt', 'BR'),
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: const [Locale('pt', 'BR')],
       debugShowCheckedModeBanner: false,
       // Fallback para erro crítico durante build do router
       builder: (context, child) {
