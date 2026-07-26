@@ -317,8 +317,9 @@ class MapBuildOrchestrator extends ConsumerWidget {
               ),
 
               // ADR-043 — Radar acima de talhões/desenho, abaixo de markers
+              // Status visual (gota/banner) removido: indicador unificado é o
+              // ponto de conectividade em MapControlsOverlay (vermelho/verde/azul).
               const ClimaRadarTileLayerWidget(),
-              const ClimaRadarStatusOverlay(),
 
               // 🔒 MARKERS ISOLADOS: Não rebuildam por GPS/zoom/pan
               const MapMarkersWidget(),

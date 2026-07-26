@@ -15,11 +15,24 @@ import '../../../../core/constants/layout_constants.dart';
 import '../../../../core/contracts/i_visit_session_lookup_provider.dart';
 import '../../../../core/providers/connectivity_provider.dart';
 import '../../../../core/state/map_state.dart';
+import '../../../../modules/clima/presentation/providers/radar_providers.dart';
 import '../../../../modules/drawing/domain/drawing_state.dart';
 import '../../../../core/utils/app_logger.dart';
 import '../../../../modules/map/presentation/widgets/visit_active_card.dart';
 import '../../../theme/premium/design_tokens.dart';
 import 'map_action_fab_menu.dart';
+
+/// Cor do indicador unificado do mapa (internet + radar de chuva).
+///
+/// Prioridade: offline → vermelho; online + radar → azul Samsung; online → verde.
+Color resolveMapStatusIndicatorColor({
+  required bool isOnline,
+  required bool radarEnabled,
+}) {
+  if (!isOnline) return const Color(0xFFFF3B30);
+  if (radarEnabled) return const Color(0xFF1428A0);
+  return const Color(0xFF34C759);
+}
 
 part 'map_controls_location_button.dart';
 part 'map_controls_measurement.dart';
@@ -767,31 +780,47 @@ class _MapButtonLabel extends StatelessWidget {
   }
 }
 
-/// Indicador visual de conectividade (círculo verde/vermelho)
+/// Indicador unificado: internet + clima (radar) no mapa.
+///
+/// - Vermelho: sem internet
+/// - Verde: com internet
+/// - Azul Samsung (#1428A0): com internet e radar de chuva ativo
 class _ConnectivityDot extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isOnline = ref.watch(isOnlineProvider).asData?.value ?? false;
-    final color = isOnline ? const Color(0xFF34C759) : const Color(0xFFFF3B30);
+    final radarEnabled = ref.watch(climaRadarEnabledProvider);
+    final color = resolveMapStatusIndicatorColor(
+      isOnline: isOnline,
+      radarEnabled: radarEnabled,
+    );
 
-    return Container(
-      width: 16,
-      height: 16,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: color,
-        boxShadow: [
-          BoxShadow(
-            color: color.withValues(alpha: 0.55),
-            blurRadius: 10,
-            spreadRadius: 3,
-          ),
-          BoxShadow(
-            color: color.withValues(alpha: 0.28),
-            blurRadius: 18,
-            spreadRadius: 6,
-          ),
-        ],
+    return Semantics(
+      label: !isOnline
+          ? 'Sem internet'
+          : radarEnabled
+          ? 'Online com radar de chuva ativo'
+          : 'Online',
+      child: Container(
+        key: const Key('map_status_indicator'),
+        width: 16,
+        height: 16,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: color,
+          boxShadow: [
+            BoxShadow(
+              color: color.withValues(alpha: 0.55),
+              blurRadius: 10,
+              spreadRadius: 3,
+            ),
+            BoxShadow(
+              color: color.withValues(alpha: 0.28),
+              blurRadius: 18,
+              spreadRadius: 6,
+            ),
+          ],
+        ),
       ),
     );
   }

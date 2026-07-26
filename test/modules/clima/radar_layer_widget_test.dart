@@ -5,7 +5,6 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:soloforte_app/core/config/map_config.dart';
 import 'package:soloforte_app/core/providers/connectivity_provider.dart';
 import 'package:soloforte_app/modules/clima/domain/entities/radar_fetch_result.dart';
 import 'package:soloforte_app/modules/clima/domain/entities/radar_rain_frame.dart';
@@ -15,7 +14,7 @@ import 'package:soloforte_app/modules/clima/presentation/widgets/radar_layer_wid
 
 void main() {
   group('ClimaRadarLayerWidget', () {
-    testWidgets('renderiza overlay quando radar ativo e há frames', (
+    testWidgets('renderiza tiles quando radar ativo e há frames', (
       tester,
     ) async {
       await tester.pumpWidget(
@@ -29,13 +28,12 @@ void main() {
       await tester.pump();
 
       expect(find.byType(TileLayer), findsOneWidget);
-      expect(find.byKey(const Key('radar_active_banner')), findsOneWidget);
-      expect(find.textContaining('Chuva ativa'), findsNothing);
+      // Banner/gota removido — status unificado no indicador do mapa.
+      expect(find.byIcon(Icons.water_drop_outlined), findsNothing);
+      expect(find.byKey(const Key('radar_active_banner')), findsNothing);
     });
 
-    testWidgets('exibe banner de carregamento enquanto busca frames', (
-      tester,
-    ) async {
+    testWidgets('não exibe banner enquanto busca frames', (tester) async {
       final completer = Completer<ClimaRadarFetchResult>();
 
       await tester.pumpWidget(
@@ -63,10 +61,11 @@ void main() {
       await tester.pump();
       await tester.pump();
 
-      expect(find.text(ClimaRadarOverlayMessages.loading), findsOneWidget);
+      expect(find.text(ClimaRadarOverlayMessages.loading), findsNothing);
+      expect(find.byType(SizedBox), findsWidgets);
     });
 
-    testWidgets('exibe banner offline quando sem conexão', (tester) async {
+    testWidgets('não exibe banner offline — só oculta tiles', (tester) async {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
@@ -85,7 +84,10 @@ void main() {
                   initialCenter: LatLng(-15.7801, -47.9292),
                   initialZoom: 5,
                 ),
-                children: const [ClimaRadarStatusOverlay()],
+                children: [
+                  ClimaRadarTileLayerWidget(tileProvider: _MemoryTileProvider()),
+                  const ClimaRadarStatusOverlay(),
+                ],
               ),
             ),
           ),
@@ -94,13 +96,11 @@ void main() {
       await tester.pump();
       await tester.pump();
 
-      expect(find.text(ClimaRadarOverlayMessages.offline), findsOneWidget);
+      expect(find.text(ClimaRadarOverlayMessages.offline), findsNothing);
       expect(find.byType(TileLayer), findsNothing);
     });
 
-    testWidgets('exibe banner sem precipitação quando manifesto vazio', (
-      tester,
-    ) async {
+    testWidgets('sem precipitação: sem tiles e sem banner', (tester) async {
       await tester.pumpWidget(
         _buildRadarMap(
           radarEnabled: true,
@@ -115,12 +115,12 @@ void main() {
 
       expect(
         find.text(ClimaRadarOverlayMessages.noPrecipitation),
-        findsOneWidget,
+        findsNothing,
       );
       expect(find.byType(TileLayer), findsNothing);
     });
 
-    testWidgets('exibe banner indisponível em erro HTTP', (tester) async {
+    testWidgets('erro HTTP: sem banner de indisponível', (tester) async {
       await tester.pumpWidget(
         _buildRadarMap(
           radarEnabled: true,
@@ -134,7 +134,7 @@ void main() {
       await tester.pump();
       await tester.pump();
 
-      expect(find.text(ClimaRadarOverlayMessages.unavailable), findsOneWidget);
+      expect(find.text(ClimaRadarOverlayMessages.unavailable), findsNothing);
     });
   });
 }
