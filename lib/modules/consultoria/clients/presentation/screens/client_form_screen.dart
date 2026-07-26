@@ -31,6 +31,7 @@ class _ClientFormScreenState extends ConsumerState<ClientFormScreen> {
   final _emailController = TextEditingController();
   final _telefoneController = TextEditingController();
   final _cpfCnpjController = TextEditingController();
+  final _dataNascimentoController = TextEditingController();
   DateTime? _dataNascimento;
 
   // ── Seção 2 — Localização
@@ -60,6 +61,7 @@ class _ClientFormScreenState extends ConsumerState<ClientFormScreen> {
     _emailController.dispose();
     _telefoneController.dispose();
     _cpfCnpjController.dispose();
+    _dataNascimentoController.dispose();
     _cidadeController.dispose();
     _ufController.dispose();
     _areaTotalController.dispose();
@@ -116,8 +118,17 @@ class _ClientFormScreenState extends ConsumerState<ClientFormScreen> {
       initialDate: _dataNascimento ?? DateTime(1990),
       firstDate: DateTime(1920),
       lastDate: DateTime.now(),
+      locale: const Locale('pt', 'BR'),
     );
-    if (picked != null) setState(() => _dataNascimento = picked);
+    if (picked != null) {
+      setState(() {
+        _dataNascimento = picked;
+        _dataNascimentoController.text =
+            '${picked.day.toString().padLeft(2, '0')}/'
+            '${picked.month.toString().padLeft(2, '0')}/'
+            '${picked.year}';
+      });
+    }
   }
 
   Future<void> _abrirBottomSheetCultura() async {
@@ -548,19 +559,12 @@ class _ClientFormScreenState extends ConsumerState<ClientFormScreen> {
         keyboardType: TextInputType.number,
       ),
       const SizedBox(height: 12),
-      GestureDetector(
+      _field(
+        controller: _dataNascimentoController,
+        label: 'Data de Nascimento',
+        readOnly: true,
         onTap: _pickDataNascimento,
-        child: AbsorbPointer(
-          child: _field(
-            controller: TextEditingController(
-              text: _dataNascimento != null
-                  ? '${_dataNascimento!.day.toString().padLeft(2, '0')}/${_dataNascimento!.month.toString().padLeft(2, '0')}/${_dataNascimento!.year}'
-                  : '',
-            ),
-            label: 'Data de Nascimento',
-            suffixIcon: const Icon(Icons.calendar_today, size: 18),
-          ),
-        ),
+        suffixIcon: const Icon(Icons.calendar_today, size: 18),
       ),
     ],
   );
@@ -762,6 +766,8 @@ class _ClientFormScreenState extends ConsumerState<ClientFormScreen> {
     int maxLines = 1,
     List<TextInputFormatter>? inputFormatters,
     ValueChanged<String>? onChanged,
+    bool readOnly = false,
+    VoidCallback? onTap,
   }) => TextFormField(
     controller: controller,
     decoration: _inputDeco(label, suffixIcon: suffixIcon),
@@ -770,6 +776,8 @@ class _ClientFormScreenState extends ConsumerState<ClientFormScreen> {
     validator: validator,
     inputFormatters: inputFormatters,
     onChanged: onChanged,
+    readOnly: readOnly,
+    onTap: onTap,
   );
 
   InputDecoration _inputDeco(String label, {Widget? suffixIcon}) =>

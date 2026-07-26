@@ -43,6 +43,7 @@ class _ClientEditFormState extends State<ClientEditForm> {
   late TextEditingController _emailCtrl;
   late TextEditingController _telefoneCtrl;
   late TextEditingController _cpfCnpjCtrl;
+  late TextEditingController _dataNascimentoCtrl;
   late TextEditingController _cidadeCtrl;
   late TextEditingController _ufCtrl;
   late TextEditingController _areaTotalCtrl;
@@ -69,6 +70,9 @@ class _ClientEditFormState extends State<ClientEditForm> {
     _emailCtrl = TextEditingController(text: c.email ?? '');
     _telefoneCtrl = TextEditingController(text: c.phone);
     _cpfCnpjCtrl = TextEditingController(text: c.cpfCnpj ?? '');
+    _dataNascimentoCtrl = TextEditingController(
+      text: c.dataNascimento != null ? _formatDate(c.dataNascimento!) : '',
+    );
     _cidadeCtrl = TextEditingController(text: c.city);
     _ufCtrl = TextEditingController(text: c.state);
     _areaTotalCtrl = TextEditingController(text: c.areaTotal?.toString() ?? '');
@@ -93,6 +97,7 @@ class _ClientEditFormState extends State<ClientEditForm> {
     _emailCtrl.dispose();
     _telefoneCtrl.dispose();
     _cpfCnpjCtrl.dispose();
+    _dataNascimentoCtrl.dispose();
     _cidadeCtrl.dispose();
     _ufCtrl.dispose();
     _areaTotalCtrl.dispose();
@@ -440,6 +445,8 @@ class _ClientEditFormState extends State<ClientEditForm> {
     Widget? suffixIcon,
     int maxLines = 1,
     List<TextInputFormatter>? inputFormatters,
+    bool readOnly = false,
+    VoidCallback? onTap,
   }) => TextFormField(
     controller: ctrl,
     decoration: _deco(label, suffixIcon: suffixIcon),
@@ -447,6 +454,8 @@ class _ClientEditFormState extends State<ClientEditForm> {
     maxLines: maxLines,
     validator: validator,
     inputFormatters: inputFormatters,
+    readOnly: readOnly,
+    onTap: onTap,
   );
 
   Widget _sectionTitle(String t) => Padding(
@@ -677,27 +686,26 @@ class _ClientEditFormState extends State<ClientEditForm> {
                     keyboardType: TextInputType.number,
                   ),
                   const SizedBox(height: 12),
-                  GestureDetector(
+                  _field(
+                    _dataNascimentoCtrl,
+                    'Data de Nascimento',
+                    readOnly: true,
                     onTap: () async {
                       final p = await showDatePicker(
                         context: context,
                         initialDate: _dataNascimentoEdit ?? DateTime(1990),
                         firstDate: DateTime(1920),
                         lastDate: DateTime.now(),
+                        locale: const Locale('pt', 'BR'),
                       );
-                      if (p != null) setState(() => _dataNascimentoEdit = p);
+                      if (p != null) {
+                        setState(() {
+                          _dataNascimentoEdit = p;
+                          _dataNascimentoCtrl.text = _formatDate(p);
+                        });
+                      }
                     },
-                    child: AbsorbPointer(
-                      child: _field(
-                        TextEditingController(
-                          text: _dataNascimentoEdit != null
-                              ? _formatDate(_dataNascimentoEdit!)
-                              : '',
-                        ),
-                        'Data de Nascimento',
-                        suffixIcon: const Icon(Icons.calendar_today, size: 18),
-                      ),
-                    ),
+                    suffixIcon: const Icon(Icons.calendar_today, size: 18),
                   ),
                   const SizedBox(height: 28),
                   _sectionTitle('Localização'),
