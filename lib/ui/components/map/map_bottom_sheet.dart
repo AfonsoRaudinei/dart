@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../../../../core/design/sf_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../theme/premium/design_tokens.dart';
 import '../premium/premium_glass_panel.dart';
@@ -14,6 +13,7 @@ import '../../../modules/drawing/presentation/coordinators/drawing_close_coordin
 import '../../../modules/drawing/domain/models/drawing_models.dart';
 import '../../../modules/map/presentation/widgets/visit_sheet.dart';
 import '../../../modules/visitas/presentation/controllers/visit_controller.dart';
+import '../../screens/map/widgets/active_visit_sheet.dart';
 import '../../../core/feature_flags/feature_flag_providers.dart';
 import '../../../core/feature_flags/feature_flag_resolver.dart';
 import '../../../core/feature_flags/feature_flag_analytics.dart';
@@ -327,63 +327,9 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
     final isActive = activeVisitAsync.valueOrNull?.isActive ?? false;
 
     if (isActive) {
-      // Já está em visita - mostrar status
-      return Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          children: [
-            const Icon(
-              SFIcons.checkCircle,
-              size: 64,
-              color: PremiumTokens.brandGreen,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Visita em Andamento',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 32),
-            ElevatedButton(
-              onPressed: () async {
-                HapticFeedback.mediumImpact(); // ✅ iOS Premium
-                await ref.read(visitControllerProvider.notifier).endSession();
-
-                if (!mounted) return;
-
-                final visitState = ref.read(visitControllerProvider);
-                if (visitState.hasError) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        'Erro ao encerrar visita: ${visitState.error}',
-                      ),
-                    ),
-                  );
-                  return;
-                }
-
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Visita encerrada com sucesso.'),
-                  ),
-                );
-                widget.onClose();
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: PremiumTokens.alertError,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 32,
-                  vertical: 16,
-                ),
-              ),
-              child: const Text(
-                'Encerrar Visita',
-                style: TextStyle(fontWeight: FontWeight.w600), // ✅ iOS Premium
-              ),
-            ),
-          ],
-        ),
-      );
+      // Caminho legado do Stack: reutiliza o sheet compacto padrão.
+      // Em produção checkIn abre via modal (MapSheetController + ActiveVisitSheet).
+      return ActiveVisitSheet(onDismissed: widget.onClose);
     }
 
     // Iniciar visita

@@ -7,8 +7,33 @@ import '../../../../core/ui/sheets/soloforte_sheet.dart';
 import '../../../../modules/drawing/presentation/coordinators/drawing_close_coordinator.dart';
 import '../../../../modules/drawing/presentation/providers/drawing_provider.dart';
 import '../../../../modules/drawing/domain/drawing_state.dart';
+import '../../../../modules/visitas/presentation/controllers/visit_controller.dart';
 import '../../../../ui/components/map/map_sheet_state.dart';
 import '../widgets/map_sheet_content_builder.dart';
+
+/// Resultado do modal de check-in quando a visita acaba de ser iniciada.
+const kVisitStartedSheetResult = 'visit_started';
+
+/// Detents do sheet de check-in.
+///
+/// Visita ativa → compacto (~34%). Iniciar visita → formulário (~60%).
+({double initial, double min, double max, List<double> snaps})
+resolveCheckInSheetSizes({required bool isActiveVisit}) {
+  if (isActiveVisit) {
+    return (
+      initial: 0.34,
+      min: 0.28,
+      max: 0.45,
+      snaps: const <double>[0.34],
+    );
+  }
+  return (
+    initial: 0.6,
+    min: 0.3,
+    max: 0.92,
+    snaps: const <double>[0.6, 0.92],
+  );
+}
 
 /// Controla abertura de modais e toggle do modo de desenho no mapa.
 ///
@@ -40,15 +65,23 @@ class MapSheetController {
     // ⚠️ NÃO simplificar — a lógica de geração previne race condition real.
     final gen = ++ref.read(modalGenerationProvider.notifier).state;
 
-    // Bug 1: checkIn precisa de mais altura inicial e máxima para exibir
-    // 4 dropdowns + botão sem corte. Outros tipos mantêm valores anteriores.
+    // checkIn com visita ativa: sheet compacto (só status + Encerrar).
+    // checkIn para iniciar: altura maior (dropdowns + CONFIRMAR CHEGADA).
     final isCheckIn = state.type == MapSheetType.checkIn;
     final isLayers = state.type == MapSheetType.layers;
-    final initialSize = isCheckIn ? 0.6 : 0.5;
-    final maxSize = isCheckIn ? 0.92 : 0.9;
-    final snapSizesList = isCheckIn ? [0.6, 0.92] : [0.5, 0.9];
+    final isActiveVisit =
+        isCheckIn &&
+        ref.read(visitControllerProvider).valueOrNull?.status == 'active';
 
-    showSoloForteSheet(
+    final checkInSizes = resolveCheckInSheetSizes(isActiveVisit: isActiveVisit);
+    final initialSize = isCheckIn ? checkInSizes.initial : 0.5;
+    final minSize = isCheckIn ? checkInSizes.min : 0.3;
+    final maxSize = isCheckIn ? checkInSizes.max : 0.9;
+    final snapSizesList = isCheckIn
+        ? checkInSizes.snaps
+        : const <double>[0.5, 0.9];
+
+    showSoloForteSheet<Object?>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -61,7 +94,7 @@ class MapSheetController {
       clipBehavior: Clip.none,
       builder: (modalContext) => DraggableScrollableSheet(
         initialChildSize: initialSize,
-        minChildSize: 0.3,
+        minChildSize: minSize,
         maxChildSize: maxSize,
         expand: false,
         snap: true,
@@ -78,7 +111,7 @@ class MapSheetController {
           if (isCheckIn) {
             return ClipRRect(
               borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(24),
+                top: Radius.circular(SoloForteSheetTokens.borderRadius),
               ),
               child: ColoredBox(
                 color: SoloForteSheetTokens.sheetBackground,
@@ -117,7 +150,19 @@ class MapSheetController {
           );
         },
       ),
-    ).whenComplete(() {
+    ).then((result) {
+      if (!context.mounted) return;
+      if (result != kVisitStartedSheetResult) return;
+      // Após CONFIRMAR CHEGADA: reabre o check-in no detent compacto
+      // (Visita em Andamento), no padrão SoloForte — não no sheet 60%.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!context.mounted) return;
+        setSheetState(
+          const MapSheetState(type: MapSheetType.checkIn),
+          'VisitStarted: reopen compact active sheet',
+        );
+      });
+    }).whenComplete(() {
       if (!context.mounted) return;
       // R-3: Sempre limpar isModalOpenProvider ao fechar (cobre swipe dismiss).
       // Se outra geração foi aberta entre meio-tempo, apenas limpa o flag sem

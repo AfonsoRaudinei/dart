@@ -6,6 +6,7 @@ import '../../../../modules/map/presentation/widgets/visit_sheet.dart';
 import '../../../../modules/visitas/presentation/controllers/visit_controller.dart';
 import '../../../../ui/components/map/map_sheet_state.dart';
 import '../../../../ui/components/map/map_layers_sheet.dart';
+import '../controllers/map_sheet_controller.dart';
 import 'active_visit_sheet.dart';
 
 /// Constrói o widget de conteúdo correto para cada [MapSheetType].
@@ -102,7 +103,9 @@ Widget buildSheetContent(
                   backgroundColor: PremiumTokens.brandGreenDark,
                 ),
               );
-              Navigator.of(context).pop();
+              // Fecha o formulário alto e sinaliza reabertura compacta
+              // (Visita em Andamento) via MapSheetController.
+              Navigator.of(context).pop(kVisitStartedSheetResult);
             },
           );
         },
