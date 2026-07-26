@@ -173,9 +173,7 @@ class SettingsScreen extends ConsumerWidget {
                   context,
                   title: 'Política de Privacidade',
                   icon: SFIcons.info,
-                  onTap: () => _openUrl(
-                    'https://afonsoraudinei.github.io/SoloForte-Pol-tica-de-Privacidade/',
-                  ),
+                  onTap: () => _openUrl(ExternalLinks.privacyPolicy),
                 ),
               ]),
 

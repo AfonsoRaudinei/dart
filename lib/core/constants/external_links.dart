@@ -1,4 +1,8 @@
 /// Links externos oficiais do SoloForte (GitHub Pages).
+///
+/// Fontes (index.html nos repositórios):
+/// - Termos: https://github.com/AfonsoRaudinei/SoloForte-Termos-de-Uso/blob/main/index.html
+/// - Privacidade: https://github.com/AfonsoRaudinei/SoloForte-Pol-tica-de-Privacidade/blob/main/index.html
 class ExternalLinks {
   ExternalLinks._();
 
@@ -9,4 +13,8 @@ class ExternalLinks {
   /// Termos de Uso (Configurações → Termos de Serviço).
   static const termsOfUse =
       'https://afonsoraudinei.github.io/SoloForte-Termos-de-Uso/';
+
+  /// Política de Privacidade (Configurações → Política de Privacidade).
+  static const privacyPolicy =
+      'https://afonsoraudinei.github.io/SoloForte-Pol-tica-de-Privacidade/';
 }
