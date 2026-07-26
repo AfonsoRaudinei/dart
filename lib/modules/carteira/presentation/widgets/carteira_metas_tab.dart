@@ -99,35 +99,39 @@ class _CarteiraMetasTabState extends ConsumerState<CarteiraMetasTab> {
             if (_valorGraoController.text.isEmpty && valor > 0) {
               _valorGraoController.text = valor.toStringAsFixed(2);
             }
-            return Row(
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Expanded(
-                  child: TextField(
-                    controller: _valorGraoController,
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true,
-                    ),
-                    decoration: const InputDecoration(
-                      prefixText: 'R\$ ',
-                      hintText: '0,00',
-                      border: OutlineInputBorder(),
-                      contentPadding: EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 10,
-                      ),
+                TextField(
+                  controller: _valorGraoController,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  textInputAction: TextInputAction.done,
+                  onSubmitted: (_) => _salvarValorGrao(),
+                  decoration: const InputDecoration(
+                    prefixText: 'R\$ ',
+                    hintText: '0,00',
+                    border: OutlineInputBorder(),
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 10,
                     ),
                   ),
                 ),
-                const SizedBox(width: 8),
-                FilledButton(
-                  onPressed: _salvandoGrao ? null : _salvarValorGrao,
-                  child: _salvandoGrao
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Text('Salvar'),
+                const SizedBox(height: 8),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: FilledButton(
+                    onPressed: _salvandoGrao ? null : _salvarValorGrao,
+                    child: _salvandoGrao
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Text('Salvar'),
+                  ),
                 ),
               ],
             );

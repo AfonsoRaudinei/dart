@@ -3,7 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import 'package:soloforte_app/core/session/local_session_identity.dart';
+import 'package:soloforte_app/core/contracts/opportunity_summary.dart';
+import 'package:soloforte_app/modules/carteira/domain/entities/categoria_global.dart';
 import 'package:soloforte_app/modules/carteira/presentation/providers/carteira_providers.dart';
+import 'package:soloforte_app/modules/carteira/presentation/widgets/lancamento_form_dialog.dart';
 
 /// Detalhe de oportunidades em aberto por cliente.
 /// Aberta via Navigator.push — sem rota pública. ADR-022.
@@ -17,13 +21,48 @@ class OportunidadesDetalheScreen extends ConsumerWidget {
   final String clienteId;
   final String clienteNome;
 
+  String get _userId => LocalSessionIdentity.resolveUserId();
+
+  Future<void> _abrirLancamento(
+    BuildContext context,
+    WidgetRef ref,
+    OpportunitySummary oportunidade,
+    CategoriaGlobal? categoria,
+  ) async {
+    if (categoria == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Categoria não encontrada.')),
+      );
+      return;
+    }
+
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (_) => LancamentoFormDialog(
+        categoria: categoria,
+        clienteId: clienteId,
+        clienteNome: clienteNome,
+        clientAreaHa: oportunidade.areaHa,
+      ),
+    );
+
+    if (saved != true) return;
+
+    ref.invalidate(clientOpportunitiesProvider(clienteId));
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Lançamento registrado com sucesso.')),
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final oportunidadesAsync =
         ref.watch(clientOpportunitiesProvider(clienteId));
+    final categoriasAsync = ref.watch(categoriasGlobaisProvider(_userId));
     final currencyFormat = NumberFormat.currency(
       locale: 'pt_BR',
-      symbol: 'R\$ ',
+      symbol: 'R\$',
       decimalDigits: 0,
     );
 
@@ -40,6 +79,11 @@ class OportunidadesDetalheScreen extends ConsumerWidget {
               child: Text('Nenhuma oportunidade em aberto 🎯'),
             );
           }
+
+          final categorias = categoriasAsync.valueOrNull ?? const [];
+          final categoriasById = {
+            for (final c in categorias) c.id: c,
+          };
 
           final totalOpportunityValue = oportunidades.fold<double>(
             0.0,
@@ -91,9 +135,7 @@ class OportunidadesDetalheScreen extends ConsumerWidget {
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          totalOpportunityValue > 0
-                              ? 'Total: ${currencyFormat.format(totalOpportunityValue)}'
-                              : 'Total: R\$ 0',
+                          'Total: ${currencyFormat.format(totalOpportunityValue)}',
                           style: Theme.of(context)
                               .textTheme
                               .bodySmall
@@ -113,6 +155,7 @@ class OportunidadesDetalheScreen extends ConsumerWidget {
                     final percentOfTotal = totalOpportunityValue > 0
                         ? op.totalOpportunityValue / totalOpportunityValue * 100
                         : 0.0;
+                    final categoria = categoriasById[op.categoryId];
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 12),
                       child: Row(
@@ -146,6 +189,22 @@ class OportunidadesDetalheScreen extends ConsumerWidget {
                                   ),
                                 ),
                               ],
+                            ),
+                          ),
+                          TextButton.icon(
+                            onPressed: () => _abrirLancamento(
+                              context,
+                              ref,
+                              op,
+                              categoria,
+                            ),
+                            icon: const Icon(Icons.add, size: 16),
+                            label: const Text('Registrar'),
+                            style: TextButton.styleFrom(
+                              visualDensity: VisualDensity.compact,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                              ),
                             ),
                           ),
                         ],

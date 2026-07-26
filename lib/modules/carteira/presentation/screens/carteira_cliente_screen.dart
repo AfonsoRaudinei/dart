@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:soloforte_app/core/session/local_session_identity.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:uuid/uuid.dart';
 
+import 'package:soloforte_app/core/router/app_routes.dart';
+import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 import 'package:soloforte_app/modules/carteira/domain/entities/carteira_lancamento.dart';
 import 'package:soloforte_app/modules/carteira/domain/entities/categoria_global.dart';
 import 'package:soloforte_app/modules/carteira/domain/entities/cliente_categoria.dart';
 import 'package:soloforte_app/modules/carteira/presentation/providers/carteira_providers.dart';
+import 'package:soloforte_app/modules/carteira/presentation/widgets/categoria_form_dialog.dart';
 import 'package:soloforte_app/modules/carteira/presentation/widgets/lancamento_form_dialog.dart';
 
 class CarteiraClienteScreen extends ConsumerWidget {
@@ -46,7 +50,43 @@ class CarteiraClienteScreen extends ConsumerWidget {
             const Center(child: Text('Erro ao carregar categorias.')),
         data: (categorias) {
           if (categorias.isEmpty) {
-            return const Center(child: Text('Nenhuma categoria ativa.'));
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.category_outlined,
+                      size: 48,
+                      color: Colors.grey[400],
+                    ),
+                    const SizedBox(height: 12),
+                    const Text(
+                      'Nenhuma categoria ativa',
+                      style: TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Crie uma categoria para registrar oportunidades deste cliente.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.grey[600], fontSize: 13),
+                    ),
+                    const SizedBox(height: 16),
+                    FilledButton.icon(
+                      onPressed: () => _criarCategoria(context, ref, userId),
+                      icon: const Icon(Icons.add, size: 18),
+                      label: const Text('Nova categoria'),
+                    ),
+                    const SizedBox(height: 8),
+                    TextButton(
+                      onPressed: () => context.go(AppRoutes.carteira),
+                      child: const Text('Ir para Carteira'),
+                    ),
+                  ],
+                ),
+              ),
+            );
           }
 
           return registrosAsync.when(
@@ -117,6 +157,46 @@ class CarteiraClienteScreen extends ConsumerWidget {
     ref.invalidate(
       categoriasClienteProvider((userId: userId, clienteId: clienteId)),
     );
+    ref.invalidate(todosRegistrosProvider(userId));
+  }
+
+  Future<void> _criarCategoria(
+    BuildContext context,
+    WidgetRef ref,
+    String userId,
+  ) async {
+    final result = await showSoloForteSheet<CategoriaFormResult>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      showDragHandle: false,
+      useSafeArea: false,
+      shape: const RoundedRectangleBorder(),
+      clipBehavior: Clip.none,
+      builder: (_) => CategoriaFormDialog(userId: userId),
+    );
+    if (result == null) return;
+
+    final now = DateTime.now();
+    final categorias =
+        await ref.read(carteiraRepositoryProvider).getCategorias(userId);
+    final nova = CategoriaGlobal(
+      id: const Uuid().v4(),
+      userId: userId,
+      nome: result.nome,
+      cor: result.corHex,
+      ativo: true,
+      ordem: categorias.length,
+      unidadeCodigo: result.unidadeCodigo,
+      unidadeLabel: result.unidadeLabel,
+      converteSacasHa: result.converteSacasHa,
+      valorReferencia: result.valorReferencia,
+      createdAt: now,
+      updatedAt: now,
+    );
+
+    await ref.read(carteiraRepositoryProvider).saveCategoria(nova);
+    ref.invalidate(categoriasGlobaisProvider(userId));
     ref.invalidate(todosRegistrosProvider(userId));
   }
 }
