@@ -1,0 +1,13 @@
+# Copie para key.properties e preencha com o keystore de release.
+# Nunca versione key.properties nem o arquivo .jks/.keystore.
+#
+#   cp key.properties.example key.properties
+#
+# Gerar keystore (exemplo — guarde a senha em local seguro):
+#   keytool -genkey -v -keystore upload-keystore.jks -keyalg RSA \
+#     -keysize 2048 -validity 10000 -alias upload
+#
+storePassword=SUBSTITUA_SENHA_DO_KEYSTORE
+keyPassword=SUBSTITUA_SENHA_DA_CHAVE
+keyAlias=upload
+storeFile=../upload-keystore.jks
