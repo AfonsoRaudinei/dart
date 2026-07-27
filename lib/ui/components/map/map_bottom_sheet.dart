@@ -24,6 +24,7 @@ import '../../../modules/dashboard/domain/location_settings.dart';
 import '../../screens/map/handlers/map_location_handler.dart';
 import 'map_sheet_state.dart'; // 🛡 REFATORAÇÃO: Modelo compartilhado
 import '../../../core/utils/app_logger.dart';
+import '../../../core/providers/connectivity_provider.dart';
 import '../../../../core/contracts/i_visit_session_lookup.dart';
 import '../../../../core/contracts/i_visit_session_lookup_provider.dart';
 
@@ -436,43 +437,63 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
           return;
         }
 
-        // visit_session_id herdado automaticamente pelo OccurrenceController
-        // caso haja sessão de visita ativa.
-        await ref
-            .read(occurrenceControllerProvider)
-            .createOccurrence(
-              type: data.type,
-              description: data.description,
-              clientId: data.clientId,
-              photoPath: data.photoPath,
-              lat: data.latitude,
-              long: data.longitude,
-              category: data.category,
-              status: 'draft',
-              cultivar: data.cultivar,
-              dataPlantio: data.dataPlantio,
-              estadioFenologico: data.estadioFenologico,
-              tipoOcorrencia: data.tipoOcorrencia,
-              amostraSolo: data.amostraSolo,
-              recomendacoes: data.recomendacoes,
-              metricasJson: data.metricasJson,
-              nutrientesJson: data.nutrientesJson,
-              categoriasJson: data.categoriasJson,
-              notasCategoriasJson: data.notasCategoriasJson,
-              fotosCategoriasJson: data.fotosCategoriasJson,
-            );
+        try {
+          // visit_session_id herdado automaticamente pelo OccurrenceController
+          // caso haja sessão de visita ativa.
+          await ref
+              .read(occurrenceControllerProvider)
+              .createOccurrence(
+                type: data.type,
+                description: data.description,
+                clientId: data.clientId,
+                photoPath: data.photoPath,
+                lat: data.latitude,
+                long: data.longitude,
+                category: data.category,
+                status: 'draft',
+                cultivar: data.cultivar,
+                dataPlantio: data.dataPlantio,
+                estadioFenologico: data.estadioFenologico,
+                tipoOcorrencia: data.tipoOcorrencia,
+                amostraSolo: data.amostraSolo,
+                recomendacoes: data.recomendacoes,
+                metricasJson: data.metricasJson,
+                nutrientesJson: data.nutrientesJson,
+                categoriasJson: data.categoriasJson,
+                notasCategoriasJson: data.notasCategoriasJson,
+                fotosCategoriasJson: data.fotosCategoriasJson,
+              );
 
-        if (!mounted) return;
+          if (!mounted) return;
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Ocorrência registrada com sucesso!'),
-            backgroundColor: PremiumTokens.brandGreen,
-          ),
-        );
+          final isOnline =
+              ref.read(isOnlineProvider).asData?.value ?? true;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                isOnline
+                    ? 'Ocorrência registrada com sucesso!'
+                    : 'Sem conexão — ocorrência salva localmente e será sincronizada.',
+              ),
+              backgroundColor: isOnline
+                  ? PremiumTokens.brandGreen
+                  : Colors.orange,
+            ),
+          );
 
-        // Fechar o sheet após salvar
-        widget.onClose();
+          // Fechar o sheet após salvar
+          widget.onClose();
+        } catch (_) {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Não foi possível salvar a ocorrência. Tente novamente.',
+              ),
+              backgroundColor: PremiumTokens.alertError,
+            ),
+          );
+        }
       },
     );
   }
