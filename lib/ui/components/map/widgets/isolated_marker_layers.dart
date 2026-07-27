@@ -139,7 +139,8 @@ class IsolatedMarketingMarkersLayer extends ConsumerWidget {
         return async.value!
             .where(
               (c) =>
-                  c.status.toValue() == 'published' &&
+                  (c.status.toValue() == 'published' ||
+                      c.status.toValue() == 'pending_approval') &&
                   c.ativo &&
                   c.deletadoEm == null,
             )

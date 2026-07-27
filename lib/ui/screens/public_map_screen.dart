@@ -211,7 +211,11 @@ class _PublicMapScreenState extends ConsumerState<PublicMapScreen> {
                             marketingCase: mCase,
                             onTap: () {
                               HapticFeedback.lightImpact();
-                              MarketingCaseSheet.show(context, mCase);
+                              MarketingCaseSheet.show(
+                                context,
+                                mCase,
+                                isPublicSurface: true,
+                              );
                             },
                           ),
                         );
