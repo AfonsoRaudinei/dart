@@ -43,6 +43,10 @@ void main() {
     expect(find.text('Ver no mapa'), findsOneWidget);
     expect(find.byType(PageView), findsOneWidget);
     expect(find.byType(MarketingMediaImage), findsWidgets);
+    final image = tester.widget<MarketingMediaImage>(
+      find.byType(MarketingMediaImage).first,
+    );
+    expect(image.fit, BoxFit.contain);
   });
 
   testWidgets('hero sem foto ainda mostra produto e ROI', (tester) async {

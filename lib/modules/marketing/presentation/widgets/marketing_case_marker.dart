@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import '../../domain/entities/marketing_case.dart';
-import '../../domain/enums/case_tipo.dart';
 import '../../domain/enums/plano_marketing.dart';
+import '../../domain/marketing_case_media.dart';
 import 'marketing_media_image.dart';
 
-/// Pin rico para o mapa — exibe foto, produto e ROI por tier.
+/// Pin rico para o mapa — foto sem crop, produto e ROI por tier.
 ///
 /// ADR-011: hierarquia visual Ouro > Prata > Bronze.
 /// Anchor: bottomCenter (ponteiro aponta para a coordenada no mapa).
+/// Retrato compacto + [BoxFit.contain] (foto de celular inteira).
 class MarketingCaseMarker extends StatelessWidget {
   final MarketingCase marketingCase;
   final VoidCallback onTap;
@@ -18,21 +19,19 @@ class MarketingCaseMarker extends StatelessWidget {
     required this.onTap,
   });
 
-  // ─── Dimensões por tier ───────────────────────────────────────
+  // ─── Dimensões por tier (retrato: mais alto que largo) ────────
   static double pinWidth(PlanoMarketing tier) => switch (tier) {
-    PlanoMarketing.ouro => 120,
-    PlanoMarketing.prata => 100,
-    PlanoMarketing.bronze => 84,
+    PlanoMarketing.ouro => 96,
+    PlanoMarketing.prata => 84,
+    PlanoMarketing.bronze => 72,
   };
 
   static double pinHeight(PlanoMarketing tier) => switch (tier) {
-    PlanoMarketing.ouro => 100,
-    PlanoMarketing.prata => 84,
-    PlanoMarketing.bronze => 70,
+    PlanoMarketing.ouro => 132,
+    PlanoMarketing.prata => 116,
+    PlanoMarketing.bronze => 100,
   };
 
-  // Zoom mínimo por tier. Ouro aparece antes; Prata e Bronze exigem
-  // aproximação progressiva para não poluir o mapa em visão regional.
   static double minZoomForTier(PlanoMarketing tier) => switch (tier) {
     PlanoMarketing.ouro => 10.0,
     PlanoMarketing.prata => 12.0,
@@ -61,18 +60,6 @@ class MarketingCaseMarker extends StatelessWidget {
     PlanoMarketing.bronze => const Color(0xFF1E1200),
   };
 
-  String? _primaryPhotoUrl() {
-    final url = switch (marketingCase.tipo) {
-      CaseTipo.resultado => marketingCase.fotoPrincipalUrl,
-      CaseTipo.antesDepois =>
-        marketingCase.fotoDepoisUrl ?? marketingCase.fotoAntesUrl,
-      CaseTipo.avaliacao => marketingCase.fotoPrincipalUrl,
-    };
-    if (url == null || url.trim().isEmpty) return null;
-    return url;
-  }
-
-  // ─── Resultado/ROI text ───────────────────────────────────────
   String? _resultText() {
     final resultadoRoi = marketingCase.computeRoi();
     if (resultadoRoi != null) {
@@ -84,8 +71,7 @@ class MarketingCaseMarker extends StatelessWidget {
       return 'ROI ${roi.roiCalculado.toStringAsFixed(0)}%';
     }
 
-    if (marketingCase.tipo == CaseTipo.antesDepois &&
-        marketingCase.parametros.isNotEmpty) {
+    if (marketingCase.parametros.isNotEmpty) {
       return '${_signed(marketingCase.mediaGanhoPercent)}%';
     }
 
@@ -119,6 +105,7 @@ class MarketingCaseMarker extends StatelessWidget {
     final border = _borderWidth(tier);
     final borderColor = _borderColor(tier);
     final resultText = _resultText();
+    final media = MarketingCaseMedia.mediaRefs(marketingCase);
     const pointerH = 10.0;
 
     return GestureDetector(
@@ -133,7 +120,6 @@ class MarketingCaseMarker extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // ── Pin body ─────────────────────────────────────
               Expanded(
                 child: Container(
                   decoration: BoxDecoration(
@@ -147,10 +133,30 @@ class MarketingCaseMarker extends StatelessWidget {
                     child: Stack(
                       fit: StackFit.expand,
                       children: [
-                        // 1. Foto de fundo
-                        _buildPhoto(tier),
-
-                        // 2. Barra inferior: produto + ROI
+                        _buildPhoto(tier, media),
+                        if (media.length > 1)
+                          Positioned(
+                            top: 4,
+                            right: 4,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 5,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.black.withValues(alpha: 0.6),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                '${media.length}',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                          ),
                         Positioned(
                           bottom: 0,
                           left: 0,
@@ -165,8 +171,6 @@ class MarketingCaseMarker extends StatelessWidget {
                   ),
                 ),
               ),
-
-              // ── Ponteiro triangular ───────────────────────────
               CustomPaint(
                 size: const Size(16, pointerH),
                 painter: _PointerPainter(color: borderColor),
@@ -178,21 +182,21 @@ class MarketingCaseMarker extends StatelessWidget {
     );
   }
 
-  Widget _buildPhoto(PlanoMarketing tier) {
-    final url = _primaryPhotoUrl();
-    if (url == null) {
+  Widget _buildPhoto(PlanoMarketing tier, List<String> media) {
+    if (media.isEmpty) {
       return _PlaceholderPin(tier: tier);
     }
-    return MarketingMediaImage(
-      source: url,
-      fit: BoxFit.cover,
-      fadeInDuration: const Duration(milliseconds: 200),
-      placeholder: (_) => _PlaceholderPin(tier: tier),
+    return ColoredBox(
+      color: _placeholderColor(tier),
+      child: MarketingMediaImage(
+        source: media.first,
+        fit: BoxFit.contain,
+        fadeInDuration: const Duration(milliseconds: 200),
+        placeholder: (_) => _PlaceholderPin(tier: tier),
+      ),
     );
   }
 }
-
-// ─── Barra inferior ──────────────────────────────────────────────
 
 class _InfoBar extends StatelessWidget {
   final String produto;
@@ -249,8 +253,6 @@ class _InfoBar extends StatelessWidget {
   }
 }
 
-// ─── Placeholder ─────────────────────────────────────────────────
-
 class _PlaceholderPin extends StatelessWidget {
   final PlanoMarketing tier;
 
@@ -270,8 +272,6 @@ class _PlaceholderPin extends StatelessWidget {
     );
   }
 }
-
-// ─── Ponteiro triangular ─────────────────────────────────────────
 
 class _PointerPainter extends CustomPainter {
   final Color color;

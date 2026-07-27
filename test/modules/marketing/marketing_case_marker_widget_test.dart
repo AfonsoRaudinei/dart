@@ -53,6 +53,30 @@ void main() {
       );
 
       expect(image.source, 'https://example.com/depois.jpg');
+      expect(image.fit, BoxFit.contain);
+    });
+
+    test('pinHeight > pinWidth (retrato) por tier', () {
+      for (final tier in PlanoMarketing.values) {
+        expect(
+          MarketingCaseMarker.pinHeight(tier),
+          greaterThan(MarketingCaseMarker.pinWidth(tier)),
+        );
+      }
+    });
+
+    testWidgets('badge de quantidade quando há várias fotos', (tester) async {
+      final marketingCase = _case(
+        tipo: CaseTipo.antesDepois,
+        fotoAntesUrl: 'https://example.com/antes.jpg',
+        fotoDepoisUrl: 'https://example.com/depois.jpg',
+      );
+
+      await tester.pumpWidget(
+        _wrap(MarketingCaseMarker(marketingCase: marketingCase, onTap: () {})),
+      );
+
+      expect(find.text('2'), findsOneWidget);
     });
 
     testWidgets('mantem placeholder quando Antes/Depois nao tem fotos', (
