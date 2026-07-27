@@ -18,7 +18,7 @@ class AuthService extends _$AuthService {
 
   SupabaseClient get _client => Supabase.instance.client;
 
-  String get _oauthRedirectUrl => '${AppConfig.supabaseUrl}/auth/v1/callback';
+  String get _oauthRedirectUrl => AppConfig.oauthCallbackUrl;
 
   Future<AuthResponse> login(String email, String password) async {
     try {
@@ -126,7 +126,7 @@ class AuthService extends _$AuthService {
       await NetworkPolicy.withTimeout(
         () => _client.auth.resetPasswordForEmail(
           email,
-          redirectTo: 'soloforte://reset-password',
+          redirectTo: AppConfig.deepLinkResetPassword,
         ),
       );
     } on AuthException catch (e) {

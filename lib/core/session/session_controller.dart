@@ -195,7 +195,7 @@ class SessionController extends _$SessionController {
       await NetworkPolicy.withTimeout(
         () => Supabase.instance.client.auth.signInWithOAuth(
           OAuthProvider.google,
-          redirectTo: '${AppConfig.supabaseUrl}/auth/v1/callback',
+          redirectTo: AppConfig.oauthCallbackUrl,
         ),
       );
     } on AuthException catch (e) {
@@ -219,7 +219,7 @@ class SessionController extends _$SessionController {
       await NetworkPolicy.withTimeout(
         () => Supabase.instance.client.auth.signInWithOAuth(
           OAuthProvider.apple,
-          redirectTo: '${AppConfig.supabaseUrl}/auth/v1/callback',
+          redirectTo: AppConfig.oauthCallbackUrl,
         ),
       );
     } on AuthException catch (e) {

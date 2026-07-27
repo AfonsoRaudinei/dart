@@ -45,6 +45,28 @@ class AppConfig {
   );
 
   // ═══════════════════════════════════════════════════════════════════
+  // SUPABASE — REDIRECT URLs (cadastrar no Dashboard)
+  // Authentication → URL Configuration → Redirect URLs:
+  //   • soloforte://reset-password  — recovery (AuthService.recoverPassword)
+  //   • {SUPABASE_URL}/auth/v1/callback — OAuth Google/Apple
+  // Site URL recomendada: soloforte://login (deep link iOS/Android configurado)
+  // ═══════════════════════════════════════════════════════════════════
+
+  static const String deepLinkResetPassword = 'soloforte://reset-password';
+
+  static const String deepLinkLogin = 'soloforte://login';
+
+  /// Callback OAuth exigido pelo Supabase (Google/Apple).
+  static String get oauthCallbackUrl => '$supabaseUrl/auth/v1/callback';
+
+  /// Lista para checklist manual no painel Supabase (redirect allowlist).
+  static List<String> requiredSupabaseRedirectUrls() => [
+        deepLinkResetPassword,
+        deepLinkLogin,
+        oauthCallbackUrl,
+      ];
+
+  // ═══════════════════════════════════════════════════════════════════
   // AMBIENTE
   // ═══════════════════════════════════════════════════════════════════
 
