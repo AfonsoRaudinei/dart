@@ -1,8 +1,8 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import '../../domain/entities/marketing_case.dart';
 import '../../domain/enums/case_tipo.dart';
 import '../../domain/enums/plano_marketing.dart';
+import 'marketing_media_image.dart';
 
 /// Pin rico para o mapa — exibe foto, produto e ROI por tier.
 ///
@@ -183,12 +183,11 @@ class MarketingCaseMarker extends StatelessWidget {
     if (url == null) {
       return _PlaceholderPin(tier: tier);
     }
-    return CachedNetworkImage(
-      imageUrl: url,
+    return MarketingMediaImage(
+      source: url,
       fit: BoxFit.cover,
-      placeholder: (_, __) => _PlaceholderPin(tier: tier),
-      errorWidget: (_, __, ___) => _PlaceholderPin(tier: tier),
       fadeInDuration: const Duration(milliseconds: 200),
+      placeholder: (_) => _PlaceholderPin(tier: tier),
     );
   }
 }

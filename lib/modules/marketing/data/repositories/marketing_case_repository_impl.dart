@@ -4,6 +4,7 @@ import 'package:path/path.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../domain/entities/marketing_case.dart';
 import '../../domain/enums/marketing_case_status.dart';
+import '../services/marketing_photo_service.dart';
 import 'i_marketing_case_repository.dart';
 import 'package:soloforte_app/core/session/local_session_identity.dart';
 import 'package:soloforte_app/core/utils/app_logger.dart';
@@ -265,11 +266,18 @@ class MarketingCaseRepositoryImpl implements IMarketingCaseRepository {
       ...marketingCase.toJson(),
       'user_id': userId,
       'sync_status': 'pending_sync',
+      'avaliacoes': marketingCase.avaliacoes.map((av) => av.toJson()).toList(),
     });
     await saveSingleToCache(pendingCase);
 
+    // 0.1 Offline-first: resolver fotos locais → URLs públicas (ou falha → pending)
+    final photoService = MarketingPhotoService(_supabase);
+    final caseWithRemoteMedia = await photoService.resolveCaseMedia(
+      pendingCase,
+    );
+
     // 1. Dados do case principal (exclui avaliacoes — tabela separada)
-    final caseJson = marketingCase.toJson()
+    final caseJson = caseWithRemoteMedia.toJson()
       ..remove('avaliacoes'); // Não existe na tabela principal
 
     // Campos ROI ficam no próprio registro (já estão em toJson via spread de roi)
@@ -290,8 +298,8 @@ class MarketingCaseRepositoryImpl implements IMarketingCaseRepository {
     final savedCase = MarketingCase.fromJson(responseWithDefaults);
 
     // 3. Salva cada avaliação na tabela filha
-    if (marketingCase.avaliacoes.isNotEmpty) {
-      final avaliacoesBatch = marketingCase.avaliacoes.map((av) {
+    if (caseWithRemoteMedia.avaliacoes.isNotEmpty) {
+      final avaliacoesBatch = caseWithRemoteMedia.avaliacoes.map((av) {
         return {
           'id': av.id,
           'case_id': savedCase.id,
@@ -317,7 +325,9 @@ class MarketingCaseRepositoryImpl implements IMarketingCaseRepository {
     final syncedCase = MarketingCase.fromJson({
       ...savedCase.toJson(),
       'sync_status': 'synced',
-      'avaliacoes': marketingCase.avaliacoes.map((av) => av.toJson()).toList(),
+      'avaliacoes': caseWithRemoteMedia.avaliacoes
+          .map((av) => av.toJson())
+          .toList(),
     });
     await saveSingleToCache(syncedCase);
 

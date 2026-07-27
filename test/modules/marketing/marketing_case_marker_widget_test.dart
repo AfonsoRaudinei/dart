@@ -1,10 +1,10 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:soloforte_app/modules/marketing/domain/entities/marketing_case.dart';
 import 'package:soloforte_app/modules/marketing/domain/enums/case_tipo.dart';
 import 'package:soloforte_app/modules/marketing/domain/enums/plano_marketing.dart';
 import 'package:soloforte_app/modules/marketing/presentation/widgets/marketing_case_marker.dart';
+import 'package:soloforte_app/modules/marketing/presentation/widgets/marketing_media_image.dart';
 
 void main() {
   group('MarketingCaseMarker', () {
@@ -48,11 +48,11 @@ void main() {
         _wrap(MarketingCaseMarker(marketingCase: marketingCase, onTap: () {})),
       );
 
-      final image = tester.widget<CachedNetworkImage>(
-        find.byType(CachedNetworkImage),
+      final image = tester.widget<MarketingMediaImage>(
+        find.byType(MarketingMediaImage),
       );
 
-      expect(image.imageUrl, 'https://example.com/depois.jpg');
+      expect(image.source, 'https://example.com/depois.jpg');
     });
 
     testWidgets('mantem placeholder quando Antes/Depois nao tem fotos', (
@@ -64,7 +64,7 @@ void main() {
         _wrap(MarketingCaseMarker(marketingCase: marketingCase, onTap: () {})),
       );
 
-      expect(find.byType(CachedNetworkImage), findsNothing);
+      expect(find.byType(MarketingMediaImage), findsNothing);
       expect(find.byIcon(Icons.agriculture), findsOneWidget);
     });
 

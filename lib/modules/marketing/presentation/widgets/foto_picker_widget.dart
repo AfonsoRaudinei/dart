@@ -1,22 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../data/services/marketing_photo_service.dart';
 import 'package:soloforte_app/core/utils/app_logger.dart';
+import 'package:soloforte_app/modules/marketing/domain/marketing_media_ref.dart';
+
+import '../../data/services/marketing_photo_service.dart';
+import 'marketing_media_image.dart';
 
 /// Widget reutilizável de seleção e preview de foto para Marketing Cases.
 ///
-/// Exibe:
-///   - Placeholder com ícone + label quando sem foto
-///   - Thumbnail da foto selecionada com botão de remover
-///   - Loading enquanto faz upload
-///   - Erro se upload falhar
+/// Offline-first: persiste localmente e tenta upload; se sem rede, mantém
+/// path local no case (`pending_sync`) até o sync.
 ///
 /// Parâmetros:
 ///   [label]       Texto do placeholder (ex: 'Foto Principal')
-///   [url]         URL atual da foto (null = sem foto)
-///   [onChanged]   Callback com a nova URL (null = foto removida)
+///   [url]         URL remota ou path local (null = sem foto)
+///   [onChanged]   Callback com a nova ref (null = foto removida)
 ///   [folder]      Subpasta no bucket (ex: 'resultado', 'avaliacoes')
 ///   [height]      Altura do bloco de foto
 ///   [required]    Se true, destaca em vermelho quando sem foto
@@ -53,29 +52,37 @@ class _FotoPickerWidgetState extends State<FotoPickerWidget> {
 
     try {
       final service = MarketingPhotoService(Supabase.instance.client);
-      final url = await service.pickAndUpload(
+      final ref = await service.pickAndResolve(
         context: context,
         folder: widget.folder,
       );
 
-      if (mounted) {
-        // 🔧 FIX: Atualizar estado interno primeiro, depois notificar pai (Bug B)
-        // Isso garante que quando o pai reconstruir o widget, o loading já está false
-        setState(() => _loading = false);
+      if (!mounted) return;
+      setState(() => _loading = false);
 
-        if (url != null) {
-          HapticFeedback.mediumImpact();
-          // Notificar o pai após o setState para evitar race condition de rebuild
-          widget.onChanged(url);
+      if (ref != null) {
+        HapticFeedback.mediumImpact();
+        widget.onChanged(ref);
+        if (MarketingMediaRef.isLocalPath(ref) && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Sem conexão — foto salva localmente e será enviada na sincronização.',
+              ),
+              backgroundColor: Colors.orange,
+              behavior: SnackBarBehavior.floating,
+              duration: Duration(seconds: 3),
+            ),
+          );
         }
       }
     } catch (e, st) {
-      AppLogger.error('FotoPickerWidget upload error', error: e, stackTrace: st);
+      AppLogger.error('FotoPickerWidget pick error', error: e, stackTrace: st);
       if (!mounted) return;
       setState(() => _loading = false);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Não foi possível enviar a foto. Tente novamente.'),
+          content: Text('Não foi possível salvar a foto. Tente novamente.'),
           backgroundColor: Colors.red,
         ),
       );
@@ -152,7 +159,7 @@ class _FotoPickerWidgetState extends State<FotoPickerWidget> {
           ),
           SizedBox(height: 8),
           Text(
-            'Enviando foto...',
+            'Salvando foto...',
             style: TextStyle(fontSize: 12, color: Colors.grey),
           ),
         ],
@@ -164,19 +171,10 @@ class _FotoPickerWidgetState extends State<FotoPickerWidget> {
     return Stack(
       fit: StackFit.expand,
       children: [
-        // Thumbnail
-        CachedNetworkImage(
-          imageUrl: url,
+        MarketingMediaImage(
+          source: url,
           fit: BoxFit.cover,
-          progressIndicatorBuilder: (_, __, progress) {
-            return Center(
-              child: CircularProgressIndicator(
-                value: progress.progress,
-                strokeWidth: 2,
-              ),
-            );
-          },
-          errorWidget: (_, __, ___) => const Center(
+          placeholder: (_) => const Center(
             child: Icon(
               Icons.broken_image_outlined,
               size: 40,
@@ -184,8 +182,6 @@ class _FotoPickerWidgetState extends State<FotoPickerWidget> {
             ),
           ),
         ),
-
-        // Overlay escuro
         Positioned.fill(
           child: DecoratedBox(
             decoration: BoxDecoration(
@@ -200,8 +196,6 @@ class _FotoPickerWidgetState extends State<FotoPickerWidget> {
             ),
           ),
         ),
-
-        // Botão remover (canto superior direito)
         Positioned(
           top: 8,
           right: 8,
@@ -218,8 +212,6 @@ class _FotoPickerWidgetState extends State<FotoPickerWidget> {
             ),
           ),
         ),
-
-        // Label + ícone editar (rodapé)
         Positioned(
           bottom: 8,
           left: 12,

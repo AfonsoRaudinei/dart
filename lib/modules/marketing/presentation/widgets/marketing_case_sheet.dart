@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 import '../../../../ui/theme/premium/design_tokens.dart';
 import '../../domain/entities/avaliacao_item.dart';
@@ -9,6 +8,7 @@ import '../../domain/enums/case_tipo.dart';
 import '../../domain/enums/plano_marketing.dart';
 import 'comparativo_chart.dart';
 import 'marketing_comparativo_read_only_section.dart';
+import 'marketing_media_image.dart';
 import '../../../../core/ui/sheets/sheet_tokens.dart';
 
 /// Bottom Sheet de visualização detalhada de um Case de Marketing
@@ -316,12 +316,12 @@ class MarketingCaseSheet extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 20),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(16),
-        child: CachedNetworkImage(
-          imageUrl: url,
+        child: MarketingMediaImage(
+          source: url,
           height: 200,
           width: double.infinity,
           fit: BoxFit.cover,
-          errorWidget: (_, __, ___) => Container(
+          placeholder: (_) => Container(
             height: 200,
             decoration: const BoxDecoration(
               color: SoloForteSheetTokens.inputBackground,
@@ -582,12 +582,12 @@ class MarketingCaseSheet extends StatelessWidget {
   Widget _buildFotoMini(String url) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(10),
-      child: CachedNetworkImage(
-        imageUrl: url,
+      child: MarketingMediaImage(
+        source: url,
         height: 130,
         width: double.infinity,
         fit: BoxFit.cover,
-        errorWidget: (_, __, ___) => Container(
+        placeholder: (_) => Container(
           height: 130,
           decoration: const BoxDecoration(
             color: SoloForteSheetTokens.inputBackground,
