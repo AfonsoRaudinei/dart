@@ -153,6 +153,27 @@ void main() {
       expect(controller.currentState, DrawingState.drawing);
     });
 
+    test('polígono: tapSketchVertex fecha no 2º toque no vértice inicial', () {
+      var closed = false;
+      controller.selectTool('polygon');
+      controller.appendDrawingPoint(const LatLng(-15.0, -47.0));
+      controller.appendDrawingPoint(const LatLng(-15.001, -47.0));
+      controller.appendDrawingPoint(const LatLng(-15.001, -47.001));
+
+      expect(
+        controller.tapSketchVertex(0, onClosePolygon: () => closed = true),
+        isTrue,
+      );
+      expect(closed, isFalse);
+      expect(controller.selectedSketchVertexIndex, 0);
+
+      expect(
+        controller.tapSketchVertex(0, onClosePolygon: () => closed = true),
+        isTrue,
+      );
+      expect(closed, isTrue);
+    });
+
     test('instructionText diferencia ferramentas', () {
       controller.selectTool('freehand');
       expect(controller.instructionText, contains('arraste'));
