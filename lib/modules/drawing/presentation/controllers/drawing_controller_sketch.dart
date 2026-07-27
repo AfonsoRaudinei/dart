@@ -90,6 +90,28 @@ extension DrawingControllerSketch on DrawingController {
     return true;
   }
 
+  /// Toque em vértice mid-draw: seleciona ou fecha no ponto inicial.
+  /// Retorna `true` se consumiu o toque (não adicionar novo ponto no mapa).
+  bool tapSketchVertex(int index, {void Function()? onClosePolygon}) {
+    if (_isDisposed) return false;
+    if (_stateMachine.currentTool != DrawingTool.polygon) return false;
+    if (!_canAcceptSketchInput()) return false;
+    if (index < 0 || index >= _currentPoints.length) return false;
+
+    final alreadySelected = _selectedSketchVertexIndex == index;
+    if (index == 0 &&
+        alreadySelected &&
+        canFinishDrawing &&
+        !hasSelfIntersection) {
+      onClosePolygon?.call();
+      return true;
+    }
+
+    _selectedSketchVertexIndex = index;
+    _notify();
+    return true;
+  }
+
   void clearSketchVertexSelection() {
     if (_selectedSketchVertexIndex == null && !_isDraggingSketchVertex) {
       return;

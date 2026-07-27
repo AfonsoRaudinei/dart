@@ -166,16 +166,10 @@ class _DrawingEditLayerState extends State<DrawingEditLayer> {
   }
 
   void _onSketchVertexTap(int index) {
-    final controller = widget.controller;
-    final alreadySelected = controller.selectedSketchVertexIndex == index;
-    if (index == 0 &&
-        alreadySelected &&
-        controller.canFinishDrawing &&
-        !controller.hasSelfIntersection) {
-      widget.onPolygonClose?.call();
-      return;
-    }
-    controller.selectSketchVertex(index);
+    widget.controller.tapSketchVertex(
+      index,
+      onClosePolygon: widget.onPolygonClose,
+    );
   }
 
   DrawingGeometry? _resolveDisplayGeometry(DrawingGeometry? original) {
@@ -314,14 +308,15 @@ class _DrawingEditLayerState extends State<DrawingEditLayer> {
       final isDragging = _isSketchDrag && _draggingVertexIndex == i;
       final isStart = i == 0;
       final showGota = isSelected || isDragging;
-      // Mesmas dimensões do DrawingLayerWidget._vertexMarker (center = vértice).
+      // Alvo de toque mínimo 44dp; dot visual menor no centro.
+      const hitSize = 44.0;
       final dotSize = isStart ? 20.0 : 16.0;
 
       markers.add(
         Marker(
           point: point,
-          width: showGota ? 48 : dotSize,
-          height: showGota ? 56 : dotSize,
+          width: showGota ? 48 : hitSize,
+          height: showGota ? 56 : hitSize,
           // Center: lat/lng do vértice coincide com o centro do ponto/gota.
           alignment: Alignment.center,
           child: _SketchVertexHandle(
