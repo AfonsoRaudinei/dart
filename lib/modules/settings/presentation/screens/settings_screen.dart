@@ -11,8 +11,8 @@ import 'package:soloforte_app/core/design/sf_icons.dart';
 import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 import 'dart:ui' as ui;
 import '../../../../core/session/session_controller.dart';
+import 'package:soloforte_app/core/session/local_session_identity.dart';
 import 'package:soloforte_app/core/database/database_helper.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import '../providers/settings_providers.dart';
 import '../providers/user_profile_provider.dart';
 import '../../domain/settings_models.dart';
@@ -817,8 +817,7 @@ class SettingsScreen extends ConsumerWidget {
           TextButton(
             onPressed: () async {
               Navigator.pop(dialogContext);
-              final userId =
-                  (Supabase.instance.client.auth.currentUser?.id ?? '').trim();
+              final userId = LocalSessionIdentity.resolveUserId().trim();
               if (userId.isEmpty) {
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
