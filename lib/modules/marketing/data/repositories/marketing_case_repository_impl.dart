@@ -262,9 +262,10 @@ class MarketingCaseRepositoryImpl implements IMarketingCaseRepository {
 
     // 0. Persistir localmente como pending_sync ANTES de ir ao Supabase
     //    Garante que o case nao seja perdido se o app morrer durante o upload
+    final ownerId = _resolveOwnerUserId(marketingCase, userId);
     final pendingCase = MarketingCase.fromJson({
       ...marketingCase.toJson(),
-      'user_id': userId,
+      'user_id': ownerId,
       'sync_status': 'pending_sync',
       'avaliacoes': marketingCase.avaliacoes.map((av) => av.toJson()).toList(),
     });
@@ -277,14 +278,7 @@ class MarketingCaseRepositoryImpl implements IMarketingCaseRepository {
     );
 
     // 1. Dados do case principal (exclui avaliacoes — tabela separada)
-    final caseJson = caseWithRemoteMedia.toJson()
-      ..remove('avaliacoes'); // Não existe na tabela principal
-
-    // Campos ROI ficam no próprio registro (já estão em toJson via spread de roi)
-    // atualizado_em é o momento local — o DB tem default now() mas podemos forçar
-    caseJson['user_id'] = userId;
-    caseJson['atualizado_em'] = DateTime.now().toIso8601String();
-    caseJson['sync_status'] = 'synced';
+    final caseJson = _remoteCaseJson(caseWithRemoteMedia, ownerId: ownerId);
 
     // 2. Upsert do case principal
     final response = await _supabase
@@ -303,7 +297,7 @@ class MarketingCaseRepositoryImpl implements IMarketingCaseRepository {
         return {
           'id': av.id,
           'case_id': savedCase.id,
-          'user_id': userId,
+          'user_id': ownerId,
           'ordem': av.ordem,
           'layout': av.layout.toValue(),
           'colapsado': av.colapsado,
@@ -328,10 +322,153 @@ class MarketingCaseRepositoryImpl implements IMarketingCaseRepository {
       'avaliacoes': caseWithRemoteMedia.avaliacoes
           .map((av) => av.toJson())
           .toList(),
+      if (caseWithRemoteMedia.pendingEditJson != null)
+        'pending_edit_json': caseWithRemoteMedia.pendingEditJson,
+      if (caseWithRemoteMedia.pendingEditBy != null)
+        'pending_edit_by': caseWithRemoteMedia.pendingEditBy,
+      if (caseWithRemoteMedia.pendingEditAt != null)
+        'pending_edit_at':
+            caseWithRemoteMedia.pendingEditAt!.toIso8601String(),
     });
     await saveSingleToCache(syncedCase);
 
     return syncedCase;
+  }
+
+  String _resolveOwnerUserId(MarketingCase marketingCase, String fallback) {
+    final owner = marketingCase.ownerUserId?.trim() ?? '';
+    return owner.isNotEmpty ? owner : fallback;
+  }
+
+  Map<String, dynamic> _remoteCaseJson(
+    MarketingCase marketingCase, {
+    required String ownerId,
+  }) {
+    final caseJson = marketingCase.toJson()..remove('avaliacoes');
+    caseJson['user_id'] = ownerId;
+    caseJson['atualizado_em'] = DateTime.now().toIso8601String();
+    caseJson['sync_status'] = 'synced';
+
+    final pendingRaw = caseJson['pending_edit_json'];
+    if (pendingRaw is String && pendingRaw.isNotEmpty) {
+      try {
+        caseJson['pending_edit_json'] = jsonDecode(pendingRaw);
+      } catch (_) {
+        // mantém string se não for JSON válido
+      }
+    }
+    return caseJson;
+  }
+
+  Future<MarketingCase> _persistAndSync(MarketingCase marketingCase) async {
+    final userId = _scopedUserId();
+    if (userId.isEmpty) {
+      throw StateError('Usuario nao autenticado.');
+    }
+    final ownerId = _resolveOwnerUserId(marketingCase, userId);
+    final local = MarketingCase.fromJson({
+      ...marketingCase.toJson(),
+      'user_id': ownerId,
+      'sync_status': 'pending_sync',
+      'avaliacoes': marketingCase.avaliacoes.map((av) => av.toJson()).toList(),
+    });
+    await saveSingleToCache(local);
+
+    try {
+      return await saveCase(local);
+    } catch (e, st) {
+      AppLogger.error(
+        'MarketingCase sync falhou — mantendo pending_sync local',
+        error: e,
+        stackTrace: st,
+      );
+      return local;
+    }
+  }
+
+  @override
+  Future<MarketingCase> softDeleteCase(MarketingCase marketingCase) async {
+    final now = DateTime.now().toUtc();
+    final deleted = MarketingCase.fromJson({
+      ...marketingCase.toJson(),
+      'deletado_em': now.toIso8601String(),
+      'ativo': false,
+      'atualizado_em': now.toIso8601String(),
+      'sync_status': 'pending_sync',
+      'avaliacoes': marketingCase.avaliacoes.map((av) => av.toJson()).toList(),
+    });
+    return _persistAndSync(deleted);
+  }
+
+  @override
+  Future<MarketingCase> proposeEdit({
+    required MarketingCase current,
+    required MarketingCase proposed,
+    required String proposedByUserId,
+  }) async {
+    final now = DateTime.now().toUtc();
+    final proposedPayload = {
+      ...proposed.toJson(),
+      'id': current.id,
+      'user_id': current.ownerUserId,
+      'client_id': current.clientId,
+    }..remove('pending_edit_json')
+      ..remove('pending_edit_by')
+      ..remove('pending_edit_at')
+      ..remove('avaliacoes');
+
+    final pending = MarketingCase.fromJson({
+      ...current.toJson(),
+      'status': MarketingCaseStatus.pendingApproval.toValue(),
+      'pending_edit_json': jsonEncode(proposedPayload),
+      'pending_edit_by': proposedByUserId,
+      'pending_edit_at': now.toIso8601String(),
+      'atualizado_em': now.toIso8601String(),
+      'sync_status': 'pending_sync',
+      'avaliacoes': current.avaliacoes.map((av) => av.toJson()).toList(),
+    });
+    return _persistAndSync(pending);
+  }
+
+  @override
+  Future<MarketingCase> approvePendingEdit(MarketingCase marketingCase) async {
+    final payload = marketingCase.pendingEditPayload;
+    if (payload == null) {
+      throw StateError('Sem edição pendente para aprovar.');
+    }
+    final now = DateTime.now().toUtc();
+    final approved = MarketingCase.fromJson({
+      ...payload,
+      'id': marketingCase.id,
+      'user_id': marketingCase.ownerUserId,
+      'client_id': marketingCase.clientId,
+      'status': MarketingCaseStatus.published.toValue(),
+      'pending_edit_json': null,
+      'pending_edit_by': null,
+      'pending_edit_at': null,
+      'atualizado_em': now.toIso8601String(),
+      'sync_status': 'pending_sync',
+      'avaliacoes': marketingCase.avaliacoes.map((av) => av.toJson()).toList(),
+      'criado_em':
+          marketingCase.criadoEm.toIso8601String(),
+    });
+    return _persistAndSync(approved);
+  }
+
+  @override
+  Future<MarketingCase> rejectPendingEdit(MarketingCase marketingCase) async {
+    final now = DateTime.now().toUtc();
+    final rejected = MarketingCase.fromJson({
+      ...marketingCase.toJson(),
+      'status': MarketingCaseStatus.published.toValue(),
+      'pending_edit_json': null,
+      'pending_edit_by': null,
+      'pending_edit_at': null,
+      'atualizado_em': now.toIso8601String(),
+      'sync_status': 'pending_sync',
+      'avaliacoes': marketingCase.avaliacoes.map((av) => av.toJson()).toList(),
+    });
+    return _persistAndSync(rejected);
   }
 
   @override

@@ -2,6 +2,7 @@ enum MarketingCaseStatus {
   draft('draft'),
   pendingSync('pending_sync'),
   published('published'),
+  pendingApproval('pending_approval'),
   archived('archived');
 
   final String value;
@@ -17,6 +18,8 @@ enum MarketingCaseStatus {
         return MarketingCaseStatus.pendingSync;
       case 'published':
         return MarketingCaseStatus.published;
+      case 'pending_approval':
+        return MarketingCaseStatus.pendingApproval;
       case 'archived':
         return MarketingCaseStatus.archived;
       default:

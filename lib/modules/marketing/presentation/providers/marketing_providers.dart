@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/services/connectivity_service.dart';
+import '../../../../core/session/local_session_identity.dart';
 import '../../../../core/session/session_controller.dart';
 import '../../data/repositories/i_marketing_case_repository.dart';
 import '../../data/repositories/marketing_case_repository_impl.dart';
@@ -157,6 +158,91 @@ class MarketingCasesNotifier
     return publishCase(publishedCase);
   }
 
+  /// Soft-delete do case (owner). Offline-first.
+  Future<MarketingCase?> softDeleteCase(MarketingCase marketingCase) async {
+    try {
+      final deleted = await _repository.softDeleteCase(marketingCase);
+      _replaceInState(deleted);
+      return deleted;
+    } catch (e, st) {
+      AppLogger.error('Erro ao excluir case', error: e, stackTrace: st);
+      return null;
+    }
+  }
+
+  /// Contraparte propõe edição (pending_approval).
+  Future<MarketingCase?> proposeEdit({
+    required MarketingCase current,
+    required MarketingCase proposed,
+  }) async {
+    try {
+      final userId = LocalSessionIdentity.resolveUserId();
+      if (userId.isEmpty) throw StateError('Usuario nao autenticado.');
+      final pending = await _repository.proposeEdit(
+        current: current,
+        proposed: proposed,
+        proposedByUserId: userId,
+      );
+      _replaceInState(pending);
+      return pending;
+    } catch (e, st) {
+      AppLogger.error('Erro ao propor edição', error: e, stackTrace: st);
+      return null;
+    }
+  }
+
+  Future<MarketingCase?> approvePendingEdit(MarketingCase marketingCase) async {
+    try {
+      final approved = await _repository.approvePendingEdit(marketingCase);
+      _replaceInState(approved);
+      return approved;
+    } catch (e, st) {
+      AppLogger.error('Erro ao aprovar edição', error: e, stackTrace: st);
+      return null;
+    }
+  }
+
+  Future<MarketingCase?> rejectPendingEdit(MarketingCase marketingCase) async {
+    try {
+      final rejected = await _repository.rejectPendingEdit(marketingCase);
+      _replaceInState(rejected);
+      return rejected;
+    } catch (e, st) {
+      AppLogger.error('Erro ao rejeitar edição', error: e, stackTrace: st);
+      return null;
+    }
+  }
+
+  /// Atualiza case existente (owner edit direto).
+  Future<MarketingCase?> updateCase(MarketingCase marketingCase) async {
+    try {
+      final saved = await _repository.saveCase(marketingCase);
+      _replaceInState(saved);
+      return saved;
+    } catch (e, st) {
+      AppLogger.error('Erro ao atualizar case', error: e, stackTrace: st);
+      final pending = MarketingCase.fromJson({
+        ...marketingCase.toJson(),
+        'sync_status': 'pending_sync',
+      });
+      await _repository.saveSingleToCache(pending);
+      _replaceInState(pending);
+      return pending;
+    }
+  }
+
+  void _replaceInState(MarketingCase updated) {
+    final current = state.valueOrNull ?? [];
+    final next = current
+        .map((c) => c.id == updated.id ? updated : c)
+        .where((c) => c.deletadoEm == null)
+        .toList();
+    if (!next.any((c) => c.id == updated.id) && updated.deletadoEm == null) {
+      next.add(updated);
+    }
+    state = AsyncData(next);
+  }
+
   /// Re-tenta o upload em lote de todos os cases que estão marcados como pending_sync
   Future<void> retryPendingCases() async {
     final currentCases = state.valueOrNull ?? [];
@@ -241,7 +327,8 @@ final publishedCasesProvider = Provider.autoDispose<List<MarketingCase>>((ref) {
   return allCases
       .where(
         (c) =>
-            c.status == MarketingCaseStatus.published &&
+            (c.status == MarketingCaseStatus.published ||
+                c.status == MarketingCaseStatus.pendingApproval) &&
             c.ativo &&
             c.deletadoEm == null,
       )

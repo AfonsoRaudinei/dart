@@ -29,7 +29,10 @@ class MarketingCaseVisibility {
   }) {
     if (marketingCase.deletadoEm != null) return false;
     if (!marketingCase.ativo) return false;
-    if (marketingCase.status != MarketingCaseStatus.published) return false;
+    if (marketingCase.status != MarketingCaseStatus.published &&
+        marketingCase.status != MarketingCaseStatus.pendingApproval) {
+      return false;
+    }
 
     if (isVisibleInReports(
       marketingCase: marketingCase,

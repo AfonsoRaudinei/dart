@@ -65,6 +65,11 @@ class MarketingCase {
   final String syncStatus;
   final DateTime? deletadoEm;
 
+  /// ADR-048 — edição proposta pela contraparte (aguarda owner).
+  final String? pendingEditJson;
+  final String? pendingEditBy;
+  final DateTime? pendingEditAt;
+
   const MarketingCase({
     required this.id,
     required this.tipo,
@@ -107,6 +112,9 @@ class MarketingCase {
     required this.atualizadoEm,
     this.syncStatus = 'local_only',
     this.deletadoEm,
+    this.pendingEditJson,
+    this.pendingEditBy,
+    this.pendingEditAt,
   });
 
   factory MarketingCase.fromJson(Map<String, dynamic> json) {
@@ -166,7 +174,19 @@ class MarketingCase {
       deletadoEm: json['deletado_em'] != null
           ? DateTime.parse(json['deletado_em'] as String)
           : null,
+      pendingEditJson: _pendingEditJsonFrom(json['pending_edit_json']),
+      pendingEditBy: json['pending_edit_by'] as String?,
+      pendingEditAt: json['pending_edit_at'] != null
+          ? DateTime.parse(json['pending_edit_at'] as String)
+          : null,
     );
+  }
+
+  static String? _pendingEditJsonFrom(dynamic raw) {
+    if (raw == null) return null;
+    if (raw is String) return raw.isEmpty ? null : raw;
+    if (raw is Map) return jsonEncode(raw);
+    return raw.toString();
   }
 
   Map<String, dynamic> toJson() {
@@ -212,7 +232,28 @@ class MarketingCase {
       'atualizado_em': atualizadoEm.toIso8601String(),
       'sync_status': syncStatus,
       'deletado_em': deletadoEm?.toIso8601String(),
+      'pending_edit_json': pendingEditJson,
+      'pending_edit_by': pendingEditBy,
+      'pending_edit_at': pendingEditAt?.toIso8601String(),
     };
+  }
+
+  bool get hasPendingEdit {
+    final raw = pendingEditJson?.trim() ?? '';
+    return raw.isNotEmpty;
+  }
+
+  /// Payload proposto (se houver) como mapa; null se inválido/ausente.
+  Map<String, dynamic>? get pendingEditPayload {
+    final raw = pendingEditJson?.trim();
+    if (raw == null || raw.isEmpty) return null;
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is Map) return Map<String, dynamic>.from(decoded);
+      return null;
+    } catch (_) {
+      return null;
+    }
   }
 
   MarketingRoiCalculation? computeRoi({double? areaTotal}) {

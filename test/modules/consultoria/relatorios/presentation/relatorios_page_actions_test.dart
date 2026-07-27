@@ -345,6 +345,30 @@ class FakeMarketingCaseRepository implements IMarketingCaseRepository {
   }
 
   @override
+  Future<MarketingCase> softDeleteCase(MarketingCase marketingCase) async {
+    return marketingCase;
+  }
+
+  @override
+  Future<MarketingCase> proposeEdit({
+    required MarketingCase current,
+    required MarketingCase proposed,
+    required String proposedByUserId,
+  }) async {
+    return current;
+  }
+
+  @override
+  Future<MarketingCase> approvePendingEdit(MarketingCase marketingCase) async {
+    return marketingCase;
+  }
+
+  @override
+  Future<MarketingCase> rejectPendingEdit(MarketingCase marketingCase) async {
+    return marketingCase;
+  }
+
+  @override
   Future<MarketingCase> getById(String id) async {
     return cases.firstWhere((item) => item.id == id);
   }
