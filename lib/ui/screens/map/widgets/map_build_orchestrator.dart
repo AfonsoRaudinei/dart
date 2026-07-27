@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'dart:math' as math;
 import 'package:latlong2/latlong.dart';
 import '../../../../ui/theme/premium/design_tokens.dart';
 import '../../../../core/state/map_ui_providers.dart';
@@ -18,6 +19,7 @@ import '../../../../core/utils/map_logger.dart';
 import '../../../../modules/drawing/presentation/providers/drawing_provider.dart';
 import '../../../../modules/drawing/presentation/coordinators/drawing_close_coordinator.dart';
 import '../../../../modules/drawing/domain/drawing_state.dart';
+import '../../../../modules/drawing/domain/sketch_vertex_hit.dart';
 import '../../../../modules/drawing/presentation/widgets/drawing_layers.dart';
 import '../../../../modules/drawing/presentation/widgets/drawing_map_gesture_overlay.dart';
 import '../../../../modules/drawing/presentation/widgets/drawing_state_indicator.dart';
@@ -197,6 +199,32 @@ class MapBuildOrchestrator extends ConsumerWidget {
                   drawCtrl.currentState == DrawingState.armed) {
                 if (drawCtrl.currentTool == DrawingTool.freehand) {
                   return;
+                }
+                if (drawCtrl.currentTool == DrawingTool.polygon &&
+                    drawCtrl.currentPoints.isNotEmpty) {
+                  final tapScreen = mapController.camera.latLngToScreenPoint(
+                    point,
+                  );
+                  final vertexIndex = findNearestSketchVertexIndex(
+                    vertices: drawCtrl.currentPoints,
+                    tapScreen: math.Point<double>(tapScreen.x, tapScreen.y),
+                    latLngToScreen: (latLng) {
+                      final screen = mapController.camera.latLngToScreenPoint(
+                        latLng,
+                      );
+                      return math.Point<double>(screen.x, screen.y);
+                    },
+                  );
+                  if (vertexIndex != null) {
+                    final consumed = drawCtrl.tapSketchVertex(
+                      vertexIndex,
+                      onClosePolygon: finishDrawing,
+                    );
+                    if (consumed) {
+                      HapticFeedback.selectionClick();
+                      return;
+                    }
+                  }
                 }
                 drawCtrl.appendDrawingPoint(point);
                 return;
