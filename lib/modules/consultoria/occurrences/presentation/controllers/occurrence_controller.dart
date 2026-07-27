@@ -49,14 +49,18 @@ class OccurrenceController {
     String? notasCategoriasJson,
     String? fotosCategoriasJson,
   }) async {
-    final visitLookup = ref.read(visitSessionLookupProvider);
-    final activeSession = await visitLookup.getActiveSession();
-    final String? sessionId = activeSession?.isActive == true
-        ? activeSession!.id
-        : null;
-    final resolvedClientId =
-        clientId ??
-        (activeSession?.isActive == true ? activeSession!.producerId : null);
+    String? sessionId;
+    String? resolvedClientId = clientId;
+    try {
+      final visitLookup = ref.read(visitSessionLookupProvider);
+      final activeSession = await visitLookup.getActiveSession();
+      sessionId = activeSession?.isActive == true ? activeSession!.id : null;
+      resolvedClientId =
+          clientId ??
+          (activeSession?.isActive == true ? activeSession!.producerId : null);
+    } catch (_) {
+      // Offline / visita indisponível: ocorrência ainda deve gravar no SQLite.
+    }
 
     String? geometry;
     if (lat != null && long != null) {
@@ -79,6 +83,7 @@ class OccurrenceController {
       createdAt: DateTime.now(),
       category: category,
       status: status ?? 'draft',
+      syncStatus: 'pending_sync',
       // v14 agronômico
       cultivar: cultivar,
       dataPlantio: dataPlantio,

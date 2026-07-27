@@ -17,9 +17,13 @@ class FakeOccurrenceRepository extends OccurrenceRepository {
 
 class FakeVisitSessionLookup implements IVisitSessionLookup {
   VisitSessionSummary? session;
+  Object? throwOnGetActive;
 
   @override
-  Future<VisitSessionSummary?> getActiveSession() async => session;
+  Future<VisitSessionSummary?> getActiveSession() async {
+    if (throwOnGetActive != null) throw throwOnGetActive!;
+    return session;
+  }
 
   @override
   Future<VisitSessionSummary?> findById(String sessionId) async {
@@ -92,6 +96,28 @@ void main() {
 
       expect(fakeOccurrenceRepository.lastSaved, isNotNull);
       expect(fakeOccurrenceRepository.lastSaved!.visitSessionId, isNull);
+      expect(fakeOccurrenceRepository.lastSaved!.syncStatus, 'pending_sync');
+    },
+  );
+
+  test(
+    'createOccurrence grava localmente mesmo se lookup de visita falhar',
+    () async {
+      fakeVisitLookup.throwOnGetActive = StateError('offline');
+
+      final controller = container.read(occurrenceControllerProvider);
+
+      await controller.createOccurrence(
+        type: 'Insetos',
+        description: 'Registro offline',
+        lat: -15.1,
+        long: -47.2,
+      );
+
+      expect(fakeOccurrenceRepository.lastSaved, isNotNull);
+      expect(fakeOccurrenceRepository.lastSaved!.visitSessionId, isNull);
+      expect(fakeOccurrenceRepository.lastSaved!.lat, -15.1);
+      expect(fakeOccurrenceRepository.lastSaved!.syncStatus, 'pending_sync');
     },
   );
 }
