@@ -1,5 +1,6 @@
 import 'dart:async';
-import 'package:device_preview/device_preview.dart';
+import 'core/ui/device_preview_impl.dart'
+    if (dart.vm.product) 'core/ui/device_preview_stub.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
