@@ -219,6 +219,13 @@ class _OccurrenceCreationSheetState
     setState(() => selected ? _nutrientes.remove(sym) : _nutrientes.add(sym));
   }
 
+  void _appendPersistedPhoto(OccurrenceCategory cat, String persistedPath) {
+    setState(() {
+      _fotos.putIfAbsent(cat.name, () => []);
+      _fotos[cat.name]!.add(persistedPath);
+    });
+  }
+
   String _formatDate(DateTime d) =>
       '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
 
