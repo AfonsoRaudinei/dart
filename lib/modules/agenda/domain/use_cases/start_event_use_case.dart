@@ -1,3 +1,6 @@
+import 'package:flutter/foundation.dart';
+import 'package:soloforte_app/core/contracts/i_visit_session_writer.dart';
+import 'package:soloforte_app/core/contracts/visit_session_mirror_input.dart';
 import 'package:uuid/uuid.dart';
 import '../entities/event.dart';
 import '../entities/visit_session.dart';
@@ -11,15 +14,17 @@ import '../repositories/i_agenda_repository.dart';
 ///   - Validar transição de status do evento
 ///   - Criar VisitSession
 ///   - Persistir evento atualizado e sessão criada
+///   - Espelhar sessão em visit_sessions (ADR-048 — mesmo UUID)
 ///
 /// Pré-condição: verificação de visita ativa já realizada pelo caller (AgendaNotifier)
 ///
 /// Retorna: tupla (updatedEvent, session) — sem mutação de estado
 class StartEventUseCase {
-  final IAgendaRepository _repository;
-  final _uuid = const Uuid();
+  StartEventUseCase(this._repository, this._visitSessionWriter);
 
-  StartEventUseCase(this._repository);
+  final IAgendaRepository _repository;
+  final IVisitSessionWriter _visitSessionWriter;
+  final _uuid = const Uuid();
 
   Future<({Event updatedEvent, VisitSession session})> execute({
     required Event event,
@@ -54,6 +59,27 @@ class StartEventUseCase {
     // Persiste
     await _repository.updateEvent(updatedEvent);
     await _repository.saveSession(session);
+
+    try {
+      await _visitSessionWriter.createMirrorSession(
+        VisitSessionMirrorInput(
+          id: session.id,
+          producerId: event.clienteId,
+          farmId: event.fazendaId,
+          areaId: event.talhaoId,
+          activityType: event.tipo.name,
+          startTime: session.startAtReal,
+          initialLat: event.latitude ?? 0.0,
+          initialLong: event.longitude ?? 0.0,
+          userId: currentUserId,
+        ),
+      );
+    } catch (error, stackTrace) {
+      debugPrint(
+        'StartEventUseCase: falha ao espelhar sessão ${session.id} em '
+        'visit_sessions — $error\n$stackTrace',
+      );
+    }
 
     return (updatedEvent: updatedEvent, session: session);
   }
