@@ -160,6 +160,24 @@ class _MarketingCasesReportsSection extends ConsumerWidget {
                   date: dateFormat.format(item.criadoEm.toLocal()),
                   enabled: true,
                   buildPayload: () => _buildMarketingPayload(ref, item),
+                  onViewLocation: () {
+                    final lat = item.lat;
+                    final lng = item.lng;
+                    if (!lat.isFinite ||
+                        !lng.isFinite ||
+                        (lat == 0 && lng == 0)) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Coordenadas da mídia inválidas.'),
+                        ),
+                      );
+                      return;
+                    }
+                    context.go(
+                      '${AppRoutes.map}?modo=foco&lat=${lat.toStringAsFixed(6)}'
+                      '&lng=${lng.toStringAsFixed(6)}',
+                    );
+                  },
                 ),
               ),
           ],
@@ -200,6 +218,7 @@ class _GeneratedReportCard extends StatelessWidget {
   final String date;
   final bool enabled;
   final Future<_GeneratedReportPayload> Function() buildPayload;
+  final VoidCallback? onViewLocation;
 
   const _GeneratedReportCard({
     required this.eyebrow,
@@ -208,6 +227,7 @@ class _GeneratedReportCard extends StatelessWidget {
     required this.date,
     required this.enabled,
     required this.buildPayload,
+    this.onViewLocation,
   });
 
   @override
@@ -232,6 +252,12 @@ class _GeneratedReportCard extends StatelessWidget {
             enabled: enabled,
             child: const Text('Exportar'),
           ),
+          if (onViewLocation != null)
+            PopupMenuItem(
+              value: 'location',
+              enabled: enabled,
+              child: const Text('Ver Localização'),
+            ),
         ],
         onSelected: (value) => _handleAction(context, value),
       ),
@@ -240,6 +266,10 @@ class _GeneratedReportCard extends StatelessWidget {
 
   Future<void> _handleAction(BuildContext context, String value) async {
     if (!enabled) return;
+    if (value == 'location') {
+      onViewLocation?.call();
+      return;
+    }
     final payload = await buildPayload();
     if (!context.mounted) return;
 
