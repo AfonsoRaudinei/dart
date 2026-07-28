@@ -86,6 +86,12 @@ dev_dependencies:
   golden_toolkit: ^0.15.0
   permission_handler_platform_interface: ^4.3.0
 
+# Workaround: objective_c 9.3.x compila sem -g → dSYM ausente no upload iOS.
+# Ver dart-lang/native#3004. Reverter quando upstream corrigir.
+dependency_overrides:
+  objective_c: 9.1.0
+  path_provider_foundation: 2.5.1
+
 flutter_launcher_icons:
   android: true
   ios: true
