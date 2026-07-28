@@ -70,4 +70,43 @@ void main() {
     expect(find.text('Ponto definido no mapa'), findsOneWidget);
     expect(find.text('-10.12345, -48.54321'), findsNothing);
   });
+
+  testWidgets('permite acionar salvar ocorrência após scroll', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          currentUserRoleProvider.overrideWithValue(UserRole.consultor),
+          clientLookupProvider.overrideWithValue(FakeClientLookup()),
+          activeVisitContextLookupProvider.overrideWithValue(
+            FakeActiveVisitContextLookup(),
+          ),
+        ],
+        child: MaterialApp(
+          home: Scaffold(
+            body: OccurrenceCreationSheet(
+              latitude: -10.12345,
+              longitude: -48.54321,
+              onConfirm: (_) {},
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.scrollUntilVisible(
+      find.text('Salvar Ocorrência'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(find.text('Salvar Ocorrência'));
+    await tester.pump();
+
+    expect(
+      find.text('Selecione ao menos uma categoria ou adicione uma descrição.'),
+      findsOneWidget,
+    );
+  });
 }
