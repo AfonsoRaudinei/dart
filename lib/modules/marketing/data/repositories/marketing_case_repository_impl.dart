@@ -325,6 +325,24 @@ class MarketingCaseRepositoryImpl implements IMarketingCaseRepository {
   }
 
   @override
+  Future<void> updateCase(MarketingCase marketingCase) async {
+    final userId = _scopedUserId();
+    if (userId.isEmpty) {
+      throw StateError('Usuario nao autenticado.');
+    }
+
+    final pendingCase = MarketingCase.fromJson({
+      ...marketingCase.toJson(),
+      'user_id': userId,
+      'sync_status': 'pending_sync',
+      'atualizado_em': DateTime.now().toUtc().toIso8601String(),
+    });
+
+    await saveSingleToCache(pendingCase);
+    await saveCase(pendingCase);
+  }
+
+  @override
   Future<MarketingCase> saveAsDraft(MarketingCase marketingCase) async {
     final userId = _scopedUserId();
     // Rascunho: salva apenas localmente, com status=draft e syncStatus=local_only

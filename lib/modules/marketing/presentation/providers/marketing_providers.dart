@@ -141,6 +141,31 @@ class MarketingCasesNotifier
     }
   }
 
+  /// Atualiza um case existente mantendo o fluxo offline-first.
+  Future<void> updateCase(MarketingCase updatedCase) async {
+    final previousCases = state.valueOrNull ?? [];
+    final optimisticCase = MarketingCase.fromJson({
+      ...updatedCase.toJson(),
+      'sync_status': 'pending_sync',
+      'atualizado_em': DateTime.now().toUtc().toIso8601String(),
+    });
+
+    state = AsyncData(
+      previousCases
+          .map((c) => c.id == optimisticCase.id ? optimisticCase : c)
+          .toList(),
+    );
+
+    try {
+      await _repository.updateCase(optimisticCase);
+      await load(forceSync: true);
+    } catch (e, st) {
+      AppLogger.error('Erro ao atualizar case', error: e, stackTrace: st);
+      state = AsyncData(previousCases);
+      rethrow;
+    }
+  }
+
   /// Publica um rascunho existente (muda status de draft para published)
   Future<MarketingCase?> publishDraft(MarketingCase draft) async {
     if (draft.status != MarketingCaseStatus.draft) {

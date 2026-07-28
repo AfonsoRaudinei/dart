@@ -160,6 +160,26 @@ class _MarketingCasesReportsSection extends ConsumerWidget {
                   date: dateFormat.format(item.criadoEm.toLocal()),
                   enabled: true,
                   buildPayload: () => _buildMarketingPayload(ref, item),
+                  onEdit: () => showSoloForteSheet<void>(
+                    context: context,
+                    isScrollControlled: true,
+                    preserveMaterialDefaults: true,
+                    backgroundColor: Colors.transparent,
+                    builder: (sheetContext) => EditCaseSheet(
+                      caso: item,
+                      onClose: () => Navigator.of(sheetContext).pop(),
+                      onSalvar: (updatedCase) {
+                        ref
+                            .read(marketingCasesProvider.notifier)
+                            .updateCase(updatedCase)
+                            .then((_) {
+                              if (!sheetContext.mounted) return;
+                              Navigator.of(sheetContext).pop();
+                            })
+                            .catchError((_) {});
+                      },
+                    ),
+                  ),
                   onViewLocation: () {
                     final lat = item.lat;
                     final lng = item.lng;
@@ -218,6 +238,7 @@ class _GeneratedReportCard extends StatelessWidget {
   final String date;
   final bool enabled;
   final Future<_GeneratedReportPayload> Function() buildPayload;
+  final VoidCallback? onEdit;
   final VoidCallback? onViewLocation;
 
   const _GeneratedReportCard({
@@ -227,6 +248,7 @@ class _GeneratedReportCard extends StatelessWidget {
     required this.date,
     required this.enabled,
     required this.buildPayload,
+    this.onEdit,
     this.onViewLocation,
   });
 
@@ -252,6 +274,12 @@ class _GeneratedReportCard extends StatelessWidget {
             enabled: enabled,
             child: const Text('Exportar'),
           ),
+          if (onEdit != null)
+            PopupMenuItem(
+              value: 'edit',
+              enabled: enabled,
+              child: const Text('Editar'),
+            ),
           if (onViewLocation != null)
             PopupMenuItem(
               value: 'location',
@@ -266,6 +294,10 @@ class _GeneratedReportCard extends StatelessWidget {
 
   Future<void> _handleAction(BuildContext context, String value) async {
     if (!enabled) return;
+    if (value == 'edit') {
+      onEdit?.call();
+      return;
+    }
     if (value == 'location') {
       onViewLocation?.call();
       return;
