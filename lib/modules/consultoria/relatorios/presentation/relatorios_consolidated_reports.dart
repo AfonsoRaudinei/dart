@@ -74,7 +74,7 @@ class _ConsolidatedReportsSection extends ConsumerWidget {
           title: 'Resumo da Propriedade',
           subtitle: _propertySubtitle(relatorios),
           date: nowLabel,
-          enabled: relatorios.any((report) => report.talhoes.isNotEmpty),
+          enabled: relatorios.any((report) => report.farmName.trim().isNotEmpty),
           buildPayload: () => _buildPropertySummaryPayload(ref, relatorios),
         ),
         _GeneratedReportCard(
