@@ -204,6 +204,33 @@ void main() {
     expect(find.text('Exportar'), findsOneWidget);
   });
 
+  testWidgets(
+    'resumo da propriedade fica disponível mesmo sem talhões separados',
+    (tester) async {
+      final relatorioRepository = FakeRelatorioRepository();
+      relatorioRepository.seed([
+        makeRelatorio(
+          id: 'rel-farm-only',
+          farmName: 'Fazenda sem Talhão',
+          status: RelatorioStatus.publicado,
+        ),
+      ]);
+
+      await _pumpScreen(
+        tester,
+        relatorioRepository: relatorioRepository,
+        occurrenceRepository: FakeOccurrenceRepository(),
+      );
+
+      await _selectSegment(tester, 'Gerados');
+
+      expect(find.text('Resumo da Propriedade'), findsOneWidget);
+      expect(find.text('1 propriedade(s), 0 talhão(ões)'), findsOneWidget);
+      expect(find.text('Disponível'), findsNWidgets(2));
+      expect(find.text('Vazio'), findsOneWidget);
+    },
+  );
+
   testWidgets('ocorrência com snake_case exibe label legível', (tester) async {
     final occurrenceRepository = FakeOccurrenceRepository()
       ..seed([
@@ -347,6 +374,14 @@ class FakeMarketingCaseRepository implements IMarketingCaseRepository {
   @override
   Future<MarketingCase> getById(String id) async {
     return cases.firstWhere((item) => item.id == id);
+  }
+
+  @override
+  Future<void> updateCase(MarketingCase marketingCase) async {
+    final index = cases.indexWhere((item) => item.id == marketingCase.id);
+    if (index >= 0) {
+      cases[index] = marketingCase;
+    }
   }
 }
 

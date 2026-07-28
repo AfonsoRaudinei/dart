@@ -2,14 +2,17 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:soloforte_app/modules/agenda/domain/enums/event_status.dart';
 import 'package:soloforte_app/modules/agenda/domain/use_cases/start_event_use_case.dart';
 import '../helpers/fake_agenda_repository.dart';
+import '../helpers/fake_visit_session_writer.dart';
 
 void main() {
   late FakeAgendaRepository repo;
+  late FakeVisitSessionWriter visitSessionWriter;
   late StartEventUseCase useCase;
 
   setUp(() {
     repo = FakeAgendaRepository();
-    useCase = StartEventUseCase(repo);
+    visitSessionWriter = FakeVisitSessionWriter();
+    useCase = StartEventUseCase(repo, visitSessionWriter);
   });
 
   // =========================================================================
@@ -80,6 +83,38 @@ void main() {
       );
 
       expect(updatedEvent.syncStatus, equals('pending'));
+    });
+
+    test('espelha sessão em visit_sessions com mesmo id e producerId', () async {
+      final evento = makeEvent(
+        id: 'evt-mirror',
+        clienteId: 'cli-99',
+        status: EventStatus.agendado,
+      );
+
+      final (:updatedEvent, :session) = await useCase.execute(
+        event: evento,
+        currentUserId: 'user-1',
+      );
+
+      expect(visitSessionWriter.createdSessions, hasLength(1));
+      final mirror = visitSessionWriter.createdSessions.single;
+      expect(mirror.id, equals(session.id));
+      expect(mirror.producerId, equals('cli-99'));
+      expect(mirror.userId, equals('user-1'));
+    });
+
+    test('falha no espelho não impede persistência da sessão da agenda', () async {
+      visitSessionWriter.throwOnCreate = true;
+      final evento = makeEvent(id: 'evt-1', status: EventStatus.agendado);
+
+      final (:updatedEvent, :session) = await useCase.execute(
+        event: evento,
+        currentUserId: 'user-1',
+      );
+
+      expect(repo.sessionById(session.id), isNotNull);
+      expect(updatedEvent.status, equals(EventStatus.emAndamento));
     });
   });
 

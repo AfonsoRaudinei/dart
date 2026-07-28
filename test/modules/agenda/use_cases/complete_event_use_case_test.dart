@@ -2,14 +2,17 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:soloforte_app/modules/agenda/domain/enums/event_status.dart';
 import 'package:soloforte_app/modules/agenda/domain/use_cases/complete_event_use_case.dart';
 import '../helpers/fake_agenda_repository.dart';
+import '../helpers/fake_visit_session_writer.dart';
 
 void main() {
   late FakeAgendaRepository repo;
+  late FakeVisitSessionWriter visitSessionWriter;
   late CompleteEventUseCase useCase;
 
   setUp(() {
     repo = FakeAgendaRepository();
-    useCase = CompleteEventUseCase(repo);
+    visitSessionWriter = FakeVisitSessionWriter();
+    useCase = CompleteEventUseCase(repo, visitSessionWriter);
   });
 
   // =========================================================================
@@ -114,6 +117,20 @@ void main() {
 
       final sessNoRepo = repo.sessionById('sess-1');
       expect(sessNoRepo?.endAtReal, isNotNull);
+    });
+
+    test('encerra espelho em visit_sessions ao concluir', () async {
+      final sess = makeSession(id: 'sess-1', eventoId: 'evt-1');
+      final evento = makeEvent(
+        id: 'evt-1',
+        status: EventStatus.finalizando,
+        visitSessionId: 'sess-1',
+      );
+
+      await useCase.execute(event: evento, sessions: [sess]);
+
+      expect(visitSessionWriter.finishedSessions, hasLength(1));
+      expect(visitSessionWriter.finishedSessions.single.$1, equals('sess-1'));
     });
   });
 

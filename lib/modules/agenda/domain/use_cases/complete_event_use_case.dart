@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+import 'package:soloforte_app/core/contracts/i_visit_session_writer.dart';
 import '../entities/event.dart';
 import '../entities/visit_session.dart';
 import '../enums/event_status.dart';
@@ -9,13 +11,15 @@ import '../repositories/i_agenda_repository.dart';
 /// Responsabilidades:
 ///   - Validar transição de status
 ///   - Fechar VisitSession ativa (se existir)
+///   - Encerrar espelho em visit_sessions (ADR-048)
 ///   - Persistir evento e sessão
 ///
 /// Retorna: tupla (updatedEvent, updatedSession?) — sem mutação de estado
 class CompleteEventUseCase {
-  final IAgendaRepository _repository;
+  CompleteEventUseCase(this._repository, this._visitSessionWriter);
 
-  CompleteEventUseCase(this._repository);
+  final IAgendaRepository _repository;
+  final IVisitSessionWriter _visitSessionWriter;
 
   Future<({Event updatedEvent, VisitSession? updatedSession})> execute({
     required Event event,
@@ -52,10 +56,22 @@ class CompleteEventUseCase {
       );
 
       await _repository.updateSession(updatedSession);
+      await _finishMirrorSession(updatedSession.id, now);
     }
 
     await _repository.updateEvent(updatedEvent);
 
     return (updatedEvent: updatedEvent, updatedSession: updatedSession);
+  }
+
+  Future<void> _finishMirrorSession(String sessionId, DateTime endTime) async {
+    try {
+      await _visitSessionWriter.finishMirrorSession(sessionId, endTime);
+    } catch (error, stackTrace) {
+      debugPrint(
+        'CompleteEventUseCase: falha ao encerrar espelho $sessionId — '
+        '$error\n$stackTrace',
+      );
+    }
   }
 }

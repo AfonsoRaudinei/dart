@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+import 'package:soloforte_app/core/contracts/i_visit_session_writer.dart';
 import '../entities/event.dart';
 import '../entities/visit_session.dart';
 import '../enums/event_status.dart';
@@ -10,15 +12,21 @@ import '../services/i_agenda_notification_service.dart';
 /// Responsabilidades:
 ///   - Validar se o evento pode ser cancelado
 ///   - Fechar VisitSession ativa (se existir)
+///   - Encerrar espelho em visit_sessions (ADR-048)
 ///   - Cancelar notificações agendadas
 ///   - Persistir evento e sessão
 ///
 /// Retorna: tupla (updatedEvent, updatedSession?) — sem mutação de estado
 class CancelEventUseCase {
+  CancelEventUseCase(
+    this._repository,
+    this._notificationService,
+    this._visitSessionWriter,
+  );
+
   final IAgendaRepository _repository;
   final IAgendaNotificationService _notificationService;
-
-  CancelEventUseCase(this._repository, this._notificationService);
+  final IVisitSessionWriter _visitSessionWriter;
 
   Future<({Event updatedEvent, VisitSession? updatedSession})> execute({
     required Event event,
@@ -49,6 +57,7 @@ class CancelEventUseCase {
         );
 
         await _repository.updateSession(updatedSession);
+        await _finishMirrorSession(updatedSession.id, now);
       }
     }
 
@@ -64,5 +73,16 @@ class CancelEventUseCase {
     await _repository.updateEvent(updatedEvent);
 
     return (updatedEvent: updatedEvent, updatedSession: updatedSession);
+  }
+
+  Future<void> _finishMirrorSession(String sessionId, DateTime endTime) async {
+    try {
+      await _visitSessionWriter.finishMirrorSession(sessionId, endTime);
+    } catch (error, stackTrace) {
+      debugPrint(
+        'CancelEventUseCase: falha ao encerrar espelho $sessionId — '
+        '$error\n$stackTrace',
+      );
+    }
   }
 }

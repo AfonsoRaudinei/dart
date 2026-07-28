@@ -44,6 +44,7 @@ import '../../occurrences/domain/occurrence.dart' hide SyncStatus;
 import '../../../marketing/domain/entities/marketing_case.dart';
 import '../../../marketing/domain/marketing_case_visibility.dart';
 import '../../../marketing/presentation/providers/marketing_providers.dart';
+import '../../../marketing/presentation/widgets/edit_case_sheet.dart';
 import 'package:soloforte_app/core/utils/app_logger.dart';
 import 'package:soloforte_app/core/utils/user_facing_error.dart';
 

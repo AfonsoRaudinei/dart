@@ -5,6 +5,7 @@ import 'package:soloforte_app/modules/agenda/domain/use_cases/cancel_event_use_c
 import 'package:soloforte_app/modules/agenda/domain/use_cases/create_event_use_case.dart';
 import '../helpers/fake_agenda_repository.dart';
 import '../helpers/fake_notification_service.dart';
+import '../helpers/fake_visit_session_writer.dart';
 
 void main() {
   late FakeAgendaRepository repo;
@@ -25,7 +26,11 @@ void main() {
     repo = FakeAgendaRepository();
     notifService = FakeAgendaNotificationService();
     createUseCase = CreateEventUseCase(repo, notifService);
-    cancelUseCase = CancelEventUseCase(repo, notifService);
+    cancelUseCase = CancelEventUseCase(
+      repo,
+      notifService,
+      NoopVisitSessionWriter(),
+    );
   });
 
   // =========================================================================
@@ -140,6 +145,27 @@ void main() {
       } catch (_) {}
 
       expect(notifService.cancelledIds, isEmpty);
+    });
+
+    test('encerra espelho em visit_sessions ao cancelar sessão ativa', () async {
+      final mirrorWriter = FakeVisitSessionWriter();
+      final cancelWithMirror = CancelEventUseCase(
+        repo,
+        notifService,
+        mirrorWriter,
+      );
+      final sess = makeSession(id: 'sess-cancel', eventoId: 'evt-cancel');
+      await repo.saveSession(sess);
+      final evento = makeEvent(
+        id: 'evt-cancel',
+        status: EventStatus.emAndamento,
+        visitSessionId: 'sess-cancel',
+      );
+
+      await cancelWithMirror.execute(event: evento, sessions: [sess]);
+
+      expect(mirrorWriter.finishedSessions, hasLength(1));
+      expect(mirrorWriter.finishedSessions.single.$1, equals('sess-cancel'));
     });
   });
 

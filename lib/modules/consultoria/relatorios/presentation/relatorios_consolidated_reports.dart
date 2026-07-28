@@ -74,7 +74,7 @@ class _ConsolidatedReportsSection extends ConsumerWidget {
           title: 'Resumo da Propriedade',
           subtitle: _propertySubtitle(relatorios),
           date: nowLabel,
-          enabled: relatorios.any((report) => report.talhoes.isNotEmpty),
+          enabled: relatorios.any((report) => report.farmName.trim().isNotEmpty),
           buildPayload: () => _buildPropertySummaryPayload(ref, relatorios),
         ),
         _GeneratedReportCard(
@@ -160,6 +160,41 @@ class _MarketingCasesReportsSection extends ConsumerWidget {
                   date: dateFormat.format(item.criadoEm.toLocal()),
                   enabled: true,
                   buildPayload: () => _buildMarketingPayload(ref, item),
+                  onEdit: () => showSoloForteSheet<void>(
+                    context: context,
+                    isScrollControlled: true,
+                    preserveMaterialDefaults: true,
+                    backgroundColor: Colors.transparent,
+                    builder: (sheetContext) => EditCaseSheet(
+                      caso: item,
+                      onClose: () => Navigator.of(sheetContext).pop(),
+                      onSalvar: (updatedCase) async {
+                        await ref
+                            .read(marketingCasesProvider.notifier)
+                            .updateCase(updatedCase);
+                        if (!sheetContext.mounted) return;
+                        Navigator.of(sheetContext).pop();
+                      },
+                    ),
+                  ),
+                  onViewLocation: () {
+                    final lat = item.lat;
+                    final lng = item.lng;
+                    if (!lat.isFinite ||
+                        !lng.isFinite ||
+                        (lat == 0 && lng == 0)) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Coordenadas da mídia inválidas.'),
+                        ),
+                      );
+                      return;
+                    }
+                    context.go(
+                      '${AppRoutes.map}?modo=foco&lat=${lat.toStringAsFixed(6)}'
+                      '&lng=${lng.toStringAsFixed(6)}',
+                    );
+                  },
                 ),
               ),
           ],
@@ -200,6 +235,8 @@ class _GeneratedReportCard extends StatelessWidget {
   final String date;
   final bool enabled;
   final Future<_GeneratedReportPayload> Function() buildPayload;
+  final VoidCallback? onEdit;
+  final VoidCallback? onViewLocation;
 
   const _GeneratedReportCard({
     required this.eyebrow,
@@ -208,6 +245,8 @@ class _GeneratedReportCard extends StatelessWidget {
     required this.date,
     required this.enabled,
     required this.buildPayload,
+    this.onEdit,
+    this.onViewLocation,
   });
 
   @override
@@ -232,6 +271,18 @@ class _GeneratedReportCard extends StatelessWidget {
             enabled: enabled,
             child: const Text('Exportar'),
           ),
+          if (onEdit != null)
+            PopupMenuItem(
+              value: 'edit',
+              enabled: enabled,
+              child: const Text('Editar'),
+            ),
+          if (onViewLocation != null)
+            PopupMenuItem(
+              value: 'location',
+              enabled: enabled,
+              child: const Text('Ver Localização'),
+            ),
         ],
         onSelected: (value) => _handleAction(context, value),
       ),
@@ -240,6 +291,14 @@ class _GeneratedReportCard extends StatelessWidget {
 
   Future<void> _handleAction(BuildContext context, String value) async {
     if (!enabled) return;
+    if (value == 'edit') {
+      onEdit?.call();
+      return;
+    }
+    if (value == 'location') {
+      onViewLocation?.call();
+      return;
+    }
     final payload = await buildPayload();
     if (!context.mounted) return;
 
