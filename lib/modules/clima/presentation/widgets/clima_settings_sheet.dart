@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:soloforte_app/modules/clima/presentation/widgets/clima_city_selection_sheet.dart';
-import 'package:soloforte_app/modules/clima/presentation/providers/clima_providers.dart';
-import 'package:soloforte_app/modules/clima/presentation/widgets/clima_tokens.dart';
-import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
+import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
+import 'package:soloforte_app/modules/clima/presentation/providers/clima_providers.dart';
+import 'package:soloforte_app/modules/clima/presentation/widgets/clima_city_selection_sheet.dart';
+import 'package:soloforte_app/modules/clima/presentation/widgets/clima_tokens.dart';
 
 // ─── Função de exibição ───────────────────────────────────────────────────────
 
@@ -15,7 +15,8 @@ void showClimaSettings(BuildContext context) {
   showSoloForteSheet<void>(
     context: context,
     isScrollControlled: true,
-    showDragHandle: false,
+    showDragHandle: true,
+    maxHeightFraction: 0.55,
     builder: (_) => const ClimaSettingsSheet(),
   );
 }
@@ -29,144 +30,130 @@ class ClimaSettingsSheet extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final unidade = ref.watch(climaUnidadeProvider);
     final selectedCity = ref.watch(climaSelectedCityProvider);
-    final bottomPad = MediaQuery.of(context).viewPadding.bottom;
+    final bottomPad = MediaQuery.paddingOf(context).bottom;
 
-    return Container(
-      padding: EdgeInsets.fromLTRB(20, 8, 20, 24 + bottomPad),
-      decoration: const BoxDecoration(
-        color: SoloForteSheetTokens.sheetBackground,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
+    return Padding(
+      padding: EdgeInsets.fromLTRB(20, 4, 20, 16 + bottomPad),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── Handle bar ────────────────────────────────────────────────────
-          Center(
-            child: Container(
-              width: 36,
-              height: 4,
-              margin: const EdgeInsets.only(top: 8, bottom: 20),
-              decoration: BoxDecoration(
-                color: kClimaDivider,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-          ),
-
-          // ── Título ────────────────────────────────────────────────────────
           const Text(
             'Configurações',
             style: TextStyle(
-              fontFamily: 'Inter',
-              fontSize: 22,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0.37,
-              color: kClimaTextPrimary,
+              fontSize: SoloForteSheetTokens.titleFontSize,
+              fontWeight: SoloForteSheetTokens.titleWeight,
+              color: SoloForteSheetTokens.titleColor,
             ),
           ),
           const SizedBox(height: 20),
-
-          // ── Seção Localização ─────────────────────────────────────────────
-          const Text(
-            'LOCALIZAÇÃO',
-            style: TextStyle(
-              fontFamily: 'Inter',
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 0.8,
-              color: kClimaTextTertiary,
-            ),
-          ),
+          const _ClimaSheetSectionLabel('LOCALIZAÇÃO'),
           const SizedBox(height: 8),
-          Container(
-            decoration: BoxDecoration(
-              color: kClimaBg,
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Column(
-              children: [
-                ClimaSettingsOptionRow(
-                  label: 'Usar localização atual',
-                  selected: selectedCity == null,
-                  onTap: () async {
-                    HapticFeedback.selectionClick();
-                    await ref.read(climaSelectedCityProvider.notifier).clear();
-                    ref.read(climaManualLocationProvider.notifier).state = null;
-                    invalidateClimaWeather(ref);
-                  },
-                ),
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 16),
-                  child: Divider(
-                    height: 1,
-                    thickness: 0.5,
-                    color: kClimaDivider,
-                  ),
-                ),
-                ClimaSettingsOptionRow(
-                  label: selectedCity?.nome ?? 'Selecionar cidade',
-                  selected: selectedCity != null,
-                  trailingIcon: Icons.chevron_right_rounded,
-                  onTap: () {
-                    HapticFeedback.selectionClick();
-                    showClimaCitySelection(context, ref);
-                  },
-                ),
-              ],
-            ),
+          _ClimaSheetOptionGroup(
+            children: [
+              ClimaSettingsOptionRow(
+                label: 'Usar localização atual',
+                selected: selectedCity == null,
+                onTap: () async {
+                  HapticFeedback.selectionClick();
+                  await ref.read(climaSelectedCityProvider.notifier).clear();
+                  ref.read(climaManualLocationProvider.notifier).state = null;
+                  invalidateClimaWeather(ref);
+                },
+              ),
+              const _ClimaSheetDivider(),
+              ClimaSettingsOptionRow(
+                label: selectedCity?.nome ?? 'Selecionar cidade',
+                selected: selectedCity != null,
+                trailingIcon: Icons.chevron_right_rounded,
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  showClimaCitySelection(context, ref);
+                },
+              ),
+            ],
           ),
           const SizedBox(height: 20),
-
-          // ── Seção Temperatura ─────────────────────────────────────────────
-          const Text(
-            'TEMPERATURA',
-            style: TextStyle(
-              fontFamily: 'Inter',
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 0.8,
-              color: kClimaTextTertiary,
-            ),
-          ),
+          const _ClimaSheetSectionLabel('TEMPERATURA'),
           const SizedBox(height: 8),
-          Container(
-            decoration: BoxDecoration(
-              color: kClimaBg,
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Column(
-              children: [
-                ClimaSettingsOptionRow(
-                  label: 'Celsius (°C)',
-                  selected: unidade == ClimaUnidade.celsius,
-                  onTap: () {
-                    HapticFeedback.selectionClick();
-                    ref.read(climaUnidadeProvider.notifier).state =
-                        ClimaUnidade.celsius;
-                  },
-                ),
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 16),
-                  child: Divider(
-                    height: 1,
-                    thickness: 0.5,
-                    color: kClimaDivider,
-                  ),
-                ),
-                ClimaSettingsOptionRow(
-                  label: 'Fahrenheit (°F)',
-                  selected: unidade == ClimaUnidade.fahrenheit,
-                  onTap: () {
-                    HapticFeedback.selectionClick();
-                    ref.read(climaUnidadeProvider.notifier).state =
-                        ClimaUnidade.fahrenheit;
-                  },
-                ),
-              ],
-            ),
+          _ClimaSheetOptionGroup(
+            children: [
+              ClimaSettingsOptionRow(
+                label: 'Celsius (°C)',
+                selected: unidade == ClimaUnidade.celsius,
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  ref.read(climaUnidadeProvider.notifier).state =
+                      ClimaUnidade.celsius;
+                },
+              ),
+              const _ClimaSheetDivider(),
+              ClimaSettingsOptionRow(
+                label: 'Fahrenheit (°F)',
+                selected: unidade == ClimaUnidade.fahrenheit,
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  ref.read(climaUnidadeProvider.notifier).state =
+                      ClimaUnidade.fahrenheit;
+                },
+              ),
+            ],
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ─── Componentes internos do sheet ────────────────────────────────────────────
+
+class _ClimaSheetSectionLabel extends StatelessWidget {
+  const _ClimaSheetSectionLabel(this.label);
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      label,
+      style: const TextStyle(
+        fontSize: 12,
+        fontWeight: FontWeight.w600,
+        letterSpacing: 0.8,
+        color: SoloForteSheetTokens.categoryLabel,
+      ),
+    );
+  }
+}
+
+class _ClimaSheetOptionGroup extends StatelessWidget {
+  const _ClimaSheetOptionGroup({required this.children});
+
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: SoloForteSheetTokens.inputBackground,
+        borderRadius: BorderRadius.circular(SoloForteSheetTokens.inputRadius),
+      ),
+      child: Column(children: children),
+    );
+  }
+}
+
+class _ClimaSheetDivider extends StatelessWidget {
+  const _ClimaSheetDivider();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Padding(
+      padding: EdgeInsets.symmetric(horizontal: 16),
+      child: Divider(
+        height: 1,
+        thickness: 1,
+        color: SoloForteSheetTokens.divider,
       ),
     );
   }
@@ -190,28 +177,41 @@ class ClimaSettingsOptionRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              label,
-              style: const TextStyle(
-                fontFamily: 'Inter',
-                fontSize: 16,
-                fontWeight: FontWeight.w400,
-                color: kClimaTextPrimary,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(SoloForteSheetTokens.inputRadius),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+                    color: selected
+                        ? SoloForteSheetTokens.chipTextActive
+                        : SoloForteSheetTokens.inputText,
+                  ),
+                ),
               ),
-            ),
-            if (trailingIcon != null)
-              Icon(trailingIcon, color: kClimaTextTertiary, size: 22)
-            else if (selected)
-              const Icon(Icons.check_rounded, color: kClimaTint, size: 20),
-          ],
+              if (trailingIcon != null)
+                Icon(
+                  trailingIcon,
+                  color: SoloForteSheetTokens.categoryLabel,
+                  size: 22,
+                )
+              else if (selected)
+                const Icon(
+                  Icons.check_rounded,
+                  color: SoloForteSheetTokens.chipTextActive,
+                  size: 20,
+                ),
+            ],
+          ),
         ),
       ),
     );

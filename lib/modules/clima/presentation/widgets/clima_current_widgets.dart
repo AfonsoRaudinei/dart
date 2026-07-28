@@ -102,12 +102,15 @@ class ClimaCurrentWeatherCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    const lightText = Colors.white;
+    const lightTextMuted = Color(0xE6FFFFFF);
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.all(24),
-        decoration: climaCardDecoration(),
+        decoration: climaHeroCardDecoration(clima.condicaoCodigo),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -129,7 +132,7 @@ class ClimaCurrentWeatherCard extends StatelessWidget {
                         fontSize: 52,
                         fontWeight: FontWeight.w700,
                         letterSpacing: -2,
-                        color: kClimaTextPrimary,
+                        color: lightText,
                         height: 1.0,
                       ),
                     ),
@@ -141,7 +144,7 @@ class ClimaCurrentWeatherCard extends StatelessWidget {
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                         letterSpacing: 0.8,
-                        color: kClimaTextTertiary,
+                        color: lightTextMuted,
                       ),
                     ),
                   ],
@@ -149,7 +152,10 @@ class ClimaCurrentWeatherCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 16),
-            Container(height: 0.5, color: kClimaDivider),
+            Container(
+              height: 0.5,
+              color: lightText.withValues(alpha: 0.25),
+            ),
             const SizedBox(height: 14),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -157,9 +163,18 @@ class ClimaCurrentWeatherCard extends StatelessWidget {
                 _MiniStat(
                   label: 'Sensação',
                   value: climaTempStr(clima.sensacaoTermica, unidade),
+                  onGradient: true,
                 ),
-                _MiniStat(label: 'Nascer ☀️', value: _hm(clima.nascerSol)),
-                _MiniStat(label: 'Pôr ☀️', value: _hm(clima.porSol)),
+                _MiniStat(
+                  label: 'Nascer ☀️',
+                  value: _hm(clima.nascerSol),
+                  onGradient: true,
+                ),
+                _MiniStat(
+                  label: 'Pôr ☀️',
+                  value: _hm(clima.porSol),
+                  onGradient: true,
+                ),
               ],
             ),
           ],
@@ -175,8 +190,13 @@ class ClimaCurrentWeatherCard extends StatelessWidget {
 class _MiniStat extends StatelessWidget {
   final String label;
   final String value;
+  final bool onGradient;
 
-  const _MiniStat({required this.label, required this.value});
+  const _MiniStat({
+    required this.label,
+    required this.value,
+    this.onGradient = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -184,22 +204,24 @@ class _MiniStat extends StatelessWidget {
       children: [
         Text(
           value,
-          style: const TextStyle(
+          style: TextStyle(
             fontFamily: 'Inter',
             fontSize: 16,
             fontWeight: FontWeight.w600,
             letterSpacing: -0.4,
-            color: kClimaTextPrimary,
+            color: onGradient ? Colors.white : kClimaTextPrimary,
           ),
         ),
         const SizedBox(height: 2),
         Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontFamily: 'Inter',
             fontSize: 12,
             fontWeight: FontWeight.w400,
-            color: kClimaTextTertiary,
+            color: onGradient
+                ? Colors.white.withValues(alpha: 0.85)
+                : kClimaTextTertiary,
           ),
         ),
       ],

@@ -26,6 +26,69 @@ BoxDecoration climaCardDecoration() => BoxDecoration(
       ],
     );
 
+/// Gradiente sutil do card principal conforme condição meteorológica.
+LinearGradient climaWeatherGradient(String condicaoCodigo) {
+  final isDay = condicaoCodigo.endsWith('d');
+  final base = condicaoCodigo.replaceAll(RegExp(r'[dn]$'), '');
+  return switch (base) {
+    '01' => LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: isDay
+            ? [const Color(0xFF5AC8FA), const Color(0xFF007AFF)]
+            : [const Color(0xFF5856D6), const Color(0xFF1C1C3A)],
+      ),
+    '02' || '03' => const LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [Color(0xFF8E8E93), Color(0xFF636366)],
+      ),
+    '04' => const LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [Color(0xFFAEAEB2), Color(0xFF48484A)],
+      ),
+    '09' || '10' => const LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [Color(0xFF5AC8FA), Color(0xFF007AFF)],
+      ),
+    '11' => const LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [Color(0xFF5856D6), Color(0xFF2C2C54)],
+      ),
+    '13' => const LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [Color(0xFF64D2FF), Color(0xFF0A84FF)],
+      ),
+    '50' => const LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [Color(0xFFAEAEB2), Color(0xFF8E8E93)],
+      ),
+    _ => const LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [Color(0xFF34C759), Color(0xFF248A3D)],
+      ),
+  };
+}
+
+/// Decoração do card principal com gradiente + sombra.
+BoxDecoration climaHeroCardDecoration(String condicaoCodigo) => BoxDecoration(
+      gradient: climaWeatherGradient(condicaoCodigo),
+      borderRadius: BorderRadius.circular(20),
+      boxShadow: const [
+        BoxShadow(
+          color: kClimaShadow,
+          offset: Offset(0, 8),
+          blurRadius: 24,
+        ),
+      ],
+    );
+
 /// Converte o código de ícone da OpenWeatherMap em emoji.
 /// Ex: '01d' → '☀️', '01n' → '🌙', '11d' → '⛈️'
 String climaWeatherEmoji(String code) {

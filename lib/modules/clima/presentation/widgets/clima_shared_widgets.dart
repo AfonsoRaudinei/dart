@@ -102,7 +102,8 @@ class ClimaShareButton extends StatelessWidget {
               onPressed: () => showSoloForteSheet<void>(
                 context: context,
                 isScrollControlled: true,
-                showDragHandle: false,
+                showDragHandle: true,
+                maxHeightFraction: 0.82,
                 builder: (_) => ClimaWhatsAppSheet(payload: payload),
               ),
             ),
@@ -248,57 +249,44 @@ class _ClimaWhatsAppSheetState extends ConsumerState<ClimaWhatsAppSheet> {
     final total = _selecionados.length;
     final payload = widget.payload;
 
-    return SafeArea(
-      top: false,
-      child: Padding(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                margin: const EdgeInsets.only(top: 12),
-                width: 36,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF48484A),
-                  borderRadius: BorderRadius.circular(2),
+    final bottomPad = MediaQuery.paddingOf(context).bottom;
+
+    return Padding(
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 4, 20, 4),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Compartilhar previsão por WhatsApp',
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: SoloForteSheetTokens.titleFontSize,
+                    fontWeight: SoloForteSheetTokens.titleWeight,
+                    color: SoloForteSheetTokens.titleColor,
+                  ),
                 ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 4),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Compartilhar previsão por WhatsApp',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 17,
-                      fontWeight: FontWeight.w600,
-                      color: SoloForteSheetTokens.titleColor,
-                    ),
+                const SizedBox(height: 4),
+                Text(
+                  payload.cidade,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: SoloForteSheetTokens.categoryLabel,
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    payload.cidade,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 13,
-                      color: SoloForteSheetTokens.categoryLabel,
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
+          ),
             const Divider(color: SoloForteSheetTokens.divider, height: 1),
             _ClimaWhatsAppPreview(payload: payload),
             const Divider(color: SoloForteSheetTokens.divider, height: 1),
@@ -383,7 +371,7 @@ class _ClimaWhatsAppSheetState extends ConsumerState<ClimaWhatsAppSheet> {
             ),
             const Divider(color: SoloForteSheetTokens.divider, height: 1),
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+              padding: EdgeInsets.fromLTRB(20, 12, 20, 16 + bottomPad),
               child: SizedBox(
                 width: double.infinity,
                 child: Tooltip(
@@ -419,8 +407,7 @@ class _ClimaWhatsAppSheetState extends ConsumerState<ClimaWhatsAppSheet> {
                 ),
               ),
             ),
-          ],
-        ),
+        ],
       ),
     );
   }
