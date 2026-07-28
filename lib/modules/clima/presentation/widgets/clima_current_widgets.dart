@@ -102,9 +102,6 @@ class ClimaCurrentWeatherCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const lightText = Colors.white;
-    const lightTextMuted = Color(0xE6FFFFFF);
-
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
       child: Container(
@@ -132,7 +129,7 @@ class ClimaCurrentWeatherCard extends StatelessWidget {
                         fontSize: 52,
                         fontWeight: FontWeight.w700,
                         letterSpacing: -2,
-                        color: lightText,
+                        color: kClimaOnGradientText,
                         height: 1.0,
                       ),
                     ),
@@ -144,7 +141,7 @@ class ClimaCurrentWeatherCard extends StatelessWidget {
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                         letterSpacing: 0.8,
-                        color: lightTextMuted,
+                        color: kClimaOnGradientTextMuted,
                       ),
                     ),
                   ],
@@ -154,7 +151,7 @@ class ClimaCurrentWeatherCard extends StatelessWidget {
             const SizedBox(height: 16),
             Container(
               height: 0.5,
-              color: lightText.withValues(alpha: 0.25),
+              color: kClimaOnGradientText.withValues(alpha: 0.25),
             ),
             const SizedBox(height: 14),
             Row(
@@ -209,7 +206,7 @@ class _MiniStat extends StatelessWidget {
             fontSize: 16,
             fontWeight: FontWeight.w600,
             letterSpacing: -0.4,
-            color: onGradient ? Colors.white : kClimaTextPrimary,
+            color: onGradient ? kClimaOnGradientText : kClimaTextPrimary,
           ),
         ),
         const SizedBox(height: 2),
@@ -220,7 +217,7 @@ class _MiniStat extends StatelessWidget {
             fontSize: 12,
             fontWeight: FontWeight.w400,
             color: onGradient
-                ? Colors.white.withValues(alpha: 0.85)
+                ? kClimaOnGradientTextMuted
                 : kClimaTextTertiary,
           ),
         ),

@@ -35,14 +35,17 @@ void main() {
       final title = tester.widget<Text>(find.text('Configurações'));
       expect(title.style?.color, SoloForteSheetTokens.titleColor);
 
-      final group = tester.widget<Container>(
-        find.descendant(
-          of: find.byType(ClimaSettingsSheet),
-          matching: find.byType(Container).at(0),
+      final optionGroup = find.ancestor(
+        of: find.text('Usar localização atual'),
+        matching: find.byWidgetPredicate(
+          (widget) =>
+              widget is Container &&
+              widget.decoration is BoxDecoration &&
+              (widget.decoration! as BoxDecoration).color ==
+                  SoloForteSheetTokens.inputBackground,
         ),
       );
-      final decoration = group.decoration! as BoxDecoration;
-      expect(decoration.color, SoloForteSheetTokens.inputBackground);
+      expect(optionGroup, findsOneWidget);
     });
 
     testWidgets('opção selecionada usa chipTextActive', (tester) async {

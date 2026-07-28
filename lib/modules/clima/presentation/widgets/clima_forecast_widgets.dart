@@ -142,13 +142,7 @@ class _HourCard extends StatelessWidget {
     return Container(
       width: 70,
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 6),
-      decoration: BoxDecoration(
-        color: kClimaCard,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: const [
-          BoxShadow(color: kClimaShadow, offset: Offset(0, 4), blurRadius: 10),
-        ],
-      ),
+      decoration: climaHourlyCardDecoration(item.condicaoCodigo),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
@@ -158,7 +152,7 @@ class _HourCard extends StatelessWidget {
               fontFamily: 'Inter',
               fontSize: 12,
               fontWeight: FontWeight.w500,
-              color: kClimaTextTertiary,
+              color: kClimaOnGradientTextMuted,
             ),
           ),
           Text(
@@ -171,7 +165,7 @@ class _HourCard extends StatelessWidget {
               fontFamily: 'Inter',
               fontSize: 16,
               fontWeight: FontWeight.w600,
-              color: kClimaTextPrimary,
+              color: kClimaOnGradientText,
             ),
           ),
           Text(
@@ -179,7 +173,7 @@ class _HourCard extends StatelessWidget {
             style: const TextStyle(
               fontFamily: 'Inter',
               fontSize: 11,
-              color: kClimaTint,
+              color: kClimaOnGradientAccent,
             ),
           ),
         ],
@@ -223,7 +217,7 @@ class ClimaWeeklyContent extends StatelessWidget {
             padding: const EdgeInsets.only(bottom: 10),
             child: Container(
               padding: const EdgeInsets.all(16),
-              decoration: climaCardDecoration(),
+              decoration: climaWeeklyCardDecoration(d.condicaoCodigo),
               child: Row(
                 children: [
                   Expanded(
@@ -236,7 +230,7 @@ class ClimaWeeklyContent extends StatelessWidget {
                             fontFamily: 'Inter',
                             fontSize: 15,
                             fontWeight: FontWeight.w600,
-                            color: kClimaTextPrimary,
+                            color: kClimaOnGradientText,
                           ),
                         ),
                         const SizedBox(height: 4),
@@ -253,7 +247,7 @@ class ClimaWeeklyContent extends StatelessWidget {
                                 style: const TextStyle(
                                   fontFamily: 'Inter',
                                   fontSize: 13,
-                                  color: kClimaTextTertiary,
+                                  color: kClimaOnGradientTextMuted,
                                 ),
                                 overflow: TextOverflow.ellipsis,
                               ),
@@ -281,7 +275,7 @@ class ClimaWeeklyContent extends StatelessWidget {
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
                           letterSpacing: -0.4,
-                          color: kClimaTextPrimary,
+                          color: kClimaOnGradientText,
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -290,7 +284,7 @@ class ClimaWeeklyContent extends StatelessWidget {
                         style: const TextStyle(
                           fontFamily: 'Inter',
                           fontSize: 13,
-                          color: kClimaTint,
+                          color: kClimaOnGradientAccent,
                         ),
                       ),
                     ],
