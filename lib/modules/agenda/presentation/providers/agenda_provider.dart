@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import '../../../../core/contracts/i_visit_session_writer_provider.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../core/router/app_routes.dart';
 import '../../../../core/session/session_controller.dart';
@@ -284,6 +285,7 @@ class Agenda extends _$Agenda {
 
     final result = await StartEventUseCase(
       AgendaRepositoryAdapter(_repository),
+      ref.read(visitSessionWriterProvider),
     ).execute(event: event, currentUserId: currentUserId);
 
     _updateEvent(result.updatedEvent);
@@ -314,6 +316,7 @@ class Agenda extends _$Agenda {
 
     final result = await CompleteEventUseCase(
       AgendaRepositoryAdapter(_repository),
+      ref.read(visitSessionWriterProvider),
     ).execute(event: event, sessions: state.sessions, notasFinais: notasFinais);
 
     if (result.updatedSession != null) {
@@ -332,6 +335,7 @@ class Agenda extends _$Agenda {
     final result = await CancelEventUseCase(
       AgendaRepositoryAdapter(_repository),
       AgendaNotificationServiceAdapter(_notificationService),
+      ref.read(visitSessionWriterProvider),
     ).execute(event: event, sessions: state.sessions);
 
     if (result.updatedSession != null) {
