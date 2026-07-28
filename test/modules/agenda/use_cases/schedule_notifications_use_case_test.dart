@@ -146,6 +146,27 @@ void main() {
 
       expect(notifService.cancelledIds, isEmpty);
     });
+
+    test('encerra espelho em visit_sessions ao cancelar sessão ativa', () async {
+      final mirrorWriter = FakeVisitSessionWriter();
+      final cancelWithMirror = CancelEventUseCase(
+        repo,
+        notifService,
+        mirrorWriter,
+      );
+      final sess = makeSession(id: 'sess-cancel', eventoId: 'evt-cancel');
+      await repo.saveSession(sess);
+      final evento = makeEvent(
+        id: 'evt-cancel',
+        status: EventStatus.emAndamento,
+        visitSessionId: 'sess-cancel',
+      );
+
+      await cancelWithMirror.execute(event: evento, sessions: [sess]);
+
+      expect(mirrorWriter.finishedSessions, hasLength(1));
+      expect(mirrorWriter.finishedSessions.single.$1, equals('sess-cancel'));
+    });
   });
 
   // =========================================================================
