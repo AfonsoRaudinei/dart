@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:soloforte_app/core/access/producer_create_context_resolver.dart';
+import 'package:soloforte_app/core/constants/layout_constants.dart';
 import 'package:soloforte_app/core/contracts/i_client_lookup.dart';
 import 'package:soloforte_app/core/contracts/i_client_lookup_provider.dart';
 import 'package:soloforte_app/core/contracts/i_active_visit_context_lookup_provider.dart';
@@ -360,12 +361,16 @@ class _OccurrenceCreationSheetState
   @override
   Widget build(BuildContext context) {
     final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
+    final safeBottom = MediaQuery.of(context).padding.bottom;
     return Material(
       color: const Color(0xFF1C1C1E),
-      child: ListView(
-        controller: widget.scrollController,
-        padding: EdgeInsets.fromLTRB(16, 12, 16, 32 + keyboardHeight),
+      child: Column(
         children: [
+          Expanded(
+            child: ListView(
+              controller: widget.scrollController,
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+              children: [
               // ── Header padrão ADR-027 (espelha NovoCaseHeader) ──────────
               Row(
                 children: [
@@ -675,8 +680,21 @@ class _OccurrenceCreationSheetState
               const SizedBox(height: 24),
               _buildPhotoActionSection(),
               const SizedBox(height: 20),
-
-              Row(
+            ],
+          ),
+          ),
+          SafeArea(
+            top: false,
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(
+                16,
+                12,
+                16,
+                keyboardHeight > 0
+                    ? keyboardHeight + 12
+                    : kFabSafeArea + safeBottom,
+              ),
+              child: Row(
                 children: [
                   Expanded(
                     child: OutlinedButton(
@@ -727,8 +745,10 @@ class _OccurrenceCreationSheetState
                   ),
                 ],
               ),
-            ],
+            ),
           ),
+        ],
+      ),
     );
   }
 
