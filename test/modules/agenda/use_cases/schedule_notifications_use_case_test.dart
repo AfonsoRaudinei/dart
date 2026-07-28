@@ -5,6 +5,7 @@ import 'package:soloforte_app/modules/agenda/domain/use_cases/cancel_event_use_c
 import 'package:soloforte_app/modules/agenda/domain/use_cases/create_event_use_case.dart';
 import '../helpers/fake_agenda_repository.dart';
 import '../helpers/fake_notification_service.dart';
+import '../helpers/fake_visit_session_writer.dart';
 
 void main() {
   late FakeAgendaRepository repo;
@@ -25,7 +26,11 @@ void main() {
     repo = FakeAgendaRepository();
     notifService = FakeAgendaNotificationService();
     createUseCase = CreateEventUseCase(repo, notifService);
-    cancelUseCase = CancelEventUseCase(repo, notifService);
+    cancelUseCase = CancelEventUseCase(
+      repo,
+      notifService,
+      NoopVisitSessionWriter(),
+    );
   });
 
   // =========================================================================
