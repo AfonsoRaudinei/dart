@@ -13,6 +13,7 @@ import 'core/contracts/i_agenda_ai_launcher_provider.dart';
 import 'core/contracts/i_farm_lookup_provider.dart';
 import 'core/contracts/i_visit_client_lookup_provider.dart';
 import 'core/contracts/i_visit_session_lookup_provider.dart';
+import 'core/contracts/i_visit_session_writer_provider.dart';
 import 'core/contracts/i_active_visit_context_lookup_provider.dart';
 import 'core/contracts/i_occurrence_read_provider.dart';
 import 'core/contracts/i_occurrence_access_reader_provider.dart';
@@ -67,6 +68,7 @@ import 'modules/carteira/data/opportunity_lookup_impl.dart';
 import 'modules/carteira/data/repositories/carteira_repository_impl.dart';
 import 'modules/visitas/data/repositories/visit_repository.dart';
 import 'modules/visitas/infra/visit_session_lookup_adapter.dart';
+import 'modules/visitas/infra/visit_session_writer_adapter.dart';
 import 'modules/drawing/infra/drawing_field_writer_adapter.dart';
 import 'modules/drawing/infra/field_lookup_adapter.dart';
 import 'modules/drawing/presentation/providers/drawing_provider.dart';
@@ -141,7 +143,9 @@ Future<void> main() async {
         final fieldRepository = FieldRepository();
         final agendaRepository = AgendaRepository();
         final carteiraRepository = CarteiraRepositoryImpl();
-        final visitSessionLookup = VisitSessionLookupAdapter(VisitRepository());
+        final visitRepository = VisitRepository();
+        final visitSessionLookup = VisitSessionLookupAdapter(visitRepository);
+        final visitSessionWriter = VisitSessionWriterAdapter(visitRepository);
 
         // 5. App principal
         runApp(
@@ -190,6 +194,7 @@ Future<void> main() async {
               ),
               // ADR-020: implementação concreta de IVisitSessionLookup
               visitSessionLookupProvider.overrideWithValue(visitSessionLookup),
+              visitSessionWriterProvider.overrideWithValue(visitSessionWriter),
               activeVisitContextLookupProvider.overrideWithValue(
                 ActiveVisitContextLookupAdapter(
                   visitSessionLookup,
