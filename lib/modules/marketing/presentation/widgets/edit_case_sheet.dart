@@ -13,7 +13,7 @@ import 'novo_case_form_helpers.dart';
 class EditCaseSheet extends StatefulWidget {
   final MarketingCase caso;
   final VoidCallback onClose;
-  final void Function(MarketingCase) onSalvar;
+  final Future<void> Function(MarketingCase) onSalvar;
 
   const EditCaseSheet({
     super.key,
@@ -75,7 +75,7 @@ class _EditCaseSheetState extends State<EditCaseSheet> {
     super.dispose();
   }
 
-  void _handleSalvar() {
+  Future<void> _handleSalvar() async {
     FocusScope.of(context).unfocus();
     if (!_formKey.currentState!.validate()) return;
 
@@ -139,10 +139,72 @@ class _EditCaseSheetState extends State<EditCaseSheet> {
       deletadoEm: casoOriginal.deletadoEm,
     );
 
-    widget.onSalvar(updatedCase);
-    if (mounted) {
-      setState(() => _isSaving = false);
+    final sanitizedCase = _sanitizeForTipo(updatedCase);
+
+    try {
+      await widget.onSalvar(sanitizedCase);
+    } catch (_) {
+      if (mounted) {
+        _showError('Não foi possível salvar as alterações. Tente novamente.');
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSaving = false);
+      }
     }
+  }
+
+  MarketingCase _sanitizeForTipo(MarketingCase marketingCase) {
+    final json = <String, dynamic>{
+      ...marketingCase.toJson(),
+      'user_id': marketingCase.ownerUserId,
+      'avaliacoes': marketingCase.avaliacoes.map((item) => item.toJson()).toList(),
+    };
+
+    switch (marketingCase.tipo) {
+      case CaseTipo.resultado:
+        json['foto_antes_url'] = null;
+        json['foto_depois_url'] = null;
+        json['ganho_produtividade'] = null;
+        json['economia_gerada'] = null;
+        json['parametros_json'] = null;
+        json['avaliacoes'] = <Map<String, dynamic>>[];
+        json['avaliacoes_json'] = null;
+        break;
+      case CaseTipo.antesDepois:
+        json['foto_principal_url'] = null;
+        json['quantidade_produzida'] = null;
+        json['prod_sem_produto'] = null;
+        json['prod_com_produto'] = null;
+        json['unidade_produtividade'] = null;
+        json['custo_produto_por_ha'] = null;
+        json['valor_grao'] = null;
+        json['roi_investimento'] = null;
+        json['roi_retorno'] = null;
+        json['roi_calculado'] = null;
+        json['avaliacoes'] = <Map<String, dynamic>>[];
+        json['avaliacoes_json'] = null;
+        break;
+      case CaseTipo.avaliacao:
+        json['foto_principal_url'] = null;
+        json['quantidade_produzida'] = null;
+        json['prod_sem_produto'] = null;
+        json['prod_com_produto'] = null;
+        json['unidade_produtividade'] = null;
+        json['custo_produto_por_ha'] = null;
+        json['valor_grao'] = null;
+        json['roi_investimento'] = null;
+        json['roi_retorno'] = null;
+        json['roi_calculado'] = null;
+        json['foto_antes_url'] = null;
+        json['foto_depois_url'] = null;
+        json['ganho_produtividade'] = null;
+        json['economia_gerada'] = null;
+        json['parametros_json'] = null;
+        break;
+    }
+
+    return MarketingCase.fromJson(json);
   }
 
   String? _trimmedOrNull(String value) {

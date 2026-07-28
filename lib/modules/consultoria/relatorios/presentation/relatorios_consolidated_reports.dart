@@ -168,15 +168,12 @@ class _MarketingCasesReportsSection extends ConsumerWidget {
                     builder: (sheetContext) => EditCaseSheet(
                       caso: item,
                       onClose: () => Navigator.of(sheetContext).pop(),
-                      onSalvar: (updatedCase) {
-                        ref
+                      onSalvar: (updatedCase) async {
+                        await ref
                             .read(marketingCasesProvider.notifier)
-                            .updateCase(updatedCase)
-                            .then((_) {
-                              if (!sheetContext.mounted) return;
-                              Navigator.of(sheetContext).pop();
-                            })
-                            .catchError((_) {});
+                            .updateCase(updatedCase);
+                        if (!sheetContext.mounted) return;
+                        Navigator.of(sheetContext).pop();
                       },
                     ),
                   ),
