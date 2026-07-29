@@ -1,25 +1,35 @@
 import 'dart:convert';
 
+import 'package:http/http.dart' as http;
+
 import 'relatorio_html_renderer.dart';
 
 class MarketingHtmlRenderer {
   /// Renderiza o HTML correto para o tipo do case.
   ///
   /// [data] = MarketingCase.toMap()/toJson() convertido pelo chamador.
-  static Future<String> render(Map<String, dynamic> data) async {
+  /// [httpClient] opcional — permite injetar client em testes (binding
+  /// do Flutter intercepta HttpClient real e devolve 400).
+  static Future<String> render(
+    Map<String, dynamic> data, {
+    http.Client? httpClient,
+  }) async {
     switch (data['tipo'] as String? ?? 'resultado') {
       case 'resultado':
-        return _renderResultado(data);
+        return _renderResultado(data, httpClient: httpClient);
       case 'antes_depois':
-        return _renderAntesDepois(data);
+        return _renderAntesDepois(data, httpClient: httpClient);
       case 'avaliacao':
-        return _renderAvaliacao(data);
+        return _renderAvaliacao(data, httpClient: httpClient);
       default:
-        return _renderResultado(data);
+        return _renderResultado(data, httpClient: httpClient);
     }
   }
 
-  static Future<String> _renderResultado(Map<String, dynamic> data) async {
+  static Future<String> _renderResultado(
+    Map<String, dynamic> data, {
+    http.Client? httpClient,
+  }) async {
     var tpl = await RelatorioHtmlRenderer.loadTemplate(
       'marketing_resultado.html',
     );
@@ -30,8 +40,9 @@ class MarketingHtmlRenderer {
       consultantRole: 'Consultoria',
     );
     final fotoPrincipalUrl = data['foto_principal_url'] as String?;
-    final foto = await RelatorioHtmlRenderer.photoPathToBase64(
+    final foto = await _fotoParaBase64(
       fotoPrincipalUrl,
+      httpClient: httpClient,
     );
 
     final roi = _MarketingRoiData.from(data);
@@ -69,7 +80,7 @@ class MarketingHtmlRenderer {
         data['localizacao_texto'] as String? ?? '',
       ),
       'visibilidade': data['visibilidade'] as String? ?? '',
-      'foto_principal_url': foto ?? fotoPrincipalUrl ?? '',
+      'foto_principal_url': foto,
       'produtividade_valor': data['produtividade_valor']?.toString() ?? '',
       'produtividade_unidade': data['produtividade_unidade'] as String? ?? '',
       'quantidade_produzida': data['quantidade_produzida']?.toString() ?? '',
@@ -116,7 +127,10 @@ class MarketingHtmlRenderer {
     return RelatorioHtmlRenderer.stripUnresolvedPlaceholders(html);
   }
 
-  static Future<String> _renderAntesDepois(Map<String, dynamic> data) async {
+  static Future<String> _renderAntesDepois(
+    Map<String, dynamic> data, {
+    http.Client? httpClient,
+  }) async {
     var tpl = await RelatorioHtmlRenderer.loadTemplate(
       'marketing_antes_depois.html',
     );
@@ -165,6 +179,15 @@ class MarketingHtmlRenderer {
               data['produtividade_valor'] != null),
     );
 
+    final fotoAntes = await _fotoParaBase64(
+      data['foto_antes_url'] as String?,
+      httpClient: httpClient,
+    );
+    final fotoDepois = await _fotoParaBase64(
+      data['foto_depois_url'] as String?,
+      httpClient: httpClient,
+    );
+
     final html = RelatorioHtmlRenderer.replacePlaceholders(tpl, {
       ...branding,
       'produtor_fazenda': RelatorioHtmlRenderer.escapeHtml(
@@ -177,8 +200,8 @@ class MarketingHtmlRenderer {
         data['localizacao_texto'] as String? ?? '',
       ),
       'visibilidade': data['visibilidade'] as String? ?? '',
-      'foto_antes_url': data['foto_antes_url'] as String? ?? '',
-      'foto_depois_url': data['foto_depois_url'] as String? ?? '',
+      'foto_antes_url': fotoAntes,
+      'foto_depois_url': fotoDepois,
       'ganho_produtividade': RelatorioHtmlRenderer.escapeHtml(
         data['ganho_produtividade'] as String? ?? '',
       ),
@@ -208,7 +231,10 @@ class MarketingHtmlRenderer {
     return RelatorioHtmlRenderer.stripUnresolvedPlaceholders(html);
   }
 
-  static Future<String> _renderAvaliacao(Map<String, dynamic> data) async {
+  static Future<String> _renderAvaliacao(
+    Map<String, dynamic> data, {
+    http.Client? httpClient,
+  }) async {
     var tpl = await RelatorioHtmlRenderer.loadTemplate(
       'marketing_avaliacao.html',
     );
@@ -282,7 +308,11 @@ class MarketingHtmlRenderer {
     if (avaliacoesLivres.isNotEmpty) {
       for (var index = 0; index < avaliacoesLivres.length; index++) {
         blocosHtml.write(
-          _renderAvaliacaoLivre(avaliacoesLivres[index], index + 1),
+          await _renderAvaliacaoLivre(
+            avaliacoesLivres[index],
+            index + 1,
+            httpClient: httpClient,
+          ),
         );
       }
     } else {
@@ -290,10 +320,20 @@ class MarketingHtmlRenderer {
       for (var index = 0; index < blocos.length; index++) {
         final bloco = blocos[index];
         if (bloco is Map<String, dynamic>) {
-          blocosHtml.write(_renderAvaliacaoBloco(bloco, index + 1));
+          blocosHtml.write(
+            await _renderAvaliacaoBloco(
+              bloco,
+              index + 1,
+              httpClient: httpClient,
+            ),
+          );
         } else if (bloco is Map) {
           blocosHtml.write(
-            _renderAvaliacaoBloco(Map<String, dynamic>.from(bloco), index + 1),
+            await _renderAvaliacaoBloco(
+              Map<String, dynamic>.from(bloco),
+              index + 1,
+              httpClient: httpClient,
+            ),
           );
         }
       }
@@ -308,7 +348,51 @@ class MarketingHtmlRenderer {
     return RelatorioHtmlRenderer.stripUnresolvedPlaceholders(tpl);
   }
 
-  static String _renderAvaliacaoLivre(_MarketingAvaliacaoData data, int ordem) {
+  /// Converte URL/path de foto para data URI base64.
+  /// Fallback: retorna [url] original em caso de erro de rede/timeout.
+  static Future<String> _fotoParaBase64(
+    String? url, {
+    http.Client? httpClient,
+  }) async {
+    if (url == null || url.isEmpty) return '';
+    if (url.startsWith('data:')) return url;
+
+    // Path local: reutiliza helper existente (já comprime se necessário).
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      return await RelatorioHtmlRenderer.photoPathToBase64(url) ?? url;
+    }
+
+    final ownsClient = httpClient == null;
+    final client = httpClient ?? http.Client();
+    try {
+      final response = await client
+          .get(Uri.parse(url))
+          .timeout(const Duration(seconds: 10));
+      if (response.statusCode == 200 && response.bodyBytes.isNotEmpty) {
+        final b64 = base64Encode(response.bodyBytes);
+        return 'data:image/jpeg;base64,$b64';
+      }
+    } catch (_) {
+      // fallback silencioso — nunca quebrar o relatório
+    } finally {
+      if (ownsClient) client.close();
+    }
+    return url;
+  }
+
+  static Future<String> _renderAvaliacaoLivre(
+    _MarketingAvaliacaoData data,
+    int ordem, {
+    http.Client? httpClient,
+  }) async {
+    final fotoA = await _fotoParaBase64(
+      data.fotoLadoAPath,
+      httpClient: httpClient,
+    );
+    final fotoB = await _fotoParaBase64(
+      data.fotoLadoBPath,
+      httpClient: httpClient,
+    );
     final parametrosHtml = data.parametros.map((parametro) {
       final unidade = parametro.unidade == null || parametro.unidade!.isEmpty
           ? ''
@@ -340,8 +424,8 @@ class MarketingHtmlRenderer {
         <span class="avaliacao-layout-tag">Média ${_formatSigned(data.mediaGanhoPercent)}%</span>
       </div>
       <div class="lados-grid">
-        ${_renderLado('a', data.nomeLadoA, data.fotoLadoAPath, data.cultura, null)}
-        ${_renderLado('b', data.nomeLadoB, data.fotoLadoBPath, data.cultura, data.observacoes)}
+        ${_renderLado('a', data.nomeLadoA, fotoA.isEmpty ? null : fotoA, data.cultura, null)}
+        ${_renderLado('b', data.nomeLadoB, fotoB.isEmpty ? null : fotoB, data.cultura, data.observacoes)}
       </div>
       <div style="padding: 0 16px 16px;">
         $parametrosHtml
@@ -350,8 +434,22 @@ class MarketingHtmlRenderer {
     ''';
   }
 
-  static String _renderAvaliacaoBloco(Map<String, dynamic> data, int ordem) {
+  static Future<String> _renderAvaliacaoBloco(
+    Map<String, dynamic> data,
+    int ordem, {
+    http.Client? httpClient,
+  }) async {
     final isDuas = (data['layout'] as String? ?? 'duas_fotos') == 'duas_fotos';
+    final fotoA = await _fotoParaBase64(
+      data['lado_a_foto_url'] as String?,
+      httpClient: httpClient,
+    );
+    final fotoB = isDuas
+        ? await _fotoParaBase64(
+            data['lado_b_foto_url'] as String?,
+            httpClient: httpClient,
+          )
+        : '';
     return '''
     <div class="avaliacao-block">
       <div class="avaliacao-header">
@@ -362,8 +460,8 @@ class MarketingHtmlRenderer {
         <span class="avaliacao-layout-tag">${isDuas ? 'Lado A vs Lado B' : 'Foto Única'}</span>
       </div>
       <div class="lados-grid${isDuas ? '' : ' uma-foto'}">
-        ${_renderLado('a', data['lado_a_label'] as String?, data['lado_a_foto_url'] as String?, data['lado_a_cultura'] as String?, data['lado_a_obs'] as String?)}
-        ${isDuas ? _renderLado('b', data['lado_b_label'] as String?, data['lado_b_foto_url'] as String?, data['lado_b_cultura'] as String?, data['lado_b_obs'] as String?) : ''}
+        ${_renderLado('a', data['lado_a_label'] as String?, fotoA.isEmpty ? null : fotoA, data['lado_a_cultura'] as String?, data['lado_a_obs'] as String?)}
+        ${isDuas ? _renderLado('b', data['lado_b_label'] as String?, fotoB.isEmpty ? null : fotoB, data['lado_b_cultura'] as String?, data['lado_b_obs'] as String?) : ''}
       </div>
     </div>
     ''';
