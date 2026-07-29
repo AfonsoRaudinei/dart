@@ -246,7 +246,8 @@ void main() {
 
       expect(html, isNot(contains('Agro Forte Consultoria')));
       expect(html, contains('SoloForte'));
-      expect(html, contains('logo-img'));
+      expect(html, isNot(contains('class="logo-area"')));
+      expect(html, isNot(contains('<img class="logo-img"')));
       expect(html, contains('sf-brand-logo'));
       expect(html, contains('Responsável: Agronomo Teste · Consultoria'));
       expect(
@@ -259,7 +260,7 @@ void main() {
   );
 
   test(
-    'ocorrencia detalhada: logo header, localizacao inline, sem meta rodape',
+    'ocorrencia detalhada: brand no footer, localizacao inline, sem meta rodape',
     () async {
       await initializeDateFormatting('pt_BR');
 
@@ -280,7 +281,9 @@ void main() {
         consultantRole: 'consultor',
       );
 
-      expect(html, contains('logo-img'));
+      expect(html, isNot(contains('class="logo-area"')));
+      expect(html, isNot(contains('<img class="logo-img"')));
+      expect(html, contains('sf-brand-logo'));
       expect(html, contains('SoloForte'));
       expect(html, contains('localizacao-inline'));
       expect(html, isNot(contains('localizacao-block')));
