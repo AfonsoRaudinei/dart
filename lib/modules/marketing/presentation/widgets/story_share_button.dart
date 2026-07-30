@@ -1,21 +1,20 @@
+import 'dart:convert';
 import 'dart:io';
-import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../../../../core/utils/app_logger.dart';
 import '../../../../core/utils/share_position.dart';
-import '../../../../core/utils/user_facing_error.dart';
 
-/// Botão circular âmbar que captura o [repaintKey] e abre o Share Sheet.
+/// Botão circular âmbar que compartilha o HTML injetado da story.
 class StoryShareButton extends StatefulWidget {
-  final GlobalKey repaintKey;
+  final String htmlContent;
   final String caseId;
 
   const StoryShareButton({
-    required this.repaintKey,
+    required this.htmlContent,
     required this.caseId,
     super.key,
   });
@@ -29,38 +28,35 @@ class _StoryShareButtonState extends State<StoryShareButton> {
 
   Future<void> _share() async {
     if (_sharing) return;
+
+    final html = widget.htmlContent;
+    if (html.isEmpty) {
+      AppLogger.warning(
+        'StoryShareButton: htmlContent vazio — share abortado',
+        tag: 'MarketingStory',
+      );
+      return;
+    }
+
     setState(() => _sharing = true);
     try {
-      final boundary = widget.repaintKey.currentContext?.findRenderObject()
-          as RenderRepaintBoundary?;
-      if (boundary == null) {
-        throw StateError('Story ainda não está pronta para compartilhar.');
-      }
-
-      final image = await boundary.toImage(pixelRatio: 3.0);
-      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
-      image.dispose();
-      if (byteData == null) {
-        throw StateError('Falha ao gerar imagem da story.');
-      }
-
       final dir = await getTemporaryDirectory();
       final safeId = widget.caseId.replaceAll(RegExp(r'[^a-zA-Z0-9_-]'), '_');
-      final file = File('${dir.path}/soloforte_story_$safeId.png');
-      await file.writeAsBytes(byteData.buffer.asUint8List());
+      final file = File('${dir.path}/soloforte_case_$safeId.html');
+      await file.writeAsString(html, encoding: utf8);
 
       if (!mounted) return;
       await Share.shareXFiles(
-        [XFile(file.path, mimeType: 'image/png')],
-        text: 'Resultado de Campo — SoloForte',
+        [XFile(file.path, mimeType: 'text/html')],
+        subject: 'Resultado de Campo — SoloForte',
         sharePositionOrigin: resolveSharePositionOrigin(context),
       );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
+        const SnackBar(
           content: Text(
-            userFacingError(e, action: 'Erro ao compartilhar story'),
+            'Não foi possível preparar o arquivo para compartilhar',
           ),
         ),
       );
