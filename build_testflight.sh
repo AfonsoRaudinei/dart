@@ -124,15 +124,16 @@ fi
 
 echo "✅ IPA confirmado com versão/build: $IPA_VERSION+$IPA_BUILD_NUMBER"
 
-# Confirmação que credenciais entraram no binário
+# Confirmação que credenciais entraram no binário.
+# Evitar `strings | grep -q` com pipefail: grep -q fecha o pipe cedo → SIGPIPE
+# (exit 141) e o check falha mesmo com a URL presente (falso negativo IPA 180).
 echo "🔍 Verificando credenciais no binário..."
 APP_BIN="$ROOT/build/ios/archive/Runner.xcarchive/Products/Applications/Runner.app/Frameworks/App.framework/App"
-if strings "$APP_BIN" | grep -q "$SUPABASE_PROJECT_REF"; then
-  echo "✅ SUPABASE_URL confirmada no binário."
-else
+if ! grep -aFq "$SUPABASE_PROJECT_REF" "$APP_BIN"; then
   echo "❌ ATENÇÃO: SUPABASE_URL NÃO encontrada no binário. NÃO suba este IPA."
   exit 1
 fi
+echo "✅ SUPABASE_URL confirmada no binário."
 
 echo "📦 IPA em: $ROOT/build/ios/ipa/"
 ls -la "$ROOT/build/ios/ipa/"
