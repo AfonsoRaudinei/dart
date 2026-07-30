@@ -1,3 +1,4 @@
+import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -296,9 +297,16 @@ GoRouter router(Ref ref) {
           // ════════════════════════════════════════════════════════════════
           GoRoute(
             path: AppRoutes.marketingStory,
-            builder: (_, state) {
-              final marketingCase = state.extra as MarketingCase;
-              return MarketingCaseStoryScreen(marketingCase: marketingCase);
+            builder: (context, state) {
+              final extra = state.extra;
+              if (extra is! MarketingCase) {
+                // Deep link / hot reload sem extra válido → mapa.
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  GoRouter.of(context).go(AppRoutes.map);
+                });
+                return const SizedBox.shrink();
+              }
+              return MarketingCaseStoryScreen(marketingCase: extra);
             },
           ),
         ],
