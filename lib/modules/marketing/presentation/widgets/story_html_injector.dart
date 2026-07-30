@@ -1,3 +1,4 @@
+import '../../../../core/html_templates/relatorio_html_renderer.dart';
 import '../../domain/entities/marketing_case.dart';
 import '../../domain/entities/marketing_roi_calculation.dart';
 import '../../domain/enums/case_tipo.dart';
@@ -7,6 +8,9 @@ import '../../domain/enums/case_tipo.dart';
 /// Formatos suportados:
 /// - `<!--MARCADOR-->textoDefault` → valor (ou `—` se vazio)
 /// - `{{FOTO_BASE64}}` / `{{FOTO_URL}}` / `{{LOGO_URL}}` etc.
+///
+/// Valores textuais livres passam por [RelatorioHtmlRenderer.escapeHtml].
+/// Números formatados, URLs e data URIs de foto/logo não são escapados.
 String injectStoryData(
   String html,
   MarketingCase marketingCase, {
@@ -19,23 +23,24 @@ String injectStoryData(
   final ganho = _ganhoText(marketingCase, roi);
   final roiValor = _roiValorText(roi, marketingCase);
   final roiSacas = roi != null ? _formatNumber(roi.roiEmSacasHa) : '—';
-  final area = _areaText(marketingCase);
+  final areaRaw = _areaText(marketingCase);
   final safra = _safraText(marketingCase);
-  final produtor = marketingCase.produtorFazenda.trim();
-  final inicial = produtor.isEmpty ? '—' : produtor[0].toUpperCase();
-  final municipio = marketingCase.localizacaoTexto.trim().isEmpty
+  final produtorRaw = marketingCase.produtorFazenda.trim();
+  final inicialRaw =
+      produtorRaw.isEmpty ? '—' : produtorRaw[0].toUpperCase();
+  final municipioRaw = marketingCase.localizacaoTexto.trim().isEmpty
       ? '—'
       : marketingCase.localizacaoTexto.trim();
-  final depoimento = _firstNonEmpty([
+  final depoimentoRaw = _firstNonEmpty([
     marketingCase.conclusaoTecnica,
     marketingCase.conclusao,
     marketingCase.descricao,
   ]);
-  final consultor = _orDash(marketingCase.nomeVendedor);
-  final produto = marketingCase.produtoUtilizado.trim().isEmpty
+  final consultorRaw = _orDash(marketingCase.nomeVendedor);
+  final produtoRaw = marketingCase.produtoUtilizado.trim().isEmpty
       ? '—'
       : marketingCase.produtoUtilizado.trim();
-  final categoria = _categoriaLabel(marketingCase.tipo);
+  final categoriaRaw = _categoriaLabel(marketingCase.tipo);
   final testemunha = marketingCase.prodSemProduto != null
       ? _formatNumber(marketingCase.prodSemProduto!)
       : '—';
@@ -43,13 +48,25 @@ String injectStoryData(
       ? _formatNumber(marketingCase.prodComProduto!)
       : '—';
 
+  // Texto livre do usuário → escape. Numéricos / safra / ROI formatado → intactos.
+  final municipio = _escapeText(municipioRaw);
+  final produtor = produtorRaw.isEmpty ? '—' : _escapeText(produtorRaw);
+  final produto = _escapeText(produtoRaw);
+  final depoimento = _escapeText(depoimentoRaw);
+  final consultor = _escapeText(consultorRaw);
+  final categoria = _escapeText(categoriaRaw);
+  final area = _escapeText(areaRaw);
+  final inicial = _escapeText(inicialRaw);
+  // ganhoProdutividade pode ser texto livre; escape é no-op em números.
+  final ganhoEscaped = _escapeText(ganho);
+
   final markers = <String, String>{
     'LOCALIZAÇÃO': municipio,
     'MUNICIPIO': municipio,
-    'PRODUTOR': produtor.isEmpty ? '—' : produtor,
-    'FAZENDA': produtor.isEmpty ? '—' : produtor,
+    'PRODUTOR': produtor,
+    'FAZENDA': produtor,
     'PRODUTO': produto,
-    'GANHO': ganho,
+    'GANHO': ganhoEscaped,
     'ROI_VALOR': roiValor,
     'ROI_SACAS': roiSacas,
     'AREA': area,
@@ -186,6 +203,11 @@ String _categoriaLabel(CaseTipo tipo) {
     case CaseTipo.avaliacao:
       return 'Avaliação';
   }
+}
+
+String _escapeText(String value) {
+  // Reutiliza o helper canônico do projeto (&#x27; para apóstrofo).
+  return RelatorioHtmlRenderer.escapeHtml(value);
 }
 
 String _orDash(String? value) {
