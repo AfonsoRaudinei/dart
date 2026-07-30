@@ -79,6 +79,26 @@ jobs:
             test/modules/clima/rainviewer_contract_test.dart \
             test/architecture/clima_radar_boundary_test.dart
 
+  regression-shield:
+    name: Regression Shield (BUG-001–005)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout do repositório
+        uses: actions/checkout@v4
+
+      - name: Configurar Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Instalar dependências Flutter
+        run: flutter pub get
+
+      - name: Regression Shield
+        run: flutter test test/regression/ --reporter=compact
+
   coverage:
     name: Coverage Flutter Ratchet
     runs-on: ubuntu-latest
