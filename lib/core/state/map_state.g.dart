@@ -53,6 +53,44 @@ final showMarkersProvider = NotifierProvider<ShowMarkers, bool>.internal(
 );
 
 typedef _$ShowMarkers = Notifier<bool>;
+String _$mapSatelliteLabelsEnabledHash() =>
+    r'ddb405b7da93c2c2e867fc853223d2d38f765b5d';
+
+/// Labels (cidades/estradas) sobre a camada Satélite via MapTiler Hybrid.
+///
+/// Copied from [MapSatelliteLabelsEnabled].
+@ProviderFor(MapSatelliteLabelsEnabled)
+final mapSatelliteLabelsEnabledProvider =
+    NotifierProvider<MapSatelliteLabelsEnabled, bool>.internal(
+      MapSatelliteLabelsEnabled.new,
+      name: r'mapSatelliteLabelsEnabledProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$mapSatelliteLabelsEnabledHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+typedef _$MapSatelliteLabelsEnabled = Notifier<bool>;
+String _$mapStateBoundariesEnabledHash() =>
+    r'fbfa0e443724e0e47ea410b1ecd4e062014c15d4';
+
+/// Divisas estaduais (UF) — malha IBGE sobre o mapa.
+///
+/// Copied from [MapStateBoundariesEnabled].
+@ProviderFor(MapStateBoundariesEnabled)
+final mapStateBoundariesEnabledProvider =
+    NotifierProvider<MapStateBoundariesEnabled, bool>.internal(
+      MapStateBoundariesEnabled.new,
+      name: r'mapStateBoundariesEnabledProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$mapStateBoundariesEnabledHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+typedef _$MapStateBoundariesEnabled = Notifier<bool>;
 String _$publicationsDataHash() => r'387f95c7062d03a5a0d773d922c15e902603560a';
 
 /// See also [PublicationsData].

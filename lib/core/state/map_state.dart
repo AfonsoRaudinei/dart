@@ -91,6 +91,40 @@ class ShowMarkers extends _$ShowMarkers {
   }
 }
 
+/// Labels (cidades/estradas) sobre a camada Satélite via MapTiler Hybrid.
+@Riverpod(keepAlive: true)
+class MapSatelliteLabelsEnabled extends _$MapSatelliteLabelsEnabled {
+  static const _kKey = 'map_satellite_labels_v1';
+
+  @override
+  bool build() {
+    final prefs = ref.read(preferencesServiceProvider);
+    return prefs.getBool(_kKey) ?? true;
+  }
+
+  void setEnabled(bool enabled) {
+    state = enabled;
+    ref.read(preferencesServiceProvider).setBool(_kKey, enabled);
+  }
+}
+
+/// Divisas estaduais (UF) — malha IBGE sobre o mapa.
+@Riverpod(keepAlive: true)
+class MapStateBoundariesEnabled extends _$MapStateBoundariesEnabled {
+  static const _kKey = 'map_state_boundaries_v1';
+
+  @override
+  bool build() {
+    final prefs = ref.read(preferencesServiceProvider);
+    return prefs.getBool(_kKey) ?? true;
+  }
+
+  void setEnabled(bool enabled) {
+    state = enabled;
+    ref.read(preferencesServiceProvider).setBool(_kKey, enabled);
+  }
+}
+
 class ExternalWmsLayerConfig {
   final bool enabled;
   final String baseUrl;

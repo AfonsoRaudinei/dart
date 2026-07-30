@@ -206,15 +206,24 @@ class MapConfig {
   static const double mapTilerStyledMaxZoom = 22.0;
   static const int mapTilerStyledMaxNativeZoom = 22;
 
+  /// Malhas oficiais UF (IBGE) — GeoJSON simplificado.
+  static const String ibgeStateBoundariesUrl =
+      'https://servicodados.ibge.gov.br/api/v3/malhas/estados'
+      '?formato=application/vnd.geo+json&qualidade=minima';
+
   static MapLayerTileConfig tileConfigForLayer(
     LayerType type, {
     required String mapTilerApiKey,
+    bool satelliteWithLabels = false,
   }) {
     switch (type) {
       case LayerType.satellite:
         if (hasMapTilerApiKey(mapTilerApiKey)) {
+          final urlTemplate = satelliteWithLabels
+              ? mapTilerHybridUrl(mapTilerApiKey)
+              : mapTilerSatelliteUrl(mapTilerApiKey);
           return MapLayerTileConfig(
-            urlTemplate: mapTilerSatelliteUrl(mapTilerApiKey),
+            urlTemplate: urlTemplate,
             attribution: mapTilerAttribution,
             maxZoom: satelliteMaxZoom,
             maxNativeZoom: mapTilerSatelliteMaxNativeZoom,
