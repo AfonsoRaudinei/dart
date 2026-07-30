@@ -11,6 +11,11 @@ const kClimaTextTertiary = Color(0xFF8E8E93);
 const kClimaDivider = Color(0xFFE5E5EA);
 const kClimaShadow = Color.fromRGBO(0, 0, 0, 0.06);
 
+/// Texto sobre cards com gradiente (hero, horário, semanal).
+const kClimaOnGradientText = Colors.white;
+const kClimaOnGradientTextMuted = Color(0xD9FFFFFF);
+const kClimaOnGradientAccent = Color(0xFFBFE9FF);
+
 // ─── Helpers compartilhados ───────────────────────────────────────────────────
 
 /// Decoração padrão dos cards iOS do módulo clima.
@@ -76,17 +81,45 @@ LinearGradient climaWeatherGradient(String condicaoCodigo) {
   };
 }
 
-/// Decoração do card principal com gradiente + sombra.
-BoxDecoration climaHeroCardDecoration(String condicaoCodigo) => BoxDecoration(
+/// Decoração com gradiente por condição — hero, horário ou semanal.
+BoxDecoration climaGradientCardDecoration(
+  String condicaoCodigo, {
+  double radius = 20,
+  Offset shadowOffset = const Offset(0, 8),
+  double shadowBlur = 24,
+}) =>
+    BoxDecoration(
       gradient: climaWeatherGradient(condicaoCodigo),
-      borderRadius: BorderRadius.circular(20),
-      boxShadow: const [
+      borderRadius: BorderRadius.circular(radius),
+      boxShadow: [
         BoxShadow(
           color: kClimaShadow,
-          offset: Offset(0, 8),
-          blurRadius: 24,
+          offset: shadowOffset,
+          blurRadius: shadowBlur,
         ),
       ],
+    );
+
+/// Decoração do card principal com gradiente + sombra.
+BoxDecoration climaHeroCardDecoration(String condicaoCodigo) =>
+    climaGradientCardDecoration(condicaoCodigo);
+
+/// Cards compactos do carrossel horário.
+BoxDecoration climaHourlyCardDecoration(String condicaoCodigo) =>
+    climaGradientCardDecoration(
+      condicaoCodigo,
+      radius: 16,
+      shadowOffset: const Offset(0, 4),
+      shadowBlur: 10,
+    );
+
+/// Cards diários da previsão semanal.
+BoxDecoration climaWeeklyCardDecoration(String condicaoCodigo) =>
+    climaGradientCardDecoration(
+      condicaoCodigo,
+      radius: 20,
+      shadowOffset: const Offset(0, 6),
+      shadowBlur: 16,
     );
 
 /// Converte o código de ícone da OpenWeatherMap em emoji.

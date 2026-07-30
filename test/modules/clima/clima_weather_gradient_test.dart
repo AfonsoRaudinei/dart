@@ -18,5 +18,17 @@ void main() {
       final gradient = climaWeatherGradient('11d');
       expect(gradient.colors.last, const Color(0xFF2C2C54));
     });
+
+    test('hourly card usa raio 16', () {
+      final decoration = climaHourlyCardDecoration('02d');
+      expect(decoration.borderRadius, BorderRadius.circular(16));
+      expect(decoration.gradient, isNotNull);
+    });
+
+    test('weekly card usa raio 20', () {
+      final decoration = climaWeeklyCardDecoration('10d');
+      expect(decoration.borderRadius, BorderRadius.circular(20));
+      expect(decoration.gradient, isNotNull);
+    });
   });
 }
