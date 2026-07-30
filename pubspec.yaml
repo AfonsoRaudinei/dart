@@ -117,6 +117,7 @@ flutter:
   assets:
     - assets/ia.png
     - assets/images/
+    - assets/story.html
     - assets/html_templates/marketing_resultado.html
     - assets/html_templates/marketing_antes_depois.html
     - assets/html_templates/marketing_avaliacao.html
