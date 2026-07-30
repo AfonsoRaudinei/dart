@@ -22,6 +22,7 @@ class LayersSheet extends ConsumerWidget {
 
   final VoidCallback? onClose; // 🔧 FIX: Callback de fechamento externo
   final Future<void> Function()? onCoordinateSearch;
+  final Future<void> Function()? onMunicipalitySearch;
   final Future<void> Function()? onDownloadOfflineArea;
   final bool renderTilePreviews;
 
@@ -29,6 +30,7 @@ class LayersSheet extends ConsumerWidget {
     super.key,
     this.onClose,
     this.onCoordinateSearch,
+    this.onMunicipalitySearch,
     this.onDownloadOfflineArea,
     this.renderTilePreviews = true,
   });
@@ -38,6 +40,8 @@ class LayersSheet extends ConsumerWidget {
     final currentLayer = ref.watch(activeLayerProvider);
     final showMarkers = ref.watch(showMarkersProvider);
     final showRadar = ref.watch(climaRadarEnabledProvider);
+    final satelliteLabelsEnabled = ref.watch(mapSatelliteLabelsEnabledProvider);
+    final stateBoundariesEnabled = ref.watch(mapStateBoundariesEnabledProvider);
     final wms = ref.watch(externalWmsLayerProvider);
     final raster = ref.watch(externalRasterLayerProvider);
 
@@ -180,6 +184,40 @@ class LayersSheet extends ConsumerWidget {
                   ),
                 ],
                 const SizedBox(height: 16),
+                if (currentLayer == LayerType.satellite) ...[
+                  _AdvancedLayerTile(
+                    icon: SFIcons.map,
+                    title: 'Nomes e estradas',
+                    statusLabel: satelliteLabelsEnabled ? 'Ativo' : 'Desativado',
+                    enabled: satelliteLabelsEnabled,
+                    hint: satelliteLabelsEnabled
+                        ? 'Mostra cidades, estradas e contexto sobre o satélite.'
+                        : 'Satélite puro, sem labels. Ative para facilitar a orientação.',
+                    onToggle: (enabled) {
+                      HapticFeedback.selectionClick();
+                      ref
+                          .read(mapSatelliteLabelsEnabledProvider.notifier)
+                          .setEnabled(enabled);
+                    },
+                    onConfigure: () {},
+                  ),
+                ],
+                _AdvancedLayerTile(
+                  icon: SFIcons.layers,
+                  title: 'Divisas estaduais',
+                  statusLabel: stateBoundariesEnabled ? 'Ativo' : 'Desativado',
+                  enabled: stateBoundariesEnabled,
+                  hint: stateBoundariesEnabled
+                      ? 'Exibe limites oficiais das UFs (IBGE) sobre o mapa.'
+                      : 'Oculta as fronteiras estaduais.',
+                  onToggle: (enabled) {
+                    HapticFeedback.selectionClick();
+                    ref
+                        .read(mapStateBoundariesEnabledProvider.notifier)
+                        .setEnabled(enabled);
+                  },
+                  onConfigure: () {},
+                ),
                 MapOfflineStatusCard(
                   onDownloadOfflineArea: onDownloadOfflineArea,
                 ),
@@ -229,6 +267,19 @@ class LayersSheet extends ConsumerWidget {
                   onConfigure: () =>
                       _showRasterConfigDialog(context, ref, raster),
                 ),
+                if (onMunicipalitySearch != null)
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(
+                      Icons.location_city_outlined,
+                      color: Colors.white70,
+                    ),
+                    title: const Text(
+                      'Ir para município',
+                      style: TextStyle(color: Colors.white),
+                    ),
+                    onTap: onMunicipalitySearch,
+                  ),
                 if (onCoordinateSearch != null)
                   ListTile(
                     contentPadding: EdgeInsets.zero,

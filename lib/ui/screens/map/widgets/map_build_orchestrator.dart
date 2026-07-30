@@ -42,6 +42,7 @@ import '../../../components/map/widgets/map_markers.dart';
 import '../../../components/map/widgets/map_controls_overlay.dart';
 import '../../../components/map/widgets/map_offline_widgets.dart';
 import '../../../components/map/widgets/isolated_marker_layers.dart';
+import '../../../components/map/widgets/map_state_boundaries_layer.dart';
 import '../../../components/map/widgets/map_tools_bottom_sheet.dart';
 import '../../../components/map/widgets/producer_map_context_card.dart';
 import '../../../components/map/map_sheet_state.dart';
@@ -79,6 +80,7 @@ class MapBuildOrchestrator extends ConsumerWidget {
   final void Function(occ.Occurrence occurrence) handleOccurrencePinTap;
   final void Function() applyInitialViewport;
   final Future<void> Function() openCoordinateSearch;
+  final Future<void> Function() openMunicipalitySearch;
   final Future<void> Function() downloadOfflineArea;
 
   const MapBuildOrchestrator({
@@ -97,6 +99,7 @@ class MapBuildOrchestrator extends ConsumerWidget {
     required this.handleOccurrencePinTap,
     required this.applyInitialViewport,
     required this.openCoordinateSearch,
+    required this.openMunicipalitySearch,
     required this.downloadOfflineArea,
   });
 
@@ -289,6 +292,8 @@ class MapBuildOrchestrator extends ConsumerWidget {
               // Layer base de tiles
               const MapLayersWidget(),
 
+              const MapStateBoundariesLayer(),
+
               // Cobertura offline baixada para a camada ativa
               const MapOfflineCoverageLayer(),
 
@@ -386,6 +391,7 @@ class MapBuildOrchestrator extends ConsumerWidget {
               onLocationModeChanged: onLocationModeChanged,
               toggleDrawMode: toggleDrawMode,
               openCoordinateSearch: openCoordinateSearch,
+              openMunicipalitySearch: openMunicipalitySearch,
               downloadOfflineArea: downloadOfflineArea,
               armOccurrenceMode: armOccurrenceMode,
               armMarketingMode: armMarketingMode,
@@ -420,6 +426,7 @@ class _MapControlsHost extends ConsumerWidget {
     required this.onLocationModeChanged,
     required this.toggleDrawMode,
     required this.openCoordinateSearch,
+    required this.openMunicipalitySearch,
     required this.downloadOfflineArea,
     required this.armOccurrenceMode,
     required this.armMarketingMode,
@@ -433,6 +440,7 @@ class _MapControlsHost extends ConsumerWidget {
   final ValueChanged<MapLocationMode> onLocationModeChanged;
   final VoidCallback toggleDrawMode;
   final Future<void> Function() openCoordinateSearch;
+  final Future<void> Function() openMunicipalitySearch;
   final Future<void> Function() downloadOfflineArea;
   final VoidCallback armOccurrenceMode;
   final void Function(CaseTipo tipo) armMarketingMode;
@@ -457,6 +465,7 @@ class _MapControlsHost extends ConsumerWidget {
         context: context,
         drawingController: ref.read(drawingControllerProvider),
         onCoordinateSearch: openCoordinateSearch,
+        onMunicipalitySearch: openMunicipalitySearch,
         onDownloadOfflineArea: downloadOfflineArea,
       ),
       onToggleOccurrenceMode: () {

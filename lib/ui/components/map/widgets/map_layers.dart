@@ -7,6 +7,7 @@ import 'package:latlong2/latlong.dart';
 import '../../../../core/state/map_state.dart';
 import '../../../../core/state/map_ui_providers.dart';
 import '../../../../core/config/map_config.dart';
+import '../../../../core/domain/map_models.dart';
 import '../../../../core/utils/map_logger.dart';
 import '../../../../core/providers/connectivity_provider.dart';
 
@@ -28,6 +29,7 @@ class MapLayersWidget extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final activeLayer = ref.watch(activeLayerProvider);
+    final satelliteLabelsEnabled = ref.watch(mapSatelliteLabelsEnabledProvider);
     final wms = ref.watch(externalWmsLayerProvider);
     final raster = ref.watch(externalRasterLayerProvider);
     final isOnline = ref.watch(isOnlineProvider).asData?.value;
@@ -36,6 +38,8 @@ class MapLayersWidget extends ConsumerWidget {
     final tileConfig = MapConfig.tileConfigForLayer(
       activeLayer,
       mapTilerApiKey: MapConfig.kMapTilerApiKey,
+      satelliteWithLabels:
+          activeLayer == LayerType.satellite && satelliteLabelsEnabled,
     );
     final layerKey = cacheService.layerKeyFromTemplate(tileConfig.urlTemplate);
     final camera = ref.watch(mapCameraSnapshotProvider);

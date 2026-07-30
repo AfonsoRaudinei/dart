@@ -21,6 +21,7 @@ import '../../modules/dashboard/services/location_service.dart';
 import '../../modules/consultoria/occurrences/domain/occurrence.dart' as occ;
 import '../../modules/marketing/domain/enums/case_tipo.dart';
 import '../../modules/marketing/presentation/providers/marketing_providers.dart';
+import '../components/map/map_municipality_search_sheet.dart';
 import '../components/map/map_sheet_state.dart';
 // 🔧 MODAL: imports para sheets dos tipos não-draw
 // (conteúdo migrado para map_sheet_content_builder.dart — ADR-031 F3)
@@ -411,6 +412,23 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
     );
   }
 
+  Future<void> _openMunicipalitySearch() async {
+    await showMapMunicipalitySearch(
+      context,
+      onSelected: (point, label) {
+        if (!mounted) return;
+        _mapController.move(point, 13.0);
+        ref.read(destinationCoordinateMarkerProvider.notifier).state = point;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Destino: $label'),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      },
+    );
+  }
+
   Future<void> _downloadOfflineArea() async {
     final isOnline = ref.read(isOnlineProvider).asData?.value ?? false;
     if (!isOnline) {
@@ -679,6 +697,7 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
       handleOccurrencePinTap: _handleOccurrencePinTap,
       applyInitialViewport: _applyInitialViewport,
       openCoordinateSearch: _openCoordinateSearch,
+      openMunicipalitySearch: _openMunicipalitySearch,
       downloadOfflineArea: _downloadOfflineArea,
     );
   }
