@@ -1,12 +1,17 @@
 #!/bin/bash
-set -e
+set -euo pipefail
 
 # ============================================================
 # SoloForte — Build TestFlight (iOS)
 # ============================================================
+# Fix IPA 179: caminhos absolutos + pod install resiliente após flutter pub get.
+# ============================================================
 
-JSON_FILE="$(dirname "$0")/.env.local.json"
-EXPORT_OPTIONS_PLIST="$(dirname "$0")/ios/ExportOptions.plist"
+ROOT="$(cd "$(dirname "$0")" && pwd)"
+cd "$ROOT"
+
+JSON_FILE="$ROOT/.env.local.json"
+EXPORT_OPTIONS_PLIST="$ROOT/ios/ExportOptions.plist"
 
 if [ ! -f "$JSON_FILE" ]; then
   echo "⚠️  Arquivo $JSON_FILE não encontrado."
@@ -18,6 +23,9 @@ if [ ! -f "$EXPORT_OPTIONS_PLIST" ]; then
   exit 1
 fi
 
+# Flutter/Xcode exigem path absoluto — relativo "./ios/..." falha no export.
+EXPORT_OPTIONS_PLIST="$(cd "$(dirname "$EXPORT_OPTIONS_PLIST")" && pwd)/$(basename "$EXPORT_OPTIONS_PLIST")"
+
 # Lê variáveis do JSON explicitamente (dart-define-from-file não é confiável)
 SUPABASE_URL=$(python3 -c "import json; d=json.load(open('$JSON_FILE')); print(d['SUPABASE_URL'])")
 SUPABASE_ANON_KEY=$(python3 -c "import json; d=json.load(open('$JSON_FILE')); print(d['SUPABASE_ANON_KEY'])")
@@ -26,11 +34,12 @@ MAPTILER_API_KEY=$(python3 -c "import json; d=json.load(open('$JSON_FILE')); pri
 GOOGLE_WEATHER_API_KEY=$(python3 -c "import json; d=json.load(open('$JSON_FILE')); print(d['GOOGLE_WEATHER_API_KEY'])")
 SUPABASE_PROJECT_REF=$(python3 -c "from urllib.parse import urlparse; import json; d=json.load(open('$JSON_FILE')); print(urlparse(d['SUPABASE_URL']).hostname.split('.')[0])")
 
-BUILD_NUMBER=$(grep "^version:" pubspec.yaml | sed 's/version: [0-9.]*+//')
-VERSION=$(grep "^version:" pubspec.yaml | sed 's/version: //' | sed 's/+.*//')
+BUILD_NUMBER=$(grep "^version:" "$ROOT/pubspec.yaml" | sed 's/version: [0-9.]*+//')
+VERSION=$(grep "^version:" "$ROOT/pubspec.yaml" | sed 's/version: //' | sed 's/+.*//')
 
 echo "============================================"
 echo "✅ Config. JSON        : $JSON_FILE"
+echo "📄 ExportOptions       : $EXPORT_OPTIONS_PLIST"
 echo "📦 Versão              : $VERSION"
 echo "🔢 Build Number        : $BUILD_NUMBER"
 echo "🔐 Credenciais         : carregadas (valores ocultos)"
@@ -65,7 +74,17 @@ fi
 echo "🧹 Limpando cache..."
 flutter clean
 flutter pub get
-cd ios && pod install --deployment && cd ..
+
+# Após flutter clean + pub get, plugins iOS (ex.: path_provider_foundation)
+# podem divergir do Podfile.lock. `pod install --deployment` às vezes só
+# avisa e segue (exit 0) com Pods inconsistentes — IPA 179. Sempre
+# reconciliar com pod install completo no release.
+echo "📦 Instalando CocoaPods (reconciliar com flutter pub get)..."
+(
+  cd "$ROOT/ios"
+  pod install
+  echo "✅ pod install OK"
+)
 
 echo "🔨 Iniciando build IPA..."
 flutter build ipa \
@@ -84,9 +103,9 @@ flutter build ipa \
 echo ""
 echo "✅ Build $VERSION+$BUILD_NUMBER concluído."
 
-IPA_FILE=$(find build/ios/ipa -maxdepth 1 -name "*.ipa" | head -n 1)
+IPA_FILE=$(find "$ROOT/build/ios/ipa" -maxdepth 1 -name "*.ipa" | head -n 1)
 if [ -z "$IPA_FILE" ]; then
-  echo "❌ ERRO: IPA não encontrado em build/ios/ipa."
+  echo "❌ ERRO: IPA não encontrado em $ROOT/build/ios/ipa."
   exit 1
 fi
 
@@ -107,12 +126,13 @@ echo "✅ IPA confirmado com versão/build: $IPA_VERSION+$IPA_BUILD_NUMBER"
 
 # Confirmação que credenciais entraram no binário
 echo "🔍 Verificando credenciais no binário..."
-if strings build/ios/archive/Runner.xcarchive/Products/Applications/Runner.app/Frameworks/App.framework/App | grep -q "$SUPABASE_PROJECT_REF"; then
+APP_BIN="$ROOT/build/ios/archive/Runner.xcarchive/Products/Applications/Runner.app/Frameworks/App.framework/App"
+if strings "$APP_BIN" | grep -q "$SUPABASE_PROJECT_REF"; then
   echo "✅ SUPABASE_URL confirmada no binário."
 else
   echo "❌ ATENÇÃO: SUPABASE_URL NÃO encontrada no binário. NÃO suba este IPA."
   exit 1
 fi
 
-echo "📦 IPA em: build/ios/ipa/"
-ls -la build/ios/ipa/
+echo "📦 IPA em: $ROOT/build/ios/ipa/"
+ls -la "$ROOT/build/ios/ipa/"
