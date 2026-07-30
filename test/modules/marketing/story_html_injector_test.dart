@@ -78,4 +78,47 @@ void main() {
     expect(out, contains('data:image/png;base64,logo'));
     expect(out, isNot(contains('hero-photo-placeholder')));
   });
+
+  test('escapa caracteres especiais em produtorFazenda', () {
+    const html = '<!--PRODUTOR-->X<!--FAZENDA-->Y';
+    final now = DateTime.utc(2025, 6, 15);
+    final c = MarketingCase(
+      id: 'case-esc-1',
+      tipo: CaseTipo.resultado,
+      visibilidade: PlanoMarketing.ouro,
+      lat: -10,
+      lng: -48,
+      localizacaoTexto: 'Sorriso/MT',
+      produtorFazenda: 'Fazenda S/A & Filhos <Premium>',
+      produtoUtilizado: 'FertMax',
+      criadoEm: now,
+      atualizadoEm: now,
+    );
+
+    final out = injectStoryData(html, c);
+
+    expect(out, contains('Fazenda S/A &amp; Filhos &lt;Premium&gt;'));
+    expect(out, isNot(contains('<Premium>')));
+  });
+
+  test('escapa aspas em conclusao', () {
+    const html = '<!--DEPOIMENTO-->texto';
+    final out = injectStoryData(
+      html,
+      baseCase(conclusao: 'Produto "excelente" e \'recomendado\''),
+    );
+
+    expect(out, contains('&quot;excelente&quot;'));
+    // Helper canônico usa &#x27; (equivalente a &#39;).
+    expect(out, contains('&#x27;recomendado&#x27;'));
+  });
+
+  test('nao escapa valores numericos de produtividade', () {
+    const html = '<!--GANHO-->0<!--TESTEMUNHA-->0<!--COM_PRODUTO-->0';
+    final out = injectStoryData(html, baseCase(ganho: '10,5'));
+
+    expect(out, contains('10,5'));
+    expect(out, contains('60,0'));
+    expect(out, contains('70,0'));
+  });
 }
