@@ -1,3 +1,4 @@
+import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -39,6 +40,8 @@ import '../../../modules/planos/presentation/screens/pagamento_screen.dart';
 import '../../../modules/planos/presentation/screens/confirmacao_screen.dart';
 import '../../../modules/planos/presentation/screens/meu_plano_screen.dart';
 import '../../../modules/planos/presentation/screens/indicacoes_screen.dart';
+import '../../../modules/marketing/domain/entities/marketing_case.dart';
+import '../../../modules/marketing/presentation/screens/marketing_case_story_screen.dart';
 
 import 'app_routes.dart';
 
@@ -287,6 +290,23 @@ GoRouter router(Ref ref) {
             builder: (_, state) {
               final id = state.uri.queryParameters['id'] ?? '';
               return PublicacaoEditorScreen(publicacaoId: id);
+            },
+          ),
+          // ════════════════════════════════════════════════════════════════
+          // MARKETING — story fullscreen (fora de /map)
+          // ════════════════════════════════════════════════════════════════
+          GoRoute(
+            path: AppRoutes.marketingStory,
+            builder: (context, state) {
+              final extra = state.extra;
+              if (extra is! MarketingCase) {
+                // Deep link / hot reload sem extra válido → mapa.
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  GoRouter.of(context).go(AppRoutes.map);
+                });
+                return const SizedBox.shrink();
+              }
+              return MarketingCaseStoryScreen(marketingCase: extra);
             },
           ),
         ],

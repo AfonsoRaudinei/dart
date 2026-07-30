@@ -1,0 +1,1504 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>SoloForte — Story Resultado de Campo</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
+<style>
+
+/* ═══════════════════════════════════════════
+   TOKENS
+═══════════════════════════════════════════ */
+:root {
+  --navy:       #1428A0;
+  --teal:       #2C5564;
+  --teal-light: #3A6B7D;
+  --amber:      #F5B935;
+  --amber-pale: #FEF3C7;
+  --green:      #2E7D32;
+  --green-leaf: #8BC34A;
+  --white:      #FFFFFF;
+  --cream:      #F7F5F0;
+  --text:       #1D1D1F;
+  --muted:      #6B7280;
+
+  /* Story size — 9:16 */
+  --story-w: 390px;
+  --story-h: 692px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  width: 100%;
+  min-height: 100vh;
+  background: #0e1117;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-family: 'DM Sans', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  padding: 24px 16px 48px;
+  gap: 32px;
+}
+
+/* ═══════════════════════════════════════════
+   STORY WRAPPER
+═══════════════════════════════════════════ */
+.story-wrapper {
+  width: var(--story-w);
+  max-width: 100%;
+  position: relative;
+}
+
+/* Título da seção (fora do card) */
+.slide-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.35);
+  margin-bottom: 10px;
+  padding-left: 2px;
+}
+
+/* ═══════════════════════════════════════════
+   CARD BASE
+═══════════════════════════════════════════ */
+.card {
+  width: 100%;
+  aspect-ratio: 9 / 16;
+  border-radius: 20px;
+  overflow: hidden;
+  position: relative;
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,0.06),
+    0 32px 80px rgba(0,0,0,0.6);
+}
+
+/* ═══════════════════════════════════════════
+   SLIDE 1 — HERO RESULTADO
+═══════════════════════════════════════════ */
+.slide-hero {
+  background: linear-gradient(
+    160deg,
+    #0a1628 0%,
+    #1428A0 40%,
+    #2C5564 100%
+  );
+}
+
+/* ═══════════════════════════════════════════
+   HEADER COM LOGO
+═══════════════════════════════════════════ */
+.hero-logo-img {
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+  filter: brightness(0) invert(1);
+  opacity: 0.92;
+  flex-shrink: 0;
+}
+
+/* Partículas decorativas */
+.slide-hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(circle at 85% 15%, rgba(245,185,53,0.25) 0%, transparent 45%),
+    radial-gradient(circle at 15% 85%, rgba(139,195,74,0.15) 0%, transparent 40%),
+    radial-gradient(circle at 50% 50%, rgba(20,40,160,0.4) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+/* Grid de pontos decorativos */
+.slide-hero::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle, rgba(255,255,255,0.08) 1px, transparent 1px);
+  background-size: 28px 28px;
+  pointer-events: none;
+  mask-image: radial-gradient(ellipse at center, black 30%, transparent 80%);
+}
+
+.hero-inner {
+  position: relative;
+  z-index: 2;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Header do slide */
+.hero-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 22px 22px 0;
+  gap: 10px;
+}
+
+.hero-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+
+.hero-brand-logo-wrap {
+  width: 40px;
+  height: 40px;
+  border-radius: 11px;
+  background: linear-gradient(135deg, rgba(255,255,255,0.22), rgba(255,255,255,0.06));
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.25);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.3),
+    0 4px 14px rgba(0,0,0,0.18);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.hero-brand-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--amber);
+  box-shadow: 0 0 8px var(--amber);
+  animation: pulse-dot 2s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(0.85); }
+}
+
+.hero-brand-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.hero-brand-name {
+  font-family: 'DM Serif Display', serif;
+  font-size: 17px;
+  color: var(--white);
+  letter-spacing: 0.03em;
+  line-height: 1;
+}
+
+.hero-brand-sub {
+  font-size: 9.5px;
+  font-weight: 500;
+  color: rgba(255,255,255,0.4);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.hero-badge {
+  background: linear-gradient(135deg, rgba(245,185,53,0.28), rgba(245,185,53,0.08));
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(245,185,53,0.5);
+  color: var(--amber);
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 5px 11px;
+  border-radius: 100px;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.15),
+    0 2px 8px rgba(245,185,53,0.2);
+}
+
+/* Foto hero */
+.hero-photo {
+  position: relative;
+  margin: 14px 22px 0;
+  border-radius: 14px;
+  overflow: hidden;
+  aspect-ratio: 16 / 8;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  flex-shrink: 0;
+}
+
+.hero-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.hero-photo-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to top,
+    rgba(20,40,160,0.65) 0%,
+    transparent 55%
+  );
+}
+
+.hero-photo-tag {
+  position: absolute;
+  bottom: 10px;
+  left: 12px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 500;
+  color: rgba(255,255,255,0.85);
+}
+
+.hero-photo-tag svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  filter: drop-shadow(0 1px 3px rgba(0,0,0,0.25));
+}
+
+.hero-photo-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: rgba(255,255,255,0.3);
+  font-size: 12px;
+}
+
+/* Número principal */
+.hero-result {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0 22px;
+  text-align: center;
+  gap: 4px;
+}
+
+.hero-result-eyebrow {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--green-leaf);
+  margin-bottom: 2px;
+}
+
+.hero-result-number {
+  font-family: 'DM Serif Display', serif;
+  font-size: 88px;
+  line-height: 0.88;
+  color: var(--white);
+  letter-spacing: -0.02em;
+  position: relative;
+}
+
+.hero-result-number .plus {
+  font-size: 52px;
+  color: var(--amber);
+  vertical-align: super;
+  line-height: 0;
+  position: relative;
+  top: 12px;
+}
+
+.hero-result-number .unit {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 20px;
+  font-weight: 400;
+  color: rgba(255,255,255,0.65);
+  letter-spacing: 0.02em;
+  margin-left: 2px;
+}
+
+.hero-result-label {
+  font-size: 13px;
+  color: rgba(255,255,255,0.55);
+  font-weight: 400;
+  margin-top: 4px;
+}
+
+/* ROI pill */
+.roi-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(180deg, #FFE9A3 0%, #F5B935 55%, #D9970E 100%);
+  color: var(--navy);
+  border-radius: 100px;
+  padding: 10px 26px;
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: 0.02em;
+  margin-top: 10px;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.65),
+    inset 0 -1px 0 rgba(120,80,0,0.15),
+    0 6px 24px rgba(245,185,53,0.45);
+  border: 1px solid rgba(255,220,140,0.4);
+}
+
+.roi-pill-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.75;
+}
+
+/* Footer slide 1 */
+.hero-footer {
+  padding: 14px 22px 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.hero-crop-tag {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.14);
+  border-radius: 100px;
+  padding: 6px 14px 6px 10px;
+  font-size: 12px;
+  color: rgba(255,255,255,0.82);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+
+.hero-crop-tag svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.hero-safra {
+  font-size: 11px;
+  color: rgba(255,255,255,0.35);
+  font-weight: 400;
+}
+
+/* ═══════════════════════════════════════════
+   SLIDE 2 — ANTES & DEPOIS
+═══════════════════════════════════════════ */
+.slide-compare {
+  background: var(--cream);
+}
+
+.compare-inner {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Header slide 2 */
+.compare-header {
+  padding: 22px 22px 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.compare-title {
+  font-family: 'DM Serif Display', serif;
+  font-size: 19px;
+  color: var(--text);
+  line-height: 1.2;
+}
+
+.compare-title span {
+  color: var(--navy);
+}
+
+.compare-step {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--navy);
+  color: var(--white);
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Fotos antes/depois */
+.compare-photos {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  margin: 18px 22px 0;
+  border-radius: 16px;
+  overflow: hidden;
+  aspect-ratio: 4 / 3;
+  position: relative;
+  flex-shrink: 0;
+  box-shadow: 0 4px 24px rgba(44,85,100,0.18);
+}
+
+.compare-side {
+  position: relative;
+  overflow: hidden;
+}
+
+.compare-side img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.compare-side-overlay {
+  position: absolute;
+  inset: 0;
+}
+
+.compare-side.before .compare-side-overlay {
+  background: linear-gradient(135deg, rgba(100,100,100,0.5) 0%, transparent 60%);
+}
+
+.compare-side.after .compare-side-overlay {
+  background: linear-gradient(225deg, rgba(20,40,160,0.4) 0%, transparent 60%);
+}
+
+.compare-side-label {
+  position: absolute;
+  top: 10px;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: 100px;
+}
+
+.compare-side.before .compare-side-label {
+  left: 10px;
+  background: rgba(0,0,0,0.55);
+  color: rgba(255,255,255,0.85);
+}
+
+.compare-side.after .compare-side-label {
+  right: 10px;
+  background: var(--navy);
+  color: var(--white);
+}
+
+.compare-side-value {
+  position: absolute;
+  bottom: 10px;
+  width: 100%;
+  text-align: center;
+  font-family: 'DM Serif Display', serif;
+  font-size: 30px;
+  color: var(--white);
+  text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+  line-height: 1;
+}
+
+.compare-side-value small {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 400;
+  opacity: 0.8;
+}
+
+/* Divisor central */
+.compare-divider {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  transform: translateX(-50%);
+  width: 3px;
+  background: var(--white);
+  z-index: 3;
+}
+
+.compare-divider-icon {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(255,255,255,0.95), rgba(255,255,255,0.75));
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow:
+    0 4px 20px rgba(20,40,160,0.35),
+    inset 0 1px 0 rgba(255,255,255,0.9);
+  border: 1px solid rgba(255,255,255,0.6);
+  z-index: 4;
+  color: var(--navy);
+}
+
+/* Placeholder fotos */
+.compare-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 11px;
+  color: rgba(100,100,100,0.5);
+}
+
+.compare-placeholder.before {
+  background: #d4d4d4;
+}
+
+.compare-placeholder.after {
+  background: #c8dce5;
+}
+
+/* Métricas slide 2 */
+.compare-metrics {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 10px;
+  margin: 16px 22px 0;
+}
+
+.metric-card {
+  background: var(--white);
+  border: 1px solid rgba(44,85,100,0.1);
+  border-radius: 12px;
+  padding: 12px 10px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.metric-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  border-radius: 12px 12px 0 0;
+}
+
+.metric-card.gain::before { background: var(--green-leaf); }
+.metric-card.roi::before { background: var(--amber); }
+.metric-card.area::before { background: var(--navy); }
+
+.metric-label {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+
+.metric-value {
+  font-family: 'DM Serif Display', serif;
+  font-size: 22px;
+  color: var(--text);
+  line-height: 1;
+}
+
+.metric-value.positive { color: var(--green); }
+.metric-value.amber { color: var(--navy); }
+
+.metric-unit {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 10px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+/* Localização slide 2 */
+.compare-location {
+  margin: 14px 22px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: var(--white);
+  border-radius: 10px;
+  border: 1px solid rgba(44,85,100,0.1);
+}
+
+.compare-location svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  filter: drop-shadow(0 2px 4px rgba(20,40,160,0.2));
+}
+
+.compare-location-text {
+  font-size: 11.5px;
+  color: var(--text);
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.compare-location-text span {
+  color: var(--muted);
+  font-weight: 400;
+}
+
+/* Footer slide 2 */
+.compare-footer {
+  margin-top: auto;
+  padding: 14px 22px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sf-footer-brand {
+  font-family: 'DM Serif Display', serif;
+  font-size: 13px;
+  color: var(--teal);
+  opacity: 0.6;
+}
+
+.compare-safra-badge {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  background: rgba(44,85,100,0.08);
+  padding: 4px 10px;
+  border-radius: 100px;
+}
+
+/* ═══════════════════════════════════════════
+   SLIDE 3 — AVALIAÇÃO / DEPOIMENTO
+═══════════════════════════════════════════ */
+.slide-review {
+  background: linear-gradient(170deg, #0d1f3a 0%, #1428A0 55%, #2C5564 100%);
+}
+
+.review-inner {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  z-index: 2;
+}
+
+.slide-review::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(circle at 90% 10%, rgba(245,185,53,0.2) 0%, transparent 50%),
+    radial-gradient(circle at 10% 90%, rgba(139,195,74,0.12) 0%, transparent 45%);
+  pointer-events: none;
+}
+
+/* Header slide 3 */
+.review-header {
+  padding: 22px 22px 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.review-brand {
+  font-family: 'DM Serif Display', serif;
+  font-size: 16px;
+  color: var(--white);
+}
+
+.review-step {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255,255,255,0.3);
+  color: rgba(255,255,255,0.7);
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Estrelas */
+.review-stars-section {
+  padding: 28px 22px 0;
+  text-align: center;
+}
+
+.review-stars-eyebrow {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.4);
+  margin-bottom: 14px;
+}
+
+.stars {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.star {
+  width: 36px;
+  height: 36px;
+  position: relative;
+}
+
+.star svg {
+  width: 100%;
+  height: 100%;
+  filter:
+    drop-shadow(0 4px 12px rgba(245,185,53,0.55))
+    drop-shadow(0 1px 2px rgba(245,185,53,0.4));
+  animation: star-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.star:nth-child(1) svg { animation-delay: 0.05s; }
+.star:nth-child(2) svg { animation-delay: 0.12s; }
+.star:nth-child(3) svg { animation-delay: 0.19s; }
+.star:nth-child(4) svg { animation-delay: 0.26s; }
+.star:nth-child(5) svg { animation-delay: 0.33s; }
+
+@keyframes star-pop {
+  from { transform: scale(0) rotate(-20deg); opacity: 0; }
+  to   { transform: scale(1) rotate(0deg);  opacity: 1; }
+}
+
+.review-score {
+  font-family: 'DM Serif Display', serif;
+  font-size: 20px;
+  color: var(--amber);
+  margin-top: 4px;
+}
+
+.review-score span {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 400;
+  color: rgba(255,255,255,0.4);
+}
+
+/* Depoimento */
+.review-quote-wrap {
+  margin: 22px 22px 0;
+  position: relative;
+}
+
+.review-quote-icon {
+  font-family: 'DM Serif Display', serif;
+  font-size: 72px;
+  line-height: 0.5;
+  color: rgba(245,185,53,0.3);
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  user-select: none;
+}
+
+.review-quote {
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 16px;
+  padding: 20px 18px 18px;
+  position: relative;
+}
+
+.review-quote-text {
+  font-size: 14px;
+  line-height: 1.65;
+  color: rgba(255,255,255,0.88);
+  font-style: italic;
+  font-weight: 300;
+  padding-top: 8px;
+}
+
+/* Produtor */
+.review-producer {
+  margin: 16px 22px 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.review-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--amber) 0%, #e67e00 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'DM Serif Display', serif;
+  font-size: 18px;
+  color: var(--navy);
+  font-weight: 400;
+  flex-shrink: 0;
+  border: 2px solid rgba(245,185,53,0.4);
+}
+
+.review-producer-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.review-producer-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--white);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.review-producer-role {
+  font-size: 11.5px;
+  color: rgba(255,255,255,0.45);
+  margin-top: 1px;
+}
+
+.review-verified {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(139,195,74,0.15);
+  border: 1px solid rgba(139,195,74,0.3);
+  border-radius: 100px;
+  padding: 3px 9px;
+  font-size: 9.5px;
+  font-weight: 600;
+  color: var(--green-leaf);
+  letter-spacing: 0.05em;
+  flex-shrink: 0;
+}
+
+/* Resultado resumido */
+.review-summary {
+  margin: 16px 22px 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.review-summary-item {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.09);
+  border-radius: 12px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.review-summary-label {
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.35);
+}
+
+.review-summary-value {
+  font-family: 'DM Serif Display', serif;
+  font-size: 22px;
+  color: var(--white);
+  line-height: 1.1;
+}
+
+.review-summary-value.highlight {
+  color: var(--amber);
+}
+
+.review-summary-unit {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 10.5px;
+  color: rgba(255,255,255,0.4);
+}
+
+/* CTA */
+.review-cta {
+  margin: auto 22px 0;
+  padding-bottom: 22px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.review-cta-btn {
+  flex: 1;
+  background: linear-gradient(180deg, #FFE9A3 0%, #F5B935 55%, #D9970E 100%);
+  color: var(--navy);
+  border: 1px solid rgba(255,220,140,0.4);
+  border-radius: 100px;
+  padding: 13px 20px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+  text-align: center;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.65),
+    inset 0 -1px 0 rgba(120,80,0,0.15),
+    0 6px 24px rgba(245,185,53,0.4);
+  text-decoration: none;
+  display: block;
+}
+
+.review-cta-share {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(255,255,255,0.18), rgba(255,255,255,0.05));
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255,255,255,0.22);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  color: rgba(255,255,255,0.85);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.25),
+    0 4px 16px rgba(0,0,0,0.15);
+}
+
+/* ═══════════════════════════════════════════
+   INDICADOR DE SLIDES (fora dos cards)
+═══════════════════════════════════════════ */
+.slide-indicators {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  margin-top: 14px;
+}
+
+.indicator {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.2);
+  transition: all 0.3s ease;
+}
+
+.indicator.active {
+  width: 22px;
+  border-radius: 3px;
+  background: var(--amber);
+}
+
+/* ═══════════════════════════════════════════
+   NOTAS TÉCNICAS (abaixo dos cards)
+═══════════════════════════════════════════ */
+.tech-note {
+  font-size: 10px;
+  color: rgba(255,255,255,0.18);
+  text-align: center;
+  margin-top: 8px;
+  letter-spacing: 0.04em;
+}
+
+/* ═══════════════════════════════════════════
+   RESPONSIVO
+═══════════════════════════════════════════ */
+@media (max-width: 420px) {
+  :root {
+    --story-w: 100%;
+  }
+  body {
+    padding: 16px 12px 32px;
+    gap: 24px;
+  }
+  .hero-result-number {
+    font-size: 72px;
+  }
+}
+
+/* Print — 1 card por página */
+@media print {
+  body {
+    background: white;
+    gap: 0;
+  }
+  .story-wrapper {
+    page-break-after: always;
+  }
+  .slide-label, .slide-indicators, .tech-note {
+    display: none;
+  }
+  .card {
+    box-shadow: none;
+    border-radius: 0;
+  }
+  .slide-hero, .slide-review {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
+
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════
+     SLIDE 1 — HERO RESULTADO
+══════════════════════════════════════ -->
+<div class="story-wrapper">
+  <div class="slide-label">01 · Resultado de Campo</div>
+  <div class="card slide-hero">
+    <div class="hero-inner">
+
+      <!-- Header -->
+      <div class="hero-header">
+        <div class="hero-brand">
+          <!-- Logo SoloForte — substituir img src pelo logo real via Dart -->
+          <div class="hero-brand-logo-wrap">
+            <img
+              class="hero-logo-img"
+              src="{{LOGO_URL}}"
+              alt="SoloForte"
+              onerror="this.style.display='none'; this.parentElement.innerHTML='<div class=\'hero-brand-dot\'></div>'"
+            >
+          </div>
+          <div class="hero-brand-text">
+            <span class="hero-brand-name">SoloForte</span>
+            <span class="hero-brand-sub">Consultoria Agronômica</span>
+          </div>
+        </div>
+        <span class="hero-badge">Resultado Comprovado</span>
+      </div>
+
+      <!-- Foto principal -->
+      <div class="hero-photo">
+        <!--
+          SUBSTITUIR: injetar src da foto do case via Dart
+          Ex: src="data:image/jpeg;base64,{{FOTO_BASE64}}"
+          Fallback: src="{{FOTO_URL}}"
+        -->
+        <div class="hero-photo-placeholder">
+          <!-- Ícone glassmorphism: planta em vaso -->
+          <svg width="72" height="72" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <!-- Gradiente vaso (branco leitoso) -->
+              <linearGradient id="potGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="rgba(255,255,255,0.35)"/>
+                <stop offset="100%" stop-color="rgba(255,255,255,0.15)"/>
+              </linearGradient>
+              <!-- Gradiente folhas (verde translúcido) -->
+              <linearGradient id="leafGradA" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="rgba(200,240,150,0.85)"/>
+                <stop offset="100%" stop-color="rgba(139,195,74,0.6)"/>
+              </linearGradient>
+              <linearGradient id="leafGradB" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="rgba(160,220,110,0.9)"/>
+                <stop offset="100%" stop-color="rgba(100,170,50,0.7)"/>
+              </linearGradient>
+              <!-- Filtro de blur suave para efeito glass interno -->
+              <filter id="glassBlur" x="-20%" y="-20%" width="140%" height="140%">
+                <feGaussianBlur stdDeviation="1.2"/>
+              </filter>
+            </defs>
+
+            <!-- Folha esquerda (atrás) -->
+            <path
+              d="M50 42 Q35 28 32 18 Q42 20 50 42 Z"
+              fill="url(#leafGradA)"
+              filter="url(#glassBlur)"
+            />
+            <!-- Folha direita (frente, maior) -->
+            <path
+              d="M50 42 Q68 26 72 14 Q78 26 50 42 Z"
+              fill="url(#leafGradB)"
+              filter="url(#glassBlur)"
+            />
+            <!-- Broto pequeno atrás -->
+            <circle cx="55" cy="20" r="3" fill="rgba(180,230,120,0.7)" filter="url(#glassBlur)"/>
+
+            <!-- Vaso (trapézio invertido) — glassmorphism -->
+            <path
+              d="M36 44 L64 44 L60 78 L40 78 Z"
+              fill="url(#potGrad)"
+              stroke="rgba(255,255,255,0.4)"
+              stroke-width="1"
+            />
+            <!-- Reflexo sutil no vaso -->
+            <path
+              d="M41 47 L43 74"
+              stroke="rgba(255,255,255,0.35)"
+              stroke-width="1.5"
+              stroke-linecap="round"
+            />
+          </svg>
+          <span style="font-size:11px; font-weight:500; letter-spacing:0.08em; text-transform:uppercase; opacity:0.5;">Foto do Resultado</span>
+        </div>
+        <div class="hero-photo-overlay"></div>
+        <div class="hero-photo-tag">
+          <!-- Pin glass gota -->
+          <svg viewBox="0 0 24 24" width="14" height="14">
+            <defs>
+              <linearGradient id="pinGrad1" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="rgba(255,255,255,0.95)"/>
+                <stop offset="100%" stop-color="rgba(245,185,53,0.85)"/>
+              </linearGradient>
+            </defs>
+            <path
+              d="M12 2 C7.5 2 4 5.5 4 10 C4 16 12 22 12 22 C12 22 20 16 20 10 C20 5.5 16.5 2 12 2 Z"
+              fill="url(#pinGrad1)"
+              stroke="rgba(255,255,255,0.6)"
+              stroke-width="0.6"
+            />
+            <circle cx="12" cy="10" r="3" fill="rgba(20,40,160,0.5)" style="filter: blur(0.6px);"/>
+          </svg>
+          <!--LOCALIZAÇÃO-->Fazenda · Município/UF
+        </div>
+      </div>
+
+      <!-- Número principal -->
+      <div class="hero-result">
+        <div class="hero-result-eyebrow">Incremento de Produtividade</div>
+        <div class="hero-result-number">
+          <span class="plus">+</span><!--GANHO-->10,0<span class="unit">sc/ha</span>
+        </div>
+        <div class="hero-result-label">sobre a testemunha</div>
+
+        <div class="roi-pill">
+          <span class="roi-pill-label">ROI</span>
+          <!--ROI_VALOR-->R$ 1.040,00/ha
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="hero-footer">
+        <div class="hero-crop-tag">
+          <!-- Ícone glass: folha -->
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="cropLeafGrad" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="rgba(200,240,150,0.9)"/>
+                <stop offset="100%" stop-color="rgba(139,195,74,0.5)"/>
+              </linearGradient>
+            </defs>
+            <!-- Corpo folha -->
+            <path
+              d="M12 3 C6 5 4 10 5 16 C11 16 17 12 18 5 C16 4 14 3 12 3 Z"
+              fill="url(#cropLeafGrad)"
+              stroke="rgba(139,195,74,0.7)"
+              stroke-width="0.8"
+              stroke-linejoin="round"
+            />
+            <!-- Nervura desfocada (efeito glass) -->
+            <path
+              d="M6 16 Q10 12 17 6"
+              stroke="rgba(100,170,50,0.55)"
+              stroke-width="1"
+              stroke-linecap="round"
+              fill="none"
+              style="filter: blur(0.4px);"
+            />
+            <!-- Talo -->
+            <line x1="5" y1="16" x2="4" y2="20" stroke="rgba(100,170,50,0.8)" stroke-width="1.4" stroke-linecap="round"/>
+          </svg>
+          <!--CULTURA-->Soja
+        </div>
+        <div class="hero-safra">Safra <!--SAFRA-->2025/26</div>
+      </div>
+
+    </div>
+  </div>
+  <div class="slide-indicators">
+    <div class="indicator active"></div>
+    <div class="indicator"></div>
+    <div class="indicator"></div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════
+     SLIDE 2 — ANTES & DEPOIS
+══════════════════════════════════════ -->
+<div class="story-wrapper">
+  <div class="slide-label">02 · Comparativo de Produtividade</div>
+  <div class="card slide-compare">
+    <div class="compare-inner">
+
+      <!-- Header -->
+      <div class="compare-header">
+        <div class="compare-title">
+          Antes <span>&amp; Depois</span>
+        </div>
+        <div class="compare-step">02</div>
+      </div>
+
+      <!-- Fotos split -->
+      <div class="compare-photos">
+
+        <!-- Lado esquerdo — Antes / Testemunha -->
+        <div class="compare-side before">
+          <!--
+            SUBSTITUIR: foto da testemunha / antes
+            src="data:image/jpeg;base64,{{FOTO_ANTES_BASE64}}"
+          -->
+          <div class="compare-placeholder before">
+            <!-- Planta pequena glass — testemunha -->
+            <svg width="52" height="52" viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <linearGradient id="beforeLeaf" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stop-color="rgba(180,200,150,0.7)"/>
+                  <stop offset="100%" stop-color="rgba(130,160,110,0.5)"/>
+                </linearGradient>
+              </defs>
+              <!-- 2 folhinhas pequenas -->
+              <ellipse cx="24" cy="28" rx="6" ry="10" transform="rotate(-30 24 28)" fill="url(#beforeLeaf)" opacity="0.85"/>
+              <ellipse cx="36" cy="28" rx="6" ry="10" transform="rotate(30 36 28)" fill="url(#beforeLeaf)" opacity="0.85"/>
+              <!-- Caule fino -->
+              <line x1="30" y1="35" x2="30" y2="48" stroke="rgba(100,140,90,0.8)" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            <span style="font-size:9.5px; letter-spacing:0.06em; text-transform:uppercase; font-weight:600; opacity:0.55;">Testemunha</span>
+          </div>
+          <div class="compare-side-overlay"></div>
+          <div class="compare-side-label">Padrão</div>
+          <div class="compare-side-value"><!--TESTEMUNHA-->100<small> sc/ha</small></div>
+        </div>
+
+        <!-- Lado direito — Depois / Com produto -->
+        <div class="compare-side after">
+          <!--
+            SUBSTITUIR: foto com produto / depois
+            src="data:image/jpeg;base64,{{FOTO_DEPOIS_BASE64}}"
+          -->
+          <div class="compare-placeholder after">
+            <!-- Planta maior/viçosa glass — com produto -->
+            <svg width="60" height="60" viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <linearGradient id="afterLeafA" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stop-color="rgba(200,240,150,0.95)"/>
+                  <stop offset="100%" stop-color="rgba(139,195,74,0.7)"/>
+                </linearGradient>
+                <linearGradient id="afterLeafB" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stop-color="rgba(160,220,110,0.9)"/>
+                  <stop offset="100%" stop-color="rgba(100,170,50,0.75)"/>
+                </linearGradient>
+              </defs>
+              <!-- 4 folhas maiores em leque -->
+              <ellipse cx="18" cy="22" rx="7" ry="13" transform="rotate(-45 18 22)" fill="url(#afterLeafA)"/>
+              <ellipse cx="42" cy="22" rx="7" ry="13" transform="rotate(45 42 22)" fill="url(#afterLeafA)"/>
+              <ellipse cx="22" cy="30" rx="6.5" ry="12" transform="rotate(-20 22 30)" fill="url(#afterLeafB)"/>
+              <ellipse cx="38" cy="30" rx="6.5" ry="12" transform="rotate(20 38 30)" fill="url(#afterLeafB)"/>
+              <!-- Broto no topo -->
+              <circle cx="30" cy="14" r="3.5" fill="rgba(180,230,120,0.9)"/>
+              <!-- Caule -->
+              <line x1="30" y1="38" x2="30" y2="52" stroke="rgba(80,140,50,0.85)" stroke-width="2.4" stroke-linecap="round"/>
+            </svg>
+            <span style="font-size:9.5px; letter-spacing:0.06em; text-transform:uppercase; font-weight:600; opacity:0.65; color: rgba(20,40,160,0.8);">Com Produto</span>
+          </div>
+          <div class="compare-side-overlay"></div>
+          <div class="compare-side-label">Com Produto</div>
+          <div class="compare-side-value"><!--COM_PRODUTO-->110<small> sc/ha</small></div>
+        </div>
+
+        <!-- Divisor -->
+        <div class="compare-divider">
+          <div class="compare-divider-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+              <path d="M5 12h14M12 5l7 7-7 7"/>
+            </svg>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Métricas -->
+      <div class="compare-metrics">
+        <div class="metric-card gain">
+          <div class="metric-label">Ganho</div>
+          <div class="metric-value positive"><!--GANHO-->+10,0</div>
+          <div class="metric-unit">sc/ha</div>
+        </div>
+        <div class="metric-card roi">
+          <div class="metric-label">ROI Líquido</div>
+          <div class="metric-value amber"><!--ROI_SACAS-->9,5</div>
+          <div class="metric-unit">sc/ha pagas</div>
+        </div>
+        <div class="metric-card area">
+          <div class="metric-label">Área</div>
+          <div class="metric-value"><!--AREA-->50</div>
+          <div class="metric-unit">hectares</div>
+        </div>
+      </div>
+
+      <!-- Localização -->
+      <div class="compare-location">
+        <svg viewBox="0 0 24 24" width="18" height="18">
+          <defs>
+            <linearGradient id="pinGrad2" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="rgba(20,40,160,0.95)"/>
+              <stop offset="100%" stop-color="rgba(44,85,100,0.7)"/>
+            </linearGradient>
+          </defs>
+          <path
+            d="M12 2 C7.5 2 4 5.5 4 10 C4 16 12 22 12 22 C12 22 20 16 20 10 C20 5.5 16.5 2 12 2 Z"
+            fill="url(#pinGrad2)"
+          />
+          <circle cx="12" cy="10" r="3" fill="rgba(255,255,255,0.85)" style="filter: blur(0.4px);"/>
+        </svg>
+        <div class="compare-location-text">
+          <!--FAZENDA-->Fazenda São João
+          <br><span><!--MUNICIPIO-->Sorriso/MT · <!--PRODUTOR-->João Silva</span>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="compare-footer">
+        <div class="sf-footer-brand">SoloForte</div>
+        <div class="compare-safra-badge">Safra <!--SAFRA-->2025/26</div>
+      </div>
+
+    </div>
+  </div>
+  <div class="slide-indicators">
+    <div class="indicator"></div>
+    <div class="indicator active"></div>
+    <div class="indicator"></div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════
+     SLIDE 3 — AVALIAÇÃO / DEPOIMENTO
+══════════════════════════════════════ -->
+<div class="story-wrapper">
+  <div class="slide-label">03 · Avaliação do Produtor</div>
+  <div class="card slide-review">
+    <div class="review-inner">
+
+      <!-- Header -->
+      <div class="review-header">
+        <div class="review-brand">SoloForte</div>
+        <div class="review-step">03</div>
+      </div>
+
+      <!-- Estrelas -->
+      <div class="review-stars-section">
+        <div class="review-stars-eyebrow">Avaliação do Produtor</div>
+        <div class="stars">
+          <svg width="0" height="0" style="position:absolute">
+            <defs>
+              <linearGradient id="starGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#FFE9A3"/>
+                <stop offset="50%" stop-color="#F5B935"/>
+                <stop offset="100%" stop-color="#D9970E"/>
+              </linearGradient>
+            </defs>
+          </svg>
+          <div class="star"><svg viewBox="0 0 24 24"><path fill="url(#starGrad)" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/><path fill="rgba(255,255,255,0.55)" d="M12 3.2 L14.6 8.5 L20 9.3 L16.2 13 L12 11 Z"/></svg></div>
+          <div class="star"><svg viewBox="0 0 24 24"><path fill="url(#starGrad)" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/><path fill="rgba(255,255,255,0.55)" d="M12 3.2 L14.6 8.5 L20 9.3 L16.2 13 L12 11 Z"/></svg></div>
+          <div class="star"><svg viewBox="0 0 24 24"><path fill="url(#starGrad)" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/><path fill="rgba(255,255,255,0.55)" d="M12 3.2 L14.6 8.5 L20 9.3 L16.2 13 L12 11 Z"/></svg></div>
+          <div class="star"><svg viewBox="0 0 24 24"><path fill="url(#starGrad)" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/><path fill="rgba(255,255,255,0.55)" d="M12 3.2 L14.6 8.5 L20 9.3 L16.2 13 L12 11 Z"/></svg></div>
+          <div class="star"><svg viewBox="0 0 24 24"><path fill="url(#starGrad)" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/><path fill="rgba(255,255,255,0.55)" d="M12 3.2 L14.6 8.5 L20 9.3 L16.2 13 L12 11 Z"/></svg></div>
+        </div>
+        <div class="review-score">5,0 <span>/ 5,0 · Excelente</span></div>
+      </div>
+
+      <!-- Depoimento -->
+      <div class="review-quote-wrap">
+        <div class="review-quote-icon">"</div>
+        <div class="review-quote">
+          <p class="review-quote-text">
+            <!--DEPOIMENTO-->O resultado superou todas as expectativas. A diferença na lavoura foi visível ainda na fase de enchimento de grãos. Com certeza vou repetir na próxima safra.
+          </p>
+        </div>
+      </div>
+
+      <!-- Produtor -->
+      <div class="review-producer">
+        <div class="review-avatar"><!--INICIAL-->J</div>
+        <div class="review-producer-info">
+          <div class="review-producer-name"><!--PRODUTOR-->João da Silva</div>
+          <div class="review-producer-role"><!--FAZENDA-->Fazenda São João · <!--MUNICIPIO-->Sorriso/MT</div>
+        </div>
+        <div class="review-verified">
+          <svg width="8" height="8" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+          Verificado
+        </div>
+      </div>
+
+      <!-- Resumo resultado -->
+      <div class="review-summary">
+        <div class="review-summary-item">
+          <div class="review-summary-label">Ganho</div>
+          <div class="review-summary-value highlight">+<!--GANHO-->10,0</div>
+          <div class="review-summary-unit">sc/ha</div>
+        </div>
+        <div class="review-summary-item">
+          <div class="review-summary-label">ROI Líquido</div>
+          <div class="review-summary-value">R$ <!--ROI_VALOR-->1.040</div>
+          <div class="review-summary-unit">por hectare</div>
+        </div>
+        <div class="review-summary-item">
+          <div class="review-summary-label">Produto</div>
+          <div class="review-summary-value" style="font-size:15px;margin-top:2px"><!--PRODUTO-->FertMax Pro</div>
+          <div class="review-summary-unit"><!--CATEGORIA-->Bioestimulante</div>
+        </div>
+        <div class="review-summary-item">
+          <div class="review-summary-label">Responsável</div>
+          <div class="review-summary-value" style="font-size:15px;margin-top:2px"><!--CONSULTOR-->Ana Luiza</div>
+          <div class="review-summary-unit">Agrônoma</div>
+        </div>
+      </div>
+
+      <!-- CTA -->
+      <div class="review-cta">
+        <a class="review-cta-btn" href="#">Ver case completo no SoloForte</a>
+        <div class="review-cta-share">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+          </svg>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="slide-indicators">
+    <div class="indicator"></div>
+    <div class="indicator"></div>
+    <div class="indicator active"></div>
+  </div>
+  <div class="tech-note">SoloForte · gerado via app · soloforte.com.br</div>
+</div>
+
+</body>
+</html>

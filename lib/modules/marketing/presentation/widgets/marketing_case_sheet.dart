@@ -8,6 +8,7 @@ import '../../domain/entities/marketing_case.dart';
 import '../../domain/enums/case_tipo.dart';
 import '../../domain/enums/plano_marketing.dart';
 import 'comparativo_chart.dart';
+import 'marketing_case_story_entry_button.dart';
 import 'marketing_comparativo_read_only_section.dart';
 import '../../../../core/ui/sheets/sheet_tokens.dart';
 
@@ -299,6 +300,10 @@ class MarketingCaseSheet extends StatelessWidget {
                       const SizedBox(height: 20),
                       _buildVendedorCard(context),
                     ],
+
+                    const SizedBox(height: 24),
+                    MarketingCaseStoryEntryButton(marketingCase: marketingCase),
+                    const SizedBox(height: 80),
                   ],
                 ),
               ),
