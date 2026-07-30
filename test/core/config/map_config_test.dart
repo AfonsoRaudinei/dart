@@ -50,6 +50,18 @@ void main() {
       expect(config.fallbackUrl, isNull);
     });
 
+    test('satellite com labels usa MapTiler Hybrid', () {
+      final config = MapConfig.tileConfigForLayer(
+        LayerType.satellite,
+        mapTilerApiKey: 'test-key',
+        satelliteWithLabels: true,
+      );
+
+      expect(config.urlTemplate, contains('/maps/hybrid/256/'));
+      expect(config.urlTemplate, isNot(contains('satellite-v4')));
+      expect(config.urlTemplate, contains('key=test-key'));
+    });
+
     test('relevo sem MapTiler key usa fallback limpo sem Esri', () {
       final config = MapConfig.tileConfigForLayer(
         LayerType.relevo,
