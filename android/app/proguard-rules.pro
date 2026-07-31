@@ -14,3 +14,6 @@
 # Gson / JSON (dependências transitivas)
 -keepattributes Signature
 -keepattributes *Annotation*
+
+# Flutter deferred components / Play Core (opcional — app não usa split APKs)
+-dontwarn com.google.android.play.core.**
