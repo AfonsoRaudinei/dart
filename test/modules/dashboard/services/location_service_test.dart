@@ -61,6 +61,38 @@ void main() {
       expect(fixes.single.position, const LatLng(-10, -48));
       expect(fixes.single.accuracyM, 4.2);
       expect(fixes.single.effectiveAccuracyM, 4.2);
+      expect(fixes.single.headingDeg, 0);
+
+      await sub.cancel();
+      await positions.close();
+    });
+
+    test('heading inválido não é propagado no stream', () async {
+      final positions = StreamController<Position>();
+      LocationService.debugSetPositionStreamFactory((_) => positions.stream);
+
+      final locationService = LocationService();
+      final fixes = <UserLocationFix>[];
+      final sub = locationService.locationStream.listen(fixes.add);
+
+      positions.add(
+        Position(
+          latitude: -10,
+          longitude: -48,
+          timestamp: DateTime.utc(2026, 7, 6),
+          accuracy: 4.2,
+          altitude: 0,
+          altitudeAccuracy: 0,
+          heading: -1,
+          headingAccuracy: 0,
+          speed: 0,
+          speedAccuracy: 0,
+        ),
+      );
+      await Future<void>.delayed(Duration.zero);
+
+      expect(fixes.single.headingDeg, isNull);
+      expect(fixes.single.hasValidHeading, isFalse);
 
       await sub.cancel();
       await positions.close();
@@ -120,6 +152,21 @@ void main() {
         accuracyM: 0,
       );
       expect(fix.effectiveAccuracyM, 12.0);
+    });
+
+    test('hasValidHeading reflete rumo GNSS', () {
+      const withHeading = UserLocationFix(
+        position: LatLng(-10, -48),
+        accuracyM: 5,
+        headingDeg: 45,
+      );
+      const withoutHeading = UserLocationFix(
+        position: LatLng(-10, -48),
+        accuracyM: 5,
+      );
+
+      expect(withHeading.hasValidHeading, isTrue);
+      expect(withoutHeading.hasValidHeading, isFalse);
     });
   });
 }

@@ -70,8 +70,10 @@ class _LoginInputFieldState extends State<LoginInputField> {
           ),
         ),
         const SizedBox(height: 8), // Spacing: 8px (8.0)
-        // Campo de Texto
-        TextFormField(
+        Semantics(
+          label: widget.label,
+          textField: true,
+          child: TextFormField(
           controller: widget.controller,
           focusNode: widget.focusNode,
           obscureText: widget.isPassword && _obscureText,
@@ -122,6 +124,7 @@ class _LoginInputFieldState extends State<LoginInputField> {
           },
           onChanged: widget.onChanged,
           onFieldSubmitted: widget.onSubmitted,
+        ),
         ),
       ],
     );

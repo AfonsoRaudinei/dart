@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sqflite/sqflite.dart';
+import '../../core/session/local_session_identity.dart';
 import '../../core/database/database_helper.dart';
 import '../../core/services/sync_orchestrator.dart';
 import '../../core/utils/app_logger.dart';
@@ -15,13 +16,26 @@ final _privateMapBootstrapProvider =
     FutureProvider.autoDispose<_BootstrapResult>((ref) async {
       // Força migrações/abertura de DB antes de construir o mapa privado.
       final db = await DatabaseHelper.instance.database;
+      final userId = LocalSessionIdentity.resolveUserId();
 
-      final clientsCount =
-          Sqflite.firstIntValue(await db.rawQuery('SELECT COUNT(*) FROM clients')) ??
-          0;
-      final agendaEventsCount =
-          Sqflite.firstIntValue(await db.rawQuery('SELECT COUNT(*) FROM agenda_events')) ??
-          0;
+      final clientsCount = userId.isEmpty
+          ? 0
+          : Sqflite.firstIntValue(
+                await db.rawQuery(
+                  'SELECT COUNT(*) FROM clients WHERE user_id = ?',
+                  [userId],
+                ),
+              ) ??
+              0;
+      final agendaEventsCount = userId.isEmpty
+          ? 0
+          : Sqflite.firstIntValue(
+                await db.rawQuery(
+                  'SELECT COUNT(*) FROM agenda_events WHERE user_id = ?',
+                  [userId],
+                ),
+              ) ??
+              0;
 
       return (clientsCount: clientsCount, agendaEventsCount: agendaEventsCount);
     });

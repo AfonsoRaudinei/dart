@@ -323,6 +323,7 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
       context: context,
       mapController: _mapController,
       isMapReady: ref.read(mapReadyStateProvider),
+      locationMode: ref.read(mapLocationModeProvider),
     );
   }
 
@@ -334,9 +335,8 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
       case MapLocationMode.following:
       case MapLocationMode.northLocked:
         MapLocationHandler.startFollowing(
-          locationStream: LocationService().locationStream.map(
-            (fix) => fix.position,
-          ),
+          mode: mode,
+          locationStream: LocationService().locationStream,
           mapController: _mapController,
           isMapReady: ref.read(mapReadyStateProvider),
         );

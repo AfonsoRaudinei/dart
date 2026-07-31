@@ -8,17 +8,18 @@ import 'package:flutter/services.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:latlong2/latlong.dart';
 import '../../../../core/permissions/location_permission_gate.dart';
 import '../../../../core/permissions/permission_provider.dart';
 import '../../../../modules/dashboard/domain/location_state.dart';
+import '../../../../modules/dashboard/domain/user_location_fix.dart';
 import '../../../../modules/dashboard/providers/location_providers.dart';
 import '../../../../modules/dashboard/services/location_service.dart';
+import '../../../../modules/map/presentation/providers/map_location_mode_provider.dart';
 
 class MapLocationHandler {
   MapLocationHandler._();
 
-  static StreamSubscription<LatLng>? _followSubscription;
+  static StreamSubscription<UserLocationFix>? _followSubscription;
 
   /// Solicita permissão de localização e, se concedida, centraliza o mapa.
   static Future<void> requestPermission({
@@ -136,6 +137,7 @@ class MapLocationHandler {
     required BuildContext context,
     required MapController mapController,
     required bool isMapReady,
+    MapLocationMode locationMode = MapLocationMode.idle,
   }) async {
     // 🔒 Guard: Verificar se o mapa está pronto
     if (!isMapReady) return;
@@ -177,26 +179,83 @@ class MapLocationHandler {
     final position = await locationService.getCurrentPosition();
 
     if (position != null && isMapReady && context.mounted) {
-      mapController.move(position.position, 16.0);
+      _applyCameraForFix(
+        mapController: mapController,
+        fix: position,
+        zoom: 16.0,
+        mode: locationMode,
+      );
     }
   }
 
   /// Inicia follow contínuo da câmera usando o stream GPS existente.
   static void startFollowing({
-    required Stream<LatLng> locationStream,
+    required MapLocationMode mode,
+    required Stream<UserLocationFix> locationStream,
     required MapController mapController,
     required bool isMapReady,
   }) {
     _followSubscription?.cancel();
     if (!isMapReady) return;
 
+    if (mode == MapLocationMode.northLocked) {
+      mapController.rotate(0);
+    }
+
     _followSubscription = locationStream.listen(
-      (position) {
-        mapController.move(position, mapController.camera.zoom);
+      (fix) {
+        _applyCameraForFix(
+          mapController: mapController,
+          fix: fix,
+          zoom: mapController.camera.zoom,
+          mode: mode,
+        );
       },
       onError: (_) {},
       cancelOnError: false,
     );
+  }
+
+  static void _applyCameraForFix({
+    required MapController mapController,
+    required UserLocationFix fix,
+    required double zoom,
+    required MapLocationMode mode,
+  }) {
+    final rotation = _mapRotationForMode(mode: mode, fix: fix);
+
+    if (rotation != null) {
+      mapController.moveAndRotate(fix.position, zoom, rotation);
+      return;
+    }
+
+    mapController.move(fix.position, zoom);
+  }
+
+  /// Retorna rotação alvo do mapa (0° = norte) ou `null` para manter a atual.
+  @visibleForTesting
+  static double? mapRotationForMode({
+    required MapLocationMode mode,
+    required UserLocationFix fix,
+  }) {
+    return _mapRotationForMode(mode: mode, fix: fix);
+  }
+
+  static double? _mapRotationForMode({
+    required MapLocationMode mode,
+    required UserLocationFix fix,
+  }) {
+    switch (mode) {
+      case MapLocationMode.northLocked:
+        return 0;
+      case MapLocationMode.following:
+        if (fix.hasValidHeading) {
+          return -fix.headingDeg!;
+        }
+        return null;
+      case MapLocationMode.idle:
+        return null;
+    }
   }
 
   /// Cancela o follow contínuo da câmera.

@@ -33,7 +33,7 @@ void main() {
       );
     });
 
-    test('normaliza sync_status local para local_only em bootstrap orfao', () {
+    test('normaliza sync_status legado para contrato canonico', () {
       expect(
         OccurrenceOwnershipPolicy.normalizeSyncStatusForWrite(
           persistedUserId: '',
@@ -41,22 +41,19 @@ void main() {
         ),
         'local_only',
       );
-    });
-
-    test('preserva sync_status existente quando usuario ja esta resolvido', () {
       expect(
         OccurrenceOwnershipPolicy.normalizeSyncStatusForWrite(
           persistedUserId: 'user-123',
           currentSyncStatus: 'local',
         ),
-        'local',
+        'local_only',
       );
       expect(
         OccurrenceOwnershipPolicy.normalizeSyncStatusForWrite(
           persistedUserId: '',
-          currentSyncStatus: 'updated',
+          currentSyncStatus: 'pending',
         ),
-        'updated',
+        'pending_sync',
       );
     });
 

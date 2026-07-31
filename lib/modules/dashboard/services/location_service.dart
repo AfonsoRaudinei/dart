@@ -61,6 +61,7 @@ class LocationService {
             UserLocationFix(
               position: LatLng(position.latitude, position.longitude),
               accuracyM: position.accuracy,
+              headingDeg: position.heading >= 0 ? position.heading : null,
             ),
           );
         }
@@ -121,6 +122,7 @@ class LocationService {
       return UserLocationFix(
         position: LatLng(position.latitude, position.longitude),
         accuracyM: position.accuracy,
+        headingDeg: position.heading >= 0 ? position.heading : null,
       );
     } catch (e) {
       return null;

@@ -323,7 +323,6 @@ class MapBuildOrchestrator extends ConsumerWidget {
 
               // ADR-043 — Radar acima de talhões/desenho, abaixo de markers
               const ClimaRadarTileLayerWidget(),
-              const ClimaRadarStatusOverlay(),
 
               // 🔒 MARKERS ISOLADOS: Não rebuildam por GPS/zoom/pan
               const MapMarkersWidget(),

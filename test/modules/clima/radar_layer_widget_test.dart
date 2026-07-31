@@ -29,76 +29,42 @@ void main() {
       await tester.pump();
 
       expect(find.byType(TileLayer), findsOneWidget);
-      expect(find.byKey(const Key('radar_active_banner')), findsOneWidget);
-      expect(find.textContaining('Chuva ativa'), findsNothing);
+      expect(find.byKey(const Key('radar_active_banner')), findsNothing);
     });
 
-    testWidgets('exibe banner de carregamento enquanto busca frames', (
+    testWidgets('não exibe banner no topo quando radar desligado', (
       tester,
     ) async {
-      final completer = Completer<ClimaRadarFetchResult>();
-
       await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            climaRadarEnabledProvider.overrideWith(
-              () => _PresetClimaRadarEnabled(true),
-            ),
-            isOnlineProvider.overrideWith((ref) => Stream.value(true)),
-            climaRadarFramesProvider.overrideWith((ref) => completer.future),
-          ],
-          child: MaterialApp(
-            home: Scaffold(
-              body: FlutterMap(
-                options: const MapOptions(
-                  initialCenter: LatLng(-15.7801, -47.9292),
-                  initialZoom: 5,
-                ),
-                children: const [ClimaRadarStatusOverlay()],
-              ),
-            ),
-          ),
+        _buildRadarMap(
+          radarEnabled: false,
+          isOnline: true,
+          result: _successResult(),
         ),
       );
       await tester.pump();
       await tester.pump();
 
-      expect(find.text(ClimaRadarOverlayMessages.loading), findsOneWidget);
+      expect(find.byType(TileLayer), findsNothing);
+      expect(find.byKey(const Key('radar_loading_banner')), findsNothing);
     });
 
-    testWidgets('exibe banner offline quando sem conexão', (tester) async {
+    testWidgets('não renderiza tiles quando sem conexão', (tester) async {
       await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            climaRadarEnabledProvider.overrideWith(
-              () => _PresetClimaRadarEnabled(true),
-            ),
-            isOnlineProvider.overrideWith((ref) => Stream.value(false)),
-            climaRadarFramesProvider.overrideWith(
-              (ref) async => _successResult(),
-            ),
-          ],
-          child: MaterialApp(
-            home: Scaffold(
-              body: FlutterMap(
-                options: const MapOptions(
-                  initialCenter: LatLng(-15.7801, -47.9292),
-                  initialZoom: 5,
-                ),
-                children: const [ClimaRadarStatusOverlay()],
-              ),
-            ),
-          ),
+        _buildRadarMap(
+          radarEnabled: true,
+          isOnline: false,
+          result: _successResult(),
         ),
       );
       await tester.pump();
       await tester.pump();
 
-      expect(find.text(ClimaRadarOverlayMessages.offline), findsOneWidget);
+      expect(find.text(ClimaRadarOverlayMessages.offline), findsNothing);
       expect(find.byType(TileLayer), findsNothing);
     });
 
-    testWidgets('exibe banner sem precipitação quando manifesto vazio', (
+    testWidgets('não renderiza tiles quando manifesto vazio', (
       tester,
     ) async {
       await tester.pumpWidget(
@@ -115,12 +81,12 @@ void main() {
 
       expect(
         find.text(ClimaRadarOverlayMessages.noPrecipitation),
-        findsOneWidget,
+        findsNothing,
       );
       expect(find.byType(TileLayer), findsNothing);
     });
 
-    testWidgets('exibe banner indisponível em erro HTTP', (tester) async {
+    testWidgets('não renderiza tiles em erro HTTP', (tester) async {
       await tester.pumpWidget(
         _buildRadarMap(
           radarEnabled: true,
@@ -134,7 +100,8 @@ void main() {
       await tester.pump();
       await tester.pump();
 
-      expect(find.text(ClimaRadarOverlayMessages.unavailable), findsOneWidget);
+      expect(find.text(ClimaRadarOverlayMessages.unavailable), findsNothing);
+      expect(find.byType(TileLayer), findsNothing);
     });
   });
 }
@@ -175,7 +142,6 @@ Widget _buildRadarMap({
           ),
           children: [
             ClimaRadarTileLayerWidget(tileProvider: _MemoryTileProvider()),
-            const ClimaRadarStatusOverlay(),
           ],
         ),
       ),

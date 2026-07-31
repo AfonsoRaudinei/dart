@@ -17,6 +17,7 @@ import 'package:soloforte_app/modules/settings/presentation/providers/settings_p
 import 'package:soloforte_app/modules/visitas/data/repositories/visit_repository.dart';
 import 'package:soloforte_app/modules/visitas/domain/models/visit_session.dart';
 import 'package:soloforte_app/modules/visitas/presentation/controllers/visit_controller.dart';
+import 'package:soloforte_app/modules/clima/presentation/providers/radar_providers.dart';
 import 'package:soloforte_app/ui/components/map/widgets/map_action_fab_menu.dart';
 import 'package:soloforte_app/ui/components/map/widgets/map_controls_overlay.dart';
 
@@ -76,9 +77,45 @@ void main() {
       expect(find.textContaining('publica', findRichText: true), findsNothing);
     });
   });
+
+  group('map status indicator', () {
+    testWidgets('vermelho quando offline', (tester) async {
+      await _pumpMapControlsOverlay(tester, isOnline: false, radarEnabled: false);
+
+      final indicator = tester.widget<Container>(
+        find.byKey(const Key('map_status_indicator')),
+      );
+      final decoration = indicator.decoration! as BoxDecoration;
+      expect(decoration.color, const Color(0xFFFF3B30));
+    });
+
+    testWidgets('verde quando online sem chuva no mapa', (tester) async {
+      await _pumpMapControlsOverlay(tester, isOnline: true, radarEnabled: false);
+
+      final indicator = tester.widget<Container>(
+        find.byKey(const Key('map_status_indicator')),
+      );
+      final decoration = indicator.decoration! as BoxDecoration;
+      expect(decoration.color, const Color(0xFF34C759));
+    });
+
+    testWidgets('azul Samsung quando online com chuva no mapa', (tester) async {
+      await _pumpMapControlsOverlay(tester, isOnline: true, radarEnabled: true);
+
+      final indicator = tester.widget<Container>(
+        find.byKey(const Key('map_status_indicator')),
+      );
+      final decoration = indicator.decoration! as BoxDecoration;
+      expect(decoration.color, const Color(0xFF1428A0));
+    });
+  });
 }
 
-Future<void> _pumpMapControlsOverlay(WidgetTester tester) async {
+Future<void> _pumpMapControlsOverlay(
+  WidgetTester tester, {
+  bool isOnline = true,
+  bool radarEnabled = false,
+}) async {
   SharedPreferences.setMockInitialValues({});
   final settingsRepository = SettingsRepository(
     await SharedPreferences.getInstance(),
@@ -92,7 +129,10 @@ Future<void> _pumpMapControlsOverlay(WidgetTester tester) async {
       overrides: [
         preferencesServiceProvider.overrideWithValue(preferencesService),
         settingsRepositoryProvider.overrideWithValue(settingsRepository),
-        isOnlineProvider.overrideWith((ref) => Stream.value(true)),
+        isOnlineProvider.overrideWith((ref) => Stream.value(isOnline)),
+        climaRadarEnabledProvider.overrideWith(
+          () => _PresetClimaRadarEnabled(radarEnabled),
+        ),
         visitRepositoryProvider.overrideWithValue(_NoActiveVisitRepository()),
         agendaSessionBridgeProvider.overrideWithValue(_NoopAgendaBridge()),
         sessionControllerProvider.overrideWith(_PublicSessionController.new),
@@ -142,4 +182,13 @@ class _NoopAgendaBridge implements IAgendaSessionBridge {
 class _PublicSessionController extends SessionController {
   @override
   SessionState build() => const SessionPublic();
+}
+
+class _PresetClimaRadarEnabled extends ClimaRadarEnabled {
+  _PresetClimaRadarEnabled(this.initial);
+
+  final bool initial;
+
+  @override
+  bool build() => initial;
 }

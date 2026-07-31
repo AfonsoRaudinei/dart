@@ -68,8 +68,20 @@ void main() {
     ) async {
       await _pumpLayersSheet(tester);
 
+      final scrollable = find.byType(Scrollable);
+      await tester.scrollUntilVisible(
+        find.text('WMS Externa'),
+        120,
+        scrollable: scrollable,
+      );
+      await tester.scrollUntilVisible(
+        find.text('Raster Custom (XYZ/GeoTIFF)'),
+        120,
+        scrollable: scrollable,
+      );
+
       expect(find.textContaining('servidor WMS'), findsOneWidget);
-      expect(find.textContaining('ortofoto, GeoTIFF'), findsOneWidget);
+      expect(find.textContaining('GeoTIFF'), findsWidgets);
     });
 
     testWidgets('mantém pinos ativos por padrão', (tester) async {

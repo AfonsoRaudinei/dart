@@ -47,7 +47,7 @@ void main() {
         );
 
         expect(fakeRepository.lastSaved, isNotNull);
-        expect(fakeRepository.lastSaved!.syncStatus, 'local');
+        expect(fakeRepository.lastSaved!.syncStatus, 'local_only');
       },
     );
 

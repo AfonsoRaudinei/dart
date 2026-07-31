@@ -796,10 +796,11 @@ else
 fi
 
 if grep -q "ClimaRadarOverlayMessages.noPrecipitation" lib/modules/clima/domain/radar_overlay_state.dart && \
-   grep -q "radar_offline_banner" lib/modules/clima/presentation/widgets/radar_layer_widget.dart; then
-  pass "estados UX diferenciados do radar (offline, vazio, erro)"
+   grep -q "map_status_indicator" lib/ui/components/map/widgets/map_controls_overlay.dart && \
+   grep -q "climaRadarEnabledProvider" lib/ui/components/map/widgets/map_controls_overlay.dart; then
+  pass "estados UX diferenciados do radar (offline, vazio, erro + indicador unificado no mapa)"
 else
-  fail "REGRA-CLIMA-RADAR-6: radar_overlay_state.dart e widget devem diferenciar estados UX"
+  fail "REGRA-CLIMA-RADAR-6: radar_overlay_state.dart e indicador unificado do mapa devem diferenciar estados UX"
 fi
 
 # ── REGRA-CLIMA-RADAR-7: telemetria sanitizada via AppLogger

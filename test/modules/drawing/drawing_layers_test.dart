@@ -8,6 +8,7 @@ import 'package:soloforte_app/modules/drawing/data/repositories/drawing_reposito
 import 'package:soloforte_app/modules/drawing/domain/models/drawing_models.dart';
 import 'package:soloforte_app/modules/drawing/domain/models/drawing_visual_style.dart';
 import 'package:soloforte_app/modules/drawing/presentation/controllers/drawing_controller.dart';
+import 'package:soloforte_app/modules/drawing/presentation/widgets/drawing_edit_layer.dart';
 import 'package:soloforte_app/modules/drawing/presentation/widgets/drawing_layers.dart';
 
 class _Repository extends DrawingRepository {
@@ -69,7 +70,9 @@ void main() {
     tester,
   ) async {
     final controller = DrawingController(repository: _Repository([]));
+    final mapController = MapController();
     addTearDown(controller.dispose);
+    addTearDown(mapController.dispose);
 
     controller.selectTool('polygon');
     controller.appendDrawingPoint(const LatLng(-10.0, -48.0));
@@ -78,16 +81,23 @@ void main() {
       MaterialApp(
         home: Scaffold(
           body: FlutterMap(
+            mapController: mapController,
             options: const MapOptions(initialCenter: LatLng(-10, -48)),
-            children: [DrawingLayerWidget(controller: controller)],
+            children: [
+              DrawingLayerWidget(controller: controller),
+              DrawingEditLayer(
+                controller: controller,
+                mapController: mapController,
+              ),
+            ],
           ),
         ),
       ),
     );
+    await tester.pump();
 
-    expect(find.byKey(const Key('drawing_point_0')), findsOneWidget);
-    final markerLayer = tester.widget<MarkerLayer>(find.byType(MarkerLayer));
-    expect(markerLayer.markers.single.point, const LatLng(-10.0, -48.0));
+    expect(find.byKey(const Key('drawing_sketch_vertex_0')), findsOneWidget);
+    expect(controller.currentPoints.single, const LatLng(-10.0, -48.0));
   });
 
   testWidgets(

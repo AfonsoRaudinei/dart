@@ -23,15 +23,8 @@ class LoginScreen extends ConsumerStatefulWidget {
 
 class _LoginScreenState extends ConsumerState<LoginScreen>
     with SingleTickerProviderStateMixin {
-  // ⚠️ Demo mode — remover antes do release público
-  static const _demoEmail = String.fromEnvironment(
-    'DEMO_EMAIL',
-    defaultValue: 'demo@soloforte.com',
-  );
-  static const _demoPassword = String.fromEnvironment(
-    'DEMO_PASSWORD',
-    defaultValue: 'demo1234',
-  );
+  static const _demoEmail = String.fromEnvironment('DEMO_EMAIL');
+  static const _demoPassword = String.fromEnvironment('DEMO_PASSWORD');
 
   final _formKey = GlobalKey<FormState>();
   final _emailCtrl = TextEditingController();
@@ -113,7 +106,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     setState(() => _loading = true);
 
     try {
-      if (kDebugMode && _isDemoMode) {
+      if (kDebugMode &&
+          _isDemoMode &&
+          _demoEmail.isNotEmpty &&
+          _demoPassword.isNotEmpty) {
         await ref
             .read(sessionControllerProvider.notifier)
             .login(_demoEmail, _demoPassword);
@@ -482,7 +478,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                             ),
 
                             // Modo Demo — visível apenas em debug builds
-                            if (kDebugMode)
+                            if (kDebugMode &&
+                                _demoEmail.isNotEmpty &&
+                                _demoPassword.isNotEmpty)
                               Center(
                                 child: DemoModeCheckbox(
                                   value: _isDemoMode,

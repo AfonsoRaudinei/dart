@@ -29,7 +29,7 @@ void main() {
       expect(find.text('Sincronizar agora'), findsOneWidget);
       expect(find.text('Agenda'), findsNothing);
       expect(find.text('Clientes'), findsNothing);
-      expect(find.text('Relatórios'), findsNothing);
+      expect(find.text('Relatórios'), findsOneWidget);
       expect(find.text('Carteira'), findsNothing);
       expect(find.text('Acesso rápido'), findsNothing);
     });
