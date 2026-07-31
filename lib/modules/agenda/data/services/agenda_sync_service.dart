@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/session/local_session_identity.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/network/network_policy.dart';
+import 'package:soloforte_app/core/services/sync_status_contract.dart';
 import '../../../../core/utils/app_logger.dart';
 import '../repositories/agenda_repository.dart';
 import '../../domain/entities/event.dart';
@@ -101,7 +102,8 @@ class AgendaSyncService {
     }
 
     final sessions = await _repository.getAllSessions();
-    final pendingSessions = sessions.where((s) => s.syncStatus == 'pending');
+    final pendingSessions =
+        sessions.where((s) => SyncStatusContract.isPending(s.syncStatus));
 
     for (final session in pendingSessions) {
       try {

@@ -6,6 +6,10 @@ Ativo — 2026-07-08
 
 ## Contexto
 
+> **Nota de numeração:** Este ADR trata da whitelist Riverpod legada. O arquivo
+> `ADR-044-OPERACAO-PLACEHOLDER.md` usa o mesmo prefixo numérico com escopo
+> distinto (módulo `operacao/` placeholder). Não confundir os dois documentos.
+
 O `AGENTS.md` proibia `StateNotifier`/`ChangeNotifier` "exceto 3 casos já
 documentados", mas a auditoria de Jul/2026 encontrou **10 classes** em 8
 arquivos. A regra e o código divergiam, tornando o enforcement ambíguo:

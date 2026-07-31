@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:soloforte_app/core/contracts/i_visit_session_writer.dart';
 import 'package:soloforte_app/core/contracts/visit_session_mirror_input.dart';
 import 'package:uuid/uuid.dart';
+import 'package:soloforte_app/core/services/sync_status_contract.dart';
 import '../entities/event.dart';
 import '../entities/visit_session.dart';
 import '../enums/event_status.dart';
@@ -45,7 +46,7 @@ class StartEventUseCase {
       startAtReal: now,
       createdBy: currentUserId,
       createdAt: now,
-      syncStatus: 'pending',
+      syncStatus: SyncStatusContract.pendingSync,
     );
 
     // Atualiza o evento
@@ -53,7 +54,7 @@ class StartEventUseCase {
       status: EventStatus.emAndamento,
       visitSessionId: session.id,
       updatedAt: now,
-      syncStatus: 'pending',
+      syncStatus: SyncStatusContract.pendingSync,
     );
 
     // Persiste

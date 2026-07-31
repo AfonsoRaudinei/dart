@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:soloforte_app/core/services/sync_status_contract.dart';
 
 /// Entidade representando uma Sessão de Visita
 ///
@@ -48,7 +49,7 @@ class VisitSession extends Equatable {
     this.checklistSnapshot,
     required this.createdBy,
     required this.createdAt,
-    this.syncStatus = 'pending',
+    this.syncStatus = SyncStatusContract.pendingSync,
     this.clienteId,
   });
 

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
+import 'package:soloforte_app/core/services/sync_status_contract.dart';
 import '../entities/event.dart';
 import '../entities/visit.dart';
 import '../enums/event_status.dart';
@@ -97,7 +98,7 @@ class CreateEventUseCase {
       status: EventStatus.agendado,
       createdAt: now,
       updatedAt: now,
-      syncStatus: 'pending',
+      syncStatus: SyncStatusContract.pendingSync,
       startTime: startTime,
       endTime: endTime,
       priority: priority,

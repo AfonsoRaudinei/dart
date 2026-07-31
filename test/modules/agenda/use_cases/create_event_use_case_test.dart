@@ -233,7 +233,7 @@ void main() {
       expect(repo.events, isEmpty);
     });
 
-    test('syncStatus inicial é pending', () async {
+    test('syncStatus inicial é pending_sync', () async {
       final (:event, :conflicts) = await useCase.execute(
         tipo: EventType.visitaTecnica,
         clienteId: 'cli-1',
@@ -243,7 +243,7 @@ void main() {
         currentEvents: [],
       );
 
-      expect(event.syncStatus, equals('pending'));
+      expect(event.syncStatus, equals('pending_sync'));
     });
   });
 }

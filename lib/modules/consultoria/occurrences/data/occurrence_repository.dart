@@ -2,6 +2,7 @@ import 'package:sqflite/sqflite.dart';
 import '../../../../core/database/database_helper.dart';
 import '../../../../core/session/local_session_identity.dart';
 import '../../../../core/utils/app_logger.dart';
+import '../../../../core/services/sync_status_contract.dart';
 import '../domain/occurrence.dart';
 
 class OccurrenceOwnershipPolicy {
@@ -26,10 +27,7 @@ class OccurrenceOwnershipPolicy {
     required String persistedUserId,
     required String currentSyncStatus,
   }) {
-    if (persistedUserId.isEmpty && currentSyncStatus == 'local') {
-      return 'local_only';
-    }
-    return currentSyncStatus;
+    return SyncStatusContract.normalize(currentSyncStatus);
   }
 
   static String buildOwnedOrOrphanWhereClause() {

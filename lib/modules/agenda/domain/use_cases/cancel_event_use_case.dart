@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:soloforte_app/core/contracts/i_visit_session_writer.dart';
+import 'package:soloforte_app/core/services/sync_status_contract.dart';
 import '../entities/event.dart';
 import '../entities/visit_session.dart';
 import '../enums/event_status.dart';
@@ -53,7 +54,7 @@ class CancelEventUseCase {
           endAtReal: now,
           duracaoMin: now.difference(session.startAtReal).inMinutes,
           notasFinais: 'Cancelado',
-          syncStatus: 'pending',
+          syncStatus: SyncStatusContract.pendingSync,
         );
 
         await _repository.updateSession(updatedSession);
@@ -64,7 +65,7 @@ class CancelEventUseCase {
     final updatedEvent = event.copyWith(
       status: EventStatus.cancelado,
       updatedAt: now,
-      syncStatus: 'pending',
+      syncStatus: SyncStatusContract.pendingSync,
     );
 
     // Cancela notificações

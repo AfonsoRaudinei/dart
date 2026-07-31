@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/core/services/sync_status_contract.dart';
 
 import '../../domain/entities/event.dart';
 import '../../domain/entities/visit.dart';
@@ -72,7 +73,7 @@ class EventModel extends Event {
       serieId: json['serieId'] as String?,
       createdAt: DateTime.parse(json['createdAt'] as String),
       updatedAt: DateTime.parse(json['updatedAt'] as String),
-      syncStatus: json['syncStatus'] as String? ?? 'pending',
+      syncStatus: json['syncStatus'] as String? ?? SyncStatusContract.pendingSync,
       startTime: _parseTimeOfDay(json['startTime']),
       endTime: _parseTimeOfDay(json['endTime']),
       priority: VisitPriority.fromString(

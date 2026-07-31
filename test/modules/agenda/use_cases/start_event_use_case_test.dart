@@ -74,7 +74,7 @@ void main() {
       expect(repo.sessionById(session.id), isNotNull);
     });
 
-    test('syncStatus do evento atualizado é pending', () async {
+    test('syncStatus do evento atualizado é pending_sync', () async {
       final evento = makeEvent(status: EventStatus.agendado);
 
       final (:updatedEvent, :session) = await useCase.execute(
@@ -82,7 +82,7 @@ void main() {
         currentUserId: 'user-1',
       );
 
-      expect(updatedEvent.syncStatus, equals('pending'));
+      expect(updatedEvent.syncStatus, equals('pending_sync'));
     });
 
     test('espelha sessão em visit_sessions com mesmo id e producerId', () async {

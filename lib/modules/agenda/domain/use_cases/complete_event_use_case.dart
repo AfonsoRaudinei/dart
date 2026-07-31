@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:soloforte_app/core/contracts/i_visit_session_writer.dart';
+import 'package:soloforte_app/core/services/sync_status_contract.dart';
 import '../entities/event.dart';
 import '../entities/visit_session.dart';
 import '../enums/event_status.dart';
@@ -37,7 +38,7 @@ class CompleteEventUseCase {
     final updatedEvent = event.copyWith(
       status: EventStatus.concluido,
       updatedAt: now,
-      syncStatus: 'pending',
+      syncStatus: SyncStatusContract.pendingSync,
     );
 
     // Fecha a sessão se existir
@@ -52,7 +53,7 @@ class CompleteEventUseCase {
         endAtReal: now,
         duracaoMin: now.difference(session.startAtReal).inMinutes,
         notasFinais: notasFinais,
-        syncStatus: 'pending',
+        syncStatus: SyncStatusContract.pendingSync,
       );
 
       await _repository.updateSession(updatedSession);

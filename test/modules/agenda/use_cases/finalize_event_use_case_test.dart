@@ -42,12 +42,12 @@ void main() {
       expect(updated.id, equals('evt-xyz'));
     });
 
-    test('syncStatus é pending após finalizar', () async {
+    test('syncStatus é pending_sync após finalizar', () async {
       final evento = makeEvent(status: EventStatus.emAndamento);
 
       final updated = await useCase.execute(evento);
 
-      expect(updated.syncStatus, equals('pending'));
+      expect(updated.syncStatus, equals('pending_sync'));
     });
   });
 

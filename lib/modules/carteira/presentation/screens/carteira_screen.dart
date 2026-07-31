@@ -254,9 +254,22 @@ class _CategoriasTab extends ConsumerWidget {
     final categoriasAsync = ref.watch(categoriasGlobaisProvider(userId));
     final valorGrao = ref.watch(valorGraoProvider).valueOrNull ?? 0.0;
 
-    return Stack(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        categoriasAsync.when(
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+          child: Align(
+            alignment: Alignment.centerRight,
+            child: FilledButton.icon(
+              onPressed: () => _criarCategoria(context, ref),
+              icon: const Icon(Icons.add),
+              label: const Text('Nova categoria'),
+            ),
+          ),
+        ),
+        Expanded(
+          child: categoriasAsync.when(
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (_, __) =>
               const Center(child: Text('Erro ao carregar categorias.')),
@@ -266,7 +279,7 @@ class _CategoriasTab extends ConsumerWidget {
             }
 
             return ListView.builder(
-              padding: const EdgeInsets.only(top: 8, bottom: kFabSafeArea + 88),
+              padding: const EdgeInsets.only(top: 8, bottom: kFabSafeArea),
               itemCount: categorias.length,
               itemBuilder: (context, index) {
                 final categoria = categorias[index];
@@ -315,16 +328,6 @@ class _CategoriasTab extends ConsumerWidget {
             );
           },
         ),
-        Positioned(
-          right: 16,
-          bottom: kFabSafeArea + 16,
-          child: FloatingActionButton.extended(
-            onPressed: () => _criarCategoria(context, ref),
-            icon: const Icon(Icons.add),
-            label: const Text('Categoria'),
-            backgroundColor: const Color(0xFF4ADE80),
-            foregroundColor: Colors.white,
-          ),
         ),
       ],
     );

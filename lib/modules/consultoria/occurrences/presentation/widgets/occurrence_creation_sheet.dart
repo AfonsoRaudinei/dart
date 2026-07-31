@@ -241,6 +241,13 @@ class _OccurrenceCreationSheetState
     return jsonEncode(map);
   }
 
+  void _registerPersistedPhoto(OccurrenceCategory cat, String path) {
+    setState(() {
+      _fotos.putIfAbsent(cat.name, () => []);
+      _fotos[cat.name]!.add(path);
+    });
+  }
+
   String? _encodeFotos() => _fotos.isEmpty ? null : jsonEncode(_fotos);
 
   EstadioData? _findEstadio(String? code) {

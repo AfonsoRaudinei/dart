@@ -148,10 +148,7 @@ extension _OccurrenceCreationSheetUiHelpers on _OccurrenceCreationSheetState {
       return;
     }
 
-    setState(() {
-      _fotos.putIfAbsent(cat.name, () => []);
-      _fotos[cat.name]!.add(persisted);
-    });
+    _registerPersistedPhoto(cat, persisted);
   }
 
   Future<void> _onAddPhotoPressed() async {

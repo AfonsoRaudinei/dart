@@ -1,3 +1,4 @@
+import 'package:soloforte_app/core/services/sync_status_contract.dart';
 import '../entities/event.dart';
 import '../enums/event_status.dart';
 import '../rules/event_rules.dart';
@@ -25,7 +26,7 @@ class FinalizeEventUseCase {
     final updatedEvent = event.copyWith(
       status: EventStatus.finalizando,
       updatedAt: DateTime.now(),
-      syncStatus: 'pending',
+      syncStatus: SyncStatusContract.pendingSync,
     );
 
     await _repository.updateEvent(updatedEvent);

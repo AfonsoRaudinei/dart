@@ -1,4 +1,5 @@
 import 'package:sqflite/sqflite.dart';
+import 'package:soloforte_app/core/services/sync_status_contract.dart';
 import '../../../../core/database/database_helper.dart';
 import '../../../../core/session/local_session_identity.dart';
 import '../../domain/entities/event.dart';
@@ -118,8 +119,10 @@ class AgendaRepository {
     final db = await _dbHelper.database;
     final results = await db.query(
       'agenda_events',
-      where: 'user_id = ? AND sync_status = ?',
-      whereArgs: [userId, 'pending'],
+      where:
+          "user_id = ? AND sync_status IN ('${SyncStatusContract.pendingSync}', "
+          "'${SyncStatusContract.legacyPending}')",
+      whereArgs: [userId],
     );
 
     return results.map(_eventFromMap).toList();
@@ -266,7 +269,7 @@ class AgendaRepository {
       'serie_id': event.serieId,
       'created_at': event.createdAt.toIso8601String(),
       'updated_at': event.updatedAt.toIso8601String(),
-      'sync_status': event.syncStatus,
+      'sync_status': SyncStatusContract.normalize(event.syncStatus),
       'start_time': event.startTime == null
           ? null
           : '${event.startTime!.hour.toString().padLeft(2, '0')}:${event.startTime!.minute.toString().padLeft(2, '0')}',
@@ -294,7 +297,7 @@ class AgendaRepository {
       'serieId': map['serie_id'],
       'createdAt': map['created_at'],
       'updatedAt': map['updated_at'],
-      'syncStatus': map['sync_status'],
+      'syncStatus': SyncStatusContract.normalize(map['sync_status'] as String?),
       'startTime': map['start_time'],
       'endTime': map['end_time'],
       'priority': map['priority'] ?? 'normal',
@@ -314,7 +317,7 @@ class AgendaRepository {
       'checklist_snapshot': session.checklistSnapshot,
       'created_by': session.createdBy,
       'created_at': session.createdAt.toIso8601String(),
-      'sync_status': session.syncStatus,
+      'sync_status': SyncStatusContract.normalize(session.syncStatus),
       'producer_id': session.clienteId,
     };
   }
@@ -330,7 +333,7 @@ class AgendaRepository {
       'checklistSnapshot': map['checklist_snapshot'],
       'createdBy': map['created_by'],
       'createdAt': map['created_at'],
-      'syncStatus': map['sync_status'],
+      'syncStatus': SyncStatusContract.normalize(map['sync_status'] as String?),
       'producer_id': map['producer_id'],
     }).toEntity();
   }

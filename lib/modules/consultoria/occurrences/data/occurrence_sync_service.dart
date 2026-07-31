@@ -7,6 +7,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:soloforte_app/core/contracts/i_occurrence_access_reader.dart';
 import 'package:soloforte_app/core/database/database_helper.dart';
 import 'package:soloforte_app/core/services/sync_retry_runner.dart';
+import 'package:soloforte_app/core/services/sync_status_contract.dart';
 import 'package:soloforte_app/core/utils/app_logger.dart';
 
 import '../domain/occurrence.dart';
@@ -171,7 +172,16 @@ class OccurrenceSyncService {
     }
 
     if (remote['deleted_at'] != null) {
-      await db.delete('occurrences', where: 'id = ?', whereArgs: [localId]);
+      await db.update(
+        'occurrences',
+        {
+          'sync_status': SyncStatusContract.deletedLocal,
+          'deleted_at': remote['deleted_at'],
+          'updated_at': DateTime.now().toUtc().toIso8601String(),
+        },
+        where: 'id = ?',
+        whereArgs: [localId],
+      );
       return;
     }
 
@@ -239,7 +249,16 @@ class OccurrenceSyncService {
       activeClientIds,
     );
     for (final id in revokedIds) {
-      await db.delete('occurrences', where: 'id = ?', whereArgs: [id]);
+      await db.update(
+        'occurrences',
+        {
+          'sync_status': SyncStatusContract.deletedLocal,
+          'deleted_at': DateTime.now().toUtc().toIso8601String(),
+          'updated_at': DateTime.now().toUtc().toIso8601String(),
+        },
+        where: 'id = ?',
+        whereArgs: [id],
+      );
     }
   }
 }

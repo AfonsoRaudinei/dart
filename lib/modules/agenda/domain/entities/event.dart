@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/core/services/sync_status_contract.dart';
 import '../enums/event_status.dart';
 import '../enums/event_type.dart';
 import 'visit.dart';
@@ -76,7 +77,7 @@ class Event extends Equatable {
     this.serieId,
     required this.createdAt,
     required this.updatedAt,
-    this.syncStatus = 'pending',
+    this.syncStatus = SyncStatusContract.pendingSync,
     this.startTime,
     this.endTime,
     this.priority = VisitPriority.normal,

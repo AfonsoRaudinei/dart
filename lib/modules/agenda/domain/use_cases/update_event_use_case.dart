@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/core/services/sync_status_contract.dart';
 import '../entities/event.dart';
 import '../entities/visit.dart';
 import '../enums/event_status.dart';
@@ -95,7 +96,7 @@ class UpdateEventUseCase {
       latitude: latitude,
       longitude: longitude,
       updatedAt: DateTime.now(),
-      syncStatus: 'pending',
+      syncStatus: SyncStatusContract.pendingSync,
     );
 
     // Persiste

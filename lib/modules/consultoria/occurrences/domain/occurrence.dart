@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/painting.dart';
+import '../../../../core/services/sync_status_contract.dart';
 import '../../../../core/utils/app_logger.dart';
 
 enum SyncStatus {
@@ -147,7 +148,7 @@ class Occurrence {
     this.geometry,
     required this.createdAt,
     DateTime? updatedAt,
-    this.syncStatus = 'local',
+    this.syncStatus = SyncStatusContract.localOnly,
     this.category,
     this.status = 'draft',
     this.remoteId,
@@ -193,7 +194,7 @@ class Occurrence {
       updatedAt: map['updated_at'] != null
           ? DateTime.parse(map['updated_at'])
           : null,
-      syncStatus: map['sync_status'] ?? 'local',
+      syncStatus: SyncStatusContract.normalize(map['sync_status'] as String?),
       category: category,
       status: map['status'] ?? 'draft',
       remoteId: map['remote_id'] as String?,
@@ -239,7 +240,7 @@ class Occurrence {
       'geometry': geometry,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
-      'sync_status': syncStatus,
+      'sync_status': SyncStatusContract.normalize(syncStatus),
       'category': category,
       'status': status,
       'remote_id': remoteId,

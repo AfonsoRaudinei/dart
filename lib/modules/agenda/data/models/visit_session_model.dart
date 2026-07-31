@@ -1,3 +1,4 @@
+import 'package:soloforte_app/core/services/sync_status_contract.dart';
 import '../../domain/entities/visit_session.dart';
 
 /// Model para serialização/deserialização de VisitSession
@@ -47,7 +48,7 @@ class VisitSessionModel extends VisitSession {
       checklistSnapshot: json['checklistSnapshot'] as String?,
       createdBy: json['createdBy'] as String,
       createdAt: DateTime.parse(json['createdAt'] as String),
-      syncStatus: json['syncStatus'] as String? ?? 'pending',
+      syncStatus: json['syncStatus'] as String? ?? SyncStatusContract.pendingSync,
       clienteId: json['producer_id'] as String?,
     );
   }

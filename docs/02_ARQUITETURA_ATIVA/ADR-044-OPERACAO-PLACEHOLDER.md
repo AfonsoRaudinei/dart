@@ -4,7 +4,7 @@
 **Status:** ATIVO  
 **Tipo:** GOVERNANÇA DE BOUNDED CONTEXT  
 **Altera fronteira entre módulos?** NÃO  
-**Relacionado:** ADR-024 (visitas absorveu geofence legado de operacao/)
+**Relacionado:** ADR-024 (visitas absorveu geofence legado de operacao/) · ADR-044-riverpod-legacy-whitelist.md (whitelist Riverpod — **numeração distinta, escopo diferente**)
 
 ---
 

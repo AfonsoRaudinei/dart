@@ -96,6 +96,9 @@ jobs:
       - name: Instalar dependências Flutter
         run: flutter pub get
 
+      - name: Flutter analyze (lib/)
+        run: flutter analyze lib/
+
       - name: Regression Shield
         run: flutter test test/regression/ --reporter=compact
 

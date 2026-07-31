@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 
+import '../../../../core/session/session_controller.dart';
 import '../../../../core/infra/preferences_service.dart';
 import '../../data/datasources/rainviewer_radar_datasource.dart';
 import '../../domain/entities/radar_fetch_result.dart';
@@ -30,6 +31,10 @@ final climaRadarEnabledProvider =
 class ClimaRadarEnabled extends Notifier<bool> {
   @override
   bool build() {
+    SessionController.registerLogoutInvalidation(
+      key: 'climaRadarEnabledProvider',
+      invalidate: (ref) => ref.invalidate(climaRadarEnabledProvider),
+    );
     return ref.read(preferencesServiceProvider).getBool(
           climaRadarEnabledPreferenceKey,
         ) ??
