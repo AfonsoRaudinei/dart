@@ -4,7 +4,6 @@ import java.util.Properties
 plugins {
     id("com.android.application")
     id("kotlin-android")
-    // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
 }
 
@@ -18,7 +17,7 @@ val keystoreProperties = Properties().apply {
 }
 
 android {
-    namespace = "com.soloforte.soloforte_app"
+    namespace = "com.soloforte.app"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -32,17 +31,6 @@ android {
         jvmTarget = JavaVersion.VERSION_17.toString()
     }
 
-    defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.soloforte.soloforte_app"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = flutter.minSdkVersion // Minimum for desugaring libs
-        targetSdk = flutter.targetSdkVersion
-        versionCode = flutter.versionCode
-        versionName = flutter.versionName
-    }
-
     signingConfigs {
         create("release") {
             if (keystorePropertiesFile.exists()) {
@@ -52,6 +40,14 @@ android {
                 storePassword = keystoreProperties["storePassword"] as String
             }
         }
+    }
+
+    defaultConfig {
+        applicationId = "com.soloforte.app"
+        minSdk = flutter.minSdkVersion
+        targetSdk = flutter.targetSdkVersion
+        versionCode = flutter.versionCode
+        versionName = flutter.versionName
     }
 
     buildTypes {

@@ -273,6 +273,13 @@ class _AppShellState extends ConsumerState<AppShell> {
     // 1. VERIFICAR AUTENTICAÇÃO + ROTA
     // ═══════════════════════════════════════════════════════════════
     final session = ref.watch(sessionControllerProvider);
+
+    if (session is SessionUnknown) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
     final isAuth = session is SessionAuthenticated;
     final path = GoRouterState.of(context).uri.path;
     final isPublicRoute = AppRoutes.publicRoutes.contains(path);
