@@ -6,12 +6,11 @@ class _StubLookup implements IFieldLookup {
   _StubLookup({
     this.findByIdResult,
     this.listByFarmIdResult = const [],
-    this.listAllResult = const [],
   });
 
   FieldSummary? findByIdResult;
   List<FieldSummary> listByFarmIdResult;
-  List<FieldSummary> listAllResult;
+  List<FieldSummary> listAllResult = const [];
   bool findByIdCalled = false;
 
   @override

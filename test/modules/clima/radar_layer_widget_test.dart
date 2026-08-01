@@ -5,11 +5,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:soloforte_app/core/config/map_config.dart';
 import 'package:soloforte_app/core/providers/connectivity_provider.dart';
-import 'package:soloforte_app/modules/clima/domain/entities/radar_fetch_result.dart';
-import 'package:soloforte_app/modules/clima/domain/entities/radar_rain_frame.dart';
-import 'package:soloforte_app/modules/clima/domain/radar_overlay_state.dart';
 import 'package:soloforte_app/modules/clima/presentation/providers/radar_providers.dart';
 import 'package:soloforte_app/modules/clima/presentation/widgets/radar_layer_widget.dart';
 
@@ -107,9 +103,9 @@ void main() {
 }
 
 ClimaRadarFetchResult _successResult() {
-  return ClimaRadarFetchResult(
+  return const ClimaRadarFetchResult(
     status: ClimaRadarFetchStatus.success,
-    frames: const [
+    frames: [
       ClimaRadarFrame(
         time: 1713000000,
         path: '/v2/radar/1713000000',

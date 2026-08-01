@@ -6,7 +6,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:soloforte_app/core/contracts/agenda_ai_recommendation_context.dart';
 import 'package:soloforte_app/core/contracts/i_agenda_ai_launcher_provider.dart';
-import 'package:soloforte_app/core/feature_flags/feature_flag_model.dart';
 import 'package:soloforte_app/core/feature_flags/feature_flag_providers.dart';
 import 'package:soloforte_app/core/feature_flags/feature_flag_resolver.dart';
 import 'package:soloforte_app/ui/components/map/widgets/map_agenda_ai_button.dart';

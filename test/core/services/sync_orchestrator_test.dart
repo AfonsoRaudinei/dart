@@ -6,7 +6,7 @@ import 'package:soloforte_app/core/services/connectivity_service.dart';
 import 'package:soloforte_app/core/services/sync_orchestrator.dart';
 
 class _RecordingModule implements SyncModule {
-  _RecordingModule(this.name, {this.delay = Duration.zero, this.syncTier = 1});
+  _RecordingModule(this.name, {this.delay = Duration.zero}) : syncTier = 1;
 
   @override
   final String name;

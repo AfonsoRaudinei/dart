@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:soloforte_app/core/contracts/i_client_lookup.dart';
 import 'package:soloforte_app/core/contracts/i_client_lookup_provider.dart';
-import 'package:soloforte_app/core/infra/preferences_service.dart';
 import 'package:soloforte_app/modules/clima/domain/clima_share_payload.dart';
 import 'package:soloforte_app/modules/clima/domain/entities/clima_atual.dart';
 import 'package:soloforte_app/modules/clima/domain/entities/previsao_diaria.dart';

@@ -5,15 +5,12 @@ import 'package:soloforte_app/core/contracts/i_producer_invite_writer.dart';
 import 'package:soloforte_app/modules/consultoria/clients/presentation/widgets/producer_invite_dialog.dart';
 
 class _FakeInviteWriter implements IProducerInviteWriter {
-  _FakeInviteWriter({this.error});
-
-  final Object? error;
+  _FakeInviteWriter();
   int calls = 0;
 
   @override
   Future<ProducerInviteData> createInvite(String clientId) async {
     calls += 1;
-    if (error != null) throw error!;
     return ProducerInviteData(
       token: 'SF-ABCD-1234-EF56',
       expiresAt: DateTime.utc(2026, 8, 1),

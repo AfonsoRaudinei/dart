@@ -1,13 +1,9 @@
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:soloforte_app/core/config/map_config.dart';
-import 'package:soloforte_app/modules/clima/data/datasources/rainviewer_radar_datasource.dart';
-import 'package:soloforte_app/modules/clima/domain/entities/radar_fetch_result.dart';
-import 'package:soloforte_app/modules/clima/domain/radar_frame_age_label.dart';
 import 'package:soloforte_app/modules/clima/presentation/providers/radar_providers.dart';
 
 void main() {

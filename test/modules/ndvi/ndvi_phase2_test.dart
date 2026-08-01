@@ -112,8 +112,8 @@ void main() {
   });
 
   test('refresh index salva imagem e stubs para available_dates', () async {
-    remote.nextResult = NdviRemoteFetchResult(
-      image: const NdviImageModel(
+    remote.nextResult = const NdviRemoteFetchResult(
+      image: NdviImageModel(
         id: 'IMG-2026-03-01',
         fieldId: 'F1',
         imageDate: '2026-03-01',
@@ -125,7 +125,7 @@ void main() {
         syncStatus: 0,
         localPath: '/tmp/ndvi.png',
       ),
-      availableDates: const ['2026-03-01', '2026-02-15', '2026-01-20'],
+      availableDates: ['2026-03-01', '2026-02-15', '2026-01-20'],
     );
 
     final result = await repository.getByFieldId('F1');
@@ -158,8 +158,8 @@ void main() {
       ),
     ];
 
-    remote.nextResult = NdviRemoteFetchResult(
-      image: const NdviImageModel(
+    remote.nextResult = const NdviRemoteFetchResult(
+      image: NdviImageModel(
         id: 'NEW',
         fieldId: 'F1',
         imageDate: '2026-03-01',
@@ -171,7 +171,7 @@ void main() {
         syncStatus: 0,
         localPath: '/tmp/new.png',
       ),
-      availableDates: const ['2026-03-01'],
+      availableDates: ['2026-03-01'],
     );
 
     final result = await repository.getByFieldId('F1');
@@ -195,8 +195,8 @@ void main() {
       ),
     );
 
-    remote.nextResult = NdviRemoteFetchResult(
-      image: const NdviImageModel(
+    remote.nextResult = const NdviRemoteFetchResult(
+      image: NdviImageModel(
         id: 'IMG-2026-02-15',
         fieldId: 'F1',
         imageDate: '2026-02-15',
@@ -241,8 +241,8 @@ void main() {
       bbox: [-51.0, -21.0, -48.0, -18.0],
     );
 
-    remote.nextResult = NdviRemoteFetchResult(
-      image: const NdviImageModel(
+    remote.nextResult = const NdviRemoteFetchResult(
+      image: NdviImageModel(
         id: 'NEW',
         fieldId: 'F1',
         imageDate: '2026-03-01',
@@ -254,7 +254,7 @@ void main() {
         syncStatus: 0,
         localPath: '/tmp/new.png',
       ),
-      availableDates: const ['2026-03-01'],
+      availableDates: ['2026-03-01'],
     );
 
     final result = await repository.getByFieldId('F1');

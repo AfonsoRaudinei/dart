@@ -25,6 +25,7 @@ void main() {
 
     test('rejeita NaN / infinito', () {
       expect(
+        // ignore: prefer_const_constructors
         OccurrenceFormData(
           type: 'Média',
           description: 'teste',
@@ -34,6 +35,7 @@ void main() {
         isFalse,
       );
       expect(
+        // ignore: prefer_const_constructors
         OccurrenceFormData(
           type: 'Média',
           description: 'teste',

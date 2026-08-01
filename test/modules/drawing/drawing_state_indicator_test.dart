@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:soloforte_app/modules/drawing/domain/drawing_state.dart';
-import 'package:soloforte_app/modules/drawing/domain/models/drawing_models.dart';
 import 'package:soloforte_app/modules/drawing/presentation/widgets/drawing_state_indicator.dart';
 
 void main() {
