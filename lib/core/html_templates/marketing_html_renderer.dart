@@ -30,9 +30,7 @@ class MarketingHtmlRenderer {
       consultantRole: 'Consultoria',
     );
     final fotoPrincipalUrl = data['foto_principal_url'] as String?;
-    final foto = await RelatorioHtmlRenderer.photoPathToBase64(
-      fotoPrincipalUrl,
-    );
+    final foto = await RelatorioHtmlRenderer.resolvePhotoSrc(fotoPrincipalUrl);
 
     final roi = _MarketingRoiData.from(data);
     tpl = _resolveAllIfBlocks(tpl, 'roi_agronomico', include: roi != null);
@@ -69,7 +67,7 @@ class MarketingHtmlRenderer {
         data['localizacao_texto'] as String? ?? '',
       ),
       'visibilidade': data['visibilidade'] as String? ?? '',
-      'foto_principal_url': foto ?? fotoPrincipalUrl ?? '',
+      'foto_principal_url': foto,
       'produtividade_valor': data['produtividade_valor']?.toString() ?? '',
       'produtividade_unidade': data['produtividade_unidade'] as String? ?? '',
       'quantidade_produzida': data['quantidade_produzida']?.toString() ?? '',
@@ -165,6 +163,23 @@ class MarketingHtmlRenderer {
               data['produtividade_valor'] != null),
     );
 
+    final fotoAntes = await RelatorioHtmlRenderer.resolvePhotoSrc(
+      data['foto_antes_url'] as String?,
+    );
+    final fotoDepois = await RelatorioHtmlRenderer.resolvePhotoSrc(
+      data['foto_depois_url'] as String?,
+    );
+    tpl = _resolveAllIfBlocks(
+      tpl,
+      'foto_antes_url',
+      include: fotoAntes.isNotEmpty,
+    );
+    tpl = _resolveAllIfBlocks(
+      tpl,
+      'foto_depois_url',
+      include: fotoDepois.isNotEmpty,
+    );
+
     final html = RelatorioHtmlRenderer.replacePlaceholders(tpl, {
       ...branding,
       'produtor_fazenda': RelatorioHtmlRenderer.escapeHtml(
@@ -177,8 +192,8 @@ class MarketingHtmlRenderer {
         data['localizacao_texto'] as String? ?? '',
       ),
       'visibilidade': data['visibilidade'] as String? ?? '',
-      'foto_antes_url': data['foto_antes_url'] as String? ?? '',
-      'foto_depois_url': data['foto_depois_url'] as String? ?? '',
+      'foto_antes_url': fotoAntes,
+      'foto_depois_url': fotoDepois,
       'ganho_produtividade': RelatorioHtmlRenderer.escapeHtml(
         data['ganho_produtividade'] as String? ?? '',
       ),

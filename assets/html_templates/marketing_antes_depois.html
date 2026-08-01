@@ -640,10 +640,9 @@
           src="{{foto_antes_url}}"
           alt="Foto Antes"
           loading="lazy"
-          onerror="this.parentElement.innerHTML='<div class=\'photo-placeholder\'><span>Sem foto</span></div>'"
         >
         <!-- {{else}} -->
-        <!-- <div class="photo-placeholder"><span>Sem foto</span></div> -->
+        <div class="photo-placeholder"><span>Sem foto</span></div>
         <!-- {{/if}} -->
         <div class="photo-label antes">Antes</div>
       </div>
@@ -655,10 +654,9 @@
           src="{{foto_depois_url}}"
           alt="Foto Depois"
           loading="lazy"
-          onerror="this.parentElement.innerHTML='<div class=\'photo-placeholder\'><span>Sem foto</span></div>'"
         >
         <!-- {{else}} -->
-        <!-- placeholder já incluso acima via onerror -->
+        <div class="photo-placeholder"><span>Sem foto</span></div>
         <!-- {{/if}} -->
         <div class="photo-label depois">Depois</div>
       </div>

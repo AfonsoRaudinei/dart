@@ -167,6 +167,31 @@ abstract class RelatorioHtmlRenderer {
     return 'data:$mime;base64,$b64';
   }
 
+  /// Aceita apenas `data:image/*` gerado internamente ou URLs `https` válidas.
+  static String sanitizePhotoSrc(String? src) {
+    if (src == null || src.isEmpty) return '';
+    if (src.startsWith('data:image/')) return src;
+
+    if (src.contains('"') ||
+        src.contains("'") ||
+        src.contains('<') ||
+        src.contains('>') ||
+        src.contains('\\')) {
+      return '';
+    }
+
+    final uri = Uri.tryParse(src);
+    if (uri == null || uri.scheme != 'https' || uri.host.isEmpty) return '';
+    if (uri.userInfo.isNotEmpty) return '';
+    return uri.toString();
+  }
+
+  /// Resolve foto local → data URI; remoto → apenas `https` sanitizado.
+  static Future<String> resolvePhotoSrc(String? path) async {
+    final resolved = await photoPathToBase64(path);
+    return sanitizePhotoSrc(resolved);
+  }
+
   static Future<String> assetImageToBase64(String assetPath) async {
     final data = await rootBundle.load(assetPath);
     final bytes = data.buffer.asUint8List();
