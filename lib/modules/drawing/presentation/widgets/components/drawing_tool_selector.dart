@@ -108,16 +108,18 @@ class _ToolButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      decoration: BoxDecoration(
-        color: backgroundColor,
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      child: Material(
+      color: backgroundColor,
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
+        side: BorderSide(
           color: isSelected ? accentColor : borderColor,
           width: isSelected ? 1.0 : 0.5,
         ),
       ),
+      clipBehavior: Clip.antiAlias,
       child: ListTile(
         onTap: () {
           HapticFeedback.lightImpact();
@@ -130,6 +132,7 @@ class _ToolButton extends StatelessWidget {
           style: const TextStyle(color: Colors.white, fontSize: 15),
         ),
         trailing: const Icon(Icons.chevron_right, color: Colors.white24, size: 18),
+      ),
       ),
     );
   }

@@ -242,13 +242,14 @@ class SettingsScreen extends ConsumerWidget {
       }
     }
 
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: BoxDecoration(
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Material(
         color: cardColor,
         borderRadius: BorderRadius.circular(10),
+        clipBehavior: Clip.antiAlias,
+        child: Column(children: dividedChildren),
       ),
-      child: Column(children: dividedChildren),
     );
   }
 
@@ -346,11 +347,10 @@ class SettingsScreen extends ConsumerWidget {
     showSoloForteSheet(
       context: context,
       showDragHandle: false,
-      builder: (_) => Container(
-        decoration: BoxDecoration(
-          color: Theme.of(context).cardColor,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-        ),
+      builder: (_) => Material(
+        color: Theme.of(context).cardColor,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        clipBehavior: Clip.antiAlias,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [

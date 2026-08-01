@@ -61,6 +61,16 @@ Future<T?> showSoloForteSheet<T>({
                     MediaQuery.of(context).size.height * maxHeightFraction,
               )
             : null),
-    builder: builder,
+    builder: (ctx) {
+      final sheet = builder(ctx);
+      if (preserveMaterialDefaults) return sheet;
+      // Flutter 3.44+ exige ancestral Material para ListTile dentro de sheet
+      // com backgroundColor (DecoratedBox). Material transparente satisfaz o
+      // contrato sem alterar a aparência do token visual.
+      return Material(
+        color: Colors.transparent,
+        child: sheet,
+      );
+    },
   );
 }
