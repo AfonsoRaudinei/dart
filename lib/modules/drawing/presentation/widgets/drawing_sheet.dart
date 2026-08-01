@@ -234,8 +234,9 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
     // 🔧 FIX CRÍTICO: Notificar o controller para ativar/desativar a ferramenta
     if (shouldActivate) {
       widget.controller.selectTool(key);
-      // 🔧 FIX-DRAW-FLOW-01: Ativar modo de desenho sem fechar bottom sheet
-      // O MapBottomSheet permanece aberto para o usuário ver ferramentas ativas
+      if (key == 'polygon' || key == 'freehand' || key == 'pivot') {
+        _requestClose(DrawingCloseIntent.dismissSheetPreserveArmed);
+      }
     } else {
       widget.controller.selectTool('none'); // Desativa ferramenta
     }

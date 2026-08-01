@@ -6,6 +6,8 @@ import '../controllers/drawing_controller.dart';
 
 enum DrawingCloseIntent {
   dismissSheet,
+  /// Fecha o sheet preservando ferramenta armed (ex.: após selecionar Polígono/Livre/Pivô).
+  dismissSheetPreserveArmed,
   switchPanel,
   saveEditAndClose,
   cancelEditAndStaySelected,
@@ -48,32 +50,46 @@ class DrawingCloseCoordinator {
         controller.exitDrawingContext();
         return const DrawingCloseDecision(shouldCloseSheet: true);
 
+      case DrawingCloseIntent.dismissSheetPreserveArmed:
+        if (controller.currentState == DrawingState.armed &&
+            controller.currentTool != DrawingTool.none) {
+          return const DrawingCloseDecision(shouldCloseSheet: true);
+        }
+        return _handleDismissOrSwitchPanel(context, controller);
+
       case DrawingCloseIntent.dismissSheet:
       case DrawingCloseIntent.switchPanel:
-        if (controller.interactionMode == DrawingInteraction.editing) {
-          if (controller.hasPendingEditChanges) {
-            final shouldDiscard = await _confirmDiscardEditingChanges(context);
-            if (!shouldDiscard) {
-              return const DrawingCloseDecision(shouldCloseSheet: false);
-            }
-          }
-          controller.exitDrawingContext();
-          return const DrawingCloseDecision(shouldCloseSheet: true);
-        }
-
-        if (controller.hasSelection) {
-          controller.exitDrawingContext();
-          return const DrawingCloseDecision(shouldCloseSheet: true);
-        }
-
-        if (controller.currentState != DrawingState.idle ||
-            controller.currentTool != DrawingTool.none) {
-          controller.cancelOperation();
-          return const DrawingCloseDecision(shouldCloseSheet: true);
-        }
-
-        return const DrawingCloseDecision(shouldCloseSheet: true);
+        return _handleDismissOrSwitchPanel(context, controller);
     }
+  }
+
+  static Future<DrawingCloseDecision> _handleDismissOrSwitchPanel(
+    BuildContext context,
+    DrawingController controller,
+  ) async {
+    if (controller.interactionMode == DrawingInteraction.editing) {
+      if (controller.hasPendingEditChanges) {
+        final shouldDiscard = await _confirmDiscardEditingChanges(context);
+        if (!shouldDiscard) {
+          return const DrawingCloseDecision(shouldCloseSheet: false);
+        }
+      }
+      controller.exitDrawingContext();
+      return const DrawingCloseDecision(shouldCloseSheet: true);
+    }
+
+    if (controller.hasSelection) {
+      controller.exitDrawingContext();
+      return const DrawingCloseDecision(shouldCloseSheet: true);
+    }
+
+    if (controller.currentState != DrawingState.idle ||
+        controller.currentTool != DrawingTool.none) {
+      controller.cancelOperation();
+      return const DrawingCloseDecision(shouldCloseSheet: true);
+    }
+
+    return const DrawingCloseDecision(shouldCloseSheet: true);
   }
 
   static Future<bool> _confirmDiscardEditingChanges(

@@ -139,9 +139,24 @@ void main() {
     final vertex = find.byKey(const Key('drawing_sketch_vertex_1'));
     expect(vertex, findsOneWidget);
 
+    // Hitbox idle ≥44dp (não o círculo visual 16–20px).
+    final idleSize = tester.getSize(vertex);
+    expect(idleSize.width, greaterThanOrEqualTo(44));
+    expect(idleSize.height, greaterThanOrEqualTo(44));
+
     await tester.tap(vertex);
     await tester.pumpAndSettle();
     expect(controller.selectedSketchVertexIndex, 1);
+
+    // Gota selecionada: CustomPaint com size explícito (não degenerado).
+    final selectedSize = tester.getSize(
+      find.byKey(const Key('drawing_sketch_vertex_1')),
+    );
+    expect(selectedSize.width, greaterThanOrEqualTo(44));
+    expect(selectedSize.height, greaterThanOrEqualTo(44));
+    final paint = tester.widgetList<CustomPaint>(find.byType(CustomPaint));
+    final gotaPaint = paint.where((p) => p.size == const Size(48, 56));
+    expect(gotaPaint, isNotEmpty);
 
     final before = controller.currentPoints[1];
     await tester.timedDrag(

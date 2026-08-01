@@ -175,7 +175,7 @@ void main() {
       },
     );
 
-    testWidgets('🚪 Bottom Sheet permanece aberto ao selecionar ferramenta', (
+    testWidgets('🚪 Bottom Sheet fecha ao selecionar ferramenta de desenho', (
       WidgetTester tester,
     ) async {
       // Configurar tela grande
@@ -200,8 +200,12 @@ void main() {
                         context: context,
                         backgroundColor: Colors.transparent,
                         isScrollControlled: true, // Evitar overflow
-                        builder: (_) => SingleChildScrollView(
-                          child: DrawingSheet(controller: controller),
+                        builder: (sheetContext) => SingleChildScrollView(
+                          child: DrawingSheet(
+                            controller: controller,
+                            onClose: () =>
+                                Navigator.of(sheetContext).pop(),
+                          ),
                         ),
                       ).then((_) {
                         sheetClosed = true;
@@ -230,10 +234,11 @@ void main() {
       await tester.tap(find.text('Polígono'));
       await tester.pumpAndSettle();
 
-      // Assert — Contrato atual: sheet permanece aberto após selecionar ferramenta
-      expect(sheetClosed, isFalse);
-      expect(find.text('Polígono'), findsOneWidget);
+      // Assert — Sheet fecha e controller permanece armed
+      expect(sheetClosed, isTrue);
+      expect(find.text('Polígono'), findsNothing);
       expect(controller.currentState, equals(DrawingState.armed));
+      expect(controller.currentTool, equals(DrawingTool.polygon));
 
       controller.dispose();
     });
@@ -585,8 +590,12 @@ void main() {
                       showModalBottomSheet(
                         context: context,
                         isScrollControlled: true,
-                        builder: (_) => SingleChildScrollView(
-                          child: DrawingSheet(controller: controller),
+                        builder: (sheetContext) => SingleChildScrollView(
+                          child: DrawingSheet(
+                            controller: controller,
+                            onClose: () =>
+                                Navigator.of(sheetContext).pop(),
+                          ),
                         ),
                       );
                     },
@@ -604,15 +613,11 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Polígono'), findsOneWidget);
 
-      // Selecionar ferramenta (sheet permanece aberto)
+      // Selecionar ferramenta (sheet fecha automaticamente)
       await tester.tap(find.text('Polígono'));
       await tester.pumpAndSettle();
-      expect(find.text('Polígono'), findsOneWidget);
-
-      // Fechar manualmente o modal para simular retorno do usuário
-      navigatorKey.currentState!.pop();
-      await tester.pumpAndSettle();
       expect(find.text('Polígono'), findsNothing);
+      expect(controller.currentState, equals(DrawingState.armed));
 
       // Reabrir sheet
       await tester.tap(find.text('Abrir'));
@@ -712,8 +717,12 @@ void main() {
                             showModalBottomSheet(
                               context: context,
                               isScrollControlled: true,
-                              builder: (_) => SingleChildScrollView(
-                                child: DrawingSheet(controller: controller),
+                              builder: (sheetContext) => SingleChildScrollView(
+                                child: DrawingSheet(
+                                  controller: controller,
+                                  onClose: () =>
+                                      Navigator.of(sheetContext).pop(),
+                                ),
                               ),
                             );
                           },
@@ -751,15 +760,8 @@ void main() {
         await tester.tap(find.text('Polígono'));
         await tester.pumpAndSettle();
 
-        // 4. Contrato atual: sheet permanece aberto após selecionar ferramenta
-        expect(find.text('Polígono'), findsOneWidget);
-
-        // 4.1 Fechar manualmente para concluir ciclo de fluxo
-        navigatorKey.currentState!.pop();
-        await tester.pumpAndSettle();
+        // 4. Sheet fecha ao selecionar; controller permanece armed
         expect(find.text('Polígono'), findsNothing);
-
-        // 5. Estado deve ser armed
         expect(find.text('Estado: armed'), findsOneWidget);
         expect(controller.currentTool, equals(DrawingTool.polygon));
 

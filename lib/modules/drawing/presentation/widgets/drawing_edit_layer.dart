@@ -314,14 +314,20 @@ class _DrawingEditLayerState extends State<DrawingEditLayer> {
       final isDragging = _isSketchDrag && _draggingVertexIndex == i;
       final isStart = i == 0;
       final showGota = isSelected || isDragging;
-      // Mesmas dimensões do DrawingLayerWidget._vertexMarker (center = vértice).
+      // Visual do ponto idle; hitbox do Marker é sempre ≥44dp.
       final dotSize = isStart ? 20.0 : 16.0;
+      final markerW = showGota
+          ? _SketchVertexHandle.gotaWidth
+          : _SketchVertexHandle.minHitSize;
+      final markerH = showGota
+          ? _SketchVertexHandle.gotaHeight
+          : _SketchVertexHandle.minHitSize;
 
       markers.add(
         Marker(
           point: point,
-          width: showGota ? 48 : dotSize,
-          height: showGota ? 56 : dotSize,
+          width: markerW,
+          height: markerH,
           // Center: lat/lng do vértice coincide com o centro do ponto/gota.
           alignment: Alignment.center,
           child: _SketchVertexHandle(
@@ -579,7 +585,14 @@ class _MidpointHandle extends StatelessWidget {
 }
 
 /// Handle mid-draw: círculo branco, ou gota + cruz quando selecionado.
+///
+/// Hitbox mínimo 44dp (idle). Gota usa 48×56 com CustomPaint size explícito
+/// para evitar shrink pelo Icon filho (~20px) que distorcia o path.
 class _SketchVertexHandle extends StatelessWidget {
+  static const double minHitSize = 44;
+  static const double gotaWidth = 48;
+  static const double gotaHeight = 56;
+
   final int index;
   final bool isStart;
   final bool isSelected;
@@ -625,25 +638,33 @@ class _SketchVertexHandle extends StatelessWidget {
         child: Stack(
           alignment: Alignment.center,
           children: [
-            Opacity(
-              opacity: isSelected ? 1 : 0,
-              child: const IgnorePointer(
-                child: CustomPaint(
-                  painter: _TeardropPainter(color: Color(0xE6E53935)),
-                  child: Align(
-                    alignment: Alignment(0, -0.12),
-                    child: Icon(
-                      Icons.open_with,
-                      color: Colors.white,
-                      size: 20,
-                    ),
+            if (isSelected)
+              const IgnorePointer(
+                child: SizedBox(
+                  width: gotaWidth,
+                  height: gotaHeight,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      CustomPaint(
+                        size: Size(gotaWidth, gotaHeight),
+                        painter: _TeardropPainter(color: Color(0xE6E53935)),
+                      ),
+                      // Bolha da gota fica acima do tip (centro do marker).
+                      Align(
+                        alignment: Alignment(0, -0.28),
+                        child: Icon(
+                          Icons.open_with,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ),
-            ),
-            Opacity(
-              opacity: isSelected ? 0 : 1,
-              child: Container(
+              )
+            else
+              Container(
                 width: dotSize,
                 height: dotSize,
                 decoration: BoxDecoration(
@@ -662,7 +683,6 @@ class _SketchVertexHandle extends StatelessWidget {
                   ],
                 ),
               ),
-            ),
           ],
         ),
       ),
