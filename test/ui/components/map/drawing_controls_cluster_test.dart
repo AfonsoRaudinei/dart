@@ -10,6 +10,7 @@ import 'package:soloforte_app/core/providers/connectivity_provider.dart';
 import 'package:soloforte_app/core/session/session_controller.dart';
 import 'package:soloforte_app/core/session/session_models.dart';
 import 'package:soloforte_app/modules/drawing/domain/drawing_state.dart';
+import 'package:soloforte_app/modules/drawing/presentation/widgets/drawing_bottom_toolbar.dart';
 import 'package:soloforte_app/modules/settings/data/settings_repository.dart';
 import 'package:soloforte_app/modules/settings/presentation/providers/settings_providers.dart';
 import 'package:soloforte_app/modules/visitas/data/repositories/visit_repository.dart';
@@ -19,33 +20,31 @@ import 'package:soloforte_app/ui/components/map/widgets/editing_controls_overlay
 import 'package:soloforte_app/ui/components/map/widgets/map_controls_overlay.dart';
 
 void main() {
-  testWidgets('renderiza backplate sólido e ações principais do desenho', (
+  testWidgets('renderiza toolbar horizontal com ações principais do desenho', (
     tester,
   ) async {
     await tester.pumpWidget(
       const MaterialApp(
         home: Scaffold(
-          body: DrawingControlsCluster(
-            primaryColor: Colors.green,
-            hasSelfIntersection: false,
-            onFinishDrawing: _noop,
-            onUndoDrawing: _noop,
-            onCancelDrawing: _noop,
+          body: DrawingBottomToolbar(
+            onConfirm: _noop,
+            onUndo: _noop,
+            onCancel: _noop,
             canUndo: true,
           ),
         ),
       ),
     );
 
-    expect(find.byKey(const Key('drawing_controls_backplate')), findsOneWidget);
-    final backplate = tester.widget<Container>(
-      find.byKey(const Key('drawing_controls_backplate')),
-    );
-    final decoration = backplate.decoration! as BoxDecoration;
-    expect(decoration.color, const Color(0xFF232326));
-    expect(decoration.color!.a, 1);
+    await tester.pump(const Duration(milliseconds: 200));
+
+    expect(find.byKey(const Key('drawing_bottom_toolbar')), findsOneWidget);
+    expect(find.text('Cancelar'), findsOneWidget);
+    expect(find.text('Desfazer'), findsOneWidget);
+    expect(find.text('Confirmar'), findsOneWidget);
     expect(find.byIcon(Icons.undo_rounded), findsOneWidget);
-    expect(find.byType(InkWell), findsNWidgets(3));
+    expect(find.byIcon(Icons.close_rounded), findsOneWidget);
+    expect(find.byIcon(Icons.check_rounded), findsOneWidget);
   });
 
   testWidgets(
@@ -202,6 +201,59 @@ void main() {
 
     expect(find.byKey(const Key('editing_controls_backplate')), findsOneWidget);
     expect(find.byType(EditingControlsOverlay), findsNothing);
+    expect(find.byKey(const Key('drawing_bottom_toolbar')), findsNothing);
+  });
+
+  testWidgets('MapControlsOverlay monta toolbar inferior no estado drawing', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    final settingsRepository = SettingsRepository(
+      await SharedPreferences.getInstance(),
+    );
+    final preferencesService = PreferencesService(
+      await SharedPreferences.getInstance(),
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          preferencesServiceProvider.overrideWithValue(preferencesService),
+          settingsRepositoryProvider.overrideWithValue(settingsRepository),
+          isOnlineProvider.overrideWith((ref) => Stream.value(true)),
+          visitRepositoryProvider.overrideWithValue(_NoActiveVisitRepository()),
+          agendaSessionBridgeProvider.overrideWithValue(_NoopAgendaBridge()),
+          sessionControllerProvider.overrideWith(_PublicSessionController.new),
+        ],
+        child: MaterialApp(
+          home: Scaffold(
+            body: MapControlsOverlay(
+              onCenterUser: _noop,
+              onLocationModeChanged: (_) {},
+              onToggleDrawMode: _noop,
+              onOpenMapTools: _noop,
+              onTabSelected: (_, _) {},
+              isDrawMode: true,
+              currentCenter: const LatLng(0, 0),
+              currentZoom: 13,
+              drawingState: DrawingState.drawing,
+              onFinishDrawing: _noop,
+              onCancelDrawing: _noop,
+              onSaveEdit: _noop,
+              onCancelEdit: _noop,
+              onUndoEdit: _noop,
+              onUndoDrawing: _noop,
+              canUndo: true,
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.pump(const Duration(milliseconds: 200));
+
+    expect(find.byKey(const Key('drawing_bottom_toolbar')), findsOneWidget);
+    expect(find.byKey(const Key('editing_controls_backplate')), findsNothing);
     expect(find.byKey(const Key('drawing_controls_backplate')), findsNothing);
   });
 

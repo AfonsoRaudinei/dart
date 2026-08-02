@@ -148,15 +148,69 @@ void main() {
     await tester.pumpAndSettle();
     expect(controller.selectedSketchVertexIndex, 1);
 
-    // Gota selecionada: CustomPaint com size explícito (não degenerado).
-    final selectedSize = tester.getSize(
-      find.byKey(const Key('drawing_sketch_vertex_1')),
-    );
-    expect(selectedSize.width, greaterThanOrEqualTo(44));
-    expect(selectedSize.height, greaterThanOrEqualTo(44));
+    // Gota selecionada: CustomPaint pin 48×56 + handle de arraste na bolha.
     final paint = tester.widgetList<CustomPaint>(find.byType(CustomPaint));
     final gotaPaint = paint.where((p) => p.size == const Size(48, 56));
     expect(gotaPaint, isNotEmpty);
+    expect(
+      find.byKey(const Key('drawing_sketch_vertex_drag_1')),
+      findsOneWidget,
+    );
+
+    final before = controller.currentPoints[1];
+    await tester.timedDrag(
+      find.byKey(const Key('drawing_sketch_vertex_drag_1')),
+      const Offset(64, 48),
+      const Duration(milliseconds: 300),
+    );
+    await tester.pumpAndSettle();
+
+    expect(controller.currentPoints[1], isNot(equals(before)));
+    expect(controller.selectedSketchVertexIndex, 1);
+    expect(controller.currentState, DrawingState.drawing);
+  });
+
+  testWidgets('mid-draw: ponto branco idle não arrasta sem selecionar', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(800, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final controller = DrawingController(
+      repository: _UpsertDrawingRepository(_feature()),
+    );
+    addTearDown(controller.dispose);
+    controller.selectTool('polygon');
+    controller.appendDrawingPoint(const LatLng(-0.05, -0.05));
+    controller.appendDrawingPoint(const LatLng(0.05, -0.05));
+    controller.appendDrawingPoint(const LatLng(0.05, 0.05));
+
+    final mapController = MapController();
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: FlutterMap(
+            mapController: mapController,
+            options: const MapOptions(
+              initialCenter: LatLng(0, 0),
+              initialZoom: 11,
+              interactionOptions: InteractionOptions(
+                flags: InteractiveFlag.none,
+              ),
+            ),
+            children: [
+              DrawingEditLayer(
+                controller: controller,
+                mapController: mapController,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
 
     final before = controller.currentPoints[1];
     await tester.timedDrag(
@@ -166,9 +220,8 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(controller.currentPoints[1], isNot(equals(before)));
-    expect(controller.selectedSketchVertexIndex, 1);
-    expect(controller.currentState, DrawingState.drawing);
+    expect(controller.currentPoints[1], equals(before));
+    expect(controller.selectedSketchVertexIndex, isNull);
   });
 }
 

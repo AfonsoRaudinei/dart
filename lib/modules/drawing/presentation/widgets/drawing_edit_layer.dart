@@ -328,8 +328,8 @@ class _DrawingEditLayerState extends State<DrawingEditLayer> {
           point: point,
           width: markerW,
           height: markerH,
-          // Center: lat/lng do vértice coincide com o centro do ponto/gota.
-          alignment: Alignment.center,
+          // Idle: centro no vértice. Selecionado: ponta da gota (pin) no vértice.
+          alignment: showGota ? Alignment.bottomCenter : Alignment.center,
           child: _SketchVertexHandle(
             index: i,
             isStart: isStart,
@@ -584,14 +584,15 @@ class _MidpointHandle extends StatelessWidget {
   }
 }
 
-/// Handle mid-draw: círculo branco, ou gota + cruz quando selecionado.
+/// Handle mid-draw: toque no ponto branco seleciona; arraste só na bolha da gota.
 ///
-/// Hitbox mínimo 44dp (idle). Gota usa 48×56 com CustomPaint size explícito
-/// para evitar shrink pelo Icon filho (~20px) que distorcia o path.
+/// Gota estilo pin: ponta no vértice geográfico, bolha + open_with acima para puxar.
 class _SketchVertexHandle extends StatelessWidget {
   static const double minHitSize = 44;
   static const double gotaWidth = 48;
   static const double gotaHeight = 56;
+  /// Altura da zona de arraste (bolha + ícone), acima da ponta.
+  static const double dragBubbleHeight = 36;
 
   final int index;
   final bool isStart;
@@ -626,65 +627,84 @@ class _SketchVertexHandle extends StatelessWidget {
         ? (hasSelfIntersection ? Colors.red : Colors.green)
         : Colors.black26;
 
-    return GestureDetector(
-      key: Key('drawing_sketch_vertex_$index'),
-      behavior: HitTestBehavior.opaque,
-      onTap: onTap,
-      onPanStart: (_) => onPanStart(),
-      onPanUpdate: onPanUpdate,
-      onPanEnd: (_) => onPanEnd(),
-      onPanCancel: onPanCancel,
-      child: SizedBox.expand(
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            if (isSelected)
-              const IgnorePointer(
-                child: SizedBox(
-                  width: gotaWidth,
-                  height: gotaHeight,
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      CustomPaint(
-                        size: Size(gotaWidth, gotaHeight),
-                        painter: _TeardropPainter(color: Color(0xE6E53935)),
-                      ),
-                      // Bolha da gota fica acima do tip (centro do marker).
-                      Align(
-                        alignment: Alignment(0, -0.28),
-                        child: Icon(
-                          Icons.open_with,
-                          color: Colors.white,
-                          size: 20,
-                        ),
-                      ),
-                    ],
-                  ),
+    if (!isSelected) {
+      // Idle: só toque para selecionar — sem pan no ponto branco.
+      return GestureDetector(
+        key: Key('drawing_sketch_vertex_$index'),
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: Center(
+          child: Container(
+            width: dotSize,
+            height: dotSize,
+            decoration: BoxDecoration(
+              color: dotColor,
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: borderColor,
+                width: isStart ? 2 : 1,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.3),
+                  blurRadius: 2,
+                  offset: const Offset(0, 1),
                 ),
-              )
-            else
-              Container(
-                width: dotSize,
-                height: dotSize,
-                decoration: BoxDecoration(
-                  color: dotColor,
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: borderColor,
-                    width: isStart ? 2 : 1,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.3),
-                      blurRadius: 2,
-                      offset: const Offset(0, 1),
-                    ),
-                  ],
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    // Selecionado: gota pin (ponta embaixo) + arraste apenas na bolha superior.
+    return SizedBox(
+      width: gotaWidth,
+      height: gotaHeight,
+      child: Stack(
+        clipBehavior: Clip.none,
+        alignment: Alignment.bottomCenter,
+        children: [
+          const IgnorePointer(
+            child: CustomPaint(
+              size: Size(gotaWidth, gotaHeight),
+              painter: _TeardropPainter(color: Color(0xE6E53935)),
+            ),
+          ),
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            height: dragBubbleHeight,
+            child: GestureDetector(
+              key: Key('drawing_sketch_vertex_drag_$index'),
+              behavior: HitTestBehavior.opaque,
+              onPanStart: (_) => onPanStart(),
+              onPanUpdate: onPanUpdate,
+              onPanEnd: (_) => onPanEnd(),
+              onPanCancel: onPanCancel,
+              child: const Center(
+                child: Icon(
+                  Icons.open_with,
+                  color: Colors.white,
+                  size: 22,
                 ),
               ),
-          ],
-        ),
+            ),
+          ),
+          // Ponta da gota: toque para fechar polígono (vértice 0) ou re-selecionar.
+          Positioned(
+            bottom: 0,
+            left: (gotaWidth - minHitSize) / 2,
+            width: minHitSize,
+            height: minHitSize,
+            child: GestureDetector(
+              key: Key('drawing_sketch_vertex_$index'),
+              behavior: HitTestBehavior.translucent,
+              onTap: onTap,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -704,21 +724,21 @@ class _TeardropPainter extends CustomPainter {
     final w = size.width;
     final h = size.height;
     final cx = w / 2;
-    final tipY = h / 2;
-    final r = w * 0.4;
-    final bubbleCy = tipY - r * 0.55;
+    // Pin: ponta na base do retângulo (= vértice geográfico via bottomCenter).
+    final tipY = h - 1.0;
+    final r = w * 0.38;
+    final bubbleCy = tipY - r * 1.05;
 
-    // Ponta da gota no centro do marker (= vértice geográfico).
     final path = ui.Path()
       ..moveTo(cx, tipY)
-      ..quadraticBezierTo(cx + r * 0.12, tipY - r * 0.35, cx + r, bubbleCy)
+      ..quadraticBezierTo(cx + r * 0.14, tipY - r * 0.42, cx + r, bubbleCy)
       ..arcToPoint(
         Offset(cx - r, bubbleCy),
         radius: Radius.circular(r),
         largeArc: true,
         clockwise: true,
       )
-      ..quadraticBezierTo(cx - r * 0.12, tipY - r * 0.35, cx, tipY)
+      ..quadraticBezierTo(cx - r * 0.14, tipY - r * 0.42, cx, tipY)
       ..close();
 
     canvas.drawShadow(path, Colors.black54, 4, true);

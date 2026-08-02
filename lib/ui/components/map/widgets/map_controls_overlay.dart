@@ -17,6 +17,7 @@ import '../../../../core/providers/connectivity_provider.dart';
 import '../../../../modules/clima/presentation/providers/radar_providers.dart';
 import '../../../../core/state/map_state.dart';
 import '../../../../modules/drawing/domain/drawing_state.dart';
+import '../../../../modules/drawing/presentation/widgets/drawing_bottom_toolbar_overlay.dart';
 import '../../../../core/utils/app_logger.dart';
 import '../../../../modules/map/presentation/widgets/visit_active_card.dart';
 import '../../../theme/premium/design_tokens.dart';
@@ -148,7 +149,6 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
     // Use SafeArea top padding to ensure elements are below the status bar/notch
     final safeTop = MediaQuery.of(context).padding.top;
     final safeBottom = MediaQuery.of(context).padding.bottom;
-    final primaryColor = Theme.of(context).colorScheme.primary;
     final activeColor = _themeColor(ref.watch(themeProvider));
     final areaUnit = ref.watch(areaDisplayUnitProvider);
     final distanceUnit = ref.watch(distanceDisplayUnitProvider);
@@ -279,17 +279,12 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
 
         // 4. Drawing Actions (Conditional)
         if (widget.drawingState == DrawingState.drawing)
-          Positioned(
-            bottom: 120,
-            right: 16,
-            child: DrawingControlsCluster(
-              primaryColor: primaryColor,
-              hasSelfIntersection: widget.hasSelfIntersection,
-              onFinishDrawing: widget.onFinishDrawing,
-              onUndoDrawing: widget.onUndoDrawing,
-              onCancelDrawing: widget.onCancelDrawing,
-              canUndo: widget.canUndo,
-            ),
+          DrawingBottomToolbarOverlay(
+            onConfirm: widget.onFinishDrawing,
+            onUndo: widget.onUndoDrawing ?? () {},
+            onCancel: widget.onCancelDrawing,
+            canUndo: widget.canUndo,
+            canConfirm: !widget.hasSelfIntersection,
           ),
 
         // 5. Editing Controls (Conditional)
@@ -307,111 +302,6 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
             ),
           ),
       ],
-    );
-  }
-}
-
-class DrawingControlsCluster extends StatelessWidget {
-  final Color primaryColor;
-  final bool hasSelfIntersection;
-  final VoidCallback onFinishDrawing;
-  final VoidCallback? onUndoDrawing;
-  final VoidCallback onCancelDrawing;
-  final bool canUndo;
-
-  const DrawingControlsCluster({
-    super.key,
-    required this.primaryColor,
-    required this.hasSelfIntersection,
-    required this.onFinishDrawing,
-    required this.onUndoDrawing,
-    required this.onCancelDrawing,
-    required this.canUndo,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      key: const Key('drawing_controls_backplate'),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-      decoration: BoxDecoration(
-        color: const Color(0xFF232326),
-        borderRadius: BorderRadius.circular(32),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.35),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Semantics(
-            button: true,
-            enabled: !hasSelfIntersection,
-            label: 'Concluir desenho',
-            child: Material(
-              elevation: 4,
-              shape: const CircleBorder(),
-              color: hasSelfIntersection ? Colors.grey : primaryColor,
-              child: InkWell(
-                customBorder: const CircleBorder(),
-                onTap: hasSelfIntersection ? null : onFinishDrawing,
-                child: const Padding(
-                  padding: EdgeInsets.all(16),
-                  child: Icon(SFIcons.check, color: Colors.white, size: 24),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-          Semantics(
-            button: true,
-            enabled: canUndo,
-            label: 'Desfazer último ponto',
-            child: Opacity(
-              opacity: canUndo ? 1.0 : 0.4,
-              child: Material(
-                elevation: 4,
-                shape: const CircleBorder(),
-                color: Colors.white,
-                child: InkWell(
-                  customBorder: const CircleBorder(),
-                  onTap: canUndo ? onUndoDrawing : null,
-                  child: const Padding(
-                    padding: EdgeInsets.all(12),
-                    child: Icon(
-                      Icons.undo_rounded,
-                      color: Colors.black87,
-                      size: 24,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-          Semantics(
-            button: true,
-            label: 'Cancelar desenho',
-            child: Material(
-              elevation: 4,
-              shape: const CircleBorder(),
-              color: Colors.redAccent,
-              child: InkWell(
-                customBorder: const CircleBorder(),
-                onTap: onCancelDrawing,
-                child: const Padding(
-                  padding: EdgeInsets.all(16),
-                  child: Icon(SFIcons.close, color: Colors.white, size: 24),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
     );
   }
 }
