@@ -26,3 +26,4 @@
 - IPA 183: `build/ios/ipa/soloforte_app.ipa` | `CFBundleVersion=183` | `CFBundleShortVersionString=1.34.0` | release local | **já gerado (sem fixes drawing sheet/gota)**
 - IPA 184: gerado sem as atualizações de drawing (sheet auto-close + gota) — código estava em stash; **não reutilizar como entrega das fixes**
 - IPA 185: pendente | `pubspec 1.34.0+185` | inclui dismissSheetPreserveArmed + gota CustomPaint size + hitbox 44dp
+- IPA 186: pendente | `pubspec 1.34.0+186` | branch `cursor/map-navigation-labels-17d6` | DrawingBottomToolbar frosted glass + gota mid-draw + wiring `canConfirm` ← `DrawingController.hasSelfIntersection` | **enviar este**
