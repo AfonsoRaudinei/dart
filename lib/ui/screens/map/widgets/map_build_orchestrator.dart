@@ -538,6 +538,7 @@ class _MapControlsHost extends ConsumerWidget {
           ref.read(drawingControllerProvider).undoDrawingPoint(),
       canUndo: drawingMetrics.canUndo,
       canRedo: drawingMetrics.canRedo,
+      hasSelfIntersection: drawingMetrics.hasSelfIntersection,
       measurementAreaHa: drawingMetrics.measureAreaHa,
       measurementPerimeterKm: drawingMetrics.measurePerimeterKm,
       measurementAzimuthDeg: drawingMetrics.measureAzimuthDeg,

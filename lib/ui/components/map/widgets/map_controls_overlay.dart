@@ -284,6 +284,9 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
             onUndo: widget.onUndoDrawing ?? () {},
             onCancel: widget.onCancelDrawing,
             canUndo: widget.canUndo,
+            // canConfirm espelha DrawingController.hasSelfIntersection
+            // (_updateRealTimeIntersection → findSelfIntersectingSegments).
+            // Widget permanece puro; validação de geometria fica no host.
             canConfirm: !widget.hasSelfIntersection,
           ),
 
