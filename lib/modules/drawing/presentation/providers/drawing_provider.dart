@@ -86,6 +86,7 @@ class DrawingMapMetrics {
     required this.tool,
     required this.canUndo,
     required this.canRedo,
+    required this.hasSelfIntersection,
     required this.measureAreaHa,
     required this.measurePerimeterKm,
     required this.measureAzimuthDeg,
@@ -96,6 +97,7 @@ class DrawingMapMetrics {
   final DrawingTool tool;
   final bool canUndo;
   final bool canRedo;
+  final bool hasSelfIntersection;
   final double measureAreaHa;
   final double measurePerimeterKm;
   final double? measureAzimuthDeg;
@@ -110,6 +112,7 @@ final drawingMapMetricsProvider = Provider<DrawingMapMetrics>((ref) {
         c.currentTool,
         c.canUndo,
         c.canRedo,
+        c.hasSelfIntersection,
         c.reviewAreaHa,
         c.reviewPerimeterKm,
         c.liveAzimuthDegrees,
@@ -123,6 +126,7 @@ final drawingMapMetricsProvider = Provider<DrawingMapMetrics>((ref) {
     tool: controller.currentTool,
     canUndo: controller.canUndo,
     canRedo: controller.canRedo,
+    hasSelfIntersection: controller.hasSelfIntersection,
     measureAreaHa: controller.reviewAreaHa,
     measurePerimeterKm: controller.reviewPerimeterKm,
     measureAzimuthDeg: controller.liveAzimuthDegrees,
