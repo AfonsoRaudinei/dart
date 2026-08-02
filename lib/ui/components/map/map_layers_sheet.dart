@@ -45,13 +45,14 @@ class LayersSheet extends ConsumerWidget {
     final wms = ref.watch(externalWmsLayerProvider);
     final raster = ref.watch(externalRasterLayerProvider);
 
-    return Container(
-      decoration: const BoxDecoration(
-        color: SoloForteSheetTokens.sheetBackground,
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(SoloForteSheetTokens.borderRadius),
-        ),
+    // Material (não Container/DecoratedBox) evita assert Flutter 3.44+
+    // "ListTile background/ink may be invisible" sob fundo colorido.
+    return Material(
+      color: SoloForteSheetTokens.sheetBackground,
+      borderRadius: const BorderRadius.vertical(
+        top: Radius.circular(SoloForteSheetTokens.borderRadius),
       ),
+      clipBehavior: Clip.antiAlias,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
