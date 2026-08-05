@@ -130,6 +130,9 @@ class MapBuildOrchestrator extends ConsumerWidget {
         (freehandInteraction.$2 == DrawingState.armed ||
             freehandInteraction.$2 == DrawingState.drawing ||
             freehandInteraction.$3);
+    final suppressMapMarkerTaps = ref.watch(
+      drawingControllerProvider.select((c) => c.suppressesMapContextTaps),
+    );
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       stopwatch.stop();
@@ -171,6 +174,20 @@ class MapBuildOrchestrator extends ConsumerWidget {
               applyInitialViewport();
             },
             onTap: (tapPos, point) {
+              final drawCtrl = ref.read(drawingControllerProvider);
+
+              if (drawCtrl.currentState == DrawingState.drawing ||
+                  drawCtrl.currentState == DrawingState.armed) {
+                if (drawCtrl.currentTool != DrawingTool.freehand) {
+                  drawCtrl.appendDrawingPoint(point);
+                }
+                return;
+              }
+
+              if (drawCtrl.suppressesMapContextTaps) {
+                return;
+              }
+
               // 🎯 Prioridade 1a: Modo armado marketing
               if (ref.read(armedModeProvider) == ArmedMode.marketing) {
                 ref.read(armedModeProvider.notifier).state = ArmedMode.none;
@@ -193,21 +210,8 @@ class MapBuildOrchestrator extends ConsumerWidget {
                 return; // Não processar lógica de talhão
               }
 
-              // 🎯 Prioridade 2: Drawing Module (Interação)
-              // 🔧 FIX-DRAW-RACE: Usar ref.read() para sempre acessar estado atual
-              final drawCtrl = ref.read(drawingControllerProvider);
-              if (drawCtrl.currentState == DrawingState.drawing ||
-                  drawCtrl.currentState == DrawingState.armed) {
-                if (drawCtrl.currentTool == DrawingTool.freehand) {
-                  return;
-                }
-                drawCtrl.appendDrawingPoint(point);
-                return;
-              }
-
               if (drawCtrl.isMultiSelectEnabled ||
                   drawCtrl.currentState == DrawingState.idle ||
-                  drawCtrl.currentState == DrawingState.reviewing ||
                   drawCtrl.currentState == DrawingState.selected) {
                 final drawingFeature = drawCtrl.findFeatureAt(point);
                 if (drawingFeature != null) {
@@ -261,7 +265,12 @@ class MapBuildOrchestrator extends ConsumerWidget {
                 }
               }
             },
-            onLongPress: handleMapLongPress,
+            onLongPress: (tapPos, point) {
+              if (ref.read(drawingControllerProvider).suppressesMapContextTaps) {
+                return;
+              }
+              handleMapLongPress(tapPos, point);
+            },
             onPositionChanged: (pos, hasGesture) {
               ref
                   .read(mapCameraSnapshotProvider.notifier)
@@ -306,6 +315,8 @@ class MapBuildOrchestrator extends ConsumerWidget {
               DrawingLayerWidget(
                 controller: ref.read(drawingControllerProvider),
                 onFeatureTap: (feature) {
+                  final drawCtrl = ref.read(drawingControllerProvider);
+                  if (drawCtrl.suppressesMapContextTaps) return;
                   ref.read(drawingControllerProvider).selectFeature(feature);
                   HapticFeedback.selectionClick();
                 },
@@ -325,15 +336,24 @@ class MapBuildOrchestrator extends ConsumerWidget {
               const ClimaRadarTileLayerWidget(),
 
               // 🔒 MARKERS ISOLADOS: Não rebuildam por GPS/zoom/pan
-              const MapMarkersWidget(),
+              AbsorbPointer(
+                absorbing: suppressMapMarkerTaps,
+                child: const MapMarkersWidget(),
+              ),
 
               // Markers de ocorrências (isolados)
-              IsolatedOccurrenceMarkersLayer(
-                onOccurrenceTap: handleOccurrencePinTap,
+              AbsorbPointer(
+                absorbing: suppressMapMarkerTaps,
+                child: IsolatedOccurrenceMarkersLayer(
+                  onOccurrenceTap: handleOccurrencePinTap,
+                ),
               ),
 
               // Markers de Marketing (isolados — Sprint 8 Performance)
-              const IsolatedMarketingMarkersLayer(),
+              AbsorbPointer(
+                absorbing: suppressMapMarkerTaps,
+                child: const IsolatedMarketingMarkersLayer(),
+              ),
 
               Consumer(
                 builder: (context, ref, _) {
