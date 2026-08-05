@@ -36,6 +36,16 @@ Arquivo incluído em `ios/Runner/PrivacyInfo.xcprivacy`:
 - API reasons: UserDefaults (CA92.1), FileTimestamp (C617.1)
 - Collected data types declarados conforme uso real
 
+**Checklist archive + Transporter:** `docs/store/IOS_ARCHIVE_PRIVACY_CHECKLIST.md`
+
+**Gate automatizado:**
+
+```bash
+./tool/release_store_check.sh
+# Com IPA gerado:
+./tool/release_store_check.sh build/ios/ipa/*.ipa
+```
+
 ---
 
 ## Export Compliance
