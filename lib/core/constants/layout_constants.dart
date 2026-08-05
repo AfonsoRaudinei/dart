@@ -39,3 +39,14 @@ const double kFabContentClearance = 4.0;
 /// Para contextos com SafeArea, somar `MediaQuery.of(context).padding.bottom`
 /// ou usar a extensão `context.fabSafeBottomPadding`.
 const double kFabSafeArea = kFabHeight + kFabBottomMargin + kFabContentClearance; // 100.0
+
+/// Altura fixa da barra inferior do modo desenho (conteúdo + padding interno).
+///
+/// Total ocupado na tela = [kDrawingBottomToolbarHeight] +
+/// `MediaQuery.padding.bottom`.
+const double kDrawingBottomToolbarHeight = 64.0;
+
+/// Recuo direito da barra de desenho para não cobrir o SmartButton global.
+///
+/// Composição: [kFabHeight] (56) + margem direita do shell (16) = 72.
+const double kDrawingBottomToolbarRightInset = kFabHeight + 16.0;
