@@ -205,6 +205,24 @@ void main() {
     expect(controller.currentState, DrawingState.idle);
   });
 
+  testWidgets(
+    'nao exibe fallback indisponivel quando flag drawing_v1 esta desabilitada',
+    (tester) async {
+      final controller = await _createController();
+      addTearDown(controller.dispose);
+
+      await _pumpHost(
+        tester,
+        GlobalKey<_MapBottomSheetHostState>(),
+        controller,
+        flag: FeatureFlag.disabled('drawing_v1'),
+      );
+
+      expect(find.text('Funcionalidade Indisponível'), findsNothing);
+      expect(find.text('Polígono'), findsOneWidget);
+    },
+  );
+
   testWidgets('abrir e fechar repetidamente nao deixa selecao residual', (
     tester,
   ) async {
@@ -237,8 +255,14 @@ void main() {
 Future<void> _pumpHost(
   WidgetTester tester,
   GlobalKey<_MapBottomSheetHostState> hostKey,
-  DrawingController controller,
-) async {
+  DrawingController controller, {
+  FeatureFlag flag = const FeatureFlag(
+    key: 'drawing_v1',
+    enabled: true,
+    rolloutPercentage: 100,
+    version: 1,
+  ),
+}) async {
   tester.view.physicalSize = const Size(1179, 2556);
   tester.view.devicePixelRatio = 3;
   addTearDown(tester.view.resetPhysicalSize);
@@ -247,9 +271,7 @@ Future<void> _pumpHost(
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
-        drawingFlagProvider.overrideWith(
-          (ref) async => FeatureFlag.fullyEnabled('drawing_v1'),
-        ),
+        drawingFlagProvider.overrideWith((ref) async => flag),
       ],
       child: MaterialApp(
         home: _MapBottomSheetHost(key: hostKey, controller: controller),
