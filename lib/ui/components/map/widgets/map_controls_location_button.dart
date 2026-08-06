@@ -57,7 +57,8 @@ class _LocationButtonState extends ConsumerState<_LocationButton> {
             child: InkWell(
               borderRadius: BorderRadius.circular(12),
               onTap: () {
-                HapticFeedback.selectionClick();
+                // Feedback leve ao ciclar idle → follow → north (idioma iOS).
+                HapticFeedback.lightImpact();
                 _showTemporaryLabel();
 
                 final nextMode = switch (locationMode) {

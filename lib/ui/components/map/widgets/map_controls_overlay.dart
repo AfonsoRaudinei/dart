@@ -553,7 +553,7 @@ class _MapActionButtonState extends State<_MapActionButton> {
           waitDuration: const Duration(milliseconds: 450),
           child: GestureDetector(
             onTap: () {
-              HapticFeedback.selectionClick();
+              HapticFeedback.lightImpact();
               _showTemporaryLabel();
               widget.onTap();
             },
