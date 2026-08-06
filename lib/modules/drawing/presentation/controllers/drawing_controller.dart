@@ -1085,7 +1085,7 @@ class DrawingController extends ChangeNotifier {
         geometry: feature.geometry,
         properties: feature.properties.copyWith(
           ativo: false,
-          syncStatus: SyncStatus.local_only,
+          syncStatus: SyncStatus.deleted_local,
           updatedAt: DateTime.now(),
         ),
       );
