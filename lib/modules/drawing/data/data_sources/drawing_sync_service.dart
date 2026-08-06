@@ -101,7 +101,26 @@ class DrawingSyncService {
     }
 
     for (var remote in remoteUpdates) {
-      final local = await _localStore.getById(remote.id);
+      final local = await _localStore.getByIdForSync(remote.id);
+
+      if (!remote.properties.ativo) {
+        if (local == null) {
+          continue;
+        }
+        try {
+          await _localStore.delete(remote.id);
+          resultUpdates.add(remote);
+        } catch (error, stackTrace) {
+          errorCount++;
+          AppLogger.error(
+            'Drawing pull tombstone persist failed [id=${remote.id}]',
+            tag: 'DrawingSync',
+            error: error,
+            stackTrace: stackTrace,
+          );
+        }
+        continue;
+      }
 
       if (local == null) {
         try {
