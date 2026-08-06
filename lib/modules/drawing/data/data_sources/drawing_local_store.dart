@@ -137,10 +137,49 @@ class DrawingLocalStore {
   Future<void> delete(String id) async {
     final userId = _resolveScopedUserId();
     final db = await _dbHelper.database;
-    // Soft delete
-    final affected = await db.update(
+    final rows = await db.query(
       'drawings',
-      {'deleted_at': DateTime.now().toIso8601String(), 'ativo': 0},
+      where:
+          'id = ? AND ${DrawingOwnershipPolicy.buildOwnedOrOrphanWhereClause(userId)}',
+      whereArgs: [
+        id,
+        ...DrawingOwnershipPolicy.buildOwnedOrOrphanWhereArgs(userId),
+      ],
+      limit: 1,
+    );
+    if (rows.isEmpty) {
+      AppLogger.warning(
+        'DrawingLocalStore.delete encontrou 0 registros [id=$id scopedUser=$userId]',
+        tag: 'DrawingLocalStore',
+      );
+      return;
+    }
+
+    final row = rows.first;
+    final syncStatus = SyncStatus.fromJson(row['sync_status'] as String);
+    final now = DateTime.now().toIso8601String();
+
+    if (syncStatus == SyncStatus.local_only) {
+      await db.delete(
+        'drawings',
+        where:
+            'id = ? AND ${DrawingOwnershipPolicy.buildOwnedOrOrphanWhereClause(userId)}',
+        whereArgs: [
+          id,
+          ...DrawingOwnershipPolicy.buildOwnedOrOrphanWhereArgs(userId),
+        ],
+      );
+      return;
+    }
+
+    await db.update(
+      'drawings',
+      {
+        'deleted_at': now,
+        'ativo': 0,
+        'sync_status': SyncStatus.deleted_local.toJson(),
+        'updated_at': now,
+      },
       where:
           'id = ? AND ${DrawingOwnershipPolicy.buildOwnedOrOrphanWhereClause(userId)}',
       whereArgs: [
@@ -148,12 +187,26 @@ class DrawingLocalStore {
         ...DrawingOwnershipPolicy.buildOwnedOrOrphanWhereArgs(userId),
       ],
     );
-    if (affected == 0) {
-      AppLogger.warning(
-        'DrawingLocalStore.delete encontrou 0 registros [id=$id scopedUser=$userId]',
-        tag: 'DrawingLocalStore',
-      );
+  }
+
+  Future<DrawingFeature?> getByIdForSync(String id) async {
+    final userId = _resolveScopedUserId();
+    final db = await _dbHelper.database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'drawings',
+      where:
+          'id = ? AND ${DrawingOwnershipPolicy.buildOwnedOrOrphanWhereClause(userId)}',
+      whereArgs: [
+        id,
+        ...DrawingOwnershipPolicy.buildOwnedOrOrphanWhereArgs(userId),
+      ],
+      limit: 1,
+    );
+
+    if (maps.isNotEmpty) {
+      return _fromRow(maps.first);
     }
+    return null;
   }
 
   Future<DrawingFeature?> getById(String id) async {
@@ -198,7 +251,7 @@ class DrawingLocalStore {
       'drawings',
       where:
           "${DrawingOwnershipPolicy.buildOwnedOrOrphanWhereClause(userId)} "
-          "AND sync_status != 'synced'",
+          "AND sync_status IN ('pending_sync', 'local_only', 'deleted_local', 'conflict')",
       whereArgs: DrawingOwnershipPolicy.buildOwnedOrOrphanWhereArgs(userId),
     );
     return maps.map((e) => _fromRow(e)).toList();
