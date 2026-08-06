@@ -3,7 +3,10 @@ import 'package:flutter/material.dart';
 import '../../../../core/constants/layout_constants.dart';
 import 'drawing_bottom_toolbar.dart';
 
-/// Posiciona [DrawingBottomToolbar] acima do SmartButton durante o desenho.
+/// Posiciona [DrawingBottomToolbar] na base da tela durante o desenho.
+///
+/// A barra ocupa `bottom: 0` com safe area interna e recuo direito para
+/// não conflitar com o SmartButton nem com a coluna flutuante do mapa.
 class DrawingBottomToolbarOverlay extends StatelessWidget {
   const DrawingBottomToolbarOverlay({
     super.key,
@@ -26,14 +29,20 @@ class DrawingBottomToolbarOverlay extends StatelessWidget {
 
     return Positioned(
       left: 16,
-      right: 16,
-      bottom: kFabSafeArea + safeBottom,
-      child: DrawingBottomToolbar(
-        onConfirm: onConfirm,
-        onUndo: onUndo,
-        onCancel: onCancel,
-        canUndo: canUndo,
-        canConfirm: canConfirm,
+      right: kDrawingBottomToolbarRightInset,
+      bottom: 0,
+      child: Padding(
+        padding: EdgeInsets.only(bottom: safeBottom),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxHeight: kDrawingBottomToolbarHeight),
+          child: DrawingBottomToolbar(
+            onConfirm: onConfirm,
+            onUndo: onUndo,
+            onCancel: onCancel,
+            canUndo: canUndo,
+            canConfirm: canConfirm,
+          ),
+        ),
       ),
     );
   }

@@ -8,15 +8,11 @@ import 'package:latlong2/latlong.dart';
 import '../../../../modules/consultoria/occurrences/presentation/controllers/occurrence_controller.dart';
 import 'map_layers_sheet.dart';
 import '../../../modules/drawing/presentation/widgets/drawing_sheet.dart';
-import '../../../modules/drawing/presentation/widgets/drawing_disabled_widget.dart';
 import '../../../modules/drawing/presentation/controllers/drawing_controller.dart';
 import '../../../modules/drawing/presentation/coordinators/drawing_close_coordinator.dart';
 import '../../../modules/drawing/domain/models/drawing_models.dart';
 import '../../../modules/map/presentation/widgets/visit_sheet.dart';
 import '../../../modules/visitas/presentation/controllers/visit_controller.dart';
-import '../../../core/feature_flags/feature_flag_providers.dart';
-import '../../../core/feature_flags/feature_flag_resolver.dart';
-import '../../../core/feature_flags/feature_flag_analytics.dart';
 import '../../../../modules/consultoria/occurrences/presentation/widgets/occurrence_list_sheet.dart';
 import '../../../../modules/consultoria/occurrences/presentation/widgets/occurrence_creation_sheet.dart';
 import '../../../modules/dashboard/services/location_service.dart';
@@ -274,28 +270,15 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
   }
 
   Widget _buildDraw() {
-    return FutureBuilder<bool>(
-      future: _checkDrawingFeatureFlag(),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) {
-          return const Center(
-            child: Padding(
-              padding: EdgeInsets.all(32),
-              child: CircularProgressIndicator(),
-            ),
-          );
-        }
-        return snapshot.data!
-            ? DrawingSheet(
-                controller: widget.drawingController,
-                scrollController: _scrollController,
-                onFocusFeature: widget.onFocusDrawingFeature,
-                onGpsMeasureStarted: _dismissCurrentSheet,
-                onSaved: _dismissCurrentSheet,
-                onClose: _dismissCurrentSheet,
-              )
-            : const DrawingDisabledWidget();
-      },
+    // Drawing é offline-first e está em produção: não bloquear revisão/salvamento
+    // por kill-switch remoto de feature flag.
+    return DrawingSheet(
+      controller: widget.drawingController,
+      scrollController: _scrollController,
+      onFocusFeature: widget.onFocusDrawingFeature,
+      onGpsMeasureStarted: _dismissCurrentSheet,
+      onSaved: _dismissCurrentSheet,
+      onClose: _dismissCurrentSheet,
     );
   }
 
@@ -529,28 +512,6 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
         widget.onClose();
       },
     );
-  }
-
-  Future<bool> _checkDrawingFeatureFlag() async {
-    try {
-      const user = FeatureFlagUser(
-        userId: 'dev-user-001',
-        role: 'consultor',
-        appVersion: '1.1.0',
-      );
-
-      final isEnabled = await ref.read(isDrawingEnabledProvider(user).future);
-
-      FeatureFlagAnalytics.trackDrawingAccess(
-        userId: user.userId,
-        userRole: user.role,
-        wasEnabled: isEnabled,
-      );
-
-      return isEnabled;
-    } catch (e) {
-      return false;
-    }
   }
 
   @override

@@ -380,4 +380,34 @@ void main() {
       expect(controller.currentState, equals(DrawingState.drawing));
     });
   });
+
+  group('suppressesMapContextTaps — blindagem de gestos do mapa', () {
+    late DrawingController controller;
+
+    setUp(() {
+      controller = DrawingController(repository: MockDrawingRepository());
+    });
+
+    tearDown(() {
+      controller.dispose();
+    });
+
+    test('idle não suprime taps contextuais', () {
+      expect(controller.suppressesMapContextTaps, isFalse);
+    });
+
+    test('armed, drawing e reviewing suprimem taps contextuais', () {
+      controller.selectTool('polygon');
+      expect(controller.suppressesMapContextTaps, isTrue);
+
+      controller.appendDrawingPoint(const LatLng(-15.7801, -47.9292));
+      expect(controller.suppressesMapContextTaps, isTrue);
+
+      controller.appendDrawingPoint(const LatLng(-15.7802, -47.9293));
+      controller.appendDrawingPoint(const LatLng(-15.7803, -47.9291));
+      controller.completeDrawing();
+      expect(controller.currentState, DrawingState.reviewing);
+      expect(controller.suppressesMapContextTaps, isTrue);
+    });
+  });
 }

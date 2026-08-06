@@ -320,6 +320,27 @@ class DrawingController extends ChangeNotifier {
   DrawingTool get currentTool => _stateMachine.currentTool;
   BooleanOperationType get booleanOperation => _stateMachine.booleanOperation;
 
+  /// Bloqueia taps contextuais do mapa (talhões, pins, sheets) enquanto o
+  /// usuário está desenhando, revisando, editando ou em fluxos exclusivos.
+  ///
+  /// [DrawingState.selected] permanece false — seleção de feature existente
+  /// continua abrindo o sheet de desenho.
+  bool get suppressesMapContextTaps {
+    switch (currentState) {
+      case DrawingState.armed:
+      case DrawingState.drawing:
+      case DrawingState.reviewing:
+      case DrawingState.editing:
+      case DrawingState.importPreview:
+      case DrawingState.booleanOperation:
+      case DrawingState.gpsTracking:
+        return true;
+      case DrawingState.idle:
+      case DrawingState.selected:
+        return false;
+    }
+  }
+
   DrawingFeature? get pendingFeatureA =>
       _booleanOpsOrchestrator.pendingFeatureA;
   DrawingFeature? get pendingFeatureB =>

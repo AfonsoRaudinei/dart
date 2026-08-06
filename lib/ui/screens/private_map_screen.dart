@@ -248,6 +248,7 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
 
   // ── _handleMapLongPress ── delegate ADR-031 F5 ─────────────────────────
   void _handleMapLongPress(TapPosition tapPos, LatLng latLng) {
+    if (ref.read(drawingControllerProvider).suppressesMapContextTaps) return;
     final initialTipo = _pendingMarketingCaseTipo;
     _pendingMarketingCaseTipo = null;
     NovoCaseModalLauncher.launch(
@@ -669,6 +670,7 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
 
   void _handleOccurrencePinTap(occ.Occurrence occurrence) {
     if (!mounted) return;
+    if (ref.read(drawingControllerProvider).suppressesMapContextTaps) return;
     OccurrenceDetailSheet.show(context, occurrence);
   }
 

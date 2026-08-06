@@ -74,7 +74,7 @@ class _DrawingBottomToolbarState extends State<DrawingBottomToolbar>
               borderRadius: BorderRadius.circular(16),
             ),
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: Row(
                 children: [
                   Expanded(
@@ -108,7 +108,7 @@ class _DrawingBottomToolbarState extends State<DrawingBottomToolbar>
                       label: 'Confirmar',
                       iconColor: _iosGreen,
                       labelColor: _iosGreen,
-                      iconSize: 26,
+                      iconSize: 22,
                       semanticsLabel: 'Confirmar desenho',
                       enabled: widget.canConfirm,
                       onTap: widget.canConfirm
@@ -136,7 +136,7 @@ class _ToolbarDivider extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: 0.5,
-      height: 36,
+      height: 28,
       color: Colors.white.withValues(alpha: 0.22),
     );
   }
@@ -175,22 +175,22 @@ class _ToolbarAction extends StatelessWidget {
         opacity: opacity,
         child: Material(
           color: Colors.transparent,
-          child: InkWell(
+            child: InkWell(
             onTap: enabled ? onTap : null,
             borderRadius: BorderRadius.circular(12),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(icon, color: iconColor, size: iconSize),
-                  const SizedBox(height: 4),
-                  Text(
-                    label,
-                    style: TextStyle(fontSize: 11, color: labelColor),
-                  ),
-                ],
-              ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(icon, color: iconColor, size: iconSize),
+                const SizedBox(height: 2),
+                Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(fontSize: 12, color: labelColor),
+                ),
+              ],
             ),
           ),
         ),
