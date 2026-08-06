@@ -38,12 +38,15 @@ class RelatorioRepositoryImpl implements IRelatorioRepository {
   @override
   Future<void> update(RelatorioTecnico relatorio) async {
     final db = await _dbHelper.database;
+    final agronomistId = LocalSessionIdentity.resolveUserId();
     final updated = relatorio.copyWith(updatedAt: DateTime.now().toUtc());
     await db.update(
       RelatorioTable.tableName,
       _toMap(updated),
-      where: '${RelatorioTable.colId} = ?',
-      whereArgs: [relatorio.id],
+      where:
+          '${RelatorioTable.colId} = ?'
+          ' AND ${RelatorioTable.colAgronomistId} = ?',
+      whereArgs: [relatorio.id, agronomistId],
     );
   }
 
@@ -178,6 +181,7 @@ class RelatorioRepositoryImpl implements IRelatorioRepository {
   @override
   Future<void> softDelete(String id) async {
     final db = await _dbHelper.database;
+    final agronomistId = LocalSessionIdentity.resolveUserId();
     final now = DateTime.now().toUtc().toIso8601String();
     await db.update(
       RelatorioTable.tableName,
@@ -186,8 +190,10 @@ class RelatorioRepositoryImpl implements IRelatorioRepository {
         RelatorioTable.colSyncStatus: RelatorioSyncStatus.deleted_local.name,
         RelatorioTable.colUpdatedAt: now,
       },
-      where: '${RelatorioTable.colId} = ?',
-      whereArgs: [id],
+      where:
+          '${RelatorioTable.colId} = ?'
+          ' AND ${RelatorioTable.colAgronomistId} = ?',
+      whereArgs: [id, agronomistId],
     );
   }
 
@@ -196,28 +202,34 @@ class RelatorioRepositoryImpl implements IRelatorioRepository {
   @override
   Future<void> markAsSynced(String id) async {
     final db = await _dbHelper.database;
+    final agronomistId = LocalSessionIdentity.resolveUserId();
     await db.update(
       RelatorioTable.tableName,
       {
         RelatorioTable.colSyncStatus: RelatorioSyncStatus.synced.name,
         RelatorioTable.colUpdatedAt: DateTime.now().toUtc().toIso8601String(),
       },
-      where: '${RelatorioTable.colId} = ?',
-      whereArgs: [id],
+      where:
+          '${RelatorioTable.colId} = ?'
+          ' AND ${RelatorioTable.colAgronomistId} = ?',
+      whereArgs: [id, agronomistId],
     );
   }
 
   @override
   Future<void> markAsPendingSync(String id) async {
     final db = await _dbHelper.database;
+    final agronomistId = LocalSessionIdentity.resolveUserId();
     await db.update(
       RelatorioTable.tableName,
       {
         RelatorioTable.colSyncStatus: RelatorioSyncStatus.pending_sync.name,
         RelatorioTable.colUpdatedAt: DateTime.now().toUtc().toIso8601String(),
       },
-      where: '${RelatorioTable.colId} = ?',
-      whereArgs: [id],
+      where:
+          '${RelatorioTable.colId} = ?'
+          ' AND ${RelatorioTable.colAgronomistId} = ?',
+      whereArgs: [id, agronomistId],
     );
   }
 
