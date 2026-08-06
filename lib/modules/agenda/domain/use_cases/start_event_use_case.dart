@@ -82,6 +82,7 @@ class StartEventUseCase {
         error: error,
         stackTrace: stackTrace,
       );
+      Error.throwWithStackTrace(error, stackTrace);
     }
 
     return (updatedEvent: updatedEvent, session: session);
