@@ -206,6 +206,7 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
                     onPressed: _isSaving ? null : _submitReview,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: PremiumTokens.brandGreen,
+                      foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(
                         horizontal: 14,
                         vertical: 12,
@@ -226,8 +227,9 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
               const SizedBox(height: 12),
             ],
 
-            // 📊 Métricas
+            // 📊 Métricas (Área / Perímetro) — contraste ADR-027
             Container(
+              key: const Key('drawing_review_metrics'),
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: SoloForteSheetTokens.inputBackground,
@@ -376,12 +378,13 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
                       );
                     },
                     style: OutlinedButton.styleFrom(
+                      foregroundColor: SoloForteSheetTokens.inputHint,
+                      side: const BorderSide(
+                        color: SoloForteSheetTokens.divider,
+                      ),
                       padding: const EdgeInsets.symmetric(vertical: 16),
                     ),
-                    child: const Text(
-                      'CANCELAR',
-                      style: TextStyle(color: Colors.grey),
-                    ),
+                    child: const Text('CANCELAR'),
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -391,6 +394,7 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
                     onPressed: _isSaving ? null : _submitReview,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: PremiumTokens.brandGreen,
+                      foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                     ),
                     child: Text(

@@ -9,6 +9,7 @@ import 'package:soloforte_app/modules/drawing/presentation/widgets/drawing_sheet
 import 'package:soloforte_app/modules/drawing/domain/drawing_state.dart';
 import 'package:soloforte_app/modules/drawing/domain/models/drawing_models.dart';
 import 'package:soloforte_app/modules/drawing/data/repositories/drawing_repository.dart';
+import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
 
 /// Mock repository que não acessa banco de dados
 class MockDrawingRepository extends DrawingRepository {
@@ -400,6 +401,34 @@ void main() {
         find.byKey(const Key('drawing_review_save_cta_bottom')),
         findsOneWidget,
       );
+
+      // Conteúdo do formulário de revisão deve permanecer visível
+      expect(find.text('Salvar Polígono'), findsOneWidget);
+      expect(find.text('Cliente'), findsOneWidget);
+      expect(find.text('Fazenda / Grupo'), findsOneWidget);
+      expect(find.text('Nome do Talhão'), findsOneWidget);
+      expect(find.byKey(const Key('drawing_review_metrics')), findsOneWidget);
+      expect(find.text('Área'), findsWidgets);
+      expect(find.text('Perímetro'), findsWidgets);
+
+      // Contraste ADR-027: valores de métrica usam texto claro do sheet
+      final metricValueTexts = tester
+          .widgetList<Text>(
+            find.descendant(
+              of: find.byKey(const Key('drawing_review_metrics')),
+              matching: find.byType(Text),
+            ),
+          )
+          .where((t) => t.data != null && (t.data!.contains('ha') || t.data!.contains('km')))
+          .toList();
+      expect(metricValueTexts, isNotEmpty);
+      for (final text in metricValueTexts) {
+        expect(
+          text.style?.color,
+          SoloForteSheetTokens.inputText,
+          reason: 'métrica "${text.data}" deve usar SoloForteSheetTokens.inputText',
+        );
+      }
 
       controller.dispose();
     });

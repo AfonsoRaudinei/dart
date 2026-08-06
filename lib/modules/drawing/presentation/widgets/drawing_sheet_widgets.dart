@@ -67,7 +67,6 @@ class _SheetHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -81,6 +80,7 @@ class _SheetHeader extends StatelessWidget {
                   key: const Key('drawing_sheet_back'),
                   tooltip: 'Voltar',
                   onPressed: onBack,
+                  color: SoloForteSheetTokens.sectionLabel,
                   icon: const Icon(Icons.arrow_back_ios_new_rounded),
                 ),
               const Expanded(
@@ -98,12 +98,13 @@ class _SheetHeader extends StatelessWidget {
                   key: const Key('drawing_sheet_close'),
                   tooltip: 'Fechar',
                   onPressed: onClose,
+                  color: SoloForteSheetTokens.sectionLabel,
                   icon: const Icon(Icons.close),
                 ),
             ],
           ),
         ),
-        Divider(height: 1, color: scheme.outlineVariant.withValues(alpha: 0.5)),
+        const Divider(height: 1, color: SoloForteSheetTokens.divider),
       ],
     );
   }
@@ -164,11 +165,21 @@ class _MetricItem extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(fontSize: 11, color: Colors.grey)),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 11,
+            color: SoloForteSheetTokens.inputHint,
+          ),
+        ),
         const SizedBox(height: 2),
         Text(
           value,
-          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+          style: const TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: SoloForteSheetTokens.inputText,
+          ),
         ),
       ],
     );
@@ -230,15 +241,28 @@ class _BigMetric extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Cores fixas de SoloForteSheetTokens — o sheet é sempre escuro (ADR-027),
+    // independente de Theme.brightness. Usar premiumTextSecondary herdava
+    // cinza escuro do tema claro e apagava Área/Perímetro.
     return Column(
       children: [
-        Icon(icon, color: context.premiumTextSecondary, size: 20),
+        Icon(icon, color: SoloForteSheetTokens.categoryLabel, size: 20),
         const SizedBox(height: 8),
         Text(
           value,
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: SoloForteSheetTokens.inputText,
+          ),
         ),
-        Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 12,
+            color: SoloForteSheetTokens.inputHint,
+          ),
+        ),
       ],
     );
   }
