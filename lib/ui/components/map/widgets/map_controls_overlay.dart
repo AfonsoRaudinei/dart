@@ -180,7 +180,9 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
             ],
           ),
         ),
-        if (widget.measurementAreaHa > 0 || widget.measurementPerimeterKm > 0)
+        if ((widget.measurementAreaHa > 0 ||
+                widget.measurementPerimeterKm > 0) &&
+            widget.drawingState != DrawingState.drawing)
           Positioned(
             top: safeTop + 56,
             left: 12,
@@ -288,6 +290,22 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
             // (_updateRealTimeIntersection → findSelfIntersectingSegments).
             // Widget permanece puro; validação de geometria fica no host.
             canConfirm: !widget.hasSelfIntersection,
+            measurementAreaHa: widget.measurementAreaHa,
+            measurementPerimeterKm: widget.measurementPerimeterKm,
+            measurementAzimuthDeg: widget.measurementAzimuthDeg,
+            gpsAccuracyM: widget.gpsAccuracyM,
+            areaUnit: areaUnit,
+            onAreaUnit: (u) =>
+                ref.read(areaDisplayUnitProvider.notifier).setUnit(u),
+            showMeasurementDetails: _showMeasurementDetails,
+            onToggleMeasurementDetails: () {
+              setState(() {
+                _showMeasurementDetails = !_showMeasurementDetails;
+              });
+            },
+            distanceUnit: distanceUnit,
+            onDistanceUnit: (u) =>
+                ref.read(distanceDisplayUnitProvider.notifier).setUnit(u),
           ),
 
         // 5. Editing Controls (Conditional)

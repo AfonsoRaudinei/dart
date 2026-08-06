@@ -40,10 +40,9 @@ const double kFabContentClearance = 4.0;
 /// ou usar a extensão `context.fabSafeBottomPadding`.
 const double kFabSafeArea = kFabHeight + kFabBottomMargin + kFabContentClearance; // 100.0
 
-/// Altura fixa da barra inferior do modo desenho (conteúdo + padding interno).
+/// Altura mínima da barra de ações do modo desenho (sem medição).
 ///
-/// Total ocupado na tela = [kDrawingBottomToolbarHeight] +
-/// `MediaQuery.padding.bottom`.
+/// Com medição integrada, o card cresce dinamicamente.
 const double kDrawingBottomToolbarHeight = 64.0;
 
 /// Recuo direito da barra de desenho para não cobrir o SmartButton global.

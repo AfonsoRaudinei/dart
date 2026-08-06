@@ -257,6 +257,75 @@ void main() {
     expect(find.byKey(const Key('drawing_controls_backplate')), findsNothing);
   });
 
+  testWidgets(
+    'modo drawing integra medição no card inferior (não no topo)',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final settingsRepository = SettingsRepository(
+        await SharedPreferences.getInstance(),
+      );
+      final preferencesService = PreferencesService(
+        await SharedPreferences.getInstance(),
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            preferencesServiceProvider.overrideWithValue(preferencesService),
+            settingsRepositoryProvider.overrideWithValue(settingsRepository),
+            isOnlineProvider.overrideWith((ref) => Stream.value(true)),
+            visitRepositoryProvider.overrideWithValue(
+              _NoActiveVisitRepository(),
+            ),
+            agendaSessionBridgeProvider.overrideWithValue(_NoopAgendaBridge()),
+            sessionControllerProvider.overrideWith(
+              _PublicSessionController.new,
+            ),
+          ],
+          child: MaterialApp(
+            home: Scaffold(
+              body: MapControlsOverlay(
+                onCenterUser: _noop,
+                onLocationModeChanged: (_) {},
+                onToggleDrawMode: _noop,
+                onOpenMapTools: _noop,
+                onTabSelected: (_, _) {},
+                isDrawMode: true,
+                currentCenter: const LatLng(0, 0),
+                currentZoom: 13,
+                drawingState: DrawingState.drawing,
+                measurementAreaHa: 1.033,
+                measurementPerimeterKm: 0.829,
+                onFinishDrawing: _noop,
+                onCancelDrawing: _noop,
+                onSaveEdit: _noop,
+                onCancelEdit: _noop,
+                onUndoEdit: _noop,
+                onUndoDrawing: _noop,
+                canUndo: true,
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.pump(const Duration(milliseconds: 200));
+
+      expect(find.text('1.033 ha'), findsOneWidget);
+      expect(find.text('Cancelar'), findsOneWidget);
+      expect(find.byKey(const Key('measurement_area_card')), findsOneWidget);
+
+      final toolbarBox = tester.getRect(
+        find.byKey(const Key('drawing_bottom_toolbar')),
+      );
+      final measurementBox = tester.getRect(
+        find.byKey(const Key('measurement_area_card')),
+      );
+      expect(measurementBox.top, greaterThan(toolbarBox.top));
+      expect(measurementBox.bottom, lessThanOrEqualTo(toolbarBox.bottom + 1));
+    },
+  );
+
   testWidgets('MapControlsOverlay exibe check-in quando ação está habilitada', (
     tester,
   ) async {
