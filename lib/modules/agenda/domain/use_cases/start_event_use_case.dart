@@ -1,6 +1,6 @@
-import 'package:flutter/foundation.dart';
 import 'package:soloforte_app/core/contracts/i_visit_session_writer.dart';
 import 'package:soloforte_app/core/contracts/visit_session_mirror_input.dart';
+import 'package:soloforte_app/core/utils/app_logger.dart';
 import 'package:uuid/uuid.dart';
 import 'package:soloforte_app/core/services/sync_status_contract.dart';
 import '../entities/event.dart';
@@ -76,9 +76,11 @@ class StartEventUseCase {
         ),
       );
     } catch (error, stackTrace) {
-      debugPrint(
-        'StartEventUseCase: falha ao espelhar sessão ${session.id} em '
-        'visit_sessions — $error\n$stackTrace',
+      AppLogger.error(
+        'StartEventUseCase: falha ao espelhar sessão ${session.id} em visit_sessions',
+        tag: 'StartEventUseCase',
+        error: error,
+        stackTrace: stackTrace,
       );
     }
 
