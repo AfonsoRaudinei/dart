@@ -48,8 +48,16 @@ class AgendaSyncService {
 
     for (final event in pendingEvents) {
       try {
-        // Não enviar eventos deletados (apenas marcar localmente)
-        if (event.syncStatus == 'deleted') {
+        if (SyncStatusContract.normalize(event.syncStatus) ==
+            SyncStatusContract.deletedLocal) {
+          await NetworkPolicy.withTimeout(
+            () => _supabase
+                .from('agenda_events')
+                .delete()
+                .eq('id', event.id)
+                .eq('user_id', userId),
+          );
+          await _repository.purgeDeletedEvent(event.id);
           continue;
         }
 
