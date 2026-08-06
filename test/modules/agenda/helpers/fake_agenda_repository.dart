@@ -193,6 +193,7 @@ Event makeEvent({
   DateTime? dataFim,
   EventStatus status = EventStatus.agendado,
   String? visitSessionId,
+  String syncStatus = SyncStatusContract.pendingSync,
 }) {
   final inicio = dataInicio ?? _tomorrow;
   final fim = dataFim ?? inicio.add(const Duration(hours: 2));
@@ -210,7 +211,7 @@ Event makeEvent({
     visitSessionId: visitSessionId,
     createdAt: now,
     updatedAt: now,
-    syncStatus: 'pending',
+    syncStatus: syncStatus,
   );
 }
 
