@@ -10,6 +10,10 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 cd "$ROOT"
 
+# App Store Connect 90068 (Spring 2027): MinimumOSVersion >= 15.0 em todos os bundles.
+# O Flutter SDK ainda grava 13.0 em App.framework/Info.plist após o build — corrigimos no archive.
+IOS_MIN_VERSION="15.0"
+
 JSON_FILE="$ROOT/.env.local.json"
 EXPORT_OPTIONS_PLIST="$ROOT/ios/ExportOptions.plist"
 
@@ -75,6 +79,12 @@ echo "🧹 Limpando cache..."
 flutter clean
 flutter pub get
 
+# Flutter.podspec é regenerado com deployment_target 13.0 — alinhar com Podfile (15.0).
+FLUTTER_PODSPEC="$ROOT/ios/Flutter/Flutter.podspec"
+if [ -f "$FLUTTER_PODSPEC" ]; then
+  sed -i '' "s/s.ios.deployment_target = '13.0'/s.ios.deployment_target = '$IOS_MIN_VERSION'/" "$FLUTTER_PODSPEC"
+fi
+
 # Após flutter clean + pub get, plugins iOS (ex.: path_provider_foundation)
 # podem divergir do Podfile.lock. `pod install --deployment` às vezes só
 # avisa e segue (exit 0) com Pods inconsistentes — IPA 179. Sempre
@@ -100,6 +110,23 @@ flutter build ipa \
   --dart-define=GOOGLE_WEATHER_API_KEY="$GOOGLE_WEATHER_API_KEY" \
   --dart-define=ENV=production
 
+ARCHIVE="$ROOT/build/ios/archive/Runner.xcarchive"
+APP_FW_PLIST="$ARCHIVE/Products/Applications/Runner.app/Frameworks/App.framework/Info.plist"
+if [ -f "$APP_FW_PLIST" ]; then
+  APP_FW_MIN=$(/usr/bin/plutil -extract MinimumOSVersion raw -o - "$APP_FW_PLIST" 2>/dev/null || echo "")
+  if [ "$APP_FW_MIN" != "$IOS_MIN_VERSION" ]; then
+    echo "🔧 App.framework MinimumOSVersion ($APP_FW_MIN → $IOS_MIN_VERSION) — Flutter SDK fix ASC 90068..."
+    /usr/bin/plutil -replace MinimumOSVersion -string "$IOS_MIN_VERSION" "$APP_FW_PLIST"
+    echo "📦 Re-exportando IPA após patch do archive..."
+    rm -rf "$ROOT/build/ios/ipa"
+    xcodebuild -exportArchive \
+      -archivePath "$ARCHIVE" \
+      -exportPath "$ROOT/build/ios/ipa" \
+      -exportOptionsPlist="$EXPORT_OPTIONS_PLIST" \
+      -allowProvisioningUpdates
+  fi
+fi
+
 echo ""
 echo "✅ Build $VERSION+$BUILD_NUMBER concluído."
 
@@ -111,8 +138,11 @@ fi
 
 IPA_CHECK_DIR=$(mktemp -d)
 unzip -q "$IPA_FILE" -d "$IPA_CHECK_DIR"
-IPA_VERSION=$(/usr/bin/plutil -extract CFBundleShortVersionString raw -o - "$IPA_CHECK_DIR/Payload/Runner.app/Info.plist")
-IPA_BUILD_NUMBER=$(/usr/bin/plutil -extract CFBundleVersion raw -o - "$IPA_CHECK_DIR/Payload/Runner.app/Info.plist")
+RUNNER_PLIST="$IPA_CHECK_DIR/Payload/Runner.app/Info.plist"
+IPA_VERSION=$(/usr/bin/plutil -extract CFBundleShortVersionString raw -o - "$RUNNER_PLIST")
+IPA_BUILD_NUMBER=$(/usr/bin/plutil -extract CFBundleVersion raw -o - "$RUNNER_PLIST")
+RUNNER_MIN=$(/usr/bin/plutil -extract MinimumOSVersion raw -o - "$RUNNER_PLIST" 2>/dev/null || echo "")
+APP_FW_MIN=$(/usr/bin/plutil -extract MinimumOSVersion raw -o - "$IPA_CHECK_DIR/Payload/Runner.app/Frameworks/App.framework/Info.plist" 2>/dev/null || echo "")
 rm -rf "$IPA_CHECK_DIR"
 
 if [ "$IPA_VERSION" != "$VERSION" ] || [ "$IPA_BUILD_NUMBER" != "$BUILD_NUMBER" ]; then
@@ -123,6 +153,14 @@ if [ "$IPA_VERSION" != "$VERSION" ] || [ "$IPA_BUILD_NUMBER" != "$BUILD_NUMBER" 
 fi
 
 echo "✅ IPA confirmado com versão/build: $IPA_VERSION+$IPA_BUILD_NUMBER"
+
+if [ "$RUNNER_MIN" != "$IOS_MIN_VERSION" ] || [ "$APP_FW_MIN" != "$IOS_MIN_VERSION" ]; then
+  echo "❌ ERRO: MinimumOSVersion incorreto no IPA (ASC 90068)."
+  echo "   Runner.app       : $RUNNER_MIN (esperado $IOS_MIN_VERSION)"
+  echo "   App.framework    : $APP_FW_MIN (esperado $IOS_MIN_VERSION)"
+  exit 1
+fi
+echo "✅ MinimumOSVersion confirmado: Runner=$RUNNER_MIN App.framework=$APP_FW_MIN"
 
 # Confirmação que credenciais entraram no binário.
 # Evitar `strings | grep -q` com pipefail: grep -q fecha o pipe cedo → SIGPIPE
