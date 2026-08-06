@@ -1,3 +1,4 @@
+import 'package:soloforte_app/core/services/sync_status_contract.dart';
 import 'package:soloforte_app/modules/agenda/domain/entities/event.dart';
 import 'package:soloforte_app/modules/agenda/domain/entities/visit_session.dart';
 import 'package:soloforte_app/modules/agenda/domain/enums/event_status.dart';
@@ -64,11 +65,17 @@ class FakeAgendaRepository implements IAgendaRepository {
       _events.values.where((e) => e.visitSessionId == sessionId).firstOrNull;
 
   @override
-  Future<List<Event>> getAllEvents() async => _events.values.toList();
+  Future<List<Event>> getAllEvents() async => _events.values
+      .where(
+        (e) =>
+            SyncStatusContract.normalize(e.syncStatus) !=
+            SyncStatusContract.deletedLocal,
+      )
+      .toList();
 
   @override
   Future<List<Event>> getEventsByDateRange(DateTime start, DateTime end) async {
-    return _events.values
+    return (await getAllEvents())
         .where(
           (e) =>
               !e.dataInicioPlanejada.isBefore(start) &&
@@ -79,7 +86,7 @@ class FakeAgendaRepository implements IAgendaRepository {
 
   @override
   Future<List<Event>> getEventsByDay(DateTime day) async {
-    return _events.values.where((e) {
+    return (await getAllEvents()).where((e) {
       final d = e.dataInicioPlanejada;
       return d.year == day.year && d.month == day.month && d.day == day.day;
     }).toList();
@@ -87,7 +94,15 @@ class FakeAgendaRepository implements IAgendaRepository {
 
   @override
   Future<List<Event>> getPendingSyncEvents() async {
-    return _events.values.where((e) => e.syncStatus == 'pending').toList();
+    return _events.values
+        .where(
+          (e) =>
+              e.syncStatus == SyncStatusContract.pendingSync ||
+              e.syncStatus == SyncStatusContract.legacyPending ||
+              SyncStatusContract.normalize(e.syncStatus) ==
+                  SyncStatusContract.deletedLocal,
+        )
+        .toList();
   }
 
   @override
@@ -100,7 +115,13 @@ class FakeAgendaRepository implements IAgendaRepository {
   Future<void> deleteEvent(String id) async {
     _checkThrow();
     final e = _events[id];
-    if (e != null) _events[id] = e.copyWith(syncStatus: 'deleted');
+    if (e != null) {
+      _events[id] = e.copyWith(syncStatus: SyncStatusContract.deletedLocal);
+    }
+  }
+
+  Future<void> purgeDeletedEvent(String id) async {
+    _events.remove(id);
   }
 
   // ──────────────────────────────────────────────────────────────
