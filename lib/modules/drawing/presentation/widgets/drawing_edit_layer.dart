@@ -1,5 +1,4 @@
 import 'dart:math' as math;
-import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -316,20 +315,17 @@ class _DrawingEditLayerState extends State<DrawingEditLayer> {
       final showGota = isSelected || isDragging;
       // Visual do ponto idle; hitbox do Marker é sempre ≥44dp.
       final dotSize = isStart ? 20.0 : 16.0;
-      final markerW = showGota
-          ? _SketchVertexHandle.gotaWidth
-          : _SketchVertexHandle.minHitSize;
-      final markerH = showGota
-          ? _SketchVertexHandle.gotaHeight
+      final markerSize = showGota
+          ? _SketchVertexHandle.gotaSize
           : _SketchVertexHandle.minHitSize;
 
       markers.add(
         Marker(
           point: point,
-          width: markerW,
-          height: markerH,
-          // Idle: centro no vértice. Selecionado: ponta da gota (pin) no vértice.
-          alignment: showGota ? Alignment.bottomCenter : Alignment.center,
+          width: markerSize,
+          height: markerSize,
+          // Idle e selecionado: centro no vértice geográfico.
+          alignment: Alignment.center,
           child: _SketchVertexHandle(
             index: i,
             isStart: isStart,
@@ -584,18 +580,15 @@ class _MidpointHandle extends StatelessWidget {
   }
 }
 
-/// Handle mid-draw: toque no ponto branco seleciona; arraste só na bolha da gota.
+/// Handle mid-draw: toque no ponto branco seleciona; gota = halo vermelho + arraste.
 ///
-/// Gota estilo pin: ponta no vértice geográfico, bolha + open_with acima para puxar.
+/// Visual alinhado ao pin de referência: círculo vermelho semitransparente com
+/// ícone `open_with` branco centralizado no vértice.
 class _SketchVertexHandle extends StatelessWidget {
   static const double minHitSize = 44;
-  static const double gotaWidth = 48;
-  static const double gotaHeight = 56;
-  /// Altura da zona de arraste (bolha + ícone), acima da ponta.
-  static const double dragBubbleHeight = 38;
-  /// Hitbox de toque só na ponta do pin (fechar polígono / re-selecionar).
-  static const double tipHitHeight = 18;
-  static const double tipHitWidth = 28;
+  static const double gotaSize = 52;
+  static const double haloDiameter = 44;
+  static const Color _gotaRed = Color(0xE6E53935);
 
   final int index;
   final bool isStart;
@@ -660,103 +653,63 @@ class _SketchVertexHandle extends StatelessWidget {
       );
     }
 
-    // Selecionado: gota pin (ponta embaixo) + arraste apenas na bolha superior.
+    // Selecionado: halo vermelho difuso + ícone de arraste centralizado no vértice.
     return SizedBox(
-      width: gotaWidth,
-      height: gotaHeight,
-      child: Stack(
-        clipBehavior: Clip.none,
-        alignment: Alignment.bottomCenter,
-        children: [
-          const IgnorePointer(
-            child: CustomPaint(
-              size: Size(gotaWidth, gotaHeight),
-              painter: _TeardropPainter(color: Color(0xE6E53935)),
-            ),
-          ),
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            height: dragBubbleHeight,
-            child: GestureDetector(
-              key: Key('drawing_sketch_vertex_drag_$index'),
-              behavior: HitTestBehavior.opaque,
-              onPanStart: (_) => onPanStart(),
-              onPanUpdate: onPanUpdate,
-              onPanEnd: (_) => onPanEnd(),
-              onPanCancel: onPanCancel,
-              child: const Center(
-                child: Icon(
-                  Icons.open_with,
-                  color: Colors.white,
-                  size: 22,
+      key: Key('drawing_sketch_vertex_$index'),
+      width: gotaSize,
+      height: gotaSize,
+      child: GestureDetector(
+        key: Key('drawing_sketch_vertex_drag_$index'),
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        onPanStart: (_) => onPanStart(),
+        onPanUpdate: onPanUpdate,
+        onPanEnd: (_) => onPanEnd(),
+        onPanCancel: onPanCancel,
+        child: Stack(
+          alignment: Alignment.center,
+          clipBehavior: Clip.none,
+          children: [
+            Container(
+              width: haloDiameter,
+              height: haloDiameter,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: _gotaRed.withValues(alpha: 0.55),
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.45),
+                  width: 1.5,
                 ),
+                boxShadow: [
+                  BoxShadow(
+                    color: _gotaRed.withValues(alpha: 0.45),
+                    blurRadius: 14,
+                    spreadRadius: 5,
+                  ),
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.28),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
             ),
-          ),
-          // Ponta da gota: toque para fechar polígono (vértice 0) ou re-selecionar.
-          // Hitbox reduzida para não cobrir a bolha de arraste acima.
-          Positioned(
-            bottom: 0,
-            left: (gotaWidth - tipHitWidth) / 2,
-            width: tipHitWidth,
-            height: tipHitHeight,
-            child: GestureDetector(
-              key: Key('drawing_sketch_vertex_$index'),
-              behavior: HitTestBehavior.translucent,
-              onTap: onTap,
+            Container(
+              width: haloDiameter * 0.72,
+              height: haloDiameter * 0.72,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: _gotaRed.withValues(alpha: 0.82),
+              ),
             ),
-          ),
-        ],
+            const Icon(
+              Icons.open_with,
+              color: Colors.white,
+              size: 22,
+            ),
+          ],
+        ),
       ),
     );
   }
-}
-
-class _TeardropPainter extends CustomPainter {
-  final Color color;
-
-  const _TeardropPainter({required this.color});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.fill;
-
-    final w = size.width;
-    final h = size.height;
-    final cx = w / 2;
-    // Pin: ponta na base do retângulo (= vértice geográfico via bottomCenter).
-    final tipY = h - 1.0;
-    final r = w * 0.38;
-    final bubbleCy = tipY - r * 1.05;
-
-    final path = ui.Path()
-      ..moveTo(cx, tipY)
-      ..quadraticBezierTo(cx + r * 0.14, tipY - r * 0.42, cx + r, bubbleCy)
-      ..arcToPoint(
-        Offset(cx - r, bubbleCy),
-        radius: Radius.circular(r),
-        largeArc: true,
-        clockwise: true,
-      )
-      ..quadraticBezierTo(cx - r * 0.14, tipY - r * 0.42, cx, tipY)
-      ..close();
-
-    canvas.drawShadow(path, Colors.black54, 4, true);
-    canvas.drawPath(path, paint);
-    canvas.drawPath(
-      path,
-      Paint()
-        ..color = Colors.white.withValues(alpha: 0.35)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.5,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant _TeardropPainter oldDelegate) =>
-      oldDelegate.color != color;
 }

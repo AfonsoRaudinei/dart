@@ -148,14 +148,17 @@ void main() {
     await tester.pumpAndSettle();
     expect(controller.selectedSketchVertexIndex, 1);
 
-    // Gota selecionada: CustomPaint pin 48×56 + handle de arraste na bolha.
-    final paint = tester.widgetList<CustomPaint>(find.byType(CustomPaint));
-    final gotaPaint = paint.where((p) => p.size == const Size(48, 56));
-    expect(gotaPaint, isNotEmpty);
+    // Gota selecionada: halo circular 52×52 + handle de arraste com ícone.
+    expect(find.byIcon(Icons.open_with), findsOneWidget);
     expect(
       find.byKey(const Key('drawing_sketch_vertex_drag_1')),
       findsOneWidget,
     );
+    final selectedSize = tester.getSize(
+      find.byKey(const Key('drawing_sketch_vertex_1')),
+    );
+    expect(selectedSize.width, greaterThanOrEqualTo(44));
+    expect(selectedSize.height, greaterThanOrEqualTo(44));
 
     final before = controller.currentPoints[1];
     await tester.timedDrag(
@@ -270,7 +273,7 @@ void main() {
     expect(controller.selectedSketchVertexIndex, 1);
   });
 
-  testWidgets('mid-draw: bolha de arraste fica acima da ponta da gota', (
+  testWidgets('mid-draw: gota selecionada fica centralizada no vértice', (
     tester,
   ) async {
     tester.view.physicalSize = const Size(800, 800);
@@ -314,13 +317,15 @@ void main() {
     await tester.tap(find.byKey(const Key('drawing_sketch_vertex_1')));
     await tester.pumpAndSettle();
 
-    final dragHandle = find.byKey(const Key('drawing_sketch_vertex_drag_1'));
-    final dragBox = tester.getRect(dragHandle);
-    final tipHandle = find.byKey(const Key('drawing_sketch_vertex_1'));
-    final tipBox = tester.getRect(tipHandle);
+    final gotaBox = tester.getRect(find.byKey(const Key('drawing_sketch_vertex_1')));
+    final dragBox = tester.getRect(
+      find.byKey(const Key('drawing_sketch_vertex_drag_1')),
+    );
 
-    expect(dragBox.bottom, lessThanOrEqualTo(tipBox.top + 1));
-    expect(tipBox.height, lessThanOrEqualTo(20));
+    expect(gotaBox.width, closeTo(52, 1));
+    expect(gotaBox.height, closeTo(52, 1));
+    expect(dragBox, equals(gotaBox));
+    expect(find.byIcon(Icons.open_with), findsOneWidget);
   });
 }
 
