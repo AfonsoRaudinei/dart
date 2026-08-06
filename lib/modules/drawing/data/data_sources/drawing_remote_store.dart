@@ -108,7 +108,7 @@ class DrawingRemoteStore {
         'soil_sampling_scheme': p.soilSamplingScheme,
         'rec_by_nutrient': p.recByNutrient,
       },
-      'deleted_at': null,
+      'deleted_at': p.ativo ? null : p.updatedAt.toUtc().toIso8601String(),
       'created_at': p.createdAt.toUtc().toIso8601String(),
       'updated_at': p.updatedAt.toUtc().toIso8601String(),
     };
