@@ -18,13 +18,12 @@ extension _DrawingSheetBuildersA on _DrawingSheetState {
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: SoloForteSheetTokens
-            .sheetBackground, // ✅ iOS Premium: Superfícies elevadas (Cards) são brancas
+        color: SoloForteSheetTokens.inputBackground,
         borderRadius: BorderRadius.circular(
           PremiumTokens.borderRadiusSm,
-        ), // ✅ iOS Premium: Inset com 12px
+        ),
         border: Border.all(
-          color: SoloForteSheetTokens.inputBackground,
+          color: SoloForteSheetTokens.divider,
           width: PremiumTokens.hairlineThickness,
         ),
       ),
@@ -33,14 +32,18 @@ extension _DrawingSheetBuildersA on _DrawingSheetState {
         children: [
           const Row(
             children: [
-              Icon(Icons.square_foot, size: 16, color: Colors.blueGrey),
+              Icon(
+                Icons.square_foot,
+                size: 16,
+                color: SoloForteSheetTokens.categoryLabel,
+              ),
               SizedBox(width: 6),
               Text(
                 'MÉTRICAS',
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
-                  color: Colors.blueGrey,
+                  color: SoloForteSheetTokens.categoryLabel,
                   letterSpacing: 0.5,
                 ),
               ),
