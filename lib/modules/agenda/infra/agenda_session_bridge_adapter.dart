@@ -11,15 +11,16 @@
 //   markEventAsDone    → getEventBySessionId + saveEvent(copyWith concluido)
 
 import 'package:soloforte_app/core/contracts/i_agenda_session_bridge.dart';
-import '../data/repositories/agenda_repository.dart';
+import 'package:soloforte_app/core/services/sync_status_contract.dart';
 import '../domain/enums/event_status.dart';
+import '../domain/repositories/i_agenda_repository.dart';
 
 /// Implementação concreta de IAgendaSessionBridge.
 /// Vive em agenda/infra/ — dona dos dados de evento de agenda.
 class AgendaSessionBridgeAdapter implements IAgendaSessionBridge {
   const AgendaSessionBridgeAdapter(this._repository);
 
-  final AgendaRepository _repository;
+  final IAgendaRepository _repository;
 
   @override
   Future<void> linkSessionToEvent({
@@ -32,6 +33,8 @@ class AgendaSessionBridgeAdapter implements IAgendaSessionBridge {
       event.copyWith(
         visitSessionId: sessionId,
         status: EventStatus.emAndamento,
+        syncStatus: SyncStatusContract.pendingSync,
+        updatedAt: DateTime.now(),
       ),
     );
   }
@@ -41,7 +44,11 @@ class AgendaSessionBridgeAdapter implements IAgendaSessionBridge {
     final event = await _repository.getEventBySessionId(sessionId);
     if (event == null) return; // noop seguro — nenhum evento vinculado
     await _repository.saveEvent(
-      event.copyWith(status: EventStatus.concluido),
+      event.copyWith(
+        status: EventStatus.concluido,
+        syncStatus: SyncStatusContract.pendingSync,
+        updatedAt: DateTime.now(),
+      ),
     );
   }
 }
