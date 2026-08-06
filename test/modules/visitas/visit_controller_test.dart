@@ -12,6 +12,7 @@ import 'package:soloforte_app/core/contracts/i_agenda_session_bridge.dart';
 import 'package:soloforte_app/core/contracts/i_agenda_session_bridge_provider.dart';
 import 'package:soloforte_app/modules/visitas/data/repositories/visit_repository.dart';
 import 'package:soloforte_app/modules/visitas/domain/models/visit_session.dart';
+import 'package:soloforte_app/core/session/session_controller.dart';
 import 'package:soloforte_app/modules/visitas/presentation/controllers/visit_controller.dart';
 
 // ── Fake 1: VisitRepository  ────────────────────────────────────
@@ -180,6 +181,21 @@ void main() {
         container.read(visitControllerProvider).valueOrNull!.areaId,
         isNull,
       );
+    });
+
+    test('logout invalidate reseta visitControllerProvider', () async {
+      SessionController.registerLogoutInvalidation(
+        key: 'visitControllerProvider',
+        invalidate: (ref) => ref.invalidate(visitControllerProvider),
+      );
+
+      fakeVisitRepo.seedActiveSession(_makeSession());
+      final controller = container.read(visitControllerProvider.notifier);
+      await controller.checkActiveSession();
+      expect(container.read(visitControllerProvider).valueOrNull, isNotNull);
+
+      container.invalidate(visitControllerProvider);
+      expect(container.read(visitControllerProvider).isLoading, isTrue);
     });
   });
 }
