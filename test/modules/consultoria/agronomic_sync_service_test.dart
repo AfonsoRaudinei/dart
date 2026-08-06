@@ -155,5 +155,35 @@ void main() {
 
       expect(shouldApply, isFalse);
     });
+
+    test('shouldApplyRemote preserva local dirty mesmo se remoto for newer', () {
+      final shouldApply = AgronomicSyncService.shouldApplyRemote(
+        {
+          'updated_at': '2026-06-05T10:00:00.000',
+          'sync_status': AgronomicSyncService.statusDirty,
+        },
+        {
+          'updated_at': '2026-06-05T12:00:00.000',
+          'sync_status': AgronomicSyncService.statusSynced,
+        },
+      );
+
+      expect(shouldApply, isFalse);
+    });
+
+    test('shouldApplyRemote aplica remoto quando local está synced e remoto newer', () {
+      final shouldApply = AgronomicSyncService.shouldApplyRemote(
+        {
+          'updated_at': '2026-06-05T10:00:00.000',
+          'sync_status': AgronomicSyncService.statusSynced,
+        },
+        {
+          'updated_at': '2026-06-05T12:00:00.000',
+          'sync_status': AgronomicSyncService.statusSynced,
+        },
+      );
+
+      expect(shouldApply, isTrue);
+    });
   });
 }

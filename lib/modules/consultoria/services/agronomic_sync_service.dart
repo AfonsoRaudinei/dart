@@ -387,17 +387,20 @@ class AgronomicSyncService {
     }
   }
 
+  /// Local dirty vence até confirmação explícita (arquitetura-persistencia §5.2).
+  /// Nunca sobrescreve trabalho de campo pendente de sync silenciosamente.
   @visibleForTesting
   static bool shouldApplyRemote(
     Map<String, Object?> local,
     Map<String, dynamic> remoteLocalShape,
   ) {
+    final localIsDirty = local['sync_status'] == statusDirty;
+    if (localIsDirty) return false;
+
     final localUpdatedAt = _parseDate(local['updated_at']);
     final remoteUpdatedAt = _parseDate(remoteLocalShape['updated_at']);
-    final localIsDirty = local['sync_status'] == statusDirty;
-
     if (localUpdatedAt == null || remoteUpdatedAt == null) return true;
-    return !(localIsDirty && remoteUpdatedAt.isBefore(localUpdatedAt));
+    return !remoteUpdatedAt.isBefore(localUpdatedAt);
   }
 
   @visibleForTesting
