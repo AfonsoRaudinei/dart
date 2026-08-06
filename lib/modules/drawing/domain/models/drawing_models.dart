@@ -148,7 +148,8 @@ enum SyncStatus {
   local_only,
   pending_sync,
   synced,
-  conflict;
+  conflict,
+  deleted_local;
 
   String toJson() => name;
   static SyncStatus fromJson(String json) => values.byName(json);
