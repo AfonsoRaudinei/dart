@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart' show TimeOfDay;
 import '../../../../core/session/local_session_identity.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/network/network_policy.dart';
@@ -11,12 +12,27 @@ import '../../domain/entities/visit_session.dart';
 import '../../domain/enums/event_type.dart';
 import '../../domain/enums/event_status.dart';
 
+/// Callback de teste para simular delete remoto sem Supabase real.
+typedef AgendaRemoteEventDelete = Future<void> Function(
+  String eventId,
+  String userId,
+);
+
 /// Serviço de sincronização da agenda com Supabase
 class AgendaSyncService {
   final SupabaseClient _supabase;
   final AgendaRepository _repository;
+  final AgendaRemoteEventDelete? _remoteEventDeleteForTest;
 
-  AgendaSyncService(this._supabase, this._repository);
+  AgendaSyncService(
+    this._supabase,
+    this._repository, {
+    @visibleForTesting AgendaRemoteEventDelete? remoteEventDeleteForTest,
+  }) : _remoteEventDeleteForTest = remoteEventDeleteForTest;
+
+  /// Expõe push de eventos para testes de integração (tombstone remoto).
+  @visibleForTesting
+  Future<void> pushEventsForTesting() => _pushEvents();
 
   /// Sincroniza eventos e sessões (push + pull)
   Future<void> sync() async {
@@ -50,13 +66,18 @@ class AgendaSyncService {
       try {
         if (SyncStatusContract.normalize(event.syncStatus) ==
             SyncStatusContract.deletedLocal) {
-          await NetworkPolicy.withTimeout(
-            () => _supabase
-                .from('agenda_events')
-                .delete()
-                .eq('id', event.id)
-                .eq('user_id', userId),
-          );
+          final remoteDelete = _remoteEventDeleteForTest;
+          if (remoteDelete != null) {
+            await remoteDelete(event.id, userId);
+          } else {
+            await NetworkPolicy.withTimeout(
+              () => _supabase
+                  .from('agenda_events')
+                  .delete()
+                  .eq('id', event.id)
+                  .eq('user_id', userId),
+            );
+          }
           await _repository.purgeDeletedEvent(event.id);
           continue;
         }
@@ -170,6 +191,17 @@ class AgendaSyncService {
         // Se não existe localmente, inserir
         if (localEvent == null) {
           await _repository.saveEvent(_mapToEvent(remote));
+          continue;
+        }
+
+        // Local pending/deleted vence até confirmação explícita.
+        if (SyncStatusContract.isPending(localEvent.syncStatus) ||
+            SyncStatusContract.normalize(localEvent.syncStatus) ==
+                SyncStatusContract.deletedLocal) {
+          AppLogger.debug(
+            'Agenda pull skip pending/deleted local [id=${localEvent.id}]',
+            tag: 'AgendaSync',
+          );
           continue;
         }
 
