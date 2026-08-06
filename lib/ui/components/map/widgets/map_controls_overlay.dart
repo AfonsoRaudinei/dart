@@ -22,6 +22,7 @@ import '../../../../core/utils/app_logger.dart';
 import '../../../../modules/map/presentation/widgets/visit_active_card.dart';
 import '../../../theme/premium/design_tokens.dart';
 import 'map_action_fab_menu.dart';
+import 'selected_talhao_card.dart';
 
 part 'map_controls_location_button.dart';
 part 'map_controls_measurement.dart';
@@ -154,11 +155,19 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
     final distanceUnit = ref.watch(distanceDisplayUnitProvider);
     return Stack(
       children: [
-        // 1. Card de contexto (Top Left)
+        // 1. Card de contexto (Top Left) + talhão selecionado
         Positioned(
           top: safeTop + 8,
           left: 12,
-          child: widget.topLeftCard ?? const VisitActiveCard(),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              widget.topLeftCard ?? const VisitActiveCard(),
+              // Consultor: chip de seleção no mapa (produtor já tem context card).
+              if (widget.topLeftCard == null) const SelectedTalhaoCard(),
+            ],
+          ),
         ),
 
         // 2. Botão de Localização + Indicador de Conectividade (canto superior direito)

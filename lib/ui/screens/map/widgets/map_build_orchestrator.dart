@@ -9,7 +9,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
-import '../../../../ui/theme/premium/design_tokens.dart';
 import '../../../../core/state/map_ui_providers.dart';
 import '../../../../core/state/map_state.dart';
 import '../../../../core/config/map_config.dart';
@@ -267,15 +266,6 @@ class MapBuildOrchestrator extends ConsumerWidget {
                   ref.read(selectedTalhaoIdProvider.notifier).state = field.id;
                   hit = true;
                   HapticFeedback.selectionClick();
-
-                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Talhão: ${field.name}'),
-                      backgroundColor: PremiumTokens.brandGreen,
-                      duration: const Duration(seconds: 1),
-                    ),
-                  );
                   break; // Stop on first hit
                 }
               }
