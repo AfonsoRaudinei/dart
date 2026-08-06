@@ -592,7 +592,10 @@ class _SketchVertexHandle extends StatelessWidget {
   static const double gotaWidth = 48;
   static const double gotaHeight = 56;
   /// Altura da zona de arraste (bolha + ícone), acima da ponta.
-  static const double dragBubbleHeight = 36;
+  static const double dragBubbleHeight = 38;
+  /// Hitbox de toque só na ponta do pin (fechar polígono / re-selecionar).
+  static const double tipHitHeight = 18;
+  static const double tipHitWidth = 28;
 
   final int index;
   final bool isStart;
@@ -693,11 +696,12 @@ class _SketchVertexHandle extends StatelessWidget {
             ),
           ),
           // Ponta da gota: toque para fechar polígono (vértice 0) ou re-selecionar.
+          // Hitbox reduzida para não cobrir a bolha de arraste acima.
           Positioned(
             bottom: 0,
-            left: (gotaWidth - minHitSize) / 2,
-            width: minHitSize,
-            height: minHitSize,
+            left: (gotaWidth - tipHitWidth) / 2,
+            width: tipHitWidth,
+            height: tipHitHeight,
             child: GestureDetector(
               key: Key('drawing_sketch_vertex_$index'),
               behavior: HitTestBehavior.translucent,

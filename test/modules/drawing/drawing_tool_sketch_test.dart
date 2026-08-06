@@ -153,6 +153,40 @@ void main() {
       expect(controller.currentState, DrawingState.drawing);
     });
 
+    test('polígono: clearSketchVertexSelection libera novo ponto', () {
+      controller.selectTool('polygon');
+      controller.appendDrawingPoint(const LatLng(-15.0, -47.0));
+      controller.appendDrawingPoint(const LatLng(-15.001, -47.0));
+      controller.selectSketchVertex(0);
+      expect(controller.selectedSketchVertexIndex, 0);
+
+      controller.clearSketchVertexSelection();
+      expect(controller.selectedSketchVertexIndex, isNull);
+
+      controller.appendDrawingPoint(const LatLng(-15.001, -47.001));
+      expect(controller.currentPoints.length, 3);
+      expect(controller.selectedSketchVertexIndex, isNull);
+    });
+
+    test('polígono: beginSketchVertexDrag marca dragging sem notify', () {
+      controller.selectTool('polygon');
+      controller.appendDrawingPoint(const LatLng(-15.0, -47.0));
+      controller.appendDrawingPoint(const LatLng(-15.001, -47.0));
+      controller.selectSketchVertex(1);
+
+      var notifyCount = 0;
+      controller.addListener(() => notifyCount++);
+
+      controller.beginSketchVertexDrag(1);
+      expect(controller.isDraggingSketchVertex, isTrue);
+      expect(controller.selectedSketchVertexIndex, 1);
+      expect(notifyCount, 0);
+
+      controller.endSketchVertexDrag();
+      expect(controller.isDraggingSketchVertex, isFalse);
+      expect(notifyCount, 1);
+    });
+
     test('instructionText diferencia ferramentas', () {
       controller.selectTool('freehand');
       expect(controller.instructionText, contains('arraste'));

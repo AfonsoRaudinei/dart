@@ -130,6 +130,21 @@ class MapBuildOrchestrator extends ConsumerWidget {
         (freehandInteraction.$2 == DrawingState.armed ||
             freehandInteraction.$2 == DrawingState.drawing ||
             freehandInteraction.$3);
+    final sketchVertexActive = ref.watch(
+      drawingControllerProvider.select(
+        (c) =>
+            c.selectedSketchVertexIndex != null || c.isDraggingSketchVertex,
+      ),
+    );
+    final polygonSketchMode = ref.watch(
+      drawingControllerProvider.select(
+        (c) =>
+            c.currentTool == DrawingTool.polygon &&
+            (c.currentState == DrawingState.drawing ||
+                c.currentState == DrawingState.armed) &&
+            c.currentPoints.isNotEmpty,
+      ),
+    );
     final suppressMapMarkerTaps = ref.watch(
       drawingControllerProvider.select((c) => c.suppressesMapContextTaps),
     );
@@ -151,7 +166,9 @@ class MapBuildOrchestrator extends ConsumerWidget {
           ),
           MapCanvas(
             mapController: mapController,
-            interactionOptions: drawingMetrics.state == DrawingState.editing
+            interactionOptions:
+                drawingMetrics.state == DrawingState.editing ||
+                    sketchVertexActive
                 ? const InteractionOptions(flags: InteractiveFlag.none)
                 : disableMapDrag
                 ? const InteractionOptions(
@@ -179,6 +196,11 @@ class MapBuildOrchestrator extends ConsumerWidget {
               if (drawCtrl.currentState == DrawingState.drawing ||
                   drawCtrl.currentState == DrawingState.armed) {
                 if (drawCtrl.currentTool != DrawingTool.freehand) {
+                  if (drawCtrl.selectedSketchVertexIndex != null ||
+                      drawCtrl.isDraggingSketchVertex) {
+                    drawCtrl.clearSketchVertexSelection();
+                    return;
+                  }
                   drawCtrl.appendDrawingPoint(point);
                 }
                 return;
@@ -333,7 +355,10 @@ class MapBuildOrchestrator extends ConsumerWidget {
               ),
 
               // ADR-043 — Radar acima de talhões/desenho, abaixo de markers
-              const ClimaRadarTileLayerWidget(),
+              IgnorePointer(
+                ignoring: polygonSketchMode,
+                child: const ClimaRadarTileLayerWidget(),
+              ),
 
               // 🔒 MARKERS ISOLADOS: Não rebuildam por GPS/zoom/pan
               AbsorbPointer(

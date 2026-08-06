@@ -223,6 +223,144 @@ void main() {
     expect(controller.currentPoints[1], equals(before));
     expect(controller.selectedSketchVertexIndex, isNull);
   });
+
+  testWidgets('mid-draw: arrasta gota com mapa interativo (pan habilitado)', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(800, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final controller = DrawingController(
+      repository: _UpsertDrawingRepository(_feature()),
+    );
+    addTearDown(controller.dispose);
+    controller.selectTool('polygon');
+    controller.appendDrawingPoint(const LatLng(-0.05, -0.05));
+    controller.appendDrawingPoint(const LatLng(0.05, -0.05));
+    controller.appendDrawingPoint(const LatLng(0.05, 0.05));
+
+    final mapController = MapController();
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: _SketchFreezeMapHarness(
+            controller: controller,
+            mapController: mapController,
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('drawing_sketch_vertex_1')));
+    await tester.pumpAndSettle();
+    expect(controller.selectedSketchVertexIndex, 1);
+
+    final before = controller.currentPoints[1];
+    await tester.timedDrag(
+      find.byKey(const Key('drawing_sketch_vertex_drag_1')),
+      const Offset(72, 56),
+      const Duration(milliseconds: 350),
+    );
+    await tester.pumpAndSettle();
+
+    expect(controller.currentPoints[1], isNot(equals(before)));
+    expect(controller.selectedSketchVertexIndex, 1);
+  });
+
+  testWidgets('mid-draw: bolha de arraste fica acima da ponta da gota', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(800, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final controller = DrawingController(
+      repository: _UpsertDrawingRepository(_feature()),
+    );
+    addTearDown(controller.dispose);
+    controller.selectTool('polygon');
+    controller.appendDrawingPoint(const LatLng(-0.05, -0.05));
+    controller.appendDrawingPoint(const LatLng(0.05, -0.05));
+
+    final mapController = MapController();
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: FlutterMap(
+            mapController: mapController,
+            options: const MapOptions(
+              initialCenter: LatLng(0, 0),
+              initialZoom: 11,
+              interactionOptions: InteractionOptions(
+                flags: InteractiveFlag.none,
+              ),
+            ),
+            children: [
+              DrawingEditLayer(
+                controller: controller,
+                mapController: mapController,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('drawing_sketch_vertex_1')));
+    await tester.pumpAndSettle();
+
+    final dragHandle = find.byKey(const Key('drawing_sketch_vertex_drag_1'));
+    final dragBox = tester.getRect(dragHandle);
+    final tipHandle = find.byKey(const Key('drawing_sketch_vertex_1'));
+    final tipBox = tester.getRect(tipHandle);
+
+    expect(dragBox.bottom, lessThanOrEqualTo(tipBox.top + 1));
+    expect(tipBox.height, lessThanOrEqualTo(20));
+  });
+}
+
+/// Espelha o freeze do [MapBuildOrchestrator] quando há vértice sketch ativo.
+class _SketchFreezeMapHarness extends StatelessWidget {
+  const _SketchFreezeMapHarness({
+    required this.controller,
+    required this.mapController,
+  });
+
+  final DrawingController controller;
+  final MapController mapController;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: controller,
+      builder: (context, _) {
+        final freeze =
+            controller.selectedSketchVertexIndex != null ||
+            controller.isDraggingSketchVertex;
+        return FlutterMap(
+          mapController: mapController,
+          options: MapOptions(
+            initialCenter: const LatLng(0, 0),
+            initialZoom: 11,
+            interactionOptions: InteractionOptions(
+              flags: freeze ? InteractiveFlag.none : InteractiveFlag.all,
+            ),
+          ),
+          children: [
+            DrawingEditLayer(
+              controller: controller,
+              mapController: mapController,
+            ),
+          ],
+        );
+      },
+    );
+  }
 }
 
 class _UpsertDrawingRepository extends DrawingRepository {
