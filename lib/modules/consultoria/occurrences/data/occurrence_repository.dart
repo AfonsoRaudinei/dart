@@ -83,7 +83,9 @@ class OccurrenceRepository {
     final map = occurrence
         .copyWith(
           updatedAt: DateTime.now(),
-          syncStatus: persistedUserId.isEmpty ? 'local_only' : 'updated',
+          syncStatus: persistedUserId.isEmpty
+              ? SyncStatusContract.localOnly
+              : SyncStatusContract.pendingSync,
         )
         .toMap();
     _logOrphanBootstrapWriteIfNeeded(
