@@ -35,7 +35,7 @@ Fronteira:    altera? sim/não → se sim, ADR necessário
 - Navegação: `context.go('/map')` para retorno; rotas em `app_routes.dart`
 - Persistência: `user_id` + `sync_status`; schema SQLite v41
 - Sheets: `lib/core/ui/sheets/soloforte_sheet.dart`
-- Scroll com FAB: `kFabSafeArea = 100dp`
+- Scroll com FAB: `kFabSafeArea = 76dp` (+ safe-area do device quando necessário)
 
 ### 4. Validação
 
