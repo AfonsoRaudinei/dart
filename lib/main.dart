@@ -56,6 +56,7 @@ import 'modules/consultoria/quick_photo/data/quick_photo_repository.dart';
 import 'modules/consultoria/quick_photo/infra/quick_photo_read_adapter.dart';
 import 'modules/agenda/data/repositories/agenda_repository.dart';
 import 'modules/agenda/infra/agenda_session_bridge_adapter.dart';
+import 'modules/agenda/infra/agenda_domain_adapters.dart';
 import 'modules/agenda/infra/agenda_ai_visit_writer_adapter.dart';
 import 'modules/ndvi/infra/ndvi_field_presenter_adapter.dart';
 import 'modules/ndvi/infra/ndvi_latest_lookup_adapter.dart';
@@ -219,7 +220,9 @@ Future<void> main() async {
               ),
               // ADR-024: implementação concreta de IAgendaSessionBridge
               agendaSessionBridgeProvider.overrideWithValue(
-                AgendaSessionBridgeAdapter(agendaRepository),
+                AgendaSessionBridgeAdapter(
+                  AgendaRepositoryAdapter(agendaRepository),
+                ),
               ),
               // ADR-024: IFieldLookup para geofence_controller (consultoria/fields)
               iFieldLookupGeofenceProvider.overrideWithValue(

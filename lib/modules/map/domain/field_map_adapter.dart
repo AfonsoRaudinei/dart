@@ -81,6 +81,9 @@ class FieldMapAdapter {
       case SyncStatus.local_only:
         status = FieldSyncStatus.localOnly;
         break;
+      case SyncStatus.deleted_local:
+        status = FieldSyncStatus.localOnly;
+        break;
     }
 
     // Color logic
