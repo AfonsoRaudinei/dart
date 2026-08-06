@@ -1,128 +1,61 @@
 # PLANO DE CORREÇÃO — OFFLINE-FIRST (PÓS-AUDITORIA)
 
 **Fonte:** `prompt/AUDITORIA_OFFLINE_FIRST_RELATORIO.md`  
-**Data:** 2026-08-06  
-**MacBook:** sincronizado com `origin/main` (SHA match) + branch `cursor/offline-audit-fixes-aaf2` com fixes parciais  
-**Escopo:** apenas itens ainda abertos após commits de soft-delete drawing/agenda e logout visitas
+**Atualizado:** 2026-08-06  
+**Branch:** `cursor/offline-audit-fixes-aaf2`  
+**Schema:** SQLite **v41**
 
 ---
 
-## Checklist de progresso (auditoria → código)
+## Checklist final
 
 | # | Correção | Risco | Status | % |
 |---|---|---|---|---|
-| 1 | Drawing soft-delete canônico + anti-ressurreição | 🔴 | **FEITO** (branch fixes) | 100% |
-| 2 | Agenda soft-delete `deleted_local` + filtro listagem + push | 🟠 | **FEITO** (branch fixes) | 100% |
-| 3 | InvalidController invalidação no logout | 🟡 | **FEITO** (branch fixes) | 100% |
-| 4 | Agronomic pull: dirty local nunca sobrescrito | 🔴 | **PENDENTE** | 0% |
-| 5 | Agenda pull: pending local nunca sobrescrito | 🟠 | **PENDENTE** | 0% |
-| 6 | Migração real `publicacoes_tecnicas` (v41) | 🔴 | **PENDENTE** | 0% |
-| 7 | Relatório mutate com escopo `user_id`/`agronomist_id` | 🟠 | **PENDENTE** | 0% |
-| 8 | StartEventUseCase: não engolir falha do mirror | 🟠 | **PENDENTE** | 0% |
-| 9 | Wire ou remover `ConflictResolutionDialog` | 🟠 | **PENDENTE** | 0% |
-| 10 | WorkManager / sync em background | 🟠 | **PENDENTE** | 0% |
-| 11 | Unificar INTEGER vs string `sync_status` | 🟡 | **PENDENTE** | 0% |
-| 12 | Occurrence `'updated'` → contrato canônico | 🟡 | **PENDENTE** | 0% |
-| 13 | OfflineSyncCoordinator unificado | 🟢 | **PENDENTE** (dívida) | 0% |
+| Docs | Relatório + 3 prompts de remediação | — | FEITO | 100% |
+| 1 | Drawing soft-delete canônico + anti-ressurreição | 🔴 | FEITO | 100% |
+| 2 | Agenda soft-delete `deleted_local` + filtro + push | 🟠 | FEITO | 100% |
+| 3 | VisitController invalidação no logout | 🟡 | FEITO | 100% |
+| 4 | Agronomic pull: dirty local nunca sobrescrito | 🔴 | FEITO | 100% |
+| 5 | Agenda pull: pending local nunca sobrescrito | 🟠 | FEITO | 100% |
+| 6 | Migração real `publicacoes_tecnicas` (v41) | 🔴 | FEITO | 100% |
+| 7 | Relatório mutate com escopo `agronomist_id` | 🟠 | FEITO | 100% |
+| 8 | StartEventUseCase: mirror não engole falha (rethrow) | 🟠 | FEITO | 100% |
+| 9 | ConflictResolutionDialog wired no sheet drawing | 🟠 | FEITO | 100% |
+| 10 | WorkManager / sync em background | 🟠 | **ADIADO** | 0% |
+| 11 | Unificar INTEGER vs string `sync_status` | 🟡 | **ADIADO** | 0% |
+| 12 | Occurrence `'updated'` → `pending_sync` | 🟡 | FEITO | 100% |
+| 13 | OfflineSyncCoordinator unificado | 🟢 | **ADIADO** | 0% |
 
-**Consolidado**
+### Consolidado
 
 | Camada | Feito | Total | % |
 |---|---|---|---|
-| Documentação (relatório + 3 prompts) | 4/4 | 4 | **100%** |
-| Correções de código críticas (#1–6) | 2/6 | 6 | **33%** |
-| Correções de código altas (#7–10) | 0/4 | 4 | **0%** |
-| Médias/baixas (#11–13) | 0/3 | 3 | **0%** |
-| **Geral (código da auditoria)** | **3/13** | 13 | **~23%** |
-| **Geral (docs + código)** | **7/17** | 17 | **~41%** |
+| Documentação | 4/4 | 4 | **100%** |
+| Código gate release (críticos+altos #1–9, #12) | 11/11 | 11 | **100%** |
+| Dívida controlada (#10, #11, #13) | 0/3 | 3 | **0%** |
+| **Geral (docs + código gate)** | **15/15** | 15 | **100%** |
+| **Geral incluindo dívida futura** | **15/18** | 18 | **~83%** |
 
 ---
 
-## O que já foi commitado nesta rodada
+## Ainda falta (dívida controlada — NÃO bloqueia gate mínimo)
 
-Branch: `cursor/offline-audit-fixes-aaf2`
-
-- Drawing: `deleted_local`, fila de push, `deleted_at` no remote, pull anti-ressurreição, testes
-- Agenda: `deleted_local`, filtro listagens, push tombstone + purge, testes
-- Visitas: `registerLogoutInvalidation` do `visitControllerProvider`, teste
+1. **WorkManager / BackgroundFetch** — sync só com app vivo (timer 15 min + reconnect + cold start + manual). Avaliação Play/iOS pendente.
+2. **Unificação INTEGER vs string `sync_status`** — agronomic/visitas ainda usam 0/1; contrato canônico é string. Migration + adapters.
+3. **`OfflineSyncCoordinator`** — consolidação opcional; hoje `SyncOrchestrator` + `SyncStatusContract` funcionam como âncora.
 
 ---
 
-## Plano de correção restante (ordenado por risco)
+## Gate `release/` offline-first
 
-### FASE A — Críticos restantes (obrigatório antes de `release/`)
+- [x] Soft-delete drawing
+- [x] Soft-delete agenda + pull local-wins
+- [x] Agronomic local-wins
+- [x] DDL publicações v41
+- [x] Relatório scoped
+- [x] Mirror visit observável
+- [x] Conflict UI wired
+- [x] Occurrence pending_sync canônico
+- [ ] WorkManager (opcional / fase futura)
 
-#### A1. Agronomic `shouldApplyRemote` — local dirty vence
-
-**Prompt:** `prompt/sync/PROMPT_FIX_PULL_LOCAL_WINS.md` (parte agronomic)  
-**Arquivo:** `lib/modules/consultoria/services/agronomic_sync_service.dart` ~391–400  
-
-**Regra:** se `localIsDirty` → `return false` (nunca aplicar remoto silenciosamente).  
-**Teste:** matriz dirty × timestamp (dirty+remote newer = false).
-
-#### A2. Agenda pull — skip pending
-
-**Prompt:** `prompt/sync/PROMPT_FIX_PULL_LOCAL_WINS.md` (parte agenda)  
-**Arquivo:** `lib/modules/agenda/data/services/agenda_sync_service.dart` ~176–180  
-
-**Regra:** antes de `updateEvent`/`updateSession` por remoto newer, se `SyncStatusContract.isPending(local)` → skip.  
-**Nota:** soft-delete push já foi feito; falta só blindagem do pull.
-
-#### A3. Migração `publicacoes_tecnicas` v41
-
-**Prompt:** `prompt/sync/PROMPT_FIX_PUBLICACOES_DDL_MIGRATION.md`  
-**Arquivos:** `database_helper.dart` (bump 41), `database_migrations_*.dart`, comentário em `publicacao_table.dart`  
-
-**Regra:** `CREATE TABLE IF NOT EXISTS publicacoes_tecnicas` com DDL do módulo; `migrateToV12` permanece histórico no-op.
-
----
-
-### FASE B — Altos (logo após A)
-
-#### B1. Relatório — mutações com `agronomist_id`/`user_id`
-
-`RelatorioRepositoryImpl.softDelete` / `update` / `markAsSynced` hoje filtram só por `id`.
-
-#### B2. StartEventUseCase — mirror visit_sessions
-
-Não engolir falha do mirror; falhar de forma observável ou retry/flag `sync_error`.
-
-#### B3. ConflictResolutionDialog
-
-Wire no fluxo drawing `conflict` **ou** remover widget morto + documentar resolução só via API.
-
-#### B4. WorkManager (avaliação)
-
-Doc exige; hoje só timer in-process 15 min. Avaliar impacto iOS/Android + Play Console antes de implementar.
-
----
-
-### FASE C — Médios (estabilização)
-
-- Normalizar INTEGER/string `sync_status` (migration + `SyncStatusContract`)
-- Occurrence: parar de escrever `'updated'`; usar `pending_sync`
-- Dual listener SyncService/Orchestrator
-- `OfflineSyncCoordinator` (opcional, consolidação)
-
----
-
-## Critério de gate `release/`
-
-Mínimo sugerido:
-
-- [x] MacBook SHA = `origin/main` (confirmado)
-- [x] Soft-delete drawing (fase A do prompt drawing) — nesta branch
-- [x] Soft-delete agenda listagem/push — nesta branch
-- [ ] **A1** agronomic local-wins
-- [ ] **A2** agenda pull local-wins
-- [ ] **A3** DDL publicações
-
-Sem A1–A3, gate offline-first permanece **bloqueado** para `release/`.
-
----
-
-## Como executar
-
-1. Merge/PR de `cursor/offline-audit-fixes-aaf2`  
-2. Executar prompts na ordem: `PROMPT_FIX_PULL_LOCAL_WINS` → `PROMPT_FIX_PUBLICACOES_DDL_MIGRATION`  
-3. Reavaliar % e só então liberar `release/`
+**Veredito:** gate mínimo de correção crítica/alta da auditoria — **APROVADO** (dívida #10/#11/#13 documentada).
