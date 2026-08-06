@@ -33,6 +33,7 @@ import 'map/widgets/map_build_orchestrator.dart';
 import 'map/handlers/map_location_handler.dart';
 import 'map/controllers/map_viewport_controller.dart';
 import 'map/controllers/map_sheet_controller.dart';
+import 'map/controllers/map_camera_animator.dart';
 import 'map/handlers/novo_case_modal_launcher.dart';
 import 'map/handlers/map_first_query_handler.dart';
 
@@ -52,8 +53,10 @@ class PrivateMapScreen extends ConsumerStatefulWidget {
   ConsumerState<PrivateMapScreen> createState() => _PrivateMapScreenState();
 }
 
-class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
+class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen>
+    with TickerProviderStateMixin {
   final MapController _mapController = MapController();
+  late final MapCameraAnimator _cameraAnimator = MapCameraAnimator(vsync: this);
   // 🔧 LIFECYCLE: Referência cacheada do DrawingController.
   // Capturada no build() para uso seguro no dispose() SEM ref.read().
   // ref é invalidado em deactivate() (antes de dispose()) — ADR-008.
@@ -184,7 +187,11 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
       return;
     }
 
-    _mapController.move(point, 17.0);
+    _cameraAnimator.animateTo(
+      mapController: _mapController,
+      dest: point,
+      zoom: 17.0,
+    );
     ref.read(destinationCoordinateMarkerProvider.notifier).state = point;
     ref.read(viewportStateProvider.notifier).state =
         InitialViewportState.applied;
@@ -201,6 +208,7 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
     // NUNCA usar ref.read() aqui — causa BadState crash.
     _drawingController?.cancelOperation(notify: false);
     MapLocationHandler.stopFollowing();
+    _cameraAnimator.dispose();
 
     super.dispose();
   }
@@ -325,6 +333,13 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
       mapController: _mapController,
       isMapReady: ref.read(mapReadyStateProvider),
       locationMode: ref.read(mapLocationModeProvider),
+      animateTo: (dest, zoom) {
+        _cameraAnimator.animateTo(
+          mapController: _mapController,
+          dest: dest,
+          zoom: zoom,
+        );
+      },
     );
   }
 
@@ -393,7 +408,11 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
       return;
     }
 
-    _mapController.move(parsed, 17.0);
+    _cameraAnimator.animateTo(
+      mapController: _mapController,
+      dest: parsed,
+      zoom: 17.0,
+    );
     ref.read(destinationCoordinateMarkerProvider.notifier).state = parsed;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -411,7 +430,11 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
       context,
       onSelected: (point, label) {
         if (!mounted) return;
-        _mapController.move(point, 13.0);
+        _cameraAnimator.animateTo(
+          mapController: _mapController,
+          dest: point,
+          zoom: 13.0,
+        );
         ref.read(destinationCoordinateMarkerProvider.notifier).state = point;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
