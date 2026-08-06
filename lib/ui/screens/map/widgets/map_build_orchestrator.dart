@@ -44,6 +44,7 @@ import '../../../components/map/widgets/map_offline_widgets.dart';
 import '../../../components/map/widgets/isolated_marker_layers.dart';
 import '../../../components/map/widgets/map_state_boundaries_layer.dart';
 import '../../../components/map/widgets/map_tools_bottom_sheet.dart';
+import '../../../components/map/widgets/map_destination_pin.dart';
 import '../../../components/map/widgets/producer_map_context_card.dart';
 import '../../../components/map/map_sheet_state.dart';
 import '../providers/map_armed_mode_provider.dart';
@@ -390,14 +391,10 @@ class MapBuildOrchestrator extends ConsumerWidget {
                     markers: [
                       Marker(
                         point: destination,
-                        width: 40,
-                        height: 40,
-                        alignment: Alignment.topCenter,
-                        child: const Icon(
-                          Icons.place,
-                          size: 40,
-                          color: Colors.redAccent,
-                        ),
+                        width: 44,
+                        height: 44,
+                        alignment: Alignment.bottomCenter,
+                        child: const MapDestinationPin(size: 44),
                       ),
                     ],
                   );

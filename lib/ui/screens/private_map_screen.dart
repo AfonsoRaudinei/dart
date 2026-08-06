@@ -346,17 +346,10 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
   }
 
   void _armOccurrenceMode() {
-    // FIX 1: Entrar em modo seleção — usuário toca no mapa para capturar LatLng
+    // Modo seleção: banner glass no mapa guia o toque (sem SnackBar redundante).
     _pendingMarketingCaseTipo = null;
     ref.read(armedModeProvider.notifier).state = ArmedMode.occurrences;
     HapticFeedback.lightImpact();
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Toque no mapa para marcar o ponto da ocorrência'),
-        duration: Duration(seconds: 10),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
   }
 
   Future<void> _openCoordinateSearch() async {
@@ -645,27 +638,10 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
   }
 
   void _armMarketingMode(CaseTipo tipo) {
+    // Banner glass no mapa guia o toque (sem SnackBar redundante).
     _pendingMarketingCaseTipo = tipo;
     ref.read(armedModeProvider.notifier).state = ArmedMode.marketing;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'Toque no mapa para localizar o case de ${_caseTipoLabel(tipo)}',
-        ),
-        duration: const Duration(seconds: 2),
-      ),
-    );
-  }
-
-  String _caseTipoLabel(CaseTipo tipo) {
-    switch (tipo) {
-      case CaseTipo.resultado:
-        return 'resultado';
-      case CaseTipo.antesDepois:
-        return 'antes/depois';
-      case CaseTipo.avaliacao:
-        return 'avaliação';
-    }
+    HapticFeedback.lightImpact();
   }
 
   void _handleOccurrencePinTap(occ.Occurrence occurrence) {
