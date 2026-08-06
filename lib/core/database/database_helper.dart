@@ -24,7 +24,7 @@ class DatabaseHelper {
 
     final db = await openDatabase(
       path,
-      version: 40,
+      version: 41,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -185,6 +185,9 @@ class DatabaseHelper {
         case 40:
           await DatabaseMigrations.migrateToV40(db);
           break;
+        case 41:
+          await DatabaseMigrations.migrateToV41(db);
+          break;
       }
     }
   }
@@ -312,10 +315,21 @@ class DatabaseHelper {
   ///
   /// Atualiza apenas linhas com `user_id` vazio ou nulo para o usuário atual.
   /// Idempotente e tolerante a tabelas ausentes.
+  ///
+  /// Não reatribui órfãos quando já existem dados locais de outro usuário
+  /// (device compartilhado / troca de conta).
   Future<void> repairOrphanUserIds(String userId) async {
     if (userId.isEmpty) return;
 
     final db = await database;
+
+    if (await _hasRowsOwnedByOtherUser(db, userId)) {
+      AppLogger.warning(
+        'repairOrphanUserIds ignorado: dados locais de outro usuário detectados',
+        tag: 'DB',
+      );
+      return;
+    }
 
     const tablesWithUserId = <String>[
       'clients',
@@ -356,5 +370,49 @@ class DatabaseHelper {
         AppLogger.error('repairOrphanUserIds erro em $table', tag: 'DB', error: e);
       }
     }
+  }
+
+  Future<bool> _hasRowsOwnedByOtherUser(Database db, String userId) async {
+    const tablesWithUserId = <String>[
+      'clients',
+      'farms',
+      'fields',
+      'visit_sessions',
+      'occurrences',
+      'visit_reports',
+      'agenda_events',
+      'agenda_visit_sessions',
+      'drawings',
+      'client_culturas',
+      'clima_atual_cache',
+      'clima_horaria_cache',
+      'clima_diaria_cache',
+      'ndvi_cache',
+      'publicacoes_tecnicas',
+      'relatorios',
+      'relatorios_v2',
+      'carteira_categorias',
+      'carteira_cliente_categorias',
+      'carteira_tipos_produto',
+      'carteira_safras',
+      'carteira_metas',
+      'carteira_lancamentos',
+    ];
+
+    for (final table in tablesWithUserId) {
+      try {
+        final count = Sqflite.firstIntValue(
+          await db.rawQuery(
+            "SELECT COUNT(*) FROM $table "
+            "WHERE user_id IS NOT NULL AND user_id != '' AND user_id != ?",
+            [userId],
+          ),
+        );
+        if ((count ?? 0) > 0) return true;
+      } catch (_) {
+        // Tabela/coluna ausente — ignorar.
+      }
+    }
+    return false;
   }
 }
