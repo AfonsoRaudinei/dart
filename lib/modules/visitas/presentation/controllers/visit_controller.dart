@@ -5,6 +5,7 @@ import '../../domain/models/visit_session.dart';
 import '../../data/repositories/visit_repository.dart';
 import 'package:soloforte_app/core/contracts/i_agenda_session_bridge.dart';
 import 'package:soloforte_app/core/contracts/i_agenda_session_bridge_provider.dart';
+import 'package:soloforte_app/core/session/session_controller.dart';
 import 'package:uuid/uuid.dart';
 
 final visitRepositoryProvider = Provider<VisitRepository>((ref) {
@@ -20,6 +21,15 @@ final visitControllerProvider =
         ), // IAgendaSessionBridge — ADR-024
       );
     });
+
+// ignore: unused_element
+final _visitLogoutInvalidationRegistration = () {
+  SessionController.registerLogoutInvalidation(
+    key: 'visitControllerProvider',
+    invalidate: (ref) => ref.invalidate(visitControllerProvider),
+  );
+  return true;
+}();
 
 class VisitController extends StateNotifier<AsyncValue<VisitSession?>> {
   final VisitRepository _repository;
