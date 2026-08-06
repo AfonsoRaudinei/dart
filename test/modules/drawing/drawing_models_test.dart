@@ -350,6 +350,11 @@ void main() {
         SyncStatus.fromJson('local_only'),
         equals(SyncStatus.local_only),
       );
+      expect(SyncStatus.deleted_local.toJson(), equals('deleted_local'));
+      expect(
+        SyncStatus.fromJson('deleted_local'),
+        equals(SyncStatus.deleted_local),
+      );
     });
   });
 }

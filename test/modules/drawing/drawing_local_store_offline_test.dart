@@ -7,6 +7,7 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:soloforte_app/core/database/database_helper.dart';
 import 'package:soloforte_app/core/infra/preferences_service.dart';
+import 'package:soloforte_app/core/session/local_session_identity.dart';
 import 'package:soloforte_app/modules/drawing/data/data_sources/drawing_local_store.dart';
 import 'package:soloforte_app/modules/drawing/domain/models/drawing_models.dart';
 
@@ -44,8 +45,11 @@ void main() {
   setUp(() async {
     SharedPreferences.setMockInitialValues({});
     DrawingLocalIdentityStore.resetEphemeralStateForTest();
+    LocalSessionIdentity.resetForTesting();
     await db.delete('drawings');
   });
+
+  tearDown(LocalSessionIdentity.resetForTesting);
 
   tearDownAll(() async {
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
@@ -70,6 +74,32 @@ void main() {
     expect(byId!.id, 'drawing-offline-1');
     expect(byId.properties.syncStatus, SyncStatus.local_only);
     expect(all.map((item) => item.id), contains('drawing-offline-1'));
+  });
+
+  test('delete synced marca deleted_local e entra na fila de sync', () async {
+    final prefs = PreferencesService(await SharedPreferences.getInstance());
+    final store = DrawingLocalStore(
+      identityStore: DrawingLocalIdentityStore(preferences: prefs),
+    );
+    LocalSessionIdentity.remember('user-drawing-1');
+    final feature = _feature(
+      'drawing-delete-synced',
+      syncStatus: SyncStatus.synced,
+    );
+
+    await store.insert(feature);
+    await store.delete('drawing-delete-synced');
+
+    expect(await store.getById('drawing-delete-synced'), isNull);
+    final pending = await store.getPendingSync();
+    expect(pending.map((f) => f.id), contains('drawing-delete-synced'));
+    expect(
+      pending
+          .firstWhere((f) => f.id == 'drawing-delete-synced')
+          .properties
+          .syncStatus,
+      SyncStatus.deleted_local,
+    );
   });
 
   test(
