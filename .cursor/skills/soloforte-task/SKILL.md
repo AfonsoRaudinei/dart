@@ -33,7 +33,7 @@ Fronteira:    altera? sim/não → se sim, ADR necessário
 
 - Riverpod: `@riverpod` — nunca StateNotifier novo
 - Navegação: `context.go('/map')` para retorno; rotas em `app_routes.dart`
-- Persistência: `user_id` + `sync_status`; schema SQLite v38
+- Persistência: `user_id` + `sync_status`; schema SQLite v41
 - Sheets: `lib/core/ui/sheets/soloforte_sheet.dart`
 - Scroll com FAB: `kFabSafeArea = 100dp`
 

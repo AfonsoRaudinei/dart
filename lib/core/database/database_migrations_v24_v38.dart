@@ -549,4 +549,45 @@ class DatabaseMigrationsV24V38 {
       }
     }
   }
+
+  /// V41 — Cria `publicacoes_tecnicas` (ADR-009).
+  ///
+  /// `migrateToV12` permanece no-op histórico; a DDL real entra aqui
+  /// para installs limpos e upgrades a partir de v40.
+  static Future<void> migrateToV41(Database db) async {
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS publicacoes_tecnicas (
+        id          TEXT PRIMARY KEY,
+        user_id     TEXT NOT NULL DEFAULT '',
+        author_id   TEXT NOT NULL,
+        tema        TEXT NOT NULL,
+        titulo      TEXT NOT NULL,
+        conteudo    TEXT NOT NULL,
+        visibility  TEXT NOT NULL,
+        sync_status TEXT NOT NULL,
+        created_at  TEXT NOT NULL,
+        updated_at  TEXT NOT NULL,
+        deleted_at  TEXT,
+        foto_paths  TEXT NOT NULL DEFAULT '[]',
+        talhao_ref  TEXT,
+        fazenda_ref TEXT,
+        safra       TEXT
+      )
+    ''');
+
+    // Idempotente: installs que já passaram por V21 podem ter a coluna.
+    try {
+      await db.execute(
+        "ALTER TABLE publicacoes_tecnicas "
+        "ADD COLUMN user_id TEXT NOT NULL DEFAULT ''",
+      );
+    } catch (_) {
+      // Coluna já existe.
+    }
+
+    AppLogger.debug(
+      'V41: publicacoes_tecnicas garantida',
+      tag: 'DB.Migration',
+    );
+  }
 }

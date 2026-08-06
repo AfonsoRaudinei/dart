@@ -4,7 +4,7 @@
 /// pela implementação do repositório.
 ///
 /// O DDL de criação ([createDdl]) serve como referência documentada;
-/// a migração real fica em `DatabaseHelper._migrateToV12`.
+/// a migração real fica em `DatabaseMigrations.migrateToV41`.
 class PublicacaoTable {
   PublicacaoTable._();
 
@@ -15,6 +15,7 @@ class PublicacaoTable {
   // ── Colunas ──────────────────────────────────────────────────────────
 
   static const String colId = 'id';
+  static const String colUserId = 'user_id';
   static const String colAuthorId = 'author_id';
   static const String colTema = 'tema';
   static const String colTitulo = 'titulo';
@@ -29,12 +30,13 @@ class PublicacaoTable {
   static const String colFazendaRef = 'fazenda_ref';
   static const String colSafra = 'safra';
 
-  // ── DDL (referência — migração em DatabaseHelper._migrateToV12) ──────
+  // ── DDL (referência — migração em DatabaseMigrations.migrateToV41) ───
 
-  /// SQL de criação da tabela — sincronizado com a migração v12.
+  /// SQL de criação da tabela — sincronizado com a migração v41.
   static const String createDdl = '''
     CREATE TABLE IF NOT EXISTS publicacoes_tecnicas (
       id          TEXT PRIMARY KEY,
+      user_id     TEXT NOT NULL DEFAULT '',
       author_id   TEXT NOT NULL,
       tema        TEXT NOT NULL,
       titulo      TEXT NOT NULL,
