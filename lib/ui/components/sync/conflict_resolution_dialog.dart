@@ -1,5 +1,11 @@
 import 'package:flutter/material.dart';
 
+/// Dialog de resolução de conflito de sync (local vs remoto).
+///
+/// Call site oficial: sheet de drawing após syncFeatures() quando
+/// DrawingSyncResult.conflicts não está vazio.
+/// Resolução efetiva via DrawingController resolveConflictUseLocal /
+/// resolveConflictUseRemote.
 class ConflictResolutionDialog extends StatelessWidget {
   final String title;
   final String description;

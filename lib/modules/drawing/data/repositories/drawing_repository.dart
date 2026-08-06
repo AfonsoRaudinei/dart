@@ -43,6 +43,15 @@ class DrawingRepository {
     return await _syncService.synchronize();
   }
 
+  Future<void> resolveConflictUseLocal(String id) =>
+      _syncService.resolveUseLocal(id);
+
+  Future<void> resolveConflictUseRemote(
+    String id,
+    DrawingFeature remoteVersion,
+  ) =>
+      _syncService.resolveUseRemote(id, remoteVersion);
+
   /// Sets status to pending_sync for all local_only features
   /// Triggered by user action "Sync Now"
   Future<void> markAllForSync() async {

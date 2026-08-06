@@ -8,6 +8,7 @@ import '../../domain/drawing_utils.dart';
 import '../../domain/drawing_state.dart';
 import '../../domain/drawing_history.dart';
 import '../../data/repositories/drawing_repository.dart';
+import '../../data/data_sources/drawing_sync_service.dart' show DrawingSyncResult;
 // ─── Services puros (Sprint 1 — delegação de lógica de negócio) ───────────────
 import '../../domain/services/drawing_feature_crud_service.dart';
 import '../../domain/services/drawing_vertex_edit_service.dart';
@@ -197,13 +198,14 @@ class DrawingController extends ChangeNotifier {
   ///
   /// Trata erros específicos de rede e timeout.
   /// Em caso de conflito, notifica o usuário para resolução manual.
-  Future<void> syncFeatures() async {
-    if (_isDisposed) return;
+  /// Retorna o resultado para a UI poder abrir [ConflictResolutionDialog].
+  Future<DrawingSyncResult?> syncFeatures() async {
+    if (_isDisposed) return null;
 
     try {
       final result = await _repository.sync();
 
-      if (_isDisposed) return;
+      if (_isDisposed) return null;
 
       if (result.errors > 0) {
         // Soft error feedback
@@ -216,20 +218,23 @@ class DrawingController extends ChangeNotifier {
       }
 
       await loadFeatures();
+      return result;
     } on TimeoutException {
-      if (_isDisposed) return;
+      if (_isDisposed) return null;
       _errorMessage = "Tempo esgotado. Verifique sua conexão.";
       if (kDebugMode) AppLogger.debug('Sync timeout', tag: 'DrawingController');
       notifyListeners();
+      return null;
     } on SocketException {
-      if (_isDisposed) return;
+      if (_isDisposed) return null;
       _errorMessage = "Sem conexão com a internet.";
       if (kDebugMode) {
         AppLogger.debug('No internet connection', tag: 'DrawingController');
       }
       notifyListeners();
+      return null;
     } catch (e, stackTrace) {
-      if (_isDisposed) return;
+      if (_isDisposed) return null;
       _errorMessage = "Erro na sincronização. Tente novamente.";
       if (kDebugMode) {
         AppLogger.error(
@@ -240,7 +245,18 @@ class DrawingController extends ChangeNotifier {
         );
       }
       notifyListeners();
+      return null;
     }
+  }
+
+  Future<void> resolveConflictUseLocal(String id) async {
+    await _repository.resolveConflictUseLocal(id);
+    await loadFeatures();
+  }
+
+  Future<void> resolveConflictUseRemote(DrawingFeature remote) async {
+    await _repository.resolveConflictUseRemote(remote.id, remote);
+    await loadFeatures();
   }
 
   // Persistence state

@@ -105,7 +105,7 @@ extension _DrawingSheetBuildersA on _DrawingSheetState {
           if (pendingCount > 0) ...[
             const SizedBox(height: 16),
             ElevatedButton.icon(
-              onPressed: () => widget.controller.syncFeatures(),
+              onPressed: () => _syncPendingFeatures(context),
               icon: const Icon(Icons.cloud_upload, color: Colors.white),
               label: Text('Enviar alterações ($pendingCount)'),
               style: ElevatedButton.styleFrom(
@@ -117,6 +117,32 @@ extension _DrawingSheetBuildersA on _DrawingSheetState {
         ],
       ),
     );
+  }
+
+  Future<void> _syncPendingFeatures(BuildContext context) async {
+    final result = await widget.controller.syncFeatures();
+    if (!context.mounted || result == null || result.conflicts.isEmpty) {
+      return;
+    }
+
+    for (final conflict in result.conflicts) {
+      if (!context.mounted) return;
+      await showDialog<void>(
+        context: context,
+        builder: (dialogContext) => ConflictResolutionDialog(
+          title: 'Conflito de sincronização',
+          description:
+              'A geometria "${conflict.properties.nome}" foi alterada '
+              'localmente e no servidor. Escolha qual versão manter.',
+          onUseLocal: () {
+            widget.controller.resolveConflictUseLocal(conflict.id);
+          },
+          onUseRemote: () {
+            widget.controller.resolveConflictUseRemote(conflict);
+          },
+        ),
+      );
+    }
   }
 
   Future<void> _openGroupMeasurementsNavigator(BuildContext context) async {

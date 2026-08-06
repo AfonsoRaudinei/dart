@@ -25,6 +25,7 @@ import 'drawing_info_edit_sheet.dart';
 import '../../../../ui/theme/premium/design_tokens.dart';
 import 'gps_walk_controls_overlay.dart';
 import '../../../../core/ui/sheets/sheet_tokens.dart';
+import '../../../../ui/components/sync/conflict_resolution_dialog.dart';
 
 part 'drawing_sheet_builders_a.dart';
 part 'drawing_sheet_builders_b.dart';
