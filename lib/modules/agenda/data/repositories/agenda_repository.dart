@@ -11,6 +11,10 @@ import '../models/visit_session_model.dart';
 class AgendaRepository {
   final DatabaseHelper _dbHelper = DatabaseHelper.instance;
 
+  /// Exclui eventos soft-deleted da UI e das listagens ativas.
+  static const _activeEventsWhere =
+      "user_id = ? AND sync_status NOT IN ('${SyncStatusContract.deletedLocal}', 'deleted')";
+
   // ═══════════════════════════════════════════════════════════════════
   // EVENTOS
   // ═══════════════════════════════════════════════════════════════════
@@ -81,7 +85,7 @@ class AgendaRepository {
     final db = await _dbHelper.database;
     final results = await db.query(
       'agenda_events',
-      where: 'user_id = ?',
+      where: _activeEventsWhere,
       whereArgs: [userId],
       orderBy: 'data_inicio_planejada ASC',
     );
@@ -97,7 +101,7 @@ class AgendaRepository {
     final results = await db.query(
       'agenda_events',
       where:
-          'user_id = ? AND data_inicio_planejada >= ? AND data_inicio_planejada < ?',
+          '$_activeEventsWhere AND data_inicio_planejada >= ? AND data_inicio_planejada < ?',
       whereArgs: [userId, start.toIso8601String(), end.toIso8601String()],
       orderBy: 'data_inicio_planejada ASC',
     );
@@ -121,7 +125,8 @@ class AgendaRepository {
       'agenda_events',
       where:
           "user_id = ? AND sync_status IN ('${SyncStatusContract.pendingSync}', "
-          "'${SyncStatusContract.legacyPending}')",
+          "'${SyncStatusContract.legacyPending}', "
+          "'${SyncStatusContract.deletedLocal}', 'deleted')",
       whereArgs: [userId],
     );
 
@@ -149,9 +154,21 @@ class AgendaRepository {
     await db.update(
       'agenda_events',
       {
-        'sync_status': 'deleted',
+        'sync_status': SyncStatusContract.deletedLocal,
         'updated_at': DateTime.now().toIso8601String(),
       },
+      where: 'id = ? AND user_id = ?',
+      whereArgs: [id, userId],
+    );
+  }
+
+  /// Remove localmente após tombstone remoto confirmado.
+  Future<void> purgeDeletedEvent(String id) async {
+    final userId = LocalSessionIdentity.resolveUserId();
+    if (userId.isEmpty) return;
+    final db = await _dbHelper.database;
+    await db.delete(
+      'agenda_events',
       where: 'id = ? AND user_id = ?',
       whereArgs: [id, userId],
     );
