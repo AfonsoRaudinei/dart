@@ -6,11 +6,11 @@ import '../repositories/i_agenda_repository.dart';
 ///
 /// Responsabilidades:
 ///   - Bloquear exclusão de eventos em andamento com sessão ativa
-///   - Marcar sync_status = 'deleted' no repositório local
-///   - NÃO executar hard delete (padrão offline-first)
+///   - Marcar sync_status = [SyncStatusContract.deletedLocal] no repositório local
+///   - NÃO executar hard delete imediato (padrão offline-first)
 ///
-/// O [SyncOrchestrator] processa a deleção remota quando houver conectividade.
-/// A query de listagem filtra WHERE sync_status != 'deleted'.
+/// O [SyncOrchestrator] propaga tombstone remoto quando houver conectividade.
+/// Listagens ativas filtram `deleted_local` / legado `deleted`.
 class DeleteEventUseCase {
   final IAgendaRepository _repository;
 
