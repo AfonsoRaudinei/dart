@@ -131,7 +131,9 @@ class CarteiraRepositoryImpl implements ICarteiraRepository {
       orderBy: 'ordem DESC',
       limit: 1,
     );
-    final nextOrdem = tipos.isEmpty ? 0 : ((tipos.first['ordem'] as int?) ?? 0) + 1;
+    final nextOrdem = tipos.isEmpty
+        ? 0
+        : ((tipos.first['ordem'] as int?) ?? 0) + 1;
 
     final now = DateTime.now();
     final tipo = CarteiraTipoProduto(
@@ -437,10 +439,21 @@ class CarteiraRepositoryImpl implements ICarteiraRepository {
 
   @override
   Future<void> saveLancamento(CarteiraLancamento lancamento) async {
+    final regraErro = CarteiraLancamento.validarRegrasFechamento(
+      closedPercent: lancamento.closedPercent,
+      tipoFechamento: lancamento.tipoFechamento,
+    );
+    if (regraErro != null) {
+      throw ArgumentError(regraErro);
+    }
+
+    final sanitizado = CarteiraLancamento.sanitizarCamposConcorrente(
+      lancamento,
+    );
     final db = await _dbHelper.database;
     await db.insert(
       'carteira_lancamentos',
-      lancamento.toMap(),
+      sanitizado.toMap(),
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
   }

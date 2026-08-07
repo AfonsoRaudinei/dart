@@ -78,6 +78,44 @@ class CarteiraLancamento {
     return (metaQuantidade - realizado).clamp(0.0, double.infinity);
   }
 
+  /// Valida combinação percentual × tipo de fechamento.
+  ///
+  /// - [tipoFechamento] null: negociação em aberto (percentual livre 0–100).
+  /// - [vendido]: percentual livre 0–100 (venda parcial permitida).
+  /// - [perdido]: percentual deve ser 0 (nada vendido para nós).
+  static String? validarRegrasFechamento({
+    required double closedPercent,
+    required TipoFechamento? tipoFechamento,
+  }) {
+    final pct = closedPercent.clamp(0.0, 100.0);
+    if (tipoFechamento == TipoFechamento.perdido && pct != 0) {
+      return 'Perdido para concorrência exige 0% (nada vendido).';
+    }
+    return null;
+  }
+
+  /// Lançamento com tipo [vendido] não deve carregar dados de concorrente.
+  static CarteiraLancamento sanitizarCamposConcorrente(
+    CarteiraLancamento lancamento,
+  ) {
+    if (lancamento.tipoFechamento == TipoFechamento.perdido) {
+      return lancamento;
+    }
+    return CarteiraLancamento(
+      id: lancamento.id,
+      userId: lancamento.userId,
+      safraId: lancamento.safraId,
+      categoriaId: lancamento.categoriaId,
+      clienteId: lancamento.clienteId,
+      quantidade: lancamento.quantidade,
+      closedPercent: lancamento.closedPercent,
+      observacao: lancamento.observacao,
+      tipoFechamento: lancamento.tipoFechamento,
+      dataLancamento: lancamento.dataLancamento,
+      createdAt: lancamento.createdAt,
+    );
+  }
+
   const CarteiraLancamento({
     required this.id,
     required this.userId,
