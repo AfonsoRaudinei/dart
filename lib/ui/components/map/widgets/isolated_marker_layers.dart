@@ -171,7 +171,11 @@ class IsolatedMarketingMarkersLayer extends ConsumerWidget {
 
     if (visibleCases.isEmpty) return const SizedBox.shrink();
 
+    // rotate: true — pin permanece vertical se a câmera rotacionar.
+    // alignment topCenter — widget acima do ponto; ponteiro na base aponta
+    // para a coordenada (flutter_map 7: topCenter = acima do ponto).
     return MarkerLayer(
+      rotate: true,
       markers: visibleCases
           .map(
             (mCase) => Marker(
@@ -179,7 +183,7 @@ class IsolatedMarketingMarkersLayer extends ConsumerWidget {
               point: LatLng(mCase.lat, mCase.lng),
               width: MarketingCaseMarker.pinWidth(mCase.visibilidade),
               height: MarketingCaseMarker.pinHeight(mCase.visibilidade) + 10,
-              alignment: Alignment.bottomCenter,
+              alignment: Alignment.topCenter,
               child: MarketingCaseMarker(
                 marketingCase: mCase,
                 onTap: () {
@@ -270,6 +274,7 @@ class IsolatedUserLocationLayer extends ConsumerWidget {
     return locationAsync.when(
       data: (userFix) {
         return MarkerLayer(
+          rotate: true,
           markers: [
             Marker(
               key: const ValueKey('user_location'),
