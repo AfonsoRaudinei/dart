@@ -7,6 +7,7 @@ import 'package:uuid/uuid.dart';
 import '../../domain/entities/carteira_lancamento.dart';
 import '../../domain/entities/categoria_global.dart';
 import '../providers/carteira_providers.dart';
+import 'tipo_fechamento_toggle.dart';
 
 /// Dialog para registrar um lançamento de realizado.
 ///
@@ -102,6 +103,16 @@ class _LancamentoFormDialogState extends ConsumerState<LancamentoFormDialog> {
       _percentController.text.trim().replaceAll(',', '.'),
     );
 
+    final regraErro = CarteiraLancamento.validarRegrasFechamento(
+      closedPercent: percent,
+      tipoFechamento: _tipoFechamento,
+    );
+    if (regraErro != null) {
+      setState(() => _mensagemErro = regraErro);
+      _rolarParaTopo();
+      return;
+    }
+
     if (_userId.isEmpty) {
       setState(() => _mensagemErro = 'Usuário não autenticado.');
       return;
@@ -112,8 +123,8 @@ class _LancamentoFormDialogState extends ConsumerState<LancamentoFormDialog> {
     );
     if (meta == null || meta.quantidade <= 0) {
       setState(
-        () => _mensagemErro =
-            'Configure a meta desta categoria antes de lançar.',
+        () =>
+            _mensagemErro = 'Configure a meta desta categoria antes de lançar.',
       );
       _rolarParaTopo();
       return;
@@ -133,28 +144,30 @@ class _LancamentoFormDialogState extends ConsumerState<LancamentoFormDialog> {
 
       final nomeConcorrente = _nomeConcorrenteController.text.trim();
       final motivoFechamento = _motivoFechamentoController.text.trim();
-      final hasTipoFechamento = _tipoFechamento != null;
-      final lancamento = CarteiraLancamento(
-        id: const Uuid().v4(),
-        userId: _userId,
-        safraId: safra.id,
-        categoriaId: widget.categoria.id,
-        clienteId: widget.clienteId,
-        quantidade: quantidade,
-        closedPercent: closedPercent,
-        observacao: _observacaoController.text.trim().isEmpty
-            ? null
-            : _observacaoController.text.trim(),
-        tipoFechamento: _tipoFechamento,
-        nomeConcorrente: hasTipoFechamento && nomeConcorrente.isNotEmpty
-            ? nomeConcorrente
-            : null,
-        motivoFechamento: hasTipoFechamento && motivoFechamento.isNotEmpty
-            ? motivoFechamento
-            : null,
-        dataFechamento: hasTipoFechamento ? _dataFechamento : null,
-        dataLancamento: _dataLancamento,
-        createdAt: DateTime.now(),
+      final isPerdido = _tipoFechamento == TipoFechamento.perdido;
+      final lancamento = CarteiraLancamento.sanitizarCamposConcorrente(
+        CarteiraLancamento(
+          id: const Uuid().v4(),
+          userId: _userId,
+          safraId: safra.id,
+          categoriaId: widget.categoria.id,
+          clienteId: widget.clienteId,
+          quantidade: quantidade,
+          closedPercent: closedPercent,
+          observacao: _observacaoController.text.trim().isEmpty
+              ? null
+              : _observacaoController.text.trim(),
+          tipoFechamento: _tipoFechamento,
+          nomeConcorrente: isPerdido && nomeConcorrente.isNotEmpty
+              ? nomeConcorrente
+              : null,
+          motivoFechamento: isPerdido && motivoFechamento.isNotEmpty
+              ? motivoFechamento
+              : null,
+          dataFechamento: isPerdido ? _dataFechamento : null,
+          dataLancamento: _dataLancamento,
+          createdAt: DateTime.now(),
+        ),
       );
       await repo.saveLancamento(lancamento);
 
@@ -199,7 +212,22 @@ class _LancamentoFormDialogState extends ConsumerState<LancamentoFormDialog> {
     if (percent == null || percent < 0.0 || percent > 100.0) {
       return 'Use um valor entre 0 e 100';
     }
-    return null;
+    return CarteiraLancamento.validarRegrasFechamento(
+      closedPercent: percent,
+      tipoFechamento: _tipoFechamento,
+    );
+  }
+
+  void _onTipoFechamentoChanged(TipoFechamento? value) {
+    setState(() {
+      _tipoFechamento = value;
+      if (value != TipoFechamento.perdido) {
+        _nomeConcorrenteController.clear();
+        _motivoFechamentoController.clear();
+        _dataFechamento = null;
+      }
+    });
+    _formKey.currentState?.validate();
   }
 
   @override
@@ -273,7 +301,10 @@ class _LancamentoFormDialogState extends ConsumerState<LancamentoFormDialog> {
                   ),
                   child: Text(
                     'Configure a meta desta categoria na aba Metas antes de registrar.',
-                    style: TextStyle(color: Colors.orange.shade900, fontSize: 13),
+                    style: TextStyle(
+                      color: Colors.orange.shade900,
+                      fontSize: 13,
+                    ),
                   ),
                 )
               else
@@ -300,72 +331,75 @@ class _LancamentoFormDialogState extends ConsumerState<LancamentoFormDialog> {
                   border: OutlineInputBorder(),
                 ),
               ),
-              Builder(builder: (context) {
-                final raw = double.tryParse(
-                  _percentController.text.replaceAll(',', '.'),
-                );
-                final validPercent = raw != null && raw >= 0.0 && raw <= 100.0;
-                if (!validPercent || meta == null || meta.quantidade <= 0) {
-                  return const SizedBox.shrink();
-                }
-                final pct = raw.clamp(0.0, 100.0);
-                final realizado = CarteiraLancamento.derivarQuantidade(
-                  metaQuantidade: meta.quantidade,
-                  closedPercent: pct,
-                );
-                final oportunidadeVolume =
-                    CarteiraLancamento.derivarOportunidadeVolume(
-                  metaQuantidade: meta.quantidade,
-                  closedPercent: pct,
-                );
-                final valorRef = widget.categoria.valorReferencia ?? 0.0;
-                final areaHa = widget.clientAreaHa;
-                final closedValuePerHa = valorRef * pct / 100;
-                final residualValuePerHa = valorRef - closedValuePerHa;
-                final residualPercent = 100.0 - pct;
-                final totalOportunidade = residualValuePerHa * areaHa;
-                return Container(
-                  margin: const EdgeInsets.only(top: 10),
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: Colors.green.shade50,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.green.shade200),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Realizado: ${_formatQuantidade(realizado)} $unidadeLabel '
-                        '(${pct.toStringAsFixed(pct % 1 == 0 ? 0 : 1)}%)',
-                        style: const TextStyle(fontSize: 13),
-                      ),
-                      Text(
-                        'Em aberto: ${_formatQuantidade(oportunidadeVolume)} $unidadeLabel',
-                        style: const TextStyle(fontSize: 13),
-                      ),
-                      if (valorRef > 0) ...[
+              Builder(
+                builder: (context) {
+                  final raw = double.tryParse(
+                    _percentController.text.replaceAll(',', '.'),
+                  );
+                  final validPercent =
+                      raw != null && raw >= 0.0 && raw <= 100.0;
+                  if (!validPercent || meta == null || meta.quantidade <= 0) {
+                    return const SizedBox.shrink();
+                  }
+                  final pct = raw.clamp(0.0, 100.0);
+                  final realizado = CarteiraLancamento.derivarQuantidade(
+                    metaQuantidade: meta.quantidade,
+                    closedPercent: pct,
+                  );
+                  final oportunidadeVolume =
+                      CarteiraLancamento.derivarOportunidadeVolume(
+                        metaQuantidade: meta.quantidade,
+                        closedPercent: pct,
+                      );
+                  final valorRef = widget.categoria.valorReferencia ?? 0.0;
+                  final areaHa = widget.clientAreaHa;
+                  final closedValuePerHa = valorRef * pct / 100;
+                  final residualValuePerHa = valorRef - closedValuePerHa;
+                  final residualPercent = 100.0 - pct;
+                  final totalOportunidade = residualValuePerHa * areaHa;
+                  return Container(
+                    margin: const EdgeInsets.only(top: 10),
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Colors.green.shade50,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.green.shade200),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
                         Text(
-                          'Fechado: ${closedValuePerHa.toStringAsFixed(2)} $unidadeLabel',
+                          'Realizado: ${_formatQuantidade(realizado)} $unidadeLabel '
+                          '(${pct.toStringAsFixed(pct % 1 == 0 ? 0 : 1)}%)',
                           style: const TextStyle(fontSize: 13),
                         ),
                         Text(
-                          'Residual: ${residualValuePerHa.toStringAsFixed(2)} $unidadeLabel '
-                          '(${residualPercent.toStringAsFixed(1)}%)',
+                          'Em aberto: ${_formatQuantidade(oportunidadeVolume)} $unidadeLabel',
                           style: const TextStyle(fontSize: 13),
                         ),
-                        Text(
-                          'Oportunidade total: R\$ ${totalOportunidade.toStringAsFixed(2)}',
-                          style: const TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
+                        if (valorRef > 0) ...[
+                          Text(
+                            'Fechado: ${closedValuePerHa.toStringAsFixed(2)} $unidadeLabel',
+                            style: const TextStyle(fontSize: 13),
                           ),
-                        ),
+                          Text(
+                            'Residual: ${residualValuePerHa.toStringAsFixed(2)} $unidadeLabel '
+                            '(${residualPercent.toStringAsFixed(1)}%)',
+                            style: const TextStyle(fontSize: 13),
+                          ),
+                          Text(
+                            'Oportunidade total: R\$ ${totalOportunidade.toStringAsFixed(2)}',
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
                       ],
-                    ],
-                  ),
-                );
-              }),
+                    ),
+                  );
+                },
+              ),
               const SizedBox(height: 12),
               InkWell(
                 onTap: _pickData,
@@ -390,43 +424,14 @@ class _LancamentoFormDialogState extends ConsumerState<LancamentoFormDialog> {
                 ),
               ),
               const SizedBox(height: 12),
-              InputDecorator(
-                decoration: const InputDecoration(
-                  labelText: 'Tipo de fechamento',
-                  border: OutlineInputBorder(),
-                ),
-                child: SegmentedButton<TipoFechamento>(
-                  emptySelectionAllowed: true,
-                  showSelectedIcon: false,
-                  segments: const [
-                    ButtonSegment(
-                      value: TipoFechamento.vendido,
-                      label: Text('Vendido'),
-                    ),
-                    ButtonSegment(
-                      value: TipoFechamento.perdido,
-                      label: Text('Perdido para concorrente'),
-                    ),
-                  ],
-                  selected: _tipoFechamento == null
-                      ? <TipoFechamento>{}
-                      : <TipoFechamento>{_tipoFechamento!},
-                  onSelectionChanged: (selected) {
-                    setState(() {
-                      _tipoFechamento = selected.isEmpty ? null : selected.first;
-                      if (_tipoFechamento == null) {
-                        _nomeConcorrenteController.clear();
-                        _motivoFechamentoController.clear();
-                        _dataFechamento = null;
-                      }
-                    });
-                  },
-                ),
+              TipoFechamentoToggle(
+                value: _tipoFechamento,
+                onChanged: _onTipoFechamentoChanged,
               ),
               const SizedBox(height: 12),
               AnimatedSwitcher(
                 duration: const Duration(milliseconds: 180),
-                child: _tipoFechamento != null
+                child: _tipoFechamento == TipoFechamento.perdido
                     ? Column(
                         key: const ValueKey('fechamento_fields'),
                         children: [

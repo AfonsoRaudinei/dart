@@ -33,6 +33,7 @@ import 'map/widgets/map_build_orchestrator.dart';
 import 'map/handlers/map_location_handler.dart';
 import 'map/controllers/map_viewport_controller.dart';
 import 'map/controllers/map_sheet_controller.dart';
+import 'map/controllers/map_camera_animator.dart';
 import 'map/handlers/novo_case_modal_launcher.dart';
 import 'map/handlers/map_first_query_handler.dart';
 
@@ -52,8 +53,10 @@ class PrivateMapScreen extends ConsumerStatefulWidget {
   ConsumerState<PrivateMapScreen> createState() => _PrivateMapScreenState();
 }
 
-class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
+class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen>
+    with TickerProviderStateMixin {
   final MapController _mapController = MapController();
+  late final MapCameraAnimator _cameraAnimator = MapCameraAnimator(vsync: this);
   // 🔧 LIFECYCLE: Referência cacheada do DrawingController.
   // Capturada no build() para uso seguro no dispose() SEM ref.read().
   // ref é invalidado em deactivate() (antes de dispose()) — ADR-008.
@@ -184,7 +187,11 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
       return;
     }
 
-    _mapController.move(point, 17.0);
+    _cameraAnimator.animateTo(
+      mapController: _mapController,
+      dest: point,
+      zoom: 17.0,
+    );
     ref.read(destinationCoordinateMarkerProvider.notifier).state = point;
     ref.read(viewportStateProvider.notifier).state =
         InitialViewportState.applied;
@@ -201,6 +208,7 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
     // NUNCA usar ref.read() aqui — causa BadState crash.
     _drawingController?.cancelOperation(notify: false);
     MapLocationHandler.stopFollowing();
+    _cameraAnimator.dispose();
 
     super.dispose();
   }
@@ -325,6 +333,13 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
       mapController: _mapController,
       isMapReady: ref.read(mapReadyStateProvider),
       locationMode: ref.read(mapLocationModeProvider),
+      animateTo: (dest, zoom) {
+        _cameraAnimator.animateTo(
+          mapController: _mapController,
+          dest: dest,
+          zoom: zoom,
+        );
+      },
     );
   }
 
@@ -346,17 +361,10 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
   }
 
   void _armOccurrenceMode() {
-    // FIX 1: Entrar em modo seleção — usuário toca no mapa para capturar LatLng
+    // Modo seleção: banner glass no mapa guia o toque (sem SnackBar redundante).
     _pendingMarketingCaseTipo = null;
     ref.read(armedModeProvider.notifier).state = ArmedMode.occurrences;
     HapticFeedback.lightImpact();
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Toque no mapa para marcar o ponto da ocorrência'),
-        duration: Duration(seconds: 10),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
   }
 
   Future<void> _openCoordinateSearch() async {
@@ -400,7 +408,11 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
       return;
     }
 
-    _mapController.move(parsed, 17.0);
+    _cameraAnimator.animateTo(
+      mapController: _mapController,
+      dest: parsed,
+      zoom: 17.0,
+    );
     ref.read(destinationCoordinateMarkerProvider.notifier).state = parsed;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -418,7 +430,11 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
       context,
       onSelected: (point, label) {
         if (!mounted) return;
-        _mapController.move(point, 13.0);
+        _cameraAnimator.animateTo(
+          mapController: _mapController,
+          dest: point,
+          zoom: 13.0,
+        );
         ref.read(destinationCoordinateMarkerProvider.notifier).state = point;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -645,27 +661,10 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
   }
 
   void _armMarketingMode(CaseTipo tipo) {
+    // Banner glass no mapa guia o toque (sem SnackBar redundante).
     _pendingMarketingCaseTipo = tipo;
     ref.read(armedModeProvider.notifier).state = ArmedMode.marketing;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'Toque no mapa para localizar o case de ${_caseTipoLabel(tipo)}',
-        ),
-        duration: const Duration(seconds: 2),
-      ),
-    );
-  }
-
-  String _caseTipoLabel(CaseTipo tipo) {
-    switch (tipo) {
-      case CaseTipo.resultado:
-        return 'resultado';
-      case CaseTipo.antesDepois:
-        return 'antes/depois';
-      case CaseTipo.avaliacao:
-        return 'avaliação';
-    }
+    HapticFeedback.lightImpact();
   }
 
   void _handleOccurrencePinTap(occ.Occurrence occurrence) {

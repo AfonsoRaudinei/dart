@@ -15,30 +15,37 @@ library;
 const double kFabHeight = 56.0;
 
 /// Margem inferior do SmartButton até a borda da safe area.
-/// Corresponde ao `bottom: 40` do Positioned no AppShell.
-const double kFabBottomMargin = 40.0;
+///
+/// Fonte da verdade: [AppShell] Positioned
+/// `bottom: MediaQuery.padding.bottom + 16`.
+/// Este valor é só a margem acima da safe area (16dp), não inclui
+/// `padding.bottom` — somar via [FabSafeAreaExtension.fabSafeBottomPadding]
+/// ou `MediaQuery.padding.bottom` quando o layout não estiver em SafeArea.
+const double kFabBottomMargin = 16.0;
 
 /// Margem de conforto acima do FAB para que o conteúdo não fique
 /// visualmente colado ao botão.
 const double kFabContentClearance = 4.0;
 
-/// Altura total reservada para o SmartButton (FAB global).
+/// Altura total reservada para o SmartButton (FAB global),
+/// **sem** a safe area do dispositivo.
 ///
 /// Composição:
 ///   56dp  — altura do FAB (FloatingActionButton padrão)
-///   40dp  — margem inferior do FAB (Positioned bottom: 40 no AppShell)
+///   16dp  — margem inferior do FAB (AppShell: padding.bottom + 16)
 ///    4dp  — clearance de conforto visual
 /// ─────────
-///  100dp  total fixo
+///   76dp  total fixo
 ///
-/// Uso em qualquer ListView/ScrollView que chegue até o fundo:
+/// Uso em qualquer ListView/ScrollView que chegue até o fundo
+/// (quando o body já respeita SafeArea inferior):
 /// ```dart
 /// padding: EdgeInsets.only(bottom: kFabSafeArea),
 /// ```
 ///
-/// Para contextos com SafeArea, somar `MediaQuery.of(context).padding.bottom`
+/// Fora de SafeArea, somar `MediaQuery.of(context).padding.bottom`
 /// ou usar a extensão `context.fabSafeBottomPadding`.
-const double kFabSafeArea = kFabHeight + kFabBottomMargin + kFabContentClearance; // 100.0
+const double kFabSafeArea = kFabHeight + kFabBottomMargin + kFabContentClearance; // 76.0
 
 /// Altura mínima da barra de ações do modo desenho (sem medição).
 ///

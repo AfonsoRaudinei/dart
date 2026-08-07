@@ -119,9 +119,12 @@ class SessionController extends _$SessionController {
         }
 
         if (data.event == AuthChangeEvent.initialSession) {
-          // Mantém SessionUnknown + lastKnown disponível até signedIn/signedOut.
+          // Se não há user na sessão inicial, confirma estado público.
+          // SessionUnknown→SessionUnknown não notifica listeners (Riverpod equality),
+          // causando spinner infinito no AppShell em fresh install.
           if (state is! SessionAuthenticated) {
-            state = const SessionUnknown();
+            LocalSessionIdentity.markSessionPublic();
+            state = const SessionPublic();
           }
           return;
         }

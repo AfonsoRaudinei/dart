@@ -144,7 +144,7 @@ class SettingsScreen extends ConsumerWidget {
                   context,
                   title: 'Meu Plano',
                   icon: Icons.workspace_premium_rounded,
-                  onTap: () => context.go(AppRoutes.meuPlano),
+                  onTap: () => _navigateFromSettings(context, AppRoutes.meuPlano),
                 ),
                 _buildSwitchTile(
                   context,
@@ -858,4 +858,11 @@ class SettingsScreen extends ConsumerWidget {
       ),
     );
   }
+}
+
+void _navigateFromSettings(BuildContext context, String route) {
+  final router = GoRouter.of(context);
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    router.go(route);
+  });
 }
