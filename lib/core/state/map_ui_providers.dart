@@ -82,3 +82,9 @@ class MapCameraSnapshot {
 final mapCameraSnapshotProvider = StateProvider.autoDispose<MapCameraSnapshot?>(
   (ref) => null,
 );
+
+/// Altura do chrome inferior do mapa (sheet stack) — mapa/controles “cedem”.
+/// 0 = sheet fechado.
+final mapSheetChromeInsetProvider = StateProvider.autoDispose<double>(
+  (ref) => 0,
+);

@@ -46,8 +46,11 @@ import '../../../components/map/widgets/map_state_boundaries_layer.dart';
 import '../../../components/map/widgets/map_tools_bottom_sheet.dart';
 import '../../../components/map/widgets/producer_map_context_card.dart';
 import '../../../components/map/map_sheet_state.dart';
+import '../../../../core/design/sf_icons.dart';
 import '../providers/map_armed_mode_provider.dart';
 import '../providers/map_ready_state_provider.dart';
+import '../providers/field_hit_index_provider.dart';
+import '../utils/map_camera_snapshot_throttle.dart';
 import 'armed_mode_banner.dart';
 import '../layers/talhao_polygon_layer.dart';
 import 'drawing_map_behavior_listener.dart';
@@ -253,38 +256,20 @@ class MapBuildOrchestrator extends ConsumerWidget {
               }
 
               // 🎯 Comportamento normal: Seleção de talhão
-              final mapFields = ref.read(mapFieldsProvider);
-              final fields = mapFields.valueOrNull ?? [];
               final selectedTalhaoId = ref.read(selectedTalhaoIdProvider);
-              bool hit = false;
-
-              for (final field in fields) {
-                if (field.geometry == null) continue;
-                final polygonPoints = TalhaoMapAdapter.toPolygon(field).points;
-
-                if (TalhaoMapAdapter.isPointInside(point, polygonPoints)) {
-                  ref.read(selectedTalhaoIdProvider.notifier).state = field.id;
-                  hit = true;
-                  HapticFeedback.selectionClick();
-
-                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Talhão: ${field.name}'),
-                      backgroundColor: PremiumTokens.brandGreen,
-                      duration: const Duration(seconds: 1),
-                    ),
-                  );
-                  break; // Stop on first hit
-                }
+              final hitIndex = ref.read(fieldHitIndexProvider);
+              String? hitId;
+              if (hitIndex != null) {
+                hitId = hitIndex.hitTest(point, TalhaoMapAdapter.isPointInside);
               }
 
-              if (!hit) {
+              if (hitId != null) {
+                ref.read(selectedTalhaoIdProvider.notifier).state = hitId;
+                HapticFeedback.selectionClick();
+              } else if (selectedTalhaoId != null) {
                 // Deselect if tapping empty space
-                if (selectedTalhaoId != null) {
-                  ref.read(selectedTalhaoIdProvider.notifier).state = null;
-                  HapticFeedback.lightImpact();
-                }
+                ref.read(selectedTalhaoIdProvider.notifier).state = null;
+                HapticFeedback.lightImpact();
               }
             },
             onLongPress: (tapPos, point) {
@@ -294,12 +279,13 @@ class MapBuildOrchestrator extends ConsumerWidget {
               handleMapLongPress(tapPos, point);
             },
             onPositionChanged: (pos, hasGesture) {
-              ref
-                  .read(mapCameraSnapshotProvider.notifier)
-                  .state = MapCameraSnapshot(
-                center: pos.center,
-                zoom: pos.zoom,
-                visibleBounds: pos.visibleBounds,
+              MapCameraSnapshotThrottle.publish(
+                ProviderScope.containerOf(context, listen: false),
+                MapCameraSnapshot(
+                  center: pos.center,
+                  zoom: pos.zoom,
+                  visibleBounds: pos.visibleBounds,
+                ),
               );
               if (hasGesture) {
                 final locationMode = ref.read(mapLocationModeProvider);
@@ -394,9 +380,16 @@ class MapBuildOrchestrator extends ConsumerWidget {
                         height: 40,
                         alignment: Alignment.topCenter,
                         child: const Icon(
-                          Icons.place,
-                          size: 40,
-                          color: Colors.redAccent,
+                          SFIcons.pinFill,
+                          size: 36,
+                          color: PremiumTokens.brandGreen,
+                          shadows: [
+                            Shadow(
+                              color: Color(0x66000000),
+                              blurRadius: 6,
+                              offset: Offset(0, 2),
+                            ),
+                          ],
                         ),
                       ),
                     ],

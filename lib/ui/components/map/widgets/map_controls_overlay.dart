@@ -16,12 +16,14 @@ import '../../../../core/contracts/i_visit_session_lookup_provider.dart';
 import '../../../../core/providers/connectivity_provider.dart';
 import '../../../../modules/clima/presentation/providers/radar_providers.dart';
 import '../../../../core/state/map_state.dart';
+import '../../../../core/state/map_ui_providers.dart';
 import '../../../../modules/drawing/domain/drawing_state.dart';
 import '../../../../modules/drawing/presentation/widgets/drawing_bottom_toolbar_overlay.dart';
 import '../../../../core/utils/app_logger.dart';
 import '../../../../modules/map/presentation/widgets/visit_active_card.dart';
 import '../../../theme/premium/design_tokens.dart';
 import 'map_action_fab_menu.dart';
+import 'selected_talhao_card.dart';
 
 part 'map_controls_location_button.dart';
 part 'map_controls_measurement.dart';
@@ -154,11 +156,22 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
     final distanceUnit = ref.watch(distanceDisplayUnitProvider);
     return Stack(
       children: [
-        // 1. Card de contexto (Top Left)
+        // 1. Card de contexto (Top Left) + talhão selected (consultor)
         Positioned(
           top: safeTop + 8,
           left: 12,
-          child: widget.topLeftCard ?? const VisitActiveCard(),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              widget.topLeftCard ?? const VisitActiveCard(),
+              // Produtor já tem contexto no ProducerMapContextCard.
+              if (widget.topLeftCard == null) ...[
+                const SizedBox(height: 8),
+                const SelectedTalhaoCard(),
+              ],
+            ],
+          ),
         ),
 
         // 2. Botão de Localização + Indicador de Conectividade (canto superior direito)
@@ -217,10 +230,13 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
             ),
           ),
 
-        // 3. Ações verticais do mapa (direita)
+        // 3. Ações verticais do mapa (direita) — sobem com sheet aberto
         Positioned(
           right: 16,
-          bottom: kFabSafeArea + safeBottom + 130,
+          bottom: kFabSafeArea +
+              safeBottom +
+              130 +
+              ref.watch(mapSheetChromeInsetProvider).clamp(0, 280) * 0.15,
           child: SafeArea(
             top: false,
             child: _MapToolsFab(
@@ -231,53 +247,56 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
           ),
         ),
 
-        Positioned.fill(
-          child: MapActionFabMenu(
-            right: 16,
-            bottom: kFabSafeArea + safeBottom + 60,
-            padding: EdgeInsets.zero,
-            direction: MapActionFabMenuDirection.left,
-            isActive: widget.isMarketingMode || widget.isOccurrenceMode,
-            activeColor: activeColor,
-            onResultado: widget.onCreateResultadoCase ?? () {},
-            onAntesDepois: widget.onCreateAntesDepoisCase ?? () {},
-            onAvaliacao: widget.onCreateAvaliacaoCase ?? () {},
-            onOcorrencia: () {
-              // Fluxo preservado: armar ocorrência e deixar o toque no mapa
-              // abrir o OccurrenceCreationSheet atual.
-              if (widget.onToggleOccurrenceMode != null) {
-                widget.onToggleOccurrenceMode!();
-              } else {
-                widget.onTabSelected(2, 'Button_Occurrences');
-              }
-            },
-            onFotoRapida: () {
-              unawaited(_openQuickPhoto(initialFilterActive: false));
-            },
-            onInversaoVegetal: () {
-              unawaited(_openQuickPhoto(initialFilterActive: true));
-            },
-          ),
-        ),
-
-        if (widget.showCheckInAction)
-          Positioned(
-            bottom: kFabSafeArea + safeBottom,
-            right: 16,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                _MapActionButton(
-                  icon: SFIcons.checkCircle,
-                  label: 'Check-in',
-                  isActive: widget.isCheckInActive,
-                  activeColor: activeColor,
-                  onTap: () => widget.onTabSelected(3, 'Button_CheckIn'),
-                ),
-              ],
+        // Progressive disclosure (Sprint C): esconde menu/check-in no desenho
+        // (toolbar de draw já ocupa a base). Tools FAB permanece.
+        if (!widget.isDrawMode) ...[
+          Positioned.fill(
+            child: MapActionFabMenu(
+              right: 16,
+              bottom: kFabSafeArea + safeBottom + 60,
+              padding: EdgeInsets.zero,
+              direction: MapActionFabMenuDirection.left,
+              isActive: widget.isMarketingMode || widget.isOccurrenceMode,
+              activeColor: activeColor,
+              onResultado: widget.onCreateResultadoCase ?? () {},
+              onAntesDepois: widget.onCreateAntesDepoisCase ?? () {},
+              onAvaliacao: widget.onCreateAvaliacaoCase ?? () {},
+              onOcorrencia: () {
+                // Fluxo preservado: armar ocorrência e deixar o toque no mapa
+                // abrir o OccurrenceCreationSheet atual.
+                if (widget.onToggleOccurrenceMode != null) {
+                  widget.onToggleOccurrenceMode!();
+                } else {
+                  widget.onTabSelected(2, 'Button_Occurrences');
+                }
+              },
+              onFotoRapida: () {
+                unawaited(_openQuickPhoto(initialFilterActive: false));
+              },
+              onInversaoVegetal: () {
+                unawaited(_openQuickPhoto(initialFilterActive: true));
+              },
             ),
           ),
+          if (widget.showCheckInAction)
+            Positioned(
+              bottom: kFabSafeArea + safeBottom,
+              right: 16,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  _MapActionButton(
+                    icon: SFIcons.checkCircle,
+                    label: 'Check-in',
+                    isActive: widget.isCheckInActive,
+                    activeColor: activeColor,
+                    onTap: () => widget.onTabSelected(3, 'Button_CheckIn'),
+                  ),
+                ],
+              ),
+            ),
+        ],
 
         // 4. Drawing Actions (Conditional)
         if (widget.drawingState == DrawingState.drawing)

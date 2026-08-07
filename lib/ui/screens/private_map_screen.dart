@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -21,8 +23,10 @@ import '../../modules/dashboard/services/location_service.dart';
 import '../../modules/consultoria/occurrences/domain/occurrence.dart' as occ;
 import '../../modules/marketing/domain/enums/case_tipo.dart';
 import '../../modules/marketing/presentation/providers/marketing_providers.dart';
+import '../components/map/map_camera_ease.dart';
 import '../components/map/map_municipality_search_sheet.dart';
 import '../components/map/map_sheet_state.dart';
+import 'map/utils/map_camera_snapshot_throttle.dart';
 // 🔧 MODAL: imports para sheets dos tipos não-draw
 // (conteúdo migrado para map_sheet_content_builder.dart — ADR-031 F3)
 import '../../modules/consultoria/occurrences/presentation/widgets/occurrence_detail_sheet.dart';
@@ -184,8 +188,9 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
       return;
     }
 
-    _mapController.move(point, 17.0);
+    unawaited(MapCameraEase.move(_mapController, to: point, zoom: 17.0));
     ref.read(destinationCoordinateMarkerProvider.notifier).state = point;
+    HapticFeedback.lightImpact();
     ref.read(viewportStateProvider.notifier).state =
         InitialViewportState.applied;
   }
@@ -201,6 +206,8 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
     // NUNCA usar ref.read() aqui — causa BadState crash.
     _drawingController?.cancelOperation(notify: false);
     MapLocationHandler.stopFollowing();
+    MapCameraSnapshotThrottle.cancel();
+    MapCameraEase.cancel();
 
     super.dispose();
   }
@@ -350,13 +357,7 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
     _pendingMarketingCaseTipo = null;
     ref.read(armedModeProvider.notifier).state = ArmedMode.occurrences;
     HapticFeedback.lightImpact();
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Toque no mapa para marcar o ponto da ocorrência'),
-        duration: Duration(seconds: 10),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    // Feedback visual: ArmedModeBanner (glass) — sem snackbar duplicado.
   }
 
   Future<void> _openCoordinateSearch() async {
@@ -400,8 +401,9 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
       return;
     }
 
-    _mapController.move(parsed, 17.0);
+    unawaited(MapCameraEase.move(_mapController, to: parsed, zoom: 17.0));
     ref.read(destinationCoordinateMarkerProvider.notifier).state = parsed;
+    HapticFeedback.lightImpact();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
@@ -418,8 +420,9 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
       context,
       onSelected: (point, label) {
         if (!mounted) return;
-        _mapController.move(point, 13.0);
+        unawaited(MapCameraEase.move(_mapController, to: point, zoom: 13.0));
         ref.read(destinationCoordinateMarkerProvider.notifier).state = point;
+        HapticFeedback.lightImpact();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Destino: $label'),
@@ -647,26 +650,11 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
   void _armMarketingMode(CaseTipo tipo) {
     _pendingMarketingCaseTipo = tipo;
     ref.read(armedModeProvider.notifier).state = ArmedMode.marketing;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'Toque no mapa para localizar o case de ${_caseTipoLabel(tipo)}',
-        ),
-        duration: const Duration(seconds: 2),
-      ),
-    );
+    HapticFeedback.lightImpact();
+    // Feedback visual: ArmedModeBanner (glass) — sem snackbar duplicado.
   }
 
-  String _caseTipoLabel(CaseTipo tipo) {
-    switch (tipo) {
-      case CaseTipo.resultado:
-        return 'resultado';
-      case CaseTipo.antesDepois:
-        return 'antes/depois';
-      case CaseTipo.avaliacao:
-        return 'avaliação';
-    }
-  }
+  // Feedback visual de armed modes: ArmedModeBanner (glass).
 
   void _handleOccurrencePinTap(occ.Occurrence occurrence) {
     if (!mounted) return;

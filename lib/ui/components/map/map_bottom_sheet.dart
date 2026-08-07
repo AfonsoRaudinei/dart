@@ -20,6 +20,7 @@ import '../../../modules/dashboard/domain/location_settings.dart';
 import '../../screens/map/handlers/map_location_handler.dart';
 import 'map_sheet_state.dart'; // 🛡 REFATORAÇÃO: Modelo compartilhado
 import '../../../core/utils/app_logger.dart';
+import '../../../core/state/map_ui_providers.dart';
 import '../../../../core/contracts/i_visit_session_lookup.dart';
 import '../../../../core/contracts/i_visit_session_lookup_provider.dart';
 
@@ -86,11 +87,19 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
 
     final initialHeight = 350.0;
     _heightAnimation = AlwaysStoppedAnimation(initialHeight);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _publishChromeInset(_getSheetHeight());
+    });
   }
 
   @override
   void dispose() {
     AppLogger.debug('MapBottomSheet DISPOSE', tag: 'MapSheet');
+    // Evita inset residual após fechar sheet.
+    try {
+      ref.read(mapSheetChromeInsetProvider.notifier).state = 0;
+    } catch (_) {}
     _heightController.dispose();
     _scrollController.dispose();
     super.dispose();
@@ -143,9 +152,21 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
     _heightAnimation = Tween<double>(begin: startHeight, end: endHeight)
         .animate(
           CurvedAnimation(parent: _heightController, curve: Curves.easeOut),
-        );
+        )
+      ..addListener(_onHeightTick);
 
-    _heightController.forward(from: 0);
+    _heightController.forward(from: 0).whenComplete(() {
+      _heightAnimation.removeListener(_onHeightTick);
+      if (mounted) _publishChromeInset(endHeight);
+    });
+  }
+
+  void _onHeightTick() {
+    _publishChromeInset(_heightAnimation.value);
+  }
+
+  void _publishChromeInset(double height) {
+    ref.read(mapSheetChromeInsetProvider.notifier).state = height;
   }
 
   void _handleVerticalDrag(DragUpdateDetails details) {
@@ -166,6 +187,7 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
         );
 
         _heightAnimation = AlwaysStoppedAnimation(newHeight);
+        _publishChromeInset(newHeight);
       });
     }
   }

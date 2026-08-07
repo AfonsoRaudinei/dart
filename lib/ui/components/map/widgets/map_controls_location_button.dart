@@ -57,7 +57,7 @@ class _LocationButtonState extends ConsumerState<_LocationButton> {
             child: InkWell(
               borderRadius: BorderRadius.circular(12),
               onTap: () {
-                HapticFeedback.selectionClick();
+                HapticFeedback.lightImpact();
                 _showTemporaryLabel();
 
                 final nextMode = switch (locationMode) {
