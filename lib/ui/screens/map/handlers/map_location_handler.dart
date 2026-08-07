@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:latlong2/latlong.dart';
 import '../../../../core/permissions/location_permission_gate.dart';
 import '../../../../core/permissions/permission_provider.dart';
 import '../../../../modules/dashboard/domain/location_state.dart';
@@ -132,12 +133,16 @@ class MapLocationHandler {
 
   /// Centraliza o mapa na posição atual do usuário.
   /// Verifica [isMapReady] antes de operar no [mapController].
+  ///
+  /// [animateTo] opcional: ease Apple-like no primeiro recenter.
+  /// Follow contínuo continua usando move instantâneo.
   static Future<void> centerOnUser({
     required WidgetRef ref,
     required BuildContext context,
     required MapController mapController,
     required bool isMapReady,
     MapLocationMode locationMode = MapLocationMode.idle,
+    void Function(LatLng dest, double zoom)? animateTo,
   }) async {
     // 🔒 Guard: Verificar se o mapa está pronto
     if (!isMapReady) return;
@@ -179,6 +184,11 @@ class MapLocationHandler {
     final position = await locationService.getCurrentPosition();
 
     if (position != null && isMapReady && context.mounted) {
+      // Recenter intencional: preferir ease; follow contínuo permanece instantâneo.
+      if (animateTo != null && locationMode == MapLocationMode.idle) {
+        animateTo(position.position, 16.0);
+        return;
+      }
       _applyCameraForFix(
         mapController: mapController,
         fix: position,
