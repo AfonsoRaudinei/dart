@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:uuid/uuid.dart';
@@ -12,6 +11,7 @@ import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 import 'package:soloforte_app/modules/carteira/domain/entities/categoria_global.dart';
 import 'package:soloforte_app/modules/carteira/presentation/providers/carteira_providers.dart';
 import 'package:soloforte_app/modules/carteira/presentation/widgets/carteira_metas_tab.dart';
+import 'package:soloforte_app/modules/carteira/presentation/widgets/carteira_module_scaffold.dart';
 import 'package:soloforte_app/modules/carteira/presentation/widgets/carteira_segment_bar.dart';
 import 'package:soloforte_app/modules/carteira/presentation/widgets/categoria_form_dialog.dart';
 import 'package:soloforte_app/modules/carteira/presentation/widgets/cliente_carteira_card.dart';
@@ -26,18 +26,11 @@ class CarteiraScreen extends ConsumerStatefulWidget {
 }
 
 class _CarteiraScreenState extends ConsumerState<CarteiraScreen> {
-  CarteiraSegment _segment = CarteiraSegment.clientes;
-
-  void _selectSegment(CarteiraSegment value) {
-    if (_segment == value) return;
-    HapticFeedback.selectionClick();
-    setState(() => _segment = value);
-  }
-
   @override
   Widget build(BuildContext context) {
     ref.watch(sessionControllerProvider);
     final userId = LocalSessionIdentity.resolveUserId();
+    final segment = ref.watch(carteiraSegmentProvider);
 
     if (userId.isEmpty) {
       return const Scaffold(
@@ -45,26 +38,14 @@ class _CarteiraScreenState extends ConsumerState<CarteiraScreen> {
       );
     }
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Carteira')),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-            child: CarteiraSegmentBar(
-              selected: _segment,
-              onSelected: _selectSegment,
-            ),
-          ),
-          Expanded(child: _buildSegmentBody(userId)),
-        ],
-      ),
+    return CarteiraModuleScaffold(
+      title: 'Carteira',
+      body: _buildSegmentBody(userId, segment),
     );
   }
 
-  Widget _buildSegmentBody(String userId) {
-    return switch (_segment) {
+  Widget _buildSegmentBody(String userId, CarteiraSegment segment) {
+    return switch (segment) {
       CarteiraSegment.clientes => _ClientesTab(userId: userId),
       CarteiraSegment.categorias => _CategoriasTab(userId: userId),
       CarteiraSegment.metas => const CarteiraMetasTab(),
