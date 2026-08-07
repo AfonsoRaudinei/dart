@@ -298,7 +298,11 @@ class _CategoriasTab extends ConsumerWidget {
                 itemCount: categorias.length,
                 itemBuilder: (context, index) {
                   final categoria = categorias[index];
-                  final custoSacasHa = categoria.custoSacasHa(valorGrao);
+                  final refLabel = categoria.rotuloReferencia();
+                  final equivLabel = categoria.rotuloEquivalenteSacasHa(
+                    valorGrao,
+                  );
+                  final hintColor = Theme.of(context).hintColor;
                   return ListTile(
                     leading: CircleAvatar(
                       radius: 10,
@@ -308,15 +312,23 @@ class _CategoriasTab extends ConsumerWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(categoria.nome),
-                        if (custoSacasHa != null)
+                        if (refLabel != null)
                           Padding(
                             padding: const EdgeInsets.only(top: 2),
                             child: Text(
-                              '${custoSacasHa.toStringAsFixed(3)} sc/ha',
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: Theme.of(context).hintColor,
+                              refLabel,
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
                               ),
+                            ),
+                          ),
+                        if (equivLabel != null)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 2),
+                            child: Text(
+                              equivLabel,
+                              style: TextStyle(fontSize: 11, color: hintColor),
                             ),
                           ),
                       ],
