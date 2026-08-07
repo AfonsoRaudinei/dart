@@ -122,7 +122,7 @@ if [ -f "$APP_FW_PLIST" ]; then
     xcodebuild -exportArchive \
       -archivePath "$ARCHIVE" \
       -exportPath "$ROOT/build/ios/ipa" \
-      -exportOptionsPlist="$EXPORT_OPTIONS_PLIST" \
+      -exportOptionsPlist "$EXPORT_OPTIONS_PLIST" \
       -allowProvisioningUpdates
   fi
 fi
