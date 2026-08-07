@@ -72,10 +72,16 @@ class CarteiraModuleScaffold extends ConsumerWidget {
     final onClienteDetail = location.startsWith(
       '${AppRoutes.carteira}/cliente/',
     );
+    final onOportunidadesDetail = location.startsWith(
+      '${AppRoutes.carteira}/oportunidades/',
+    );
     final current = ref.read(carteiraSegmentProvider);
 
     if (current == value) {
       if (onClienteDetail && value == CarteiraSegment.clientes) {
+        context.go(AppRoutes.carteira);
+      }
+      if (onOportunidadesDetail && value == CarteiraSegment.oportunidades) {
         context.go(AppRoutes.carteira);
       }
       return;
@@ -84,7 +90,9 @@ class CarteiraModuleScaffold extends ConsumerWidget {
     HapticFeedback.selectionClick();
     ref.read(carteiraSegmentProvider.notifier).state = value;
 
-    if (onClienteDetail || location != AppRoutes.carteira) {
+    if (onClienteDetail ||
+        onOportunidadesDetail ||
+        location != AppRoutes.carteira) {
       context.go(AppRoutes.carteira);
     }
   }

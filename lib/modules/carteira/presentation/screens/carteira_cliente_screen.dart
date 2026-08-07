@@ -293,6 +293,12 @@ class _CategoriaClienteItemState extends ConsumerState<_CategoriaClienteItem> {
         categoriaId: widget.categoria.id,
       )),
     );
+    final closedPctAsync = ref.watch(
+      closedPercentClienteCategoriaProvider((
+        clienteId: widget.clienteId,
+        categoriaId: widget.categoria.id,
+      )),
+    );
     final lancamentosAsync = ref.watch(
       lancamentosSafraProvider((
         categoriaId: widget.categoria.id,
@@ -302,9 +308,7 @@ class _CategoriaClienteItemState extends ConsumerState<_CategoriaClienteItem> {
 
     final meta = metaAsync.valueOrNull;
     final realizado = realizadoAsync.valueOrNull ?? 0.0;
-    final pct = (meta != null && meta.quantidade > 0)
-        ? (realizado / meta.quantidade * 100.0).clamp(0.0, 100.0)
-        : 0.0;
+    final pct = closedPctAsync.valueOrNull ?? 0.0;
     final totalHistorico = lancamentosAsync.valueOrNull?.length ?? 0;
 
     return Card(
@@ -370,7 +374,32 @@ class _CategoriaClienteItemState extends ConsumerState<_CategoriaClienteItem> {
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      '${pct.toStringAsFixed(0)}%',
+                      '${pct.toStringAsFixed(0)}% fechado',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ] else if (pct > 0) ...[
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Expanded(
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(4),
+                        child: LinearProgressIndicator(
+                          value: pct / 100.0,
+                          backgroundColor: Colors.grey[200],
+                          color: cor,
+                          minHeight: 6,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      '${pct.toStringAsFixed(0)}% fechado',
                       style: const TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,

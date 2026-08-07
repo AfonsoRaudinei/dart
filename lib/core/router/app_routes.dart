@@ -60,6 +60,9 @@ class AppRoutes {
   static String carteiraCliente(String clienteId) =>
       '/carteira/cliente/$clienteId';
 
+  static String carteiraOportunidades(String clienteId) =>
+      '/carteira/oportunidades/$clienteId';
+
   // Agenda L2+ — navegação declarativa (Fase 7, sem context.pop)
   static String agendaDay(DateTime date) =>
       '$agenda/day?date=${date.toIso8601String()}';

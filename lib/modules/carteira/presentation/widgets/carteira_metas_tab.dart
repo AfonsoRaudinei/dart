@@ -24,6 +24,8 @@ class CarteiraMetasTab extends ConsumerStatefulWidget {
 class _CarteiraMetasTabState extends ConsumerState<CarteiraMetasTab> {
   late final TextEditingController _valorGraoController;
   bool _salvandoGrao = false;
+  String? _graoFeedback;
+  bool _graoFeedbackErro = false;
 
   String get _userId => LocalSessionIdentity.resolveUserId();
 
@@ -43,17 +45,34 @@ class _CarteiraMetasTabState extends ConsumerState<CarteiraMetasTab> {
     final valor = double.tryParse(
       _valorGraoController.text.replaceAll(',', '.'),
     );
-    if (valor == null || valor <= 0) return;
+    if (valor == null || valor <= 0) {
+      setState(() {
+        _graoFeedback = 'Informe um valor válido maior que zero';
+        _graoFeedbackErro = true;
+      });
+      return;
+    }
     if (_userId.isEmpty) return;
 
-    setState(() => _salvandoGrao = true);
+    setState(() {
+      _salvandoGrao = true;
+      _graoFeedback = null;
+    });
     try {
       await ref.read(carteiraRepositoryProvider).setValorGrao(_userId, valor);
       ref.invalidate(valorGraoProvider);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Valor do grão atualizado')),
-        );
+        setState(() {
+          _graoFeedback = 'Valor do grão atualizado';
+          _graoFeedbackErro = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _graoFeedback = 'Erro ao salvar: $e';
+          _graoFeedbackErro = true;
+        });
       }
     } finally {
       if (mounted) {
@@ -109,6 +128,11 @@ class _CarteiraMetasTabState extends ConsumerState<CarteiraMetasTab> {
                   ),
                   textInputAction: TextInputAction.done,
                   onSubmitted: (_) => _salvarValorGrao(),
+                  onChanged: (_) {
+                    if (_graoFeedback != null) {
+                      setState(() => _graoFeedback = null);
+                    }
+                  },
                   decoration: const InputDecoration(
                     prefixText: 'R\$ ',
                     hintText: '0,00',
@@ -119,6 +143,19 @@ class _CarteiraMetasTabState extends ConsumerState<CarteiraMetasTab> {
                     ),
                   ),
                 ),
+                if (_graoFeedback != null) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    _graoFeedback!,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: _graoFeedbackErro
+                          ? Theme.of(context).colorScheme.error
+                          : Colors.green.shade700,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 8),
                 Align(
                   alignment: Alignment.centerRight,
@@ -257,6 +294,8 @@ class _CarteiraMetasTabState extends ConsumerState<CarteiraMetasTab> {
                         return _MetaCategoriaItem(
                           categoria: cat,
                           meta: meta,
+                          valorGrao:
+                              ref.watch(valorGraoProvider).valueOrNull ?? 0.0,
                           progressoAsync: progressoAsync,
                           onEdit: () => _abrirMetaDialog(cat, meta),
                         );
@@ -335,12 +374,14 @@ class _EmptyState extends StatelessWidget {
 class _MetaCategoriaItem extends ConsumerWidget {
   final CategoriaGlobal categoria;
   final CarteiraMeta? meta;
+  final double valorGrao;
   final AsyncValue<double> progressoAsync;
   final VoidCallback onEdit;
 
   const _MetaCategoriaItem({
     required this.categoria,
     required this.meta,
+    required this.valorGrao,
     required this.progressoAsync,
     required this.onEdit,
   });
@@ -363,6 +404,8 @@ class _MetaCategoriaItem extends ConsumerWidget {
     final metaLabel = metaQtd == null
         ? 'Sem meta definida'
         : 'Meta: ${metaQtd % 1 == 0 ? metaQtd.toInt() : metaQtd.toStringAsFixed(1)} $unidade';
+    final refLabel = categoria.rotuloReferencia();
+    final equivLabel = categoria.rotuloEquivalenteSacasHa(valorGrao);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
@@ -391,6 +434,25 @@ class _MetaCategoriaItem extends ConsumerWidget {
                   metaLabel,
                   style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                 ),
+                if (refLabel != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 2),
+                    child: Text(
+                      refLabel,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                if (equivLabel != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 2),
+                    child: Text(
+                      equivLabel,
+                      style: TextStyle(fontSize: 11, color: Colors.grey[500]),
+                    ),
+                  ),
                 if (metaQtd != null) ...[
                   const SizedBox(height: 6),
                   Row(

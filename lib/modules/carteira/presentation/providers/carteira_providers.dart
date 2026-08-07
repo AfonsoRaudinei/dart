@@ -195,6 +195,22 @@ final realizadoClienteCategoriaProvider = FutureProvider.autoDispose
       );
     });
 
+/// Percentual fechado por cliente+categoria (ADR-029 — soma closed_percent).
+final closedPercentClienteCategoriaProvider = FutureProvider.autoDispose
+    .family<double, ({String clienteId, String categoriaId})>((
+      ref,
+      args,
+    ) async {
+      final userId = _currentUserId(ref);
+      if (userId.isEmpty) return 0.0;
+      final repo = ref.watch(carteiraRepositoryProvider);
+      return repo.getClosedPercentByClienteCategoria(
+        args.clienteId,
+        args.categoriaId,
+        userId,
+      );
+    });
+
 class OportunidadeCliente {
   final CategoriaGlobal categoria;
   final double metaQuantidade;

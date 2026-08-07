@@ -18,6 +18,7 @@ import '../../modules/agenda/presentation/pages/agenda_day_page.dart';
 import '../../modules/agenda/presentation/pages/agenda_event_detail_page.dart';
 import '../../modules/carteira/presentation/screens/carteira_cliente_screen.dart';
 import '../../modules/carteira/presentation/screens/carteira_screen.dart';
+import '../../modules/carteira/presentation/screens/oportunidades_detalhe_screen.dart';
 import '../../ui/screens/publicacao_editor_screen.dart';
 import '../../modules/settings/presentation/providers/user_profile_provider.dart';
 import '../../../modules/settings/presentation/screens/settings_screen.dart';
@@ -199,6 +200,13 @@ GoRouter router(Ref ref) {
                 path: 'cliente/:clienteId',
                 builder: (_, state) => CarteiraClienteScreen(
                   clienteId: state.pathParameters['clienteId']!,
+                ),
+              ),
+              GoRoute(
+                path: 'oportunidades/:clienteId',
+                builder: (_, state) => OportunidadesDetalheScreen(
+                  clienteId: state.pathParameters['clienteId']!,
+                  clienteNome: state.uri.queryParameters['nome'] ?? 'Cliente',
                 ),
               ),
             ],

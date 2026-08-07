@@ -4,10 +4,7 @@ import 'package:soloforte_app/modules/carteira/domain/enums/unidade_categoria.da
 void main() {
   group('UnidadeCategoria', () {
     test('labelForCodigo retorna fallback para codigo desconhecido', () {
-      expect(
-        UnidadeCategoria.labelForCodigo('litros_ha'),
-        'litros_ha',
-      );
+      expect(UnidadeCategoria.labelForCodigo('litros_ha'), 'litros_ha');
       expect(UnidadeCategoria.labelForCodigo('bigBag'), 'Big Bag');
     });
 

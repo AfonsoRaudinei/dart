@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 
 import 'package:soloforte_app/core/constants/layout_constants.dart';
@@ -8,6 +9,8 @@ import 'package:soloforte_app/core/session/local_session_identity.dart';
 import 'package:soloforte_app/core/session/session_controller.dart';
 import 'package:soloforte_app/core/router/app_routes.dart';
 import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
+import 'package:soloforte_app/core/contracts/i_client_lookup.dart';
+import 'package:soloforte_app/core/contracts/opportunity_summary.dart';
 import 'package:soloforte_app/modules/carteira/domain/entities/categoria_global.dart';
 import 'package:soloforte_app/modules/carteira/presentation/providers/carteira_providers.dart';
 import 'package:soloforte_app/modules/carteira/presentation/widgets/carteira_metas_tab.dart';
@@ -15,8 +18,6 @@ import 'package:soloforte_app/modules/carteira/presentation/widgets/carteira_mod
 import 'package:soloforte_app/modules/carteira/presentation/widgets/carteira_segment_bar.dart';
 import 'package:soloforte_app/modules/carteira/presentation/widgets/categoria_form_dialog.dart';
 import 'package:soloforte_app/modules/carteira/presentation/widgets/cliente_carteira_card.dart';
-import 'package:soloforte_app/modules/carteira/presentation/screens/oportunidades_detalhe_screen.dart';
-import 'package:soloforte_app/core/contracts/i_client_lookup.dart';
 
 class CarteiraScreen extends ConsumerStatefulWidget {
   const CarteiraScreen({super.key});
@@ -377,18 +378,24 @@ class _OportunidadesClientesList extends ConsumerWidget {
   final List<ClientSummary> clientes;
   final String userId;
 
+  static final _currencyFormat = NumberFormat.currency(
+    locale: 'pt_BR',
+    symbol: 'R\$',
+    decimalDigits: 0,
+  );
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final porCliente = <ClientSummary, List<OportunidadeCliente>>{};
+    final porCliente = <ClientSummary, List<OpportunitySummary>>{};
 
     for (final cliente in clientes) {
       final lista =
-          ref.watch(oportunidadesClienteProvider(cliente.id)).valueOrNull ?? [];
+          ref.watch(clientOpportunitiesProvider(cliente.id)).valueOrNull ?? [];
       if (lista.isNotEmpty) porCliente[cliente] = lista;
     }
 
     final algumCarregando = clientes.any(
-      (c) => ref.watch(oportunidadesClienteProvider(c.id)).isLoading,
+      (c) => ref.watch(clientOpportunitiesProvider(c.id)).isLoading,
     );
 
     if (porCliente.isEmpty) {
@@ -399,7 +406,11 @@ class _OportunidadesClientesList extends ConsumerWidget {
     }
 
     final sorted = porCliente.entries.toList()
-      ..sort((a, b) => b.value.length.compareTo(a.value.length));
+      ..sort((a, b) {
+        double total(List<OpportunitySummary> ops) =>
+            ops.fold(0.0, (sum, op) => sum + op.totalOpportunityValue);
+        return total(b.value).compareTo(total(a.value));
+      });
 
     return ListView.builder(
       padding: const EdgeInsets.only(top: 8, bottom: 24),
@@ -408,6 +419,10 @@ class _OportunidadesClientesList extends ConsumerWidget {
         final entry = sorted[index];
         final cliente = entry.key;
         final oportunidades = entry.value;
+        final totalValor = oportunidades.fold<double>(
+          0.0,
+          (sum, op) => sum + op.totalOpportunityValue,
+        );
 
         return Card(
           margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -418,17 +433,18 @@ class _OportunidadesClientesList extends ConsumerWidget {
             ),
             subtitle: Text(
               '${oportunidades.length} '
-              '${oportunidades.length == 1 ? 'categoria em aberto' : 'categorias em aberto'}',
+              '${oportunidades.length == 1 ? 'categoria em aberto' : 'categorias em aberto'}'
+              '${totalValor > 0 ? ' · ${_currencyFormat.format(totalValor)}' : ''}',
             ),
             trailing: const Icon(Icons.chevron_right),
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => OportunidadesDetalheScreen(
-                  clienteId: cliente.id,
-                  clienteNome: cliente.name,
-                ),
-              ),
-            ),
+            onTap: () {
+              ref.read(carteiraSegmentProvider.notifier).state =
+                  CarteiraSegment.oportunidades;
+              context.push(
+                '${AppRoutes.carteiraOportunidades(cliente.id)}'
+                '?nome=${Uri.encodeComponent(cliente.name)}',
+              );
+            },
           ),
         );
       },

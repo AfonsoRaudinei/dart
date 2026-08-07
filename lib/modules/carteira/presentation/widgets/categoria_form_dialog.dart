@@ -93,8 +93,7 @@ class _CategoriaFormDialogState extends ConsumerState<CategoriaFormDialog> {
     _selectedColor = _hexToColor(widget.initialCorHex ?? '#4ADE80');
     _unidadeCodigo =
         widget.initialUnidadeCodigo ?? UnidadeCategoria.defaultCodigo;
-    _unidadeLabel =
-        widget.initialUnidadeLabel ?? UnidadeCategoria.defaultLabel;
+    _unidadeLabel = widget.initialUnidadeLabel ?? UnidadeCategoria.defaultLabel;
     _converteSacasHa =
         widget.initialConverteSacasHa ??
         UnidadeCategoria.converteSacasHaForCodigo(_unidadeCodigo);

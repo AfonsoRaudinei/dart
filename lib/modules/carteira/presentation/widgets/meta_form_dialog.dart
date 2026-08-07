@@ -93,6 +93,7 @@ class _MetaFormDialogState extends ConsumerState<MetaFormDialog> {
       ref.invalidate(metaCategoriaProvider(widget.categoria.id));
       ref.invalidate(progressoCategoriaProvider(widget.categoria.id));
       ref.invalidate(oportunidadesClienteProvider);
+      ref.invalidate(clientOpportunitiesProvider);
 
       if (mounted) {
         Navigator.of(context).pop(true);
@@ -114,6 +115,9 @@ class _MetaFormDialogState extends ConsumerState<MetaFormDialog> {
   Widget build(BuildContext context) {
     final cor = _parseCor(widget.categoria.cor);
     final unidade = widget.categoria.unidadeLabel;
+    final valorGrao = ref.watch(valorGraoProvider).valueOrNull ?? 0.0;
+    final refLabel = widget.categoria.rotuloReferencia();
+    final equivLabel = widget.categoria.rotuloEquivalenteSacasHa(valorGrao);
 
     return AlertDialog(
       title: Row(
@@ -133,15 +137,40 @@ class _MetaFormDialogState extends ConsumerState<MetaFormDialog> {
           ),
         ],
       ),
-      content: TextField(
-        controller: _quantidadeController,
-        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-        autofocus: true,
-        decoration: InputDecoration(
-          labelText: 'Meta',
-          suffixText: unidade,
-          border: const OutlineInputBorder(),
-        ),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (refLabel != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: Text(
+                refLabel,
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          if (equivLabel != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Text(
+                equivLabel,
+                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+              ),
+            ),
+          TextField(
+            controller: _quantidadeController,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            autofocus: true,
+            decoration: InputDecoration(
+              labelText: 'Meta',
+              suffixText: unidade,
+              border: const OutlineInputBorder(),
+            ),
+          ),
+        ],
       ),
       actions: [
         TextButton(

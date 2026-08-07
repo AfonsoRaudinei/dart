@@ -185,6 +185,12 @@ class _LancamentoFormDialogState extends ConsumerState<LancamentoFormDialog> {
       );
       ref.invalidate(realizadoCategoriaProvider(widget.categoria.id));
       ref.invalidate(progressoCategoriaProvider(widget.categoria.id));
+      ref.invalidate(
+        closedPercentClienteCategoriaProvider((
+          clienteId: widget.clienteId,
+          categoriaId: widget.categoria.id,
+        )),
+      );
       ref.invalidate(oportunidadesClienteProvider(widget.clienteId));
       ref.invalidate(clientOpportunitiesProvider(widget.clienteId));
 
