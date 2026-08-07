@@ -7,7 +7,11 @@ import '../../domain/enums/plano_marketing.dart';
 /// Pin rico para o mapa — exibe foto, produto e ROI por tier.
 ///
 /// ADR-011: hierarquia visual Ouro > Prata > Bronze.
-/// Anchor: bottomCenter (ponteiro aponta para a coordenada no mapa).
+///
+/// Call sites devem usar `Alignment.topCenter` no [Marker]: no flutter_map 7
+/// isso posiciona o widget acima do ponto, deixando o ponteiro (base do pin)
+/// sobre a coordenada. Também preferir `MarkerLayer(rotate: true)` para o pin
+/// permanecer vertical se a câmera rotacionar.
 class MarketingCaseMarker extends StatelessWidget {
   final MarketingCase marketingCase;
   final VoidCallback onTap;
