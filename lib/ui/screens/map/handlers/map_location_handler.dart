@@ -198,7 +198,11 @@ class MapLocationHandler {
     _followSubscription?.cancel();
     if (!isMapReady) return;
 
-    if (mode == MapLocationMode.northLocked) {
+    // Norte sempre para cima: following e northLocked zeraram a câmera.
+    // O gesto de rotação está desabilitado no MapCanvas — sem isso o rumo
+    // GNSS podia deixar o norte nas laterais sem caminho de volta.
+    if (mode == MapLocationMode.following ||
+        mode == MapLocationMode.northLocked) {
       mapController.rotate(0);
     }
 
@@ -222,7 +226,7 @@ class MapLocationHandler {
     required double zoom,
     required MapLocationMode mode,
   }) {
-    final rotation = _mapRotationForMode(mode: mode, fix: fix);
+    final rotation = _mapRotationForMode(mode: mode);
 
     if (rotation != null) {
       mapController.moveAndRotate(fix.position, zoom, rotation);
@@ -232,27 +236,27 @@ class MapLocationHandler {
     mapController.move(fix.position, zoom);
   }
 
-  /// Retorna rotação alvo do mapa (0° = norte) ou `null` para manter a atual.
+  /// Retorna rotação alvo do mapa (0° = norte para cima) ou `null` para
+  /// manter a atual.
+  ///
+  /// `following` e `northLocked` são sempre norte-acima. Course-up por rumo
+  /// GNSS foi removido: `Position.heading` é rumo de deslocamento (não
+  /// azimute de bússola) e, parado, entrega valores arbitrários — o mapa
+  /// ficava com norte nas laterais e sem gesto de rotação para corrigir.
   @visibleForTesting
   static double? mapRotationForMode({
     required MapLocationMode mode,
-    required UserLocationFix fix,
   }) {
-    return _mapRotationForMode(mode: mode, fix: fix);
+    return _mapRotationForMode(mode: mode);
   }
 
   static double? _mapRotationForMode({
     required MapLocationMode mode,
-    required UserLocationFix fix,
   }) {
     switch (mode) {
       case MapLocationMode.northLocked:
-        return 0;
       case MapLocationMode.following:
-        if (fix.hasValidHeading) {
-          return -fix.headingDeg!;
-        }
-        return null;
+        return 0;
       case MapLocationMode.idle:
         return null;
     }
