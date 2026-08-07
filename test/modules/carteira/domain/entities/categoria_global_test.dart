@@ -53,8 +53,10 @@ void main() {
     });
 
     test('toMap persiste ativo como 0/1 e unidade codigo', () {
-      final map = build(unidadeCodigo: 'sacas60k', unidadeLabel: 'Sacas 60k')
-          .toMap();
+      final map = build(
+        unidadeCodigo: 'sacas60k',
+        unidadeLabel: 'Sacas 60k',
+      ).toMap();
 
       expect(map['ativo'], 1);
       expect(map['unidade'], 'sacas60k');
@@ -79,6 +81,43 @@ void main() {
         isNull,
       );
       expect(build(valorReferencia: null).custoSacasHa(100), isNull);
+    });
+
+    test('rotuloReferencia exibe valor cadastrado com unidade', () {
+      expect(
+        build(valorReferencia: 2000, unidadeLabel: r'R$/ha').rotuloReferencia(),
+        r'2000 R$/ha',
+      );
+      expect(
+        build(
+          valorReferencia: 15.5,
+          unidadeLabel: 'ton/ha',
+          converteSacasHa: false,
+        ).rotuloReferencia(),
+        '15.5 ton/ha',
+      );
+      expect(build(valorReferencia: null).rotuloReferencia(), isNull);
+      expect(build(valorReferencia: 0).rotuloReferencia(), isNull);
+    });
+
+    test('rotuloEquivalenteSacasHa exibe conversão auxiliar', () {
+      final categoria = build(
+        valorReferencia: 1000,
+        unidadeLabel: r'R$/ha',
+        converteSacasHa: true,
+      );
+
+      expect(categoria.rotuloEquivalenteSacasHa(100), '≈ 10.000 sc/ha');
+      expect(
+        build(
+          unidadeCodigo: 'toneladaPorHa',
+          unidadeLabel: 'ton/ha',
+          converteSacasHa: false,
+          valorReferencia: 1000,
+        ).rotuloEquivalenteSacasHa(100),
+        isNull,
+      );
+      expect(categoria.rotuloEquivalenteSacasHa(0), isNull);
     });
   });
 }
