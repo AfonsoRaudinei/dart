@@ -819,9 +819,10 @@ echo ""
 # Fundamento: navegação declarativa via context.go()/push() com AppRoutes.
 #             pop() cria stack implícita e quebra contrato SmartButton L1/L2+.
 #
-# Exceções: comentários em smart_button.dart (documentação do contrato).
+# Exceções: lib/ui/components/smart_button.dart — único ponto autorizado
+#           a usar pop()/canPop() (volta à tela anterior; fallback /map).
 # =============================================================================
-echo -e "── ${CYAN}REGRA-NAV-1${NC}: context.pop()/canPop() proibidos ───────────────"
+echo -e "── ${CYAN}REGRA-NAV-1${NC}: context.pop()/canPop() proibidos fora do SmartButton ───────────────"
 echo ""
 
 NAV_VIOLATIONS=$(grep -rn "context\.pop()\|context\.canPop()" lib/ --include="*.dart" \

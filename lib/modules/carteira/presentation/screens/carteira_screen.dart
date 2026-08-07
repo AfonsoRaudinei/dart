@@ -9,8 +9,6 @@ import 'package:soloforte_app/core/session/local_session_identity.dart';
 import 'package:soloforte_app/core/session/session_controller.dart';
 import 'package:soloforte_app/core/router/app_routes.dart';
 import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
-import 'package:soloforte_app/core/contracts/i_client_lookup.dart';
-import 'package:soloforte_app/core/contracts/opportunity_summary.dart';
 import 'package:soloforte_app/modules/carteira/domain/entities/categoria_global.dart';
 import 'package:soloforte_app/modules/carteira/presentation/providers/carteira_providers.dart';
 import 'package:soloforte_app/modules/carteira/presentation/widgets/carteira_metas_tab.dart';
@@ -18,6 +16,8 @@ import 'package:soloforte_app/modules/carteira/presentation/widgets/carteira_mod
 import 'package:soloforte_app/modules/carteira/presentation/widgets/carteira_segment_bar.dart';
 import 'package:soloforte_app/modules/carteira/presentation/widgets/categoria_form_dialog.dart';
 import 'package:soloforte_app/modules/carteira/presentation/widgets/cliente_carteira_card.dart';
+import 'package:soloforte_app/modules/carteira/presentation/widgets/oportunidades_chart_card.dart';
+import 'package:soloforte_app/modules/carteira/presentation/widgets/oportunidades_chart_mode_toggle.dart';
 
 class CarteiraScreen extends ConsumerStatefulWidget {
   const CarteiraScreen({super.key});
@@ -50,7 +50,7 @@ class _CarteiraScreenState extends ConsumerState<CarteiraScreen> {
       CarteiraSegment.clientes => _ClientesTab(userId: userId),
       CarteiraSegment.categorias => _CategoriasTab(userId: userId),
       CarteiraSegment.metas => const CarteiraMetasTab(),
-      CarteiraSegment.oportunidades => _OportunidadesTab(userId: userId),
+      CarteiraSegment.oportunidades => const _OportunidadesTab(),
     };
   }
 }
@@ -348,35 +348,7 @@ class _CategoriasTab extends ConsumerWidget {
 // ─────────────────────────────────────────────────────────────
 
 class _OportunidadesTab extends ConsumerWidget {
-  const _OportunidadesTab({required this.userId});
-
-  final String userId;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final clientesAsync = ref.watch(carteiraClientesProvider);
-
-    return clientesAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (_, __) => const Center(child: Text('Erro ao carregar clientes.')),
-      data: (clientes) {
-        if (clientes.isEmpty) {
-          return const Center(child: Text('Nenhuma oportunidade em aberto 🎯'));
-        }
-        return _OportunidadesClientesList(clientes: clientes, userId: userId);
-      },
-    );
-  }
-}
-
-class _OportunidadesClientesList extends ConsumerWidget {
-  const _OportunidadesClientesList({
-    required this.clientes,
-    required this.userId,
-  });
-
-  final List<ClientSummary> clientes;
-  final String userId;
+  const _OportunidadesTab();
 
   static final _currencyFormat = NumberFormat.currency(
     locale: 'pt_BR',
@@ -386,66 +358,78 @@ class _OportunidadesClientesList extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final porCliente = <ClientSummary, List<OpportunitySummary>>{};
+    final overviewAsync = ref.watch(oportunidadesCarteiraOverviewProvider);
+    final chartMode = ref.watch(oportunidadesChartModeProvider);
 
-    for (final cliente in clientes) {
-      final lista =
-          ref.watch(clientOpportunitiesProvider(cliente.id)).valueOrNull ?? [];
-      if (lista.isNotEmpty) porCliente[cliente] = lista;
-    }
+    return overviewAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (_, __) =>
+          const Center(child: Text('Erro ao carregar oportunidades.')),
+      data: (overview) {
+        if (overview.porCliente.isEmpty) {
+          return const Center(child: Text('Nenhuma oportunidade em aberto 🎯'));
+        }
 
-    final algumCarregando = clientes.any(
-      (c) => ref.watch(clientOpportunitiesProvider(c.id)).isLoading,
-    );
+        final slices = overview.slicesFor(chartMode);
+        final chartTitle = chartMode == OportunidadesChartMode.categoria
+            ? 'Oportunidades por categoria'
+            : 'Oportunidades por produtor';
 
-    if (porCliente.isEmpty) {
-      if (algumCarregando) {
-        return const Center(child: CircularProgressIndicator());
-      }
-      return const Center(child: Text('Nenhuma oportunidade em aberto 🎯'));
-    }
-
-    final sorted = porCliente.entries.toList()
-      ..sort((a, b) {
-        double total(List<OpportunitySummary> ops) =>
-            ops.fold(0.0, (sum, op) => sum + op.totalOpportunityValue);
-        return total(b.value).compareTo(total(a.value));
-      });
-
-    return ListView.builder(
-      padding: const EdgeInsets.only(top: 8, bottom: 24),
-      itemCount: sorted.length,
-      itemBuilder: (context, index) {
-        final entry = sorted[index];
-        final cliente = entry.key;
-        final oportunidades = entry.value;
-        final totalValor = oportunidades.fold<double>(
-          0.0,
-          (sum, op) => sum + op.totalOpportunityValue,
-        );
-
-        return Card(
-          margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          child: ListTile(
-            title: Text(
-              cliente.name,
-              style: const TextStyle(fontWeight: FontWeight.w600),
+        return ListView(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+          children: [
+            OportunidadesChartModeToggle(
+              value: chartMode,
+              onChanged: (mode) {
+                ref.read(oportunidadesChartModeProvider.notifier).state = mode;
+              },
             ),
-            subtitle: Text(
-              '${oportunidades.length} '
-              '${oportunidades.length == 1 ? 'categoria em aberto' : 'categorias em aberto'}'
-              '${totalValor > 0 ? ' · ${_currencyFormat.format(totalValor)}' : ''}',
+            const SizedBox(height: 12),
+            OportunidadesChartCard(
+              slices: slices,
+              title: chartTitle,
+              totalValue: overview.totalValue,
             ),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () {
-              ref.read(carteiraSegmentProvider.notifier).state =
-                  CarteiraSegment.oportunidades;
-              context.push(
-                '${AppRoutes.carteiraOportunidades(cliente.id)}'
-                '?nome=${Uri.encodeComponent(cliente.name)}',
+            const SizedBox(height: 16),
+            OportunidadesChartLegend(slices: slices),
+            const SizedBox(height: 8),
+            Text(
+              'Produtores',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Colors.grey[600],
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.5,
+              ),
+            ),
+            const SizedBox(height: 8),
+            ...overview.porCliente.map((resumo) {
+              final cliente = resumo.cliente;
+              final count = resumo.oportunidades.length;
+              return Card(
+                margin: const EdgeInsets.only(bottom: 8),
+                child: ListTile(
+                  title: Text(
+                    cliente.name,
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  subtitle: Text(
+                    '$count '
+                    '${count == 1 ? 'categoria em aberto' : 'categorias em aberto'}'
+                    '${resumo.totalValue > 0 ? ' · ${_currencyFormat.format(resumo.totalValue)}' : ''}',
+                  ),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () {
+                    ref.read(carteiraSegmentProvider.notifier).state =
+                        CarteiraSegment.oportunidades;
+                    context.push(
+                      '${AppRoutes.carteiraOportunidades(cliente.id)}'
+                      '?nome=${Uri.encodeComponent(cliente.name)}',
+                    );
+                  },
+                ),
               );
-            },
-          ),
+            }),
+          ],
         );
       },
     );

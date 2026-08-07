@@ -52,9 +52,7 @@ void main() {
             builder: (context, state) => Consumer(
               builder: (context, ref, _) {
                 capturedRef = ref;
-                return const Scaffold(
-                  body: SmartButton(),
-                );
+                return const Scaffold(body: SmartButton());
               },
             ),
           ),
@@ -79,10 +77,10 @@ void main() {
       // ASSERT 3: Ao clicar, abre SideMenu via provider (não navega)
       final initialLocation =
           router.routerDelegate.currentConfiguration.uri.path;
-      
+
       // Verificar que menu está fechado antes do clique
       expect(capturedRef.read(sideMenuOpenProvider), isFalse);
-      
+
       await tester.tap(fabFinder);
       await tester.pumpAndSettle();
 
@@ -97,13 +95,11 @@ void main() {
     });
 
     // ═══════════════════════════════════════════════════════════════
-    // CENÁRIO 2: FORA DO /map — FAB RETORNA AO MAPA
+    // CENÁRIO 2: FORA DO /map — FAB VOLTA (pop) OU FALLBACK /map
     // ═══════════════════════════════════════════════════════════════
-    testWidgets('DADO que estou em qualquer rota fora de /map '
-        'QUANDO o SmartButton é renderizado '
-        'ENTÃO deve exibir ícone de voltar (←) '
-        'E ao clicar deve executar context.go(/map) '
-        'E NÃO deve usar pop() ou canPop()', (WidgetTester tester) async {
+    testWidgets('DADO que estou em L1 sem stack '
+        'QUANDO o SmartButton ← é clicado '
+        'ENTÃO faz fallback context.go(/map)', (WidgetTester tester) async {
       // ARRANGE: Criar router com múltiplas rotas
       final router = GoRouter(
         initialLocation: '/settings',
@@ -149,7 +145,7 @@ void main() {
       await tester.tap(fabFinder);
       await tester.pumpAndSettle();
 
-      // ASSERT 4: Rota mudou para /map (navegação declarativa)
+      // ASSERT 4: Sem stack → fallback /map
       expect(
         router.routerDelegate.currentConfiguration.uri.path,
         equals(AppRoutes.map),
@@ -157,6 +153,51 @@ void main() {
 
       // ASSERT 5: Estamos agora no mapa
       expect(find.text('Mapa'), findsOneWidget);
+    });
+
+    testWidgets('DADO que naveguei via push para L2+ '
+        'QUANDO o SmartButton ← é clicado '
+        'ENTÃO faz pop para a tela anterior', (WidgetTester tester) async {
+      final router = GoRouter(
+        initialLocation: AppRoutes.map,
+        routes: [
+          GoRoute(
+            path: AppRoutes.map,
+            builder: (context, state) => Scaffold(
+              body: Center(
+                child: TextButton(
+                  onPressed: () => context.push('/settings'),
+                  child: const Text('Ir settings'),
+                ),
+              ),
+            ),
+          ),
+          GoRoute(
+            path: '/settings',
+            builder: (context, state) => const Scaffold(
+              body: Column(children: [Text('Settings'), SmartButton()]),
+            ),
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(child: MaterialApp.router(routerConfig: router)),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Ir settings'));
+      await tester.pumpAndSettle();
+      expect(find.text('Settings'), findsOneWidget);
+
+      await tester.tap(find.byType(FloatingActionButton));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Ir settings'), findsOneWidget);
+      expect(
+        router.routerDelegate.currentConfiguration.uri.path,
+        equals(AppRoutes.map),
+      );
     });
 
     // ═══════════════════════════════════════════════════════════════

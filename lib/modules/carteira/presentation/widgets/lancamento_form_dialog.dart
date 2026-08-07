@@ -193,6 +193,7 @@ class _LancamentoFormDialogState extends ConsumerState<LancamentoFormDialog> {
       );
       ref.invalidate(oportunidadesClienteProvider(widget.clienteId));
       ref.invalidate(clientOpportunitiesProvider(widget.clienteId));
+      ref.invalidate(oportunidadesCarteiraOverviewProvider);
 
       if (mounted) {
         Navigator.of(context).pop(true);

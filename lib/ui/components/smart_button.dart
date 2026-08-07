@@ -3,27 +3,21 @@
 SMART BUTTON — ARQUITETURA STACK-BASED (SOLOFORTE)
 ════════════════════════════════════════════════════════════════════
 
-Botão global refatorado para arquitetura Stack.
-
-PROBLEMAS RESOLVIDOS:
-1. ✅ Não depende mais do Scaffold (não usa openEndDrawer)
-2. ✅ Sempre visível - nunca coberto por drawer/modal
-3. ✅ Comportamento 100% baseado na rota atual
+Botão global em overlay — comportamento baseado na rota atual.
 
 CONTRATO OFICIAL:
 ┌─────────┬───────────────────────┬─────────┬───────────────────────────────┐
 │ Nível   │ Rota                  │ Ícone   │ Ação                          │
 ├─────────┼───────────────────────┼─────────┼───────────────────────────────┤
 │ L0      │ /map                  │ ☰       │ Abrir SideMenu (via provider) │
-│ L1/L2+  │ Qualquer outra        │ ←       │ context.go(AppRoutes.map)     │
+│ L1/L2+  │ Qualquer outra        │ ←       │ pop se houver stack; senão /map │
 │ PUBLIC  │ /public-map, /login   │ CTA     │ "Acessar SoloForte"           │
 └─────────┴───────────────────────┴─────────┴───────────────────────────────┘
 
 PROIBIÇÕES ABSOLUTAS:
-❌ Navigator.pop() ou context.pop()
 ❌ Scaffold.of(context).openEndDrawer()
-❌ Lógica baseada em stack de navegação
 ❌ Múltiplos FABs no sistema
+❌ Lógica de pop fora deste arquivo (REGRA-NAV-1)
 
 REGRA DE OURO:
 "O botão não pertence ao Scaffold. Ele é um overlay global em Stack."
@@ -144,18 +138,19 @@ class _SmartButtonState extends ConsumerState<SmartButton> {
       case RouteLevel.l1:
       case RouteLevel.l2Plus:
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // L1/L2+: FORA DO MAPA — ← Retorna ao mapa via go()
-        // CONTRATO MAP-FIRST: Navegação declarativa obrigatória
-        // ❌ SEM pop() — ❌ SEM canPop() — ❌ SEM stack
-        // ❌ SEM await — ❌ SEM ref no callback
+        // L1/L2+: FORA DO MAPA — ← volta à tela anterior (stack)
+        // Se não houver stack (entrada via go), fallback declarativo /map.
+        // Único ponto autorizado a usar pop (REGRA-NAV-1 allowlist).
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         return FloatingActionButton(
           heroTag: 'smart_button_back',
           onPressed: () {
-            // Guard: widget pode ter sido disposed durante transição de rota
             if (!mounted) return;
-            // Retorno EXPLÍCITO, SÍNCRONO e DECLARATIVO para o mapa
-            context.go(AppRoutes.map);
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go(AppRoutes.map);
+            }
           },
           backgroundColor: primaryColor,
           elevation: safeElevation,
