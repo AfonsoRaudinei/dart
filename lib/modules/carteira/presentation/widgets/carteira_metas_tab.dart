@@ -22,64 +22,7 @@ class CarteiraMetasTab extends ConsumerStatefulWidget {
 }
 
 class _CarteiraMetasTabState extends ConsumerState<CarteiraMetasTab> {
-  late final TextEditingController _valorGraoController;
-  bool _salvandoGrao = false;
-  String? _graoFeedback;
-  bool _graoFeedbackErro = false;
-
   String get _userId => LocalSessionIdentity.resolveUserId();
-
-  @override
-  void initState() {
-    super.initState();
-    _valorGraoController = TextEditingController();
-  }
-
-  @override
-  void dispose() {
-    _valorGraoController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _salvarValorGrao() async {
-    final valor = double.tryParse(
-      _valorGraoController.text.replaceAll(',', '.'),
-    );
-    if (valor == null || valor <= 0) {
-      setState(() {
-        _graoFeedback = 'Informe um valor válido maior que zero';
-        _graoFeedbackErro = true;
-      });
-      return;
-    }
-    if (_userId.isEmpty) return;
-
-    setState(() {
-      _salvandoGrao = true;
-      _graoFeedback = null;
-    });
-    try {
-      await ref.read(carteiraRepositoryProvider).setValorGrao(_userId, valor);
-      ref.invalidate(valorGraoProvider);
-      if (mounted) {
-        setState(() {
-          _graoFeedback = 'Valor do grão atualizado';
-          _graoFeedbackErro = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _graoFeedback = 'Erro ao salvar: $e';
-          _graoFeedbackErro = true;
-        });
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _salvandoGrao = false);
-      }
-    }
-  }
 
   Future<void> _abrirNovaSafra() async {
     await showDialog<bool>(
@@ -114,65 +57,7 @@ class _CarteiraMetasTabState extends ConsumerState<CarteiraMetasTab> {
         valorGraoAsync.when(
           loading: () => const LinearProgressIndicator(),
           error: (_, __) => const SizedBox.shrink(),
-          data: (valor) {
-            if (_valorGraoController.text.isEmpty && valor > 0) {
-              _valorGraoController.text = valor.toStringAsFixed(2);
-            }
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                TextField(
-                  controller: _valorGraoController,
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
-                  ),
-                  textInputAction: TextInputAction.done,
-                  onSubmitted: (_) => _salvarValorGrao(),
-                  onChanged: (_) {
-                    if (_graoFeedback != null) {
-                      setState(() => _graoFeedback = null);
-                    }
-                  },
-                  decoration: const InputDecoration(
-                    prefixText: 'R\$ ',
-                    hintText: '0,00',
-                    border: OutlineInputBorder(),
-                    contentPadding: EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 10,
-                    ),
-                  ),
-                ),
-                if (_graoFeedback != null) ...[
-                  const SizedBox(height: 8),
-                  Text(
-                    _graoFeedback!,
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: _graoFeedbackErro
-                          ? Theme.of(context).colorScheme.error
-                          : Colors.green.shade700,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 8),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: FilledButton(
-                    onPressed: _salvandoGrao ? null : _salvarValorGrao,
-                    child: _salvandoGrao
-                        ? const SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Text('Salvar'),
-                  ),
-                ),
-              ],
-            );
-          },
+          data: (valor) => _ValorGraoInlineItem(valor: valor),
         ),
         const SizedBox(height: 24),
         const Divider(height: 1),
@@ -337,6 +222,209 @@ class _SectionLabel extends StatelessWidget {
         fontWeight: FontWeight.w600,
         letterSpacing: 0.5,
       ),
+    );
+  }
+}
+
+class _ValorGraoInlineItem extends ConsumerStatefulWidget {
+  const _ValorGraoInlineItem({required this.valor});
+
+  final double valor;
+
+  @override
+  ConsumerState<_ValorGraoInlineItem> createState() =>
+      _ValorGraoInlineItemState();
+}
+
+class _ValorGraoInlineItemState extends ConsumerState<_ValorGraoInlineItem> {
+  late final TextEditingController _controller;
+  bool _editando = false;
+  bool _salvando = false;
+  String? _feedback;
+  bool _feedbackErro = false;
+
+  String get _userId => LocalSessionIdentity.resolveUserId();
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _iniciarEdicao() {
+    final valor = widget.valor;
+    _controller.text = valor > 0 ? valor.toStringAsFixed(2) : '';
+    setState(() {
+      _editando = true;
+      _feedback = null;
+    });
+  }
+
+  void _cancelarEdicao() {
+    setState(() {
+      _editando = false;
+      _feedback = null;
+    });
+  }
+
+  Future<void> _salvar() async {
+    final parsed = double.tryParse(_controller.text.replaceAll(',', '.'));
+    if (parsed == null || parsed <= 0) {
+      setState(() {
+        _feedback = 'Informe um valor válido maior que zero';
+        _feedbackErro = true;
+      });
+      return;
+    }
+    if (_userId.isEmpty) return;
+
+    setState(() {
+      _salvando = true;
+      _feedback = null;
+    });
+    try {
+      await ref.read(carteiraRepositoryProvider).setValorGrao(_userId, parsed);
+      ref.invalidate(valorGraoProvider);
+      if (mounted) {
+        setState(() {
+          _editando = false;
+          _feedback = 'Valor do grão atualizado';
+          _feedbackErro = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _feedback = 'Erro ao salvar: $e';
+          _feedbackErro = true;
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _salvando = false);
+      }
+    }
+  }
+
+  String _rotuloValor(double valor) {
+    if (valor <= 0) return 'Não configurado';
+    return 'R\$ ${valor.toStringAsFixed(2)}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_editando) {
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                TextField(
+                  controller: _controller,
+                  autofocus: true,
+                  enabled: !_salvando,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  textInputAction: TextInputAction.done,
+                  onSubmitted: (_) => _salvar(),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 15,
+                  ),
+                  decoration: const InputDecoration(
+                    isDense: true,
+                    prefixText: 'R\$ ',
+                    hintText: '0,00',
+                    border: InputBorder.none,
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                ),
+                if (_feedback != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Text(
+                      _feedback!,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: _feedbackErro
+                            ? Theme.of(context).colorScheme.error
+                            : Colors.green.shade700,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          IconButton(
+            icon: _salvando
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.check, size: 18),
+            onPressed: _salvando ? null : _salvar,
+            visualDensity: VisualDensity.compact,
+            color: Theme.of(context).colorScheme.primary,
+            tooltip: 'Salvar',
+          ),
+          IconButton(
+            icon: const Icon(Icons.close, size: 18),
+            onPressed: _salvando ? null : _cancelarEdicao,
+            visualDensity: VisualDensity.compact,
+            color: Colors.grey[600],
+            tooltip: 'Cancelar',
+          ),
+        ],
+      );
+    }
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                _rotuloValor(widget.valor),
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 15,
+                  color: widget.valor > 0 ? null : Colors.grey[600],
+                ),
+              ),
+              if (_feedback != null && !_feedbackErro)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Text(
+                    _feedback!,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.green.shade700,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+        IconButton(
+          icon: const Icon(Icons.edit_outlined, size: 18),
+          onPressed: _iniciarEdicao,
+          visualDensity: VisualDensity.compact,
+          color: Colors.grey[600],
+          tooltip: 'Editar valor do grão',
+        ),
+      ],
     );
   }
 }
