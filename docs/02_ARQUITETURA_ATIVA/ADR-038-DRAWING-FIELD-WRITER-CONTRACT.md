@@ -34,3 +34,4 @@ concreta em `drawing/infra/drawing_field_writer_adapter.dart`.
   soft delete do drawing e recalculo da area total do cliente.
 - Novos comandos de escrita sobre desenhos devem ser adicionados ao contrato
   somente quando houver consumidor real fora de `drawing/`.
+- Comando `linkFieldToFarm` documentado em ADR-049 (consumidor: hub do cliente).

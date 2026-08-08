@@ -220,7 +220,7 @@ lib/
 
 -----
 
-## ADRs ATIVOS (008–047)
+## ADRs ATIVOS (008–049)
 
 | ADR | Decisão |
 |---|---|
@@ -258,6 +258,8 @@ lib/
 | 045 | Contratos NDVI e visita ativa |
 | 046 | Contratos Agenda AI |
 | 047 | OccurrenceSummary campos ricos (IReportWriter) |
+| 048 | Agenda session mirror visit sessions |
+| 049 | IDrawingFieldWriter.linkFieldToFarm |
 
 Detalhes: `docs/02_ARQUITETURA_ATIVA/ADR-*.md`
 
