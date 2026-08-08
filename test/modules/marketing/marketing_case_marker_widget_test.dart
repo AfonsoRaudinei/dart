@@ -85,7 +85,42 @@ void main() {
         _wrap(MarketingCaseMarker(marketingCase: marketingCase, onTap: () {})),
       );
 
-      expect(find.text('ROI R\$350/ha'), findsOneWidget);
+      expect(find.text('R\$350/ha'), findsOneWidget);
+    });
+
+    testWidgets('badge ROI do pin Prata não usa ellipsis (número completo)', (
+      tester,
+    ) async {
+      final marketingCase = _case(
+        tipo: CaseTipo.resultado,
+        fotoPrincipalUrl: 'https://example.com/resultado.jpg',
+        prodSemProduto: 55,
+        prodComProduto: 65,
+        unidadeProdutividade: 'sc/ha',
+        custoProdutoPorHa: 70,
+        valorGrao: 105,
+      );
+
+      await tester.pumpWidget(
+        _wrap(
+          SizedBox(
+            width: MarketingCaseMarker.pinWidth(PlanoMarketing.prata),
+            height: MarketingCaseMarker.pinHeight(PlanoMarketing.prata) + 10,
+            child: MarketingCaseMarker(
+              marketingCase: marketingCase,
+              onTap: () {},
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // 980 = (65-55)*105 - 70 — valor completo, sem prefixo "ROI ".
+      expect(find.text('R\$980/ha'), findsOneWidget);
+
+      final roiText = tester.widget<Text>(find.text('R\$980/ha'));
+      expect(roiText.overflow, isNot(TextOverflow.ellipsis));
+      expect(roiText.softWrap, isFalse);
     });
   });
 }
