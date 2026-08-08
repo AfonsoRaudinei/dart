@@ -80,7 +80,8 @@ class MarketingCaseMarker extends StatelessWidget {
   String? _resultText() {
     final resultadoRoi = marketingCase.computeRoi();
     if (resultadoRoi != null) {
-      return 'ROI ${_moneyCompact(resultadoRoi.roiLiquidoRsHa)}/ha';
+      // Compacto no pin (Prata=100px): sem prefixo "ROI " para caber o valor.
+      return '${_moneyCompact(resultadoRoi.roiLiquidoRsHa)}/ha';
     }
 
     final roi = marketingCase.roi;
@@ -212,7 +213,8 @@ class _InfoBar extends StatelessWidget {
       decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.65)),
       child: Row(
         children: [
-          Expanded(
+          // Produto cede espaço; badge do resultado tem prioridade visual.
+          Flexible(
             child: Text(
               produto,
               style: const TextStyle(
@@ -227,23 +229,22 @@ class _InfoBar extends StatelessWidget {
           ),
           if (resultText != null) ...[
             const SizedBox(width: 3),
-            Flexible(
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF0A84FF),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text(
-                  resultText!,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 7,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                  ),
+            // Largura intrínseca: não ellipsiza o valor (bug Prata: só "ROI").
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+              decoration: BoxDecoration(
+                color: const Color(0xFF0A84FF),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                resultText!,
+                softWrap: false,
+                maxLines: 1,
+                style: const TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 7,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
                 ),
               ),
             ),
