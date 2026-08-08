@@ -6,6 +6,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'dart:async';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
@@ -16,6 +17,7 @@ import '../../../../core/config/map_config.dart';
 import '../../../../core/session/user_role.dart';
 import '../../../../core/utils/map_logger.dart';
 import '../../../../modules/drawing/presentation/providers/drawing_provider.dart';
+import '../../../../modules/consultoria/occurrences/presentation/coordinators/occurrence_close_coordinator.dart';
 import '../../../../modules/drawing/presentation/coordinators/drawing_close_coordinator.dart';
 import '../../../../modules/drawing/domain/drawing_state.dart';
 import '../../../../modules/drawing/presentation/widgets/drawing_layers.dart';
@@ -48,6 +50,7 @@ import '../../../components/map/widgets/producer_map_context_card.dart';
 import '../../../components/map/map_sheet_state.dart';
 import '../providers/map_armed_mode_provider.dart';
 import '../providers/map_ready_state_provider.dart';
+import '../providers/occurrence_form_guard_provider.dart';
 import 'armed_mode_banner.dart';
 import '../layers/talhao_polygon_layer.dart';
 import 'drawing_map_behavior_listener.dart';
@@ -513,16 +516,14 @@ class _MapControlsHost extends ConsumerWidget {
         onDownloadOfflineArea: downloadOfflineArea,
       ),
       onToggleOccurrenceMode: () {
-        if (armedMode == ArmedMode.occurrences) {
-          ref.read(armedModeProvider.notifier).state = ArmedMode.none;
-          ScaffoldMessenger.of(context).hideCurrentSnackBar();
-          if (ref.read(isModalOpenProvider)) {
-            Navigator.of(context).pop();
-          }
-          setSheetState(null, 'Toggle OFF: Closing occurrence sheet');
-        } else {
-          armOccurrenceMode();
-        }
+        unawaited(
+          _handleToggleOccurrenceMode(
+            ref: ref,
+            context: context,
+            armOccurrenceMode: armOccurrenceMode,
+            setSheetState: setSheetState,
+          ),
+        );
       },
       onCreateResultadoCase: () => armMarketingMode(CaseTipo.resultado),
       onCreateAntesDepoisCase: () => armMarketingMode(CaseTipo.antesDepois),
@@ -663,4 +664,36 @@ class _MapControlsHost extends ConsumerWidget {
       },
     );
   }
+}
+
+Future<void> _handleToggleOccurrenceMode({
+  required WidgetRef ref,
+  required BuildContext context,
+  required VoidCallback armOccurrenceMode,
+  required void Function(MapSheetState? state, String reason) setSheetState,
+}) async {
+  final armedMode = ref.read(armedModeProvider);
+  if (armedMode != ArmedMode.occurrences) {
+    armOccurrenceMode();
+    return;
+  }
+
+  final sheetState = ref.read(mapSheetStateProvider);
+  if (sheetState?.isCreatingOccurrence == true) {
+    final canClose = await OccurrenceCloseCoordinator.confirmDiscardIfDirty(
+      context,
+      guard: ref.read(occurrenceFormGuardProvider),
+    );
+    if (!canClose || !context.mounted) return;
+  }
+
+  ref.read(armedModeProvider.notifier).state = ArmedMode.none;
+  if (!context.mounted) return;
+  ScaffoldMessenger.of(context).hideCurrentSnackBar();
+  if (ref.read(isModalOpenProvider)) {
+    Navigator.of(context).pop();
+  }
+  ref.read(pendingOccurrenceLocationProvider.notifier).state = null;
+  ref.read(occurrenceFormGuardProvider.notifier).state = null;
+  setSheetState(null, 'Toggle OFF: Closing occurrence sheet');
 }
