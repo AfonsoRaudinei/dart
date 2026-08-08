@@ -178,7 +178,7 @@ lib/
 - Fazer PASSO 0 (find/rg) antes de qualquer ação
 - Sugerir abordagem antes de executar em mudanças estruturais
 - Declarar bounded context antes de qualquer mudança
-- Respeitar `kFabSafeArea = 100dp` em layouts com scroll
+- Respeitar `kFabSafeArea = 76dp` em layouts com scroll (FAB 56 + margem AppShell 16 + clearance 4; somar safe-area do device quando necessário)
 - Rodar `arch_check.sh` ao final e confirmar Exit 0
 
 ### Padrão de bottom sheets

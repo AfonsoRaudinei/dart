@@ -9,7 +9,7 @@ Documento de referência para App Store Connect e Google Play Console.
 | Campo | Valor |
 |-------|-------|
 | **Nome do app** | SoloForte |
-| **Bundle ID / Application ID** | `com.soloforte.app` |
+| **Bundle ID / Application ID** | `com.soloforte.soloforteApp` |
 | **Versão** | 1.0.0 (build 1) |
 | **Idioma principal** | Português (Brasil) |
 | **Categoria Apple** | Produtividade |

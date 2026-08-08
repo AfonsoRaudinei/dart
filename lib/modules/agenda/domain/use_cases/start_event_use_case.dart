@@ -76,13 +76,13 @@ class StartEventUseCase {
         ),
       );
     } catch (error, stackTrace) {
+      // Espelho em visit_sessions é best-effort; falha não invalida o início.
       AppLogger.error(
         'StartEventUseCase: falha ao espelhar sessão ${session.id} em visit_sessions',
         tag: 'StartEventUseCase',
         error: error,
         stackTrace: stackTrace,
       );
-      Error.throwWithStackTrace(error, stackTrace);
     }
 
     return (updatedEvent: updatedEvent, session: session);
