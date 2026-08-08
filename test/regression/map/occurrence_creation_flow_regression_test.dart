@@ -90,16 +90,16 @@ void main() {
       expect(orchestratorSource, contains('isCreatingOccurrence'));
     });
 
-    test('regression shield: arquivo de teste do coordinator presente', () {
+    test('regression shield: arquivos de widget test presentes', () {
       expect(
         File(
-          'test/modules/consultoria/occurrences/occurrence_close_coordinator_test.dart',
+          'test/ui/components/map/map_bottom_sheet_occurrence_host_test.dart',
         ).existsSync(),
         isTrue,
       );
       expect(
         File(
-          'test/modules/consultoria/occurrences/occurrence_form_draft_test.dart',
+          'test/modules/consultoria/occurrences/occurrence_draft_restore_test.dart',
         ).existsSync(),
         isTrue,
       );
