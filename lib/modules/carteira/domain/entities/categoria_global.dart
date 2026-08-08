@@ -58,7 +58,8 @@ class CategoriaGlobal {
     String? unidadeLabel,
     bool? converteSacasHa,
   }) {
-    final codigo = (map['unidade'] as String?) ?? UnidadeCategoria.defaultCodigo;
+    final codigo =
+        (map['unidade'] as String?) ?? UnidadeCategoria.defaultCodigo;
     return CategoriaGlobal(
       id: map['id'] as String,
       userId: map['user_id'] as String,
@@ -103,6 +104,28 @@ class CategoriaGlobal {
     if (valorReferencia == null || valorReferencia! <= 0) return null;
     if (valorGrao <= 0) return null;
     return valorReferencia! / valorGrao;
+  }
+
+  /// Valor e tipo cadastrados — ex.: `2000 R$/ha`.
+  String? rotuloReferencia() {
+    final valor = valorReferencia;
+    if (valor == null || valor <= 0) return null;
+    return '${_formatarValorReferencia(valor)} $unidadeLabel';
+  }
+
+  /// Equivalência auxiliar em sacas/ha (Cálculo 8) — ex.: `≈ 15.648 sc/ha`.
+  String? rotuloEquivalenteSacasHa(double valorGrao) {
+    final sacas = custoSacasHa(valorGrao);
+    if (sacas == null) return null;
+    return '≈ ${sacas.toStringAsFixed(3)} sc/ha';
+  }
+
+  static String _formatarValorReferencia(double valor) {
+    if (valor % 1 == 0) return valor.toInt().toString();
+    final formatted = valor.toStringAsFixed(2);
+    return formatted
+        .replaceAll(RegExp(r'0+$'), '')
+        .replaceAll(RegExp(r'\.$'), '');
   }
 
   CategoriaGlobal copyWith({

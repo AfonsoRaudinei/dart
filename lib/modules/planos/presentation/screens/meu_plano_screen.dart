@@ -2,6 +2,7 @@
 //
 // Rota: /planos/meu-plano — exibe info do plano ativo com dias restantes.
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -211,23 +212,19 @@ class _PlanoAtivoContent extends ConsumerWidget {
         ],
         const SizedBox(height: 32),
         if (plano.plano != PlanoTipo.ouro)
-          SizedBox(
-            width: double.infinity,
-            height: 52,
-            child: GestureDetector(
-              onTap: () {
-                HapticFeedback.lightImpact();
-                context.go('/planos');
-              },
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  color: const Color(0xFF32D74B),
-                  borderRadius: BorderRadius.circular(50),
-                ),
-                child: const Center(
+          Material(
+            color: const Color(0xFF32D74B),
+            borderRadius: BorderRadius.circular(50),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(50),
+              onTap: () => _navigateToRoute(context, AppRoutes.planos),
+              child: SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: Center(
                   child: Text(
-                    'Ver planos superiores',
-                    style: TextStyle(
+                    _upgradePlanCtaLabel,
+                    style: const TextStyle(
                       fontFamily: 'Inter',
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
@@ -359,10 +356,7 @@ class _NavigationRow extends StatelessWidget {
       borderRadius: BorderRadius.circular(16),
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
-        onTap: () {
-          HapticFeedback.lightImpact();
-          context.go(route);
-        },
+        onTap: () => _navigateToRoute(context, route),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
           child: Row(
@@ -400,4 +394,19 @@ class _NavigationRow extends StatelessWidget {
       ),
     );
   }
+}
+
+void _navigateToRoute(BuildContext context, String route) {
+  HapticFeedback.lightImpact();
+  final router = GoRouter.of(context);
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    router.go(route);
+  });
+}
+
+String get _upgradePlanCtaLabel {
+  if (defaultTargetPlatform == TargetPlatform.iOS) {
+    return 'Consultar opções de plano';
+  }
+  return 'Ver planos superiores';
 }

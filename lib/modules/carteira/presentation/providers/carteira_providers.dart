@@ -16,6 +16,12 @@ import 'package:soloforte_app/modules/carteira/domain/entities/carteira_tipo_pro
 import 'package:soloforte_app/modules/carteira/domain/entities/categoria_global.dart';
 import 'package:soloforte_app/modules/carteira/domain/entities/cliente_categoria.dart';
 import 'package:soloforte_app/modules/carteira/domain/repositories/i_carteira_repository.dart';
+import 'package:soloforte_app/modules/carteira/presentation/widgets/carteira_segment_bar.dart';
+
+/// Segmento ativo do módulo Carteira — persiste entre telas do bounded context.
+final carteiraSegmentProvider = StateProvider<CarteiraSegment>(
+  (ref) => CarteiraSegment.clientes,
+);
 
 final carteiraRepositoryProvider = Provider<ICarteiraRepository>((ref) {
   return CarteiraRepositoryImpl();

@@ -11,6 +11,8 @@ import 'package:soloforte_app/modules/carteira/domain/entities/categoria_global.
 import 'package:soloforte_app/modules/carteira/domain/entities/cliente_categoria.dart';
 import 'package:soloforte_app/modules/carteira/presentation/providers/carteira_providers.dart';
 import 'package:soloforte_app/modules/carteira/presentation/widgets/categoria_form_dialog.dart';
+import 'package:soloforte_app/modules/carteira/presentation/widgets/carteira_module_scaffold.dart';
+import 'package:soloforte_app/modules/carteira/presentation/widgets/carteira_segment_bar.dart';
 import 'package:soloforte_app/modules/carteira/presentation/widgets/lancamento_form_dialog.dart';
 
 class CarteiraClienteScreen extends ConsumerWidget {
@@ -36,13 +38,16 @@ class CarteiraClienteScreen extends ConsumerWidget {
       categoriasClienteProvider((userId: userId, clienteId: clienteId)),
     );
 
-    return Scaffold(
-      appBar: AppBar(
-        title: clienteAsync.when(
-          data: (cliente) => Text(cliente?.name ?? 'Cliente'),
-          loading: () => const Text('Carteira do Cliente'),
-          error: (_, __) => const Text('Carteira do Cliente'),
-        ),
+    return CarteiraModuleScaffold(
+      title: clienteAsync.when(
+        data: (cliente) => cliente?.name ?? 'Cliente',
+        loading: () => 'Carteira do Cliente',
+        error: (_, __) => 'Carteira do Cliente',
+      ),
+      forceSegment: CarteiraSegment.clientes,
+      leading: IconButton(
+        icon: const Icon(Icons.arrow_back),
+        onPressed: () => context.go(AppRoutes.carteira),
       ),
       body: categoriasAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
@@ -178,8 +183,9 @@ class CarteiraClienteScreen extends ConsumerWidget {
     if (result == null) return;
 
     final now = DateTime.now();
-    final categorias =
-        await ref.read(carteiraRepositoryProvider).getCategorias(userId);
+    final categorias = await ref
+        .read(carteiraRepositoryProvider)
+        .getCategorias(userId);
     final nova = CategoriaGlobal(
       id: const Uuid().v4(),
       userId: userId,
