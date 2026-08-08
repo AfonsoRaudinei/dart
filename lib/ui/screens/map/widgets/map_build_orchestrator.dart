@@ -18,6 +18,7 @@ import '../../../../core/session/user_role.dart';
 import '../../../../core/utils/map_logger.dart';
 import '../../../../modules/drawing/presentation/providers/drawing_provider.dart';
 import '../../../../modules/consultoria/occurrences/presentation/coordinators/occurrence_close_coordinator.dart';
+import '../../../../modules/consultoria/occurrences/presentation/providers/occurrence_draft_provider.dart';
 import '../../../../modules/drawing/presentation/coordinators/drawing_close_coordinator.dart';
 import '../../../../modules/drawing/domain/drawing_state.dart';
 import '../../../../modules/drawing/presentation/widgets/drawing_layers.dart';
@@ -685,6 +686,11 @@ Future<void> _handleToggleOccurrenceMode({
       guard: ref.read(occurrenceFormGuardProvider),
     );
     if (!canClose || !context.mounted) return;
+
+    final location = ref.read(pendingOccurrenceLocationProvider);
+    if (location != null) {
+      clearOccurrenceDraft(ref, location.latitude, location.longitude);
+    }
   }
 
   ref.read(armedModeProvider.notifier).state = ArmedMode.none;
