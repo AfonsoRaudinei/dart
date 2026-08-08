@@ -254,6 +254,124 @@ void main() {
     expect(find.textContaining('Ervas Daninhas'), findsOneWidget);
     expect(find.text('ervas_daninhas'), findsNothing);
   });
+
+  testWidgets('filtro de marketing cases por tipo na aba Gerados', (
+    tester,
+  ) async {
+    final marketingRepo = FakeMarketingCaseRepository([
+      _marketingCase(id: 'mkt-resultado', tipo: 'resultado'),
+      _marketingCase(
+        id: 'mkt-antes',
+        tipo: 'antes_depois',
+        produtorFazenda: 'Produtor Antes Depois',
+      ),
+    ]);
+
+    await _pumpScreen(
+      tester,
+      relatorioRepository: FakeRelatorioRepository(),
+      occurrenceRepository: FakeOccurrenceRepository(),
+      marketingRepository: marketingRepo,
+    );
+
+    await _selectSegment(tester, 'Gerados');
+    await tester.drag(find.byType(ListView), const Offset(0, -400));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Produtor Teste - Fazenda Marketing'), findsOneWidget);
+    expect(find.text('Produtor Antes Depois'), findsOneWidget);
+
+    await tester.tap(find.text('Resultado').first);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Produtor Teste - Fazenda Marketing'), findsOneWidget);
+    expect(find.text('Produtor Antes Depois'), findsNothing);
+
+    await tester.tap(find.text('Todas').first);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Produtor Antes Depois'), findsOneWidget);
+  });
+
+  testWidgets('exclusão de marketing case remove card após confirmação', (
+    tester,
+  ) async {
+    final marketingRepo = FakeMarketingCaseRepository([
+      _marketingCase(id: 'mkt-delete'),
+    ]);
+
+    await _pumpScreen(
+      tester,
+      relatorioRepository: FakeRelatorioRepository(),
+      occurrenceRepository: FakeOccurrenceRepository(),
+      marketingRepository: marketingRepo,
+    );
+
+    await _selectSegment(tester, 'Gerados');
+    await tester.drag(find.byType(ListView), const Offset(0, -400));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Produtor Teste - Fazenda Marketing'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Ações do case de marketing').first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Excluir').last);
+    await _pumpActionFrame(tester);
+    expect(find.text('Excluir case de marketing?'), findsOneWidget);
+    await tester.tap(find.widgetWithText(FilledButton, 'Excluir'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Produtor Teste - Fazenda Marketing'), findsNothing);
+    expect(marketingRepo.cases.first.deletadoEm, isNotNull);
+    expect(marketingRepo.cases.first.ativo, isFalse);
+  });
+
+  testWidgets('cancelar exclusão de marketing case mantém o card', (
+    tester,
+  ) async {
+    final marketingRepo = FakeMarketingCaseRepository([
+      _marketingCase(id: 'mkt-keep'),
+    ]);
+
+    await _pumpScreen(
+      tester,
+      relatorioRepository: FakeRelatorioRepository(),
+      occurrenceRepository: FakeOccurrenceRepository(),
+      marketingRepository: marketingRepo,
+    );
+
+    await _selectSegment(tester, 'Gerados');
+    await tester.drag(find.byType(ListView), const Offset(0, -400));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('Ações do case de marketing').first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Excluir').last);
+    await _pumpActionFrame(tester);
+    await tester.tap(find.text('Cancelar'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Produtor Teste - Fazenda Marketing'), findsOneWidget);
+    expect(marketingRepo.cases.first.deletadoEm, isNull);
+  });
+
+  testWidgets('consolidados na aba Gerados não exibem opção Excluir', (
+    tester,
+  ) async {
+    await _pumpScreen(
+      tester,
+      relatorioRepository: FakeRelatorioRepository(),
+      occurrenceRepository: FakeOccurrenceRepository(),
+    );
+
+    await _selectSegment(tester, 'Gerados');
+    await tester.tap(find.byTooltip('Ações do relatório consolidado').first);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Pré-visualizar HTML'), findsOneWidget);
+    expect(find.text('Exportar'), findsOneWidget);
+    expect(find.text('Excluir'), findsNothing);
+  });
 }
 
 Future<void> _selectSegment(WidgetTester tester, String label) async {
@@ -265,6 +383,7 @@ Future<void> _pumpScreen(
   WidgetTester tester, {
   required FakeRelatorioRepository relatorioRepository,
   required FakeOccurrenceRepository occurrenceRepository,
+  FakeMarketingCaseRepository? marketingRepository,
   List<MarketingCase>? marketingCases,
 }) async {
   final overrides = <Override>[
@@ -275,7 +394,8 @@ Future<void> _pumpScreen(
     ),
     occurrenceRepositoryProvider.overrideWithValue(occurrenceRepository),
     marketingCaseRepositoryProvider.overrideWithValue(
-      FakeMarketingCaseRepository(marketingCases ?? const []),
+      marketingRepository ??
+          FakeMarketingCaseRepository(marketingCases ?? const []),
     ),
     quickPhotoListProvider.overrideWith((ref) async => const []),
   ];
@@ -347,7 +467,7 @@ class FakeOccurrenceRepository extends OccurrenceRepository {
 class FakeMarketingCaseRepository implements IMarketingCaseRepository {
   final List<MarketingCase> cases;
 
-  const FakeMarketingCaseRepository(this.cases);
+  FakeMarketingCaseRepository(this.cases);
 
   @override
   Future<List<MarketingCase>> fetchMarketingCases() async => cases;
@@ -383,17 +503,38 @@ class FakeMarketingCaseRepository implements IMarketingCaseRepository {
       cases[index] = marketingCase;
     }
   }
+
+  @override
+  Future<MarketingCase> softDelete(String id) async {
+    final index = cases.indexWhere((item) => item.id == id);
+    if (index < 0) {
+      throw StateError('Case não encontrado: $id');
+    }
+    final existing = cases[index];
+    final deleted = MarketingCase.fromJson({
+      ...existing.toJson(),
+      'deletado_em': DateTime.utc(2026, 8, 8, 12).toIso8601String(),
+      'ativo': false,
+      'sync_status': 'pending_sync',
+    });
+    cases[index] = deleted;
+    return deleted;
+  }
 }
 
-MarketingCase _marketingCase() {
+MarketingCase _marketingCase({
+  String id = 'mkt-1',
+  String tipo = 'resultado',
+  String produtorFazenda = 'Produtor Teste - Fazenda Marketing',
+}) {
   return MarketingCase.fromJson({
-    'id': 'mkt-1',
-    'tipo': 'resultado',
+    'id': id,
+    'tipo': tipo,
     'visibilidade': 'ouro',
     'lat': -10.1,
     'lng': -48.2,
     'localizacao_texto': 'Palmas, TO',
-    'produtor_fazenda': 'Produtor Teste - Fazenda Marketing',
+    'produtor_fazenda': produtorFazenda,
     'produto_utilizado': 'Produto X',
     'produtividade_valor': 72,
     'produtividade_unidade': 'sc/ha',

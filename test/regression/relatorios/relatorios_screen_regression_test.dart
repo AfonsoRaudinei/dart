@@ -197,6 +197,11 @@ class FakeMarketingCaseRepository implements IMarketingCaseRepository {
 
   @override
   Future<void> updateCase(MarketingCase marketingCase) async {}
+
+  @override
+  Future<MarketingCase> softDelete(String id) async {
+    return cases.firstWhere((item) => item.id == id);
+  }
 }
 
 MarketingCase _marketingCase() {
