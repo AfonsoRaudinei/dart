@@ -182,6 +182,41 @@ class MarketingCasesNotifier
     return publishCase(publishedCase);
   }
 
+  /// Exclusão lógica offline-first: remove da lista visível e enfileira sync.
+  Future<void> deleteCase(String id) async {
+    final previousCases = state.valueOrNull ?? [];
+    final index = previousCases.indexWhere((c) => c.id == id);
+    if (index < 0) return;
+
+    final existing = previousCases[index];
+    final now = DateTime.now().toUtc();
+    final optimisticDeleted = MarketingCase.fromJson({
+      ...existing.toJson(),
+      'deletado_em': now.toIso8601String(),
+      'ativo': false,
+      'sync_status': 'pending_sync',
+      'atualizado_em': now.toIso8601String(),
+    });
+
+    state = AsyncData(
+      previousCases
+          .map((c) => c.id == id ? optimisticDeleted : c)
+          .toList(),
+    );
+
+    try {
+      final synced = await _repository.softDelete(id);
+      final updatedCases = state.valueOrNull ?? [];
+      state = AsyncData(
+        updatedCases.map((c) => c.id == id ? synced : c).toList(),
+      );
+    } catch (e, st) {
+      AppLogger.error('Erro ao excluir case', error: e, stackTrace: st);
+      state = AsyncData(previousCases);
+      rethrow;
+    }
+  }
+
   /// Re-tenta o upload em lote de todos os cases que estão marcados como pending_sync
   Future<void> retryPendingCases() async {
     final currentCases = state.valueOrNull ?? [];
