@@ -42,6 +42,7 @@ import '../../occurrences/presentation/widgets/occurrence_detail_sheet.dart';
 // hide SyncStatus para evitar conflito com o enum de relatorio.dart
 import '../../occurrences/domain/occurrence.dart' hide SyncStatus;
 import '../../../marketing/domain/entities/marketing_case.dart';
+import '../../../marketing/domain/enums/case_tipo.dart';
 import '../../../marketing/domain/marketing_case_visibility.dart';
 import '../../../marketing/presentation/providers/marketing_providers.dart';
 import '../../../marketing/presentation/widgets/edit_case_sheet.dart';

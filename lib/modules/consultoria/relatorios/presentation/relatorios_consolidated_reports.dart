@@ -99,13 +99,78 @@ class _ConsolidatedReportsSection extends ConsumerWidget {
   }
 }
 
-class _MarketingCasesReportsSection extends ConsumerWidget {
+class _MarketingCasesReportsSection extends ConsumerStatefulWidget {
   final DateFormat dateFormat;
 
   const _MarketingCasesReportsSection({required this.dateFormat});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_MarketingCasesReportsSection> createState() =>
+      _MarketingCasesReportsSectionState();
+}
+
+enum _MarketingCaseFilter { all, resultado, antesDepois, avaliacao }
+
+class _MarketingCasesReportsSectionState
+    extends ConsumerState<_MarketingCasesReportsSection> {
+  _MarketingCaseFilter _filter = _MarketingCaseFilter.all;
+
+  void _selectFilter(_MarketingCaseFilter value) {
+    if (_filter == value) return;
+    setState(() => _filter = value);
+  }
+
+  List<MarketingCase> _applyTypeFilter(List<MarketingCase> cases) {
+    switch (_filter) {
+      case _MarketingCaseFilter.resultado:
+        return cases
+            .where((item) => item.tipo == CaseTipo.resultado)
+            .toList();
+      case _MarketingCaseFilter.antesDepois:
+        return cases
+            .where((item) => item.tipo == CaseTipo.antesDepois)
+            .toList();
+      case _MarketingCaseFilter.avaliacao:
+        return cases
+            .where((item) => item.tipo == CaseTipo.avaliacao)
+            .toList();
+      case _MarketingCaseFilter.all:
+        return cases;
+    }
+  }
+
+  Future<void> _confirmDelete(
+    BuildContext context,
+    WidgetRef ref,
+    MarketingCase item,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Excluir case de marketing?'),
+        content: const Text(
+          'O case será removido da lista e marcado para sincronização.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Excluir'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    await ref.read(marketingCasesProvider.notifier).deleteCase(item.id);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final dateFormat = widget.dateFormat;
     late final AsyncValue<List<MarketingCase>> casesAsync;
     try {
       casesAsync = ref.watch(marketingCasesProvider);
@@ -141,24 +206,41 @@ class _MarketingCasesReportsSection extends ConsumerWidget {
             authorizedClientIds: authorized,
           );
         }).toList();
+        final filtered = _applyTypeFilter(visible);
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _InsetGroupHeader(title: 'Marketing Cases', count: visible.length),
+            _InsetGroupHeader(title: 'Marketing Cases', count: filtered.length),
+            if (visible.isNotEmpty) ...[
+              Padding(
+                padding: const EdgeInsets.fromLTRB(4, 0, 4, 12),
+                child: _MarketingCaseFilterBar(
+                  selected: _filter,
+                  onSelected: _selectFilter,
+                ),
+              ),
+            ],
             if (visible.isEmpty)
               _PremiumEmptyState(
                 message: 'Nenhum case publicado.',
                 ctaLabel: 'Abrir mapa',
                 onCta: () => context.go(AppRoutes.map),
               )
+            else if (filtered.isEmpty)
+              _PremiumEmptyState(
+                message: 'Nenhum case neste filtro.',
+                ctaLabel: 'Mostrar todos',
+                onCta: () => _selectFilter(_MarketingCaseFilter.all),
+              )
             else
-              ...visible.map(
+              ...filtered.map(
                 (item) => _GeneratedReportCard(
                   eyebrow: 'Marketing',
                   title: item.produtorFazenda,
                   subtitle: _marketingSubtitle(item),
                   date: dateFormat.format(item.criadoEm.toLocal()),
                   enabled: true,
+                  menuTooltip: 'Ações do case de marketing',
                   buildPayload: () => _buildMarketingPayload(ref, item),
                   onEdit: () => showSoloForteSheet<void>(
                     context: context,
@@ -195,6 +277,7 @@ class _MarketingCasesReportsSection extends ConsumerWidget {
                       '&lng=${lng.toStringAsFixed(6)}',
                     );
                   },
+                  onDelete: () => _confirmDelete(context, ref, item),
                 ),
               ),
           ],
@@ -228,6 +311,63 @@ class _MarketingCasesReportsSection extends ConsumerWidget {
   }
 }
 
+class _MarketingCaseFilterBar extends StatelessWidget {
+  final _MarketingCaseFilter selected;
+  final ValueChanged<_MarketingCaseFilter> onSelected;
+
+  const _MarketingCaseFilterBar({
+    required this.selected,
+    required this.onSelected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: 8,
+      runSpacing: 6,
+      children: [
+        _filterChip(context, 'Todas', _MarketingCaseFilter.all),
+        _filterChip(context, 'Resultado', _MarketingCaseFilter.resultado),
+        _filterChip(context, 'Antes/Depois', _MarketingCaseFilter.antesDepois),
+        _filterChip(context, 'Avaliação', _MarketingCaseFilter.avaliacao),
+      ],
+    );
+  }
+
+  Widget _filterChip(
+    BuildContext context,
+    String label,
+    _MarketingCaseFilter value,
+  ) {
+    final isSelected = selected == value;
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => onSelected(value),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 140),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        decoration: BoxDecoration(
+          color: isSelected ? PremiumTokens.brandGreen : Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected
+                ? PremiumTokens.brandGreen
+                : const Color(0xFFD1D1D6),
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: isSelected ? Colors.white : context.premiumTextPrimary,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _GeneratedReportCard extends StatelessWidget {
   final String eyebrow;
   final String title;
@@ -235,8 +375,10 @@ class _GeneratedReportCard extends StatelessWidget {
   final String date;
   final bool enabled;
   final Future<_GeneratedReportPayload> Function() buildPayload;
+  final String menuTooltip;
   final VoidCallback? onEdit;
   final VoidCallback? onViewLocation;
+  final Future<void> Function()? onDelete;
 
   const _GeneratedReportCard({
     required this.eyebrow,
@@ -245,8 +387,10 @@ class _GeneratedReportCard extends StatelessWidget {
     required this.date,
     required this.enabled,
     required this.buildPayload,
+    this.menuTooltip = 'Ações do relatório consolidado',
     this.onEdit,
     this.onViewLocation,
+    this.onDelete,
   });
 
   @override
@@ -259,7 +403,7 @@ class _GeneratedReportCard extends StatelessWidget {
       statusLabel: enabled ? 'Disponível' : 'Vazio',
       statusColor: enabled ? PremiumTokens.brandGreen : Colors.grey,
       trailing: _AsyncActionMenu(
-        tooltip: 'Ações do relatório consolidado',
+        tooltip: menuTooltip,
         itemBuilder: (context) => [
           PopupMenuItem(
             value: 'html',
@@ -283,6 +427,11 @@ class _GeneratedReportCard extends StatelessWidget {
               enabled: enabled,
               child: const Text('Ver Localização'),
             ),
+          if (onDelete != null)
+            const PopupMenuItem(
+              value: 'delete',
+              child: Text('Excluir', style: TextStyle(color: Colors.red)),
+            ),
         ],
         onSelected: (value) => _handleAction(context, value),
       ),
@@ -290,13 +439,18 @@ class _GeneratedReportCard extends StatelessWidget {
   }
 
   Future<void> _handleAction(BuildContext context, String value) async {
-    if (!enabled) return;
+    if (!enabled && value != 'delete') return;
     if (value == 'edit') {
       onEdit?.call();
       return;
     }
     if (value == 'location') {
       onViewLocation?.call();
+      return;
+    }
+    if (value == 'delete') {
+      final delete = onDelete;
+      if (delete != null) await delete();
       return;
     }
     final payload = await buildPayload();
