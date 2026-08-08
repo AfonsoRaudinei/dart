@@ -15,6 +15,9 @@ import '../../../modules/map/presentation/widgets/visit_sheet.dart';
 import '../../../modules/visitas/presentation/controllers/visit_controller.dart';
 import '../../../../modules/consultoria/occurrences/presentation/widgets/occurrence_list_sheet.dart';
 import '../../../../modules/consultoria/occurrences/presentation/widgets/occurrence_creation_sheet.dart';
+import '../../../../modules/consultoria/occurrences/presentation/coordinators/occurrence_close_coordinator.dart';
+import '../../../../modules/consultoria/occurrences/presentation/coordinators/occurrence_form_guard.dart';
+import '../../../screens/map/providers/occurrence_form_guard_provider.dart';
 import '../../../modules/dashboard/services/location_service.dart';
 import '../../../modules/dashboard/domain/location_settings.dart';
 import '../../screens/map/handlers/map_location_handler.dart';
@@ -61,11 +64,13 @@ class MapBottomSheet extends ConsumerStatefulWidget {
 class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
     with SingleTickerProviderStateMixin {
   // 🛡 APENAS ESTADOS EFÉMEROS DE UI (animação e drag)
-  SheetDetent _currentDetent = SheetDetent.compact;
+  SheetDetent _currentDetent = SheetDetent.medium;
 
   late AnimationController _heightController;
   late Animation<double> _heightAnimation;
   final ScrollController _scrollController = ScrollController();
+  bool _initialDetentSynced = false;
+  OccurrenceFormGuard? _occurrenceFormGuard;
 
   @override
   void initState() {
@@ -75,22 +80,48 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
       tag: 'MapSheet',
     );
 
-    // Draw abre já expandido (equivalente ao initialChildSize do modal)
-    // para evitar estado "colado" no rodapé no primeiro frame.
-    _currentDetent = SheetDetent.medium;
-
     _heightController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 300),
     );
 
-    final initialHeight = 350.0;
-    _heightAnimation = AlwaysStoppedAnimation(initialHeight);
+    _heightAnimation = AlwaysStoppedAnimation(0);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_initialDetentSynced) return;
+    _initialDetentSynced = true;
+    _syncInitialDetentHeight();
+  }
+
+  void _syncInitialDetentHeight() {
+    _currentDetent = _resolveInitialDetent();
+    _heightAnimation = AlwaysStoppedAnimation(_getDetentHeight(_currentDetent));
+  }
+
+  SheetDetent _resolveInitialDetent() {
+    if (widget.state.isCreatingOccurrence || widget.creationLocation != null) {
+      return SheetDetent.expanded;
+    }
+    return SheetDetent.medium;
+  }
+
+  void _ensureOccurrenceFormGuard() {
+    if (!widget.state.isCreatingOccurrence) {
+      _occurrenceFormGuard = null;
+      ref.read(occurrenceFormGuardProvider.notifier).state = null;
+      return;
+    }
+    _occurrenceFormGuard ??= OccurrenceFormGuard();
+    ref.read(occurrenceFormGuardProvider.notifier).state = _occurrenceFormGuard;
   }
 
   @override
   void dispose() {
     AppLogger.debug('MapBottomSheet DISPOSE', tag: 'MapSheet');
+    ref.read(occurrenceFormGuardProvider.notifier).state = null;
     _heightController.dispose();
     _scrollController.dispose();
     super.dispose();
@@ -115,6 +146,19 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
         _animateToDetent(SheetDetent.expanded);
       }
     }
+
+    if (widget.state.isCreatingOccurrence != oldWidget.state.isCreatingOccurrence &&
+        widget.state.isCreatingOccurrence) {
+      if (_currentDetent != SheetDetent.expanded) {
+        _animateToDetent(SheetDetent.expanded);
+      }
+    }
+  }
+
+  Future<void> _requestDismissCurrentSheet({
+    DrawingCloseIntent intent = DrawingCloseIntent.dismissSheet,
+  }) async {
+    await _dismissCurrentSheet(intent: intent);
   }
 
   Future<void> _dismissCurrentSheet({
@@ -130,6 +174,22 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
         return;
       }
     }
+
+    if (widget.state.isCreatingOccurrence) {
+      final canClose = await OccurrenceCloseCoordinator.confirmDiscardIfDirty(
+        context,
+        guard: _occurrenceFormGuard,
+      );
+      if (!mounted) return;
+      if (!canClose) {
+        if (_currentDetent == SheetDetent.compact) {
+          _animateToDetent(SheetDetent.medium);
+        }
+        return;
+      }
+    }
+
+    ref.read(occurrenceFormGuardProvider.notifier).state = null;
     widget.onClose();
   }
 
@@ -191,7 +251,7 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
         // Flick para baixo → retrair ou fechar
         if (_currentDetent == SheetDetent.medium &&
             widget.state.type == MapSheetType.draw) {
-          _dismissCurrentSheet();
+          _requestDismissCurrentSheet();
           return;
         }
         if (_currentDetent == SheetDetent.expanded) {
@@ -199,8 +259,7 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
         } else if (_currentDetent == SheetDetent.medium) {
           _animateToDetent(SheetDetent.compact);
         } else if (_currentDetent == SheetDetent.compact) {
-          // 🔹 FECHAMENTO REAL: Flick down no compact (ETAPA 3)
-          _dismissCurrentSheet();
+          _requestDismissCurrentSheet();
         }
       }
       return;
@@ -214,8 +273,7 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
 
     // Calcular em qual "zona" está
     if (currentHeight < closeThreshold) {
-      // 🔹 FECHAMENTO REAL: Drag abaixo do threshold (ETAPA 3)
-      _dismissCurrentSheet();
+      _requestDismissCurrentSheet();
     } else if (currentHeight < (compactHeight + mediumHeight) * 0.5) {
       _animateToDetent(SheetDetent.compact);
     } else if (currentHeight < (mediumHeight + expandedHeight) * 0.5) {
@@ -445,6 +503,7 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
 
   // Criação de ocorrência: OccurrenceCreationSheet (pin = ponto do mapa).
   Widget _buildOccurrenceForm() {
+    _ensureOccurrenceFormGuard();
     final creationLocation = widget.creationLocation;
     final lat = creationLocation?.latitude ?? 0;
     final lng = creationLocation?.longitude ?? 0;
@@ -453,8 +512,14 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
       latitude: lat,
       longitude: lng,
       scrollController: _scrollController,
-      onCancel: () {
-        // Encerrar completamente o contexto (modo disabled) e fechar form creation
+      formGuard: _occurrenceFormGuard,
+      onCancel: () async {
+        final canClose = await OccurrenceCloseCoordinator.confirmDiscardIfDirty(
+          context,
+          guard: _occurrenceFormGuard,
+        );
+        if (!canClose || !mounted) return;
+        ref.read(occurrenceFormGuardProvider.notifier).state = null;
         widget.onClose();
       },
       onConfirm: (data) async {
