@@ -22,6 +22,10 @@ class DrawingRepository {
     }
   }
 
+  Future<DrawingFeature?> getFeatureById(String id) async {
+    return _localStore.getById(id);
+  }
+
   Future<void> deleteFeature(String id) async {
     await _localStore.delete(id);
   }
