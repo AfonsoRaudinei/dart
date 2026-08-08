@@ -18,31 +18,39 @@ import 'package:soloforte_app/modules/visitas/data/repositories/visit_repository
 import 'package:soloforte_app/modules/visitas/domain/models/visit_session.dart';
 import 'package:soloforte_app/modules/visitas/presentation/controllers/visit_controller.dart';
 import 'package:soloforte_app/modules/clima/presentation/providers/radar_providers.dart';
+import 'package:soloforte_app/core/constants/layout_constants.dart';
 import 'package:soloforte_app/ui/components/map/widgets/map_action_fab_menu.dart';
 import 'package:soloforte_app/ui/components/map/widgets/map_controls_overlay.dart';
 
 /// BUG-002 / BUG-005 — Map: botões errados na coluna direita / publicações removidas.
 void main() {
   group('BUG-002 controls_overlay_regression', () {
-    test('map_controls_overlay.dart não referencia botões legados de coordenada/offline', () {
-      final source = File(
-        'lib/ui/components/map/widgets/map_controls_overlay.dart',
-      ).readAsStringSync();
+    test(
+      'map_controls_overlay.dart não referencia botões legados de coordenada/offline',
+      () {
+        final source = File(
+          'lib/ui/components/map/widgets/map_controls_overlay.dart',
+        ).readAsStringSync();
 
-      expect(source.contains('coordinateButton'), isFalse);
-      expect(source.contains('offlineDownloadButton'), isFalse);
-      expect(source.contains('ValueKey(\'coordinateButton\')'), isFalse);
-      expect(source.contains('ValueKey(\'offlineDownloadButton\')'), isFalse);
-    });
+        expect(source.contains('coordinateButton'), isFalse);
+        expect(source.contains('offlineDownloadButton'), isFalse);
+        expect(source.contains('ValueKey(\'coordinateButton\')'), isFalse);
+        expect(source.contains('ValueKey(\'offlineDownloadButton\')'), isFalse);
+      },
+    );
 
-    testWidgets('coluna direita não contém keys legadas de coordenada/offline', (
-      tester,
-    ) async {
-      await _pumpMapControlsOverlay(tester);
+    testWidgets(
+      'coluna direita não contém keys legadas de coordenada/offline',
+      (tester) async {
+        await _pumpMapControlsOverlay(tester);
 
-      expect(find.byKey(const ValueKey('coordinateButton')), findsNothing);
-      expect(find.byKey(const ValueKey('offlineDownloadButton')), findsNothing);
-    });
+        expect(find.byKey(const ValueKey('coordinateButton')), findsNothing);
+        expect(
+          find.byKey(const ValueKey('offlineDownloadButton')),
+          findsNothing,
+        );
+      },
+    );
 
     testWidgets(
       'coluna direita mantém ferramentas essenciais do mapa (layers, ações, check-in)',
@@ -54,6 +62,43 @@ void main() {
         expect(find.byTooltip('Check-in'), findsOneWidget);
       },
     );
+
+    testWidgets('stack lateral mantém gap fixo e folga acima do FAB', (
+      tester,
+    ) async {
+      await _pumpMapControlsOverlay(tester);
+
+      final layers = tester.getRect(find.byTooltip('Ferramentas do mapa'));
+      final pins = tester.getRect(find.byTooltip('Ações'));
+      final checkIn = tester.getRect(find.byTooltip('Check-in'));
+
+      expect(layers.right, closeTo(pins.right, 0.5));
+      expect(pins.right, closeTo(checkIn.right, 0.5));
+      expect(pins.top - layers.bottom, closeTo(kMapSideControlGap, 0.5));
+      expect(checkIn.top - pins.bottom, closeTo(kMapSideControlGap, 0.5));
+
+      final media = MediaQuery.of(
+        tester.element(find.byKey(const Key('map_side_controls_stack'))),
+      );
+      final expectedBottom =
+          kFabSafeArea + media.padding.bottom + kMapSideStackAboveFab;
+      final stackBottom = media.size.height - expectedBottom;
+      expect(checkIn.bottom, closeTo(stackBottom, 1.0));
+    });
+
+    testWidgets('cluster de localização fica colado à safe area superior', (
+      tester,
+    ) async {
+      await _pumpMapControlsOverlay(tester);
+
+      final cluster = tester.getRect(
+        find.byKey(const Key('map_location_status_cluster')),
+      );
+      final media = MediaQuery.of(
+        tester.element(find.byKey(const Key('map_location_status_cluster'))),
+      );
+      expect(cluster.top, closeTo(media.padding.top + 2, 0.5));
+    });
   });
 
   group('BUG-005 controls_overlay_publicacoes_regression', () {
@@ -80,7 +125,11 @@ void main() {
 
   group('map status indicator', () {
     testWidgets('vermelho quando offline', (tester) async {
-      await _pumpMapControlsOverlay(tester, isOnline: false, radarEnabled: false);
+      await _pumpMapControlsOverlay(
+        tester,
+        isOnline: false,
+        radarEnabled: false,
+      );
 
       final indicator = tester.widget<Container>(
         find.byKey(const Key('map_status_indicator')),
@@ -90,7 +139,11 @@ void main() {
     });
 
     testWidgets('verde quando online sem chuva no mapa', (tester) async {
-      await _pumpMapControlsOverlay(tester, isOnline: true, radarEnabled: false);
+      await _pumpMapControlsOverlay(
+        tester,
+        isOnline: true,
+        radarEnabled: false,
+      );
 
       final indicator = tester.widget<Container>(
         find.byKey(const Key('map_status_indicator')),
