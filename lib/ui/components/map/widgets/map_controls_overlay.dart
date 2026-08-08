@@ -26,6 +26,26 @@ import 'map_action_fab_menu.dart';
 part 'map_controls_location_button.dart';
 part 'map_controls_measurement.dart';
 
+/// Espaçamento fixo entre botões laterais do mapa (camadas / pins / check-in).
+const double kMapSideControlGap = 12;
+
+/// Folga extra acima do SmartButton para o stack lateral não colar no FAB.
+const double kMapSideStackAboveFab = 20;
+
+/// Sombra iOS premium para controles flutuantes do mapa.
+final List<BoxShadow> kMapControlIosShadow = [
+  BoxShadow(
+    color: Colors.black.withValues(alpha: 0.12),
+    blurRadius: 22,
+    offset: const Offset(0, 8),
+  ),
+  BoxShadow(
+    color: Colors.black.withValues(alpha: 0.06),
+    blurRadius: 4,
+    offset: const Offset(0, 1),
+  ),
+];
+
 Color _themeColor(String theme) {
   switch (theme) {
     case 'green':
@@ -161,17 +181,16 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
           child: widget.topLeftCard ?? const VisitActiveCard(),
         ),
 
-        // 2. Botão de Localização + Indicador de Conectividade (canto superior direito)
+        // 2. Localização + luz de status — o mais alto possível sob a safe area
         Positioned(
-          top: safeTop + 12, // Respeita safe area (Dynamic Island / notch)
+          key: const Key('map_location_status_cluster'),
+          top: safeTop + 2,
           right: 12,
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Indicador unificado: offline / online / clima no mapa
               const _MapStatusIndicator(),
               const SizedBox(width: 6),
-              // Botão de Localização com 3 estados
               _LocationButton(
                 onCenterUser: widget.onCenterUser,
                 onLocationModeChanged: widget.onLocationModeChanged,
@@ -184,7 +203,7 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
                 widget.measurementPerimeterKm > 0) &&
             widget.drawingState != DrawingState.drawing)
           Positioned(
-            top: safeTop + 56,
+            top: safeTop + 48,
             left: 12,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -217,57 +236,45 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
             ),
           ),
 
-        // 3. Ações verticais do mapa (direita)
+        // 3. Stack lateral fixo: camadas → pins (+) → check-in
+        // Sem SafeArea aninhado (evita drift) e sem inset do sheet.
         Positioned(
+          key: const Key('map_side_controls_stack'),
           right: 16,
-          bottom: kFabSafeArea + safeBottom + 130,
-          child: SafeArea(
-            top: false,
-            child: _MapToolsFab(
-              isActive: widget.isDrawMode,
-              activeColor: activeColor,
-              onTap: widget.onOpenMapTools,
-            ),
-          ),
-        ),
-
-        Positioned.fill(
-          child: MapActionFabMenu(
-            right: 16,
-            bottom: kFabSafeArea + safeBottom + 60,
-            padding: EdgeInsets.zero,
-            direction: MapActionFabMenuDirection.left,
-            isActive: widget.isMarketingMode || widget.isOccurrenceMode,
-            activeColor: activeColor,
-            onResultado: widget.onCreateResultadoCase ?? () {},
-            onAntesDepois: widget.onCreateAntesDepoisCase ?? () {},
-            onAvaliacao: widget.onCreateAvaliacaoCase ?? () {},
-            onOcorrencia: () {
-              // Fluxo preservado: armar ocorrência e deixar o toque no mapa
-              // abrir o OccurrenceCreationSheet atual.
-              if (widget.onToggleOccurrenceMode != null) {
-                widget.onToggleOccurrenceMode!();
-              } else {
-                widget.onTabSelected(2, 'Button_Occurrences');
-              }
-            },
-            onFotoRapida: () {
-              unawaited(_openQuickPhoto(initialFilterActive: false));
-            },
-            onInversaoVegetal: () {
-              unawaited(_openQuickPhoto(initialFilterActive: true));
-            },
-          ),
-        ),
-
-        if (widget.showCheckInAction)
-          Positioned(
-            bottom: kFabSafeArea + safeBottom,
-            right: 16,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
+          bottom: kFabSafeArea + safeBottom + kMapSideStackAboveFab,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              _MapToolsFab(
+                isActive: widget.isDrawMode,
+                activeColor: activeColor,
+                onTap: widget.onOpenMapTools,
+              ),
+              const SizedBox(height: kMapSideControlGap),
+              MapActionFabMenu(
+                embedded: true,
+                isActive: widget.isMarketingMode || widget.isOccurrenceMode,
+                activeColor: activeColor,
+                onResultado: widget.onCreateResultadoCase ?? () {},
+                onAntesDepois: widget.onCreateAntesDepoisCase ?? () {},
+                onAvaliacao: widget.onCreateAvaliacaoCase ?? () {},
+                onOcorrencia: () {
+                  if (widget.onToggleOccurrenceMode != null) {
+                    widget.onToggleOccurrenceMode!();
+                  } else {
+                    widget.onTabSelected(2, 'Button_Occurrences');
+                  }
+                },
+                onFotoRapida: () {
+                  unawaited(_openQuickPhoto(initialFilterActive: false));
+                },
+                onInversaoVegetal: () {
+                  unawaited(_openQuickPhoto(initialFilterActive: true));
+                },
+              ),
+              if (widget.showCheckInAction) ...[
+                const SizedBox(height: kMapSideControlGap),
                 _MapActionButton(
                   icon: SFIcons.checkCircle,
                   label: 'Check-in',
@@ -276,8 +283,9 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
                   onTap: () => widget.onTabSelected(3, 'Button_CheckIn'),
                 ),
               ],
-            ),
+            ],
           ),
+        ),
 
         // 4. Drawing Actions (Conditional)
         if (widget.drawingState == DrawingState.drawing)
@@ -556,13 +564,7 @@ class _MapActionButtonState extends State<_MapActionButton> {
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.15),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
+                boxShadow: kMapControlIosShadow,
               ),
               child: Icon(
                 widget.icon,
@@ -608,13 +610,7 @@ class _MapToolsFab extends StatelessWidget {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.15),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
+            boxShadow: kMapControlIosShadow,
           ),
           child: Icon(
             SFIcons.layers,

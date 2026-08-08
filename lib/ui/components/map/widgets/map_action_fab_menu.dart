@@ -29,6 +29,10 @@ class MapActionFabMenu extends StatefulWidget {
   final MapActionFabMenuDirection direction;
   final bool useLegacyExpandedMenu;
 
+  /// Quando true, renderiza só o botão (sem Positioned/SafeArea).
+  /// Use dentro de um stack lateral já ancorado pelo parent.
+  final bool embedded;
+
   const MapActionFabMenu({
     super.key,
     required this.onResultado,
@@ -46,6 +50,7 @@ class MapActionFabMenu extends StatefulWidget {
     this.bottom = 0,
     this.direction = MapActionFabMenuDirection.up,
     this.useLegacyExpandedMenu = false,
+    this.embedded = false,
   });
 
   @override
@@ -225,6 +230,11 @@ class _MapActionFabMenuState extends State<MapActionFabMenu>
 
   @override
   Widget build(BuildContext context) {
+    final body = _buildMenuBody();
+    if (widget.embedded) {
+      return body;
+    }
+
     return Stack(
       children: [
         if (_isOpen)
@@ -239,11 +249,7 @@ class _MapActionFabMenuState extends State<MapActionFabMenu>
           right: widget.right,
           top: widget.top,
           bottom: widget.top == null ? widget.bottom : null,
-          child: SafeArea(
-            top: false,
-            minimum: widget.padding,
-            child: _buildMenuBody(),
-          ),
+          child: SafeArea(top: false, minimum: widget.padding, child: body),
         ),
       ],
     );
@@ -280,9 +286,14 @@ class _MasterFab extends StatelessWidget {
             borderRadius: BorderRadius.circular(12),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.15),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
+                color: Colors.black.withValues(alpha: 0.12),
+                blurRadius: 22,
+                offset: const Offset(0, 8),
+              ),
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.06),
+                blurRadius: 4,
+                offset: const Offset(0, 1),
               ),
             ],
           ),
