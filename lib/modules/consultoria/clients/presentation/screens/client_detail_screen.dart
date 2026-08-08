@@ -19,6 +19,8 @@ import '../widgets/cultura_item_widget.dart';
 import '../widgets/client_hub_section.dart';
 import '../widgets/client_detail_sub_widgets.dart';
 import '../widgets/client_edit_form.dart';
+import '../widgets/create_farm_sheet.dart';
+import '../widgets/link_drawing_to_farm_sheet.dart';
 import '../widgets/producer_invite_dialog.dart';
 import '../widgets/talhao_map_preview.dart';
 
@@ -100,9 +102,19 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen> {
     }
   }
 
-  // 🆕 SPRINT 3: Modal iOS Premium — escolha de ação para nova fazenda/talhão
-  void _showNovaFazendaModal(BuildContext context, client) =>
-      showNovaFazendaModal(context, client);
+  void _showCreateFarmSheet(BuildContext context, Client client) {
+    showCreateFarmSheet(
+      context,
+      client: client,
+      onFarmCreated: () {
+        ref.invalidate(clientDetailProvider(client.id));
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Fazenda cadastrada.')),
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -360,9 +372,7 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen> {
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-                          // 🆕 SPRINT 3: Modal de escolha em vez de ir direto ao mapa
-                          onPressed: () =>
-                              _showNovaFazendaModal(context, client),
+                          onPressed: () => _showCreateFarmSheet(context, client),
                         ),
                       ],
                     ),
@@ -651,50 +661,98 @@ class _ClientDrawingFieldsSection extends ConsumerWidget {
 
     return drawingFieldsAsync.when(
       data: (fields) {
-        if (fields.isEmpty) return const SizedBox.shrink();
-
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Talhões do mapa',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Talhões do mapa',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                ),
+                TextButton.icon(
+                  icon: const Icon(
+                    Icons.add,
+                    color: PremiumTokens.brandGreen,
+                  ),
+                  label: const Text(
+                    'Talhão',
+                    style: TextStyle(
+                      color: PremiumTokens.brandGreen,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  onPressed: () => showAdicionarTalhaoModal(context, client),
+                ),
+              ],
             ),
             const SizedBox(height: 16),
-            ...fields.map((field) {
-              final farmName = field.farmId == null
-                  ? null
-                  : _findFarmName(client, field.farmId!);
+            if (fields.isEmpty)
+              Container(
+                padding: const EdgeInsets.all(24),
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: Colors.grey[50],
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey[200]!),
+                ),
+                child: Text(
+                  'Nenhum talhão do mapa',
+                  style: TextStyle(color: Colors.grey[600]),
+                  textAlign: TextAlign.center,
+                ),
+              )
+            else
+              ...fields.map((field) {
+                final farmName = field.farmId == null
+                    ? null
+                    : _findFarmName(client, field.farmId!);
 
-              return TalhaoMapPreviewWidget(
-                vertices: field.vertices,
-                nome: field.name,
-                areaHa: field.areaHa,
-                subtitle: farmName == null ? null : 'Fazenda: $farmName',
-                onTap: () => context.go(_mapViewUri(field)),
-                actions: [
-                  IconButton(
-                    tooltip: 'Abrir no mapa',
-                    icon: const Icon(Icons.open_in_full, size: 20),
-                    onPressed: () => context.go(_mapViewUri(field)),
-                  ),
-                  IconButton(
-                    tooltip: 'Editar no mapa',
-                    icon: const Icon(Icons.edit_outlined, size: 20),
-                    onPressed: () => context.go(_mapEditUri(field)),
-                  ),
-                  IconButton(
-                    tooltip: 'Excluir talhão',
-                    icon: const Icon(
-                      Icons.delete_outline,
-                      size: 20,
-                      color: Colors.red,
+                return TalhaoMapPreviewWidget(
+                  vertices: field.vertices,
+                  nome: field.name,
+                  areaHa: field.areaHa,
+                  subtitle: farmName == null
+                      ? 'Sem fazenda vinculada'
+                      : 'Fazenda: $farmName',
+                  onTap: () => context.go(_mapViewUri(field)),
+                  actions: [
+                    IconButton(
+                      tooltip: 'Vincular à fazenda',
+                      icon: Icon(
+                        field.farmId == null
+                            ? Icons.link
+                            : Icons.link_outlined,
+                        size: 20,
+                        color: PremiumTokens.brandGreen,
+                      ),
+                      onPressed: () =>
+                          _linkDrawingToFarm(context, ref, field),
                     ),
-                    onPressed: () => _confirmDeleteDrawing(context, ref, field),
-                  ),
-                ],
-              );
-            }),
+                    IconButton(
+                      tooltip: 'Abrir no mapa',
+                      icon: const Icon(Icons.open_in_full, size: 20),
+                      onPressed: () => context.go(_mapViewUri(field)),
+                    ),
+                    IconButton(
+                      tooltip: 'Editar no mapa',
+                      icon: const Icon(Icons.edit_outlined, size: 20),
+                      onPressed: () => context.go(_mapEditUri(field)),
+                    ),
+                    IconButton(
+                      tooltip: 'Excluir talhão',
+                      icon: const Icon(
+                        Icons.delete_outline,
+                        size: 20,
+                        color: Colors.red,
+                      ),
+                      onPressed: () =>
+                          _confirmDeleteDrawing(context, ref, field),
+                    ),
+                  ],
+                );
+              }),
           ],
         );
       },
@@ -711,6 +769,33 @@ class _ClientDrawingFieldsSection extends ConsumerWidget {
       if (farm.id == farmId) return farm.name;
     }
     return null;
+  }
+
+  Future<void> _linkDrawingToFarm(
+    BuildContext context,
+    WidgetRef ref,
+    ClientDrawingFieldSummary field,
+  ) async {
+    final previousFarmId = field.farmId;
+    final linkedFarm = await showLinkDrawingToFarmSheet(
+      context,
+      client: client,
+      field: field,
+    );
+    if (linkedFarm == null || !context.mounted) return;
+
+    ref.invalidate(clientDetailProvider(client.id));
+    ref.invalidate(clientDrawingFieldsProvider(client.id));
+    ref.invalidate(farmLinkedFieldsProvider(linkedFarm.id));
+    if (previousFarmId != null && previousFarmId != linkedFarm.id) {
+      ref.invalidate(farmLinkedFieldsProvider(previousFarmId));
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Talhão vinculado à fazenda "${linkedFarm.name}".'),
+      ),
+    );
   }
 
   Future<void> _confirmDeleteDrawing(

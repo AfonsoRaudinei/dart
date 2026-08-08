@@ -241,10 +241,10 @@ class ClientModalOption extends StatelessWidget {
   }
 }
 
-// ── Helper: modal de nova fazenda ────────────────────────────────────────
+// ── Helper: modal de adicionar talhão (desenhar / importar) ─────────────
 // Função livre para evitar dependência do state — chamada com context+client.
 
-void showNovaFazendaModal(BuildContext context, Client client) {
+void showAdicionarTalhaoModal(BuildContext context, Client client) {
   HapticFeedback.lightImpact();
   showSoloForteSheet<void>(
     context: context,
