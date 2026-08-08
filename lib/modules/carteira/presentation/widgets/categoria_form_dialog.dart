@@ -260,9 +260,9 @@ class _CategoriaFormDialogState extends ConsumerState<CategoriaFormDialog> {
                                     : null,
                               ),
                               child: isSelected
-                                  ? const Icon(
+                                  ? Icon(
                                       Icons.check,
-                                      color: Colors.white,
+                                      color: Theme.of(context).colorScheme.onPrimary,
                                       size: 18,
                                     )
                                   : null,

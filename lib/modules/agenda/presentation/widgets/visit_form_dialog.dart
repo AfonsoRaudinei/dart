@@ -315,7 +315,7 @@ class _VisitFormDialogState extends ConsumerState<VisitFormDialog> {
                     label: 'Normal',
                     icon: Icons.check_circle_outline,
                     isSelected: _priority == VisitPriority.normal,
-                    selectedColor: const Color(0xFF4ADE80),
+                    selectedColor: Theme.of(context).colorScheme.primary,
                     onTap: () {
                       setState(() {
                         _priority = VisitPriority.normal;

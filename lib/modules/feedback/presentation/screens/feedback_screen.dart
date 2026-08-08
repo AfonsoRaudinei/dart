@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:soloforte_app/core/constants/layout_constants.dart';
 import 'package:soloforte_app/core/router/app_routes.dart';
+import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../domain/entities/feedback_impact.dart';
@@ -113,17 +114,31 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
     );
   }
 
+  Color _statsCardBackground(FeedbackType type, BuildContext context) {
+    if (!context.isPremiumDark) {
+      return switch (type) {
+        FeedbackType.bug => _bugBackground,
+        FeedbackType.suggestion => _suggestionBackground,
+        FeedbackType.praise => _praiseBackground,
+      };
+    }
+    return switch (type) {
+      FeedbackType.bug => const Color(0xFF2A1A1A),
+      FeedbackType.suggestion => const Color(0xFF2A2418),
+      FeedbackType.praise => const Color(0xFF1A2A22),
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
-    // Watch state
     final formState = ref.watch(feedbackControllerProvider);
     final statsAsync = ref.watch(feedbackStatsProvider);
-
-    // Header Color (using Map-First consistency or white)
-    const backgroundColor = Color(0xFFF5F7FA); // Light gray background
+    final accent = Theme.of(context).colorScheme.primary;
+    final textPrimary = context.premiumTextPrimary;
+    final textSecondary = context.premiumTextSecondary;
 
     return Scaffold(
-      backgroundColor: backgroundColor,
+      backgroundColor: context.premiumBackground,
       body: SafeArea(
         child: formState.isSuccess
             ? _buildSuccessView()
@@ -140,11 +155,12 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // Header
-                    const Text(
+                    Text(
                       'Feedback',
                       style: TextStyle(
                         fontSize: 26,
                         fontWeight: FontWeight.w700,
+                        color: textPrimary,
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -155,12 +171,12 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
                     const SizedBox(height: 32),
 
                     // Stats Section
-                    const Text(
+                    Text(
                       'Seus feedbacks',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
-                        color: Color(0xFF1D1D1F),
+                        color: textPrimary,
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -179,7 +195,10 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
                                 count: stats.bugCount,
                                 icon: Icons.bug_report_outlined,
                                 color: _bugColor,
-                                backgroundColor: _bugBackground,
+                                backgroundColor: _statsCardBackground(
+                                  FeedbackType.bug,
+                                  context,
+                                ),
                                 isSelected: _selectedType == FeedbackType.bug,
                                 onTap: () => setState(
                                   () => _selectedType = FeedbackType.bug,
@@ -190,7 +209,10 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
                                 count: stats.suggestionCount,
                                 icon: Icons.lightbulb_outline,
                                 color: _suggestionColor,
-                                backgroundColor: _suggestionBackground,
+                                backgroundColor: _statsCardBackground(
+                                  FeedbackType.suggestion,
+                                  context,
+                                ),
                                 isSelected:
                                     _selectedType == FeedbackType.suggestion,
                                 onTap: () => setState(
@@ -202,7 +224,10 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
                                 count: stats.praiseCount,
                                 icon: Icons.favorite_border,
                                 color: _praiseColor,
-                                backgroundColor: _praiseBackground,
+                                backgroundColor: _statsCardBackground(
+                                  FeedbackType.praise,
+                                  context,
+                                ),
                                 isSelected:
                                     _selectedType == FeedbackType.praise,
                                 onTap: () => setState(
@@ -231,7 +256,10 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
                                 count: 0,
                                 icon: Icons.bug_report_outlined,
                                 color: _bugColor,
-                                backgroundColor: _bugBackground,
+                                backgroundColor: _statsCardBackground(
+                                  FeedbackType.bug,
+                                  context,
+                                ),
                                 isSelected: _selectedType == FeedbackType.bug,
                                 onTap: () => setState(
                                   () => _selectedType = FeedbackType.bug,
@@ -242,7 +270,10 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
                                 count: 0,
                                 icon: Icons.lightbulb_outline,
                                 color: _suggestionColor,
-                                backgroundColor: _suggestionBackground,
+                                backgroundColor: _statsCardBackground(
+                                  FeedbackType.suggestion,
+                                  context,
+                                ),
                                 isSelected:
                                     _selectedType == FeedbackType.suggestion,
                                 onTap: () => setState(
@@ -254,7 +285,10 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
                                 count: 0,
                                 icon: Icons.favorite_border,
                                 color: _praiseColor,
-                                backgroundColor: _praiseBackground,
+                                backgroundColor: _statsCardBackground(
+                                  FeedbackType.praise,
+                                  context,
+                                ),
                                 isSelected:
                                     _selectedType == FeedbackType.praise,
                                 onTap: () => setState(
@@ -271,7 +305,7 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
                     Text(
                       'Toque em um cartão ou selecione abaixo o tipo do feedback.',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: const Color(0xFF6B7280),
+                        color: textSecondary,
                       ),
                     ),
 
@@ -299,7 +333,7 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
                     Container(
                       padding: const EdgeInsets.all(24),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: context.premiumSurface,
                         borderRadius: BorderRadius.circular(24),
                         boxShadow: [
                           BoxShadow(
@@ -334,7 +368,7 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
                                   ),
                                   label: const Text('E-mail'),
                                   style: TextButton.styleFrom(
-                                    foregroundColor: const Color(0xFF0F62FE),
+                                    foregroundColor: accent,
                                     padding: const EdgeInsets.symmetric(
                                       horizontal: 8,
                                     ),
@@ -343,21 +377,21 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
                               ],
                             ),
                             const SizedBox(height: 6),
-                            const Text(
+                            Text(
                               'Canal direto: $_supportEmail',
                               style: TextStyle(
                                 fontSize: 13,
-                                color: Color(0xFF6B7280),
+                                color: textSecondary,
                               ),
                             ),
                             const SizedBox(height: 24),
 
                             // Type Selector
-                            const Text(
+                            Text(
                               'Tipo de Feedback',
                               style: TextStyle(
                                 fontSize: 16,
-                                color: Color(0xFF1D1D1F),
+                                color: textPrimary,
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
@@ -366,11 +400,11 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
 
                             const SizedBox(height: 24),
 
-                            const Text(
+                            Text(
                               'Onde aconteceu?',
                               style: TextStyle(
                                 fontSize: 16,
-                                color: Color(0xFF1D1D1F),
+                                color: textPrimary,
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
@@ -379,11 +413,11 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
 
                             const SizedBox(height: 24),
 
-                            const Text(
+                            Text(
                               'Impacto',
                               style: TextStyle(
                                 fontSize: 16,
-                                color: Color(0xFF1D1D1F),
+                                color: textPrimary,
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
@@ -393,11 +427,11 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
                             const SizedBox(height: 24),
 
                             // Message Input
-                            const Text(
+                            Text(
                               'Sua mensagem',
                               style: TextStyle(
                                 fontSize: 16,
-                                color: Color(0xFF1D1D1F),
+                                color: textPrimary,
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
@@ -411,31 +445,31 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
                               decoration: InputDecoration(
                                 hintText:
                                     'Ex.: encontrei erro ao salvar uma visita, gostaria de filtro por safra...',
-                                hintStyle: const TextStyle(
-                                  color: Colors.black38,
+                                hintStyle: TextStyle(
+                                  color: context.premiumTextTertiary,
                                 ),
                                 counterText: '',
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(
-                                    color: Color(0xFFE5E7EB),
+                                  borderSide: BorderSide(
+                                    color: context.premiumHairline,
                                   ),
                                 ),
                                 enabledBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(
-                                    color: Color(0xFFE5E7EB),
+                                  borderSide: BorderSide(
+                                    color: context.premiumHairline,
                                   ),
                                 ),
                                 focusedBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(
-                                    color: Color(0xFF0F62FE),
+                                  borderSide: BorderSide(
+                                    color: accent,
                                     width: 1.5,
                                   ),
                                 ),
                                 filled: true,
-                                fillColor: const Color(0xFFF5F7FA),
+                                fillColor: context.premiumBackground,
                                 contentPadding: const EdgeInsets.all(16),
                               ),
                               validator: (value) {
@@ -454,9 +488,9 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
                               alignment: Alignment.centerLeft,
                               child: Text(
                                 '$_messageLength/$_messageMaxLength',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 13,
-                                  color: Color(0xFF6B7280),
+                                  color: textSecondary,
                                 ),
                               ),
                             ),
@@ -472,7 +506,7 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
                                     ? null
                                     : _submit,
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFF0F62FE),
+                                  backgroundColor: accent,
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12),
                                   ),
@@ -526,7 +560,7 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
       hint: const Text('Selecione o tipo'),
       isExpanded: true,
       icon: const Icon(Icons.keyboard_arrow_down),
-      decoration: _dropdownDecoration(),
+      decoration: _dropdownDecoration(context),
       validator: (value) =>
           value == null ? 'Selecione o tipo de feedback' : null,
       items: FeedbackType.values.map((type) {
@@ -569,7 +603,7 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
       hint: const Text('Selecione o módulo'),
       isExpanded: true,
       icon: const Icon(Icons.keyboard_arrow_down),
-      decoration: _dropdownDecoration(),
+      decoration: _dropdownDecoration(context),
       validator: (value) => value == null ? 'Selecione o módulo' : null,
       items: FeedbackModule.values.map((module) {
         return DropdownMenuItem(
@@ -578,7 +612,7 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
             children: [
               Icon(
                 _moduleIcon(module),
-                color: const Color(0xFF0F62FE),
+                color: Theme.of(context).colorScheme.primary,
                 size: 20,
               ),
               const SizedBox(width: 12),
@@ -607,7 +641,7 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
       hint: const Text('Selecione o impacto'),
       isExpanded: true,
       icon: const Icon(Icons.keyboard_arrow_down),
-      decoration: _dropdownDecoration(),
+      decoration: _dropdownDecoration(context),
       validator: (value) => value == null ? 'Selecione o impacto' : null,
       items: FeedbackImpact.values.map((impact) {
         final color = _impactColor(impact);
@@ -630,22 +664,23 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
     );
   }
 
-  InputDecoration _dropdownDecoration() {
+  InputDecoration _dropdownDecoration(BuildContext context) {
+    final accent = Theme.of(context).colorScheme.primary;
     return InputDecoration(
       filled: true,
-      fillColor: const Color(0xFFF5F7FA),
+      fillColor: context.premiumBackground,
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+        borderSide: BorderSide(color: context.premiumHairline),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+        borderSide: BorderSide(color: context.premiumHairline),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Color(0xFF0F62FE), width: 1.5),
+        borderSide: BorderSide(color: accent, width: 1.5),
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
@@ -700,6 +735,7 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
 
   // Phase 4: Success View
   Widget _buildSuccessView() {
+    final accent = Theme.of(context).colorScheme.primary;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -708,32 +744,28 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
           children: [
             Container(
               padding: const EdgeInsets.all(24),
-              decoration: const BoxDecoration(
-                color: Color(0xFFD1FAE5),
+              decoration: BoxDecoration(
+                color: accent.withValues(alpha: 0.15),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
-                Icons.check,
-                color: Color(0xFF34C759),
-                size: 48,
-              ),
+              child: Icon(Icons.check, color: accent, size: 48),
             ),
             const SizedBox(height: 24),
-            const Text(
+            Text(
               'Obrigado!',
               style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.w600,
-                color: Color(0xFF1D1D1F),
+                color: context.premiumTextPrimary,
               ),
             ),
             const SizedBox(height: 16),
-            const Text(
+            Text(
               'Seu feedback foi enviado com sucesso. Se precisar complementar, use $_supportEmail.',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 16,
-                color: Color(0xFF86868B),
+                color: context.premiumTextSecondary,
                 height: 1.5,
               ),
             ),
@@ -743,17 +775,11 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
               height: 56,
               child: OutlinedButton(
                 onPressed: () {
-                  // Reset form to send another or go back
-                  // Design suggests just being done, but let's allow going back or resetting
-                  // For now, let's reset internal state to allow new submission or just go back
-                  // But the user might want to leave.
-                  // Let's offer "Back to Home"
                   context.go(AppRoutes.map);
-                  // Ensure state is reset next time we visit
                   ref.read(feedbackControllerProvider.notifier).reset();
                 },
                 style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: Color(0xFF0F62FE)),
+                  side: BorderSide(color: accent),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),

@@ -124,8 +124,8 @@ class MonthCalendarGrid extends StatelessWidget {
                 ),
                 child: Text(
                   events.length.toString(),
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: theme.colorScheme.onPrimary,
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
                   ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 
 enum OportunidadesChartMode { categoria, produtor }
 
@@ -16,11 +17,17 @@ class OportunidadesChartModeToggle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final trackColor = isDark
+        ? const Color(0xFF242426)
+        : const Color(0xFFE5E5EA);
+    final selectedFill = isDark ? context.premiumSurface : Colors.white;
+
     return Container(
       height: 34,
       padding: const EdgeInsets.all(2),
       decoration: BoxDecoration(
-        color: const Color(0xFFE5E5EA),
+        color: trackColor,
         borderRadius: BorderRadius.circular(9),
       ),
       child: Row(
@@ -28,6 +35,7 @@ class OportunidadesChartModeToggle extends StatelessWidget {
           _Side(
             label: 'Categoria',
             isSelected: value == OportunidadesChartMode.categoria,
+            selectedFill: selectedFill,
             onTap: () {
               if (value == OportunidadesChartMode.categoria) return;
               HapticFeedback.selectionClick();
@@ -37,6 +45,7 @@ class OportunidadesChartModeToggle extends StatelessWidget {
           _Side(
             label: 'Produtor',
             isSelected: value == OportunidadesChartMode.produtor,
+            selectedFill: selectedFill,
             onTap: () {
               if (value == OportunidadesChartMode.produtor) return;
               HapticFeedback.selectionClick();
@@ -53,11 +62,13 @@ class _Side extends StatelessWidget {
   const _Side({
     required this.label,
     required this.isSelected,
+    required this.selectedFill,
     required this.onTap,
   });
 
   final String label;
   final bool isSelected;
+  final Color selectedFill;
   final VoidCallback onTap;
 
   @override
@@ -71,7 +82,7 @@ class _Side extends StatelessWidget {
           curve: Curves.easeOut,
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: isSelected ? Colors.white : Colors.transparent,
+            color: isSelected ? selectedFill : Colors.transparent,
             borderRadius: BorderRadius.circular(7),
             boxShadow: isSelected
                 ? [
@@ -88,7 +99,9 @@ class _Side extends StatelessWidget {
             style: TextStyle(
               fontSize: 13,
               fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-              color: isSelected ? Colors.black87 : Colors.black54,
+              color: isSelected
+                  ? context.premiumTextPrimary
+                  : context.premiumTextSecondary,
             ),
           ),
         ),

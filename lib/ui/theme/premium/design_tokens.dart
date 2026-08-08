@@ -28,11 +28,13 @@ class PremiumTokens {
     0xFFFFFFFF,
   ); // Cards, formulários brancos limpos
 
-  // Dark Mode
-  static const Color backgroundDark = Color(0xFF000000); // Preto puro
+  // Dark Mode (Black — soloforte-blackmode)
+  static const Color backgroundDark = Color(0xFF0D0D0D);
   static const Color surfaceDark = Color(
     0xFF1C1C1E,
   ); // Cinza chumbo claro (cards)
+  static const Color blackAccentPrimary = Color(0xFF1428A0); // Azul Samsung
+  static const Color blackAccentVariant = Color(0xFF0F1E7A); // pressed/hover
 
   // === VIDROS (GLASSMORPHISM) ===
 
@@ -57,7 +59,7 @@ class PremiumTokens {
   static const Color textTertiaryLight = Color(0x4D3C3C43);
 
   static const Color textPrimaryDark = Color(0xFFFFFFFF);
-  static const Color textSecondaryDark = Color(0x99ebebf5); // Opacidade de 60%
+  static const Color textSecondaryDark = Color(0xFFA0A0A5);
   static const Color textTertiaryDark = Color(0x4DEBEBF5);
 
   // === GEOMETRIA (SQUIRCLES) E BORDAS ===

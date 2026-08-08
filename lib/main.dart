@@ -30,6 +30,8 @@ import 'core/contracts/i_agenda_observable.dart';
 import 'core/contracts/i_agenda_observable_provider.dart';
 import 'core/contracts/i_report_writer_provider.dart';
 import 'core/contracts/i_user_location_lookup_provider.dart';
+import 'core/contracts/i_marketing_case_reports_lookup_provider.dart';
+import 'core/contracts/marketing_case_reports_list_provider.dart';
 import 'modules/dashboard/infra/location_lookup_adapter.dart';
 import 'core/database/database_helper.dart';
 import 'core/infra/preferences_service.dart';
@@ -78,6 +80,7 @@ import 'modules/produtor/data/producer_link_repository.dart';
 import 'modules/produtor/infra/producer_invite_writer_adapter.dart';
 import 'modules/produtor/infra/occurrence_access_reader_adapter.dart';
 import 'modules/clima/infra/radar_overlay_controller_adapter.dart';
+import 'modules/marketing/infra/marketing_case_reports_lookup_adapter.dart';
 import 'modules/map/presentation/providers/visit_completion_observer.dart';
 import 'modules/settings/data/settings_repository.dart';
 import 'modules/settings/presentation/providers/settings_providers.dart';
@@ -290,6 +293,13 @@ Future<void> main() async {
               // Contrato de localização do usuário para módulo clima/
               userLocationLookupProvider.overrideWith(
                 (ref) => LocationLookupAdapter(ref),
+              ),
+              // ADR-048: Marketing Cases em Relatórios via contrato neutro
+              marketingCaseReportsLookupProvider.overrideWith(
+                (ref) => MarketingCaseReportsLookupAdapter(ref),
+              ),
+              marketingCaseReportsListProvider.overrideWith(
+                (ref) => ref.watch(marketingCaseReportsListImplProvider),
               ),
             ],
             child: const SoloForteApp(),

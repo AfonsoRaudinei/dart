@@ -107,6 +107,7 @@ class ClientListScreen extends ConsumerWidget {
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       children: ['Todos', 'Ativos', 'Inativos'].map((f) {
                         final isSelected = filter == f;
+                        final accent = Theme.of(context).colorScheme.primary;
                         return Padding(
                           padding: const EdgeInsets.only(right: 8.0),
                           child: GestureDetector(
@@ -120,12 +121,12 @@ class ClientListScreen extends ConsumerWidget {
                               ),
                               decoration: BoxDecoration(
                                 color: isSelected
-                                    ? PremiumTokens.brandGreen
+                                    ? accent
                                     : context.premiumSurface,
                                 borderRadius: BorderRadius.circular(20),
                                 border: Border.all(
                                   color: isSelected
-                                      ? PremiumTokens.brandGreen
+                                      ? accent
                                       : context.premiumHairline,
                                 ),
                               ),
@@ -133,7 +134,7 @@ class ClientListScreen extends ConsumerWidget {
                                 f,
                                 style: TextStyle(
                                   color: isSelected
-                                      ? Colors.white
+                                      ? Theme.of(context).colorScheme.onPrimary
                                       : context.premiumTextPrimary,
                                   fontWeight: isSelected
                                       ? FontWeight.w600

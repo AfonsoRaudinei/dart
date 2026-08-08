@@ -12,6 +12,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:soloforte_app/core/constants/layout_constants.dart';
 import 'package:soloforte_app/core/router/app_routes.dart';
+import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 import '../../data/services/mercadopago_service.dart';
 
 class PagamentoScreen extends ConsumerStatefulWidget {
@@ -77,7 +78,7 @@ class _PagamentoScreenState extends ConsumerState<PagamentoScreen> {
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFF000000),
+      backgroundColor: context.premiumBackground,
       body: SafeArea(
         child: Column(
           children: [
@@ -89,13 +90,13 @@ class _PagamentoScreenState extends ConsumerState<PagamentoScreen> {
                   const SizedBox(height: 16),
                   _PlanoBadge(label: _planoLabel),
                   const SizedBox(height: 24),
-                  const Text(
+                  Text(
                     'Escolha o método de pagamento',
                     style: TextStyle(
                       fontFamily: 'Inter',
                       fontSize: 17,
                       fontWeight: FontWeight.w600,
-                      color: Colors.white,
+                      color: context.premiumTextPrimary,
                       letterSpacing: -0.4,
                     ),
                   ),
@@ -134,9 +135,9 @@ class _PagamentoScreenState extends ConsumerState<PagamentoScreen> {
                   ],
                   const SizedBox(height: 32),
                   _loading
-                      ? const Center(
+                      ? Center(
                           child: CircularProgressIndicator(
-                            color: Color(0xFF32D74B),
+                            color: Theme.of(context).colorScheme.primary,
                           ),
                         )
                       : SizedBox(
@@ -146,7 +147,7 @@ class _PagamentoScreenState extends ConsumerState<PagamentoScreen> {
                             onTap: _iniciarPagamento,
                             child: DecoratedBox(
                               decoration: BoxDecoration(
-                                color: const Color(0xFF32D74B),
+                                color: Theme.of(context).colorScheme.primary,
                                 borderRadius: BorderRadius.circular(50),
                               ),
                               child: const Center(
@@ -175,8 +176,9 @@ class _PagamentoScreenState extends ConsumerState<PagamentoScreen> {
   }
 
   Widget _buildIosUnavailable(BuildContext context) {
+    final primary = Theme.of(context).colorScheme.primary;
     return Scaffold(
-      backgroundColor: const Color(0xFF000000),
+      backgroundColor: context.premiumBackground,
       body: SafeArea(
         child: Center(
           child: Padding(
@@ -184,20 +186,20 @@ class _PagamentoScreenState extends ConsumerState<PagamentoScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(
+                Icon(
                   Icons.lock_outline_rounded,
-                  color: Color(0xFF32D74B),
+                  color: primary,
                   size: 56,
                 ),
                 const SizedBox(height: 24),
-                const Text(
+                Text(
                   'Pagamento indisponivel no iOS',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontFamily: 'Inter',
                     fontSize: 20,
                     fontWeight: FontWeight.w700,
-                    color: Colors.white,
+                    color: context.premiumTextPrimary,
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -216,12 +218,12 @@ class _PagamentoScreenState extends ConsumerState<PagamentoScreen> {
                     HapticFeedback.lightImpact();
                     context.go(AppRoutes.planos);
                   },
-                  child: const Text(
+                  child: Text(
                     'Voltar aos planos',
                     style: TextStyle(
                       fontFamily: 'Inter',
                       fontSize: 15,
-                      color: Color(0xFF32D74B),
+                      color: primary,
                     ),
                   ),
                 ),
@@ -235,18 +237,18 @@ class _PagamentoScreenState extends ConsumerState<PagamentoScreen> {
   }
 
   Widget _buildHeader(BuildContext context) {
-    return const Padding(
-      padding: EdgeInsets.fromLTRB(20, 16, 20, 8),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
       child: Row(
         children: [
-          SizedBox(width: 40),
+          const SizedBox(width: 40),
           Text(
             'Pagamento',
             style: TextStyle(
               fontFamily: 'Inter',
               fontSize: 22,
               fontWeight: FontWeight.w700,
-              color: Colors.white,
+              color: context.premiumTextPrimary,
             ),
           ),
         ],
@@ -265,6 +267,7 @@ class _PlanoBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final primary = Theme.of(context).colorScheme.primary;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
       decoration: BoxDecoration(
@@ -273,19 +276,19 @@ class _PlanoBadge extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Icon(
+          Icon(
             Icons.verified_rounded,
-            color: Color(0xFF32D74B),
+            color: primary,
             size: 20,
           ),
           const SizedBox(width: 12),
           Text(
             'Plano $label',
-            style: const TextStyle(
+            style: TextStyle(
               fontFamily: 'Inter',
               fontSize: 16,
               fontWeight: FontWeight.w600,
-              color: Colors.white,
+              color: context.premiumTextPrimary,
             ),
           ),
         ],
@@ -311,6 +314,7 @@ class _MetodoTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final primary = Theme.of(context).colorScheme.primary;
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
@@ -318,12 +322,12 @@ class _MetodoTile extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: selecionado
-              ? const Color(0xFF32D74B).withAlpha(25)
+              ? primary.withAlpha(25)
               : const Color(0xFF1C1C1E),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: selecionado
-                ? const Color(0xFF32D74B)
+                ? primary
                 : const Color(0xFF3A3A3C),
             width: selecionado ? 1.5 : 1,
           ),
@@ -333,7 +337,7 @@ class _MetodoTile extends StatelessWidget {
             Icon(
               icone,
               color: selecionado
-                  ? const Color(0xFF32D74B)
+                  ? primary
                   : const Color(0xFF8E8E93),
               size: 28,
             ),
@@ -349,7 +353,7 @@ class _MetodoTile extends StatelessWidget {
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
                       color: selecionado
-                          ? Colors.white
+                          ? context.premiumTextPrimary
                           : const Color(0xFFE5E5EA),
                     ),
                   ),
@@ -365,9 +369,9 @@ class _MetodoTile extends StatelessWidget {
               ),
             ),
             if (selecionado)
-              const Icon(
+              Icon(
                 Icons.check_circle_rounded,
-                color: Color(0xFF32D74B),
+                color: primary,
                 size: 20,
               ),
           ],

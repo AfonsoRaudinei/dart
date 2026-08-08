@@ -211,7 +211,7 @@ class PremiumAppTheme {
   // ============================================
 
   static ThemeData get darkTheme {
-    const accent = PremiumTokens.brandGreenDark;
+    const accent = PremiumTokens.blackAccentPrimary;
 
     return ThemeData(
       useMaterial3: true,
@@ -222,12 +222,12 @@ class PremiumAppTheme {
       highlightColor: Colors.transparent,
       hoverColor: Colors.transparent,
 
-      primaryColor: PremiumTokens.brandGreenDark,
-      scaffoldBackgroundColor: PremiumTokens.backgroundDark, // Preto profundo
+      primaryColor: PremiumTokens.blackAccentPrimary,
+      scaffoldBackgroundColor: PremiumTokens.backgroundDark,
 
       colorScheme: const ColorScheme.dark(
-        primary: PremiumTokens.brandGreenDark,
-        secondary: PremiumTokens.brandGreenDark,
+        primary: PremiumTokens.blackAccentPrimary,
+        secondary: PremiumTokens.blackAccentVariant,
         surface: PremiumTokens.surfaceDark,
         error: PremiumTokens.alertError,
         onPrimary: Colors.white,

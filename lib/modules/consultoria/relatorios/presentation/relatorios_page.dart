@@ -10,12 +10,10 @@ import '../../../../core/constants/layout_constants.dart';
 import '../../../../core/contracts/i_occurrence_access_reader_provider.dart';
 import '../../../../core/router/app_routes.dart';
 import '../../../../core/html_templates/html_report_viewer.dart';
-import '../../../../core/html_templates/marketing_html_renderer.dart';
 import '../../../../core/html_templates/ocorrencia_html_renderer.dart';
 import '../../../../core/html_templates/propriedade_html_renderer.dart';
 import '../../../../core/html_templates/relatorio_html_renderer.dart';
 import '../../../../core/html_templates/report_export_service.dart';
-import '../../../../core/session/local_session_identity.dart';
 import '../../../../core/session/user_role.dart';
 import '../../../../core/utils/share_position.dart';
 import '../../../../core/ui/sheets/soloforte_sheet.dart';
@@ -41,11 +39,9 @@ import '../../occurrences/presentation/widgets/occurrence_creation_sheet.dart';
 import '../../occurrences/presentation/widgets/occurrence_detail_sheet.dart';
 // hide SyncStatus para evitar conflito com o enum de relatorio.dart
 import '../../occurrences/domain/occurrence.dart' hide SyncStatus;
-import '../../../marketing/domain/entities/marketing_case.dart';
-import '../../../marketing/domain/enums/case_tipo.dart';
-import '../../../marketing/domain/marketing_case_visibility.dart';
-import '../../../marketing/presentation/providers/marketing_providers.dart';
-import '../../../marketing/presentation/widgets/edit_case_sheet.dart';
+import '../../../../core/contracts/marketing_case_reports_list_provider.dart';
+import '../../../../core/contracts/i_marketing_case_reports_lookup_provider.dart';
+import '../../../../core/contracts/marketing_case_report_snapshot.dart';
 import 'package:soloforte_app/core/utils/app_logger.dart';
 import 'package:soloforte_app/core/utils/user_facing_error.dart';
 

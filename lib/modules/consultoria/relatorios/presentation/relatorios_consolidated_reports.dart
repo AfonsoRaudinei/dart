@@ -120,20 +120,16 @@ class _MarketingCasesReportsSectionState
     setState(() => _filter = value);
   }
 
-  List<MarketingCase> _applyTypeFilter(List<MarketingCase> cases) {
+  List<MarketingCaseReportSnapshot> _applyTypeFilter(
+    List<MarketingCaseReportSnapshot> cases,
+  ) {
     switch (_filter) {
       case _MarketingCaseFilter.resultado:
-        return cases
-            .where((item) => item.tipo == CaseTipo.resultado)
-            .toList();
+        return cases.where((item) => item.tipo == 'resultado').toList();
       case _MarketingCaseFilter.antesDepois:
-        return cases
-            .where((item) => item.tipo == CaseTipo.antesDepois)
-            .toList();
+        return cases.where((item) => item.tipo == 'antes_depois').toList();
       case _MarketingCaseFilter.avaliacao:
-        return cases
-            .where((item) => item.tipo == CaseTipo.avaliacao)
-            .toList();
+        return cases.where((item) => item.tipo == 'avaliacao').toList();
       case _MarketingCaseFilter.all:
         return cases;
     }
@@ -142,7 +138,7 @@ class _MarketingCasesReportsSectionState
   Future<void> _confirmDelete(
     BuildContext context,
     WidgetRef ref,
-    MarketingCase item,
+    MarketingCaseReportSnapshot item,
   ) async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -165,47 +161,30 @@ class _MarketingCasesReportsSectionState
       ),
     );
     if (confirmed != true) return;
-    await ref.read(marketingCasesProvider.notifier).deleteCase(item.id);
+    await ref.read(marketingCaseReportsLookupProvider).deleteCase(item.id);
   }
 
   @override
   Widget build(BuildContext context) {
     final dateFormat = widget.dateFormat;
-    late final AsyncValue<List<MarketingCase>> casesAsync;
+    late final AsyncValue<List<MarketingCaseReportSnapshot>> casesAsync;
     try {
-      casesAsync = ref.watch(marketingCasesProvider);
+      casesAsync = ref.watch(marketingCaseReportsListProvider);
     } catch (e, st) {
       AppLogger.error(
-        'marketingCasesProvider falhou na criação',
+        'marketingCaseReportsListProvider falhou na criação',
         tag: 'RelatoriosScreen',
         error: e,
         stackTrace: st,
       );
       return _SectionError(
         title: 'Marketing Cases',
-        onRetry: () => ref.invalidate(marketingCasesProvider),
+        onRetry: () => ref.invalidate(marketingCaseReportsListProvider),
       );
     }
 
-    final role = ref.watch(currentUserRoleProvider);
-    final authorizedAsync = role.isProdutor
-        ? ref.watch(authorizedClientIdsProvider)
-        : const AsyncValue.data(<String>{});
-    final currentUserId = LocalSessionIdentity.resolveUserId();
-
     return casesAsync.when(
-      data: (cases) {
-        final authorized =
-            authorizedAsync.valueOrNull ?? const <String>{};
-        final visible = cases.where((item) {
-          if (item.deletadoEm != null) return false;
-          if (!role.isProdutor) return true;
-          return MarketingCaseVisibility.isVisibleInReports(
-            marketingCase: item,
-            currentUserId: currentUserId,
-            authorizedClientIds: authorized,
-          );
-        }).toList();
+      data: (visible) {
         final filtered = _applyTypeFilter(visible);
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -237,28 +216,14 @@ class _MarketingCasesReportsSectionState
                 (item) => _GeneratedReportCard(
                   eyebrow: 'Marketing',
                   title: item.produtorFazenda,
-                  subtitle: _marketingSubtitle(item),
+                  subtitle: '${item.tipoLabel} • ${item.statusValue}',
                   date: dateFormat.format(item.criadoEm.toLocal()),
                   enabled: true,
                   menuTooltip: 'Ações do case de marketing',
                   buildPayload: () => _buildMarketingPayload(ref, item),
-                  onEdit: () => showSoloForteSheet<void>(
-                    context: context,
-                    isScrollControlled: true,
-                    preserveMaterialDefaults: true,
-                    backgroundColor: Colors.transparent,
-                    builder: (sheetContext) => EditCaseSheet(
-                      caso: item,
-                      onClose: () => Navigator.of(sheetContext).pop(),
-                      onSalvar: (updatedCase) async {
-                        await ref
-                            .read(marketingCasesProvider.notifier)
-                            .updateCase(updatedCase);
-                        if (!sheetContext.mounted) return;
-                        Navigator.of(sheetContext).pop();
-                      },
-                    ),
-                  ),
+                  onEdit: () => ref
+                      .read(marketingCaseReportsLookupProvider)
+                      .showEditSheet(context, item.id),
                   onViewLocation: () {
                     final lat = item.lat;
                     final lng = item.lng;
@@ -285,29 +250,18 @@ class _MarketingCasesReportsSectionState
       },
       loading: () => const _SectionLoading(title: 'Marketing Cases'),
       error: (e, st) {
-        AppLogger.error('marketingCasesProvider ERROR', tag: 'RelatoriosScreen', error: e, stackTrace: st);
+        AppLogger.error(
+          'marketingCaseReportsListProvider ERROR',
+          tag: 'RelatoriosScreen',
+          error: e,
+          stackTrace: st,
+        );
         return _SectionError(
           title: 'Marketing Cases',
-          onRetry: () => ref.invalidate(marketingCasesProvider),
+          onRetry: () => ref.invalidate(marketingCaseReportsListProvider),
         );
       },
     );
-  }
-
-  String _marketingSubtitle(MarketingCase item) {
-    return '${_marketingTypeLabel(item)} • ${item.status.toValue()}';
-  }
-
-  String _marketingTypeLabel(MarketingCase item) {
-    switch (item.tipo.toValue()) {
-      case 'antes_depois':
-        return 'Antes/Depois';
-      case 'avaliacao':
-        return 'Avaliação';
-      case 'resultado':
-      default:
-        return 'Resultado';
-    }
   }
 }
 
@@ -707,47 +661,27 @@ Map<String, dynamic> _historyRow(RelatorioTecnico report) {
 
 Future<_GeneratedReportPayload> _buildMarketingPayload(
   WidgetRef ref,
-  MarketingCase item,
+  MarketingCaseReportSnapshot item,
 ) async {
   final branding = await _resolveReportBrandingContext(
     ref,
     fallbackConsultantName: item.nomeVendedor ?? 'Equipe técnica',
     fallbackConsultantRole: 'Consultoria',
   );
-  final data = {
-    ...item.toJson(),
-    'avaliacoes': item.avaliacoes.map((bloco) => bloco.toJson()).toList(),
-    'report_brand_name': branding.brandName,
-    'report_logo_path': branding.logoPath,
-    'nome_vendedor': branding.consultantName,
-  };
-  final html = await MarketingHtmlRenderer.render(data);
+  final bundle = await ref.read(marketingCaseReportsLookupProvider).buildExportBundle(
+    item.id,
+    fallbackConsultantName: item.nomeVendedor ?? 'Equipe técnica',
+    fallbackConsultantRole: 'Consultoria',
+    reportBrandName: branding.brandName,
+    reportLogoPath: branding.logoPath,
+    consultantName: branding.consultantName,
+    consultantRole: branding.consultantRole,
+  );
   return _GeneratedReportPayload(
-    title: 'Marketing ${item.produtorFazenda}',
-    fileBaseName: 'marketing_${item.id}',
-    html: html,
-    json: {'tipo': 'marketing_case', 'case': data},
-    csv: ConsultoriaReportExportData.toCsv([
-      [
-        'id',
-        'tipo',
-        'produtor_fazenda',
-        'produto_utilizado',
-        'status',
-        'criado_em',
-        'lat',
-        'lng',
-      ],
-      [
-        item.id,
-        item.tipo.toValue(),
-        item.produtorFazenda,
-        item.produtoUtilizado,
-        item.status.toValue(),
-        item.criadoEm.toIso8601String(),
-        item.lat,
-        item.lng,
-      ],
-    ]),
+    title: bundle.title,
+    fileBaseName: bundle.fileBaseName,
+    html: bundle.html,
+    json: bundle.json,
+    csv: bundle.csv,
   );
 }

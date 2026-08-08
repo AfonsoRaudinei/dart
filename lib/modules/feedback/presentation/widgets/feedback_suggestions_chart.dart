@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 
 import '../../domain/entities/feedback_module.dart';
 
@@ -21,11 +22,12 @@ class FeedbackSuggestionsChart extends StatelessWidget {
         suggestionsByModule.entries.where((entry) => entry.value > 0).toList()
           ..sort((a, b) => b.value.compareTo(a.value));
     final visibleEntries = entries.take(6).toList();
+    final accent = Theme.of(context).colorScheme.primary;
 
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.premiumSurface,
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
@@ -38,59 +40,65 @@ class FeedbackSuggestionsChart extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Sugestões por módulo',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w700,
-              color: Color(0xFF1D1D1F),
+              color: context.premiumTextPrimary,
             ),
           ),
           const SizedBox(height: 6),
           Text(
             'Ajuda a ver onde as melhorias estão concentradas.',
-            style: Theme.of(
-              context,
-            ).textTheme.bodySmall?.copyWith(color: const Color(0xFF6B7280)),
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: context.premiumTextSecondary,
+            ),
           ),
           const SizedBox(height: 18),
           if (isUnavailable)
-            const SizedBox(
+            SizedBox(
               height: 140,
               child: Center(
                 child: Text(
                   'Não foi possível carregar estatísticas',
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: Color(0xFF6B7280)),
+                  style: TextStyle(color: context.premiumTextSecondary),
                 ),
               ),
             )
           else if (visibleEntries.isEmpty)
-            const SizedBox(
+            SizedBox(
               height: 140,
               child: Center(
                 child: Text(
                   'Nenhuma sugestão enviada ainda',
-                  style: TextStyle(color: Color(0xFF6B7280)),
+                  style: TextStyle(color: context.premiumTextSecondary),
                 ),
               ),
             )
           else
             SizedBox(
               height: 240,
-              child: BarChart(_buildChartData(visibleEntries)),
+              child: BarChart(_buildChartData(context, visibleEntries, accent)),
             ),
         ],
       ),
     );
   }
 
-  BarChartData _buildChartData(List<MapEntry<FeedbackModule, int>> entries) {
+  BarChartData _buildChartData(
+    BuildContext context,
+    List<MapEntry<FeedbackModule, int>> entries,
+    Color accent,
+  ) {
     final maxValue = entries.fold<int>(
       0,
       (previous, entry) => math.max(previous, entry.value),
     );
     final maxY = math.max(1, maxValue + 1).toDouble();
+    final textSecondary = context.premiumTextSecondary;
+    final textPrimary = context.premiumTextPrimary;
 
     return BarChartData(
       alignment: BarChartAlignment.spaceAround,
@@ -107,12 +115,12 @@ class FeedbackSuggestionsChart extends StatelessWidget {
           tooltipBorderRadius: BorderRadius.circular(8),
           fitInsideHorizontally: true,
           fitInsideVertically: true,
-          getTooltipColor: (_) => const Color(0xFF111827),
+          getTooltipColor: (_) => context.premiumSurface,
           getTooltipItem: (group, groupIndex, rod, rodIndex) {
             return BarTooltipItem(
               rod.toY.toInt().toString(),
-              const TextStyle(
-                color: Colors.white,
+              TextStyle(
+                color: textPrimary,
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
               ),
@@ -139,7 +147,7 @@ class FeedbackSuggestionsChart extends StatelessWidget {
               if (value % 1 != 0) return const SizedBox.shrink();
               return Text(
                 value.toInt().toString(),
-                style: const TextStyle(color: Color(0xFF6B7280), fontSize: 11),
+                style: TextStyle(color: textSecondary, fontSize: 11),
               );
             },
           ),
@@ -160,8 +168,8 @@ class FeedbackSuggestionsChart extends StatelessWidget {
                   textAlign: TextAlign.center,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Color(0xFF374151),
+                  style: TextStyle(
+                    color: textPrimary,
                     fontSize: 10,
                     fontWeight: FontWeight.w600,
                   ),
@@ -179,7 +187,7 @@ class FeedbackSuggestionsChart extends StatelessWidget {
             barRods: [
               BarChartRodData(
                 toY: entries[index].value.toDouble(),
-                color: const Color(0xFF0F62FE),
+                color: accent,
                 width: 20,
                 borderRadius: BorderRadius.circular(6),
               ),

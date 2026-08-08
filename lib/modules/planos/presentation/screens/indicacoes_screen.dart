@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:soloforte_app/core/constants/layout_constants.dart';
+import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 import '../providers/plano_providers.dart';
 import '../../domain/entities/referral.dart';
 import '../../domain/entities/referral_code.dart';
@@ -23,7 +24,7 @@ class IndicacoesScreen extends ConsumerWidget {
     final referralsAsync = ref.watch(referralsProvider);
 
     return Scaffold(
-      backgroundColor: const Color(0xFF000000),
+      backgroundColor: context.premiumBackground,
       body: SafeArea(
         child: Column(
           children: [
@@ -34,8 +35,10 @@ class IndicacoesScreen extends ConsumerWidget {
                   codigo: codigo,
                   referralsAsync: referralsAsync,
                 ),
-                loading: () => const Center(
-                  child: CircularProgressIndicator(color: Color(0xFF32D74B)),
+                loading: () => Center(
+                  child: CircularProgressIndicator(
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
                 ),
                 error: (e, _) => Center(
                   child: Text(
@@ -55,18 +58,18 @@ class IndicacoesScreen extends ConsumerWidget {
   }
 
   Widget _buildHeader(BuildContext context) {
-    return const Padding(
-      padding: EdgeInsets.fromLTRB(20, 16, 20, 8),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
       child: Row(
         children: [
-          SizedBox(width: 40),
+          const SizedBox(width: 40),
           Text(
             'Indicações',
             style: TextStyle(
               fontFamily: 'Inter',
               fontSize: 22,
               fontWeight: FontWeight.w700,
-              color: Colors.white,
+              color: context.premiumTextPrimary,
             ),
           ),
         ],
@@ -100,13 +103,13 @@ class _IndicacoesContent extends StatelessWidget {
           _ProgressoCard(indicacoesValidadas: codigo!.indicacoesValidadas),
           const SizedBox(height: 20),
         ],
-        const Text(
+        Text(
           'Histórico de indicações',
           style: TextStyle(
             fontFamily: 'Inter',
             fontSize: 17,
             fontWeight: FontWeight.w600,
-            color: Colors.white,
+            color: context.premiumTextPrimary,
           ),
         ),
         const SizedBox(height: 12),
@@ -118,10 +121,12 @@ class _IndicacoesContent extends StatelessWidget {
                       .map((r) => _ReferralTile(referral: r))
                       .toList(),
                 ),
-          loading: () => const Center(
+          loading: () => Center(
             child: Padding(
-              padding: EdgeInsets.all(24),
-              child: CircularProgressIndicator(color: Color(0xFF32D74B)),
+              padding: const EdgeInsets.all(24),
+              child: CircularProgressIndicator(
+                color: Theme.of(context).colorScheme.primary,
+              ),
             ),
           ),
           error: (e, _) => Text(
@@ -147,12 +152,13 @@ class _CodigoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final primary = Theme.of(context).colorScheme.primary;
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: const Color(0xFF1C1C1E),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFF32D74B).withAlpha(60)),
+        border: Border.all(color: primary.withAlpha(60)),
       ),
       child: Column(
         children: [
@@ -170,11 +176,11 @@ class _CodigoCard extends StatelessWidget {
             children: [
               Text(
                 codigo.code,
-                style: const TextStyle(
+                style: TextStyle(
                   fontFamily: 'Inter',
                   fontSize: 32,
                   fontWeight: FontWeight.w700,
-                  color: Color(0xFF32D74B),
+                  color: primary,
                   letterSpacing: 6,
                 ),
               ),
@@ -193,12 +199,12 @@ class _CodigoCard extends StatelessWidget {
                 child: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF32D74B).withAlpha(30),
+                    color: primary.withAlpha(30),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.copy_rounded,
-                    color: Color(0xFF32D74B),
+                    color: primary,
                     size: 18,
                   ),
                 ),
@@ -235,6 +241,7 @@ class _ProgressoCard extends StatelessWidget {
     // Bronze (0-4 = Prata) | Prata (0-9 = Ouro)
     final meta = 5; // simplificado — provider mostraria o plano atual
     final progresso = (indicacoesValidadas / meta).clamp(0.0, 1.0);
+    final primary = Theme.of(context).colorScheme.primary;
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -248,13 +255,13 @@ class _ProgressoCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 'Progresso',
                 style: TextStyle(
                   fontFamily: 'Inter',
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
-                  color: Colors.white,
+                  color: context.premiumTextPrimary,
                 ),
               ),
               Text(
@@ -273,7 +280,7 @@ class _ProgressoCard extends StatelessWidget {
             child: LinearProgressIndicator(
               value: progresso,
               backgroundColor: const Color(0xFF3A3A3C),
-              color: const Color(0xFF32D74B),
+              color: primary,
               minHeight: 8,
             ),
           ),
@@ -292,10 +299,10 @@ class _ReferralTile extends StatelessWidget {
 
   const _ReferralTile({required this.referral});
 
-  Color get _statusColor {
+  Color _statusColor(BuildContext context) {
     switch (referral.status) {
       case ReferralStatus.validada:
-        return const Color(0xFF32D74B);
+        return Theme.of(context).colorScheme.primary;
       case ReferralStatus.pendente:
         return const Color(0xFFFF9F0A);
       case ReferralStatus.expirada:
@@ -316,6 +323,7 @@ class _ReferralTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final statusColor = _statusColor(context);
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -329,12 +337,12 @@ class _ReferralTile extends StatelessWidget {
             width: 36,
             height: 36,
             decoration: BoxDecoration(
-              color: _statusColor.withAlpha(25),
+              color: statusColor.withAlpha(25),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(
               Icons.person_outline_rounded,
-              color: _statusColor,
+              color: statusColor,
               size: 18,
             ),
           ),
@@ -345,11 +353,11 @@ class _ReferralTile extends StatelessWidget {
               children: [
                 Text(
                   'Código: ${referral.code}',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontFamily: 'Inter',
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
-                    color: Colors.white,
+                    color: context.premiumTextPrimary,
                   ),
                 ),
                 Text(
@@ -369,7 +377,7 @@ class _ReferralTile extends StatelessWidget {
               fontFamily: 'Inter',
               fontSize: 13,
               fontWeight: FontWeight.w600,
-              color: _statusColor,
+              color: statusColor,
             ),
           ),
         ],

@@ -49,12 +49,12 @@ class UnsavedChangesDialog extends StatelessWidget {
         if (onSaveAndExit != null)
           TextButton(
             onPressed: onSaveAndExit,
+            style: TextButton.styleFrom(
+              foregroundColor: theme.colorScheme.primary,
+            ),
             child: const Text(
               'Salvar e Sair',
-              style: TextStyle(
-                color: Color(0xFF4ADE80),
-                fontWeight: FontWeight.w600,
-              ),
+              style: TextStyle(fontWeight: FontWeight.w600),
             ),
           ),
         TextButton(

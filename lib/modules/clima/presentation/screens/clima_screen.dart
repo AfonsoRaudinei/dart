@@ -32,7 +32,7 @@ class ClimaScreen extends ConsumerWidget {
     final fallback = ref.watch(climaLocationFallbackProvider);
 
     return Scaffold(
-      backgroundColor: kClimaBg,
+      backgroundColor: context.climaBg,
       body: SafeArea(
         child: Column(
           children: [
@@ -188,14 +188,14 @@ class _CurrentView extends ConsumerWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
+                Text(
                   'Clima',
                   style: TextStyle(
                     fontFamily: 'Inter',
                     fontSize: 34,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 0.37,
-                    color: kClimaTextPrimary,
+                    color: context.climaTextPrimary,
                   ),
                 ),
                 Row(
@@ -292,8 +292,8 @@ class _ClimaMapRadarButton extends ConsumerWidget {
         width: double.infinity,
         child: OutlinedButton.icon(
           style: OutlinedButton.styleFrom(
-            foregroundColor: kClimaTint,
-            side: const BorderSide(color: kClimaDivider),
+            foregroundColor: context.climaTint,
+            side: BorderSide(color: context.climaDivider),
             padding: const EdgeInsets.symmetric(vertical: 14),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(14),

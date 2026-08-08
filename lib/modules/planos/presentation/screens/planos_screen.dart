@@ -11,6 +11,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:soloforte_app/core/constants/layout_constants.dart';
 import 'package:soloforte_app/core/router/app_routes.dart';
+import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 import '../../domain/enums/plano_tipo.dart';
 import '../providers/plano_providers.dart';
 
@@ -21,16 +22,16 @@ class PlanosScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     if (defaultTargetPlatform == TargetPlatform.iOS) {
       return Scaffold(
-        backgroundColor: const Color(0xFF000000),
+        backgroundColor: context.premiumBackground,
         appBar: AppBar(
           backgroundColor: Colors.transparent,
           elevation: 0,
-          title: const Text(
+          title: Text(
             'Planos SoloForte',
             style: TextStyle(
               fontFamily: 'Inter',
               fontWeight: FontWeight.w700,
-              color: Colors.white,
+              color: context.premiumTextPrimary,
             ),
           ),
           centerTitle: true,
@@ -41,29 +42,29 @@ class PlanosScreen extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(
+                Icon(
                   Icons.workspace_premium_rounded,
                   size: 64,
-                  color: Color(0xFF32D74B),
+                  color: Theme.of(context).colorScheme.primary,
                 ),
                 const SizedBox(height: 24),
-                const Text(
+                Text(
                   'Plano SoloForte',
                   style: TextStyle(
                     fontFamily: 'Inter',
                     fontSize: 18,
                     fontWeight: FontWeight.w500,
-                    color: Colors.white,
+                    color: context.premiumTextPrimary,
                   ),
                 ),
                 const SizedBox(height: 8),
-                const Text(
+                Text(
                   'Status da assinatura',
                   style: TextStyle(
                     fontFamily: 'Inter',
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF32D74B),
+                    color: Theme.of(context).colorScheme.primary,
                   ),
                 ),
                 const SizedBox(height: 32),
@@ -104,12 +105,12 @@ class PlanosScreen extends StatelessWidget {
                     HapticFeedback.lightImpact();
                     context.go(AppRoutes.map);
                   },
-                  child: const Text(
+                  child: Text(
                     'Voltar ao mapa',
                     style: TextStyle(
                       fontFamily: 'Inter',
                       fontSize: 15,
-                      color: Color(0xFF32D74B),
+                      color: Theme.of(context).colorScheme.primary,
                     ),
                   ),
                 ),
@@ -121,7 +122,7 @@ class PlanosScreen extends StatelessWidget {
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFF000000),
+      backgroundColor: context.premiumBackground,
       body: SafeArea(
         child: Column(
           children: [
@@ -150,11 +151,11 @@ class PlanosScreen extends StatelessWidget {
   }
 
   Widget _buildHeader(BuildContext context) {
-    return const Padding(
-      padding: EdgeInsets.fromLTRB(20, 16, 20, 8),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
       child: Row(
         children: [
-          SizedBox(width: 40),
+          const SizedBox(width: 40),
           Expanded(
             child: Text(
               'Planos SoloForte',
@@ -162,7 +163,7 @@ class PlanosScreen extends StatelessWidget {
                 fontFamily: 'Inter',
                 fontSize: 22,
                 fontWeight: FontWeight.w700,
-                color: Colors.white,
+                color: context.premiumTextPrimary,
                 letterSpacing: 0.37,
               ),
             ),
@@ -173,6 +174,7 @@ class PlanosScreen extends StatelessWidget {
   }
 
   Widget _buildIndication(BuildContext context) {
+    final primary = Theme.of(context).colorScheme.primary;
     return GestureDetector(
       onTap: () {
         HapticFeedback.lightImpact();
@@ -183,7 +185,7 @@ class PlanosScreen extends StatelessWidget {
         decoration: BoxDecoration(
           color: const Color(0xFF1C1C1E),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: const Color(0xFF32D74B).withAlpha(60)),
+          border: Border.all(color: primary.withAlpha(60)),
         ),
         child: Row(
           children: [
@@ -191,17 +193,17 @@ class PlanosScreen extends StatelessWidget {
               width: 46,
               height: 46,
               decoration: BoxDecoration(
-                color: const Color(0xFF32D74B).withAlpha(30),
+                color: primary.withAlpha(30),
                 borderRadius: BorderRadius.circular(14),
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.people_outline_rounded,
-                color: Color(0xFF32D74B),
+                color: primary,
                 size: 24,
               ),
             ),
             const SizedBox(width: 16),
-            const Expanded(
+            Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -211,11 +213,11 @@ class PlanosScreen extends StatelessWidget {
                       fontFamily: 'Inter',
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
-                      color: Colors.white,
+                      color: context.premiumTextPrimary,
                     ),
                   ),
-                  SizedBox(height: 4),
-                  Text(
+                  const SizedBox(height: 4),
+                  const Text(
                     '5 indicações → Prata · 10 indicações → Ouro',
                     style: TextStyle(
                       fontFamily: 'Inter',
