@@ -21,12 +21,15 @@ import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 import '../../domain/occurrence.dart';
 import '../../../relatorio_visita/data/image_storage_service.dart';
 import '../coordinators/occurrence_form_guard.dart';
+import '../providers/occurrence_draft_provider.dart';
+import '../models/occurrence_form_draft.dart';
 import 'occurrence_client_selector.dart';
 import 'occurrence_fenologia_data.dart';
 import 'occurrence_form_widgets.dart';
 
 part 'occurrence_creation_sheet_models.dart';
 part 'occurrence_creation_sheet_ui_helpers.dart';
+part 'occurrence_creation_sheet_draft.dart';
 
 class OccurrenceCreationSheet extends ConsumerStatefulWidget {
   final double latitude;
@@ -84,9 +87,13 @@ class _OccurrenceCreationSheetState
     widget.formGuard?.readIsDirty = _hasUnsavedChanges;
     _clientsFuture = _loadClientsForCurrentRole();
     _hydrateInitialOccurrence();
+    _restoreDraftIfAny();
+    _cultivarCtrl.addListener(_persistDraft);
+    _descCtrl.addListener(_persistDraft);
+    _recomCtrl.addListener(_persistDraft);
     if (widget.initialOccurrence != null) {
       _prefillInitialClient();
-    } else {
+    } else if (_selectedClient == null) {
       _prefillActiveVisitClient();
     }
   }
@@ -182,6 +189,10 @@ class _OccurrenceCreationSheetState
 
   @override
   void dispose() {
+    _cultivarCtrl.removeListener(_persistDraft);
+    _descCtrl.removeListener(_persistDraft);
+    _recomCtrl.removeListener(_persistDraft);
+    _persistDraft();
     if (widget.formGuard?.readIsDirty == _hasUnsavedChanges) {
       widget.formGuard?.readIsDirty = null;
     }
@@ -218,14 +229,14 @@ class _OccurrenceCreationSheetState
       _metrics[cat.name]?[key] ?? 0;
 
   void _setMetric(OccurrenceCategory cat, String key, int value) {
-    setState(() {
+    _patchForm(() {
       _metrics.putIfAbsent(cat.name, () => {});
       _metrics[cat.name]![key] = value;
     });
   }
 
   void _toggleNutriente(String sym, bool selected) {
-    setState(() => selected ? _nutrientes.remove(sym) : _nutrientes.add(sym));
+    _patchForm(() => selected ? _nutrientes.remove(sym) : _nutrientes.add(sym));
   }
 
   String _formatDate(DateTime d) =>
@@ -250,7 +261,7 @@ class _OccurrenceCreationSheetState
   }
 
   void _registerPersistedPhoto(OccurrenceCategory cat, String path) {
-    setState(() {
+    _patchForm(() {
       _fotos.putIfAbsent(cat.name, () => []);
       _fotos[cat.name]!.add(path);
     });
@@ -452,7 +463,7 @@ class _OccurrenceCreationSheetState
               OccurrenceClientSelector(
                 clientsFuture: _clientsFuture,
                 selectedClient: _selectedClient,
-                onChanged: (value) => setState(() => _selectedClient = value),
+                onChanged: (value) => _patchForm(() => _selectedClient = value),
               ),
               const SizedBox(height: 20),
 
@@ -476,7 +487,7 @@ class _OccurrenceCreationSheetState
                     lastDate: DateTime.now().add(const Duration(days: 365)),
                     helpText: 'Data de Plantio',
                   );
-                  if (picked != null) setState(() => _dataPlantio = picked);
+                  if (picked != null) _patchForm(() => _dataPlantio = picked);
                 },
                 child: Container(
                   padding: const EdgeInsets.all(14),
@@ -507,7 +518,7 @@ class _OccurrenceCreationSheetState
                       if (_dataPlantio != null) ...[
                         const Spacer(),
                         GestureDetector(
-                          onTap: () => setState(() => _dataPlantio = null),
+                          onTap: () => _patchForm(() => _dataPlantio = null),
                           child: const Icon(
                             Icons.clear,
                             size: 16,
@@ -546,8 +557,8 @@ class _OccurrenceCreationSheetState
               OccurrenceEstadioDropdown(
                 selected: _estadio,
                 expanded: _estadioCardExpanded,
-                onChanged: (e) => setState(() => _estadio = e),
-                onToggleCard: () => setState(
+                onChanged: (e) => _patchForm(() => _estadio = e),
+                onToggleCard: () => _patchForm(
                   () => _estadioCardExpanded = !_estadioCardExpanded,
                 ),
               ),
@@ -570,9 +581,8 @@ class _OccurrenceCreationSheetState
                   return GestureDetector(
                     onTap: () {
                       HapticFeedback.selectionClick();
-                      setState(() {
+                      _patchForm(() {
                         _selectedCategoryValue = cat.value;
-                        // sincroniza _cats para manter SEÇÃO 4 (métricas) funcional
                         _cats.clear();
                         if (cat.enumValue != null) {
                           _cats.add(cat.enumValue!);
@@ -637,7 +647,7 @@ class _OccurrenceCreationSheetState
                       : const Color(0xFFFF3B30);
                   return Expanded(
                     child: GestureDetector(
-                      onTap: () => setState(() => _urgency = u),
+                      onTap: () => _patchForm(() => _urgency = u),
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 200),
                         margin: const EdgeInsets.only(right: 6),
@@ -845,8 +855,9 @@ class _OccurrenceCreationSheetState
                             top: 2,
                             right: 2,
                             child: GestureDetector(
-                              onTap: () =>
-                                  setState(() => _fotos[cat.name]!.removeAt(i)),
+                              onTap: () => _patchForm(
+                                () => _fotos[cat.name]!.removeAt(i),
+                              ),
                               child: Container(
                                 padding: const EdgeInsets.all(2),
                                 decoration: BoxDecoration(
