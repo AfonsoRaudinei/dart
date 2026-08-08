@@ -1,5 +1,29 @@
 part of 'occurrence_creation_sheet.dart';
 
+extension _OccurrenceCreationSheetLifecycle on _OccurrenceCreationSheetState {
+  bool _hasUnsavedChanges() {
+    if (_cultivarCtrl.text.trim().isNotEmpty) return true;
+    if (_dataPlantio != null) return true;
+    if (_estadio != null) return true;
+    if (_selectedCategoryValue != null) return true;
+    if (_descCtrl.text.trim().isNotEmpty) return true;
+    if (_recomCtrl.text.trim().isNotEmpty) return true;
+    if (_metrics.isNotEmpty) return true;
+    if (_nutrientes.isNotEmpty) return true;
+    if (_fotos.isNotEmpty) return true;
+    if (_urgency != 'Média') return true;
+    for (final controller in _notasCtrls.values) {
+      if (controller.text.trim().isNotEmpty) return true;
+    }
+    return false;
+  }
+
+  Future<void> _handleCancel() async {
+    HapticFeedback.lightImpact();
+    await widget.onCancel?.call();
+  }
+}
+
 extension _OccurrenceCreationSheetUiHelpers on _OccurrenceCreationSheetState {
   Widget _buildNutrientGrid(Color color) {
     return Padding(
@@ -116,26 +140,45 @@ extension _OccurrenceCreationSheetUiHelpers on _OccurrenceCreationSheetState {
       _fotos.values.fold<int>(0, (sum, list) => sum + list.length);
 
   Future<void> _pickPhoto(OccurrenceCategory cat) async {
-    final src = await showSoloForteSheet<ImageSource>(
+    await showSoloForteSheet<void>(
       context: context,
       backgroundColor: Colors.transparent,
       showDragHandle: false,
       useSafeArea: false,
       shape: const RoundedRectangleBorder(),
       clipBehavior: Clip.none,
-      builder: (_) =>
-          OccurrencePhotoSourceSheet(catEmoji: cat.emoji, catLabel: cat.label),
+      builder: (sheetContext) => OccurrencePhotoSourceSheet(
+        catEmoji: cat.emoji,
+        catLabel: cat.label,
+        onCamera: () {
+          unawaited(
+            _capturePhotoFromSource(sheetContext, cat, ImageSource.camera),
+          );
+        },
+        onGallery: () {
+          unawaited(
+            _capturePhotoFromSource(sheetContext, cat, ImageSource.gallery),
+          );
+        },
+      ),
     );
-    if (src == null) return;
+  }
+
+  Future<void> _capturePhotoFromSource(
+    BuildContext sheetContext,
+    OccurrenceCategory cat,
+    ImageSource source,
+  ) async {
+    Navigator.of(sheetContext).pop();
+    if (!mounted) return;
+
     final xFile = await _picker.pickImage(
-      source: src,
+      source: source,
       imageQuality: 80,
       maxWidth: 1920,
     );
-    if (xFile == null) return;
+    if (xFile == null || !mounted) return;
 
-    // Path do ImagePicker é temporário — persiste em documents/media
-    // para o relatório conseguir ler foto_base64 / galeria depois.
     final persisted = await ImageStorageService().persistLocalCopy(xFile.path);
     if (persisted == null) {
       if (!mounted) return;

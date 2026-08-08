@@ -1,4 +1,5 @@
 // ignore_for_file: use_build_context_synchronously
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
@@ -19,6 +20,7 @@ import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 
 import '../../domain/occurrence.dart';
 import '../../../relatorio_visita/data/image_storage_service.dart';
+import '../coordinators/occurrence_form_guard.dart';
 import 'occurrence_client_selector.dart';
 import 'occurrence_fenologia_data.dart';
 import 'occurrence_form_widgets.dart';
@@ -30,9 +32,10 @@ class OccurrenceCreationSheet extends ConsumerStatefulWidget {
   final double latitude;
   final double longitude;
   final OccurrenceConfirmCallback onConfirm;
-  final VoidCallback? onCancel;
+  final FutureOr<void> Function()? onCancel;
   final ScrollController? scrollController;
   final Occurrence? initialOccurrence;
+  final OccurrenceFormGuard? formGuard;
 
   const OccurrenceCreationSheet({
     super.key,
@@ -42,6 +45,7 @@ class OccurrenceCreationSheet extends ConsumerStatefulWidget {
     this.onCancel,
     this.scrollController,
     this.initialOccurrence,
+    this.formGuard,
   });
 
   @override
@@ -77,6 +81,7 @@ class _OccurrenceCreationSheetState
     super.initState();
     _pinLatitude = widget.latitude;
     _pinLongitude = widget.longitude;
+    widget.formGuard?.readIsDirty = _hasUnsavedChanges;
     _clientsFuture = _loadClientsForCurrentRole();
     _hydrateInitialOccurrence();
     if (widget.initialOccurrence != null) {
@@ -177,6 +182,9 @@ class _OccurrenceCreationSheetState
 
   @override
   void dispose() {
+    if (widget.formGuard?.readIsDirty == _hasUnsavedChanges) {
+      widget.formGuard?.readIsDirty = null;
+    }
     _cultivarCtrl.dispose();
     _descCtrl.dispose();
     _recomCtrl.dispose();
@@ -426,7 +434,7 @@ class _OccurrenceCreationSheetState
                   if (widget.onCancel != null)
                     IconButton(
                       icon: const Icon(Icons.close),
-                      onPressed: widget.onCancel,
+                      onPressed: _handleCancel,
                       color: const Color(0xFF8E8E93),
                     ),
                 ],
@@ -705,10 +713,7 @@ class _OccurrenceCreationSheetState
                 children: [
                   Expanded(
                     child: OutlinedButton(
-                      onPressed: () {
-                        HapticFeedback.lightImpact();
-                        widget.onCancel?.call();
-                      },
+                      onPressed: _handleCancel,
                       style: OutlinedButton.styleFrom(
                         foregroundColor: Colors.white54,
                         side: const BorderSide(color: Colors.white24),
