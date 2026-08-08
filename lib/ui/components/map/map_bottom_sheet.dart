@@ -15,6 +15,7 @@ import '../../../modules/map/presentation/widgets/visit_sheet.dart';
 import '../../../modules/visitas/presentation/controllers/visit_controller.dart';
 import '../../../../modules/consultoria/occurrences/presentation/widgets/occurrence_list_sheet.dart';
 import '../../../../modules/consultoria/occurrences/presentation/widgets/occurrence_creation_sheet.dart';
+import '../../../../modules/consultoria/occurrences/presentation/providers/occurrence_draft_provider.dart';
 import '../../../../modules/consultoria/occurrences/presentation/coordinators/occurrence_close_coordinator.dart';
 import '../../../../modules/consultoria/occurrences/presentation/coordinators/occurrence_form_guard.dart';
 import '../../../screens/map/providers/occurrence_form_guard_provider.dart';
@@ -187,6 +188,7 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
         }
         return;
       }
+      _clearOccurrenceDraftAtCurrentPin();
     }
 
     ref.read(occurrenceFormGuardProvider.notifier).state = null;
@@ -309,6 +311,27 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
 
   double _getSheetHeight() {
     return _getDetentHeight(_currentDetent);
+  }
+
+  bool _shouldShowSheetContent(double height) {
+    if (widget.state.isCreatingOccurrence) {
+      // Formulário longo: exibir conteúdo assim que passar do handle compacto.
+      return height >= _getDetentHeight(SheetDetent.compact) + 8;
+    }
+    return height > _getDetentHeight(SheetDetent.compact) + 96;
+  }
+
+  String _tabContentKey() {
+    if (widget.state.type == MapSheetType.occurrences) {
+      return 'occurrences_${widget.state.isCreatingOccurrence}';
+    }
+    return widget.state.type.name;
+  }
+
+  void _clearOccurrenceDraftAtCurrentPin() {
+    final location = widget.creationLocation;
+    if (location == null) return;
+    clearOccurrenceDraft(ref, location.latitude, location.longitude);
   }
 
   Widget _buildTabContent() {
@@ -519,6 +542,7 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
           guard: _occurrenceFormGuard,
         );
         if (!canClose || !mounted) return;
+        _clearOccurrenceDraftAtCurrentPin();
         ref.read(occurrenceFormGuardProvider.notifier).state = null;
         widget.onClose();
       },
@@ -566,6 +590,8 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
 
         if (!mounted) return;
 
+        clearOccurrenceDraft(ref, data.latitude, data.longitude);
+
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Ocorrência registrada com sucesso!'),
@@ -593,9 +619,7 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
       child: AnimatedBuilder(
         animation: _heightAnimation,
         builder: (context, child) {
-          final showContent =
-              _heightAnimation.value >
-              (_getDetentHeight(SheetDetent.compact) + 96);
+          final showContent = _shouldShowSheetContent(_heightAnimation.value);
           return SizedBox(
             height: _heightAnimation.value,
             child: PremiumGlassPanel(
@@ -665,7 +689,7 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
                             );
                           },
                           child: Container(
-                            key: ValueKey(widget.state.type),
+                            key: ValueKey(_tabContentKey()),
                             child: _buildTabContent(),
                           ),
                         ),
