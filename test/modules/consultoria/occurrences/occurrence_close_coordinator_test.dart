@@ -66,5 +66,71 @@ void main() {
 
       expect(find.text('Descartar ocorrência?'), findsOneWidget);
     });
+
+    testWidgets('retorna false quando usuário continua preenchendo', (
+      tester,
+    ) async {
+      final guard = OccurrenceFormGuard();
+      guard.readIsDirty = () => true;
+      bool? result;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Builder(
+            builder: (context) {
+              return ElevatedButton(
+                onPressed: () async {
+                  result = await OccurrenceCloseCoordinator.confirmDiscardIfDirty(
+                    context,
+                    guard: guard,
+                  );
+                },
+                child: const Text('Fechar'),
+              );
+            },
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Fechar'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Continuar preenchendo'));
+      await tester.pumpAndSettle();
+
+      expect(result, isFalse);
+    });
+
+    testWidgets('retorna true quando usuário confirma descarte', (
+      tester,
+    ) async {
+      final guard = OccurrenceFormGuard();
+      guard.readIsDirty = () => true;
+      bool? result;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Builder(
+            builder: (context) {
+              return ElevatedButton(
+                onPressed: () async {
+                  result = await OccurrenceCloseCoordinator.confirmDiscardIfDirty(
+                    context,
+                    guard: guard,
+                  );
+                },
+                child: const Text('Fechar'),
+              );
+            },
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Fechar'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Descartar'));
+      await tester.pumpAndSettle();
+
+      expect(result, isTrue);
+    });
   });
 }
