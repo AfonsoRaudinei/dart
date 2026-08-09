@@ -23,3 +23,7 @@
 - Testes esperados: `test/modules/consultoria/`.
 - Rodar `flutter analyze lib/modules/consultoria/` e `./tool/arch_check.sh`.
 
+## Relatorios — regras de visibilidade e cronologia
+
+- Aba **Gerados** (Publicacoes): lista apenas `MarketingCaseStatus.published`, ativo e nao deletado. Filtro no adapter ADR-050 (`marketingCaseReportsListImplProvider`); consultoria consome via `core/contracts`.
+- Aba **Consolidados** e export de **Ocorrencias**: obrigatorio `clientId` unico por exportacao. Com multiplos produtores, exigir selecao antes de consolidar ou exportar; nunca misturar dados de produtores distintos.
