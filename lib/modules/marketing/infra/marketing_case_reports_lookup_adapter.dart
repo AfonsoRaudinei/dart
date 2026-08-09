@@ -10,6 +10,7 @@ import '../../../core/session/user_role.dart';
 import '../../../core/ui/sheets/soloforte_sheet.dart';
 import '../../settings/presentation/providers/user_profile_provider.dart';
 import '../domain/entities/marketing_case.dart';
+import '../domain/enums/marketing_case_status.dart';
 import '../domain/marketing_case_visibility.dart';
 import '../presentation/providers/marketing_providers.dart';
 import '../presentation/widgets/edit_case_sheet.dart';
@@ -31,6 +32,8 @@ final marketingCaseReportsListImplProvider =
             final authorized = authorizedAsync.valueOrNull ?? const <String>{};
             final visible = cases.where((item) {
               if (item.deletadoEm != null) return false;
+              if (!item.ativo) return false;
+              if (item.status != MarketingCaseStatus.published) return false;
               if (!role.isProdutor) return true;
               return MarketingCaseVisibility.isVisibleInReports(
                 marketingCase: item,
