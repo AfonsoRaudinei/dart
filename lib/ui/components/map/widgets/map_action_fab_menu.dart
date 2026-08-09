@@ -28,6 +28,7 @@ class MapActionFabMenu extends StatefulWidget {
   final double? bottom;
   final MapActionFabMenuDirection direction;
   final bool useLegacyExpandedMenu;
+  final bool embedded;
 
   const MapActionFabMenu({
     super.key,
@@ -46,6 +47,7 @@ class MapActionFabMenu extends StatefulWidget {
     this.bottom = 0,
     this.direction = MapActionFabMenuDirection.up,
     this.useLegacyExpandedMenu = false,
+    this.embedded = false,
   });
 
   @override
@@ -168,6 +170,7 @@ class _MapActionFabMenuState extends State<MapActionFabMenu>
     }
 
     return _MasterFab(
+      key: const Key('map_control_actions_btn'),
       isOpen: false,
       isActive: widget.isActive,
       activeColor: widget.activeColor,
@@ -225,6 +228,10 @@ class _MapActionFabMenuState extends State<MapActionFabMenu>
 
   @override
   Widget build(BuildContext context) {
+    if (widget.embedded) {
+      return _buildMenuBody();
+    }
+
     return Stack(
       children: [
         if (_isOpen)
@@ -257,6 +264,7 @@ class _MasterFab extends StatelessWidget {
   final VoidCallback onTap;
 
   const _MasterFab({
+    super.key,
     required this.isOpen,
     required this.isActive,
     required this.activeColor,

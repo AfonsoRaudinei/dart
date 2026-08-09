@@ -28,6 +28,9 @@ import 'selected_talhao_card.dart';
 part 'map_controls_location_button.dart';
 part 'map_controls_measurement.dart';
 
+const double _kMapActionButtonSize = 44.0;
+const double _kMapActionColumnSpacing = 12.0;
+
 Color _themeColor(String theme) {
   switch (theme) {
     case 'green':
@@ -230,63 +233,55 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
             ),
           ),
 
-        // 3. Ações verticais do mapa (direita) — sobem com sheet aberto
+        // 3. Coluna de ações verticais (direita) — alinhada, espaçamento uniforme,
+        // sobe inteira com sheet aberto. No desenho, só camadas (posição preservada).
         Positioned(
           right: 16,
           bottom: kFabSafeArea +
               safeBottom +
-              130 +
-              ref.watch(mapSheetChromeInsetProvider).clamp(0, 280) * 0.15,
-          child: SafeArea(
-            top: false,
-            child: _MapToolsFab(
-              isActive: widget.isDrawMode,
-              activeColor: activeColor,
-              onTap: widget.onOpenMapTools,
-            ),
-          ),
-        ),
-
-        // Progressive disclosure (Sprint C): esconde menu/check-in no desenho
-        // (toolbar de draw já ocupa a base). Tools FAB permanece.
-        if (!widget.isDrawMode) ...[
-          Positioned.fill(
-            child: MapActionFabMenu(
-              right: 16,
-              bottom: kFabSafeArea + safeBottom + 60,
-              padding: EdgeInsets.zero,
-              direction: MapActionFabMenuDirection.left,
-              isActive: widget.isMarketingMode || widget.isOccurrenceMode,
-              activeColor: activeColor,
-              onResultado: widget.onCreateResultadoCase ?? () {},
-              onAntesDepois: widget.onCreateAntesDepoisCase ?? () {},
-              onAvaliacao: widget.onCreateAvaliacaoCase ?? () {},
-              onOcorrencia: () {
-                // Fluxo preservado: armar ocorrência e deixar o toque no mapa
-                // abrir o OccurrenceCreationSheet atual.
-                if (widget.onToggleOccurrenceMode != null) {
-                  widget.onToggleOccurrenceMode!();
-                } else {
-                  widget.onTabSelected(2, 'Button_Occurrences');
-                }
-              },
-              onFotoRapida: () {
-                unawaited(_openQuickPhoto(initialFilterActive: false));
-              },
-              onInversaoVegetal: () {
-                unawaited(_openQuickPhoto(initialFilterActive: true));
-              },
-            ),
-          ),
-          if (widget.showCheckInAction)
-            Positioned(
-              bottom: kFabSafeArea + safeBottom,
-              right: 16,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
+              ref.watch(mapSheetChromeInsetProvider).clamp(0, 280) * 0.15 +
+              (widget.isDrawMode
+                  ? (_kMapActionColumnSpacing + _kMapActionButtonSize) * 2
+                  : 0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              _MapToolsFab(
+                isActive: widget.isDrawMode,
+                activeColor: activeColor,
+                onTap: widget.onOpenMapTools,
+              ),
+              if (!widget.isDrawMode) ...[
+                const SizedBox(height: _kMapActionColumnSpacing),
+                MapActionFabMenu(
+                  embedded: true,
+                  padding: EdgeInsets.zero,
+                  direction: MapActionFabMenuDirection.left,
+                  isActive:
+                      widget.isMarketingMode || widget.isOccurrenceMode,
+                  activeColor: activeColor,
+                  onResultado: widget.onCreateResultadoCase ?? () {},
+                  onAntesDepois: widget.onCreateAntesDepoisCase ?? () {},
+                  onAvaliacao: widget.onCreateAvaliacaoCase ?? () {},
+                  onOcorrencia: () {
+                    if (widget.onToggleOccurrenceMode != null) {
+                      widget.onToggleOccurrenceMode!();
+                    } else {
+                      widget.onTabSelected(2, 'Button_Occurrences');
+                    }
+                  },
+                  onFotoRapida: () {
+                    unawaited(_openQuickPhoto(initialFilterActive: false));
+                  },
+                  onInversaoVegetal: () {
+                    unawaited(_openQuickPhoto(initialFilterActive: true));
+                  },
+                ),
+                if (widget.showCheckInAction) ...[
+                  const SizedBox(height: _kMapActionColumnSpacing),
                   _MapActionButton(
+                    buttonKey: const Key('map_control_check_in'),
                     icon: SFIcons.checkCircle,
                     label: 'Check-in',
                     isActive: widget.isCheckInActive,
@@ -294,9 +289,10 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
                     onTap: () => widget.onTabSelected(3, 'Button_CheckIn'),
                   ),
                 ],
-              ),
-            ),
-        ],
+              ],
+            ],
+          ),
+        ),
 
         // 4. Drawing Actions (Conditional)
         if (widget.drawingState == DrawingState.drawing)
@@ -518,12 +514,14 @@ class _MapActionButton extends StatefulWidget {
   final VoidCallback onTap;
   final bool isActive;
   final Color activeColor;
+  final Key? buttonKey;
 
   const _MapActionButton({
     required this.icon,
     required this.label,
     required this.onTap,
     required this.activeColor,
+    this.buttonKey,
     this.isActive = false,
   });
 
@@ -570,6 +568,7 @@ class _MapActionButtonState extends State<_MapActionButton> {
             onLongPress: _showTemporaryLabel,
             behavior: HitTestBehavior.opaque,
             child: Container(
+              key: widget.buttonKey,
               width: 44,
               height: 44,
               decoration: BoxDecoration(
@@ -620,6 +619,7 @@ class _MapToolsFab extends StatelessWidget {
           onTap();
         },
         child: AnimatedContainer(
+          key: const Key('map_control_layers_btn'),
           duration: const Duration(milliseconds: 180),
           curve: Curves.easeOutCubic,
           width: 44,

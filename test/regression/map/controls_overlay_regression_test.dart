@@ -18,6 +18,7 @@ import 'package:soloforte_app/modules/visitas/data/repositories/visit_repository
 import 'package:soloforte_app/modules/visitas/domain/models/visit_session.dart';
 import 'package:soloforte_app/modules/visitas/presentation/controllers/visit_controller.dart';
 import 'package:soloforte_app/modules/clima/presentation/providers/radar_providers.dart';
+import 'package:soloforte_app/core/state/map_ui_providers.dart';
 import 'package:soloforte_app/ui/components/map/widgets/map_action_fab_menu.dart';
 import 'package:soloforte_app/ui/components/map/widgets/map_controls_overlay.dart';
 
@@ -78,6 +79,121 @@ void main() {
     });
   });
 
+  group('coluna direita alinhamento', () {
+    testWidgets('botões têm espaçamento uniforme e alinhamento horizontal', (
+      tester,
+    ) async {
+      await _pumpMapControlsOverlay(
+        tester,
+        safePadding: const EdgeInsets.only(bottom: 34),
+      );
+
+      final layers = _buttonBounds(tester, 'map_control_layers_btn');
+      final actions = _buttonBounds(tester, 'map_control_actions_btn');
+      final checkIn = _buttonBounds(tester, 'map_control_check_in');
+
+      expect(layers.width, closeTo(44, 0.1));
+      expect(actions.width, closeTo(44, 0.1));
+      expect(checkIn.width, closeTo(44, 0.1));
+
+      expect(layers.right, closeTo(actions.right, 0.1));
+      expect(actions.right, closeTo(checkIn.right, 0.1));
+
+      const spacing = 12.0;
+      expect(layers.bottom, closeTo(actions.top - spacing, 0.1));
+      expect(actions.bottom, closeTo(checkIn.top - spacing, 0.1));
+    });
+
+    testWidgets('coluna inteira sobe uniformemente com sheet inset', (
+      tester,
+    ) async {
+      SharedPreferences.setMockInitialValues({});
+      final settingsRepository = SettingsRepository(
+        await SharedPreferences.getInstance(),
+      );
+      final preferencesService = PreferencesService(
+        await SharedPreferences.getInstance(),
+      );
+
+      final container = ProviderContainer(
+        overrides: [
+          preferencesServiceProvider.overrideWithValue(preferencesService),
+          settingsRepositoryProvider.overrideWithValue(settingsRepository),
+          isOnlineProvider.overrideWith((ref) => Stream.value(true)),
+          climaRadarEnabledProvider.overrideWith(
+            () => _PresetClimaRadarEnabled(false),
+          ),
+          visitRepositoryProvider.overrideWithValue(_NoActiveVisitRepository()),
+          agendaSessionBridgeProvider.overrideWithValue(_NoopAgendaBridge()),
+          sessionControllerProvider.overrideWith(_PublicSessionController.new),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp(
+            home: Scaffold(
+              body: MapControlsOverlay(
+                onCenterUser: () {},
+                onLocationModeChanged: (_) {},
+                onToggleDrawMode: () {},
+                onOpenMapTools: () {},
+                onTabSelected: (_, _) {},
+                isDrawMode: false,
+                showCheckInAction: true,
+                currentCenter: const LatLng(-10.2, -48.3),
+                currentZoom: 13,
+                drawingState: DrawingState.idle,
+                onFinishDrawing: () {},
+                onCancelDrawing: () {},
+                onSaveEdit: () {},
+                onCancelEdit: () {},
+                onUndoEdit: () {},
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final baselineCheckIn = _buttonBounds(tester, 'map_control_check_in');
+      final baselineLayers = _buttonBounds(tester, 'map_control_layers_btn');
+
+      container.read(mapSheetChromeInsetProvider.notifier).state = 200;
+      await tester.pumpAndSettle();
+
+      final insetCheckIn = _buttonBounds(tester, 'map_control_check_in');
+      final insetLayers = _buttonBounds(tester, 'map_control_layers_btn');
+
+      const expectedLift = 200.0 * 0.15;
+      expect(
+        baselineCheckIn.bottom - insetCheckIn.bottom,
+        closeTo(expectedLift, 0.1),
+      );
+      expect(
+        baselineLayers.bottom - insetLayers.bottom,
+        closeTo(expectedLift, 0.1),
+      );
+    });
+
+    testWidgets('modo desenho mantém camadas na posição superior da coluna', (
+      tester,
+    ) async {
+      await _pumpMapControlsOverlay(tester, isDrawMode: false);
+      final fullModeLayers = _buttonBounds(tester, 'map_control_layers_btn');
+
+      await _pumpMapControlsOverlay(tester, isDrawMode: true);
+      final drawModeLayers = _buttonBounds(tester, 'map_control_layers_btn');
+
+      expect(drawModeLayers.bottom, closeTo(fullModeLayers.bottom, 0.1));
+      expect(drawModeLayers.right, closeTo(fullModeLayers.right, 0.1));
+      expect(find.byKey(const Key('map_control_actions_btn')), findsNothing);
+      expect(find.byKey(const Key('map_control_check_in')), findsNothing);
+    });
+  });
+
   group('map status indicator', () {
     testWidgets('vermelho quando offline', (tester) async {
       await _pumpMapControlsOverlay(tester, isOnline: false, radarEnabled: false);
@@ -115,6 +231,9 @@ Future<void> _pumpMapControlsOverlay(
   WidgetTester tester, {
   bool isOnline = true,
   bool radarEnabled = false,
+  bool isDrawMode = false,
+  bool showCheckInAction = true,
+  EdgeInsets safePadding = EdgeInsets.zero,
 }) async {
   SharedPreferences.setMockInitialValues({});
   final settingsRepository = SettingsRepository(
@@ -137,30 +256,45 @@ Future<void> _pumpMapControlsOverlay(
         agendaSessionBridgeProvider.overrideWithValue(_NoopAgendaBridge()),
         sessionControllerProvider.overrideWith(_PublicSessionController.new),
       ],
-      child: MaterialApp(
-        home: Scaffold(
-          body: MapControlsOverlay(
-            onCenterUser: () {},
-            onLocationModeChanged: (_) {},
-            onToggleDrawMode: () {},
-            onOpenMapTools: () {},
-            onTabSelected: (_, _) {},
-            isDrawMode: false,
-            showCheckInAction: true,
-            currentCenter: const LatLng(-10.2, -48.3),
-            currentZoom: 13,
-            drawingState: DrawingState.idle,
-            onFinishDrawing: () {},
-            onCancelDrawing: () {},
-            onSaveEdit: () {},
-            onCancelEdit: () {},
-            onUndoEdit: () {},
+      child: MediaQuery(
+        data: MediaQueryData(
+          size: const Size(400, 800),
+          padding: safePadding,
+        ),
+        child: MaterialApp(
+          home: Scaffold(
+            body: MapControlsOverlay(
+              onCenterUser: () {},
+              onLocationModeChanged: (_) {},
+              onToggleDrawMode: () {},
+              onOpenMapTools: () {},
+              onTabSelected: (_, _) {},
+              isDrawMode: isDrawMode,
+              showCheckInAction: showCheckInAction,
+              currentCenter: const LatLng(-10.2, -48.3),
+              currentZoom: 13,
+              drawingState: DrawingState.idle,
+              onFinishDrawing: () {},
+              onCancelDrawing: () {},
+              onSaveEdit: () {},
+              onCancelEdit: () {},
+              onUndoEdit: () {},
+            ),
           ),
         ),
       ),
     ),
   );
   await tester.pumpAndSettle();
+}
+
+Rect _buttonBounds(WidgetTester tester, String keyName) {
+  final finder = find.byKey(Key(keyName));
+  expect(finder, findsOneWidget);
+  return Rect.fromPoints(
+    tester.getTopLeft(finder),
+    tester.getBottomRight(finder),
+  );
 }
 
 class _NoActiveVisitRepository extends VisitRepository {
