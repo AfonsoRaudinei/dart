@@ -305,6 +305,89 @@ void main() {
     expect(find.text('Produtor Antes Depois'), findsOneWidget);
   });
 
+  testWidgets('Gerados exige seleção de produtor com múltiplos clientes', (
+    tester,
+  ) async {
+    await _pumpScreen(
+      tester,
+      relatorioRepository: FakeRelatorioRepository(),
+      occurrenceRepository: FakeOccurrenceRepository(),
+      marketingCases: [
+        _marketingCase(
+          id: 'mkt-a',
+          clientId: 'cli-a',
+          produtorFazenda: 'Publicação Produtor A',
+        ),
+        _marketingCase(
+          id: 'mkt-b',
+          clientId: 'cli-b',
+          tipo: 'antes_depois',
+          produtorFazenda: 'Publicação Produtor B',
+        ),
+      ],
+    );
+
+    await _selectSegment(tester, 'Gerados');
+
+    expect(
+      find.text('Selecione um produtor para visualizar publicações.'),
+      findsOneWidget,
+    );
+    expect(find.text('Publicação Produtor A'), findsNothing);
+    expect(find.text('Publicação Produtor B'), findsNothing);
+
+    await tester.tap(find.text('Produtor A · 1').first);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Publicação Produtor A'), findsOneWidget);
+    expect(find.text('Publicação Produtor B'), findsNothing);
+  });
+
+  testWidgets('Gerados filtro por tipo respeita escopo do produtor', (
+    tester,
+  ) async {
+    await _pumpScreen(
+      tester,
+      relatorioRepository: FakeRelatorioRepository(),
+      occurrenceRepository: FakeOccurrenceRepository(),
+      marketingCases: [
+        _marketingCase(
+          id: 'mkt-a-resultado',
+          clientId: 'cli-a',
+          tipo: 'resultado',
+          produtorFazenda: 'Case Resultado A',
+        ),
+        _marketingCase(
+          id: 'mkt-a-antes',
+          clientId: 'cli-a',
+          tipo: 'antes_depois',
+          produtorFazenda: 'Case Antes A',
+        ),
+        _marketingCase(
+          id: 'mkt-b-resultado',
+          clientId: 'cli-b',
+          tipo: 'resultado',
+          produtorFazenda: 'Case Resultado B',
+        ),
+      ],
+    );
+
+    await _selectSegment(tester, 'Gerados');
+    await tester.tap(find.text('Produtor A · 2').first);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Case Resultado A'), findsOneWidget);
+    expect(find.text('Case Antes A'), findsOneWidget);
+    expect(find.text('Case Resultado B'), findsNothing);
+
+    await tester.tap(find.text('Resultado').first);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Case Resultado A'), findsOneWidget);
+    expect(find.text('Case Antes A'), findsNothing);
+    expect(find.text('Case Resultado B'), findsNothing);
+  });
+
   testWidgets('exclusão de marketing case remove card após confirmação', (
     tester,
   ) async {
@@ -388,6 +471,71 @@ void main() {
     expect(find.text('Pré-visualizar HTML'), findsOneWidget);
     expect(find.text('Exportar'), findsOneWidget);
     expect(find.text('Excluir'), findsNothing);
+  });
+
+  testWidgets('visitas com produtor único não exibe seletor de produtor', (
+    tester,
+  ) async {
+    final relatorioRepository = FakeRelatorioRepository();
+    relatorioRepository.seed([
+      makeRelatorio(
+        id: 'rel-solo',
+        farmName: 'Fazenda Solo',
+        status: RelatorioStatus.publicado,
+      ),
+    ]);
+
+    await _pumpScreen(
+      tester,
+      relatorioRepository: relatorioRepository,
+      occurrenceRepository: FakeOccurrenceRepository(),
+    );
+
+    expect(find.text('Fazenda Solo'), findsWidgets);
+    expect(find.text('Produtor Teste · 1'), findsNothing);
+  });
+
+  testWidgets('visitas exige seleção de produtor com múltiplos clientes', (
+    tester,
+  ) async {
+    final relatorioRepository = FakeRelatorioRepository();
+    relatorioRepository.seed([
+      makeRelatorio(
+        id: 'rel-visit-a',
+        clientId: 'cli-a',
+        farmName: 'Fazenda Visita A',
+        status: RelatorioStatus.publicado,
+      ),
+      makeRelatorio(
+        id: 'rel-visit-b',
+        clientId: 'cli-b',
+        farmName: 'Fazenda Visita B',
+        status: RelatorioStatus.publicado,
+      ),
+    ]);
+
+    await _pumpScreen(
+      tester,
+      relatorioRepository: relatorioRepository,
+      occurrenceRepository: FakeOccurrenceRepository(),
+    );
+
+    expect(
+      find.text(
+        'Selecione um produtor para visualizar relatórios de visita.',
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('Fazenda Visita A'), findsNothing);
+    expect(find.text('Fazenda Visita B'), findsNothing);
+    expect(find.text('Produtor A · 1'), findsOneWidget);
+    expect(find.text('Produtor B · 1'), findsOneWidget);
+
+    await tester.tap(find.text('Produtor A · 1').first);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Fazenda Visita A'), findsWidgets);
+    expect(find.text('Fazenda Visita B'), findsNothing);
   });
 
   testWidgets('consolidados exige seleção de produtor com múltiplos clientes', (
@@ -742,6 +890,7 @@ MarketingCase _marketingCase({
   String tipo = 'resultado',
   String produtorFazenda = 'Produtor Teste - Fazenda Marketing',
   String status = 'published',
+  String? clientId,
 }) {
   return MarketingCase.fromJson({
     'id': id,
@@ -759,6 +908,7 @@ MarketingCase _marketingCase({
     'descricao': 'Case de resultado para teste.',
     'quantidade_produzida': 1800,
     'status': status,
+    if (clientId != null) 'client_id': clientId,
     'criado_em': '2026-06-04T12:00:00.000Z',
     'atualizado_em': '2026-06-04T12:00:00.000Z',
     'sync_status': 'synced',
