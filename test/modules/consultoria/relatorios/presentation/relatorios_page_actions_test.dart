@@ -467,14 +467,17 @@ void main() {
 
     await _selectSegment(tester, 'Ocorrências');
 
-    expect(find.textContaining('Selecione um produtor'), findsOneWidget);
+    expect(find.textContaining('Selecione um produtor'), findsNWidgets(2));
     expect(find.text('Produtor A · 1'), findsOneWidget);
     expect(find.text('Produtor B · 1'), findsOneWidget);
+    expect(find.textContaining('Pragas'), findsNothing);
 
     await tester.tap(find.text('Produtor A · 1').first);
     await tester.pumpAndSettle();
 
     expect(find.text('1 ocorrência(s)'), findsOneWidget);
+    expect(find.textContaining('Daninhas'), findsOneWidget);
+    expect(find.textContaining('Pragas'), findsNothing);
     expect(find.text('Produtor B · 1'), findsOneWidget);
   });
 
@@ -497,6 +500,48 @@ void main() {
 
     expect(find.text('Produtor Teste - Fazenda Marketing'), findsOneWidget);
     expect(find.text('Rascunho oculto'), findsNothing);
+  });
+
+  testWidgets('Gerados oculta marketing case pending_sync', (tester) async {
+    await _pumpScreen(
+      tester,
+      relatorioRepository: FakeRelatorioRepository(),
+      occurrenceRepository: FakeOccurrenceRepository(),
+      marketingCases: [
+        _marketingCase(id: 'mkt-published'),
+        _marketingCase(
+          id: 'mkt-pending',
+          produtorFazenda: 'Pendente sync oculto',
+          status: 'pending_sync',
+        ),
+      ],
+    );
+
+    await _selectSegment(tester, 'Gerados');
+
+    expect(find.text('Produtor Teste - Fazenda Marketing'), findsOneWidget);
+    expect(find.text('Pendente sync oculto'), findsNothing);
+  });
+
+  testWidgets('Gerados oculta marketing case arquivado', (tester) async {
+    await _pumpScreen(
+      tester,
+      relatorioRepository: FakeRelatorioRepository(),
+      occurrenceRepository: FakeOccurrenceRepository(),
+      marketingCases: [
+        _marketingCase(id: 'mkt-published'),
+        _marketingCase(
+          id: 'mkt-archived',
+          produtorFazenda: 'Arquivado oculto',
+          status: 'archived',
+        ),
+      ],
+    );
+
+    await _selectSegment(tester, 'Gerados');
+
+    expect(find.text('Produtor Teste - Fazenda Marketing'), findsOneWidget);
+    expect(find.text('Arquivado oculto'), findsNothing);
   });
 
   testWidgets('publicação em Gerados oferece Compartilhar pack', (
