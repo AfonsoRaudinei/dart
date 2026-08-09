@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/contracts/i_marketing_case_reports_lookup.dart';
 import '../../../core/contracts/marketing_case_report_snapshot.dart';
+import '../../../core/contracts/marketing_case_reports_list_policy.dart';
 import '../../../core/contracts/i_occurrence_access_reader_provider.dart';
 import '../../../core/html_templates/marketing_html_renderer.dart';
 import '../../../core/session/local_session_identity.dart';
@@ -10,7 +11,6 @@ import '../../../core/session/user_role.dart';
 import '../../../core/ui/sheets/soloforte_sheet.dart';
 import '../../settings/presentation/providers/user_profile_provider.dart';
 import '../domain/entities/marketing_case.dart';
-import '../domain/enums/marketing_case_status.dart';
 import '../domain/marketing_case_visibility.dart';
 import '../presentation/providers/marketing_providers.dart';
 import '../presentation/widgets/edit_case_sheet.dart';
@@ -31,9 +31,13 @@ final marketingCaseReportsListImplProvider =
           data: (cases) {
             final authorized = authorizedAsync.valueOrNull ?? const <String>{};
             final visible = cases.where((item) {
-              if (item.deletadoEm != null) return false;
-              if (!item.ativo) return false;
-              if (item.status != MarketingCaseStatus.published) return false;
+              if (!isEligibleForGeradosTab(
+                statusValue: item.status.toValue(),
+                ativo: item.ativo,
+                deletadoEm: item.deletadoEm,
+              )) {
+                return false;
+              }
               if (!role.isProdutor) return true;
               return MarketingCaseVisibility.isVisibleInReports(
                 marketingCase: item,
@@ -62,6 +66,7 @@ MarketingCaseReportSnapshot _toSnapshot(MarketingCase item) {
     lat: item.lat,
     lng: item.lng,
     nomeVendedor: item.nomeVendedor,
+    clientId: item.clientId,
   );
 }
 
