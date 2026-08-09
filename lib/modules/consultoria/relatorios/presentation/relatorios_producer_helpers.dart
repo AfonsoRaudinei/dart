@@ -137,3 +137,39 @@ Map<String, int> _producerCountsFromIds(Iterable<String?> clientIds) {
   }
   return counts;
 }
+
+List<RelatorioTecnico> _scopeRelatoriosByClientId(
+  List<RelatorioTecnico> relatorios,
+  String clientId,
+) {
+  final normalized = clientId.trim();
+  final scoped = relatorios
+      .where((report) => report.clientId.trim() == normalized)
+      .toList();
+  final dropped = relatorios.length - scoped.length;
+  if (dropped > 0) {
+    AppLogger.warning(
+      'Relatórios fora do clientId $normalized descartados na exportação ($dropped)',
+      tag: 'RelatoriosExport',
+    );
+  }
+  return scoped;
+}
+
+List<Occurrence> _scopeOccurrencesByClientId(
+  List<Occurrence> occurrences,
+  String clientId,
+) {
+  final normalized = clientId.trim();
+  final scoped = occurrences
+      .where((item) => (item.clientId ?? '').trim() == normalized)
+      .toList();
+  final dropped = occurrences.length - scoped.length;
+  if (dropped > 0) {
+    AppLogger.warning(
+      'Ocorrências fora do clientId $normalized descartadas na exportação ($dropped)',
+      tag: 'RelatoriosExport',
+    );
+  }
+  return scoped;
+}

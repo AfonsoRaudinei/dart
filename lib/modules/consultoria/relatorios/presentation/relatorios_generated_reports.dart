@@ -190,7 +190,8 @@ Future<_GeneratedReportPayload> _buildOccurrenceListPayload(
   List<Occurrence> occurrences,
   String clientId,
 ) async {
-  final sorted = _sortOccurrencesByCreatedAt(occurrences);
+  final scoped = _scopeOccurrencesByClientId(occurrences, clientId);
+  final sorted = _sortOccurrencesByCreatedAt(scoped);
   final rows = <Map<String, dynamic>>[];
   for (final occurrence in sorted) {
     final data = occurrence.toMap();
@@ -260,8 +261,9 @@ Future<_GeneratedReportPayload> _buildPropertySummaryPayload(
   List<RelatorioTecnico> relatorios,
   String clientId,
 ) async {
+  final scoped = _scopeRelatoriosByClientId(relatorios, clientId);
   final now = DateTime.now();
-  final sorted = _sortRelatoriosByPeriodStart(relatorios);
+  final sorted = _sortRelatoriosByPeriodStart(scoped);
   final first = sorted.isNotEmpty ? sorted.first : null;
   final fieldsById = <String, Map<String, dynamic>>{};
   for (final report in sorted) {
@@ -315,9 +317,10 @@ Future<_GeneratedReportPayload> _buildPropertySummaryPayload(
       'fields': fields,
     },
     csv: ConsultoriaReportExportData.toCsv([
-      ['talhao_id', 'nome', 'area_ha', 'cultura', 'safra'],
+      ['client_id', 'talhao_id', 'nome', 'area_ha', 'cultura', 'safra'],
       ...fields.map(
         (field) => [
+          clientId,
           field['codigo'],
           field['nome'],
           field['area_produtiva'],
@@ -334,7 +337,8 @@ Future<_GeneratedReportPayload> _buildVisitHistoryPayload(
   List<RelatorioTecnico> relatorios,
   String clientId,
 ) async {
-  final sorted = _sortRelatoriosByPeriodStart(relatorios);
+  final scoped = _scopeRelatoriosByClientId(relatorios, clientId);
+  final sorted = _sortRelatoriosByPeriodStart(scoped);
   final rows = sorted.map(_historyRow).toList();
   final agronomists = {
     for (final report in sorted) report.agronomistId: report.agronomistId,
