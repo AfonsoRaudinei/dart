@@ -123,7 +123,7 @@ final clientDrawingFieldsProvider = FutureProvider.family
           'sync_status',
         ],
         where:
-            'user_id = ? AND cliente_id = ? AND deleted_at IS NULL AND ativo = 1',
+            'user_id = ? AND cliente_id = ? AND deleted_at IS NULL AND ativo = 1 AND (fazenda_id IS NULL OR fazenda_id = \'\')',
         whereArgs: [userId, clientId],
         orderBy: 'updated_at DESC',
       );
