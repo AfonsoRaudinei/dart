@@ -117,7 +117,7 @@ class _VisitPhotosSectionState extends ConsumerState<_VisitPhotosSection> {
       case _VisitPhotoFilter.vegetal:
         return 'Nenhuma foto de inversão vegetal registrada.';
       case _VisitPhotoFilter.orphan:
-        return 'Nenhuma foto órfã (sem visita vinculada).';
+        return 'Nenhuma foto órfã. Fotos sem visita aparecem aqui para vincular no mapa.';
       case _VisitPhotoFilter.all:
         return 'Nenhuma foto registrada. Use o botão + no mapa.';
     }
@@ -142,6 +142,18 @@ class _VisitPhotosSectionState extends ConsumerState<_VisitPhotosSection> {
         await _openEditor(context, photo);
         return;
       case 'map':
+        _openOnMap(context, photo);
+        return;
+      case 'link':
+        // Map-First: vínculo real ocorre no fluxo de visita no mapa (sem inventar sessão).
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'No mapa, abra ou inicie uma visita para vincular esta mídia.',
+            ),
+          ),
+        );
         _openOnMap(context, photo);
         return;
       case 'delete':
@@ -459,6 +471,11 @@ class _VisitPhotoCard extends StatelessWidget {
             const PopupMenuItem(
               value: 'map',
               child: Text('Ver no mapa'),
+            ),
+          if (!linked && hasCoords)
+            const PopupMenuItem(
+              value: 'link',
+              child: Text('Vincular no mapa'),
             ),
           const PopupMenuItem(
             value: 'delete',
