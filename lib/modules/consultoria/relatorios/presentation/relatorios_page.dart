@@ -499,20 +499,26 @@ class _OccurrenciasSectionState extends ConsumerState<_OccurrenciasSection> {
                 .where((occurrence) => occurrence.clientId == effectiveClientId)
                 .toList();
         final exportEnabled = effectiveClientId != null && scoped.isNotEmpty;
+        final visibleOccurrences = producerIds.length <= 1
+            ? list
+            : (effectiveClientId == null ? const <Occurrence>[] : scoped);
+        final headerCount = effectiveClientId != null && producerIds.length > 1
+            ? scoped.length
+            : list.length;
 
         return ListView(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
           children: [
             _InsetGroupHeader(
               title: 'Ocorrências Registradas',
-              count: list.length,
+              count: headerCount,
             ),
             if (list.isNotEmpty && producerIds.isNotEmpty) ...[
               if (producerIds.length > 1) ...[
                 Padding(
                   padding: const EdgeInsets.fromLTRB(4, 0, 4, 12),
                   child: Text(
-                    'Produtor (exportação)',
+                    'Produtor',
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
@@ -553,8 +559,13 @@ class _OccurrenciasSectionState extends ConsumerState<_OccurrenciasSection> {
                 ctaLabel: 'Abrir mapa',
                 onCta: () => context.go(AppRoutes.map),
               )
+            else if (producerIds.length > 1 && effectiveClientId == null)
+              const _PremiumEmptyState(
+                message:
+                    'Selecione um produtor para visualizar e exportar ocorrências.',
+              )
             else
-              ...list.map(
+              ...visibleOccurrences.map(
                 (occurrence) => _OccurrenciaCard(
                   occurrence: occurrence,
                   dateFormat: widget.dateFormat,
