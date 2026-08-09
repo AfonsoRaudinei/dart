@@ -15,10 +15,16 @@ enum _MarketingCaseFilter { all, resultado, antesDepois, avaliacao }
 class _MarketingCasesReportsSectionState
     extends ConsumerState<_MarketingCasesReportsSection> {
   _MarketingCaseFilter _filter = _MarketingCaseFilter.all;
+  String? _selectedClientId;
 
   void _selectFilter(_MarketingCaseFilter value) {
     if (_filter == value) return;
     setState(() => _filter = value);
+  }
+
+  void _selectProducer(String clientId) {
+    if (_selectedClientId == clientId) return;
+    setState(() => _selectedClientId = clientId);
   }
 
   List<MarketingCaseReportSnapshot> _applyTypeFilter(
@@ -100,15 +106,52 @@ class _MarketingCasesReportsSectionState
 
     return casesAsync.when(
       data: (visible) {
-        final filtered = _applyTypeFilter(visible);
+        final producerCounts =
+            _producerCountsFromIds(visible.map((item) => item.clientId));
+        final producerIds = producerCounts.keys.toList()..sort();
+        final needsProducerSelection = producerIds.length > 1;
+        final effectiveClientId =
+            needsProducerSelection ? _selectedClientId : null;
+        final scoped = !needsProducerSelection
+            ? visible
+            : (effectiveClientId == null
+                ? const <MarketingCaseReportSnapshot>[]
+                : visible
+                    .where((item) => item.clientId == effectiveClientId)
+                    .toList());
+        final filtered = _applyTypeFilter(scoped);
         final grouped = _groupByFarm(filtered);
+        final headerCount = effectiveClientId != null && needsProducerSelection
+            ? scoped.length
+            : visible.length;
+
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _InsetGroupHeader(
               title: 'Publicações',
-              count: filtered.length,
+              count: headerCount,
             ),
+            if (needsProducerSelection) ...[
+              Padding(
+                padding: const EdgeInsets.fromLTRB(4, 0, 4, 12),
+                child: Text(
+                  'Produtor',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: context.premiumTextSecondary,
+                  ),
+                ),
+              ),
+              _RelatoriosProducerSelector(
+                producerIds: producerIds,
+                itemCounts: producerCounts,
+                selectedClientId: effectiveClientId,
+                onSelected: _selectProducer,
+              ),
+              const SizedBox(height: 12),
+            ],
             if (visible.isNotEmpty) ...[
               Padding(
                 padding: const EdgeInsets.fromLTRB(4, 0, 4, 12),
@@ -124,6 +167,11 @@ class _MarketingCasesReportsSectionState
                     'Nenhuma publicação ainda. Crie um case de marketing no mapa (toque longo).',
                 ctaLabel: 'Abrir mapa',
                 onCta: () => context.go(AppRoutes.map),
+              )
+            else if (needsProducerSelection && effectiveClientId == null)
+              const _PremiumEmptyState(
+                message:
+                    'Selecione um produtor para visualizar publicações.',
               )
             else if (filtered.isEmpty)
               _PremiumEmptyState(
