@@ -37,13 +37,13 @@ void main() {
       final pageSource = File(
         'lib/modules/consultoria/relatorios/presentation/relatorios_page.dart',
       ).readAsStringSync();
-      final consolidatedSource = File(
-        'lib/modules/consultoria/relatorios/presentation/relatorios_consolidated_reports.dart',
+      final marketingSource = File(
+        'lib/modules/consultoria/relatorios/presentation/relatorios_marketing_reports.dart',
       ).readAsStringSync();
 
       expect(pageSource.contains('occurrencesListProvider'), isTrue);
       expect(pageSource.contains('_relatoriosTecnicosListProvider'), isTrue);
-      expect(consolidatedSource.contains('marketingCaseReportsListProvider'), isTrue);
+      expect(marketingSource.contains('marketingCaseReportsListProvider'), isTrue);
       expect(pageSource.contains('ref.watch(relatoriosListProvider)'), isFalse);
     });
 
@@ -113,10 +113,8 @@ void main() {
 
         await tester.tap(find.text('Gerados').first);
         await tester.pumpAndSettle();
-        await tester.drag(find.byType(ListView), const Offset(0, -400));
-        await tester.pumpAndSettle();
 
-        expect(find.text('Marketing Cases'), findsOneWidget);
+        expect(find.text('Publicações'), findsOneWidget);
         expect(find.text('Produtor Regression - Fazenda Marketing'), findsOneWidget);
       },
     );
