@@ -25,5 +25,8 @@
 
 ## Relatorios — regras de visibilidade e cronologia
 
-- Aba **Gerados** (Publicacoes): lista apenas `MarketingCaseStatus.published`, ativo e nao deletado. Filtro no adapter ADR-050 (`marketingCaseReportsListImplProvider`); consultoria consome via `core/contracts`.
-- Aba **Consolidados** e export de **Ocorrencias**: obrigatorio `clientId` unico por exportacao. Com multiplos produtores, exigir selecao antes de consolidar ou exportar; nunca misturar dados de produtores distintos.
+**Fonte da verdade:** ADR-051 (`docs/02_ARQUITETURA_ATIVA/ADR-051-RELATORIOS-VISIBILIDADE-CRONOLOGIA.md`).
+
+- Aba **Gerados** (Publicacoes): lista apenas `MarketingCaseStatus.published`, ativo e nao deletado; ACL produtor via adapter ADR-050 (`marketingCaseReportsListImplProvider`). Consultoria consome via `core/contracts`.
+- **Cronologia segura:** Consolidados, export de Ocorrencias, aba Visitas e aba Gerados (quando 2+ `clientId`) exigem `clientId` unico. Com multiplos produtores, selecao obrigatoria antes de listar ou exportar; nunca misturar dados de produtores distintos.
+- **Defense-in-depth:** builders de export em `relatorios_generated_reports.dart` refiltram por `clientId` (ver ADR-051).
