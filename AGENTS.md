@@ -221,7 +221,7 @@ lib/
 
 -----
 
-## ADRs ATIVOS (008–050)
+## ADRs ATIVOS (008–051)
 
 | ADR | Decisão |
 |---|---|
@@ -262,6 +262,7 @@ lib/
 | 048 | Agenda session mirror visit sessions |
 | 049 | IDrawingFieldWriter.linkFieldToFarm |
 | 050 | IMarketingCaseReportsLookup (consultoria ↔ marketing) |
+| 051 | Relatórios visibilidade Gerados + cronologia por clientId |
 
 Detalhes: `docs/02_ARQUITETURA_ATIVA/ADR-*.md`
 
