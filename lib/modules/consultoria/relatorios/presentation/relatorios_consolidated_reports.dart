@@ -1,42 +1,30 @@
 part of 'relatorios_page.dart';
 
-class _GeneratedReportPayload {
-  final String title;
-  final String fileBaseName;
-  final String html;
-  final Map<String, dynamic> json;
-  final String csv;
-
-  const _GeneratedReportPayload({
-    required this.title,
-    required this.fileBaseName,
-    required this.html,
-    required this.json,
-    required this.csv,
-  });
-
-  ReportExportPayload toExportPayload() {
-    return ReportExportPayload(
-      title: title,
-      html: html,
-      fileBaseName: fileBaseName,
-      json: json,
-      csv: csv,
-    );
-  }
-}
-
-class _ConsolidatedReportsSection extends ConsumerWidget {
+/// Aba Consolidados — Resumo + Histórico por produtor (clientId único).
+class _ConsolidatedReportsSection extends ConsumerStatefulWidget {
   final DateFormat dateFormat;
 
   const _ConsolidatedReportsSection({required this.dateFormat});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final relatoriosAsync = ref.watch(_relatoriosTecnicosListProvider);
-    final occurrencesAsync = ref.watch(occurrencesListProvider);
+  ConsumerState<_ConsolidatedReportsSection> createState() =>
+      _ConsolidatedReportsSectionState();
+}
 
-    if (relatoriosAsync.isLoading || occurrencesAsync.isLoading) {
+class _ConsolidatedReportsSectionState
+    extends ConsumerState<_ConsolidatedReportsSection> {
+  String? _selectedClientId;
+
+  void _selectProducer(String clientId) {
+    if (_selectedClientId == clientId) return;
+    setState(() => _selectedClientId = clientId);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final relatoriosAsync = ref.watch(_relatoriosTecnicosListProvider);
+
+    if (relatoriosAsync.isLoading) {
       return const _SectionLoading(title: 'Relatórios Consolidados');
     }
     if (relatoriosAsync.hasError) {
@@ -45,46 +33,104 @@ class _ConsolidatedReportsSection extends ConsumerWidget {
         onRetry: () => ref.invalidate(_relatoriosTecnicosListProvider),
       );
     }
-    if (occurrencesAsync.hasError) {
-      return _SectionError(
-        title: 'Relatórios Consolidados',
-        onRetry: () => ref.invalidate(occurrencesListProvider),
-      );
-    }
 
     final relatorios =
         relatoriosAsync.valueOrNull ?? const <RelatorioTecnico>[];
-    final occurrences = occurrencesAsync.valueOrNull ?? const <Occurrence>[];
-    final nowLabel = dateFormat.format(DateTime.now());
+    final nowLabel = widget.dateFormat.format(DateTime.now());
+    final producerCounts =
+        _producerCountsFromIds(relatorios.map((r) => r.clientId));
+    final producerIds = producerCounts.keys.toList()..sort();
+    final effectiveClientId = _selectedClientId ??
+        (producerIds.length == 1 ? producerIds.first : null);
+    final scoped = effectiveClientId == null
+        ? const <RelatorioTecnico>[]
+        : relatorios
+            .where((report) => report.clientId == effectiveClientId)
+            .toList();
+    final hasProperty = scoped.any(
+      (report) => report.farmName.trim().isNotEmpty,
+    );
+    final exportsEnabled = effectiveClientId != null && scoped.isNotEmpty;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _InsetGroupHeader(title: 'Relatórios Consolidados', count: 3),
-        _GeneratedReportCard(
-          eyebrow: 'Gerado sob demanda',
-          title: 'Lista de Ocorrências',
-          subtitle: '${occurrences.length} ocorrência(s)',
-          date: nowLabel,
-          enabled: occurrences.isNotEmpty,
-          buildPayload: () => _buildOccurrenceListPayload(ref, occurrences),
-        ),
-        _GeneratedReportCard(
-          eyebrow: 'Gerado sob demanda',
-          title: 'Resumo da Propriedade',
-          subtitle: _propertySubtitle(relatorios),
-          date: nowLabel,
-          enabled: relatorios.any((report) => report.farmName.trim().isNotEmpty),
-          buildPayload: () => _buildPropertySummaryPayload(ref, relatorios),
-        ),
-        _GeneratedReportCard(
-          eyebrow: 'Gerado sob demanda',
-          title: 'Histórico de Visitas',
-          subtitle: '${relatorios.length} visita(s)',
-          date: nowLabel,
-          enabled: relatorios.isNotEmpty,
-          buildPayload: () => _buildVisitHistoryPayload(ref, relatorios),
-        ),
+        const _InsetGroupHeader(title: 'Relatórios Consolidados', count: 2),
+        if (relatorios.isEmpty)
+          _PremiumEmptyState(
+            message:
+                'Sem dados para consolidar. Gere relatórios de visita na aba Visitas (via mapa).',
+            ctaLabel: 'Abrir mapa',
+            onCta: () => context.go(AppRoutes.map),
+          )
+        else ...[
+          if (producerIds.length > 1) ...[
+            Padding(
+              padding: const EdgeInsets.fromLTRB(4, 0, 4, 12),
+              child: Text(
+                'Produtor',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: context.premiumTextSecondary,
+                ),
+              ),
+            ),
+            _RelatoriosProducerSelector(
+              producerIds: producerIds,
+              itemCounts: producerCounts,
+              selectedClientId: effectiveClientId,
+              onSelected: _selectProducer,
+            ),
+            const SizedBox(height: 8),
+          ],
+          if (!exportsEnabled)
+            _PremiumEmptyState(
+              message: producerIds.length > 1
+                  ? 'Selecione um produtor para consolidar visitas e exportar relatórios.'
+                  : 'Nenhum relatório vinculado a produtor para consolidar.',
+            )
+          else
+            Builder(
+              builder: (context) {
+                final clientId = effectiveClientId;
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _GeneratedReportCard(
+                      eyebrow: 'Gerado sob demanda',
+                      title: 'Resumo da Propriedade',
+                      subtitle: _propertySubtitle(scoped),
+                      date: nowLabel,
+                      enabled: hasProperty,
+                      buildPayload: () => _buildPropertySummaryPayload(
+                        ref,
+                        scoped,
+                        clientId,
+                      ),
+                    ),
+                    _GeneratedReportCard(
+                      eyebrow: 'Gerado sob demanda',
+                      title: 'Histórico de Visitas',
+                      subtitle: '${scoped.length} visita(s)',
+                      date: nowLabel,
+                      enabled: scoped.isNotEmpty,
+                      buildPayload: () => _buildVisitHistoryPayload(
+                        ref,
+                        scoped,
+                        clientId,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    _VisitHistoryTimeline(
+                      relatorios: scoped,
+                      dateFormat: widget.dateFormat,
+                    ),
+                  ],
+                );
+              },
+            ),
+        ],
       ],
     );
   }
@@ -99,589 +145,100 @@ class _ConsolidatedReportsSection extends ConsumerWidget {
   }
 }
 
-class _MarketingCasesReportsSection extends ConsumerStatefulWidget {
+/// Timeline compacta do histórico de visitas (Consolidados).
+class _VisitHistoryTimeline extends StatelessWidget {
+  final List<RelatorioTecnico> relatorios;
   final DateFormat dateFormat;
 
-  const _MarketingCasesReportsSection({required this.dateFormat});
-
-  @override
-  ConsumerState<_MarketingCasesReportsSection> createState() =>
-      _MarketingCasesReportsSectionState();
-}
-
-enum _MarketingCaseFilter { all, resultado, antesDepois, avaliacao }
-
-class _MarketingCasesReportsSectionState
-    extends ConsumerState<_MarketingCasesReportsSection> {
-  _MarketingCaseFilter _filter = _MarketingCaseFilter.all;
-
-  void _selectFilter(_MarketingCaseFilter value) {
-    if (_filter == value) return;
-    setState(() => _filter = value);
-  }
-
-  List<MarketingCaseReportSnapshot> _applyTypeFilter(
-    List<MarketingCaseReportSnapshot> cases,
-  ) {
-    switch (_filter) {
-      case _MarketingCaseFilter.resultado:
-        return cases.where((item) => item.tipo == 'resultado').toList();
-      case _MarketingCaseFilter.antesDepois:
-        return cases.where((item) => item.tipo == 'antes_depois').toList();
-      case _MarketingCaseFilter.avaliacao:
-        return cases.where((item) => item.tipo == 'avaliacao').toList();
-      case _MarketingCaseFilter.all:
-        return cases;
-    }
-  }
-
-  Future<void> _confirmDelete(
-    BuildContext context,
-    WidgetRef ref,
-    MarketingCaseReportSnapshot item,
-  ) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Excluir case de marketing?'),
-        content: const Text(
-          'O case será removido da lista e marcado para sincronização.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('Cancelar'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: Colors.red),
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('Excluir'),
-          ),
-        ],
-      ),
-    );
-    if (confirmed != true) return;
-    await ref.read(marketingCaseReportsLookupProvider).deleteCase(item.id);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final dateFormat = widget.dateFormat;
-    late final AsyncValue<List<MarketingCaseReportSnapshot>> casesAsync;
-    try {
-      casesAsync = ref.watch(marketingCaseReportsListProvider);
-    } catch (e, st) {
-      AppLogger.error(
-        'marketingCaseReportsListProvider falhou na criação',
-        tag: 'RelatoriosScreen',
-        error: e,
-        stackTrace: st,
-      );
-      return _SectionError(
-        title: 'Marketing Cases',
-        onRetry: () => ref.invalidate(marketingCaseReportsListProvider),
-      );
-    }
-
-    return casesAsync.when(
-      data: (visible) {
-        final filtered = _applyTypeFilter(visible);
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _InsetGroupHeader(title: 'Marketing Cases', count: filtered.length),
-            if (visible.isNotEmpty) ...[
-              Padding(
-                padding: const EdgeInsets.fromLTRB(4, 0, 4, 12),
-                child: _MarketingCaseFilterBar(
-                  selected: _filter,
-                  onSelected: _selectFilter,
-                ),
-              ),
-            ],
-            if (visible.isEmpty)
-              _PremiumEmptyState(
-                message: 'Nenhum case publicado.',
-                ctaLabel: 'Abrir mapa',
-                onCta: () => context.go(AppRoutes.map),
-              )
-            else if (filtered.isEmpty)
-              _PremiumEmptyState(
-                message: 'Nenhum case neste filtro.',
-                ctaLabel: 'Mostrar todos',
-                onCta: () => _selectFilter(_MarketingCaseFilter.all),
-              )
-            else
-              ...filtered.map(
-                (item) => _GeneratedReportCard(
-                  eyebrow: 'Marketing',
-                  title: item.produtorFazenda,
-                  subtitle: '${item.tipoLabel} • ${item.statusValue}',
-                  date: dateFormat.format(item.criadoEm.toLocal()),
-                  enabled: true,
-                  menuTooltip: 'Ações do case de marketing',
-                  buildPayload: () => _buildMarketingPayload(ref, item),
-                  onEdit: () => ref
-                      .read(marketingCaseReportsLookupProvider)
-                      .showEditSheet(context, item.id),
-                  onViewLocation: () {
-                    final lat = item.lat;
-                    final lng = item.lng;
-                    if (!lat.isFinite ||
-                        !lng.isFinite ||
-                        (lat == 0 && lng == 0)) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Coordenadas da mídia inválidas.'),
-                        ),
-                      );
-                      return;
-                    }
-                    context.go(
-                      '${AppRoutes.map}?modo=foco&lat=${lat.toStringAsFixed(6)}'
-                      '&lng=${lng.toStringAsFixed(6)}',
-                    );
-                  },
-                  onDelete: () => _confirmDelete(context, ref, item),
-                ),
-              ),
-          ],
-        );
-      },
-      loading: () => const _SectionLoading(title: 'Marketing Cases'),
-      error: (e, st) {
-        AppLogger.error(
-          'marketingCaseReportsListProvider ERROR',
-          tag: 'RelatoriosScreen',
-          error: e,
-          stackTrace: st,
-        );
-        return _SectionError(
-          title: 'Marketing Cases',
-          onRetry: () => ref.invalidate(marketingCaseReportsListProvider),
-        );
-      },
-    );
-  }
-}
-
-class _MarketingCaseFilterBar extends StatelessWidget {
-  final _MarketingCaseFilter selected;
-  final ValueChanged<_MarketingCaseFilter> onSelected;
-
-  const _MarketingCaseFilterBar({
-    required this.selected,
-    required this.onSelected,
+  const _VisitHistoryTimeline({
+    required this.relatorios,
+    required this.dateFormat,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 6,
+    final sorted = _sortRelatoriosByPeriodStart(relatorios);
+    final items = sorted.take(8).toList();
+    if (items.isEmpty) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _filterChip(context, 'Todas', _MarketingCaseFilter.all),
-        _filterChip(context, 'Resultado', _MarketingCaseFilter.resultado),
-        _filterChip(context, 'Antes/Depois', _MarketingCaseFilter.antesDepois),
-        _filterChip(context, 'Avaliação', _MarketingCaseFilter.avaliacao),
-      ],
-    );
-  }
-
-  Widget _filterChip(
-    BuildContext context,
-    String label,
-    _MarketingCaseFilter value,
-  ) {
-    final isSelected = selected == value;
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: () => onSelected(value),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 140),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-        decoration: BoxDecoration(
-          color: isSelected ? PremiumTokens.brandGreen : Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: isSelected
-                ? PremiumTokens.brandGreen
-                : const Color(0xFFD1D1D6),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(4, 8, 4, 8),
+          child: Text(
+            'Linha do tempo',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: context.premiumTextSecondary,
+            ),
           ),
         ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: isSelected ? Colors.white : context.premiumTextPrimary,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _GeneratedReportCard extends StatelessWidget {
-  final String eyebrow;
-  final String title;
-  final String subtitle;
-  final String date;
-  final bool enabled;
-  final Future<_GeneratedReportPayload> Function() buildPayload;
-  final String menuTooltip;
-  final VoidCallback? onEdit;
-  final VoidCallback? onViewLocation;
-  final Future<void> Function()? onDelete;
-
-  const _GeneratedReportCard({
-    required this.eyebrow,
-    required this.title,
-    required this.subtitle,
-    required this.date,
-    required this.enabled,
-    required this.buildPayload,
-    this.menuTooltip = 'Ações do relatório consolidado',
-    this.onEdit,
-    this.onViewLocation,
-    this.onDelete,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return _DataCard(
-      eyebrow: eyebrow,
-      title: title,
-      subtitle: enabled ? subtitle : '$subtitle • sem dados',
-      date: date,
-      statusLabel: enabled ? 'Disponível' : 'Vazio',
-      statusColor: enabled ? PremiumTokens.brandGreen : Colors.grey,
-      trailing: _AsyncActionMenu(
-        tooltip: menuTooltip,
-        itemBuilder: (context) => [
-          PopupMenuItem(
-            value: 'html',
-            enabled: enabled,
-            child: const Text('Pré-visualizar HTML'),
-          ),
-          PopupMenuItem(
-            value: 'export',
-            enabled: enabled,
-            child: const Text('Exportar'),
-          ),
-          if (onEdit != null)
-            PopupMenuItem(
-              value: 'edit',
-              enabled: enabled,
-              child: const Text('Editar'),
+        ...items.map((report) {
+          final title = report.title?.isNotEmpty == true
+              ? report.title!
+              : report.farmName;
+          final status = switch (report.status) {
+            RelatorioStatus.publicado => 'Publicado',
+            RelatorioStatus.arquivado => 'Arquivado',
+            RelatorioStatus.pendente_revisao => 'Rascunho',
+          };
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Column(
+                  children: [
+                    Container(
+                      width: 10,
+                      height: 10,
+                      margin: const EdgeInsets.only(top: 4),
+                      decoration: const BoxDecoration(
+                        color: PremiumTokens.brandGreen,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    Container(
+                      width: 2,
+                      height: 28,
+                      color: const Color(0xFFE5E5EA),
+                    ),
+                  ],
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: context.premiumTextPrimary,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      Text(
+                        '${dateFormat.format(report.periodStart.toLocal())} · $status · ${report.farmName}',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: context.premiumTextSecondary,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-          if (onViewLocation != null)
-            PopupMenuItem(
-              value: 'location',
-              enabled: enabled,
-              child: const Text('Ver Localização'),
-            ),
-          if (onDelete != null)
-            const PopupMenuItem(
-              value: 'delete',
-              child: Text('Excluir', style: TextStyle(color: Colors.red)),
-            ),
-        ],
-        onSelected: (value) => _handleAction(context, value),
-      ),
-    );
-  }
-
-  Future<void> _handleAction(BuildContext context, String value) async {
-    if (!enabled && value != 'delete') return;
-    if (value == 'edit') {
-      onEdit?.call();
-      return;
-    }
-    if (value == 'location') {
-      onViewLocation?.call();
-      return;
-    }
-    if (value == 'delete') {
-      final delete = onDelete;
-      if (delete != null) await delete();
-      return;
-    }
-    final payload = await buildPayload();
-    if (!context.mounted) return;
-
-    switch (value) {
-      case 'html':
-        await Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) => HtmlReportViewer(
-              title: payload.title,
-              htmlContent: payload.html,
-              fileBaseName: payload.fileBaseName,
-              jsonData: payload.json,
-              csvData: payload.csv,
-            ),
-          ),
-        );
-        return;
-      case 'export':
-        await _export(context, ReportExportFormat.html, payload);
-        return;
-    }
-  }
-
-  Future<void> _export(
-    BuildContext context,
-    ReportExportFormat format,
-    _GeneratedReportPayload payload,
-  ) async {
-    final shareOrigin = resolveSharePositionOrigin(context);
-    await const ReportExportService().export(
-      format,
-      payload.toExportPayload(),
-      sharePositionOrigin: shareOrigin,
-    );
-    if (!context.mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Exportação iniciada.')));
-  }
-}
-
-Future<_GeneratedReportPayload> _buildOccurrenceListPayload(
-  WidgetRef ref,
-  List<Occurrence> occurrences,
-) async {
-  final rows = <Map<String, dynamic>>[];
-  for (final occurrence in occurrences) {
-    final data = occurrence.toMap();
-    data['foto_base64'] =
-        await RelatorioHtmlRenderer.photoPathToBase64(occurrence.photoPath) ??
-        '';
-    rows.add(data);
-  }
-
-  final branding = await _resolveReportBrandingContext(
-    ref,
-    fallbackConsultantName: 'Equipe técnica',
-    fallbackConsultantRole: 'Consultoria',
-  );
-  final html = await OcorrenciaHtmlRenderer.renderLista(
-    ocorrencias: rows,
-    clienteNome: 'Todos os clientes',
-    agronomistNome: branding.consultantName,
-    dataVisita: DateTime.now(),
-    reportBrandName: branding.brandName,
-    reportLogoPath: branding.logoPath,
-    consultantRole: branding.consultantRole,
-  );
-
-  return _GeneratedReportPayload(
-    title: 'Lista de Ocorrências',
-    fileBaseName: 'lista_ocorrencias',
-    html: html,
-    json: {'tipo': 'lista_ocorrencias', 'ocorrencias': rows},
-    csv: ConsultoriaReportExportData.toCsv([
-      [
-        'id',
-        'tipo',
-        'categoria',
-        'status',
-        'descricao',
-        'cliente_id',
-        'created_at',
-        'lat',
-        'long',
+          );
+        }),
       ],
-      ...occurrences.map(
-        (item) => [
-          item.id,
-          item.type,
-          item.category,
-          item.status,
-          item.description,
-          item.clientId,
-          item.createdAt.toIso8601String(),
-          item.lat,
-          item.long,
-        ],
-      ),
-    ]),
-  );
-}
-
-Future<_GeneratedReportPayload> _buildPropertySummaryPayload(
-  WidgetRef ref,
-  List<RelatorioTecnico> relatorios,
-) async {
-  final now = DateTime.now();
-  final first = relatorios.isNotEmpty ? relatorios.first : null;
-  final fieldsById = <String, Map<String, dynamic>>{};
-  for (final report in relatorios) {
-    for (final talhao in report.talhoes) {
-      fieldsById[talhao.talhaoId] = {
-        'nome': talhao.nomeTalhao,
-        'codigo': talhao.talhaoId,
-        'area_produtiva': talhao.areaHectares,
-        'centro_geo': '',
-        'bordadura_geo': '',
-        'cultura': talhao.cultura,
-        'safra': talhao.safra,
-      };
-    }
+    );
   }
-  final fields = fieldsById.values.toList();
-  final areaTotal = fields
-      .map((field) => (field['area_produtiva'] as num?)?.toDouble() ?? 0.0)
-      .fold<double>(0, (total, area) => total + area);
-
-  final branding = await _resolveReportBrandingContext(
-    ref,
-    fallbackConsultantName: 'Equipe técnica',
-    fallbackConsultantRole: 'Consultoria',
-  );
-  final html = await PropriedadeHtmlRenderer.renderPropriedade(
-    farmId: first?.farmName ?? 'propriedade',
-    farmNome: first?.farmName ?? 'Propriedade',
-    clienteNome: first?.clientId ?? 'Cliente',
-    areaTotal: areaTotal,
-    createdAt: first?.createdAt ?? now,
-    updatedAt: relatorios.isNotEmpty ? relatorios.last.updatedAt : now,
-    fields: fields,
-    reportBrandName: branding.brandName,
-    reportLogoPath: branding.logoPath,
-    consultantName: branding.consultantName,
-    consultantRole: branding.consultantRole,
-  );
-
-  return _GeneratedReportPayload(
-    title: 'Resumo da Propriedade',
-    fileBaseName: 'resumo_propriedade',
-    html: html,
-    json: {
-      'tipo': 'resumo_propriedade',
-      'farmName': first?.farmName,
-      'areaTotal': areaTotal,
-      'fields': fields,
-    },
-    csv: ConsultoriaReportExportData.toCsv([
-      ['talhao_id', 'nome', 'area_ha', 'cultura', 'safra'],
-      ...fields.map(
-        (field) => [
-          field['codigo'],
-          field['nome'],
-          field['area_produtiva'],
-          field['cultura'],
-          field['safra'],
-        ],
-      ),
-    ]),
-  );
-}
-
-Future<_GeneratedReportPayload> _buildVisitHistoryPayload(
-  WidgetRef ref,
-  List<RelatorioTecnico> relatorios,
-) async {
-  final rows = relatorios.map(_historyRow).toList();
-  final agronomists = {
-    for (final report in relatorios) report.agronomistId: report.agronomistId,
-  };
-
-  final branding = await _resolveReportBrandingContext(
-    ref,
-    fallbackConsultantName: 'Equipe técnica',
-    fallbackConsultantRole: 'Consultoria',
-  );
-  final html = await PropriedadeHtmlRenderer.renderHistorico(
-    clienteNome: 'Todos os clientes',
-    farmName: relatorios.length == 1
-        ? relatorios.first.farmName
-        : 'Todas as propriedades',
-    relatorios: rows,
-    agronomistNomes: agronomists,
-    reportBrandName: branding.brandName,
-    reportLogoPath: branding.logoPath,
-    consultantName: branding.consultantName,
-    consultantRole: branding.consultantRole,
-  );
-
-  return _GeneratedReportPayload(
-    title: 'Histórico de Visitas',
-    fileBaseName: 'historico_visitas',
-    html: html,
-    json: {'tipo': 'historico_visitas', 'relatorios': rows},
-    csv: ConsultoriaReportExportData.toCsv([
-      [
-        'id',
-        'titulo',
-        'fazenda',
-        'status',
-        'inicio',
-        'fim',
-        'ocorrencias',
-        'talhoes',
-        'fotos',
-        'publicacoes',
-      ],
-      ...relatorios.map(
-        (report) => [
-          report.id,
-          report.title ?? report.farmName,
-          report.farmName,
-          report.status.name,
-          report.periodStart.toIso8601String(),
-          report.periodEnd.toIso8601String(),
-          report.ocorrencias.length,
-          report.talhoes.length,
-          report.fotos.length,
-          report.publicacoesRefs.length,
-        ],
-      ),
-    ]),
-  );
-}
-
-Map<String, dynamic> _historyRow(RelatorioTecnico report) {
-  return {
-    'id': report.id,
-    'status': report.status.name,
-    'title': report.title,
-    'farm_name': report.farmName,
-    'agronomist_id': report.agronomistId,
-    'period_start': report.periodStart.toIso8601String(),
-    'period_end': report.periodEnd.toIso8601String(),
-    'ocorrencias': report.ocorrencias.map((item) => item.toJson()).toList(),
-    'talhoes': report.talhoes.map((item) => item.toJson()).toList(),
-    'fotos': report.fotos,
-    'publicacoes_refs': report.publicacoesRefs,
-    'custom_notes': report.customNotes,
-  };
-}
-
-Future<_GeneratedReportPayload> _buildMarketingPayload(
-  WidgetRef ref,
-  MarketingCaseReportSnapshot item,
-) async {
-  final branding = await _resolveReportBrandingContext(
-    ref,
-    fallbackConsultantName: item.nomeVendedor ?? 'Equipe técnica',
-    fallbackConsultantRole: 'Consultoria',
-  );
-  final bundle = await ref.read(marketingCaseReportsLookupProvider).buildExportBundle(
-    item.id,
-    fallbackConsultantName: item.nomeVendedor ?? 'Equipe técnica',
-    fallbackConsultantRole: 'Consultoria',
-    reportBrandName: branding.brandName,
-    reportLogoPath: branding.logoPath,
-    consultantName: branding.consultantName,
-    consultantRole: branding.consultantRole,
-  );
-  return _GeneratedReportPayload(
-    title: bundle.title,
-    fileBaseName: bundle.fileBaseName,
-    html: bundle.html,
-    json: bundle.json,
-    csv: bundle.csv,
-  );
 }
