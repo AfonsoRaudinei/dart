@@ -294,7 +294,7 @@ Future<void> main() async {
               userLocationLookupProvider.overrideWith(
                 (ref) => LocationLookupAdapter(ref),
               ),
-              // ADR-048: Marketing Cases em Relatórios via contrato neutro
+              // ADR-050: Marketing Cases em Relatórios via contrato neutro
               marketingCaseReportsLookupProvider.overrideWith(
                 (ref) => MarketingCaseReportsLookupAdapter(ref),
               ),

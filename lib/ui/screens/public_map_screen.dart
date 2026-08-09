@@ -184,6 +184,7 @@ class _PublicMapScreenState extends ConsumerState<PublicMapScreen> {
               // Pinos de Marketing (Apenas Ouro na tela deslogada)
               if (ref.watch(marketingCasesProvider).hasValue)
                 MarkerLayer(
+                  rotate: true,
                   markers: ref
                       .watch(marketingCasesProvider)
                       .value!
@@ -206,7 +207,7 @@ class _PublicMapScreenState extends ConsumerState<PublicMapScreen> {
                                 mCase.visibilidade,
                               ) +
                               10,
-                          alignment: Alignment.bottomCenter,
+                          alignment: Alignment.topCenter,
                           child: MarketingCaseMarker(
                             marketingCase: mCase,
                             onTap: () {

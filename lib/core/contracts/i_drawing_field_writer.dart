@@ -7,4 +7,14 @@ abstract interface class IDrawingFieldWriter {
     required String fieldId,
     required String clientId,
   });
+
+  /// Associa um talhao do mapa (`drawings`) a uma fazenda do cliente.
+  ///
+  /// Atualiza `fazenda_id` / `cliente_id` sem alterar a geometria.
+  /// Ver ADR-049.
+  Future<void> linkFieldToFarm({
+    required String fieldId,
+    required String clientId,
+    required String farmId,
+  });
 }

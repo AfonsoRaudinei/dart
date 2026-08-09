@@ -7,6 +7,6 @@ final marketingCaseReportsListProvider =
     Provider<AsyncValue<List<MarketingCaseReportSnapshot>>>((ref) {
       throw UnimplementedError(
         'marketingCaseReportsListProvider: registrar override em main.dart '
-        '(veja ADR-048)',
+        '(veja ADR-050)',
       );
     });

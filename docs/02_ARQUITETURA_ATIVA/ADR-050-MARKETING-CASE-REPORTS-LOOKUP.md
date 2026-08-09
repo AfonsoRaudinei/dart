@@ -1,4 +1,4 @@
-# ADR-048 — `IMarketingCaseReportsLookup` para Relatórios → Gerados
+# ADR-050 — `IMarketingCaseReportsLookup` para Relatórios → Gerados
 
 **Data:** 08/08/2026  
 **Status:** APROVADO  

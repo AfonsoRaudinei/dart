@@ -6,6 +6,6 @@ final marketingCaseReportsLookupProvider =
     Provider<IMarketingCaseReportsLookup>((ref) {
       throw UnimplementedError(
         'marketingCaseReportsLookupProvider: registrar MarketingCaseReportsLookupAdapter '
-        'no ProviderScope (veja main.dart e ADR-048)',
+        'no ProviderScope (veja main.dart e ADR-050)',
       );
     });

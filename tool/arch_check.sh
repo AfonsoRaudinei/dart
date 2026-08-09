@@ -15,6 +15,7 @@
 #   REGRA-NDVI — Invariants ADR-042 (lookup chain, fronteira, testes)
 #   REGRA-NAV-1 — context.pop()/canPop() proibidos (Map-First)
 #   REGRA-MARKETING — blindagem de pins, fronteiras e bottom sheets
+#   REGRA-OCCURRENCE-SHEET — blindagem criação ocorrência P0/P1 (BUG-006)
 #   REGRA-UI-MAP-CTA — anti-regressão CTA fantasma + sombra de atribuição
 # =============================================================================
 
@@ -889,6 +890,79 @@ if [ -n "$ROUTER_PUBLIC_REDIRECT_LINE" ] && [ -n "$ROUTER_PROFILE_LOADING_LINE" 
   pass "router redireciona autenticado fora de rota pública antes do await de perfil"
 else
   fail "REGRA-UI-MAP-CTA: em app_router.dart, if (isPublicRoute) deve vir ANTES de profileAsync.isLoading"
+fi
+
+echo ""
+
+# =============================================================================
+# REGRA-OCCURRENCE-SHEET — blindagem P0/P1 criação de ocorrência no mapa
+#
+# Fundamento (BUG-006): sheet preso em 350px, perda de dados após foto.
+# =============================================================================
+echo -e "── ${CYAN}REGRA-OCCURRENCE-SHEET${NC}: criação de ocorrência no mapa ───────"
+echo ""
+
+MAP_BOTTOM_SHEET="lib/ui/components/map/map_bottom_sheet.dart"
+OCC_UI_HELPERS="lib/modules/consultoria/occurrences/presentation/widgets/occurrence_creation_sheet_ui_helpers.dart"
+OCC_CREATION_SHEET="lib/modules/consultoria/occurrences/presentation/widgets/occurrence_creation_sheet.dart"
+OCC_DRAFT_PROVIDER="lib/modules/consultoria/occurrences/presentation/providers/occurrence_draft_provider.dart"
+MAP_PERF_HOSTS="lib/ui/screens/map/widgets/map_performance_hosts.dart"
+OCC_REGRESSION_TEST="test/regression/map/occurrence_creation_flow_regression_test.dart"
+
+if [ -f "$MAP_BOTTOM_SHEET" ] \
+  && grep -q "_resolveInitialDetent" "$MAP_BOTTOM_SHEET" \
+  && grep -q "SheetDetent.expanded" "$MAP_BOTTOM_SHEET" \
+  && grep -q "isCreatingOccurrence" "$MAP_BOTTOM_SHEET" \
+  && ! grep -q "final initialHeight = 350.0" "$MAP_BOTTOM_SHEET"; then
+  pass "REGRA-OCC-1: MapBottomSheet abre criação expandida sem altura 350px fixa"
+else
+  fail "REGRA-OCC-1: MapBottomSheet deve usar _resolveInitialDetent expanded (sem 350px hardcoded)"
+fi
+
+if [ -f "$MAP_BOTTOM_SHEET" ] \
+  && grep -q "OccurrenceCloseCoordinator" "$MAP_BOTTOM_SHEET" \
+  && grep -q "confirmDiscardIfDirty" "$MAP_BOTTOM_SHEET"; then
+  pass "REGRA-OCC-2: dismiss de ocorrência passa pelo OccurrenceCloseCoordinator"
+else
+  fail "REGRA-OCC-2: MapBottomSheet deve confirmar descarte via OccurrenceCloseCoordinator"
+fi
+
+if [ -f "$OCC_UI_HELPERS" ] \
+  && grep -q "Navigator.of(sheetContext).pop()" "$OCC_UI_HELPERS" \
+  && grep -q "_capturePhotoFromSource" "$OCC_UI_HELPERS"; then
+  pass "REGRA-OCC-3: foto fecha modal de origem antes do ImagePicker"
+else
+  fail "REGRA-OCC-3: occurrence_creation_sheet_ui_helpers deve pop sheet antes de pickImage"
+fi
+
+if [ -f "$MAP_BOTTOM_SHEET" ] \
+  && grep -q "_shouldShowSheetContent" "$MAP_BOTTOM_SHEET" \
+  && grep -q "_tabContentKey" "$MAP_BOTTOM_SHEET"; then
+  pass "REGRA-OCC-4: showContent e tab key estáveis na criação"
+else
+  fail "REGRA-OCC-4: MapBottomSheet deve ter _shouldShowSheetContent e _tabContentKey"
+fi
+
+if [ -f "$OCC_DRAFT_PROVIDER" ] \
+  && [ -f "$OCC_CREATION_SHEET" ] \
+  && grep -q "_restoreDraftIfAny" "$OCC_CREATION_SHEET" \
+  && grep -q "_persistDraft" "$OCC_CREATION_SHEET" \
+  && grep -q "clearOccurrenceDraft" "$OCC_DRAFT_PROVIDER"; then
+  pass "REGRA-OCC-5: rascunho keyed por pin com persist/restore/clear"
+else
+  fail "REGRA-OCC-5: occurrence draft provider + persist/restore no formulário"
+fi
+
+if [ -f "$MAP_PERF_HOSTS" ] && ! grep -q "clearOccurrenceDraft" "$MAP_PERF_HOSTS"; then
+  pass "REGRA-OCC-6: onClose do host não apaga rascunho indiscriminadamente"
+else
+  fail "REGRA-OCC-6: map_performance_hosts não deve chamar clearOccurrenceDraft no onClose"
+fi
+
+if [ -f "$OCC_REGRESSION_TEST" ]; then
+  pass "REGRA-OCC-7: regression shield BUG-006 presente"
+else
+  fail "REGRA-OCC-7: test/regression/map/occurrence_creation_flow_regression_test.dart obrigatório"
 fi
 
 echo ""

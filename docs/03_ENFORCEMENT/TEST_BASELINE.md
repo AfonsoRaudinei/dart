@@ -1,7 +1,7 @@
 # SoloForte — Baseline de testes (`flutter test`)
 
 **Atualizado:** 2026-08-08  
-**Branch de referência:** `cursor/carteira-finalize-618c` (após Marketing/Gerados + ADR-048)
+**Branch de referência:** `cursor/carteira-finalize-618c` (após Marketing/Gerados + ADR-050)
 
 ## Snapshot atual (medido localmente)
 
@@ -23,7 +23,7 @@
 | Baseline legado citado em sessão Marketing | 1216 | 1 | 1 |
 | Branch sem mudanças unstaged Marketing (stash) | 1231 | 1 | 2 |
 | Após Marketing/Gerados + testes novos | 1235 | 1 | 2 |
-| Após ADR-048 + teste integração saveCase | 1238 | 1 | 2 |
+| Após ADR-050 + teste integração saveCase | 1238 | 1 | 2 |
 
 ## Delta por entrega Marketing/Gerados (esta sessão)
 

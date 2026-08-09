@@ -111,7 +111,7 @@ Comunicação cross-module **APENAS** via `lib/core/contracts/`:
 | `IAgendaSessionBridge` | — | agenda | agenda_ai |
 | `IAgendaObservable` | — | agenda | map |
 | `IOpportunityLookup` | — | carteira | map |
-| `IMarketingCaseReportsLookup` | 048 | marketing | consultoria/relatorios |
+| `IMarketingCaseReportsLookup` | 050 | marketing | consultoria/relatorios |
 | `IUserLocationLookup` | — | settings/clima | clima |
 | `IOccurrenceRead` | — | consultoria | map |
 | `IDrawingFieldWriter` | 038 | drawing | consultoria (via adapter) |
@@ -221,7 +221,7 @@ lib/
 
 -----
 
-## ADRs ATIVOS (008–048)
+## ADRs ATIVOS (008–050)
 
 | ADR | Decisão |
 |---|---|
@@ -259,7 +259,9 @@ lib/
 | 045 | Contratos NDVI e visita ativa |
 | 046 | Contratos Agenda AI |
 | 047 | OccurrenceSummary campos ricos (IReportWriter) |
-| 048 | IMarketingCaseReportsLookup (consultoria ↔ marketing) |
+| 048 | Agenda session mirror visit sessions |
+| 049 | IDrawingFieldWriter.linkFieldToFarm |
+| 050 | IMarketingCaseReportsLookup (consultoria ↔ marketing) |
 
 Detalhes: `docs/02_ARQUITETURA_ATIVA/ADR-*.md`
 
