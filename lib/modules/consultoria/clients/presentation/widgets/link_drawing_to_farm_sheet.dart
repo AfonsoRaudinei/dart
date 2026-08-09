@@ -9,16 +9,19 @@ import 'package:soloforte_app/modules/consultoria/farms/data/repositories/farm_r
 import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
+import 'client_sheet_form_padding.dart';
 
 /// Sheet para vincular um talhão do mapa a uma fazenda existente ou nova (1:1).
 class LinkDrawingToFarmSheet extends ConsumerStatefulWidget {
   final Client client;
   final ClientDrawingFieldSummary field;
+  final String? preselectedFarmId;
 
   const LinkDrawingToFarmSheet({
     super.key,
     required this.client,
     required this.field,
+    this.preselectedFarmId,
   });
 
   @override
@@ -68,7 +71,11 @@ class _LinkDrawingToFarmSheetState
         _farms = farms;
         _isLoading = false;
         _showCreateForm = farms.isEmpty;
-        if (farms.length == 1) {
+        if (widget.preselectedFarmId != null &&
+            farms.any((f) => f.id == widget.preselectedFarmId)) {
+          _selectedFarmId = widget.preselectedFarmId;
+          _showCreateForm = false;
+        } else if (farms.length == 1) {
           _selectedFarmId = farms.first.id;
         } else if (widget.field.farmId != null) {
           _selectedFarmId = widget.field.farmId;
@@ -152,12 +159,7 @@ class _LinkDrawingToFarmSheetState
         color: Colors.white,
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      padding: EdgeInsets.only(
-        left: 24,
-        right: 24,
-        top: 12,
-        bottom: MediaQuery.of(context).padding.bottom + 24,
-      ),
+      padding: clientSheetFormPadding(context),
       child: SafeArea(
         top: false,
         child: SingleChildScrollView(
@@ -356,6 +358,7 @@ Future<Farm?> showLinkDrawingToFarmSheet(
   BuildContext context, {
   required Client client,
   required ClientDrawingFieldSummary field,
+  String? preselectedFarmId,
 }) {
   return showSoloForteSheet<Farm>(
     context: context,
@@ -364,6 +367,10 @@ Future<Farm?> showLinkDrawingToFarmSheet(
     useSafeArea: false,
     shape: const RoundedRectangleBorder(),
     clipBehavior: Clip.none,
-    builder: (_) => LinkDrawingToFarmSheet(client: client, field: field),
+    builder: (_) => LinkDrawingToFarmSheet(
+      client: client,
+      field: field,
+      preselectedFarmId: preselectedFarmId,
+    ),
   );
 }

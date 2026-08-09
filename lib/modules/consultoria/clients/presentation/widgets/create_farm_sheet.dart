@@ -7,6 +7,7 @@ import 'package:soloforte_app/modules/consultoria/clients/presentation/widgets/f
 import 'package:soloforte_app/modules/consultoria/farms/data/repositories/farm_repository.dart';
 import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 import 'package:uuid/uuid.dart';
+import 'client_sheet_form_padding.dart';
 
 /// Sheet de cadastro de fazenda por nome (sem forçar abertura do mapa).
 class CreateFarmSheet extends StatefulWidget {
@@ -84,12 +85,7 @@ class _CreateFarmSheetState extends State<CreateFarmSheet> {
         color: Colors.white,
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      padding: EdgeInsets.only(
-        left: 24,
-        right: 24,
-        top: 12,
-        bottom: MediaQuery.of(context).padding.bottom + 24,
-      ),
+      padding: clientSheetFormPadding(context),
       child: SafeArea(
         top: false,
         child: SingleChildScrollView(
@@ -205,7 +201,7 @@ class _CreateFarmSheetState extends State<CreateFarmSheet> {
 Future<void> showCreateFarmSheet(
   BuildContext context, {
   required Client client,
-  required VoidCallback onFarmCreated,
+  required ValueChanged<Farm> onFarmCreated,
 }) {
   final repository = FarmRepository();
 
@@ -230,9 +226,9 @@ Future<void> showCreateFarmSheet(
         await repository.saveFarm(farm, clientId);
         return farm;
       },
-      onCreated: (_) {
+      onCreated: (farm) {
         Navigator.of(context, rootNavigator: false).pop();
-        onFarmCreated();
+        onFarmCreated(farm);
       },
     ),
   );
