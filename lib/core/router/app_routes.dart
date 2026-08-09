@@ -41,6 +41,7 @@ class AppRoutes {
   static const String meuPlano = '/planos/meu-plano';
 
   // Privadas — L2+ (Níveis Profundos que usam pop)
+  /// Deprecated: create de relatório é Map-First via `IReportWriter` (não registrar rota).
   static const String reportNew = '/consultoria/relatorios/novo';
   static String reportDetail(String id) => '/consultoria/relatorios/$id';
 
