@@ -280,3 +280,45 @@ Detalhes: `docs/02_ARQUITETURA_ATIVA/ADR-*.md`
 
 > Zero achismo. Zero dado inventado. Zero refatoração oportunista.
 > Arquitetura > rapidez. Contrato > UI. Estado previsível > mágica.
+
+-----
+
+## Cursor Cloud specific instructions
+
+Contexto durável para agentes rodando na VM do Cursor Cloud (Linux headless). O SDK já
+vem instalado no snapshot e o update script (`/opt/flutter/bin/flutter pub get`) roda no
+boot — **não** reinstale dependências aqui.
+
+### Toolchain (já provisionado no snapshot)
+
+- Flutter **stable** em `/opt/flutter` (Dart bundled satisfaz `sdk: ^3.10.8`).
+  `PATH` já inclui `/opt/flutter/bin` via `~/.bashrc`; em shells não-interativos use o
+  caminho absoluto `/opt/flutter/bin/flutter`.
+- Sem Android SDK/emulador (a VM não tem `/dev/kvm`) e sem macOS/iOS. Web e desktop
+  Linux existem só por padrão do Flutter (projeto é mobile-only).
+
+### Comandos padrão (fonte da verdade: seção SETUP DO AMBIENTE acima + README)
+
+- Lint: `flutter analyze lib/`  · Testes: `flutter test`  · Gate: `./tool/arch_check.sh`
+  (deve dar Exit 0). Build de sanidade de compilação: `flutter build web`.
+
+### Como "rodar/verificar o app" nesta VM
+
+- Não há device móvel nem emulador; a forma suportada de exercitar a UI headless é a
+  suíte de widget/golden tests (`flutter test`), que renderiza os widgets reais do app.
+- O binário roda em `flutter run -d web-server` / `flutter build web`, mas **web é
+  plataforma NÃO suportada** e o boot fica preso no splash: `main.dart` faz
+  `Supabase.initialize` e o `RouterNotifier.isInitializing` só vira `false` quando o
+  `onAuthStateChange` emite uma **mudança real** de estado. Sem backend Supabase
+  acessível, o gotrue emite `initialSession(null)` e o estado permanece
+  `const SessionUnknown()` (sem mudança) → app nunca sai do splash. Um demo de UI de
+  verdade na VM exige credenciais Supabase reais (secrets `SUPABASE_URL` /
+  `SUPABASE_ANON_KEY`) ou um Supabase local; caso contrário, prefira widget/golden tests.
+
+### Gotcha conhecido (pré-existente, não é de ambiente)
+
+- `lib/ui/components/map/map_bottom_sheet.dart` importa
+  `../../../screens/map/providers/occurrence_form_guard_provider.dart` (um `../` a mais;
+  o correto é `../../screens/...`). Isso quebra `flutter build` e o teste
+  `test/ui/components/map/map_bottom_sheet_drawing_host_test.dart`. Presente em `main` e
+  nesta branch — é bug de código a ser corrigido no fluxo normal, não no setup do ambiente.
