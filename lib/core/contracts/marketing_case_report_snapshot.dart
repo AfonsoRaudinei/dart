@@ -10,6 +10,7 @@ class MarketingCaseReportSnapshot {
   final double lat;
   final double lng;
   final String? nomeVendedor;
+  final String? clientId;
 
   const MarketingCaseReportSnapshot({
     required this.id,
@@ -21,6 +22,7 @@ class MarketingCaseReportSnapshot {
     required this.lat,
     required this.lng,
     this.nomeVendedor,
+    this.clientId,
   });
 }
 
