@@ -590,4 +590,23 @@ class DatabaseMigrationsV24V38 {
       tag: 'DB.Migration',
     );
   }
+
+  /// V42 — `client_id` em quick_photos (ADR-051 — aba Mídia por produtor).
+  static Future<void> migrateToV42(Database db) async {
+    if (!await DatabaseSchemaUtils.columnExists(
+      db,
+      'quick_photos',
+      'client_id',
+    )) {
+      await db.execute('ALTER TABLE quick_photos ADD COLUMN client_id TEXT');
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_quick_photos_client_id '
+        'ON quick_photos(client_id)',
+      );
+      AppLogger.debug(
+        'V42: client_id adicionado em quick_photos',
+        tag: 'DB.Migration',
+      );
+    }
+  }
 }
