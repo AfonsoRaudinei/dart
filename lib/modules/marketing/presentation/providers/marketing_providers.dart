@@ -2,8 +2,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/services/connectivity_service.dart';
 import '../../../../core/session/session_controller.dart';
+import '../../../../core/contracts/i_client_lookup_provider.dart';
+import '../../../../core/contracts/i_farm_lookup_provider.dart';
 import '../../data/repositories/i_marketing_case_repository.dart';
 import '../../data/repositories/marketing_case_repository_impl.dart';
+import '../../data/services/marketing_case_client_id_backfill_service.dart';
 import '../../data/services/marketing_sync_service.dart';
 import '../../domain/entities/marketing_case.dart';
 import '../../domain/enums/marketing_case_status.dart';
@@ -22,15 +25,28 @@ final marketingSyncServiceProvider = Provider<MarketingSyncService>((ref) {
   return MarketingSyncService(repo);
 });
 
+final marketingCaseClientIdBackfillServiceProvider =
+    Provider<MarketingCaseClientIdBackfillService>((ref) {
+      return MarketingCaseClientIdBackfillService(
+        clientLookup: ref.watch(clientLookupProvider),
+        farmLookup: ref.watch(iFarmLookupProvider),
+        repository: ref.watch(marketingCaseRepositoryProvider),
+      );
+    });
+
 // ── State do provider: a lista de cases ───────────────────────
 class MarketingCasesNotifier
     extends StateNotifier<AsyncValue<List<MarketingCase>>> {
   final IMarketingCaseRepository _repository;
   final MarketingSyncService _syncService;
+  final MarketingCaseClientIdBackfillService _backfillService;
   Future<void>? _activeLoad;
 
-  MarketingCasesNotifier(this._repository, this._syncService)
-    : super(const AsyncLoading());
+  MarketingCasesNotifier(
+    this._repository,
+    this._syncService,
+    this._backfillService,
+  ) : super(const AsyncLoading());
 
   /// Carrega os cases (cache local com fallback remoto)
   Future<void> load({bool forceSync = false}) async {
@@ -49,6 +65,7 @@ class MarketingCasesNotifier
 
     try {
       localCases = await _repository.getLocalCases();
+      localCases = await _backfillService.backfillIfNeeded(localCases);
       if (localCases.isNotEmpty) {
         state = AsyncData(localCases);
       } else {
@@ -56,7 +73,8 @@ class MarketingCasesNotifier
       }
 
       final cases = await _syncService.getCases(forceSync: true);
-      state = AsyncData(cases);
+      final backfilledCases = await _backfillService.backfillIfNeeded(cases);
+      state = AsyncData(backfilledCases);
     } catch (e, st) {
       if (localCases.isNotEmpty) {
         AppLogger.error(
@@ -261,7 +279,8 @@ final marketingCasesProvider =
       ref.keepAlive();
       final repo = ref.watch(marketingCaseRepositoryProvider);
       final sync = ref.watch(marketingSyncServiceProvider);
-      final notifier = MarketingCasesNotifier(repo, sync);
+      final backfill = ref.watch(marketingCaseClientIdBackfillServiceProvider);
+      final notifier = MarketingCasesNotifier(repo, sync, backfill);
 
       // Listener para re-tentar upload de pending_sync quando voltar a conexão
       ref.listen<AsyncValue<bool>>(connectivityStateProvider, (previous, next) {

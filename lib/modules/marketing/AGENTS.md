@@ -22,7 +22,12 @@
 - Usar cores, texto, inputs e divisores de `SoloForteSheetTokens` em `lib/core/ui/sheets/sheet_tokens.dart`.
 - Não duplicar handle, título, botão de fechar ou criar dropdown/material branco fora do padrão escuro do sheet.
 
-## Qualidade obrigatoria
+## Backfill legado `client_id`
+
+- Heurística: `domain/marketing_case_client_id_resolver.dart`
+- Job idempotente: `data/services/marketing_case_client_id_backfill_service.dart`
+- Disparo: `marketingCasesProvider.load` (após cache local e após sync remoto)
+- Nunca sobrescreve `client_id` existente; `synced` → `pending_sync` ao preencher
 
 - Publicacao deve usar dados reais e preservar autoria/contexto.
 - Regras de plano ficam explicitas e testaveis.
