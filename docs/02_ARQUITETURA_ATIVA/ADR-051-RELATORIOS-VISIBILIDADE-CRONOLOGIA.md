@@ -98,6 +98,21 @@ Cobertura auditável via log `MarketingBackfill` (`antes` / `depois` %).
 
 Heurística pura: `marketing/domain/marketing_case_client_id_resolver.dart`.
 
+### 6. Aba Mídia (`QuickPhotoRecord.clientId`)
+
+Fotos rápidas persistem `client_id` (SQLite v42) ao capturar com visita ativa
+(`producerId` da sessão via `IVisitSessionLookup`).
+
+Backfill idempotente `QuickPhotoClientIdBackfillService` (no
+`quickPhotoListProvider`):
+
+1. Mantém `client_id` existente.
+2. Infere via `visit_session_id` → `IVisitSessionLookup.findById` → `producerId`.
+3. Sem sessão ou produtor → permanece `null`.
+
+UI: chips de produtor em `relatorios_visit_photos_section.dart` quando há 2+
+`clientId` distintos (mesmo padrão de Visitas/Gerados).
+
 ## Consequências
 
 - Regras de visibilidade e cronologia documentadas e auditáveis em CI/review.
@@ -105,12 +120,13 @@ Heurística pura: `marketing/domain/marketing_case_client_id_resolver.dart`.
 - Policy de visibilidade Gerados em `core/contracts` (`MarketingCaseReportsListPolicy`).
 - Aba **Visitas** com filtro por produtor em `relatorios_visit_reports_section.dart`.
 - Aba **Gerados** com filtro por produtor quando há 2+ `clientId` distintos.
+- Aba **Mídia** com filtro por produtor quando há 2+ `clientId` distintos
+  (`QuickPhotoRecord.clientId`, schema SQLite v42).
 - Backfill legado melhora chips Gerados para cases antigos com label reconhecível.
 - Cases sem match de inferência permanecem sem `client_id` (sem particionamento multi-produtor).
-- Aba **Mídia** permanece fora do escopo (sem `clientId` consistente em fotos).
+- Fotos órfãs (sem `visit_session_id`) permanecem sem `client_id`.
 - `smart_button.dart` e Design System **não** são alterados por este ADR.
 
 ## Fora de escopo
 
 - Novo método de listagem em `IMarketingCaseReportsLookup` (provider já cumpre).
-- Filtro da aba Mídia por produtor.
