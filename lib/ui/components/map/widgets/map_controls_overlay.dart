@@ -124,13 +124,15 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
 
   Future<void> _openQuickPhoto({required bool initialFilterActive}) async {
     String? visitSessionId;
+    String? clientId;
     try {
       final activeSession = await ref
           .read(visitSessionLookupProvider)
           .getActiveSession();
-      visitSessionId = activeSession?.isActive == true
-          ? activeSession!.id
-          : null;
+      if (activeSession?.isActive == true) {
+        visitSessionId = activeSession!.id;
+        clientId = activeSession.producerId;
+      }
     } catch (error) {
       AppLogger.warning(
         'Não foi possível vincular foto rápida à visita ativa',
@@ -145,6 +147,7 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
       lat: widget.currentCenter.latitude,
       lng: widget.currentCenter.longitude,
       visitSessionId: visitSessionId,
+      clientId: clientId,
       initialFilterActive: initialFilterActive,
     );
   }
