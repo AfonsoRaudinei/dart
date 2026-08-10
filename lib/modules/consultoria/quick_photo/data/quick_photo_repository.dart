@@ -10,6 +10,14 @@ import '../../../../core/database/database_helper.dart';
 import '../../../../core/utils/app_logger.dart';
 import '../domain/quick_photo_record.dart';
 
+/// Porta mínima para persistir `client_id` inferido (testável sem Supabase).
+abstract interface class IQuickPhotoClientIdPatcher {
+  Future<QuickPhotoRecord?> patchClientIdIfMissing({
+    required String photoId,
+    required String clientId,
+  });
+}
+
 enum QuickPhotoType {
   normal('normal'),
   vegetalFilter('vegetal_filter');
@@ -19,7 +27,7 @@ enum QuickPhotoType {
   final String value;
 }
 
-class QuickPhotoRepository {
+class QuickPhotoRepository implements IQuickPhotoClientIdPatcher {
   static const _bucket = 'quick-photos';
   static const _table = 'quick_photos';
 
@@ -46,6 +54,7 @@ class QuickPhotoRepository {
     double? lat,
     double? lng,
     String? visitSessionId,
+    String? clientId,
     QuickPhotoType type = QuickPhotoType.normal,
   }) async {
     final userId = LocalSessionIdentity.resolveUserId();
@@ -59,6 +68,7 @@ class QuickPhotoRepository {
       lat: lat,
       lng: lng,
       visitSessionId: visitSessionId,
+      clientId: clientId,
       type: type,
       createdAt: createdAt,
     );
@@ -79,6 +89,7 @@ class QuickPhotoRepository {
         createdAt: createdAt,
         type: type,
         visitSessionId: visitSessionId,
+        clientId: clientId,
       );
       syncStatus = remoteSynced ? 0 : 1;
     }
@@ -95,6 +106,7 @@ class QuickPhotoRepository {
       longitude: lng,
       createdAt: createdAt,
       visitSessionId: visitSessionId,
+      clientId: clientId,
       type: type.value,
       syncStatus: syncStatus,
     );
@@ -263,9 +275,57 @@ class QuickPhotoRepository {
       longitude: (row['lng'] as num?)?.toDouble(),
       createdAt: DateTime.parse(row['created_at'] as String).toUtc(),
       visitSessionId: row['visit_session_id'] as String?,
+      clientId: row['client_id'] as String?,
       type: type.value,
       syncStatus: remoteSynced ? syncSynced : syncPending,
     );
+  }
+
+  /// Preenche `client_id` ausente localmente (idempotente). Retorna null se já
+  /// preenchido ou registro não encontrado.
+  Future<QuickPhotoRecord?> patchClientIdIfMissing({
+    required String photoId,
+    required String clientId,
+  }) async {
+    final userId = LocalSessionIdentity.resolveUserId();
+    final normalizedClientId = clientId.trim();
+    if (userId.isEmpty || photoId.isEmpty || normalizedClientId.isEmpty) {
+      return null;
+    }
+
+    final db = await _databaseHelper.database;
+    final rows = await db.query(
+      _table,
+      where: 'id = ? AND user_id = ? AND sync_status != ?',
+      whereArgs: [photoId, userId, syncDeleted],
+      limit: 1,
+    );
+    if (rows.isEmpty) return null;
+
+    final row = rows.first;
+    final existing = (row['client_id'] as String?)?.trim();
+    if (existing != null && existing.isNotEmpty) {
+      return QuickPhotoRecord.fromMap(row);
+    }
+
+    final syncStatus = row['sync_status'] as int? ?? syncPending;
+    final nextSyncStatus = syncStatus == syncSynced ? syncPending : syncStatus;
+
+    await db.update(
+      _table,
+      {
+        'client_id': normalizedClientId,
+        'sync_status': nextSyncStatus,
+      },
+      where: 'id = ? AND user_id = ?',
+      whereArgs: [photoId, userId],
+    );
+
+    return QuickPhotoRecord.fromMap({
+      ...row,
+      'client_id': normalizedClientId,
+      'sync_status': nextSyncStatus,
+    });
   }
 
   static String typeLabel(String type) {
@@ -287,12 +347,14 @@ class QuickPhotoRepository {
     double? lat,
     double? lng,
     String? visitSessionId,
+    String? clientId,
   }) async {
     final db = await _databaseHelper.database;
     await db.insert(_table, {
       'id': id,
       'user_id': userId,
       'visit_session_id': visitSessionId,
+      'client_id': clientId,
       'local_path': localPath,
       'storage_path': null,
       'public_url': null,
@@ -313,6 +375,7 @@ class QuickPhotoRepository {
     double? lat,
     double? lng,
     String? visitSessionId,
+    String? clientId,
   }) async {
     try {
       final storagePath = '$userId/$id.jpg';
@@ -341,6 +404,8 @@ class QuickPhotoRepository {
         'lng': lng,
         'photo_type': type.value,
         'visit_session_id': visitSessionId,
+        if (clientId != null && clientId.trim().isNotEmpty)
+          'client_id': clientId.trim(),
         'created_at': createdAt.toIso8601String(),
       });
 

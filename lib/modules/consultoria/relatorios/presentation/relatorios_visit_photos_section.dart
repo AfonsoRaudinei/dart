@@ -36,6 +36,12 @@ class _VisitPhotosSection extends ConsumerStatefulWidget {
 
 class _VisitPhotosSectionState extends ConsumerState<_VisitPhotosSection> {
   _VisitPhotoFilter _filter = _VisitPhotoFilter.all;
+  String? _selectedClientId;
+
+  void _selectProducer(String clientId) {
+    if (_selectedClientId == clientId) return;
+    setState(() => _selectedClientId = clientId);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -43,49 +49,86 @@ class _VisitPhotosSectionState extends ConsumerState<_VisitPhotosSection> {
 
     return photosAsync.when(
       data: (photos) {
-        final filtered = _filterVisitPhotos(photos, _filter);
-        return ListView.builder(
+        final producerCounts =
+            _producerCountsFromIds(photos.map((photo) => photo.clientId));
+        final producerIds = producerCounts.keys.toList()..sort();
+        final needsProducerSelection = producerIds.length > 1;
+        final effectiveClientId =
+            needsProducerSelection ? _selectedClientId : null;
+        final scoped = !needsProducerSelection
+            ? photos
+            : (effectiveClientId == null
+                ? const <QuickPhotoRecord>[]
+                : photos
+                    .where((photo) => photo.clientId == effectiveClientId)
+                    .toList());
+        final filtered = _filterVisitPhotos(scoped, _filter);
+        final headerCount = effectiveClientId != null && needsProducerSelection
+            ? scoped.length
+            : photos.length;
+
+        return ListView(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-          itemCount: 3 + (filtered.isEmpty ? 1 : filtered.length),
-          itemBuilder: (context, index) {
-            if (index == 0) {
-              return _InsetGroupHeader(
-                title: 'Fotos da visita',
-                count: filtered.length,
-              );
-            }
-            if (index == 1) {
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: _VisitPhotoFilterBar(
-                  selected: _filter,
-                  onSelected: (value) => setState(() => _filter = value),
+          children: [
+            _InsetGroupHeader(
+              title: 'Fotos da visita',
+              count: headerCount,
+            ),
+            if (needsProducerSelection) ...[
+              Padding(
+                padding: const EdgeInsets.fromLTRB(4, 0, 4, 12),
+                child: Text(
+                  'Produtor',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: context.premiumTextSecondary,
+                  ),
                 ),
-              );
-            }
-            if (filtered.isEmpty) {
-              if (index == 2) {
-                return _PremiumEmptyState(
-                  message: photos.isEmpty
-                      ? _emptyMessage(_VisitPhotoFilter.all)
-                      : _emptyMessage(_filter),
-                  ctaLabel: 'Abrir mapa',
-                  onCta: () => context.go(AppRoutes.map),
-                );
-              }
-              return const SizedBox(height: kFabSafeArea);
-            }
-            if (index == filtered.length + 2) {
-              return const SizedBox(height: kFabSafeArea);
-            }
-            final photo = filtered[index - 2];
-            return _VisitPhotoCard(
-              photo: photo,
-              dateFormat: widget.dateFormat,
-              onTap: () => _openPreview(context, photo),
-              onAction: (value) => _handleAction(context, photo, value),
-            );
-          },
+              ),
+              _RelatoriosProducerSelector(
+                producerIds: producerIds,
+                itemCounts: producerCounts,
+                selectedClientId: effectiveClientId,
+                onSelected: _selectProducer,
+              ),
+              const SizedBox(height: 12),
+            ],
+            Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: _VisitPhotoFilterBar(
+                selected: _filter,
+                onSelected: (value) => setState(() => _filter = value),
+              ),
+            ),
+            if (photos.isEmpty)
+              _PremiumEmptyState(
+                message: _emptyMessage(_VisitPhotoFilter.all),
+                ctaLabel: 'Abrir mapa',
+                onCta: () => context.go(AppRoutes.map),
+              )
+            else if (needsProducerSelection && effectiveClientId == null)
+              const _PremiumEmptyState(
+                message:
+                    'Selecione um produtor para visualizar fotos da visita.',
+              )
+            else if (filtered.isEmpty)
+              _PremiumEmptyState(
+                message: _emptyMessage(_filter),
+                ctaLabel: 'Abrir mapa',
+                onCta: () => context.go(AppRoutes.map),
+              )
+            else
+              ...filtered.map(
+                (photo) => _VisitPhotoCard(
+                  photo: photo,
+                  dateFormat: widget.dateFormat,
+                  onTap: () => _openPreview(context, photo),
+                  onAction: (value) => _handleAction(context, photo, value),
+                ),
+              ),
+            const SizedBox(height: kFabSafeArea),
+          ],
         );
       },
       loading: () => const Padding(

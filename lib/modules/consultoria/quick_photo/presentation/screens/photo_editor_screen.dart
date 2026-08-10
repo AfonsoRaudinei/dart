@@ -16,6 +16,7 @@ class PhotoEditorScreen extends StatefulWidget {
   final double? lat;
   final double? lng;
   final String? visitSessionId;
+  final String? clientId;
   final bool initialFilterActive;
 
   /// Quando setado, salva in-place (edição) em vez de criar novo registro.
@@ -27,6 +28,7 @@ class PhotoEditorScreen extends StatefulWidget {
     this.lat,
     this.lng,
     this.visitSessionId,
+    this.clientId,
     this.initialFilterActive = false,
     this.existingPhotoId,
   });
@@ -154,6 +156,7 @@ class _PhotoEditorScreenState extends State<PhotoEditorScreen> {
           lat: widget.lat,
           lng: widget.lng,
           visitSessionId: widget.visitSessionId,
+          clientId: widget.clientId,
           type: type,
         );
       }

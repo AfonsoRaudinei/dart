@@ -5,6 +5,7 @@ class QuickPhotoRecord {
   final double? longitude;
   final DateTime createdAt;
   final String? visitSessionId;
+  final String? clientId;
   final String type;
   final String? storagePath;
   final String? publicUrl;
@@ -18,6 +19,7 @@ class QuickPhotoRecord {
     this.longitude,
     required this.createdAt,
     this.visitSessionId,
+    this.clientId,
     this.type = 'normal',
     this.storagePath,
     this.publicUrl,
@@ -33,6 +35,7 @@ class QuickPhotoRecord {
       longitude: (map['lng'] as num?)?.toDouble(),
       createdAt: DateTime.parse(map['created_at'] as String).toUtc(),
       visitSessionId: map['visit_session_id'] as String?,
+      clientId: map['client_id'] as String?,
       type: map['photo_type'] as String? ?? 'normal',
       storagePath: map['storage_path'] as String?,
       publicUrl: map['public_url'] as String?,

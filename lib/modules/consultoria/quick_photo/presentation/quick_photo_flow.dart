@@ -11,6 +11,7 @@ class QuickPhotoFlow {
     double? lat,
     double? lng,
     String? visitSessionId,
+    String? clientId,
     bool initialFilterActive = false,
   }) async {
     final imagePath = await ImageStorageService().captureAndSaveImage();
@@ -24,6 +25,7 @@ class QuickPhotoFlow {
           lat: lat,
           lng: lng,
           visitSessionId: visitSessionId,
+          clientId: clientId,
           initialFilterActive: initialFilterActive,
         ),
       ),
