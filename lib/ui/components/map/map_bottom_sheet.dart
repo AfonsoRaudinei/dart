@@ -356,6 +356,72 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
     clearOccurrenceDraft(ref, location.latitude, location.longitude);
   }
 
+  bool _hasValidOccurrencePin(LatLng? location) {
+    if (location == null) return false;
+    if (!location.latitude.isFinite || !location.longitude.isFinite) {
+      return false;
+    }
+    if (location.latitude < -90 || location.latitude > 90) return false;
+    if (location.longitude < -180 || location.longitude > 180) return false;
+    return location.latitude != 0 || location.longitude != 0;
+  }
+
+  Widget _buildOccurrencePinRequiredPlaceholder() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          controller: _scrollController,
+          physics: const BouncingScrollPhysics(),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(
+                    SFIcons.pinFill,
+                    size: 48,
+                    color: Color(0xFFFF9F0A),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Marque o ponto no mapa',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Toque no mapa para definir onde a ocorrência aconteceu. '
+                    'O formulário só abre depois que o ponto estiver marcado.',
+                    style: TextStyle(color: Color(0xFF8E8E93), fontSize: 14),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 24),
+                  OutlinedButton(
+                    onPressed: widget.onClose,
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.white70,
+                      side: const BorderSide(color: Colors.white24),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 14,
+                      ),
+                    ),
+                    child: const Text('Voltar ao mapa'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   Widget _buildTabContent() {
     // 🛡 REFATORAÇÃO: Switch explícito baseado em MapSheetType (determinístico)
     switch (widget.state.type) {
@@ -548,10 +614,16 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
 
   // Criação de ocorrência: OccurrenceCreationSheet (pin = ponto do mapa).
   Widget _buildOccurrenceForm() {
-    _ensureOccurrenceFormGuard();
     final creationLocation = widget.creationLocation;
-    final lat = creationLocation?.latitude ?? 0;
-    final lng = creationLocation?.longitude ?? 0;
+    if (!_hasValidOccurrencePin(creationLocation)) {
+      _occurrenceFormGuard = null;
+      ref.read(occurrenceFormGuardProvider.notifier).state = null;
+      return _buildOccurrencePinRequiredPlaceholder();
+    }
+
+    _ensureOccurrenceFormGuard();
+    final lat = creationLocation!.latitude;
+    final lng = creationLocation.longitude;
 
     return OccurrenceCreationSheet(
       latitude: lat,
@@ -569,23 +641,12 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
         widget.onClose();
       },
       onConfirm: (data) async {
-        // Blindagem: pin da ocorrência = ponto do mapa (tap), NUNCA GPS.
-        // GPS aqui causava regressão recorrente (pin na localização do usuário).
         if (!data.hasValidMapPin) {
-          if (!mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                'Ponto do mapa inválido. Toque novamente no mapa para marcar a ocorrência.',
-              ),
-              backgroundColor: PremiumTokens.alertError,
-            ),
+          throw StateError(
+            'Ponto do mapa inválido. Toque novamente no mapa para marcar a ocorrência.',
           );
-          return;
         }
 
-        // visit_session_id herdado automaticamente pelo OccurrenceController
-        // caso haja sessão de visita ativa.
         await ref
             .read(occurrenceControllerProvider)
             .createOccurrence(
@@ -621,7 +682,6 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
           ),
         );
 
-        // Fechar o sheet após salvar
         widget.onClose();
       },
     );
