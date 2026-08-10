@@ -4,6 +4,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:soloforte_app/core/contracts/i_client_lookup.dart';
 import 'package:soloforte_app/core/contracts/i_client_lookup_provider.dart';
+import 'package:soloforte_app/core/contracts/i_farm_lookup.dart';
+import 'package:soloforte_app/core/contracts/i_farm_lookup_provider.dart';
 import 'package:soloforte_app/core/session/user_role.dart';
 import 'package:soloforte_app/core/contracts/i_marketing_case_reports_lookup_provider.dart';
 import 'package:soloforte_app/core/contracts/marketing_case_reports_list_provider.dart';
@@ -726,6 +728,7 @@ Future<void> _pumpScreen(
   final overrides = <Override>[
     currentUserRoleProvider.overrideWithValue(UserRole.consultor),
     clientLookupProvider.overrideWithValue(_RelatoriosTestClientLookup()),
+    iFarmLookupProvider.overrideWithValue(_RelatoriosTestFarmLookup()),
     relatorioRepositoryProvider.overrideWithValue(relatorioRepository),
     publish_repo.relatorioRepositoryProvider.overrideWithValue(
       relatorioRepository,
@@ -866,6 +869,25 @@ class FakeMarketingCaseRepository implements IMarketingCaseRepository {
   }
 }
 
+class _RelatoriosTestFarmLookup implements IFarmLookup {
+  @override
+  Future<FarmSummary?> findById(String farmId) async => null;
+
+  @override
+  Future<List<FarmSummary>> getFarmsByClient(String clientId) async =>
+      const [];
+
+  @override
+  Future<void> saveFarm({
+    required String clientId,
+    required String farmId,
+    required String name,
+    required String city,
+    required String state,
+    required double areaHa,
+  }) async {}
+}
+
 class _RelatoriosTestClientLookup implements IClientLookup {
   static const _clients = <ClientSummary>[
     ClientSummary(id: 'cli-test-1', name: 'Produtor Teste', active: true),
@@ -890,7 +912,7 @@ MarketingCase _marketingCase({
   String tipo = 'resultado',
   String produtorFazenda = 'Produtor Teste - Fazenda Marketing',
   String status = 'published',
-  String? clientId,
+  String? clientId = 'cli-test-1',
 }) {
   return MarketingCase.fromJson({
     'id': id,
