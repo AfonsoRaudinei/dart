@@ -80,20 +80,37 @@ Exports relevantes:
 | **015** | `IClientLookup` — nomes de produtor nos chips e títulos de export |
 | **050** | `IMarketingCaseReportsLookup` + `marketingCaseReportsListProvider` — fronteira marketing ↔ relatorios |
 
+### 5. Backfill legado de `client_id` (Marketing Cases)
+
+Cases criados antes da propagação de `clientId` em `novo_case_sheet` podem
+ter `client_id` nulo no JSON do cache (`marketing_cases_cache`).
+
+Job idempotente `MarketingCaseClientIdBackfillService` (disparado no
+`marketingCasesProvider.load` após ler cache local):
+
+1. Mantém `client_id` já preenchido (nunca sobrescreve).
+2. Infere via `produtor_fazenda` + `IClientLookup` / `IFarmLookup` (match único).
+3. Sem match → permanece `null` (não inventar).
+4. `sync_status`: preserva valor; se era `synced`, vira `pending_sync` para
+   reenvio do `client_id` ao Supabase.
+
+Cobertura auditável via log `MarketingBackfill` (`antes` / `depois` %).
+
+Heurística pura: `marketing/domain/marketing_case_client_id_resolver.dart`.
+
 ## Consequências
 
 - Regras de visibilidade e cronologia documentadas e auditáveis em CI/review.
 - `arch_check.sh` e testes de widget cobrem multi-produtor e status não-publicados.
-- Policy de visibilidade Gerados pode ser extraída para `core/contracts`
-  (`MarketingCaseReportsListPolicy`) na Fase 2 — adapter delega à policy.
-- Aba **Visitas** com filtro por produtor implementado em `relatorios_visit_reports_section.dart`.
-- Aba **Gerados** com filtro por produtor quando há 2+ `clientId` distintos no snapshot.
-- Cases legados sem `client_id` continuam visíveis quando não há particionamento multi-produtor.
+- Policy de visibilidade Gerados em `core/contracts` (`MarketingCaseReportsListPolicy`).
+- Aba **Visitas** com filtro por produtor em `relatorios_visit_reports_section.dart`.
+- Aba **Gerados** com filtro por produtor quando há 2+ `clientId` distintos.
+- Backfill legado melhora chips Gerados para cases antigos com label reconhecível.
+- Cases sem match de inferência permanecem sem `client_id` (sem particionamento multi-produtor).
 - Aba **Mídia** permanece fora do escopo (sem `clientId` consistente em fotos).
 - `smart_button.dart` e Design System **não** são alterados por este ADR.
 
 ## Fora de escopo
 
 - Novo método de listagem em `IMarketingCaseReportsLookup` (provider já cumpre).
-- Migração/backfill de `client_id` em marketing cases legados.
 - Filtro da aba Mídia por produtor.
