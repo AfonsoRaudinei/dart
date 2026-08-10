@@ -106,4 +106,5 @@ class OccurrenceFormData {
   }
 }
 
-typedef OccurrenceConfirmCallback = void Function(OccurrenceFormData data);
+typedef OccurrenceConfirmCallback =
+    Future<void> Function(OccurrenceFormData data);
