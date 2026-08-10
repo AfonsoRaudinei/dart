@@ -119,4 +119,4 @@ void main() {
   });
 }
 
-void _noopConfirm(_) {}
+Future<void> _noopConfirm(_) async {}

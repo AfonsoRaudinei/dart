@@ -30,6 +30,7 @@ import 'occurrence_form_widgets.dart';
 part 'occurrence_creation_sheet_models.dart';
 part 'occurrence_creation_sheet_ui_helpers.dart';
 part 'occurrence_creation_sheet_draft.dart';
+part 'occurrence_creation_sheet_submit.dart';
 
 class OccurrenceCreationSheet extends ConsumerStatefulWidget {
   final double latitude;
@@ -74,6 +75,8 @@ class _OccurrenceCreationSheetState
   final _descCtrl = TextEditingController();
   final _recomCtrl = TextEditingController();
   final _picker = ImagePicker();
+  bool _isSaving = false;
+  String? _submitError;
 
   /// Pin imutável da abertura — ignora rebuild do pendingOccurrenceLocation.
   late final double _pinLatitude;
@@ -337,56 +340,8 @@ class _OccurrenceCreationSheetState
     }
   }
 
-  void _submit() {
-    final desc = _descCtrl.text.trim();
-    if (_selectedCategoryValue == null && _cats.isEmpty && desc.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Selecione ao menos uma categoria ou adicione uma descrição.',
-          ),
-          backgroundColor: Colors.redAccent,
-        ),
-      );
-      return;
-    }
-    HapticFeedback.mediumImpact();
-
-    final primaryCat = _cats.isNotEmpty ? _cats.first.name : null;
-    final firstPhoto = _fotos.values.firstOrNull?.firstOrNull;
-
-    widget.onConfirm(
-      OccurrenceFormData(
-        type: _urgency,
-        description: desc,
-        // Pin imutável do initState — nunca GPS / nunca lat do provider mid-form.
-        latitude: _pinLatitude,
-        longitude: _pinLongitude,
-        clientId: _selectedClient?.id,
-        photoPath: firstPhoto,
-        category: _selectedCategoryValue ?? primaryCat,
-        cultivar: _cultivarCtrl.text.trim().isEmpty
-            ? null
-            : _cultivarCtrl.text.trim(),
-        dataPlantio: _isoDate(_dataPlantio),
-        estadioFenologico: _estadio?.code,
-        tipoOcorrencia: null, // FIX 3: removido da UI
-        amostraSolo: _selectedCategoryValue == 'amostra_solo', // FIX 4
-        recomendacoes: _recomCtrl.text.trim().isEmpty
-            ? null
-            : _recomCtrl.text.trim(),
-        metricasJson: _encodeMetricas(),
-        nutrientesJson: _encodeNutrientes(),
-        categoriasJson: _encodeCategorias(),
-        notasCategoriasJson: _encodeNotas(),
-        fotosCategoriasJson: _encodeFotos(),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
-    final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
     final safeBottom = MediaQuery.of(context).padding.bottom;
     return Material(
       color: const Color(0xFF1C1C1E),
@@ -397,6 +352,7 @@ class _OccurrenceCreationSheetState
               controller: widget.scrollController,
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
               children: [
+              if (_buildSubmitErrorBanner() case final banner?) banner,
               // ── Header padrão ADR-027 (espelha NovoCaseHeader) ──────────
               Row(
                 children: [
@@ -715,15 +671,13 @@ class _OccurrenceCreationSheetState
                 16,
                 12,
                 16,
-                keyboardHeight > 0
-                    ? keyboardHeight + 12
-                    : kFabSafeArea + safeBottom,
+                kFabSafeArea + safeBottom,
               ),
               child: Row(
                 children: [
                   Expanded(
                     child: OutlinedButton(
-                      onPressed: _handleCancel,
+                      onPressed: _isSaving ? null : _handleCancel,
                       style: OutlinedButton.styleFrom(
                         foregroundColor: Colors.white54,
                         side: const BorderSide(color: Colors.white24),
@@ -745,7 +699,7 @@ class _OccurrenceCreationSheetState
                   Expanded(
                     flex: 2,
                     child: ElevatedButton(
-                      onPressed: _submit,
+                      onPressed: _isSaving ? null : _submit,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: PremiumTokens.brandGreen,
                         foregroundColor: Colors.black,
@@ -754,15 +708,24 @@ class _OccurrenceCreationSheetState
                           borderRadius: BorderRadius.circular(50),
                         ),
                       ),
-                      child: Text(
-                        widget.initialOccurrence == null
-                            ? 'Salvar Ocorrência'
-                            : 'Salvar Alterações',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: -0.4,
-                        ),
-                      ),
+                      child: _isSaving
+                          ? const SizedBox(
+                              width: 22,
+                              height: 22,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2.2,
+                                color: Colors.black87,
+                              ),
+                            )
+                          : Text(
+                              widget.initialOccurrence == null
+                                  ? 'Salvar Ocorrência'
+                                  : 'Salvar Alterações',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: -0.4,
+                              ),
+                            ),
                     ),
                   ),
                 ],

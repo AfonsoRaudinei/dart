@@ -54,7 +54,7 @@ void main() {
             body: OccurrenceCreationSheet(
               latitude: -10.12345,
               longitude: -48.54321,
-              onConfirm: (_) {},
+              onConfirm: (_) async {},
             ),
           ),
         ),
@@ -88,7 +88,7 @@ void main() {
             body: OccurrenceCreationSheet(
               latitude: -10.12345,
               longitude: -48.54321,
-              onConfirm: (_) {},
+              onConfirm: (_) async {},
             ),
           ),
         ),
@@ -105,7 +105,13 @@ void main() {
     await tester.pump();
 
     expect(
-      find.text('Selecione ao menos uma categoria ou adicione uma descrição.'),
+      find.byKey(const Key('occurrence_submit_error_banner')),
+      findsOneWidget,
+    );
+    expect(
+      find.text(
+        'Selecione ao menos uma categoria ou adicione uma descrição.',
+      ),
       findsOneWidget,
     );
   });

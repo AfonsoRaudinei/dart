@@ -120,13 +120,35 @@ void main() {
     expect(find.byType(MapBottomSheet), findsNothing);
     expect(hostKey.currentState!.closeCount, 1);
   });
+
+  testWidgets(
+    'criação sem creationLocation não exibe formulário salvável',
+    (tester) async {
+      final hostKey = GlobalKey<_OccurrenceSheetHostState>();
+      final controller = await _createController();
+      addTearDown(controller.dispose);
+
+      await _pumpOccurrenceHost(
+        tester,
+        hostKey,
+        controller,
+        creationLocation: null,
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(OccurrenceCreationSheet), findsNothing);
+      expect(find.text('Marque o ponto no mapa'), findsOneWidget);
+      expect(find.text('Salvar Ocorrência'), findsNothing);
+    },
+  );
 }
 
 Future<void> _pumpOccurrenceHost(
   WidgetTester tester,
   GlobalKey<_OccurrenceSheetHostState> hostKey,
-  DrawingController controller,
-) async {
+  DrawingController controller, {
+  LatLng? creationLocation = const LatLng(-10.12345, -48.54321),
+}) async {
   tester.view.physicalSize = const Size(1179, 2556);
   tester.view.devicePixelRatio = 3;
   addTearDown(tester.view.resetPhysicalSize);
@@ -146,7 +168,11 @@ Future<void> _pumpOccurrenceHost(
         activeVisitContextLookupProvider.overrideWithValue(_EmptyVisitLookup()),
       ],
       child: MaterialApp(
-        home: _OccurrenceSheetHost(key: hostKey, controller: controller),
+        home: _OccurrenceSheetHost(
+          key: hostKey,
+          controller: controller,
+          creationLocation: creationLocation,
+        ),
       ),
     ),
   );
@@ -193,9 +219,14 @@ DrawingFeature _feature() {
 }
 
 class _OccurrenceSheetHost extends StatefulWidget {
-  const _OccurrenceSheetHost({super.key, required this.controller});
+  const _OccurrenceSheetHost({
+    super.key,
+    required this.controller,
+    this.creationLocation = const LatLng(-10.12345, -48.54321),
+  });
 
   final DrawingController controller;
+  final LatLng? creationLocation;
 
   @override
   State<_OccurrenceSheetHost> createState() => _OccurrenceSheetHostState();
@@ -204,7 +235,6 @@ class _OccurrenceSheetHost extends StatefulWidget {
 class _OccurrenceSheetHostState extends State<_OccurrenceSheetHost> {
   var closeCount = 0;
   bool _visible = true;
-  final _creationLocation = const LatLng(-10.12345, -48.54321);
   final _state = const MapSheetState(
     type: MapSheetType.occurrences,
     isCreatingOccurrence: true,
@@ -227,7 +257,7 @@ class _OccurrenceSheetHostState extends State<_OccurrenceSheetHost> {
                 }),
                 state: _state,
                 onStateChange: (_) {},
-                creationLocation: _creationLocation,
+                creationLocation: widget.creationLocation,
               ),
             ),
         ],
