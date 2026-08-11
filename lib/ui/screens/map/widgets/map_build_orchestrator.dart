@@ -200,6 +200,26 @@ class MapBuildOrchestrator extends ConsumerWidget {
             onTap: (tapPos, point) {
               final drawCtrl = ref.read(drawingControllerProvider);
 
+              if (drawCtrl.suppressesMapContextTaps) {
+                return;
+              }
+
+              // 🎯 Prioridade 1: modos armados do mapa (antes de desenho/talhão)
+              final armedMode = ref.read(armedModeProvider);
+              if (armedMode == ArmedMode.marketing) {
+                ref.read(armedModeProvider.notifier).state = ArmedMode.none;
+                ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                handleMapLongPress(tapPos, point);
+                return;
+              }
+
+              if (armedMode == ArmedMode.occurrences) {
+                ref.read(armedModeProvider.notifier).state = ArmedMode.none;
+                ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                openOccurrenceSheet(point.latitude, point.longitude);
+                return;
+              }
+
               if (drawCtrl.currentState == DrawingState.drawing ||
                   drawCtrl.currentState == DrawingState.armed) {
                 if (drawCtrl.currentTool != DrawingTool.freehand) {
@@ -211,32 +231,6 @@ class MapBuildOrchestrator extends ConsumerWidget {
                   drawCtrl.appendDrawingPoint(point);
                 }
                 return;
-              }
-
-              if (drawCtrl.suppressesMapContextTaps) {
-                return;
-              }
-
-              // 🎯 Prioridade 1a: Modo armado marketing
-              if (ref.read(armedModeProvider) == ArmedMode.marketing) {
-                ref.read(armedModeProvider.notifier).state = ArmedMode.none;
-                ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                handleMapLongPress(tapPos, point);
-                return;
-              }
-
-              // 🎯 Prioridade 1b: Verificar modo armado de ocorrências
-              if (ref.read(armedModeProvider) == ArmedMode.occurrences) {
-                final lat = point.latitude;
-                final lng = point.longitude;
-
-                // Desarmar imediatamente para evitar múltiplos taps
-                ref.read(armedModeProvider.notifier).state = ArmedMode.none;
-                ScaffoldMessenger.of(context).hideCurrentSnackBar();
-
-                // Abrir sheet de criação de ocorrência com coordenadas
-                openOccurrenceSheet(lat, lng);
-                return; // Não processar lógica de talhão
               }
 
               if (drawCtrl.isMultiSelectEnabled ||
@@ -280,6 +274,20 @@ class MapBuildOrchestrator extends ConsumerWidget {
               if (ref.read(drawingControllerProvider).suppressesMapContextTaps) {
                 return;
               }
+
+              final armedMode = ref.read(armedModeProvider);
+              if (armedMode == ArmedMode.occurrences) {
+                ref.read(armedModeProvider.notifier).state = ArmedMode.none;
+                ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                openOccurrenceSheet(point.latitude, point.longitude);
+                return;
+              }
+
+              if (armedMode == ArmedMode.marketing) {
+                ref.read(armedModeProvider.notifier).state = ArmedMode.none;
+                ScaffoldMessenger.of(context).hideCurrentSnackBar();
+              }
+
               handleMapLongPress(tapPos, point);
             },
             onPositionChanged: (pos, hasGesture) {
