@@ -355,6 +355,11 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
   void _armOccurrenceMode() {
     // FIX 1: Entrar em modo seleção — usuário toca no mapa para capturar LatLng
     _pendingMarketingCaseTipo = null;
+    final drawCtrl = ref.read(drawingControllerProvider);
+    if (drawCtrl.currentState == DrawingState.drawing ||
+        drawCtrl.currentState == DrawingState.armed) {
+      drawCtrl.cancelOperation();
+    }
     ref.read(armedModeProvider.notifier).state = ArmedMode.occurrences;
     HapticFeedback.lightImpact();
     // Feedback visual: ArmedModeBanner (glass) — sem snackbar duplicado.
