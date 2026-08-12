@@ -217,10 +217,10 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
             ),
           ),
 
-        // 3. Ações verticais do mapa (direita)
+        // 3. Ações verticais do mapa (direita) — coluna com folga anti mis-tap vs FAB
         Positioned(
           right: 16,
-          bottom: kFabSafeArea + safeBottom + 130,
+          bottom: kMapToolsBottomOffset + safeBottom,
           child: SafeArea(
             top: false,
             child: _MapToolsFab(
@@ -234,7 +234,7 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
         Positioned.fill(
           child: MapActionFabMenu(
             right: 16,
-            bottom: kFabSafeArea + safeBottom + 60,
+            bottom: kMapActionMenuBottomOffset + safeBottom,
             padding: EdgeInsets.zero,
             direction: MapActionFabMenuDirection.left,
             isActive: widget.isMarketingMode || widget.isOccurrenceMode,
@@ -262,7 +262,7 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
 
         if (widget.showCheckInAction)
           Positioned(
-            bottom: kFabSafeArea + safeBottom,
+            bottom: kMapCheckInBottomOffset + safeBottom,
             right: 16,
             child: Column(
               mainAxisSize: MainAxisSize.min,

@@ -30,7 +30,8 @@ const TABLES_TO_DELETE = [
   'security_logs',
   'app_settings',
   'user_preferences',
-  'feedback', // Added based on DB verification
+  'feedback', // legado
+  'feedbacks',
   'perfis', // Added based on DB verification
   'profiles',
 ]

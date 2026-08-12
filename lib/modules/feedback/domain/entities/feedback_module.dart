@@ -84,4 +84,14 @@ enum FeedbackModule {
         return FeedbackModule.other;
     }
   }
+
+  static FeedbackModule fromLabel(String? label) {
+    if (label == null || label.trim().isEmpty) {
+      return FeedbackModule.other;
+    }
+    for (final module in FeedbackModule.values) {
+      if (module.label == label) return module;
+    }
+    return FeedbackModule.other;
+  }
 }
