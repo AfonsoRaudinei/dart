@@ -1,7 +1,9 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter/services.dart';
+import 'package:http/http.dart' as http;
 import 'package:image/image.dart' as img;
 import 'package:intl/intl.dart';
 
@@ -190,6 +192,73 @@ abstract class RelatorioHtmlRenderer {
   static Future<String> resolvePhotoSrc(String? path) async {
     final resolved = await photoPathToBase64(path);
     return sanitizePhotoSrc(resolved);
+  }
+
+  /// Resolve foto para export HTML auto-contido (offline-first).
+  ///
+  /// - Path local → `data:image/*;base64,...`
+  /// - URL remota → download + inline base64 (fallback: URL https sanitizada)
+  static Future<String> resolvePhotoSrcForExport(
+    String? path, {
+    Future<Uint8List?> Function(String url)? fetchRemoteBytes,
+  }) async {
+    if (path == null || path.isEmpty) return '';
+    final trimmed = path.trim();
+    if (trimmed.startsWith('data:image/')) {
+      return sanitizePhotoSrc(trimmed);
+    }
+
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+      final sanitized = sanitizePhotoSrc(trimmed);
+      if (sanitized.isEmpty) return '';
+      final fetcher = fetchRemoteBytes ?? _fetchRemotePhotoBytes;
+      final bytes = await fetcher(sanitized);
+      if (bytes != null && bytes.isNotEmpty) {
+        final inlined = _bytesToInlineDataUri(bytes, hintPath: sanitized);
+        if (inlined != null) return inlined;
+      }
+      return sanitized;
+    }
+
+    final local = await photoPathToBase64(trimmed);
+    return sanitizePhotoSrc(local);
+  }
+
+  static Future<Uint8List?> _fetchRemotePhotoBytes(String url) async {
+    try {
+      final response = await http
+          .get(Uri.parse(url))
+          .timeout(const Duration(seconds: 8));
+      if (response.statusCode == 200 && response.bodyBytes.isNotEmpty) {
+        return response.bodyBytes;
+      }
+    } catch (_) {
+      // fallback silencioso para URL remota no HTML exportado
+    }
+    return null;
+  }
+
+  static String? _bytesToInlineDataUri(
+    Uint8List bytes, {
+    required String hintPath,
+    int maxBytes = maxInlineImageBytes,
+    int maxDimension = maxInlineImageDimension,
+    int jpegQuality = 78,
+  }) {
+    var output = bytes;
+    var mime = _mimeFromPath(hintPath);
+    if (output.lengthInBytes > maxBytes) {
+      final compressed = _compressImage(
+        output,
+        maxDimension: maxDimension,
+        jpegQuality: jpegQuality,
+      );
+      if (compressed != null) {
+        output = compressed;
+        mime = 'image/jpeg';
+      }
+    }
+    return 'data:$mime;base64,${base64Encode(output)}';
   }
 
   static Future<String> assetImageToBase64(String assetPath) async {
