@@ -7,6 +7,7 @@ import '../../../../core/contracts/i_occurrence_access_reader_provider.dart';
 import '../../../../core/session/local_session_identity.dart';
 import '../../../../core/session/user_role.dart';
 import '../../../../core/state/map_state.dart';
+import '../../../../core/state/map_ui_providers.dart';
 import '../../../../core/domain/publicacao.dart';
 import '../../../../modules/consultoria/occurrences/domain/occurrence.dart';
 import '../../../../modules/dashboard/providers/location_providers.dart';
@@ -147,6 +148,8 @@ class IsolatedMarketingMarkersLayer extends ConsumerWidget {
       }),
     );
 
+    final focusedCaseId = ref.watch(focusedMarketingCaseIdProvider);
+
     final cases = (isProdutor
             ? publishedCases.where(
                 (c) => MarketingCaseVisibility.isVisibleOnMapForProducer(
@@ -161,9 +164,11 @@ class IsolatedMarketingMarkersLayer extends ConsumerWidget {
 
     if (cases.isEmpty) return const SizedBox.shrink();
 
-    // Filtro por zoom: cada tier tem um raio mínimo de visibilidade
+    // Filtro por zoom: cada tier tem um raio mínimo de visibilidade.
+    // Case em foco (Ver Localização) ignora o filtro de zoom.
     final visibleCases = cases
         .where((c) {
+          if (focusedCaseId != null && c.id == focusedCaseId) return true;
           final tier = c.visibilidade;
           return MarketingCaseMarker.isVisibleAtZoom(tier, currentZoom);
         })

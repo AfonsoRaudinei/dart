@@ -185,7 +185,12 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
     }
 
     _mapController.move(point, 17.0);
-    ref.read(destinationCoordinateMarkerProvider.notifier).state = point;
+    final focusedCaseId = ref.read(focusedMarketingCaseIdProvider);
+    if (focusedCaseId == null || focusedCaseId.isEmpty) {
+      ref.read(destinationCoordinateMarkerProvider.notifier).state = point;
+    } else {
+      ref.read(destinationCoordinateMarkerProvider.notifier).state = null;
+    }
     ref.read(viewportStateProvider.notifier).state =
         InitialViewportState.applied;
   }
