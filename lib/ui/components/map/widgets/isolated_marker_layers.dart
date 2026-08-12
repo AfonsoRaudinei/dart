@@ -170,6 +170,8 @@ class IsolatedMarketingMarkersLayer extends ConsumerWidget {
       }),
     );
 
+    final focusedCaseId = ref.watch(focusedMarketingCaseIdProvider);
+
     final cases = (isProdutor
             ? publishedCases.where(
                 (c) => MarketingCaseVisibility.isVisibleOnMapForProducer(
@@ -184,9 +186,11 @@ class IsolatedMarketingMarkersLayer extends ConsumerWidget {
 
     if (cases.isEmpty) return const SizedBox.shrink();
 
-    // Filtro por zoom: cada tier tem um raio mínimo de visibilidade
+    // Filtro por zoom: cada tier tem um raio mínimo de visibilidade.
+    // Case em foco (Ver Localização) ignora o filtro de zoom.
     final visibleCases = cases
         .where((c) {
+          if (focusedCaseId != null && c.id == focusedCaseId) return true;
           final tier = c.visibilidade;
           return MarketingCaseMarker.isVisibleAtZoom(tier, currentZoom);
         })

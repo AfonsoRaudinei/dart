@@ -96,7 +96,7 @@ class _MarketingCasesReportsSectionState
               Navigator.of(viewerContext).pop();
               viewerContext.go(
                 '${AppRoutes.map}?modo=foco&lat=${lat.toStringAsFixed(6)}'
-                '&lng=${lng.toStringAsFixed(6)}',
+                '&lng=${lng.toStringAsFixed(6)}&caseId=${Uri.encodeComponent(item.id)}',
               );
             }
           : null,
