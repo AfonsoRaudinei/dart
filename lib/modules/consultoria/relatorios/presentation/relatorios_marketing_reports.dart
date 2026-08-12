@@ -160,7 +160,6 @@ class _MarketingCasesReportsSectionState
                       statusColor: _marketingStatusColor(item.statusValue),
                       menuTooltip: 'Ações da publicação',
                       buildPayload: () => _buildMarketingPayload(ref, item),
-                      showPackShare: true,
                       onEdit: () => ref
                           .read(marketingCaseReportsLookupProvider)
                           .showEditSheet(context, item.id),
@@ -179,7 +178,7 @@ class _MarketingCasesReportsSectionState
                         }
                         context.go(
                           '${AppRoutes.map}?modo=foco&lat=${lat.toStringAsFixed(6)}'
-                          '&lng=${lng.toStringAsFixed(6)}',
+                          '&lng=${lng.toStringAsFixed(6)}&caseId=${Uri.encodeComponent(item.id)}',
                         );
                       },
                       onDelete: () => _confirmDelete(context, ref, item),
