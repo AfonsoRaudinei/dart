@@ -1,5 +1,8 @@
--- Tabela de feedback in-app (Fase 3)
--- Executar no SQL Editor do Supabase
+-- DEPRECATED: use supabase/migrations/20260811000000_feedbacks_dashboard.sql
+-- Tabela oficial: public.feedbacks (colunas tipo, modulo, impacto, mensagem)
+-- Dashboard: https://afonsoraudinei.github.io/Feedback/
+
+-- Legado (category/message) — não usar no app v1.34+
 
 CREATE TABLE IF NOT EXISTS public.feedback (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

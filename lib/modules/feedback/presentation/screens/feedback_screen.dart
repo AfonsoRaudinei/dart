@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:soloforte_app/core/constants/feedback_config.dart';
+import 'package:soloforte_app/core/constants/external_links.dart';
 import 'package:soloforte_app/core/constants/layout_constants.dart';
 import 'package:soloforte_app/core/router/app_routes.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -12,7 +14,6 @@ import '../controllers/feedback_controller.dart';
 import '../widgets/feedback_suggestions_chart.dart';
 import '../widgets/feedback_stats_card.dart';
 
-const _supportEmail = 'raudyneyb@icloud.com';
 const _messageMaxLength = 500;
 const _messageMinLength = 12;
 
@@ -72,7 +73,9 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
   Future<void> _openSupportEmail() async {
     final subject = Uri.encodeComponent('Feedback SoloForte');
     final body = Uri.encodeComponent(_messageController.text.trim());
-    final uri = Uri.parse('mailto:$_supportEmail?subject=$subject&body=$body');
+    final uri = Uri.parse(
+      'mailto:${FeedbackConfig.supportEmail}?subject=$subject&body=$body',
+    );
     final didLaunch = await launchUrl(
       uri,
       mode: LaunchMode.externalApplication,
@@ -113,6 +116,19 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
     );
   }
 
+  Future<void> _openFeedbackDashboard() async {
+    final uri = Uri.parse(ExternalLinks.feedbackDashboard);
+    final didLaunch = await launchUrl(
+      uri,
+      mode: LaunchMode.externalApplication,
+    );
+    if (!didLaunch && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Não foi possível abrir o painel de feedback')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     // Watch state
@@ -139,18 +155,36 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Header
-                    const Text(
-                      'Feedback',
-                      style: TextStyle(
-                        fontSize: 26,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Conte o que precisa melhorar, o que deu errado ou o que funcionou bem.',
-                      style: Theme.of(context).textTheme.bodyMedium!,
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Feedback',
+                                style: TextStyle(
+                                  fontSize: 26,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              SizedBox(height: 8),
+                              Text(
+                                'Conte o que precisa melhorar, o que deu errado ou o que funcionou bem.',
+                              ),
+                            ],
+                          ),
+                        ),
+                        TextButton.icon(
+                          onPressed: _openFeedbackDashboard,
+                          icon: const Icon(Icons.open_in_new, size: 16),
+                          label: const Text('Painel'),
+                          style: TextButton.styleFrom(
+                            foregroundColor: const Color(0xFF0F62FE),
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 32),
 
@@ -344,7 +378,7 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
                             ),
                             const SizedBox(height: 6),
                             const Text(
-                              'Canal direto: $_supportEmail',
+                              'Canal direto: ${FeedbackConfig.supportEmail}',
                               style: TextStyle(
                                 fontSize: 13,
                                 color: Color(0xFF6B7280),
@@ -729,7 +763,7 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
             ),
             const SizedBox(height: 16),
             const Text(
-              'Seu feedback foi enviado com sucesso. Se precisar complementar, use $_supportEmail.',
+              'Seu feedback foi enviado com sucesso. Se precisar complementar, use ${FeedbackConfig.supportEmail}.',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 16,

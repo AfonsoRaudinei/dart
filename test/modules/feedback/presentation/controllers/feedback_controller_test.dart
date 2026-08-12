@@ -4,6 +4,7 @@ import 'package:soloforte_app/modules/feedback/domain/entities/feedback_impact.d
 import 'package:soloforte_app/modules/feedback/domain/entities/feedback_module.dart';
 import 'package:soloforte_app/modules/feedback/domain/entities/feedback_stats.dart';
 import 'package:soloforte_app/modules/feedback/domain/entities/feedback_type.dart';
+import 'package:soloforte_app/modules/feedback/domain/feedback_submission_exception.dart';
 import 'package:soloforte_app/modules/feedback/domain/repositories/i_feedback_repository.dart';
 import 'package:soloforte_app/modules/feedback/presentation/controllers/feedback_controller.dart';
 
@@ -11,6 +12,7 @@ import 'package:soloforte_app/modules/feedback/presentation/controllers/feedback
 class FakeFeedbackRepository implements IFeedbackRepository {
   FeedbackStats? statsResponse;
   bool shouldThrowError = false;
+  FeedbackSubmissionException? submissionException;
   Map<String, dynamic>? lastSubmission;
 
   @override
@@ -26,6 +28,7 @@ class FakeFeedbackRepository implements IFeedbackRepository {
     required FeedbackImpact impact,
     required String message,
   }) async {
+    if (submissionException != null) throw submissionException!;
     if (shouldThrowError) throw Exception('Fake error');
     lastSubmission = {
       'type': type,
@@ -99,5 +102,23 @@ void main() {
     final state = container.read(feedbackControllerProvider);
     expect(state.isSuccess, false);
     expect(state.errorMessage, isNotNull);
+  });
+
+  test('FeedbackController - auth required message', () async {
+    fakeRepository.submissionException = const FeedbackSubmissionException(
+      'Faça login para enviar feedback.',
+    );
+    final controller = container.read(feedbackControllerProvider.notifier);
+
+    await controller.submitFeedback(
+      type: FeedbackType.bug,
+      module: FeedbackModule.visits,
+      impact: FeedbackImpact.low,
+      message: 'Erro ao abrir relatório',
+    );
+
+    final state = container.read(feedbackControllerProvider);
+    expect(state.isSuccess, false);
+    expect(state.errorMessage, 'Faça login para enviar feedback.');
   });
 }

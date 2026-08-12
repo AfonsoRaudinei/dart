@@ -5,9 +5,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:url_launcher/url_launcher.dart';
 
-import 'package:soloforte_app/core/constants/external_links.dart';
 import 'package:soloforte_app/core/router/app_routes.dart';
 import 'package:soloforte_app/core/session/user_role.dart';
 import 'package:soloforte_app/core/services/connectivity_service.dart';
@@ -640,15 +638,6 @@ class _AccountActionItem extends StatelessWidget {
 
 void _closeAndNavigate(BuildContext context, WidgetRef ref, String route) {
   ref.read(sideMenuOpenProvider.notifier).state = false;
-
-  // Feedback: abre o dashboard externo (único vínculo alterado).
-  if (route == AppRoutes.feedback) {
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      final uri = Uri.parse(ExternalLinks.feedbackDashboard);
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    });
-    return;
-  }
 
   final router = GoRouter.of(context);
   WidgetsBinding.instance.addPostFrameCallback((_) {
