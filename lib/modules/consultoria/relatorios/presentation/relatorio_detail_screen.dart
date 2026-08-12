@@ -16,6 +16,7 @@ import '../models/relatorio_tecnico.dart';
 import '../providers/relatorio_providers.dart';
 import '../use_cases/publish_relatorio_use_case.dart';
 import 'package:soloforte_app/core/utils/user_facing_error.dart';
+import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 
 /// Tela de Detalhe do Relatório Técnico — PASSO 3
 ///
@@ -80,11 +81,13 @@ class _RelatorioDetailScreenState extends ConsumerState<RelatorioDetailScreen> {
     final async = ref.watch(relatorioDetailProvider(id: widget.relatorioId));
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF2F4F7),
+      backgroundColor: context.premiumBackground,
       body: SafeArea(
         child: async.when(
-          loading: () => const Center(
-            child: CircularProgressIndicator(color: Color(0xFF1A56DB)),
+          loading: () => Center(
+            child: CircularProgressIndicator(
+              color: Theme.of(context).colorScheme.primary,
+            ),
           ),
           error: (error, _) => Center(
             child: Padding(
@@ -152,10 +155,10 @@ class _RelatorioDetailScreenState extends ConsumerState<RelatorioDetailScreen> {
             Expanded(
               child: Text(
                 relatorio.title ?? relatorio.farmName,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF111827),
+                  color: context.premiumTextPrimary,
                 ),
               ),
             ),
@@ -163,7 +166,7 @@ class _RelatorioDetailScreenState extends ConsumerState<RelatorioDetailScreen> {
             _StatusChip(status: relatorio.status),
             const SizedBox(width: 8),
             PopupMenuButton<String>(
-              icon: const Icon(Icons.more_vert, color: Color(0xFF6B7280)),
+              icon: Icon(Icons.more_vert, color: context.premiumTextSecondary),
               onSelected: (value) async {
                 if (value == 'html') {
                   await _openHtml(context, ref, relatorio);
@@ -175,11 +178,15 @@ class _RelatorioDetailScreenState extends ConsumerState<RelatorioDetailScreen> {
                   final confirm = await showDialog<bool>(
                     context: context,
                     builder: (ctx) => AlertDialog(
-                      backgroundColor: const Color(0xFF1C1C1E),
-                      title: const Text('Excluir relatório?',
-                          style: TextStyle(color: Colors.white)),
-                      content: const Text('Esta ação não pode ser desfeita.',
-                          style: TextStyle(color: Color(0xFF8E8E93))),
+                      backgroundColor: context.premiumSurface,
+                      title: Text(
+                        'Excluir relatório?',
+                        style: TextStyle(color: context.premiumTextPrimary),
+                      ),
+                      content: Text(
+                        'Esta ação não pode ser desfeita.',
+                        style: TextStyle(color: context.premiumTextSecondary),
+                      ),
                       actions: [
                         TextButton(
                           onPressed: () => Navigator.pop(ctx, false),
@@ -243,7 +250,7 @@ class _RelatorioDetailScreenState extends ConsumerState<RelatorioDetailScreen> {
         margin: const EdgeInsets.fromLTRB(24, 16, 24, 0),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: context.premiumSurface,
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
@@ -284,7 +291,7 @@ class _RelatorioDetailScreenState extends ConsumerState<RelatorioDetailScreen> {
         margin: const EdgeInsets.fromLTRB(24, 16, 24, 0),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: context.premiumSurface,
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
@@ -297,12 +304,12 @@ class _RelatorioDetailScreenState extends ConsumerState<RelatorioDetailScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Editar relatório',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: Color(0xFF111827),
+                color: context.premiumTextPrimary,
               ),
             ),
             const SizedBox(height: 16),
@@ -315,8 +322,8 @@ class _RelatorioDetailScreenState extends ConsumerState<RelatorioDetailScreen> {
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10),
-                  borderSide: const BorderSide(
-                    color: Color(0xFF1A56DB),
+                  borderSide: BorderSide(
+                    color: Theme.of(context).colorScheme.primary,
                     width: 2,
                   ),
                 ),
@@ -333,8 +340,8 @@ class _RelatorioDetailScreenState extends ConsumerState<RelatorioDetailScreen> {
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10),
-                  borderSide: const BorderSide(
-                    color: Color(0xFF1A56DB),
+                  borderSide: BorderSide(
+                    color: Theme.of(context).colorScheme.primary,
                     width: 2,
                   ),
                 ),
@@ -345,8 +352,10 @@ class _RelatorioDetailScreenState extends ConsumerState<RelatorioDetailScreen> {
               OutlinedButton(
                 onPressed: () => _saveChanges(relatorio),
                 style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: Color(0xFF1A56DB)),
-                  foregroundColor: const Color(0xFF1A56DB),
+                  side: BorderSide(
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                  foregroundColor: Theme.of(context).colorScheme.primary,
                 ),
                 child: const Text('Salvar alterações'),
               ),
@@ -363,7 +372,7 @@ class _RelatorioDetailScreenState extends ConsumerState<RelatorioDetailScreen> {
         margin: const EdgeInsets.fromLTRB(24, 16, 24, 0),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: context.premiumSurface,
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
@@ -376,12 +385,12 @@ class _RelatorioDetailScreenState extends ConsumerState<RelatorioDetailScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Ocorrências',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: Color(0xFF111827),
+                color: context.premiumTextPrimary,
               ),
             ),
             const SizedBox(height: 12),
@@ -409,7 +418,7 @@ class _RelatorioDetailScreenState extends ConsumerState<RelatorioDetailScreen> {
         margin: const EdgeInsets.fromLTRB(24, 16, 24, 0),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: context.premiumSurface,
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
@@ -422,12 +431,12 @@ class _RelatorioDetailScreenState extends ConsumerState<RelatorioDetailScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Talhões visitados',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: Color(0xFF111827),
+                color: context.premiumTextPrimary,
               ),
             ),
             const SizedBox(height: 12),
@@ -456,18 +465,18 @@ class _RelatorioDetailScreenState extends ConsumerState<RelatorioDetailScreen> {
         child: FilledButton(
           onPressed: _isPublishing ? null : () => _publishRelatorio(relatorio),
           style: FilledButton.styleFrom(
-            backgroundColor: const Color(0xFF1A56DB),
+            backgroundColor: Theme.of(context).colorScheme.primary,
             minimumSize: const Size(double.infinity, 50),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
             ),
           ),
           child: _isPublishing
-              ? const SizedBox(
+              ? SizedBox(
                   width: 20,
                   height: 20,
                   child: CircularProgressIndicator(
-                    color: Colors.white,
+                    color: Theme.of(context).colorScheme.onPrimary,
                     strokeWidth: 2,
                   ),
                 )
@@ -600,7 +609,7 @@ class _RelatorioDetailScreenState extends ConsumerState<RelatorioDetailScreen> {
           ),
           FilledButton(
             style: FilledButton.styleFrom(
-              backgroundColor: const Color(0xFF1A56DB),
+              backgroundColor: Theme.of(context).colorScheme.primary,
             ),
             onPressed: () => Navigator.pop(context, true),
             child: const Text('Publicar'),
@@ -714,17 +723,20 @@ class _InfoRow extends StatelessWidget {
           width: 100,
           child: Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w500,
-              color: Color(0xFF6B7280),
+              color: context.premiumTextSecondary,
             ),
           ),
         ),
         Expanded(
           child: Text(
             value,
-            style: const TextStyle(fontSize: 14, color: Color(0xFF111827)),
+            style: TextStyle(
+              fontSize: 14,
+              color: context.premiumTextPrimary,
+            ),
           ),
         ),
       ],

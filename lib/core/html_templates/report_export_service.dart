@@ -110,6 +110,55 @@ class ReportExportService {
     );
   }
 
+  /// Pack leave-behind: HTML + CSV (+ JSON quando disponível) num único share.
+  Future<void> exportPack(
+    ReportExportPayload payload, {
+    Rect? sharePositionOrigin,
+  }) async {
+    final base = _baseName(payload);
+    final files = <XFile>[
+      XFile(
+        (await writeTempFile(
+          baseName: base,
+          extension: 'html',
+          content: payload.html,
+        )).path,
+        mimeType: 'text/html',
+      ),
+    ];
+    final csv = payload.csv;
+    if (csv != null && csv.trim().isNotEmpty) {
+      files.add(
+        XFile(
+          (await writeTempFile(
+            baseName: base,
+            extension: 'csv',
+            content: csv,
+          )).path,
+          mimeType: 'text/csv',
+        ),
+      );
+    }
+    final json = payload.json;
+    if (json != null) {
+      files.add(
+        XFile(
+          (await writeTempFile(
+            baseName: base,
+            extension: 'json',
+            content: const JsonEncoder.withIndent('  ').convert(json),
+          )).path,
+          mimeType: 'application/json',
+        ),
+      );
+    }
+    await Share.shareXFiles(
+      files,
+      subject: payload.title,
+      sharePositionOrigin: sharePositionOrigin,
+    );
+  }
+
   Future<File> writeTempFile({
     required String baseName,
     required String extension,

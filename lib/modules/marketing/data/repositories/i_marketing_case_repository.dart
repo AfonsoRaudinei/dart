@@ -24,4 +24,7 @@ abstract class IMarketingCaseRepository {
 
   /// Obtem detalhes de um case a partir do cache local.
   Future<MarketingCase> getById(String id);
+
+  /// Marca o case como excluído logicamente (`deletado_em`) e enfileira sync.
+  Future<MarketingCase> softDelete(String id);
 }

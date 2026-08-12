@@ -286,7 +286,7 @@ class MarketingCaseRepositoryImpl implements IMarketingCaseRepository {
         .single();
 
     // Garantir que ativo está presente na resposta (pode ser null em schemas antigos)
-    final responseWithDefaults = {'ativo': true, ...response};
+    final responseWithDefaults = {'ativo': marketingCase.ativo, ...response};
     final savedCase = MarketingCase.fromJson(responseWithDefaults);
 
     // 3. Salva cada avaliação na tabela filha
@@ -358,5 +358,59 @@ class MarketingCaseRepositoryImpl implements IMarketingCaseRepository {
     await saveSingleToCache(draftCase);
 
     return draftCase;
+  }
+
+  @override
+  Future<MarketingCase> softDelete(String id) async {
+    final userId = _scopedUserId();
+    if (userId.isEmpty) {
+      throw StateError('Usuario nao autenticado.');
+    }
+
+    final existing = await getById(id);
+    final now = DateTime.now().toUtc();
+
+    final pendingDelete = MarketingCase.fromJson({
+      ...existing.toJson(),
+      'user_id': userId,
+      'deletado_em': now.toIso8601String(),
+      'ativo': false,
+      'sync_status': 'pending_sync',
+      'atualizado_em': now.toIso8601String(),
+    });
+    await saveSingleToCache(pendingDelete);
+
+    try {
+      final caseJson = pendingDelete.toJson()..remove('avaliacoes');
+      caseJson['user_id'] = userId;
+      caseJson['deletado_em'] = now.toIso8601String();
+      caseJson['ativo'] = false;
+      caseJson['sync_status'] = 'synced';
+      caseJson['atualizado_em'] = now.toIso8601String();
+
+      final response = await _supabase
+          .from('marketing_cases')
+          .upsert(caseJson)
+          .select()
+          .single();
+
+      final responseWithDefaults = {'ativo': false, ...response};
+      final syncedCase = MarketingCase.fromJson({
+        ...MarketingCase.fromJson(responseWithDefaults).toJson(),
+        'sync_status': 'synced',
+        'deletado_em': now.toIso8601String(),
+        'avaliacoes': existing.avaliacoes.map((av) => av.toJson()).toList(),
+      });
+      await saveSingleToCache(syncedCase);
+      return syncedCase;
+    } catch (e, st) {
+      AppLogger.error(
+        'Falha ao sincronizar exclusão de MarketingCase; mantendo local',
+        tag: 'MarketingRepo',
+        error: e,
+        stackTrace: st,
+      );
+      return pendingDelete;
+    }
   }
 }

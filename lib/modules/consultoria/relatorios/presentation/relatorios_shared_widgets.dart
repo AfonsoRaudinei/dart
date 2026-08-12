@@ -111,7 +111,13 @@ class _AsyncActionMenuState extends State<_AsyncActionMenu> {
 
 // ── Segmented header ─────────────────────────────────────────────────────────
 
-enum _RelatoriosSegment { visitas, ocorrencias, gerados, midia }
+enum _RelatoriosSegment {
+  visitas,
+  ocorrencias,
+  gerados,
+  consolidados,
+  midia,
+}
 
 class _RelatoriosSegmentBar extends StatelessWidget {
   final _RelatoriosSegment selected;
@@ -131,55 +137,87 @@ class _RelatoriosSegmentBar extends StatelessWidget {
         color: const Color(0xFFE5E5EA),
         borderRadius: BorderRadius.circular(10),
       ),
-      child: Row(
-        children: [
-          _seg(context, 'Visitas', _RelatoriosSegment.visitas),
-          _seg(context, 'Ocorrências', _RelatoriosSegment.ocorrencias),
-          _seg(context, 'Gerados', _RelatoriosSegment.gerados),
-          _seg(context, 'Mídia', _RelatoriosSegment.midia),
-        ],
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          // 5 segmentos: scroll horizontal quando a largura não comporta labels.
+          final useScroll = constraints.maxWidth < 420;
+          final segments = <Widget>[
+            _seg(context, 'Visitas', _RelatoriosSegment.visitas, useScroll),
+            _seg(
+              context,
+              'Ocorrências',
+              _RelatoriosSegment.ocorrencias,
+              useScroll,
+            ),
+            _seg(context, 'Marketing', _RelatoriosSegment.gerados, useScroll),
+            _seg(
+              context,
+              'Consolidados',
+              _RelatoriosSegment.consolidados,
+              useScroll,
+            ),
+            _seg(context, 'Mídia', _RelatoriosSegment.midia, useScroll),
+          ];
+          if (useScroll) {
+            return SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(children: segments),
+            );
+          }
+          return Row(children: segments);
+        },
       ),
     );
   }
 
-  Widget _seg(BuildContext context, String label, _RelatoriosSegment value) {
+  Widget _seg(
+    BuildContext context,
+    String label,
+    _RelatoriosSegment value,
+    bool scrollable,
+  ) {
     final isSelected = selected == value;
-    return Expanded(
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: () => onSelected(value),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 160),
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: isSelected ? Colors.white : Colors.transparent,
-            borderRadius: BorderRadius.circular(8),
-            boxShadow: isSelected
-                ? [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.06),
-                      blurRadius: 6,
-                      offset: const Offset(0, 1),
-                    ),
-                  ]
-                : null,
-          ),
-          child: Text(
-            label,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-              letterSpacing: -0.2,
-              color: isSelected
-                  ? context.premiumTextPrimary
-                  : context.premiumTextSecondary,
-            ),
+    final child = GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => onSelected(value),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 160),
+        alignment: Alignment.center,
+        padding: scrollable
+            ? const EdgeInsets.symmetric(horizontal: 12)
+            : EdgeInsets.zero,
+        decoration: BoxDecoration(
+          color: isSelected ? Colors.white : Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.06),
+                    blurRadius: 6,
+                    offset: const Offset(0, 1),
+                  ),
+                ]
+              : null,
+        ),
+        child: Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+            letterSpacing: -0.2,
+            color: isSelected
+                ? context.premiumTextPrimary
+                : context.premiumTextSecondary,
           ),
         ),
       ),
     );
+    if (scrollable) {
+      return SizedBox(height: 34, child: child);
+    }
+    return Expanded(child: child);
   }
 }
 
