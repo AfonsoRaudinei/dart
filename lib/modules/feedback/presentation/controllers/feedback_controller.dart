@@ -5,6 +5,7 @@ import '../../domain/entities/feedback_impact.dart';
 import '../../domain/entities/feedback_module.dart';
 import '../../domain/entities/feedback_stats.dart';
 import '../../domain/entities/feedback_type.dart';
+import '../../domain/feedback_submission_exception.dart';
 import '../../domain/repositories/i_feedback_repository.dart';
 import 'feedback_state.dart';
 
@@ -51,6 +52,11 @@ class FeedbackController extends _$FeedbackController {
       );
       state = state.copyWith(isSubmitting: false, isSuccess: true);
       ref.invalidate(feedbackStatsProvider);
+    } on FeedbackSubmissionException catch (e) {
+      state = state.copyWith(
+        isSubmitting: false,
+        errorMessage: e.userMessage,
+      );
     } catch (e) {
       state = state.copyWith(
         isSubmitting: false,

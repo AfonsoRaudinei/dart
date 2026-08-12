@@ -1,39 +1,45 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+
+import '../../../../core/constants/feedback_config.dart';
 import '../../../../core/network/network_policy.dart';
 import '../../../../core/utils/app_logger.dart';
 import '../../domain/entities/feedback_impact.dart';
 import '../../domain/entities/feedback_module.dart';
 import '../../domain/entities/feedback_stats.dart';
 import '../../domain/entities/feedback_type.dart';
+import '../../domain/feedback_submission_exception.dart';
 import '../../domain/repositories/i_feedback_repository.dart';
 
 class SupabaseFeedbackRepository implements IFeedbackRepository {
-  final _client = Supabase.instance.client;
+  SupabaseFeedbackRepository({SupabaseClient? client})
+    : _client = client ?? Supabase.instance.client;
+
+  final SupabaseClient _client;
+
+  static const _table = FeedbackConfig.supabaseTable;
 
   @override
   Future<FeedbackStats> getStats() async {
     try {
       final response = await NetworkPolicy.withTimeout(
         () => _client
-            .from('feedback')
-            .select('type,module')
+            .from(_table)
+            .select('tipo,modulo')
             .withConverter((rows) => rows as List<dynamic>),
       );
 
       int bugs = 0, suggestions = 0, praise = 0;
       final suggestionsByModule = <FeedbackModule, int>{};
       for (final row in response) {
-        switch (row['type'] as String?) {
-          case 'bug':
+        switch (row['tipo'] as String?) {
+          case 'Bug':
             bugs++;
-          case 'suggestion':
+          case 'Sugestão':
             suggestions++;
-            final module = FeedbackModule.fromStorageValue(
-              row['module'] as String?,
-            );
+            final module = FeedbackModule.fromLabel(row['modulo'] as String?);
             suggestionsByModule[module] =
                 (suggestionsByModule[module] ?? 0) + 1;
-          case 'praise':
+          case 'Elogios':
             praise++;
         }
       }
@@ -62,15 +68,64 @@ class SupabaseFeedbackRepository implements IFeedbackRepository {
     required String message,
   }) async {
     final user = _client.auth.currentUser;
+    if (user == null) {
+      throw const FeedbackSubmissionException(
+        'Faça login para enviar feedback.',
+      );
+    }
+
+    final normalizedMessage = message.trim();
+    if (normalizedMessage.isEmpty) {
+      throw const FeedbackSubmissionException(
+        'Por favor, escreva sua mensagem.',
+      );
+    }
+
+    final payload = {
+      'user_id': user.id,
+      'tipo': type.label,
+      'modulo': module.label,
+      'impacto': impact.label,
+      'mensagem': normalizedMessage,
+    };
+
     await NetworkPolicy.withTimeout(
-      () => _client.from('feedback').insert({
-        'user_id': user?.id,
-        'type': type.name,
-        'module': module.storageValue,
-        'impact': impact.storageValue,
-        'message': message,
-        'created_at': DateTime.now().toIso8601String(),
-      }),
+      () => _client.from(_table).insert(payload),
     );
+
+    await _notifyByEmail(
+      tipo: type.label,
+      modulo: module.label,
+      impacto: impact.label,
+      mensagem: normalizedMessage,
+      userEmail: user.email,
+    );
+  }
+
+  Future<void> _notifyByEmail({
+    required String tipo,
+    required String modulo,
+    required String impacto,
+    required String mensagem,
+    required String? userEmail,
+  }) async {
+    try {
+      await _client.functions.invoke(
+        FeedbackConfig.notifyFunction,
+        body: {
+          'tipo': tipo,
+          'modulo': modulo,
+          'impacto': impacto,
+          'mensagem': mensagem,
+          'user_email': userEmail,
+        },
+      );
+    } catch (e) {
+      AppLogger.warning(
+        'Notificação por e-mail falhou (feedback já salvo)',
+        tag: 'FeedbackRepository',
+        error: e,
+      );
+    }
   }
 }
