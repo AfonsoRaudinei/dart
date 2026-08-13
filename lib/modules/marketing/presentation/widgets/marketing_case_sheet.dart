@@ -2,12 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 import '../../../../ui/theme/premium/design_tokens.dart';
 import '../../domain/entities/avaliacao_item.dart';
 import '../../domain/entities/marketing_case.dart';
 import '../../domain/enums/case_tipo.dart';
-import '../../domain/enums/plano_marketing.dart';
+import '../theme/plano_marketing_visual.dart';
 import 'comparativo_chart.dart';
 import 'marketing_case_resultado_read_only_section.dart';
 import 'marketing_case_story_entry_button.dart';
@@ -35,27 +36,9 @@ class MarketingCaseSheet extends StatelessWidget {
     );
   }
 
-  Color get _planoColor {
-    switch (marketingCase.visibilidade) {
-      case PlanoMarketing.ouro:
-        return const Color(0xFFFFB800);
-      case PlanoMarketing.prata:
-        return const Color(0xFF9EA9B2);
-      case PlanoMarketing.bronze:
-        return const Color(0xFFA0522D);
-    }
-  }
+  Color get _planoColor => marketingCase.visibilidade.color;
 
-  IconData get _planoIcon {
-    switch (marketingCase.visibilidade) {
-      case PlanoMarketing.ouro:
-        return Icons.workspace_premium_rounded;
-      case PlanoMarketing.prata:
-        return Icons.verified_rounded;
-      case PlanoMarketing.bronze:
-        return Icons.star_border_rounded;
-    }
-  }
+  IconData get _planoIcon => marketingCase.visibilidade.icon;
 
   String get _tipoLabel {
     switch (marketingCase.tipo) {
@@ -599,7 +582,8 @@ class MarketingCaseSheet extends StatelessWidget {
             IconButton(
               icon: const Icon(Icons.phone_outlined),
               color: PremiumTokens.brandGreen,
-              onPressed: () => HapticFeedback.lightImpact(),
+              tooltip: 'Ligar para o responsável',
+              onPressed: () => _ligarPara(marketingCase.telefoneVendedor!),
             ),
         ],
       ),
@@ -625,6 +609,16 @@ class MarketingCaseSheet extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  /// Mesmo padrão de contato do detalhe de cliente: `tel:` via url_launcher.
+  /// Antes o botão só vibrava — não ligava para ninguém.
+  static Future<void> _ligarPara(String telefone) async {
+    HapticFeedback.lightImpact();
+    final digits = telefone.replaceAll(RegExp(r'[^0-9+]'), '');
+    if (digits.isEmpty) return;
+    final uri = Uri.parse('tel:$digits');
+    if (await canLaunchUrl(uri)) await launchUrl(uri);
   }
 
   static String _formatDatePtBr(DateTime date) {
