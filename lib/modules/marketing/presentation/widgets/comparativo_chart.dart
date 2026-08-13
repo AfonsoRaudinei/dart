@@ -33,7 +33,7 @@ class ComparativoChart extends StatelessWidget {
       decoration: BoxDecoration(
         color: SoloForteSheetTokens.inputBackground,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: PremiumTokens.hairlineLight),
+        border: Border.all(color: SoloForteSheetTokens.divider),
       ),
       child: selected == null
           ? _GeneralChart(parametros: parametros, onSelect: onSelect)
@@ -55,36 +55,24 @@ class _GeneralChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final media =
-        parametros.fold<double>(0, (sum, item) => sum + item.deltaPercent) /
-        parametros.length;
     final maxAbs = parametros
         .map((item) => item.deltaPercent.abs())
         .fold<double>(1, (max, value) => value > max ? value : max);
 
+    // A média de ganho é impressa por quem usa o gráfico, a partir do valor
+    // da entidade. Calculá-la de novo aqui gerava dois números para o mesmo
+    // conceito, com fontes diferentes.
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                'Média de ganho: ${_signed(media)}%',
-                style: const TextStyle(
-                  fontWeight: FontWeight.w800,
-                  fontSize: 15,
-                  color: SoloForteSheetTokens.inputText,
-                ),
-              ),
-            ),
-            TextButton(
-              onPressed: () => onSelect(null),
-              child: const Text(
-                'Visão Geral',
-                style: TextStyle(color: PremiumTokens.brandGreen),
-              ),
-            ),
-          ],
+        const Text(
+          'Toque em uma barra para ver o parâmetro',
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.4,
+            color: SoloForteSheetTokens.inputHint,
+          ),
         ),
         const SizedBox(height: 12),
         SizedBox(
