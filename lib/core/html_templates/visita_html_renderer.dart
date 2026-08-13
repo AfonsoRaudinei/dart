@@ -265,12 +265,15 @@ class VisitaHtmlRenderer {
     ''';
   }
 
+  /// O relatório vai para o produtor: "-10.1000, -48.2000" não diz nada a ele
+  /// e parece saída de debug. O que informa é que o ponto existe — a
+  /// coordenada em si vive no mapa do app.
   static String _renderOcorrenciaLocation(Map<String, dynamic> ocorrencia) {
     final lat = _double(ocorrencia['lat']);
     final lng = _double(ocorrencia['lng']);
     if (lat == null || lng == null) return '';
     return '''
-    <div class="ocorrencia-location">📍 ${lat.toStringAsFixed(4)}, ${lng.toStringAsFixed(4)}</div>
+    <div class="ocorrencia-location">📍 Ponto georreferenciado</div>
     ''';
   }
 
