@@ -92,27 +92,37 @@ fi
 echo "📦 Instalando CocoaPods (reconciliar com flutter pub get)..."
 (
   cd "$ROOT/ios"
-  pod install
+  LANG=en_US.UTF-8 pod install
   echo "✅ pod install OK"
 )
 
 ARCHIVE="$ROOT/build/ios/archive/Runner.xcarchive"
 
-# ── Workaround CoreSimulator desatualizado ────────────────────────────────
-# `flutter build ipa` passa `-destination generic/platform=iOS` ao xcodebuild,
-# que falha quando CoreSimulator < 1051.55. O archive nunca chega a ser criado.
+# ── Workaround iOS platform support não instalado ─────────────────────────
+# `flutter build ipa` e `flutter build ios` passam
+# `-destination generic/platform=iOS` ao xcodebuild, que falha quando o
+# iOS 26.5 platform support não está instalado (erro "iOS 26.5 is not
+# installed. Please download and install the platform from Xcode > Settings
+# > Components.").
 #
-# `flutter build ios` usa `-sdk iphoneos` (sem -destination) e NÃO aciona o
-# lookup de CoreSimulator. Usamos 3 passos diretos:
-#   1. flutter build ios  → compila Dart + gera Generated.xcconfig
-#   2. xcodebuild archive -sdk iphoneos → arquiva sem destination lookup
+# Solução: 3 passos diretos:
+#   1. flutter build ios --config-only → gera Generated.xcconfig SEM invocar
+#      xcodebuild (evita o lookup de destination)
+#   2. xcodebuild archive -sdk iphoneos → arquiva sem -destination; compila
+#      Dart via xcode_backend.sh usando DART_DEFINES_B64
 #   3. xcodebuild -exportArchive → exporta o IPA
 # ─────────────────────────────────────────────────────────────────────────
 
-echo "🔨 Etapa 1: compilando Dart + configuração Xcode..."
+echo "🔨 Etapa 1: configurando Xcode (Generated.xcconfig, sem xcodebuild)..."
+# --config-only gera Generated.xcconfig e inicializa o toolchain Flutter sem
+# invocar xcodebuild. Isso evita o erro '-destination generic/platform=iOS'
+# quando o iOS 26.5 platform support não está instalado no Xcode.
+# O Step 2 (xcodebuild archive -sdk iphoneos) compilará o Dart via
+# xcode_backend.sh usando DART_DEFINES_B64.
 flutter build ios \
   --release \
   --no-codesign \
+  --config-only \
   --build-name="$VERSION" \
   --build-number="$BUILD_NUMBER" \
   --dart-define=APP_VERSION="$VERSION+$BUILD_NUMBER" \
@@ -145,6 +155,28 @@ defines = [
 print(','.join(base64.b64encode(d.encode()).decode() for d in defines))
 ")
 
+# ── Workaround actool "No simulator runtime version" (Xcode 26.6) ──────────
+# actool procura runtimes montadas em /Library/Developer/CoreSimulator/Volumes/
+# pelo build do SDK corrente (iphoneos26.5 = 23F81a). O runtime baixado é
+# 23F77 (build menor). Criamos um symlink iOS_23F81a → iOS_23F77 (se montado)
+# ou iOS_23E254a (26.4.1) para que actool encontre um runtime compatível.
+# Requer sudo; se não disponível, continua (iOS_23F77 montado pode ser suficiente).
+SDK_BUILD=$(xcrun --sdk iphoneos --show-sdk-build-version 2>/dev/null || echo "")
+SIM_VOLUMES_DIR="/Library/Developer/CoreSimulator/Volumes"
+FAKE_LINK="${SIM_VOLUMES_DIR}/iOS_${SDK_BUILD}"
+if [ -n "$SDK_BUILD" ] && [ ! -e "$FAKE_LINK" ]; then
+  # Prefere o runtime 23F77 (iOS 26.5) se montado
+  SYMLINK_TARGET=""
+  for candidate in "${SIM_VOLUMES_DIR}/iOS_23F77" "${SIM_VOLUMES_DIR}/iOS_23E254a" "${SIM_VOLUMES_DIR}/iOS_23C54"; do
+    [ -d "$candidate" ] && SYMLINK_TARGET="$candidate" && break
+  done
+  if [ -n "$SYMLINK_TARGET" ]; then
+    echo "🔗 Symlink CoreSimulator iOS ${SDK_BUILD} → ${SYMLINK_TARGET} (sudo)..."
+    sudo ln -sf "$SYMLINK_TARGET" "$FAKE_LINK" 2>/dev/null || \
+      echo "⚠️  sudo não disponível — continuando sem symlink (iOS_23F77 pode ser suficiente)"
+  fi
+fi
+
 echo "📦 Etapa 2: arquivando com -sdk iphoneos (sem -destination)..."
 rm -rf "$ARCHIVE"
 xcodebuild archive \
@@ -160,6 +192,7 @@ xcodebuild archive \
   BUNDLE_SKSL_PATH="" \
   FLUTTER_BUILD_NAME="${VERSION}" \
   FLUTTER_BUILD_NUMBER="${BUILD_NUMBER}" \
+  ENABLE_ONLY_ACTIVE_RESOURCES=NO \
   -allowProvisioningUpdates
 
 echo "📲 Etapa 3: exportando IPA..."
