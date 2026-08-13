@@ -20,14 +20,17 @@ String injectStoryData(
   String? logoSrc,
 }) {
   final roi = marketingCase.computeRoi();
-  final ganho = _ganhoText(marketingCase, roi);
-  final roiValor = _roiValorText(roi, marketingCase);
+  final ganho = _Ganho.from(marketingCase, roi);
+  final roiTexto = _Roi.from(marketingCase, roi);
+  final unidade = _unidadeText(marketingCase);
   final roiSacas = roi != null ? _formatNumber(roi.roiEmSacasHa) : '—';
+  final roiSacasUnidade = roi != null && unidade.isNotEmpty
+      ? '$unidade pagas'
+      : '';
   final areaRaw = _areaText(marketingCase);
   final safra = _safraText(marketingCase);
   final produtorRaw = marketingCase.produtorFazenda.trim();
-  final inicialRaw =
-      produtorRaw.isEmpty ? '—' : produtorRaw[0].toUpperCase();
+  final inicialRaw = produtorRaw.isEmpty ? '—' : produtorRaw[0].toUpperCase();
   final municipioRaw = marketingCase.localizacaoTexto.trim().isEmpty
       ? '—'
       : marketingCase.localizacaoTexto.trim();
@@ -58,7 +61,7 @@ String injectStoryData(
   final area = _escapeText(areaRaw);
   final inicial = _escapeText(inicialRaw);
   // ganhoProdutividade pode ser texto livre; escape é no-op em números.
-  final ganhoEscaped = _escapeText(ganho);
+  final ganhoEscaped = _escapeText(ganho.valor);
 
   final markers = <String, String>{
     'LOCALIZAÇÃO': municipio,
@@ -66,10 +69,17 @@ String injectStoryData(
     'PRODUTOR': produtor,
     'FAZENDA': produtor,
     'PRODUTO': produto,
+    'GANHO_SINAL': ganho.sinal,
     'GANHO': ganhoEscaped,
-    'ROI_VALOR': roiValor,
+    'GANHO_UNIDADE': _escapeText(ganho.unidade),
+    'UNIDADE': _escapeText(unidade),
+    'ROI_VALOR': roiTexto.valor,
+    'ROI_SUFIXO': roiTexto.sufixo,
+    'ROI_UNIDADE': roiTexto.unidade,
     'ROI_SACAS': roiSacas,
+    'ROI_SACAS_UNIDADE': _escapeText(roiSacasUnidade),
     'AREA': area,
+    'AREA_UNIDADE': marketingCase.tamanhoHa != null ? 'hectares' : '',
     'SAFRA': safra,
     'DEPOIMENTO': depoimento,
     'INICIAL': inicial,
@@ -81,16 +91,12 @@ String injectStoryData(
   };
 
   // Um único passe — evita que um valor injetado seja engolido pelo próximo.
-  var out = html.replaceAllMapped(
-    RegExp('<!--([A-ZÁÉÍÓÚÂÊÔÃÕÇ_]+)-->[^<]*'),
-    (match) {
-      final key = match.group(1)!;
-      return markers[key] ?? match.group(0)!;
-    },
-  );
-
-  // Evita "R$ R$" quando o template já prefixa a moeda.
-  out = out.replaceAll('R\$ R\$', 'R\$ ');
+  var out = html.replaceAllMapped(RegExp('<!--([A-ZÁÉÍÓÚÂÊÔÃÕÇ_]+)-->[^<]*'), (
+    match,
+  ) {
+    final key = match.group(1)!;
+    return markers[key] ?? match.group(0)!;
+  });
 
   final logo = logoSrc?.trim() ?? '';
   out = out.replaceAll('{{LOGO_URL}}', logo);
@@ -148,42 +154,87 @@ String _replacePhotoPlaceholder(
   return html.replaceFirst(pattern, img);
 }
 
-String _ganhoText(MarketingCase c, MarketingRoiCalculation? roi) {
-  if (c.ganhoProdutividade != null && c.ganhoProdutividade!.trim().isNotEmpty) {
-    return c.ganhoProdutividade!.trim().replaceFirst(RegExp(r'^\+'), '');
+/// Ganho quebrado em sinal, magnitude e unidade — o template não prefixa
+/// sinal nem unidade, senão um ganho negativo vira "+-3,4 sc/ha".
+class _Ganho {
+  const _Ganho(this.sinal, this.valor, this.unidade);
+
+  final String sinal;
+  final String valor;
+  final String unidade;
+
+  static _Ganho from(MarketingCase c, MarketingRoiCalculation? roi) {
+    final livre = c.ganhoProdutividade?.trim();
+    if (livre != null && livre.isNotEmpty) {
+      // Texto livre do consultor já carrega sinal e unidade próprios.
+      return _Ganho('', livre, '');
+    }
+    final unidade = _unidadeText(c);
+    if (roi != null) {
+      return _Ganho(
+        _sinal(roi.ganhoScHa),
+        _formatNumber(roi.ganhoScHa.abs()),
+        unidade,
+      );
+    }
+    if (c.produtividadeValor != null) {
+      return _Ganho(
+        _sinal(c.produtividadeValor!),
+        _formatNumber(c.produtividadeValor!.abs()),
+        unidade,
+      );
+    }
+    if (c.mediaGanhoPercent != 0) {
+      return _Ganho(
+        _sinal(c.mediaGanhoPercent),
+        _formatNumber(c.mediaGanhoPercent.abs()),
+        '%',
+      );
+    }
+    return const _Ganho('', '—', '');
   }
-  if (roi != null) {
-    return _formatNumber(roi.ganhoScHa);
-  }
-  if (c.produtividadeValor != null) {
-    return _formatNumber(c.produtividadeValor!);
-  }
-  if (c.mediaGanhoPercent != 0) {
-    return _formatNumber(c.mediaGanhoPercent);
-  }
-  return '—';
 }
 
-String _roiValorText(MarketingRoiCalculation? roi, MarketingCase c) {
-  if (roi != null) {
-    return 'R\$ ${_formatMoney(roi.roiLiquidoRsHa)}/ha';
+/// ROI com sufixo e unidade próprios: o bloco `RoiBloco.roiCalculado` é
+/// percentual (`(retorno-investimento)/investimento*100`), não R\$/ha.
+class _Roi {
+  const _Roi(this.valor, this.sufixo, this.unidade);
+
+  final String valor;
+  final String sufixo;
+  final String unidade;
+
+  static _Roi from(MarketingCase c, MarketingRoiCalculation? roi) {
+    if (roi != null) {
+      return _Roi(
+        'R\$ ${_formatMoney(roi.roiLiquidoRsHa)}',
+        '/ha',
+        'por hectare',
+      );
+    }
+    final bloco = c.roi;
+    if (bloco != null) {
+      return _Roi(
+        '${_formatNumber(bloco.roiCalculado)}%',
+        '',
+        'sobre o investimento',
+      );
+    }
+    return const _Roi('—', '', '');
   }
-  if (c.roi != null) {
-    return 'R\$ ${_formatMoney(c.roi!.roiCalculado)}';
-  }
-  return '—';
+}
+
+String _sinal(double value) => value < 0 ? '−' : '+';
+
+/// Unidade real do case — o template não pode fixar `sc/ha`.
+String _unidadeText(MarketingCase c) {
+  final texto = c.unidadeProdutividade?.trim();
+  if (texto != null && texto.isNotEmpty) return texto;
+  return c.produtividadeUnidade?.toValue() ?? '';
 }
 
 String _areaText(MarketingCase c) {
-  if (c.nomeTalhao != null && c.nomeTalhao!.trim().isNotEmpty) {
-    if (c.tamanhoHa != null) {
-      return '${c.nomeTalhao!.trim()} · ${_formatNumber(c.tamanhoHa!)} ha';
-    }
-    return c.nomeTalhao!.trim();
-  }
-  if (c.tamanhoHa != null) {
-    return _formatNumber(c.tamanhoHa!);
-  }
+  if (c.tamanhoHa != null) return _formatNumber(c.tamanhoHa!);
   return '—';
 }
 
