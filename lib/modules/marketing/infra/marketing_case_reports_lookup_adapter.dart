@@ -30,17 +30,21 @@ final marketingCaseReportsListImplProvider =
         return casesAsync.when(
           data: (cases) {
             final authorized = authorizedAsync.valueOrNull ?? const <String>{};
-            final visible = cases.where((item) {
-              if (item.deletadoEm != null) return false;
-              if (!item.ativo) return false;
-              if (item.status != MarketingCaseStatus.published) return false;
-              if (!role.isProdutor) return true;
-              return MarketingCaseVisibility.isVisibleInReports(
-                marketingCase: item,
-                currentUserId: currentUserId,
-                authorizedClientIds: authorized,
-              );
-            }).map(_toSnapshot).toList();
+            final visible = cases
+                .where((item) {
+                  if (item.deletadoEm != null) return false;
+                  if (!item.ativo) return false;
+                  if (item.status != MarketingCaseStatus.published)
+                    return false;
+                  if (!role.isProdutor) return true;
+                  return MarketingCaseVisibility.isVisibleInReports(
+                    marketingCase: item,
+                    currentUserId: currentUserId,
+                    authorizedClientIds: authorized,
+                  );
+                })
+                .map(_toSnapshot)
+                .toList();
             return AsyncData(visible);
           },
           loading: () => const AsyncLoading(),
@@ -105,7 +109,9 @@ class MarketingCaseReportsLookupAdapter implements IMarketingCaseReportsLookup {
         caso: item,
         onClose: () => Navigator.of(sheetContext).pop(),
         onSalvar: (updatedCase) async {
-          await _ref.read(marketingCasesProvider.notifier).updateCase(updatedCase);
+          await _ref
+              .read(marketingCasesProvider.notifier)
+              .updateCase(updatedCase);
           if (!sheetContext.mounted) return;
           Navigator.of(sheetContext).pop();
         },

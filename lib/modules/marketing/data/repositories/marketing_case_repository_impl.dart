@@ -102,7 +102,11 @@ class MarketingCaseRepositoryImpl implements IMarketingCaseRepository {
       return getLocalCases();
     } catch (e) {
       // Erro de rede ou timeout → serve cache local
-      AppLogger.error('Erro inesperado, servindo cache', tag: 'MarketingRepo', error: e);
+      AppLogger.error(
+        'Erro inesperado, servindo cache',
+        tag: 'MarketingRepo',
+        error: e,
+      );
       return getLocalCases();
     }
   }
