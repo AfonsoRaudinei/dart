@@ -588,6 +588,7 @@ html, body {
 }
 
 .metric-card.gain::before { background: var(--green-leaf); }
+.metric-card.loss::before { background: #FF3B30; }
 .metric-card.roi::before { background: var(--amber); }
 .metric-card.area::before { background: var(--navy); }
 
@@ -608,6 +609,7 @@ html, body {
 }
 
 .metric-value.positive { color: var(--green); }
+.metric-value.negative { color: #FF3B30; }
 .metric-value.amber { color: var(--navy); }
 
 .metric-unit {
@@ -1091,11 +1093,11 @@ html, body {
 
       <!-- Número principal -->
       <div class="hero-result">
-        <div class="hero-result-eyebrow">Incremento de Produtividade</div>
+        <div class="hero-result-eyebrow"><!--GANHO_TITULO-->Incremento de Produtividade</div>
         <div class="hero-result-number">
           <span class="plus"><!--GANHO_SINAL-->+</span><!--GANHO-->10,0<span class="unit"><!--GANHO_UNIDADE-->sc/ha</span>
         </div>
-        <div class="hero-result-label">sobre a testemunha</div>
+        <div class="hero-result-label"><!--GANHO_BASE-->sobre a testemunha</div>
 
         <div class="roi-pill">
           <span class="roi-pill-label">ROI</span>
@@ -1215,7 +1217,7 @@ html, body {
       <!-- Métricas -->
       <div class="compare-metrics">
         <div class="metric-card gain">
-          <div class="metric-label">Ganho</div>
+          <div class="metric-label"><!--GANHO_ROTULO-->Ganho</div>
           <div class="metric-value positive"><!--GANHO_SINAL-->+<!--GANHO-->10,0</div>
           <div class="metric-unit"><!--GANHO_UNIDADE-->sc/ha</div>
         </div>
@@ -1309,7 +1311,7 @@ html, body {
       <!-- Resumo resultado -->
       <div class="review-summary">
         <div class="review-summary-item">
-          <div class="review-summary-label">Ganho</div>
+          <div class="review-summary-label"><!--GANHO_ROTULO-->Ganho</div>
           <div class="review-summary-value highlight"><!--GANHO_SINAL-->+<!--GANHO-->10,0</div>
           <div class="review-summary-unit"><!--GANHO_UNIDADE-->sc/ha</div>
         </div>
