@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../domain/entities/marketing_case.dart';
 import '../../domain/enums/case_tipo.dart';
 import '../../domain/enums/plano_marketing.dart';
+import '../theme/plano_marketing_visual.dart';
 
 /// Pin rico para o mapa — exibe foto, produto e ROI por tier.
 ///
@@ -53,11 +54,7 @@ class MarketingCaseMarker extends StatelessWidget {
     PlanoMarketing.bronze => 2.0,
   };
 
-  static Color _borderColor(PlanoMarketing tier) => switch (tier) {
-    PlanoMarketing.ouro => const Color(0xFFFFD700),
-    PlanoMarketing.prata => const Color(0xFFC0C0C0),
-    PlanoMarketing.bronze => const Color(0xFFCD7F32),
-  };
+  static Color _borderColor(PlanoMarketing tier) => tier.color;
 
   static Color _placeholderColor(PlanoMarketing tier) => switch (tier) {
     PlanoMarketing.ouro => const Color(0xFF2C2400),
