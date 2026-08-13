@@ -309,6 +309,23 @@ void main() {
     },
   );
 
+  test('marketing: moeda e numeros em pt-BR com separador de milhar', () async {
+    await initializeDateFormatting('pt_BR');
+
+    final html = await MarketingHtmlRenderer.render({
+      ..._marketingBase('resultado'),
+      'prod_sem_produto': 1200.0,
+      'prod_com_produto': 1450.0,
+      'custo_produto_por_ha': 1890.5,
+      'valor_grao': 110.0,
+      'tamanho_ha': 1250.0,
+    });
+
+    expect(html, contains('R\$ 1.890,50'));
+    expect(html, isNot(contains('R\$ 1890,50')));
+    expect(html, contains('1.250,0'));
+  });
+
   test('marketing: case minimo nao renderiza secao sem dado', () async {
     await initializeDateFormatting('pt_BR');
 

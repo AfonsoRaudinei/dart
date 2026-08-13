@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:intl/intl.dart';
+
 import 'relatorio_html_renderer.dart';
 
 class MarketingHtmlRenderer {
@@ -551,12 +553,12 @@ class MarketingHtmlRenderer {
 
   static String _formatMoney(double? value) {
     if (value == null) return '';
-    return 'R\$ ${value.toStringAsFixed(2).replaceAll('.', ',')}';
+    return 'R\$ ${NumberFormat('#,##0.00', 'pt_BR').format(value)}';
   }
 
   static String _formatNumber(double? value) {
     if (value == null) return '';
-    return value.toStringAsFixed(1).replaceAll('.', ',');
+    return NumberFormat('#,##0.0', 'pt_BR').format(value);
   }
 
   static String _formatSigned(double? value) {
