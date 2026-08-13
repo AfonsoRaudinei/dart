@@ -96,45 +96,79 @@ echo "📦 Instalando CocoaPods (reconciliar com flutter pub get)..."
   echo "✅ pod install OK"
 )
 
-echo "🔨 Iniciando build IPA..."
-
 ARCHIVE="$ROOT/build/ios/archive/Runner.xcarchive"
-_BUILD_IPA_OK=true
 
-flutter build ipa \
+# ── Workaround CoreSimulator desatualizado ────────────────────────────────
+# `flutter build ipa` passa `-destination generic/platform=iOS` ao xcodebuild,
+# que falha quando CoreSimulator < 1051.55. O archive nunca chega a ser criado.
+#
+# `flutter build ios` usa `-sdk iphoneos` (sem -destination) e NÃO aciona o
+# lookup de CoreSimulator. Usamos 3 passos diretos:
+#   1. flutter build ios  → compila Dart + gera Generated.xcconfig
+#   2. xcodebuild archive -sdk iphoneos → arquiva sem destination lookup
+#   3. xcodebuild -exportArchive → exporta o IPA
+# ─────────────────────────────────────────────────────────────────────────
+
+echo "🔨 Etapa 1: compilando Dart + configuração Xcode..."
+flutter build ios \
   --release \
+  --no-codesign \
   --build-name="$VERSION" \
   --build-number="$BUILD_NUMBER" \
-  --export-options-plist="$EXPORT_OPTIONS_PLIST" \
   --dart-define=APP_VERSION="$VERSION+$BUILD_NUMBER" \
   --dart-define=SUPABASE_URL="$SUPABASE_URL" \
   --dart-define=SUPABASE_ANON_KEY="$SUPABASE_ANON_KEY" \
   --dart-define=STADIA_API_KEY="$STADIA_API_KEY" \
   --dart-define=MAPTILER_API_KEY="$MAPTILER_API_KEY" \
   --dart-define=GOOGLE_WEATHER_API_KEY="$GOOGLE_WEATHER_API_KEY" \
-  --dart-define=ENV=production || _BUILD_IPA_OK=false
+  --dart-define=ENV=production
 
-# Workaround: CoreSimulator desatualizado faz flutter build ipa falhar em
-# "-destination generic/platform=iOS" mesmo quando o archive é criado.
-# O "Xcode archive done" nos logs confirma que Runner.xcarchive existe.
-# xcodebuild -exportArchive NÃO usa destination — funciona sem CoreSimulator.
-if [ "$_BUILD_IPA_OK" = false ]; then
-  echo ""
-  echo "⚠️  flutter build ipa retornou erro (provavelmente CoreSimulator desatualizado)."
-  if [ ! -d "$ARCHIVE" ]; then
-    echo "❌ Archive não encontrado em $ARCHIVE. Falha irrecuperável."
-    echo "   Corrija: atualize o macOS (Software Update) para alinhar CoreSimulator."
-    exit 1
-  fi
-  echo "✅ Archive existe em $ARCHIVE — tentando exportar IPA diretamente..."
-  rm -rf "$ROOT/build/ios/ipa"
-  xcodebuild -exportArchive \
-    -archivePath "$ARCHIVE" \
-    -exportPath "$ROOT/build/ios/ipa" \
-    -exportOptionsPlist "$EXPORT_OPTIONS_PLIST" \
-    -allowProvisioningUpdates
-  echo "✅ Export concluído via fallback."
-fi
+# Codifica dart-defines em base64 para xcode_backend.sh (fallback se o archive
+# decidir recompilar Dart em vez de usar os artefatos pré-compilados acima).
+DART_DEFINES_B64=$(APP_VERSION="${VERSION}+${BUILD_NUMBER}" \
+  SUPABASE_URL="$SUPABASE_URL" \
+  SUPABASE_ANON_KEY="$SUPABASE_ANON_KEY" \
+  STADIA_API_KEY="$STADIA_API_KEY" \
+  MAPTILER_API_KEY="$MAPTILER_API_KEY" \
+  GOOGLE_WEATHER_API_KEY="$GOOGLE_WEATHER_API_KEY" \
+  python3 -c "
+import base64, os
+defines = [
+    'APP_VERSION='   + os.environ['APP_VERSION'],
+    'SUPABASE_URL='  + os.environ['SUPABASE_URL'],
+    'SUPABASE_ANON_KEY=' + os.environ['SUPABASE_ANON_KEY'],
+    'STADIA_API_KEY='    + os.environ['STADIA_API_KEY'],
+    'MAPTILER_API_KEY='  + os.environ['MAPTILER_API_KEY'],
+    'GOOGLE_WEATHER_API_KEY=' + os.environ['GOOGLE_WEATHER_API_KEY'],
+    'ENV=production',
+]
+print(','.join(base64.b64encode(d.encode()).decode() for d in defines))
+")
+
+echo "📦 Etapa 2: arquivando com -sdk iphoneos (sem -destination)..."
+rm -rf "$ARCHIVE"
+xcodebuild archive \
+  -workspace "$ROOT/ios/Runner.xcworkspace" \
+  -scheme Runner \
+  -configuration Release \
+  -sdk iphoneos \
+  -archivePath "$ARCHIVE" \
+  DART_DEFINES="$DART_DEFINES_B64" \
+  DART_OBFUSCATION=false \
+  TRACK_WIDGET_CREATION=false \
+  TREE_SHAKE_ICONS=true \
+  BUNDLE_SKSL_PATH="" \
+  FLUTTER_BUILD_NAME="${VERSION}" \
+  FLUTTER_BUILD_NUMBER="${BUILD_NUMBER}" \
+  -allowProvisioningUpdates
+
+echo "📲 Etapa 3: exportando IPA..."
+rm -rf "$ROOT/build/ios/ipa"
+xcodebuild -exportArchive \
+  -archivePath "$ARCHIVE" \
+  -exportPath "$ROOT/build/ios/ipa" \
+  -exportOptionsPlist "$EXPORT_OPTIONS_PLIST" \
+  -allowProvisioningUpdates
 APP_FW_PLIST="$ARCHIVE/Products/Applications/Runner.app/Frameworks/App.framework/Info.plist"
 if [ -f "$APP_FW_PLIST" ]; then
   APP_FW_MIN=$(/usr/bin/plutil -extract MinimumOSVersion raw -o - "$APP_FW_PLIST" 2>/dev/null || echo "")
