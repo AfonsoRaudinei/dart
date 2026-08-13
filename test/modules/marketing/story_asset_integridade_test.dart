@@ -109,6 +109,50 @@ void main() {
       expect(out, contains('4,0'));
     });
 
+    test('produtividade absoluta nao e anunciada como incremento', () {
+      final now = DateTime.utc(2026, 3, 10);
+      final out = injectStoryData(
+        story,
+        MarketingCase(
+          id: 'case-prod',
+          tipo: CaseTipo.resultado,
+          visibilidade: PlanoMarketing.ouro,
+          lat: -10,
+          lng: -48,
+          localizacaoTexto: 'Sorriso/MT',
+          produtorFazenda: 'Cliente X - Fazenda Y',
+          produtoUtilizado: 'Produto Z',
+          criadoEm: now,
+          atualizadoEm: now,
+          produtividadeValor: 72,
+          unidadeProdutividade: 'sc/ha',
+        ),
+      );
+
+      expect(out, contains('72,0'));
+      expect(out, isNot(contains('Incremento de Produtividade')));
+      expect(out, isNot(contains('sobre a testemunha')));
+      expect(out, isNot(contains('+72,0')));
+    });
+
+    test('ganho negativo nao sai pintado de verde', () {
+      final out = injectStoryData(
+        story,
+        caseBase(
+          unidade: 'sc/ha',
+          prodSem: 70,
+          prodCom: 66,
+          custo: 90,
+          valor: 110,
+        ),
+      );
+
+      expect(out, contains('metric-value negative'));
+      expect(out, isNot(contains('metric-value positive')));
+      expect(out, contains('metric-card loss'));
+      expect(out, isNot(contains('metric-card gain')));
+    });
+
     test('sem ROI nao sobra moeda nem unidade orfas', () {
       final out = injectStoryData(story, caseBase());
 
