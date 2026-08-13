@@ -291,6 +291,91 @@ void main() {
       expect(html, isNot(contains('cat-emoji')));
     },
   );
+
+  _marketingRegressionTests();
+}
+
+void _marketingRegressionTests() {
+  group('marketing: bugs reportados no sheet in-app (ganho duplo, pin sem '
+      'texto, vendedor duplicado)', () {
+    test('resultado: ganho nao aparece duas vezes na primeira dobra', () async {
+      final html = await MarketingHtmlRenderer.render(_marketingBase('resultado'));
+
+      // O card de Produtividade mostra "Ganho" com o valor calculado — o pill
+      // do cabeçalho não pode repetir a mesma informação.
+      expect(html, isNot(contains('<span class="pill-dot"></span>Ganho')));
+      expect(html, contains('kpi-label">Ganho</div>'));
+    });
+
+    test('antes/depois: ganho nao aparece duas vezes na primeira dobra', () async {
+      final html = await MarketingHtmlRenderer.render(
+        _marketingBase('antes_depois'),
+      );
+
+      expect(html, isNot(contains('Ganho: {{ganho_produtividade}}')));
+      expect(html, isNot(contains('>Ganho: +12%<')));
+    });
+
+    test('resultado: localizacao mostra texto real, nao so o pin', () async {
+      final html = await MarketingHtmlRenderer.render(_marketingBase('resultado'));
+
+      expect(html, contains('Palmas, TO'));
+      expect(html, contains('📍'));
+      // Seção "Localização" solta e vazia foi removida — o dado vive na
+      // legenda da foto.
+      expect(html, isNot(contains('section-label-text">Localização<')));
+    });
+
+    test('resultado: sem localizacao_texto nao sobra pin orfao', () async {
+      final html = await MarketingHtmlRenderer.render({
+        ..._marketingBase('resultado'),
+        'localizacao_texto': '   ',
+      });
+
+      expect(html, isNot(contains('📍')));
+      expect(html, isNot(contains('class="photo-caption"')));
+    });
+
+    test('antes/depois e avaliacao: localizacao mostra texto real', () async {
+      for (final tipo in const ['antes_depois', 'avaliacao']) {
+        final html = await MarketingHtmlRenderer.render(_marketingBase(tipo));
+        expect(html, contains('Palmas, TO'), reason: tipo);
+        expect(html, contains('📍'), reason: tipo);
+      }
+    });
+
+    test(
+      'vendedor nao aparece duplicado (card Responsável Comercial + rodapé)',
+      () async {
+        for (final tipo in const ['resultado', 'antes_depois', 'avaliacao']) {
+          final html = await MarketingHtmlRenderer.render(
+            _marketingBase(tipo),
+          );
+
+          expect(
+            html,
+            contains('Vendedor Teste'),
+            reason: '$tipo: card do vendedor deve existir',
+          );
+          expect(
+            html,
+            isNot(contains('Responsável: Vendedor Teste')),
+            reason: '$tipo: rodapé não deve repetir o nome do vendedor',
+          );
+          expect(
+            'Vendedor Teste'.allMatches(html).length,
+            1,
+            reason: '$tipo: nome do vendedor deve aparecer uma única vez',
+          );
+        }
+      },
+    );
+
+    test('rodape usa tagline generica quando nao duplica vendedor', () async {
+      final html = await MarketingHtmlRenderer.render(_marketingBase('resultado'));
+      expect(html, contains('Agronomia inteligente'));
+    });
+  });
 }
 
 Map<String, dynamic> _marketingBase(String tipo) {
