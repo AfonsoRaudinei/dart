@@ -209,7 +209,9 @@ class MarketingCasesNotifier
     });
 
     state = AsyncData(
-      previousCases.map((c) => c.id == id ? optimisticDeleted : c).toList(),
+      previousCases
+          .map((c) => c.id == id ? optimisticDeleted : c)
+          .toList(),
     );
 
     try {
