@@ -10,7 +10,7 @@ import '../../../core/session/user_role.dart';
 import '../../../core/ui/sheets/soloforte_sheet.dart';
 import '../../planos/presentation/providers/plano_providers.dart';
 import '../../settings/presentation/providers/user_profile_provider.dart';
-import '../../ui/screens/widgets/plano_block_sheet.dart';
+import '../../../ui/screens/widgets/plano_block_sheet.dart';
 import '../domain/entities/marketing_case.dart';
 import '../domain/enums/marketing_case_status.dart';
 import '../domain/marketing_case_visibility.dart';
@@ -40,7 +40,7 @@ final marketingCaseReportsListImplProvider =
               final isDraft = item.status == MarketingCaseStatus.draft;
               if (!isPublished && !isDraft) return false;
               if (!role.isProdutor) return true;
-              if (isDraft) return true;
+              // Drafts also respect ownership/ACL — never bypass for produtor.
               return MarketingCaseVisibility.isVisibleInReports(
                 marketingCase: item,
                 currentUserId: currentUserId,

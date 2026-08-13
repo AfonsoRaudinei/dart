@@ -83,42 +83,39 @@ class MarketingCasesNotifier
     }
   }
 
-  /// Envia o case ao Supabase, atualiza a lista imediatamente (optimistic)
+  /// Envia o case ao Supabase, atualiza a lista imediatamente (optimistic).
+  /// Upsert por id: evita duplicar quando [publishDraft] republica o mesmo case.
   Future<MarketingCase?> publishCase(MarketingCase newCase) async {
-    // 1. Optimistic update: adiciona à lista com syncStatus=local_only
     final previousCases = state.valueOrNull ?? [];
-    state = AsyncData([...previousCases, newCase]);
+    state = AsyncData(_upsertById(previousCases, newCase));
 
     try {
-      // 2. Enviar ao Supabase
       final savedCase = await _repository.saveCase(newCase);
-
-      // 3. Substituir o case temporário pelo definitivo (syncStatus=synced)
       final updatedCases = state.valueOrNull ?? [];
-      state = AsyncData(
-        updatedCases.map((c) => c.id == newCase.id ? savedCase : c).toList(),
-      );
-
+      state = AsyncData(_upsertById(updatedCases, savedCase));
       return savedCase;
     } catch (e, st) {
       AppLogger.error('Erro ao publicar case', error: e, stackTrace: st);
-      // Rollback: remover da lista em caso de falha remota mas manter no cache local
       final updatedCases = state.valueOrNull ?? [];
-      // Marcar como pending_sync em vez de remover (offline-first)
-      state = AsyncData(
-        updatedCases
-            .map(
-              (c) => c.id == newCase.id
-                  ? MarketingCase.fromJson({
-                      ...newCase.toJson(),
-                      'sync_status': 'pending_sync',
-                    })
-                  : c,
-            )
-            .toList(),
-      );
+      // Offline-first: mantém o case e marca pending_sync (sem duplicar).
+      final pending = MarketingCase.fromJson({
+        ...newCase.toJson(),
+        'sync_status': 'pending_sync',
+      });
+      state = AsyncData(_upsertById(updatedCases, pending));
       return null;
     }
+  }
+
+  static List<MarketingCase> _upsertById(
+    List<MarketingCase> cases,
+    MarketingCase item,
+  ) {
+    final index = cases.indexWhere((c) => c.id == item.id);
+    if (index < 0) return [...cases, item];
+    final next = List<MarketingCase>.from(cases);
+    next[index] = item;
+    return next;
   }
 
   /// Salva o case como rascunho (apenas local, não sincroniza)
@@ -128,11 +125,7 @@ class MarketingCasesNotifier
 
       // Adiciona à lista local se necessário (para futuras consultas)
       final currentCases = state.valueOrNull ?? [];
-      final exists = currentCases.any((c) => c.id == draftCase.id);
-
-      if (!exists) {
-        state = AsyncData([...currentCases, draftCase]);
-      }
+      state = AsyncData(_upsertById(currentCases, draftCase));
 
       return draftCase;
     } catch (e, st) {
@@ -186,7 +179,7 @@ class MarketingCasesNotifier
     final publishedCase = MarketingCase.fromJson({
       ...draft.toJson(),
       'status': MarketingCaseStatus.published.toValue(),
-      'atualizado_em': DateTime.now().toIso8601String(),
+      'atualizado_em': DateTime.now().toUtc().toIso8601String(),
     });
 
     return publishCase(publishedCase);
