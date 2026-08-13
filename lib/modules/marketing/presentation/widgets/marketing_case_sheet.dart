@@ -52,7 +52,9 @@ class MarketingCaseSheet extends StatelessWidget {
   }
 
   String _formatMoney(double value) {
-    return 'R\$ ${NumberFormat('#,##0.00', 'pt_BR').format(value)}';
+    // Sinal antes da moeda: "-R$ 595,00", não "R$ -595,00".
+    final absoluto = NumberFormat('#,##0.00', 'pt_BR').format(value.abs());
+    return '${value < 0 ? '-' : ''}R\$ $absoluto';
   }
 
   @override
@@ -300,6 +302,7 @@ class MarketingCaseSheet extends StatelessWidget {
         _MetricaItem(
           label: 'ROI líquido por hectare',
           value: _formatMoney(resultadoRoi.roiLiquidoRsHa),
+          negativo: resultadoRoi.roiLiquidoRsHa < 0,
         ),
       );
     } else if (marketingCase.produtividadeValor != null) {
@@ -337,8 +340,12 @@ class MarketingCaseSheet extends StatelessWidget {
         children: [
           Text(
             destaque.value,
-            style: const TextStyle(
-              color: PremiumTokens.brandGreen,
+            style: TextStyle(
+              // Verde é afirmação de ganho: um resultado negativo não pode
+              // sair pintado de verde só porque é o número herói.
+              color: destaque.negativo
+                  ? PremiumTokens.alertError
+                  : PremiumTokens.brandGreen,
               fontSize: 30,
               fontWeight: FontWeight.w700,
               letterSpacing: -0.5,
@@ -764,6 +771,11 @@ class _AvaliacaoLivreReadOnlyCardState
 class _MetricaItem {
   final String label;
   final String value;
+  final bool negativo;
 
-  const _MetricaItem({required this.label, required this.value});
+  const _MetricaItem({
+    required this.label,
+    required this.value,
+    this.negativo = false,
+  });
 }

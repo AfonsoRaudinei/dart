@@ -16,7 +16,9 @@ class MarketingCaseResultadoReadOnlySection extends StatelessWidget {
   });
 
   String _formatMoney(double value) {
-    return 'R\$ ${NumberFormat('#,##0.00', 'pt_BR').format(value)}';
+    // Sinal antes da moeda: "-R$ 595,00", não "R$ -595,00".
+    final absoluto = NumberFormat('#,##0.00', 'pt_BR').format(value.abs());
+    return '${value < 0 ? '-' : ''}R\$ $absoluto';
   }
 
   String _formatNumber(double value) {
@@ -27,6 +29,10 @@ class MarketingCaseResultadoReadOnlySection extends StatelessWidget {
     final formatted = _formatNumber(value);
     return value >= 0 ? '+$formatted' : formatted;
   }
+
+  /// Verde afirma ganho; valor negativo não pode herdar essa leitura.
+  Color _corDoResultado(double value) =>
+      value < 0 ? PremiumTokens.alertError : PremiumTokens.brandGreen;
 
   @override
   Widget build(BuildContext context) {
@@ -72,7 +78,7 @@ class MarketingCaseResultadoReadOnlySection extends StatelessWidget {
                 label: 'Ganho',
                 value:
                     '${_formatSigned(calc.ganhoScHa)} ${input.unidadeProdutividade}',
-                valueColor: PremiumTokens.brandGreen,
+                valueColor: _corDoResultado(calc.ganhoScHa),
               ),
               const SizedBox(height: 8),
               const Text(
@@ -88,7 +94,7 @@ class MarketingCaseResultadoReadOnlySection extends StatelessWidget {
                 label: 'ROI em sacas',
                 value:
                     '${_formatNumber(calc.roiEmSacasHa)} ${input.unidadeProdutividade}',
-                valueColor: PremiumTokens.brandGreen,
+                valueColor: _corDoResultado(calc.roiEmSacasHa),
               ),
               _SheetRoiLine(
                 label: 'Custo do produto',
