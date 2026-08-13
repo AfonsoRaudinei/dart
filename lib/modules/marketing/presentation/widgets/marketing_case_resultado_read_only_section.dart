@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+
 import '../../../../core/ui/sheets/sheet_tokens.dart';
 import '../../../../ui/theme/premium/design_tokens.dart';
 import '../../domain/entities/marketing_case.dart';
@@ -14,7 +16,7 @@ class MarketingCaseResultadoReadOnlySection extends StatelessWidget {
   });
 
   String _formatMoney(double value) {
-    return 'R\$ ${value.toStringAsFixed(2).replaceAll('.', ',')}';
+    return 'R\$ ${NumberFormat('#,##0.00', 'pt_BR').format(value)}';
   }
 
   String _formatNumber(double value) {
@@ -33,53 +35,10 @@ class MarketingCaseResultadoReadOnlySection extends StatelessWidget {
     final MarketingRoiCalculation calc = roi;
     final input = calc.input;
 
+    // O ROI/ha já é o número herói do sheet; aqui fica só o detalhamento.
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Container(
-          margin: const EdgeInsets.only(top: 4),
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: const Color(0xFF123D2A),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: PremiumTokens.brandGreen.withValues(alpha: 0.35),
-            ),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'ROI líquido',
-                style: TextStyle(
-                  color: Color(0xCCFFFFFF),
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                '${_formatMoney(calc.roiLiquidoRsHa)}/ha',
-                style: const TextStyle(
-                  color: PremiumTokens.brandGreen,
-                  fontSize: 28,
-                  fontWeight: FontWeight.w800,
-                  height: 1.1,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                '${_formatNumber(calc.roiEmSacasHa)} sc/ha',
-                style: const TextStyle(
-                  color: Color(0xCCFFFFFF),
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 12),
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
@@ -125,6 +84,12 @@ class MarketingCaseResultadoReadOnlySection extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 10),
+              _SheetRoiLine(
+                label: 'ROI em sacas',
+                value:
+                    '${_formatNumber(calc.roiEmSacasHa)} ${input.unidadeProdutividade}',
+                valueColor: PremiumTokens.brandGreen,
+              ),
               _SheetRoiLine(
                 label: 'Custo do produto',
                 value: '${_formatMoney(input.custoProdutoPorHa)}/ha',
