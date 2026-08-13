@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/ui/sheets/sheet_tokens.dart';
 import '../../../../ui/theme/premium/design_tokens.dart';
@@ -9,8 +10,9 @@ import '../../domain/enums/plano_marketing.dart';
 import '../../domain/enums/produtividade_unidade.dart';
 import 'case_selectors_widget.dart';
 import 'novo_case_form_helpers.dart';
+import 'produtor_entry_section.dart';
 
-class EditCaseSheet extends StatefulWidget {
+class EditCaseSheet extends ConsumerStatefulWidget {
   final MarketingCase caso;
   final VoidCallback onClose;
   final Future<void> Function(MarketingCase) onSalvar;
@@ -23,10 +25,10 @@ class EditCaseSheet extends StatefulWidget {
   });
 
   @override
-  State<EditCaseSheet> createState() => _EditCaseSheetState();
+  ConsumerState<EditCaseSheet> createState() => _EditCaseSheetState();
 }
 
-class _EditCaseSheetState extends State<EditCaseSheet> {
+class _EditCaseSheetState extends ConsumerState<EditCaseSheet> {
   final _formKey = GlobalKey<FormState>();
   final _produtorCtrl = TextEditingController();
   final _produtoCtrl = TextEditingController();
@@ -41,6 +43,7 @@ class _EditCaseSheetState extends State<EditCaseSheet> {
   late final CaseTipo _tipo;
   late PlanoMarketing _visibilidade;
   ProdutividadeUnidade? _produtividadeUnidade;
+  String? _clientId;
   bool _isSaving = false;
 
   @override
@@ -50,6 +53,7 @@ class _EditCaseSheetState extends State<EditCaseSheet> {
     _tipo = caso.tipo;
     _visibilidade = caso.visibilidade;
     _produtividadeUnidade = caso.produtividadeUnidade;
+    _clientId = caso.clientId;
     _produtorCtrl.text = caso.produtorFazenda;
     _produtoCtrl.text = caso.produtoUtilizado;
     _produtividadeCtrl.text = caso.produtividadeValor?.toString() ?? '';
@@ -116,7 +120,7 @@ class _EditCaseSheetState extends State<EditCaseSheet> {
       unidadeProdutividade: casoOriginal.unidadeProdutividade,
       custoProdutoPorHa: casoOriginal.custoProdutoPorHa,
       valorGrao: casoOriginal.valorGrao,
-      clientId: casoOriginal.clientId,
+      clientId: _clientId,
       ownerUserId: casoOriginal.ownerUserId,
       fotoAntesUrl: casoOriginal.fotoAntesUrl,
       fotoDepoisUrl: casoOriginal.fotoDepoisUrl,
@@ -341,10 +345,10 @@ class _EditCaseSheetState extends State<EditCaseSheet> {
                   novoCaseFieldBox(
                     child: Column(
                       children: [
-                        novoCaseTextInput(
-                          _produtorCtrl,
-                          'Produtor / Fazenda',
-                          required: true,
+                        ProdutorEntrySection(
+                          produtorController: _produtorCtrl,
+                          clientId: _clientId,
+                          onClientIdChanged: (id) => setState(() => _clientId = id),
                         ),
                         const NovoCaseFDivider(),
                         novoCaseTextInput(

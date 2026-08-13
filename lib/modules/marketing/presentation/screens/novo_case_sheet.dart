@@ -18,6 +18,7 @@ import '../widgets/novo_case_avaliacao_section.dart';
 import '../widgets/novo_case_form_helpers.dart';
 import '../widgets/novo_case_header.dart';
 import '../widgets/novo_case_publicar_button.dart';
+import '../widgets/produtor_entry_section.dart';
 import '../widgets/novo_case_resultado_section.dart';
 import '../../../../core/ui/sheets/sheet_tokens.dart';
 
@@ -413,10 +414,10 @@ class _NovoCaseSheetState extends ConsumerState<NovoCaseSheet> {
             novoCaseFieldBox(
               child: Column(
                 children: [
-                  novoCaseTextInput(
-                    _produtorCtrl,
-                    'Produtor / Fazenda *',
-                    required: true,
+                  ProdutorEntrySection(
+                    produtorController: _produtorCtrl,
+                    clientId: _clientId,
+                    onClientIdChanged: (id) => setState(() => _clientId = id),
                   ),
                   const NovoCaseFDivider(),
                   novoCaseTextInput(
