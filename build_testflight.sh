@@ -97,6 +97,10 @@ echo "📦 Instalando CocoaPods (reconciliar com flutter pub get)..."
 )
 
 echo "🔨 Iniciando build IPA..."
+
+ARCHIVE="$ROOT/build/ios/archive/Runner.xcarchive"
+_BUILD_IPA_OK=true
+
 flutter build ipa \
   --release \
   --build-name="$VERSION" \
@@ -108,9 +112,29 @@ flutter build ipa \
   --dart-define=STADIA_API_KEY="$STADIA_API_KEY" \
   --dart-define=MAPTILER_API_KEY="$MAPTILER_API_KEY" \
   --dart-define=GOOGLE_WEATHER_API_KEY="$GOOGLE_WEATHER_API_KEY" \
-  --dart-define=ENV=production
+  --dart-define=ENV=production || _BUILD_IPA_OK=false
 
-ARCHIVE="$ROOT/build/ios/archive/Runner.xcarchive"
+# Workaround: CoreSimulator desatualizado faz flutter build ipa falhar em
+# "-destination generic/platform=iOS" mesmo quando o archive é criado.
+# O "Xcode archive done" nos logs confirma que Runner.xcarchive existe.
+# xcodebuild -exportArchive NÃO usa destination — funciona sem CoreSimulator.
+if [ "$_BUILD_IPA_OK" = false ]; then
+  echo ""
+  echo "⚠️  flutter build ipa retornou erro (provavelmente CoreSimulator desatualizado)."
+  if [ ! -d "$ARCHIVE" ]; then
+    echo "❌ Archive não encontrado em $ARCHIVE. Falha irrecuperável."
+    echo "   Corrija: atualize o macOS (Software Update) para alinhar CoreSimulator."
+    exit 1
+  fi
+  echo "✅ Archive existe em $ARCHIVE — tentando exportar IPA diretamente..."
+  rm -rf "$ROOT/build/ios/ipa"
+  xcodebuild -exportArchive \
+    -archivePath "$ARCHIVE" \
+    -exportPath "$ROOT/build/ios/ipa" \
+    -exportOptionsPlist "$EXPORT_OPTIONS_PLIST" \
+    -allowProvisioningUpdates
+  echo "✅ Export concluído via fallback."
+fi
 APP_FW_PLIST="$ARCHIVE/Products/Applications/Runner.app/Frameworks/App.framework/Info.plist"
 if [ -f "$APP_FW_PLIST" ]; then
   APP_FW_MIN=$(/usr/bin/plutil -extract MinimumOSVersion raw -o - "$APP_FW_PLIST" 2>/dev/null || echo "")
