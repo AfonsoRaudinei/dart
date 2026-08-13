@@ -146,8 +146,12 @@ class IsolatedMarketingMarkersLayer extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final focusedCaseId = ref.watch(focusedMarketingCaseIdProvider);
     final showMarkers = ref.watch(showMarkersProvider);
-    if (!showMarkers) return const SizedBox.shrink();
+    if (!showMarkers &&
+        (focusedCaseId == null || focusedCaseId.isEmpty)) {
+      return const SizedBox.shrink();
+    }
 
     // Zoom: snapshot throttled quando disponível; fallback live até onMapReady.
     final snapshotZoom = ref.watch(
@@ -177,8 +181,6 @@ class IsolatedMarketingMarkersLayer extends ConsumerWidget {
             .toList(growable: false);
       }),
     );
-
-    final focusedCaseId = ref.watch(focusedMarketingCaseIdProvider);
 
     final cases = (isProdutor
             ? publishedCases.where(
