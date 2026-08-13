@@ -258,6 +258,90 @@ void main() {
     },
   );
 
+  test(
+    'marketing: nenhum {{#if}} fica sem resolver (secao fantasma)',
+    () async {
+      await initializeDateFormatting('pt_BR');
+
+      // Um bloco condicional nao resolvido sobrevive como `<!--  -->` depois de
+      // stripUnresolvedPlaceholders, e o conteudo dele aparece sempre.
+      for (final tipo in const ['resultado', 'antes_depois', 'avaliacao']) {
+        final completo = await MarketingHtmlRenderer.render(
+          _marketingBase(tipo),
+        );
+        expect(
+          completo,
+          isNot(contains('<!--  -->')),
+          reason: '$tipo completo',
+        );
+
+        final minimo = await MarketingHtmlRenderer.render({
+          'tipo': tipo,
+          'produtor_fazenda': 'Cliente Teste - Fazenda Modelo',
+          'produto_utilizado': 'Produto X',
+          'visibilidade': 'publico',
+          'status': 'publicado',
+          'criado_em': '2026-06-03T12:00:00.000Z',
+        });
+        expect(minimo, isNot(contains('<!--  -->')), reason: '$tipo minimo');
+      }
+    },
+  );
+
+  test(
+    'marketing: foto ausente tem fallback que independe de JavaScript',
+    () async {
+      await initializeDateFormatting('pt_BR');
+
+      // O WebView do app roda com JavaScriptMode.disabled, entao o onerror do
+      // <img> nunca dispara: o fallback precisa vir do proprio HTML/CSS.
+      for (final tipo in const ['resultado', 'antes_depois']) {
+        final html = await MarketingHtmlRenderer.render({
+          ..._marketingBase(tipo),
+          'foto_principal_url': null,
+          'foto_antes_url': null,
+          'foto_depois_url': null,
+        });
+
+        expect(html, contains('Sem foto'), reason: tipo);
+        expect(html, isNot(contains('placeholder via onerror')), reason: tipo);
+      }
+    },
+  );
+
+  test('marketing: moeda e numeros em pt-BR com separador de milhar', () async {
+    await initializeDateFormatting('pt_BR');
+
+    final html = await MarketingHtmlRenderer.render({
+      ..._marketingBase('resultado'),
+      'prod_sem_produto': 1200.0,
+      'prod_com_produto': 1450.0,
+      'custo_produto_por_ha': 1890.5,
+      'valor_grao': 110.0,
+      'tamanho_ha': 1250.0,
+    });
+
+    expect(html, contains('R\$ 1.890,50'));
+    expect(html, isNot(contains('R\$ 1890,50')));
+    expect(html, contains('1.250,0'));
+  });
+
+  test('marketing: case minimo nao renderiza secao sem dado', () async {
+    await initializeDateFormatting('pt_BR');
+
+    final html = await MarketingHtmlRenderer.render({
+      'tipo': 'resultado',
+      'produtor_fazenda': 'Cliente Teste - Fazenda Modelo',
+      'produto_utilizado': 'Produto X',
+      'visibilidade': 'publico',
+      'status': 'publicado',
+      'criado_em': '2026-06-03T12:00:00.000Z',
+    });
+
+    expect(html, isNot(contains('Observações')));
+    expect(html, isNot(contains('Responsável Comercial')));
+  });
+
   test('marketing: localizacao inline exibe o texto real do case', () async {
     await initializeDateFormatting('pt_BR');
 
