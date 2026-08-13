@@ -85,7 +85,6 @@ String injectStoryData(
     'INICIAL': inicial,
     'CONSULTOR': consultor,
     'CATEGORIA': categoria,
-    'CULTURA': '—',
     'TESTEMUNHA': testemunha,
     'COM_PRODUTO': comProduto,
   };

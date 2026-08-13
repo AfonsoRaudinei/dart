@@ -56,7 +56,7 @@ void main() {
   });
 
   test('nulls opcionais viram traco', () {
-    const html = '<!--DEPOIMENTO-->texto<!--CONSULTOR-->nome<!--CULTURA-->Soja';
+    const html = '<!--DEPOIMENTO-->texto<!--CONSULTOR-->nome';
     final out = injectStoryData(html, baseCase());
 
     expect(out, contains('—'));

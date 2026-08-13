@@ -31,6 +31,12 @@ void main() {
     expect(story, contains('Conclusão Técnica'));
   });
 
+  test('story nao tem controle morto nem campo sem fonte de dado', () {
+    expect(story, isNot(contains('href="#"')));
+    expect(story, isNot(contains('review-cta-share')));
+    expect(story, isNot(contains('<!--CULTURA-->')));
+  });
+
   test('story nao inventa cargo do responsavel', () {
     expect(story, isNot(contains('Agrônoma')));
     expect(story, isNot(contains('Agrônomo')));
