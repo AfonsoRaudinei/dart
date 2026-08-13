@@ -279,7 +279,7 @@ class OcorrenciaHtmlRenderer {
               <span class="ocorrencia-meta-item">
                 ${RelatorioHtmlRenderer.formatTime(createdAt)}
               </span>
-              ${hasLoc ? '<span class="ocorrencia-meta-item sf-location" aria-label="Localização">📍</span>' : ''}
+              ${hasLoc ? '<span class="ocorrencia-meta-item sf-location">📍 Georreferenciada</span>' : ''}
               ${_isAmostraSolo(data) ? '<span class="ocorrencia-meta-item">Amostra coletada</span>' : ''}
             </div>
           </div>
