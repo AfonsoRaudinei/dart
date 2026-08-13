@@ -42,6 +42,13 @@ class MarketingHtmlRenderer {
       fetchRemoteBytes: fetchRemoteBytes,
     );
 
+    final localizacao = _trimmed(data['localizacao_texto']);
+    tpl = _resolveAllIfBlocks(
+      tpl,
+      'localizacao_texto',
+      include: localizacao.isNotEmpty,
+    );
+
     final roi = _MarketingRoiData.from(data);
     tpl = _resolveAllIfBlocks(tpl, 'roi_agronomico', include: roi != null);
     tpl = _resolveAllIfBlocks(
@@ -73,9 +80,7 @@ class MarketingHtmlRenderer {
       'produto_utilizado': RelatorioHtmlRenderer.escapeHtml(
         data['produto_utilizado'] as String? ?? '',
       ),
-      'localizacao_texto': RelatorioHtmlRenderer.escapeHtml(
-        data['localizacao_texto'] as String? ?? '',
-      ),
+      'localizacao_texto': RelatorioHtmlRenderer.escapeHtml(localizacao),
       'visibilidade': data['visibilidade'] as String? ?? '',
       'foto_principal_url': foto,
       'produtividade_valor': data['produtividade_valor']?.toString() ?? '',
@@ -136,6 +141,13 @@ class MarketingHtmlRenderer {
       customLogoPath: data['report_logo_path'] as String?,
       consultantName: data['nome_vendedor'] as String?,
       consultantRole: 'Consultoria',
+    );
+
+    final localizacao = _trimmed(data['localizacao_texto']);
+    tpl = _resolveAllIfBlocks(
+      tpl,
+      'localizacao_texto',
+      include: localizacao.isNotEmpty,
     );
 
     final parametros = _MarketingParametroData.listFrom(
@@ -203,9 +215,7 @@ class MarketingHtmlRenderer {
       'produto_utilizado': RelatorioHtmlRenderer.escapeHtml(
         data['produto_utilizado'] as String? ?? '',
       ),
-      'localizacao_texto': RelatorioHtmlRenderer.escapeHtml(
-        data['localizacao_texto'] as String? ?? '',
-      ),
+      'localizacao_texto': RelatorioHtmlRenderer.escapeHtml(localizacao),
       'visibilidade': data['visibilidade'] as String? ?? '',
       'foto_antes_url': fotoAntes,
       'foto_depois_url': fotoDepois,
@@ -252,6 +262,13 @@ class MarketingHtmlRenderer {
       consultantRole: 'Consultoria',
     );
 
+    final localizacao = _trimmed(data['localizacao_texto']);
+    tpl = _resolveAllIfBlocks(
+      tpl,
+      'localizacao_texto',
+      include: localizacao.isNotEmpty,
+    );
+
     final avaliacoesLivres = _MarketingAvaliacaoData.listFrom(
       data['avaliacoes_json'],
     );
@@ -278,9 +295,7 @@ class MarketingHtmlRenderer {
       'produto_utilizado': RelatorioHtmlRenderer.escapeHtml(
         data['produto_utilizado'] as String? ?? '',
       ),
-      'localizacao_texto': RelatorioHtmlRenderer.escapeHtml(
-        data['localizacao_texto'] as String? ?? '',
-      ),
+      'localizacao_texto': RelatorioHtmlRenderer.escapeHtml(localizacao),
       'visibilidade': data['visibilidade'] as String? ?? '',
       'nome_talhao': RelatorioHtmlRenderer.escapeHtml(
         data['nome_talhao'] as String? ?? '',
@@ -465,6 +480,9 @@ class MarketingHtmlRenderer {
       return iso;
     }
   }
+
+  static String _trimmed(dynamic value) =>
+      value is String ? value.trim() : '';
 
   static String _inicial(String? nome) {
     if (nome == null || nome.isEmpty) return '?';
