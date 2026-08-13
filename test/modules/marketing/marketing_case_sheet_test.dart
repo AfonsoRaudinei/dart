@@ -26,15 +26,20 @@ void main() {
       );
       expect(sheet.expand, isFalse);
 
-      expect(find.text('ROI líquido'), findsOneWidget);
-      expect(find.text('R\$ 980,00/ha'), findsOneWidget);
-      expect(find.text('9,3 sc/ha'), findsOneWidget);
-      expect(find.text('Testemunha'), findsOneWidget);
-      expect(find.text('Com produto'), findsOneWidget);
-      expect(find.text('Ganho'), findsOneWidget);
       // Bloco de resultado: valor herói acima do rótulo descritivo
       expect(find.text('R\$ 980,00'), findsOneWidget);
       expect(find.text('ROI líquido por hectare'), findsOneWidget);
+
+      // O ROI/ha aparece uma única vez: o detalhamento não repete o herói
+      expect(find.text('R\$ 980,00/ha'), findsNothing);
+      expect(find.text('ROI líquido'), findsNothing);
+
+      // Detalhamento continua com os dados que o herói não carrega
+      expect(find.text('9,3 sc/ha'), findsOneWidget);
+      expect(find.text('ROI em sacas'), findsOneWidget);
+      expect(find.text('Testemunha'), findsOneWidget);
+      expect(find.text('Com produto'), findsOneWidget);
+      expect(find.text('Ganho'), findsOneWidget);
     });
   });
 }
