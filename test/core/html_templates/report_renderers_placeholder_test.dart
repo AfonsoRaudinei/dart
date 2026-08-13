@@ -288,6 +288,27 @@ void main() {
     },
   );
 
+  test(
+    'marketing: foto ausente tem fallback que independe de JavaScript',
+    () async {
+      await initializeDateFormatting('pt_BR');
+
+      // O WebView do app roda com JavaScriptMode.disabled, entao o onerror do
+      // <img> nunca dispara: o fallback precisa vir do proprio HTML/CSS.
+      for (final tipo in const ['resultado', 'antes_depois']) {
+        final html = await MarketingHtmlRenderer.render({
+          ..._marketingBase(tipo),
+          'foto_principal_url': null,
+          'foto_antes_url': null,
+          'foto_depois_url': null,
+        });
+
+        expect(html, contains('Sem foto'), reason: tipo);
+        expect(html, isNot(contains('placeholder via onerror')), reason: tipo);
+      }
+    },
+  );
+
   test('marketing: case minimo nao renderiza secao sem dado', () async {
     await initializeDateFormatting('pt_BR');
 
