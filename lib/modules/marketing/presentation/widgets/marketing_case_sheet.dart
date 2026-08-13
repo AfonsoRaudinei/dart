@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:intl/intl.dart';
 import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 import '../../../../ui/theme/premium/design_tokens.dart';
 import '../../domain/entities/avaliacao_item.dart';
@@ -68,7 +69,7 @@ class MarketingCaseSheet extends StatelessWidget {
   }
 
   String _formatMoney(double value) {
-    return 'R\$ ${value.toStringAsFixed(2).replaceAll('.', ',')}';
+    return 'R\$ ${NumberFormat('#,##0.00', 'pt_BR').format(value)}';
   }
 
   @override
@@ -98,9 +99,7 @@ class MarketingCaseSheet extends StatelessWidget {
                   width: 36,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: Theme.of(
-                      context,
-                    ).dividerColor.withValues(alpha: 0.4),
+                    color: SoloForteSheetTokens.divider,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -145,22 +144,21 @@ class MarketingCaseSheet extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(width: 8),
-                        // Tipo
+                        // Tipo — categoria, não valor: fica neutro para não
+                        // competir com o verde do número de resultado.
                         Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 12,
                             vertical: 6,
                           ),
                           decoration: BoxDecoration(
-                            color: PremiumTokens.brandGreen.withValues(
-                              alpha: 0.1,
-                            ),
+                            color: SoloForteSheetTokens.inputBackground,
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Text(
                             _tipoLabel,
                             style: const TextStyle(
-                              color: PremiumTokens.brandGreen,
+                              color: SoloForteSheetTokens.inputHint,
                               fontWeight: FontWeight.w600,
                               fontSize: 11,
                             ),
@@ -179,46 +177,17 @@ class MarketingCaseSheet extends StatelessWidget {
                             fontWeight: FontWeight.w800,
                           ),
                     ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.location_on_outlined,
-                          size: 14,
-                          color: SoloForteSheetTokens.inputHint,
-                        ),
-                        const SizedBox(width: 4),
-                        Expanded(
-                          child: Text(
-                            marketingCase.localizacaoTexto,
-                            style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(
-                                  color: SoloForteSheetTokens.inputHint,
-                                ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    if (marketingCase.dataCase != null) ...[
-                      const SizedBox(height: 6),
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.calendar_today_outlined,
-                            size: 14,
-                            color: SoloForteSheetTokens.inputHint,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            _formatDatePtBr(marketingCase.dataCase!),
-                            style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(
-                                  color: SoloForteSheetTokens.inputHint,
-                                ),
-                          ),
-                        ],
+                    const SizedBox(height: 6),
+                    // Identificação do case em uma linha só: quem, onde,
+                    // quando. Antes o produtor ficava numa seção solta lá
+                    // embaixo, depois das métricas.
+                    Text(
+                      _subtitulo(),
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: SoloForteSheetTokens.inputHint,
+                        height: 1.4,
                       ),
-                    ],
+                    ),
                     const SizedBox(height: 20),
 
                     // ── Foto principal ─────────────────────────
@@ -229,12 +198,6 @@ class MarketingCaseSheet extends StatelessWidget {
                     _buildMetricasRow(context),
                     const SizedBox(height: 20),
 
-                    // ── Produtor / Fazenda ─────────────────────
-                    _buildInfoSection(
-                      context,
-                      'Produtor / Fazenda',
-                      marketingCase.produtorFazenda,
-                    ),
                     if (marketingCase.descricao != null) ...[
                       _buildInfoSection(
                         context,
@@ -342,6 +305,9 @@ class MarketingCaseSheet extends StatelessWidget {
     );
   }
 
+  /// Bloco de resultado: um número herói e as demais métricas como linhas.
+  /// Antes eram caixas coloridas lado a lado, cada uma com sua cor, todas
+  /// disputando a mesma atenção — o valor do case não se destacava.
   Widget _buildMetricasRow(BuildContext context) {
     final items = <_MetricaItem>[];
 
@@ -349,10 +315,8 @@ class MarketingCaseSheet extends StatelessWidget {
     if (resultadoRoi != null) {
       items.add(
         _MetricaItem(
-          label: 'ROI/ha',
+          label: 'ROI líquido por hectare',
           value: _formatMoney(resultadoRoi.roiLiquidoRsHa),
-          icon: Icons.trending_up_rounded,
-          color: const Color(0xFF34C759),
         ),
       );
     } else if (marketingCase.produtividadeValor != null) {
@@ -361,65 +325,103 @@ class MarketingCaseSheet extends StatelessWidget {
           label: 'Produtividade',
           value:
               '${marketingCase.produtividadeValor!.toStringAsFixed(1)} ${marketingCase.produtividadeUnidade?.toValue() ?? ''}',
-          icon: Icons.bar_chart_rounded,
-          color: PremiumTokens.brandGreen,
         ),
       );
     }
     if (marketingCase.economiaGerada != null) {
       items.add(
         _MetricaItem(
-          label: 'Economia',
+          label: 'Economia gerada',
           value: marketingCase.economiaGerada!,
-          icon: Icons.savings_outlined,
-          color: const Color(0xFFFFB800),
         ),
       );
     }
 
     if (items.isEmpty) return const SizedBox.shrink();
 
-    return Row(
-      children: items
-          .map(
-            (item) => Expanded(
-              child: Container(
-                margin: const EdgeInsets.only(right: 8),
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: item.color.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: item.color.withValues(alpha: 0.2)),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Icon(item.icon, color: item.color, size: 20),
-                    const SizedBox(height: 8),
-                    Text(
-                      item.label,
-                      style: TextStyle(
-                        color: item.color.withValues(alpha: 0.85),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      item.value,
-                      style: TextStyle(
-                        color: item.color,
-                        fontWeight: FontWeight.w800,
-                        fontSize: 16,
-                      ),
-                    ),
-                  ],
-                ),
+    final destaque = items.first;
+    final secundarias = items.skip(1).toList();
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: SoloForteSheetTokens.inputBackground,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: SoloForteSheetTokens.divider),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            destaque.value,
+            style: const TextStyle(
+              color: PremiumTokens.brandGreen,
+              fontSize: 30,
+              fontWeight: FontWeight.w700,
+              letterSpacing: -0.5,
+              height: 1.1,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            destaque.label,
+            style: const TextStyle(
+              color: SoloForteSheetTokens.inputHint,
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          for (final item in secundarias) ...[
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 12),
+              child: Divider(
+                height: PremiumTokens.hairlineThickness,
+                thickness: PremiumTokens.hairlineThickness,
+                color: SoloForteSheetTokens.divider,
               ),
             ),
-          )
-          .toList(),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // economiaGerada é texto livre: rótulo e valor precisam
+                // ceder espaço um ao outro em vez de estourar a linha.
+                Expanded(
+                  child: Text(
+                    item.label,
+                    style: const TextStyle(
+                      color: SoloForteSheetTokens.inputHint,
+                      fontSize: 13,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Flexible(
+                  child: Text(
+                    item.value,
+                    textAlign: TextAlign.end,
+                    style: const TextStyle(
+                      color: SoloForteSheetTokens.inputText,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
     );
+  }
+
+  String _subtitulo() {
+    final partes = <String>[
+      marketingCase.produtorFazenda.trim(),
+      marketingCase.localizacaoTexto.trim(),
+      if (marketingCase.dataCase != null)
+        _formatDatePtBr(marketingCase.dataCase!),
+    ].where((parte) => parte.isNotEmpty);
+    return partes.join(' · ');
   }
 
   Widget _buildInfoSection(BuildContext context, String label, String value) {
@@ -519,29 +521,21 @@ class MarketingCaseSheet extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF0057FF).withValues(alpha: 0.06),
+        color: SoloForteSheetTokens.inputBackground,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: const Color(0xFF0057FF).withValues(alpha: 0.2),
-        ),
+        border: Border.all(color: SoloForteSheetTokens.divider),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
-            children: [
-              Icon(Icons.notes_rounded, color: Color(0xFF0057FF), size: 16),
-              SizedBox(width: 6),
-              Text(
-                'CONCLUSÃO TÉCNICA',
-                style: TextStyle(
-                  color: Color(0xFF0057FF),
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.5,
-                ),
-              ),
-            ],
+          const Text(
+            'CONCLUSÃO TÉCNICA',
+            style: TextStyle(
+              color: SoloForteSheetTokens.inputHint,
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.6,
+            ),
           ),
           const SizedBox(height: 10),
           Text(
@@ -562,7 +556,7 @@ class MarketingCaseSheet extends StatelessWidget {
       decoration: BoxDecoration(
         color: SoloForteSheetTokens.inputBackground,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: PremiumTokens.hairlineLight),
+        border: Border.all(color: SoloForteSheetTokens.divider),
       ),
       child: Row(
         children: [
@@ -663,7 +657,7 @@ class _AvaliacaoLivreReadOnlyCardState
       decoration: BoxDecoration(
         color: SoloForteSheetTokens.inputBackground,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: PremiumTokens.hairlineLight),
+        border: Border.all(color: SoloForteSheetTokens.divider),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -776,13 +770,6 @@ class _AvaliacaoLivreReadOnlyCardState
 class _MetricaItem {
   final String label;
   final String value;
-  final IconData icon;
-  final Color color;
 
-  const _MetricaItem({
-    required this.label,
-    required this.value,
-    required this.icon,
-    required this.color,
-  });
+  const _MetricaItem({required this.label, required this.value});
 }
