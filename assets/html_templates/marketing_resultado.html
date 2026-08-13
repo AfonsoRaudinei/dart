@@ -237,22 +237,29 @@
     position: absolute;
     bottom: 14px;
     left: 16px;
-    right: 16px;
+    max-width: calc(100% - 32px);
     z-index: 1;
     color: var(--sf-white);
     font-size: 12.5px;
     font-weight: 500;
-    letter-spacing: 0.03em;
-    display: flex;
+    letter-spacing: 0.02em;
+    display: inline-flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
+    padding: 6px 12px 6px 10px;
+    border-radius: 100px;
+    /* legibilidade sobre qualquer foto (céu claro, palhada, placeholder) */
+    background: rgba(29,29,31,0.55);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.18);
   }
 
-  .photo-caption svg {
-    width: 14px;
-    height: 14px;
-    fill: var(--sf-amber);
-    flex-shrink: 0;
+  .photo-caption-text {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .photo-placeholder {
@@ -484,14 +491,6 @@
   }
 
   /* ═══ LOCALIZAÇÃO (inline resumido) ═══ */
-  .localizacao-inline {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 28px;
-    padding: 6px 0;
-  }
-
   /* ═══════════════════════════════════════════
      VENDEDOR
   ═══════════════════════════════════════════ */
@@ -695,15 +694,18 @@
         src="{{foto_principal_url}}"
         alt="Foto do Resultado"
         loading="lazy"
-        onerror="this.parentElement.innerHTML='<div class=\'photo-placeholder\'><span>Sem foto</span></div>'"
+        onerror="this.outerHTML='<div class=\'photo-placeholder\'><span>Sem foto</span></div>'"
       >
       <!-- {{else}} -->
       <!-- placeholder via onerror -->
       <!-- {{/if}} -->
 
+      <!-- {{#if localizacao_texto}} -->
       <div class="photo-caption">
-        <span class="sf-location" aria-label="Localização">📍</span>
+        <span class="sf-location" aria-hidden="true">📍</span>
+        <span class="photo-caption-text">{{localizacao_texto}}</span>
       </div>
+      <!-- {{/if}} -->
     </div>
 
     <!-- KPIs de Produtividade -->
@@ -798,13 +800,6 @@
       {{descricao}}
     </div>
     <!-- {{/if}} -->
-
-    <!-- LOCALIZAÇÃO (inline resumido) -->
-    <div class="localizacao-inline">
-      <div class="section-label-bar"></div>
-      <span class="section-label-text">Localização</span>
-      <span class="sf-location" aria-label="Localização">📍</span>
-    </div>
 
     <!-- VENDEDOR -->
     <!-- {{#if nome_vendedor}} -->
