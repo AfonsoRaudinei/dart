@@ -377,6 +377,79 @@ void main() {
     }
   });
 
+  test('ocorrencia: localizacao informa o fato, nao a coordenada', () async {
+    await initializeDateFormatting('pt_BR');
+
+    Map<String, dynamic> ocorrencia({double? lat, double? long}) => {
+      'id': 'occ-loc',
+      'type': 'Media',
+      'description': 'Insetos no baixeiro',
+      'category': 'insetos',
+      'status': 'draft',
+      'created_at': now.toIso8601String(),
+      'updated_at': now.toIso8601String(),
+      'sync_status': 'local',
+      if (lat != null) 'lat': lat,
+      if (long != null) 'long': long,
+    };
+
+    final comPonto = await OcorrenciaHtmlRenderer.renderDetalhe(
+      ocorrencia(lat: -10.1, long: -48.2),
+    );
+    expect(comPonto, contains('Ponto georreferenciado'));
+    expect(comPonto, isNot(contains('-10.1000')));
+
+    final semPonto = await OcorrenciaHtmlRenderer.renderDetalhe(ocorrencia());
+    expect(semPonto, isNot(contains('Ponto georreferenciado')));
+    expect(semPonto, isNot(contains('📍')));
+
+    final lista = await OcorrenciaHtmlRenderer.renderLista(
+      clienteNome: 'Cliente Teste',
+      fazendaNome: 'Fazenda Modelo',
+      talhaoNome: 'Talhao Norte',
+      agronomistNome: 'Agronomo Teste',
+      dataVisita: now,
+      ocorrencias: [ocorrencia(lat: -10.1, long: -48.2)],
+    );
+    expect(lista, contains('Georreferenciada'));
+  });
+
+  test('relatorio de visita nao imprime coordenada crua', () async {
+    await initializeDateFormatting('pt_BR');
+
+    final html = await VisitaHtmlRenderer.render(
+      relatorio: {
+        'id': 'rel-loc',
+        'status': 'publicado',
+        'title': 'Visita tecnica',
+        'farmName': 'Fazenda Modelo',
+        'periodStart': now.toIso8601String(),
+        'periodEnd': now.add(const Duration(hours: 1)).toIso8601String(),
+        'customNotes': '',
+        'ocorrencias': [
+          {
+            'id': 'occ-1',
+            'tipo': 'Insetos',
+            'descricao': 'Lagarta em reboleira',
+            'registradaEm': now.toIso8601String(),
+            'lat': -10.1,
+            'lng': -48.2,
+          },
+        ],
+        'talhoes': const [],
+        'monitoramentos': const [],
+        'fotos': const <String>[],
+        'publicacoesRefs': const <String>[],
+      },
+      agronomistNome: 'Agronomo Teste',
+      clienteNome: 'Cliente Teste',
+      publicacoesTitulos: const {},
+    );
+
+    expect(html, contains('Ponto georreferenciado'));
+    expect(html, isNot(contains('-10.1000, -48.2000')));
+  });
+
   test(
     'ocorrencia detalhada: logo header, localizacao inline, sem meta rodape',
     () async {
