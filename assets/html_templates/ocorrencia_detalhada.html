@@ -483,15 +483,25 @@
 
   /* ═══ LOCALIZAÇÃO (inline resumido) ═══ */
   .localizacao-inline {
-    display: inline-flex;
+    display: flex;
+    flex-wrap: wrap;
     align-items: center;
     gap: 8px;
+    max-width: 100%;
     margin-bottom: 28px;
     padding: 6px 0;
   }
 
   .localizacao-inline .section-label-text {
     margin: 0;
+  }
+
+  .localizacao-inline-text {
+    min-width: 0;
+    font-size: 13.5px;
+    font-weight: 500;
+    color: var(--sf-text);
+    overflow-wrap: anywhere;
   }
 
   /* ═══ TIMESTAMPS ═══ */
@@ -806,7 +816,8 @@
     <div class="localizacao-inline">
       <div class="section-label-bar"></div>
       <span class="section-label-text">Localização</span>
-      <span class="sf-location" aria-label="Localização">📍</span>
+      <span class="sf-location" aria-hidden="true">📍</span>
+      <span class="localizacao-inline-text">Ponto georreferenciado</span>
     </div>
     <!-- {{/if}} -->
 
