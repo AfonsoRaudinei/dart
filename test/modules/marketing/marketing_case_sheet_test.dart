@@ -4,6 +4,7 @@ import 'package:soloforte_app/modules/marketing/domain/entities/marketing_case.d
 import 'package:soloforte_app/modules/marketing/domain/enums/case_tipo.dart';
 import 'package:soloforte_app/modules/marketing/domain/enums/plano_marketing.dart';
 import 'package:soloforte_app/modules/marketing/presentation/widgets/marketing_case_sheet.dart';
+import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 
 void main() {
   group('MarketingCaseSheet', () {
@@ -40,6 +41,41 @@ void main() {
       expect(find.text('Testemunha'), findsOneWidget);
       expect(find.text('Com produto'), findsOneWidget);
       expect(find.text('Ganho'), findsOneWidget);
+    });
+
+    testWidgets('resultado negativo nao sai pintado de verde', (tester) async {
+      final now = DateTime.utc(2026, 8, 7);
+      final prejuizo = MarketingCase(
+        id: 'case-sheet-neg',
+        tipo: CaseTipo.resultado,
+        visibilidade: PlanoMarketing.prata,
+        lat: -10,
+        lng: -48,
+        localizacaoTexto: 'Palmas Tocantins',
+        produtorFazenda: 'Miguel',
+        produtoUtilizado: 'coach',
+        dataCase: now,
+        prodSemProduto: 65,
+        prodComProduto: 60,
+        unidadeProdutividade: 'sc/ha',
+        custoProdutoPorHa: 70,
+        valorGrao: 105,
+        criadoEm: now,
+        atualizadoEm: now,
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(body: MarketingCaseSheet(marketingCase: prejuizo)),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final heroi = tester.widget<Text>(find.text('-R\$ 595,00'));
+      expect(heroi.style?.color, PremiumTokens.alertError);
+
+      final ganho = tester.widget<Text>(find.text('-5,0 sc/ha'));
+      expect(ganho.style?.color, PremiumTokens.alertError);
     });
   });
 }
