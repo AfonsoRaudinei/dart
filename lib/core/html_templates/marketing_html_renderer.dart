@@ -44,11 +44,34 @@ class MarketingHtmlRenderer {
       fetchRemoteBytes: fetchRemoteBytes,
     );
 
+    // P0: resolver foto antes de localizacao para não deixar if/else no DOM.
+    tpl = _resolveAllIfBlocks(
+      tpl,
+      'foto_principal_url',
+      include: foto.isNotEmpty,
+    );
+
     final localizacao = _trimmed(data['localizacao_texto']);
     tpl = _resolveAllIfBlocks(
       tpl,
       'localizacao_texto',
       include: localizacao.isNotEmpty,
+    );
+
+    // Seções opcionais resultado
+    final descricaoR = _trimmed(data['descricao']);
+    tpl = _resolveAllIfBlocks(tpl, 'descricao', include: descricaoR.isNotEmpty);
+    final nomeVendedorR = _trimmed(data['nome_vendedor']);
+    tpl = _resolveAllIfBlocks(
+      tpl,
+      'nome_vendedor',
+      include: nomeVendedorR.isNotEmpty,
+    );
+    final telefoneVendedorR = _trimmed(data['telefone_vendedor']);
+    tpl = _resolveAllIfBlocks(
+      tpl,
+      'telefone_vendedor',
+      include: telefoneVendedorR.isNotEmpty,
     );
 
     final roi = _MarketingRoiData.from(data);
@@ -190,6 +213,22 @@ class MarketingHtmlRenderer {
               data['produtividade_valor'] != null),
     );
 
+    // P1: seções opcionais antes/depois
+    final descricaoA = _trimmed(data['descricao']);
+    tpl = _resolveAllIfBlocks(tpl, 'descricao', include: descricaoA.isNotEmpty);
+    final nomeVendedorA = _trimmed(data['nome_vendedor']);
+    tpl = _resolveAllIfBlocks(
+      tpl,
+      'nome_vendedor',
+      include: nomeVendedorA.isNotEmpty,
+    );
+    final telefoneVendedorA = _trimmed(data['telefone_vendedor']);
+    tpl = _resolveAllIfBlocks(
+      tpl,
+      'telefone_vendedor',
+      include: telefoneVendedorA.isNotEmpty,
+    );
+
     final fotoAntes = await RelatorioHtmlRenderer.resolvePhotoSrcForExport(
       data['foto_antes_url'] as String?,
       fetchRemoteBytes: fetchRemoteBytes,
@@ -288,6 +327,51 @@ class MarketingHtmlRenderer {
       include: conclusao?.trim().isNotEmpty == true,
     );
     tpl = _resolveAllIfBlocks(tpl, 'roi_calculado', include: false);
+
+    // P0: talhão — compound condition substituída por 'talhao_info' (simples).
+    // Template usa  <!-- {{#if talhao_info}} -->  (já renomeado).
+    final nomeTalhao = _trimmed(data['nome_talhao']);
+    final tamanhoHa = (data['tamanho_ha'] as num?)?.toDouble();
+    tpl = _resolveAllIfBlocks(
+      tpl,
+      'talhao_info',
+      include: nomeTalhao.isNotEmpty || tamanhoHa != null,
+    );
+    tpl = _resolveAllIfBlocks(
+      tpl,
+      'nome_talhao',
+      include: nomeTalhao.isNotEmpty,
+    );
+    tpl = _resolveAllIfBlocks(
+      tpl,
+      'tamanho_ha',
+      include: tamanhoHa != null,
+    );
+    tpl = _resolveAllIfBlocks(
+      tpl,
+      'produtividade_valor',
+      include: data['produtividade_valor'] != null,
+    );
+
+    // P1: seções opcionais avaliação
+    final descricaoAv = _trimmed(data['descricao']);
+    tpl = _resolveAllIfBlocks(
+      tpl,
+      'descricao',
+      include: descricaoAv.isNotEmpty,
+    );
+    final nomeVendedorAv = _trimmed(data['nome_vendedor']);
+    tpl = _resolveAllIfBlocks(
+      tpl,
+      'nome_vendedor',
+      include: nomeVendedorAv.isNotEmpty,
+    );
+    final telefoneVendedorAv = _trimmed(data['telefone_vendedor']);
+    tpl = _resolveAllIfBlocks(
+      tpl,
+      'telefone_vendedor',
+      include: telefoneVendedorAv.isNotEmpty,
+    );
 
     tpl = RelatorioHtmlRenderer.replacePlaceholders(tpl, {
       ...branding,
