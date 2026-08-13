@@ -45,6 +45,13 @@ class PremiumTokens {
     0xCC1E1E1E,
   ); // Escuro a 80% opacity para Blur
 
+  // === TIERS (ouro / prata / bronze) ===
+  // Fonte única: o mesmo tier tinha uma cor no pin do mapa e outra no sheet.
+  // Estes são os valores já usados pelo módulo planos e pelo pin.
+  static const Color tierGold = Color(0xFFFFD700);
+  static const Color tierSilver = Color(0xFFC0C0C0);
+  static const Color tierBronze = Color(0xFFCD7F32);
+
   // === ALERTAS E STATUS !===
 
   static const Color alertError = Color(0xFFFF3B30); // iOS System Red
@@ -101,14 +108,16 @@ class PremiumTokens {
 extension PremiumThemeAware on BuildContext {
   bool get isPremiumDark => Theme.of(this).brightness == Brightness.dark;
 
-  Color get premiumBackground =>
-      isPremiumDark ? PremiumTokens.backgroundDark : PremiumTokens.backgroundLight;
+  Color get premiumBackground => isPremiumDark
+      ? PremiumTokens.backgroundDark
+      : PremiumTokens.backgroundLight;
 
   Color get premiumSurface =>
       isPremiumDark ? PremiumTokens.surfaceDark : PremiumTokens.surfaceLight;
 
-  Color get premiumTextPrimary =>
-      isPremiumDark ? PremiumTokens.textPrimaryDark : PremiumTokens.textPrimaryLight;
+  Color get premiumTextPrimary => isPremiumDark
+      ? PremiumTokens.textPrimaryDark
+      : PremiumTokens.textPrimaryLight;
 
   Color get premiumTextSecondary => isPremiumDark
       ? PremiumTokens.textSecondaryDark
