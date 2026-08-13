@@ -24,6 +24,9 @@ class MapFirstQueryHandler {
     required void Function(LatLng point) focusCoordinate,
   }) {
     final modo = uri.queryParameters['modo'];
+    if (modo != 'foco') {
+      ref.read(focusedMarketingCaseIdProvider.notifier).state = null;
+    }
     final clienteId = uri.queryParameters['clienteId'];
     final clienteNome = uri.queryParameters['clienteNome'];
     final fazendaId = uri.queryParameters['fazendaId'];

@@ -74,6 +74,31 @@ void main() {
 
       expect(container.read(focusedMarketingCaseIdProvider), isNull);
     });
+
+    testWidgets('modo diferente de foco limpa focusedMarketingCaseIdProvider', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          child: MaterialApp(
+            home: _MapFirstQueryHarness(
+              uri: Uri.parse('/map?modo=desenho&clienteId=client-1'),
+              onFocusCoordinate: (_) {},
+              initialFocusedCaseId: 'mkt-stale',
+            ),
+          ),
+        ),
+      );
+
+      await tester.pump();
+      await tester.pump();
+
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(_MapFirstQueryHarness)),
+      );
+
+      expect(container.read(focusedMarketingCaseIdProvider), isNull);
+    });
   });
 
   group('Foco de publicação de marketing no mapa', () {
@@ -246,10 +271,12 @@ MarketingCasesNotifier _marketingCasesNotifier(List<MarketingCase> cases) {
 class _MapFirstQueryHarness extends ConsumerStatefulWidget {
   final Uri uri;
   final void Function(LatLng point) onFocusCoordinate;
+  final String? initialFocusedCaseId;
 
   const _MapFirstQueryHarness({
     required this.uri,
     required this.onFocusCoordinate,
+    this.initialFocusedCaseId,
   });
 
   @override
@@ -262,6 +289,10 @@ class _MapFirstQueryHarnessState extends ConsumerState<_MapFirstQueryHarness> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (widget.initialFocusedCaseId != null) {
+        ref.read(focusedMarketingCaseIdProvider.notifier).state =
+            widget.initialFocusedCaseId;
+      }
       MapFirstQueryHandler.handle(
         uri: widget.uri,
         ref: ref,
