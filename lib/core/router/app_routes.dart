@@ -45,6 +45,12 @@ class AppRoutes {
   static const String reportNew = '/consultoria/relatorios/novo';
   static String reportDetail(String id) => '/consultoria/relatorios/$id';
 
+  /// Abre Relatórios com aba inicial (`marketing` = publicações/rascunhos).
+  static String reportsWithTab(String tab) => '$reports?tab=$tab';
+
+  /// Aba Marketing (publicações / rascunhos) em Relatórios.
+  static String get reportsMarketing => reportsWithTab('marketing');
+
   static const String clientNew = '/consultoria/clientes/novo';
   static String clientDetail(String id) => '/consultoria/clientes/$id';
 

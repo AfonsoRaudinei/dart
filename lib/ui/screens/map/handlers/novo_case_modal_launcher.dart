@@ -15,6 +15,7 @@ import '../../../../core/contracts/i_producer_property_gateway_provider.dart';
 import '../../../../core/session/user_role.dart';
 import '../../../../modules/marketing/domain/entities/marketing_case.dart';
 import '../../../../modules/marketing/domain/enums/case_tipo.dart';
+import '../../../../modules/marketing/domain/marketing_case_quota.dart';
 import '../../../../modules/marketing/presentation/providers/marketing_providers.dart';
 import '../../../../modules/marketing/presentation/screens/novo_case_type_sheets.dart';
 import '../../../../modules/marketing/presentation/widgets/draft_saved_sheet.dart';
@@ -38,11 +39,10 @@ class NovoCaseModalLauncher {
     if (!context.mounted) return;
 
     Future<void> handlePublicar(MarketingCase newCase) async {
-      // Lê plano — nunca null após PROMPT-A (retorna UserPlan.free())
       final plano = ref.read(planoAtivoProvider).valueOrNull;
+      final cases = ref.read(marketingCasesProvider).valueOrNull ?? [];
 
-      // 1. Admin bypass — sem verificação de limite
-      if (plano?.isAdmin == true) {
+      if (!MarketingCaseQuota.isAtLimit(cases: cases, plan: plano)) {
         Navigator.of(context).pop();
         final saved = await ref
             .read(marketingCasesProvider.notifier)
@@ -52,65 +52,40 @@ class NovoCaseModalLauncher {
         return;
       }
 
-      // 2. Contar cases publicados do usuário
-      final cases = ref.read(marketingCasesProvider).valueOrNull ?? [];
-      final casesPublicados = cases
-          .where(
-            (c) =>
-                c.status.toValue() == 'published' &&
-                c.ativo &&
-                c.deletadoEm == null,
-          )
-          .length;
+      // Limite atingido: salva rascunho em vez de descartar.
+      if (!context.mounted) return;
+      Navigator.of(context).pop();
 
-      // 3. Limite: free tier = 3, plano padrão conforme UserPlan
-      final limite = plano?.limiteCases ?? 3;
-
-      if (casesPublicados >= limite) {
+      try {
+        await ref.read(marketingCasesProvider.notifier).saveAsDraft(newCase);
+      } catch (_) {
         if (!context.mounted) return;
-        Navigator.of(context).pop();
-
-        try {
-          await ref.read(marketingCasesProvider.notifier).saveAsDraft(newCase);
-        } catch (_) {
-          if (!context.mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Não foi possível salvar o rascunho. Tente novamente.'),
-            ),
-          );
-          return;
-        }
-
-        if (!context.mounted) return;
-        final action = await DraftSavedSheet.show(
-          context,
-          planoLabel: plano?.plano.label,
-          limite: limite,
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Não foi possível salvar o rascunho. Tente novamente.'),
+          ),
         );
-        if (!context.mounted) return;
-
-        switch (action) {
-          case DraftSavedAction.verRelatorios:
-            context.go(AppRoutes.reports);
-          case DraftSavedAction.verPlanos:
-            context.go('/planos');
-          case DraftSavedAction.dismiss:
-          case null:
-            break;
-        }
         return;
       }
 
-      // 4. Publica normalmente
-      Navigator.of(context).pop();
-
-      final saved = await ref
-          .read(marketingCasesProvider.notifier)
-          .publishCase(newCase);
-
       if (!context.mounted) return;
-      _showPublishResult(context, saved);
+      final limite = MarketingCaseQuota.limitFor(plano);
+      final action = await DraftSavedSheet.show(
+        context,
+        planoLabel: plano?.plano.label,
+        limite: limite,
+      );
+      if (!context.mounted) return;
+
+      switch (action) {
+        case DraftSavedAction.verRelatorios:
+          context.go(AppRoutes.reportsMarketing);
+        case DraftSavedAction.verPlanos:
+          context.go(AppRoutes.planos);
+        case DraftSavedAction.dismiss:
+        case null:
+          break;
+      }
     }
 
     Widget buildCaseSheet() {

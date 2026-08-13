@@ -48,7 +48,15 @@ class _ProdutorEntrySectionState extends ConsumerState<ProdutorEntrySection> {
     setState(() {
       _mode = mode;
       if (mode == ProdutorEntryMode.nome) {
-        widget.onClientIdChanged(null);
+        if (widget.clientId != null) {
+          widget.onClientIdChanged(null);
+        }
+      } else {
+        // Cliente: limpa label livre até o usuário escolher na lista.
+        widget.produtorController.clear();
+        if (widget.clientId != null) {
+          widget.onClientIdChanged(null);
+        }
       }
     });
     HapticFeedback.selectionClick();
@@ -100,7 +108,8 @@ class _ProdutorEntrySectionState extends ConsumerState<ProdutorEntrySection> {
       final farms = await ref
           .read(iFarmLookupProvider)
           .getFarmsByClient(client.id);
-      if (farms.isNotEmpty) {
+      // Só anexa fazenda quando há exatamente uma — evita label arbitrária.
+      if (farms.length == 1) {
         return '${client.name} / ${farms.first.name}';
       }
     } catch (_) {
@@ -124,7 +133,11 @@ class _ProdutorEntrySectionState extends ConsumerState<ProdutorEntrySection> {
             widget.produtorController,
             'Produtor / Fazenda *',
             required: widget.required,
-            onChanged: (_) => widget.onClientIdChanged(null),
+            onChanged: (_) {
+              if (widget.clientId != null) {
+                widget.onClientIdChanged(null);
+              }
+            },
           )
         else
           FormField<String>(

@@ -13,6 +13,7 @@ import '../../settings/presentation/providers/user_profile_provider.dart';
 import '../../../ui/screens/widgets/plano_block_sheet.dart';
 import '../domain/entities/marketing_case.dart';
 import '../domain/enums/marketing_case_status.dart';
+import '../domain/marketing_case_quota.dart';
 import '../domain/marketing_case_visibility.dart';
 import '../presentation/providers/marketing_providers.dart';
 import '../presentation/widgets/edit_case_sheet.dart';
@@ -94,43 +95,39 @@ class MarketingCaseReportsLookupAdapter implements IMarketingCaseReportsLookup {
   }
 
   @override
-  Future<bool> publishDraftCase(BuildContext context, String caseId) async {
+  Future<MarketingDraftPublishResult> publishDraftCase(
+    BuildContext context,
+    String caseId,
+  ) async {
     final cases = _ref.read(marketingCasesProvider).valueOrNull ?? [];
     final draft = cases.cast<MarketingCase?>().firstWhere(
       (c) => c?.id == caseId,
       orElse: () => null,
     );
     if (draft == null || draft.status != MarketingCaseStatus.draft) {
-      return false;
+      return MarketingDraftPublishResult.notFound;
     }
 
     final plano = _ref.read(planoAtivoProvider).valueOrNull;
-    if (plano?.isAdmin != true) {
-      final casesPublicados = cases
-          .where(
-            (c) =>
-                c.status == MarketingCaseStatus.published &&
-                c.ativo &&
-                c.deletadoEm == null,
-          )
-          .length;
-      final limite = plano?.limiteCases ?? 3;
-      if (casesPublicados >= limite) {
-        if (!context.mounted) return false;
-        PlanoBlockSheet.show(
-          context,
-          motivo: 'limite_atingido',
-          planoLabel: plano?.plano.label,
-          limite: limite,
-        );
-        return false;
-      }
+    if (MarketingCaseQuota.isAtLimit(cases: cases, plan: plano)) {
+      if (!context.mounted) return MarketingDraftPublishResult.blockedByQuota;
+      PlanoBlockSheet.show(
+        context,
+        motivo: 'limite_atingido',
+        planoLabel: plano?.plano.label,
+        limite: MarketingCaseQuota.limitFor(plano),
+      );
+      return MarketingDraftPublishResult.blockedByQuota;
     }
 
     final saved = await _ref
         .read(marketingCasesProvider.notifier)
         .publishDraft(draft);
-    return saved != null;
+    if (saved == null) {
+      // Offline-first: publishCase já persistiu como pending_sync.
+      return MarketingDraftPublishResult.pendingSync;
+    }
+    return MarketingDraftPublishResult.published;
   }
 
   @override

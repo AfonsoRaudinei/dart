@@ -109,13 +109,28 @@ class _MarketingCasesReportsSectionState
     WidgetRef ref,
     MarketingCaseReportSnapshot item,
   ) async {
-    final published = await ref
+    final result = await ref
         .read(marketingCaseReportsLookupProvider)
         .publishDraftCase(context, item.id);
-    if (!context.mounted || !published) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Case publicado com sucesso!')),
-    );
+    if (!context.mounted) return;
+
+    switch (result) {
+      case MarketingDraftPublishResult.published:
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Case publicado com sucesso!')),
+        );
+      case MarketingDraftPublishResult.pendingSync:
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Sem conexão — case salvo localmente e será sincronizado.',
+            ),
+          ),
+        );
+      case MarketingDraftPublishResult.blockedByQuota:
+      case MarketingDraftPublishResult.notFound:
+        break;
+    }
   }
 
   @override

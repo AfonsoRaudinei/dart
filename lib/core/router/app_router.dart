@@ -150,7 +150,9 @@ GoRouter router(Ref ref) {
           ),
           GoRoute(
             path: AppRoutes.reports,
-            builder: (_, __) => const RelatoriosScreen(),
+            builder: (_, state) => RelatoriosScreen(
+              initialTab: state.uri.queryParameters['tab'],
+            ),
             routes: [
               GoRoute(
                 path: ':id',

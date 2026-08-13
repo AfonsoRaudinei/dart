@@ -355,19 +355,30 @@ class MarketingCaseRepositoryImpl implements IMarketingCaseRepository {
   @override
   Future<MarketingCase> saveAsDraft(MarketingCase marketingCase) async {
     final userId = _scopedUserId();
-    // Rascunho: salva apenas localmente, com status=draft e syncStatus=local_only
+    // Rascunho offline-first: pending_sync local + tentativa de upsert remoto.
     final draftCase = MarketingCase.fromJson({
       ...marketingCase.toJson(),
       if (userId.isNotEmpty) 'user_id': userId,
       'status': MarketingCaseStatus.draft.toValue(),
-      'sync_status': 'local_only',
-      'atualizado_em': DateTime.now().toIso8601String(),
+      'sync_status': 'pending_sync',
+      'atualizado_em': DateTime.now().toUtc().toIso8601String(),
     });
 
-    // Persiste no cache local
     await saveSingleToCache(draftCase);
 
-    return draftCase;
+    if (userId.isEmpty) return draftCase;
+
+    try {
+      return await saveCase(draftCase);
+    } catch (e, st) {
+      AppLogger.error(
+        'Falha ao sincronizar rascunho de MarketingCase; mantendo local',
+        tag: 'MarketingRepo',
+        error: e,
+        stackTrace: st,
+      );
+      return draftCase;
+    }
   }
 
   @override

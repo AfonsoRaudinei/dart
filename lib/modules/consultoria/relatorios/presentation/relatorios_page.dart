@@ -42,6 +42,7 @@ import '../../occurrences/presentation/widgets/occurrence_detail_sheet.dart';
 // hide SyncStatus para evitar conflito com o enum de relatorio.dart
 import '../../occurrences/domain/occurrence.dart' hide SyncStatus;
 import '../../../../core/contracts/marketing_case_reports_list_provider.dart';
+import '../../../../core/contracts/i_marketing_case_reports_lookup.dart';
 import '../../../../core/contracts/i_marketing_case_reports_lookup_provider.dart';
 import '../../../../core/contracts/marketing_case_report_snapshot.dart';
 import 'package:soloforte_app/core/utils/app_logger.dart';
@@ -122,7 +123,10 @@ Future<_ReportBrandingContext> _resolveReportBrandingContext(
 /// Segmentos: Visitas | Ocorrências | Marketing | Consolidados | Mídia
 /// Marketing = publicações de Marketing (ADR-050). Consolidados = exports on-demand.
 class RelatoriosScreen extends ConsumerStatefulWidget {
-  const RelatoriosScreen({super.key});
+  /// Query `tab` da rota: `marketing` abre o segmento de publicações.
+  final String? initialTab;
+
+  const RelatoriosScreen({super.key, this.initialTab});
 
   @override
   ConsumerState<RelatoriosScreen> createState() => _RelatoriosScreenState();
@@ -130,7 +134,32 @@ class RelatoriosScreen extends ConsumerStatefulWidget {
 
 class _RelatoriosScreenState extends ConsumerState<RelatoriosScreen> {
   static final _dateFormat = DateFormat('dd/MM/yyyy', 'pt_BR');
-  _RelatoriosSegment _segment = _RelatoriosSegment.visitas;
+  late _RelatoriosSegment _segment;
+
+  @override
+  void initState() {
+    super.initState();
+    _segment = _segmentFromTab(widget.initialTab);
+  }
+
+  static _RelatoriosSegment _segmentFromTab(String? tab) {
+    switch (tab?.trim().toLowerCase()) {
+      case 'marketing':
+      case 'gerados':
+        return _RelatoriosSegment.gerados;
+      case 'ocorrencias':
+      case 'ocorrências':
+        return _RelatoriosSegment.ocorrencias;
+      case 'consolidados':
+        return _RelatoriosSegment.consolidados;
+      case 'midia':
+      case 'mídia':
+        return _RelatoriosSegment.midia;
+      case 'visitas':
+      default:
+        return _RelatoriosSegment.visitas;
+    }
+  }
 
   void _selectSegment(_RelatoriosSegment value) {
     if (_segment == value) return;
