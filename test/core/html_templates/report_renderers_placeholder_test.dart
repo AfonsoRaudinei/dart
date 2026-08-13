@@ -258,6 +258,52 @@ void main() {
     },
   );
 
+  test(
+    'marketing: nenhum {{#if}} fica sem resolver (secao fantasma)',
+    () async {
+      await initializeDateFormatting('pt_BR');
+
+      // Um bloco condicional nao resolvido sobrevive como `<!--  -->` depois de
+      // stripUnresolvedPlaceholders, e o conteudo dele aparece sempre.
+      for (final tipo in const ['resultado', 'antes_depois', 'avaliacao']) {
+        final completo = await MarketingHtmlRenderer.render(
+          _marketingBase(tipo),
+        );
+        expect(
+          completo,
+          isNot(contains('<!--  -->')),
+          reason: '$tipo completo',
+        );
+
+        final minimo = await MarketingHtmlRenderer.render({
+          'tipo': tipo,
+          'produtor_fazenda': 'Cliente Teste - Fazenda Modelo',
+          'produto_utilizado': 'Produto X',
+          'visibilidade': 'publico',
+          'status': 'publicado',
+          'criado_em': '2026-06-03T12:00:00.000Z',
+        });
+        expect(minimo, isNot(contains('<!--  -->')), reason: '$tipo minimo');
+      }
+    },
+  );
+
+  test('marketing: case minimo nao renderiza secao sem dado', () async {
+    await initializeDateFormatting('pt_BR');
+
+    final html = await MarketingHtmlRenderer.render({
+      'tipo': 'resultado',
+      'produtor_fazenda': 'Cliente Teste - Fazenda Modelo',
+      'produto_utilizado': 'Produto X',
+      'visibilidade': 'publico',
+      'status': 'publicado',
+      'criado_em': '2026-06-03T12:00:00.000Z',
+    });
+
+    expect(html, isNot(contains('Observações')));
+    expect(html, isNot(contains('Responsável Comercial')));
+  });
+
   test('marketing: localizacao inline exibe o texto real do case', () async {
     await initializeDateFormatting('pt_BR');
 
