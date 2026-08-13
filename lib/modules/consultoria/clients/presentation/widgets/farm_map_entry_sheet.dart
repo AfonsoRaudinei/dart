@@ -8,6 +8,7 @@ import 'package:soloforte_app/modules/consultoria/clients/domain/client.dart';
 import 'package:soloforte_app/modules/consultoria/farms/data/repositories/farm_repository.dart';
 import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 import 'package:uuid/uuid.dart';
+import 'client_sheet_form_padding.dart';
 
 enum FarmMapEntryMode {
   draw('desenho'),
@@ -191,12 +192,7 @@ class _FarmMapEntrySheetState extends State<FarmMapEntrySheet> {
         color: Colors.white,
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      padding: EdgeInsets.only(
-        left: 24,
-        right: 24,
-        top: 12,
-        bottom: MediaQuery.of(context).padding.bottom + 24,
-      ),
+      padding: clientSheetFormPadding(context),
       child: SafeArea(
         top: false,
         child: SingleChildScrollView(

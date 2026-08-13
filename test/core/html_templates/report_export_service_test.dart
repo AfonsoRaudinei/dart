@@ -47,4 +47,33 @@ void main() {
     );
     expect(ReportExportService.safeFileBaseName('///'), 'relatorio');
   });
+
+  test('exportPack grava HTML CSV e JSON no diretório temporário', () async {
+    const channel = MethodChannel('dev.fluttercommunity.plus/share');
+    final shared = <MethodCall>[];
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(channel, (call) async {
+          shared.add(call);
+          return null;
+        });
+
+    const service = ReportExportService();
+    await service.exportPack(
+      const ReportExportPayload(
+        title: 'Pack Teste',
+        html: '<html></html>',
+        fileBaseName: 'pack_teste',
+        json: {'ok': true},
+        csv: 'a,b\n1,2',
+      ),
+    );
+
+    expect(File('${tempDir.path}/pack_teste.html').existsSync(), isTrue);
+    expect(File('${tempDir.path}/pack_teste.csv').existsSync(), isTrue);
+    expect(File('${tempDir.path}/pack_teste.json').existsSync(), isTrue);
+    expect(shared, isNotEmpty);
+
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(channel, null);
+  });
 }

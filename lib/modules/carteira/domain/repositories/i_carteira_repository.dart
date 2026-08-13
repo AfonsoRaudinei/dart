@@ -86,4 +86,11 @@ abstract class ICarteiraRepository {
     String safraId,
     String userId,
   );
+
+  /// Soma de closed_percent por cliente+categoria (ADR-029, sem filtro de safra).
+  Future<double> getClosedPercentByClienteCategoria(
+    String clienteId,
+    String categoriaId,
+    String userId,
+  );
 }

@@ -10,6 +10,7 @@ class AgendaIndicadoresView extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final accent = theme.colorScheme.primary;
 
     final now = DateTime.now();
     final weekStart = now.subtract(Duration(days: now.weekday - 1));
@@ -46,7 +47,7 @@ class AgendaIndicadoresView extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 16),
-          _buildEfficiencyCard(theme, efficiency, completedEvents > 0),
+          _buildEfficiencyCard(theme, accent, efficiency, completedEvents > 0),
           const SizedBox(height: 24),
           Text(
             'Resumo',
@@ -60,7 +61,7 @@ class AgendaIndicadoresView extends ConsumerWidget {
             'Total de Eventos',
             totalEvents.toString(),
             Icons.event,
-            const Color(0xFF4ADE80),
+            accent,
           ),
           const SizedBox(height: 8),
           _buildMetricCard(
@@ -68,7 +69,7 @@ class AgendaIndicadoresView extends ConsumerWidget {
             'Concluídos',
             completedEvents.toString(),
             Icons.check_circle,
-            const Color(0xFF4ADE80),
+            accent,
           ),
           const SizedBox(height: 8),
           _buildMetricCard(
@@ -93,17 +94,16 @@ class AgendaIndicadoresView extends ConsumerWidget {
 
   Widget _buildEfficiencyCard(
     ThemeData theme,
+    Color accent,
     String efficiency,
     bool showPositiveTrend,
   ) {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: theme.brightness == Brightness.dark
-            ? const Color(0xFF1A3A1F)
-            : const Color(0xFFD1FAE5),
+        color: accent.withValues(alpha: theme.brightness == Brightness.dark ? 0.12 : 0.1),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF4ADE80)),
+        border: Border.all(color: accent.withValues(alpha: 0.45)),
       ),
       child: Column(
         children: [
@@ -111,7 +111,7 @@ class AgendaIndicadoresView extends ConsumerWidget {
             'Eficiência',
             style: theme.textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.w600,
-              color: const Color(0xFF4ADE80),
+              color: accent,
             ),
           ),
           const SizedBox(height: 16),
@@ -124,7 +124,7 @@ class AgendaIndicadoresView extends ConsumerWidget {
                 efficiency,
                 style: theme.textTheme.displayLarge?.copyWith(
                   fontWeight: FontWeight.w700,
-                  color: const Color(0xFF4ADE80),
+                  color: accent,
                 ),
               ),
               const SizedBox(width: 4),
@@ -132,7 +132,7 @@ class AgendaIndicadoresView extends ConsumerWidget {
                 '%',
                 style: theme.textTheme.headlineMedium?.copyWith(
                   fontWeight: FontWeight.w600,
-                  color: const Color(0xFF4ADE80),
+                  color: accent,
                 ),
               ),
             ],
@@ -140,7 +140,7 @@ class AgendaIndicadoresView extends ConsumerWidget {
           const SizedBox(height: 8),
           Icon(
             showPositiveTrend ? Icons.trending_up : Icons.trending_flat,
-            color: const Color(0xFF4ADE80),
+            color: accent,
             size: 32,
           ),
         ],

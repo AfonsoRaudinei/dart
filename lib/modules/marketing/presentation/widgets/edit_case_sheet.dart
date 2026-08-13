@@ -38,7 +38,7 @@ class _EditCaseSheetState extends State<EditCaseSheet> {
   final _conclusaoCtrl = TextEditingController();
   final _conclusaoTecnicaCtrl = TextEditingController();
 
-  late CaseTipo _tipo;
+  late final CaseTipo _tipo;
   late PlanoMarketing _visibilidade;
   ProdutividadeUnidade? _produtividadeUnidade;
   bool _isSaving = false;
@@ -86,8 +86,7 @@ class _EditCaseSheetState extends State<EditCaseSheet> {
 
     final produtividadeValor = _parseDouble(_produtividadeCtrl.text);
     final tamanhoHa = _parseDouble(_tamanhoHaCtrl.text);
-    final produtividadeUnidade = _tipo == CaseTipo.avaliacao ||
-            produtividadeValor == null
+    final produtividadeUnidade = produtividadeValor == null
         ? null
         : (_produtividadeUnidade ?? ProdutividadeUnidade.scHa);
 
@@ -105,7 +104,7 @@ class _EditCaseSheetState extends State<EditCaseSheet> {
       produtorFazenda: _produtorCtrl.text.trim(),
       produtoUtilizado: _produtoCtrl.text.trim(),
       dataCase: casoOriginal.dataCase,
-      produtividadeValor: _tipo == CaseTipo.avaliacao ? null : produtividadeValor,
+      produtividadeValor: produtividadeValor,
       produtividadeUnidade: produtividadeUnidade,
       nomeVendedor: _trimmedOrNull(_nomeVendedorCtrl.text),
       telefoneVendedor: _trimmedOrNull(_telefoneCtrl.text),
@@ -224,6 +223,20 @@ class _EditCaseSheetState extends State<EditCaseSheet> {
     ).showSnackBar(SnackBar(content: Text(message)));
   }
 
+  String get _tipoLabel {
+    switch (_tipo) {
+      case CaseTipo.resultado:
+        return 'Resultado';
+      case CaseTipo.antesDepois:
+        return 'Antes/Depois';
+      case CaseTipo.avaliacao:
+        return 'Avaliação';
+    }
+  }
+
+  String get _produtividadeLabel =>
+      _tipo == CaseTipo.avaliacao ? 'Produção ideal' : 'Valor da produtividade';
+
   @override
   Widget build(BuildContext context) {
     return SafeArea(
@@ -285,9 +298,35 @@ class _EditCaseSheetState extends State<EditCaseSheet> {
                   const SizedBox(height: 20),
                   novoCaseSectionLabel('Tipo do case'),
                   const SizedBox(height: 10),
-                  CaseTipoSelector(
-                    selectedTipo: _tipo,
-                    onChanged: (value) => setState(() => _tipo = value),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 12,
+                    ),
+                    decoration: BoxDecoration(
+                      color: PremiumTokens.brandGreen.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: PremiumTokens.brandGreen.withValues(alpha: 0.45),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.lock_outline,
+                          size: 18,
+                          color: PremiumTokens.brandGreen.withValues(alpha: 0.9),
+                        ),
+                        const SizedBox(width: 10),
+                        Text(
+                          _tipoLabel,
+                          style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                   const SizedBox(height: 20),
                   novoCaseSectionLabel('Visibilidade'),
@@ -335,7 +374,7 @@ class _EditCaseSheetState extends State<EditCaseSheet> {
                       children: [
                         novoCaseTextInput(
                           _produtividadeCtrl,
-                          'Valor da produtividade',
+                          _produtividadeLabel,
                           keyboardType: const TextInputType.numberWithOptions(
                             decimal: true,
                           ),
@@ -367,11 +406,9 @@ class _EditCaseSheetState extends State<EditCaseSheet> {
                                 ),
                               )
                               .toList(),
-                          onChanged: _tipo == CaseTipo.avaliacao
-                              ? null
-                              : (value) => setState(
-                                  () => _produtividadeUnidade = value,
-                                ),
+                          onChanged: (value) => setState(
+                            () => _produtividadeUnidade = value,
+                          ),
                         ),
                       ],
                     ),

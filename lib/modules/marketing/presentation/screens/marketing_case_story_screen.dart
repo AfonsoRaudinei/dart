@@ -1,9 +1,6 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:http/http.dart' as http;
 
 import '../../../../core/html_templates/relatorio_html_renderer.dart';
 import '../../domain/entities/marketing_case.dart';
@@ -102,26 +99,8 @@ Future<String> _buildInjectedHtml(MarketingCase marketingCase) async {
   );
 }
 
-/// Baixa URL remota → data URI; fallback silencioso para a URL original.
 Future<String?> _fotoParaSrc(String? url) async {
   if (url == null || url.trim().isEmpty) return null;
-  final trimmed = url.trim();
-  if (trimmed.startsWith('data:')) return trimmed;
-
-  if (!trimmed.startsWith('http://') && !trimmed.startsWith('https://')) {
-    final local = await RelatorioHtmlRenderer.photoPathToBase64(trimmed);
-    return local ?? trimmed;
-  }
-
-  try {
-    final response = await http
-        .get(Uri.parse(trimmed))
-        .timeout(const Duration(seconds: 8));
-    if (response.statusCode == 200 && response.bodyBytes.isNotEmpty) {
-      return 'data:image/jpeg;base64,${base64Encode(response.bodyBytes)}';
-    }
-  } catch (_) {
-    // fallback silencioso
-  }
-  return trimmed;
+  final resolved = await RelatorioHtmlRenderer.resolvePhotoSrcForExport(url);
+  return resolved.isEmpty ? null : resolved;
 }

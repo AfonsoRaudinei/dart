@@ -35,9 +35,9 @@ class ClimaSubViewHeader extends StatelessWidget {
               HapticFeedback.lightImpact();
               onBack();
             },
-            child: const Icon(
+            child: Icon(
               Icons.arrow_back_ios_new_rounded,
-              color: kClimaTint,
+              color: context.climaTint,
               size: 20,
             ),
           ),
@@ -45,12 +45,12 @@ class ClimaSubViewHeader extends StatelessWidget {
           Expanded(
             child: Text(
               title,
-              style: const TextStyle(
+              style: TextStyle(
                 fontFamily: 'Inter',
                 fontSize: 22,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 0.37,
-                color: kClimaTextPrimary,
+                color: context.climaTextPrimary,
               ),
             ),
           ),
@@ -80,12 +80,12 @@ class ClimaShareButton extends StatelessWidget {
           height: 44,
           child: DecoratedBox(
             decoration: BoxDecoration(
-              color: kClimaCard,
+              color: context.climaCard,
               borderRadius: BorderRadius.circular(14),
-              boxShadow: const [
+              boxShadow: [
                 BoxShadow(
-                  color: kClimaShadow,
-                  offset: Offset(0, 2),
+                  color: context.climaShadow,
+                  offset: const Offset(0, 2),
                   blurRadius: 8,
                 ),
               ],
@@ -93,9 +93,9 @@ class ClimaShareButton extends StatelessWidget {
             child: IconButton(
               padding: EdgeInsets.zero,
               constraints: const BoxConstraints.expand(),
-              icon: const Icon(
+              icon: Icon(
                 Icons.share_outlined,
-                color: Color(0xFF4ADE80),
+                color: context.climaTint,
                 size: 22,
               ),
               tooltip: 'Compartilhar no WhatsApp',
@@ -130,13 +130,17 @@ class ClimaIconBtn extends StatelessWidget {
         width: 36,
         height: 36,
         decoration: BoxDecoration(
-          color: kClimaCard,
+          color: context.climaCard,
           borderRadius: BorderRadius.circular(10),
-          boxShadow: const [
-            BoxShadow(color: kClimaShadow, offset: Offset(0, 2), blurRadius: 8),
+          boxShadow: [
+            BoxShadow(
+              color: context.climaShadow,
+              offset: const Offset(0, 2),
+              blurRadius: 8,
+            ),
           ],
         ),
-        child: Icon(icon, size: 18, color: kClimaTint),
+        child: Icon(icon, size: 18, color: context.climaTint),
       ),
     );
   }
@@ -149,10 +153,13 @@ class ClimaLoadingCenter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Padding(
-      padding: EdgeInsets.only(top: 100),
+    return Padding(
+      padding: const EdgeInsets.only(top: 100),
       child: Center(
-        child: CircularProgressIndicator(color: kClimaTint, strokeWidth: 2.5),
+        child: CircularProgressIndicator(
+          color: context.climaTint,
+          strokeWidth: 2.5,
+        ),
       ),
     );
   }
@@ -173,24 +180,24 @@ class ClimaErrorState extends StatelessWidget {
         children: [
           const Text('⚠️', style: TextStyle(fontSize: 40)),
           const SizedBox(height: 16),
-          const Text(
+          Text(
             'Não foi possível carregar os dados climáticos.',
             textAlign: TextAlign.center,
             style: TextStyle(
               fontFamily: 'Inter',
               fontSize: 16,
               fontWeight: FontWeight.w500,
-              color: kClimaTextSecondary,
+              color: context.climaTextSecondary,
             ),
           ),
           const SizedBox(height: 8),
           Text(
             message,
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
               fontFamily: 'Inter',
               fontSize: 13,
-              color: kClimaTextTertiary,
+              color: context.climaTextTertiary,
             ),
           ),
         ],
@@ -248,6 +255,7 @@ class _ClimaWhatsAppSheetState extends ConsumerState<ClimaWhatsAppSheet> {
   Widget build(BuildContext context) {
     final total = _selecionados.length;
     final payload = widget.payload;
+    final accent = Theme.of(context).colorScheme.primary;
 
     final bottomPad = MediaQuery.paddingOf(context).bottom;
 
@@ -295,11 +303,11 @@ class _ClimaWhatsAppSheetState extends ConsumerState<ClimaWhatsAppSheet> {
                 maxHeight: MediaQuery.of(context).size.height * 0.45,
               ),
               child: _loading
-                  ? const Padding(
-                      padding: EdgeInsets.all(32),
+                  ? Padding(
+                      padding: const EdgeInsets.all(32),
                       child: Center(
                         child: CircularProgressIndicator(
-                          color: kClimaTint,
+                          color: accent,
                           strokeWidth: 2.5,
                         ),
                       ),
@@ -331,9 +339,9 @@ class _ClimaWhatsAppSheetState extends ConsumerState<ClimaWhatsAppSheet> {
                         final tel = cliente.phone;
                         final hasPhone = climaPhoneIsValid(tel);
                         return CheckboxListTile(
-                          tileColor: const Color(0xFF2C2C2E),
-                          activeColor: const Color(0xFF4ADE80),
-                          checkColor: Colors.black,
+                          tileColor: SoloForteSheetTokens.inputBackground,
+                          activeColor: accent,
+                          checkColor: Theme.of(context).colorScheme.onPrimary,
                           value: hasPhone && _selecionados.contains(tel),
                           onChanged: hasPhone
                               ? (checked) {
@@ -381,10 +389,10 @@ class _ClimaWhatsAppSheetState extends ConsumerState<ClimaWhatsAppSheet> {
                   child: FilledButton.icon(
                     onPressed: total == 0 ? null : _enviarParaSelecionados,
                     style: FilledButton.styleFrom(
-                      backgroundColor: const Color(0xFF4ADE80),
-                      disabledBackgroundColor: const Color(0xFF2C2C2E),
-                      foregroundColor: Colors.black,
-                      disabledForegroundColor: const Color(0xFF48484A),
+                      backgroundColor: accent,
+                      disabledBackgroundColor: SoloForteSheetTokens.inputBackground,
+                      foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                      disabledForegroundColor: SoloForteSheetTokens.categoryLabel,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),

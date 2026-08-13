@@ -34,36 +34,36 @@ class ClimaLocationRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final content = Row(
       children: [
-        const Icon(Icons.location_on_rounded, size: 14, color: kClimaTint),
+        Icon(Icons.location_on_rounded, size: 14, color: context.climaTint),
         const SizedBox(width: 4),
         Expanded(
           child: Text(
             cidade,
-            style: const TextStyle(
+            style: TextStyle(
               fontFamily: 'Inter',
               fontSize: 15,
               fontWeight: FontWeight.w500,
-              color: kClimaTextSecondary,
+              color: context.climaTextSecondary,
             ),
             overflow: TextOverflow.ellipsis,
           ),
         ),
         if (onTap != null) ...[
-          const Icon(
+          Icon(
             Icons.chevron_right_rounded,
             size: 18,
-            color: kClimaTextTertiary,
+            color: context.climaTextTertiary,
           ),
           const SizedBox(width: 4),
         ],
         Flexible(
           child: Text(
             'Atualizado $_tempoAtras',
-            style: const TextStyle(
+            style: TextStyle(
               fontFamily: 'Inter',
               fontSize: 13,
               fontWeight: FontWeight.w400,
-              color: kClimaTextTertiary,
+              color: context.climaTextTertiary,
             ),
             overflow: TextOverflow.ellipsis,
             textAlign: TextAlign.end,
@@ -107,7 +107,7 @@ class ClimaCurrentWeatherCard extends StatelessWidget {
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.all(24),
-        decoration: climaHeroCardDecoration(clima.condicaoCodigo),
+        decoration: climaHeroCardDecoration(context, clima.condicaoCodigo),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -206,7 +206,9 @@ class _MiniStat extends StatelessWidget {
             fontSize: 16,
             fontWeight: FontWeight.w600,
             letterSpacing: -0.4,
-            color: onGradient ? kClimaOnGradientText : kClimaTextPrimary,
+            color: onGradient
+                ? kClimaOnGradientText
+                : context.climaTextPrimary,
           ),
         ),
         const SizedBox(height: 2),
@@ -218,7 +220,7 @@ class _MiniStat extends StatelessWidget {
             fontWeight: FontWeight.w400,
             color: onGradient
                 ? kClimaOnGradientTextMuted
-                : kClimaTextTertiary,
+                : context.climaTextTertiary,
           ),
         ),
       ],
@@ -256,12 +258,12 @@ class ClimaDetailsCard extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
       child: Container(
-        decoration: climaCardDecoration(),
+        decoration: climaCardDecoration(context),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Padding(
-              padding: EdgeInsets.fromLTRB(16, 14, 16, 8),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
               child: Text(
                 'Detalhes',
                 style: TextStyle(
@@ -269,7 +271,7 @@ class ClimaDetailsCard extends StatelessWidget {
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
                   letterSpacing: -0.4,
-                  color: kClimaTextPrimary,
+                  color: context.climaTextPrimary,
                 ),
               ),
             ),
@@ -278,12 +280,12 @@ class ClimaDetailsCard extends StatelessWidget {
               return Column(
                 children: [
                   if (i > 0)
-                    const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 16),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: Divider(
                         height: 1,
                         thickness: 0.5,
-                        color: kClimaDivider,
+                        color: context.climaDivider,
                       ),
                     ),
                   Padding(
@@ -297,22 +299,22 @@ class ClimaDetailsCard extends StatelessWidget {
                         const SizedBox(width: 10),
                         Text(
                           row.label,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontFamily: 'Inter',
                             fontSize: 15,
                             fontWeight: FontWeight.w400,
-                            color: kClimaTextSecondary,
+                            color: context.climaTextSecondary,
                           ),
                         ),
                         const Spacer(),
                         Text(
                           row.value,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontFamily: 'Inter',
                             fontSize: 15,
                             fontWeight: FontWeight.w500,
                             letterSpacing: -0.4,
-                            color: kClimaTextPrimary,
+                            color: context.climaTextPrimary,
                           ),
                         ),
                       ],
@@ -471,12 +473,12 @@ class _TabChip extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 15),
         decoration: BoxDecoration(
-          color: kClimaCard,
+          color: context.climaCard,
           borderRadius: BorderRadius.circular(14),
-          boxShadow: const [
+          boxShadow: [
             BoxShadow(
-              color: kClimaShadow,
-              offset: Offset(0, 4),
+              color: context.climaShadow,
+              offset: const Offset(0, 4),
               blurRadius: 12,
             ),
           ],
@@ -484,12 +486,12 @@ class _TabChip extends StatelessWidget {
         child: Center(
           child: Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               fontFamily: 'Inter',
               fontSize: 15,
               fontWeight: FontWeight.w600,
               letterSpacing: -0.3,
-              color: kClimaTint,
+              color: context.climaTint,
             ),
           ),
         ),

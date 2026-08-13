@@ -15,11 +15,16 @@ import '../../../modules/map/presentation/widgets/visit_sheet.dart';
 import '../../../modules/visitas/presentation/controllers/visit_controller.dart';
 import '../../../../modules/consultoria/occurrences/presentation/widgets/occurrence_list_sheet.dart';
 import '../../../../modules/consultoria/occurrences/presentation/widgets/occurrence_creation_sheet.dart';
+import '../../../../modules/consultoria/occurrences/presentation/providers/occurrence_draft_provider.dart';
+import '../../../../modules/consultoria/occurrences/presentation/coordinators/occurrence_close_coordinator.dart';
+import '../../../../modules/consultoria/occurrences/presentation/coordinators/occurrence_form_guard.dart';
+import '../../screens/map/providers/occurrence_form_guard_provider.dart';
 import '../../../modules/dashboard/services/location_service.dart';
 import '../../../modules/dashboard/domain/location_settings.dart';
 import '../../screens/map/handlers/map_location_handler.dart';
 import 'map_sheet_state.dart'; // 🛡 REFATORAÇÃO: Modelo compartilhado
 import '../../../core/utils/app_logger.dart';
+import '../../../core/state/map_ui_providers.dart';
 import '../../../../core/contracts/i_visit_session_lookup.dart';
 import '../../../../core/contracts/i_visit_session_lookup_provider.dart';
 
@@ -61,11 +66,13 @@ class MapBottomSheet extends ConsumerStatefulWidget {
 class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
     with SingleTickerProviderStateMixin {
   // 🛡 APENAS ESTADOS EFÉMEROS DE UI (animação e drag)
-  SheetDetent _currentDetent = SheetDetent.compact;
+  SheetDetent _currentDetent = SheetDetent.medium;
 
   late AnimationController _heightController;
   late Animation<double> _heightAnimation;
   final ScrollController _scrollController = ScrollController();
+  bool _initialDetentSynced = false;
+  OccurrenceFormGuard? _occurrenceFormGuard;
 
   @override
   void initState() {
@@ -75,22 +82,56 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
       tag: 'MapSheet',
     );
 
-    // Draw abre já expandido (equivalente ao initialChildSize do modal)
-    // para evitar estado "colado" no rodapé no primeiro frame.
-    _currentDetent = SheetDetent.medium;
-
     _heightController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 300),
     );
 
-    final initialHeight = 350.0;
-    _heightAnimation = AlwaysStoppedAnimation(initialHeight);
+    _heightAnimation = AlwaysStoppedAnimation(0);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_initialDetentSynced) return;
+    _initialDetentSynced = true;
+    _syncInitialDetentHeight();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _publishChromeInset(_getSheetHeight());
+    });
+  }
+
+  void _syncInitialDetentHeight() {
+    _currentDetent = _resolveInitialDetent();
+    _heightAnimation = AlwaysStoppedAnimation(_getDetentHeight(_currentDetent));
+  }
+
+  SheetDetent _resolveInitialDetent() {
+    if (widget.state.isCreatingOccurrence || widget.creationLocation != null) {
+      return SheetDetent.expanded;
+    }
+    return SheetDetent.medium;
+  }
+
+  void _ensureOccurrenceFormGuard() {
+    if (!widget.state.isCreatingOccurrence) {
+      _occurrenceFormGuard = null;
+      ref.read(occurrenceFormGuardProvider.notifier).state = null;
+      return;
+    }
+    _occurrenceFormGuard ??= OccurrenceFormGuard();
+    ref.read(occurrenceFormGuardProvider.notifier).state = _occurrenceFormGuard;
   }
 
   @override
   void dispose() {
     AppLogger.debug('MapBottomSheet DISPOSE', tag: 'MapSheet');
+    // Evita inset residual após fechar sheet.
+    try {
+      ref.read(mapSheetChromeInsetProvider.notifier).state = 0;
+    } catch (_) {}
+    ref.read(occurrenceFormGuardProvider.notifier).state = null;
     _heightController.dispose();
     _scrollController.dispose();
     super.dispose();
@@ -115,6 +156,19 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
         _animateToDetent(SheetDetent.expanded);
       }
     }
+
+    if (widget.state.isCreatingOccurrence != oldWidget.state.isCreatingOccurrence &&
+        widget.state.isCreatingOccurrence) {
+      if (_currentDetent != SheetDetent.expanded) {
+        _animateToDetent(SheetDetent.expanded);
+      }
+    }
+  }
+
+  Future<void> _requestDismissCurrentSheet({
+    DrawingCloseIntent intent = DrawingCloseIntent.dismissSheet,
+  }) async {
+    await _dismissCurrentSheet(intent: intent);
   }
 
   Future<void> _dismissCurrentSheet({
@@ -130,6 +184,23 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
         return;
       }
     }
+
+    if (widget.state.isCreatingOccurrence) {
+      final canClose = await OccurrenceCloseCoordinator.confirmDiscardIfDirty(
+        context,
+        guard: _occurrenceFormGuard,
+      );
+      if (!mounted) return;
+      if (!canClose) {
+        if (_currentDetent == SheetDetent.compact) {
+          _animateToDetent(SheetDetent.medium);
+        }
+        return;
+      }
+      _clearOccurrenceDraftAtCurrentPin();
+    }
+
+    ref.read(occurrenceFormGuardProvider.notifier).state = null;
     widget.onClose();
   }
 
@@ -143,9 +214,21 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
     _heightAnimation = Tween<double>(begin: startHeight, end: endHeight)
         .animate(
           CurvedAnimation(parent: _heightController, curve: Curves.easeOut),
-        );
+        )
+      ..addListener(_onHeightTick);
 
-    _heightController.forward(from: 0);
+    _heightController.forward(from: 0).whenComplete(() {
+      _heightAnimation.removeListener(_onHeightTick);
+      if (mounted) _publishChromeInset(endHeight);
+    });
+  }
+
+  void _onHeightTick() {
+    _publishChromeInset(_heightAnimation.value);
+  }
+
+  void _publishChromeInset(double height) {
+    ref.read(mapSheetChromeInsetProvider.notifier).state = height;
   }
 
   void _handleVerticalDrag(DragUpdateDetails details) {
@@ -166,6 +249,7 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
         );
 
         _heightAnimation = AlwaysStoppedAnimation(newHeight);
+        _publishChromeInset(newHeight);
       });
     }
   }
@@ -191,7 +275,7 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
         // Flick para baixo → retrair ou fechar
         if (_currentDetent == SheetDetent.medium &&
             widget.state.type == MapSheetType.draw) {
-          _dismissCurrentSheet();
+          _requestDismissCurrentSheet();
           return;
         }
         if (_currentDetent == SheetDetent.expanded) {
@@ -199,8 +283,7 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
         } else if (_currentDetent == SheetDetent.medium) {
           _animateToDetent(SheetDetent.compact);
         } else if (_currentDetent == SheetDetent.compact) {
-          // 🔹 FECHAMENTO REAL: Flick down no compact (ETAPA 3)
-          _dismissCurrentSheet();
+          _requestDismissCurrentSheet();
         }
       }
       return;
@@ -214,8 +297,7 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
 
     // Calcular em qual "zona" está
     if (currentHeight < closeThreshold) {
-      // 🔹 FECHAMENTO REAL: Drag abaixo do threshold (ETAPA 3)
-      _dismissCurrentSheet();
+      _requestDismissCurrentSheet();
     } else if (currentHeight < (compactHeight + mediumHeight) * 0.5) {
       _animateToDetent(SheetDetent.compact);
     } else if (currentHeight < (mediumHeight + expandedHeight) * 0.5) {
@@ -251,6 +333,93 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
 
   double _getSheetHeight() {
     return _getDetentHeight(_currentDetent);
+  }
+
+  bool _shouldShowSheetContent(double height) {
+    if (widget.state.isCreatingOccurrence) {
+      // Formulário longo: exibir conteúdo assim que passar do handle compacto.
+      return height >= _getDetentHeight(SheetDetent.compact) + 8;
+    }
+    return height > _getDetentHeight(SheetDetent.compact) + 96;
+  }
+
+  String _tabContentKey() {
+    if (widget.state.type == MapSheetType.occurrences) {
+      return 'occurrences_${widget.state.isCreatingOccurrence}';
+    }
+    return widget.state.type.name;
+  }
+
+  void _clearOccurrenceDraftAtCurrentPin() {
+    final location = widget.creationLocation;
+    if (location == null) return;
+    clearOccurrenceDraft(ref, location.latitude, location.longitude);
+  }
+
+  bool _hasValidOccurrencePin(LatLng? location) {
+    if (location == null) return false;
+    if (!location.latitude.isFinite || !location.longitude.isFinite) {
+      return false;
+    }
+    if (location.latitude < -90 || location.latitude > 90) return false;
+    if (location.longitude < -180 || location.longitude > 180) return false;
+    return location.latitude != 0 || location.longitude != 0;
+  }
+
+  Widget _buildOccurrencePinRequiredPlaceholder() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          controller: _scrollController,
+          physics: const BouncingScrollPhysics(),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(
+                    SFIcons.pinFill,
+                    size: 48,
+                    color: Color(0xFFFF9F0A),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Marque o ponto no mapa',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Toque no mapa para definir onde a ocorrência aconteceu. '
+                    'O formulário só abre depois que o ponto estiver marcado.',
+                    style: TextStyle(color: Color(0xFF8E8E93), fontSize: 14),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 24),
+                  OutlinedButton(
+                    onPressed: widget.onClose,
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.white70,
+                      side: const BorderSide(color: Colors.white24),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 14,
+                      ),
+                    ),
+                    child: const Text('Voltar ao mapa'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
   }
 
   Widget _buildTabContent() {
@@ -446,35 +615,38 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
   // Criação de ocorrência: OccurrenceCreationSheet (pin = ponto do mapa).
   Widget _buildOccurrenceForm() {
     final creationLocation = widget.creationLocation;
-    final lat = creationLocation?.latitude ?? 0;
-    final lng = creationLocation?.longitude ?? 0;
+    if (!_hasValidOccurrencePin(creationLocation)) {
+      _occurrenceFormGuard = null;
+      ref.read(occurrenceFormGuardProvider.notifier).state = null;
+      return _buildOccurrencePinRequiredPlaceholder();
+    }
+
+    _ensureOccurrenceFormGuard();
+    final lat = creationLocation!.latitude;
+    final lng = creationLocation.longitude;
 
     return OccurrenceCreationSheet(
       latitude: lat,
       longitude: lng,
       scrollController: _scrollController,
-      onCancel: () {
-        // Encerrar completamente o contexto (modo disabled) e fechar form creation
+      formGuard: _occurrenceFormGuard,
+      onCancel: () async {
+        final canClose = await OccurrenceCloseCoordinator.confirmDiscardIfDirty(
+          context,
+          guard: _occurrenceFormGuard,
+        );
+        if (!canClose || !mounted) return;
+        _clearOccurrenceDraftAtCurrentPin();
+        ref.read(occurrenceFormGuardProvider.notifier).state = null;
         widget.onClose();
       },
       onConfirm: (data) async {
-        // Blindagem: pin da ocorrência = ponto do mapa (tap), NUNCA GPS.
-        // GPS aqui causava regressão recorrente (pin na localização do usuário).
         if (!data.hasValidMapPin) {
-          if (!mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                'Ponto do mapa inválido. Toque novamente no mapa para marcar a ocorrência.',
-              ),
-              backgroundColor: PremiumTokens.alertError,
-            ),
+          throw StateError(
+            'Ponto do mapa inválido. Toque novamente no mapa para marcar a ocorrência.',
           );
-          return;
         }
 
-        // visit_session_id herdado automaticamente pelo OccurrenceController
-        // caso haja sessão de visita ativa.
         await ref
             .read(occurrenceControllerProvider)
             .createOccurrence(
@@ -501,6 +673,8 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
 
         if (!mounted) return;
 
+        clearOccurrenceDraft(ref, data.latitude, data.longitude);
+
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Ocorrência registrada com sucesso!'),
@@ -508,7 +682,6 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
           ),
         );
 
-        // Fechar o sheet após salvar
         widget.onClose();
       },
     );
@@ -528,9 +701,7 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
       child: AnimatedBuilder(
         animation: _heightAnimation,
         builder: (context, child) {
-          final showContent =
-              _heightAnimation.value >
-              (_getDetentHeight(SheetDetent.compact) + 96);
+          final showContent = _shouldShowSheetContent(_heightAnimation.value);
           return SizedBox(
             height: _heightAnimation.value,
             child: PremiumGlassPanel(
@@ -600,7 +771,7 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
                             );
                           },
                           child: Container(
-                            key: ValueKey(widget.state.type),
+                            key: ValueKey(_tabContentKey()),
                             child: _buildTabContent(),
                           ),
                         ),

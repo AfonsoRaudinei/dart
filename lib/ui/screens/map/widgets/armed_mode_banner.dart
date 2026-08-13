@@ -1,57 +1,83 @@
-// ADR-030 F2 — Widget extraído de private_map_screen.dart (B12)
-// Indicador visual efêmero: modo seleção de ponto para ocorrência.
+// Indicador visual glass: modo armado ocorrência / marketing.
+
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:soloforte_app/core/design/sf_icons.dart';
+import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
+
 import '../providers/map_armed_mode_provider.dart';
 
-/// Banner exibido quando [armedModeProvider] == [ArmedMode.occurrences].
-/// Posicionado no topo da tela, ignora ponteiro (IgnorePointer).
+/// Banner glass unificado para [ArmedMode.occurrences] e [ArmedMode.marketing].
+/// Posicionado no topo; ignora ponteiro (IgnorePointer).
 class ArmedModeBanner extends ConsumerWidget {
   const ArmedModeBanner({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final armedMode = ref.watch(armedModeProvider);
-    if (armedMode != ArmedMode.occurrences) return const SizedBox.shrink();
+    if (armedMode == ArmedMode.none) return const SizedBox.shrink();
+
+    final isOccurrence = armedMode == ArmedMode.occurrences;
+    final label = isOccurrence
+        ? 'Toque no mapa para marcar o ponto'
+        : 'Toque no mapa para localizar o case';
+    final accent = isOccurrence
+        ? const Color(0xFFFF9F0A)
+        : PremiumTokens.brandGreen;
 
     return Positioned(
       top: MediaQuery.of(context).padding.top + 8,
-      left: 0,
-      right: 0,
+      left: 16,
+      right: 16,
       child: IgnorePointer(
         child: Center(
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            decoration: BoxDecoration(
-              color: Colors.black87,
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.3),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: const Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.location_pin,
-                  color: Colors.orangeAccent,
-                  size: 16,
-                ),
-                SizedBox(width: 8),
-                Text(
-                  'Toque no mapa para marcar o ponto',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 360),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(14),
+              child: BackdropFilter(
+                filter: ui.ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 10,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.78),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.45),
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.08),
+                        blurRadius: 18,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(SFIcons.pinFill, color: accent, size: 16),
+                      const SizedBox(width: 8),
+                      Flexible(
+                        child: Text(
+                          label,
+                          style: TextStyle(
+                            color: context.premiumTextPrimary,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                            letterSpacing: -0.2,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ],
+              ),
             ),
           ),
         ),

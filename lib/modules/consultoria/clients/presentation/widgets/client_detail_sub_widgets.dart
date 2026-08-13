@@ -72,11 +72,11 @@ class _ClientActionButtonState extends State<ClientActionButton> {
               const SizedBox(height: 8),
               Text(
                 widget.label,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w500,
                   letterSpacing: 0.07,
-                  color: Colors.black87,
+                  color: context.premiumTextPrimary,
                 ),
               ),
             ],
@@ -108,13 +108,13 @@ class ClientFarmItem extends StatelessWidget {
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.all(Radius.circular(16)),
+        decoration: BoxDecoration(
+          color: context.premiumSurface,
+          borderRadius: const BorderRadius.all(Radius.circular(16)),
           boxShadow: [
             BoxShadow(
-              color: Color.fromRGBO(0, 0, 0, 0.08),
-              offset: Offset(0, 10),
+              color: Colors.black.withValues(alpha: 0.08),
+              offset: const Offset(0, 10),
               blurRadius: 32,
             ),
           ],
@@ -182,6 +182,8 @@ class ClientModalOption extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final accent = Theme.of(context).colorScheme.primary;
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -190,8 +192,9 @@ class ClientModalOption extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           decoration: BoxDecoration(
-            color: const Color(0xFFF2F2F7),
+            color: context.premiumSurface,
             borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: context.premiumHairline),
           ),
           child: Row(
             children: [
@@ -199,10 +202,10 @@ class ClientModalOption extends StatelessWidget {
                 width: 44,
                 height: 44,
                 decoration: BoxDecoration(
-                  color: PremiumTokens.brandGreen.withAlpha(26),
+                  color: accent.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(icon, color: PremiumTokens.brandGreen, size: 22),
+                child: Icon(icon, color: accent, size: 22),
               ),
               const SizedBox(width: 14),
               Expanded(
@@ -211,18 +214,18 @@ class ClientModalOption extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
-                        color: Colors.black87,
+                        color: context.premiumTextPrimary,
                       ),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       subtitle,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 13,
-                        color: Colors.black45,
+                        color: context.premiumTextSecondary,
                       ),
                     ),
                   ],
@@ -241,10 +244,10 @@ class ClientModalOption extends StatelessWidget {
   }
 }
 
-// ── Helper: modal de nova fazenda ────────────────────────────────────────
+// ── Helper: modal de adicionar talhão (desenhar / importar) ─────────────
 // Função livre para evitar dependência do state — chamada com context+client.
 
-void showNovaFazendaModal(BuildContext context, Client client) {
+void showAdicionarTalhaoModal(BuildContext context, Client client) {
   HapticFeedback.lightImpact();
   showSoloForteSheet<void>(
     context: context,
@@ -254,9 +257,9 @@ void showNovaFazendaModal(BuildContext context, Client client) {
     shape: const RoundedRectangleBorder(),
     clipBehavior: Clip.none,
     builder: (_) => Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      decoration: BoxDecoration(
+        color: context.premiumSurface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
       padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
       child: Column(
@@ -268,18 +271,22 @@ void showNovaFazendaModal(BuildContext context, Client client) {
             height: 5,
             margin: const EdgeInsets.only(bottom: 20),
             decoration: BoxDecoration(
-              color: const Color(0xFFC5C5C7),
+              color: context.premiumHairline,
               borderRadius: BorderRadius.circular(10),
             ),
           ),
-          const Text(
+          Text(
             'Adicionar Talhão',
-            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
           ),
           const SizedBox(height: 8),
-          const Text(
+          Text(
             'Como deseja criar o novo talhão?',
-            style: TextStyle(fontSize: 15, color: Colors.black54),
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: context.premiumTextSecondary,
+            ),
           ),
           const SizedBox(height: 24),
           // Opção 1: Desenhar

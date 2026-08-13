@@ -2,7 +2,6 @@
 //
 // Rota: /planos/meu-plano — exibe info do plano ativo com dias restantes.
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -10,6 +9,7 @@ import 'package:go_router/go_router.dart';
 
 import 'package:soloforte_app/core/constants/layout_constants.dart';
 import 'package:soloforte_app/core/router/app_routes.dart';
+import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 
 import '../providers/plano_providers.dart';
 import '../../domain/entities/user_plan.dart';
@@ -23,7 +23,7 @@ class MeuPlanoScreen extends ConsumerWidget {
     final planoAsync = ref.watch(planoAtivoProvider);
 
     return Scaffold(
-      backgroundColor: const Color(0xFF000000),
+      backgroundColor: context.premiumBackground,
       body: SafeArea(
         child: Column(
           children: [
@@ -31,8 +31,10 @@ class MeuPlanoScreen extends ConsumerWidget {
             Expanded(
               child: planoAsync.when(
                 data: (plano) => _PlanoAtivoContent(plano: plano),
-                loading: () => const Center(
-                  child: CircularProgressIndicator(color: Color(0xFF32D74B)),
+                loading: () => Center(
+                  child: CircularProgressIndicator(
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
                 ),
                 error: (e, _) => _ErrorContent(error: e.toString()),
               ),
@@ -44,18 +46,18 @@ class MeuPlanoScreen extends ConsumerWidget {
   }
 
   Widget _buildHeader(BuildContext context) {
-    return const Padding(
-      padding: EdgeInsets.fromLTRB(20, 16, 20, 8),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
       child: Row(
         children: [
-          SizedBox(width: 40),
+          const SizedBox(width: 40),
           Text(
             'Meu Plano',
             style: TextStyle(
               fontFamily: 'Inter',
               fontSize: 22,
               fontWeight: FontWeight.w700,
-              color: Colors.white,
+              color: context.premiumTextPrimary,
               letterSpacing: 0.37,
             ),
           ),
@@ -101,6 +103,7 @@ class _PlanoAtivoContent extends ConsumerWidget {
     final dias = plano.diasRestantes;
     final expiraEmBreve = plano.expiraEmBreve;
     final codigoAsync = ref.watch(meuCodigoIndicacaoProvider);
+    final primary = Theme.of(context).colorScheme.primary;
 
     return ListView(
       padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -157,7 +160,7 @@ class _PlanoAtivoContent extends ConsumerWidget {
                 expiraEmBreve
                     ? Icons.warning_amber_rounded
                     : Icons.calendar_today_rounded,
-                color: expiraEmBreve ? Colors.red : const Color(0xFF32D74B),
+                color: expiraEmBreve ? Colors.red : primary,
                 size: 24,
               ),
               const SizedBox(width: 16),
@@ -174,7 +177,7 @@ class _PlanoAtivoContent extends ConsumerWidget {
                       fontFamily: 'Inter',
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
-                      color: expiraEmBreve ? Colors.red : Colors.white,
+                      color: expiraEmBreve ? Colors.red : context.premiumTextPrimary,
                     ),
                   ),
                   if (!plano.isIndefinite)
@@ -212,19 +215,23 @@ class _PlanoAtivoContent extends ConsumerWidget {
         ],
         const SizedBox(height: 32),
         if (plano.plano != PlanoTipo.ouro)
-          Material(
-            color: const Color(0xFF32D74B),
-            borderRadius: BorderRadius.circular(50),
-            child: InkWell(
-              borderRadius: BorderRadius.circular(50),
-              onTap: () => _navigateToRoute(context, AppRoutes.planos),
-              child: SizedBox(
-                width: double.infinity,
-                height: 52,
-                child: Center(
+          SizedBox(
+            width: double.infinity,
+            height: 52,
+            child: GestureDetector(
+              onTap: () {
+                HapticFeedback.lightImpact();
+                context.go('/planos');
+              },
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: primary,
+                  borderRadius: BorderRadius.circular(50),
+                ),
+                child: const Center(
                   child: Text(
-                    _upgradePlanCtaLabel,
-                    style: const TextStyle(
+                    'Ver planos superiores',
+                    style: TextStyle(
                       fontFamily: 'Inter',
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
@@ -302,6 +309,7 @@ class _InfoRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final primary = Theme.of(context).colorScheme.primary;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       decoration: BoxDecoration(
@@ -310,7 +318,7 @@ class _InfoRow extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(icon, color: const Color(0xFF32D74B), size: 20),
+          Icon(icon, color: primary, size: 20),
           const SizedBox(width: 12),
           Text(
             label,
@@ -323,11 +331,11 @@ class _InfoRow extends StatelessWidget {
           const Spacer(),
           Text(
             value,
-            style: const TextStyle(
+            style: TextStyle(
               fontFamily: 'Inter',
               fontSize: 15,
               fontWeight: FontWeight.w600,
-              color: Colors.white,
+              color: context.premiumTextPrimary,
             ),
           ),
         ],
@@ -351,17 +359,21 @@ class _NavigationRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final primary = Theme.of(context).colorScheme.primary;
     return Material(
       color: const Color(0xFF1C1C1E),
       borderRadius: BorderRadius.circular(16),
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
-        onTap: () => _navigateToRoute(context, route),
+        onTap: () {
+          HapticFeedback.lightImpact();
+          context.go(route);
+        },
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
           child: Row(
             children: [
-              Icon(icon, color: const Color(0xFF32D74B), size: 22),
+              Icon(icon, color: primary, size: 22),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
@@ -375,11 +387,11 @@ class _NavigationRow extends StatelessWidget {
               ),
               Text(
                 value,
-                style: const TextStyle(
+                style: TextStyle(
                   fontFamily: 'Inter',
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
-                  color: Colors.white,
+                  color: context.premiumTextPrimary,
                 ),
               ),
               const SizedBox(width: 8),
@@ -394,19 +406,4 @@ class _NavigationRow extends StatelessWidget {
       ),
     );
   }
-}
-
-void _navigateToRoute(BuildContext context, String route) {
-  HapticFeedback.lightImpact();
-  final router = GoRouter.of(context);
-  WidgetsBinding.instance.addPostFrameCallback((_) {
-    router.go(route);
-  });
-}
-
-String get _upgradePlanCtaLabel {
-  if (defaultTargetPlatform == TargetPlatform.iOS) {
-    return 'Consultar opções de plano';
-  }
-  return 'Ver planos superiores';
 }

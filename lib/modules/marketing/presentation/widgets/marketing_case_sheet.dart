@@ -8,6 +8,7 @@ import '../../domain/entities/marketing_case.dart';
 import '../../domain/enums/case_tipo.dart';
 import '../../domain/enums/plano_marketing.dart';
 import 'comparativo_chart.dart';
+import 'marketing_case_resultado_read_only_section.dart';
 import 'marketing_case_story_entry_button.dart';
 import 'marketing_comparativo_read_only_section.dart';
 import '../../../../core/ui/sheets/sheet_tokens.dart';
@@ -26,6 +27,9 @@ class MarketingCaseSheet extends StatelessWidget {
       context: context,
       isScrollControlled: true,
       showDragHandle: false,
+      // Fundo transparente: o pane do DraggableScrollableSheet pinta só a
+      // fração visível — evita faixa preta acima do handle (padrão map sheets).
+      backgroundColor: Colors.transparent,
       builder: (_) => MarketingCaseSheet(marketingCase: marketingCase),
     );
   }
@@ -67,18 +71,10 @@ class MarketingCaseSheet extends StatelessWidget {
     return 'R\$ ${value.toStringAsFixed(2).replaceAll('.', ',')}';
   }
 
-  String _formatNumber(double value) {
-    return value.toStringAsFixed(1).replaceAll('.', ',');
-  }
-
-  String _formatSigned(double value) {
-    final formatted = _formatNumber(value);
-    return value >= 0 ? '+$formatted' : formatted;
-  }
-
   @override
   Widget build(BuildContext context) {
     return DraggableScrollableSheet(
+      expand: false,
       initialChildSize: 0.7,
       minChildSize: 0.4,
       maxChildSize: 0.95,
@@ -88,7 +84,9 @@ class MarketingCaseSheet extends StatelessWidget {
         return Container(
           decoration: const BoxDecoration(
             color: SoloForteSheetTokens.sheetBackground,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            borderRadius: BorderRadius.vertical(
+              top: Radius.circular(SoloForteSheetTokens.borderRadius),
+            ),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -247,7 +245,9 @@ class MarketingCaseSheet extends StatelessWidget {
 
                     // ── Tipo Resultado: específico ─────────────
                     if (marketingCase.tipo == CaseTipo.resultado) ...[
-                      _buildResultadoRoiSection(context),
+                      MarketingCaseResultadoReadOnlySection(
+                        marketingCase: marketingCase,
+                      ),
                     ],
 
                     // ── Tipo Antes/Depois ──────────────────────
@@ -397,20 +397,20 @@ class MarketingCaseSheet extends StatelessWidget {
                     Icon(item.icon, color: item.color, size: 20),
                     const SizedBox(height: 8),
                     Text(
+                      item.label,
+                      style: TextStyle(
+                        color: item.color.withValues(alpha: 0.85),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
                       item.value,
                       style: TextStyle(
                         color: item.color,
                         fontWeight: FontWeight.w800,
                         fontSize: 16,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      item.label,
-                      style: TextStyle(
-                        color: item.color.withValues(alpha: 0.7),
-                        fontSize: 10,
-                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ],
@@ -419,97 +419,6 @@ class MarketingCaseSheet extends StatelessWidget {
             ),
           )
           .toList(),
-    );
-  }
-
-  Widget _buildResultadoRoiSection(BuildContext context) {
-    final roi = marketingCase.computeRoi();
-    if (roi == null) return const SizedBox.shrink();
-    final input = roi.input;
-
-    return Container(
-      margin: const EdgeInsets.only(top: 4),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: SoloForteSheetTokens.inputBackground,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: PremiumTokens.hairlineLight),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'PRODUTIVIDADE',
-            style: TextStyle(
-              color: SoloForteSheetTokens.inputHint,
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 10),
-          Text(
-            'Testemunha: ${_formatNumber(input.prodSemProduto)} ${input.unidadeProdutividade}   →   Com produto: ${_formatNumber(input.prodComProduto)} ${input.unidadeProdutividade}',
-            style: const TextStyle(
-              color: SoloForteSheetTokens.inputText,
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            'Ganho: ${_formatSigned(roi.ganhoScHa)} ${input.unidadeProdutividade}',
-            style: const TextStyle(
-              fontSize: 14,
-              color: PremiumTokens.brandGreen,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 16),
-          const Text(
-            'ROI / RETORNO',
-            style: TextStyle(
-              color: SoloForteSheetTokens.inputHint,
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 10),
-          Text(
-            'Custo do produto: ${_formatMoney(input.custoProdutoPorHa)}/ha',
-            style: const TextStyle(
-              color: SoloForteSheetTokens.inputText,
-              fontSize: 13,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'Valor do grão: ${_formatMoney(input.valorGrao)}/sc',
-            style: const TextStyle(
-              color: SoloForteSheetTokens.inputText,
-              fontSize: 13,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'ROI líquido: ${_formatMoney(roi.roiLiquidoRsHa)}/ha (${_formatNumber(roi.roiEmSacasHa)} sc/ha)',
-            style: const TextStyle(
-              color: SoloForteSheetTokens.inputText,
-              fontSize: 14,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          if (roi.roiSacasTalhao != null && roi.roiReaisTalhao != null) ...[
-            const SizedBox(height: 8),
-            Text(
-              'No talhão (${marketingCase.tamanhoHa!.toStringAsFixed(1)} ha): ${_formatNumber(roi.roiSacasTalhao!)} sc · ${_formatMoney(roi.roiReaisTalhao!)}',
-              style: const TextStyle(
-                color: SoloForteSheetTokens.inputText,
-                fontSize: 13,
-              ),
-            ),
-          ],
-        ],
-      ),
     );
   }
 

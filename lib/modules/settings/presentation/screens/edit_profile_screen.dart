@@ -17,6 +17,7 @@ import '../../../../core/session/user_role.dart';
 import '../../domain/entities/user_profile.dart';
 import '../providers/user_profile_provider.dart';
 import 'package:soloforte_app/core/utils/user_facing_error.dart';
+import '../../../../ui/theme/premium/design_tokens.dart';
 
 class EditProfileScreen extends ConsumerWidget {
   const EditProfileScreen({super.key});
@@ -37,7 +38,6 @@ class EditProfileScreen extends ConsumerWidget {
           children: [
             const Text(
               'Não foi possível carregar o perfil.',
-              style: TextStyle(color: Colors.white),
             ),
             const SizedBox(height: 16),
             OutlinedButton(
@@ -52,7 +52,6 @@ class EditProfileScreen extends ConsumerWidget {
               context,
               child: const Text(
                 'Usuário não autenticado.',
-                style: TextStyle(color: Colors.white),
               ),
             )
           : _EditProfileForm(
@@ -66,18 +65,20 @@ class EditProfileScreen extends ConsumerWidget {
     BuildContext context, {
     required Widget child,
   }) {
-    const bgColor = Color(0xFF1C1C1E);
     return Scaffold(
-      backgroundColor: bgColor,
+      backgroundColor: context.premiumBackground,
       appBar: AppBar(
-        backgroundColor: bgColor,
+        backgroundColor: context.premiumBackground,
         surfaceTintColor: Colors.transparent,
-        title: const Text(
+        title: Text(
           'Editar Perfil',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+          style: TextStyle(
+            color: context.premiumTextPrimary,
+            fontWeight: FontWeight.w600,
+          ),
         ),
         leading: IconButton(
-          icon: const Icon(Icons.close, color: Colors.white),
+          icon: Icon(Icons.close, color: context.premiumTextPrimary),
           onPressed: () => context.go(AppRoutes.settings),
         ),
       ),
@@ -96,10 +97,6 @@ class _EditProfileForm extends ConsumerStatefulWidget {
 }
 
 class _EditProfileFormState extends ConsumerState<_EditProfileForm> {
-  static const _inputFillColor = Colors.white;
-  static const _inputTextColor = Color(0xFF1C1C1E);
-  static const _inputBorderColor = Color(0xFFE5E5EA);
-
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _fullNameCtrl;
   late final TextEditingController _phoneCtrl;
@@ -203,10 +200,12 @@ class _EditProfileFormState extends ConsumerState<_EditProfileForm> {
 
   @override
   Widget build(BuildContext context) {
-    const bgColor = Color(0xFF1C1C1E);
-    const cardColor = Color(0xFF2C2C2E);
-    const hintColor = Color(0xFF8E8E93);
-    const amberColor = Color(0xFFF59E0B);
+    final theme = Theme.of(context);
+    final bgColor = context.premiumBackground;
+    final cardColor = context.premiumSurface;
+    final hintColor = context.premiumTextSecondary;
+    final dividerColor = context.premiumHairline;
+    final accentColor = theme.colorScheme.primary;
     final profile = widget.initialProfile;
     final role = profile.role.toUserRole();
     final canEditProfessionalId = role.isConsultor;
@@ -220,25 +219,28 @@ class _EditProfileFormState extends ConsumerState<_EditProfileForm> {
       appBar: AppBar(
         backgroundColor: bgColor,
         surfaceTintColor: Colors.transparent,
-        title: const Text(
+        title: Text(
           'Editar Perfil',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+          style: TextStyle(
+            color: context.premiumTextPrimary,
+            fontWeight: FontWeight.w600,
+          ),
         ),
         leading: IconButton(
-          icon: const Icon(Icons.close, color: Colors.white),
+          icon: Icon(Icons.close, color: context.premiumTextPrimary),
           onPressed: _saving ? null : () => context.go(AppRoutes.settings),
         ),
         actions: [
           if (_saving)
-            const Padding(
-              padding: EdgeInsets.only(right: 16),
+            Padding(
+              padding: const EdgeInsets.only(right: 16),
               child: Center(
                 child: SizedBox(
                   width: 20,
                   height: 20,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    color: amberColor,
+                    color: accentColor,
                   ),
                 ),
               ),
@@ -246,10 +248,10 @@ class _EditProfileFormState extends ConsumerState<_EditProfileForm> {
           else
             TextButton(
               onPressed: _save,
-              child: const Text(
+              child: Text(
                 'Salvar',
                 style: TextStyle(
-                  color: amberColor,
+                  color: accentColor,
                   fontWeight: FontWeight.w600,
                   fontSize: 16,
                 ),
@@ -262,28 +264,28 @@ class _EditProfileFormState extends ConsumerState<_EditProfileForm> {
         child: ListView(
           padding: const EdgeInsets.symmetric(vertical: 16),
           children: [
-            // ── Somente leitura ──────────────────────────────
             _sectionHeader('INFORMAÇÕES DA CONTA', hintColor),
             _card(cardColor, [
               _readonlyRow('E-mail', profile.email, hintColor),
-              const Divider(height: 1, color: Color(0xFF3A3A3C)),
+              Divider(height: 1, color: dividerColor),
               _readonlyRow('Perfil', role.label, hintColor),
-              const Divider(height: 1, color: Color(0xFF3A3A3C)),
+              Divider(height: 1, color: dividerColor),
               _readonlyRow('Cadastrado em', createdAtStr, hintColor),
             ]),
 
-            // ── Editáveis ────────────────────────────────────
             _sectionHeader('DADOS EDITÁVEIS', hintColor),
             _card(cardColor, [
               _editableField(
+                context: context,
                 controller: _fullNameCtrl,
                 label: 'Nome completo',
                 hint: 'Seu nome',
                 hintColor: hintColor,
                 enabled: !_saving,
               ),
-              const Divider(height: 1, color: Color(0xFF3A3A3C)),
+              Divider(height: 1, color: dividerColor),
               _editableField(
+                context: context,
                 controller: _phoneCtrl,
                 label: 'Telefone',
                 hint: '(00) 00000-0000',
@@ -291,9 +293,10 @@ class _EditProfileFormState extends ConsumerState<_EditProfileForm> {
                 keyboardType: TextInputType.phone,
                 enabled: !_saving,
               ),
-              const Divider(height: 1, color: Color(0xFF3A3A3C)),
+              Divider(height: 1, color: dividerColor),
               if (canEditProfessionalId) ...[
                 _editableField(
+                  context: context,
                   controller: _creaCtrl,
                   label: 'CREA / CFT',
                   hint: 'Número do registro',
@@ -301,8 +304,8 @@ class _EditProfileFormState extends ConsumerState<_EditProfileForm> {
                   enabled: !_saving,
                 ),
               ] else ...[
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                   child: Text(
                     'Dados profissionais adicionais disponíveis apenas para consultor.',
                     style: TextStyle(
@@ -355,7 +358,7 @@ class _EditProfileFormState extends ConsumerState<_EditProfileForm> {
         Expanded(
           child: Text(
             value,
-            style: const TextStyle(color: Color(0xFF8E8E93), fontSize: 14),
+            style: TextStyle(color: hintColor, fontSize: 14),
           ),
         ),
       ],
@@ -363,64 +366,72 @@ class _EditProfileFormState extends ConsumerState<_EditProfileForm> {
   );
 
   Widget _editableField({
+    required BuildContext context,
     required TextEditingController controller,
     required String label,
     required String hint,
     required Color hintColor,
     TextInputType keyboardType = TextInputType.text,
     bool enabled = true,
-  }) => Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-    child: Row(
-      children: [
-        SizedBox(
-          width: 110,
-          child: Text(label, style: TextStyle(color: hintColor, fontSize: 14)),
-        ),
-        Expanded(
-          child: TextFormField(
-            controller: controller,
-            enabled: enabled,
-            keyboardType: keyboardType,
-            style: const TextStyle(color: _inputTextColor, fontSize: 14),
-            decoration: InputDecoration(
-              hintText: hint,
-              hintStyle: const TextStyle(
-                color: Color(0xFF636366),
-                fontSize: 14,
-              ),
-              filled: true,
-              fillColor: enabled
-                  ? _inputFillColor
-                  : _inputFillColor.withValues(alpha: 0.72),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(14),
-                borderSide: const BorderSide(color: _inputBorderColor),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(14),
-                borderSide: const BorderSide(color: _inputBorderColor),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(14),
-                borderSide: const BorderSide(
-                  color: Color(0xFF0A84FF),
-                  width: 2,
+  }) {
+    final theme = Theme.of(context);
+    final fillColor = context.premiumSurface;
+    final borderColor = context.premiumHairline;
+    final textColor = context.premiumTextPrimary;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 110,
+            child: Text(label, style: TextStyle(color: hintColor, fontSize: 14)),
+          ),
+          Expanded(
+            child: TextFormField(
+              controller: controller,
+              enabled: enabled,
+              keyboardType: keyboardType,
+              style: TextStyle(color: textColor, fontSize: 14),
+              decoration: InputDecoration(
+                hintText: hint,
+                hintStyle: TextStyle(
+                  color: context.premiumTextTertiary,
+                  fontSize: 14,
                 ),
-              ),
-              disabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(14),
-                borderSide: const BorderSide(color: _inputBorderColor),
-              ),
-              isDense: true,
-              contentPadding: const EdgeInsets.symmetric(
-                vertical: 14,
-                horizontal: 16,
+                filled: true,
+                fillColor: enabled
+                    ? fillColor
+                    : fillColor.withValues(alpha: 0.72),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide(color: borderColor),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide(color: borderColor),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide(
+                    color: theme.colorScheme.primary,
+                    width: 2,
+                  ),
+                ),
+                disabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide(color: borderColor),
+                ),
+                isDense: true,
+                contentPadding: const EdgeInsets.symmetric(
+                  vertical: 14,
+                  horizontal: 16,
+                ),
               ),
             ),
           ),
-        ),
-      ],
-    ),
-  );
+        ],
+      ),
+    );
+  }
 }

@@ -131,7 +131,9 @@ class CarteiraRepositoryImpl implements ICarteiraRepository {
       orderBy: 'ordem DESC',
       limit: 1,
     );
-    final nextOrdem = tipos.isEmpty ? 0 : ((tipos.first['ordem'] as int?) ?? 0) + 1;
+    final nextOrdem = tipos.isEmpty
+        ? 0
+        : ((tipos.first['ordem'] as int?) ?? 0) + 1;
 
     final now = DateTime.now();
     final tipo = CarteiraTipoProduto(
@@ -437,10 +439,21 @@ class CarteiraRepositoryImpl implements ICarteiraRepository {
 
   @override
   Future<void> saveLancamento(CarteiraLancamento lancamento) async {
+    final regraErro = CarteiraLancamento.validarRegrasFechamento(
+      closedPercent: lancamento.closedPercent,
+      tipoFechamento: lancamento.tipoFechamento,
+    );
+    if (regraErro != null) {
+      throw ArgumentError(regraErro);
+    }
+
+    final sanitizado = CarteiraLancamento.sanitizarCamposConcorrente(
+      lancamento,
+    );
     final db = await _dbHelper.database;
     await db.insert(
       'carteira_lancamentos',
-      lancamento.toMap(),
+      sanitizado.toMap(),
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
   }
@@ -491,6 +504,23 @@ class CarteiraRepositoryImpl implements ICarteiraRepository {
       [clienteId, categoriaId, safraId, userId],
     );
     return (result.first['total'] as num?)?.toDouble() ?? 0.0;
+  }
+
+  @override
+  Future<double> getClosedPercentByClienteCategoria(
+    String clienteId,
+    String categoriaId,
+    String userId,
+  ) async {
+    final db = await _dbHelper.database;
+    final result = await db.rawQuery(
+      'SELECT COALESCE(SUM(closed_percent), 0.0) AS total '
+      'FROM carteira_lancamentos '
+      'WHERE cliente_id = ? AND categoria_id = ? AND user_id = ?',
+      [clienteId, categoriaId, userId],
+    );
+    final total = (result.first['total'] as num?)?.toDouble() ?? 0.0;
+    return total.clamp(0.0, 100.0);
   }
 
   Map<String, Object?> _categoriaToMap(CategoriaGlobal categoria) {

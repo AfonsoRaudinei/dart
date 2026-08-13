@@ -15,7 +15,15 @@ import 'package:soloforte_app/modules/carteira/domain/entities/carteira_safra.da
 import 'package:soloforte_app/modules/carteira/domain/entities/carteira_tipo_produto.dart';
 import 'package:soloforte_app/modules/carteira/domain/entities/categoria_global.dart';
 import 'package:soloforte_app/modules/carteira/domain/entities/cliente_categoria.dart';
+import 'package:soloforte_app/modules/carteira/domain/oportunidades_aggregation.dart';
 import 'package:soloforte_app/modules/carteira/domain/repositories/i_carteira_repository.dart';
+import 'package:soloforte_app/modules/carteira/presentation/widgets/carteira_segment_bar.dart';
+import 'package:soloforte_app/modules/carteira/presentation/widgets/oportunidades_chart_mode_toggle.dart';
+
+/// Segmento ativo do módulo Carteira — persiste entre telas do bounded context.
+final carteiraSegmentProvider = StateProvider<CarteiraSegment>(
+  (ref) => CarteiraSegment.clientes,
+);
 
 final carteiraRepositoryProvider = Provider<ICarteiraRepository>((ref) {
   return CarteiraRepositoryImpl();
@@ -34,6 +42,99 @@ final clientOpportunitiesProvider = FutureProvider.autoDispose
     .family<List<OpportunitySummary>, String>((ref, clientId) async {
       final lookup = ref.watch(opportunityLookupProvider);
       return lookup.getOpenOpportunities(clientId);
+    });
+
+/// Modo do gráfico na aba Oportunidades (só UI — não altera cálculos ADR-029).
+final oportunidadesChartModeProvider = StateProvider<OportunidadesChartMode>(
+  (ref) => OportunidadesChartMode.categoria,
+);
+
+/// Resumo da carteira: oportunidades por cliente (lookup ADR-029 sem mudança de fórmula).
+class OportunidadesClienteResumo {
+  const OportunidadesClienteResumo({
+    required this.cliente,
+    required this.oportunidades,
+    required this.totalValue,
+    required this.colorArgb,
+  });
+
+  final ClientSummary cliente;
+  final List<OpportunitySummary> oportunidades;
+  final double totalValue;
+  final int colorArgb;
+}
+
+class OportunidadesCarteiraOverview {
+  const OportunidadesCarteiraOverview({
+    required this.porCliente,
+    required this.allOpportunities,
+  });
+
+  final List<OportunidadesClienteResumo> porCliente;
+  final List<OpportunitySummary> allOpportunities;
+
+  double get totalValue => sumOpportunityValues(allOpportunities);
+
+  List<OpportunityChartSlice> slicesFor(OportunidadesChartMode mode) {
+    return switch (mode) {
+      OportunidadesChartMode.categoria => aggregateOpportunitiesByCategory(
+        allOpportunities,
+      ),
+      OportunidadesChartMode.produtor => aggregateOpportunitiesByProducer(
+        porCliente.map(
+          (r) => (
+            clientId: r.cliente.id,
+            clientName: r.cliente.name,
+            colorArgb: r.colorArgb,
+            total: r.totalValue,
+          ),
+        ),
+      ),
+    };
+  }
+}
+
+const _kProducerPalette = <int>[
+  0xFFE53935,
+  0xFF43A047,
+  0xFF1E88E5,
+  0xFFFB8C00,
+  0xFF8E24AA,
+  0xFF00897B,
+  0xFF6D4C41,
+  0xFF546E7A,
+];
+
+final oportunidadesCarteiraOverviewProvider =
+    FutureProvider.autoDispose<OportunidadesCarteiraOverview>((ref) async {
+      final clients = await ref.watch(carteiraClientesProvider.future);
+      final lookup = ref.watch(opportunityLookupProvider);
+
+      final porCliente = <OportunidadesClienteResumo>[];
+      final all = <OpportunitySummary>[];
+
+      for (var i = 0; i < clients.length; i++) {
+        final cliente = clients[i];
+        final ops = await lookup.getOpenOpportunities(cliente.id);
+        if (ops.isEmpty) continue;
+        final total = sumOpportunityValues(ops);
+        final color = _kProducerPalette[i % _kProducerPalette.length];
+        porCliente.add(
+          OportunidadesClienteResumo(
+            cliente: cliente,
+            oportunidades: ops,
+            totalValue: total,
+            colorArgb: color,
+          ),
+        );
+        all.addAll(ops);
+      }
+
+      porCliente.sort((a, b) => b.totalValue.compareTo(a.totalValue));
+      return OportunidadesCarteiraOverview(
+        porCliente: porCliente,
+        allOpportunities: all,
+      );
     });
 
 final categoriasGlobaisProvider = FutureProvider.autoDispose
@@ -185,6 +286,22 @@ final realizadoClienteCategoriaProvider = FutureProvider.autoDispose
         args.clienteId,
         args.categoriaId,
         safra.id,
+        userId,
+      );
+    });
+
+/// Percentual fechado por cliente+categoria (ADR-029 — soma closed_percent).
+final closedPercentClienteCategoriaProvider = FutureProvider.autoDispose
+    .family<double, ({String clienteId, String categoriaId})>((
+      ref,
+      args,
+    ) async {
+      final userId = _currentUserId(ref);
+      if (userId.isEmpty) return 0.0;
+      final repo = ref.watch(carteiraRepositoryProvider);
+      return repo.getClosedPercentByClienteCategoria(
+        args.clienteId,
+        args.categoriaId,
         userId,
       );
     });

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'relatorio_html_renderer.dart';
 
@@ -6,20 +7,26 @@ class MarketingHtmlRenderer {
   /// Renderiza o HTML correto para o tipo do case.
   ///
   /// [data] = MarketingCase.toMap()/toJson() convertido pelo chamador.
-  static Future<String> render(Map<String, dynamic> data) async {
+  static Future<String> render(
+    Map<String, dynamic> data, {
+    Future<Uint8List?> Function(String url)? fetchRemoteBytes,
+  }) async {
     switch (data['tipo'] as String? ?? 'resultado') {
       case 'resultado':
-        return _renderResultado(data);
+        return _renderResultado(data, fetchRemoteBytes: fetchRemoteBytes);
       case 'antes_depois':
-        return _renderAntesDepois(data);
+        return _renderAntesDepois(data, fetchRemoteBytes: fetchRemoteBytes);
       case 'avaliacao':
-        return _renderAvaliacao(data);
+        return _renderAvaliacao(data, fetchRemoteBytes: fetchRemoteBytes);
       default:
-        return _renderResultado(data);
+        return _renderResultado(data, fetchRemoteBytes: fetchRemoteBytes);
     }
   }
 
-  static Future<String> _renderResultado(Map<String, dynamic> data) async {
+  static Future<String> _renderResultado(
+    Map<String, dynamic> data, {
+    Future<Uint8List?> Function(String url)? fetchRemoteBytes,
+  }) async {
     var tpl = await RelatorioHtmlRenderer.loadTemplate(
       'marketing_resultado.html',
     );
@@ -30,7 +37,10 @@ class MarketingHtmlRenderer {
       consultantRole: 'Consultoria',
     );
     final fotoPrincipalUrl = data['foto_principal_url'] as String?;
-    final foto = await RelatorioHtmlRenderer.resolvePhotoSrc(fotoPrincipalUrl);
+    final foto = await RelatorioHtmlRenderer.resolvePhotoSrcForExport(
+      fotoPrincipalUrl,
+      fetchRemoteBytes: fetchRemoteBytes,
+    );
 
     final roi = _MarketingRoiData.from(data);
     tpl = _resolveAllIfBlocks(tpl, 'roi_agronomico', include: roi != null);
@@ -114,7 +124,10 @@ class MarketingHtmlRenderer {
     return RelatorioHtmlRenderer.stripUnresolvedPlaceholders(html);
   }
 
-  static Future<String> _renderAntesDepois(Map<String, dynamic> data) async {
+  static Future<String> _renderAntesDepois(
+    Map<String, dynamic> data, {
+    Future<Uint8List?> Function(String url)? fetchRemoteBytes,
+  }) async {
     var tpl = await RelatorioHtmlRenderer.loadTemplate(
       'marketing_antes_depois.html',
     );
@@ -163,11 +176,13 @@ class MarketingHtmlRenderer {
               data['produtividade_valor'] != null),
     );
 
-    final fotoAntes = await RelatorioHtmlRenderer.resolvePhotoSrc(
+    final fotoAntes = await RelatorioHtmlRenderer.resolvePhotoSrcForExport(
       data['foto_antes_url'] as String?,
+      fetchRemoteBytes: fetchRemoteBytes,
     );
-    final fotoDepois = await RelatorioHtmlRenderer.resolvePhotoSrc(
+    final fotoDepois = await RelatorioHtmlRenderer.resolvePhotoSrcForExport(
       data['foto_depois_url'] as String?,
+      fetchRemoteBytes: fetchRemoteBytes,
     );
     tpl = _resolveAllIfBlocks(
       tpl,
@@ -223,7 +238,10 @@ class MarketingHtmlRenderer {
     return RelatorioHtmlRenderer.stripUnresolvedPlaceholders(html);
   }
 
-  static Future<String> _renderAvaliacao(Map<String, dynamic> data) async {
+  static Future<String> _renderAvaliacao(
+    Map<String, dynamic> data, {
+    Future<Uint8List?> Function(String url)? fetchRemoteBytes,
+  }) async {
     var tpl = await RelatorioHtmlRenderer.loadTemplate(
       'marketing_avaliacao.html',
     );
@@ -297,7 +315,11 @@ class MarketingHtmlRenderer {
     if (avaliacoesLivres.isNotEmpty) {
       for (var index = 0; index < avaliacoesLivres.length; index++) {
         blocosHtml.write(
-          _renderAvaliacaoLivre(avaliacoesLivres[index], index + 1),
+          await _renderAvaliacaoLivre(
+            avaliacoesLivres[index],
+            index + 1,
+            fetchRemoteBytes: fetchRemoteBytes,
+          ),
         );
       }
     } else {
@@ -305,10 +327,20 @@ class MarketingHtmlRenderer {
       for (var index = 0; index < blocos.length; index++) {
         final bloco = blocos[index];
         if (bloco is Map<String, dynamic>) {
-          blocosHtml.write(_renderAvaliacaoBloco(bloco, index + 1));
+          blocosHtml.write(
+            await _renderAvaliacaoBloco(
+              bloco,
+              index + 1,
+              fetchRemoteBytes: fetchRemoteBytes,
+            ),
+          );
         } else if (bloco is Map) {
           blocosHtml.write(
-            _renderAvaliacaoBloco(Map<String, dynamic>.from(bloco), index + 1),
+            await _renderAvaliacaoBloco(
+              Map<String, dynamic>.from(bloco),
+              index + 1,
+              fetchRemoteBytes: fetchRemoteBytes,
+            ),
           );
         }
       }
@@ -323,7 +355,11 @@ class MarketingHtmlRenderer {
     return RelatorioHtmlRenderer.stripUnresolvedPlaceholders(tpl);
   }
 
-  static String _renderAvaliacaoLivre(_MarketingAvaliacaoData data, int ordem) {
+  static Future<String> _renderAvaliacaoLivre(
+    _MarketingAvaliacaoData data,
+    int ordem, {
+    Future<Uint8List?> Function(String url)? fetchRemoteBytes,
+  }) async {
     final parametrosHtml = data.parametros.map((parametro) {
       final unidade = parametro.unidade == null || parametro.unidade!.isEmpty
           ? ''
@@ -355,8 +391,8 @@ class MarketingHtmlRenderer {
         <span class="avaliacao-layout-tag">Média ${_formatSigned(data.mediaGanhoPercent)}%</span>
       </div>
       <div class="lados-grid">
-        ${_renderLado('a', data.nomeLadoA, data.fotoLadoAPath, data.cultura, null)}
-        ${_renderLado('b', data.nomeLadoB, data.fotoLadoBPath, data.cultura, data.observacoes)}
+        ${await _renderLado('a', data.nomeLadoA, data.fotoLadoAPath, data.cultura, null, fetchRemoteBytes: fetchRemoteBytes)}
+        ${await _renderLado('b', data.nomeLadoB, data.fotoLadoBPath, data.cultura, data.observacoes, fetchRemoteBytes: fetchRemoteBytes)}
       </div>
       <div style="padding: 0 16px 16px;">
         $parametrosHtml
@@ -365,7 +401,11 @@ class MarketingHtmlRenderer {
     ''';
   }
 
-  static String _renderAvaliacaoBloco(Map<String, dynamic> data, int ordem) {
+  static Future<String> _renderAvaliacaoBloco(
+    Map<String, dynamic> data,
+    int ordem, {
+    Future<Uint8List?> Function(String url)? fetchRemoteBytes,
+  }) async {
     final isDuas = (data['layout'] as String? ?? 'duas_fotos') == 'duas_fotos';
     return '''
     <div class="avaliacao-block">
@@ -377,22 +417,29 @@ class MarketingHtmlRenderer {
         <span class="avaliacao-layout-tag">${isDuas ? 'Lado A vs Lado B' : 'Foto Única'}</span>
       </div>
       <div class="lados-grid${isDuas ? '' : ' uma-foto'}">
-        ${_renderLado('a', data['lado_a_label'] as String?, data['lado_a_foto_url'] as String?, data['lado_a_cultura'] as String?, data['lado_a_obs'] as String?)}
-        ${isDuas ? _renderLado('b', data['lado_b_label'] as String?, data['lado_b_foto_url'] as String?, data['lado_b_cultura'] as String?, data['lado_b_obs'] as String?) : ''}
+        ${await _renderLado('a', data['lado_a_label'] as String?, data['lado_a_foto_url'] as String?, data['lado_a_cultura'] as String?, data['lado_a_obs'] as String?, fetchRemoteBytes: fetchRemoteBytes)}
+        ${isDuas ? await _renderLado('b', data['lado_b_label'] as String?, data['lado_b_foto_url'] as String?, data['lado_b_cultura'] as String?, data['lado_b_obs'] as String?, fetchRemoteBytes: fetchRemoteBytes) : ''}
       </div>
     </div>
     ''';
   }
 
-  static String _renderLado(
+  static Future<String> _renderLado(
     String lado,
     String? label,
     String? fotoUrl,
     String? cultura,
-    String? obs,
-  ) {
-    final fotoHtml = (fotoUrl != null && fotoUrl.isNotEmpty)
-        ? '<img src="$fotoUrl" alt="Lado ${lado.toUpperCase()}" loading="lazy">'
+    String? obs, {
+    Future<Uint8List?> Function(String url)? fetchRemoteBytes,
+  }) async {
+    final resolvedFoto = fotoUrl != null && fotoUrl.isNotEmpty
+        ? await RelatorioHtmlRenderer.resolvePhotoSrcForExport(
+            fotoUrl,
+            fetchRemoteBytes: fetchRemoteBytes,
+          )
+        : '';
+    final fotoHtml = resolvedFoto.isNotEmpty
+        ? '<img src="$resolvedFoto" alt="Lado ${lado.toUpperCase()}" loading="lazy">'
         : '<div class="lado-foto-placeholder"><span>Sem foto</span></div>';
 
     return '''

@@ -8,13 +8,15 @@ import 'package:soloforte_app/modules/clima/presentation/widgets/clima_tokens.da
 
 // ─── Constantes internas ──────────────────────────────────────────────────────
 
-const _kTintRGBO = Color.fromRGBO(52, 199, 89, 1.0);
-
-BoxDecoration _chartCard() => BoxDecoration(
-      color: kClimaCard,
+BoxDecoration _chartCard(BuildContext context) => BoxDecoration(
+      color: context.climaCard,
       borderRadius: BorderRadius.circular(20),
-      boxShadow: const [
-        BoxShadow(color: kClimaShadow, offset: Offset(0, 8), blurRadius: 24),
+      boxShadow: [
+        BoxShadow(
+          color: context.climaShadow,
+          offset: const Offset(0, 8),
+          blurRadius: 24,
+        ),
       ],
     );
 
@@ -44,22 +46,24 @@ class ClimaTemperatureLineChart extends StatelessWidget {
     final minY = temps.reduce(math.min) - 3;
     final maxY = temps.reduce(math.max) + 3;
 
+    final accent = context.climaTint;
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
       child: Container(
         height: 162,
         padding: const EdgeInsets.fromLTRB(12, 14, 16, 8),
-        decoration: _chartCard(),
+        decoration: _chartCard(context),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               '🌡️  Temperatura (${unidade == ClimaUnidade.celsius ? '°C' : '°F'})',
-              style: const TextStyle(
+              style: TextStyle(
                 fontFamily: 'Inter',
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
-                color: kClimaTextSecondary,
+                color: context.climaTextSecondary,
               ),
             ),
             const SizedBox(height: 4),
@@ -92,10 +96,10 @@ class ClimaTemperatureLineChart extends StatelessWidget {
                           }
                           return Text(
                             '${previsoes[i].hora.hour}h',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontFamily: 'Inter',
                               fontSize: 10,
-                              color: kClimaTextTertiary,
+                              color: context.climaTextTertiary,
                             ),
                           );
                         },
@@ -107,15 +111,15 @@ class ClimaTemperatureLineChart extends StatelessWidget {
                       spots: spots,
                       isCurved: true,
                       curveSmoothness: 0.35,
-                      color: _kTintRGBO,
+                      color: accent,
                       barWidth: 2.5,
                       dotData: const FlDotData(show: false),
                       belowBarData: BarAreaData(
                         show: true,
-                        gradient: const LinearGradient(
+                        gradient: LinearGradient(
                           colors: [
-                            Color.fromRGBO(52, 199, 89, 0.18),
-                            Color.fromRGBO(52, 199, 89, 0.0),
+                            accent.withValues(alpha: 0.18),
+                            accent.withValues(alpha: 0.0),
                           ],
                           begin: Alignment.topCenter,
                           end: Alignment.bottomCenter,
@@ -145,6 +149,8 @@ class ClimaPrecipitacaoBarChart extends StatelessWidget {
   Widget build(BuildContext context) {
     if (previsoes.isEmpty) return const SizedBox.shrink();
 
+    final accent = context.climaTint;
+
     final barGroups = List.generate(
       previsoes.length,
       (i) => BarChartGroupData(
@@ -152,7 +158,7 @@ class ClimaPrecipitacaoBarChart extends StatelessWidget {
         barRods: [
           BarChartRodData(
             toY: previsoes[i].probabilidadeChuva.toDouble(),
-            color: const Color.fromRGBO(52, 199, 89, 0.72),
+            color: accent.withValues(alpha: 0.72),
             width: _barWidth(previsoes.length),
             borderRadius: const BorderRadius.vertical(
               top: Radius.circular(3),
@@ -167,17 +173,17 @@ class ClimaPrecipitacaoBarChart extends StatelessWidget {
       child: Container(
         height: 132,
         padding: const EdgeInsets.fromLTRB(12, 14, 16, 8),
-        decoration: _chartCard(),
+        decoration: _chartCard(context),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               '☔  Prob. de Chuva (%)',
               style: TextStyle(
                 fontFamily: 'Inter',
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
-                color: kClimaTextSecondary,
+                color: context.climaTextSecondary,
               ),
             ),
             const SizedBox(height: 4),
@@ -211,10 +217,10 @@ class ClimaPrecipitacaoBarChart extends StatelessWidget {
                           }
                           return Text(
                             '${previsoes[i].hora.hour}h',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontFamily: 'Inter',
                               fontSize: 10,
-                              color: kClimaTextTertiary,
+                              color: context.climaTextTertiary,
                             ),
                           );
                         },

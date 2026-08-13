@@ -339,7 +339,17 @@ class MarketingCaseRepositoryImpl implements IMarketingCaseRepository {
     });
 
     await saveSingleToCache(pendingCase);
-    await saveCase(pendingCase);
+
+    try {
+      await saveCase(pendingCase);
+    } catch (e, st) {
+      AppLogger.error(
+        'Falha ao sincronizar update de MarketingCase; mantendo local',
+        tag: 'MarketingRepo',
+        error: e,
+        stackTrace: st,
+      );
+    }
   }
 
   @override

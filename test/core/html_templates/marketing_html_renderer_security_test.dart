@@ -38,6 +38,7 @@ void main() {
   });
 
   test('marketing antes/depois nao inclui onerror nem URL maliciosa', () async {
+    const remoteUrl = 'https://cdn.test/depois.jpg';
     final html = await MarketingHtmlRenderer.render({
       'tipo': 'antes_depois',
       'produtor_fazenda': 'Cliente',
@@ -45,16 +46,16 @@ void main() {
       'localizacao_texto': 'Palmas',
       'visibilidade': 'publico',
       'foto_antes_url': '"><img src=x onerror=alert(1)>',
-      'foto_depois_url': 'https://cdn.test/depois.jpg',
+      'foto_depois_url': remoteUrl,
       'descricao': 'Teste',
       'nome_vendedor': 'Vendedor',
       'criado_em': '2026-06-03T12:00:00.000Z',
       'status': 'publicado',
-    });
+    }, fetchRemoteBytes: (_) async => null);
 
     expect(html, isNot(contains('onerror=')));
     expect(html, contains('Sem foto'));
     expect(html, contains('photo-label antes'));
-    expect(html, contains('https://cdn.test/depois.jpg'));
+    expect(html, contains(remoteUrl));
   });
 }

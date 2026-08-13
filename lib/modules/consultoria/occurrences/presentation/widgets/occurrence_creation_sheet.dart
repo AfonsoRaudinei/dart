@@ -1,4 +1,5 @@
 // ignore_for_file: use_build_context_synchronously
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
@@ -19,20 +20,26 @@ import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 
 import '../../domain/occurrence.dart';
 import '../../../relatorio_visita/data/image_storage_service.dart';
+import '../coordinators/occurrence_form_guard.dart';
+import '../providers/occurrence_draft_provider.dart';
+import '../models/occurrence_form_draft.dart';
 import 'occurrence_client_selector.dart';
 import 'occurrence_fenologia_data.dart';
 import 'occurrence_form_widgets.dart';
 
 part 'occurrence_creation_sheet_models.dart';
 part 'occurrence_creation_sheet_ui_helpers.dart';
+part 'occurrence_creation_sheet_draft.dart';
+part 'occurrence_creation_sheet_submit.dart';
 
 class OccurrenceCreationSheet extends ConsumerStatefulWidget {
   final double latitude;
   final double longitude;
   final OccurrenceConfirmCallback onConfirm;
-  final VoidCallback? onCancel;
+  final FutureOr<void> Function()? onCancel;
   final ScrollController? scrollController;
   final Occurrence? initialOccurrence;
+  final OccurrenceFormGuard? formGuard;
 
   const OccurrenceCreationSheet({
     super.key,
@@ -42,6 +49,7 @@ class OccurrenceCreationSheet extends ConsumerStatefulWidget {
     this.onCancel,
     this.scrollController,
     this.initialOccurrence,
+    this.formGuard,
   });
 
   @override
@@ -67,6 +75,8 @@ class _OccurrenceCreationSheetState
   final _descCtrl = TextEditingController();
   final _recomCtrl = TextEditingController();
   final _picker = ImagePicker();
+  bool _isSaving = false;
+  String? _submitError;
 
   /// Pin imutável da abertura — ignora rebuild do pendingOccurrenceLocation.
   late final double _pinLatitude;
@@ -77,11 +87,16 @@ class _OccurrenceCreationSheetState
     super.initState();
     _pinLatitude = widget.latitude;
     _pinLongitude = widget.longitude;
+    widget.formGuard?.readIsDirty = _hasUnsavedChanges;
     _clientsFuture = _loadClientsForCurrentRole();
     _hydrateInitialOccurrence();
+    _restoreDraftIfAny();
+    _cultivarCtrl.addListener(_persistDraft);
+    _descCtrl.addListener(_persistDraft);
+    _recomCtrl.addListener(_persistDraft);
     if (widget.initialOccurrence != null) {
       _prefillInitialClient();
-    } else {
+    } else if (_selectedClient == null) {
       _prefillActiveVisitClient();
     }
   }
@@ -177,6 +192,13 @@ class _OccurrenceCreationSheetState
 
   @override
   void dispose() {
+    _cultivarCtrl.removeListener(_persistDraft);
+    _descCtrl.removeListener(_persistDraft);
+    _recomCtrl.removeListener(_persistDraft);
+    _persistDraft();
+    if (widget.formGuard?.readIsDirty == _hasUnsavedChanges) {
+      widget.formGuard?.readIsDirty = null;
+    }
     _cultivarCtrl.dispose();
     _descCtrl.dispose();
     _recomCtrl.dispose();
@@ -210,14 +232,14 @@ class _OccurrenceCreationSheetState
       _metrics[cat.name]?[key] ?? 0;
 
   void _setMetric(OccurrenceCategory cat, String key, int value) {
-    setState(() {
+    _patchForm(() {
       _metrics.putIfAbsent(cat.name, () => {});
       _metrics[cat.name]![key] = value;
     });
   }
 
   void _toggleNutriente(String sym, bool selected) {
-    setState(() => selected ? _nutrientes.remove(sym) : _nutrientes.add(sym));
+    _patchForm(() => selected ? _nutrientes.remove(sym) : _nutrientes.add(sym));
   }
 
   String _formatDate(DateTime d) =>
@@ -242,7 +264,7 @@ class _OccurrenceCreationSheetState
   }
 
   void _registerPersistedPhoto(OccurrenceCategory cat, String path) {
-    setState(() {
+    _patchForm(() {
       _fotos.putIfAbsent(cat.name, () => []);
       _fotos[cat.name]!.add(path);
     });
@@ -318,56 +340,8 @@ class _OccurrenceCreationSheetState
     }
   }
 
-  void _submit() {
-    final desc = _descCtrl.text.trim();
-    if (_selectedCategoryValue == null && _cats.isEmpty && desc.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Selecione ao menos uma categoria ou adicione uma descrição.',
-          ),
-          backgroundColor: Colors.redAccent,
-        ),
-      );
-      return;
-    }
-    HapticFeedback.mediumImpact();
-
-    final primaryCat = _cats.isNotEmpty ? _cats.first.name : null;
-    final firstPhoto = _fotos.values.firstOrNull?.firstOrNull;
-
-    widget.onConfirm(
-      OccurrenceFormData(
-        type: _urgency,
-        description: desc,
-        // Pin imutável do initState — nunca GPS / nunca lat do provider mid-form.
-        latitude: _pinLatitude,
-        longitude: _pinLongitude,
-        clientId: _selectedClient?.id,
-        photoPath: firstPhoto,
-        category: _selectedCategoryValue ?? primaryCat,
-        cultivar: _cultivarCtrl.text.trim().isEmpty
-            ? null
-            : _cultivarCtrl.text.trim(),
-        dataPlantio: _isoDate(_dataPlantio),
-        estadioFenologico: _estadio?.code,
-        tipoOcorrencia: null, // FIX 3: removido da UI
-        amostraSolo: _selectedCategoryValue == 'amostra_solo', // FIX 4
-        recomendacoes: _recomCtrl.text.trim().isEmpty
-            ? null
-            : _recomCtrl.text.trim(),
-        metricasJson: _encodeMetricas(),
-        nutrientesJson: _encodeNutrientes(),
-        categoriasJson: _encodeCategorias(),
-        notasCategoriasJson: _encodeNotas(),
-        fotosCategoriasJson: _encodeFotos(),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
-    final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
     final safeBottom = MediaQuery.of(context).padding.bottom;
     return Material(
       color: const Color(0xFF1C1C1E),
@@ -378,6 +352,7 @@ class _OccurrenceCreationSheetState
               controller: widget.scrollController,
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
               children: [
+              if (_buildSubmitErrorBanner() case final banner?) banner,
               // ── Header padrão ADR-027 (espelha NovoCaseHeader) ──────────
               Row(
                 children: [
@@ -426,7 +401,7 @@ class _OccurrenceCreationSheetState
                   if (widget.onCancel != null)
                     IconButton(
                       icon: const Icon(Icons.close),
-                      onPressed: widget.onCancel,
+                      onPressed: _handleCancel,
                       color: const Color(0xFF8E8E93),
                     ),
                 ],
@@ -444,7 +419,7 @@ class _OccurrenceCreationSheetState
               OccurrenceClientSelector(
                 clientsFuture: _clientsFuture,
                 selectedClient: _selectedClient,
-                onChanged: (value) => setState(() => _selectedClient = value),
+                onChanged: (value) => _patchForm(() => _selectedClient = value),
               ),
               const SizedBox(height: 20),
 
@@ -468,7 +443,7 @@ class _OccurrenceCreationSheetState
                     lastDate: DateTime.now().add(const Duration(days: 365)),
                     helpText: 'Data de Plantio',
                   );
-                  if (picked != null) setState(() => _dataPlantio = picked);
+                  if (picked != null) _patchForm(() => _dataPlantio = picked);
                 },
                 child: Container(
                   padding: const EdgeInsets.all(14),
@@ -499,7 +474,7 @@ class _OccurrenceCreationSheetState
                       if (_dataPlantio != null) ...[
                         const Spacer(),
                         GestureDetector(
-                          onTap: () => setState(() => _dataPlantio = null),
+                          onTap: () => _patchForm(() => _dataPlantio = null),
                           child: const Icon(
                             Icons.clear,
                             size: 16,
@@ -538,8 +513,8 @@ class _OccurrenceCreationSheetState
               OccurrenceEstadioDropdown(
                 selected: _estadio,
                 expanded: _estadioCardExpanded,
-                onChanged: (e) => setState(() => _estadio = e),
-                onToggleCard: () => setState(
+                onChanged: (e) => _patchForm(() => _estadio = e),
+                onToggleCard: () => _patchForm(
                   () => _estadioCardExpanded = !_estadioCardExpanded,
                 ),
               ),
@@ -562,9 +537,8 @@ class _OccurrenceCreationSheetState
                   return GestureDetector(
                     onTap: () {
                       HapticFeedback.selectionClick();
-                      setState(() {
+                      _patchForm(() {
                         _selectedCategoryValue = cat.value;
-                        // sincroniza _cats para manter SEÇÃO 4 (métricas) funcional
                         _cats.clear();
                         if (cat.enumValue != null) {
                           _cats.add(cat.enumValue!);
@@ -629,7 +603,7 @@ class _OccurrenceCreationSheetState
                       : const Color(0xFFFF3B30);
                   return Expanded(
                     child: GestureDetector(
-                      onTap: () => setState(() => _urgency = u),
+                      onTap: () => _patchForm(() => _urgency = u),
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 200),
                         margin: const EdgeInsets.only(right: 6),
@@ -697,18 +671,13 @@ class _OccurrenceCreationSheetState
                 16,
                 12,
                 16,
-                keyboardHeight > 0
-                    ? keyboardHeight + 12
-                    : kFabSafeArea + safeBottom,
+                kFabSafeArea + safeBottom,
               ),
               child: Row(
                 children: [
                   Expanded(
                     child: OutlinedButton(
-                      onPressed: () {
-                        HapticFeedback.lightImpact();
-                        widget.onCancel?.call();
-                      },
+                      onPressed: _isSaving ? null : _handleCancel,
                       style: OutlinedButton.styleFrom(
                         foregroundColor: Colors.white54,
                         side: const BorderSide(color: Colors.white24),
@@ -730,7 +699,7 @@ class _OccurrenceCreationSheetState
                   Expanded(
                     flex: 2,
                     child: ElevatedButton(
-                      onPressed: _submit,
+                      onPressed: _isSaving ? null : _submit,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: PremiumTokens.brandGreen,
                         foregroundColor: Colors.black,
@@ -739,15 +708,24 @@ class _OccurrenceCreationSheetState
                           borderRadius: BorderRadius.circular(50),
                         ),
                       ),
-                      child: Text(
-                        widget.initialOccurrence == null
-                            ? 'Salvar Ocorrência'
-                            : 'Salvar Alterações',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: -0.4,
-                        ),
-                      ),
+                      child: _isSaving
+                          ? const SizedBox(
+                              width: 22,
+                              height: 22,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2.2,
+                                color: Colors.black87,
+                              ),
+                            )
+                          : Text(
+                              widget.initialOccurrence == null
+                                  ? 'Salvar Ocorrência'
+                                  : 'Salvar Alterações',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: -0.4,
+                              ),
+                            ),
                     ),
                   ),
                 ],
@@ -840,8 +818,9 @@ class _OccurrenceCreationSheetState
                             top: 2,
                             right: 2,
                             child: GestureDetector(
-                              onTap: () =>
-                                  setState(() => _fotos[cat.name]!.removeAt(i)),
+                              onTap: () => _patchForm(
+                                () => _fotos[cat.name]!.removeAt(i),
+                              ),
                               child: Container(
                                 padding: const EdgeInsets.all(2),
                                 decoration: BoxDecoration(

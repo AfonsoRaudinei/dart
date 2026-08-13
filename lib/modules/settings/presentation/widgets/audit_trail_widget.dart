@@ -5,6 +5,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 import '../../data/models/user_profile_audit_entry.dart';
 
 class AuditTrailWidget extends StatelessWidget {
@@ -14,15 +15,15 @@ class AuditTrailWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const hintColor = Color(0xFF8E8E93);
-    const dividerColor = Color(0xFF3A3A3C);
-
     if (entries.isEmpty) {
-      return const Padding(
-        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         child: Text(
           'Nenhuma alteração registrada',
-          style: TextStyle(color: hintColor, fontSize: 13),
+          style: TextStyle(
+            color: context.premiumTextSecondary,
+            fontSize: 13,
+          ),
         ),
       );
     }
@@ -31,9 +32,9 @@ class AuditTrailWidget extends StatelessWidget {
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       itemCount: entries.length,
-      separatorBuilder: (_, __) => const Divider(
+      separatorBuilder: (_, __) => Divider(
         height: 1,
-        color: dividerColor,
+        color: context.premiumHairline,
         indent: 16,
         endIndent: 16,
       ),
@@ -52,8 +53,8 @@ class AuditTrailWidget extends StatelessWidget {
             children: [
               Text(
                 '[$dateStr]  ${entry.fieldChanged}',
-                style: const TextStyle(
-                  color: hintColor,
+                style: TextStyle(
+                  color: context.premiumTextSecondary,
                   fontSize: 11,
                   fontFamily: 'monospace',
                 ),
@@ -61,8 +62,8 @@ class AuditTrailWidget extends StatelessWidget {
               const SizedBox(height: 2),
               Text(
                 '$oldVal → $newVal',
-                style: const TextStyle(
-                  color: Color(0xFFD1D1D6),
+                style: TextStyle(
+                  color: context.premiumTextPrimary,
                   fontSize: 13,
                 ),
               ),

@@ -1,16 +1,16 @@
-import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
+import 'package:go_router/go_router.dart';
 
-import 'package:soloforte_app/core/session/local_session_identity.dart';
-import 'package:soloforte_app/core/contracts/opportunity_summary.dart';
-import 'package:soloforte_app/modules/carteira/domain/entities/categoria_global.dart';
+import 'package:soloforte_app/core/router/app_routes.dart';
+import 'package:soloforte_app/modules/carteira/domain/oportunidades_aggregation.dart';
 import 'package:soloforte_app/modules/carteira/presentation/providers/carteira_providers.dart';
-import 'package:soloforte_app/modules/carteira/presentation/widgets/lancamento_form_dialog.dart';
+import 'package:soloforte_app/modules/carteira/presentation/widgets/carteira_module_scaffold.dart';
+import 'package:soloforte_app/modules/carteira/presentation/widgets/carteira_segment_bar.dart';
+import 'package:soloforte_app/modules/carteira/presentation/widgets/oportunidades_chart_card.dart';
 
-/// Detalhe de oportunidades em aberto por cliente.
-/// Aberta via Navigator.push — sem rota pública. ADR-022.
+/// Detalhe de oportunidades em aberto por cliente (ADR-029).
+/// Somente leitura — registro de lançamento fica na aba Clientes.
 class OportunidadesDetalheScreen extends ConsumerWidget {
   const OportunidadesDetalheScreen({
     super.key,
@@ -21,58 +21,27 @@ class OportunidadesDetalheScreen extends ConsumerWidget {
   final String clienteId;
   final String clienteNome;
 
-  String get _userId => LocalSessionIdentity.resolveUserId();
-
-  Future<void> _abrirLancamento(
-    BuildContext context,
-    WidgetRef ref,
-    OpportunitySummary oportunidade,
-    CategoriaGlobal? categoria,
-  ) async {
-    if (categoria == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Categoria não encontrada.')),
-      );
-      return;
-    }
-
-    final saved = await showDialog<bool>(
-      context: context,
-      builder: (_) => LancamentoFormDialog(
-        categoria: categoria,
-        clienteId: clienteId,
-        clienteNome: clienteNome,
-        clientAreaHa: oportunidade.areaHa,
-      ),
-    );
-
-    if (saved != true) return;
-
-    ref.invalidate(clientOpportunitiesProvider(clienteId));
-    if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Lançamento registrado com sucesso.')),
-    );
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final oportunidadesAsync =
-        ref.watch(clientOpportunitiesProvider(clienteId));
-    final categoriasAsync = ref.watch(categoriasGlobaisProvider(_userId));
-    final currencyFormat = NumberFormat.currency(
-      locale: 'pt_BR',
-      symbol: 'R\$',
-      decimalDigits: 0,
+    final oportunidadesAsync = ref.watch(
+      clientOpportunitiesProvider(clienteId),
     );
 
-    return Scaffold(
-      appBar: AppBar(title: Text(clienteNome)),
+    return CarteiraModuleScaffold(
+      title: clienteNome,
+      forceSegment: CarteiraSegment.oportunidades,
+      leading: IconButton(
+        icon: const Icon(Icons.arrow_back),
+        onPressed: () {
+          ref.read(carteiraSegmentProvider.notifier).state =
+              CarteiraSegment.oportunidades;
+          context.go(AppRoutes.carteira);
+        },
+      ),
       body: oportunidadesAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (_, __) => const Center(
-          child: Text('Erro ao carregar oportunidades.'),
-        ),
+        error: (_, __) =>
+            const Center(child: Text('Erro ao carregar oportunidades.')),
         data: (oportunidades) {
           if (oportunidades.isEmpty) {
             return const Center(
@@ -80,139 +49,19 @@ class OportunidadesDetalheScreen extends ConsumerWidget {
             );
           }
 
-          final categorias = categoriasAsync.valueOrNull ?? const [];
-          final categoriasById = {
-            for (final c in categorias) c.id: c,
-          };
-
-          final totalOpportunityValue = oportunidades.fold<double>(
-            0.0,
-            (sum, op) => sum + op.totalOpportunityValue,
-          );
-
-          final sections = oportunidades.asMap().entries.map(
-            (entry) {
-              final op = entry.value;
-              return PieChartSectionData(
-                color: Color(op.categoryColor),
-                value: op.totalOpportunityValue > 0
-                    ? op.totalOpportunityValue
-                    : 0.01,
-                radius: 55,
-                title: '',
-              );
-            },
-          ).toList();
+          final slices = aggregateOpportunitiesByCategory(oportunidades);
+          final total = sumOpportunityValues(oportunidades);
 
           return ListView(
-            padding: const EdgeInsets.only(top: 8, bottom: 24),
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
             children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Card(
-                  margin: EdgeInsets.zero,
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      children: [
-                        SizedBox(
-                          height: 220,
-                          child: PieChart(
-                            PieChartData(
-                              sections: sections,
-                              centerSpaceRadius: 50,
-                              sectionsSpace: 2,
-                              borderData: FlBorderData(show: false),
-                              pieTouchData: PieTouchData(enabled: false),
-                              startDegreeOffset: -90,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          'Oportunidades por categoria',
-                          style: Theme.of(context).textTheme.titleMedium,
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          'Total: ${currencyFormat.format(totalOpportunityValue)}',
-                          style: Theme.of(context)
-                              .textTheme
-                              .bodySmall
-                              ?.copyWith(color: Colors.grey[600]),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
+              OportunidadesChartCard(
+                slices: slices,
+                title: 'Oportunidades por categoria',
+                totalValue: total,
               ),
               const SizedBox(height: 16),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: oportunidades.map((op) {
-                    final percentOfTotal = totalOpportunityValue > 0
-                        ? op.totalOpportunityValue / totalOpportunityValue * 100
-                        : 0.0;
-                    final categoria = categoriasById[op.categoryId];
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Container(
-                            width: 12,
-                            height: 12,
-                            decoration: BoxDecoration(
-                              color: Color(op.categoryColor),
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  op.categoryName,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  '${currencyFormat.format(op.totalOpportunityValue)} · ${percentOfTotal.toStringAsFixed(1)}%',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey[600],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          TextButton.icon(
-                            onPressed: () => _abrirLancamento(
-                              context,
-                              ref,
-                              op,
-                              categoria,
-                            ),
-                            icon: const Icon(Icons.add, size: 16),
-                            label: const Text('Registrar'),
-                            style: TextButton.styleFrom(
-                              visualDensity: VisualDensity.compact,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  }).toList(),
-                ),
-              ),
+              OportunidadesChartLegend(slices: slices),
             ],
           );
         },

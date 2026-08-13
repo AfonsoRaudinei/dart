@@ -5,9 +5,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:url_launcher/url_launcher.dart';
 
-import 'package:soloforte_app/core/constants/external_links.dart';
 import 'package:soloforte_app/core/router/app_routes.dart';
 import 'package:soloforte_app/core/session/user_role.dart';
 import 'package:soloforte_app/core/services/connectivity_service.dart';
@@ -21,10 +19,24 @@ import 'package:soloforte_app/modules/settings/presentation/providers/user_profi
 
 part 'side_menu_overlay_sections.dart';
 
-const _menuGreen = Color(0xFF34C759);
-const _deepGreen = Color(0xFF1E3A2F);
-const _softGreen = Color(0xFFF1FAF4);
-const _cardBorder = Color(0xFFE5E5E7);
+Color _menuAccent(BuildContext context) =>
+    Theme.of(context).colorScheme.primary;
+
+Color _menuIconBg(BuildContext context) =>
+    _menuAccent(context).withValues(alpha: 0.08);
+
+Color _menuBorder(BuildContext context) {
+  return Theme.of(context).brightness == Brightness.dark
+      ? const Color(0xFF2C2C2E)
+      : const Color(0xFFE5E5E7);
+}
+
+Color _menuSecondaryText(BuildContext context) {
+  return Theme.of(context).brightness == Brightness.dark
+      ? const Color(0xFFA0A0A5)
+      : const Color(0xFF8E8E93);
+}
+
 const _appBuildVersion = String.fromEnvironment(
   'APP_VERSION',
   defaultValue: '1.1.0+115',
@@ -143,16 +155,19 @@ class SideMenuOverlay extends ConsumerWidget {
               child: Image.asset(
                 'assets/images/logo.jpeg',
                 fit: BoxFit.cover,
-                color: _deepGreen.withValues(alpha: 0.32),
+                color: _menuAccent(context).withValues(alpha: 0.32),
                 colorBlendMode: BlendMode.multiply,
               ),
             ),
-            const DecoratedBox(
+            DecoratedBox(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: [Color(0xF21E3A2F), Color(0xD934C759)],
+                  colors: [
+                    _menuAccent(context).withValues(alpha: 0.92),
+                    _menuAccent(context).withValues(alpha: 0.62),
+                  ],
                 ),
               ),
             ),
@@ -257,7 +272,7 @@ class SideMenuOverlay extends ConsumerWidget {
       ),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
-        border: const Border(top: BorderSide(color: _cardBorder, width: 0.7)),
+        border: Border(top: BorderSide(color: _menuBorder(context), width: 0.7)),
       ),
       child: Row(
         children: [
@@ -355,7 +370,7 @@ class _MenuPanel extends StatelessWidget {
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _cardBorder),
+        border: Border.all(color: _menuBorder(context)),
       ),
       child: Column(children: children),
     );
@@ -393,10 +408,10 @@ class _MenuItem extends ConsumerWidget {
                   width: 32,
                   height: 32,
                   decoration: BoxDecoration(
-                    color: _softGreen,
+                    color: _menuIconBg(context),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: Icon(icon, color: _menuGreen, size: 18),
+                  child: Icon(icon, color: _menuAccent(context), size: 18),
                 ),
                 const SizedBox(width: 11),
                 Expanded(
@@ -566,7 +581,7 @@ class _AccountActionItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final effectiveIconColor = iconColor ?? _menuGreen;
+    final effectiveIconColor = iconColor ?? _menuAccent(context);
 
     return InkWell(
       borderRadius: BorderRadius.circular(15),
@@ -640,15 +655,6 @@ class _AccountActionItem extends StatelessWidget {
 
 void _closeAndNavigate(BuildContext context, WidgetRef ref, String route) {
   ref.read(sideMenuOpenProvider.notifier).state = false;
-
-  // Feedback: abre o dashboard externo (único vínculo alterado).
-  if (route == AppRoutes.feedback) {
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      final uri = Uri.parse(ExternalLinks.feedbackDashboard);
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    });
-    return;
-  }
 
   final router = GoRouter.of(context);
   WidgetsBinding.instance.addPostFrameCallback((_) {

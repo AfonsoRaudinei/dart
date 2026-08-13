@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 import '../../domain/enums/agenda_view.dart';
 import '../providers/agenda_filters_provider.dart';
 import 'unsaved_changes_dialog.dart';
@@ -12,14 +13,17 @@ class AgendaSegmentedControl extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final currentView = ref.watch(agendaViewProvider);
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final trackColor = isDark
+        ? const Color(0xFF242426)
+        : const Color(0xFFF3F4F6);
+    final selectedFill = isDark ? context.premiumSurface : Colors.white;
 
     return Container(
       height: 48,
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: theme.brightness == Brightness.dark
-            ? const Color(0xFF161A1D)
-            : const Color(0xFFF3F4F6),
+        color: trackColor,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
@@ -32,13 +36,14 @@ class AgendaSegmentedControl extends ConsumerWidget {
                 duration: const Duration(milliseconds: 200),
                 margin: const EdgeInsets.all(4),
                 decoration: BoxDecoration(
-                  color: isSelected
-                      ? (theme.brightness == Brightness.dark
-                            ? const Color(0xFF1E2428)
-                            : Colors.white)
-                      : Colors.transparent,
+                  color: isSelected ? selectedFill : Colors.transparent,
                   borderRadius: BorderRadius.circular(12),
-                  boxShadow: isSelected
+                  border: isSelected
+                      ? Border.all(
+                          color: theme.colorScheme.primary.withValues(alpha: 0.35),
+                        )
+                      : null,
+                  boxShadow: isSelected && !isDark
                       ? [
                           BoxShadow(
                             color: Colors.black.withValues(alpha: 0.05),
@@ -57,12 +62,8 @@ class AgendaSegmentedControl extends ConsumerWidget {
                           ? FontWeight.w600
                           : FontWeight.w400,
                       color: isSelected
-                          ? (theme.brightness == Brightness.dark
-                                ? const Color(0xFFE6E6E6)
-                                : const Color(0xFF1A1A1A))
-                          : (theme.brightness == Brightness.dark
-                                ? const Color(0xFF9CA3AF)
-                                : const Color(0xFF6B7280)),
+                          ? context.premiumTextPrimary
+                          : context.premiumTextSecondary,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,

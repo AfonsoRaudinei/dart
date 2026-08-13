@@ -190,7 +190,7 @@ class _QuickActionCard extends ConsumerWidget {
       color: Theme.of(context).colorScheme.surface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: const BorderSide(color: _cardBorder),
+        side: BorderSide(color: _menuBorder(context)),
       ),
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
@@ -201,7 +201,7 @@ class _QuickActionCard extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, color: _menuGreen, size: 21),
+              Icon(icon, color: _menuAccent(context), size: 21),
               const Spacer(),
               Text(
                 label,
@@ -229,10 +229,10 @@ class _DailySummary extends StatelessWidget {
       height: 76,
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 9),
       decoration: BoxDecoration(
-        color: _softGreen,
+        color: _menuIconBg(context),
         borderRadius: BorderRadius.circular(16),
       ),
-      child: const Row(
+      child: Row(
         children: [
           _SummaryMetric(icon: Icons.calendar_today_outlined, label: 'Visitas'),
           _SummaryMetric(icon: Icons.people_outline_rounded, label: 'Clientes'),
@@ -259,7 +259,7 @@ class _SummaryMetric extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, size: 15, color: _menuGreen),
+          Icon(icon, size: 15, color: _menuAccent(context)),
           const SizedBox(height: 2),
           const Text(
             '--',
@@ -269,7 +269,7 @@ class _SummaryMetric extends StatelessWidget {
             label,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontSize: 9, color: Color(0xFF6B7280)),
+            style: TextStyle(fontSize: 9, color: _menuSecondaryText(context)),
           ),
         ],
       ),
@@ -286,29 +286,32 @@ class _MotivationalCard extends StatelessWidget {
       constraints: const BoxConstraints(maxHeight: 90),
       padding: const EdgeInsets.all(13),
       decoration: BoxDecoration(
-        color: _softGreen,
+        color: _menuIconBg(context),
         borderRadius: BorderRadius.circular(16),
       ),
-      child: const Row(
+      child: Row(
         children: [
-          Icon(Icons.eco_outlined, color: _menuGreen, size: 24),
-          SizedBox(width: 10),
+          Icon(Icons.eco_outlined, color: _menuAccent(context), size: 24),
+          const SizedBox(width: 10),
           Expanded(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                const Text(
                   'Foco no que importa',
                   style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
                 ),
-                SizedBox(height: 3),
+                const SizedBox(height: 3),
                 Flexible(
                   child: Text(
                     'Acompanhe suas visitas, clientes e resultados em tempo real.',
                     maxLines: 3,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(fontSize: 10, color: Color(0xFF6B7280)),
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: _menuSecondaryText(context),
+                    ),
                   ),
                 ),
               ],

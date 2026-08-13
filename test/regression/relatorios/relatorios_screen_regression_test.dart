@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:soloforte_app/core/session/user_role.dart';
+import 'package:soloforte_app/core/contracts/i_marketing_case_reports_lookup_provider.dart';
+import 'package:soloforte_app/core/contracts/marketing_case_reports_list_provider.dart';
 import 'package:soloforte_app/modules/consultoria/occurrences/data/occurrence_repository.dart';
 import 'package:soloforte_app/modules/consultoria/occurrences/domain/occurrence.dart';
 import 'package:soloforte_app/modules/consultoria/occurrences/presentation/controllers/occurrence_controller.dart';
@@ -15,6 +17,7 @@ import 'package:soloforte_app/modules/consultoria/relatorios/providers/relatorio
 import 'package:soloforte_app/modules/consultoria/quick_photo/presentation/providers/quick_photo_list_provider.dart';
 import 'package:soloforte_app/modules/marketing/data/repositories/i_marketing_case_repository.dart';
 import 'package:soloforte_app/modules/marketing/domain/entities/marketing_case.dart';
+import 'package:soloforte_app/modules/marketing/infra/marketing_case_reports_lookup_adapter.dart';
 import 'package:soloforte_app/modules/marketing/presentation/providers/marketing_providers.dart';
 import 'package:soloforte_app/modules/settings/presentation/providers/user_profile_provider.dart';
 
@@ -34,13 +37,13 @@ void main() {
       final pageSource = File(
         'lib/modules/consultoria/relatorios/presentation/relatorios_page.dart',
       ).readAsStringSync();
-      final consolidatedSource = File(
-        'lib/modules/consultoria/relatorios/presentation/relatorios_consolidated_reports.dart',
+      final marketingSource = File(
+        'lib/modules/consultoria/relatorios/presentation/relatorios_marketing_reports.dart',
       ).readAsStringSync();
 
       expect(pageSource.contains('occurrencesListProvider'), isTrue);
       expect(pageSource.contains('_relatoriosTecnicosListProvider'), isTrue);
-      expect(consolidatedSource.contains('marketingCasesProvider'), isTrue);
+      expect(marketingSource.contains('marketingCaseReportsListProvider'), isTrue);
       expect(pageSource.contains('ref.watch(relatoriosListProvider)'), isFalse);
     });
 
@@ -99,7 +102,7 @@ void main() {
     );
 
     testWidgets(
-      'seção de marketing exibe item de marketingCasesProvider',
+      'seção de marketing exibe item de marketingCaseReportsListProvider',
       (tester) async {
         await _pumpRelatoriosScreen(
           tester,
@@ -110,10 +113,8 @@ void main() {
 
         await tester.tap(find.text('Gerados').first);
         await tester.pumpAndSettle();
-        await tester.drag(find.byType(ListView), const Offset(0, -400));
-        await tester.pumpAndSettle();
 
-        expect(find.text('Marketing Cases'), findsOneWidget);
+        expect(find.text('Publicações'), findsOneWidget);
         expect(find.text('Produtor Regression - Fazenda Marketing'), findsOneWidget);
       },
     );
@@ -137,6 +138,12 @@ Future<void> _pumpRelatoriosScreen(
         occurrenceRepositoryProvider.overrideWithValue(occurrenceRepository),
         marketingCaseRepositoryProvider.overrideWithValue(
           FakeMarketingCaseRepository(marketingCases ?? const []),
+        ),
+        marketingCaseReportsLookupProvider.overrideWith(
+          (ref) => MarketingCaseReportsLookupAdapter(ref),
+        ),
+        marketingCaseReportsListProvider.overrideWith(
+          (ref) => ref.watch(marketingCaseReportsListImplProvider),
         ),
         quickPhotoListProvider.overrideWith((ref) async => const []),
       ],
@@ -197,6 +204,11 @@ class FakeMarketingCaseRepository implements IMarketingCaseRepository {
 
   @override
   Future<void> updateCase(MarketingCase marketingCase) async {}
+
+  @override
+  Future<MarketingCase> softDelete(String id) async {
+    return cases.firstWhere((item) => item.id == id);
+  }
 }
 
 MarketingCase _marketingCase() {

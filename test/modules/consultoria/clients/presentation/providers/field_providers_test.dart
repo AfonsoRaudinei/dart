@@ -1,6 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:soloforte_app/modules/consultoria/clients/presentation/providers/field_providers.dart';
 
+/// Espelha o filtro SQL de talhões avulsos em [clientDrawingFieldsProvider].
+const _orphanDrawingsWhereSuffix =
+    'AND (fazenda_id IS NULL OR fazenda_id = \'\')';
+
 void main() {
   group('mergeFarmLinkedFieldSummaries', () {
     test('combina fields e drawings vinculados sem duplicar ids', () {
@@ -57,6 +61,12 @@ void main() {
       expect(merged, hasLength(1));
       expect(merged.single.id, 'drawing-1');
       expect(totalFarmLinkedAreaHa(merged), 8);
+    });
+  });
+
+  group('clientDrawingFieldsProvider', () {
+    test('consulta apenas talhões avulsos (sem fazenda_id)', () {
+      expect(_orphanDrawingsWhereSuffix, contains('fazenda_id IS NULL'));
     });
   });
 }

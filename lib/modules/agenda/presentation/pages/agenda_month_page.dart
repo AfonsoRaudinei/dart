@@ -95,8 +95,8 @@ class _AgendaMonthPageState extends ConsumerState<AgendaMonthPage> {
                   ),
                   child: Text(
                     '${_countActiveFilters(filters)}',
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: theme.colorScheme.onPrimary,
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
                     ),

@@ -230,10 +230,6 @@ class SettingsScreen extends ConsumerWidget {
   }
 
   Widget _buildSection(BuildContext context, List<Widget> children) {
-    // Determine card color based on brightness
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardColor = isDark ? const Color(0xFF1C1C1E) : Colors.white;
-
     final List<Widget> dividedChildren = [];
     for (int i = 0; i < children.length; i++) {
       dividedChildren.add(children[i]);
@@ -245,7 +241,7 @@ class SettingsScreen extends ConsumerWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Material(
-        color: cardColor,
+        color: context.premiumSurface,
         borderRadius: BorderRadius.circular(10),
         clipBehavior: Clip.antiAlias,
         child: Column(children: dividedChildren),
@@ -274,8 +270,8 @@ class SettingsScreen extends ConsumerWidget {
       avatarImage = NetworkImage(photoUrl);
     }
 
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textColor = isDark ? Colors.white : const Color(0xFF1D1D1F);
+    final textColor = context.premiumTextPrimary;
+    final accent = Theme.of(context).colorScheme.primary;
 
     return Padding(
       padding: const EdgeInsets.all(16.0),
@@ -298,13 +294,13 @@ class SettingsScreen extends ConsumerWidget {
                   right: 0,
                   child: Container(
                     padding: const EdgeInsets.all(4),
-                    decoration: const BoxDecoration(
-                      color: Color(0xFF34C759),
+                    decoration: BoxDecoration(
+                      color: accent,
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.edit,
-                      color: Colors.white,
+                      color: Theme.of(context).colorScheme.onPrimary,
                       size: 12,
                     ),
                   ),
@@ -523,8 +519,10 @@ class SettingsScreen extends ConsumerWidget {
                   icon: const Icon(Icons.edit_outlined, size: 16),
                   label: const Text('Editar perfil'),
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: const Color(0xFFF59E0B),
-                    side: const BorderSide(color: Color(0xFFF59E0B)),
+                    foregroundColor: Theme.of(context).colorScheme.primary,
+                    side: BorderSide(
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
                     padding: const EdgeInsets.symmetric(vertical: 10),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
@@ -540,8 +538,6 @@ class SettingsScreen extends ConsumerWidget {
   }
 
   Widget _buildInfoRow(BuildContext context, String label, String value) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -562,9 +558,7 @@ class SettingsScreen extends ConsumerWidget {
           child: Text(
             value,
             style: (Theme.of(context).textTheme.bodyMedium ?? const TextStyle())
-                .copyWith(
-                  color: isDark ? Colors.white : const Color(0xFF1D1D1F),
-                ),
+                .copyWith(color: context.premiumTextPrimary),
           ),
         ),
       ],
@@ -619,7 +613,7 @@ class SettingsScreen extends ConsumerWidget {
     required Function(bool) onChanged,
     IconData? icon,
   }) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final accent = Theme.of(context).colorScheme.primary;
 
     return SwitchListTile(
       value: value,
@@ -630,7 +624,7 @@ class SettingsScreen extends ConsumerWidget {
       title: Text(
         title,
         style: (Theme.of(context).textTheme.bodyMedium ?? const TextStyle())
-            .copyWith(color: isDark ? Colors.white : const Color(0xFF1D1D1F)),
+            .copyWith(color: context.premiumTextPrimary),
       ),
       subtitle: subtitle != null
           ? Text(
@@ -644,13 +638,13 @@ class SettingsScreen extends ConsumerWidget {
           ? Container(
               padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(
-                color: PremiumTokens.brandGreen.withValues(alpha: 0.1),
+                color: accent.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(6),
               ),
-              child: Icon(icon, color: PremiumTokens.brandGreen, size: 20),
+              child: Icon(icon, color: accent, size: 20),
             )
           : null,
-      activeTrackColor: PremiumTokens.brandGreen,
+      activeTrackColor: accent,
     );
   }
 
@@ -660,21 +654,21 @@ class SettingsScreen extends ConsumerWidget {
     required IconData icon,
     required VoidCallback onTap,
   }) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final accent = Theme.of(context).colorScheme.primary;
 
     return ListTile(
       leading: Container(
         padding: const EdgeInsets.all(6),
         decoration: BoxDecoration(
-          color: PremiumTokens.brandGreen.withValues(alpha: 0.1),
+          color: accent.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(6),
         ),
-        child: Icon(icon, color: PremiumTokens.brandGreen, size: 20),
+        child: Icon(icon, color: accent, size: 20),
       ),
       title: Text(
         title,
         style: (Theme.of(context).textTheme.bodyMedium ?? const TextStyle())
-            .copyWith(color: isDark ? Colors.white : const Color(0xFF1D1D1F)),
+            .copyWith(color: context.premiumTextPrimary),
       ),
       trailing: const Icon(
         SFIcons.chevronRight,
@@ -697,8 +691,7 @@ class SettingsScreen extends ConsumerWidget {
   }) {
     final color = isDestructive
         ? const Color(0xFFFF3B30)
-        : PremiumTokens.brandGreen;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+        : Theme.of(context).colorScheme.primary;
 
     return ListTile(
       leading: Container(
@@ -713,9 +706,7 @@ class SettingsScreen extends ConsumerWidget {
         title,
         style: (Theme.of(context).textTheme.bodyMedium ?? const TextStyle())
             .copyWith(
-              color: isDestructive
-                  ? color
-                  : (isDark ? Colors.white : const Color(0xFF1D1D1F)),
+              color: isDestructive ? color : context.premiumTextPrimary,
             ),
       ),
       onTap: () {

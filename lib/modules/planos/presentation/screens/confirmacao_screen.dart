@@ -11,6 +11,7 @@ import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 import 'package:soloforte_app/core/constants/layout_constants.dart';
 import 'package:soloforte_app/core/router/app_routes.dart';
+import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 
 import '../providers/plano_providers.dart';
 
@@ -95,7 +96,7 @@ class _ConfirmacaoScreenState extends ConsumerState<ConfirmacaoScreen>
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFF000000),
+      backgroundColor: context.premiumBackground,
       body: SafeArea(
         child: Center(
           child: Padding(
@@ -108,8 +109,9 @@ class _ConfirmacaoScreenState extends ConsumerState<ConfirmacaoScreen>
   }
 
   Widget _buildIosUnavailable(BuildContext context) {
+    final primary = Theme.of(context).colorScheme.primary;
     return Scaffold(
-      backgroundColor: const Color(0xFF000000),
+      backgroundColor: context.premiumBackground,
       body: SafeArea(
         child: Center(
           child: Padding(
@@ -117,20 +119,20 @@ class _ConfirmacaoScreenState extends ConsumerState<ConfirmacaoScreen>
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(
+                Icon(
                   Icons.lock_outline_rounded,
-                  color: Color(0xFF32D74B),
+                  color: primary,
                   size: 56,
                 ),
                 const SizedBox(height: 24),
-                const Text(
+                Text(
                   'Checkout indisponivel no iOS',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontFamily: 'Inter',
                     fontSize: 20,
                     fontWeight: FontWeight.w700,
-                    color: Colors.white,
+                    color: context.premiumTextPrimary,
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -149,12 +151,12 @@ class _ConfirmacaoScreenState extends ConsumerState<ConfirmacaoScreen>
                     HapticFeedback.lightImpact();
                     context.go(AppRoutes.planos);
                   },
-                  child: const Text(
+                  child: Text(
                     'Voltar aos planos',
                     style: TextStyle(
                       fontFamily: 'Inter',
                       fontSize: 15,
-                      color: Color(0xFF32D74B),
+                      color: primary,
                     ),
                   ),
                 ),
@@ -168,19 +170,20 @@ class _ConfirmacaoScreenState extends ConsumerState<ConfirmacaoScreen>
   }
 
   Widget _buildAguardando() {
+    final primary = Theme.of(context).colorScheme.primary;
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        const CircularProgressIndicator(color: Color(0xFF32D74B)),
+        CircularProgressIndicator(color: primary),
         const SizedBox(height: 32),
-        const Text(
+        Text(
           'Aguardando confirmação do pagamento...',
           textAlign: TextAlign.center,
           style: TextStyle(
             fontFamily: 'Inter',
             fontSize: 20,
             fontWeight: FontWeight.w600,
-            color: Colors.white,
+            color: context.premiumTextPrimary,
           ),
         ),
         const SizedBox(height: 12),
@@ -201,12 +204,12 @@ class _ConfirmacaoScreenState extends ConsumerState<ConfirmacaoScreen>
             HapticFeedback.lightImpact();
             context.go(AppRoutes.map);
           },
-          child: const Text(
+          child: Text(
             'Verificar depois',
             style: TextStyle(
               fontFamily: 'Inter',
               fontSize: 15,
-              color: Color(0xFF32D74B),
+              color: primary,
               decoration: TextDecoration.underline,
             ),
           ),
@@ -217,6 +220,7 @@ class _ConfirmacaoScreenState extends ConsumerState<ConfirmacaoScreen>
   }
 
   Widget _buildConfirmado() {
+    final primary = Theme.of(context).colorScheme.primary;
     return ScaleTransition(
       scale: _scaleAnim,
       child: Column(
@@ -226,23 +230,23 @@ class _ConfirmacaoScreenState extends ConsumerState<ConfirmacaoScreen>
             width: 100,
             height: 100,
             decoration: BoxDecoration(
-              color: const Color(0xFF32D74B).withAlpha(30),
+              color: primary.withAlpha(30),
               borderRadius: BorderRadius.circular(50),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.check_rounded,
-              color: Color(0xFF32D74B),
+              color: primary,
               size: 56,
             ),
           ),
           const SizedBox(height: 24),
-          const Text(
+          Text(
             'Plano ativado! 🎉',
             style: TextStyle(
               fontFamily: 'Inter',
               fontSize: 28,
               fontWeight: FontWeight.w700,
-              color: Colors.white,
+              color: context.premiumTextPrimary,
             ),
           ),
           const SizedBox(height: 8),
@@ -266,7 +270,7 @@ class _ConfirmacaoScreenState extends ConsumerState<ConfirmacaoScreen>
               },
               child: DecoratedBox(
                 decoration: BoxDecoration(
-                  color: const Color(0xFF32D74B),
+                  color: primary,
                   borderRadius: BorderRadius.circular(50),
                 ),
                 child: const Center(

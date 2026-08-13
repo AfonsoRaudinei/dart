@@ -1,4 +1,3 @@
-
 import 'package:soloforte_app/core/contracts/i_opportunity_lookup.dart';
 import 'package:soloforte_app/core/session/local_session_identity.dart';
 import 'package:soloforte_app/core/contracts/opportunity_summary.dart';
@@ -17,19 +16,16 @@ class OpportunityLookupImpl implements IOpportunityLookup {
   OpportunityLookupImpl({
     required ICarteiraRepository repository,
     required DatabaseHelper db,
-  })  : _repository = repository,
-        _db = db;
+  }) : _repository = repository,
+       _db = db;
 
   final ICarteiraRepository _repository;
   final DatabaseHelper _db;
 
-  String get _userId =>
-      LocalSessionIdentity.resolveUserId();
+  String get _userId => LocalSessionIdentity.resolveUserId();
 
   @override
-  Future<List<OpportunitySummary>> getOpenOpportunities(
-    String clientId,
-  ) async {
+  Future<List<OpportunitySummary>> getOpenOpportunities(String clientId) async {
     try {
       final userId = _userId;
       if (userId.isEmpty) return [];
@@ -53,14 +49,15 @@ class OpportunityLookupImpl implements IOpportunityLookup {
       final summaries = <OpportunitySummary>[];
 
       for (final categoria in categorias) {
+        if (!categoria.ativo) continue;
+
         final result = await database.rawQuery(
           'SELECT COALESCE(SUM(closed_percent), 0.0) AS total '
           'FROM carteira_lancamentos '
           'WHERE cliente_id = ? AND categoria_id = ? AND user_id = ?',
           [clientId, categoria.id, userId],
         );
-        final rawPct =
-            (result.first['total'] as num?)?.toDouble() ?? 0.0;
+        final rawPct = (result.first['total'] as num?)?.toDouble() ?? 0.0;
         final closedPercent = rawPct.clamp(0.0, 100.0);
 
         summaries.add(
@@ -77,13 +74,10 @@ class OpportunityLookupImpl implements IOpportunityLookup {
         );
       }
 
-      final open = summaries
-          .where((s) => s.residualPercent > 0.0)
-          .toList();
+      final open = summaries.where((s) => s.residualPercent > 0.0).toList();
 
       open.sort(
-        (a, b) =>
-            b.totalOpportunityValue.compareTo(a.totalOpportunityValue),
+        (a, b) => b.totalOpportunityValue.compareTo(a.totalOpportunityValue),
       );
 
       return open;

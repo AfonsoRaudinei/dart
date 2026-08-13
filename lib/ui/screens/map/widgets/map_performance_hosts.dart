@@ -16,9 +16,11 @@ import '../../../../modules/drawing/presentation/widgets/gps_tracking_overlay.da
 import '../../../../modules/consultoria/clients/presentation/providers/field_providers.dart';
 import '../../../../modules/dashboard/providers/location_providers.dart';
 import '../../../../modules/visitas/presentation/controllers/geofence_controller.dart';
+import '../../../../core/state/map_ui_providers.dart';
 import '../../../components/map/map_bottom_sheet.dart';
 import '../../../components/map/map_sheet_state.dart';
 import '../providers/map_ready_state_provider.dart';
+import '../providers/occurrence_form_guard_provider.dart';
 
 /// Mantém GeofenceController ativo sem rebuildar o orchestrator.
 class MapGeofenceLifecycleHost extends ConsumerWidget {
@@ -152,6 +154,8 @@ class MapBottomSheetOverlayHost extends ConsumerWidget {
           setSheetState(newState, 'MapBottomSheet: State Changed');
         },
         onClose: () {
+          ref.read(pendingOccurrenceLocationProvider.notifier).state = null;
+          ref.read(occurrenceFormGuardProvider.notifier).state = null;
           setSheetState(null, 'MapBottomSheet: onClose');
         },
         creationLocation: creationLocation,

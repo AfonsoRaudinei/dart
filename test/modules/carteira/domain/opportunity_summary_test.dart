@@ -21,6 +21,13 @@ void main() {
       expect(summary.totalOpportunityValue, 300000);
     });
 
+    test('0% fechado mantém oportunidade integral sem meta', () {
+      final aberto = summary.copyWith(closedPercent: 0);
+
+      expect(aberto.residualPercent, 100);
+      expect(aberto.totalOpportunityValue, 500000);
+    });
+
     test('100% fechado zera oportunidade residual', () {
       final fechado = summary.copyWith(closedPercent: 100);
 

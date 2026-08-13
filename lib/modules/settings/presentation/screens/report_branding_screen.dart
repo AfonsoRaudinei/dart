@@ -74,7 +74,7 @@ class _ReportBrandingScreenState extends ConsumerState<ReportBrandingScreen> {
             decoration: InputDecoration(
               hintText: 'Ex.: Agro Forte Consultoria',
               filled: true,
-              fillColor: Colors.white,
+              fillColor: context.premiumSurface,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
                 borderSide: BorderSide.none,
@@ -172,7 +172,7 @@ class _PreviewCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.premiumSurface,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
@@ -198,7 +198,7 @@ class _PreviewCard extends StatelessWidget {
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF5F7FA),
+                  color: context.premiumBackground,
                   borderRadius: BorderRadius.circular(12),
                   image: issuerImage,
                 ),
@@ -271,7 +271,7 @@ class _FooterBrandPreview extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFFF7F8FA),
+        color: context.premiumBackground,
         borderRadius: BorderRadius.circular(10),
       ),
       child: Row(
@@ -280,7 +280,7 @@ class _FooterBrandPreview extends StatelessWidget {
             width: 32,
             height: 32,
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: context.premiumSurface,
               borderRadius: BorderRadius.circular(8),
               image: assetLogo
                   ? const DecorationImage(

@@ -44,7 +44,7 @@ class ClimaHoraryContent extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20),
           child: Container(
-            decoration: climaCardDecoration(),
+            decoration: climaCardDecoration(context),
             child: Column(
               children: List.generate(previsoes.length, (i) {
                 final h = previsoes[i];
@@ -52,12 +52,12 @@ class ClimaHoraryContent extends StatelessWidget {
                 return Column(
                   children: [
                     if (i > 0)
-                      const Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 16),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
                         child: Divider(
                           height: 1,
                           thickness: 0.5,
-                          color: kClimaDivider,
+                          color: context.climaDivider,
                         ),
                       ),
                     Padding(
@@ -71,10 +71,10 @@ class ClimaHoraryContent extends StatelessWidget {
                             width: 36,
                             child: Text(
                               hora,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontFamily: 'Inter',
                                 fontSize: 14,
-                                color: kClimaTextTertiary,
+                                color: context.climaTextTertiary,
                               ),
                             ),
                           ),
@@ -86,22 +86,22 @@ class ClimaHoraryContent extends StatelessWidget {
                           Expanded(
                             child: Text(
                               h.condicao,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontFamily: 'Inter',
                                 fontSize: 14,
-                                color: kClimaTextSecondary,
+                                color: context.climaTextSecondary,
                               ),
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
                           Text(
                             climaTempShort(h.temperatura, unidade),
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontFamily: 'Inter',
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
                               letterSpacing: -0.4,
-                              color: kClimaTextPrimary,
+                              color: context.climaTextPrimary,
                             ),
                           ),
                           const SizedBox(width: 12),
@@ -110,10 +110,10 @@ class ClimaHoraryContent extends StatelessWidget {
                             child: Text(
                               '${h.precipitacao.toStringAsFixed(0)} mm',
                               textAlign: TextAlign.right,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontFamily: 'Inter',
                                 fontSize: 13,
-                                color: kClimaTint,
+                                color: context.climaTint,
                               ),
                             ),
                           ),
@@ -142,7 +142,7 @@ class _HourCard extends StatelessWidget {
     return Container(
       width: 70,
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 6),
-      decoration: climaHourlyCardDecoration(item.condicaoCodigo),
+      decoration: climaHourlyCardDecoration(context, item.condicaoCodigo),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
@@ -217,7 +217,7 @@ class ClimaWeeklyContent extends StatelessWidget {
             padding: const EdgeInsets.only(bottom: 10),
             child: Container(
               padding: const EdgeInsets.all(16),
-              decoration: climaWeeklyCardDecoration(d.condicaoCodigo),
+              decoration: climaWeeklyCardDecoration(context, d.condicaoCodigo),
               child: Row(
                 children: [
                   Expanded(

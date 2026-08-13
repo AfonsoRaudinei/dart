@@ -8,11 +8,52 @@ import 'package:soloforte_app/modules/marketing/domain/entities/parametro_compar
 import 'package:soloforte_app/modules/marketing/domain/entities/roi_bloco.dart';
 import 'package:soloforte_app/modules/marketing/domain/enums/case_tipo.dart';
 import 'package:soloforte_app/modules/marketing/domain/enums/plano_marketing.dart';
+import 'package:soloforte_app/modules/marketing/domain/enums/produtividade_unidade.dart';
 import 'package:soloforte_app/modules/marketing/presentation/widgets/edit_case_sheet.dart';
 
 void main() {
   group('EditCaseSheet', () {
-    testWidgets('sanitiza campos incompatíveis ao trocar tipo para avaliação', (
+    testWidgets('não permite trocar tipo e sanitiza campos de avaliação', (
+      tester,
+    ) async {
+      MarketingCase? savedCase;
+
+      await tester.pumpWidget(
+        _wrap(
+          EditCaseSheet(
+            caso: _caseAvaliacao(),
+            onClose: () {},
+            onSalvar: (updatedCase) async {
+              savedCase = updatedCase;
+            },
+          ),
+        ),
+      );
+
+      expect(find.text('Resultado'), findsNothing);
+      expect(find.text('Antes/\nDepois'), findsNothing);
+      expect(find.text('Avaliação'), findsWidgets);
+
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Produção ideal'),
+        '72,5',
+      );
+      await tester.ensureVisible(find.text('Salvar'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Salvar'));
+      await tester.pumpAndSettle();
+
+      expect(savedCase, isNotNull);
+      expect(savedCase!.tipo, CaseTipo.avaliacao);
+      expect(savedCase!.produtividadeValor, 72.5);
+      expect(savedCase!.produtividadeUnidade, ProdutividadeUnidade.scHa);
+      expect(savedCase!.fotoPrincipalUrl, isNull);
+      expect(savedCase!.fotoAntesUrl, isNull);
+      expect(savedCase!.fotoDepoisUrl, isNull);
+      expect(savedCase!.parametros, isEmpty);
+    });
+
+    testWidgets('mantém tipo resultado fixo ao salvar edição', (
       tester,
     ) async {
       MarketingCase? savedCase;
@@ -29,27 +70,24 @@ void main() {
         ),
       );
 
-      await tester.tap(find.text('Avaliação'));
-      await tester.pumpAndSettle();
+      expect(find.text('Resultado'), findsWidgets);
+      expect(find.text('Antes/\nDepois'), findsNothing);
 
-      await tester.enterText(find.widgetWithText(TextFormField, 'Nome do talhão'), 'Talhão 7');
-      await tester.ensureVisible(find.text('Salvar'));
+      await tester.scrollUntilVisible(
+        find.text('Salvar'),
+        500,
+        scrollable: find.byType(Scrollable).first,
+      );
       await tester.pumpAndSettle();
       await tester.tap(find.text('Salvar'));
       await tester.pumpAndSettle();
 
       expect(savedCase, isNotNull);
-      expect(savedCase!.tipo, CaseTipo.avaliacao);
-      expect(savedCase!.nomeTalhao, 'Talhão 7');
-      expect(savedCase!.fotoPrincipalUrl, isNull);
-      expect(savedCase!.prodSemProduto, isNull);
-      expect(savedCase!.prodComProduto, isNull);
-      expect(savedCase!.custoProdutoPorHa, isNull);
-      expect(savedCase!.valorGrao, isNull);
-      expect(savedCase!.roi, isNull);
-      expect(savedCase!.fotoAntesUrl, isNull);
-      expect(savedCase!.fotoDepoisUrl, isNull);
-      expect(savedCase!.parametros, isEmpty);
+      expect(savedCase!.tipo, CaseTipo.resultado);
+      expect(savedCase!.produtorFazenda, 'Produtor A');
+      expect(savedCase!.fotoPrincipalUrl, 'https://example.com/resultado.jpg');
+      expect(savedCase!.prodSemProduto, 60);
+      expect(savedCase!.prodComProduto, 68);
     });
 
     testWidgets('mantém loading até o save terminar e mostra erro em falha', (
@@ -89,7 +127,31 @@ void main() {
 
 Widget _wrap(Widget child) {
   return MaterialApp(
-    home: Scaffold(body: child),
+    home: MediaQuery(
+      data: const MediaQueryData(size: Size(800, 1400)),
+      child: Scaffold(body: child),
+    ),
+  );
+}
+
+MarketingCase _caseAvaliacao() {
+  final now = DateTime.utc(2026, 9, 9, 12);
+  return MarketingCase(
+    id: 'case-avaliacao',
+    tipo: CaseTipo.avaliacao,
+    visibilidade: PlanoMarketing.ouro,
+    lat: -12.345,
+    lng: -47.89,
+    localizacaoTexto: 'São domingos',
+    produtorFazenda: 'Afonso',
+    produtoUtilizado: 'coach',
+    dataCase: now,
+    nomeVendedor: 'RAUDINEI',
+    telefoneVendedor: '63992418349',
+    nomeTalhao: 'São domingos',
+    tamanhoHa: 100,
+    criadoEm: now,
+    atualizadoEm: now,
   );
 }
 

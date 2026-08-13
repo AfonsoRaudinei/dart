@@ -158,11 +158,21 @@ class MarketingCasesNotifier
 
     try {
       await _repository.updateCase(optimisticCase);
-      await load(forceSync: true);
     } catch (e, st) {
       AppLogger.error('Erro ao atualizar case', error: e, stackTrace: st);
       state = AsyncData(previousCases);
       rethrow;
+    }
+
+    try {
+      await load(forceSync: true);
+    } catch (e, st) {
+      AppLogger.error(
+        'Erro ao recarregar após update de case; mantendo estado otimista',
+        tag: 'MarketingProvider',
+        error: e,
+        stackTrace: st,
+      );
     }
   }
 

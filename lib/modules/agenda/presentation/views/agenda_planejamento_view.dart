@@ -280,7 +280,7 @@ class _AgendaPlanejamentoViewState
                           ? const Color(0xFF1E2428)
                           : const Color(0xFFF3F4F6))
                     : isActive
-                    ? const Color(0xFF4ADE80)
+                    ? theme.colorScheme.primary
                     : (theme.brightness == Brightness.dark
                           ? const Color(0xFF2A3136)
                           : const Color(0xFFE5E7EB)),
@@ -296,7 +296,7 @@ class _AgendaPlanejamentoViewState
                               ? const Color(0xFF3A3A3C)
                               : const Color(0xFFD1D5DB))
                         : isActive
-                        ? const Color(0xFF14532D)
+                        ? theme.colorScheme.onPrimary
                         : (theme.brightness == Brightness.dark
                               ? const Color(0xFF9CA3AF)
                               : const Color(0xFF6B7280)),
@@ -330,7 +330,7 @@ class _AgendaPlanejamentoViewState
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: isToday
-              ? const Color(0xFF4ADE80)
+              ? theme.colorScheme.primary
               : (theme.brightness == Brightness.dark
                     ? const Color(0xFF2A3136)
                     : const Color(0xFFE5E7EB)),
@@ -455,7 +455,7 @@ class _AgendaPlanejamentoViewState
                   DateFormat('EEEE', 'pt_BR').format(day),
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w700,
-                    color: isSunday ? const Color(0xFF4ADE80) : null,
+                    color: isSunday ? theme.colorScheme.primary : null,
                   ),
                 ),
                 const SizedBox(height: 4),

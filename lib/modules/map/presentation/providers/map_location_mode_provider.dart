@@ -5,7 +5,7 @@ enum MapLocationMode {
   /// Sem rastreamento — ícone seta normal (navigation_outlined)
   idle,
 
-  /// Centralizando no usuário — ícone seta azul preenchida (navigation)
+  /// Centralizando no usuário com norte para cima — ícone seta preenchida
   following,
 
   /// Seguindo + norte travado — ícone bússola (explore)
@@ -15,11 +15,12 @@ enum MapLocationMode {
 /// Provider do estado atual do modo de localização no mapa
 ///
 /// Ciclo de estados no tap:
-/// - idle → following: centraliza o mapa na posição do usuário
-/// - following → northLocked: mantém centralizado + trava norte em 0°
+/// - idle → following: centraliza no usuário com norte para cima (0°)
+/// - following → northLocked: mantém centralizado + norte em 0°
 /// - northLocked → idle: para de seguir
 ///
-/// Quando o usuário move o mapa manualmente, o estado regride para idle
+/// A câmera é sempre norte-acima em following/northLocked (sem course-up).
+/// Quando o usuário move o mapa manualmente, o estado regride para idle.
 final mapLocationModeProvider = StateProvider<MapLocationMode>(
   (ref) => MapLocationMode.idle,
 );

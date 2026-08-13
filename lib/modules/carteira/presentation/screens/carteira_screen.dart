@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 
 import 'package:soloforte_app/core/constants/layout_constants.dart';
@@ -11,18 +12,26 @@ import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 import 'package:soloforte_app/modules/carteira/domain/entities/categoria_global.dart';
 import 'package:soloforte_app/modules/carteira/presentation/providers/carteira_providers.dart';
 import 'package:soloforte_app/modules/carteira/presentation/widgets/carteira_metas_tab.dart';
+import 'package:soloforte_app/modules/carteira/presentation/widgets/carteira_module_scaffold.dart';
+import 'package:soloforte_app/modules/carteira/presentation/widgets/carteira_segment_bar.dart';
 import 'package:soloforte_app/modules/carteira/presentation/widgets/categoria_form_dialog.dart';
 import 'package:soloforte_app/modules/carteira/presentation/widgets/cliente_carteira_card.dart';
-import 'package:soloforte_app/modules/carteira/presentation/screens/oportunidades_detalhe_screen.dart';
-import 'package:soloforte_app/core/contracts/i_client_lookup.dart';
+import 'package:soloforte_app/modules/carteira/presentation/widgets/oportunidades_chart_card.dart';
+import 'package:soloforte_app/modules/carteira/presentation/widgets/oportunidades_chart_mode_toggle.dart';
 
-class CarteiraScreen extends ConsumerWidget {
+class CarteiraScreen extends ConsumerStatefulWidget {
   const CarteiraScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<CarteiraScreen> createState() => _CarteiraScreenState();
+}
+
+class _CarteiraScreenState extends ConsumerState<CarteiraScreen> {
+  @override
+  Widget build(BuildContext context) {
     ref.watch(sessionControllerProvider);
     final userId = LocalSessionIdentity.resolveUserId();
+    final segment = ref.watch(carteiraSegmentProvider);
 
     if (userId.isEmpty) {
       return const Scaffold(
@@ -30,31 +39,19 @@ class CarteiraScreen extends ConsumerWidget {
       );
     }
 
-    return DefaultTabController(
-      length: 4,
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text('Carteira'),
-          bottom: const TabBar(
-            isScrollable: true,
-            tabs: [
-              Tab(text: 'Clientes'),
-              Tab(text: 'Categorias'),
-              Tab(text: 'Metas'),
-              Tab(text: 'Oportunidades'),
-            ],
-          ),
-        ),
-        body: TabBarView(
-          children: [
-            _ClientesTab(userId: userId),
-            _CategoriasTab(userId: userId),
-            const CarteiraMetasTab(),
-            _OportunidadesTab(userId: userId),
-          ],
-        ),
-      ),
+    return CarteiraModuleScaffold(
+      title: 'Carteira',
+      body: _buildSegmentBody(userId, segment),
     );
+  }
+
+  Widget _buildSegmentBody(String userId, CarteiraSegment segment) {
+    return switch (segment) {
+      CarteiraSegment.clientes => _ClientesTab(userId: userId),
+      CarteiraSegment.categorias => _CategoriasTab(userId: userId),
+      CarteiraSegment.metas => const CarteiraMetasTab(),
+      CarteiraSegment.oportunidades => const _OportunidadesTab(),
+    };
   }
 }
 
@@ -270,64 +267,76 @@ class _CategoriasTab extends ConsumerWidget {
         ),
         Expanded(
           child: categoriasAsync.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (_, __) =>
-              const Center(child: Text('Erro ao carregar categorias.')),
-          data: (categorias) {
-            if (categorias.isEmpty) {
-              return const Center(child: Text('Nenhuma categoria ativa.'));
-            }
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (_, __) =>
+                const Center(child: Text('Erro ao carregar categorias.')),
+            data: (categorias) {
+              if (categorias.isEmpty) {
+                return const Center(child: Text('Nenhuma categoria ativa.'));
+              }
 
-            return ListView.builder(
-              padding: const EdgeInsets.only(top: 8, bottom: kFabSafeArea),
-              itemCount: categorias.length,
-              itemBuilder: (context, index) {
-                final categoria = categorias[index];
-                final custoSacasHa = categoria.custoSacasHa(valorGrao);
-                return ListTile(
-                  leading: CircleAvatar(
-                    radius: 10,
-                    backgroundColor: _parseColor(categoria.cor),
-                  ),
-                  title: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(categoria.nome),
-                      if (custoSacasHa != null)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 2),
-                          child: Text(
-                            '${custoSacasHa.toStringAsFixed(3)} sc/ha',
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: Theme.of(context).hintColor,
+              return ListView.builder(
+                padding: const EdgeInsets.only(top: 8, bottom: kFabSafeArea),
+                itemCount: categorias.length,
+                itemBuilder: (context, index) {
+                  final categoria = categorias[index];
+                  final refLabel = categoria.rotuloReferencia();
+                  final equivLabel = categoria.rotuloEquivalenteSacasHa(
+                    valorGrao,
+                  );
+                  final hintColor = Theme.of(context).hintColor;
+                  return ListTile(
+                    leading: CircleAvatar(
+                      radius: 10,
+                      backgroundColor: _parseColor(categoria.cor),
+                    ),
+                    title: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(categoria.nome),
+                        if (refLabel != null)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 2),
+                            child: Text(
+                              refLabel,
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
                           ),
+                        if (equivLabel != null)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 2),
+                            child: Text(
+                              equivLabel,
+                              style: TextStyle(fontSize: 11, color: hintColor),
+                            ),
+                          ),
+                      ],
+                    ),
+                    trailing: Wrap(
+                      spacing: 4,
+                      children: [
+                        IconButton(
+                          tooltip: 'Editar',
+                          icon: const Icon(Icons.edit_outlined),
+                          onPressed: () =>
+                              _editarCategoria(context, ref, categoria),
                         ),
-                    ],
-                  ),
-                  trailing: Wrap(
-                    spacing: 4,
-                    children: [
-                      IconButton(
-                        tooltip: 'Editar',
-                        icon: const Icon(Icons.edit_outlined),
-                        onPressed: () =>
-                            _editarCategoria(context, ref, categoria),
-                      ),
-                      IconButton(
-                        tooltip: 'Desativar',
-                        icon: const Icon(Icons.block_outlined),
-                        onPressed: () =>
-                            _desativarCategoria(context, ref, categoria),
-                      ),
-                    ],
-                  ),
-                );
-              },
-            );
-          },
-        ),
+                        IconButton(
+                          tooltip: 'Desativar',
+                          icon: const Icon(Icons.block_outlined),
+                          onPressed: () =>
+                              _desativarCategoria(context, ref, categoria),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              );
+            },
+          ),
         ),
       ],
     );
@@ -339,89 +348,88 @@ class _CategoriasTab extends ConsumerWidget {
 // ─────────────────────────────────────────────────────────────
 
 class _OportunidadesTab extends ConsumerWidget {
-  const _OportunidadesTab({required this.userId});
+  const _OportunidadesTab();
 
-  final String userId;
+  static final _currencyFormat = NumberFormat.currency(
+    locale: 'pt_BR',
+    symbol: 'R\$',
+    decimalDigits: 0,
+  );
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final clientesAsync = ref.watch(carteiraClientesProvider);
+    final overviewAsync = ref.watch(oportunidadesCarteiraOverviewProvider);
+    final chartMode = ref.watch(oportunidadesChartModeProvider);
 
-    return clientesAsync.when(
+    return overviewAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (_, __) => const Center(child: Text('Erro ao carregar clientes.')),
-      data: (clientes) {
-        if (clientes.isEmpty) {
+      error: (_, __) =>
+          const Center(child: Text('Erro ao carregar oportunidades.')),
+      data: (overview) {
+        if (overview.porCliente.isEmpty) {
           return const Center(child: Text('Nenhuma oportunidade em aberto 🎯'));
         }
-        return _OportunidadesClientesList(clientes: clientes, userId: userId);
-      },
-    );
-  }
-}
 
-class _OportunidadesClientesList extends ConsumerWidget {
-  const _OportunidadesClientesList({
-    required this.clientes,
-    required this.userId,
-  });
+        final slices = overview.slicesFor(chartMode);
+        final chartTitle = chartMode == OportunidadesChartMode.categoria
+            ? 'Oportunidades por categoria'
+            : 'Oportunidades por produtor';
 
-  final List<ClientSummary> clientes;
-  final String userId;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final porCliente = <ClientSummary, List<OportunidadeCliente>>{};
-
-    for (final cliente in clientes) {
-      final lista =
-          ref.watch(oportunidadesClienteProvider(cliente.id)).valueOrNull ?? [];
-      if (lista.isNotEmpty) porCliente[cliente] = lista;
-    }
-
-    final algumCarregando = clientes.any(
-      (c) => ref.watch(oportunidadesClienteProvider(c.id)).isLoading,
-    );
-
-    if (porCliente.isEmpty) {
-      if (algumCarregando) {
-        return const Center(child: CircularProgressIndicator());
-      }
-      return const Center(child: Text('Nenhuma oportunidade em aberto 🎯'));
-    }
-
-    final sorted = porCliente.entries.toList()
-      ..sort((a, b) => b.value.length.compareTo(a.value.length));
-
-    return ListView.builder(
-      padding: const EdgeInsets.only(top: 8, bottom: 24),
-      itemCount: sorted.length,
-      itemBuilder: (context, index) {
-        final entry = sorted[index];
-        final cliente = entry.key;
-        final oportunidades = entry.value;
-
-        return Card(
-          margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          child: ListTile(
-            title: Text(
-              cliente.name,
-              style: const TextStyle(fontWeight: FontWeight.w600),
+        return ListView(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+          children: [
+            OportunidadesChartModeToggle(
+              value: chartMode,
+              onChanged: (mode) {
+                ref.read(oportunidadesChartModeProvider.notifier).state = mode;
+              },
             ),
-            subtitle: Text(
-              '${oportunidades.length} '
-              '${oportunidades.length == 1 ? 'categoria em aberto' : 'categorias em aberto'}',
+            const SizedBox(height: 12),
+            OportunidadesChartCard(
+              slices: slices,
+              title: chartTitle,
+              totalValue: overview.totalValue,
             ),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => OportunidadesDetalheScreen(
-                  clienteId: cliente.id,
-                  clienteNome: cliente.name,
-                ),
+            const SizedBox(height: 16),
+            OportunidadesChartLegend(slices: slices),
+            const SizedBox(height: 8),
+            Text(
+              'Produtores',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Colors.grey[600],
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.5,
               ),
             ),
-          ),
+            const SizedBox(height: 8),
+            ...overview.porCliente.map((resumo) {
+              final cliente = resumo.cliente;
+              final count = resumo.oportunidades.length;
+              return Card(
+                margin: const EdgeInsets.only(bottom: 8),
+                child: ListTile(
+                  title: Text(
+                    cliente.name,
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  subtitle: Text(
+                    '$count '
+                    '${count == 1 ? 'categoria em aberto' : 'categorias em aberto'}'
+                    '${resumo.totalValue > 0 ? ' · ${_currencyFormat.format(resumo.totalValue)}' : ''}',
+                  ),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () {
+                    ref.read(carteiraSegmentProvider.notifier).state =
+                        CarteiraSegment.oportunidades;
+                    context.push(
+                      '${AppRoutes.carteiraOportunidades(cliente.id)}'
+                      '?nome=${Uri.encodeComponent(cliente.name)}',
+                    );
+                  },
+                ),
+              );
+            }),
+          ],
         );
       },
     );

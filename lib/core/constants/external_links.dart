@@ -6,7 +6,8 @@
 class ExternalLinks {
   ExternalLinks._();
 
-  /// Dashboard de feedback (SideMenu → Feedback).
+  /// Dashboard admin de feedback (GitHub Pages → lê tabela Supabase `feedback`).
+  /// Não é entrada do Side Menu: o usuário abre `/feedback` (FeedbackScreen).
   static const feedbackDashboard =
       'https://afonsoraudinei.github.io/Feedback/';
 

@@ -72,9 +72,9 @@ class _TipoProdutoFormDialogState extends State<TipoProdutoFormDialog> {
                     const SizedBox(height: 8),
                     Text(
                       'Ex.: Litros/ha, Sc/ha, Doses/ha',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Colors.grey[600],
-                      ),
+                      style: Theme.of(
+                        context,
+                      ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
                     ),
                     const SizedBox(height: 16),
                     TextFormField(

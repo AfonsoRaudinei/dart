@@ -157,36 +157,39 @@ void main() {
       expect(acima.percentualFechado, 100);
     });
 
-    test('derivarQuantidade segue meta × percentual (CARTEIRA_CALCULOS Cálculo 3)', () {
-      expect(
-        CarteiraLancamento.derivarQuantidade(
-          metaQuantidade: 90,
-          closedPercent: 100,
-        ),
-        90.0,
-      );
-      expect(
-        CarteiraLancamento.derivarQuantidade(
-          metaQuantidade: 90,
-          closedPercent: 50,
-        ),
-        45.0,
-      );
-      expect(
-        CarteiraLancamento.derivarQuantidade(
-          metaQuantidade: 90,
-          closedPercent: 0,
-        ),
-        0.0,
-      );
-      expect(
-        CarteiraLancamento.derivarQuantidade(
-          metaQuantidade: 2678,
-          closedPercent: 50,
-        ),
-        closeTo(1339, 0.001),
-      );
-    });
+    test(
+      'derivarQuantidade segue meta × percentual (CARTEIRA_CALCULOS Cálculo 3)',
+      () {
+        expect(
+          CarteiraLancamento.derivarQuantidade(
+            metaQuantidade: 90,
+            closedPercent: 100,
+          ),
+          90.0,
+        );
+        expect(
+          CarteiraLancamento.derivarQuantidade(
+            metaQuantidade: 90,
+            closedPercent: 50,
+          ),
+          45.0,
+        );
+        expect(
+          CarteiraLancamento.derivarQuantidade(
+            metaQuantidade: 90,
+            closedPercent: 0,
+          ),
+          0.0,
+        );
+        expect(
+          CarteiraLancamento.derivarQuantidade(
+            metaQuantidade: 2678,
+            closedPercent: 50,
+          ),
+          closeTo(1339, 0.001),
+        );
+      },
+    );
 
     test('derivarOportunidadeVolume retorna meta - realizado', () {
       expect(

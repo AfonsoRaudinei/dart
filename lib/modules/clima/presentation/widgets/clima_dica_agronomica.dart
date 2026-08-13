@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 
 import 'package:soloforte_app/modules/clima/domain/entities/previsao_diaria.dart';
+import 'package:soloforte_app/modules/clima/presentation/widgets/clima_tokens.dart';
 
 // ─── Dica Agronomica Card ─────────────────────────────────────────────────────
 
 /// Card com dicas agronômicas geradas por regras a partir da previsão semanal.
-/// Exibido no topo da visão de 7 dias.
 class ClimaDicaAgronomicaCard extends StatelessWidget {
   final List<PrevisaoDiaria> previsoes;
 
@@ -16,25 +16,33 @@ class ClimaDicaAgronomicaCard extends StatelessWidget {
     final dicas = _gerarDicas(previsoes);
     if (dicas.isEmpty) return const SizedBox.shrink();
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final backgroundColor = isDark
+        ? const Color(0xFF242426)
+        : const Color(0xFFF0FFF4);
+    final borderColor = isDark
+        ? context.climaTint.withValues(alpha: 0.45)
+        : const Color.fromRGBO(52, 199, 89, 0.35);
+    final textColor = isDark
+        ? context.climaTextPrimary
+        : const Color(0xFF1A6B3C);
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: const Color(0xFFF0FFF4),
+          color: backgroundColor,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: const Color.fromRGBO(52, 199, 89, 0.35),
-            width: 0.5,
-          ),
+          border: Border.all(color: borderColor, width: 0.5),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Row(
+            Row(
               children: [
-                Text('🌱', style: TextStyle(fontSize: 16)),
-                SizedBox(width: 8),
+                const Text('🌱', style: TextStyle(fontSize: 16)),
+                const SizedBox(width: 8),
                 Text(
                   'DICAS AGRONÔMICAS',
                   style: TextStyle(
@@ -42,7 +50,7 @@ class ClimaDicaAgronomicaCard extends StatelessWidget {
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 0.8,
-                    color: Color(0xFF1A6B3C),
+                    color: textColor,
                   ),
                 ),
               ],
@@ -59,12 +67,12 @@ class ClimaDicaAgronomicaCard extends StatelessWidget {
                     Expanded(
                       child: Text(
                         d.texto,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontFamily: 'Inter',
                           fontSize: 14,
                           fontWeight: FontWeight.w400,
                           height: 1.4,
-                          color: Color(0xFF1A6B3C),
+                          color: textColor,
                         ),
                       ),
                     ),
@@ -85,7 +93,6 @@ class ClimaDicaAgronomicaCard extends StatelessWidget {
     final proximos2 = previsoes.take(2).toList();
     final proximos7 = previsoes.take(7).toList();
 
-    // Regra 1: chuva intensa nos próximos 2 dias
     final chuvaIntensa = proximos2.any((d) => d.precipitacao > 5);
     if (chuvaIntensa) {
       dicas.add(const _Dica(
@@ -94,7 +101,6 @@ class ClimaDicaAgronomicaCard extends StatelessWidget {
       ));
     }
 
-    // Regra 2: período seco prolongado
     final seco = proximos7.every((d) => d.precipitacao < 1);
     if (seco) {
       dicas.add(const _Dica(
@@ -103,7 +109,6 @@ class ClimaDicaAgronomicaCard extends StatelessWidget {
       ));
     }
 
-    // Regra 3: ventos fortes nos próximos 2 dias
     final ventoForte = proximos2.any((d) => d.ventoMedio > 20);
     if (ventoForte) {
       dicas.add(const _Dica(
@@ -112,7 +117,6 @@ class ClimaDicaAgronomicaCard extends StatelessWidget {
       ));
     }
 
-    // Regra 4: alertas meteorológicos ativos
     final temAlerta = proximos7.any((d) => d.temAlerta);
     if (temAlerta) {
       dicas.add(const _Dica(
@@ -121,7 +125,6 @@ class ClimaDicaAgronomicaCard extends StatelessWidget {
       ));
     }
 
-    // Regra 5: condições favoráveis (sem chuva, sem vento, sem alertas)
     if (!chuvaIntensa && !seco && !ventoForte && !temAlerta) {
       dicas.add(const _Dica(
         '✅',
@@ -132,8 +135,6 @@ class ClimaDicaAgronomicaCard extends StatelessWidget {
     return dicas;
   }
 }
-
-// ─── Modelo interno ───────────────────────────────────────────────────────────
 
 class _Dica {
   final String emoji;

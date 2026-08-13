@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
 import '../../domain/enums/event_type.dart';
@@ -222,6 +223,10 @@ class _AgendaFilterChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final unselectedFill = context.premiumSurface;
+    final unselectedBorder = context.premiumHairline;
+    final unselectedText = context.premiumTextPrimary;
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -233,19 +238,17 @@ class _AgendaFilterChip extends StatelessWidget {
           decoration: BoxDecoration(
             color: isSelected
                 ? accentColor.withValues(alpha: 0.14)
-                : Colors.white,
+                : unselectedFill,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: isSelected
-                  ? accentColor
-                  : const Color(0xFFE5E7EB).withValues(alpha: 0.18),
+              color: isSelected ? accentColor : unselectedBorder,
               width: isSelected ? 1.5 : 1,
             ),
           ),
           child: Text(
             label,
             style: TextStyle(
-              color: isSelected ? accentColor : const Color(0xFF202124),
+              color: isSelected ? accentColor : unselectedText,
               fontSize: 15,
               fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
             ),

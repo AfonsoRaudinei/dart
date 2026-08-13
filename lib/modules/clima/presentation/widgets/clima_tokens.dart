@@ -1,15 +1,32 @@
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 
-// ─── Design Tokens — Módulo Clima ─────────────────────────────────────────────
+// ─── Design Tokens — Módulo Clima (theme-aware) ─────────────────────────────
 
-const kClimaBg = Color(0xFFF2F2F7);
-const kClimaCard = Colors.white;
-const kClimaTint = Color(0xFF34C759);
-const kClimaTextPrimary = Color(0xFF000000);
-const kClimaTextSecondary = Color(0xFF3C3C43);
-const kClimaTextTertiary = Color(0xFF8E8E93);
-const kClimaDivider = Color(0xFFE5E5EA);
-const kClimaShadow = Color.fromRGBO(0, 0, 0, 0.06);
+/// Cores do módulo Clima derivadas do tema ativo (Verde/Azul/Black).
+extension ClimaTheme on BuildContext {
+  Color get climaBg => premiumBackground;
+
+  Color get climaCard => premiumSurface;
+
+  Color get climaTint => Theme.of(this).colorScheme.primary;
+
+  Color get climaTextPrimary => premiumTextPrimary;
+
+  Color get climaTextSecondary => premiumTextSecondary;
+
+  Color get climaTextTertiary => premiumTextTertiary;
+
+  Color get climaDivider => premiumHairline;
+
+  Color get climaShadow => Colors.black.withValues(
+        alpha: Theme.of(this).brightness == Brightness.dark ? 0.28 : 0.06,
+      );
+
+  Color get climaSegmentTrack => Theme.of(this).brightness == Brightness.dark
+      ? const Color(0xFF242426)
+      : const Color(0xFFE5E5EA);
+}
 
 /// Texto sobre cards com gradiente (hero, horário, semanal).
 const kClimaOnGradientText = Colors.white;
@@ -19,13 +36,13 @@ const kClimaOnGradientAccent = Color(0xFFBFE9FF);
 // ─── Helpers compartilhados ───────────────────────────────────────────────────
 
 /// Decoração padrão dos cards iOS do módulo clima.
-BoxDecoration climaCardDecoration() => BoxDecoration(
-      color: kClimaCard,
+BoxDecoration climaCardDecoration(BuildContext context) => BoxDecoration(
+      color: context.climaCard,
       borderRadius: BorderRadius.circular(20),
-      boxShadow: const [
+      boxShadow: [
         BoxShadow(
-          color: kClimaShadow,
-          offset: Offset(0, 8),
+          color: context.climaShadow,
+          offset: const Offset(0, 8),
           blurRadius: 24,
         ),
       ],
@@ -83,6 +100,7 @@ LinearGradient climaWeatherGradient(String condicaoCodigo) {
 
 /// Decoração com gradiente por condição — hero, horário ou semanal.
 BoxDecoration climaGradientCardDecoration(
+  BuildContext context,
   String condicaoCodigo, {
   double radius = 20,
   Offset shadowOffset = const Offset(0, 8),
@@ -93,7 +111,7 @@ BoxDecoration climaGradientCardDecoration(
       borderRadius: BorderRadius.circular(radius),
       boxShadow: [
         BoxShadow(
-          color: kClimaShadow,
+          color: context.climaShadow,
           offset: shadowOffset,
           blurRadius: shadowBlur,
         ),
@@ -101,12 +119,19 @@ BoxDecoration climaGradientCardDecoration(
     );
 
 /// Decoração do card principal com gradiente + sombra.
-BoxDecoration climaHeroCardDecoration(String condicaoCodigo) =>
-    climaGradientCardDecoration(condicaoCodigo);
+BoxDecoration climaHeroCardDecoration(
+  BuildContext context,
+  String condicaoCodigo,
+) =>
+    climaGradientCardDecoration(context, condicaoCodigo);
 
 /// Cards compactos do carrossel horário.
-BoxDecoration climaHourlyCardDecoration(String condicaoCodigo) =>
+BoxDecoration climaHourlyCardDecoration(
+  BuildContext context,
+  String condicaoCodigo,
+) =>
     climaGradientCardDecoration(
+      context,
       condicaoCodigo,
       radius: 16,
       shadowOffset: const Offset(0, 4),
@@ -114,8 +139,12 @@ BoxDecoration climaHourlyCardDecoration(String condicaoCodigo) =>
     );
 
 /// Cards diários da previsão semanal.
-BoxDecoration climaWeeklyCardDecoration(String condicaoCodigo) =>
+BoxDecoration climaWeeklyCardDecoration(
+  BuildContext context,
+  String condicaoCodigo,
+) =>
     climaGradientCardDecoration(
+      context,
       condicaoCodigo,
       radius: 20,
       shadowOffset: const Offset(0, 6),
@@ -123,7 +152,6 @@ BoxDecoration climaWeeklyCardDecoration(String condicaoCodigo) =>
     );
 
 /// Converte o código de ícone da OpenWeatherMap em emoji.
-/// Ex: '01d' → '☀️', '01n' → '🌙', '11d' → '⛈️'
 String climaWeatherEmoji(String code) {
   final isDay = code.endsWith('d');
   final base = code.replaceAll(RegExp(r'[dn]$'), '');
@@ -145,7 +173,6 @@ String climaWeatherEmoji(String code) {
 
 enum ClimaUnidade { celsius, fahrenheit }
 
-/// Temperatura com símbolo de unidade. Ex: '23°C' ou '73°F'
 String climaTempStr(double celsius, ClimaUnidade unit) {
   if (unit == ClimaUnidade.fahrenheit) {
     return '${(celsius * 9 / 5 + 32).round()}°F';
@@ -153,7 +180,6 @@ String climaTempStr(double celsius, ClimaUnidade unit) {
   return '${celsius.round()}°C';
 }
 
-/// Temperatura curta sem abreviação. Ex: '23°' ou '73°'
 String climaTempShort(double celsius, ClimaUnidade unit) {
   if (unit == ClimaUnidade.fahrenheit) {
     return '${(celsius * 9 / 5 + 32).round()}°';
@@ -161,6 +187,5 @@ String climaTempShort(double celsius, ClimaUnidade unit) {
   return '${celsius.round()}°';
 }
 
-/// Valor numérico convertido — para uso em gráficos.
 double climaTempValue(double celsius, ClimaUnidade unit) =>
     unit == ClimaUnidade.fahrenheit ? celsius * 9 / 5 + 32 : celsius;

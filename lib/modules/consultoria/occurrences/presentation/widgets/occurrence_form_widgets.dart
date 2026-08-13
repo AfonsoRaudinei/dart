@@ -426,11 +426,15 @@ class OccurrenceRadioChip extends StatelessWidget {
 class OccurrencePhotoSourceSheet extends StatelessWidget {
   final String catEmoji;
   final String catLabel;
+  final VoidCallback onCamera;
+  final VoidCallback onGallery;
 
   const OccurrencePhotoSourceSheet({
     super.key,
     required this.catEmoji,
     required this.catLabel,
+    required this.onCamera,
+    required this.onGallery,
   });
 
   @override
@@ -460,7 +464,7 @@ class OccurrencePhotoSourceSheet extends StatelessWidget {
               color: Colors.white70,
             ),
             title: const Text('Câmera', style: TextStyle(color: Colors.white)),
-            onTap: () => Navigator.pop(context, ImageSource.camera),
+            onTap: onCamera,
           ),
           ListTile(
             leading: const Icon(
@@ -468,7 +472,7 @@ class OccurrencePhotoSourceSheet extends StatelessWidget {
               color: Colors.white70,
             ),
             title: const Text('Galeria', style: TextStyle(color: Colors.white)),
-            onTap: () => Navigator.pop(context, ImageSource.gallery),
+            onTap: onGallery,
           ),
         ],
       ),

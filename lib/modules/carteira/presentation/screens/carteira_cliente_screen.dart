@@ -11,6 +11,8 @@ import 'package:soloforte_app/modules/carteira/domain/entities/categoria_global.
 import 'package:soloforte_app/modules/carteira/domain/entities/cliente_categoria.dart';
 import 'package:soloforte_app/modules/carteira/presentation/providers/carteira_providers.dart';
 import 'package:soloforte_app/modules/carteira/presentation/widgets/categoria_form_dialog.dart';
+import 'package:soloforte_app/modules/carteira/presentation/widgets/carteira_module_scaffold.dart';
+import 'package:soloforte_app/modules/carteira/presentation/widgets/carteira_segment_bar.dart';
 import 'package:soloforte_app/modules/carteira/presentation/widgets/lancamento_form_dialog.dart';
 
 class CarteiraClienteScreen extends ConsumerWidget {
@@ -36,13 +38,16 @@ class CarteiraClienteScreen extends ConsumerWidget {
       categoriasClienteProvider((userId: userId, clienteId: clienteId)),
     );
 
-    return Scaffold(
-      appBar: AppBar(
-        title: clienteAsync.when(
-          data: (cliente) => Text(cliente?.name ?? 'Cliente'),
-          loading: () => const Text('Carteira do Cliente'),
-          error: (_, __) => const Text('Carteira do Cliente'),
-        ),
+    return CarteiraModuleScaffold(
+      title: clienteAsync.when(
+        data: (cliente) => cliente?.name ?? 'Cliente',
+        loading: () => 'Carteira do Cliente',
+        error: (_, __) => 'Carteira do Cliente',
+      ),
+      forceSegment: CarteiraSegment.clientes,
+      leading: IconButton(
+        icon: const Icon(Icons.arrow_back),
+        onPressed: () => context.go(AppRoutes.carteira),
       ),
       body: categoriasAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
@@ -178,8 +183,9 @@ class CarteiraClienteScreen extends ConsumerWidget {
     if (result == null) return;
 
     final now = DateTime.now();
-    final categorias =
-        await ref.read(carteiraRepositoryProvider).getCategorias(userId);
+    final categorias = await ref
+        .read(carteiraRepositoryProvider)
+        .getCategorias(userId);
     final nova = CategoriaGlobal(
       id: const Uuid().v4(),
       userId: userId,
@@ -287,6 +293,12 @@ class _CategoriaClienteItemState extends ConsumerState<_CategoriaClienteItem> {
         categoriaId: widget.categoria.id,
       )),
     );
+    final closedPctAsync = ref.watch(
+      closedPercentClienteCategoriaProvider((
+        clienteId: widget.clienteId,
+        categoriaId: widget.categoria.id,
+      )),
+    );
     final lancamentosAsync = ref.watch(
       lancamentosSafraProvider((
         categoriaId: widget.categoria.id,
@@ -296,9 +308,7 @@ class _CategoriaClienteItemState extends ConsumerState<_CategoriaClienteItem> {
 
     final meta = metaAsync.valueOrNull;
     final realizado = realizadoAsync.valueOrNull ?? 0.0;
-    final pct = (meta != null && meta.quantidade > 0)
-        ? (realizado / meta.quantidade * 100.0).clamp(0.0, 100.0)
-        : 0.0;
+    final pct = closedPctAsync.valueOrNull ?? 0.0;
     final totalHistorico = lancamentosAsync.valueOrNull?.length ?? 0;
 
     return Card(
@@ -364,7 +374,32 @@ class _CategoriaClienteItemState extends ConsumerState<_CategoriaClienteItem> {
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      '${pct.toStringAsFixed(0)}%',
+                      '${pct.toStringAsFixed(0)}% fechado',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ] else if (pct > 0) ...[
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Expanded(
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(4),
+                        child: LinearProgressIndicator(
+                          value: pct / 100.0,
+                          backgroundColor: Colors.grey[200],
+                          color: cor,
+                          minHeight: 6,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      '${pct.toStringAsFixed(0)}% fechado',
                       style: const TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
