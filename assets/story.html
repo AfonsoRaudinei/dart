@@ -1126,13 +1126,13 @@ html, body {
       <div class="hero-result">
         <div class="hero-result-eyebrow">Incremento de Produtividade</div>
         <div class="hero-result-number">
-          <span class="plus">+</span><!--GANHO-->10,0<span class="unit">sc/ha</span>
+          <span class="plus"><!--GANHO_SINAL-->+</span><!--GANHO-->10,0<span class="unit"><!--GANHO_UNIDADE-->sc/ha</span>
         </div>
         <div class="hero-result-label">sobre a testemunha</div>
 
         <div class="roi-pill">
           <span class="roi-pill-label">ROI</span>
-          <!--ROI_VALOR-->R$ 1.040,00/ha
+          <!--ROI_VALOR-->R$ 1.040,00<!--ROI_SUFIXO-->/ha
         </div>
       </div>
 
@@ -1226,7 +1226,7 @@ html, body {
           </div>
           <div class="compare-side-overlay"></div>
           <div class="compare-side-label">Padrão</div>
-          <div class="compare-side-value"><!--TESTEMUNHA-->100<small> sc/ha</small></div>
+          <div class="compare-side-value"><!--TESTEMUNHA-->100<small> <!--UNIDADE-->sc/ha</small></div>
         </div>
 
         <!-- Lado direito — Depois / Com produto -->
@@ -1262,7 +1262,7 @@ html, body {
           </div>
           <div class="compare-side-overlay"></div>
           <div class="compare-side-label">Com Produto</div>
-          <div class="compare-side-value"><!--COM_PRODUTO-->110<small> sc/ha</small></div>
+          <div class="compare-side-value"><!--COM_PRODUTO-->110<small> <!--UNIDADE-->sc/ha</small></div>
         </div>
 
         <!-- Divisor -->
@@ -1280,18 +1280,18 @@ html, body {
       <div class="compare-metrics">
         <div class="metric-card gain">
           <div class="metric-label">Ganho</div>
-          <div class="metric-value positive"><!--GANHO-->+10,0</div>
-          <div class="metric-unit">sc/ha</div>
+          <div class="metric-value positive"><!--GANHO_SINAL-->+<!--GANHO-->10,0</div>
+          <div class="metric-unit"><!--GANHO_UNIDADE-->sc/ha</div>
         </div>
         <div class="metric-card roi">
           <div class="metric-label">ROI Líquido</div>
           <div class="metric-value amber"><!--ROI_SACAS-->9,5</div>
-          <div class="metric-unit">sc/ha pagas</div>
+          <div class="metric-unit"><!--ROI_SACAS_UNIDADE-->sc/ha pagas</div>
         </div>
         <div class="metric-card area">
           <div class="metric-label">Área</div>
           <div class="metric-value"><!--AREA-->50</div>
-          <div class="metric-unit">hectares</div>
+          <div class="metric-unit"><!--AREA_UNIDADE-->hectares</div>
         </div>
       </div>
 
@@ -1311,8 +1311,8 @@ html, body {
           <circle cx="12" cy="10" r="3" fill="rgba(255,255,255,0.85)" style="filter: blur(0.4px);"/>
         </svg>
         <div class="compare-location-text">
-          <!--FAZENDA-->Fazenda São João
-          <br><span><!--MUNICIPIO-->Sorriso/MT · <!--PRODUTOR-->João Silva</span>
+          <!--PRODUTOR-->Cliente · Fazenda São João
+          <br><span><!--MUNICIPIO-->Sorriso/MT</span>
         </div>
       </div>
 
@@ -1365,8 +1365,8 @@ html, body {
       <div class="review-producer">
         <div class="review-avatar"><!--INICIAL-->J</div>
         <div class="review-producer-info">
-          <div class="review-producer-name"><!--PRODUTOR-->João da Silva</div>
-          <div class="review-producer-role"><!--FAZENDA-->Fazenda São João · <!--MUNICIPIO-->Sorriso/MT</div>
+          <div class="review-producer-name"><!--PRODUTOR-->Cliente · Fazenda São João</div>
+          <div class="review-producer-role"><!--MUNICIPIO-->Sorriso/MT</div>
         </div>
       </div>
 
@@ -1374,13 +1374,13 @@ html, body {
       <div class="review-summary">
         <div class="review-summary-item">
           <div class="review-summary-label">Ganho</div>
-          <div class="review-summary-value highlight">+<!--GANHO-->10,0</div>
-          <div class="review-summary-unit">sc/ha</div>
+          <div class="review-summary-value highlight"><!--GANHO_SINAL-->+<!--GANHO-->10,0</div>
+          <div class="review-summary-unit"><!--GANHO_UNIDADE-->sc/ha</div>
         </div>
         <div class="review-summary-item">
           <div class="review-summary-label">ROI Líquido</div>
-          <div class="review-summary-value">R$ <!--ROI_VALOR-->1.040</div>
-          <div class="review-summary-unit">por hectare</div>
+          <div class="review-summary-value"><!--ROI_VALOR-->R$ 1.040,00</div>
+          <div class="review-summary-unit"><!--ROI_UNIDADE-->por hectare</div>
         </div>
         <div class="review-summary-item">
           <div class="review-summary-label">Produto</div>
