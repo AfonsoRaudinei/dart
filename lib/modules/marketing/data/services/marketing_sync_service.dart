@@ -27,10 +27,7 @@ class MarketingSyncService {
       _lastSync = DateTime.now();
       return remoteCases;
     } catch (e) {
-      AppLogger.error(
-        'Erro no Sync de MarketingCase, servindo Cache antigo',
-        error: e,
-      );
+      AppLogger.error('Erro no Sync de MarketingCase, servindo Cache antigo', error: e);
       return await _repository.getLocalCases();
     }
   }

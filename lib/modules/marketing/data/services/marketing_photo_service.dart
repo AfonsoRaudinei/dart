@@ -106,11 +106,7 @@ class MarketingPhotoService {
       final publicUrl = _supabase.storage.from(_bucket).getPublicUrl(path);
       return publicUrl;
     } on StorageException catch (e, st) {
-      AppLogger.error(
-        'MarketingPhotoService upload error',
-        error: e,
-        stackTrace: st,
-      );
+      AppLogger.error('MarketingPhotoService upload error', error: e, stackTrace: st);
       rethrow;
     } catch (e) {
       AppLogger.error('MarketingPhotoService unexpected error', error: e);
