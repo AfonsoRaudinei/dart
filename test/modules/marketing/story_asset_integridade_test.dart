@@ -117,6 +117,22 @@ void main() {
       expect(out, isNot(contains('+—')));
     });
 
+    test('valores em pt-BR usam separador de milhar', () {
+      final out = injectStoryData(
+        story,
+        caseBase(
+          unidade: 'sc/ha',
+          prodSem: 60,
+          prodCom: 70,
+          custo: 90,
+          valor: 110,
+        ),
+      );
+
+      expect(out, contains('R\$ 1.010,00'));
+      expect(out, isNot(contains('R\$ 1010,00')));
+    });
+
     test('RoiBloco percentual nunca vira moeda', () {
       final out = injectStoryData(
         story,

@@ -1,3 +1,5 @@
+import 'package:intl/intl.dart';
+
 import '../../../../core/html_templates/relatorio_html_renderer.dart';
 import '../../domain/entities/marketing_case.dart';
 import '../../domain/entities/marketing_roi_calculation.dart';
@@ -275,9 +277,9 @@ String _firstNonEmpty(List<String?> values) {
 }
 
 String _formatNumber(double value) {
-  return value.toStringAsFixed(1).replaceAll('.', ',');
+  return NumberFormat('#,##0.0', 'pt_BR').format(value);
 }
 
 String _formatMoney(double value) {
-  return value.toStringAsFixed(2).replaceAll('.', ',');
+  return NumberFormat('#,##0.00', 'pt_BR').format(value);
 }
