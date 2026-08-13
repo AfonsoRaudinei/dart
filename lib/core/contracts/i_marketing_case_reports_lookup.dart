@@ -9,6 +9,9 @@ abstract interface class IMarketingCaseReportsLookup {
 
   Future<void> showEditSheet(BuildContext context, String caseId);
 
+  /// Publica um rascunho se houver vaga no plano. Retorna `true` se publicado.
+  Future<bool> publishDraftCase(BuildContext context, String caseId);
+
   Future<MarketingCaseReportExportBundle> buildExportBundle(
     String caseId, {
     required String? fallbackConsultantName,
