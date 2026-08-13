@@ -74,6 +74,9 @@ String injectStoryData(
     'GANHO_SINAL': ganho.sinal,
     'GANHO': ganhoEscaped,
     'GANHO_UNIDADE': _escapeText(ganho.unidade),
+    'GANHO_TITULO': _escapeText(ganho.titulo),
+    'GANHO_BASE': _escapeText(ganho.base),
+    'GANHO_ROTULO': _escapeText(ganho.rotulo),
     'UNIDADE': _escapeText(unidade),
     'ROI_VALOR': roiTexto.valor,
     'ROI_SUFIXO': roiTexto.sufixo,
@@ -98,6 +101,13 @@ String injectStoryData(
     final key = match.group(1)!;
     return markers[key] ?? match.group(0)!;
   });
+
+  // Verde é afirmação de ganho: um resultado negativo não pode sair verde,
+  // nem no número nem na faixa do card.
+  if (ganho.negativo) {
+    out = out.replaceAll('metric-value positive', 'metric-value negative');
+    out = out.replaceAll('metric-card gain', 'metric-card loss');
+  }
 
   final logo = logoSrc?.trim() ?? '';
   out = out.replaceAll('{{LOGO_URL}}', logo);
@@ -158,41 +168,74 @@ String _replacePhotoPlaceholder(
 /// Ganho quebrado em sinal, magnitude e unidade — o template não prefixa
 /// sinal nem unidade, senão um ganho negativo vira "+-3,4 sc/ha".
 class _Ganho {
-  const _Ganho(this.sinal, this.valor, this.unidade);
+  const _Ganho({
+    this.sinal = '',
+    required this.valor,
+    this.unidade = '',
+    required this.titulo,
+    this.base = '',
+    required this.rotulo,
+    this.negativo = false,
+  });
 
   final String sinal;
   final String valor;
   final String unidade;
 
+  /// Título e base do slide 1, e rótulo do card: o número nem sempre é um
+  /// incremento sobre testemunha, e o texto fixo dizia que sempre era.
+  final String titulo;
+  final String base;
+  final String rotulo;
+  final bool negativo;
+
+  static const _tituloIncremento = 'Incremento de Produtividade';
+
   static _Ganho from(MarketingCase c, MarketingRoiCalculation? roi) {
     final livre = c.ganhoProdutividade?.trim();
     if (livre != null && livre.isNotEmpty) {
       // Texto livre do consultor já carrega sinal e unidade próprios.
-      return _Ganho('', livre, '');
+      return _Ganho(
+        valor: livre,
+        titulo: _tituloIncremento,
+        rotulo: 'Ganho',
+        negativo: livre.startsWith('-') || livre.startsWith('−'),
+      );
     }
     final unidade = _unidadeText(c);
     if (roi != null) {
       return _Ganho(
-        _sinal(roi.ganhoScHa),
-        _formatNumber(roi.ganhoScHa.abs()),
-        unidade,
+        sinal: _sinal(roi.ganhoScHa),
+        valor: _formatNumber(roi.ganhoScHa.abs()),
+        unidade: unidade,
+        titulo: _tituloIncremento,
+        base: 'sobre a testemunha',
+        rotulo: 'Ganho',
+        negativo: roi.ganhoScHa < 0,
       );
     }
     if (c.produtividadeValor != null) {
+      // Produtividade absoluta, não incremento: sem sinal e sem "sobre a
+      // testemunha", que afirmariam uma comparação que não existe.
       return _Ganho(
-        _sinal(c.produtividadeValor!),
-        _formatNumber(c.produtividadeValor!.abs()),
-        unidade,
+        valor: _formatNumber(c.produtividadeValor!),
+        unidade: unidade,
+        titulo: 'Produtividade',
+        rotulo: 'Produtividade',
       );
     }
     if (c.mediaGanhoPercent != 0) {
       return _Ganho(
-        _sinal(c.mediaGanhoPercent),
-        _formatNumber(c.mediaGanhoPercent.abs()),
-        '%',
+        sinal: _sinal(c.mediaGanhoPercent),
+        valor: _formatNumber(c.mediaGanhoPercent.abs()),
+        unidade: '%',
+        titulo: 'Ganho Médio',
+        base: 'média dos parâmetros',
+        rotulo: 'Ganho médio',
+        negativo: c.mediaGanhoPercent < 0,
       );
     }
-    return const _Ganho('', '—', '');
+    return const _Ganho(valor: '—', titulo: _tituloIncremento, rotulo: 'Ganho');
   }
 }
 
