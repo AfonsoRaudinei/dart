@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import '../../../../ui/theme/premium/design_tokens.dart';
 import '../../domain/enums/case_tipo.dart';
 import '../../domain/enums/plano_marketing.dart';
+import '../theme/plano_marketing_visual.dart';
 
 class CaseTipoSelector extends StatelessWidget {
   final CaseTipo selectedTipo;
@@ -49,9 +50,7 @@ class CaseTipoSelector extends StatelessWidget {
                 labels[t]!,
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                  color: isSelected
-                      ? Colors.white
-                      : const Color(0xFF8E8E93),
+                  color: isSelected ? Colors.white : const Color(0xFF8E8E93),
                   fontWeight: isSelected ? FontWeight.w700 : FontWeight.normal,
                 ),
               ),
@@ -75,15 +74,10 @@ class PlanoMarketingSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = {
-      PlanoMarketing.ouro: const Color(0xFFFFB800),
-      PlanoMarketing.prata: const Color(0xFF9EA9B2),
-      PlanoMarketing.bronze: const Color(0xFFA0522D),
-    };
     return Row(
       children: PlanoMarketing.values.map((p) {
         final isSelected = selectedPlano == p;
-        final color = colors[p]!;
+        final color = p.color;
         return Expanded(
           child: GestureDetector(
             onTap: () {
@@ -109,9 +103,7 @@ class PlanoMarketingSelector extends StatelessWidget {
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
                   color: color,
-                  fontWeight: isSelected
-                      ? FontWeight.w700
-                      : FontWeight.normal,
+                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.normal,
                 ),
               ),
             ),
