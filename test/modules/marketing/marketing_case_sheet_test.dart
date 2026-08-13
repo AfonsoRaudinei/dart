@@ -32,8 +32,9 @@ void main() {
       expect(find.text('Testemunha'), findsOneWidget);
       expect(find.text('Com produto'), findsOneWidget);
       expect(find.text('Ganho'), findsOneWidget);
-      // Chip de métrica: label acima do valor
-      expect(find.text('ROI/ha'), findsOneWidget);
+      // Bloco de resultado: valor herói acima do rótulo descritivo
+      expect(find.text('R\$ 980,00'), findsOneWidget);
+      expect(find.text('ROI líquido por hectare'), findsOneWidget);
     });
   });
 }
