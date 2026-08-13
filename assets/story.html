@@ -371,27 +371,7 @@ html, body {
   padding: 14px 22px 22px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-}
-
-.hero-crop-tag {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  background: rgba(255,255,255,0.08);
-  border: 1px solid rgba(255,255,255,0.14);
-  border-radius: 100px;
-  padding: 6px 14px 6px 10px;
-  font-size: 12px;
-  color: rgba(255,255,255,0.82);
-  font-weight: 500;
-  letter-spacing: 0.02em;
-}
-
-.hero-crop-tag svg {
-  width: 18px;
-  height: 18px;
-  flex-shrink: 0;
+  justify-content: flex-end;
 }
 
 .hero-safra {
@@ -608,6 +588,7 @@ html, body {
 }
 
 .metric-card.gain::before { background: var(--green-leaf); }
+.metric-card.loss::before { background: #FF3B30; }
 .metric-card.roi::before { background: var(--amber); }
 .metric-card.area::before { background: var(--navy); }
 
@@ -628,6 +609,7 @@ html, body {
 }
 
 .metric-value.positive { color: var(--green); }
+.metric-value.negative { color: #FF3B30; }
 .metric-value.amber { color: var(--navy); }
 
 .metric-unit {
@@ -747,65 +729,17 @@ html, body {
   justify-content: center;
 }
 
-/* Estrelas */
-.review-stars-section {
+/* Eyebrow */
+.review-eyebrow-section {
   padding: 28px 22px 0;
   text-align: center;
 }
 
-.review-stars-eyebrow {
+.review-eyebrow {
   font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: rgba(255,255,255,0.4);
-  margin-bottom: 14px;
-}
-
-.stars {
-  display: flex;
-  justify-content: center;
-  gap: 8px;
-  margin-bottom: 8px;
-}
-
-.star {
-  width: 36px;
-  height: 36px;
-  position: relative;
-}
-
-.star svg {
-  width: 100%;
-  height: 100%;
-  filter:
-    drop-shadow(0 4px 12px rgba(245,185,53,0.55))
-    drop-shadow(0 1px 2px rgba(245,185,53,0.4));
-  animation: star-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
-}
-
-.star:nth-child(1) svg { animation-delay: 0.05s; }
-.star:nth-child(2) svg { animation-delay: 0.12s; }
-.star:nth-child(3) svg { animation-delay: 0.19s; }
-.star:nth-child(4) svg { animation-delay: 0.26s; }
-.star:nth-child(5) svg { animation-delay: 0.33s; }
-
-@keyframes star-pop {
-  from { transform: scale(0) rotate(-20deg); opacity: 0; }
-  to   { transform: scale(1) rotate(0deg);  opacity: 1; }
-}
-
-.review-score {
-  font-family: 'DM Serif Display', serif;
-  font-size: 20px;
-  color: var(--amber);
-  margin-top: 4px;
-}
-
-.review-score span {
-  font-family: 'DM Sans', sans-serif;
-  font-size: 13px;
-  font-weight: 400;
   color: rgba(255,255,255,0.4);
 }
 
@@ -888,21 +822,6 @@ html, body {
   margin-top: 1px;
 }
 
-.review-verified {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  background: rgba(139,195,74,0.15);
-  border: 1px solid rgba(139,195,74,0.3);
-  border-radius: 100px;
-  padding: 3px 9px;
-  font-size: 9.5px;
-  font-weight: 600;
-  color: var(--green-leaf);
-  letter-spacing: 0.05em;
-  flex-shrink: 0;
-}
-
 /* Resultado resumido */
 .review-summary {
   margin: 16px 22px 0;
@@ -955,44 +874,31 @@ html, body {
   gap: 10px;
 }
 
-.review-cta-btn {
+.review-signoff {
   flex: 1;
-  background: linear-gradient(180deg, #FFE9A3 0%, #F5B935 55%, #D9970E 100%);
-  color: var(--navy);
-  border: 1px solid rgba(255,220,140,0.4);
-  border-radius: 100px;
-  padding: 13px 20px;
-  font-family: 'DM Sans', sans-serif;
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0.03em;
-  cursor: pointer;
-  text-align: center;
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,0.65),
-    inset 0 -1px 0 rgba(120,80,0,0.15),
-    0 6px 24px rgba(245,185,53,0.4);
-  text-decoration: none;
-  display: block;
-}
-
-.review-cta-share {
-  width: 46px;
-  height: 46px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, rgba(255,255,255,0.18), rgba(255,255,255,0.05));
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(255,255,255,0.22);
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
-  flex-shrink: 0;
-  color: rgba(255,255,255,0.85);
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,0.25),
-    0 4px 16px rgba(0,0,0,0.15);
+  gap: 7px;
+  padding: 13px 20px;
+  border-radius: 100px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: rgba(255,255,255,0.62);
+}
+
+.review-signoff-brand {
+  font-family: 'DM Serif Display', serif;
+  font-size: 14px;
+  letter-spacing: 0;
+  color: var(--white);
+}
+
+.review-signoff-sep {
+  color: rgba(255,255,255,0.3);
 }
 
 /* ═══════════════════════════════════════════
@@ -1187,51 +1093,20 @@ html, body {
 
       <!-- Número principal -->
       <div class="hero-result">
-        <div class="hero-result-eyebrow">Incremento de Produtividade</div>
+        <div class="hero-result-eyebrow"><!--GANHO_TITULO-->Incremento de Produtividade</div>
         <div class="hero-result-number">
-          <span class="plus">+</span><!--GANHO-->10,0<span class="unit">sc/ha</span>
+          <span class="plus"><!--GANHO_SINAL-->+</span><!--GANHO-->10,0<span class="unit"><!--GANHO_UNIDADE-->sc/ha</span>
         </div>
-        <div class="hero-result-label">sobre a testemunha</div>
+        <div class="hero-result-label"><!--GANHO_BASE-->sobre a testemunha</div>
 
         <div class="roi-pill">
           <span class="roi-pill-label">ROI</span>
-          <!--ROI_VALOR-->R$ 1.040,00/ha
+          <!--ROI_VALOR-->R$ 1.040,00<!--ROI_SUFIXO-->/ha
         </div>
       </div>
 
       <!-- Footer -->
       <div class="hero-footer">
-        <div class="hero-crop-tag">
-          <!-- Ícone glass: folha -->
-          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-              <linearGradient id="cropLeafGrad" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0%" stop-color="rgba(200,240,150,0.9)"/>
-                <stop offset="100%" stop-color="rgba(139,195,74,0.5)"/>
-              </linearGradient>
-            </defs>
-            <!-- Corpo folha -->
-            <path
-              d="M12 3 C6 5 4 10 5 16 C11 16 17 12 18 5 C16 4 14 3 12 3 Z"
-              fill="url(#cropLeafGrad)"
-              stroke="rgba(139,195,74,0.7)"
-              stroke-width="0.8"
-              stroke-linejoin="round"
-            />
-            <!-- Nervura desfocada (efeito glass) -->
-            <path
-              d="M6 16 Q10 12 17 6"
-              stroke="rgba(100,170,50,0.55)"
-              stroke-width="1"
-              stroke-linecap="round"
-              fill="none"
-              style="filter: blur(0.4px);"
-            />
-            <!-- Talo -->
-            <line x1="5" y1="16" x2="4" y2="20" stroke="rgba(100,170,50,0.8)" stroke-width="1.4" stroke-linecap="round"/>
-          </svg>
-          <!--CULTURA-->Soja
-        </div>
         <div class="hero-safra">Safra <!--SAFRA-->2025/26</div>
       </div>
 
@@ -1289,7 +1164,7 @@ html, body {
           </div>
           <div class="compare-side-overlay"></div>
           <div class="compare-side-label">Padrão</div>
-          <div class="compare-side-value"><!--TESTEMUNHA-->100<small> sc/ha</small></div>
+          <div class="compare-side-value"><!--TESTEMUNHA-->100<small> <!--UNIDADE-->sc/ha</small></div>
         </div>
 
         <!-- Lado direito — Depois / Com produto -->
@@ -1325,7 +1200,7 @@ html, body {
           </div>
           <div class="compare-side-overlay"></div>
           <div class="compare-side-label">Com Produto</div>
-          <div class="compare-side-value"><!--COM_PRODUTO-->110<small> sc/ha</small></div>
+          <div class="compare-side-value"><!--COM_PRODUTO-->110<small> <!--UNIDADE-->sc/ha</small></div>
         </div>
 
         <!-- Divisor -->
@@ -1342,19 +1217,19 @@ html, body {
       <!-- Métricas -->
       <div class="compare-metrics">
         <div class="metric-card gain">
-          <div class="metric-label">Ganho</div>
-          <div class="metric-value positive"><!--GANHO-->+10,0</div>
-          <div class="metric-unit">sc/ha</div>
+          <div class="metric-label"><!--GANHO_ROTULO-->Ganho</div>
+          <div class="metric-value positive"><!--GANHO_SINAL-->+<!--GANHO-->10,0</div>
+          <div class="metric-unit"><!--GANHO_UNIDADE-->sc/ha</div>
         </div>
         <div class="metric-card roi">
           <div class="metric-label">ROI Líquido</div>
           <div class="metric-value amber"><!--ROI_SACAS-->9,5</div>
-          <div class="metric-unit">sc/ha pagas</div>
+          <div class="metric-unit"><!--ROI_SACAS_UNIDADE-->sc/ha pagas</div>
         </div>
         <div class="metric-card area">
           <div class="metric-label">Área</div>
           <div class="metric-value"><!--AREA-->50</div>
-          <div class="metric-unit">hectares</div>
+          <div class="metric-unit"><!--AREA_UNIDADE-->hectares</div>
         </div>
       </div>
 
@@ -1374,8 +1249,8 @@ html, body {
           <circle cx="12" cy="10" r="3" fill="rgba(255,255,255,0.85)" style="filter: blur(0.4px);"/>
         </svg>
         <div class="compare-location-text">
-          <!--FAZENDA-->Fazenda São João
-          <br><span><!--MUNICIPIO-->Sorriso/MT · <!--PRODUTOR-->João Silva</span>
+          <!--PRODUTOR-->Cliente · Fazenda São João
+          <br><span><!--MUNICIPIO-->Sorriso/MT</span>
         </div>
       </div>
 
@@ -1396,10 +1271,10 @@ html, body {
 
 
 <!-- ══════════════════════════════════════
-     SLIDE 3 — AVALIAÇÃO / DEPOIMENTO
+     SLIDE 3 — CONCLUSÃO TÉCNICA
 ══════════════════════════════════════ -->
 <div class="story-wrapper">
-  <div class="slide-label">03 · Avaliação do Produtor</div>
+  <div class="slide-label">03 · Conclusão Técnica</div>
   <div class="card slide-review">
     <div class="review-inner">
 
@@ -1409,26 +1284,9 @@ html, body {
         <div class="review-step">03</div>
       </div>
 
-      <!-- Estrelas -->
-      <div class="review-stars-section">
-        <div class="review-stars-eyebrow">Avaliação do Produtor</div>
-        <div class="stars">
-          <svg width="0" height="0" style="position:absolute">
-            <defs>
-              <linearGradient id="starGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stop-color="#FFE9A3"/>
-                <stop offset="50%" stop-color="#F5B935"/>
-                <stop offset="100%" stop-color="#D9970E"/>
-              </linearGradient>
-            </defs>
-          </svg>
-          <div class="star"><svg viewBox="0 0 24 24"><path fill="url(#starGrad)" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/><path fill="rgba(255,255,255,0.55)" d="M12 3.2 L14.6 8.5 L20 9.3 L16.2 13 L12 11 Z"/></svg></div>
-          <div class="star"><svg viewBox="0 0 24 24"><path fill="url(#starGrad)" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/><path fill="rgba(255,255,255,0.55)" d="M12 3.2 L14.6 8.5 L20 9.3 L16.2 13 L12 11 Z"/></svg></div>
-          <div class="star"><svg viewBox="0 0 24 24"><path fill="url(#starGrad)" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/><path fill="rgba(255,255,255,0.55)" d="M12 3.2 L14.6 8.5 L20 9.3 L16.2 13 L12 11 Z"/></svg></div>
-          <div class="star"><svg viewBox="0 0 24 24"><path fill="url(#starGrad)" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/><path fill="rgba(255,255,255,0.55)" d="M12 3.2 L14.6 8.5 L20 9.3 L16.2 13 L12 11 Z"/></svg></div>
-          <div class="star"><svg viewBox="0 0 24 24"><path fill="url(#starGrad)" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/><path fill="rgba(255,255,255,0.55)" d="M12 3.2 L14.6 8.5 L20 9.3 L16.2 13 L12 11 Z"/></svg></div>
-        </div>
-        <div class="review-score">5,0 <span>/ 5,0 · Excelente</span></div>
+      <!-- Eyebrow -->
+      <div class="review-eyebrow-section">
+        <div class="review-eyebrow">Conclusão Técnica</div>
       </div>
 
       <!-- Depoimento -->
@@ -1445,26 +1303,22 @@ html, body {
       <div class="review-producer">
         <div class="review-avatar"><!--INICIAL-->J</div>
         <div class="review-producer-info">
-          <div class="review-producer-name"><!--PRODUTOR-->João da Silva</div>
-          <div class="review-producer-role"><!--FAZENDA-->Fazenda São João · <!--MUNICIPIO-->Sorriso/MT</div>
-        </div>
-        <div class="review-verified">
-          <svg width="8" height="8" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
-          Verificado
+          <div class="review-producer-name"><!--PRODUTOR-->Cliente · Fazenda São João</div>
+          <div class="review-producer-role"><!--MUNICIPIO-->Sorriso/MT</div>
         </div>
       </div>
 
       <!-- Resumo resultado -->
       <div class="review-summary">
         <div class="review-summary-item">
-          <div class="review-summary-label">Ganho</div>
-          <div class="review-summary-value highlight">+<!--GANHO-->10,0</div>
-          <div class="review-summary-unit">sc/ha</div>
+          <div class="review-summary-label"><!--GANHO_ROTULO-->Ganho</div>
+          <div class="review-summary-value highlight"><!--GANHO_SINAL-->+<!--GANHO-->10,0</div>
+          <div class="review-summary-unit"><!--GANHO_UNIDADE-->sc/ha</div>
         </div>
         <div class="review-summary-item">
           <div class="review-summary-label">ROI Líquido</div>
-          <div class="review-summary-value">R$ <!--ROI_VALOR-->1.040</div>
-          <div class="review-summary-unit">por hectare</div>
+          <div class="review-summary-value"><!--ROI_VALOR-->R$ 1.040,00</div>
+          <div class="review-summary-unit"><!--ROI_UNIDADE-->por hectare</div>
         </div>
         <div class="review-summary-item">
           <div class="review-summary-label">Produto</div>
@@ -1474,18 +1328,16 @@ html, body {
         <div class="review-summary-item">
           <div class="review-summary-label">Responsável</div>
           <div class="review-summary-value" style="font-size:15px;margin-top:2px"><!--CONSULTOR-->Ana Luiza</div>
-          <div class="review-summary-unit">Agrônoma</div>
+          <div class="review-summary-unit">Consultoria</div>
         </div>
       </div>
 
-      <!-- CTA -->
+      <!-- Fecho de marca (não interativo: a story é um arquivo compartilhado) -->
       <div class="review-cta">
-        <a class="review-cta-btn" href="#">Ver case completo no SoloForte</a>
-        <div class="review-cta-share">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
-            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
-          </svg>
+        <div class="review-signoff">
+          <span class="review-signoff-brand">SoloForte</span>
+          <span class="review-signoff-sep">·</span>
+          <span>Consultoria Agronômica</span>
         </div>
       </div>
 

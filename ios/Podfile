@@ -49,5 +49,19 @@ post_install do |installer|
         'PERMISSION_LOCATION_WHENINUSE=1',
       ]
     end
+
+    # Xcode 26.6 / iphoneos26.5 SDK (build 23F81a): actool falha ao compilar a
+    # variante "thinned" do DKPhotoGallery porque não encontra um simulator
+    # runtime montado com build 23F81a (o runtime público é 23F77).
+    # Remove o Images.xcassets da fase de resources para que actool não seja
+    # invocado nesse target. As imagens (ícones do gallery picker do file_picker)
+    # ficam ausentes em runtime — aceitável para TestFlight/produção.
+    if target.name == 'DKPhotoGallery-DKPhotoGallery'
+      target.resources_build_phase.files.each do |build_file|
+        if build_file.file_ref && build_file.file_ref.path.to_s.end_with?('.xcassets')
+          target.resources_build_phase.remove_build_file(build_file)
+        end
+      end
+    end
   end
 end
