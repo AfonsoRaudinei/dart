@@ -71,6 +71,12 @@ class MarketingHtmlRenderer {
       'data_case',
       include: data['data_case'] != null,
     );
+    tpl = _resolveAllIfBlocks(
+      tpl,
+      'foto_principal_url',
+      include: foto.isNotEmpty,
+    );
+    tpl = _resolveTextoIfBlocks(tpl, data);
 
     final html = RelatorioHtmlRenderer.replacePlaceholders(tpl, {
       ...branding,
@@ -206,6 +212,7 @@ class MarketingHtmlRenderer {
       'foto_depois_url',
       include: fotoDepois.isNotEmpty,
     );
+    tpl = _resolveTextoIfBlocks(tpl, data);
 
     final html = RelatorioHtmlRenderer.replacePlaceholders(tpl, {
       ...branding,
@@ -286,6 +293,21 @@ class MarketingHtmlRenderer {
       include: conclusao?.trim().isNotEmpty == true,
     );
     tpl = _resolveAllIfBlocks(tpl, 'roi_calculado', include: false);
+    final temTalhao = _trimmed(data['nome_talhao']).isNotEmpty;
+    final temArea = (data['tamanho_ha'] as num?) != null;
+    tpl = _resolveAllIfBlocks(
+      tpl,
+      'bloco_talhao',
+      include: temTalhao || temArea || data['produtividade_valor'] != null,
+    );
+    tpl = _resolveAllIfBlocks(tpl, 'nome_talhao', include: temTalhao);
+    tpl = _resolveAllIfBlocks(tpl, 'tamanho_ha', include: temArea);
+    tpl = _resolveAllIfBlocks(
+      tpl,
+      'produtividade_valor',
+      include: data['produtividade_valor'] != null,
+    );
+    tpl = _resolveTextoIfBlocks(tpl, data);
 
     tpl = RelatorioHtmlRenderer.replacePlaceholders(tpl, {
       ...branding,
@@ -481,12 +503,32 @@ class MarketingHtmlRenderer {
     }
   }
 
-  static String _trimmed(dynamic value) =>
-      value is String ? value.trim() : '';
+  static String _trimmed(dynamic value) => value is String ? value.trim() : '';
 
   static String _inicial(String? nome) {
     if (nome == null || nome.isEmpty) return '?';
     return nome[0].toUpperCase();
+  }
+
+  /// Condicionais comuns aos três tipos. Sem isso, `stripUnresolvedPlaceholders`
+  /// apaga só o marcador e a seção fica visível e vazia.
+  static String _resolveTextoIfBlocks(
+    String template,
+    Map<String, dynamic> data,
+  ) {
+    var tpl = template;
+    for (final campo in const [
+      'descricao',
+      'nome_vendedor',
+      'telefone_vendedor',
+    ]) {
+      tpl = _resolveAllIfBlocks(
+        tpl,
+        campo,
+        include: _trimmed(data[campo]).isNotEmpty,
+      );
+    }
+    return tpl;
   }
 
   static String _resolveAllIfBlocks(
