@@ -2,7 +2,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
+
+import '../../../../core/router/app_routes.dart';
 
 import '../../../../core/access/producer_create_context_resolver.dart';
 import '../../../../core/ui/sheets/soloforte_sheet.dart';
@@ -14,10 +17,10 @@ import '../../../../modules/marketing/domain/entities/marketing_case.dart';
 import '../../../../modules/marketing/domain/enums/case_tipo.dart';
 import '../../../../modules/marketing/presentation/providers/marketing_providers.dart';
 import '../../../../modules/marketing/presentation/screens/novo_case_type_sheets.dart';
+import '../../../../modules/marketing/presentation/widgets/draft_saved_sheet.dart';
 import '../../../../modules/planos/presentation/providers/plano_providers.dart';
 import '../../../../modules/settings/presentation/providers/user_profile_provider.dart';
 import '../../../../ui/components/map/widgets/producer_map_context_card.dart';
-import '../../widgets/plano_block_sheet.dart';
 
 /// Lança o fluxo completo de criação de novo case a partir de um long-press
 /// no mapa. Verifica plano ativo, limite de cases e exibe os sheets adequados.
@@ -66,12 +69,36 @@ class NovoCaseModalLauncher {
       if (casesPublicados >= limite) {
         if (!context.mounted) return;
         Navigator.of(context).pop();
-        PlanoBlockSheet.show(
+
+        try {
+          await ref.read(marketingCasesProvider.notifier).saveAsDraft(newCase);
+        } catch (_) {
+          if (!context.mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Não foi possível salvar o rascunho. Tente novamente.'),
+            ),
+          );
+          return;
+        }
+
+        if (!context.mounted) return;
+        final action = await DraftSavedSheet.show(
           context,
-          motivo: 'limite_atingido',
           planoLabel: plano?.plano.label,
           limite: limite,
         );
+        if (!context.mounted) return;
+
+        switch (action) {
+          case DraftSavedAction.verRelatorios:
+            context.go(AppRoutes.reports);
+          case DraftSavedAction.verPlanos:
+            context.go('/planos');
+          case DraftSavedAction.dismiss:
+          case null:
+            break;
+        }
         return;
       }
 

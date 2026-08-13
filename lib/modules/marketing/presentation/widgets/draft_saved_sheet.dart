@@ -3,19 +3,46 @@ import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 
 import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
 
-/// Bottom sheet exibido após salvar um rascunho sem plano ativo.
-/// Retorna [true] se o usuário quer ver os planos, [false] ou null para fechar.
-class DraftSavedSheet extends StatelessWidget {
-  const DraftSavedSheet({super.key});
+/// Bottom sheet exibido após salvar um case como rascunho (limite de plano).
+/// Retorna [DraftSavedAction] indicando a ação escolhida pelo usuário.
+enum DraftSavedAction { dismiss, verPlanos, verRelatorios }
 
-  /// Exibe o sheet e retorna `true` se o usuário tocou em "Ver planos".
-  /// A navegação fica a cargo do chamador após o modal fechar.
-  static Future<bool?> show(BuildContext context) {
-    return showSoloForteSheet<bool>(
+/// Bottom sheet exibido após salvar um rascunho quando a publicação não é possível.
+class DraftSavedSheet extends StatelessWidget {
+  final String? planoLabel;
+  final int? limite;
+
+  const DraftSavedSheet({
+    super.key,
+    this.planoLabel,
+    this.limite,
+  });
+
+  /// Exibe o sheet e retorna a ação escolhida.
+  static Future<DraftSavedAction?> show(
+    BuildContext context, {
+    String? planoLabel,
+    int? limite,
+  }) {
+    return showSoloForteSheet<DraftSavedAction>(
       context: context,
       showDragHandle: false,
-      builder: (_) => const DraftSavedSheet(),
+      builder: (_) => DraftSavedSheet(
+        planoLabel: planoLabel,
+        limite: limite,
+      ),
     );
+  }
+
+  String get _limiteMessage {
+    if (planoLabel != null && limite != null) {
+      return 'Seu plano $planoLabel permite apenas $limite case(s) ativo(s). '
+          'O case foi salvo como rascunho em Relatórios > Marketing. '
+          'Faça upgrade para publicar mais.';
+    }
+    return 'O limite de cases ativos do seu plano foi atingido. '
+        'O case foi salvo como rascunho em Relatórios > Marketing. '
+        'Faça upgrade para publicar quando houver vaga.';
   }
 
   @override
@@ -29,7 +56,6 @@ class DraftSavedSheet extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Handle visual
           Center(
             child: Container(
               margin: const EdgeInsets.only(bottom: 16),
@@ -41,8 +67,6 @@ class DraftSavedSheet extends StatelessWidget {
               ),
             ),
           ),
-
-          // Ícone
           Container(
             width: 64,
             height: 64,
@@ -51,43 +75,54 @@ class DraftSavedSheet extends StatelessWidget {
               shape: BoxShape.circle,
             ),
             child: const Icon(
-              Icons.check_circle,
+              Icons.save_outlined,
               size: 32,
               color: Color(0xFF34C759),
             ),
           ),
-
           const SizedBox(height: 16),
-
-          // Título
           Text(
-            'Case salvo com sucesso!',
+            'Case salvo como rascunho',
             style: Theme.of(
               context,
             ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
             textAlign: TextAlign.center,
           ),
-
           const SizedBox(height: 8),
-
-          // Mensagem
           Text(
-            'Seu case foi salvo como rascunho. Para publicá-lo no mapa e compartilhar com outros usuários, ative um plano.',
+            _limiteMessage,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               color: Theme.of(context).textTheme.bodySmall?.color,
             ),
             textAlign: TextAlign.center,
           ),
-
           const SizedBox(height: 24),
-
-          // Botão primário: Ver planos
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              // Fecha o modal e sinaliza ao chamador para navegar para /planos.
-              // A navegação fica NO PAI — nunca neste widget.
-              onPressed: () => Navigator.of(context).pop(true),
+              onPressed: () =>
+                  Navigator.of(context).pop(DraftSavedAction.verRelatorios),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF34C759),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                minimumSize: const Size(double.infinity, 52),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: const Text(
+                'Ver em Relatórios',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () =>
+                  Navigator.of(context).pop(DraftSavedAction.verPlanos),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFF59E0B),
                 foregroundColor: Colors.black,
@@ -103,14 +138,12 @@ class DraftSavedSheet extends StatelessWidget {
               ),
             ),
           ),
-
           const SizedBox(height: 12),
-
-          // Botão secundário: Ok (apenas fecha)
           SizedBox(
             width: double.infinity,
             child: TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
+              onPressed: () =>
+                  Navigator.of(context).pop(DraftSavedAction.dismiss),
               style: TextButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),
               ),
@@ -124,7 +157,6 @@ class DraftSavedSheet extends StatelessWidget {
               ),
             ),
           ),
-
           const SizedBox(height: 8),
         ],
       ),
