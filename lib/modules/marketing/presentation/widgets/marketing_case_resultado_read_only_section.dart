@@ -85,7 +85,7 @@ class MarketingCaseResultadoReadOnlySection extends StatelessWidget {
           decoration: BoxDecoration(
             color: SoloForteSheetTokens.inputBackground,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: PremiumTokens.hairlineLight),
+            border: Border.all(color: SoloForteSheetTokens.divider),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,

@@ -33,7 +33,7 @@ class ComparativoChart extends StatelessWidget {
       decoration: BoxDecoration(
         color: SoloForteSheetTokens.inputBackground,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: PremiumTokens.hairlineLight),
+        border: Border.all(color: SoloForteSheetTokens.divider),
       ),
       child: selected == null
           ? _GeneralChart(parametros: parametros, onSelect: onSelect)
