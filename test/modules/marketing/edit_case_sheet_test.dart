@@ -2,7 +2,10 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:soloforte_app/core/contracts/i_client_lookup.dart';
+import 'package:soloforte_app/core/contracts/i_client_lookup_provider.dart';
 import 'package:soloforte_app/modules/marketing/domain/entities/marketing_case.dart';
 import 'package:soloforte_app/modules/marketing/domain/entities/parametro_comparativo.dart';
 import 'package:soloforte_app/modules/marketing/domain/entities/roi_bloco.dart';
@@ -126,12 +129,25 @@ void main() {
 }
 
 Widget _wrap(Widget child) {
-  return MaterialApp(
-    home: MediaQuery(
-      data: const MediaQueryData(size: Size(800, 1400)),
-      child: Scaffold(body: child),
+  return ProviderScope(
+    overrides: [
+      clientLookupProvider.overrideWithValue(_FakeClientLookup()),
+    ],
+    child: MaterialApp(
+      home: MediaQuery(
+        data: const MediaQueryData(size: Size(800, 1400)),
+        child: Scaffold(body: child),
+      ),
     ),
   );
+}
+
+class _FakeClientLookup implements IClientLookup {
+  @override
+  Future<ClientSummary?> findById(String id) async => null;
+
+  @override
+  Future<List<ClientSummary>> listAtivos() async => const [];
 }
 
 MarketingCase _caseAvaliacao() {

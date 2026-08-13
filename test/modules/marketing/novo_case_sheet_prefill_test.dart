@@ -45,15 +45,22 @@ void main() {
     final fields = tester.widgetList<TextFormField>(find.byType(TextFormField));
     final values = fields.map((field) => field.controller!.text).toList();
 
-    expect(values, contains('José Augusto Miranda / Fazenda Boa Vista'));
+    expect(find.text('José Augusto Miranda / Fazenda Boa Vista'), findsOneWidget);
     expect(values, contains('Porto Nacional - TO'));
     expect(values, contains('Talhão Norte'));
     expect(values, contains('42.5'));
 
-    await tester.enterText(find.byType(TextFormField).first, 'Nome ajustado');
+    await tester.tap(find.text('Nome'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Produtor / Fazenda *'),
+      'Nome ajustado',
+    );
     expect(
       tester
-          .widget<TextFormField>(find.byType(TextFormField).first)
+          .widget<TextFormField>(
+            find.widgetWithText(TextFormField, 'Produtor / Fazenda *'),
+          )
           .controller!
           .text,
       'Nome ajustado',
