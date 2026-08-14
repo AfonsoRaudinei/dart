@@ -30,6 +30,10 @@ void main() {
         tapBlock.indexOf('ArmedMode.occurrences'),
         lessThan(tapBlock.indexOf('DrawingState.drawing')),
       );
+      expect(
+        tapBlock.indexOf('ArmedMode.occurrences'),
+        lessThan(tapBlock.indexOf('if (drawCtrl.suppressesMapContextTaps)')),
+      );
       expect(tapBlock, contains('openOccurrenceSheet(point.latitude'));
     });
 
@@ -41,6 +45,14 @@ void main() {
 
       expect(longPressBlock, contains('ArmedMode.occurrences'));
       expect(
+        longPressBlock.indexOf('ArmedMode.occurrences'),
+        lessThan(
+          longPressBlock.indexOf(
+            'if (ref.read(drawingControllerProvider).suppressesMapContextTaps)',
+          ),
+        ),
+      );
+      expect(
         longPressBlock.indexOf('openOccurrenceSheet(point.latitude'),
         lessThan(longPressBlock.indexOf('handleMapLongPress(tapPos, point)')),
       );
@@ -48,7 +60,12 @@ void main() {
 
     test('_armOccurrenceMode cancela desenho armado para liberar tap no mapa', () {
       expect(privateMapSource, contains('void _armOccurrenceMode()'));
+      expect(privateMapSource, contains('drawCtrl.suppressesMapContextTaps'));
       expect(privateMapSource, contains('drawCtrl.cancelOperation()'));
+      expect(
+        privateMapSource,
+        contains("MapSheetType.draw"),
+      );
       expect(privateMapSource, contains('ArmedMode.occurrences'));
     });
 

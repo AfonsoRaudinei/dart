@@ -200,11 +200,7 @@ class MapBuildOrchestrator extends ConsumerWidget {
             onTap: (tapPos, point) {
               final drawCtrl = ref.read(drawingControllerProvider);
 
-              if (drawCtrl.suppressesMapContextTaps) {
-                return;
-              }
-
-              // 🎯 Prioridade 1: modos armados do mapa (antes de desenho/talhão)
+              // Prioridade 0: modos armados — antes do bloqueio de desenho
               final armedMode = ref.read(armedModeProvider);
               if (armedMode == ArmedMode.marketing) {
                 ref.read(armedModeProvider.notifier).state = ArmedMode.none;
@@ -217,6 +213,10 @@ class MapBuildOrchestrator extends ConsumerWidget {
                 ref.read(armedModeProvider.notifier).state = ArmedMode.none;
                 ScaffoldMessenger.of(context).hideCurrentSnackBar();
                 openOccurrenceSheet(point.latitude, point.longitude);
+                return;
+              }
+
+              if (drawCtrl.suppressesMapContextTaps) {
                 return;
               }
 
@@ -271,10 +271,6 @@ class MapBuildOrchestrator extends ConsumerWidget {
               }
             },
             onLongPress: (tapPos, point) {
-              if (ref.read(drawingControllerProvider).suppressesMapContextTaps) {
-                return;
-              }
-
               final armedMode = ref.read(armedModeProvider);
               if (armedMode == ArmedMode.occurrences) {
                 ref.read(armedModeProvider.notifier).state = ArmedMode.none;
@@ -286,6 +282,12 @@ class MapBuildOrchestrator extends ConsumerWidget {
               if (armedMode == ArmedMode.marketing) {
                 ref.read(armedModeProvider.notifier).state = ArmedMode.none;
                 ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                handleMapLongPress(tapPos, point);
+                return;
+              }
+
+              if (ref.read(drawingControllerProvider).suppressesMapContextTaps) {
+                return;
               }
 
               handleMapLongPress(tapPos, point);

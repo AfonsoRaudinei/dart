@@ -361,9 +361,12 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
     // FIX 1: Entrar em modo seleção — usuário toca no mapa para capturar LatLng
     _pendingMarketingCaseTipo = null;
     final drawCtrl = ref.read(drawingControllerProvider);
-    if (drawCtrl.currentState == DrawingState.drawing ||
-        drawCtrl.currentState == DrawingState.armed) {
+    if (drawCtrl.suppressesMapContextTaps) {
       drawCtrl.cancelOperation();
+    }
+    final sheetState = ref.read(mapSheetStateProvider);
+    if (sheetState?.type == MapSheetType.draw) {
+      _setSheetState(null, 'ArmOccurrenceMode: close draw sheet');
     }
     ref.read(armedModeProvider.notifier).state = ArmedMode.occurrences;
     HapticFeedback.lightImpact();
