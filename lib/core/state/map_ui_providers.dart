@@ -55,8 +55,9 @@ final modalGenerationProvider = StateProvider.autoDispose<int>((ref) => 0);
 
 /// Localização pendente para criação de ocorrência.
 /// != null → abre OccurrenceCreationSheet; null → OccurrenceListSheet.
+/// Sem autoDispose: escrita ocorre antes do overlay montar o listener.
 /// TODO(ADR-031-F1): migrado de _pendingOccurrenceLocation (setState) em private_map_screen.dart
-final pendingOccurrenceLocationProvider = StateProvider.autoDispose<LatLng?>(
+final pendingOccurrenceLocationProvider = StateProvider<LatLng?>(
   (ref) => null,
 );
 

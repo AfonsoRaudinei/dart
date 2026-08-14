@@ -122,7 +122,7 @@ void main() {
   });
 
   testWidgets(
-    'criação sem creationLocation não exibe formulário salvável',
+    'criação sem creationLocation não exibe formulário nem placeholder',
     (tester) async {
       final hostKey = GlobalKey<_OccurrenceSheetHostState>();
       final controller = await _createController();
@@ -137,7 +137,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(OccurrenceCreationSheet), findsNothing);
-      expect(find.text('Marque o ponto no mapa'), findsOneWidget);
+      expect(find.text('Marque o ponto no mapa'), findsNothing);
       expect(find.text('Salvar Ocorrência'), findsNothing);
     },
   );

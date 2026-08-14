@@ -117,11 +117,18 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
   void _ensureOccurrenceFormGuard() {
     if (!widget.state.isCreatingOccurrence) {
       _occurrenceFormGuard = null;
-      ref.read(occurrenceFormGuardProvider.notifier).state = null;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        ref.read(occurrenceFormGuardProvider.notifier).state = null;
+      });
       return;
     }
     _occurrenceFormGuard ??= OccurrenceFormGuard();
-    ref.read(occurrenceFormGuardProvider.notifier).state = _occurrenceFormGuard;
+    final guard = _occurrenceFormGuard;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      ref.read(occurrenceFormGuardProvider.notifier).state = guard;
+    });
   }
 
   @override
@@ -131,7 +138,9 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
     try {
       ref.read(mapSheetChromeInsetProvider.notifier).state = 0;
     } catch (_) {}
-    ref.read(occurrenceFormGuardProvider.notifier).state = null;
+    try {
+      ref.read(occurrenceFormGuardProvider.notifier).state = null;
+    } catch (_) {}
     _heightController.dispose();
     _scrollController.dispose();
     super.dispose();
@@ -366,62 +375,6 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
     return location.latitude != 0 || location.longitude != 0;
   }
 
-  Widget _buildOccurrencePinRequiredPlaceholder() {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        return SingleChildScrollView(
-          controller: _scrollController,
-          physics: const BouncingScrollPhysics(),
-          child: ConstrainedBox(
-            constraints: BoxConstraints(minHeight: constraints.maxHeight),
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(
-                    SFIcons.pinFill,
-                    size: 48,
-                    color: Color(0xFFFF9F0A),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Marque o ponto no mapa',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Toque no mapa para definir onde a ocorrência aconteceu. '
-                    'O formulário só abre depois que o ponto estiver marcado.',
-                    style: TextStyle(color: Color(0xFF8E8E93), fontSize: 14),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 24),
-                  OutlinedButton(
-                    onPressed: widget.onClose,
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.white70,
-                      side: const BorderSide(color: Colors.white24),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 24,
-                        vertical: 14,
-                      ),
-                    ),
-                    child: const Text('Voltar ao mapa'),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-
   Widget _buildTabContent() {
     // 🛡 REFATORAÇÃO: Switch explícito baseado em MapSheetType (determinístico)
     switch (widget.state.type) {
@@ -616,9 +569,7 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
   Widget _buildOccurrenceForm() {
     final creationLocation = widget.creationLocation;
     if (!_hasValidOccurrencePin(creationLocation)) {
-      _occurrenceFormGuard = null;
-      ref.read(occurrenceFormGuardProvider.notifier).state = null;
-      return _buildOccurrencePinRequiredPlaceholder();
+      return const SizedBox.shrink();
     }
 
     _ensureOccurrenceFormGuard();

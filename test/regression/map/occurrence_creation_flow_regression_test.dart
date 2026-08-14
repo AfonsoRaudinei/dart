@@ -104,5 +104,32 @@ void main() {
         isTrue,
       );
     });
+
+    test('IPA 206: pin atômico em MapSheetState e provider sem autoDispose', () {
+      final sheetStateSource =
+          File('lib/ui/components/map/map_sheet_state.dart').readAsStringSync();
+      final providersSource =
+          File('lib/core/state/map_ui_providers.dart').readAsStringSync();
+      final privateMapSource =
+          File('lib/ui/screens/private_map_screen.dart').readAsStringSync();
+
+      expect(sheetStateSource, contains('occurrenceLatitude'));
+      expect(sheetStateSource, contains('occurrencePin'));
+      expect(privateMapSource, contains('occurrenceLatitude: lat'));
+      expect(
+        providersSource,
+        isNot(contains(
+          'pendingOccurrenceLocationProvider = StateProvider.autoDispose',
+        )),
+      );
+    });
+
+    test('IPA 206: host resolve pin do sheet state quando provider é null', () {
+      expect(performanceHostsSource, contains('sheetState.occurrencePin'));
+    });
+
+    test('IPA 206: sem placeholder Marque o ponto no mapa', () {
+      expect(mapBottomSheetSource, isNot(contains('Marque o ponto no mapa')));
+    });
   });
 }

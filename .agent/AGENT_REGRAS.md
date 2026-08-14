@@ -89,3 +89,18 @@ Ao tocar `assets/html_templates/**` ou `lib/core/html_templates/**`, ler e obede
 | Rodapé | Só SoloForte + tagline — excluir ID, Sync, Sessão, meta técnica |
 
 Validar após mudança: header com `logo-img` / `soloforte_logo`, zero `footer-meta` com ID/Sync, localização `.localizacao-inline`.
+
+---
+
+## Ocorrências no mapa — blindagem anti-regressão
+
+Ao tocar fluxo de criação de ocorrência no mapa (`private_map_screen`, `map_build_orchestrator`, `map_bottom_sheet`, `map_sheet_state`, `map_ui_providers`):
+
+| Regra | Ação |
+|---|---|
+| Plano completo | Ler `.agent/PLANO_BLINDAGEM_OCORRENCIAS_MAPA.md` |
+| Pin atômico | Coordenada em `MapSheetState.occurrenceLatitude/Longitude` — nunca só provider |
+| Provider | `pendingOccurrenceLocationProvider` **sem** `autoDispose` |
+| UI | **Proibido** placeholder "Marque o ponto no mapa" |
+| Gesture | `ArmedMode.occurrences` **antes** de `suppressesMapContextTaps` |
+| Validação | `flutter test test/regression/map/` + `./tool/arch_check.sh` Exit 0 |

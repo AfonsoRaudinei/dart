@@ -16,7 +16,6 @@ import '../../../../modules/drawing/presentation/widgets/gps_tracking_overlay.da
 import '../../../../modules/consultoria/clients/presentation/providers/field_providers.dart';
 import '../../../../modules/dashboard/providers/location_providers.dart';
 import '../../../../modules/visitas/presentation/controllers/geofence_controller.dart';
-import '../../../../core/state/map_ui_providers.dart';
 import '../../../components/map/map_bottom_sheet.dart';
 import '../../../components/map/map_sheet_state.dart';
 import '../providers/map_ready_state_provider.dart';
@@ -141,7 +140,17 @@ class MapBottomSheetOverlayHost extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
-    final creationLocation = ref.watch(pendingOccurrenceLocationProvider);
+    final pendingLocation = ref.watch(pendingOccurrenceLocationProvider);
+    final creationLocation = pendingLocation ?? sheetState.occurrencePin;
+
+    if (sheetState.isCreatingOccurrence && creationLocation == null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref.read(pendingOccurrenceLocationProvider.notifier).state = null;
+        ref.read(occurrenceFormGuardProvider.notifier).state = null;
+        setSheetState(null, 'Occurrence create aborted: missing pin');
+      });
+      return const SizedBox.shrink();
+    }
 
     return Positioned(
       bottom: 0,

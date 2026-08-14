@@ -1,138 +1,62 @@
-# ✅ IMPLEMENTAÇÃO CONCLUÍDA: Fluxo "Armado" para Ocorrências
+# Fluxo armado de ocorrências no mapa
 
-## 📋 RESUMO DA IMPLEMENTAÇÃO
+**Status:** ATIVO · **Atualizado:** Ago/2026 · **IPA alvo:** 207+
 
-Foi implementado com sucesso o padrão "ARM → TAP → SHEET" para o botão de Ocorrências no mapa do SoloForte, conforme especificado.
+> Fonte de verdade arquitetural: `docs/02_ARQUITETURA_ATIVA/arquitetura-ocorrencias.md`
 
-## 🔧 ALTERAÇÕES REALIZADAS
+---
 
-### 1. Arquivo Principal Modificado
-**`lib/ui/screens/private_map_screen.dart`**
-
-#### Mudanças implementadas:
-
-1. **Enum de Modo Armado** (linha 33)
-   - Criado `enum ArmedMode { none, occurrences }` para rastrear o estado
-
-2. **Estado Local** (linha 48)
-   - Adicionada variável `ArmedMode _armedMode = ArmedMode.none;`
-
-3. **Função de Toggle** (`_toggleOccurrenceMode` - linha 132)
-   - Verifica GPS obrigatório
-   - Arma/desarma o modo ao clicar no botão
-   - Mostra SnackBar com instrução: "📍 Toque no mapa para registrar a ocorrência"
-   - Permite cancelamento pelo botão "CANCELAR" no SnackBar
-
-4. **Handler do Map Tap** (linha 416)
-   - **Prioridade 1**: Verifica se está em modo armado
-   - Se armado: captura lat/lng, desarma imediatamente, abre dialog
-   - Se não armado: comportamento normal de seleção de talhão (sem regressão)
-
-5. **Dialog de Criação** (`_openOccurrenceDialog` - linha 282)
-   - Recebe lat/lng do tap
-   - Mostra formulário com tipo e descrição
-   - Exibe coordenadas capturadas
-   - Vincula automaticamente `visitSessionId` se houver visita ativa
-   - Salva ocorrência via `occurrenceControllerProvider`
-
-6. **Botão Atualizado** (linha 629)
-   - `onTap`: agora chama `_toggleOccurrenceMode` ao invés de abrir sheet
-   - `isActive`: reflete o estado armado (`_armedMode == ArmedMode.occurrences`)
-   - Feedback visual: botão fica verde quando armado
-
-### 2. Correção de Import
-**`lib/modules/visitas/presentation/controllers/geofence_controller.dart`**
-- Corrigido caminho do import de `visit_session.dart`
-
-### 3. Import Adicionado
-**`lib/ui/screens/private_map_screen.dart`**
-- Adicionado import do `occurrence_controller.dart` (linha 23)
-
-## ✅ VALIDAÇÃO DOS REQUISITOS
-
-### Casos de Teste Implementados
-
-| # | Caso de Teste | Status |
-|---|---------------|--------|
-| 1 | Tocar ícone Ocorrências → NÃO abre sheet | ✅ Implementado |
-| 2 | Após tocar ícone → ícone fica verde (armado) | ✅ Implementado |
-| 3 | Após tocar ícone → SnackBar com instrução | ✅ Implementado |
-| 4 | Próximo tap no mapa abre dialog com lat/lng | ✅ Implementado |
-| 5 | Dialog mostra coordenadas capturadas | ✅ Implementado |
-| 6 | Ocorrência vincula visitSessionId se ativo | ✅ Implementado |
-| 7 | Segundo toque no ícone desarma (toggle off) | ✅ Implementado |
-| 8 | Cancelar no SnackBar desarma o modo | ✅ Implementado |
-| 9 | Após abrir dialog, modo é desarmado automaticamente | ✅ Implementado |
-| 10 | Taps seguintes no mapa funcionam normalmente | ✅ Implementado |
-| 11 | Publicações e Camadas continuam funcionando | ✅ Sem regressão |
-| 12 | GPS obrigatório para armar o modo | ✅ Implementado |
-
-## 🚫 GARANTIAS DE NÃO-REGRESSÃO
-
-✅ **Nenhuma nova rota criada**
-✅ **Nenhum outro módulo alterado** (exceto correção de import)
-✅ **Tema e navegação global intactos**
-✅ **Outros botões (Camadas, Publicações, Desenhar) não afetados**
-✅ **Seleção de talhão continua funcionando normalmente**
-✅ **FAB de Check-in não foi tocado**
-
-## 🎯 FLUXO FINAL IMPLEMENTADO
+## Fluxo oficial (Map-First)
 
 ```
-1. Usuário clica no ícone "Ocorrências"
-   ↓
-2. Ícone fica VERDE (armado)
-   ↓
-3. SnackBar aparece: "📍 Toque no mapa para registrar a ocorrência"
-   ↓
-4. Usuário toca em qualquer ponto do mapa
-   ↓
-5. Modo é DESARMADO automaticamente
-   ↓
-6. Dialog abre com:
-   - Dropdown de tipo
-   - Campo de descrição
-   - Coordenadas capturadas
-   ↓
-7. Usuário preenche e salva
-   ↓
-8. Ocorrência é criada com lat/lng corretos
-   ↓
-9. visitSessionId é vinculado automaticamente se houver visita ativa
+Ícone + (ações) → PublicationActionsBottomSheet
+  → Ocorrência
+  → armedModeProvider = ArmedMode.occurrences
+  → ArmedModeBanner: "Toque no mapa para marcar o ponto"
+
+Tap simples no mapa (ArmedMode.occurrences)
+  → map_build_orchestrator.onTap
+  → private_map_screen._openOccurrenceSheet(lat, lng)
+  → MapSheetState(occurrences, isCreatingOccurrence, occurrenceLatitude/Longitude)
+  → MapBottomSheet → OccurrenceCreationSheet
 ```
 
-## 🔄 ALTERNATIVAS DE CANCELAMENTO
+**Proibido neste fluxo:** tela intermediária "Marque o ponto no mapa" (removida Ago/2026).
 
-**Opção 1**: Clicar novamente no ícone Ocorrências (toggle off)
-**Opção 2**: Clicar em "CANCELAR" no SnackBar
-**Opção 3**: Fechar o dialog sem salvar (não cria ocorrência)
+---
 
-## 📝 TESTE MANUAL SUGERIDO
+## Arquivos principais
 
-Para validar em dispositivo real (Android/iOS):
+| Papel | Arquivo |
+|---|---|
+| Modo armado | `lib/ui/screens/map/providers/map_armed_mode_provider.dart` |
+| Dispatcher tap | `lib/ui/screens/map/widgets/map_build_orchestrator.dart` |
+| Abrir sheet | `lib/ui/screens/private_map_screen.dart` → `_openOccurrenceSheet` |
+| Estado sheet + pin | `lib/ui/components/map/map_sheet_state.dart` |
+| Pin efêmero | `lib/core/state/map_ui_providers.dart` → `pendingOccurrenceLocationProvider` |
+| Formulário | `lib/modules/consultoria/occurrences/presentation/widgets/occurrence_creation_sheet.dart` |
+| Menu ações | `lib/ui/components/map/widgets/publication_actions_bottom_sheet.dart` |
 
-1. Fazer login no app
-2. Navegar para o mapa (`/dashboard/mapa-tecnico`)
-3. Clicar no botão "Ocorrências" (terceiro da coluna direita)
-4. Verificar que o botão ficou verde
-5. Verificar que apareceu o SnackBar com instrução
-6. Tocar em qualquer ponto do mapa
-7. Verificar que o dialog abre com as coordenadas
-8. Preencher tipo e descrição
-9. Salvar e verificar mensagem de sucesso
-10. Clicar novamente no botão para testar toggle off
+---
 
-## ⚠️ OBSERVAÇÃO SOBRE WEB
+## Regras de gesto
 
-O app foi testado em modo web, mas há erros relacionados a plugins nativos (GPS, path_provider) que são esperados e não afetam a lógica implementada. **Para teste completo, execute em dispositivo móvel real ou emulador Android/iOS.**
+1. `ArmedMode.occurrences` e `ArmedMode.marketing` têm **prioridade** sobre `suppressesMapContextTaps`.
+2. Long press em modo ocorrência reutiliza `openOccurrenceSheet` (não abre MarketingCase).
+3. `_armOccurrenceMode` cancela desenho bloqueante e fecha `MapSheetType.draw` se aberto.
 
-## 🎉 RESULTADO
+---
 
-O fluxo de Ocorrências foi **completamente corrigido** seguindo o padrão especificado:
-- ✅ Modo armado funcional
-- ✅ Captura de coordenadas precisa
-- ✅ Feedback visual claro
-- ✅ Zero regressões
-- ✅ Isolado dentro do módulo do mapa
+## Contrato de coordenada
 
-**Status**: PRONTO PARA TESTES EM CAMPO 🚀
+- Pin viaja **atomicamente** em `MapSheetState.occurrenceLatitude/Longitude` (`occurrencePin` getter).
+- `pendingOccurrenceLocationProvider` é espelho para rascunho keyed — **sem** `autoDispose`.
+- Sem pin válido → sheet de criação **não** abre (fecha imediatamente).
+
+---
+
+## Testes de regressão
+
+- `test/regression/map/map_occurrence_gesture_routing_regression_test.dart`
+- `test/ui/components/map/map_bottom_sheet_occurrence_host_test.dart`
+- `test/regression/map/occurrence_sheet_regression_test.dart`

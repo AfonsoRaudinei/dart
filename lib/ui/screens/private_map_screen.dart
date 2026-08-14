@@ -645,19 +645,25 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
     if (!mounted) return;
 
     final occurrenceLocation = LatLng(lat, lng);
+    final sheetState = MapSheetState(
+      type: MapSheetType.occurrences,
+      isCreatingOccurrence: true,
+      occurrenceLatitude: lat,
+      occurrenceLongitude: lng,
+    );
+    if (sheetState.occurrencePin == null) {
+      AppLogger.warning(
+        'OpenOccurrenceSheet ignorado: coordenada inválida ($lat, $lng)',
+        tag: 'PrivateMap',
+      );
+      return;
+    }
 
-    // O ponto precisa existir antes do sheet para evitar o primeiro frame em 0,0.
+    // Pin no sheet state (fonte primária) + provider (compat/rascunho keyed).
     ref.read(pendingOccurrenceLocationProvider.notifier).state =
         occurrenceLocation;
 
-    // Usando setter instrumentado
-    _setSheetState(
-      const MapSheetState(
-        type: MapSheetType.occurrences,
-        isCreatingOccurrence: true,
-      ),
-      'OpenOccurrenceSheet (Create Mode)',
-    );
+    _setSheetState(sheetState, 'OpenOccurrenceSheet (Create Mode)');
   }
 
   void _armMarketingMode(CaseTipo tipo) {

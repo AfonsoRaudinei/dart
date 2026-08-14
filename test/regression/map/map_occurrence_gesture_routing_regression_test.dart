@@ -83,6 +83,24 @@ void main() {
       );
     });
 
+    test('_openOccurrenceSheet embute coordenada no MapSheetState', () {
+      expect(privateMapSource, contains('occurrenceLatitude: lat'));
+      expect(privateMapSource, contains('occurrenceLongitude: lng'));
+      expect(privateMapSource, contains('sheetState.occurrencePin == null'));
+    });
+
+    test('pendingOccurrenceLocationProvider não usa autoDispose', () {
+      final providerSource = File(
+        'lib/core/state/map_ui_providers.dart',
+      ).readAsStringSync();
+      expect(
+        providerSource,
+        isNot(contains(
+          'pendingOccurrenceLocationProvider = StateProvider.autoDispose',
+        )),
+      );
+    });
+
     test('sheet de criação de ocorrência existe no módulo consultoria', () {
       expect(
         File(

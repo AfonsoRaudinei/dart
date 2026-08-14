@@ -965,6 +965,46 @@ else
   fail "REGRA-OCC-7: test/regression/map/occurrence_creation_flow_regression_test.dart obrigatório"
 fi
 
+MAP_SHEET_STATE="lib/ui/components/map/map_sheet_state.dart"
+MAP_UI_PROVIDERS="lib/core/state/map_ui_providers.dart"
+PRIVATE_MAP="lib/ui/screens/private_map_screen.dart"
+MAP_ORCHESTRATOR="lib/ui/screens/map/widgets/map_build_orchestrator.dart"
+OCC_GESTURE_REGRESSION="test/regression/map/map_occurrence_gesture_routing_regression_test.dart"
+
+if [ -f "$MAP_SHEET_STATE" ] \
+  && grep -q "occurrenceLatitude" "$MAP_SHEET_STATE" \
+  && grep -q "occurrencePin" "$MAP_SHEET_STATE"; then
+  pass "REGRA-OCC-8: MapSheetState carrega pin atômico (occurrencePin)"
+else
+  fail "REGRA-OCC-8: MapSheetState deve ter occurrenceLatitude/Longitude e getter occurrencePin"
+fi
+
+if [ -f "$MAP_UI_PROVIDERS" ] \
+  && grep -q "pendingOccurrenceLocationProvider = StateProvider<LatLng?>" "$MAP_UI_PROVIDERS" \
+  && ! grep -q "pendingOccurrenceLocationProvider = StateProvider.autoDispose" "$MAP_UI_PROVIDERS"; then
+  pass "REGRA-OCC-9: pendingOccurrenceLocationProvider sem autoDispose"
+else
+  fail "REGRA-OCC-9: pendingOccurrenceLocationProvider não pode ser autoDispose (IPA 206)"
+fi
+
+if [ -f "$MAP_BOTTOM_SHEET" ] \
+  && ! grep -q "Marque o ponto no mapa" "$MAP_BOTTOM_SHEET"; then
+  pass "REGRA-OCC-10: sem placeholder intermediário Marque o ponto no mapa"
+else
+  fail "REGRA-OCC-10: map_bottom_sheet não deve exibir placeholder Marque o ponto no mapa"
+fi
+
+if [ -f "$MAP_ORCHESTRATOR" ] \
+  && grep -q "ArmedMode.occurrences" "$MAP_ORCHESTRATOR" \
+  && grep -q "if (drawCtrl.suppressesMapContextTaps)" "$MAP_ORCHESTRATOR" \
+  && [ -f "$PRIVATE_MAP" ] \
+  && grep -q "occurrenceLatitude: lat" "$PRIVATE_MAP" \
+  && [ -f "$OCC_GESTURE_REGRESSION" ]; then
+  pass "REGRA-OCC-11: blindagem gesture + pin IPA 206 (orchestrator + openOccurrenceSheet + teste)"
+else
+  fail "REGRA-OCC-11: gesture routing e pin atômico devem permanecer blindados (IPA 206)"
+fi
+
 echo ""
 
 # =============================================================================
