@@ -104,3 +104,17 @@ Ao tocar fluxo de criação de ocorrência no mapa (`private_map_screen`, `map_b
 | UI | **Proibido** placeholder "Marque o ponto no mapa" |
 | Gesture | `ArmedMode.occurrences` **antes** de `suppressesMapContextTaps` |
 | Validação | `flutter test test/regression/map/` + `./tool/arch_check.sh` Exit 0 |
+
+---
+
+## Coluna direita do mapa — blindagem anti-regressão (REGRA-MAP-CHROME-1)
+
+Ao tocar `map_controls_overlay.dart` ou constantes de layout do mapa:
+
+| Regra | Ação |
+|---|---|
+| Posição travada | Usar `kMapActionColumnBottomInset` + `safeBottom` — **nunca** `mapSheetChromeInsetProvider` |
+| Constantes | Tamanho/espaçamento em `layout_constants.dart` (`kMapActionColumn*`) |
+| SmartButton | Coluna ancorada ao FAB global (`kFabSafeArea` = 76dp acima da safe-area) |
+| Modo desenho | Compensar com `kMapActionColumnDrawModeCompensation` para manter camadas fixas |
+| Validação | `flutter test test/regression/map/controls_overlay_regression_test.dart` + `arch_check.sh` REGRA-MAP-CHROME-1 |

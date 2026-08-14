@@ -7,7 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:soloforte_app/core/access/producer_create_context_resolver.dart';
-import 'package:soloforte_app/core/constants/layout_constants.dart';
+import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
 import 'package:soloforte_app/core/contracts/i_client_lookup.dart';
 import 'package:soloforte_app/core/contracts/i_client_lookup_provider.dart';
 import 'package:soloforte_app/core/contracts/i_active_visit_context_lookup_provider.dart';
@@ -343,8 +343,12 @@ class _OccurrenceCreationSheetState
   @override
   Widget build(BuildContext context) {
     final safeBottom = MediaQuery.of(context).padding.bottom;
+    // No map stack o FAB fica fora do sheet — não reservar kFabSafeArea aqui.
+    final actionBarBottomPadding = widget.scrollController != null
+        ? (safeBottom > 0 ? safeBottom : 12.0)
+        : safeBottom + 24.0;
     return Material(
-      color: const Color(0xFF1C1C1E),
+      color: SoloForteSheetTokens.sheetBackground,
       child: Column(
         children: [
           Expanded(
@@ -671,7 +675,7 @@ class _OccurrenceCreationSheetState
                 16,
                 12,
                 16,
-                kFabSafeArea + safeBottom,
+                actionBarBottomPadding,
               ),
               child: Row(
                 children: [

@@ -815,6 +815,26 @@ fi
 echo ""
 
 # =============================================================================
+# REGRA-MAP-CHROME-1 — coluna direita do mapa com posição travada
+#
+# A coluna (camadas / + / check-in) não pode reagir ao detent do bottom sheet.
+# Posição canônica: kMapActionColumnBottomInset + safe-area (+ compensação draw).
+# =============================================================================
+echo -e "── ${CYAN}REGRA-MAP-CHROME-1${NC}: coluna direita do mapa — posição travada ───────────────"
+echo ""
+
+MAP_CONTROLS_OVERLAY="lib/ui/components/map/widgets/map_controls_overlay.dart"
+if [ ! -f "$MAP_CONTROLS_OVERLAY" ]; then
+  fail "REGRA-MAP-CHROME-1: $MAP_CONTROLS_OVERLAY ausente"
+elif grep -q "mapSheetChromeInsetProvider" "$MAP_CONTROLS_OVERLAY"; then
+  fail "REGRA-MAP-CHROME-1: coluna de ações não pode depender de mapSheetChromeInsetProvider"
+elif ! grep -q "kMapActionColumnBottomInset" "$MAP_CONTROLS_OVERLAY"; then
+  fail "REGRA-MAP-CHROME-1: usar kMapActionColumnBottomInset em map_controls_overlay.dart"
+else
+  pass "coluna direita do mapa ancorada em kMapActionColumnBottomInset (sem sheet inset)"
+fi
+
+# =============================================================================
 # REGRA-NAV-1 — context.pop()/canPop() proibidos (Map-First, Fase 7)
 #
 # Fundamento: navegação declarativa via context.go()/push() com AppRoutes.

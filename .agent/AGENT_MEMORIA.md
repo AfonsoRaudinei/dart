@@ -108,3 +108,4 @@ Fonte canônica: `.cursor/rules/soloforte-designer.mdc`
 | Jul/2026 | Prompt Codex merge: `prompt/PROMPT_CODEX_RESOLVER_MERGE_BUILD156.md` |
 | Jul/2026 | HTML reports: logo SoloForte no header; zero ícones genéricos; localização inline; rodapé sem ID/Sync |
 | Ago/2026 | **Ocorrências mapa IPA 206:** pin atômico em `MapSheetState`; sem placeholder; blindagem em `.agent/PLANO_BLINDAGEM_OCORRENCIAS_MAPA.md` + REGRA-OCC-8..11 |
+| Ago/2026 | **Coluna direita mapa:** posição travada via `kMapActionColumnBottomInset` (REGRA-MAP-CHROME-1) — sem `mapSheetChromeInsetProvider` |
