@@ -2,6 +2,28 @@
 
 import 'package:flutter/material.dart';
 
+/// Identificador semântico do tema SoloForte ('green' | 'blue' | 'black').
+///
+/// Registrado em [PremiumAppTheme.themeFor] / darkTheme.
+/// Permite que sheets em `core/` detectem o tema via [Theme.of]
+/// sem importar `modules/settings/` nem comparar hex de accent.
+class SoloForteThemeExtension extends ThemeExtension<SoloForteThemeExtension> {
+  final String themeId; // 'green' | 'blue' | 'black'
+
+  const SoloForteThemeExtension({required this.themeId});
+
+  @override
+  SoloForteThemeExtension copyWith({String? themeId}) =>
+      SoloForteThemeExtension(themeId: themeId ?? this.themeId);
+
+  @override
+  SoloForteThemeExtension lerp(
+    ThemeExtension<SoloForteThemeExtension>? other,
+    double t,
+  ) =>
+      t < 0.5 ? this : (other as SoloForteThemeExtension? ?? this);
+}
+
 /// Tokens visuais oficiais dos bottom sheets do SoloForte.
 /// Fonte da verdade: ADR-027 / IMG_3809.png (screenshot produção).
 abstract final class SoloForteSheetTokens {
@@ -48,4 +70,52 @@ abstract final class SoloForteSheetTokens {
   static const double titleFontSize    = 20.0;
   static const FontWeight titleWeight  = FontWeight.w700;
   static const Color titleColor        = Colors.white;
+}
+
+/// Skin iOS leve — aplicada quando `SoloForteThemeExtension.themeId == 'blue'`.
+/// Não altera [SoloForteSheetTokens] (verde / black).
+abstract final class SoloForteSheetSkinIos {
+  // Fundo principal do sheet
+  static const Color background = Color(0xFFF5F6F8); // prata suave iOS 17
+
+  // Card interno agrupado
+  static const Color cardBackground = Color(0xFFEBF5FF);
+  static const Color cardBorder = Color(0xFFB3D9F5);
+  static const double cardRadius = 14.0;
+
+  // Handle
+  static const Color handleColor = Color(0xFF7EC8F0);
+  static const Size handleSize = Size(40, 4);
+
+  // Borda superior do sheet
+  static const Color sheetBorder = Color(0xFFB3D9F5);
+  static const double sheetRadius = 22.0;
+
+  // Ícones — circulares
+  static const Color iconBackground = Color(0xFFB3D9F5);
+  static const Color iconStroke = Color(0xFF0175C2);
+  static const double iconRadius = 999.0; // circular
+
+  // Textos
+  static const Color titleColor = Color(0xFF003D6B);
+  static const Color subtitleColor = Color(0xFF1A8FD1);
+  static const Color arrowColor = Color(0xFF0175C2);
+
+  // Badge role (ex: "consultor")
+  static const Color badgeBackground = Color(0xFFD0EEFB);
+  static const Color badgeText = Color(0xFF0175C2);
+  static const Color badgeBorder = Color(0xFF7EC8F0);
+
+  // Botão CTA principal
+  static const Color ctaBackground = Color(0xFF0175C2); // Flutter Blue
+  static const Color ctaText = Color(0xFFFFFFFF);
+  static const double ctaRadius = 13.0;
+
+  // Botão ghost (Cancelar)
+  static const Color ghostBorder = Color(0xFF7EC8F0);
+  static const Color ghostText = Color(0xFF0175C2);
+  static const double ghostRadius = 13.0;
+
+  // Separador entre rows do card
+  static const Color rowDivider = Color(0x1A0175C2); // 10% opacity
 }
