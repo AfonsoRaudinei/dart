@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
 import 'design_tokens.dart';
 
 /// O novo Tema Premium do aplicativo (Responsável pela Fase 1)
@@ -9,11 +10,22 @@ class PremiumAppTheme {
   static const Color _blueAccent = Color(0xFF1B6EE0);
 
   static ThemeData themeFor(String mode) {
-    return switch (mode) {
+    final themeId = switch (mode) {
+      'blue' => 'blue',
+      'black' => 'black',
+      _ => 'green',
+    };
+    final base = switch (mode) {
       'blue' => _buildLightTheme(_blueAccent),
       'black' => darkTheme,
       'green' || _ => lightTheme,
     };
+    // Append/replace only the semantic extension — cores/shapes intocados.
+    return base.copyWith(
+      extensions: <ThemeExtension<dynamic>>[
+        SoloForteThemeExtension(themeId: themeId),
+      ],
+    );
   }
 
   static ThemeMode themeModeFor(String mode) {
@@ -262,6 +274,11 @@ class PremiumAppTheme {
         thickness: PremiumTokens.hairlineThickness,
         space: 1,
       ),
+
+      // MaterialApp.darkTheme usa este getter direto (tema black).
+      extensions: const <ThemeExtension<dynamic>>[
+        SoloForteThemeExtension(themeId: 'black'),
+      ],
     );
   }
 }
