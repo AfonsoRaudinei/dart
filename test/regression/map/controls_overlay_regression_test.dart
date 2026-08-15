@@ -231,7 +231,8 @@ void main() {
     });
   });
 
-  group('map flash regression (868cbea)', () {
+  /// BUG-009 — Flash ao tocar ícones/abrir sheets (fix 868cbea).
+  group('BUG-009 map_flash_regression', () {
     test('map _MapActionButton label só em long-press, não no onTap', () {
       final source = File(
         'lib/ui/components/map/widgets/map_controls_overlay.dart',
