@@ -16,7 +16,6 @@ import '../../../../core/contracts/i_visit_session_lookup_provider.dart';
 import '../../../../core/providers/connectivity_provider.dart';
 import '../../../../modules/clima/presentation/providers/radar_providers.dart';
 import '../../../../core/state/map_state.dart';
-import '../../../../core/state/map_ui_providers.dart';
 import '../../../../modules/drawing/domain/drawing_state.dart';
 import '../../../../modules/drawing/presentation/widgets/drawing_bottom_toolbar_overlay.dart';
 import '../../../../core/utils/app_logger.dart';
@@ -27,9 +26,6 @@ import 'selected_talhao_card.dart';
 
 part 'map_controls_location_button.dart';
 part 'map_controls_measurement.dart';
-
-const double _kMapActionButtonSize = 44.0;
-const double _kMapActionColumnSpacing = 12.0;
 
 Color _themeColor(String theme) {
   switch (theme) {
@@ -233,16 +229,13 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
             ),
           ),
 
-        // 3. Coluna de ações verticais (direita) — alinhada, espaçamento uniforme,
-        // sobe inteira com sheet aberto. No desenho, só camadas (posição preservada).
+        // 3. Coluna de ações verticais (direita) — posição travada (REGRA-MAP-CHROME-1).
+        // Não reage ao sheet: evita “pulo” ao arrastar detent ou retomar o app.
         Positioned(
-          right: 16,
-          bottom: kFabSafeArea +
+          right: kMapActionColumnRightInset,
+          bottom: kMapActionColumnBottomInset +
               safeBottom +
-              ref.watch(mapSheetChromeInsetProvider).clamp(0, 280) * 0.15 +
-              (widget.isDrawMode
-                  ? (_kMapActionColumnSpacing + _kMapActionButtonSize) * 2
-                  : 0),
+              (widget.isDrawMode ? kMapActionColumnDrawModeCompensation : 0),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.end,
@@ -253,7 +246,7 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
                 onTap: widget.onOpenMapTools,
               ),
               if (!widget.isDrawMode) ...[
-                const SizedBox(height: _kMapActionColumnSpacing),
+                const SizedBox(height: kMapActionColumnSpacing),
                 MapActionFabMenu(
                   embedded: true,
                   padding: EdgeInsets.zero,
@@ -279,7 +272,7 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
                   },
                 ),
                 if (widget.showCheckInAction) ...[
-                  const SizedBox(height: _kMapActionColumnSpacing),
+                  const SizedBox(height: kMapActionColumnSpacing),
                   _MapActionButton(
                     buttonKey: const Key('map_control_check_in'),
                     icon: SFIcons.checkCircle,

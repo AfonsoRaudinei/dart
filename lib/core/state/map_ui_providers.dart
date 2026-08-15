@@ -83,7 +83,9 @@ final mapCameraSnapshotProvider = StateProvider.autoDispose<MapCameraSnapshot?>(
   (ref) => null,
 );
 
-/// Altura do chrome inferior do mapa (sheet stack) — mapa/controles “cedem”.
+/// Altura do chrome inferior do mapa (sheet stack) — reservado para padding de
+/// câmera/mapa no futuro. A coluna de ações **não** consome este valor
+/// (REGRA-MAP-CHROME-1: posição travada em [kMapActionColumnBottomInset]).
 /// 0 = sheet fechado.
 final mapSheetChromeInsetProvider = StateProvider.autoDispose<double>(
   (ref) => 0,

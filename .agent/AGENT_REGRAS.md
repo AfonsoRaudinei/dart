@@ -52,9 +52,18 @@ Ver `.agent/PLANO_BLINDAGEM_OCORRENCIAS_MAPA.md` · REGRA-OCC-8..11 em `arch_che
 
 ---
 
-## Coluna direita do mapa (REGRA-MAP-CHROME-1)
+## Coluna direita do mapa — blindagem anti-regressão (REGRA-MAP-CHROME-1)
 
-`kMapActionColumnBottomInset` + `safeBottom` — **nunca** `mapSheetChromeInsetProvider`
+Ao tocar `map_controls_overlay.dart` ou constantes de layout do mapa:
+
+| Regra | Ação |
+|---|---|
+| Posição travada | Usar `kMapActionColumnBottomInset` + `safeBottom` — **nunca** `mapSheetChromeInsetProvider` |
+| Constantes | Tamanho/espaçamento em `layout_constants.dart` (`kMapActionColumn*`) |
+| SmartButton | Coluna ancorada ao FAB global (`kFabSafeArea` = 76dp acima da safe-area) |
+| Modo desenho | Compensar com `kMapActionColumnDrawModeCompensation` para manter camadas fixas |
+| IPA | **208 NÃO inclui** este fix — mínimo **209+** |
+| Validação | `flutter test test/regression/map/controls_overlay_regression_test.dart` + `arch_check.sh` REGRA-MAP-CHROME-1 |
 
 ---
 

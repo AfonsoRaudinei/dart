@@ -1,43 +1,44 @@
-# Prompt — SheetSkin iOS (tema Azul) · concluído em main
+# Prompt — Travamento da coluna direita do mapa (REGRA-MAP-CHROME-1)
 
-## Status
+## Status IPA
 
-| Item | Valor |
+| IPA | Inclui travamento? |
 |---|---|
-| Feature original | commit `6230591` (branch `cursor/marketing-cliente-limite-493d`) |
-| Cherry-pick em `main` | `e04e690` |
-| Tag | `feat/sheet-skin-ios` |
-| Restore | `restore/sheet-skin-ios-pre` (`2685139`) |
-| Auditoria | LIBERADO (read-only, 14/08/2026) |
+| **208** | ❌ NÃO — código ficou só na branch `cursor/marketing-cliente-limite-493d` (`2685139`), não mergeado em `main` |
+| **209+** | ✅ Obrigatório — regenerar após merge deste fix em `main` |
 
-## O que foi entregue (Fase 1 — chrome)
+## Sintoma
 
-- `SoloForteThemeExtension` + `SoloForteSheetSkinIos` em `sheet_tokens.dart`
-- Registro da extension em `premium_app_theme.dart` (green / blue / black)
-- `showSoloForteSheet` aplica skin iOS quando `themeId == 'blue'`
-- `SoloForteSheetSkinScope` + `_SoloForteSheetChrome`
-- 12 chamadores intocados
+Ícones da coluna direita (camadas, +, check-in) se movem ao arrastar o bottom sheet ou retomar o app.
 
-## QA device
+## Causa
 
-Checklist completo em `design/sheets.md` (seção QA Versão Final).
+`map_controls_overlay.dart` acoplava `Positioned.bottom` a `mapSheetChromeInsetProvider * 0.15`.
 
-**Critério:** chrome prata + handle azul nos sheets sem `transparent`. Marketing / visita / MapBottomSheet = limitação conhecida.
+## Verdade (layout canônico)
 
-## Fase 2 (WIP local — não em main)
-
-Conteúdo interno via `SoloForteSheetSkin.of(context)` — stash `wip-fase2-sheets-pre-cherry-pick` na branch feature.
-
-Arquivos: `sheet_skin_resolver.dart`, widgets `sheet_card/row/actions`, `agenda_filters_sheet.dart`.
-
-## MacBook — próximo passo
-
-```bash
-git fetch origin
-git checkout main
-git pull origin main
-flutter pub get
-git log -1 --oneline   # deve mostrar e04e690
+```
+bottom = kMapActionColumnBottomInset + safeBottom
+       = kFabSafeArea (76) + safeBottom
 ```
 
-Validar: Configurações → tema **Azul** → abrir sheet (avatar / agenda filtros).
+Modo desenho: `+ kMapActionColumnDrawModeCompensation`.
+
+## Proibido
+
+- `mapSheetChromeInsetProvider` em `map_controls_overlay.dart`
+- Offsets mágicos fora de `layout_constants.dart`
+
+## Validação
+
+```bash
+flutter test test/regression/map/controls_overlay_regression_test.dart
+./tool/arch_check.sh   # REGRA-MAP-CHROME-1 Exit 0
+```
+
+## MacBook
+
+```bash
+git pull origin main && flutter pub get
+# hot restart ou IPA 209+
+```
