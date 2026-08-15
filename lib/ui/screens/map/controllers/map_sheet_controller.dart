@@ -52,6 +52,9 @@ class MapSheetController {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
+      // Host próprio (DraggableScrollableSheet + chrome local). Sem este flag,
+      // tema Azul pinta prata + Column do chrome iOS e o sheet colapsa → tela branca.
+      preserveMaterialDefaults: true,
       barrierColor: Colors.black.withValues(alpha: 0.20),
       enableDrag: true,
       isDismissible: true,
