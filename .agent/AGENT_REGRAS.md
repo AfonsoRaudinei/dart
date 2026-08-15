@@ -43,7 +43,7 @@ Ler: `.agent/AGENT_MEMORIA.md` · `prompt/AGENT_MEMORIA.md`
 
 ## Bottom sheets — SheetSkin iOS (tema Azul)
 
-**Doc canônico:** `design/sheets.md` · **Skill:** `.cursor/skills/soloforte-sheets/SKILL.md`
+**Doc canônico:** `design/sheets.md` · **Auditoria IPA 210:** `.agent/AUDITORIA_REGRESSAO_IPA210.md`
 
 | Regra | Ação |
 |---|---|
@@ -51,13 +51,28 @@ Ler: `.agent/AGENT_MEMORIA.md` · `prompt/AGENT_MEMORIA.md`
 | Detecção | `SoloForteThemeExtension.themeId == 'blue'` — **nunca** hex |
 | Tokens iOS | `SoloForteSheetSkinIos` em `sheet_tokens.dart` |
 | Registro tema | `premium_app_theme.dart` — extension nos 3 temas |
-| Chamadores | 12 arquivos — **não alterar** sem prompt cirúrgico |
+| Blast radius | **20+ callers** com `Colors.transparent` — **não** confiar na lista de 12 do prompt Fase 1 |
 | Escopo Fase 1 | Chrome-only (fundo, handle, borda, radius, `SoloForteSheetSkinScope`) |
 | Escopo Fase 2 | Conteúdo interno + `transparent` + `MapBottomSheet` chrome (Ago/2026) |
 | Helper | `soloForteSheetIsIos(context)` — scope ou `themeId == 'blue'` |
-| Validação | `./tool/arch_check.sh` Exit 0 após mudança em `core/ui/sheets/` |
+| Validação | `flutter test test/regression/sheets/soloforte_sheet_contract_test.dart` + `./tool/arch_check.sh` |
 
 **Main:** cherry-pick `6230591` → `e04e690` · tag `feat/sheet-skin-ios`
+
+---
+
+## REGRA-SHEET-BLAST-1 — sheets compartilhados (IPA 210)
+
+Ao tocar `lib/core/ui/sheets/` ou widgets de sheet compartilhados:
+
+| Regra | Ação |
+|---|---|
+| Inventário | `rg showSoloForteSheet` + `rg 'backgroundColor: Colors.transparent'` |
+| Contrato | **Proibido** inverter `transparent` / `preserveMaterialDefaults` sem atualizar callers + teste |
+| Conteúdo escuro | `SoloForteSheetTokens.titleColor` (branco) não assume fundo escuro no tema Azul — usar `soloForteSheetIsIos` |
+| Transversal | Afeta consultoria, marketing, agenda, carteira, map, drawing, planos |
+| Release | **Proibido** reutilizar mesmo `+N` após código na `main` — próximo archive = próximo build |
+| Doc | `.agent/AUDITORIA_REGRESSAO_IPA210.md` |
 
 ---
 
@@ -75,7 +90,7 @@ Ao tocar `map_controls_overlay.dart` ou constantes de layout do mapa:
 |---|---|
 | Posição travada | Usar `kMapActionColumnBottomInset` + `safeBottom` — **nunca** `mapSheetChromeInsetProvider` |
 | Constantes | Tamanho/espaçamento em `layout_constants.dart` (`kMapActionColumn*`) |
-| SmartButton | Coluna ancorada ao FAB global (`kFabSafeArea` = 76dp acima da safe-area) |
+| SmartButton | Coluna ancorada ao FAB global (`kFabSafeArea` = 100dp acima da safe-area) |
 | Modo desenho | Compensar com `kMapActionColumnDrawModeCompensation` (130dp) |
 | Espaçamento canônico | 26dp (camadas↔+) · 16dp (+↔check-in) — ver `layout_constants.dart` |
 | IPA | **209** travou inset mas spacing 12px errado — **210+** com gaps 26/16 |

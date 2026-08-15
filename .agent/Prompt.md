@@ -71,3 +71,29 @@ flutter test test/regression/map/controls_overlay_regression_test.dart
 ## MacBook
 
 `git pull origin main` → hot restart ou IPA **210+**.
+
+---
+
+# Prompt — SheetSkin iOS / REGRA-SHEET-BLAST-1 (IPA 210)
+
+## Status IPA 210
+
+| IPA | Conteúdo principal | Regressão conhecida |
+|---|---|---|
+| **209** | `ddf7f56` — chrome travado, spacing 12px | coluna ~26px abaixo do layout |
+| **210** | `78d32f2` — gaps 26/16 + SheetSkin Fase 2 | Relatórios/Marketing/Agenda ilegíveis (chrome prata + texto branco) |
+
+**Causa:** commit `6c0b3ae` — `Colors.transparent` passou a resolver para fundo prata iOS. Relatórios **não** teve commit no delta 209→210.
+
+**Doc completo:** `.agent/AUDITORIA_REGRESSAO_IPA210.md`
+
+## Antes de tocar `core/ui/sheets/`
+
+```bash
+rg -l showSoloForteSheet lib/
+rg -l 'backgroundColor: Colors.transparent' lib/
+flutter test test/regression/sheets/soloforte_sheet_contract_test.dart
+./tool/arch_check.sh
+```
+
+**Proibido:** inverter contrato `transparent` / `preserveMaterialDefaults` sem atualizar callers afetados.
