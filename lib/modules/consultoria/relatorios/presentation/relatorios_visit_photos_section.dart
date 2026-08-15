@@ -277,7 +277,24 @@ class _VisitPhotosSectionState extends ConsumerState<_VisitPhotosSection> {
     await showSoloForteSheet<void>(
       context: context,
       maxHeightFraction: 0.88,
-      builder: (sheetContext) => SafeArea(
+      builder: (sheetContext) {
+        final isIos = soloForteSheetIsIos(sheetContext);
+        final sheetBg = isIos
+            ? SoloForteSheetSkinIos.background
+            : SoloForteSheetTokens.sheetBackground;
+        final titleColor = isIos
+            ? const Color(0xFF1D1D1F)
+            : SoloForteSheetTokens.titleColor;
+        final subtitleColor = isIos
+            ? const Color(0xFF636366)
+            : const Color(0xFFAEAEB2);
+        final dividerColor = isIos
+            ? const Color(0xFFE5E5EA)
+            : SoloForteSheetTokens.divider;
+
+        return Material(
+          color: sheetBg,
+          child: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -291,20 +308,20 @@ class _VisitPhotosSectionState extends ConsumerState<_VisitPhotosSection> {
                       children: [
                         Text(
                           QuickPhotoRepository.typeLabel(photo.type),
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: SoloForteSheetTokens.titleFontSize,
                             fontWeight: SoloForteSheetTokens.titleWeight,
-                            color: SoloForteSheetTokens.titleColor,
+                            color: titleColor,
                           ),
                         ),
                         if (isVegetal)
-                          const Padding(
-                            padding: EdgeInsets.only(top: 4),
+                          Padding(
+                            padding: const EdgeInsets.only(top: 4),
                             child: Text(
                               'Inversão vegetal aplicada no arquivo',
                               style: TextStyle(
                                 fontSize: 12,
-                                color: Color(0xFFAEAEB2),
+                                color: subtitleColor,
                               ),
                             ),
                           ),
@@ -324,7 +341,7 @@ class _VisitPhotosSectionState extends ConsumerState<_VisitPhotosSection> {
                 ],
               ),
             ),
-            const Divider(height: 1, color: SoloForteSheetTokens.divider),
+            Divider(height: 1, color: dividerColor),
             Expanded(
               child: InteractiveViewer(
                 child: Image.file(
@@ -367,7 +384,9 @@ class _VisitPhotosSectionState extends ConsumerState<_VisitPhotosSection> {
             ),
           ],
         ),
-      ),
+          ),
+        );
+      },
     );
   }
 }
