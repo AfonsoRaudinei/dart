@@ -74,7 +74,7 @@ Este revisor é **bom** para o projeto **se** operar por lote/diff, exigir
 `lib/modules/reports/` (ADR-034) · `lib/modules/consultoria/agenda/` (ADR-018) · `lib/modules/relatorios/` top-level (não existe)
 
 **Contratos cross-module (só via `lib/core/contracts/`):**  
-`IClientLookup` · `IFarmLookup` · `IFieldLookup` · `IVisitSessionLookup` · `IVisitClientLookup` · `IReportWriter` · `IAgendaSessionBridge` · `IAgendaObservable` · `IOpportunityLookup` · `IUserLocationLookup` · `IOccurrenceRead` · `IDrawingFieldWriter` · `IProducerInviteWriter` · `IProducerPropertyGateway` · `IOccurrenceAccessReader` · `IRadarOverlayController`
+`IClientLookup` · `IFarmLookup` · `IFieldLookup` · `IVisitSessionLookup` · `IVisitClientLookup` · `IReportWriter` · `IAgendaSessionBridge` · `IAgendaObservable` · `IOpportunityLookup` · `IMarketingCaseReportsLookup` (ADR-050) · `IUserLocationLookup` · `IOccurrenceRead` · `IDrawingFieldWriter` · `IProducerInviteWriter` · `IProducerPropertyGateway` · `IOccurrenceAccessReader` · `IRadarOverlayController`
 
 ---
 
