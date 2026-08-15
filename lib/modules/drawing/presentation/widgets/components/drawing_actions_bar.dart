@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../domain/models/drawing_models.dart';
 import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
+import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 
 /// Widget responsável por exibir ações contextuais para features de desenho.
 ///
@@ -58,11 +59,21 @@ class DrawingActionsBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isIos = soloForteSheetIsIos(context);
+    final panelBg = isIos
+        ? Colors.transparent
+        : SoloForteSheetTokens.sheetBackground;
+    final muted = isIos
+        ? SoloForteSheetSkinIos.subtitleColor
+        : SoloForteSheetTokens.inputHint;
+    final titleColor =
+        isIos ? SoloForteSheetSkinIos.titleColor : null;
+
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: const BoxDecoration(
-        color: SoloForteSheetTokens.sheetBackground,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      decoration: BoxDecoration(
+        color: panelBg,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -91,16 +102,17 @@ class DrawingActionsBar extends StatelessWidget {
                   children: [
                     Text(
                       selectedFeature.properties.nome,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
+                        color: titleColor,
                       ),
                     ),
                     Text(
                       '${selectedFeature.properties.areaHa.toStringAsFixed(2)} ha',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
-                        color: SoloForteSheetTokens.inputHint,
+                        color: muted,
                       ),
                     ),
                   ],
@@ -137,12 +149,12 @@ class DrawingActionsBar extends StatelessWidget {
           const SizedBox(height: 16),
 
           // Operações booleanas
-          const Text(
+          Text(
             'Operações',
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
-              color: SoloForteSheetTokens.inputHint,
+              color: muted,
             ),
           ),
           const SizedBox(height: 12),
@@ -180,12 +192,12 @@ class DrawingActionsBar extends StatelessWidget {
           const SizedBox(height: 16),
 
           // Exportar (multi-formato)
-          const Text(
+          Text(
             'Exportar',
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
-              color: SoloForteSheetTokens.inputHint,
+              color: muted,
             ),
           ),
           const SizedBox(height: 12),
@@ -214,12 +226,12 @@ class DrawingActionsBar extends StatelessWidget {
           const Divider(height: 1),
           const SizedBox(height: 16),
 
-          const Text(
+          Text(
             'Lote',
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
-              color: SoloForteSheetTokens.inputHint,
+              color: muted,
             ),
           ),
           const SizedBox(height: 12),
@@ -373,12 +385,24 @@ class _ActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isIos = soloForteSheetIsIos(context);
     final color = isDestructive
         ? Colors.red
-        : SoloForteSheetTokens.sectionLabel;
+        : (isIos
+            ? SoloForteSheetSkinIos.titleColor
+            : SoloForteSheetTokens.sectionLabel);
+    final tileBg = isIos
+        ? SoloForteSheetSkinIos.cardBackground
+        : SoloForteSheetTokens.inputBackground;
+    final descColor = isIos
+        ? SoloForteSheetSkinIos.subtitleColor
+        : SoloForteSheetTokens.inputHint;
+    final chevronColor = isIos
+        ? SoloForteSheetSkinIos.arrowColor
+        : SoloForteSheetTokens.divider;
 
     return Material(
-      color: SoloForteSheetTokens.inputBackground,
+      color: tileBg,
       borderRadius: BorderRadius.circular(12),
       child: InkWell(
         onTap: onTap,
@@ -404,17 +428,17 @@ class _ActionButton extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       description,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
-                        color: SoloForteSheetTokens.inputHint,
+                        color: descColor,
                       ),
                     ),
                   ],
                 ),
               ),
-              const Icon(
+              Icon(
                 Icons.chevron_right,
-                color: SoloForteSheetTokens.divider,
+                color: chevronColor,
               ),
             ],
           ),

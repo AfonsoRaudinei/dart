@@ -89,9 +89,15 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Text(
+          Text(
             '✏️ Editando geometria',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: soloForteSheetIsIos(context)
+                  ? SoloForteSheetSkinIos.titleColor
+                  : null,
+            ),
           ),
           const Divider(),
           if (widget.controller.hasSelfIntersection ||
@@ -99,12 +105,16 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
             _buildSelfIntersectionWarning(),
             const SizedBox(height: 12),
           ],
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 8),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
             child: Text(
               'Arraste os pontos para modificar a área.\nUse os controles laterais para salvar, desfazer, refazer ou cancelar.',
               textAlign: TextAlign.center,
-              style: TextStyle(color: SoloForteSheetTokens.inputHint),
+              style: TextStyle(
+                color: soloForteSheetIsIos(context)
+                    ? SoloForteSheetSkinIos.subtitleColor
+                    : SoloForteSheetTokens.inputHint,
+              ),
             ),
           ),
           const SizedBox(height: 12),
@@ -151,11 +161,38 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
     final area = widget.controller.liveAreaHa;
     final perimeter = widget.controller.livePerimeterKm;
     final f = NumberFormat("##0.##", "pt_BR");
-    const sectionLabelStyle = TextStyle(
-      color: SoloForteSheetTokens.sectionLabel,
+    final isIos = soloForteSheetIsIos(context);
+    final sectionLabelStyle = TextStyle(
+      color: isIos
+          ? SoloForteSheetSkinIos.titleColor
+          : SoloForteSheetTokens.sectionLabel,
       fontSize: SoloForteSheetTokens.sectionFontSize,
       fontWeight: SoloForteSheetTokens.sectionWeight,
     );
+    final titleColor = isIos
+        ? SoloForteSheetSkinIos.titleColor
+        : SoloForteSheetTokens.titleColor;
+    final muted = isIos
+        ? SoloForteSheetSkinIos.subtitleColor
+        : SoloForteSheetTokens.sectionLabel;
+    final panelBg = isIos
+        ? SoloForteSheetSkinIos.cardBackground
+        : SoloForteSheetTokens.inputBackground;
+    final panelBorder = isIos
+        ? SoloForteSheetSkinIos.cardBorder
+        : SoloForteSheetTokens.divider;
+    final inputText = isIos
+        ? SoloForteSheetSkinIos.titleColor
+        : SoloForteSheetTokens.inputText;
+    final inputHint = isIos
+        ? SoloForteSheetSkinIos.subtitleColor
+        : SoloForteSheetTokens.inputHint;
+    final inputFill = isIos
+        ? SoloForteSheetSkinIos.cardBackground
+        : SoloForteSheetTokens.inputBackground;
+    final focusBorder = isIos
+        ? SoloForteSheetSkinIos.iconStroke
+        : PremiumTokens.brandGreen;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -164,11 +201,11 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Text(
+            Text(
               'Salvar Polígono',
               textAlign: TextAlign.center,
               style: TextStyle(
-                color: SoloForteSheetTokens.titleColor,
+                color: titleColor,
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
               ),
@@ -191,12 +228,12 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
                     color: PremiumTokens.brandGreen,
                   ),
                   const SizedBox(width: 10),
-                  const Expanded(
+                  Expanded(
                     child: Text(
                       'Revise os dados e toque em salvar para criar o desenho no mapa.',
                       style: TextStyle(
                         fontSize: 13.5,
-                        color: SoloForteSheetTokens.sectionLabel,
+                        color: muted,
                       ),
                     ),
                   ),
@@ -230,9 +267,9 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: SoloForteSheetTokens.inputBackground,
+                color: panelBg,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: SoloForteSheetTokens.divider),
+                border: Border.all(color: panelBorder),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -245,7 +282,7 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
                   Container(
                     width: 1,
                     height: 40,
-                    color: SoloForteSheetTokens.divider,
+                    color: panelBorder,
                   ),
                   _BigMetric(
                     icon: Icons.straighten,
@@ -258,49 +295,49 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
             const SizedBox(height: 24),
 
             // 1. Selecionar Cliente
-            const Text('Cliente', style: sectionLabelStyle),
+            Text('Cliente', style: sectionLabelStyle),
             const SizedBox(height: 8),
             _buildClientField(),
             const SizedBox(height: 16),
 
             // 2. Selecionar Fazenda
-            const Text('Fazenda / Grupo', style: sectionLabelStyle),
+            Text('Fazenda / Grupo', style: sectionLabelStyle),
             const SizedBox(height: 8),
             _buildFarmField(),
             const SizedBox(height: 16),
 
             // 3. Nome do Talhão
-            const Text('Nome do Talhão', style: sectionLabelStyle),
+            Text('Nome do Talhão', style: sectionLabelStyle),
             const SizedBox(height: 8),
             TextFormField(
               controller: _nomeController,
-              style: const TextStyle(color: SoloForteSheetTokens.inputText),
+              style: TextStyle(color: inputText),
               decoration: InputDecoration(
                 hintText: 'Ex: Talhão Norte',
-                hintStyle: const TextStyle(
-                  color: SoloForteSheetTokens.inputHint,
-                ),
+                hintStyle: TextStyle(color: inputHint),
                 suffixText: '${f.format(area)} ha',
-                suffixStyle: const TextStyle(
-                  color: SoloForteSheetTokens.inputHint,
-                ),
+                suffixStyle: TextStyle(color: inputHint),
                 filled: true,
-                fillColor: SoloForteSheetTokens.inputBackground,
+                fillColor: inputFill,
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: 16,
                   vertical: 12,
                 ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide.none,
+                  borderSide: isIos
+                      ? const BorderSide(color: SoloForteSheetSkinIos.cardBorder)
+                      : BorderSide.none,
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide.none,
+                  borderSide: isIos
+                      ? const BorderSide(color: SoloForteSheetSkinIos.cardBorder)
+                      : BorderSide.none,
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(color: PremiumTokens.brandGreen),
+                  borderSide: BorderSide(color: focusBorder),
                 ),
               ),
               validator: (v) =>
@@ -521,6 +558,17 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
 
   Widget _buildClientField() {
     final clientState = ref.watch(drawingClientProvider);
+    final isIos = soloForteSheetIsIos(context);
+    final inputText = isIos
+        ? SoloForteSheetSkinIos.titleColor
+        : SoloForteSheetTokens.inputText;
+    final inputHint = isIos
+        ? SoloForteSheetSkinIos.subtitleColor
+        : SoloForteSheetTokens.inputHint;
+    final dropdownBg = isIos
+        ? SoloForteSheetSkinIos.cardBackground
+        : SoloForteSheetTokens.inputBackground;
+
     if (clientState.preSelectedClientId != null) {
       final name =
           _selectedClient?.name ??
@@ -528,15 +576,15 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
           'Cliente selecionado';
       return InputDecorator(
         decoration: _sheetFieldDecoration(
-          suffixIcon: const Icon(
+          suffixIcon: Icon(
             Icons.lock_outline,
             size: 18,
-            color: SoloForteSheetTokens.inputHint,
+            color: inputHint,
           ),
         ),
         child: Text(
           name,
-          style: const TextStyle(color: SoloForteSheetTokens.inputText),
+          style: TextStyle(color: inputText),
         ),
       );
     }
@@ -544,12 +592,12 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
     return DropdownButtonFormField<Client>(
       initialValue: _selectedClient,
       decoration: _sheetFieldDecoration(),
-      dropdownColor: SoloForteSheetTokens.inputBackground,
-      style: const TextStyle(color: SoloForteSheetTokens.inputText),
-      iconEnabledColor: SoloForteSheetTokens.inputHint,
-      hint: const Text(
+      dropdownColor: dropdownBg,
+      style: TextStyle(color: inputText),
+      iconEnabledColor: inputHint,
+      hint: Text(
         'Selecione o cliente...',
-        style: TextStyle(color: SoloForteSheetTokens.inputHint),
+        style: TextStyle(color: inputHint),
       ),
       items: clientState.clients.map((c) {
         return DropdownMenuItem(value: c, child: Text(c.name));
@@ -569,6 +617,17 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
 
   Widget _buildFarmField() {
     final clientState = ref.watch(drawingClientProvider);
+    final isIos = soloForteSheetIsIos(context);
+    final inputText = isIos
+        ? SoloForteSheetSkinIos.titleColor
+        : SoloForteSheetTokens.inputText;
+    final inputHint = isIos
+        ? SoloForteSheetSkinIos.subtitleColor
+        : SoloForteSheetTokens.inputHint;
+    final dropdownBg = isIos
+        ? SoloForteSheetSkinIos.cardBackground
+        : SoloForteSheetTokens.inputBackground;
+
     if (clientState.preSelectedFarmId != null) {
       final name =
           _selectedFarm?.name ??
@@ -576,15 +635,15 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
           'Fazenda selecionada';
       return InputDecorator(
         decoration: _sheetFieldDecoration(
-          suffixIcon: const Icon(
+          suffixIcon: Icon(
             Icons.lock_outline,
             size: 18,
-            color: SoloForteSheetTokens.inputHint,
+            color: inputHint,
           ),
         ),
         child: Text(
           name,
-          style: const TextStyle(color: SoloForteSheetTokens.inputText),
+          style: TextStyle(color: inputText),
         ),
       );
     }
@@ -592,12 +651,12 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
     return DropdownButtonFormField<dynamic>(
       initialValue: _selectedFarm,
       decoration: _sheetFieldDecoration(),
-      dropdownColor: SoloForteSheetTokens.inputBackground,
-      style: const TextStyle(color: SoloForteSheetTokens.inputText),
-      iconEnabledColor: SoloForteSheetTokens.inputHint,
-      hint: const Text(
+      dropdownColor: dropdownBg,
+      style: TextStyle(color: inputText),
+      iconEnabledColor: inputHint,
+      hint: Text(
         'Selecione a fazenda...',
-        style: TextStyle(color: SoloForteSheetTokens.inputHint),
+        style: TextStyle(color: inputHint),
       ),
       items: [
         ...clientState.farms.map(
@@ -647,22 +706,33 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
   }
 
   InputDecoration _sheetFieldDecoration({Widget? suffixIcon}) {
+    final isIos = soloForteSheetIsIos(context);
+    final fillColor = isIos
+        ? SoloForteSheetSkinIos.cardBackground
+        : SoloForteSheetTokens.inputBackground;
+    final focusBorder = isIos
+        ? SoloForteSheetSkinIos.iconStroke
+        : PremiumTokens.brandGreen;
     return InputDecoration(
       filled: true,
-      fillColor: SoloForteSheetTokens.inputBackground,
+      fillColor: fillColor,
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       suffixIcon: suffixIcon,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
-        borderSide: BorderSide.none,
+        borderSide: isIos
+            ? const BorderSide(color: SoloForteSheetSkinIos.cardBorder)
+            : BorderSide.none,
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
-        borderSide: BorderSide.none,
+        borderSide: isIos
+            ? const BorderSide(color: SoloForteSheetSkinIos.cardBorder)
+            : BorderSide.none,
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
-        borderSide: const BorderSide(color: PremiumTokens.brandGreen),
+        borderSide: BorderSide(color: focusBorder),
       ),
     );
   }

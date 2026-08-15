@@ -5,6 +5,7 @@ import '../../domain/repositories/i_clients_repository.dart';
 import '../controllers/drawing_controller.dart';
 import '../providers/drawing_client_provider.dart';
 import '../../../../core/ui/sheets/sheet_tokens.dart';
+import '../../../../core/ui/sheets/soloforte_sheet.dart';
 
 /// Bottom sheet para editar as informações básicas de um talhão:
 /// nome, cliente, fazenda, área (read-only), cultura e safra.
@@ -157,21 +158,47 @@ class _DrawingInfoEditSheetState extends ConsumerState<DrawingInfoEditSheet> {
       }
     }
 
-    const bg = SoloForteSheetTokens.sheetBackground;
-    const inputBg = SoloForteSheetTokens.inputBackground;
-    const hintColor = SoloForteSheetTokens.inputHint;
-    const divColor = SoloForteSheetTokens.divider;
-    const textStyle = TextStyle(color: Colors.white, fontSize: 14);
-    const labelStyle = TextStyle(
-      color: Colors.white70,
+    final isIos = soloForteSheetIsIos(context);
+    final bg = isIos
+        ? (widget.embedded
+            ? Colors.transparent
+            : SoloForteSheetSkinIos.background)
+        : SoloForteSheetTokens.sheetBackground;
+    final inputBg = isIos
+        ? SoloForteSheetSkinIos.cardBackground
+        : SoloForteSheetTokens.inputBackground;
+    final hintColor = isIos
+        ? SoloForteSheetSkinIos.subtitleColor
+        : SoloForteSheetTokens.inputHint;
+    final divColor = isIos
+        ? SoloForteSheetSkinIos.rowDivider
+        : SoloForteSheetTokens.divider;
+    final textStyle = TextStyle(
+      color: isIos ? SoloForteSheetSkinIos.titleColor : Colors.white,
+      fontSize: 14,
+    );
+    final labelStyle = TextStyle(
+      color: isIos
+          ? SoloForteSheetSkinIos.subtitleColor
+          : Colors.white70,
       fontSize: 12,
       fontWeight: FontWeight.w500,
     );
+    final titleStyle = TextStyle(
+      color: isIos ? SoloForteSheetSkinIos.titleColor : Colors.white,
+      fontSize: 17,
+      fontWeight: FontWeight.w600,
+    );
+    final mutedText = textStyle.copyWith(
+      color: isIos
+          ? SoloForteSheetSkinIos.subtitleColor
+          : Colors.white60,
+    );
 
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: bg,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
       ),
       padding: EdgeInsets.only(
         left: 16,
@@ -198,18 +225,14 @@ class _DrawingInfoEditSheetState extends ConsumerState<DrawingInfoEditSheet> {
                 ),
               ),
 
-            const Text(
+            Text(
               'Editar Informações',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 17,
-                fontWeight: FontWeight.w600,
-              ),
+              style: titleStyle,
             ),
             const SizedBox(height: 20),
 
             // Nome
-            const Text('Nome do talhão *', style: labelStyle),
+            Text('Nome do talhão *', style: labelStyle),
             const SizedBox(height: 6),
             TextFormField(
               controller: _nomeCtrl,
@@ -218,10 +241,12 @@ class _DrawingInfoEditSheetState extends ConsumerState<DrawingInfoEditSheet> {
                 filled: true,
                 fillColor: inputBg,
                 hintText: 'Ex: Talhão 01',
-                hintStyle: const TextStyle(color: hintColor),
+                hintStyle: TextStyle(color: hintColor),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide.none,
+                  borderSide: isIos
+                      ? const BorderSide(color: SoloForteSheetSkinIos.cardBorder)
+                      : BorderSide.none,
                 ),
               ),
               validator: (v) =>
@@ -230,23 +255,26 @@ class _DrawingInfoEditSheetState extends ConsumerState<DrawingInfoEditSheet> {
             const SizedBox(height: 16),
 
             // Área (read-only)
-            const Text('Área (ha)', style: labelStyle),
+            Text('Área (ha)', style: labelStyle),
             const SizedBox(height: 6),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
               decoration: BoxDecoration(
                 color: inputBg,
                 borderRadius: BorderRadius.circular(8),
+                border: isIos
+                    ? Border.all(color: SoloForteSheetSkinIos.cardBorder)
+                    : null,
               ),
               child: Text(
                 widget.feature.properties.areaHa.toStringAsFixed(2),
-                style: textStyle.copyWith(color: Colors.white60),
+                style: mutedText,
               ),
             ),
             const SizedBox(height: 16),
 
             // Cliente
-            const Text('Cliente', style: labelStyle),
+            Text('Cliente', style: labelStyle),
             const SizedBox(height: 6),
             clientState.isLoadingClients
                 ? const LinearProgressIndicator()
@@ -254,7 +282,7 @@ class _DrawingInfoEditSheetState extends ConsumerState<DrawingInfoEditSheet> {
                     initialValue: _selectedClient,
                     dropdownColor: inputBg,
                     style: textStyle,
-                    hint: const Text(
+                    hint: Text(
                       'Selecionar cliente',
                       style: TextStyle(color: hintColor),
                     ),
@@ -271,7 +299,6 @@ class _DrawingInfoEditSheetState extends ConsumerState<DrawingInfoEditSheet> {
                         value: null,
                         child: Text(
                           '— Nenhum —',
-                          style: TextStyle(color: hintColor),
                         ),
                       ),
                       ...clientState.clients.map(
@@ -283,7 +310,7 @@ class _DrawingInfoEditSheetState extends ConsumerState<DrawingInfoEditSheet> {
             const SizedBox(height: 16),
 
             // Fazenda
-            const Text('Fazenda', style: labelStyle),
+            Text('Fazenda', style: labelStyle),
             const SizedBox(height: 6),
             clientState.isLoadingFarms
                 ? const LinearProgressIndicator()
@@ -291,7 +318,7 @@ class _DrawingInfoEditSheetState extends ConsumerState<DrawingInfoEditSheet> {
                     initialValue: _selectedFarm,
                     dropdownColor: inputBg,
                     style: textStyle,
-                    hint: const Text(
+                    hint: Text(
                       'Selecionar fazenda',
                       style: TextStyle(color: hintColor),
                     ),
@@ -304,7 +331,7 @@ class _DrawingInfoEditSheetState extends ConsumerState<DrawingInfoEditSheet> {
                       ),
                     ),
                     items: [
-                      const DropdownMenuItem<Farm>(
+                      DropdownMenuItem<Farm>(
                         value: null,
                         child: Text(
                           '— Nenhuma —',
@@ -322,7 +349,7 @@ class _DrawingInfoEditSheetState extends ConsumerState<DrawingInfoEditSheet> {
             const SizedBox(height: 16),
 
             // Cultura
-            const Text('Cultura', style: labelStyle),
+            Text('Cultura', style: labelStyle),
             const SizedBox(height: 6),
             TextFormField(
               controller: _culturaCtrl,
@@ -331,7 +358,7 @@ class _DrawingInfoEditSheetState extends ConsumerState<DrawingInfoEditSheet> {
                 filled: true,
                 fillColor: inputBg,
                 hintText: 'Ex: soja, milho, café',
-                hintStyle: const TextStyle(color: hintColor),
+                hintStyle: TextStyle(color: hintColor),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                   borderSide: BorderSide.none,
@@ -341,7 +368,7 @@ class _DrawingInfoEditSheetState extends ConsumerState<DrawingInfoEditSheet> {
             const SizedBox(height: 16),
 
             // Safra
-            const Text('Safra', style: labelStyle),
+            Text('Safra', style: labelStyle),
             const SizedBox(height: 6),
             TextFormField(
               controller: _safraCtrl,
@@ -350,7 +377,7 @@ class _DrawingInfoEditSheetState extends ConsumerState<DrawingInfoEditSheet> {
                 filled: true,
                 fillColor: inputBg,
                 hintText: 'Ex: 2025/2026',
-                hintStyle: const TextStyle(color: hintColor),
+                hintStyle: TextStyle(color: hintColor),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                   borderSide: BorderSide.none,
@@ -359,7 +386,7 @@ class _DrawingInfoEditSheetState extends ConsumerState<DrawingInfoEditSheet> {
             ),
             const SizedBox(height: 28),
 
-            const Divider(color: divColor),
+            Divider(color: divColor),
             const SizedBox(height: 12),
 
             Row(
@@ -368,8 +395,14 @@ class _DrawingInfoEditSheetState extends ConsumerState<DrawingInfoEditSheet> {
                   child: OutlinedButton(
                     onPressed: _close,
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.white70,
-                      side: const BorderSide(color: divColor),
+                      foregroundColor: isIos
+                          ? SoloForteSheetSkinIos.ghostText
+                          : Colors.white70,
+                      side: BorderSide(
+                        color: isIos
+                            ? SoloForteSheetSkinIos.ghostBorder
+                            : divColor,
+                      ),
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
@@ -383,7 +416,9 @@ class _DrawingInfoEditSheetState extends ConsumerState<DrawingInfoEditSheet> {
                   child: ElevatedButton(
                     onPressed: _save,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF34C759),
+                      backgroundColor: isIos
+                          ? SoloForteSheetSkinIos.ctaBackground
+                          : const Color(0xFF34C759),
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(

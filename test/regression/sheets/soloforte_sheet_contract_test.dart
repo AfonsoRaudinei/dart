@@ -96,5 +96,26 @@ void main() {
         );
       },
     );
+
+    test(
+      'DrawingActionsBar / InfoEdit usam tokens iOS no tema Azul',
+      () {
+        final actions = File(
+          'lib/modules/drawing/presentation/widgets/components/drawing_actions_bar.dart',
+        ).readAsStringSync();
+        final info = File(
+          'lib/modules/drawing/presentation/widgets/drawing_info_edit_sheet.dart',
+        ).readAsStringSync();
+        final review = File(
+          'lib/modules/drawing/presentation/widgets/drawing_sheet_builders_b.dart',
+        ).readAsStringSync();
+
+        expect(actions.contains('soloForteSheetIsIos(context)'), isTrue);
+        expect(actions.contains('SoloForteSheetSkinIos'), isTrue);
+        expect(info.contains('soloForteSheetIsIos(context)'), isTrue);
+        expect(info.contains('SoloForteSheetSkinIos.titleColor'), isTrue);
+        expect(review.contains('SoloForteSheetSkinIos.titleColor'), isTrue);
+      },
+    );
   });
 }

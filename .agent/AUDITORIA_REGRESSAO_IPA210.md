@@ -143,11 +143,17 @@ flutter test test/regression/sheets/soloforte_sheet_contract_test.dart
 
 ---
 
-## Follow-up (fora desta blindagem)
+## Follow-up (visual callers)
 
-- Correção visual dos callers quebrados (Relatórios, Marketing, Agenda, Carteira) — prompt cirúrgico separado.
-- IPA **211+** com fixes visuais + novo build number.
-- WIP local (flash ícones mapa, 7 arquivos) — não misturar com esta entrega.
+| Item | Status |
+|---|---|
+| Relatórios / Marketing / Agenda / Carteira (Fase 3) | ✅ em `main` (`6971edb`…`a3a0c6b`) |
+| Drawing — ActionsBar / InfoEdit / Review form tokens iOS | ✅ follow-up Ago/2026 (texto legível no chrome prata) |
+| IPA **211+** com novo build number | ⏳ archive separado — não reutilizar `+210` |
+| WIP local (flash ícones mapa) | ⏳ não misturar |
+
+**Preserve intencionais (layout DSS, não opt-out dark):**
+`map_sheet_controller.dart`, `marketing_case_sheet.dart` — conteúdo via `themeId == 'blue'`.
 
 ---
 
