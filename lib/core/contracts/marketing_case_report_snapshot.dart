@@ -1,4 +1,4 @@
-/// DTO neutro para Marketing Cases na aba Relatórios → Gerados.
+/// DTO neutro para Marketing Cases na aba Relatórios → Marketing.
 /// Não importa entidades de `marketing/`.
 class MarketingCaseReportSnapshot {
   final String id;
