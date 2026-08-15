@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../../../core/design/sf_icons.dart';
+import '../../../../core/ui/sheets/sheet_tokens.dart';
 import '../../../../core/ui/sheets/soloforte_sheet.dart';
 import '../../../theme/premium/design_tokens.dart';
 import '../../premium/premium_glass_panel.dart';
@@ -60,6 +61,72 @@ class PublicationActionsBottomSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bottomPadding = MediaQuery.of(context).padding.bottom;
+    final isIos = soloForteSheetIsIos(context);
+
+    if (isIos) {
+      return SafeArea(
+        top: false,
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(16, 0, 16, 12 + bottomPadding),
+          child: Container(
+            decoration: BoxDecoration(
+              color: SoloForteSheetSkinIos.cardBackground,
+              borderRadius:
+                  BorderRadius.circular(SoloForteSheetSkinIos.cardRadius),
+              border: Border.all(color: SoloForteSheetSkinIos.cardBorder),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _ActionRow(
+                  icon: SFIcons.barChart,
+                  title: 'Resultado',
+                  color: SoloForteSheetSkinIos.iconStroke,
+                  isIos: true,
+                  onTap: () => _select(context, onResultado),
+                ),
+                _ActionRow(
+                  icon: SFIcons.compareArrows,
+                  title: 'Antes/Depois',
+                  color: SoloForteSheetSkinIos.iconStroke,
+                  isIos: true,
+                  onTap: () => _select(context, onAntesDepois),
+                ),
+                _ActionRow(
+                  icon: SFIcons.science,
+                  title: 'Avaliação',
+                  color: SoloForteSheetSkinIos.iconStroke,
+                  isIos: true,
+                  onTap: () => _select(context, onAvaliacao),
+                ),
+                _ActionRow(
+                  icon: SFIcons.warning,
+                  title: 'Ocorrência',
+                  color: SoloForteSheetSkinIos.iconStroke,
+                  isIos: true,
+                  onTap: () => _select(context, onOcorrencia),
+                ),
+                _ActionRow(
+                  icon: SFIcons.image,
+                  title: 'Foto rápida',
+                  color: SoloForteSheetSkinIos.iconStroke,
+                  isIos: true,
+                  onTap: () => _select(context, onFotoRapida),
+                ),
+                _ActionRow(
+                  icon: SFIcons.leaf,
+                  title: 'Inversão vegetal',
+                  color: SoloForteSheetSkinIos.iconStroke,
+                  isIos: true,
+                  showDivider: false,
+                  onTap: () => _select(context, onInversaoVegetal),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
 
     return SafeArea(
       top: false,
@@ -144,6 +211,7 @@ class _ActionRow extends StatelessWidget {
   final Color color;
   final VoidCallback onTap;
   final bool showDivider;
+  final bool isIos;
 
   const _ActionRow({
     required this.icon,
@@ -151,10 +219,19 @@ class _ActionRow extends StatelessWidget {
     required this.color,
     required this.onTap,
     this.showDivider = true,
+    this.isIos = false,
   });
 
   @override
   Widget build(BuildContext context) {
+    final titleColor = isIos ? SoloForteSheetSkinIos.titleColor : Colors.white;
+    final arrowColor = isIos
+        ? SoloForteSheetSkinIos.arrowColor
+        : Colors.white.withValues(alpha: 0.32);
+    final dividerColor = isIos
+        ? SoloForteSheetSkinIos.rowDivider
+        : Colors.white.withValues(alpha: 0.08);
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -167,14 +244,21 @@ class _ActionRow extends StatelessWidget {
               height: 52,
               child: Row(
                 children: [
+                  const SizedBox(width: 12),
                   Container(
                     width: 34,
                     height: 34,
                     decoration: BoxDecoration(
-                      color: color.withValues(alpha: 0.16),
-                      borderRadius: BorderRadius.circular(10),
+                      color: isIos
+                          ? SoloForteSheetSkinIos.iconBackground
+                          : color.withValues(alpha: 0.16),
+                      borderRadius: BorderRadius.circular(isIos ? 999 : 10),
                     ),
-                    child: Icon(icon, color: color, size: 20),
+                    child: Icon(
+                      icon,
+                      color: isIos ? SoloForteSheetSkinIos.iconStroke : color,
+                      size: 20,
+                    ),
                   ),
                   const SizedBox(width: 14),
                   Expanded(
@@ -182,18 +266,15 @@ class _ActionRow extends StatelessWidget {
                       title,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: titleColor,
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),
-                  Icon(
-                    SFIcons.chevronRight,
-                    color: Colors.white.withValues(alpha: 0.32),
-                    size: 18,
-                  ),
+                  Icon(SFIcons.chevronRight, color: arrowColor, size: 18),
+                  const SizedBox(width: 12),
                 ],
               ),
             ),
@@ -201,8 +282,8 @@ class _ActionRow extends StatelessWidget {
               Divider(
                 height: 1,
                 thickness: 0.5,
-                indent: 48,
-                color: Colors.white.withValues(alpha: 0.08),
+                indent: 60,
+                color: dividerColor,
               ),
           ],
         ),

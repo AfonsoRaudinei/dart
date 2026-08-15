@@ -61,13 +61,18 @@ class _MapToolsBottomSheetState extends State<MapToolsBottomSheet> {
   @override
   Widget build(BuildContext context) {
     final bottomPadding = MediaQuery.of(context).padding.bottom;
+    final isIos = soloForteSheetIsIos(context);
+    final bg = isIos
+        ? SoloForteSheetSkinIos.background
+        : SoloForteSheetTokens.sheetBackground;
+    final radius = isIos
+        ? SoloForteSheetSkinIos.sheetRadius
+        : SoloForteSheetTokens.borderRadius;
 
     return Container(
-      decoration: const BoxDecoration(
-        color: SoloForteSheetTokens.sheetBackground,
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(SoloForteSheetTokens.borderRadius),
-        ),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(radius)),
       ),
       child: SafeArea(
         top: false,
@@ -82,6 +87,7 @@ class _MapToolsBottomSheetState extends State<MapToolsBottomSheet> {
                 child: _SegmentedHeader(
                   selectedIndex: _selectedIndex,
                   onSelected: _selectTab,
+                  isIos: isIos,
                 ),
               ),
               const SizedBox(height: 12),
@@ -117,24 +123,29 @@ class _MapToolsBottomSheetState extends State<MapToolsBottomSheet> {
 class _SegmentedHeader extends StatelessWidget {
   final int selectedIndex;
   final ValueChanged<int> onSelected;
+  final bool isIos;
 
   const _SegmentedHeader({
     required this.selectedIndex,
     required this.onSelected,
+    required this.isIos,
   });
 
   @override
   Widget build(BuildContext context) {
+    final trackColor =
+        isIos ? SoloForteSheetSkinIos.cardBackground : const Color(0xFF2C2C2E);
+    final trackBorder = isIos
+        ? SoloForteSheetSkinIos.cardBorder
+        : Colors.white.withValues(alpha: 0.08);
+
     return Container(
       height: 44,
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: const Color(0xFF2C2C2E),
+        color: trackColor,
         borderRadius: BorderRadius.circular(15),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.08),
-          width: 0.5,
-        ),
+        border: Border.all(color: trackBorder, width: 0.5),
       ),
       child: Row(
         children: [
@@ -143,12 +154,14 @@ class _SegmentedHeader extends StatelessWidget {
             label: 'Desenho',
             isSelected: selectedIndex == 0,
             onTap: () => onSelected(0),
+            isIos: isIos,
           ),
           _SegmentButton(
             icon: SFIcons.layers,
             label: 'Visualização',
             isSelected: selectedIndex == 1,
             onTap: () => onSelected(1),
+            isIos: isIos,
           ),
         ],
       ),
@@ -161,16 +174,24 @@ class _SegmentButton extends StatelessWidget {
   final String label;
   final bool isSelected;
   final VoidCallback onTap;
+  final bool isIos;
 
   const _SegmentButton({
     required this.icon,
     required this.label,
     required this.isSelected,
     required this.onTap,
+    required this.isIos,
   });
 
   @override
   Widget build(BuildContext context) {
+    final selectedBg = isIos
+        ? SoloForteSheetSkinIos.ctaBackground
+        : PremiumTokens.brandGreen;
+    final idleLabel =
+        isIos ? SoloForteSheetSkinIos.subtitleColor : const Color(0xFFAEAEB2);
+
     return Expanded(
       child: Material(
         color: Colors.transparent,
@@ -182,9 +203,9 @@ class _SegmentButton extends StatelessWidget {
             curve: Curves.easeOutCubic,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: isSelected ? PremiumTokens.brandGreen : Colors.transparent,
+              color: isSelected ? selectedBg : Colors.transparent,
               borderRadius: BorderRadius.circular(11),
-              boxShadow: isSelected
+              boxShadow: isSelected && !isIos
                   ? [
                       BoxShadow(
                         color: Colors.black.withValues(alpha: 0.16),
@@ -200,7 +221,7 @@ class _SegmentButton extends StatelessWidget {
                 Icon(
                   icon,
                   size: 17,
-                  color: isSelected ? Colors.white : const Color(0xFFAEAEB2),
+                  color: isSelected ? Colors.white : idleLabel,
                 ),
                 const SizedBox(width: 7),
                 Flexible(
@@ -209,9 +230,7 @@ class _SegmentButton extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      color: isSelected
-                          ? Colors.white
-                          : const Color(0xFFAEAEB2),
+                      color: isSelected ? Colors.white : idleLabel,
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
                     ),

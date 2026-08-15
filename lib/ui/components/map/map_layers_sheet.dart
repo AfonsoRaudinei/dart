@@ -13,6 +13,7 @@ import '../../../core/services/local_geotiff_service.dart';
 import '../../../core/contracts/i_radar_overlay_controller_provider.dart';
 import '../../../core/state/map_state.dart';
 import '../../../core/ui/sheets/sheet_tokens.dart';
+import '../../../core/ui/sheets/soloforte_sheet.dart';
 import 'widgets/map_offline_widgets.dart';
 import '../../theme/premium/design_tokens.dart';
 import '../../../modules/clima/presentation/providers/radar_providers.dart';
@@ -47,11 +48,17 @@ class LayersSheet extends ConsumerWidget {
 
     // Material (não Container/DecoratedBox) evita assert Flutter 3.44+
     // "ListTile background/ink may be invisible" sob fundo colorido.
+    final isIos = soloForteSheetIsIos(context);
+    final bg = isIos
+        ? SoloForteSheetSkinIos.background
+        : SoloForteSheetTokens.sheetBackground;
+    final radius = isIos
+        ? SoloForteSheetSkinIos.sheetRadius
+        : SoloForteSheetTokens.borderRadius;
+
     return Material(
-      color: SoloForteSheetTokens.sheetBackground,
-      borderRadius: const BorderRadius.vertical(
-        top: Radius.circular(SoloForteSheetTokens.borderRadius),
-      ),
+      color: bg,
+      borderRadius: BorderRadius.vertical(top: Radius.circular(radius)),
       clipBehavior: Clip.antiAlias,
       child: Column(
         mainAxisSize: MainAxisSize.min,

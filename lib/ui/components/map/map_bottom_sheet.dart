@@ -27,6 +27,8 @@ import '../../../core/utils/app_logger.dart';
 import '../../../core/state/map_ui_providers.dart';
 import '../../../../core/contracts/i_visit_session_lookup.dart';
 import '../../../../core/contracts/i_visit_session_lookup_provider.dart';
+import '../../../../core/ui/sheets/sheet_tokens.dart';
+import '../../../../core/ui/sheets/soloforte_sheet.dart';
 
 /// Provider local para sessão ativa — substitui visitControllerProvider para leituras
 final _activeVisitProvider = FutureProvider<VisitSessionSummary?>((ref) async {
@@ -693,96 +695,107 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
       'MapBottomSheet BUILD | type=${widget.state.type}',
       tag: 'MapSheet',
     );
-    return GestureDetector(
-      key: const Key('map_bottom_sheet_root'),
-      onVerticalDragStart: _handleDragStart,
-      onVerticalDragUpdate: _handleVerticalDrag,
-      onVerticalDragEnd: _handleDragEnd,
-      child: AnimatedBuilder(
-        animation: _heightAnimation,
-        builder: (context, child) {
-          final showContent = _shouldShowSheetContent(_heightAnimation.value);
-          return SizedBox(
-            height: _heightAnimation.value,
-            child: PremiumGlassPanel(
-              isDark: true,
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(24.0),
-              ),
-              child: Container(
-                decoration: BoxDecoration(
-                  // Fundo escuro fixo — evita sombra branca no light mode
-                  color: PremiumTokens.surfaceDark,
-                  border: Border(
-                    top: BorderSide(
-                      color: Theme.of(
-                        context,
-                      ).dividerColor.withValues(alpha: 0.1),
-                      width: 0.5,
+    // Host próprio (não passa por showSoloForteSheet) — detecta via ThemeExtension.
+    final isIos = soloForteSheetIsIos(context);
+    final sheetRadius = isIos ? SoloForteSheetSkinIos.sheetRadius : 24.0;
+    final sheetBg =
+        isIos ? SoloForteSheetSkinIos.background : PremiumTokens.surfaceDark;
+    final topBorder = isIos
+        ? SoloForteSheetSkinIos.sheetBorder
+        : Theme.of(context).dividerColor.withValues(alpha: 0.1);
+    final handleColor =
+        isIos ? SoloForteSheetSkinIos.handleColor : const Color(0xFFC5C5C7);
+    final handleWidth =
+        isIos ? SoloForteSheetSkinIos.handleSize.width : 36.0;
+    final handleHeight =
+        isIos ? SoloForteSheetSkinIos.handleSize.height : 5.0;
+
+    return SoloForteSheetSkinScope(
+      isIos: isIos,
+      child: GestureDetector(
+        key: const Key('map_bottom_sheet_root'),
+        onVerticalDragStart: _handleDragStart,
+        onVerticalDragUpdate: _handleVerticalDrag,
+        onVerticalDragEnd: _handleDragEnd,
+        child: AnimatedBuilder(
+          animation: _heightAnimation,
+          builder: (context, child) {
+            final showContent = _shouldShowSheetContent(_heightAnimation.value);
+            return SizedBox(
+              height: _heightAnimation.value,
+              child: PremiumGlassPanel(
+                isDark: !isIos,
+                borderRadius: BorderRadius.vertical(
+                  top: Radius.circular(sheetRadius),
+                ),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: sheetBg,
+                    borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(sheetRadius),
+                    ),
+                    border: Border(
+                      top: BorderSide(color: topBorder, width: 0.5),
                     ),
                   ),
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Handle (alça) - área de drag expandida
-                    GestureDetector(
-                      key: const Key('map_bottom_sheet_handle'),
-                      onTap: _handleHandleTap,
-                      child: Container(
-                        padding: const EdgeInsets.only(
-                          top: 14,
-                          bottom: 20,
-                        ), // Hit area + margin
-                        child: Center(
-                          child: Container(
-                            width: 36, // ✅ iOS Premium: 36px
-                            height: 5, // ✅ iOS Premium: 5px
-                            decoration: BoxDecoration(
-                              color: const Color(
-                                0xFFC5C5C7,
-                              ), // ✅ iOS Premium: #C5C5C7
-                              borderRadius: BorderRadius.circular(
-                                10,
-                              ), // ✅ iOS Premium: squircle radius
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Handle (alça) - área de drag expandida
+                      GestureDetector(
+                        key: const Key('map_bottom_sheet_handle'),
+                        onTap: _handleHandleTap,
+                        child: Container(
+                          padding: const EdgeInsets.only(
+                            top: 14,
+                            bottom: 20,
+                          ), // Hit area + margin
+                          child: Center(
+                            child: Container(
+                              width: handleWidth,
+                              height: handleHeight,
+                              decoration: BoxDecoration(
+                                color: handleColor,
+                                borderRadius: BorderRadius.circular(10),
+                              ),
                             ),
                           ),
                         ),
                       ),
-                    ),
 
-                    // Conteúdo da tab selecionada com cross-fade
-                    if (showContent)
-                      Expanded(
-                        child: AnimatedSwitcher(
-                          duration: const Duration(milliseconds: 200),
-                          switchInCurve: Curves.easeOut,
-                          switchOutCurve: Curves.easeIn,
-                          transitionBuilder: (child, animation) {
-                            return FadeTransition(
-                              opacity: animation,
-                              child: SlideTransition(
-                                position: Tween<Offset>(
-                                  begin: const Offset(0.05, 0),
-                                  end: Offset.zero,
-                                ).animate(animation),
-                                child: child,
-                              ),
-                            );
-                          },
-                          child: Container(
-                            key: ValueKey(_tabContentKey()),
-                            child: _buildTabContent(),
+                      // Conteúdo da tab selecionada com cross-fade
+                      if (showContent)
+                        Expanded(
+                          child: AnimatedSwitcher(
+                            duration: const Duration(milliseconds: 200),
+                            switchInCurve: Curves.easeOut,
+                            switchOutCurve: Curves.easeIn,
+                            transitionBuilder: (child, animation) {
+                              return FadeTransition(
+                                opacity: animation,
+                                child: SlideTransition(
+                                  position: Tween<Offset>(
+                                    begin: const Offset(0.05, 0),
+                                    end: Offset.zero,
+                                  ).animate(animation),
+                                  child: child,
+                                ),
+                              );
+                            },
+                            child: Container(
+                              key: ValueKey(_tabContentKey()),
+                              child: _buildTabContent(),
+                            ),
                           ),
                         ),
-                      ),
-                    // Navegação agora no FloatingDockWidget externo
-                  ],
+                      // Navegação agora no FloatingDockWidget externo
+                    ],
+                  ),
                 ),
               ),
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }
