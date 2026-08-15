@@ -55,7 +55,7 @@ Este revisor é **bom** para o projeto **se** operar por lote/diff, exigir
 | Estado | Riverpod `@riverpod` / `AsyncNotifier` (ADR-008) |
 | Legado estado | Whitelist **exata** ADR-044 (10 notifiers) — fora dela = violação |
 | Navegação | `context.go()` / `context.push()` — **nunca** `pop()` / `canPop()` |
-| Persistência | SQLite offline-first — schema **v40** (`database_helper.dart`) |
+| Persistência | SQLite offline-first — schema **v41** (`database_helper.dart`) |
 | Mapa | `flutter_map` — **nunca** `google_maps_flutter` |
 | Gate CI | `./tool/arch_check.sh` → Exit 0 |
 | Coverage mínimo CI | 36.46% |
@@ -238,7 +238,7 @@ rg -n "GoRoute\(" lib/core/router/app_router.dart
 ```
 Procurar: qualquer `pop`/`canPop` · comparação exata de path (preferir `startsWith`) · sub-rota sob `/map` · retorno que não reentra `/map` quando o fluxo Map-First exige.
 
-### EIXO 4 — Persistência offline-first (schema v40)
+### EIXO 4 — Persistência offline-first (schema v41)
 ```bash
 rg -n "Supabase|\.from\(|http\." lib/<lote>/
 rg -n "sync_status|user_id|deleted_local|hard delete|db\.delete\(" lib/<lote>/
@@ -326,7 +326,7 @@ Testes existentes continuam verdes? SIM / NÃO
 
 - Todas = NÃO → `SAFE`  
 - Qualquer = SIM → `⚠️ MUDA COMPORTAMENTO` + aprovação separada  
-- Schema muda → ADR + migração idempotente + bump de versão (hoje: **v40**)
+- Schema muda → ADR + migração idempotente + bump de versão (hoje: **v41**)
 
 **Equivalência:** refatoração `SAFE` precisa apontar teste existente que cobre o comportamento. Se não houver → primeiro passo do prompt = **teste de caracterização**, depois refatorar.
 

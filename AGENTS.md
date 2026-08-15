@@ -183,7 +183,8 @@ Se precisar cruzar fronteira → contrato em `core/contracts/` + ADR novo.
 lib/
 ├── core/
 │   ├── contracts/         ← contratos inter-módulos
-│   ├── database/          ← database_helper.dart (schema v40)
+│   ├── database/          ← database_helper.dart (schema v41)
+│   ├── domain/            ← FieldMapEntity (canônico — Etapa 3)
 │   ├── router/            ← app_router.dart (única exceção core→modules)
 │   └── state/
 ├── modules/
@@ -191,18 +192,33 @@ lib/
 │   ├── consultoria/       ← clientes, fazendas, talhões, ocorrências
 │   │   └── relatorios/    ← ADR-013 (relatorios_v2)
 │   ├── drawing/           ← geometrias, KML/KMZ
+│   ├── map/               ← domínio/adapters leves (NÃO é o host UI do mapa)
 │   ├── visitas/           ← sessões de visita (ADR-023)
 │   ├── produtor/          ← propriedade do produtor (ADR-039/040)
 │   └── settings/
-└── ui/
+└── ui/                    ← host Map-First (chrome, layers, overlays)
     ├── components/
     │   ├── app_shell.dart      ← SmartButton FAB ÚNICO
-    │   └── smart_button.dart   ← NUNCA ALTERAR
+    │   ├── smart_button.dart   ← NUNCA ALTERAR
+    │   └── map/                ← MapBottomSheet, controls, layers sheet
     └── screens/
-        └── private_map_screen.dart ← tela principal Map-First
+        ├── private_map_screen.dart ← tela principal Map-First
+        └── map/                    ← controllers, handlers, orchestrator
 ```
 
 **Regras por módulo:** ler `lib/modules/<modulo>/AGENTS.md` ou `lib/core/AGENTS.md` / `lib/ui/AGENTS.md`.
+
+### Fronteira Map-First (política 4A — oficial Ago/2026)
+
+| Camada | Onde vive | Exemplos |
+|---|---|---|
+| **Host UI do mapa** | `lib/ui/screens/map/` · `lib/ui/components/map/` · `private_map_screen.dart` | chrome coluna direita, layers, sheets do mapa, orchestrator |
+| **Módulo `map/`** | `lib/modules/map/` | adapters (`FieldMapAdapter`), providers/observers finos, widgets de visita ainda colocados |
+| **Entidade visual compartilhada** | `lib/core/domain/field_map_entity.dart` | `FieldMapEntity` — não duplicar em `modules/map/domain/` |
+
+- Correções de **chrome / sheets / overlay** → editar **`lib/ui/`** (não procurar só em `modules/map/`).
+- **Proibido** migrar em massa `ui/ → modules/map/` sem ADR + aprovação explícita (isso seria política **4B**, fora de escopo).
+- Ninguém importa `modules/map` de outro módulo de domínio; UI pode compor o mapa.
 
 -----
 
@@ -222,7 +238,7 @@ lib/
 - Tokens visuais: `lib/core/ui/sheets/sheet_tokens.dart`
 - Não duplicar handles, títulos ou botões de fechar fora do padrão
 - **REGRA-SHEET-BLAST-1:** mudança em `core/ui/sheets/` é transversal (8+ bounded contexts). Antes de alterar: `rg showSoloForteSheet` + `rg 'backgroundColor: Colors.transparent'`. Ver `.agent/AUDITORIA_REGRESSAO_IPA210.md`
-- **REGRA-MAP-CHROME-1:** coluna direita do mapa travada em `kMapActionColumnBottomInset` — nunca `mapSheetChromeInsetProvider`. Ver `.agent/Prompt.md`
+- **REGRA-MAP-CHROME-1:** coluna direita do mapa travada em `kMapActionColumnBottomInset` — nunca `mapSheetChromeInsetProvider`. Ver `.agent/Prompt.md`. Host UI: `lib/ui/` (política 4A).
 
 ### O agente NÃO DEVE
 
@@ -312,6 +328,22 @@ Detalhes: `docs/02_ARQUITETURA_ATIVA/ADR-*.md`
 4. Este `AGENTS.md`
 5. `lib/**/AGENTS.md` do módulo afetado
 6. `docs/03_ENFORCEMENT/enforcement-rules.md`
+
+### O que ler (índice operacional)
+
+| Precisa de… | Ler |
+|---|---|
+| Verdade do produto / proibições | Este `AGENTS.md` |
+| Memória operacional (sync, IPA, preferências) | `.agent/AGENT_MEMORIA.md` (**canônico**) |
+| Regras de execução do agente | `.agent/AGENT_REGRAS.md` (**canônico**) |
+| Sheets / chrome mapa (anti-regressão) | `.agent/AUDITORIA_REGRESSAO_IPA210.md` · `.agent/Prompt.md` · `design/sheets.md` |
+| Fronteira Map-First (`ui/` vs `modules/map`) | Este `AGENTS.md` → “Fronteira Map-First (política 4A)” · `lib/ui/AGENTS.md` · `lib/modules/map/AGENTS.md` |
+| Workflow Cursor | `.cursor/skills/soloforte-task/SKILL.md` |
+| IPA / archive | `AGENTIPA.md` |
+
+**Não usar como verdade ativa:** `PROJECT_RULES.md`, cópias em `prompt/AGENT_*.md` (stubs), auditorias em `docs/05_HISTORICO/`, snapshots antigos com schema v40.
+
+**Canônico de memória/regras:** `.agent/AGENT_*` vence. `prompt/AGENT_*` só redireciona.
 
 -----
 

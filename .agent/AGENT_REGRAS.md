@@ -1,6 +1,7 @@
 # Regras do Agente — SoloForte
 
-> Espelho operacional em `.agent/` · fonte duplicada em `prompt/AGENT_REGRAS.md` quando aplicável.
+> **Canônico neste path.** Cópias em `prompt/AGENT_REGRAS.md` são apenas redirecionamento.
+> Em conflito: este arquivo + `AGENTS.md` (raiz) vencem.
 
 ## Terminal — SEMPRE executar daqui
 
@@ -37,7 +38,7 @@ git status && git log -1 --oneline
 
 ## Memória persistente
 
-Ler: `.agent/AGENT_MEMORIA.md` · `prompt/AGENT_MEMORIA.md`
+Ler: `.agent/AGENT_MEMORIA.md` (**canônico**). `prompt/AGENT_MEMORIA.md` só redireciona.
 
 ---
 

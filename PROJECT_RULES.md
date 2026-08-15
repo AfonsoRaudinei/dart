@@ -1,3 +1,13 @@
+# PROJECT_RULES.md — LEGADO (não é fonte da verdade)
+
+> **Não usar este arquivo como verdade ativa.**
+> Fonte canônica: [`AGENTS.md`](AGENTS.md) (raiz).
+> Memória/regras do agente: [`.agent/AGENT_MEMORIA.md`](.agent/AGENT_MEMORIA.md) · [`.agent/AGENT_REGRAS.md`](.agent/AGENT_REGRAS.md).
+>
+> Conteúdo abaixo é histórico de intenções iniciais (mobile-first). Em conflito, `AGENTS.md` vence.
+
+-----
+
 # O que ESTE projeto VAI ser
 
 ## Plataforma alvo

@@ -38,6 +38,7 @@ Fronteira:    altera? sim/não → se sim, ADR necessário
 - Scroll com FAB: `kFabSafeArea = 100dp`
 - **Se tocar sheets:** `rg showSoloForteSheet` + `rg 'backgroundColor: Colors.transparent'` (REGRA-SHEET-BLAST-1)
 - **Se tocar map chrome:** `kMapActionColumnBottomInset` — nunca `mapSheetChromeInsetProvider` (REGRA-MAP-CHROME-1)
+- **Host UI do mapa:** `lib/ui/screens/map/` + `lib/ui/components/map/` (política 4A) — `modules/map/` é só adapters/providers leves
 
 ### 4. Validação
 

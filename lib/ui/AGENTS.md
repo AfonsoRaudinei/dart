@@ -2,7 +2,23 @@
 
 ## Bounded context
 
-`ui/` contem shell, telas globais, componentes reutilizaveis, mapa privado/publico, tema e helpers visuais.
+`ui/` contem shell, telas globais, componentes reutilizaveis, **host Map-First**, tema e helpers visuais.
+
+## Fronteira Map-First (política 4A)
+
+O mapa visual do produto vive aqui — **não** em `lib/modules/map/` (que é domínio/adapters leves).
+
+| Pasta | Responsabilidade |
+|---|---|
+| `lib/ui/screens/private_map_screen.dart` | Tela principal Map-First |
+| `lib/ui/screens/map/` | Controllers, handlers, layers, orchestrator |
+| `lib/ui/components/map/` | MapBottomSheet, coluna direita, layers/tools sheets |
+
+- Correções de chrome / overlay / sheet do mapa → **este bounded context (`ui/`)**.
+- `modules/map/` não é o lugar certo para editar posição da coluna direita ou chrome.
+- Migrar `ui/ → modules/map/` = política **4B** (proibida sem ADR + aprovação explícita).
+
+Ver tabela completa em `AGENTS.md` (raiz) → “Fronteira Map-First (política 4A)”.
 
 ## Regra principal
 

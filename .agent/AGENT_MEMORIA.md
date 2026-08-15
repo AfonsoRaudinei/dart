@@ -1,6 +1,7 @@
 # Memória do Agente — SoloForte (Raudinei)
 
 > Arquivo persistente de preferências e fatos operacionais.  
+> **Canônico neste path.** `prompt/AGENT_MEMORIA.md` é apenas redirecionamento.
 > O agente **DEVE ler** este arquivo no início de tarefas com Git/deploy.
 
 ---
@@ -10,7 +11,7 @@
 1. **Sempre executar comandos no terminal daqui** — nunca só passar instruções para copiar
 2. **Sempre sincronizar MacBook** ao encerrar tarefa — serviço completo
 3. **Não parar para perguntar** se deve executar git push/merge/pull óbvios
-4. **Salvar regras** em `prompt/` + `.cursor/rules/` para persistir entre sessões
+4. **Salvar regras** em `.agent/` + `.cursor/rules/` (canônico); `prompt/` só para prompts de execução
 5. **Correção não é entrega enquanto estiver só na branch** — o merge na `main` é parte
    obrigatória da tarefa, não uma etapa opcional/posterior (REGRA-ENTREGA-1, ver `AGENTS.md`)
 
