@@ -111,7 +111,8 @@ class _AgendaMonthPageState extends ConsumerState<AgendaMonthPage> {
                 context: context,
                 isScrollControlled: true,
                 showDragHandle: false,
-                builder: (context) => const AgendaFiltersSheet(),
+                backgroundColor: Colors.transparent,
+                builder: (sheetContext) => const AgendaFiltersSheet(),
               );
             },
             tooltip: 'Filtrar',

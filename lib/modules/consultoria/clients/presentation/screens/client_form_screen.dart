@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
 import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 import 'package:uuid/uuid.dart';
 import '../providers/clients_providers.dart';
@@ -77,38 +78,44 @@ class _ClientFormScreenState extends ConsumerState<ClientFormScreen> {
       context: context,
       showDragHandle: false,
       useSafeArea: false,
-      preserveMaterialDefaults: true,
-      builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.camera_alt),
-              title: const Text('Câmera'),
-              onTap: () async {
-                Navigator.of(ctx).pop();
-                final picked = await ImagePicker().pickImage(
-                  source: ImageSource.camera,
-                );
-                if (!mounted) return;
-                if (picked != null) setState(() => _fotoPath = picked.path);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.photo_library),
-              title: const Text('Galeria'),
-              onTap: () async {
-                Navigator.of(ctx).pop();
-                final picked = await ImagePicker().pickImage(
-                  source: ImageSource.gallery,
-                );
-                if (!mounted) return;
-                if (picked != null) setState(() => _fotoPath = picked.path);
-              },
-            ),
-          ],
-        ),
-      ),
+      builder: (ctx) {
+        final isIos = soloForteSheetIsIos(ctx);
+        final iconColor =
+            isIos ? SoloForteSheetSkinIos.iconStroke : null;
+        final titleColor =
+            isIos ? SoloForteSheetSkinIos.titleColor : null;
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: Icon(Icons.camera_alt, color: iconColor),
+                title: Text('Câmera', style: TextStyle(color: titleColor)),
+                onTap: () async {
+                  Navigator.of(ctx).pop();
+                  final picked = await ImagePicker().pickImage(
+                    source: ImageSource.camera,
+                  );
+                  if (!mounted) return;
+                  if (picked != null) setState(() => _fotoPath = picked.path);
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.photo_library, color: iconColor),
+                title: Text('Galeria', style: TextStyle(color: titleColor)),
+                onTap: () async {
+                  Navigator.of(ctx).pop();
+                  final picked = await ImagePicker().pickImage(
+                    source: ImageSource.gallery,
+                  );
+                  if (!mounted) return;
+                  if (picked != null) setState(() => _fotoPath = picked.path);
+                },
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -144,109 +151,133 @@ class _ClientFormScreenState extends ConsumerState<ClientFormScreen> {
       isScrollControlled: true,
       showDragHandle: false,
       useSafeArea: false,
-      preserveMaterialDefaults: true,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setModalState) => Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(ctx).viewInsets.bottom,
-          ),
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(20),
-            child: Form(
-              key: formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    'Adicionar Cultura',
-                    style: Theme.of(ctx).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  DropdownButtonFormField<CulturaTipo>(
-                    decoration: _inputDeco('Cultura *'),
-                    items: CulturaTipo.values
-                        .map(
-                          (c) =>
-                              DropdownMenuItem(value: c, child: Text(c.label)),
-                        )
-                        .toList(),
-                    onChanged: (v) =>
-                        setModalState(() => culturaSelecionada = v),
-                    validator: (v) =>
-                        v == null ? 'Selecione uma cultura' : null,
-                  ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    controller: areaController,
-                    decoration: _inputDeco('Área (ha) *'),
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true,
-                    ),
-                    validator: (v) {
-                      final d = double.tryParse(v ?? '');
-                      if (d == null || d <= 0) return 'Informe área > 0';
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    controller: variedadeController,
-                    decoration: _inputDeco('Variedade / Cultivar'),
-                  ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    controller: safraController,
-                    decoration: _inputDeco('Safra (ex: 2024/2025)'),
-                  ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    controller: obsController,
-                    decoration: _inputDeco('Observação'),
-                    maxLines: 2,
-                  ),
-                  const SizedBox(height: 20),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: PremiumTokens.brandGreen,
-                        foregroundColor: Colors.white,
+      builder: (ctx) {
+        final isIos = soloForteSheetIsIos(ctx);
+        final titleColor =
+            isIos ? SoloForteSheetSkinIos.titleColor : null;
+        final ctaBg = isIos
+            ? SoloForteSheetSkinIos.ctaBackground
+            : PremiumTokens.brandGreen;
+        final ctaFg =
+            isIos ? SoloForteSheetSkinIos.ctaText : Colors.white;
+        final ctaRadius =
+            isIos ? SoloForteSheetSkinIos.ctaRadius : 8.0;
+        return StatefulBuilder(
+          builder: (ctx, setModalState) => Theme(
+            data: ThemeData.light().copyWith(
+              colorScheme: ColorScheme.light(primary: ctaBg),
+            ),
+            child: Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(ctx).viewInsets.bottom,
+              ),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(20),
+                child: Form(
+                  key: formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Adicionar Cultura',
+                        style: Theme.of(ctx).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: titleColor,
+                        ),
                       ),
-                      onPressed: () {
-                        if (formKey.currentState?.validate() != true) return;
-                        final nova = ClientCultura(
-                          id: const Uuid().v4(),
-                          clientId: '',
-                          cultura: culturaSelecionada!.name,
-                          areaHa: double.parse(areaController.text),
-                          variedade: variedadeController.text.isEmpty
-                              ? null
-                              : variedadeController.text,
-                          safra: safraController.text.isEmpty
-                              ? null
-                              : safraController.text,
-                          observacao: obsController.text.isEmpty
-                              ? null
-                              : obsController.text,
-                          createdAt: DateTime.now(),
-                          updatedAt: DateTime.now(),
-                        );
-                        Navigator.of(ctx).pop();
-                        setState(() => _culturas.add(nova));
-                      },
-                      child: const Text('Confirmar'),
-                    ),
+                      const SizedBox(height: 16),
+                      DropdownButtonFormField<CulturaTipo>(
+                        decoration: _inputDeco('Cultura *'),
+                        items: CulturaTipo.values
+                            .map(
+                              (c) => DropdownMenuItem(
+                                value: c,
+                                child: Text(c.label),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: (v) =>
+                            setModalState(() => culturaSelecionada = v),
+                        validator: (v) =>
+                            v == null ? 'Selecione uma cultura' : null,
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: areaController,
+                        decoration: _inputDeco('Área (ha) *'),
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                        validator: (v) {
+                          final d = double.tryParse(v ?? '');
+                          if (d == null || d <= 0) return 'Informe área > 0';
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: variedadeController,
+                        decoration: _inputDeco('Variedade / Cultivar'),
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: safraController,
+                        decoration: _inputDeco('Safra (ex: 2024/2025)'),
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: obsController,
+                        decoration: _inputDeco('Observação'),
+                        maxLines: 2,
+                      ),
+                      const SizedBox(height: 20),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: ctaBg,
+                            foregroundColor: ctaFg,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(ctaRadius),
+                            ),
+                          ),
+                          onPressed: () {
+                            if (formKey.currentState?.validate() != true) {
+                              return;
+                            }
+                            final nova = ClientCultura(
+                              id: const Uuid().v4(),
+                              clientId: '',
+                              cultura: culturaSelecionada!.name,
+                              areaHa: double.parse(areaController.text),
+                              variedade: variedadeController.text.isEmpty
+                                  ? null
+                                  : variedadeController.text,
+                              safra: safraController.text.isEmpty
+                                  ? null
+                                  : safraController.text,
+                              observacao: obsController.text.isEmpty
+                                  ? null
+                                  : obsController.text,
+                              createdAt: DateTime.now(),
+                              updatedAt: DateTime.now(),
+                            );
+                            Navigator.of(ctx).pop();
+                            setState(() => _culturas.add(nova));
+                          },
+                          child: const Text('Confirmar'),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                    ],
                   ),
-                  const SizedBox(height: 8),
-                ],
+                ),
               ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
@@ -260,87 +291,111 @@ class _ClientFormScreenState extends ConsumerState<ClientFormScreen> {
       isScrollControlled: true,
       showDragHandle: false,
       useSafeArea: false,
-      preserveMaterialDefaults: true,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setModalState) => Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(ctx).viewInsets.bottom,
-          ),
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(20),
-            child: Form(
-              key: formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    'Adicionar Área',
-                    style: Theme.of(ctx).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: areaController,
-                    decoration: _inputDeco('Tamanho da área (ha) *'),
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true,
-                    ),
-                    validator: (value) {
-                      final area = _parseArea(value);
-                      if (area == null || area <= 0) return 'Informe área > 0';
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  DropdownButtonFormField<String>(
-                    decoration: _inputDeco('Tipo da área *'),
-                    items: const [
-                      DropdownMenuItem(
-                        value: 'propria',
-                        child: Text('Própria'),
+      builder: (ctx) {
+        final isIos = soloForteSheetIsIos(ctx);
+        final titleColor =
+            isIos ? SoloForteSheetSkinIos.titleColor : null;
+        final ctaBg = isIos
+            ? SoloForteSheetSkinIos.ctaBackground
+            : PremiumTokens.brandGreen;
+        final ctaFg =
+            isIos ? SoloForteSheetSkinIos.ctaText : Colors.white;
+        final ctaRadius =
+            isIos ? SoloForteSheetSkinIos.ctaRadius : 8.0;
+        return StatefulBuilder(
+          builder: (ctx, setModalState) => Theme(
+            data: ThemeData.light().copyWith(
+              colorScheme: ColorScheme.light(primary: ctaBg),
+            ),
+            child: Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(ctx).viewInsets.bottom,
+              ),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(20),
+                child: Form(
+                  key: formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Adicionar Área',
+                        style: Theme.of(ctx).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: titleColor,
+                        ),
                       ),
-                      DropdownMenuItem(
-                        value: 'arrendada',
-                        child: Text('Arrendada'),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: areaController,
+                        decoration: _inputDeco('Tamanho da área (ha) *'),
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                        validator: (value) {
+                          final area = _parseArea(value);
+                          if (area == null || area <= 0) {
+                            return 'Informe área > 0';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      DropdownButtonFormField<String>(
+                        decoration: _inputDeco('Tipo da área *'),
+                        items: const [
+                          DropdownMenuItem(
+                            value: 'propria',
+                            child: Text('Própria'),
+                          ),
+                          DropdownMenuItem(
+                            value: 'arrendada',
+                            child: Text('Arrendada'),
+                          ),
+                        ],
+                        onChanged: (value) =>
+                            setModalState(() => tipoSelecionado = value),
+                        validator: (value) =>
+                            value == null ? 'Selecione o tipo da área' : null,
+                      ),
+                      const SizedBox(height: 20),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: ctaBg,
+                            foregroundColor: ctaFg,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(ctaRadius),
+                            ),
+                          ),
+                          onPressed: () {
+                            if (formKey.currentState?.validate() != true) {
+                              return;
+                            }
+                            setState(() {
+                              _areas.add(
+                                _AreaPropriedade(
+                                  areaHa: _parseArea(areaController.text)!,
+                                  tipo: tipoSelecionado!,
+                                ),
+                              );
+                              _atualizarResumoAreas();
+                            });
+                            Navigator.of(ctx).pop();
+                          },
+                          child: const Text('Adicionar'),
+                        ),
                       ),
                     ],
-                    onChanged: (value) =>
-                        setModalState(() => tipoSelecionado = value),
-                    validator: (value) =>
-                        value == null ? 'Selecione o tipo da área' : null,
                   ),
-                  const SizedBox(height: 20),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: PremiumTokens.brandGreen,
-                        foregroundColor: Colors.white,
-                      ),
-                      onPressed: () {
-                        if (formKey.currentState?.validate() != true) return;
-                        setState(() {
-                          _areas.add(
-                            _AreaPropriedade(
-                              areaHa: _parseArea(areaController.text)!,
-                              tipo: tipoSelecionado!,
-                            ),
-                          );
-                          _atualizarResumoAreas();
-                        });
-                        Navigator.of(ctx).pop();
-                      },
-                      child: const Text('Adicionar'),
-                    ),
-                  ),
-                ],
+                ),
               ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 

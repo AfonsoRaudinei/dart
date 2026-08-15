@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:soloforte_app/core/constants/layout_constants.dart';
+import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
 import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 import 'package:image_picker/image_picker.dart';
@@ -13,6 +14,8 @@ import '../../domain/enums/cultura_tipo.dart';
 import '../widgets/client_avatar_widget.dart';
 import '../widgets/cultura_item_widget.dart';
 import '../widgets/client_detail_sub_widgets.dart';
+
+part 'client_edit_form_sheets.dart';
 
 // ── Formulário de edição de cliente (extraído de client_detail_screen) ───
 // Sprint 7 — Bounded Context Hygiene: mantém client_detail_screen < 900 linhas.
@@ -61,6 +64,8 @@ class _ClientEditFormState extends State<ClientEditForm> {
   bool _usaAssistenciaEdit = false;
   String? _fotoPathEdit;
   final _formKey = GlobalKey<FormState>();
+
+  void _patch(VoidCallback fn) => setState(fn);
 
   @override
   void initState() {
@@ -171,255 +176,6 @@ class _ClientEditFormState extends State<ClientEditForm> {
     final tipos = _areasPropriedadeEditadas.map((area) => area.tipo).toSet();
     _areaTotalCtrl.text = total.toString();
     _tipoPropriedadeEdit = tipos.length > 1 ? 'mista' : tipos.firstOrNull;
-  }
-
-  Future<void> _pickImage() async {
-    await showSoloForteSheet<void>(
-      context: context,
-      showDragHandle: false,
-      useSafeArea: false,
-      preserveMaterialDefaults: true,
-      builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.camera_alt),
-              title: const Text('Câmera'),
-              onTap: () async {
-                Navigator.of(ctx).pop();
-                final picked = await ImagePicker().pickImage(
-                  source: ImageSource.camera,
-                );
-                if (!mounted) return;
-                if (picked != null) setState(() => _fotoPathEdit = picked.path);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.photo_library),
-              title: const Text('Galeria'),
-              onTap: () async {
-                Navigator.of(ctx).pop();
-                final picked = await ImagePicker().pickImage(
-                  source: ImageSource.gallery,
-                );
-                if (!mounted) return;
-                if (picked != null) setState(() => _fotoPathEdit = picked.path);
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Future<void> _abrirBottomSheetCultura() async {
-    final formKey = GlobalKey<FormState>();
-    CulturaTipo? culturaSel;
-    final areaCtrl = TextEditingController();
-    final variedadeCtrl = TextEditingController();
-    final safraCtrl = TextEditingController();
-    final obsCtrl = TextEditingController();
-
-    await showSoloForteSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      showDragHandle: false,
-      useSafeArea: false,
-      preserveMaterialDefaults: true,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setS) => Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(ctx).viewInsets.bottom,
-          ),
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(20),
-            child: Form(
-              key: formKey,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    'Adicionar Cultura',
-                    style: Theme.of(ctx).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  DropdownButtonFormField<CulturaTipo>(
-                    decoration: _deco('Cultura *'),
-                    items: CulturaTipo.values
-                        .map(
-                          (c) =>
-                              DropdownMenuItem(value: c, child: Text(c.label)),
-                        )
-                        .toList(),
-                    onChanged: (v) => setS(() => culturaSel = v),
-                    validator: (v) =>
-                        v == null ? 'Selecione uma cultura' : null,
-                  ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    controller: areaCtrl,
-                    decoration: _deco('Área (ha) *'),
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true,
-                    ),
-                    validator: (v) {
-                      final d = double.tryParse(v ?? '');
-                      if (d == null || d <= 0) return 'Informe área > 0';
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    controller: variedadeCtrl,
-                    decoration: _deco('Variedade / Cultivar'),
-                  ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    controller: safraCtrl,
-                    decoration: _deco('Safra'),
-                  ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    controller: obsCtrl,
-                    decoration: _deco('Observação'),
-                    maxLines: 2,
-                  ),
-                  const SizedBox(height: 20),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: PremiumTokens.brandGreen,
-                        foregroundColor: Colors.white,
-                      ),
-                      onPressed: () {
-                        if (formKey.currentState?.validate() != true) return;
-                        final nova = ClientCultura(
-                          id: const Uuid().v4(),
-                          clientId: widget.client.id,
-                          cultura: culturaSel!.name,
-                          areaHa: double.parse(areaCtrl.text),
-                          variedade: variedadeCtrl.text.isEmpty
-                              ? null
-                              : variedadeCtrl.text,
-                          safra: safraCtrl.text.isEmpty ? null : safraCtrl.text,
-                          observacao: obsCtrl.text.isEmpty
-                              ? null
-                              : obsCtrl.text,
-                          createdAt: DateTime.now(),
-                          updatedAt: DateTime.now(),
-                        );
-                        Navigator.of(ctx).pop();
-                        setState(() => _culturasEditadas.add(nova));
-                      },
-                      child: const Text('Confirmar'),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Future<void> _abrirBottomSheetArea() async {
-    final formKey = GlobalKey<FormState>();
-    final areaCtrl = TextEditingController();
-    String? tipoSelecionado;
-
-    await showSoloForteSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      showDragHandle: false,
-      useSafeArea: false,
-      preserveMaterialDefaults: true,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setModalState) => Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(ctx).viewInsets.bottom,
-          ),
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(20),
-            child: Form(
-              key: formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    'Adicionar Área',
-                    style: Theme.of(ctx).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: areaCtrl,
-                    decoration: _deco('Tamanho da área (ha) *'),
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true,
-                    ),
-                    validator: (value) {
-                      final area = _parseArea(value);
-                      if (area == null || area <= 0) return 'Informe área > 0';
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  DropdownButtonFormField<String>(
-                    decoration: _deco('Tipo da área *'),
-                    items: const [
-                      DropdownMenuItem(
-                        value: 'propria',
-                        child: Text('Própria'),
-                      ),
-                      DropdownMenuItem(
-                        value: 'arrendada',
-                        child: Text('Arrendada'),
-                      ),
-                    ],
-                    onChanged: (value) =>
-                        setModalState(() => tipoSelecionado = value),
-                    validator: (value) =>
-                        value == null ? 'Selecione o tipo da área' : null,
-                  ),
-                  const SizedBox(height: 20),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: PremiumTokens.brandGreen,
-                        foregroundColor: Colors.white,
-                      ),
-                      onPressed: () {
-                        if (formKey.currentState?.validate() != true) return;
-                        setState(() {
-                          _areasPropriedadeEditadas.add(
-                            _AreaPropriedade(
-                              areaHa: _parseArea(areaCtrl.text)!,
-                              tipo: tipoSelecionado!,
-                            ),
-                          );
-                          _sincronizarResumoAreas();
-                        });
-                        Navigator.of(ctx).pop();
-                      },
-                      child: const Text('Adicionar'),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
   }
 
   String _formatDate(DateTime d) =>

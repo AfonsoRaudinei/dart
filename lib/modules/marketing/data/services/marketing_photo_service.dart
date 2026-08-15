@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path/path.dart' as p;
 import 'package:soloforte_app/core/session/local_session_identity.dart';
+import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
 import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
@@ -118,75 +119,111 @@ class MarketingPhotoService {
   Future<ImageSource?> _showSourceDialog(BuildContext context) async {
     return showSoloForteSheet<ImageSource>(
       context: context,
-      preserveMaterialDefaults: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: null, // chrome iOS Azul automático
       showDragHandle: false,
-      useSafeArea: false,
-      shape: const RoundedRectangleBorder(),
-      clipBehavior: Clip.none,
-      builder: (_) => Container(
-        margin: const EdgeInsets.fromLTRB(16, 0, 16, 32),
-        decoration: BoxDecoration(
-          color: Theme.of(context).scaffoldBackgroundColor,
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 36,
-              height: 4,
-              margin: const EdgeInsets.symmetric(vertical: 12),
-              decoration: BoxDecoration(
-                color: Colors.grey.shade300,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const Padding(
-              padding: EdgeInsets.only(bottom: 8),
-              child: Text(
-                'Selecionar foto',
-                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
-              ),
-            ),
-            ListTile(
-              leading: Container(
-                width: 44,
-                height: 44,
+      builder: (sheetContext) {
+        final isIos = soloForteSheetIsIos(sheetContext);
+        final cardBg = isIos
+            ? SoloForteSheetSkinIos.cardBackground
+            : Theme.of(sheetContext).scaffoldBackgroundColor;
+        final titleColor =
+            isIos ? SoloForteSheetSkinIos.titleColor : null;
+        final subColor =
+            isIos ? SoloForteSheetSkinIos.subtitleColor : null;
+        final iconBg =
+            isIos ? SoloForteSheetSkinIos.iconBackground : Colors.blue.shade50;
+        final iconFg =
+            isIos ? SoloForteSheetSkinIos.iconStroke : Colors.blue.shade600;
+        final radius = isIos
+            ? SoloForteSheetSkinIos.sheetRadius
+            : 20.0;
+
+        return Container(
+          margin: const EdgeInsets.fromLTRB(16, 0, 16, 32),
+          decoration: BoxDecoration(
+            color: cardBg,
+            borderRadius: BorderRadius.circular(radius),
+            border: isIos
+                ? Border.all(color: SoloForteSheetSkinIos.cardBorder)
+                : null,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: isIos
+                    ? SoloForteSheetSkinIos.handleSize.width
+                    : 36,
+                height: isIos
+                    ? SoloForteSheetSkinIos.handleSize.height
+                    : 4,
+                margin: const EdgeInsets.symmetric(vertical: 12),
                 decoration: BoxDecoration(
-                  color: Colors.blue.shade50,
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.camera_alt_rounded,
-                  color: Colors.blue.shade600,
+                  color: isIos
+                      ? SoloForteSheetSkinIos.handleColor
+                      : Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(999),
                 ),
               ),
-              title: const Text('Câmera'),
-              subtitle: const Text('Tirar nova foto'),
-              onTap: () => Navigator.pop(context, ImageSource.camera),
-            ),
-            ListTile(
-              leading: Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: Colors.purple.shade50,
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.photo_library_rounded,
-                  color: Colors.purple.shade600,
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Text(
+                  'Selecionar foto',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 16,
+                    color: titleColor,
+                  ),
                 ),
               ),
-              title: const Text('Galeria'),
-              subtitle: const Text('Escolher da biblioteca de fotos'),
-              onTap: () => Navigator.pop(context, ImageSource.gallery),
-            ),
-            const SizedBox(height: 8),
-          ],
-        ),
-      ),
+              ListTile(
+                leading: Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: iconBg,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(Icons.camera_alt_rounded, color: iconFg),
+                ),
+                title: Text('Câmera', style: TextStyle(color: titleColor)),
+                subtitle: Text(
+                  'Tirar nova foto',
+                  style: TextStyle(color: subColor),
+                ),
+                onTap: () =>
+                    Navigator.pop(sheetContext, ImageSource.camera),
+              ),
+              ListTile(
+                leading: Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: isIos
+                        ? SoloForteSheetSkinIos.iconBackground
+                        : Colors.purple.shade50,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.photo_library_rounded,
+                    color: isIos
+                        ? SoloForteSheetSkinIos.iconStroke
+                        : Colors.purple.shade600,
+                  ),
+                ),
+                title: Text('Galeria', style: TextStyle(color: titleColor)),
+                subtitle: Text(
+                  'Escolher da biblioteca de fotos',
+                  style: TextStyle(color: subColor),
+                ),
+                onTap: () =>
+                    Navigator.pop(sheetContext, ImageSource.gallery),
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        );
+      },
     );
   }
 }

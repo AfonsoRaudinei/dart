@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
 import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 import 'package:soloforte_app/modules/consultoria/clients/domain/agronomic_models.dart';
 import 'package:soloforte_app/modules/consultoria/clients/domain/client.dart';
@@ -80,116 +81,146 @@ class _CreateFarmSheetState extends State<CreateFarmSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final isIos = soloForteSheetIsIos(context);
+    final titleColor =
+        isIos ? SoloForteSheetSkinIos.titleColor : null;
+    final subtitleColor =
+        isIos ? SoloForteSheetSkinIos.subtitleColor : Colors.black54;
+    final ctaBg = isIos
+        ? SoloForteSheetSkinIos.ctaBackground
+        : PremiumTokens.brandGreen;
+    final ctaFg =
+        isIos ? SoloForteSheetSkinIos.ctaText : Colors.white;
+    final ctaRadius =
+        isIos ? SoloForteSheetSkinIos.ctaRadius : 8.0;
+    final sheetBg =
+        isIos ? SoloForteSheetSkinIos.background : Colors.white;
+    final sheetRadius =
+        isIos ? SoloForteSheetSkinIos.sheetRadius : 24.0;
+
     return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      decoration: BoxDecoration(
+        color: sheetBg,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(sheetRadius)),
       ),
       padding: clientSheetFormPadding(context),
       child: SafeArea(
         top: false,
         child: SingleChildScrollView(
-          child: Form(
-            key: _formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(
-                  child: Container(
-                    width: 36,
-                    height: 5,
-                    margin: const EdgeInsets.only(bottom: 20),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFC5C5C7),
-                      borderRadius: BorderRadius.circular(10),
+          child: Theme(
+            data: ThemeData.light().copyWith(
+              colorScheme: ColorScheme.light(primary: ctaBg),
+            ),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (!isIos)
+                    Center(
+                      child: Container(
+                        width: 36,
+                        height: 5,
+                        margin: const EdgeInsets.only(bottom: 20),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFC5C5C7),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                    ),
+                  Text(
+                    'Nova fazenda',
+                    style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w600,
+                      color: titleColor,
                     ),
                   ),
-                ),
-                const Text(
-                  'Nova fazenda',
-                  style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Cadastre a fazenda por nome. Você pode vincular talhões depois.',
-                  style: TextStyle(fontSize: 14, color: Colors.black54),
-                ),
-                const SizedBox(height: 20),
-                TextFormField(
-                  controller: _nameController,
-                  textCapitalization: TextCapitalization.words,
-                  decoration: const InputDecoration(
-                    labelText: 'Nome da fazenda',
+                  const SizedBox(height: 8),
+                  Text(
+                    'Cadastre a fazenda por nome. Você pode vincular talhões depois.',
+                    style: TextStyle(fontSize: 14, color: subtitleColor),
                   ),
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Informe o nome da fazenda';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: _cityController,
-                  textCapitalization: TextCapitalization.words,
-                  decoration: const InputDecoration(labelText: 'Município'),
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Informe o município';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: _stateController,
-                  textCapitalization: TextCapitalization.characters,
-                  inputFormatters: [
-                    LengthLimitingTextInputFormatter(2),
-                    FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z]')),
-                  ],
-                  decoration: const InputDecoration(labelText: 'UF'),
-                  validator: (value) {
-                    if (value == null || value.trim().length != 2) {
-                      return 'Informe a UF com 2 letras';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: _areaController,
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
-                  ),
-                  decoration: const InputDecoration(
-                    labelText: 'Área total (ha) — opcional',
-                  ),
-                  validator: (value) {
-                    final trimmed = (value ?? '').trim();
-                    if (trimmed.isEmpty) return null;
-                    final area = _parseArea(trimmed);
-                    if (area < 0) {
-                      return 'Informe uma área válida';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 24),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: PremiumTokens.brandGreen,
-                      foregroundColor: Colors.white,
-                      minimumSize: const Size.fromHeight(52),
+                  const SizedBox(height: 20),
+                  TextFormField(
+                    controller: _nameController,
+                    textCapitalization: TextCapitalization.words,
+                    decoration: const InputDecoration(
+                      labelText: 'Nome da fazenda',
                     ),
-                    onPressed: _isSaving ? null : _submit,
-                    child: Text(_isSaving ? 'Salvando...' : 'Salvar fazenda'),
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Informe o nome da fazenda';
+                      }
+                      return null;
+                    },
                   ),
-                ),
-              ],
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: _cityController,
+                    textCapitalization: TextCapitalization.words,
+                    decoration: const InputDecoration(labelText: 'Município'),
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Informe o município';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: _stateController,
+                    textCapitalization: TextCapitalization.characters,
+                    inputFormatters: [
+                      LengthLimitingTextInputFormatter(2),
+                      FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z]')),
+                    ],
+                    decoration: const InputDecoration(labelText: 'UF'),
+                    validator: (value) {
+                      if (value == null || value.trim().length != 2) {
+                        return 'Informe a UF com 2 letras';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: _areaController,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    decoration: const InputDecoration(
+                      labelText: 'Área total (ha) — opcional',
+                    ),
+                    validator: (value) {
+                      final trimmed = (value ?? '').trim();
+                      if (trimmed.isEmpty) return null;
+                      final area = _parseArea(trimmed);
+                      if (area < 0) {
+                        return 'Informe uma área válida';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: ctaBg,
+                        foregroundColor: ctaFg,
+                        minimumSize: const Size.fromHeight(52),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(ctaRadius),
+                        ),
+                      ),
+                      onPressed: _isSaving ? null : _submit,
+                      child: Text(_isSaving ? 'Salvando...' : 'Salvar fazenda'),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -207,7 +238,6 @@ Future<void> showCreateFarmSheet(
 
   return showSoloForteSheet<void>(
     context: context,
-    preserveMaterialDefaults: true,
     backgroundColor: Colors.transparent,
     showDragHandle: false,
     useSafeArea: false,

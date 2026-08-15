@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:soloforte_app/core/contracts/i_ndvi_field_presenter_provider.dart';
 import 'package:soloforte_app/core/contracts/i_visit_client_lookup_provider.dart';
 import 'package:soloforte_app/core/contracts/visit_client_hierarchy.dart';
+import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
 import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 import 'package:soloforte_app/modules/visitas/presentation/controllers/visit_controller.dart';
 import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
@@ -164,12 +165,7 @@ class VisitActiveCard extends ConsumerWidget {
     showSoloForteSheet(
       context: context,
       isScrollControlled: true,
-      preserveMaterialDefaults: true,
-      backgroundColor: Colors.transparent,
       showDragHandle: false,
-      useSafeArea: false,
-      shape: const RoundedRectangleBorder(),
-      clipBehavior: Clip.none,
       builder: (_) => _SelectionSheet(
         title: 'Selecionar Fazenda',
         items: hierarchy.farms.map((f) => f.name).toList(),
@@ -201,12 +197,7 @@ class VisitActiveCard extends ConsumerWidget {
     showSoloForteSheet(
       context: context,
       isScrollControlled: true,
-      preserveMaterialDefaults: true,
-      backgroundColor: Colors.transparent,
       showDragHandle: false,
-      useSafeArea: false,
-      shape: const RoundedRectangleBorder(),
-      clipBehavior: Clip.none,
       builder: (_) => _SelectionSheet(
         title: 'Selecionar Talhão',
         items: farm.fields.map((t) => t.name).toList(),
@@ -351,10 +342,32 @@ class _SelectionSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isIos = soloForteSheetIsIos(context);
+    final bg =
+        isIos ? SoloForteSheetSkinIos.background : Colors.white;
+    final handle = isIos
+        ? SoloForteSheetSkinIos.handleColor
+        : const Color(0xFFC5C5C7);
+    final titleColor =
+        isIos ? SoloForteSheetSkinIos.titleColor : null;
+    final accent = isIos
+        ? SoloForteSheetSkinIos.iconStroke
+        : PremiumTokens.brandGreen;
+    final divider = isIos
+        ? SoloForteSheetSkinIos.rowDivider
+        : Colors.black.withValues(alpha: 0.07);
+    final radius =
+        isIos ? SoloForteSheetSkinIos.sheetRadius : 24.0;
+
     return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(radius)),
+        border: isIos
+            ? const Border(
+                top: BorderSide(color: SoloForteSheetSkinIos.sheetBorder),
+              )
+            : null,
       ),
       child: SafeArea(
         top: false,
@@ -364,10 +377,14 @@ class _SelectionSheet extends StatelessWidget {
             Center(
               child: Container(
                 margin: const EdgeInsets.only(top: 10, bottom: 8),
-                width: 36,
-                height: 4,
+                width: isIos
+                    ? SoloForteSheetSkinIos.handleSize.width
+                    : 36,
+                height: isIos
+                    ? SoloForteSheetSkinIos.handleSize.height
+                    : 4,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFC5C5C7),
+                  color: handle,
                   borderRadius: BorderRadius.circular(10),
                 ),
               ),
@@ -376,10 +393,11 @@ class _SelectionSheet extends StatelessWidget {
               padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
               child: Text(
                 title,
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
+                style: TextStyle(
+                  fontSize: isIos ? 14 : 15,
+                  fontWeight: isIos ? FontWeight.w700 : FontWeight.w600,
                   letterSpacing: -0.4,
+                  color: titleColor,
                 ),
               ),
             ),
@@ -388,10 +406,8 @@ class _SelectionSheet extends StatelessWidget {
               physics: const NeverScrollableScrollPhysics(),
               padding: const EdgeInsets.symmetric(horizontal: 16),
               itemCount: items.length,
-              separatorBuilder: (_, __) => Container(
-                height: 0.5,
-                color: Colors.black.withValues(alpha: 0.07),
-              ),
+              separatorBuilder: (_, __) =>
+                  Container(height: 0.5, color: divider),
               itemBuilder: (_, index) {
                 final isSelected = index == selectedIndex;
                 return ListTile(
@@ -405,16 +421,18 @@ class _SelectionSheet extends StatelessWidget {
                           ? FontWeight.w600
                           : FontWeight.w400,
                       color: isSelected
-                          ? PremiumTokens.brandGreen
-                          : context.premiumTextPrimary,
+                          ? accent
+                          : (isIos
+                              ? SoloForteSheetSkinIos.titleColor
+                              : context.premiumTextPrimary),
                       letterSpacing: -0.3,
                     ),
                   ),
                   trailing: isSelected
-                      ? const Icon(
+                      ? Icon(
                           Icons.check_rounded,
                           size: 18,
-                          color: PremiumTokens.brandGreen,
+                          color: accent,
                         )
                       : null,
                   onTap: () {

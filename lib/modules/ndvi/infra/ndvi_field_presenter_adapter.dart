@@ -15,15 +15,12 @@ class NdviFieldPresenterAdapter implements INdviFieldPresenter {
     required String fieldName,
     double? areaHa,
   }) {
+    // Sem backgroundColor/shape hardcoded — chrome iOS Azul via showSoloForteSheet.
     return showSoloForteSheet<void>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Theme.of(context).colorScheme.surface,
       showDragHandle: false,
       useSafeArea: false,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
       builder: (_) => NdviTalhaoSheet(
         fieldId: fieldId,
         fieldName: fieldName,

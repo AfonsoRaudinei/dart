@@ -347,8 +347,20 @@ class _OccurrenceCreationSheetState
     final actionBarBottomPadding = widget.scrollController != null
         ? (safeBottom > 0 ? safeBottom : 12.0)
         : safeBottom + 24.0;
+    final isIos = occurrenceFormIsIos(context);
+    final sheetBg = isIos
+        ? SoloForteSheetSkinIos.background
+        : SoloForteSheetTokens.sheetBackground;
+    final accent = isIos
+        ? SoloForteSheetSkinIos.iconStroke
+        : PremiumTokens.brandGreen;
+    final titleColor =
+        isIos ? SoloForteSheetSkinIos.titleColor : Colors.white;
+    final muted = isIos
+        ? SoloForteSheetSkinIos.subtitleColor
+        : const Color(0xFF8E8E93);
     return Material(
-      color: SoloForteSheetTokens.sheetBackground,
+      color: sheetBg,
       child: Column(
         children: [
           Expanded(
@@ -364,16 +376,16 @@ class _OccurrenceCreationSheetState
                     width: 40,
                     height: 40,
                     decoration: BoxDecoration(
-                      color: PremiumTokens.brandGreen.withValues(alpha: .15),
+                      color: accent.withValues(alpha: .15),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: PremiumTokens.brandGreen,
+                        color: accent,
                         width: .6,
                       ),
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.location_on_rounded,
-                      color: PremiumTokens.brandGreen,
+                      color: accent,
                       size: 22,
                     ),
                   ),
@@ -386,16 +398,16 @@ class _OccurrenceCreationSheetState
                           widget.initialOccurrence == null
                               ? 'Nova Ocorrência'
                               : 'Editar Ocorrência',
-                          style: const TextStyle(
-                            color: Colors.white,
+                          style: TextStyle(
+                            color: titleColor,
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
-                        const Text(
+                        Text(
                           'Ponto definido no mapa',
                           style: TextStyle(
-                            color: Color(0xFF8E8E93),
+                            color: muted,
                             fontSize: 12,
                           ),
                         ),
@@ -406,7 +418,7 @@ class _OccurrenceCreationSheetState
                     IconButton(
                       icon: const Icon(Icons.close),
                       onPressed: _handleCancel,
-                      color: const Color(0xFF8E8E93),
+                      color: muted,
                     ),
                 ],
               ),
@@ -452,16 +464,26 @@ class _OccurrenceCreationSheetState
                 child: Container(
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF1C1C1E),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.white12),
+                    color: isIos
+                        ? SoloForteSheetSkinIos.cardBackground
+                        : const Color(0xFF1C1C1E),
+                    borderRadius: BorderRadius.circular(
+                      isIos ? SoloForteSheetSkinIos.cardRadius : 12,
+                    ),
+                    border: Border.all(
+                      color: isIos
+                          ? SoloForteSheetSkinIos.cardBorder
+                          : Colors.white12,
+                    ),
                   ),
                   child: Row(
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.calendar_today_outlined,
                         size: 18,
-                        color: Colors.white54,
+                        color: isIos
+                            ? SoloForteSheetSkinIos.iconStroke
+                            : Colors.white54,
                       ),
                       const SizedBox(width: 10),
                       Text(
@@ -470,8 +492,8 @@ class _OccurrenceCreationSheetState
                             : 'Data de Plantio (opcional)',
                         style: TextStyle(
                           color: _dataPlantio != null
-                              ? Colors.white
-                              : Colors.white38,
+                              ? titleColor
+                              : muted,
                           fontSize: 14,
                         ),
                       ),
@@ -479,10 +501,10 @@ class _OccurrenceCreationSheetState
                         const Spacer(),
                         GestureDetector(
                           onTap: () => _patchForm(() => _dataPlantio = null),
-                          child: const Icon(
+                          child: Icon(
                             Icons.clear,
                             size: 16,
-                            color: Colors.white38,
+                            color: muted,
                           ),
                         ),
                       ],
@@ -495,12 +517,12 @@ class _OccurrenceCreationSheetState
                   padding: const EdgeInsets.only(top: 6),
                   child: Row(
                     children: [
-                      const Icon(Icons.grass, size: 14, color: Colors.white38),
+                      Icon(Icons.grass, size: 14, color: muted),
                       const SizedBox(width: 6),
                       Text(
                         '${DateTime.now().difference(_dataPlantio!).inDays} dias desde o plantio (DAP real)',
-                        style: const TextStyle(
-                          color: Colors.white54,
+                        style: TextStyle(
+                          color: muted,
                           fontSize: 12,
                         ),
                       ),
@@ -615,10 +637,18 @@ class _OccurrenceCreationSheetState
                         decoration: BoxDecoration(
                           color: sel
                               ? color.withValues(alpha: .18)
-                              : const Color(0xFF1C1C1E),
-                          borderRadius: BorderRadius.circular(16),
+                              : (isIos
+                                    ? SoloForteSheetSkinIos.cardBackground
+                                    : const Color(0xFF1C1C1E)),
+                          borderRadius: BorderRadius.circular(
+                            isIos ? SoloForteSheetSkinIos.cardRadius : 16,
+                          ),
                           border: Border.all(
-                            color: sel ? color : Colors.white12,
+                            color: sel
+                                ? color
+                                : (isIos
+                                      ? SoloForteSheetSkinIos.cardBorder
+                                      : Colors.white12),
                             width: sel ? 1.5 : 1,
                           ),
                         ),

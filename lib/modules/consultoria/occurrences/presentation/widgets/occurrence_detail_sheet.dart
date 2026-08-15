@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:soloforte_app/core/contracts/i_client_lookup_provider.dart';
 import 'package:soloforte_app/core/router/app_routes.dart';
+import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
 import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 
 import '../../../../../../core/design/sf_icons.dart';
@@ -140,7 +141,6 @@ class OccurrenceDetailSheet extends ConsumerWidget {
     Navigator.of(context).pop();
     await showSoloForteSheet<void>(
       context: context,
-      preserveMaterialDefaults: true,
       backgroundColor: Colors.transparent,
       builder: (sheetContext) => FractionallySizedBox(
         heightFactor: 0.92,
@@ -217,7 +217,9 @@ class OccurrenceDetailSheet extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isIos = soloForteSheetIsIos(context);
+    final isDark =
+        !isIos && Theme.of(context).brightness == Brightness.dark;
     final categoryColor = _colorForCategory(occurrence.category);
     final urgencyColor = _colorForUrgency(occurrence.type);
     final categoryLabel = _labelForCategory(occurrence.category);
@@ -225,6 +227,30 @@ class OccurrenceDetailSheet extends ConsumerWidget {
     final category = OccurrenceCategory.fromString(occurrence.category);
     final metricLabel = _firstMetricLabel(occurrence);
     final hasMapPin = occurrence.getCoordinates() != null;
+
+    final sheetBg = isIos
+        ? SoloForteSheetSkinIos.background
+        : (isDark ? PremiumTokens.surfaceDark : context.premiumSurface);
+    final sheetRadius = isIos
+        ? SoloForteSheetSkinIos.sheetRadius
+        : PremiumTokens.borderRadiusLg;
+    final handleColor = isIos
+        ? SoloForteSheetSkinIos.handleColor
+        : (isDark ? const Color(0xFF545458) : const Color(0xFFC5C5C7));
+    final titleColor = isIos
+        ? SoloForteSheetSkinIos.titleColor
+        : (isDark
+            ? PremiumTokens.textPrimaryDark
+            : context.premiumTextPrimary);
+    final dividerColor = isIos
+        ? SoloForteSheetSkinIos.rowDivider
+        : (isDark ? PremiumTokens.hairlineDark : context.premiumHairline);
+    final cardBg = isIos
+        ? SoloForteSheetSkinIos.cardBackground
+        : (isDark ? const Color(0xFF2C2C2E) : context.premiumBackground);
+    final cardRadius = isIos
+        ? SoloForteSheetSkinIos.cardRadius
+        : PremiumTokens.borderRadiusSm;
 
     final formattedDate = DateFormat(
       "dd 'de' MMMM 'de' yyyy 'às' HH:mm",
@@ -242,7 +268,7 @@ class OccurrenceDetailSheet extends ConsumerWidget {
                 .findById(occurrence.clientId!),
             builder: (context, snapshot) => Text(
               snapshot.data?.name ?? 'Cliente não encontrado',
-              style: _DetailRow.valueStyle(isDark),
+              style: _DetailRow.valueStyle(isDark, isIos: isIos),
             ),
           ),
         ),
@@ -323,39 +349,44 @@ class OccurrenceDetailSheet extends ConsumerWidget {
           maxHeight: MediaQuery.sizeOf(context).height * 0.9,
         ),
         decoration: BoxDecoration(
-          color: isDark
-              ? PremiumTokens.surfaceDark
-              : context.premiumSurface,
-          borderRadius: const BorderRadius.vertical(
-            top: Radius.circular(PremiumTokens.borderRadiusLg),
-          ),
-          boxShadow: PremiumTokens.premiumShadow,
+          color: sheetBg,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(sheetRadius)),
+          border: isIos
+              ? const Border(
+                  top: BorderSide(color: SoloForteSheetSkinIos.sheetBorder),
+                )
+              : null,
+          boxShadow: isIos ? null : PremiumTokens.premiumShadow,
         ),
         child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               const SizedBox(height: 12),
-              Center(
-                child: Container(
-                  width: 36,
-                  height: 5,
-                  decoration: BoxDecoration(
-                    color: isDark
-                        ? const Color(0xFF545458)
-                        : const Color(0xFFC5C5C7),
-                    borderRadius: BorderRadius.circular(10),
+              if (!isIos)
+                Center(
+                  child: Container(
+                    width: 36,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: handleColor,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 16),
+              if (!isIos) const SizedBox(height: 16),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: Row(
                   children: [
                     if (backRoute != null) ...[
                       IconButton(
-                        icon: const Icon(Icons.arrow_back_ios_new),
+                        icon: Icon(
+                          Icons.arrow_back_ios_new,
+                          color: isIos
+                              ? SoloForteSheetSkinIos.arrowColor
+                              : null,
+                        ),
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(
                           minWidth: 40,
@@ -376,7 +407,9 @@ class OccurrenceDetailSheet extends ConsumerWidget {
                       width: 48,
                       height: 48,
                       decoration: BoxDecoration(
-                        color: categoryColor.withValues(alpha: 0.16),
+                        color: isIos
+                            ? SoloForteSheetSkinIos.iconBackground
+                            : categoryColor.withValues(alpha: 0.16),
                         shape: BoxShape.circle,
                       ),
                       child: Center(
@@ -397,9 +430,7 @@ class OccurrenceDetailSheet extends ConsumerWidget {
                               fontSize: 17,
                               fontWeight: FontWeight.w600,
                               letterSpacing: -0.4,
-                              color: isDark
-                                  ? PremiumTokens.textPrimaryDark
-                                  : context.premiumTextPrimary,
+                              color: titleColor,
                             ),
                           ),
                           const SizedBox(height: 4),
@@ -426,7 +457,9 @@ class OccurrenceDetailSheet extends ConsumerWidget {
                         tooltip: 'Ver no mapa',
                         icon: Icon(
                           SFIcons.pinFill,
-                          color: categoryColor,
+                          color: isIos
+                              ? SoloForteSheetSkinIos.iconStroke
+                              : categoryColor,
                           size: 22,
                         ),
                         onPressed: () => _goToMapPin(context),
@@ -439,9 +472,7 @@ class OccurrenceDetailSheet extends ConsumerWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: Divider(
                   thickness: PremiumTokens.hairlineThickness,
-                  color: isDark
-                      ? PremiumTokens.hairlineDark
-                      : context.premiumHairline,
+                  color: dividerColor,
                   height: 1,
                 ),
               ),
@@ -450,18 +481,18 @@ class OccurrenceDetailSheet extends ConsumerWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Container(
                   decoration: BoxDecoration(
-                    color: isDark
-                        ? const Color(0xFF2C2C2E)
-                        : context.premiumBackground,
-                    borderRadius: BorderRadius.circular(
-                      PremiumTokens.borderRadiusSm,
-                    ),
+                    color: cardBg,
+                    borderRadius: BorderRadius.circular(cardRadius),
+                    border: isIos
+                        ? Border.all(color: SoloForteSheetSkinIos.cardBorder)
+                        : null,
                   ),
                   child: Column(
                     children: [
                       for (var i = 0; i < detailRows.length; i++)
                         _DetailRow(
                           isDark: isDark,
+                          isIos: isIos,
                           icon: detailRows[i].icon,
                           label: detailRows[i].label,
                           value: detailRows[i].value,
@@ -481,10 +512,25 @@ class OccurrenceDetailSheet extends ConsumerWidget {
                     height: 48,
                     child: OutlinedButton.icon(
                       onPressed: () => _goToMapPin(context),
+                      style: isIos
+                          ? OutlinedButton.styleFrom(
+                              foregroundColor: SoloForteSheetSkinIos.ghostText,
+                              side: const BorderSide(
+                                color: SoloForteSheetSkinIos.ghostBorder,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(
+                                  SoloForteSheetSkinIos.ghostRadius,
+                                ),
+                              ),
+                            )
+                          : null,
                       icon: Icon(
                         SFIcons.pinFill,
                         size: 18,
-                        color: categoryColor,
+                        color: isIos
+                            ? SoloForteSheetSkinIos.iconStroke
+                            : categoryColor,
                       ),
                       label: const Text('Ver ponto no mapa'),
                     ),
@@ -500,6 +546,20 @@ class OccurrenceDetailSheet extends ConsumerWidget {
                       Expanded(
                         child: OutlinedButton.icon(
                           onPressed: () => _openEditSheet(context, ref),
+                          style: isIos
+                              ? OutlinedButton.styleFrom(
+                                  foregroundColor:
+                                      SoloForteSheetSkinIos.ghostText,
+                                  side: const BorderSide(
+                                    color: SoloForteSheetSkinIos.ghostBorder,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(
+                                      SoloForteSheetSkinIos.ghostRadius,
+                                    ),
+                                  ),
+                                )
+                              : null,
                           icon: const Icon(Icons.edit_outlined, size: 18),
                           label: const Text('Editar'),
                         ),
@@ -526,6 +586,7 @@ class OccurrenceDetailSheet extends ConsumerWidget {
                   height: 50,
                   child: CupertinoCloseButton(
                     isDark: isDark,
+                    isIos: isIos,
                     onTap: () => Navigator.of(context).pop(),
                   ),
                 ),
@@ -590,6 +651,7 @@ class _HeaderChip extends StatelessWidget {
 
 class _DetailRow extends StatelessWidget {
   final bool isDark;
+  final bool isIos;
   final IconData icon;
   final String label;
   final String? value;
@@ -598,6 +660,7 @@ class _DetailRow extends StatelessWidget {
 
   const _DetailRow({
     required this.isDark,
+    this.isIos = false,
     required this.icon,
     required this.label,
     this.value,
@@ -605,19 +668,31 @@ class _DetailRow extends StatelessWidget {
     required this.showDivider,
   });
 
-  static TextStyle valueStyle(bool isDark) {
+  static TextStyle valueStyle(bool isDark, {bool isIos = false}) {
     return TextStyle(
       fontSize: 15,
       fontWeight: FontWeight.w400,
       letterSpacing: -0.4,
-      color: isDark
-          ? PremiumTokens.textPrimaryDark
-          : PremiumTokens.textPrimaryLight,
+      color: isIos
+          ? SoloForteSheetSkinIos.titleColor
+          : (isDark
+              ? PremiumTokens.textPrimaryDark
+              : PremiumTokens.textPrimaryLight),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final iconColor = isIos
+        ? SoloForteSheetSkinIos.iconStroke
+        : (isDark ? const Color(0xFF8E8E93) : const Color(0xFF6C6C70));
+    final labelColor = isIos
+        ? SoloForteSheetSkinIos.subtitleColor
+        : (isDark ? const Color(0xFF8E8E93) : const Color(0xFF6C6C70));
+    final dividerColor = isIos
+        ? SoloForteSheetSkinIos.rowDivider
+        : (isDark ? PremiumTokens.hairlineDark : context.premiumHairline);
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -626,13 +701,7 @@ class _DetailRow extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(
-                icon,
-                size: 18,
-                color: isDark
-                    ? const Color(0xFF8E8E93)
-                    : const Color(0xFF6C6C70),
-              ),
+              Icon(icon, size: 18, color: iconColor),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -644,16 +713,14 @@ class _DetailRow extends StatelessWidget {
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
                         letterSpacing: 0.07,
-                        color: isDark
-                            ? const Color(0xFF8E8E93)
-                            : const Color(0xFF6C6C70),
+                        color: labelColor,
                       ),
                     ),
                     const SizedBox(height: 2),
                     if (valueBuilder != null)
                       valueBuilder!(context)
                     else
-                      Text(value ?? '—', style: valueStyle(isDark)),
+                      Text(value ?? '—', style: valueStyle(isDark, isIos: isIos)),
                   ],
                 ),
               ),
@@ -665,9 +732,7 @@ class _DetailRow extends StatelessWidget {
             padding: const EdgeInsets.only(left: 46),
             child: Divider(
               thickness: PremiumTokens.hairlineThickness,
-              color: isDark
-                  ? PremiumTokens.hairlineDark
-                  : context.premiumHairline,
+              color: dividerColor,
               height: 1,
             ),
           ),
@@ -678,11 +743,13 @@ class _DetailRow extends StatelessWidget {
 
 class CupertinoCloseButton extends StatefulWidget {
   final bool isDark;
+  final bool isIos;
   final VoidCallback onTap;
 
   const CupertinoCloseButton({
     super.key,
     required this.isDark,
+    this.isIos = false,
     required this.onTap,
   });
 
@@ -695,6 +762,17 @@ class _CupertinoCloseButtonState extends State<CupertinoCloseButton> {
 
   @override
   Widget build(BuildContext context) {
+    final bg = widget.isIos
+        ? SoloForteSheetSkinIos.cardBackground
+        : (widget.isDark
+            ? const Color(0xFF2C2C2E)
+            : context.premiumBackground);
+    final textColor = widget.isIos
+        ? SoloForteSheetSkinIos.titleColor
+        : (widget.isDark
+            ? PremiumTokens.textPrimaryDark
+            : context.premiumTextPrimary);
+
     return GestureDetector(
       onTapDown: (_) => setState(() => _pressed = true),
       onTapUp: (_) {
@@ -711,10 +789,15 @@ class _CupertinoCloseButtonState extends State<CupertinoCloseButton> {
           duration: const Duration(milliseconds: 80),
           child: Container(
             decoration: BoxDecoration(
-              color: widget.isDark
-                  ? const Color(0xFF2C2C2E)
-                  : context.premiumBackground,
-              borderRadius: BorderRadius.circular(PremiumTokens.borderRadiusMd),
+              color: bg,
+              borderRadius: BorderRadius.circular(
+                widget.isIos
+                    ? SoloForteSheetSkinIos.ctaRadius
+                    : PremiumTokens.borderRadiusMd,
+              ),
+              border: widget.isIos
+                  ? Border.all(color: SoloForteSheetSkinIos.cardBorder)
+                  : null,
             ),
             alignment: Alignment.center,
             child: Text(
@@ -723,9 +806,7 @@ class _CupertinoCloseButtonState extends State<CupertinoCloseButton> {
                 fontSize: 17,
                 fontWeight: FontWeight.w600,
                 letterSpacing: -0.4,
-                color: widget.isDark
-                    ? PremiumTokens.textPrimaryDark
-                    : context.premiumTextPrimary,
+                color: textColor,
               ),
             ),
           ),

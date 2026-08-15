@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:soloforte_app/core/contracts/i_drawing_field_writer_provider.dart';
+import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
 import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 import 'package:soloforte_app/modules/consultoria/clients/domain/agronomic_models.dart';
 import 'package:soloforte_app/modules/consultoria/clients/domain/client.dart';
@@ -154,103 +155,156 @@ class _LinkDrawingToFarmSheetState
 
   @override
   Widget build(BuildContext context) {
+    final isIos = soloForteSheetIsIos(context);
+    final titleColor =
+        isIos ? SoloForteSheetSkinIos.titleColor : null;
+    final subtitleColor =
+        isIos ? SoloForteSheetSkinIos.subtitleColor : Colors.black54;
+    final accent =
+        isIos ? SoloForteSheetSkinIos.iconStroke : PremiumTokens.brandGreen;
+    final ctaBg = isIos
+        ? SoloForteSheetSkinIos.ctaBackground
+        : PremiumTokens.brandGreen;
+    final ctaFg =
+        isIos ? SoloForteSheetSkinIos.ctaText : Colors.white;
+    final ctaRadius =
+        isIos ? SoloForteSheetSkinIos.ctaRadius : 8.0;
+    final sheetBg =
+        isIos ? SoloForteSheetSkinIos.background : Colors.white;
+    final sheetRadius =
+        isIos ? SoloForteSheetSkinIos.sheetRadius : 24.0;
+
     return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      decoration: BoxDecoration(
+        color: sheetBg,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(sheetRadius)),
       ),
       padding: clientSheetFormPadding(context),
       child: SafeArea(
         top: false,
         child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 36,
-                  height: 5,
-                  margin: const EdgeInsets.only(bottom: 20),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFC5C5C7),
-                    borderRadius: BorderRadius.circular(10),
+          child: Theme(
+            data: ThemeData.light().copyWith(
+              colorScheme: ColorScheme.light(primary: ctaBg),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (!isIos)
+                  Center(
+                    child: Container(
+                      width: 36,
+                      height: 5,
+                      margin: const EdgeInsets.only(bottom: 20),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFC5C5C7),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                  ),
+                Text(
+                  'Vincular à fazenda',
+                  style: TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w600,
+                    color: titleColor,
                   ),
                 ),
-              ),
-              const Text(
-                'Vincular à fazenda',
-                style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Associe "${widget.field.name}" a uma fazenda. Uma fazenda pode ter apenas este talhão.',
-                style: const TextStyle(fontSize: 14, color: Colors.black54),
-              ),
-              const SizedBox(height: 20),
-              if (_isLoading)
-                const Center(child: CircularProgressIndicator())
-              else ...[
-                if (_farms.isNotEmpty && !_showCreateForm) _buildFarmList(),
-                if (_farms.isNotEmpty)
-                  TextButton.icon(
-                    onPressed: () {
-                      setState(() {
-                        _showCreateForm = !_showCreateForm;
-                        if (_showCreateForm) {
-                          _selectedFarmId = null;
-                        }
-                      });
-                    },
-                    icon: Icon(
-                      _showCreateForm ? Icons.list_alt : Icons.add,
-                      color: PremiumTokens.brandGreen,
+                const SizedBox(height: 8),
+                Text(
+                  'Associe "${widget.field.name}" a uma fazenda. Uma fazenda pode ter apenas este talhão.',
+                  style: TextStyle(fontSize: 14, color: subtitleColor),
+                ),
+                const SizedBox(height: 20),
+                if (_isLoading)
+                  const Center(child: CircularProgressIndicator())
+                else ...[
+                  if (_farms.isNotEmpty && !_showCreateForm)
+                    _buildFarmList(isIos),
+                  if (_farms.isNotEmpty)
+                    TextButton.icon(
+                      onPressed: () {
+                        setState(() {
+                          _showCreateForm = !_showCreateForm;
+                          if (_showCreateForm) {
+                            _selectedFarmId = null;
+                          }
+                        });
+                      },
+                      icon: Icon(
+                        _showCreateForm ? Icons.list_alt : Icons.add,
+                        color: accent,
+                      ),
+                      label: Text(
+                        _showCreateForm
+                            ? 'Usar fazenda existente'
+                            : 'Criar fazenda com este talhão',
+                        style: TextStyle(color: accent),
+                      ),
                     ),
-                    label: Text(
-                      _showCreateForm
-                          ? 'Usar fazenda existente'
-                          : 'Criar fazenda com este talhão',
-                      style: const TextStyle(color: PremiumTokens.brandGreen),
-                    ),
-                  ),
-                if (_showCreateForm) ...[
-                  const SizedBox(height: 8),
-                  _buildCreateForm(),
+                  if (_showCreateForm) ...[
+                    const SizedBox(height: 8),
+                    _buildCreateForm(isIos),
+                  ],
                 ],
-              ],
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: PremiumTokens.brandGreen,
-                    foregroundColor: Colors.white,
-                    minimumSize: const Size.fromHeight(52),
-                  ),
-                  onPressed: (_isLoading || _isSaving) ? null : _submit,
-                  child: Text(
-                    _isSaving
-                        ? 'Vinculando...'
-                        : (_showCreateForm
-                            ? 'Criar fazenda e vincular'
-                            : 'Vincular talhão'),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: ctaBg,
+                      foregroundColor: ctaFg,
+                      minimumSize: const Size.fromHeight(52),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(ctaRadius),
+                      ),
+                    ),
+                    onPressed: (_isLoading || _isSaving) ? null : _submit,
+                    child: Text(
+                      _isSaving
+                          ? 'Vinculando...'
+                          : (_showCreateForm
+                              ? 'Criar fazenda e vincular'
+                              : 'Vincular talhão'),
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildFarmList() {
+  Widget _buildFarmList(bool isIos) {
+    final accent =
+        isIos ? SoloForteSheetSkinIos.iconStroke : PremiumTokens.brandGreen;
+    final selectedBg = isIos
+        ? SoloForteSheetSkinIos.cardBackground
+        : const Color(0xFFEFFAF2);
+    final unselectedBg =
+        isIos ? SoloForteSheetSkinIos.background : Colors.white;
+    final unselectedBorder = isIos
+        ? SoloForteSheetSkinIos.cardBorder
+        : const Color(0xFFE2E2E8);
+    final titleColor =
+        isIos ? SoloForteSheetSkinIos.titleColor : null;
+    final unchecked =
+        isIos ? SoloForteSheetSkinIos.subtitleColor : Colors.black38;
+    final radius = isIos ? SoloForteSheetSkinIos.cardRadius : 16.0;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Fazendas cadastradas',
-          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+          style: TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w600,
+            color: titleColor,
+          ),
         ),
         const SizedBox(height: 12),
         ..._farms.map((farm) {
@@ -261,12 +315,10 @@ class _LinkDrawingToFarmSheetState
               margin: const EdgeInsets.only(bottom: 10),
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: selected ? const Color(0xFFEFFAF2) : Colors.white,
-                borderRadius: BorderRadius.circular(16),
+                color: selected ? selectedBg : unselectedBg,
+                borderRadius: BorderRadius.circular(radius),
                 border: Border.all(
-                  color: selected
-                      ? PremiumTokens.brandGreen
-                      : const Color(0xFFE2E2E8),
+                  color: selected ? accent : unselectedBorder,
                 ),
               ),
               child: Row(
@@ -274,9 +326,10 @@ class _LinkDrawingToFarmSheetState
                   Expanded(
                     child: Text(
                       farm.name,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
+                        color: titleColor,
                       ),
                     ),
                   ),
@@ -285,9 +338,7 @@ class _LinkDrawingToFarmSheetState
                         ? Icons.check_circle
                         : Icons.radio_button_unchecked,
                     size: 20,
-                    color: selected
-                        ? PremiumTokens.brandGreen
-                        : Colors.black38,
+                    color: selected ? accent : unchecked,
                   ),
                 ],
               ),
@@ -298,15 +349,19 @@ class _LinkDrawingToFarmSheetState
     );
   }
 
-  Widget _buildCreateForm() {
+  Widget _buildCreateForm(bool isIos) {
     return Form(
       key: _formKey,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Criar fazenda com este talhão',
-            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+              color: isIos ? SoloForteSheetSkinIos.titleColor : null,
+            ),
           ),
           const SizedBox(height: 12),
           TextFormField(
@@ -362,7 +417,6 @@ Future<Farm?> showLinkDrawingToFarmSheet(
 }) {
   return showSoloForteSheet<Farm>(
     context: context,
-    preserveMaterialDefaults: true,
     backgroundColor: Colors.transparent,
     showDragHandle: false,
     useSafeArea: false,

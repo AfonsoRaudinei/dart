@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
+import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
 import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 
 import '../../domain/occurrence.dart';
@@ -10,6 +10,11 @@ import 'occurrence_fenologia_data.dart';
 // ════════════════════════════════════════════════════════════════════════════
 // Extraídos para manter occurrence_creation_sheet.dart abaixo de 900 linhas.
 // (Sprint 7 — Bounded Context Hygiene)
+
+/// Detecção Azul via themeId (mesmo padrão visit_sheet) — funciona dentro ou
+/// fora de [SoloForteSheetSkinScope].
+bool occurrenceFormIsIos(BuildContext context) =>
+    Theme.of(context).extension<SoloForteThemeExtension>()?.themeId == 'blue';
 
 // ── Cabeçalho de seção ────────────────────────────────────────────────────
 
@@ -25,21 +30,26 @@ class OccurrenceSectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isIos = occurrenceFormIsIos(context);
     return Row(
       children: [
         Text(icon, style: const TextStyle(fontSize: 16)),
         const SizedBox(width: 6),
         Text(
           title,
-          style: const TextStyle(
-            color: Colors.white,
+          style: TextStyle(
+            color: isIos ? SoloForteSheetSkinIos.titleColor : Colors.white,
             fontSize: 13,
             fontWeight: FontWeight.w700,
             letterSpacing: .4,
           ),
         ),
         const SizedBox(width: 8),
-        const Expanded(child: Divider(color: Colors.white12)),
+        Expanded(
+          child: Divider(
+            color: isIos ? SoloForteSheetSkinIos.rowDivider : Colors.white12,
+          ),
+        ),
       ],
     );
   }
@@ -63,35 +73,50 @@ class OccurrenceDarkField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isIos = occurrenceFormIsIos(context);
+    final textColor =
+        isIos ? SoloForteSheetSkinIos.titleColor : Colors.white;
+    final labelColor =
+        isIos ? SoloForteSheetSkinIos.subtitleColor : Colors.white38;
+    final hintColor =
+        isIos ? SoloForteSheetSkinIos.subtitleColor : Colors.white24;
+    final fill = isIos
+        ? SoloForteSheetSkinIos.cardBackground
+        : const Color(0xFF1C1C1E);
+    final border = isIos
+        ? SoloForteSheetSkinIos.cardBorder
+        : Colors.white12;
+    final focus = isIos
+        ? SoloForteSheetSkinIos.iconStroke
+        : PremiumTokens.brandGreen;
+    final radius = isIos ? SoloForteSheetSkinIos.cardRadius : 12.0;
+
     return TextField(
       controller: controller,
       maxLines: maxLines,
-      style: const TextStyle(color: Colors.white, fontSize: 14),
+      style: TextStyle(color: textColor, fontSize: 14),
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: const TextStyle(color: Colors.white38, fontSize: 13),
+        labelStyle: TextStyle(color: labelColor, fontSize: 13),
         hintText: hint,
-        hintStyle: const TextStyle(color: Colors.white24, fontSize: 13),
+        hintStyle: TextStyle(color: hintColor, fontSize: 13),
         filled: true,
-        fillColor: const Color(0xFF1C1C1E),
+        fillColor: fill,
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 14,
           vertical: 12,
         ),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Colors.white12),
+          borderRadius: BorderRadius.circular(radius),
+          borderSide: BorderSide(color: border),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Colors.white12),
+          borderRadius: BorderRadius.circular(radius),
+          borderSide: BorderSide(color: border),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(
-            color: PremiumTokens.brandGreen,
-            width: 1.5,
-          ),
+          borderRadius: BorderRadius.circular(radius),
+          borderSide: BorderSide(color: focus, width: 1.5),
         ),
       ),
     );
@@ -116,6 +141,11 @@ class OccurrenceSliderRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isIos = occurrenceFormIsIos(context);
+    final labelColor =
+        isIos ? SoloForteSheetSkinIos.titleColor : Colors.white70;
+    final inactive =
+        isIos ? SoloForteSheetSkinIos.rowDivider : Colors.white12;
     return Padding(
       padding: const EdgeInsets.fromLTRB(14, 4, 14, 0),
       child: Column(
@@ -126,7 +156,7 @@ class OccurrenceSliderRow extends StatelessWidget {
             children: [
               Text(
                 label,
-                style: const TextStyle(color: Colors.white70, fontSize: 13),
+                style: TextStyle(color: labelColor, fontSize: 13),
               ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -148,7 +178,7 @@ class OccurrenceSliderRow extends StatelessWidget {
           SliderTheme(
             data: SliderThemeData(
               activeTrackColor: color,
-              inactiveTrackColor: Colors.white12,
+              inactiveTrackColor: inactive,
               thumbColor: color,
               overlayColor: color.withValues(alpha: .2),
               trackHeight: 4,
@@ -198,13 +228,29 @@ class OccurrenceEstadioDropdown extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isIos = occurrenceFormIsIos(context);
+    final surface = isIos
+        ? SoloForteSheetSkinIos.cardBackground
+        : const Color(0xFF1C1C1E);
+    final border = isIos
+        ? SoloForteSheetSkinIos.cardBorder
+        : Colors.white12;
+    final muted =
+        isIos ? SoloForteSheetSkinIos.subtitleColor : Colors.white38;
+    final title =
+        isIos ? SoloForteSheetSkinIos.titleColor : Colors.white;
+    final dropdownBg = isIos
+        ? SoloForteSheetSkinIos.background
+        : const Color(0xFF2C2C2E);
+    final radius = isIos ? SoloForteSheetSkinIos.cardRadius : 12.0;
+
     return Column(
       children: [
         Container(
           decoration: BoxDecoration(
-            color: const Color(0xFF1C1C1E),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.white12),
+            color: surface,
+            borderRadius: BorderRadius.circular(radius),
+            border: Border.all(color: border),
           ),
           child: Row(
             children: [
@@ -212,23 +258,23 @@ class OccurrenceEstadioDropdown extends StatelessWidget {
                 child: DropdownButtonHideUnderline(
                   child: DropdownButton<EstadioData?>(
                     value: selected,
-                    hint: const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 14),
+                    hint: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 14),
                       child: Text(
                         'Selecionar estádio (opcional)',
-                        style: TextStyle(color: Colors.white38, fontSize: 13),
+                        style: TextStyle(color: muted, fontSize: 13),
                       ),
                     ),
-                    dropdownColor: const Color(0xFF2C2C2E),
+                    dropdownColor: dropdownBg,
                     isExpanded: true,
                     icon: const SizedBox.shrink(),
                     padding: const EdgeInsets.symmetric(horizontal: 14),
                     items: [
-                      const DropdownMenuItem<EstadioData?>(
+                      DropdownMenuItem<EstadioData?>(
                         value: null,
                         child: Text(
                           '— Nenhum —',
-                          style: TextStyle(color: Colors.white38, fontSize: 13),
+                          style: TextStyle(color: muted, fontSize: 13),
                         ),
                       ),
                       ...kEstadios.map(
@@ -236,8 +282,8 @@ class OccurrenceEstadioDropdown extends StatelessWidget {
                           value: e,
                           child: Text(
                             e.name,
-                            style: const TextStyle(
-                              color: Colors.white,
+                            style: TextStyle(
+                              color: title,
                               fontSize: 13,
                             ),
                           ),
@@ -386,18 +432,30 @@ class OccurrenceRadioChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isIos = occurrenceFormIsIos(context);
+    final accent = isIos
+        ? SoloForteSheetSkinIos.iconStroke
+        : PremiumTokens.brandGreen;
+    final idleSurface = isIos
+        ? SoloForteSheetSkinIos.cardBackground
+        : const Color(0xFF1C1C1E);
+    final idleBorder = isIos
+        ? SoloForteSheetSkinIos.cardBorder
+        : Colors.white12;
+    final idleText =
+        isIos ? SoloForteSheetSkinIos.subtitleColor : Colors.white38;
+    final radius = isIos ? SoloForteSheetSkinIos.cardRadius : 12.0;
+
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         decoration: BoxDecoration(
-          color: selected
-              ? PremiumTokens.brandGreen.withValues(alpha: .15)
-              : const Color(0xFF1C1C1E),
-          borderRadius: BorderRadius.circular(12),
+          color: selected ? accent.withValues(alpha: .15) : idleSurface,
+          borderRadius: BorderRadius.circular(radius),
           border: Border.all(
-            color: selected ? PremiumTokens.brandGreen : Colors.white12,
+            color: selected ? accent : idleBorder,
             width: selected ? 1.5 : 1,
           ),
         ),
@@ -409,7 +467,7 @@ class OccurrenceRadioChip extends StatelessWidget {
             Text(
               label,
               style: TextStyle(
-                color: selected ? PremiumTokens.brandGreen : Colors.white38,
+                color: selected ? accent : idleText,
                 fontWeight: selected ? FontWeight.bold : FontWeight.normal,
                 fontSize: 14,
               ),
@@ -439,39 +497,49 @@ class OccurrencePhotoSourceSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isIos = occurrenceFormIsIos(context);
+    final bg = isIos
+        ? SoloForteSheetSkinIos.cardBackground
+        : const Color(0xFF1C1C1E);
+    final radius =
+        isIos ? SoloForteSheetSkinIos.cardRadius : 16.0;
+    final titleColor =
+        isIos ? SoloForteSheetSkinIos.titleColor : Colors.white;
+    final iconColor =
+        isIos ? SoloForteSheetSkinIos.iconStroke : Colors.white70;
+    final tileColor =
+        isIos ? SoloForteSheetSkinIos.titleColor : Colors.white;
+
     return Container(
       margin: const EdgeInsets.all(12),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFF1C1C1E),
-        borderRadius: BorderRadius.circular(16),
+        color: bg,
+        borderRadius: BorderRadius.circular(radius),
+        border: isIos
+            ? Border.all(color: SoloForteSheetSkinIos.cardBorder)
+            : null,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
             '$catEmoji $catLabel',
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: titleColor,
               fontWeight: FontWeight.bold,
               fontSize: 16,
             ),
           ),
           const SizedBox(height: 16),
           ListTile(
-            leading: const Icon(
-              Icons.camera_alt_outlined,
-              color: Colors.white70,
-            ),
-            title: const Text('Câmera', style: TextStyle(color: Colors.white)),
+            leading: Icon(Icons.camera_alt_outlined, color: iconColor),
+            title: Text('Câmera', style: TextStyle(color: tileColor)),
             onTap: onCamera,
           ),
           ListTile(
-            leading: const Icon(
-              Icons.photo_library_outlined,
-              color: Colors.white70,
-            ),
-            title: const Text('Galeria', style: TextStyle(color: Colors.white)),
+            leading: Icon(Icons.photo_library_outlined, color: iconColor),
+            title: Text('Galeria', style: TextStyle(color: tileColor)),
             onTap: onGallery,
           ),
         ],
@@ -489,20 +557,34 @@ class OccurrenceCatPickerSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isIos = occurrenceFormIsIos(context);
+    final bg = isIos
+        ? SoloForteSheetSkinIos.cardBackground
+        : const Color(0xFF1C1C1E);
+    final radius =
+        isIos ? SoloForteSheetSkinIos.cardRadius : 16.0;
+    final titleColor =
+        isIos ? SoloForteSheetSkinIos.titleColor : Colors.white;
+    final tileColor =
+        isIos ? SoloForteSheetSkinIos.titleColor : Colors.white;
+
     return Container(
       margin: const EdgeInsets.all(12),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFF1C1C1E),
-        borderRadius: BorderRadius.circular(16),
+        color: bg,
+        borderRadius: BorderRadius.circular(radius),
+        border: isIos
+            ? Border.all(color: SoloForteSheetSkinIos.cardBorder)
+            : null,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Text(
+          Text(
             'Foto para qual categoria?',
             style: TextStyle(
-              color: Colors.white,
+              color: titleColor,
               fontWeight: FontWeight.bold,
               fontSize: 15,
             ),
@@ -511,10 +593,7 @@ class OccurrenceCatPickerSheet extends StatelessWidget {
           ...cats.map(
             (cat) => ListTile(
               leading: Text(cat.emoji, style: const TextStyle(fontSize: 22)),
-              title: Text(
-                cat.label,
-                style: const TextStyle(color: Colors.white),
-              ),
+              title: Text(cat.label, style: TextStyle(color: tileColor)),
               onTap: () => Navigator.pop(context, cat),
             ),
           ),

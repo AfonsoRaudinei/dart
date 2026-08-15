@@ -51,20 +51,31 @@ class _ProfileAvatarPickerState extends State<ProfileAvatarPicker> {
       context: context,
       showDragHandle: false,
       builder: (BuildContext bc) {
+        final isIos = soloForteSheetIsIos(bc);
+        final iconColor =
+            isIos ? SoloForteSheetSkinIos.iconStroke : null;
+        final titleColor =
+            isIos ? SoloForteSheetSkinIos.titleColor : null;
         return SafeArea(
           child: Wrap(
             children: <Widget>[
               ListTile(
-                leading: const Icon(Icons.photo_library),
-                title: const Text('Galeria'),
+                leading: Icon(Icons.photo_library, color: iconColor),
+                title: Text(
+                  'Galeria',
+                  style: TextStyle(color: titleColor),
+                ),
                 onTap: () {
                   _pickImage(ImageSource.gallery);
                   Navigator.of(context).pop();
                 },
               ),
               ListTile(
-                leading: const Icon(Icons.photo_camera),
-                title: const Text('Câmera'),
+                leading: Icon(Icons.photo_camera, color: iconColor),
+                title: Text(
+                  'Câmera',
+                  style: TextStyle(color: titleColor),
+                ),
                 onTap: () {
                   _pickImage(ImageSource.camera);
                   Navigator.of(context).pop();

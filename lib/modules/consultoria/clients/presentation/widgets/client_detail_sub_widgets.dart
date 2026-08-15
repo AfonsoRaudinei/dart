@@ -1,6 +1,7 @@
 // ignore_for_file: use_build_context_synchronously
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
 import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 import '../../domain/client.dart';
@@ -182,19 +183,38 @@ class ClientModalOption extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final accent = Theme.of(context).colorScheme.primary;
+    final isIos = soloForteSheetIsIos(context);
+    final accent = isIos
+        ? SoloForteSheetSkinIos.iconStroke
+        : Theme.of(context).colorScheme.primary;
+    final surface = isIos
+        ? SoloForteSheetSkinIos.cardBackground
+        : context.premiumSurface;
+    final border = isIos
+        ? SoloForteSheetSkinIos.cardBorder
+        : context.premiumHairline;
+    final titleColor = isIos
+        ? SoloForteSheetSkinIos.titleColor
+        : context.premiumTextPrimary;
+    final subtitleColor = isIos
+        ? SoloForteSheetSkinIos.subtitleColor
+        : context.premiumTextSecondary;
+    final arrowColor = isIos
+        ? SoloForteSheetSkinIos.arrowColor
+        : const Color(0xFFC7C7CC);
+    final radius = isIos ? SoloForteSheetSkinIos.cardRadius : 16.0;
 
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(radius),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           decoration: BoxDecoration(
-            color: context.premiumSurface,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: context.premiumHairline),
+            color: surface,
+            borderRadius: BorderRadius.circular(radius),
+            border: Border.all(color: border),
           ),
           child: Row(
             children: [
@@ -202,8 +222,12 @@ class ClientModalOption extends StatelessWidget {
                 width: 44,
                 height: 44,
                 decoration: BoxDecoration(
-                  color: accent.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
+                  color: isIos
+                      ? SoloForteSheetSkinIos.iconBackground
+                      : accent.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(
+                    isIos ? SoloForteSheetSkinIos.iconRadius : 12,
+                  ),
                 ),
                 child: Icon(icon, color: accent, size: 22),
               ),
@@ -217,7 +241,7 @@ class ClientModalOption extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
-                        color: context.premiumTextPrimary,
+                        color: titleColor,
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -225,15 +249,15 @@ class ClientModalOption extends StatelessWidget {
                       subtitle,
                       style: TextStyle(
                         fontSize: 13,
-                        color: context.premiumTextSecondary,
+                        color: subtitleColor,
                       ),
                     ),
                   ],
                 ),
               ),
-              const Icon(
+              Icon(
                 Icons.chevron_right,
-                color: Color(0xFFC7C7CC),
+                color: arrowColor,
                 size: 20,
               ),
             ],
@@ -251,78 +275,98 @@ void showAdicionarTalhaoModal(BuildContext context, Client client) {
   HapticFeedback.lightImpact();
   showSoloForteSheet<void>(
     context: context,
-    preserveMaterialDefaults: true,
     backgroundColor: Colors.transparent,
     showDragHandle: false,
     useSafeArea: false,
     shape: const RoundedRectangleBorder(),
     clipBehavior: Clip.none,
-    builder: (_) => Container(
-      decoration: BoxDecoration(
-        color: context.premiumSurface,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Drag pill
-          Container(
-            width: 36,
-            height: 5,
-            margin: const EdgeInsets.only(bottom: 20),
-            decoration: BoxDecoration(
-              color: context.premiumHairline,
-              borderRadius: BorderRadius.circular(10),
+    builder: (sheetCtx) {
+      final isIos = soloForteSheetIsIos(sheetCtx);
+      final surface = isIos
+          ? SoloForteSheetSkinIos.background
+          : context.premiumSurface;
+      final handle = isIos
+          ? SoloForteSheetSkinIos.handleColor
+          : context.premiumHairline;
+      final titleColor = isIos
+          ? SoloForteSheetSkinIos.titleColor
+          : null;
+      final subtitleColor = isIos
+          ? SoloForteSheetSkinIos.subtitleColor
+          : context.premiumTextSecondary;
+      final radius =
+          isIos ? SoloForteSheetSkinIos.sheetRadius : 24.0;
+
+      return Container(
+        decoration: BoxDecoration(
+          color: surface,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(radius)),
+        ),
+        padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (!isIos)
+              Container(
+                width: 36,
+                height: 5,
+                margin: const EdgeInsets.only(bottom: 20),
+                decoration: BoxDecoration(
+                  color: handle,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              )
+            else
+              const SizedBox(height: 8),
+            Text(
+              'Adicionar Talhão',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: titleColor,
+              ),
             ),
-          ),
-          Text(
-            'Adicionar Talhão',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w600,
+            const SizedBox(height: 8),
+            Text(
+              'Como deseja criar o novo talhão?',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: subtitleColor,
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Como deseja criar o novo talhão?',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: context.premiumTextSecondary,
+            const SizedBox(height: 24),
+            // Opção 1: Desenhar
+            ClientModalOption(
+              icon: Icons.edit_location_alt_outlined,
+              title: 'Desenhar no Mapa',
+              subtitle: 'Toque no mapa para definir os vértices',
+              onTap: () {
+                Navigator.of(context).pop();
+                HapticFeedback.selectionClick();
+                showFarmMapEntrySheet(
+                  context,
+                  client: client,
+                  mode: FarmMapEntryMode.draw,
+                );
+              },
             ),
-          ),
-          const SizedBox(height: 24),
-          // Opção 1: Desenhar
-          ClientModalOption(
-            icon: Icons.edit_location_alt_outlined,
-            title: 'Desenhar no Mapa',
-            subtitle: 'Toque no mapa para definir os vértices',
-            onTap: () {
-              Navigator.of(context).pop();
-              HapticFeedback.selectionClick();
-              showFarmMapEntrySheet(
-                context,
-                client: client,
-                mode: FarmMapEntryMode.draw,
-              );
-            },
-          ),
-          const SizedBox(height: 12),
-          // Opção 2: Importar KML/KMZ
-          ClientModalOption(
-            icon: Icons.upload_file_outlined,
-            title: 'Importar KML ou KMZ',
-            subtitle: 'Selecione um arquivo do dispositivo',
-            onTap: () {
-              Navigator.of(context).pop();
-              HapticFeedback.selectionClick();
-              showFarmMapEntrySheet(
-                context,
-                client: client,
-                mode: FarmMapEntryMode.import,
-              );
-            },
-          ),
-        ],
-      ),
-    ),
+            const SizedBox(height: 12),
+            // Opção 2: Importar KML/KMZ
+            ClientModalOption(
+              icon: Icons.upload_file_outlined,
+              title: 'Importar KML ou KMZ',
+              subtitle: 'Selecione um arquivo do dispositivo',
+              onTap: () {
+                Navigator.of(context).pop();
+                HapticFeedback.selectionClick();
+                showFarmMapEntrySheet(
+                  context,
+                  client: client,
+                  mode: FarmMapEntryMode.import,
+                );
+              },
+            ),
+          ],
+        ),
+      );
+    },
   );
 }

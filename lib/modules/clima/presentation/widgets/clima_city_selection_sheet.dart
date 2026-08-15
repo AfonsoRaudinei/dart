@@ -62,32 +62,41 @@ class _ClimaCitySelectionSheetState extends State<ClimaCitySelectionSheet> {
   bool _geocoding = false;
   String? _error;
 
-  static const _fieldDecoration = InputDecoration(
-    filled: true,
-    fillColor: SoloForteSheetTokens.inputBackground,
-    border: OutlineInputBorder(
-      borderRadius: BorderRadius.all(
-        Radius.circular(SoloForteSheetTokens.inputRadius),
+  InputDecoration _fieldDecoration(bool isIos) {
+    final fill = isIos
+        ? SoloForteSheetSkinIos.cardBackground
+        : SoloForteSheetTokens.inputBackground;
+    final radius = isIos
+        ? SoloForteSheetSkinIos.cardRadius
+        : SoloForteSheetTokens.inputRadius;
+    final focusBorder = isIos
+        ? SoloForteSheetSkinIos.iconStroke
+        : SoloForteSheetTokens.chipBorderActive;
+    final labelColor = isIos
+        ? SoloForteSheetSkinIos.subtitleColor
+        : SoloForteSheetTokens.inputHint;
+    final borderSide = isIos
+        ? const BorderSide(color: SoloForteSheetSkinIos.cardBorder)
+        : BorderSide.none;
+
+    return InputDecoration(
+      filled: true,
+      fillColor: fill,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.all(Radius.circular(radius)),
+        borderSide: borderSide,
       ),
-      borderSide: BorderSide.none,
-    ),
-    enabledBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.all(
-        Radius.circular(SoloForteSheetTokens.inputRadius),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.all(Radius.circular(radius)),
+        borderSide: borderSide,
       ),
-      borderSide: BorderSide.none,
-    ),
-    focusedBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.all(
-        Radius.circular(SoloForteSheetTokens.inputRadius),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.all(Radius.circular(radius)),
+        borderSide: BorderSide(color: focusBorder, width: 1.5),
       ),
-      borderSide: BorderSide(
-        color: SoloForteSheetTokens.chipBorderActive,
-        width: 1.5,
-      ),
-    ),
-    labelStyle: TextStyle(color: SoloForteSheetTokens.inputHint),
-  );
+      labelStyle: TextStyle(color: labelColor),
+    );
+  }
 
   @override
   void initState() {
@@ -197,6 +206,34 @@ class _ClimaCitySelectionSheetState extends State<ClimaCitySelectionSheet> {
   @override
   Widget build(BuildContext context) {
     final bottomPad = MediaQuery.paddingOf(context).bottom;
+    final isIos = soloForteSheetIsIos(context);
+    final titleColor = isIos
+        ? SoloForteSheetSkinIos.titleColor
+        : SoloForteSheetTokens.titleColor;
+    final inputText = isIos
+        ? SoloForteSheetSkinIos.titleColor
+        : SoloForteSheetTokens.inputText;
+    final hintColor = isIos
+        ? SoloForteSheetSkinIos.subtitleColor
+        : SoloForteSheetTokens.inputHint;
+    final accent = isIos
+        ? SoloForteSheetSkinIos.iconStroke
+        : SoloForteSheetTokens.chipTextActive;
+    final categoryLabel = isIos
+        ? SoloForteSheetSkinIos.subtitleColor
+        : SoloForteSheetTokens.categoryLabel;
+    final listBg = isIos
+        ? SoloForteSheetSkinIos.cardBackground
+        : SoloForteSheetTokens.inputBackground;
+    final listRadius = isIos
+        ? SoloForteSheetSkinIos.cardRadius
+        : SoloForteSheetTokens.inputRadius;
+    final divider = isIos
+        ? SoloForteSheetSkinIos.rowDivider
+        : SoloForteSheetTokens.divider;
+    final dropdownBg = isIos
+        ? SoloForteSheetSkinIos.cardBackground
+        : SoloForteSheetTokens.inputBackground;
 
     return Padding(
       padding: EdgeInsets.fromLTRB(20, 4, 20, 16 + bottomPad),
@@ -204,34 +241,29 @@ class _ClimaCitySelectionSheetState extends State<ClimaCitySelectionSheet> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Selecionar cidade',
             style: TextStyle(
               fontSize: SoloForteSheetTokens.titleFontSize,
               fontWeight: SoloForteSheetTokens.titleWeight,
-              color: SoloForteSheetTokens.titleColor,
+              color: titleColor,
             ),
           ),
           const SizedBox(height: 16),
           if (_loadingEstados)
-            const Padding(
-              padding: EdgeInsets.all(24),
+            Padding(
+              padding: const EdgeInsets.all(24),
               child: Center(
-                child: CircularProgressIndicator(
-                  color: SoloForteSheetTokens.chipTextActive,
-                ),
+                child: CircularProgressIndicator(color: accent),
               ),
             )
           else ...[
             DropdownButtonFormField<IbgeEstado>(
               initialValue: _estadoSelecionado,
-              dropdownColor: SoloForteSheetTokens.inputBackground,
-              style: const TextStyle(
-                color: SoloForteSheetTokens.inputText,
-                fontSize: 16,
-              ),
-              iconEnabledColor: SoloForteSheetTokens.categoryLabel,
-              decoration: _fieldDecoration.copyWith(
+              dropdownColor: dropdownBg,
+              style: TextStyle(color: inputText, fontSize: 16),
+              iconEnabledColor: categoryLabel,
+              decoration: _fieldDecoration(isIos).copyWith(
                 labelText: 'Estado (UF)',
               ),
               items: _estados
@@ -260,10 +292,7 @@ class _ClimaCitySelectionSheetState extends State<ClimaCitySelectionSheet> {
               child: SheetInputField(
                 controller: _searchController,
                 hintText: 'Buscar município…',
-                prefixIcon: const Icon(
-                  Icons.search,
-                  color: SoloForteSheetTokens.inputHint,
-                ),
+                prefixIcon: Icon(Icons.search, color: hintColor),
               ),
             ),
             const SizedBox(height: 12),
@@ -272,10 +301,7 @@ class _ClimaCitySelectionSheetState extends State<ClimaCitySelectionSheet> {
                 padding: const EdgeInsets.only(bottom: 8),
                 child: Text(
                   _error!,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    color: SoloForteSheetTokens.chipTextActive,
-                  ),
+                  style: TextStyle(fontSize: 13, color: accent),
                 ),
               ),
             ConstrainedBox(
@@ -283,89 +309,78 @@ class _ClimaCitySelectionSheetState extends State<ClimaCitySelectionSheet> {
                 maxHeight: MediaQuery.of(context).size.height * 0.42,
               ),
               child: _loadingMunicipios || _geocoding
-                    ? const Center(
-                        child: CircularProgressIndicator(
-                          color: SoloForteSheetTokens.chipTextActive,
+                  ? Center(child: CircularProgressIndicator(color: accent))
+                  : _filteredMunicipios.isEmpty
+                  ? Center(
+                      child: Text(
+                        'Nenhum município encontrado.',
+                        style: TextStyle(fontSize: 14, color: categoryLabel),
+                      ),
+                    )
+                  : Container(
+                      decoration: BoxDecoration(
+                        color: listBg,
+                        borderRadius: BorderRadius.circular(listRadius),
+                        border: isIos
+                            ? Border.all(
+                                color: SoloForteSheetSkinIos.cardBorder,
+                              )
+                            : null,
+                      ),
+                      child: ListView.separated(
+                        shrinkWrap: true,
+                        itemCount: _filteredMunicipios.length,
+                        separatorBuilder: (_, __) => Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: Divider(height: 1, color: divider),
                         ),
-                      )
-                    : _filteredMunicipios.isEmpty
-                    ? const Center(
-                        child: Text(
-                          'Nenhum município encontrado.',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: SoloForteSheetTokens.categoryLabel,
-                          ),
-                        ),
-                      )
-                    : Container(
-                        decoration: BoxDecoration(
-                          color: SoloForteSheetTokens.inputBackground,
-                          borderRadius: BorderRadius.circular(
-                            SoloForteSheetTokens.inputRadius,
-                          ),
-                        ),
-                        child: ListView.separated(
-                          shrinkWrap: true,
-                          itemCount: _filteredMunicipios.length,
-                          separatorBuilder: (_, __) => const Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 16),
-                            child: Divider(
-                              height: 1,
-                              color: SoloForteSheetTokens.divider,
-                            ),
-                          ),
-                          itemBuilder: (context, index) {
-                            final municipio = _filteredMunicipios[index];
-                            final label =
-                                '${municipio.nome}, ${municipio.uf}';
-                            final isSelected =
-                                widget.selectedCity?.nome == label;
-                            return Material(
-                              color: Colors.transparent,
-                              child: InkWell(
-                                onTap: () {
-                                  HapticFeedback.selectionClick();
-                                  _selectMunicipio(municipio);
-                                },
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 16,
-                                    vertical: 14,
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      Expanded(
-                                        child: Text(
-                                          municipio.nome,
-                                          style: TextStyle(
-                                            fontSize: 16,
-                                            fontWeight: isSelected
-                                                ? FontWeight.w600
-                                                : FontWeight.w400,
-                                            color: isSelected
-                                                ? SoloForteSheetTokens
-                                                      .chipTextActive
-                                                : SoloForteSheetTokens
-                                                      .inputText,
-                                          ),
+                        itemBuilder: (context, index) {
+                          final municipio = _filteredMunicipios[index];
+                          final label = '${municipio.nome}, ${municipio.uf}';
+                          final isSelected =
+                              widget.selectedCity?.nome == label;
+                          return Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              onTap: () {
+                                HapticFeedback.selectionClick();
+                                _selectMunicipio(municipio);
+                              },
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 14,
+                                ),
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        municipio.nome,
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: isSelected
+                                              ? FontWeight.w600
+                                              : FontWeight.w400,
+                                          color: isSelected
+                                              ? accent
+                                              : inputText,
                                         ),
                                       ),
-                                      if (isSelected)
-                                        const Icon(
-                                          Icons.check_rounded,
-                                          color: SoloForteSheetTokens
-                                              .chipTextActive,
-                                          size: 20,
-                                        ),
-                                    ],
-                                  ),
+                                    ),
+                                    if (isSelected)
+                                      Icon(
+                                        Icons.check_rounded,
+                                        color: accent,
+                                        size: 20,
+                                      ),
+                                  ],
                                 ),
                               ),
-                            );
-                          },
-                        ),
+                            ),
+                          );
+                        },
                       ),
+                    ),
             ),
           ],
         ],

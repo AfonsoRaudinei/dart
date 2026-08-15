@@ -52,6 +52,15 @@ class _PublicacaoPreviewSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isIos = soloForteSheetIsIos(context);
+    final bg = isIos
+        ? SoloForteSheetSkinIos.background
+        : SoloForteSheetTokens.sheetBackground;
+    final radius = isIos ? SoloForteSheetSkinIos.sheetRadius : 16.0;
+    final handleColor = isIos
+        ? SoloForteSheetSkinIos.handleColor
+        : context.premiumSurface;
+
     return DraggableScrollableSheet(
       initialChildSize: 0.32, // Peek ~30% (iOS Maps style)
       minChildSize: 0.20,
@@ -60,10 +69,15 @@ class _PublicacaoPreviewSheet extends StatelessWidget {
       snapSizes: const [0.32, 0.55, 0.70],
       builder: (context, scrollController) {
         return Container(
-          decoration: const BoxDecoration(
-            color: SoloForteSheetTokens.sheetBackground,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(16.0)),
-            boxShadow: [
+          decoration: BoxDecoration(
+            color: bg,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(radius)),
+            border: isIos
+                ? const Border(
+                    top: BorderSide(color: SoloForteSheetSkinIos.sheetBorder),
+                  )
+                : null,
+            boxShadow: const [
               BoxShadow(
                 color: Color(0x26000000),
                 blurRadius: 20,
@@ -79,10 +93,10 @@ class _PublicacaoPreviewSheet extends StatelessWidget {
               Center(
                 child: Container(
                   margin: const EdgeInsets.only(top: 12, bottom: 8),
-                  width: 40,
-                  height: 4,
+                  width: isIos ? SoloForteSheetSkinIos.handleSize.width : 40,
+                  height: isIos ? SoloForteSheetSkinIos.handleSize.height : 4,
                   decoration: BoxDecoration(
-                    color: context.premiumSurface,
+                    color: handleColor,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -118,34 +132,44 @@ class _CoverSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final cover = publicacao.coverMedia;
     final hasCover = cover.path.isNotEmpty;
+    final isIos = soloForteSheetIsIos(context);
+    final surface = isIos
+        ? SoloForteSheetSkinIos.cardBackground
+        : context.premiumSurface;
+    final radius = isIos ? SoloForteSheetSkinIos.cardRadius : 10.0;
 
     return Container(
       height: 160,
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: context.premiumSurface,
-        borderRadius: BorderRadius.circular(10.0),
+        color: surface,
+        borderRadius: BorderRadius.circular(radius),
+        border: isIos
+            ? Border.all(color: SoloForteSheetSkinIos.cardBorder)
+            : null,
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(10.0),
+        borderRadius: BorderRadius.circular(radius),
         child: hasCover
             ? CachedNetworkImage(
                 imageUrl: cover.path,
                 fit: BoxFit.cover,
                 width: double.infinity,
-                errorWidget: (_, __, ___) => _placeholder(context),
+                errorWidget: (_, __, ___) => _placeholder(context, isIos),
               )
-            : _placeholder(context),
+            : _placeholder(context, isIos),
       ),
     );
   }
 
-  Widget _placeholder(BuildContext context) {
+  Widget _placeholder(BuildContext context, bool isIos) {
     return Center(
       child: Icon(
         SFIcons.image,
         size: 48,
-        color: context.premiumTextTertiary,
+        color: isIos
+            ? SoloForteSheetSkinIos.subtitleColor
+            : context.premiumTextTertiary,
       ),
     );
   }
@@ -158,6 +182,10 @@ class _HeaderSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isIos = soloForteSheetIsIos(context);
+    final titleColor =
+        isIos ? SoloForteSheetSkinIos.titleColor : null;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
@@ -167,13 +195,20 @@ class _HeaderSection extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              color: _getTypeColor().withValues(alpha: 0.1),
+              color: isIos
+                  ? SoloForteSheetSkinIos.badgeBackground
+                  : _getTypeColor().withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(4),
+              border: isIos
+                  ? Border.all(color: SoloForteSheetSkinIos.badgeBorder)
+                  : null,
             ),
             child: Text(
               _getTypeLabel(),
               style: TextStyle(
-                color: _getTypeColor(),
+                color: isIos
+                    ? SoloForteSheetSkinIos.badgeText
+                    : _getTypeColor(),
                 fontSize: 10.0,
                 fontWeight: FontWeight.w500,
               ),
@@ -183,7 +218,11 @@ class _HeaderSection extends StatelessWidget {
           // Título
           Text(
             publicacao.title ?? 'Publicação sem título',
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: titleColor,
+            ),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
@@ -230,6 +269,14 @@ class _InfoSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isIos = soloForteSheetIsIos(context);
+    final subtitle = isIos
+        ? SoloForteSheetSkinIos.subtitleColor
+        : context.premiumTextSecondary;
+    final tertiary = isIos
+        ? SoloForteSheetSkinIos.subtitleColor
+        : context.premiumTextTertiary;
+
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -240,9 +287,7 @@ class _InfoSection extends StatelessWidget {
               publicacao.description!.isNotEmpty) ...[
             Text(
               publicacao.description!,
-              style: const TextStyle(fontSize: 14).copyWith(
-                color: context.premiumTextSecondary,
-              ),
+              style: TextStyle(fontSize: 14, color: subtitle),
               maxLines: 3,
               overflow: TextOverflow.ellipsis,
             ),
@@ -257,13 +302,13 @@ class _InfoSection extends StatelessWidget {
                 Icon(
                   SFIcons.personOutline,
                   size: 14,
-                  color: context.premiumTextTertiary,
+                  color: tertiary,
                 ),
                 const SizedBox(width: 4),
                 Flexible(
                   child: Text(
                     publicacao.clientName!,
-                    style: TextStyle(fontSize: 12, color: context.premiumTextSecondary),
+                    style: TextStyle(fontSize: 12, color: subtitle),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -275,13 +320,13 @@ class _InfoSection extends StatelessWidget {
                 Icon(
                   SFIcons.place,
                   size: 14,
-                  color: context.premiumTextTertiary,
+                  color: tertiary,
                 ),
                 const SizedBox(width: 4),
                 Flexible(
                   child: Text(
                     publicacao.areaName!,
-                    style: TextStyle(fontSize: 12, color: context.premiumTextSecondary),
+                    style: TextStyle(fontSize: 12, color: subtitle),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -297,23 +342,23 @@ class _InfoSection extends StatelessWidget {
               Icon(
                 SFIcons.calendar,
                 size: 14,
-                color: context.premiumTextTertiary,
+                color: tertiary,
               ),
               const SizedBox(width: 4),
               Text(
                 DateFormat('dd/MM/yyyy').format(publicacao.createdAt),
-                style: TextStyle(fontSize: 12, color: context.premiumTextSecondary),
+                style: TextStyle(fontSize: 12, color: subtitle),
               ),
               const SizedBox(width: 16),
               Icon(
                 SFIcons.photoLibrary,
                 size: 14,
-                color: context.premiumTextTertiary,
+                color: tertiary,
               ),
               const SizedBox(width: 4),
               Text(
                 '${publicacao.media.length} ${publicacao.media.length == 1 ? 'foto' : 'fotos'}',
-                style: TextStyle(fontSize: 12, color: context.premiumTextSecondary),
+                style: TextStyle(fontSize: 12, color: subtitle),
               ),
             ],
           ),
@@ -331,6 +376,12 @@ class _CTASection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isIos = soloForteSheetIsIos(context);
+    final ctaBg = isIos
+        ? SoloForteSheetSkinIos.ctaBackground
+        : PremiumTokens.brandGreen;
+    final ctaRadius = isIos ? SoloForteSheetSkinIos.ctaRadius : 10.0;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: SizedBox(
@@ -346,11 +397,11 @@ class _CTASection extends StatelessWidget {
           icon: const Icon(SFIcons.openInNew, size: 18),
           label: const Text('Ver detalhes'),
           style: ElevatedButton.styleFrom(
-            backgroundColor: PremiumTokens.brandGreen,
+            backgroundColor: ctaBg,
             foregroundColor: Colors.white,
             padding: const EdgeInsets.symmetric(vertical: 14),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10.0),
+              borderRadius: BorderRadius.circular(ctaRadius),
             ),
             textStyle: const TextStyle(
               fontSize: 12.0,

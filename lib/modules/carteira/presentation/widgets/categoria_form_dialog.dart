@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
 import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 import 'package:soloforte_app/modules/carteira/domain/entities/carteira_tipo_produto.dart';
 import 'package:soloforte_app/modules/carteira/domain/enums/unidade_categoria.dart';
@@ -140,12 +141,8 @@ class _CategoriaFormDialogState extends ConsumerState<CategoriaFormDialog> {
     final result = await showSoloForteSheet<TipoProdutoFormResult>(
       context: context,
       isScrollControlled: true,
-      preserveMaterialDefaults: true,
-      backgroundColor: Colors.transparent,
       showDragHandle: false,
       useSafeArea: false,
-      shape: const RoundedRectangleBorder(),
-      clipBehavior: Clip.none,
       builder: (_) => const TipoProdutoFormDialog(),
     );
     if (result == null || !mounted) return;
@@ -164,6 +161,27 @@ class _CategoriaFormDialogState extends ConsumerState<CategoriaFormDialog> {
   @override
   Widget build(BuildContext context) {
     final tiposAsync = ref.watch(tiposProdutoProvider(widget.userId));
+    final isIos = soloForteSheetIsIos(context);
+    final sheetBg = isIos
+        ? SoloForteSheetSkinIos.background
+        : Theme.of(context).colorScheme.surface;
+    final sheetRadius = isIos
+        ? SoloForteSheetSkinIos.sheetRadius
+        : 24.0;
+    final handleColor = isIos
+        ? SoloForteSheetSkinIos.handleColor
+        : Colors.grey.shade300;
+    final titleColor = isIos ? SoloForteSheetSkinIos.titleColor : null;
+    final labelColor = isIos
+        ? SoloForteSheetSkinIos.subtitleColor
+        : Theme.of(context).hintColor;
+    final tipoLabelColor = isIos
+        ? SoloForteSheetSkinIos.subtitleColor
+        : Colors.grey[600];
+    final ctaBg = isIos ? SoloForteSheetSkinIos.ctaBackground : null;
+    final ctaFg = isIos ? SoloForteSheetSkinIos.ctaText : null;
+    final ctaRadius = isIos ? SoloForteSheetSkinIos.ctaRadius : 20.0;
+    final ghostColor = isIos ? SoloForteSheetSkinIos.ghostText : null;
 
     return Padding(
       padding: EdgeInsets.only(
@@ -171,21 +189,29 @@ class _CategoriaFormDialogState extends ConsumerState<CategoriaFormDialog> {
       ),
       child: Container(
         decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          color: sheetBg,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(sheetRadius)),
+          border: isIos
+              ? const Border(
+                  top: BorderSide(color: SoloForteSheetSkinIos.sheetBorder),
+                )
+              : null,
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              margin: const EdgeInsets.only(top: 12, bottom: 8),
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey.shade300,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
+            if (!isIos)
+              Container(
+                margin: const EdgeInsets.only(top: 12, bottom: 8),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: handleColor,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              )
+            else
+              const SizedBox(height: 8),
             Flexible(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(24, 8, 24, 0),
@@ -197,15 +223,20 @@ class _CategoriaFormDialogState extends ConsumerState<CategoriaFormDialog> {
                     children: [
                       Text(
                         widget.title,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.w600,
+                          color: titleColor,
                         ),
                       ),
                       const SizedBox(height: 20),
                       TextFormField(
                         controller: _nomeController,
-                        decoration: const InputDecoration(labelText: 'Nome'),
+                        style: TextStyle(color: titleColor),
+                        decoration: InputDecoration(
+                          labelText: 'Nome',
+                          labelStyle: TextStyle(color: labelColor),
+                        ),
                         validator: (value) {
                           final text = value?.trim() ?? '';
                           if (text.isEmpty) {
@@ -220,7 +251,7 @@ class _CategoriaFormDialogState extends ConsumerState<CategoriaFormDialog> {
                         child: Text(
                           'Cor',
                           style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(color: Theme.of(context).hintColor),
+                              ?.copyWith(color: labelColor),
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -241,9 +272,11 @@ class _CategoriaFormDialogState extends ConsumerState<CategoriaFormDialog> {
                                 shape: BoxShape.circle,
                                 border: isSelected
                                     ? Border.all(
-                                        color: Theme.of(
-                                          context,
-                                        ).colorScheme.onSurface,
+                                        color: isIos
+                                            ? SoloForteSheetSkinIos.iconStroke
+                                            : Theme.of(
+                                                context,
+                                              ).colorScheme.onSurface,
                                         width: 3,
                                       )
                                     : Border.all(
@@ -272,25 +305,33 @@ class _CategoriaFormDialogState extends ConsumerState<CategoriaFormDialog> {
                         }).toList(),
                       ),
                       const SizedBox(height: 16),
-                      const Divider(height: 1),
+                      Divider(
+                        height: 1,
+                        color: isIos ? SoloForteSheetSkinIos.rowDivider : null,
+                      ),
                       const SizedBox(height: 16),
                       Align(
                         alignment: Alignment.centerLeft,
                         child: Text(
                           'Tipo de produto',
                           style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(color: Colors.grey[600]),
+                              ?.copyWith(color: tipoLabelColor),
                         ),
                       ),
                       const SizedBox(height: 8),
                       tiposAsync.when(
-                        loading: () => const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 12),
+                        loading: () => Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
                           child: Center(
                             child: SizedBox(
                               width: 24,
                               height: 24,
-                              child: CircularProgressIndicator(strokeWidth: 2),
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: isIos
+                                    ? SoloForteSheetSkinIos.iconStroke
+                                    : null,
+                              ),
                             ),
                           ),
                         ),
@@ -317,15 +358,31 @@ class _CategoriaFormDialogState extends ConsumerState<CategoriaFormDialog> {
                       const SizedBox(height: 16),
                       TextFormField(
                         controller: _valorReferenciaController,
+                        style: TextStyle(color: titleColor),
                         keyboardType: const TextInputType.numberWithOptions(
                           decimal: true,
                         ),
                         decoration: InputDecoration(
                           labelText: 'Custo / Referência (opcional)',
+                          labelStyle: TextStyle(color: labelColor),
                           suffixText: _unidadeLabel,
+                          suffixStyle: TextStyle(color: labelColor),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
+                            borderSide: isIos
+                                ? const BorderSide(
+                                    color: SoloForteSheetSkinIos.cardBorder,
+                                  )
+                                : const BorderSide(),
                           ),
+                          enabledBorder: isIos
+                              ? OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: const BorderSide(
+                                    color: SoloForteSheetSkinIos.cardBorder,
+                                  ),
+                                )
+                              : null,
                         ),
                         validator: (value) {
                           if (value == null || value.trim().isEmpty) {
@@ -350,6 +407,7 @@ class _CategoriaFormDialogState extends ConsumerState<CategoriaFormDialog> {
                   Expanded(
                     child: TextButton(
                       onPressed: () => Navigator.of(context).pop(),
+                      style: TextButton.styleFrom(foregroundColor: ghostColor),
                       child: const Text('Cancelar'),
                     ),
                   ),
@@ -380,6 +438,13 @@ class _CategoriaFormDialogState extends ConsumerState<CategoriaFormDialog> {
                                 ),
                               );
                             },
+                      style: FilledButton.styleFrom(
+                        backgroundColor: ctaBg,
+                        foregroundColor: ctaFg,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(ctaRadius),
+                        ),
+                      ),
                       child: const Text('Salvar'),
                     ),
                   ),
@@ -408,7 +473,16 @@ class _UnidadeSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = Theme.of(context).colorScheme.primary;
+    final isIos = soloForteSheetIsIos(context);
+    final color = isIos
+        ? SoloForteSheetSkinIos.iconStroke
+        : Theme.of(context).colorScheme.primary;
+    final inactiveBorder = isIos
+        ? SoloForteSheetSkinIos.cardBorder
+        : Colors.grey.shade300;
+    final inactiveText = isIos
+        ? SoloForteSheetSkinIos.subtitleColor
+        : Colors.grey.shade600;
 
     return Wrap(
       spacing: 8,
@@ -426,7 +500,7 @@ class _UnidadeSelector extends StatelessWidget {
                     ? color.withValues(alpha: 0.12)
                     : Colors.transparent,
                 border: Border.all(
-                  color: isSelected ? color : Colors.grey.shade300,
+                  color: isSelected ? color : inactiveBorder,
                   width: isSelected ? 1.5 : 1.0,
                 ),
                 borderRadius: BorderRadius.circular(20),
@@ -436,7 +510,7 @@ class _UnidadeSelector extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                  color: isSelected ? color : Colors.grey.shade600,
+                  color: isSelected ? color : inactiveText,
                 ),
               ),
             ),

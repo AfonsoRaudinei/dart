@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
+import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 import '../../domain/enums/event_type.dart';
 import '../../domain/enums/event_status.dart';
 import '../providers/agenda_filters_provider.dart';
@@ -14,14 +15,30 @@ class AgendaFiltersSheet extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final filters = ref.watch(agendaFiltersProvider);
     final bottomPad = MediaQuery.of(context).viewPadding.bottom;
+    final isIos = soloForteSheetIsIos(context);
+    final sheetBg = isIos
+        ? SoloForteSheetSkinIos.background
+        : SoloForteSheetTokens.sheetBackground;
+    final titleColor = isIos
+        ? SoloForteSheetSkinIos.titleColor
+        : SoloForteSheetTokens.titleColor;
+    final clearColor = isIos
+        ? SoloForteSheetSkinIos.ghostText
+        : SoloForteSheetTokens.chipBorderActive;
+    final ctaBg = isIos
+        ? SoloForteSheetSkinIos.ctaBackground
+        : SoloForteSheetTokens.chipBorderActive;
+    final ctaFg = isIos ? SoloForteSheetSkinIos.ctaText : Colors.black;
+    final ctaRadius = isIos ? SoloForteSheetSkinIos.ctaRadius : 14.0;
+    final sheetRadius = isIos
+        ? SoloForteSheetSkinIos.sheetRadius
+        : SoloForteSheetTokens.borderRadius;
 
     return Container(
       padding: EdgeInsets.fromLTRB(20, 8, 20, 24 + bottomPad),
-      decoration: const BoxDecoration(
-        color: SoloForteSheetTokens.sheetBackground,
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(SoloForteSheetTokens.borderRadius),
-        ),
+      decoration: BoxDecoration(
+        color: sheetBg,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(sheetRadius)),
       ),
       child: SafeArea(
         top: false,
@@ -30,27 +47,30 @@ class AgendaFiltersSheet extends ConsumerWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Center(
-                child: Container(
-                  width: 36,
-                  height: 4,
-                  margin: const EdgeInsets.only(top: 8, bottom: 20),
-                  decoration: BoxDecoration(
-                    color: SoloForteSheetTokens.divider,
-                    borderRadius: BorderRadius.circular(2),
+              if (!isIos)
+                Center(
+                  child: Container(
+                    width: 36,
+                    height: 4,
+                    margin: const EdgeInsets.only(top: 8, bottom: 20),
+                    decoration: BoxDecoration(
+                      color: SoloForteSheetTokens.divider,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
                   ),
-                ),
-              ),
+                )
+              else
+                const SizedBox(height: 8),
 
               Row(
                 children: [
-                  const Expanded(
+                  Expanded(
                     child: Text(
                       'Filtros',
                       style: TextStyle(
                         fontSize: SoloForteSheetTokens.titleFontSize,
                         fontWeight: SoloForteSheetTokens.titleWeight,
-                        color: SoloForteSheetTokens.titleColor,
+                        color: titleColor,
                       ),
                     ),
                   ),
@@ -59,9 +79,7 @@ class AgendaFiltersSheet extends ConsumerWidget {
                       onPressed: () {
                         ref.read(agendaFiltersProvider.notifier).clearAll();
                       },
-                      style: TextButton.styleFrom(
-                        foregroundColor: SoloForteSheetTokens.chipBorderActive,
-                      ),
+                      style: TextButton.styleFrom(foregroundColor: clearColor),
                       child: const Text(
                         'Limpar',
                         style: TextStyle(fontWeight: FontWeight.w600),
@@ -79,7 +97,9 @@ class AgendaFiltersSheet extends ConsumerWidget {
                   return _AgendaFilterChip(
                     label: type.label,
                     isSelected: isSelected,
-                    accentColor: _typeAccentColor(type),
+                    accentColor: isIos
+                        ? SoloForteSheetSkinIos.iconStroke
+                        : _typeAccentColor(type),
                     onTap: () {
                       ref.read(agendaFiltersProvider.notifier).toggleType(type);
                     },
@@ -96,7 +116,9 @@ class AgendaFiltersSheet extends ConsumerWidget {
                   return _AgendaFilterChip(
                     label: status.label,
                     isSelected: isSelected,
-                    accentColor: _statusAccentColor(status),
+                    accentColor: isIos
+                        ? SoloForteSheetSkinIos.iconStroke
+                        : _statusAccentColor(status),
                     onTap: () {
                       ref
                           .read(agendaFiltersProvider.notifier)
@@ -112,12 +134,12 @@ class AgendaFiltersSheet extends ConsumerWidget {
                 child: ElevatedButton(
                   onPressed: () => Navigator.pop(context),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: SoloForteSheetTokens.chipBorderActive,
-                    foregroundColor: Colors.black,
+                    backgroundColor: ctaBg,
+                    foregroundColor: ctaFg,
                     elevation: 0,
                     minimumSize: const Size(double.infinity, 54),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(ctaRadius),
                     ),
                   ),
                   child: const Text(
@@ -177,13 +199,16 @@ class _SectionTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isIos = soloForteSheetIsIos(context);
     return Text(
       label,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 12,
         fontWeight: FontWeight.w600,
         letterSpacing: 0.8,
-        color: SoloForteSheetTokens.inputHint,
+        color: isIos
+            ? SoloForteSheetSkinIos.subtitleColor
+            : SoloForteSheetTokens.inputHint,
       ),
     );
   }
@@ -196,12 +221,20 @@ class _FilterGroup extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isIos = soloForteSheetIsIos(context);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: SoloForteSheetTokens.inputBackground,
-        borderRadius: BorderRadius.circular(14),
+        color: isIos
+            ? SoloForteSheetSkinIos.cardBackground
+            : SoloForteSheetTokens.inputBackground,
+        borderRadius: BorderRadius.circular(
+          isIos ? SoloForteSheetSkinIos.cardRadius : 14,
+        ),
+        border: isIos
+            ? Border.all(color: SoloForteSheetSkinIos.cardBorder)
+            : null,
       ),
       child: Wrap(spacing: 10, runSpacing: 10, children: children),
     );
@@ -223,9 +256,16 @@ class _AgendaFilterChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final unselectedFill = context.premiumSurface;
-    final unselectedBorder = context.premiumHairline;
-    final unselectedText = context.premiumTextPrimary;
+    final isIos = soloForteSheetIsIos(context);
+    final unselectedFill = isIos
+        ? SoloForteSheetSkinIos.background
+        : context.premiumSurface;
+    final unselectedBorder = isIos
+        ? SoloForteSheetSkinIos.cardBorder
+        : context.premiumHairline;
+    final unselectedText = isIos
+        ? SoloForteSheetSkinIos.titleColor
+        : context.premiumTextPrimary;
 
     return Material(
       color: Colors.transparent,

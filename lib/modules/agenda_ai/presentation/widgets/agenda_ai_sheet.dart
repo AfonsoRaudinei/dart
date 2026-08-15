@@ -8,6 +8,7 @@ import 'package:soloforte_app/core/contracts/i_agenda_ai_launcher_provider.dart'
 import 'package:soloforte_app/core/contracts/i_agenda_ai_recommendation_context_lookup_provider.dart';
 import 'package:soloforte_app/core/contracts/i_agenda_ai_visit_writer_provider.dart';
 import 'package:soloforte_app/core/feature_flags/feature_flag_analytics.dart';
+import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
 import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 import 'package:soloforte_app/modules/agenda_ai/data/services/agenda_ai_service.dart';
 
@@ -15,12 +16,8 @@ Future<void> showAgendaAiSheet(BuildContext context) {
   return showSoloForteSheet<void>(
     context: context,
     isScrollControlled: true,
-    preserveMaterialDefaults: true,
-    backgroundColor: Colors.transparent,
     showDragHandle: false,
     useSafeArea: false,
-    shape: const RoundedRectangleBorder(),
-    clipBehavior: Clip.none,
     builder: (_) => const _AgendaAiSheet(),
   );
 }
@@ -277,34 +274,82 @@ class _AgendaAiSheetState extends ConsumerState<_AgendaAiSheet> {
   @override
   Widget build(BuildContext context) {
     final height = MediaQuery.of(context).size.height * 0.86;
+    final isIos = soloForteSheetIsIos(context);
+    final sheetBg = isIos
+        ? SoloForteSheetSkinIos.background
+        : const Color(0xFF1C1C1E);
+    final sheetRadius = isIos
+        ? SoloForteSheetSkinIos.sheetRadius
+        : 24.0;
+    final handleColor = isIos
+        ? SoloForteSheetSkinIos.handleColor
+        : const Color(0xFF3A3A3C);
+    final titleColor = isIos ? SoloForteSheetSkinIos.titleColor : null;
+    final iconColor = isIos
+        ? SoloForteSheetSkinIos.iconStroke
+        : const Color(0xFF34C759);
+    final chatPanelBg = isIos
+        ? SoloForteSheetSkinIos.cardBackground
+        : const Color(0xFFF7F7F9);
+    final chatPanelRadius = isIos
+        ? SoloForteSheetSkinIos.cardRadius
+        : 12.0;
+    final userBubble = isIos
+        ? SoloForteSheetSkinIos.badgeBackground
+        : const Color(0xFFE7F7EC);
+    final aiBubble = isIos ? Colors.white : Colors.white;
+    final inputFill = isIos
+        ? Colors.white
+        : const Color(0xFF2C2C2E);
+    final inputHint = isIos
+        ? SoloForteSheetSkinIos.subtitleColor
+        : const Color(0xFF8E8E93);
+    final ctaBg = isIos
+        ? SoloForteSheetSkinIos.ctaBackground
+        : const Color(0xFFF59E0B);
+    final ctaFg = isIos ? SoloForteSheetSkinIos.ctaText : Colors.black;
+    final ctaRadius = isIos ? SoloForteSheetSkinIos.ctaRadius : 12.0;
+    final chatTextColor = isIos ? SoloForteSheetSkinIos.titleColor : null;
 
     return Container(
       height: height,
-      decoration: const BoxDecoration(
-        color: Color(0xFF1C1C1E),
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      decoration: BoxDecoration(
+        color: sheetBg,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(sheetRadius)),
+        border: isIos
+            ? const Border(
+                top: BorderSide(color: SoloForteSheetSkinIos.sheetBorder),
+              )
+            : null,
       ),
       child: Column(
         children: [
-          const SizedBox(height: 10),
-          Container(
-            width: 36,
-            height: 4,
-            decoration: BoxDecoration(
-              color: const Color(0xFF3A3A3C),
-              borderRadius: BorderRadius.circular(999),
+          if (!isIos) ...[
+            const SizedBox(height: 10),
+            Container(
+              width: 36,
+              height: 4,
+              decoration: BoxDecoration(
+                color: handleColor,
+                borderRadius: BorderRadius.circular(999),
+              ),
             ),
-          ),
-          const SizedBox(height: 12),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16),
+            const SizedBox(height: 12),
+          ] else
+            const SizedBox(height: 8),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Row(
               children: [
-                Icon(Icons.auto_awesome, color: Color(0xFF34C759)),
-                SizedBox(width: 8),
+                Icon(Icons.auto_awesome, color: iconColor),
+                const SizedBox(width: 8),
                 Text(
                   'Assistente IA • Agenda + Carteira',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: titleColor,
+                  ),
                 ),
               ],
             ),
@@ -312,42 +357,99 @@ class _AgendaAiSheetState extends ConsumerState<_AgendaAiSheet> {
           const SizedBox(height: 12),
           Expanded(
             child: _loading
-                ? const Center(child: CircularProgressIndicator())
+                ? Center(
+                    child: CircularProgressIndicator(
+                      color: isIos ? SoloForteSheetSkinIos.iconStroke : null,
+                    ),
+                  )
                 : _error != null
-                ? Center(child: Text(_error!))
+                ? Center(
+                    child: Text(
+                      _error!,
+                      style: TextStyle(color: titleColor),
+                    ),
+                  )
                 : ListView(
                     padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                     children: [
-                      const Text(
+                      Text(
                         'Sugestão de visita',
-                        style: TextStyle(fontWeight: FontWeight.w700),
+                        style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          color: titleColor,
+                        ),
                       ),
                       const SizedBox(height: 8),
                       if (_recommendations.isEmpty)
-                        const Card(
+                        Card(
+                          color: isIos
+                              ? SoloForteSheetSkinIos.cardBackground
+                              : null,
+                          shape: isIos
+                              ? RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(
+                                    SoloForteSheetSkinIos.cardRadius,
+                                  ),
+                                  side: const BorderSide(
+                                    color: SoloForteSheetSkinIos.cardBorder,
+                                  ),
+                                )
+                              : null,
                           child: Padding(
-                            padding: EdgeInsets.all(12),
-                            child: Text('Sem sugestão elegível no momento.'),
+                            padding: const EdgeInsets.all(12),
+                            child: Text(
+                              'Sem sugestão elegível no momento.',
+                              style: TextStyle(color: titleColor),
+                            ),
                           ),
                         )
                       else
                         ..._recommendations.map(
                           (rec) => Card(
+                            color: isIos
+                                ? SoloForteSheetSkinIos.cardBackground
+                                : null,
+                            shape: isIos
+                                ? RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(
+                                      SoloForteSheetSkinIos.cardRadius,
+                                    ),
+                                    side: const BorderSide(
+                                      color: SoloForteSheetSkinIos.cardBorder,
+                                    ),
+                                  )
+                                : null,
                             child: ListTile(
                               title: Text(
                                 rec['clientName'] as String? ?? 'Cliente',
+                                style: TextStyle(color: titleColor),
                               ),
-                              subtitle: Text(rec['reason'] as String? ?? ''),
+                              subtitle: Text(
+                                rec['reason'] as String? ?? '',
+                                style: TextStyle(
+                                  color: isIos
+                                      ? SoloForteSheetSkinIos.subtitleColor
+                                      : null,
+                                ),
+                              ),
                               trailing: _creatingVisit
-                                  ? const SizedBox(
+                                  ? SizedBox(
                                       width: 20,
                                       height: 20,
                                       child: CircularProgressIndicator(
                                         strokeWidth: 2,
+                                        color: isIos
+                                            ? SoloForteSheetSkinIos.iconStroke
+                                            : null,
                                       ),
                                     )
                                   : IconButton(
-                                      icon: const Icon(Icons.add_task),
+                                      icon: Icon(
+                                        Icons.add_task,
+                                        color: isIos
+                                            ? SoloForteSheetSkinIos.iconStroke
+                                            : null,
+                                      ),
                                       onPressed: () =>
                                           _createVisitFromRecommendation(rec),
                                     ),
@@ -355,24 +457,33 @@ class _AgendaAiSheetState extends ConsumerState<_AgendaAiSheet> {
                           ),
                         ),
                       const SizedBox(height: 16),
-                      const Text(
+                      Text(
                         'Chat rápido',
-                        style: TextStyle(fontWeight: FontWeight.w700),
+                        style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          color: titleColor,
+                        ),
                       ),
                       const SizedBox(height: 8),
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFF7F7F9),
-                          borderRadius: BorderRadius.circular(12),
+                          color: chatPanelBg,
+                          borderRadius: BorderRadius.circular(chatPanelRadius),
+                          border: isIos
+                              ? Border.all(
+                                  color: SoloForteSheetSkinIos.cardBorder,
+                                )
+                              : null,
                         ),
                         child: Column(
                           children: [
                             if (_chat.isEmpty)
-                              const Align(
+                              Align(
                                 alignment: Alignment.centerLeft,
                                 child: Text(
                                   'Pergunte algo sobre a sugestão e próximos passos.',
+                                  style: TextStyle(color: chatTextColor),
                                 ),
                               )
                             else
@@ -388,12 +499,19 @@ class _AgendaAiSheetState extends ConsumerState<_AgendaAiSheet> {
                                       vertical: 8,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: m.isUser
-                                          ? const Color(0xFFE7F7EC)
-                                          : Colors.white,
+                                      color: m.isUser ? userBubble : aiBubble,
                                       borderRadius: BorderRadius.circular(10),
+                                      border: isIos
+                                          ? Border.all(
+                                              color: SoloForteSheetSkinIos
+                                                  .cardBorder,
+                                            )
+                                          : null,
                                     ),
-                                    child: Text(m.text),
+                                    child: Text(
+                                      m.text,
+                                      style: TextStyle(color: chatTextColor),
+                                    ),
                                   ),
                                 ),
                               ),
@@ -403,17 +521,32 @@ class _AgendaAiSheetState extends ConsumerState<_AgendaAiSheet> {
                                 Expanded(
                                   child: TextField(
                                     controller: _chatController,
-                                    decoration: const InputDecoration(
+                                    style: TextStyle(color: chatTextColor),
+                                    decoration: InputDecoration(
                                       hintText:
                                           'Ex: qual abordagem usar nessa visita?',
-                                      hintStyle: TextStyle(
-                                        color: Color(0xFF8E8E93),
-                                      ),
+                                      hintStyle: TextStyle(color: inputHint),
                                       filled: true,
-                                      fillColor: Color(0xFF2C2C2E),
+                                      fillColor: inputFill,
                                       border: OutlineInputBorder(
-                                        borderSide: BorderSide.none,
-                                        borderRadius: BorderRadius.all(
+                                        borderSide: isIos
+                                            ? const BorderSide(
+                                                color: SoloForteSheetSkinIos
+                                                    .cardBorder,
+                                              )
+                                            : BorderSide.none,
+                                        borderRadius: const BorderRadius.all(
+                                          Radius.circular(12),
+                                        ),
+                                      ),
+                                      enabledBorder: OutlineInputBorder(
+                                        borderSide: isIos
+                                            ? const BorderSide(
+                                                color: SoloForteSheetSkinIos
+                                                    .cardBorder,
+                                              )
+                                            : BorderSide.none,
+                                        borderRadius: const BorderRadius.all(
                                           Radius.circular(12),
                                         ),
                                       ),
@@ -426,10 +559,11 @@ class _AgendaAiSheetState extends ConsumerState<_AgendaAiSheet> {
                                 ElevatedButton(
                                   onPressed: _sendChat,
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: const Color(0xFFF59E0B),
-                                    foregroundColor: Colors.black,
+                                    backgroundColor: ctaBg,
+                                    foregroundColor: ctaFg,
                                     shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
+                                      borderRadius:
+                                          BorderRadius.circular(ctaRadius),
                                     ),
                                     padding: const EdgeInsets.symmetric(
                                       horizontal: 16,

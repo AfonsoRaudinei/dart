@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 
 import '../../../../core/access/producer_create_context_resolver.dart';
+import '../../../../core/ui/sheets/sheet_tokens.dart';
 import '../../../../core/ui/sheets/soloforte_sheet.dart';
 import '../../../../core/contracts/i_active_visit_context_lookup.dart';
 import '../../../../core/contracts/i_active_visit_context_lookup_provider.dart';
@@ -84,30 +85,35 @@ class NovoCaseModalLauncher {
       context: context,
       showDragHandle: false,
       maxHeightFraction: 0.85,
-      builder: (sheetContext) => Padding(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Center(
-              child: Container(
-                margin: const EdgeInsets.symmetric(vertical: 8),
-                width: 36,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Theme.of(
-                    sheetContext,
-                  ).dividerColor.withValues(alpha: 0.3),
-                  borderRadius: BorderRadius.circular(2),
+      builder: (sheetContext) {
+        final isIos = soloForteSheetIsIos(sheetContext);
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Center(
+                child: Container(
+                  margin: const EdgeInsets.symmetric(vertical: 8),
+                  width: isIos ? SoloForteSheetSkinIos.handleSize.width : 36,
+                  height: isIos ? SoloForteSheetSkinIos.handleSize.height : 4,
+                  decoration: BoxDecoration(
+                    color: isIos
+                        ? SoloForteSheetSkinIos.handleColor
+                        : Theme.of(sheetContext)
+                            .dividerColor
+                            .withValues(alpha: 0.3),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
               ),
-            ),
-            Flexible(child: buildCaseSheet()),
-          ],
-        ),
-      ),
+              Flexible(child: buildCaseSheet()),
+            ],
+          ),
+        );
+      },
     );
   }
 

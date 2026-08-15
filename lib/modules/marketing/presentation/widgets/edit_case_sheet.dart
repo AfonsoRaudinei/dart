@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../../../core/ui/sheets/sheet_tokens.dart';
+import '../../../../core/ui/sheets/soloforte_sheet.dart';
 import '../../../../ui/theme/premium/design_tokens.dart';
 import '../../domain/entities/marketing_case.dart';
 import '../../domain/enums/case_tipo.dart';
@@ -239,14 +240,52 @@ class _EditCaseSheetState extends State<EditCaseSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final isIos = soloForteSheetIsIos(context);
+    final sheetBg = isIos
+        ? SoloForteSheetSkinIos.background
+        : SoloForteSheetTokens.sheetBackground;
+    final sheetRadius = isIos ? SoloForteSheetSkinIos.sheetRadius : 28.0;
+    final handleColor = isIos
+        ? SoloForteSheetSkinIos.handleColor
+        : PremiumTokens.hairlineLight;
+    final titleColor = isIos
+        ? SoloForteSheetSkinIos.titleColor
+        : Colors.white;
+    final hintColor = isIos
+        ? SoloForteSheetSkinIos.subtitleColor
+        : SoloForteSheetTokens.inputHint;
+    final lockAccent = isIos
+        ? SoloForteSheetSkinIos.iconStroke
+        : PremiumTokens.brandGreen;
+    final dropdownBg = isIos
+        ? SoloForteSheetSkinIos.cardBackground
+        : SoloForteSheetTokens.inputBackground;
+    final fieldText = isIos
+        ? SoloForteSheetSkinIos.titleColor
+        : SoloForteSheetTokens.inputText;
+    final ctaBg = isIos
+        ? SoloForteSheetSkinIos.ctaBackground
+        : PremiumTokens.brandGreen;
+    final ghostBorder = isIos
+        ? SoloForteSheetSkinIos.ghostBorder
+        : PremiumTokens.hairlineLight;
+    final ghostFg = isIos
+        ? SoloForteSheetSkinIos.ghostText
+        : Colors.white;
+
     return SafeArea(
       top: false,
       child: Material(
         color: Colors.transparent,
         child: Container(
-          decoration: const BoxDecoration(
-            color: SoloForteSheetTokens.sheetBackground,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          decoration: BoxDecoration(
+            color: sheetBg,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(sheetRadius)),
+            border: isIos
+                ? const Border(
+                    top: BorderSide(color: SoloForteSheetSkinIos.sheetBorder),
+                  )
+                : null,
           ),
           child: SingleChildScrollView(
             padding: EdgeInsets.fromLTRB(
@@ -260,31 +299,34 @@ class _EditCaseSheetState extends State<EditCaseSheet> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Center(
-                    child: Container(
-                      width: 40,
-                      height: 4,
-                      margin: const EdgeInsets.only(bottom: 16),
-                      decoration: BoxDecoration(
-                        color: PremiumTokens.hairlineLight,
-                        borderRadius: BorderRadius.circular(999),
+                  if (!isIos)
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        margin: const EdgeInsets.only(bottom: 16),
+                        decoration: BoxDecoration(
+                          color: handleColor,
+                          borderRadius: BorderRadius.circular(999),
+                        ),
                       ),
-                    ),
-                  ),
+                    )
+                  else
+                    const SizedBox(height: 8),
                   Row(
                     children: [
                       Expanded(
                         child: Text(
                           'Editar case',
                           style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            color: Colors.white,
+                            color: titleColor,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
                       ),
                       IconButton(
                         onPressed: widget.onClose,
-                        icon: const Icon(Icons.close, color: Colors.white),
+                        icon: Icon(Icons.close, color: titleColor),
                       ),
                     ],
                   ),
@@ -292,7 +334,7 @@ class _EditCaseSheetState extends State<EditCaseSheet> {
                   Text(
                     widget.caso.localizacaoTexto,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: SoloForteSheetTokens.inputHint,
+                      color: hintColor,
                     ),
                   ),
                   const SizedBox(height: 20),
@@ -304,10 +346,10 @@ class _EditCaseSheetState extends State<EditCaseSheet> {
                       vertical: 12,
                     ),
                     decoration: BoxDecoration(
-                      color: PremiumTokens.brandGreen.withValues(alpha: 0.12),
+                      color: lockAccent.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: PremiumTokens.brandGreen.withValues(alpha: 0.45),
+                        color: lockAccent.withValues(alpha: 0.45),
                       ),
                     ),
                     child: Row(
@@ -315,13 +357,13 @@ class _EditCaseSheetState extends State<EditCaseSheet> {
                         Icon(
                           Icons.lock_outline,
                           size: 18,
-                          color: PremiumTokens.brandGreen.withValues(alpha: 0.9),
+                          color: lockAccent.withValues(alpha: 0.9),
                         ),
                         const SizedBox(width: 10),
                         Text(
                           _tipoLabel,
                           style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                            color: Colors.white,
+                            color: titleColor,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
@@ -382,21 +424,17 @@ class _EditCaseSheetState extends State<EditCaseSheet> {
                         const NovoCaseFDivider(),
                         DropdownButtonFormField<ProdutividadeUnidade>(
                           initialValue: _produtividadeUnidade,
-                          dropdownColor: SoloForteSheetTokens.inputBackground,
-                          iconEnabledColor: Colors.white,
-                          style: const TextStyle(
-                            color: SoloForteSheetTokens.inputText,
-                          ),
+                          dropdownColor: dropdownBg,
+                          iconEnabledColor: fieldText,
+                          style: TextStyle(color: fieldText),
                           decoration: const InputDecoration(
                             border: InputBorder.none,
                             contentPadding: EdgeInsets.symmetric(vertical: 12),
                             isDense: true,
                           ),
-                          hint: const Text(
+                          hint: Text(
                             'Unidade da produtividade',
-                            style: TextStyle(
-                              color: SoloForteSheetTokens.inputHint,
-                            ),
+                            style: TextStyle(color: hintColor),
                           ),
                           items: ProdutividadeUnidade.values
                               .map(
@@ -462,11 +500,16 @@ class _EditCaseSheetState extends State<EditCaseSheet> {
                         child: OutlinedButton(
                           onPressed: _isSaving ? null : widget.onClose,
                           style: OutlinedButton.styleFrom(
-                            side: const BorderSide(
-                              color: PremiumTokens.hairlineLight,
-                            ),
-                            foregroundColor: Colors.white,
+                            side: BorderSide(color: ghostBorder),
+                            foregroundColor: ghostFg,
                             padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(
+                                isIos
+                                    ? SoloForteSheetSkinIos.ghostRadius
+                                    : 8,
+                              ),
+                            ),
                           ),
                           child: const Text('Cancelar'),
                         ),
@@ -476,8 +519,18 @@ class _EditCaseSheetState extends State<EditCaseSheet> {
                         child: FilledButton(
                           onPressed: _isSaving ? null : _handleSalvar,
                           style: FilledButton.styleFrom(
-                            backgroundColor: PremiumTokens.brandGreen,
+                            backgroundColor: ctaBg,
+                            foregroundColor: isIos
+                                ? SoloForteSheetSkinIos.ctaText
+                                : null,
                             padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(
+                                isIos
+                                    ? SoloForteSheetSkinIos.ctaRadius
+                                    : 8,
+                              ),
+                            ),
                           ),
                           child: Text(_isSaving ? 'Salvando...' : 'Salvar'),
                         ),

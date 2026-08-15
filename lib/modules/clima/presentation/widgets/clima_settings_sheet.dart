@@ -31,6 +31,10 @@ class ClimaSettingsSheet extends ConsumerWidget {
     final unidade = ref.watch(climaUnidadeProvider);
     final selectedCity = ref.watch(climaSelectedCityProvider);
     final bottomPad = MediaQuery.paddingOf(context).bottom;
+    final isIos = soloForteSheetIsIos(context);
+    final titleColor = isIos
+        ? SoloForteSheetSkinIos.titleColor
+        : SoloForteSheetTokens.titleColor;
 
     return Padding(
       padding: EdgeInsets.fromLTRB(20, 4, 20, 16 + bottomPad),
@@ -38,12 +42,12 @@ class ClimaSettingsSheet extends ConsumerWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Configurações',
             style: TextStyle(
               fontSize: SoloForteSheetTokens.titleFontSize,
               fontWeight: SoloForteSheetTokens.titleWeight,
-              color: SoloForteSheetTokens.titleColor,
+              color: titleColor,
             ),
           ),
           const SizedBox(height: 20),
@@ -114,13 +118,16 @@ class _ClimaSheetSectionLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isIos = soloForteSheetIsIos(context);
     return Text(
       label,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 12,
         fontWeight: FontWeight.w600,
         letterSpacing: 0.8,
-        color: SoloForteSheetTokens.categoryLabel,
+        color: isIos
+            ? SoloForteSheetSkinIos.subtitleColor
+            : SoloForteSheetTokens.categoryLabel,
       ),
     );
   }
@@ -133,10 +140,20 @@ class _ClimaSheetOptionGroup extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isIos = soloForteSheetIsIos(context);
     return Container(
       decoration: BoxDecoration(
-        color: SoloForteSheetTokens.inputBackground,
-        borderRadius: BorderRadius.circular(SoloForteSheetTokens.inputRadius),
+        color: isIos
+            ? SoloForteSheetSkinIos.cardBackground
+            : SoloForteSheetTokens.inputBackground,
+        borderRadius: BorderRadius.circular(
+          isIos
+              ? SoloForteSheetSkinIos.cardRadius
+              : SoloForteSheetTokens.inputRadius,
+        ),
+        border: isIos
+            ? Border.all(color: SoloForteSheetSkinIos.cardBorder)
+            : null,
       ),
       child: Column(children: children),
     );
@@ -148,12 +165,15 @@ class _ClimaSheetDivider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Padding(
-      padding: EdgeInsets.symmetric(horizontal: 16),
+    final isIos = soloForteSheetIsIos(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Divider(
         height: 1,
         thickness: 1,
-        color: SoloForteSheetTokens.divider,
+        color: isIos
+            ? SoloForteSheetSkinIos.rowDivider
+            : SoloForteSheetTokens.divider,
       ),
     );
   }
@@ -177,11 +197,25 @@ class ClimaSettingsOptionRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isIos = soloForteSheetIsIos(context);
+    final selectedColor = isIos
+        ? SoloForteSheetSkinIos.iconStroke
+        : SoloForteSheetTokens.chipTextActive;
+    final unselectedColor = isIos
+        ? SoloForteSheetSkinIos.titleColor
+        : SoloForteSheetTokens.inputText;
+    final trailingColor = isIos
+        ? SoloForteSheetSkinIos.arrowColor
+        : SoloForteSheetTokens.categoryLabel;
+    final radius = isIos
+        ? SoloForteSheetSkinIos.cardRadius
+        : SoloForteSheetTokens.inputRadius;
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(SoloForteSheetTokens.inputRadius),
+        borderRadius: BorderRadius.circular(radius),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           child: Row(
@@ -192,24 +226,14 @@ class ClimaSettingsOptionRow extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-                    color: selected
-                        ? SoloForteSheetTokens.chipTextActive
-                        : SoloForteSheetTokens.inputText,
+                    color: selected ? selectedColor : unselectedColor,
                   ),
                 ),
               ),
               if (trailingIcon != null)
-                Icon(
-                  trailingIcon,
-                  color: SoloForteSheetTokens.categoryLabel,
-                  size: 22,
-                )
+                Icon(trailingIcon, color: trailingColor, size: 22)
               else if (selected)
-                const Icon(
-                  Icons.check_rounded,
-                  color: SoloForteSheetTokens.chipTextActive,
-                  size: 20,
-                ),
+                Icon(Icons.check_rounded, color: selectedColor, size: 20),
             ],
           ),
         ),

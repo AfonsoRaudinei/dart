@@ -255,7 +255,26 @@ class _ClimaWhatsAppSheetState extends ConsumerState<ClimaWhatsAppSheet> {
   Widget build(BuildContext context) {
     final total = _selecionados.length;
     final payload = widget.payload;
-    final accent = Theme.of(context).colorScheme.primary;
+    final isIos = soloForteSheetIsIos(context);
+    final accent = isIos
+        ? SoloForteSheetSkinIos.ctaBackground
+        : Theme.of(context).colorScheme.primary;
+    final titleColor = isIos
+        ? SoloForteSheetSkinIos.titleColor
+        : SoloForteSheetTokens.titleColor;
+    final categoryLabel = isIos
+        ? SoloForteSheetSkinIos.subtitleColor
+        : SoloForteSheetTokens.categoryLabel;
+    final divider = isIos
+        ? SoloForteSheetSkinIos.rowDivider
+        : SoloForteSheetTokens.divider;
+    final inputBg = isIos
+        ? SoloForteSheetSkinIos.cardBackground
+        : SoloForteSheetTokens.inputBackground;
+    final inputText = isIos
+        ? SoloForteSheetSkinIos.titleColor
+        : SoloForteSheetTokens.inputText;
+    final ctaRadius = isIos ? SoloForteSheetSkinIos.ctaRadius : 12.0;
 
     final bottomPad = MediaQuery.paddingOf(context).bottom;
 
@@ -272,14 +291,14 @@ class _ClimaWhatsAppSheetState extends ConsumerState<ClimaWhatsAppSheet> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Compartilhar previsão por WhatsApp',
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     fontSize: SoloForteSheetTokens.titleFontSize,
                     fontWeight: SoloForteSheetTokens.titleWeight,
-                    color: SoloForteSheetTokens.titleColor,
+                    color: titleColor,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -287,134 +306,131 @@ class _ClimaWhatsAppSheetState extends ConsumerState<ClimaWhatsAppSheet> {
                   payload.cidade,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    color: SoloForteSheetTokens.categoryLabel,
-                  ),
+                  style: TextStyle(fontSize: 13, color: categoryLabel),
                 ),
               ],
             ),
           ),
-            const Divider(color: SoloForteSheetTokens.divider, height: 1),
-            _ClimaWhatsAppPreview(payload: payload),
-            const Divider(color: SoloForteSheetTokens.divider, height: 1),
-            ConstrainedBox(
-              constraints: BoxConstraints(
-                maxHeight: MediaQuery.of(context).size.height * 0.45,
-              ),
-              child: _loading
-                  ? Padding(
-                      padding: const EdgeInsets.all(32),
-                      child: Center(
-                        child: CircularProgressIndicator(
-                          color: accent,
-                          strokeWidth: 2.5,
+          Divider(color: divider, height: 1),
+          _ClimaWhatsAppPreview(payload: payload),
+          Divider(color: divider, height: 1),
+          ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.45,
+            ),
+            child: _loading
+                ? Padding(
+                    padding: const EdgeInsets.all(32),
+                    child: Center(
+                      child: CircularProgressIndicator(
+                        color: accent,
+                        strokeWidth: 2.5,
+                      ),
+                    ),
+                  )
+                : _clientes.isEmpty
+                ? Padding(
+                    padding: const EdgeInsets.all(32),
+                    child: Center(
+                      child: Text(
+                        'Nenhum cliente cadastrado.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 14,
+                          color: categoryLabel,
                         ),
                       ),
-                    )
-                  : _clientes.isEmpty
-                  ? const Padding(
-                      padding: EdgeInsets.all(32),
-                      child: Center(
-                        child: Text(
-                          'Nenhum cliente cadastrado.',
-                          textAlign: TextAlign.center,
+                    ),
+                  )
+                : ListView.separated(
+                    shrinkWrap: true,
+                    itemCount: _clientes.length,
+                    separatorBuilder: (_, __) =>
+                        Divider(color: divider, height: 1),
+                    itemBuilder: (_, i) {
+                      final cliente = _clientes[i];
+                      final tel = cliente.phone;
+                      final hasPhone = climaPhoneIsValid(tel);
+                      return CheckboxListTile(
+                        tileColor: inputBg,
+                        activeColor: accent,
+                        checkColor: isIos
+                            ? SoloForteSheetSkinIos.ctaText
+                            : Theme.of(context).colorScheme.onPrimary,
+                        value: hasPhone && _selecionados.contains(tel),
+                        onChanged: hasPhone
+                            ? (checked) {
+                                setState(() {
+                                  if (checked == true && tel != null) {
+                                    _selecionados.add(tel);
+                                  } else if (tel != null) {
+                                    _selecionados.remove(tel);
+                                  }
+                                });
+                              }
+                            : null,
+                        title: Text(
+                          cliente.name,
                           style: TextStyle(
                             fontFamily: 'Inter',
-                            fontSize: 14,
-                            color: SoloForteSheetTokens.categoryLabel,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w500,
+                            color: hasPhone ? inputText : categoryLabel,
                           ),
                         ),
-                      ),
-                    )
-                  : ListView.separated(
-                      shrinkWrap: true,
-                      itemCount: _clientes.length,
-                      separatorBuilder: (_, __) => const Divider(
-                        color: SoloForteSheetTokens.divider,
-                        height: 1,
-                      ),
-                      itemBuilder: (_, i) {
-                        final cliente = _clientes[i];
-                        final tel = cliente.phone;
-                        final hasPhone = climaPhoneIsValid(tel);
-                        return CheckboxListTile(
-                          tileColor: SoloForteSheetTokens.inputBackground,
-                          activeColor: accent,
-                          checkColor: Theme.of(context).colorScheme.onPrimary,
-                          value: hasPhone && _selecionados.contains(tel),
-                          onChanged: hasPhone
-                              ? (checked) {
-                                  setState(() {
-                                    if (checked == true && tel != null) {
-                                      _selecionados.add(tel);
-                                    } else if (tel != null) {
-                                      _selecionados.remove(tel);
-                                    }
-                                  });
-                                }
-                              : null,
-                          title: Text(
-                            cliente.name,
-                            style: TextStyle(
-                              fontFamily: 'Inter',
-                              fontSize: 15,
-                              fontWeight: FontWeight.w500,
-                              color: hasPhone
-                                  ? SoloForteSheetTokens.inputText
-                                  : SoloForteSheetTokens.categoryLabel,
-                            ),
+                        subtitle: Text(
+                          hasPhone ? tel! : 'Sem telefone cadastrado',
+                          style: TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 13,
+                            color: categoryLabel,
                           ),
-                          subtitle: Text(
-                            hasPhone ? tel! : 'Sem telefone cadastrado',
-                            style: const TextStyle(
-                              fontFamily: 'Inter',
-                              fontSize: 13,
-                              color: SoloForteSheetTokens.categoryLabel,
-                            ),
-                          ),
-                        );
-                      },
+                        ),
+                      );
+                    },
+                  ),
+          ),
+          Divider(color: divider, height: 1),
+          Padding(
+            padding: EdgeInsets.fromLTRB(20, 12, 20, 16 + bottomPad),
+            child: SizedBox(
+              width: double.infinity,
+              child: Tooltip(
+                message: total == 0
+                    ? 'Selecione ao menos um destinatário'
+                    : 'Enviar previsão pelo WhatsApp',
+                child: FilledButton.icon(
+                  onPressed: total == 0 ? null : _enviarParaSelecionados,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: accent,
+                    disabledBackgroundColor: inputBg,
+                    foregroundColor: isIos
+                        ? SoloForteSheetSkinIos.ctaText
+                        : Theme.of(context).colorScheme.onPrimary,
+                    disabledForegroundColor: categoryLabel,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(ctaRadius),
                     ),
-            ),
-            const Divider(color: SoloForteSheetTokens.divider, height: 1),
-            Padding(
-              padding: EdgeInsets.fromLTRB(20, 12, 20, 16 + bottomPad),
-              child: SizedBox(
-                width: double.infinity,
-                child: Tooltip(
-                  message: total == 0
-                      ? 'Selecione ao menos um destinatário'
-                      : 'Enviar previsão pelo WhatsApp',
-                  child: FilledButton.icon(
-                    onPressed: total == 0 ? null : _enviarParaSelecionados,
-                    style: FilledButton.styleFrom(
-                      backgroundColor: accent,
-                      disabledBackgroundColor: SoloForteSheetTokens.inputBackground,
-                      foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                      disabledForegroundColor: SoloForteSheetTokens.categoryLabel,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    icon: const Icon(Icons.send_rounded, size: 18),
-                    label: Text(
-                      total == 0
-                          ? 'Selecione destinatários'
-                          : 'Enviar pelo WhatsApp ($total)',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontFamily: 'Inter',
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                      ),
+                  ),
+                  icon: const Icon(Icons.send_rounded, size: 18),
+                  label: Text(
+                    total == 0
+                        ? 'Selecione destinatários'
+                        : 'Enviar pelo WhatsApp ($total)',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
               ),
             ),
+          ),
         ],
       ),
     );
@@ -428,27 +444,42 @@ class _ClimaWhatsAppPreview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isIos = soloForteSheetIsIos(context);
+    final cardBg = isIos
+        ? SoloForteSheetSkinIos.cardBackground
+        : SoloForteSheetTokens.inputBackground;
+    final cardBorder = isIos
+        ? SoloForteSheetSkinIos.cardBorder
+        : SoloForteSheetTokens.divider;
+    final labelColor = isIos
+        ? SoloForteSheetSkinIos.subtitleColor
+        : SoloForteSheetTokens.categoryLabel;
+    final titleColor = isIos
+        ? SoloForteSheetSkinIos.titleColor
+        : SoloForteSheetTokens.inputText;
+    final radius = isIos ? SoloForteSheetSkinIos.cardRadius : 14.0;
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: SoloForteSheetTokens.inputBackground,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: SoloForteSheetTokens.divider),
+          color: cardBg,
+          borderRadius: BorderRadius.circular(radius),
+          border: Border.all(color: cardBorder),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Prévia do card',
               style: TextStyle(
                 fontFamily: 'Inter',
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 0.7,
-                color: SoloForteSheetTokens.categoryLabel,
+                color: labelColor,
               ),
             ),
             const SizedBox(height: 8),
@@ -468,11 +499,11 @@ class _ClimaWhatsAppPreview extends StatelessWidget {
                         payload.previewTitle,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontFamily: 'Inter',
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
-                          color: SoloForteSheetTokens.inputText,
+                          color: titleColor,
                         ),
                       ),
                       const SizedBox(height: 3),
@@ -480,10 +511,10 @@ class _ClimaWhatsAppPreview extends StatelessWidget {
                         payload.previewSubtitle,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontFamily: 'Inter',
                           fontSize: 13,
-                          color: SoloForteSheetTokens.categoryLabel,
+                          color: labelColor,
                         ),
                       ),
                     ],
@@ -513,19 +544,27 @@ class _PreviewChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isIos = soloForteSheetIsIos(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: SoloForteSheetTokens.categoryBackground,
+        color: isIos
+            ? SoloForteSheetSkinIos.badgeBackground
+            : SoloForteSheetTokens.categoryBackground,
         borderRadius: BorderRadius.circular(999),
+        border: isIos
+            ? Border.all(color: SoloForteSheetSkinIos.badgeBorder)
+            : null,
       ),
       child: Text(
         label,
-        style: const TextStyle(
+        style: TextStyle(
           fontFamily: 'Inter',
           fontSize: 12,
           fontWeight: FontWeight.w500,
-          color: SoloForteSheetTokens.inputText,
+          color: isIos
+              ? SoloForteSheetSkinIos.badgeText
+              : SoloForteSheetTokens.inputText,
         ),
       ),
     );

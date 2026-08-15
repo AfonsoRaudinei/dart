@@ -3,6 +3,7 @@ import 'package:soloforte_app/core/session/local_session_identity.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:soloforte_app/core/router/app_routes.dart';
+import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
 import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 import '../../domain/entities/event.dart';
 import '../../domain/enums/event_status.dart';
@@ -230,81 +231,111 @@ class DayEventCard extends ConsumerWidget {
   ) async {
     await showSoloForteSheet<void>(
       context: context,
-      preserveMaterialDefaults: true,
-      backgroundColor: Colors.transparent,
       showDragHandle: false,
-      useSafeArea: false,
-      shape: const RoundedRectangleBorder(),
-      clipBehavior: Clip.none,
-      builder: (ctx) => Container(
-        margin: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Theme.of(ctx).cardColor,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              margin: const EdgeInsets.only(top: 8),
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey.shade300,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Text(
-                event.titulo,
-                style: Theme.of(
-                  ctx,
-                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
-              ),
-            ),
-            const Divider(height: 1),
-            if (onVisitHtml != null)
-              ListTile(
-                leading: const Icon(
-                  Icons.article_outlined,
-                  color: Color(0xFF16A34A),
+      builder: (ctx) {
+        final isIos = soloForteSheetIsIos(ctx);
+        final bg = isIos
+            ? SoloForteSheetSkinIos.cardBackground
+            : Theme.of(ctx).cardColor;
+        final handle = isIos
+            ? SoloForteSheetSkinIos.handleColor
+            : Colors.grey.shade300;
+        final titleColor =
+            isIos ? SoloForteSheetSkinIos.titleColor : null;
+        final radius =
+            isIos ? SoloForteSheetSkinIos.cardRadius : 16.0;
+
+        return Container(
+          margin: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: bg,
+            borderRadius: BorderRadius.circular(radius),
+            border: isIos
+                ? Border.all(color: SoloForteSheetSkinIos.cardBorder)
+                : null,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                margin: const EdgeInsets.only(top: 8),
+                width: isIos
+                    ? SoloForteSheetSkinIos.handleSize.width
+                    : 40,
+                height: isIos
+                    ? SoloForteSheetSkinIos.handleSize.height
+                    : 4,
+                decoration: BoxDecoration(
+                  color: handle,
+                  borderRadius: BorderRadius.circular(2),
                 ),
-                title: const Text('Pré-visualizar HTML de visita'),
-                onTap: () async {
+              ),
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text(
+                  event.titulo,
+                  style: Theme.of(ctx).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: titleColor,
+                  ),
+                ),
+              ),
+              Divider(
+                height: 1,
+                color: isIos ? SoloForteSheetSkinIos.rowDivider : null,
+              ),
+              if (onVisitHtml != null)
+                ListTile(
+                  leading: Icon(
+                    Icons.article_outlined,
+                    color: isIos
+                        ? SoloForteSheetSkinIos.iconStroke
+                        : const Color(0xFF16A34A),
+                  ),
+                  title: Text(
+                    'Pré-visualizar HTML de visita',
+                    style: TextStyle(color: titleColor),
+                  ),
+                  onTap: () async {
+                    Navigator.of(ctx).pop();
+                    await onVisitHtml!(event);
+                  },
+                ),
+              ListTile(
+                leading: Icon(
+                  Icons.edit_outlined,
+                  color: isIos
+                      ? SoloForteSheetSkinIos.iconStroke
+                      : const Color(0xFF3B82F6),
+                ),
+                title: Text(
+                  'Editar evento',
+                  style: TextStyle(color: titleColor),
+                ),
+                onTap: () {
                   Navigator.of(ctx).pop();
-                  await onVisitHtml!(event);
+                  VisitEditDialog.show(context, event);
                 },
               ),
-            ListTile(
-              leading: const Icon(
-                Icons.edit_outlined,
-                color: Color(0xFF3B82F6),
+              ListTile(
+                leading: const Icon(
+                  Icons.delete_outline,
+                  color: Color(0xFFEF4444),
+                ),
+                title: const Text(
+                  'Excluir evento',
+                  style: TextStyle(color: Color(0xFFEF4444)),
+                ),
+                onTap: () async {
+                  Navigator.of(ctx).pop();
+                  await _confirmarExclusao(context, ref, event);
+                },
               ),
-              title: const Text('Editar evento'),
-              onTap: () {
-                Navigator.of(ctx).pop();
-                VisitEditDialog.show(context, event);
-              },
-            ),
-            ListTile(
-              leading: const Icon(
-                Icons.delete_outline,
-                color: Color(0xFFEF4444),
-              ),
-              title: const Text(
-                'Excluir evento',
-                style: TextStyle(color: Color(0xFFEF4444)),
-              ),
-              onTap: () async {
-                Navigator.of(ctx).pop();
-                await _confirmarExclusao(context, ref, event);
-              },
-            ),
-            const SizedBox(height: 8),
-          ],
-        ),
-      ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        );
+      },
     );
   }
 

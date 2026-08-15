@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
-
 import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
+import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 
 /// Bottom sheet exibido após salvar um rascunho sem plano ativo.
 /// Retorna [true] se o usuário quer ver os planos, [false] ou null para fechar.
@@ -39,27 +38,51 @@ class DraftSavedSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isIos = soloForteSheetIsIos(context);
+    final bg = isIos
+        ? SoloForteSheetSkinIos.background
+        : SoloForteSheetTokens.sheetBackground;
+    final radius = isIos ? SoloForteSheetSkinIos.sheetRadius : 24.0;
+    final titleColor = isIos ? SoloForteSheetSkinIos.titleColor : null;
+    final messageColor = isIos
+        ? SoloForteSheetSkinIos.subtitleColor
+        : Theme.of(context).textTheme.bodySmall?.color;
+    final ctaBg = isIos
+        ? SoloForteSheetSkinIos.ctaBackground
+        : const Color(0xFFF59E0B);
+    final ctaFg = isIos ? SoloForteSheetSkinIos.ctaText : Colors.black;
+    final ctaRadius = isIos ? SoloForteSheetSkinIos.ctaRadius : 12.0;
+    final secondaryColor = isIos
+        ? SoloForteSheetSkinIos.ghostText
+        : Theme.of(context).textTheme.bodyLarge?.color;
+    final handleColor = isIos
+        ? SoloForteSheetSkinIos.handleColor
+        : Theme.of(context).dividerColor.withValues(alpha: 0.3);
+
     return Container(
-      decoration: const BoxDecoration(
-        color: SoloForteSheetTokens.sheetBackground,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(radius)),
       ),
       padding: const EdgeInsets.all(24),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Handle visual
-          Center(
-            child: Container(
-              margin: const EdgeInsets.only(bottom: 16),
-              width: 36,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Theme.of(context).dividerColor.withValues(alpha: 0.3),
-                borderRadius: BorderRadius.circular(2),
+          // Handle visual — no iOS o chrome de showSoloForteSheet já desenha.
+          if (!isIos)
+            Center(
+              child: Container(
+                margin: const EdgeInsets.only(bottom: 16),
+                width: 36,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: handleColor,
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
-            ),
-          ),
+            )
+          else
+            const SizedBox(height: 4),
 
           // Ícone
           Container(
@@ -81,9 +104,10 @@ class DraftSavedSheet extends StatelessWidget {
           // Título
           Text(
             title,
-            style: Theme.of(
-              context,
-            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.w600,
+              color: titleColor,
+            ),
             textAlign: TextAlign.center,
           ),
 
@@ -93,7 +117,7 @@ class DraftSavedSheet extends StatelessWidget {
           Text(
             message,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Theme.of(context).textTheme.bodySmall?.color,
+              color: messageColor,
             ),
             textAlign: TextAlign.center,
           ),
@@ -108,12 +132,12 @@ class DraftSavedSheet extends StatelessWidget {
               // A navegação fica NO PAI — nunca neste widget.
               onPressed: () => Navigator.of(context).pop(true),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFF59E0B),
-                foregroundColor: Colors.black,
+                backgroundColor: ctaBg,
+                foregroundColor: ctaFg,
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 minimumSize: const Size(double.infinity, 52),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(ctaRadius),
                 ),
               ),
               child: const Text(
@@ -138,7 +162,7 @@ class DraftSavedSheet extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
-                  color: Theme.of(context).textTheme.bodyLarge?.color,
+                  color: secondaryColor,
                 ),
               ),
             ),

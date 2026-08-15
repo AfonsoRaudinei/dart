@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
+import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
 import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 
 class PlanoBlockSheet extends StatelessWidget {
@@ -48,21 +49,40 @@ class PlanoBlockSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isIos = soloForteSheetIsIos(context);
+    final titleColor = isIos
+        ? SoloForteSheetSkinIos.titleColor
+        : Colors.white;
+    final bodyColor = isIos
+        ? SoloForteSheetSkinIos.subtitleColor
+        : const Color(0xFF8E8E93);
+    final handleColor = isIos
+        ? SoloForteSheetSkinIos.handleColor
+        : const Color(0xFF3A3A3C);
+    final ctaBg = isIos
+        ? SoloForteSheetSkinIos.ctaBackground
+        : const Color(0xFF32D74B);
+    final ctaFg = isIos ? SoloForteSheetSkinIos.ctaText : Colors.white;
+    final ctaRadius = isIos ? SoloForteSheetSkinIos.ctaRadius : 50.0;
+
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              width: 36,
-              height: 4,
-              margin: const EdgeInsets.only(bottom: 20),
-              decoration: BoxDecoration(
-                color: const Color(0xFF3A3A3C),
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
+            if (!isIos)
+              Container(
+                width: 36,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 20),
+                decoration: BoxDecoration(
+                  color: handleColor,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              )
+            else
+              const SizedBox(height: 4),
             const Icon(
               Icons.lock_outline_rounded,
               color: Color(0xFFFF9F0A),
@@ -74,11 +94,11 @@ class PlanoBlockSheet extends StatelessWidget {
                   ? 'Plano necessário para publicar'
                   : 'Limite de cases atingido',
               textAlign: TextAlign.center,
-              style: const TextStyle(
+              style: TextStyle(
                 fontFamily: 'Inter',
                 fontSize: 20,
                 fontWeight: FontWeight.w700,
-                color: Colors.white,
+                color: titleColor,
               ),
             ),
             const SizedBox(height: 8),
@@ -87,10 +107,10 @@ class PlanoBlockSheet extends StatelessWidget {
                   ? 'Assine um plano para publicar seus cases agronômicos no mapa.'
                   : 'Seu plano ${planoLabel ?? 'atual'} permite apenas ${limite ?? _limiteDoPlano(planoLabel)} case(s) ativo(s). Faça upgrade para publicar mais.',
               textAlign: TextAlign.center,
-              style: const TextStyle(
+              style: TextStyle(
                 fontFamily: 'Inter',
                 fontSize: 14,
-                color: Color(0xFF8E8E93),
+                color: bodyColor,
               ),
             ),
             const SizedBox(height: 24),
@@ -106,17 +126,17 @@ class PlanoBlockSheet extends StatelessWidget {
                 },
                 child: DecoratedBox(
                   decoration: BoxDecoration(
-                    color: const Color(0xFF32D74B),
-                    borderRadius: BorderRadius.circular(50),
+                    color: ctaBg,
+                    borderRadius: BorderRadius.circular(ctaRadius),
                   ),
-                  child: const Center(
+                  child: Center(
                     child: Text(
                       'Ver planos',
                       style: TextStyle(
                         fontFamily: 'Inter',
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
-                        color: Colors.white,
+                        color: ctaFg,
                       ),
                     ),
                   ),

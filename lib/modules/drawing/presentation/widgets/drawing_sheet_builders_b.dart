@@ -697,30 +697,46 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
   }
 
   Future<DrawingExportFormat?> _selectExportFormat(BuildContext context) async {
+    // Sem backgroundColor hardcoded — chrome iOS Azul via showSoloForteSheet.
     return showSoloForteSheet<DrawingExportFormat>(
       context: context,
-      backgroundColor: SoloForteSheetTokens.sheetBackground,
-      builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const ListTile(
-              title: Text(
-                'Formato de exportação',
-                style: TextStyle(fontWeight: FontWeight.w700),
+      builder: (ctx) {
+        final isIos = soloForteSheetIsIos(ctx);
+        final titleColor =
+            isIos ? SoloForteSheetSkinIos.titleColor : null;
+        final subtitleColor =
+            isIos ? SoloForteSheetSkinIos.subtitleColor : null;
+        final iconColor = isIos
+            ? SoloForteSheetSkinIos.iconStroke
+            : PremiumTokens.brandGreen;
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                title: Text(
+                  'Formato de exportação',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    color: titleColor,
+                  ),
+                ),
               ),
-            ),
-            ..._ExportOption.values.map(
-              (opt) => ListTile(
-                leading: Icon(opt.icon, color: PremiumTokens.brandGreen),
-                title: Text(opt.label),
-                subtitle: Text(opt.subtitle),
-                onTap: () => Navigator.of(ctx).pop(opt.format),
+              ..._ExportOption.values.map(
+                (opt) => ListTile(
+                  leading: Icon(opt.icon, color: iconColor),
+                  title: Text(opt.label, style: TextStyle(color: titleColor)),
+                  subtitle: Text(
+                    opt.subtitle,
+                    style: TextStyle(color: subtitleColor),
+                  ),
+                  onTap: () => Navigator.of(ctx).pop(opt.format),
+                ),
               ),
-            ),
-          ],
-        ),
-      ),
+            ],
+          ),
+        );
+      },
     );
   }
 

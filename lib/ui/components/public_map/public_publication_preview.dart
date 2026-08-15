@@ -30,13 +30,34 @@ class _PublicPublicationPreviewSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isIos = soloForteSheetIsIos(context);
+    final bg = isIos
+        ? SoloForteSheetSkinIos.background
+        : SoloForteSheetTokens.sheetBackground;
+    final radius = isIos
+        ? SoloForteSheetSkinIos.sheetRadius
+        : SoloForteSheetTokens.borderRadius;
+    final handleColor = isIos
+        ? SoloForteSheetSkinIos.handleColor
+        : context.premiumHairline;
+    final titleColor =
+        isIos ? SoloForteSheetSkinIos.titleColor : null;
+    final subtitle = isIos
+        ? SoloForteSheetSkinIos.subtitleColor
+        : context.premiumTextSecondary;
+
     return Container(
       constraints: BoxConstraints(
         maxHeight: MediaQuery.of(context).size.height * 0.75,
       ),
-      decoration: const BoxDecoration(
-        color: SoloForteSheetTokens.sheetBackground,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(radius)),
+        border: isIos
+            ? const Border(
+                top: BorderSide(color: SoloForteSheetSkinIos.sheetBorder),
+              )
+            : null,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -44,10 +65,10 @@ class _PublicPublicationPreviewSheet extends StatelessWidget {
           // Handle
           Container(
             margin: const EdgeInsets.only(top: 12),
-            width: 40,
-            height: 4,
+            width: isIos ? SoloForteSheetSkinIos.handleSize.width : 40,
+            height: isIos ? SoloForteSheetSkinIos.handleSize.height : 4,
             decoration: BoxDecoration(
-              color: context.premiumHairline,
+              color: handleColor,
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -60,22 +81,24 @@ class _PublicPublicationPreviewSheet extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Imagem de capa
-                  if (publication.media.isNotEmpty) _buildCoverImage(context),
+                  if (publication.media.isNotEmpty)
+                    _buildCoverImage(context, isIos, subtitle),
 
                   const SizedBox(height: 20.0),
 
                   // Badge de tipo
-                  _buildTypeBadge(context),
+                  _buildTypeBadge(context, isIos),
 
                   const SizedBox(height: 12.0),
 
                   // Título
                   Text(
                     publication.title ?? 'Sem título',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
-                    ).copyWith(fontSize: 24),
+                      color: titleColor,
+                    ),
                   ),
 
                   const SizedBox(height: 12.0),
@@ -83,7 +106,7 @@ class _PublicPublicationPreviewSheet extends StatelessWidget {
                   // Informações do cliente/área
                   if (publication.clientName != null ||
                       publication.areaName != null)
-                    _buildClientInfo(context),
+                    _buildClientInfo(context, subtitle),
 
                   const SizedBox(height: 16.0),
 
@@ -91,8 +114,9 @@ class _PublicPublicationPreviewSheet extends StatelessWidget {
                   if (publication.description != null)
                     Text(
                       publication.description!,
-                      style: const TextStyle(fontSize: 14).copyWith(
-                        color: context.premiumTextSecondary,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: subtitle,
                         height: 1.5,
                       ),
                     ),
@@ -100,12 +124,13 @@ class _PublicPublicationPreviewSheet extends StatelessWidget {
                   const SizedBox(height: 20.0),
 
                   // Data de publicação
-                  _buildPublicationDate(context),
+                  _buildPublicationDate(context, subtitle),
 
                   const SizedBox(height: 20.0),
 
                   // Galeria de imagens (se houver mais de uma)
-                  if (publication.media.length > 1) _buildGallery(context),
+                  if (publication.media.length > 1)
+                    _buildGallery(context, isIos, titleColor, subtitle),
                 ],
               ),
             ),
@@ -115,9 +140,22 @@ class _PublicPublicationPreviewSheet extends StatelessWidget {
     );
   }
 
-  Widget _buildCoverImage(BuildContext context) {
+  Widget _buildCoverImage(
+    BuildContext context,
+    bool isIos,
+    Color subtitle,
+  ) {
+    final surface = isIos
+        ? SoloForteSheetSkinIos.cardBackground
+        : context.premiumSurface;
+    final progress = isIos
+        ? SoloForteSheetSkinIos.ctaBackground
+        : PremiumTokens.brandGreen;
+
     return ClipRRect(
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(
+        isIos ? SoloForteSheetSkinIos.cardRadius : 16,
+      ),
       child: AspectRatio(
         aspectRatio: 16 / 9,
         child: CachedNetworkImage(
@@ -125,23 +163,21 @@ class _PublicPublicationPreviewSheet extends StatelessWidget {
           fit: BoxFit.cover,
           errorWidget: (context, url, error) {
             return Container(
-              color: context.premiumSurface,
+              color: surface,
               child: Icon(
                 Icons.image,
                 size: 64,
-                color: context.premiumTextSecondary,
+                color: subtitle,
               ),
             );
           },
           placeholder: (context, url) {
             return Container(
-              color: context.premiumSurface,
-              child: const Center(
+              color: surface,
+              child: Center(
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(
-                    PremiumTokens.brandGreen,
-                  ),
+                  valueColor: AlwaysStoppedAnimation<Color>(progress),
                 ),
               ),
             );
@@ -151,28 +187,35 @@ class _PublicPublicationPreviewSheet extends StatelessWidget {
     );
   }
 
-  Widget _buildTypeBadge(BuildContext context) {
+  Widget _buildTypeBadge(BuildContext context, bool isIos) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 4),
       decoration: BoxDecoration(
-        color: _getTypeColor(publication.type).withValues(alpha: 0.1),
+        color: isIos
+            ? SoloForteSheetSkinIos.badgeBackground
+            : _getTypeColor(publication.type).withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
+        border: isIos
+            ? Border.all(color: SoloForteSheetSkinIos.badgeBorder)
+            : null,
       ),
       child: Text(
         _getTypeLabel(publication.type),
-        style: TextStyle(fontSize: 12, color: context.premiumTextSecondary)
-            .copyWith(
-              color: _getTypeColor(publication.type),
-              fontWeight: FontWeight.w500,
-            ),
+        style: TextStyle(
+          fontSize: 12,
+          color: isIos
+              ? SoloForteSheetSkinIos.badgeText
+              : _getTypeColor(publication.type),
+          fontWeight: FontWeight.w500,
+        ),
       ),
     );
   }
 
-  Widget _buildClientInfo(BuildContext context) {
+  Widget _buildClientInfo(BuildContext context, Color subtitle) {
     return Row(
       children: [
-        Icon(Icons.location_on, size: 16, color: context.premiumTextSecondary),
+        Icon(Icons.location_on, size: 16, color: subtitle),
         const SizedBox(width: 4),
         Expanded(
           child: Text(
@@ -180,37 +223,50 @@ class _PublicPublicationPreviewSheet extends StatelessWidget {
               if (publication.clientName != null) publication.clientName,
               if (publication.areaName != null) publication.areaName,
             ].join(' • '),
-            style: TextStyle(color: context.premiumTextSecondary, fontSize: 14),
+            style: TextStyle(color: subtitle, fontSize: 14),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildPublicationDate(BuildContext context) {
+  Widget _buildPublicationDate(BuildContext context, Color subtitle) {
     final formatter = DateFormat('dd/MM/yyyy • HH:mm');
     return Row(
       children: [
-        Icon(Icons.schedule, size: 16, color: context.premiumTextSecondary),
+        Icon(Icons.schedule, size: 16, color: subtitle),
         const SizedBox(width: 4),
         Text(
           'Publicado em ${formatter.format(publication.createdAt)}',
           style: TextStyle(
             fontSize: 12,
-            color: context.premiumTextSecondary,
-          ).copyWith(color: context.premiumTextSecondary),
+            color: subtitle,
+          ),
         ),
       ],
     );
   }
 
-  Widget _buildGallery(BuildContext context) {
+  Widget _buildGallery(
+    BuildContext context,
+    bool isIos,
+    Color? titleColor,
+    Color subtitle,
+  ) {
+    final surface = isIos
+        ? SoloForteSheetSkinIos.cardBackground
+        : context.premiumSurface;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           'Galeria (${publication.media.length} fotos)',
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: titleColor,
+          ),
         ),
         const SizedBox(height: 12.0),
         SizedBox(
@@ -222,7 +278,9 @@ class _PublicPublicationPreviewSheet extends StatelessWidget {
             itemBuilder: (context, index) {
               final media = publication.media[index];
               return ClipRRect(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(
+                  isIos ? SoloForteSheetSkinIos.cardRadius : 12,
+                ),
                 child: AspectRatio(
                   aspectRatio: 1,
                   child: CachedNetworkImage(
@@ -230,10 +288,10 @@ class _PublicPublicationPreviewSheet extends StatelessWidget {
                     fit: BoxFit.cover,
                     errorWidget: (context, url, error) {
                       return Container(
-                        color: context.premiumSurface,
+                        color: surface,
                         child: Icon(
                           Icons.image,
-                          color: context.premiumTextSecondary,
+                          color: subtitle,
                         ),
                       );
                     },

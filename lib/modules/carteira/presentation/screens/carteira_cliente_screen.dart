@@ -173,12 +173,8 @@ class CarteiraClienteScreen extends ConsumerWidget {
     final result = await showSoloForteSheet<CategoriaFormResult>(
       context: context,
       isScrollControlled: true,
-      preserveMaterialDefaults: true,
-      backgroundColor: Colors.transparent,
       showDragHandle: false,
       useSafeArea: false,
-      shape: const RoundedRectangleBorder(),
-      clipBehavior: Clip.none,
       builder: (_) => CategoriaFormDialog(userId: userId),
     );
     if (result == null) return;

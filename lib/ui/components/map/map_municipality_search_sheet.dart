@@ -44,32 +44,41 @@ class _MapMunicipalitySearchSheetState extends State<MapMunicipalitySearchSheet>
   bool _geocoding = false;
   String? _error;
 
-  static const _fieldDecoration = InputDecoration(
-    filled: true,
-    fillColor: SoloForteSheetTokens.inputBackground,
-    border: OutlineInputBorder(
-      borderRadius: BorderRadius.all(
-        Radius.circular(SoloForteSheetTokens.inputRadius),
+  InputDecoration _fieldDecoration(bool isIos) {
+    final fill = isIos
+        ? SoloForteSheetSkinIos.cardBackground
+        : SoloForteSheetTokens.inputBackground;
+    final radius = isIos
+        ? SoloForteSheetSkinIos.cardRadius
+        : SoloForteSheetTokens.inputRadius;
+    final hint = isIos
+        ? SoloForteSheetSkinIos.subtitleColor
+        : SoloForteSheetTokens.inputHint;
+    final focus = isIos
+        ? SoloForteSheetSkinIos.iconStroke
+        : SoloForteSheetTokens.chipBorderActive;
+    final side = isIos
+        ? const BorderSide(color: SoloForteSheetSkinIos.cardBorder)
+        : BorderSide.none;
+
+    return InputDecoration(
+      filled: true,
+      fillColor: fill,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.all(Radius.circular(radius)),
+        borderSide: side,
       ),
-      borderSide: BorderSide.none,
-    ),
-    enabledBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.all(
-        Radius.circular(SoloForteSheetTokens.inputRadius),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.all(Radius.circular(radius)),
+        borderSide: side,
       ),
-      borderSide: BorderSide.none,
-    ),
-    focusedBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.all(
-        Radius.circular(SoloForteSheetTokens.inputRadius),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.all(Radius.circular(radius)),
+        borderSide: BorderSide(color: focus, width: 1.5),
       ),
-      borderSide: BorderSide(
-        color: SoloForteSheetTokens.chipBorderActive,
-        width: 1.5,
-      ),
-    ),
-    labelStyle: TextStyle(color: SoloForteSheetTokens.inputHint),
-  );
+      labelStyle: TextStyle(color: hint),
+    );
+  }
 
   @override
   void initState() {
@@ -159,6 +168,37 @@ class _MapMunicipalitySearchSheetState extends State<MapMunicipalitySearchSheet>
   @override
   Widget build(BuildContext context) {
     final bottomPad = MediaQuery.paddingOf(context).bottom;
+    final isIos = soloForteSheetIsIos(context);
+    final titleColor = isIos
+        ? SoloForteSheetSkinIos.titleColor
+        : SoloForteSheetTokens.titleColor;
+    final inputText = isIos
+        ? SoloForteSheetSkinIos.titleColor
+        : SoloForteSheetTokens.inputText;
+    final hintColor = isIos
+        ? SoloForteSheetSkinIos.subtitleColor
+        : SoloForteSheetTokens.inputHint;
+    final accent = isIos
+        ? SoloForteSheetSkinIos.iconStroke
+        : SoloForteSheetTokens.chipTextActive;
+    final muted = isIos
+        ? SoloForteSheetSkinIos.subtitleColor
+        : SoloForteSheetTokens.categoryLabel;
+    final listBg = isIos
+        ? SoloForteSheetSkinIos.cardBackground
+        : SoloForteSheetTokens.inputBackground;
+    final listRadius = isIos
+        ? SoloForteSheetSkinIos.cardRadius
+        : SoloForteSheetTokens.inputRadius;
+    final divider = isIos
+        ? SoloForteSheetSkinIos.rowDivider
+        : SoloForteSheetTokens.divider;
+    final dropdownBg = isIos
+        ? SoloForteSheetSkinIos.cardBackground
+        : SoloForteSheetTokens.inputBackground;
+    final iconColor = isIos
+        ? SoloForteSheetSkinIos.subtitleColor
+        : SoloForteSheetTokens.categoryLabel;
 
     return Padding(
       padding: EdgeInsets.fromLTRB(20, 4, 20, 16 + bottomPad),
@@ -166,34 +206,33 @@ class _MapMunicipalitySearchSheetState extends State<MapMunicipalitySearchSheet>
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Ir para município',
             style: TextStyle(
               fontSize: SoloForteSheetTokens.titleFontSize,
               fontWeight: SoloForteSheetTokens.titleWeight,
-              color: SoloForteSheetTokens.titleColor,
+              color: titleColor,
             ),
           ),
           const SizedBox(height: 16),
           if (_loadingEstados)
-            const Padding(
-              padding: EdgeInsets.all(24),
+            Padding(
+              padding: const EdgeInsets.all(24),
               child: Center(
-                child: CircularProgressIndicator(
-                  color: SoloForteSheetTokens.chipTextActive,
-                ),
+                child: CircularProgressIndicator(color: accent),
               ),
             )
           else ...[
             DropdownButtonFormField<IbgeEstado>(
               initialValue: _estadoSelecionado,
-              dropdownColor: SoloForteSheetTokens.inputBackground,
-              style: const TextStyle(
-                color: SoloForteSheetTokens.inputText,
+              dropdownColor: dropdownBg,
+              style: TextStyle(
+                color: inputText,
                 fontSize: 16,
               ),
-              iconEnabledColor: SoloForteSheetTokens.categoryLabel,
-              decoration: _fieldDecoration.copyWith(labelText: 'Estado (UF)'),
+              iconEnabledColor: iconColor,
+              decoration:
+                  _fieldDecoration(isIos).copyWith(labelText: 'Estado (UF)'),
               items: _estados
                   .map(
                     (e) => DropdownMenuItem(
@@ -220,9 +259,9 @@ class _MapMunicipalitySearchSheetState extends State<MapMunicipalitySearchSheet>
               child: SheetInputField(
                 controller: _searchController,
                 hintText: 'Buscar município…',
-                prefixIcon: const Icon(
+                prefixIcon: Icon(
                   Icons.search,
-                  color: SoloForteSheetTokens.inputHint,
+                  color: hintColor,
                 ),
               ),
             ),
@@ -232,9 +271,9 @@ class _MapMunicipalitySearchSheetState extends State<MapMunicipalitySearchSheet>
                 padding: const EdgeInsets.only(bottom: 8),
                 child: Text(
                   _error!,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 13,
-                    color: SoloForteSheetTokens.chipTextActive,
+                    color: accent,
                   ),
                 ),
               ),
@@ -243,36 +282,37 @@ class _MapMunicipalitySearchSheetState extends State<MapMunicipalitySearchSheet>
                 maxHeight: MediaQuery.of(context).size.height * 0.42,
               ),
               child: _loadingMunicipios || _geocoding
-                  ? const Center(
-                      child: CircularProgressIndicator(
-                        color: SoloForteSheetTokens.chipTextActive,
-                      ),
+                  ? Center(
+                      child: CircularProgressIndicator(color: accent),
                     )
                   : _filteredMunicipios.isEmpty
-                  ? const Center(
+                  ? Center(
                       child: Text(
                         'Nenhum município encontrado.',
                         style: TextStyle(
                           fontSize: 14,
-                          color: SoloForteSheetTokens.categoryLabel,
+                          color: muted,
                         ),
                       ),
                     )
                   : Container(
                       decoration: BoxDecoration(
-                        color: SoloForteSheetTokens.inputBackground,
-                        borderRadius: BorderRadius.circular(
-                          SoloForteSheetTokens.inputRadius,
-                        ),
+                        color: listBg,
+                        borderRadius: BorderRadius.circular(listRadius),
+                        border: isIos
+                            ? Border.all(
+                                color: SoloForteSheetSkinIos.cardBorder,
+                              )
+                            : null,
                       ),
                       child: ListView.separated(
                         shrinkWrap: true,
                         itemCount: _filteredMunicipios.length,
-                        separatorBuilder: (_, __) => const Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 16),
+                        separatorBuilder: (_, __) => Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
                           child: Divider(
                             height: 1,
-                            color: SoloForteSheetTokens.divider,
+                            color: divider,
                           ),
                         ),
                         itemBuilder: (context, index) {
@@ -291,9 +331,9 @@ class _MapMunicipalitySearchSheetState extends State<MapMunicipalitySearchSheet>
                                 ),
                                 child: Text(
                                   municipio.nome,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 16,
-                                    color: SoloForteSheetTokens.inputText,
+                                    color: inputText,
                                   ),
                                 ),
                               ),

@@ -724,7 +724,6 @@ class _OccurrenciaCard extends ConsumerWidget {
   Future<void> _showEditSheet(BuildContext context, WidgetRef ref) {
     return showSoloForteSheet<void>(
       context: context,
-      preserveMaterialDefaults: true,
       backgroundColor: Colors.transparent,
       builder: (sheetContext) => FractionallySizedBox(
         heightFactor: 0.92,

@@ -13,6 +13,8 @@ import 'marketing_case_story_entry_button.dart';
 import 'marketing_comparativo_read_only_section.dart';
 import '../../../../core/ui/sheets/sheet_tokens.dart';
 
+part 'marketing_case_sheet_avaliacao.dart';
+
 /// Bottom Sheet de visualização detalhada de um Case de Marketing
 /// Aberto ao tocar num pin no mapa (Passo 8)
 class MarketingCaseSheet extends StatelessWidget {
@@ -27,13 +29,17 @@ class MarketingCaseSheet extends StatelessWidget {
       context: context,
       isScrollControlled: true,
       showDragHandle: false,
+      // DraggableScrollableSheet: preserve evita faixa preta acima do pane
+      // (mesmo padrão de VisitSheet / map sheets).
       preserveMaterialDefaults: true,
-      // Fundo transparente: o pane do DraggableScrollableSheet pinta só a
-      // fração visível — evita faixa preta acima do handle (padrão map sheets).
       backgroundColor: Colors.transparent,
       builder: (_) => MarketingCaseSheet(marketingCase: marketingCase),
     );
   }
+
+  /// Host usa [preserveMaterialDefaults]; Scope força isIos=false — detectar Azul via themeId.
+  bool _isIosBlue(BuildContext context) =>
+      Theme.of(context).extension<SoloForteThemeExtension>()?.themeId == 'blue';
 
   Color get _planoColor {
     switch (marketingCase.visibilidade) {
@@ -74,6 +80,29 @@ class MarketingCaseSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isIos = _isIosBlue(context);
+    final sheetBg = isIos
+        ? SoloForteSheetSkinIos.background
+        : SoloForteSheetTokens.sheetBackground;
+    final sheetRadius = isIos
+        ? SoloForteSheetSkinIos.sheetRadius
+        : SoloForteSheetTokens.borderRadius;
+    final handleColor = isIos
+        ? SoloForteSheetSkinIos.handleColor
+        : Theme.of(context).dividerColor.withValues(alpha: 0.4);
+    final titleColor = isIos
+        ? SoloForteSheetSkinIos.titleColor
+        : SoloForteSheetTokens.inputText;
+    final hintColor = isIos
+        ? SoloForteSheetSkinIos.subtitleColor
+        : SoloForteSheetTokens.inputHint;
+    final cardBg = isIos
+        ? SoloForteSheetSkinIos.cardBackground
+        : SoloForteSheetTokens.inputBackground;
+    final cardBorder = isIos
+        ? SoloForteSheetSkinIos.cardBorder
+        : PremiumTokens.hairlineLight;
+
     return DraggableScrollableSheet(
       expand: false,
       initialChildSize: 0.7,
@@ -83,11 +112,16 @@ class MarketingCaseSheet extends StatelessWidget {
       snapSizes: const [0.5, 0.7, 0.95],
       builder: (context, scrollController) {
         return Container(
-          decoration: const BoxDecoration(
-            color: SoloForteSheetTokens.sheetBackground,
+          decoration: BoxDecoration(
+            color: sheetBg,
             borderRadius: BorderRadius.vertical(
-              top: Radius.circular(SoloForteSheetTokens.borderRadius),
+              top: Radius.circular(sheetRadius),
             ),
+            border: isIos
+                ? const Border(
+                    top: BorderSide(color: SoloForteSheetSkinIos.sheetBorder),
+                  )
+                : null,
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -96,12 +130,14 @@ class MarketingCaseSheet extends StatelessWidget {
               Center(
                 child: Container(
                   margin: const EdgeInsets.symmetric(vertical: 12),
-                  width: 36,
-                  height: 4,
+                  width: isIos
+                      ? SoloForteSheetSkinIos.handleSize.width
+                      : 36,
+                  height: isIos
+                      ? SoloForteSheetSkinIos.handleSize.height
+                      : 4,
                   decoration: BoxDecoration(
-                    color: Theme.of(
-                      context,
-                    ).dividerColor.withValues(alpha: 0.4),
+                    color: handleColor,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -153,15 +189,18 @@ class MarketingCaseSheet extends StatelessWidget {
                             vertical: 6,
                           ),
                           decoration: BoxDecoration(
-                            color: PremiumTokens.brandGreen.withValues(
-                              alpha: 0.1,
-                            ),
+                            color: (isIos
+                                    ? SoloForteSheetSkinIos.iconStroke
+                                    : PremiumTokens.brandGreen)
+                                .withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Text(
                             _tipoLabel,
-                            style: const TextStyle(
-                              color: PremiumTokens.brandGreen,
+                            style: TextStyle(
+                              color: isIos
+                                  ? SoloForteSheetSkinIos.iconStroke
+                                  : PremiumTokens.brandGreen,
                               fontWeight: FontWeight.w600,
                               fontSize: 11,
                             ),
@@ -176,26 +215,24 @@ class MarketingCaseSheet extends StatelessWidget {
                       marketingCase.produtoUtilizado,
                       style: Theme.of(context).textTheme.headlineSmall
                           ?.copyWith(
-                            color: SoloForteSheetTokens.inputText,
+                            color: titleColor,
                             fontWeight: FontWeight.w800,
                           ),
                     ),
                     const SizedBox(height: 4),
                     Row(
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.location_on_outlined,
                           size: 14,
-                          color: SoloForteSheetTokens.inputHint,
+                          color: hintColor,
                         ),
                         const SizedBox(width: 4),
                         Expanded(
                           child: Text(
                             marketingCase.localizacaoTexto,
                             style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(
-                                  color: SoloForteSheetTokens.inputHint,
-                                ),
+                                ?.copyWith(color: hintColor),
                           ),
                         ),
                       ],
@@ -204,18 +241,16 @@ class MarketingCaseSheet extends StatelessWidget {
                       const SizedBox(height: 6),
                       Row(
                         children: [
-                          const Icon(
+                          Icon(
                             Icons.calendar_today_outlined,
                             size: 14,
-                            color: SoloForteSheetTokens.inputHint,
+                            color: hintColor,
                           ),
                           const SizedBox(width: 4),
                           Text(
                             _formatDatePtBr(marketingCase.dataCase!),
                             style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(
-                                  color: SoloForteSheetTokens.inputHint,
-                                ),
+                                ?.copyWith(color: hintColor),
                           ),
                         ],
                       ),
@@ -224,7 +259,7 @@ class MarketingCaseSheet extends StatelessWidget {
 
                     // ── Foto principal ─────────────────────────
                     if (marketingCase.fotoPrincipalUrl != null)
-                      _buildFoto(marketingCase.fotoPrincipalUrl!),
+                      _buildFoto(marketingCase.fotoPrincipalUrl!, isIos),
 
                     // ── Métricas destaque ──────────────────────
                     _buildMetricasRow(context),
@@ -235,12 +270,16 @@ class MarketingCaseSheet extends StatelessWidget {
                       context,
                       'Produtor / Fazenda',
                       marketingCase.produtorFazenda,
+                      titleColor: titleColor,
+                      hintColor: hintColor,
                     ),
                     if (marketingCase.descricao != null) ...[
                       _buildInfoSection(
                         context,
                         'Descrição',
                         marketingCase.descricao!,
+                        titleColor: titleColor,
+                        hintColor: hintColor,
                       ),
                     ],
 
@@ -264,17 +303,25 @@ class MarketingCaseSheet extends StatelessWidget {
                             context,
                             'Ganho de Produtividade',
                             marketingCase.ganhoProdutividade!,
+                            titleColor: titleColor,
+                            hintColor: hintColor,
                           ),
                         if (marketingCase.economiaGerada != null)
                           _buildInfoSection(
                             context,
                             'Economia Gerada',
                             marketingCase.economiaGerada!,
+                            titleColor: titleColor,
+                            hintColor: hintColor,
                           ),
                       ],
                       if (marketingCase.fotoAntesUrl != null ||
                           marketingCase.fotoDepoisUrl != null)
-                        _buildAntesDepoisFotos(context),
+                        _buildAntesDepoisFotos(
+                          context,
+                          titleColor: titleColor,
+                          isIos: isIos,
+                        ),
                     ],
 
                     // ── Tipo Avaliação ─────────────────────────
@@ -284,22 +331,38 @@ class MarketingCaseSheet extends StatelessWidget {
                           context,
                           'Talhão',
                           '${marketingCase.nomeTalhao!}${marketingCase.tamanhoHa != null ? ' — ${marketingCase.tamanhoHa!.toStringAsFixed(1)} ha' : ''}',
+                          titleColor: titleColor,
+                          hintColor: hintColor,
                         ),
                       ],
                       if (marketingCase.avaliacoesLivres.isNotEmpty) ...[
                         const SizedBox(height: 12),
-                        _buildAvaliacoesLivresList(context),
+                        _buildAvaliacoesLivresList(
+                          context,
+                          hintColor: hintColor,
+                          cardBg: cardBg,
+                          cardBorder: cardBorder,
+                          titleColor: titleColor,
+                          isIos: isIos,
+                        ),
                       ],
                       if (marketingCase.conclusaoTecnica != null) ...[
                         const SizedBox(height: 12),
-                        _buildConclusaoCard(context),
+                        _buildConclusaoCard(context, titleColor: titleColor),
                       ],
                     ],
 
                     // ── Vendedor ───────────────────────────────
                     if (marketingCase.nomeVendedor != null) ...[
                       const SizedBox(height: 20),
-                      _buildVendedorCard(context),
+                      _buildVendedorCard(
+                        context,
+                        cardBg: cardBg,
+                        cardBorder: cardBorder,
+                        titleColor: titleColor,
+                        hintColor: hintColor,
+                        isIos: isIos,
+                      ),
                     ],
 
                     const SizedBox(height: 24),
@@ -317,7 +380,14 @@ class MarketingCaseSheet extends StatelessWidget {
 
   // ── Builders de seção ────────────────────────────────────────
 
-  Widget _buildFoto(String url) {
+  Widget _buildFoto(String url, bool isIos) {
+    final placeholderBg = isIos
+        ? SoloForteSheetSkinIos.cardBackground
+        : SoloForteSheetTokens.inputBackground;
+    final placeholderIcon = isIos
+        ? SoloForteSheetSkinIos.subtitleColor
+        : SoloForteSheetTokens.inputHint;
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 20),
       child: ClipRRect(
@@ -329,13 +399,11 @@ class MarketingCaseSheet extends StatelessWidget {
           fit: BoxFit.cover,
           errorWidget: (_, __, ___) => Container(
             height: 200,
-            decoration: const BoxDecoration(
-              color: SoloForteSheetTokens.inputBackground,
-            ),
-            child: const Icon(
+            decoration: BoxDecoration(color: placeholderBg),
+            child: Icon(
               Icons.image_not_supported_outlined,
               size: 40,
-              color: SoloForteSheetTokens.inputHint,
+              color: placeholderIcon,
             ),
           ),
         ),
@@ -423,7 +491,13 @@ class MarketingCaseSheet extends StatelessWidget {
     );
   }
 
-  Widget _buildInfoSection(BuildContext context, String label, String value) {
+  Widget _buildInfoSection(
+    BuildContext context,
+    String label,
+    String value, {
+    required Color titleColor,
+    required Color hintColor,
+  }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Column(
@@ -431,8 +505,8 @@ class MarketingCaseSheet extends StatelessWidget {
         children: [
           Text(
             label.toUpperCase(),
-            style: const TextStyle(
-              color: SoloForteSheetTokens.inputHint,
+            style: TextStyle(
+              color: hintColor,
               fontSize: 10,
               fontWeight: FontWeight.w600,
               letterSpacing: 0.6,
@@ -442,7 +516,7 @@ class MarketingCaseSheet extends StatelessWidget {
           Text(
             value,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: SoloForteSheetTokens.inputText,
+              color: titleColor,
               fontWeight: FontWeight.w500,
               height: 1.4,
             ),
@@ -452,19 +526,23 @@ class MarketingCaseSheet extends StatelessWidget {
     );
   }
 
-  Widget _buildAntesDepoisFotos(BuildContext context) {
+  Widget _buildAntesDepoisFotos(
+    BuildContext context, {
+    required Color titleColor,
+    required bool isIos,
+  }) {
     return Row(
       children: [
         if (marketingCase.fotoAntesUrl != null)
           Expanded(
             child: Column(
               children: [
-                _buildFotoMini(marketingCase.fotoAntesUrl!),
+                _buildFotoMini(marketingCase.fotoAntesUrl!, isIos),
                 const SizedBox(height: 4),
-                const Text(
+                Text(
                   'Antes',
                   style: TextStyle(
-                    color: SoloForteSheetTokens.inputText,
+                    color: titleColor,
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
                   ),
@@ -477,14 +555,16 @@ class MarketingCaseSheet extends StatelessWidget {
           Expanded(
             child: Column(
               children: [
-                _buildFotoMini(marketingCase.fotoDepoisUrl!),
+                _buildFotoMini(marketingCase.fotoDepoisUrl!, isIos),
                 const SizedBox(height: 4),
-                const Text(
+                Text(
                   'Depois',
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
-                    color: PremiumTokens.brandGreen,
+                    color: isIos
+                        ? SoloForteSheetSkinIos.iconStroke
+                        : PremiumTokens.brandGreen,
                   ),
                 ),
               ],
@@ -494,7 +574,14 @@ class MarketingCaseSheet extends StatelessWidget {
     );
   }
 
-  Widget _buildFotoMini(String url) {
+  Widget _buildFotoMini(String url, bool isIos) {
+    final placeholderBg = isIos
+        ? SoloForteSheetSkinIos.cardBackground
+        : SoloForteSheetTokens.inputBackground;
+    final placeholderIcon = isIos
+        ? SoloForteSheetSkinIos.subtitleColor
+        : SoloForteSheetTokens.inputHint;
+
     return ClipRRect(
       borderRadius: BorderRadius.circular(10),
       child: CachedNetworkImage(
@@ -504,19 +591,20 @@ class MarketingCaseSheet extends StatelessWidget {
         fit: BoxFit.cover,
         errorWidget: (_, __, ___) => Container(
           height: 130,
-          decoration: const BoxDecoration(
-            color: SoloForteSheetTokens.inputBackground,
-          ),
-          child: const Icon(
+          decoration: BoxDecoration(color: placeholderBg),
+          child: Icon(
             Icons.image_not_supported_outlined,
-            color: SoloForteSheetTokens.inputHint,
+            color: placeholderIcon,
           ),
         ),
       ),
     );
   }
 
-  Widget _buildConclusaoCard(BuildContext context) {
+  Widget _buildConclusaoCard(
+    BuildContext context, {
+    required Color titleColor,
+  }) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -548,7 +636,7 @@ class MarketingCaseSheet extends StatelessWidget {
           Text(
             marketingCase.conclusaoTecnica!,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: SoloForteSheetTokens.inputText,
+              color: titleColor,
               height: 1.5,
             ),
           ),
@@ -557,26 +645,34 @@ class MarketingCaseSheet extends StatelessWidget {
     );
   }
 
-  Widget _buildVendedorCard(BuildContext context) {
+  Widget _buildVendedorCard(
+    BuildContext context, {
+    required Color cardBg,
+    required Color cardBorder,
+    required Color titleColor,
+    required Color hintColor,
+    required bool isIos,
+  }) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: SoloForteSheetTokens.inputBackground,
+        color: cardBg,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: PremiumTokens.hairlineLight),
+        border: Border.all(color: cardBorder),
       ),
       child: Row(
         children: [
           Container(
             width: 44,
             height: 44,
-            decoration: const BoxDecoration(
-              gradient: PremiumTokens.brandGradient,
+            decoration: BoxDecoration(
+              gradient: isIos ? null : PremiumTokens.brandGradient,
+              color: isIos ? SoloForteSheetSkinIos.iconBackground : null,
               shape: BoxShape.circle,
             ),
-            child: const Icon(
+            child: Icon(
               Icons.person_rounded,
-              color: Colors.white,
+              color: isIos ? SoloForteSheetSkinIos.iconStroke : Colors.white,
               size: 22,
             ),
           ),
@@ -588,7 +684,7 @@ class MarketingCaseSheet extends StatelessWidget {
                 Text(
                   marketingCase.nomeVendedor!,
                   style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    color: SoloForteSheetTokens.inputText,
+                    color: titleColor,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -596,7 +692,7 @@ class MarketingCaseSheet extends StatelessWidget {
                   Text(
                     marketingCase.telefoneVendedor!,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: SoloForteSheetTokens.inputHint,
+                      color: hintColor,
                     ),
                   ),
               ],
@@ -605,7 +701,9 @@ class MarketingCaseSheet extends StatelessWidget {
           if (marketingCase.telefoneVendedor != null)
             IconButton(
               icon: const Icon(Icons.phone_outlined),
-              color: PremiumTokens.brandGreen,
+              color: isIos
+                  ? SoloForteSheetSkinIos.iconStroke
+                  : PremiumTokens.brandGreen,
               onPressed: () => HapticFeedback.lightImpact(),
             ),
         ],
@@ -613,14 +711,21 @@ class MarketingCaseSheet extends StatelessWidget {
     );
   }
 
-  Widget _buildAvaliacoesLivresList(BuildContext context) {
+  Widget _buildAvaliacoesLivresList(
+    BuildContext context, {
+    required Color hintColor,
+    required Color cardBg,
+    required Color cardBorder,
+    required Color titleColor,
+    required bool isIos,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(
           'AVALIAÇÕES (${marketingCase.avaliacoesLivres.length})',
-          style: const TextStyle(
-            color: SoloForteSheetTokens.inputHint,
+          style: TextStyle(
+            color: hintColor,
             fontSize: 10,
             fontWeight: FontWeight.w600,
             letterSpacing: 0.6,
@@ -628,7 +733,14 @@ class MarketingCaseSheet extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         ...marketingCase.avaliacoesLivres.map(
-          (avaliacao) => _AvaliacaoLivreReadOnlyCard(avaliacao: avaliacao),
+          (avaliacao) => _AvaliacaoLivreReadOnlyCard(
+            avaliacao: avaliacao,
+            cardBg: cardBg,
+            cardBorder: cardBorder,
+            titleColor: titleColor,
+            hintColor: hintColor,
+            isIos: isIos,
+          ),
         ),
       ],
     );
@@ -639,151 +751,4 @@ class MarketingCaseSheet extends StatelessWidget {
     final month = date.month.toString().padLeft(2, '0');
     return '$day/$month/${date.year}';
   }
-}
-
-class _AvaliacaoLivreReadOnlyCard extends StatefulWidget {
-  final AvaliacaoItem avaliacao;
-
-  const _AvaliacaoLivreReadOnlyCard({required this.avaliacao});
-
-  @override
-  State<_AvaliacaoLivreReadOnlyCard> createState() =>
-      _AvaliacaoLivreReadOnlyCardState();
-}
-
-class _AvaliacaoLivreReadOnlyCardState
-    extends State<_AvaliacaoLivreReadOnlyCard> {
-  String? _selectedParametroId;
-
-  @override
-  Widget build(BuildContext context) {
-    final avaliacao = widget.avaliacao;
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: SoloForteSheetTokens.inputBackground,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: PremiumTokens.hairlineLight),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(
-            '${avaliacao.titulo.isEmpty ? 'Avaliação' : avaliacao.titulo} — ${avaliacao.nomeLadoA} vs ${avaliacao.nomeLadoB}',
-            style: const TextStyle(
-              color: SoloForteSheetTokens.inputText,
-              fontSize: 14,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'Média de ganho: ${_formatSigned(avaliacao.mediaGanhoPercent)}%',
-            style: const TextStyle(
-              color: PremiumTokens.brandGreen,
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          if (avaliacao.cultura != null && avaliacao.cultura!.isNotEmpty) ...[
-            const SizedBox(height: 4),
-            Text(
-              'Cultura: ${avaliacao.cultura}',
-              style: const TextStyle(
-                color: SoloForteSheetTokens.inputHint,
-                fontSize: 12,
-              ),
-            ),
-          ],
-          const SizedBox(height: 10),
-          ...avaliacao.parametros.map(
-            (parametro) => Padding(
-              padding: const EdgeInsets.only(bottom: 6),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      parametro.titulo,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: SoloForteSheetTokens.inputText,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                  Text(
-                    '${_formatValue(parametro.testemunha)} -> ${_formatValue(parametro.teste)}',
-                    style: const TextStyle(
-                      color: SoloForteSheetTokens.inputText,
-                      fontSize: 12,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    parametro.testemunha == 0
-                        ? '--'
-                        : '${_formatSigned(parametro.deltaPercent)}%',
-                    style: TextStyle(
-                      color: parametro.isNegativo
-                          ? PremiumTokens.alertError
-                          : PremiumTokens.brandGreen,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          if (avaliacao.parametros.isNotEmpty) ...[
-            const SizedBox(height: 10),
-            ComparativoChart(
-              parametros: avaliacao.parametros,
-              selecionadoId: _selectedParametroId,
-              onSelect: (id) => setState(() => _selectedParametroId = id),
-              testemunhaLabel: avaliacao.nomeLadoA,
-              testeLabel: avaliacao.nomeLadoB,
-            ),
-          ],
-          if (avaliacao.observacoes != null &&
-              avaliacao.observacoes!.isNotEmpty) ...[
-            const SizedBox(height: 10),
-            Text(
-              avaliacao.observacoes!,
-              style: const TextStyle(
-                color: SoloForteSheetTokens.inputText,
-                fontSize: 12,
-                height: 1.35,
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  static String _formatValue(double value) {
-    return value.toStringAsFixed(1).replaceAll('.', ',');
-  }
-
-  static String _formatSigned(double value) {
-    final formatted = value.toStringAsFixed(1).replaceAll('.', ',');
-    return value >= 0 ? '+$formatted' : formatted;
-  }
-}
-
-class _MetricaItem {
-  final String label;
-  final String value;
-  final IconData icon;
-  final Color color;
-
-  const _MetricaItem({
-    required this.label,
-    required this.value,
-    required this.icon,
-    required this.color,
-  });
 }

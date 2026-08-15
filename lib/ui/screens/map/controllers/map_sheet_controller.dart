@@ -77,14 +77,23 @@ class MapSheetController {
             scrollController,
             onArmOccurrenceMode,
           );
+          final isBlue = Theme.of(context)
+                  .extension<SoloForteThemeExtension>()
+                  ?.themeId ==
+              'blue';
+          final hostBg = isBlue
+              ? SoloForteSheetSkinIos.background
+              : SoloForteSheetTokens.sheetBackground;
+          final hostRadius =
+              isBlue ? SoloForteSheetSkinIos.sheetRadius : 24.0;
 
           if (isCheckIn) {
             return ClipRRect(
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(24),
+              borderRadius: BorderRadius.vertical(
+                top: Radius.circular(hostRadius),
               ),
               child: ColoredBox(
-                color: SoloForteSheetTokens.sheetBackground,
+                color: hostBg,
                 child: content,
               ),
             );
@@ -93,23 +102,34 @@ class MapSheetController {
           return Container(
             decoration: BoxDecoration(
               color: isLayers
-                  ? SoloForteSheetTokens.sheetBackground
+                  ? hostBg
                   : Theme.of(context).scaffoldBackgroundColor,
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(24),
+              borderRadius: BorderRadius.vertical(
+                top: Radius.circular(hostRadius),
               ),
+              border: isBlue
+                  ? const Border(
+                      top: BorderSide(color: SoloForteSheetSkinIos.sheetBorder),
+                    )
+                  : null,
             ),
             child: Column(
               children: [
                 Center(
                   child: Container(
                     margin: const EdgeInsets.symmetric(vertical: 8),
-                    width: 36,
-                    height: 4,
+                    width: isBlue
+                        ? SoloForteSheetSkinIos.handleSize.width
+                        : 36,
+                    height: isBlue
+                        ? SoloForteSheetSkinIos.handleSize.height
+                        : 4,
                     decoration: BoxDecoration(
-                      color: Theme.of(
-                        context,
-                      ).dividerColor.withValues(alpha: 0.3),
+                      color: isBlue
+                          ? SoloForteSheetSkinIos.handleColor
+                          : Theme.of(context)
+                              .dividerColor
+                              .withValues(alpha: 0.3),
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),

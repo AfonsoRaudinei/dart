@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
+import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 
 class TipoProdutoFormResult {
   const TipoProdutoFormResult({
@@ -31,7 +33,27 @@ class _TipoProdutoFormDialogState extends State<TipoProdutoFormDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final color = Theme.of(context).colorScheme.primary;
+    final isIos = soloForteSheetIsIos(context);
+    final color = isIos
+        ? SoloForteSheetSkinIos.iconStroke
+        : Theme.of(context).colorScheme.primary;
+    final sheetBg = isIos
+        ? SoloForteSheetSkinIos.background
+        : Theme.of(context).colorScheme.surface;
+    final sheetRadius = isIos
+        ? SoloForteSheetSkinIos.sheetRadius
+        : 24.0;
+    final handleColor = isIos
+        ? SoloForteSheetSkinIos.handleColor
+        : Colors.grey.shade300;
+    final titleColor = isIos ? SoloForteSheetSkinIos.titleColor : null;
+    final subColor = isIos
+        ? SoloForteSheetSkinIos.subtitleColor
+        : Colors.grey[600];
+    final ctaBg = isIos ? SoloForteSheetSkinIos.ctaBackground : null;
+    final ctaFg = isIos ? SoloForteSheetSkinIos.ctaText : null;
+    final ctaRadius = isIos ? SoloForteSheetSkinIos.ctaRadius : 20.0;
+    final ghostColor = isIos ? SoloForteSheetSkinIos.ghostText : null;
 
     return Padding(
       padding: EdgeInsets.only(
@@ -39,21 +61,29 @@ class _TipoProdutoFormDialogState extends State<TipoProdutoFormDialog> {
       ),
       child: Container(
         decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          color: sheetBg,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(sheetRadius)),
+          border: isIos
+              ? const Border(
+                  top: BorderSide(color: SoloForteSheetSkinIos.sheetBorder),
+                )
+              : null,
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              margin: const EdgeInsets.only(top: 12, bottom: 8),
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey.shade300,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
+            if (!isIos)
+              Container(
+                margin: const EdgeInsets.only(top: 12, bottom: 8),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: handleColor,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              )
+            else
+              const SizedBox(height: 8),
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 8, 24, 0),
               child: Form(
@@ -62,11 +92,12 @@ class _TipoProdutoFormDialogState extends State<TipoProdutoFormDialog> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'Novo tipo de produto',
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w600,
+                        color: titleColor,
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -74,18 +105,33 @@ class _TipoProdutoFormDialogState extends State<TipoProdutoFormDialog> {
                       'Ex.: Litros/ha, Sc/ha, Doses/ha',
                       style: Theme.of(
                         context,
-                      ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
+                      ).textTheme.bodySmall?.copyWith(color: subColor),
                     ),
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: _labelController,
                       autofocus: true,
                       textCapitalization: TextCapitalization.sentences,
+                      style: TextStyle(color: titleColor),
                       decoration: InputDecoration(
                         labelText: 'Unidade / tipo',
+                        labelStyle: TextStyle(color: subColor),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
+                          borderSide: isIos
+                              ? const BorderSide(
+                                  color: SoloForteSheetSkinIos.cardBorder,
+                                )
+                              : const BorderSide(),
                         ),
+                        enabledBorder: isIos
+                            ? OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(
+                                  color: SoloForteSheetSkinIos.cardBorder,
+                                ),
+                              )
+                            : null,
                       ),
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
@@ -99,11 +145,14 @@ class _TipoProdutoFormDialogState extends State<TipoProdutoFormDialog> {
                       contentPadding: EdgeInsets.zero,
                       value: _converteSacasHa,
                       activeThumbColor: color,
-                      title: const Text('Converte para sacas/ha'),
+                      title: Text(
+                        'Converte para sacas/ha',
+                        style: TextStyle(color: titleColor),
+                      ),
                       subtitle: Text(
                         'Ative para tipos baseados em R\$/ha',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.grey[600],
+                          color: subColor,
                         ),
                       ),
                       onChanged: (value) =>
@@ -121,6 +170,7 @@ class _TipoProdutoFormDialogState extends State<TipoProdutoFormDialog> {
                   Expanded(
                     child: TextButton(
                       onPressed: () => Navigator.of(context).pop(),
+                      style: TextButton.styleFrom(foregroundColor: ghostColor),
                       child: const Text('Cancelar'),
                     ),
                   ),
@@ -138,6 +188,13 @@ class _TipoProdutoFormDialogState extends State<TipoProdutoFormDialog> {
                           ),
                         );
                       },
+                      style: FilledButton.styleFrom(
+                        backgroundColor: ctaBg,
+                        foregroundColor: ctaFg,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(ctaRadius),
+                        ),
+                      ),
                       child: const Text('Adicionar'),
                     ),
                   ),

@@ -162,8 +162,7 @@ class MarketingCaseReportsLookupAdapter implements IMarketingCaseReportsLookup {
     await showSoloForteSheet<void>(
       context: context,
       isScrollControlled: true,
-      preserveMaterialDefaults: true,
-      backgroundColor: Colors.transparent,
+      showDragHandle: false,
       builder: (sheetContext) => EditCaseSheet(
         caso: item,
         onClose: () => Navigator.of(sheetContext).pop(),
