@@ -119,8 +119,8 @@ Future<_ReportBrandingContext> _resolveReportBrandingContext(
 
 /// Tela de Relatórios — Premium iOS com segmentos tipados.
 ///
-/// Segmentos: Visitas | Ocorrências | Gerados | Consolidados | Mídia
-/// Gerados = publicações de Marketing (ADR-050). Consolidados = exports on-demand.
+/// Segmentos: Visitas | Ocorrências | Marketing | Consolidados | Mídia
+/// Marketing = publicações/cases (ADR-050), incl. não gerados (rascunho).
 class RelatoriosScreen extends ConsumerStatefulWidget {
   const RelatoriosScreen({super.key});
 
@@ -130,7 +130,7 @@ class RelatoriosScreen extends ConsumerStatefulWidget {
 
 class _RelatoriosScreenState extends ConsumerState<RelatoriosScreen> {
   static final _dateFormat = DateFormat('dd/MM/yyyy', 'pt_BR');
-  _RelatoriosSegment _segment = _RelatoriosSegment.visitas;
+  _RelatoriosSegment _segment = _RelatoriosSegment.gerados;
 
   void _selectSegment(_RelatoriosSegment value) {
     if (_segment == value) return;

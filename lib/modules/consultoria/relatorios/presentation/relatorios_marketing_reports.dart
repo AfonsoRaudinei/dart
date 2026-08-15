@@ -12,13 +12,38 @@ class _MarketingCasesReportsSection extends ConsumerStatefulWidget {
 
 enum _MarketingCaseFilter { all, resultado, antesDepois, avaliacao }
 
+enum _MarketingCaseStatusFilter { all, published, draft }
+
 class _MarketingCasesReportsSectionState
     extends ConsumerState<_MarketingCasesReportsSection> {
   _MarketingCaseFilter _filter = _MarketingCaseFilter.all;
+  _MarketingCaseStatusFilter _statusFilter = _MarketingCaseStatusFilter.all;
 
   void _selectFilter(_MarketingCaseFilter value) {
     if (_filter == value) return;
     setState(() => _filter = value);
+  }
+
+  void _selectStatusFilter(_MarketingCaseStatusFilter value) {
+    if (_statusFilter == value) return;
+    setState(() => _statusFilter = value);
+  }
+
+  List<MarketingCaseReportSnapshot> _applyStatusFilter(
+    List<MarketingCaseReportSnapshot> cases,
+  ) {
+    switch (_statusFilter) {
+      case _MarketingCaseStatusFilter.published:
+        return cases
+            .where((item) => item.statusValue.toLowerCase() == 'published')
+            .toList();
+      case _MarketingCaseStatusFilter.draft:
+        return cases
+            .where((item) => item.statusValue.toLowerCase() == 'draft')
+            .toList();
+      case _MarketingCaseStatusFilter.all:
+        return cases;
+    }
   }
 
   List<MarketingCaseReportSnapshot> _applyTypeFilter(
@@ -79,6 +104,20 @@ class _MarketingCasesReportsSectionState
     await ref.read(marketingCaseReportsLookupProvider).deleteCase(item.id);
   }
 
+  Future<void> _publishDraft(
+    BuildContext context,
+    WidgetRef ref,
+    MarketingCaseReportSnapshot item,
+  ) async {
+    final published = await ref
+        .read(marketingCaseReportsLookupProvider)
+        .publishDraftCase(context, item.id);
+    if (!context.mounted || !published) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Case publicado com sucesso!')),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final dateFormat = widget.dateFormat;
@@ -93,23 +132,31 @@ class _MarketingCasesReportsSectionState
         stackTrace: st,
       );
       return _SectionError(
-        title: 'Publicações',
+        title: 'Marketing',
         onRetry: () => ref.invalidate(marketingCaseReportsListProvider),
       );
     }
 
     return casesAsync.when(
       data: (visible) {
-        final filtered = _applyTypeFilter(visible);
+        final statusFiltered = _applyStatusFilter(visible);
+        final filtered = _applyTypeFilter(statusFiltered);
         final grouped = _groupByFarm(filtered);
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _InsetGroupHeader(
-              title: 'Publicações',
+              title: 'Marketing',
               count: filtered.length,
             ),
             if (visible.isNotEmpty) ...[
+              Padding(
+                padding: const EdgeInsets.fromLTRB(4, 0, 4, 8),
+                child: _MarketingCaseStatusFilterBar(
+                  selected: _statusFilter,
+                  onSelected: _selectStatusFilter,
+                ),
+              ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(4, 0, 4, 12),
                 child: _MarketingCaseFilterBar(
@@ -129,7 +176,10 @@ class _MarketingCasesReportsSectionState
               _PremiumEmptyState(
                 message: 'Nenhuma publicação neste filtro.',
                 ctaLabel: 'Mostrar todas',
-                onCta: () => _selectFilter(_MarketingCaseFilter.all),
+                onCta: () {
+                  _selectFilter(_MarketingCaseFilter.all);
+                  _selectStatusFilter(_MarketingCaseStatusFilter.all);
+                },
               )
             else
               ...grouped.entries.expand((entry) {
@@ -160,10 +210,13 @@ class _MarketingCasesReportsSectionState
                       statusColor: _marketingStatusColor(item.statusValue),
                       menuTooltip: 'Ações da publicação',
                       buildPayload: () => _buildMarketingPayload(ref, item),
-                      showPackShare: true,
+                      showPackShare: false,
                       onEdit: () => ref
                           .read(marketingCaseReportsLookupProvider)
                           .showEditSheet(context, item.id),
+                      onPublish: item.statusValue.toLowerCase() == 'draft'
+                          ? () => _publishDraft(context, ref, item)
+                          : null,
                       onViewLocation: () {
                         final lat = item.lat;
                         final lng = item.lng;
@@ -190,7 +243,7 @@ class _MarketingCasesReportsSectionState
           ],
         );
       },
-      loading: () => const _SectionLoading(title: 'Publicações'),
+      loading: () => const _SectionLoading(title: 'Marketing'),
       error: (e, st) {
         AppLogger.error(
           'marketingCaseReportsListProvider ERROR',
@@ -199,7 +252,7 @@ class _MarketingCasesReportsSectionState
           stackTrace: st,
         );
         return _SectionError(
-          title: 'Publicações',
+          title: 'Marketing',
           onRetry: () => ref.invalidate(marketingCaseReportsListProvider),
         );
       },
@@ -210,9 +263,9 @@ class _MarketingCasesReportsSectionState
 String _marketingStatusLabel(String statusValue) {
   switch (statusValue.toLowerCase()) {
     case 'published':
-      return 'Disponível';
+      return 'Gerado';
     case 'draft':
-      return 'Rascunho';
+      return 'Não gerado';
     case 'pending_sync':
       return 'Pendente sync';
     case 'archived':
@@ -234,6 +287,66 @@ Color _marketingStatusColor(String statusValue) {
       return Colors.grey;
     default:
       return PremiumTokens.brandGreen;
+  }
+}
+
+class _MarketingCaseStatusFilterBar extends StatelessWidget {
+  final _MarketingCaseStatusFilter selected;
+  final ValueChanged<_MarketingCaseStatusFilter> onSelected;
+
+  const _MarketingCaseStatusFilterBar({
+    required this.selected,
+    required this.onSelected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: 8,
+      runSpacing: 6,
+      children: [
+        _statusChip(context, 'Todas', _MarketingCaseStatusFilter.all),
+        _statusChip(context, 'Gerados', _MarketingCaseStatusFilter.published),
+        _statusChip(
+          context,
+          'Não gerados',
+          _MarketingCaseStatusFilter.draft,
+        ),
+      ],
+    );
+  }
+
+  Widget _statusChip(
+    BuildContext context,
+    String label,
+    _MarketingCaseStatusFilter value,
+  ) {
+    final isSelected = selected == value;
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => onSelected(value),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 140),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFFFF9500) : Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected
+                ? const Color(0xFFFF9500)
+                : const Color(0xFFD1D1D6),
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: isSelected ? Colors.white : context.premiumTextPrimary,
+          ),
+        ),
+      ),
+    );
   }
 }
 

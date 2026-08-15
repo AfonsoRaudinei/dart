@@ -39,6 +39,7 @@ class _GeneratedReportCard extends StatelessWidget {
   final bool showPackShare;
   final VoidCallback? onEdit;
   final VoidCallback? onViewLocation;
+  final Future<void> Function()? onPublish;
   final Future<void> Function()? onDelete;
 
   const _GeneratedReportCard({
@@ -54,6 +55,7 @@ class _GeneratedReportCard extends StatelessWidget {
     this.showPackShare = false,
     this.onEdit,
     this.onViewLocation,
+    this.onPublish,
     this.onDelete,
   });
 
@@ -86,6 +88,12 @@ class _GeneratedReportCard extends StatelessWidget {
               enabled: enabled,
               child: const Text('Compartilhar pack'),
             ),
+          if (onPublish != null)
+            PopupMenuItem(
+              value: 'publish',
+              enabled: enabled,
+              child: const Text('Publicar'),
+            ),
           if (onEdit != null)
             PopupMenuItem(
               value: 'edit',
@@ -113,6 +121,11 @@ class _GeneratedReportCard extends StatelessWidget {
     if (!enabled && value != 'delete') return;
     if (value == 'edit') {
       onEdit?.call();
+      return;
+    }
+    if (value == 'publish') {
+      final publish = onPublish;
+      if (publish != null) await publish();
       return;
     }
     if (value == 'location') {
