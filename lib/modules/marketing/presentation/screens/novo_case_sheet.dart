@@ -10,8 +10,10 @@ import '../../domain/entities/avaliacao_item.dart';
 import '../../domain/entities/marketing_case.dart';
 import '../../domain/entities/parametro_comparativo.dart';
 import '../../domain/enums/case_tipo.dart';
+import '../../domain/enums/marketing_case_status.dart';
 import '../../domain/enums/plano_marketing.dart';
 import '../../domain/enums/produtividade_unidade.dart';
+import '../providers/marketing_providers.dart';
 import '../widgets/case_selectors_widget.dart';
 import '../widgets/novo_case_antes_depois_section.dart';
 import '../widgets/novo_case_avaliacao_section.dart';
@@ -181,45 +183,82 @@ class _NovoCaseSheetState extends ConsumerState<NovoCaseSheet> {
   }
 
   void _handlePublicar() {
-    // 🔧 FIX: Fechar teclado antes da validação (Bug A)
-    FocusScope.of(context).unfocus();
-
-    if (!_formKey.currentState!.validate()) return;
-
-    // Validações de foto obrigatória
-    if (_tipo == CaseTipo.resultado && _fotoPrincipalUrl == null) {
-      _showError('Foto principal obrigatória para o tipo Resultado.');
-      return;
-    }
-    if (_tipo == CaseTipo.antesDepois &&
-        (_fotoAntesUrl == null || _fotoDepoisUrl == null)) {
-      _showError('Adicione as fotos Antes e Depois.');
-      return;
-    }
-
-    if (_tipo == CaseTipo.resultado && !_hasResultadoRoiInputs) {
-      _showError('Preencha os dados de ROI do resultado.');
-      return;
-    }
-    if (_tipo == CaseTipo.antesDepois && !_validateParametrosComparativos()) {
-      return;
-    }
-    if (_dataCase == null) {
-      _showError('Selecione a data do case.');
-      return;
-    }
-    if (_tipo == CaseTipo.avaliacao && _nomeTalhaoCtrl.text.trim().isEmpty) {
-      _showError('Preencha o nome do talhão.');
-      return;
-    }
+    final newCase = _validateAndBuildCase();
+    if (newCase == null) return;
 
     setState(() => _isLoading = true);
     HapticFeedback.mediumImpact();
 
-    final String caseId = _uuid.v4();
+    try {
+      widget.onPublicar(newCase);
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
 
+  Future<void> _handleSalvarRascunho() async {
+    final newCase = _validateAndBuildCase();
+    if (newCase == null) return;
+
+    setState(() => _isLoading = true);
+    HapticFeedback.mediumImpact();
+
+    try {
+      await ref.read(marketingCasesProvider.notifier).saveAsDraft(newCase);
+      if (!mounted) return;
+      widget.onClose();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Rascunho salvo. Veja em Relatórios → Marketing (Não gerado).',
+          ),
+          duration: Duration(seconds: 4),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      _showError('Erro ao salvar rascunho: $e');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  /// Valida o formulário e monta o case. Retorna null se inválido.
+  MarketingCase? _validateAndBuildCase() {
+    FocusScope.of(context).unfocus();
+
+    if (!_formKey.currentState!.validate()) return null;
+
+    if (_tipo == CaseTipo.resultado && _fotoPrincipalUrl == null) {
+      _showError('Foto principal obrigatória para o tipo Resultado.');
+      return null;
+    }
+    if (_tipo == CaseTipo.antesDepois &&
+        (_fotoAntesUrl == null || _fotoDepoisUrl == null)) {
+      _showError('Adicione as fotos Antes e Depois.');
+      return null;
+    }
+
+    if (_tipo == CaseTipo.resultado && !_hasResultadoRoiInputs) {
+      _showError('Preencha os dados de ROI do resultado.');
+      return null;
+    }
+    if (_tipo == CaseTipo.antesDepois && !_validateParametrosComparativos()) {
+      return null;
+    }
+    if (_dataCase == null) {
+      _showError('Selecione a data do case.');
+      return null;
+    }
+    if (_tipo == CaseTipo.avaliacao && _nomeTalhaoCtrl.text.trim().isEmpty) {
+      _showError('Preencha o nome do talhão.');
+      return null;
+    }
+
+    final caseId = _uuid.v4();
     final now = DateTime.now();
-    final newCase = MarketingCase(
+
+    return MarketingCase(
       id: caseId,
       tipo: _tipo,
       visibilidade: _visibilidade,
@@ -261,8 +300,6 @@ class _NovoCaseSheetState extends ConsumerState<NovoCaseSheet> {
       valorGrao: _tipo == CaseTipo.resultado
           ? _parseDouble(_valorGraoCtrl.text)
           : null,
-      // Propaga clientId sempre que houver contexto (visita ou propriedade
-      // do produtor) para ACL de leitura por vínculo (ADR-041).
       clientId: _clientId,
       fotoAntesUrl: _tipo == CaseTipo.antesDepois ? _fotoAntesUrl : null,
       fotoDepoisUrl: _tipo == CaseTipo.antesDepois ? _fotoDepoisUrl : null,
@@ -286,16 +323,11 @@ class _NovoCaseSheetState extends ConsumerState<NovoCaseSheet> {
           ? _conclusaoCtrl.text.trim()
           : null,
       ativo: true,
+      status: MarketingCaseStatus.draft,
       criadoEm: now,
       atualizadoEm: now,
       syncStatus: 'local_only',
     );
-
-    try {
-      widget.onPublicar(newCase);
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
   }
 
   void _showError(String msg) {
@@ -536,6 +568,22 @@ class _NovoCaseSheetState extends ConsumerState<NovoCaseSheet> {
             NovoCasePublicarButton(
               isLoading: _isLoading,
               onPressed: _handlePublicar,
+            ),
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
+              onPressed: _isLoading ? null : _handleSalvarRascunho,
+              icon: const Icon(Icons.save_outlined, size: 20),
+              label: Text(
+                _isLoading ? 'Salvando...' : 'Salvar rascunho (Relatórios)',
+              ),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: PremiumTokens.brandGreen,
+                side: const BorderSide(color: PremiumTokens.brandGreen),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
             ),
             const SizedBox(height: 8),
             TextButton(

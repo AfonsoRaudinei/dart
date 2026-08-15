@@ -14,10 +14,11 @@ import '../../../../modules/marketing/domain/entities/marketing_case.dart';
 import '../../../../modules/marketing/domain/enums/case_tipo.dart';
 import '../../../../modules/marketing/presentation/providers/marketing_providers.dart';
 import '../../../../modules/marketing/presentation/screens/novo_case_type_sheets.dart';
+import '../../../../modules/marketing/presentation/widgets/draft_saved_sheet.dart';
 import '../../../../modules/planos/presentation/providers/plano_providers.dart';
 import '../../../../modules/settings/presentation/providers/user_profile_provider.dart';
 import '../../../../ui/components/map/widgets/producer_map_context_card.dart';
-import '../../widgets/plano_block_sheet.dart';
+import 'package:go_router/go_router.dart';
 
 /// Lança o fluxo completo de criação de novo case a partir de um long-press
 /// no mapa. Verifica plano ativo, limite de cases e exibe os sheets adequados.
@@ -63,15 +64,34 @@ class NovoCaseModalLauncher {
       // 3. Limite: free tier = 3, plano padrão conforme UserPlan
       final limite = plano?.limiteCases ?? 3;
 
-      if (casesPublicados >= limite) {
+    if (casesPublicados >= limite) {
         if (!context.mounted) return;
         Navigator.of(context).pop();
-        PlanoBlockSheet.show(
-          context,
-          motivo: 'limite_atingido',
-          planoLabel: plano?.plano.label,
-          limite: limite,
+        try {
+          await ref.read(marketingCasesProvider.notifier).saveAsDraft(newCase);
+        } catch (_) {
+          if (!context.mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Não foi possível salvar o rascunho. Tente novamente.'),
+            ),
+          );
+          return;
+        }
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Limite de $limite cases publicados. Salvo como Não gerado em '
+              'Relatórios → Marketing.',
+            ),
+            duration: const Duration(seconds: 5),
+          ),
         );
+        final verPlanos = await DraftSavedSheet.show(context);
+        if (verPlanos == true && context.mounted) {
+          context.go('/planos');
+        }
         return;
       }
 

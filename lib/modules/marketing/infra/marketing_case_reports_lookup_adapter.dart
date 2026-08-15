@@ -190,6 +190,7 @@ class MarketingCaseReportsLookupAdapter implements IMarketingCaseReportsLookup {
       'report_brand_name': reportBrandName,
       'report_logo_path': reportLogoPath,
       'nome_vendedor': resolvedConsultant,
+      'cargo_consultor': resolvedRole,
     };
     final html = await MarketingHtmlRenderer.render(data);
 

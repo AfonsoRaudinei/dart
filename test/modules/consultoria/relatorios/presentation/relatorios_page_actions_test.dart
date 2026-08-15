@@ -21,6 +21,8 @@ import 'package:soloforte_app/modules/marketing/data/repositories/i_marketing_ca
 import 'package:soloforte_app/modules/marketing/domain/entities/marketing_case.dart';
 import 'package:soloforte_app/modules/marketing/infra/marketing_case_reports_lookup_adapter.dart';
 import 'package:soloforte_app/modules/marketing/presentation/providers/marketing_providers.dart';
+import 'package:soloforte_app/modules/planos/domain/entities/user_plan.dart';
+import 'package:soloforte_app/modules/planos/presentation/providers/plano_providers.dart';
 import 'package:soloforte_app/modules/settings/presentation/providers/user_profile_provider.dart';
 
 import '../../helpers/consultoria_test_factories.dart';
@@ -502,7 +504,42 @@ void main() {
     expect(find.text('Produtor Teste - Fazenda Marketing'), findsOneWidget);
     expect(find.text('Case não gerado'), findsOneWidget);
     expect(find.text('Não gerado'), findsWidgets);
-    expect(find.text('Gerado'), findsWidgets);
+    expect(find.text('Marketing'), findsWidgets);
+  });
+
+  testWidgets('publicação em Marketing: Publicar draft exibe snackbar de sucesso', (
+    tester,
+  ) async {
+    final marketingRepo = FakeMarketingCaseRepository([
+      _marketingCase(
+        id: 'mkt-draft-publish',
+        produtorFazenda: 'Case para publicar',
+        status: 'draft',
+      ),
+    ]);
+
+    await _pumpScreen(
+      tester,
+      relatorioRepository: FakeRelatorioRepository(),
+      occurrenceRepository: FakeOccurrenceRepository(),
+      marketingRepository: marketingRepo,
+      planoOverride: UserPlan.free(userId: 'test-user'),
+    );
+
+    await _selectSegment(tester, 'Marketing');
+    await tester.tap(find.byTooltip('Ações da publicação').first);
+    await tester.pumpAndSettle();
+    expect(find.text('Publicar'), findsOneWidget);
+
+    await tester.tap(find.text('Publicar'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(find.text('Case publicado com sucesso!'), findsOneWidget);
+    expect(
+      marketingRepo.cases.single.status.toValue(),
+      'published',
+    );
   });
 
   testWidgets('publicação em Marketing não oferece Compartilhar pack', (
@@ -535,6 +572,7 @@ Future<void> _pumpScreen(
   required FakeOccurrenceRepository occurrenceRepository,
   FakeMarketingCaseRepository? marketingRepository,
   List<MarketingCase>? marketingCases,
+  UserPlan? planoOverride,
 }) async {
   final overrides = <Override>[
     currentUserRoleProvider.overrideWithValue(UserRole.consultor),
@@ -556,6 +594,11 @@ Future<void> _pumpScreen(
     ),
     quickPhotoListProvider.overrideWith((ref) async => const []),
   ];
+  if (planoOverride != null) {
+    overrides.add(
+      planoAtivoProvider.overrideWith((ref) async => planoOverride),
+    );
+  }
 
   await tester.pumpWidget(
     ProviderScope(
@@ -640,6 +683,12 @@ class FakeMarketingCaseRepository implements IMarketingCaseRepository {
 
   @override
   Future<MarketingCase> saveCase(MarketingCase marketingCase) async {
+    final index = cases.indexWhere((item) => item.id == marketingCase.id);
+    if (index >= 0) {
+      cases[index] = marketingCase;
+    } else {
+      cases.add(marketingCase);
+    }
     return marketingCase;
   }
 

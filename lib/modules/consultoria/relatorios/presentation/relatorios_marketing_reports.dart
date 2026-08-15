@@ -263,7 +263,7 @@ class _MarketingCasesReportsSectionState
 String _marketingStatusLabel(String statusValue) {
   switch (statusValue.toLowerCase()) {
     case 'published':
-      return 'Gerado';
+      return 'Marketing';
     case 'draft':
       return 'Não gerado';
     case 'pending_sync':
@@ -306,7 +306,7 @@ class _MarketingCaseStatusFilterBar extends StatelessWidget {
       runSpacing: 6,
       children: [
         _statusChip(context, 'Todas', _MarketingCaseStatusFilter.all),
-        _statusChip(context, 'Gerados', _MarketingCaseStatusFilter.published),
+        _statusChip(context, 'Marketing', _MarketingCaseStatusFilter.published),
         _statusChip(
           context,
           'Não gerados',
