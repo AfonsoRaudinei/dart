@@ -107,6 +107,7 @@ Fonte canônica: `.cursor/rules/soloforte-designer.mdc`
 | Jul/2026 | MacBook: pasta `~/appdart`, branch `release/build-156` — NÃO mergear main |
 | Jul/2026 | Prompt Codex merge: `prompt/PROMPT_CODEX_RESOLVER_MERGE_BUILD156.md` |
 | Jul/2026 | HTML reports: logo SoloForte no header; zero ícones genéricos; localização inline; rodapé sem ID/Sync |
+| Ago/2026 | **Pin marketing + norte:** fix em `main` (PR #39/#61, `768e370`/`c33f7c9` + endurecimento). Course-up GNSS removido; `MarkerLayer(rotate:true)` + `topCenter`. Port cirúrgico em `release/build-156` (PR #62). **Dispositivo só atualiza após `git pull` + rebuild IPA (209+ / hot restart não basta se binário antigo).** |
 | Ago/2026 | **Ocorrências mapa IPA 206:** pin atômico em `MapSheetState`; blindagem `.agent/PLANO_BLINDAGEM_OCORRENCIAS_MAPA.md` + REGRA-OCC-8..11 |
 | Ago/2026 | **Coluna direita mapa:** posição travada via `kMapActionColumnBottomInset` (REGRA-MAP-CHROME-1) — sem `mapSheetChromeInsetProvider`; **IPA 208 sem o fix → 209+** |
 | Ago/2026 | **SheetSkin iOS (tema Azul):** cherry-pick `6230591` em `main` · `SoloForteThemeExtension` + `SoloForteSheetSkinIos` · tag `feat/sheet-skin-ios` · doc `design/sheets.md` |
