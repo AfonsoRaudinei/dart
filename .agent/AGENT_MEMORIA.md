@@ -43,20 +43,26 @@ git merge <branch> && git push origin main
 git status && git log -1 --oneline
 ```
 
-### Parte B — MacBook (`~/appdart`)
+### Parte B — MacBook (pasta local do projeto)
+
+**Path:** a pasta **não** é necessariamente `~/appdart` (esse path pode não existir). Usar o diretório do clone onde o Cursor Desktop já está aberto (prompt costuma mostrar `... appdart %`).
 
 **Preferência atual (IPA 209+ / pin-norte / coluna direita):**
 
 ```bash
-cd ~/appdart
+# já dentro da pasta do projeto:
 git fetch origin
 git checkout main
 git pull origin main
 flutter pub get
 git status && git log -1 --oneline
+# esperado: SHA = origin/main (ex.: ddf7f56+)
+# depois: flutter run  OU  archive IPA novo — hot restart nao basta
 ```
 
 **Legado `release/build-156`:** só se o fluxo GNSS cirúrgico ainda exigir essa branch — **não mergear `origin/main` cego**; usar port. Pin/norte já portado (PR #62). Ver `prompt/PROMPT_CODEX_RESOLVER_MERGE_BUILD156.md`.
+
+**zsh:** não cole comentários com parênteses na mesma linha do comando — zsh trata `(...)` como glob qualifier (`unknown file attribute`).
 
 ### Parte C — Encerramento obrigatório na resposta
 
