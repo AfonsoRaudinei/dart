@@ -186,6 +186,9 @@ class MapBuildOrchestrator extends ConsumerWidget {
                   )
                 : null,
             onMapReady: () {
+              // Norte para cima no boot — evita câmera residual / IPA antigo
+              // com course-up GNSS deixando norte nas laterais.
+              mapController.rotate(0);
               // ADR-032 F1: _isMapReady → mapReadyStateProvider
               ref.read(mapReadyStateProvider.notifier).state = true;
               ref

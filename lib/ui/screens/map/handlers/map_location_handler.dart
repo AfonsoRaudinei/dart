@@ -263,8 +263,12 @@ class MapLocationHandler {
   }
 
   /// Cancela o follow contínuo da câmera.
-  static void stopFollowing() {
+  ///
+  /// Se [mapController] for passado, zera a rotação (norte para cima).
+  /// Útil ao sair de following após IPA com course-up residual.
+  static void stopFollowing({MapController? mapController}) {
     _followSubscription?.cancel();
     _followSubscription = null;
+    mapController?.rotate(0);
   }
 }

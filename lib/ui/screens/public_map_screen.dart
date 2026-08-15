@@ -146,6 +146,15 @@ class _PublicMapScreenState extends ConsumerState<PublicMapScreen> {
               initialZoom: _defaultZoom,
               minZoom: 3.0,
               maxZoom: 18.0,
+              // Norte sempre para cima — mesmo contrato do MapCanvas privado.
+              // Sem isso o gesto de dois dedos girava a câmera e o norte
+              // ficava nas laterais sem caminho de volta (pins já usam rotate:true).
+              interactionOptions: const InteractionOptions(
+                flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
+              ),
+              onMapReady: () {
+                _mapController.rotate(0);
+              },
               onPositionChanged: (camera, _) {
                 if (camera.zoom == _currentZoom) return;
                 setState(() => _currentZoom = camera.zoom);
