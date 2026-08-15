@@ -251,6 +251,7 @@ void showAdicionarTalhaoModal(BuildContext context, Client client) {
   HapticFeedback.lightImpact();
   showSoloForteSheet<void>(
     context: context,
+    preserveMaterialDefaults: true,
     backgroundColor: Colors.transparent,
     showDragHandle: false,
     useSafeArea: false,

@@ -140,6 +140,7 @@ class OccurrenceDetailSheet extends ConsumerWidget {
     Navigator.of(context).pop();
     await showSoloForteSheet<void>(
       context: context,
+      preserveMaterialDefaults: true,
       backgroundColor: Colors.transparent,
       builder: (sheetContext) => FractionallySizedBox(
         heightFactor: 0.92,

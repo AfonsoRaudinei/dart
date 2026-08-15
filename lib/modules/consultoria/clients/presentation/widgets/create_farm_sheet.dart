@@ -207,6 +207,7 @@ Future<void> showCreateFarmSheet(
 
   return showSoloForteSheet<void>(
     context: context,
+    preserveMaterialDefaults: true,
     backgroundColor: Colors.transparent,
     showDragHandle: false,
     useSafeArea: false,

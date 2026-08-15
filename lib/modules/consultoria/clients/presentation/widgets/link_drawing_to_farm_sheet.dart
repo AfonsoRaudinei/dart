@@ -362,6 +362,7 @@ Future<Farm?> showLinkDrawingToFarmSheet(
 }) {
   return showSoloForteSheet<Farm>(
     context: context,
+    preserveMaterialDefaults: true,
     backgroundColor: Colors.transparent,
     showDragHandle: false,
     useSafeArea: false,

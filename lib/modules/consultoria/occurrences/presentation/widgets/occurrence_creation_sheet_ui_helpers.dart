@@ -142,6 +142,7 @@ extension _OccurrenceCreationSheetUiHelpers on _OccurrenceCreationSheetState {
   Future<void> _pickPhoto(OccurrenceCategory cat) async {
     await showSoloForteSheet<void>(
       context: context,
+      preserveMaterialDefaults: true,
       backgroundColor: Colors.transparent,
       showDragHandle: false,
       useSafeArea: false,
@@ -211,6 +212,7 @@ extension _OccurrenceCreationSheetUiHelpers on _OccurrenceCreationSheetState {
     }
     final cat = await showSoloForteSheet<OccurrenceCategory>(
       context: context,
+      preserveMaterialDefaults: true,
       backgroundColor: Colors.transparent,
       showDragHandle: false,
       useSafeArea: false,
