@@ -66,6 +66,11 @@ resolvedBackground = transparentOverride
 | planos | `planos_screen.dart` |
 | map/ui | `map_sheet_controller.dart`, `visit_active_card.dart`, `publication_actions_bottom_sheet.dart` |
 
+**Check-in tela branca (tema Azul):** `map_sheet_controller` ficou de fora do fix `9495998`.
+`transparent` + chrome iOS (`Column` + handle) envolvendo `DraggableScrollableSheet`
+colapsa a altura → modal prata/branco vazio. Correção: `preserveMaterialDefaults: true`
+no `openSheet` (mesmo padrão dos demais hosts transparent).
+
 ### Sintoma em Relatórios
 
 - `relatorios_page.dart` abre `OccurrenceCreationSheet` via `showSoloForteSheet(..., transparent)`.
