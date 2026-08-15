@@ -8,6 +8,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../../ui/theme/premium/design_tokens.dart';
 import '../../../../core/router/app_routes.dart';
 import 'package:soloforte_app/core/design/sf_icons.dart';
+import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
 import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 import 'dart:ui' as ui;
 import '../../../../core/session/local_session_identity.dart';
@@ -343,37 +344,56 @@ class SettingsScreen extends ConsumerWidget {
     showSoloForteSheet(
       context: context,
       showDragHandle: false,
-      builder: (_) => Material(
-        color: Theme.of(context).cardColor,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-        clipBehavior: Clip.antiAlias,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.camera_alt),
-              title: const Text('Câmera'),
-              onTap: () {
-                Navigator.pop(context);
-                ref
-                    .read(profileProvider.notifier)
-                    .updateImage(ImageSource.camera);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.photo_library),
-              title: const Text('Galeria'),
-              onTap: () {
-                Navigator.pop(context);
-                ref
-                    .read(profileProvider.notifier)
-                    .updateImage(ImageSource.gallery);
-              },
-            ),
-            const SizedBox(height: 20),
-          ],
-        ),
-      ),
+      builder: (sheetContext) {
+        final isIos = soloForteSheetIsIos(sheetContext);
+        final materialColor = isIos
+            ? SoloForteSheetSkinIos.background
+            : Theme.of(context).cardColor;
+        final iconColor =
+            isIos ? SoloForteSheetSkinIos.iconStroke : null;
+        final titleColor =
+            isIos ? SoloForteSheetSkinIos.titleColor : null;
+        final radius = isIos
+            ? SoloForteSheetSkinIos.sheetRadius
+            : 20.0;
+        return Material(
+          color: materialColor,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(radius)),
+          clipBehavior: Clip.antiAlias,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: Icon(Icons.camera_alt, color: iconColor),
+                title: Text(
+                  'Câmera',
+                  style: TextStyle(color: titleColor),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  ref
+                      .read(profileProvider.notifier)
+                      .updateImage(ImageSource.camera);
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.photo_library, color: iconColor),
+                title: Text(
+                  'Galeria',
+                  style: TextStyle(color: titleColor),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  ref
+                      .read(profileProvider.notifier)
+                      .updateImage(ImageSource.gallery);
+                },
+              ),
+              const SizedBox(height: 20),
+            ],
+          ),
+        );
+      },
     );
   }
 
