@@ -30,3 +30,14 @@
 - Camadas devem ser isoladas, previsiveis e sem recomposicao desnecessaria.
 - Testes esperados: testes de mapa em `test/ui/components/map/` e modulo afetado.
 - Rodar `flutter analyze lib/modules/map/` e `./tool/arch_check.sh`.
+
+## Coluna direita — REGRA-MAP-CHROME-1
+
+- Posicao travada: `kMapActionColumnBottomInset` + `safeBottom` — **nunca** `mapSheetChromeInsetProvider`
+- Gaps canonicos: 26dp (camadas↔+) · 16dp (+↔check-in)
+- Teste: `flutter test test/regression/map/controls_overlay_regression_test.dart`
+- Doc: `.agent/Prompt.md`
+
+## Sheets do mapa — REGRA-SHEET-BLAST-1
+
+MapBottomSheet e sheets do mapa usam SheetSkin iOS no tema Azul. Mudanca em `core/ui/sheets/` e transversal — ver `.agent/AUDITORIA_REGRESSAO_IPA210.md`.

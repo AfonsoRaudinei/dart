@@ -23,3 +23,14 @@
 - Testes esperados: `test/modules/consultoria/`.
 - Rodar `flutter analyze lib/modules/consultoria/` e `./tool/arch_check.sh`.
 
+## Relatorios — cautela (IPA 210)
+
+`relatorios/` herda chrome de `showSoloForteSheet` — regressao visual pode ocorrer **sem commit em relatorios/**.
+
+- Sheets: `relatorios_page.dart` usa `Colors.transparent` — conteudo interno deve usar `soloForteSheetIsIos(context)` para cores
+- HTML: logo SoloForte obrigatorio (`.cursor/rules/soloforte-designer.mdc`)
+- Export iPad: `resolveSharePositionOrigin()`
+- Filtro produtor/`clientId` em listas e export
+- Sem import direto `modules/marketing/` (ADR-050)
+- Doc: `.agent/AUDITORIA_REGRESSAO_IPA210.md`
+

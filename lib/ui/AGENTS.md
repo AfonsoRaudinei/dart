@@ -35,3 +35,14 @@
 - Navegacao sempre via `context.go()` ou `context.push()` com rotas explicitas.
 - Componentes globais devem decidir comportamento por namespace, nao por tela visivel.
 - Rodar testes de UI afetados e `./tool/arch_check.sh`.
+
+## Map chrome — REGRA-MAP-CHROME-1
+
+Coluna direita em `lib/ui/components/map/widgets/map_controls_overlay.dart`:
+
+- `kMapActionColumnBottomInset` — nunca `mapSheetChromeInsetProvider`
+- Teste: `test/regression/map/controls_overlay_regression_test.dart`
+
+## Sheets — REGRA-SHEET-BLAST-1
+
+Componentes de mapa e shell usam `showSoloForteSheet`. Mudanca em `core/ui/sheets/` afeta todos os modulos — ver `.agent/AUDITORIA_REGRESSAO_IPA210.md`.

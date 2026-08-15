@@ -28,3 +28,12 @@
 - Depois de editar contratos: validar todos os consumidores e testes do modulo afetado.
 - Rodar `./tool/arch_check.sh`; entrega so vale com Exit 0.
 
+## Sheets compartilhados (REGRA-SHEET-BLAST-1)
+
+`core/ui/sheets/` e infra transversal — mudanca aqui afeta 8+ bounded contexts.
+
+- Inventario obrigatorio: `rg showSoloForteSheet` + `rg 'backgroundColor: Colors.transparent'`
+- Proibido inverter contrato `transparent` / `preserveMaterialDefaults` sem atualizar callers
+- Teste: `flutter test test/regression/sheets/soloforte_sheet_contract_test.dart`
+- Doc: `.agent/AUDITORIA_REGRESSAO_IPA210.md` · `design/sheets.md`
+
