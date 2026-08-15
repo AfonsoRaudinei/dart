@@ -205,7 +205,7 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
     // Usar referência cacheada em _drawingController, capturada no build().
     // NUNCA usar ref.read() aqui — causa BadState crash.
     _drawingController?.cancelOperation(notify: false);
-    MapLocationHandler.stopFollowing();
+    MapLocationHandler.stopFollowing(mapController: _mapController);
     MapCameraSnapshotThrottle.cancel();
     MapCameraEase.cancel();
 
@@ -338,7 +338,7 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
   void _handleLocationModeChanged(MapLocationMode mode) {
     switch (mode) {
       case MapLocationMode.idle:
-        MapLocationHandler.stopFollowing();
+        MapLocationHandler.stopFollowing(mapController: _mapController);
         break;
       case MapLocationMode.following:
       case MapLocationMode.northLocked:
@@ -686,7 +686,8 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
       toggleDrawMode: _toggleDrawMode,
       centerOnUser: _centerOnUser,
       onLocationModeChanged: _handleLocationModeChanged,
-      stopFollowing: MapLocationHandler.stopFollowing,
+      stopFollowing: () =>
+          MapLocationHandler.stopFollowing(mapController: _mapController),
       armOccurrenceMode: _armOccurrenceMode,
       armMarketingMode: _armMarketingMode,
       handleOccurrencePinTap: _handleOccurrencePinTap,
