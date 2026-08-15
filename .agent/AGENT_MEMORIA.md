@@ -43,18 +43,20 @@ git merge <branch> && git push origin main
 git status && git log -1 --oneline
 ```
 
-### Parte B — MacBook (`~/appdart`, branch `release/build-156`)
+### Parte B — MacBook (`~/appdart`)
+
+**Preferência atual (IPA 209+ / pin-norte / coluna direita):**
 
 ```bash
 cd ~/appdart
 git fetch origin
-git checkout release/build-156
-git pull origin release/build-156
+git checkout main
+git pull origin main
+flutter pub get
 git status && git log -1 --oneline
 ```
 
-> **Não mergear `origin/main`** — usar port cirúrgico GNSS.  
-> Ver `prompt/PROMPT_CODEX_RESOLVER_MERGE_BUILD156.md`
+**Legado `release/build-156`:** só se o fluxo GNSS cirúrgico ainda exigir essa branch — **não mergear `origin/main` cego**; usar port. Pin/norte já portado (PR #62). Ver `prompt/PROMPT_CODEX_RESOLVER_MERGE_BUILD156.md`.
 
 ### Parte C — Encerramento obrigatório na resposta
 
