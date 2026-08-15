@@ -3,6 +3,8 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:soloforte_app/core/constants/layout_constants.dart';
+import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
+import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 import 'package:soloforte_app/modules/ndvi/domain/entities/ndvi_image.dart';
 import 'package:soloforte_app/modules/ndvi/domain/ndvi_image_utils.dart';
 import 'package:soloforte_app/modules/ndvi/presentation/providers/ndvi_providers.dart';
@@ -25,26 +27,46 @@ class NdviTalhaoSheet extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     ref.watch(ndviEnsureCurrentDateProvider(fieldId));
     final ndviAsync = ref.watch(ndviImagesProvider(fieldId));
+    final isIos = soloForteSheetIsIos(context);
+    final sheetBg = isIos
+        ? SoloForteSheetSkinIos.background
+        : const Color(0xFF1C1C1E);
+    final sheetRadius = isIos ? SoloForteSheetSkinIos.sheetRadius : 16.0;
+    final handleColor = isIos
+        ? SoloForteSheetSkinIos.handleColor
+        : const Color(0xFF3A3A3C);
+    final titleColor = isIos ? SoloForteSheetSkinIos.titleColor : null;
+    final subtitleColor = isIos
+        ? SoloForteSheetSkinIos.subtitleColor
+        : Theme.of(context).colorScheme.onSurfaceVariant;
 
     return Container(
-      decoration: const BoxDecoration(
-        color: Color(0xFF1C1C1E),
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      decoration: BoxDecoration(
+        color: sheetBg,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(sheetRadius)),
+        border: isIos
+            ? const Border(
+                top: BorderSide(color: SoloForteSheetSkinIos.sheetBorder),
+              )
+            : null,
       ),
       child: Column(
         children: [
-          // Drag handle
-          Center(
-            child: Container(
-              margin: const EdgeInsets.only(top: 12, bottom: 8),
-              width: 36,
-              height: 4,
-              decoration: BoxDecoration(
-                color: const Color(0xFF3A3A3C),
-                borderRadius: BorderRadius.circular(10),
+          // Drag handle — omitido no iOS (chrome do showSoloForteSheet)
+          if (!isIos)
+            Center(
+              child: Container(
+                margin: const EdgeInsets.only(top: 12, bottom: 8),
+                width: 36,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: handleColor,
+                  borderRadius: BorderRadius.circular(10),
+                ),
               ),
-            ),
-          ),
+            )
+          else
+            const SizedBox(height: 8),
 
           Expanded(
             child: Padding(
@@ -78,9 +100,10 @@ class NdviTalhaoSheet extends ConsumerWidget {
                           children: [
                             Text(
                               fieldName,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
+                                color: titleColor,
                               ),
                             ),
                             if (areaHa != null) ...[
@@ -89,9 +112,7 @@ class NdviTalhaoSheet extends ConsumerWidget {
                                 '•  ${areaHa!.toStringAsFixed(1)} ha',
                                 style: TextStyle(
                                   fontSize: 16,
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.onSurfaceVariant,
+                                  color: subtitleColor,
                                 ),
                               ),
                             ],
@@ -238,7 +259,10 @@ class NdviTalhaoSheet extends ConsumerWidget {
                                                 .state =
                                             safeIndex + 1
                                   : null,
-                              icon: const Icon(Icons.chevron_left_rounded),
+                              icon: Icon(
+                                Icons.chevron_left_rounded,
+                                color: titleColor,
+                              ),
                             ),
                             Padding(
                               padding: const EdgeInsets.symmetric(
@@ -246,8 +270,9 @@ class NdviTalhaoSheet extends ConsumerWidget {
                               ),
                               child: Text(
                                 '${safeIndex + 1} de ${images.length} imagens',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontWeight: FontWeight.w500,
+                                  color: titleColor,
                                 ),
                               ),
                             ),
@@ -263,7 +288,10 @@ class NdviTalhaoSheet extends ConsumerWidget {
                                                 .state =
                                             safeIndex - 1
                                   : null,
-                              icon: const Icon(Icons.chevron_right_rounded),
+                              icon: Icon(
+                                Icons.chevron_right_rounded,
+                                color: titleColor,
+                              ),
                             ),
                           ],
                         ),
@@ -273,12 +301,16 @@ class NdviTalhaoSheet extends ConsumerWidget {
                         // Dados NDVI
                         Text(
                           'NDVI médio: ${current.ndviMean.toStringAsFixed(2)}',
-                          style: const TextStyle(fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: titleColor,
+                          ),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           'Mín: ${current.ndviMin.toStringAsFixed(2)}   Máx: ${current.ndviMax.toStringAsFixed(2)}',
-                          style: Theme.of(context).textTheme.bodySmall,
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(color: subtitleColor),
                         ),
 
                         const SizedBox(height: kFabSafeArea),
@@ -368,6 +400,9 @@ class _ErrorState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isIos = soloForteSheetIsIos(context);
+    final textColor = isIos ? SoloForteSheetSkinIos.titleColor : null;
+    final accent = isIos ? SoloForteSheetSkinIos.iconStroke : null;
     return SizedBox(
       height: 300,
       child: Column(
@@ -375,8 +410,14 @@ class _ErrorState extends StatelessWidget {
         children: [
           const Icon(Icons.error_outline, size: 48, color: Colors.red),
           const SizedBox(height: 16),
-          const Text('Erro ao carregar imagens NDVI'),
-          TextButton(onPressed: onRetry, child: const Text('Tentar novamente')),
+          Text(
+            'Erro ao carregar imagens NDVI',
+            style: TextStyle(color: textColor),
+          ),
+          TextButton(
+            onPressed: onRetry,
+            child: Text('Tentar novamente', style: TextStyle(color: accent)),
+          ),
         ],
       ),
     );
@@ -388,12 +429,17 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const SizedBox(
+    final isIos = soloForteSheetIsIos(context);
+    return SizedBox(
       height: 200,
       child: Center(
         child: Text(
           'Nenhuma imagem disponível para este talhão',
-          style: TextStyle(color: Colors.grey),
+          style: TextStyle(
+            color: isIos
+                ? SoloForteSheetSkinIos.subtitleColor
+                : Colors.grey,
+          ),
         ),
       ),
     );
@@ -405,8 +451,13 @@ class _MaskUnavailable extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
-      child: Icon(Icons.filter_b_and_w_outlined, color: Colors.white, size: 48),
+    final isIos = soloForteSheetIsIos(context);
+    return Center(
+      child: Icon(
+        Icons.filter_b_and_w_outlined,
+        color: isIos ? SoloForteSheetSkinIos.iconStroke : Colors.white,
+        size: 48,
+      ),
     );
   }
 }
@@ -416,8 +467,13 @@ class _ImageUnavailable extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
-      child: Icon(Icons.satellite_alt_outlined, color: Colors.white, size: 48),
+    final isIos = soloForteSheetIsIos(context);
+    return Center(
+      child: Icon(
+        Icons.satellite_alt_outlined,
+        color: isIos ? SoloForteSheetSkinIos.iconStroke : Colors.white,
+        size: 48,
+      ),
     );
   }
 }
@@ -430,23 +486,37 @@ class _InfoPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isIos = soloForteSheetIsIos(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.06),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        color: isIos
+            ? SoloForteSheetSkinIos.cardBackground
+            : Colors.white.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(
+          isIos ? SoloForteSheetSkinIos.cardRadius : 999,
+        ),
+        border: Border.all(
+          color: isIos
+              ? SoloForteSheetSkinIos.cardBorder
+              : Colors.white.withValues(alpha: 0.08),
+        ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 14, color: Colors.white70),
+          Icon(
+            icon,
+            size: 14,
+            color: isIos ? SoloForteSheetSkinIos.iconStroke : Colors.white70,
+          ),
           const SizedBox(width: 6),
           Text(
             label,
-            style: Theme.of(
-              context,
-            ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600),
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              fontWeight: FontWeight.w600,
+              color: isIos ? SoloForteSheetSkinIos.titleColor : null,
+            ),
           ),
         ],
       ),
@@ -520,11 +590,22 @@ class _LegendChip extends StatelessWidget {
           decoration: BoxDecoration(
             color: item.color,
             borderRadius: BorderRadius.circular(3),
-            border: Border.all(color: Colors.white24),
+            border: Border.all(
+              color: soloForteSheetIsIos(context)
+                  ? SoloForteSheetSkinIos.cardBorder
+                  : Colors.white24,
+            ),
           ),
         ),
         const SizedBox(width: 6),
-        Text(item.label, style: Theme.of(context).textTheme.bodySmall),
+        Text(
+          item.label,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: soloForteSheetIsIos(context)
+                ? SoloForteSheetSkinIos.subtitleColor
+                : null,
+          ),
+        ),
       ],
     );
   }
