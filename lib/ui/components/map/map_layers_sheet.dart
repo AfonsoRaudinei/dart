@@ -68,13 +68,17 @@ class LayersSheet extends ConsumerWidget {
             padding: const EdgeInsets.fromLTRB(20, 16, 12, 12),
             child: Row(
               children: [
-                const Expanded(
+                Expanded(
                   child: Text(
                     'Camadas',
                     style: TextStyle(
-                      fontSize: SoloForteSheetTokens.titleFontSize,
-                      fontWeight: SoloForteSheetTokens.titleWeight,
-                      color: SoloForteSheetTokens.titleColor,
+                      fontSize: isIos ? 16 : SoloForteSheetTokens.titleFontSize,
+                      fontWeight: isIos
+                          ? FontWeight.w700
+                          : SoloForteSheetTokens.titleWeight,
+                      color: isIos
+                          ? SoloForteSheetSkinIos.titleColor
+                          : SoloForteSheetTokens.titleColor,
                     ),
                   ),
                 ),
@@ -82,10 +86,12 @@ class LayersSheet extends ConsumerWidget {
                   onPressed:
                       onClose ??
                       () => Navigator.of(context, rootNavigator: false).pop(),
-                  child: const Text(
+                  child: Text(
                     'Cancelar',
                     style: TextStyle(
-                      color: _accent,
+                      color: isIos
+                          ? SoloForteSheetSkinIos.ghostText
+                          : _accent,
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
                     ),
@@ -94,7 +100,12 @@ class LayersSheet extends ConsumerWidget {
               ],
             ),
           ),
-          const Divider(height: 1, color: SoloForteSheetTokens.divider),
+          Divider(
+            height: 1,
+            color: isIos
+                ? SoloForteSheetSkinIos.rowDivider
+                : SoloForteSheetTokens.divider,
+          ),
           Flexible(
             child: ListView(
               shrinkWrap: true,
@@ -175,17 +186,28 @@ class LayersSheet extends ConsumerWidget {
                 ),
                 if (showRadar) ...[
                   const SizedBox(height: 12),
-                  const Row(
+                  Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(Icons.info_outline, size: 14, color: Colors.white60),
-                      SizedBox(width: 6),
+                      Icon(
+                        Icons.info_outline,
+                        size: 14,
+                        color: isIos
+                            ? SoloForteSheetSkinIos.subtitleColor
+                            : Colors.white60,
+                      ),
+                      const SizedBox(width: 6),
                       Expanded(
                         child: Text(
                           'Mostra a chuva em tempo real (áreas em azul). '
                           'Use a camada Satélite para melhor contraste. '
                           'Pode não haver chuva na sua região agora.',
-                          style: TextStyle(color: Colors.white60, fontSize: 11),
+                          style: TextStyle(
+                            color: isIos
+                                ? SoloForteSheetSkinIos.subtitleColor
+                                : Colors.white60,
+                            fontSize: 11,
+                          ),
                         ),
                       ),
                     ],
@@ -230,7 +252,11 @@ class LayersSheet extends ConsumerWidget {
                   onDownloadOfflineArea: onDownloadOfflineArea,
                 ),
                 const SizedBox(height: kFabSafeArea),
-                const Divider(color: SoloForteSheetTokens.divider),
+                Divider(
+                  color: isIos
+                      ? SoloForteSheetSkinIos.rowDivider
+                      : SoloForteSheetTokens.divider,
+                ),
                 const SizedBox(height: 8),
                 _AdvancedLayerTile(
                   icon: SFIcons.layers,
@@ -278,26 +304,38 @@ class LayersSheet extends ConsumerWidget {
                 if (onMunicipalitySearch != null)
                   ListTile(
                     contentPadding: EdgeInsets.zero,
-                    leading: const Icon(
+                    leading: Icon(
                       Icons.location_city_outlined,
-                      color: Colors.white70,
+                      color: isIos
+                          ? SoloForteSheetSkinIos.iconStroke
+                          : Colors.white70,
                     ),
-                    title: const Text(
+                    title: Text(
                       'Ir para município',
-                      style: TextStyle(color: Colors.white),
+                      style: TextStyle(
+                        color: isIos
+                            ? SoloForteSheetSkinIos.titleColor
+                            : Colors.white,
+                      ),
                     ),
                     onTap: onMunicipalitySearch,
                   ),
                 if (onCoordinateSearch != null)
                   ListTile(
                     contentPadding: EdgeInsets.zero,
-                    leading: const Icon(
+                    leading: Icon(
                       Icons.search_rounded,
-                      color: Colors.white70,
+                      color: isIos
+                          ? SoloForteSheetSkinIos.iconStroke
+                          : Colors.white70,
                     ),
-                    title: const Text(
+                    title: Text(
                       'Ir para coordenada',
-                      style: TextStyle(color: Colors.white),
+                      style: TextStyle(
+                        color: isIos
+                            ? SoloForteSheetSkinIos.titleColor
+                            : Colors.white,
+                      ),
                     ),
                     onTap: onCoordinateSearch,
                   ),
@@ -666,6 +704,16 @@ class _LayerGridTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isIos = soloForteSheetIsIos(context);
+    final labelColor = isIos
+        ? (isSelected
+            ? SoloForteSheetSkinIos.titleColor
+            : SoloForteSheetSkinIos.subtitleColor)
+        : (isSelected ? Colors.white : Colors.white60);
+    final selectionBorder = isIos
+        ? SoloForteSheetSkinIos.iconStroke
+        : _accent;
+
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: onTap,
@@ -686,7 +734,7 @@ class _LayerGridTile extends StatelessWidget {
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(_radius),
                           border: Border.all(
-                            color: _accent,
+                            color: selectionBorder,
                             width: _borderWidth,
                           ),
                         ),
@@ -711,7 +759,7 @@ class _LayerGridTile extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
               textAlign: TextAlign.center,
               style: TextStyle(
-                color: isSelected ? Colors.white : Colors.white60,
+                color: labelColor,
                 fontSize: 12,
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
               ),
@@ -744,17 +792,22 @@ class _AdvancedLayerTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isIos = soloForteSheetIsIos(context);
+    final iconColor =
+        isIos ? SoloForteSheetSkinIos.iconStroke : Colors.white70;
+    final titleColor =
+        isIos ? SoloForteSheetSkinIos.titleColor : Colors.white;
+    final mutedColor =
+        isIos ? SoloForteSheetSkinIos.subtitleColor : Colors.white60;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         ListTile(
           contentPadding: EdgeInsets.zero,
-          leading: Icon(icon, color: Colors.white70),
-          title: Text(title, style: const TextStyle(color: Colors.white)),
-          subtitle: Text(
-            statusLabel,
-            style: const TextStyle(color: Colors.white60),
-          ),
+          leading: Icon(icon, color: iconColor),
+          title: Text(title, style: TextStyle(color: titleColor)),
+          subtitle: Text(statusLabel, style: TextStyle(color: mutedColor)),
           trailing: Switch(value: enabled, onChanged: onToggle),
           onTap: onConfigure,
         ),
@@ -763,12 +816,12 @@ class _AdvancedLayerTile extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Icon(Icons.info_outline, size: 14, color: Colors.white60),
+              Icon(Icons.info_outline, size: 14, color: mutedColor),
               const SizedBox(width: 6),
               Expanded(
                 child: Text(
                   hint,
-                  style: const TextStyle(color: Colors.white60, fontSize: 11),
+                  style: TextStyle(color: mutedColor, fontSize: 11),
                 ),
               ),
             ],

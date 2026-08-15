@@ -539,8 +539,10 @@ git push origin cursor/marketing-cliente-limite-493d --force
 
 ### Fase 2 residual (opcional)
 
-- Conteúdo profundo de `LayersSheet` / forms de drawing ainda com labels escuros
-  em alguns sub-fluxos — chrome e lista principal já iOS
+- Forms/dialogs profundos de WMS/Raster no `LayersSheet` ainda usam
+  `InputDecoration` Material padrão — chrome e lista principal já iOS
+- Contraste texto branco sobre prata: **corrigido** em LayersSheet,
+  placeholder de ocorrência, MapOfflineStatusCard (15/08/2026)
 
 ---
 

@@ -371,6 +371,18 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
   Widget _buildOccurrencePinRequiredPlaceholder() {
     return LayoutBuilder(
       builder: (context, constraints) {
+        final isIos = soloForteSheetIsIos(context);
+        final titleColor =
+            isIos ? SoloForteSheetSkinIos.titleColor : Colors.white;
+        final bodyColor = isIos
+            ? SoloForteSheetSkinIos.subtitleColor
+            : const Color(0xFF8E8E93);
+        final buttonFg =
+            isIos ? SoloForteSheetSkinIos.ghostText : Colors.white70;
+        final buttonSide = isIos
+            ? SoloForteSheetSkinIos.ghostBorder
+            : Colors.white24;
+
         return SingleChildScrollView(
           controller: _scrollController,
           physics: const BouncingScrollPhysics(),
@@ -390,24 +402,24 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
                   Text(
                     'Marque o ponto no mapa',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: Colors.white,
+                      color: titleColor,
                       fontWeight: FontWeight.w600,
                     ),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 8),
-                  const Text(
+                  Text(
                     'Toque no mapa para definir onde a ocorrência aconteceu. '
                     'O formulário só abre depois que o ponto estiver marcado.',
-                    style: TextStyle(color: Color(0xFF8E8E93), fontSize: 14),
+                    style: TextStyle(color: bodyColor, fontSize: 14),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 24),
                   OutlinedButton(
                     onPressed: widget.onClose,
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.white70,
-                      side: const BorderSide(color: Colors.white24),
+                      foregroundColor: buttonFg,
+                      side: BorderSide(color: buttonSide),
                       padding: const EdgeInsets.symmetric(
                         horizontal: 24,
                         vertical: 14,

@@ -8,6 +8,8 @@ import '../../../../core/domain/map_models.dart';
 import '../../../../core/providers/connectivity_provider.dart';
 import '../../../../core/state/map_ui_providers.dart';
 import '../../../../core/state/map_state.dart';
+import '../../../../core/ui/sheets/sheet_tokens.dart';
+import '../../../../core/ui/sheets/soloforte_sheet.dart';
 import '../../../theme/premium/design_tokens.dart';
 
 enum MapOfflineVisualState {
@@ -311,6 +313,25 @@ class MapOfflineStatusCard extends ConsumerWidget {
     final canDownload =
         presentation.canDownloadCurrentArea && onDownloadOfflineArea != null;
     final subtitle = '${mapLayerLabel(snapshot.activeLayer)} • $areasLabel';
+    final isIos = soloForteSheetIsIos(context);
+    final cardBg = isIos
+        ? SoloForteSheetSkinIos.cardBackground
+        : Colors.white.withValues(alpha: 0.06);
+    final cardBorder = isIos
+        ? SoloForteSheetSkinIos.cardBorder
+        : presentation.accentColor.withValues(alpha: 0.28);
+    final labelMuted =
+        isIos ? SoloForteSheetSkinIos.subtitleColor : Colors.white70;
+    final titleColor =
+        isIos ? SoloForteSheetSkinIos.titleColor : Colors.white;
+    final subtitleColor = isIos
+        ? SoloForteSheetSkinIos.subtitleColor
+        : Colors.white.withValues(alpha: 0.62);
+    final downloadIconColor =
+        isIos ? SoloForteSheetSkinIos.iconStroke : Colors.white;
+    final downloadBg = isIos
+        ? SoloForteSheetSkinIos.iconBackground
+        : presentation.accentColor.withValues(alpha: 0.18);
 
     return Semantics(
       button: canDownload,
@@ -321,17 +342,17 @@ class MapOfflineStatusCard extends ConsumerWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.06),
+            color: cardBg,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: presentation.accentColor.withValues(alpha: 0.28),
-            ),
+            border: Border.all(color: cardBorder),
           ),
           child: Row(
             children: [
               Icon(
                 presentation.icon,
-                color: presentation.accentColor,
+                color: isIos
+                    ? SoloForteSheetSkinIos.iconStroke
+                    : presentation.accentColor,
                 size: 22,
               ),
               const SizedBox(width: 10),
@@ -339,10 +360,10 @@ class MapOfflineStatusCard extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'Mapa offline',
                       style: TextStyle(
-                        color: Colors.white70,
+                        color: labelMuted,
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                       ),
@@ -350,8 +371,8 @@ class MapOfflineStatusCard extends ConsumerWidget {
                     const SizedBox(height: 3),
                     Text(
                       canDownload ? 'Baixar área visível' : presentation.title,
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: titleColor,
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
                       ),
@@ -362,7 +383,7 @@ class MapOfflineStatusCard extends ConsumerWidget {
                     Text(
                       subtitle,
                       style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.62),
+                        color: subtitleColor,
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                       ),
@@ -378,13 +399,13 @@ class MapOfflineStatusCard extends ConsumerWidget {
                   width: 34,
                   height: 34,
                   decoration: BoxDecoration(
-                    color: presentation.accentColor.withValues(alpha: 0.18),
+                    color: downloadBg,
                     borderRadius: BorderRadius.circular(10),
                   ),
                   alignment: Alignment.center,
-                  child: const Icon(
+                  child: Icon(
                     Icons.download_rounded,
-                    color: Colors.white,
+                    color: downloadIconColor,
                     size: 18,
                   ),
                 ),

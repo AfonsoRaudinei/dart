@@ -244,7 +244,7 @@ class _ActionRow extends StatelessWidget {
               height: 52,
               child: Row(
                 children: [
-                  const SizedBox(width: 12),
+                  if (isIos) const SizedBox(width: 12),
                   Container(
                     width: 34,
                     height: 34,
@@ -274,7 +274,7 @@ class _ActionRow extends StatelessWidget {
                     ),
                   ),
                   Icon(SFIcons.chevronRight, color: arrowColor, size: 18),
-                  const SizedBox(width: 12),
+                  if (isIos) const SizedBox(width: 12),
                 ],
               ),
             ),
@@ -282,7 +282,7 @@ class _ActionRow extends StatelessWidget {
               Divider(
                 height: 1,
                 thickness: 0.5,
-                indent: 60,
+                indent: isIos ? 60 : 48,
                 color: dividerColor,
               ),
           ],

@@ -160,7 +160,11 @@ Future<T?> showSoloForteSheet<T>({
             : null),
     builder: (ctx) {
       final sheet = builder(ctx);
-      if (preserveMaterialDefaults) return sheet;
+      // Opt-out explícito: scope isIos=false evita fallback themeId nos widgets
+      // internos quando preserveMaterialDefaults=true.
+      if (preserveMaterialDefaults) {
+        return SoloForteSheetSkinScope(isIos: false, child: sheet);
+      }
       // Flutter 3.44+ exige ancestral Material para ListTile dentro de sheet
       // com backgroundColor (DecoratedBox). Material transparente satisfaz o
       // contrato sem alterar a aparência do token visual.
