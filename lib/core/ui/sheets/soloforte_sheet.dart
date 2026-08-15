@@ -3,6 +3,28 @@
 import 'package:flutter/material.dart';
 import 'sheet_tokens.dart';
 
+/// Resolve a cor de fundo do modal conforme tema e flags do caller.
+///
+/// Extraído para teste de contrato (REGRA-SHEET-BLAST-1).
+@visibleForTesting
+Color? resolveSoloForteSheetBackgroundColor({
+  required bool isIos,
+  required bool preserveMaterialDefaults,
+  Color? backgroundColor,
+}) {
+  if (preserveMaterialDefaults) {
+    return backgroundColor;
+  }
+  if (isIos) {
+    final transparentOverride =
+        backgroundColor == null || backgroundColor == Colors.transparent;
+    return transparentOverride
+        ? SoloForteSheetSkinIos.background
+        : backgroundColor;
+  }
+  return backgroundColor ?? SoloForteSheetTokens.sheetBackground;
+}
+
 /// Propaga a skin ativa do sheet para widgets filhos (headers, inputs, etc.).
 class SoloForteSheetSkinScope extends InheritedWidget {
   final bool isIos;
@@ -103,19 +125,11 @@ Future<T?> showSoloForteSheet<T>({
 
   // Fase 2: `Colors.transparent` não anula o fundo prata iOS — callers que
   // pintavam glass escuro por cima passam a herdar o chrome correto.
-  final Color? resolvedBackground;
-  if (preserveMaterialDefaults) {
-    resolvedBackground = backgroundColor;
-  } else if (isIos) {
-    final transparentOverride =
-        backgroundColor == null || backgroundColor == Colors.transparent;
-    resolvedBackground = transparentOverride
-        ? SoloForteSheetSkinIos.background
-        : backgroundColor;
-  } else {
-    resolvedBackground =
-        backgroundColor ?? SoloForteSheetTokens.sheetBackground;
-  }
+  final resolvedBackground = resolveSoloForteSheetBackgroundColor(
+    isIos: isIos,
+    preserveMaterialDefaults: preserveMaterialDefaults,
+    backgroundColor: backgroundColor,
+  );
 
   final resolvedRadius =
       isIos ? SoloForteSheetSkinIos.sheetRadius : SoloForteSheetTokens.borderRadius;

@@ -834,6 +834,31 @@ else
   pass "coluna direita do mapa ancorada em kMapActionColumnBottomInset (sem sheet inset)"
 fi
 
+echo ""
+
+# =============================================================================
+# REGRA-SHEET-BLAST-1 — contrato de fundo do sheet (IPA 210)
+#
+# Mudança em core/ui/sheets é transversal. O teste de contrato garante que
+# transparent no tema Azul resolve para SoloForteSheetSkinIos.background e que
+# preserveMaterialDefaults não força o prata.
+# Doc: .agent/AUDITORIA_REGRESSAO_IPA210.md · design/sheets.md
+# =============================================================================
+echo -e "── ${CYAN}REGRA-SHEET-BLAST-1${NC}: contrato showSoloForteSheet (blast radius sheets) ─────"
+echo ""
+
+SHEET_CONTRACT_TEST="test/regression/sheets/soloforte_sheet_contract_test.dart"
+SHEET_IMPL="lib/core/ui/sheets/soloforte_sheet.dart"
+if [ ! -f "$SHEET_CONTRACT_TEST" ]; then
+  fail "REGRA-SHEET-BLAST-1: $SHEET_CONTRACT_TEST ausente"
+elif [ ! -f "$SHEET_IMPL" ]; then
+  fail "REGRA-SHEET-BLAST-1: $SHEET_IMPL ausente"
+elif ! grep -q "resolveSoloForteSheetBackgroundColor" "$SHEET_IMPL"; then
+  fail "REGRA-SHEET-BLAST-1: soloforte_sheet.dart deve expor resolveSoloForteSheetBackgroundColor"
+else
+  pass "contrato de sheet documentado e testável (REGRA-SHEET-BLAST-1)"
+fi
+
 # =============================================================================
 # REGRA-NAV-1 — context.pop()/canPop() proibidos (Map-First, Fase 7)
 #
