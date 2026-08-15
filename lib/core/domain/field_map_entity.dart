@@ -3,6 +3,9 @@ import 'package:latlong2/latlong.dart';
 
 /// Atributos visuais e fonte da entidade do mapa.
 /// Unifica Talhões (Consultoria) e Desenhos (Drawing Module).
+///
+/// **Canônico:** `lib/core/domain/field_map_entity.dart` —
+/// não duplicar em `modules/map/domain/` (Etapa 3 — organização Ago/2026).
 class FieldMapEntity {
   final String id;
   final String label;

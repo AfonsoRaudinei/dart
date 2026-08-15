@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:soloforte_app/core/domain/field_map_entity.dart';
 import '../../consultoria/clients/domain/agronomic_models.dart';
 import '../../drawing/domain/models/drawing_models.dart';
 import '../../../core/utils/app_logger.dart';
-import 'field_map_entity.dart';
 
 class FieldMapAdapter {
   static FieldMapEntity fromTalhao(Talhao talhao, {bool isSelected = false}) {
