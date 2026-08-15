@@ -258,6 +258,41 @@ void main() {
     },
   );
 
+  test('marketing: localizacao inline exibe o texto real do case', () async {
+    await initializeDateFormatting('pt_BR');
+
+    for (final tipo in const ['resultado', 'antes_depois', 'avaliacao']) {
+      final html = await MarketingHtmlRenderer.render({
+        ..._marketingBase(tipo),
+        'localizacao_texto': 'Fazenda Modelo · Palmas/TO',
+      });
+
+      expect(html, contains('Fazenda Modelo · Palmas/TO'), reason: tipo);
+      expect(html, contains('📍'), reason: tipo);
+    }
+  });
+
+  test('marketing: sem localizacao o pin nao fica orfao', () async {
+    await initializeDateFormatting('pt_BR');
+
+    for (final tipo in const ['resultado', 'antes_depois', 'avaliacao']) {
+      for (final vazio in const ['', '   ']) {
+        final html = await MarketingHtmlRenderer.render({
+          ..._marketingBase(tipo),
+          'localizacao_texto': vazio,
+        });
+
+        expect(html, isNot(contains('📍')), reason: '$tipo/"$vazio"');
+        expect(
+          html,
+          isNot(contains('class="localizacao-inline"')),
+          reason: tipo,
+        );
+        expect(html, isNot(contains('class="photo-caption"')), reason: tipo);
+      }
+    }
+  });
+
   test(
     'ocorrencia detalhada: logo header, localizacao inline, sem meta rodape',
     () async {

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 
 import '../../../components/map/map_sheet_state.dart';
+import '../../../../core/state/map_ui_providers.dart';
 import '../../../../core/utils/app_logger.dart';
 import '../../../../modules/drawing/presentation/providers/drawing_provider.dart';
 
@@ -23,6 +24,9 @@ class MapFirstQueryHandler {
     required void Function(LatLng point) focusCoordinate,
   }) {
     final modo = uri.queryParameters['modo'];
+    if (modo != 'foco') {
+      ref.read(focusedMarketingCaseIdProvider.notifier).state = null;
+    }
     final clienteId = uri.queryParameters['clienteId'];
     final clienteNome = uri.queryParameters['clienteNome'];
     final fazendaId = uri.queryParameters['fazendaId'];
@@ -103,6 +107,7 @@ class MapFirstQueryHandler {
     if (modo == 'foco') {
       final lat = double.tryParse(uri.queryParameters['lat'] ?? '');
       final lng = double.tryParse(uri.queryParameters['lng'] ?? '');
+      final caseId = uri.queryParameters['caseId']?.trim();
       if (lat == null || lng == null) {
         AppLogger.warning(
           'MAP-FIRST: modo=foco sem lat/lng válidos',
@@ -115,9 +120,11 @@ class MapFirstQueryHandler {
       if (lat == 0 && lng == 0) return;
 
       AppLogger.debug(
-        'MAP-FIRST: recebido modo=foco lat=$lat lng=$lng',
+        'MAP-FIRST: recebido modo=foco lat=$lat lng=$lng caseId=$caseId',
         tag: 'PrivateMap',
       );
+      ref.read(focusedMarketingCaseIdProvider.notifier).state =
+          (caseId != null && caseId.isNotEmpty) ? caseId : null;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         focusCoordinate(LatLng(lat, lng));
       });

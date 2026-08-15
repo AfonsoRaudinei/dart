@@ -149,7 +149,7 @@ class _RelatoriosSegmentBar extends StatelessWidget {
               _RelatoriosSegment.ocorrencias,
               useScroll,
             ),
-            _seg(context, 'Gerados', _RelatoriosSegment.gerados, useScroll),
+            _seg(context, 'Marketing', _RelatoriosSegment.gerados, useScroll),
             _seg(
               context,
               'Consolidados',

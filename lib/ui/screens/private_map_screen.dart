@@ -189,7 +189,12 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
     }
 
     unawaited(MapCameraEase.move(_mapController, to: point, zoom: 17.0));
-    ref.read(destinationCoordinateMarkerProvider.notifier).state = point;
+    final focusedCaseId = ref.read(focusedMarketingCaseIdProvider);
+    if (focusedCaseId == null || focusedCaseId.isEmpty) {
+      ref.read(destinationCoordinateMarkerProvider.notifier).state = point;
+    } else {
+      ref.read(destinationCoordinateMarkerProvider.notifier).state = null;
+    }
     HapticFeedback.lightImpact();
     ref.read(viewportStateProvider.notifier).state =
         InitialViewportState.applied;

@@ -383,6 +383,10 @@ class MapBuildOrchestrator extends ConsumerWidget {
 
               Consumer(
                 builder: (context, ref, _) {
+                  final focusedCaseId = ref.watch(focusedMarketingCaseIdProvider);
+                  if (focusedCaseId != null && focusedCaseId.isNotEmpty) {
+                    return const SizedBox.shrink();
+                  }
                   final destination = ref.watch(
                     destinationCoordinateMarkerProvider,
                   );

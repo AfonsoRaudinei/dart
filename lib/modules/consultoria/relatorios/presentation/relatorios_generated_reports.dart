@@ -36,7 +36,6 @@ class _GeneratedReportCard extends StatelessWidget {
   final String menuTooltip;
   final String? statusLabel;
   final Color? statusColor;
-  final bool showPackShare;
   final VoidCallback? onEdit;
   final VoidCallback? onViewLocation;
   final Future<void> Function()? onDelete;
@@ -51,7 +50,6 @@ class _GeneratedReportCard extends StatelessWidget {
     this.menuTooltip = 'Ações do relatório consolidado',
     this.statusLabel,
     this.statusColor,
-    this.showPackShare = false,
     this.onEdit,
     this.onViewLocation,
     this.onDelete,
@@ -80,12 +78,6 @@ class _GeneratedReportCard extends StatelessWidget {
             enabled: enabled,
             child: const Text('Exportar'),
           ),
-          if (showPackShare)
-            PopupMenuItem(
-              value: 'pack',
-              enabled: enabled,
-              child: const Text('Compartilhar pack'),
-            ),
           if (onEdit != null)
             PopupMenuItem(
               value: 'edit',
@@ -144,9 +136,6 @@ class _GeneratedReportCard extends StatelessWidget {
       case 'export':
         await _export(context, ReportExportFormat.html, payload);
         return;
-      case 'pack':
-        await _exportPack(context, payload);
-        return;
     }
   }
 
@@ -165,23 +154,6 @@ class _GeneratedReportCard extends StatelessWidget {
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(const SnackBar(content: Text('Exportação iniciada.')));
-  }
-
-  Future<void> _exportPack(
-    BuildContext context,
-    _GeneratedReportPayload payload,
-  ) async {
-    final shareOrigin = resolveSharePositionOrigin(context);
-    await const ReportExportService().exportPack(
-      payload.toExportPayload(),
-      sharePositionOrigin: shareOrigin,
-    );
-    if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Pack (HTML + CSV + JSON) pronto para compartilhar.'),
-      ),
-    );
   }
 }
 
