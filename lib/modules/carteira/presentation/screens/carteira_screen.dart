@@ -143,6 +143,7 @@ class _CategoriasTab extends ConsumerWidget {
     final result = await showSoloForteSheet<CategoriaFormResult>(
       context: context,
       isScrollControlled: true,
+      preserveMaterialDefaults: true,
       backgroundColor: Colors.transparent,
       showDragHandle: false,
       useSafeArea: false,
@@ -182,6 +183,7 @@ class _CategoriasTab extends ConsumerWidget {
     final result = await showSoloForteSheet<CategoriaFormResult>(
       context: context,
       isScrollControlled: true,
+      preserveMaterialDefaults: true,
       backgroundColor: Colors.transparent,
       showDragHandle: false,
       useSafeArea: false,

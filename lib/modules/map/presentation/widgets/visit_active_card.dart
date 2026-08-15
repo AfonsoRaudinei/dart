@@ -164,6 +164,7 @@ class VisitActiveCard extends ConsumerWidget {
     showSoloForteSheet(
       context: context,
       isScrollControlled: true,
+      preserveMaterialDefaults: true,
       backgroundColor: Colors.transparent,
       showDragHandle: false,
       useSafeArea: false,
@@ -200,6 +201,7 @@ class VisitActiveCard extends ConsumerWidget {
     showSoloForteSheet(
       context: context,
       isScrollControlled: true,
+      preserveMaterialDefaults: true,
       backgroundColor: Colors.transparent,
       showDragHandle: false,
       useSafeArea: false,

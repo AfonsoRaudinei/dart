@@ -230,6 +230,7 @@ class DayEventCard extends ConsumerWidget {
   ) async {
     await showSoloForteSheet<void>(
       context: context,
+      preserveMaterialDefaults: true,
       backgroundColor: Colors.transparent,
       showDragHandle: false,
       useSafeArea: false,

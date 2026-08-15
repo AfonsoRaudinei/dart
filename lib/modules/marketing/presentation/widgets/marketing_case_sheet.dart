@@ -27,6 +27,7 @@ class MarketingCaseSheet extends StatelessWidget {
       context: context,
       isScrollControlled: true,
       showDragHandle: false,
+      preserveMaterialDefaults: true,
       // Fundo transparente: o pane do DraggableScrollableSheet pinta só a
       // fração visível — evita faixa preta acima do handle (padrão map sheets).
       backgroundColor: Colors.transparent,

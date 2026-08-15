@@ -118,6 +118,7 @@ class MarketingPhotoService {
   Future<ImageSource?> _showSourceDialog(BuildContext context) async {
     return showSoloForteSheet<ImageSource>(
       context: context,
+      preserveMaterialDefaults: true,
       backgroundColor: Colors.transparent,
       showDragHandle: false,
       useSafeArea: false,

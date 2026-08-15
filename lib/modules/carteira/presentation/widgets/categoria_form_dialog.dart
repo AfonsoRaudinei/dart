@@ -140,6 +140,7 @@ class _CategoriaFormDialogState extends ConsumerState<CategoriaFormDialog> {
     final result = await showSoloForteSheet<TipoProdutoFormResult>(
       context: context,
       isScrollControlled: true,
+      preserveMaterialDefaults: true,
       backgroundColor: Colors.transparent,
       showDragHandle: false,
       useSafeArea: false,

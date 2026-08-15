@@ -15,6 +15,7 @@ Future<void> showAgendaAiSheet(BuildContext context) {
   return showSoloForteSheet<void>(
     context: context,
     isScrollControlled: true,
+    preserveMaterialDefaults: true,
     backgroundColor: Colors.transparent,
     showDragHandle: false,
     useSafeArea: false,
