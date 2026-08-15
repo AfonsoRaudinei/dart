@@ -93,5 +93,11 @@ API
 anon
 .env.local.json
 analyze_output.txt
+test_report.txt
+test_report_2.txt
+test_results.txt
+flutter_*.png
+flutter_*.log
+.claude/worktrees/
 edit_private_map.dart
 soloforte.db
