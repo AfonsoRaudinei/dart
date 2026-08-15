@@ -11,6 +11,8 @@
 2. **Sempre sincronizar MacBook** ao encerrar tarefa — serviço completo
 3. **Não parar para perguntar** se deve executar git push/merge/pull óbvios
 4. **Salvar regras** em `prompt/` + `.cursor/rules/` para persistir entre sessões
+5. **Correção não é entrega enquanto estiver só na branch** — o merge na `main` é parte
+   obrigatória da tarefa, não uma etapa opcional/posterior (REGRA-ENTREGA-1, ver `AGENTS.md`)
 
 ---
 
@@ -119,3 +121,4 @@ Fonte canônica: `.cursor/rules/soloforte-designer.mdc`
 | Ago/2026 | **Ocorrências mapa IPA 206:** pin atômico em `MapSheetState`; blindagem `.agent/PLANO_BLINDAGEM_OCORRENCIAS_MAPA.md` + REGRA-OCC-8..11 |
 | Ago/2026 | **Coluna direita mapa:** posição travada via `kMapActionColumnBottomInset` (REGRA-MAP-CHROME-1) — sem `mapSheetChromeInsetProvider`; **IPA 208 sem o fix → 209+** |
 | Ago/2026 | **SheetSkin iOS (tema Azul):** cherry-pick `6230591` em `main` · `SoloForteThemeExtension` + `SoloForteSheetSkinIos` · tag `feat/sheet-skin-ios` · doc `design/sheets.md` |
+| Ago/2026 | **Incidente REGRA-ENTREGA-1:** fix da coluna direita (gaps 26/16, commit `302eeeb`) ficou só na branch `cursor/fix-map-chrome-canonical-spacing`, sem merge na `main` — corrigido e regra endurecida em `AGENTS.md`/`AGENT_REGRAS.md`/`.agent/Prompt.md`: correção só conta como entregue quando está em `origin/main` |

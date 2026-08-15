@@ -35,3 +35,15 @@ Ver `.cursor/rules/cursor-desktop-sync.mdc`.
 - Encerrar sem push/merge na `main` remota
 - Dizer "não dá" sem executar o que é possível daqui
 - Delegar git remoto ao usuário
+- **Reportar uma correção como "feita"/"pronta" enquanto o commit só existe numa branch
+  `cursor/...`** — correção só está no app quando está em `origin/main` (REGRA-ENTREGA-1,
+  ver `AGENTS.md` raiz e `.agent/Prompt.md`)
+
+## Verificação final obrigatória (REGRA-ENTREGA-1)
+
+Antes de encerrar qualquer resposta que tenha feito commit:
+
+```bash
+git fetch origin --quiet
+git branch --contains HEAD -a | grep -E "(^|/)main$" || echo "❌ merge pendente — não encerrar"
+```

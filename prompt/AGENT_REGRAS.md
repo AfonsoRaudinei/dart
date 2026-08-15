@@ -54,6 +54,13 @@ git status && git log -1 --oneline
 
 **Fluxo oficial completo:** `prompt/FLUXO_OFICIAL_CURSOR_DESKTOP.md`
 
+### REGRA-ENTREGA-1 — correção só existe quando está na `main`
+
+Commit + push numa branch de feature **não é entrega**. Toda correção de prompt só
+conta como concluída quando o SHA aparece em `git log origin/main`. Ver `AGENTS.md`
+(raiz) e `.agent/Prompt.md` para o checklist completo e o incidente que motivou a regra
+(`302eeeb` ficou só em `cursor/fix-map-chrome-canonical-spacing` por dias).
+
 ---
 
 ## Memória persistente

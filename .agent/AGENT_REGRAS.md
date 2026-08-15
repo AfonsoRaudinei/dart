@@ -21,6 +21,20 @@ git status && git log -1 --oneline
 
 ---
 
+## REGRA-ENTREGA-1 — Correção só vale se estiver na `main` (no app)
+
+> Todo prompt que resultar em código alterado (fix, feature, doc) só está concluído
+> quando o commit está em `origin/main`. Commit + push só na branch de feature = **tarefa
+> incompleta**, mesmo que o código esteja correto e testado.
+
+- ❌ **Nunca** encerrar a resposta relatando "correção feita" com o código preso numa branch `cursor/...`
+- ✅ Sempre fechar o ciclo: `push da branch` → `checkout main` → `pull` → `merge` → `push origin main`
+- ✅ Confirmar com `git branch --contains <sha> -a` que a `main`/`origin/main` contém o commit
+- ✅ Reportar ao usuário o SHA final da `main`, não o SHA da branch
+- Referência completa: `AGENTS.md` (raiz) → seção REGRA-ENTREGA-1 · `.agent/Prompt.md`
+
+---
+
 ## Memória persistente
 
 Ler: `.agent/AGENT_MEMORIA.md` · `prompt/AGENT_MEMORIA.md`
@@ -61,8 +75,9 @@ Ao tocar `map_controls_overlay.dart` ou constantes de layout do mapa:
 | Posição travada | Usar `kMapActionColumnBottomInset` + `safeBottom` — **nunca** `mapSheetChromeInsetProvider` |
 | Constantes | Tamanho/espaçamento em `layout_constants.dart` (`kMapActionColumn*`) |
 | SmartButton | Coluna ancorada ao FAB global (`kFabSafeArea` = 76dp acima da safe-area) |
-| Modo desenho | Compensar com `kMapActionColumnDrawModeCompensation` para manter camadas fixas |
-| IPA | **208 NÃO inclui** este fix — mínimo **209+** |
+| Modo desenho | Compensar com `kMapActionColumnDrawModeCompensation` (130dp) |
+| Espaçamento canônico | 26dp (camadas↔+) · 16dp (+↔check-in) — ver `layout_constants.dart` |
+| IPA | **209** travou inset mas spacing 12px errado — **210+** com gaps 26/16 |
 | Validação | `flutter test test/regression/map/controls_overlay_regression_test.dart` + `arch_check.sh` REGRA-MAP-CHROME-1 |
 
 ---

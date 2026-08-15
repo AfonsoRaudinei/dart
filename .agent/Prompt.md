@@ -1,44 +1,73 @@
-# Prompt — Travamento da coluna direita do mapa (REGRA-MAP-CHROME-1)
+# Prompts do agente — regras gerais + Coluna direita do mapa
+
+## REGRA-ENTREGA-1 — Toda correção precisa chegar na `main` (no app)
+
+> Vale para **qualquer** prompt executado neste repositório (bug fix, feature, doc, ajuste
+> de layout), não só para o tema abaixo. Fonte da verdade: `AGENTS.md` (raiz) e
+> `.agent/AGENT_REGRAS.md`.
+
+**Nunca** considerar uma tarefa concluída com o código parado numa branch de feature
+(`cursor/...`). Commit + push numa branch é só o meio do caminho — a correção **só está
+no aplicativo** depois do merge na `main` remota.
+
+Checklist obrigatório antes de encerrar QUALQUER resposta que tenha alterado código:
+
+```bash
+# 1) validar
+./tool/arch_check.sh && flutter analyze lib/ && flutter test
+
+# 2) commit por arquivo + push da branch
+git push -u origin <branch>
+
+# 3) merge obrigatório na main (nunca pular)
+git checkout main && git pull origin main
+git merge <branch> && git push origin main
+
+# 4) provar que a correção está na main
+git fetch origin --quiet
+git branch --contains <sha-do-fix> -a   # deve listar "main" / "remotes/origin/main"
+```
+
+Se o passo 4 não listar `main`, a tarefa **não está pronta** — o agente deve mergear
+antes de responder "correção feita".
+
+---
+
+# Prompt — Coluna direita do mapa (REGRA-MAP-CHROME-1)
 
 ## Status IPA
 
-| IPA | Inclui travamento? |
-|---|---|
-| **208** | ❌ NÃO — código ficou só na branch `cursor/marketing-cliente-limite-493d` (`2685139`), não mergeado em `main` |
-| **209+** | ✅ Obrigatório — regenerar após merge deste fix em `main` |
+| IPA | Travamento inset | Posição canônica (imagem) |
+|---|---|---|
+| **208** | ❌ | ❌ `mapSheetChromeInsetProvider` |
+| **209** | ✅ | ❌ spacing uniforme 12px — coluna ~26px abaixo do layout correto |
+| **210+** | ✅ | ✅ gaps 26dp (camadas↔+) e 16dp (+↔check-in) |
 
-## Sintoma
+## Verdade visual (referência imagem Porto Nacional)
 
-Ícones da coluna direita (camadas, +, check-in) se movem ao arrastar o bottom sheet ou retomar o app.
+Coluna fixa na direita, de cima para baixo:
 
-## Causa
-
-`map_controls_overlay.dart` acoplava `Positioned.bottom` a `mapSheetChromeInsetProvider * 0.15`.
-
-## Verdade (layout canônico)
+1. Camadas (layers)
+2. + (ações)
+3. Check-in
+4. SmartButton ☰ (AppShell — não mover)
 
 ```
-bottom = kMapActionColumnBottomInset + safeBottom
-       = kFabSafeArea (76) + safeBottom
+bottom coluna = kMapActionColumnBottomInset + safeBottom  (= kFabSafeArea + safeBottom)
+gap + ↔ check-in = kMapActionColumnSpacingAboveCheckIn (16)
+gap camadas ↔ + = kMapActionColumnSpacingAboveActions (26)
+offset camadas.bottom − check-in.bottom = 130dp
 ```
 
-Modo desenho: `+ kMapActionColumnDrawModeCompensation`.
-
-## Proibido
-
-- `mapSheetChromeInsetProvider` em `map_controls_overlay.dart`
-- Offsets mágicos fora de `layout_constants.dart`
+**Proibido:** `mapSheetChromeInsetProvider` em `map_controls_overlay.dart`.
 
 ## Validação
 
 ```bash
 flutter test test/regression/map/controls_overlay_regression_test.dart
-./tool/arch_check.sh   # REGRA-MAP-CHROME-1 Exit 0
+./tool/arch_check.sh
 ```
 
 ## MacBook
 
-```bash
-git pull origin main && flutter pub get
-# hot restart ou IPA 209+
-```
+`git pull origin main` → hot restart ou IPA **210+**.

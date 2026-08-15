@@ -246,7 +246,7 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
                 onTap: widget.onOpenMapTools,
               ),
               if (!widget.isDrawMode) ...[
-                const SizedBox(height: kMapActionColumnSpacing),
+                const SizedBox(height: kMapActionColumnSpacingAboveActions),
                 MapActionFabMenu(
                   embedded: true,
                   padding: EdgeInsets.zero,
@@ -272,7 +272,7 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
                   },
                 ),
                 if (widget.showCheckInAction) ...[
-                  const SizedBox(height: kMapActionColumnSpacing),
+                  const SizedBox(height: kMapActionColumnSpacingAboveCheckIn),
                   _MapActionButton(
                     buttonKey: const Key('map_control_check_in'),
                     icon: SFIcons.checkCircle,
