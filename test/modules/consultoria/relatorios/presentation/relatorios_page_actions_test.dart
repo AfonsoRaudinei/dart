@@ -56,6 +56,7 @@ void main() {
       occurrenceRepository: FakeOccurrenceRepository(),
     );
 
+    await _selectSegment(tester, 'Visitas');
     expect(find.text('Relatórios de Visita'), findsOneWidget);
     expect(find.text('Fazenda Rascunho'), findsWidgets);
 
@@ -137,7 +138,7 @@ void main() {
     );
   });
 
-  testWidgets('exibe UI dedicada: Gerados=Publicações, Consolidados e Ocorrências', (
+  testWidgets('exibe UI dedicada: Marketing=Publicações, Consolidados e Ocorrências', (
     tester,
   ) async {
     final relatorioRepository = FakeRelatorioRepository();
@@ -183,8 +184,8 @@ void main() {
     expect(find.text('Lista de Ocorrências'), findsOneWidget);
     expect(find.text('Exportar lista'), findsOneWidget);
 
-    await _selectSegment(tester, 'Gerados');
-    expect(find.text('Publicações'), findsOneWidget);
+    await _selectSegment(tester, 'Marketing');
+    expect(find.text('Marketing'), findsWidgets);
     expect(find.text('Produtor Teste - Fazenda Marketing'), findsOneWidget);
     expect(find.text('Relatórios Consolidados'), findsNothing);
 
@@ -269,7 +270,7 @@ void main() {
     expect(find.text('ervas_daninhas'), findsNothing);
   });
 
-  testWidgets('filtro de marketing cases por tipo na aba Gerados', (
+  testWidgets('filtro de marketing cases por tipo na aba Marketing', (
     tester,
   ) async {
     final marketingRepo = FakeMarketingCaseRepository([
@@ -288,7 +289,7 @@ void main() {
       marketingRepository: marketingRepo,
     );
 
-    await _selectSegment(tester, 'Gerados');
+    await _selectSegment(tester, 'Marketing');
 
     expect(find.text('Produtor Teste - Fazenda Marketing'), findsOneWidget);
     expect(find.text('Produtor Antes Depois'), findsOneWidget);
@@ -299,7 +300,8 @@ void main() {
     expect(find.text('Produtor Teste - Fazenda Marketing'), findsOneWidget);
     expect(find.text('Produtor Antes Depois'), findsNothing);
 
-    await tester.tap(find.text('Todas').first);
+    // Status bar e tipo têm chip "Todas"; o de tipo é o último.
+    await tester.tap(find.text('Todas').last);
     await tester.pumpAndSettle();
 
     expect(find.text('Produtor Antes Depois'), findsOneWidget);
@@ -319,7 +321,7 @@ void main() {
       marketingRepository: marketingRepo,
     );
 
-    await _selectSegment(tester, 'Gerados');
+    await _selectSegment(tester, 'Marketing');
 
     expect(find.text('Produtor Teste - Fazenda Marketing'), findsOneWidget);
 
@@ -350,7 +352,7 @@ void main() {
       marketingRepository: marketingRepo,
     );
 
-    await _selectSegment(tester, 'Gerados');
+    await _selectSegment(tester, 'Marketing');
 
     await tester.tap(find.byTooltip('Ações da publicação').first);
     await tester.pumpAndSettle();
@@ -478,7 +480,9 @@ void main() {
     expect(find.text('Produtor B · 1'), findsOneWidget);
   });
 
-  testWidgets('Gerados oculta marketing case em rascunho', (tester) async {
+  testWidgets('Marketing lista marketing case não gerado (rascunho)', (
+    tester,
+  ) async {
     await _pumpScreen(
       tester,
       relatorioRepository: FakeRelatorioRepository(),
@@ -487,19 +491,21 @@ void main() {
         _marketingCase(id: 'mkt-published'),
         _marketingCase(
           id: 'mkt-draft',
-          produtorFazenda: 'Rascunho oculto',
+          produtorFazenda: 'Case não gerado',
           status: 'draft',
         ),
       ],
     );
 
-    await _selectSegment(tester, 'Gerados');
+    await _selectSegment(tester, 'Marketing');
 
     expect(find.text('Produtor Teste - Fazenda Marketing'), findsOneWidget);
-    expect(find.text('Rascunho oculto'), findsNothing);
+    expect(find.text('Case não gerado'), findsOneWidget);
+    expect(find.text('Não gerado'), findsWidgets);
+    expect(find.text('Gerado'), findsWidgets);
   });
 
-  testWidgets('publicação em Gerados oferece Compartilhar pack', (
+  testWidgets('publicação em Marketing não oferece Compartilhar pack', (
     tester,
   ) async {
     await _pumpScreen(
@@ -509,11 +515,11 @@ void main() {
       marketingCases: [_marketingCase()],
     );
 
-    await _selectSegment(tester, 'Gerados');
+    await _selectSegment(tester, 'Marketing');
     await tester.tap(find.byTooltip('Ações da publicação').first);
     await tester.pumpAndSettle();
 
-    expect(find.text('Compartilhar pack'), findsOneWidget);
+    expect(find.text('Compartilhar pack'), findsNothing);
     expect(find.text('Editar'), findsOneWidget);
   });
 }

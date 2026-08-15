@@ -64,6 +64,9 @@ void main() {
           occurrenceRepository: FakeOccurrenceRepository(),
         );
 
+        await tester.tap(find.text('Visitas').first);
+        await tester.pumpAndSettle();
+
         expect(find.text('Relatórios de Visita'), findsOneWidget);
         expect(find.text('Fazenda Regression Shield'), findsWidgets);
         expect(find.text('Nenhum relatório gerado ainda.'), findsNothing);
@@ -111,10 +114,10 @@ void main() {
           marketingCases: [_marketingCase()],
         );
 
-        await tester.tap(find.text('Gerados').first);
+        await tester.tap(find.text('Marketing').first);
         await tester.pumpAndSettle();
 
-        expect(find.text('Publicações'), findsOneWidget);
+        expect(find.text('Marketing'), findsWidgets);
         expect(find.text('Produtor Regression - Fazenda Marketing'), findsOneWidget);
       },
     );
