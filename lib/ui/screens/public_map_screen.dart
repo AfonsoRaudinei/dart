@@ -128,11 +128,18 @@ class _PublicMapScreenState extends ConsumerState<PublicMapScreen> {
           // Mapa como fundo
           FlutterMap(
             mapController: _mapController,
-            options: const MapOptions(
-              initialCenter: LatLng(-23.5505, -46.6333), // SP Default
+            options: MapOptions(
+              initialCenter: const LatLng(-23.5505, -46.6333), // SP Default
               initialZoom: _defaultZoom,
               minZoom: 3.0,
               maxZoom: 18.0,
+              // Norte sempre para cima — mesmo contrato do MapCanvas privado.
+              interactionOptions: const InteractionOptions(
+                flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
+              ),
+              onMapReady: () {
+                _mapController.rotate(0);
+              },
             ),
             children: [
               // TileLayer com estilo iOS
@@ -167,6 +174,7 @@ class _PublicMapScreenState extends ConsumerState<PublicMapScreen> {
               // Pinos de Marketing (Apenas Ouro na tela deslogada)
               if (ref.watch(marketingCasesProvider).hasValue)
                 MarkerLayer(
+                  rotate: true,
                   markers: ref
                       .watch(marketingCasesProvider)
                       .value!
@@ -176,9 +184,15 @@ class _PublicMapScreenState extends ConsumerState<PublicMapScreen> {
                       .map((mCase) {
                         return Marker(
                           point: LatLng(mCase.lat, mCase.lng),
-                          width: 100,
-                          height: 100,
-                          alignment: Alignment.center,
+                          width: MarketingCaseMarker.pinWidth(
+                            mCase.visibilidade,
+                          ),
+                          height:
+                              MarketingCaseMarker.pinHeight(
+                                mCase.visibilidade,
+                              ) +
+                              10,
+                          alignment: Alignment.topCenter,
                           child: MarketingCaseMarker(
                             marketingCase: mCase,
                             onTap: () {
