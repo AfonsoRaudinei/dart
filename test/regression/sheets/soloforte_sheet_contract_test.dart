@@ -76,5 +76,25 @@ void main() {
         expect(source.contains('MapSheetType.checkIn'), isTrue);
       },
     );
+
+    test(
+      'DrawingSheet não força sheetBackground escuro quando tema Azul',
+      () {
+        // Imagem 3 regressão: painel #1C1C1E aninhado no chrome prata.
+        final source = File(
+          'lib/modules/drawing/presentation/widgets/drawing_sheet.dart',
+        ).readAsStringSync();
+
+        expect(source.contains('soloForteSheetIsIos(context)'), isTrue);
+        expect(source.contains('Colors.transparent'), isTrue);
+        expect(
+          source.contains(
+            'color: SoloForteSheetTokens.sheetBackground,\n'
+            '          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),',
+          ),
+          isFalse,
+        );
+      },
+    );
   });
 }
