@@ -152,6 +152,37 @@ chmod +x tool/arch_check.sh
 | REGRA 2 | CRÍTICA | PR bloqueado automaticamente |
 | REGRA 3 | ALERTA | Aviso em PR — revisão manual obrigatória |
 | REGRA-NDVI | CRÍTICA | PR bloqueado + job `ndvi-regression` |
+| REGRA-MAP-CHROME-1 | CRÍTICA | PR bloqueado — coluna direita sem `mapSheetChromeInsetProvider` |
+| REGRA-SHEET-BLAST-1 | ALERTA | Teste de contrato obrigatório ao alterar `core/ui/sheets/` |
+
+---
+
+## REGRA-MAP-CHROME-1 — Coluna direita do mapa
+
+**Fundamento:** a coluna (camadas / + / check-in) não pode reagir ao detent do bottom sheet.
+
+```
+lib/ui/components/map/widgets/map_controls_overlay.dart
+  → kMapActionColumnBottomInset + safeBottom
+  → PROIBIDO: mapSheetChromeInsetProvider
+```
+
+**Verificação automática:** `tool/arch_check.sh` (seção REGRA-MAP-CHROME-1)  
+**Teste de regressão:** `test/regression/map/controls_overlay_regression_test.dart`
+
+---
+
+## REGRA-SHEET-BLAST-1 — Contrato de sheets compartilhados (IPA 210)
+
+**Fundamento:** mudança em `core/ui/sheets/` é transversal — afeta consultoria, marketing, agenda, carteira, map, drawing, planos.
+
+Incidente IPA 210: Relatórios quebrou sem commit em `relatorios/` porque Fase 2 inverteu o contrato de `Colors.transparent`.
+
+**Verificação:**
+- `lib/core/ui/sheets/soloforte_sheet.dart` expõe `resolveSoloForteSheetBackgroundColor`
+- `test/regression/sheets/soloforte_sheet_contract_test.dart` presente
+
+**Doc:** `.agent/AUDITORIA_REGRESSAO_IPA210.md` · `design/sheets.md`
 
 ---
 

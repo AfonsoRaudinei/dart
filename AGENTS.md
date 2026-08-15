@@ -221,6 +221,8 @@ lib/
 - Wrapper padrão: `lib/core/ui/sheets/soloforte_sheet.dart`
 - Tokens visuais: `lib/core/ui/sheets/sheet_tokens.dart`
 - Não duplicar handles, títulos ou botões de fechar fora do padrão
+- **REGRA-SHEET-BLAST-1:** mudança em `core/ui/sheets/` é transversal (8+ bounded contexts). Antes de alterar: `rg showSoloForteSheet` + `rg 'backgroundColor: Colors.transparent'`. Ver `.agent/AUDITORIA_REGRESSAO_IPA210.md`
+- **REGRA-MAP-CHROME-1:** coluna direita do mapa travada em `kMapActionColumnBottomInset` — nunca `mapSheetChromeInsetProvider`. Ver `.agent/Prompt.md`
 
 ### O agente NÃO DEVE
 

@@ -1,6 +1,12 @@
 # PROMPT CIRÚRGICO — feat: SheetSkin iOS para Tema Azul
 
-**Agente:** Engenheiro Sênior Flutter/Dart — Top 0,1% **Módulos tocados:** `core/ui/sheets/` + `ui/theme/premium/premium_app_theme.dart` **Tipo:** feature · skin condicional por tema ativo · ThemeExtension semântica **Risco:** Baixo **Versão base:** v1.34.0+189 · arch_check Exit 0 **Restore point:** `restore/sheet-skin-ios-pre` · SHA `2685139`
+**Agente:** Engenheiro Sênior Flutter/Dart — Top 0,1% **Módulos tocados:** `core/ui/sheets/` + `ui/theme/premium/premium_app_theme.dart` **Tipo:** feature · skin condicional por tema ativo · ThemeExtension semântica **Risco:** **Alto após Fase 2** (blast radius 20+ callers) **Versão base:** v1.34.0+210 · arch_check Exit 0 **Auditoria IPA 210:** `.agent/AUDITORIA_REGRESSAO_IPA210.md`
+
+> **REGRA-SHEET-BLAST-1 (15/Ago/2026):** A lista de “12 chamadores” abaixo é só a Fase 1.
+> O grep real de `backgroundColor: Colors.transparent` cobre **20+ arquivos** em 8 bounded contexts.
+> Na Fase 2 (`6c0b3ae`), `transparent` **passa a resolver para fundo prata iOS** — não é mais “limitação conhecida”.
+> Antes de alterar `core/ui/sheets/`: `rg showSoloForteSheet` + `rg 'backgroundColor: Colors.transparent'`.
+> Teste: `flutter test test/regression/sheets/soloforte_sheet_contract_test.dart`
 
 ---
 
@@ -15,7 +21,8 @@
 | Leitura em widget        | `ref.watch(themeProvider)`                                            |
 | Restrição arch           | `core/` NÃO pode importar `modules/settings/`                         |
 | Solução de detecção      | `ThemeExtension<SoloForteThemeExtension>` em `premium_app_theme.dart` |
-| Chamadores               | 12 arquivos (listados abaixo)                                         |
+| Chamadores Fase 1 | 12 arquivos (listados abaixo) — **não é lista completa** |
+| Blast radius real | 20+ arquivos com `Colors.transparent` — ver `.agent/AUDITORIA_REGRESSAO_IPA210.md` |
 | Variante atual em tokens | Nenhuma — só `SoloForteSheetTokens` escuro fixo                       |
 | arch_check               | ✅ Exit 0                                                              |
 
@@ -371,7 +378,8 @@ Próximos passos:
 | Situação | Classificação correta |
 |---|---|
 | Sheet com `showSoloForteSheet` sem `transparent` → chrome prata + handle azul | ✅ PASSOU |
-| Sheet com `backgroundColor: transparent` → chrome não pinta fundo prata | ⚠️ LIMITAÇÃO CONHECIDA — não é FALHA |
+| Sheet com `backgroundColor: transparent` no tema Azul → fundo prata iOS (`6c0b3ae` Fase 2) | ✅ CONTRATO ATUAL — callers com conteúdo escuro precisam `soloForteSheetIsIos` ou `preserveMaterialDefaults` |
+| `preserveMaterialDefaults: true` + `transparent` → não força prata | ✅ CONTRATO — ver `resolveSoloForteSheetBackgroundColor` |
 | `MapBottomSheet` / hosts próprios do mapa → não participam do chrome | ⚠️ LIMITAÇÃO CONHECIDA — não é FALHA |
 | App quebra, crash, dismiss não funciona | ❌ FALHA real |
 | Visual azul/prata aparece com tema Verde ou Black | ❌ FALHA real |
@@ -535,14 +543,16 @@ git push origin cursor/marketing-cliente-limite-493d --force
 - `PublicationActionsBottomSheet` → card agrupado iOS (transparent resolvido)
 - `MapBottomSheet` → chrome iOS + `SoloForteSheetSkinScope` para filhos
 - Helper: `soloForteSheetIsIos()` (scope → ThemeExtension fallback)
+- `resolveSoloForteSheetBackgroundColor()` — testável (REGRA-SHEET-BLAST-1)
+- **Contrato Fase 2:** `Colors.transparent` no tema Azul → `SoloForteSheetSkinIos.background`
 - Zero alteração na assinatura de `showSoloForteSheet()`
 
-### Fase 2 residual (opcional)
+### Fase 2 residual — callers ainda quebrados (IPA 210)
 
-- Forms/dialogs profundos de WMS/Raster no `LayersSheet` ainda usam
-  `InputDecoration` Material padrão — chrome e lista principal já iOS
-- Contraste texto branco sobre prata: **corrigido** em LayersSheet,
-  placeholder de ocorrência, MapOfflineStatusCard (15/08/2026)
+Relatórios, Marketing, Agenda, Carteira e outros callers com `transparent` + conteúdo
+que usa `SoloForteSheetTokens.titleColor` (branco) sobre fundo agora prata — **follow-up cirúrgico** (IPA 211+).
+
+Contraste parcial corrigido em: LayersSheet, placeholder de ocorrência, MapOfflineStatusCard (15/08/2026).
 
 ---
 
