@@ -87,6 +87,7 @@ extension _DrawingSheetBuildersA on _DrawingSheetState {
   Widget _buildToolsGrid(BuildContext context) {
     // 🆕 REFATORADO: Usar DrawingToolSelector component
     final pendingCount = widget.controller.pendingSyncCount;
+    final isIos = soloForteSheetIsIos(context);
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -99,8 +100,29 @@ extension _DrawingSheetBuildersA on _DrawingSheetState {
           const SizedBox(height: 12),
           OutlinedButton.icon(
             onPressed: () => _openGroupMeasurementsNavigator(context),
-            icon: const Icon(Icons.folder_open_outlined),
-            label: const Text('Grupo > Medições'),
+            icon: Icon(
+              Icons.folder_open_outlined,
+              color: isIos ? SoloForteSheetSkinIos.ghostText : null,
+            ),
+            label: Text(
+              'Grupo > Medições',
+              style: TextStyle(
+                color: isIos ? SoloForteSheetSkinIos.ghostText : null,
+              ),
+            ),
+            style: isIos
+                ? OutlinedButton.styleFrom(
+                    foregroundColor: SoloForteSheetSkinIos.ghostText,
+                    side: const BorderSide(
+                      color: SoloForteSheetSkinIos.ghostBorder,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(
+                        SoloForteSheetSkinIos.ghostRadius,
+                      ),
+                    ),
+                  )
+                : null,
           ),
           if (pendingCount > 0) ...[
             const SizedBox(height: 16),
@@ -109,8 +131,17 @@ extension _DrawingSheetBuildersA on _DrawingSheetState {
               icon: const Icon(Icons.cloud_upload, color: Colors.white),
               label: Text('Enviar alterações ($pendingCount)'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.orange,
+                backgroundColor: isIos
+                    ? SoloForteSheetSkinIos.ctaBackground
+                    : Colors.orange,
                 foregroundColor: Colors.white,
+                shape: isIos
+                    ? RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(
+                          SoloForteSheetSkinIos.ctaRadius,
+                        ),
+                      )
+                    : null,
               ),
             ),
           ],

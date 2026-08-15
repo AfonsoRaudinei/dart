@@ -13,6 +13,14 @@ class _SelectedModeFooter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isIos = soloForteSheetIsIos(context);
+    final footerBg = isIos
+        ? SoloForteSheetSkinIos.background
+        : SoloForteSheetTokens.sheetBackground;
+    final topBorder = isIos
+        ? SoloForteSheetSkinIos.cardBorder
+        : SoloForteSheetTokens.inputBackground;
+
     return Container(
       key: const Key('drawing_selected_sticky_footer'),
       padding: EdgeInsets.fromLTRB(
@@ -21,11 +29,11 @@ class _SelectedModeFooter extends StatelessWidget {
         16,
         safeBottom > 0 ? safeBottom : 16,
       ),
-      decoration: const BoxDecoration(
-        color: SoloForteSheetTokens.sheetBackground,
+      decoration: BoxDecoration(
+        color: footerBg,
         border: Border(
           top: BorderSide(
-            color: SoloForteSheetTokens.inputBackground,
+            color: topBorder,
             width: PremiumTokens.hairlineThickness,
           ),
         ),
@@ -36,6 +44,14 @@ class _SelectedModeFooter extends StatelessWidget {
             child: OutlinedButton(
               key: const Key('drawing_selected_edit_button'),
               onPressed: onEdit,
+              style: isIos
+                  ? OutlinedButton.styleFrom(
+                      foregroundColor: SoloForteSheetSkinIos.ghostText,
+                      side: const BorderSide(
+                        color: SoloForteSheetSkinIos.ghostBorder,
+                      ),
+                    )
+                  : null,
               child: const Text('Editar'),
             ),
           ),
@@ -45,7 +61,9 @@ class _SelectedModeFooter extends StatelessWidget {
               key: const Key('drawing_selected_exit_button'),
               onPressed: onExit,
               style: ElevatedButton.styleFrom(
-                backgroundColor: PremiumTokens.brandGreen,
+                backgroundColor: isIos
+                    ? SoloForteSheetSkinIos.ctaBackground
+                    : PremiumTokens.brandGreen,
               ),
               child: const Text(
                 'Sair da seleção',
@@ -67,7 +85,12 @@ class _SheetHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
+    final isIos = soloForteSheetIsIos(context);
+    final titleColor =
+        isIos ? SoloForteSheetSkinIos.titleColor : SoloForteSheetTokens.titleColor;
+    final iconColor =
+        isIos ? SoloForteSheetSkinIos.iconStroke : Theme.of(context).colorScheme.onSurface;
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -81,15 +104,18 @@ class _SheetHeader extends StatelessWidget {
                   key: const Key('drawing_sheet_back'),
                   tooltip: 'Voltar',
                   onPressed: onBack,
-                  icon: const Icon(Icons.arrow_back_ios_new_rounded),
+                  icon: Icon(
+                    Icons.arrow_back_ios_new_rounded,
+                    color: iconColor,
+                  ),
                 ),
-              const Expanded(
+              Expanded(
                 child: Text(
                   'Ferramentas de Desenho',
                   style: TextStyle(
-                    color: SoloForteSheetTokens.titleColor,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
+                    color: titleColor,
+                    fontSize: isIos ? 16 : 18,
+                    fontWeight: isIos ? FontWeight.w700 : FontWeight.w600,
                   ),
                 ),
               ),
@@ -98,12 +124,20 @@ class _SheetHeader extends StatelessWidget {
                   key: const Key('drawing_sheet_close'),
                   tooltip: 'Fechar',
                   onPressed: onClose,
-                  icon: const Icon(Icons.close),
+                  icon: Icon(Icons.close, color: iconColor),
                 ),
             ],
           ),
         ),
-        Divider(height: 1, color: scheme.outlineVariant.withValues(alpha: 0.5)),
+        Divider(
+          height: 1,
+          color: isIos
+              ? SoloForteSheetSkinIos.rowDivider
+              : Theme.of(context)
+                  .colorScheme
+                  .outlineVariant
+                  .withValues(alpha: 0.5),
+        ),
       ],
     );
   }
