@@ -53,7 +53,8 @@ Ler: `.agent/AGENT_MEMORIA.md` · `prompt/AGENT_MEMORIA.md`
 | Registro tema | `premium_app_theme.dart` — extension nos 3 temas |
 | Chamadores | 12 arquivos — **não alterar** sem prompt cirúrgico |
 | Escopo Fase 1 | Chrome-only (fundo, handle, borda, radius, `SoloForteSheetSkinScope`) |
-| Limitação QA | `transparent` / `MapBottomSheet` = limitação conhecida, não FALHA |
+| Escopo Fase 2 | Conteúdo interno + `transparent` + `MapBottomSheet` chrome (Ago/2026) |
+| Helper | `soloForteSheetIsIos(context)` — scope ou `themeId == 'blue'` |
 | Validação | `./tool/arch_check.sh` Exit 0 após mudança em `core/ui/sheets/` |
 
 **Main:** cherry-pick `6230591` → `e04e690` · tag `feat/sheet-skin-ios`

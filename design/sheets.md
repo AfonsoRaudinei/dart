@@ -528,14 +528,23 @@ git reset --hard restore/sheet-skin-ios-pre
 git push origin cursor/marketing-cliente-limite-493d --force
 ```
 
-### Fase 2 — agendada (fora deste escopo)
+### Fase 2 — conteúdo interno + MapBottomSheet (Ago/2026)
 
-- `core/ui/sheets/widgets/` → widgets internos leem `SoloForteSheetSkinScope.of(context)`
-- Conteúdo interno adota tokens iOS quando `isIos == true`
-- Zero alteração nos 12 chamadores externos
+- `core/ui/sheets/widgets/` → leem `soloForteSheetIsIos(context)`
+- `MapToolsBottomSheet` / `DrawingToolSelector` / header desenho → tokens iOS
+- `PublicationActionsBottomSheet` → card agrupado iOS (transparent resolvido)
+- `MapBottomSheet` → chrome iOS + `SoloForteSheetSkinScope` para filhos
+- Helper: `soloForteSheetIsIos()` (scope → ThemeExtension fallback)
+- Zero alteração na assinatura de `showSoloForteSheet()`
+
+### Fase 2 residual (opcional)
+
+- Conteúdo profundo de `LayersSheet` / forms de drawing ainda com labels escuros
+  em alguns sub-fluxos — chrome e lista principal já iOS
 
 ---
 
 *SoloForte v1.34.0+189 · 14/08/2026*  
 *Commit branch: 6230591 · Main: e04e690 · Tag: feat/sheet-skin-ios*  
-*Restore: restore/sheet-skin-ios-pre · SHA 2685139*
+*Restore: restore/sheet-skin-ios-pre · SHA 2685139*  
+*Fase 2: MapBottomSheet + conteúdo mapa/desenho · 15/08/2026*
