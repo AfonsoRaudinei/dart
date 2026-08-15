@@ -297,14 +297,24 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
     // NOTA ARQUITETURAL: O handle (pílula de drag) é renderizado pelo
     // componente pai (lib/ui/screens/private_map_sheets.dart / MapBottomSheet).
     // Este widget não inclui handle próprio.
+    // Tema Azul: fundo transparente — herda prata do host (MapToolsBottomSheet /
+    // MapBottomSheet). Evita painel escuro aninhado fora do padrão iOS.
+    final isIos = soloForteSheetIsIos(context);
+    final sheetBg = isIos
+        ? Colors.transparent
+        : SoloForteSheetTokens.sheetBackground;
+    final sheetRadius = isIos ? 0.0 : 20.0;
+
     return AnimatedPadding(
       duration: const Duration(milliseconds: 150),
       curve: Curves.easeOut,
       padding: EdgeInsets.only(bottom: bottomInset),
       child: Container(
-        decoration: const BoxDecoration(
-          color: SoloForteSheetTokens.sheetBackground,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        decoration: BoxDecoration(
+          color: sheetBg,
+          borderRadius: BorderRadius.vertical(
+            top: Radius.circular(sheetRadius),
+          ),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,

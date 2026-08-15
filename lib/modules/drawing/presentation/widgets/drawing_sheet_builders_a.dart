@@ -13,34 +13,42 @@ extension _DrawingSheetBuildersA on _DrawingSheetState {
     if (area <= 0 && perimeter <= 0) return const SizedBox.shrink();
 
     final f = NumberFormat("##0.##", "pt_BR");
+    final isIos = soloForteSheetIsIos(context);
+    final panelBg = isIos
+        ? SoloForteSheetSkinIos.cardBackground
+        : SoloForteSheetTokens.sheetBackground;
+    final panelBorder = isIos
+        ? SoloForteSheetSkinIos.cardBorder
+        : SoloForteSheetTokens.inputBackground;
+    final labelColor =
+        isIos ? SoloForteSheetSkinIos.subtitleColor : Colors.blueGrey;
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: SoloForteSheetTokens
-            .sheetBackground, // ✅ iOS Premium: Superfícies elevadas (Cards) são brancas
+        color: panelBg,
         borderRadius: BorderRadius.circular(
-          PremiumTokens.borderRadiusSm,
-        ), // ✅ iOS Premium: Inset com 12px
+          isIos ? SoloForteSheetSkinIos.cardRadius : PremiumTokens.borderRadiusSm,
+        ),
         border: Border.all(
-          color: SoloForteSheetTokens.inputBackground,
+          color: panelBorder,
           width: PremiumTokens.hairlineThickness,
         ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
-              Icon(Icons.square_foot, size: 16, color: Colors.blueGrey),
-              SizedBox(width: 6),
+              Icon(Icons.square_foot, size: 16, color: labelColor),
+              const SizedBox(width: 6),
               Text(
                 'MÉTRICAS',
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
-                  color: Colors.blueGrey,
+                  color: labelColor,
                   letterSpacing: 0.5,
                 ),
               ),

@@ -195,14 +195,23 @@ class _MetricItem extends StatelessWidget {
   const _MetricItem({required this.label, required this.value});
   @override
   Widget build(BuildContext context) {
+    final isIos = soloForteSheetIsIos(context);
+    final valueColor = isIos ? SoloForteSheetSkinIos.titleColor : null;
+    final labelColor =
+        isIos ? SoloForteSheetSkinIos.subtitleColor : Colors.grey;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(fontSize: 11, color: Colors.grey)),
+        Text(label, style: TextStyle(fontSize: 11, color: labelColor)),
         const SizedBox(height: 2),
         Text(
           value,
-          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: valueColor,
+          ),
         ),
       ],
     );
