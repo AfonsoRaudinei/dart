@@ -93,6 +93,40 @@ Nunca assumir onde um arquivo está. Sempre auditar primeiro.
 
 - ❌ Nunca `git add .` ou `git add -A`
 - ✅ Commits por arquivo, mensagem descritiva por módulo
+- ❌ **Nunca encerrar uma tarefa (prompt, correção ou fix) apenas com commit/push numa branch de feature** — isso não conta como entregue
+- ✅ **Toda correção só está "no aplicativo" após `merge` + `push` na `main` remota** (ver REGRA-ENTREGA-1 abaixo)
+
+-----
+
+## REGRA-ENTREGA-1 — Correção só existe quando está na `main` (no app)
+
+> Motivação: em Ago/2026 uma correção (`fix(map): coluna direita`, commit `302eeeb`) ficou
+> **3 dias** só na branch `cursor/fix-map-chrome-canonical-spacing`, nunca chegou à `main` nem
+> ao app publicado. Prompt executado + correção feita **não é o mesmo** que correção entregue.
+
+**Definição de "pronto":** um prompt de correção/fix só está concluído quando o commit
+aparece em `git log origin/main` — não quando aparece só em `git log` da branch local/feature.
+
+| Etapa | Obrigatório | Comando |
+|---|---|---|
+| 1. Implementar + validar (`arch_check.sh`, `flutter analyze`, testes) | ✅ | — |
+| 2. Commit por arquivo na branch de trabalho | ✅ | `git commit` |
+| 3. Push da branch | ✅ | `git push -u origin <branch>` |
+| 4. **Merge na `main` remota** | ✅ **NUNCA PULAR** | `git checkout main && git pull origin main && git merge <branch> && git push origin main` |
+| 5. Confirmar SHA de `main` contém o fix | ✅ | `git branch --contains <sha> -a` deve listar `main`/`remotes/origin/main` |
+| 6. Informar ao usuário o SHA da `main` atualizado | ✅ | — |
+
+**Checagem automática antes de encerrar qualquer resposta que tenha feito commit:**
+
+```bash
+git fetch origin --quiet
+git branch --contains HEAD -a | grep -E "main$" || echo "❌ CORREÇÃO AINDA NÃO ESTÁ NA MAIN — merge obrigatório antes de encerrar"
+```
+
+- ❌ Proibido dizer "correção feita" ou "PR pronto" como entrega final sem o merge na `main`
+- ❌ Proibido deixar branch de feature aberta como única prova da correção — branch é rascunho, `main` é o app
+- ✅ Se o merge exigir revisão humana (PR grande, risco alto), **abrir o PR e mergear apenas se aprovado explicitamente for exigido** — na ausência dessa exigência explícita do usuário, o agente mergeia direto (ver `AGENT_MEMORIA.md`: "não parar para perguntar" em git óbvio)
+- ✅ Aplica-se a **todo** prompt executado neste repositório, não só a IPA/release — ver `.agent/Prompt.md` (REGRA-ENTREGA-1)
 
 -----
 
@@ -209,13 +243,14 @@ lib/
 [ ] Tema mudou?                         NÃO
 [ ] Contrato de dados alterado?         NÃO (ou ADR criado)
 [ ] Apenas o módulo alvo foi afetado?   SIM
+[ ] Commit chegou na main remota (origin/main)? SIM — senão, NÃO ENCERRAR (REGRA-ENTREGA-1)
 ```
 
 -----
 
 ## FORMATO DE ENTREGA
 
-- Mudanças no app → commits por módulo, PR com descrição de escopo
+- Mudanças no app → commits por módulo, **merge obrigatório na `main` remota** (REGRA-ENTREGA-1) — PR só documenta o escopo, não substitui o merge
 - Prompts para agente → arquivo `.md` em `prompt/`
 - Documentação humana → `.md` na raiz ou `docs/`
 
