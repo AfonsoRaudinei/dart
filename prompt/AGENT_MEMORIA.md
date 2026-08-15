@@ -11,6 +11,7 @@
 2. **Sempre sincronizar MacBook** ao encerrar tarefa — serviço completo
 3. **Não parar para perguntar** se deve executar git push/merge/pull óbvios
 4. **Salvar regras** em `prompt/` + `.cursor/rules/` para persistir entre sessões
+5. **Correção não é entrega enquanto estiver só na branch** — merge na `main` obrigatório (REGRA-ENTREGA-1, ver `AGENTS.md`)
 
 ---
 
@@ -113,3 +114,5 @@ Fonte canônica: `.cursor/rules/soloforte-designer.mdc`
 | Ago/2026 | **Ocorrências mapa IPA 206:** pin atômico em `MapSheetState`; blindagem `.agent/PLANO_BLINDAGEM_OCORRENCIAS_MAPA.md` + REGRA-OCC-8..11 |
 | Ago/2026 | **Coluna direita mapa:** `kMapActionColumnBottomInset` (REGRA-MAP-CHROME-1) |
 | Ago/2026 | **SheetSkin iOS (tema Azul):** cherry-pick `6230591` em `main` · `SoloForteThemeExtension` + `SoloForteSheetSkinIos` · tag `feat/sheet-skin-ios` · doc `design/sheets.md` |
+| Ago/2026 | **Incidente IPA 210:** regressão transversal em Relatórios/Marketing/Agenda — SheetSkin Fase 2 inverteu contrato `transparent`. Doc: `.agent/AUDITORIA_REGRESSAO_IPA210.md` · REGRA-SHEET-BLAST-1 |
+| Ago/2026 | **Incidente REGRA-ENTREGA-1:** fix coluna direita (`302eeeb`) ficou só em branch — correção só conta em `origin/main` |

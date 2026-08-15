@@ -96,3 +96,29 @@ Ao tocar `assets/html_templates/**` ou `lib/core/html_templates/**`, ler e obede
 | Rodapé | Só SoloForte + tagline — excluir ID, Sync, Sessão, meta técnica |
 
 Validar após mudança: header com `logo-img` / `soloforte_logo`, zero `footer-meta` com ID/Sync, localização `.localizacao-inline`.
+
+---
+
+## Bottom sheets — REGRA-SHEET-BLAST-1 (IPA 210)
+
+**Espelho de:** `.agent/AGENT_REGRAS.md` · **Auditoria:** `.agent/AUDITORIA_REGRESSAO_IPA210.md`
+
+Ao tocar `lib/core/ui/sheets/`:
+
+```bash
+rg -l showSoloForteSheet lib/
+rg -l 'backgroundColor: Colors.transparent' lib/
+flutter test test/regression/sheets/soloforte_sheet_contract_test.dart
+```
+
+- **20+ callers** com `transparent` — não confiar na lista de 12 do prompt Fase 1
+- **Proibido** inverter contrato `transparent` / `preserveMaterialDefaults` sem atualizar callers
+- Conteúdo com `SoloForteSheetTokens.titleColor` (branco) não assume fundo escuro no tema Azul
+
+---
+
+## Coluna direita do mapa — REGRA-MAP-CHROME-1
+
+- Usar `kMapActionColumnBottomInset` — **nunca** `mapSheetChromeInsetProvider`
+- Gaps canônicos: 26dp (camadas↔+) · 16dp (+↔check-in)
+- Teste: `flutter test test/regression/map/controls_overlay_regression_test.dart`
