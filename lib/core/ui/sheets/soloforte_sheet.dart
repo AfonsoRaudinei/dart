@@ -20,6 +20,18 @@ class SoloForteSheetSkinScope extends InheritedWidget {
   bool updateShouldNotify(SoloForteSheetSkinScope old) => old.isIos != isIos;
 }
 
+/// Resolve se a skin iOS Azul está ativa.
+///
+/// Preferência: [SoloForteSheetSkinScope] (dentro de [showSoloForteSheet]).
+/// Fallback: [SoloForteThemeExtension.themeId] — para hosts próprios
+/// ([MapBottomSheet]) que não passam pelo wrapper modal.
+bool soloForteSheetIsIos(BuildContext context) {
+  final scope = SoloForteSheetSkinScope.of(context);
+  if (scope != null) return scope.isIos;
+  final ext = Theme.of(context).extension<SoloForteThemeExtension>();
+  return ext?.themeId == 'blue';
+}
+
 /// Chrome privado: handle + borda iOS quando [isIos]; senão passa o child.
 class _SoloForteSheetChrome extends StatelessWidget {
   final bool isIos;
@@ -89,12 +101,21 @@ Future<T?> showSoloForteSheet<T>({
   final ext = Theme.of(context).extension<SoloForteThemeExtension>();
   final bool isIos = !preserveMaterialDefaults && ext?.themeId == 'blue';
 
-  final resolvedBackground = preserveMaterialDefaults
-      ? backgroundColor
-      : (backgroundColor ??
-          (isIos
-              ? SoloForteSheetSkinIos.background
-              : SoloForteSheetTokens.sheetBackground));
+  // Fase 2: `Colors.transparent` não anula o fundo prata iOS — callers que
+  // pintavam glass escuro por cima passam a herdar o chrome correto.
+  final Color? resolvedBackground;
+  if (preserveMaterialDefaults) {
+    resolvedBackground = backgroundColor;
+  } else if (isIos) {
+    final transparentOverride =
+        backgroundColor == null || backgroundColor == Colors.transparent;
+    resolvedBackground = transparentOverride
+        ? SoloForteSheetSkinIos.background
+        : backgroundColor;
+  } else {
+    resolvedBackground =
+        backgroundColor ?? SoloForteSheetTokens.sheetBackground;
+  }
 
   final resolvedRadius =
       isIos ? SoloForteSheetSkinIos.sheetRadius : SoloForteSheetTokens.borderRadius;

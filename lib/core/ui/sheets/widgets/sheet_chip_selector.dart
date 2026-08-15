@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import '../sheet_tokens.dart';
+import '../soloforte_sheet.dart';
 
 class SheetChipSelector<T> extends StatelessWidget {
   const SheetChipSelector({
@@ -19,6 +20,23 @@ class SheetChipSelector<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isIos = soloForteSheetIsIos(context);
+    final activeBorder = isIos
+        ? SoloForteSheetSkinIos.iconStroke
+        : SoloForteSheetTokens.chipBorderActive;
+    final inactiveBorder = isIos
+        ? SoloForteSheetSkinIos.cardBorder
+        : SoloForteSheetTokens.chipBorderInactive;
+    final activeText = isIos
+        ? SoloForteSheetSkinIos.iconStroke
+        : SoloForteSheetTokens.chipTextActive;
+    final inactiveText = isIos
+        ? SoloForteSheetSkinIos.subtitleColor
+        : SoloForteSheetTokens.chipTextInactive;
+    final radius = isIos
+        ? SoloForteSheetSkinIos.ctaRadius
+        : SoloForteSheetTokens.chipRadius;
+
     return Row(
       children: options.map((option) {
         final isActive = option == selected;
@@ -29,23 +47,20 @@ class SheetChipSelector<T> extends StatelessWidget {
               margin: const EdgeInsets.symmetric(horizontal: 4),
               padding: const EdgeInsets.symmetric(vertical: 12),
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(SoloForteSheetTokens.chipRadius),
+                color: isIos && isActive
+                    ? SoloForteSheetSkinIos.badgeBackground
+                    : null,
+                borderRadius: BorderRadius.circular(radius),
                 border: Border.all(
-                  color: isActive
-                      ? SoloForteSheetTokens.chipBorderActive
-                      : SoloForteSheetTokens.chipBorderInactive,
-                  width: isActive
-                      ? SoloForteSheetTokens.chipBorderWidth
-                      : 1.0,
+                  color: isActive ? activeBorder : inactiveBorder,
+                  width: isActive ? SoloForteSheetTokens.chipBorderWidth : 1.0,
                 ),
               ),
               child: Text(
                 labelBuilder(option),
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: isActive
-                      ? SoloForteSheetTokens.chipTextActive
-                      : SoloForteSheetTokens.chipTextInactive,
+                  color: isActive ? activeText : inactiveText,
                   fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
                 ),
               ),
