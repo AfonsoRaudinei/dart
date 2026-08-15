@@ -230,6 +230,44 @@ void main() {
       expect(decoration.color, const Color(0xFF1428A0));
     });
   });
+
+  group('map flash regression (868cbea)', () {
+    test('map _MapActionButton label só em long-press, não no onTap', () {
+      final source = File(
+        'lib/ui/components/map/widgets/map_controls_overlay.dart',
+      ).readAsStringSync();
+
+      final classStart = source.indexOf('class _MapActionButton extends');
+      final classEnd = source.indexOf('class _MapToolsFab extends', classStart);
+      final mapButtonSource = source.substring(classStart, classEnd);
+
+      expect(mapButtonSource.contains('onLongPress: _showTemporaryLabel'), isTrue);
+      final onTapStart = mapButtonSource.indexOf('onTap: () {');
+      final onTapEnd = mapButtonSource.indexOf('onLongPress:', onTapStart);
+      final onTapBlock = mapButtonSource.substring(onTapStart, onTapEnd);
+      expect(onTapBlock.contains('_showTemporaryLabel'), isFalse);
+    });
+
+    test('app_shell mantém SmartButton estável (wrapper const, sem key por rota)', () {
+      final source = File('lib/ui/components/app_shell.dart').readAsStringSync();
+
+      expect(source.contains('const _SmartButtonWrapper()'), isTrue);
+      expect(source.contains('const SmartButton()'), isTrue);
+      expect(source.contains('remonta o FAB a cada'), isTrue);
+    });
+
+    test('private_map_screen evita reabrir modal do mesmo tipo (sameModalAlreadyOpen)', () {
+      final source = File(
+        'lib/ui/screens/private_map_screen.dart',
+      ).readAsStringSync();
+
+      expect(source.contains('sameModalAlreadyOpen'), isTrue);
+      expect(
+        source.contains('Já há modal do mesmo tipo — só atualiza estado'),
+        isTrue,
+      );
+    });
+  });
 }
 
 Future<void> _pumpMapControlsOverlay(

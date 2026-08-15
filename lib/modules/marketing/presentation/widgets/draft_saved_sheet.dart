@@ -6,15 +6,34 @@ import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
 /// Bottom sheet exibido após salvar um rascunho sem plano ativo.
 /// Retorna [true] se o usuário quer ver os planos, [false] ou null para fechar.
 class DraftSavedSheet extends StatelessWidget {
-  const DraftSavedSheet({super.key});
+  const DraftSavedSheet({
+    super.key,
+    this.title = 'Case salvo com sucesso!',
+    this.message =
+        'Seu case foi salvo como rascunho. Para publicá-lo no mapa e '
+        'compartilhar com outros usuários, ative um plano.',
+  });
+
+  final String title;
+  final String message;
 
   /// Exibe o sheet e retorna `true` se o usuário tocou em "Ver planos".
   /// A navegação fica a cargo do chamador após o modal fechar.
-  static Future<bool?> show(BuildContext context) {
+  static Future<bool?> show(
+    BuildContext context, {
+    String? title,
+    String? message,
+  }) {
     return showSoloForteSheet<bool>(
       context: context,
       showDragHandle: false,
-      builder: (_) => const DraftSavedSheet(),
+      builder: (_) => DraftSavedSheet(
+        title: title ?? 'Case salvo com sucesso!',
+        message:
+            message ??
+            'Seu case foi salvo como rascunho. Para publicá-lo no mapa e '
+                'compartilhar com outros usuários, ative um plano.',
+      ),
     );
   }
 
@@ -61,7 +80,7 @@ class DraftSavedSheet extends StatelessWidget {
 
           // Título
           Text(
-            'Case salvo com sucesso!',
+            title,
             style: Theme.of(
               context,
             ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
@@ -72,7 +91,7 @@ class DraftSavedSheet extends StatelessWidget {
 
           // Mensagem
           Text(
-            'Seu case foi salvo como rascunho. Para publicá-lo no mapa e compartilhar com outros usuários, ative um plano.',
+            message,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               color: Theme.of(context).textTheme.bodySmall?.color,
             ),

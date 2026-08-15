@@ -559,6 +559,87 @@ void main() {
     expect(find.text('Compartilhar pack'), findsNothing);
     expect(find.text('Editar'), findsOneWidget);
   });
+
+  testWidgets('filtro status Marketing oculta rascunhos e Não gerados oculta publicados', (
+    tester,
+  ) async {
+    await _pumpScreen(
+      tester,
+      relatorioRepository: FakeRelatorioRepository(),
+      occurrenceRepository: FakeOccurrenceRepository(),
+      marketingCases: [
+        _marketingCase(id: 'mkt-published'),
+        _marketingCase(
+          id: 'mkt-draft-filter',
+          produtorFazenda: 'Somente rascunho',
+          status: 'draft',
+        ),
+      ],
+    );
+
+    await _selectSegment(tester, 'Marketing');
+    expect(find.text('Produtor Teste - Fazenda Marketing'), findsOneWidget);
+    expect(find.text('Somente rascunho'), findsOneWidget);
+
+    await tester.tap(find.text('Não gerados'));
+    await tester.pumpAndSettle();
+    expect(find.text('Somente rascunho'), findsOneWidget);
+    expect(find.text('Produtor Teste - Fazenda Marketing'), findsNothing);
+
+    final statusBar = find.ancestor(
+      of: find.text('Não gerados'),
+      matching: find.byWidgetPredicate((widget) => widget is Wrap),
+    );
+    await tester.tap(
+      find.descendant(of: statusBar, matching: find.text('Marketing')),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Produtor Teste - Fazenda Marketing'), findsOneWidget);
+    expect(find.text('Somente rascunho'), findsNothing);
+  });
+
+  testWidgets(
+    'publicação em Marketing no limite exibe sheet de planos e mantém draft',
+    (tester) async {
+      final marketingRepo = FakeMarketingCaseRepository([
+        _marketingCase(id: 'mkt-p1'),
+        _marketingCase(id: 'mkt-p2'),
+        _marketingCase(id: 'mkt-p3'),
+        _marketingCase(
+          id: 'mkt-draft-limit',
+          produtorFazenda: 'Draft no limite',
+          status: 'draft',
+        ),
+      ]);
+
+      await _pumpScreen(
+        tester,
+        relatorioRepository: FakeRelatorioRepository(),
+        occurrenceRepository: FakeOccurrenceRepository(),
+        marketingRepository: marketingRepo,
+        planoOverride: UserPlan.free(userId: 'test-user'),
+      );
+
+      await _selectSegment(tester, 'Marketing');
+      await tester.tap(find.text('Draft no limite'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('Ações da publicação').first);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Publicar'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
+
+      expect(find.text('Limite de publicações atingido'), findsOneWidget);
+      expect(
+        marketingRepo.cases.singleWhere((c) => c.id == 'mkt-draft-limit').status
+            .toValue(),
+        'draft',
+      );
+
+      await tester.tap(find.text('Ok, entendi'));
+      await tester.pumpAndSettle();
+    },
+  );
 }
 
 Future<void> _selectSegment(WidgetTester tester, String label) async {
@@ -694,7 +775,18 @@ class FakeMarketingCaseRepository implements IMarketingCaseRepository {
 
   @override
   Future<MarketingCase> saveAsDraft(MarketingCase marketingCase) async {
-    return marketingCase;
+    final draft = MarketingCase.fromJson({
+      ...marketingCase.toJson(),
+      'status': 'draft',
+      'sync_status': 'local_only',
+    });
+    final index = cases.indexWhere((item) => item.id == draft.id);
+    if (index >= 0) {
+      cases[index] = draft;
+    } else {
+      cases.add(draft);
+    }
+    return draft;
   }
 
   @override

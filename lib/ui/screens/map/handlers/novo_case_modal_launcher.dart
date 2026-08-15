@@ -36,74 +36,7 @@ class NovoCaseModalLauncher {
     if (!context.mounted) return;
 
     Future<void> handlePublicar(MarketingCase newCase) async {
-      // Lê plano — nunca null após PROMPT-A (retorna UserPlan.free())
-      final plano = ref.read(planoAtivoProvider).valueOrNull;
-
-      // 1. Admin bypass — sem verificação de limite
-      if (plano?.isAdmin == true) {
-        Navigator.of(context).pop();
-        final saved = await ref
-            .read(marketingCasesProvider.notifier)
-            .publishCase(newCase);
-        if (!context.mounted) return;
-        _showPublishResult(context, saved);
-        return;
-      }
-
-      // 2. Contar cases publicados do usuário
-      final cases = ref.read(marketingCasesProvider).valueOrNull ?? [];
-      final casesPublicados = cases
-          .where(
-            (c) =>
-                c.status.toValue() == 'published' &&
-                c.ativo &&
-                c.deletadoEm == null,
-          )
-          .length;
-
-      // 3. Limite: free tier = 3, plano padrão conforme UserPlan
-      final limite = plano?.limiteCases ?? 3;
-
-    if (casesPublicados >= limite) {
-        if (!context.mounted) return;
-        Navigator.of(context).pop();
-        try {
-          await ref.read(marketingCasesProvider.notifier).saveAsDraft(newCase);
-        } catch (_) {
-          if (!context.mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Não foi possível salvar o rascunho. Tente novamente.'),
-            ),
-          );
-          return;
-        }
-        if (!context.mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Limite de $limite cases publicados. Salvo como Não gerado em '
-              'Relatórios → Marketing.',
-            ),
-            duration: const Duration(seconds: 5),
-          ),
-        );
-        final verPlanos = await DraftSavedSheet.show(context);
-        if (verPlanos == true && context.mounted) {
-          context.go('/planos');
-        }
-        return;
-      }
-
-      // 4. Publica normalmente
-      Navigator.of(context).pop();
-
-      final saved = await ref
-          .read(marketingCasesProvider.notifier)
-          .publishCase(newCase);
-
-      if (!context.mounted) return;
-      _showPublishResult(context, saved);
+      await submitCaseFromMap(context: context, ref: ref, newCase: newCase);
     }
 
     Widget buildCaseSheet() {
@@ -176,6 +109,79 @@ class NovoCaseModalLauncher {
         ),
       ),
     );
+  }
+
+  /// Publica case do mapa ou salva rascunho quando o limite de publicados foi atingido.
+  static Future<void> submitCaseFromMap({
+    required BuildContext context,
+    required WidgetRef ref,
+    required MarketingCase newCase,
+  }) async {
+    final plano = ref.read(planoAtivoProvider).valueOrNull;
+
+    if (plano?.isAdmin == true) {
+      Navigator.of(context).pop();
+      final saved = await ref
+          .read(marketingCasesProvider.notifier)
+          .publishCase(newCase);
+      if (!context.mounted) return;
+      _showPublishResult(context, saved);
+      return;
+    }
+
+    final cases = ref.read(marketingCasesProvider).valueOrNull ?? [];
+    final casesPublicados = cases
+        .where(
+          (c) =>
+              c.status.toValue() == 'published' &&
+              c.ativo &&
+              c.deletadoEm == null,
+        )
+        .length;
+
+    final limite = plano?.limiteCases ?? 3;
+
+    if (casesPublicados >= limite) {
+      if (!context.mounted) return;
+      Navigator.of(context).pop();
+      try {
+        await ref.read(marketingCasesProvider.notifier).saveAsDraft(newCase);
+      } catch (_) {
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Não foi possível salvar o rascunho. Tente novamente.',
+            ),
+          ),
+        );
+        return;
+      }
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Limite de $limite cases publicados. Salvo como Não gerado em '
+            'Relatórios → Marketing.',
+          ),
+          duration: const Duration(seconds: 5),
+        ),
+      );
+      final verPlanos = await DraftSavedSheet.show(context);
+      if (verPlanos == true && context.mounted) {
+        context.go('/planos');
+      }
+      return;
+    }
+
+    Navigator.of(context).pop();
+
+    final saved = await ref
+        .read(marketingCasesProvider.notifier)
+        .publishCase(newCase);
+
+    if (!context.mounted) return;
+    _showPublishResult(context, saved);
   }
 
   static Future<ActiveVisitContext?> _loadActiveVisitContext(

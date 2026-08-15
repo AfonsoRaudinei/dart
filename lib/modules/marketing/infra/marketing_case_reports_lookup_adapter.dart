@@ -14,7 +14,9 @@ import '../domain/entities/marketing_case.dart';
 import '../domain/enums/marketing_case_status.dart';
 import '../domain/marketing_case_visibility.dart';
 import '../presentation/providers/marketing_providers.dart';
+import '../presentation/widgets/draft_saved_sheet.dart';
 import '../presentation/widgets/edit_case_sheet.dart';
+import 'package:go_router/go_router.dart';
 
 /// Provider interno — registrado em `main.dart` como override de
 /// [marketingCaseReportsListProvider] em `core/contracts/`.
@@ -116,15 +118,28 @@ class MarketingCaseReportsLookupAdapter implements IMarketingCaseReportsLookup {
       final limite = plano?.limiteCases ?? 3;
       if (casesPublicados >= limite) {
         if (!context.mounted) return false;
+        final planoLabel = plano?.plano.label;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'Limite de $limite cases atingido'
-              '${plano?.plano.label != null ? ' no plano ${plano!.plano.label}' : ''}. '
+              'Limite de $limite cases publicados'
+              '${planoLabel != null ? ' no plano $planoLabel' : ''}. '
               'Atualize o plano para publicar.',
             ),
+            duration: const Duration(seconds: 5),
           ),
         );
+        final verPlanos = await DraftSavedSheet.show(
+          context,
+          title: 'Limite de publicações atingido',
+          message:
+              'Você já tem $limite case(s) publicado(s). Atualize o plano para '
+              'publicar este case no mapa ou mantenha como Não gerado em '
+              'Relatórios → Marketing.',
+        );
+        if (verPlanos == true && context.mounted) {
+          context.go('/planos');
+        }
         return false;
       }
     }
