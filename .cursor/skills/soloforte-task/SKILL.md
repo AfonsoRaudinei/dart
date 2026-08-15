@@ -36,6 +36,8 @@ Fronteira:    altera? sim/não → se sim, ADR necessário
 - Persistência: `user_id` + `sync_status`; schema SQLite v41
 - Sheets: `lib/core/ui/sheets/soloforte_sheet.dart`
 - Scroll com FAB: `kFabSafeArea = 100dp`
+- **Se tocar sheets:** `rg showSoloForteSheet` + `rg 'backgroundColor: Colors.transparent'` (REGRA-SHEET-BLAST-1)
+- **Se tocar map chrome:** `kMapActionColumnBottomInset` — nunca `mapSheetChromeInsetProvider` (REGRA-MAP-CHROME-1)
 
 ### 4. Validação
 
@@ -43,6 +45,8 @@ Fronteira:    altera? sim/não → se sim, ADR necessário
 flutter pub run build_runner build --delete-conflicting-outputs  # se @riverpod novo
 flutter analyze lib/modules/<modulo>/
 flutter test test/modules/<modulo>/
+flutter test test/regression/sheets/soloforte_sheet_contract_test.dart  # se tocou sheets
+flutter test test/regression/map/controls_overlay_regression_test.dart  # se tocou map chrome
 ./tool/arch_check.sh
 ```
 
@@ -82,4 +86,5 @@ Ver tabela completa em [AGENTS.md](../../AGENTS.md). Resumo:
 
 - ADRs: [docs/02_ARQUITETURA_ATIVA/](../../docs/02_ARQUITETURA_ATIVA/)
 - Prompts: [prompt/](../../prompt/)
+- Auditoria IPA 210: [.agent/AUDITORIA_REGRESSAO_IPA210.md](../../.agent/AUDITORIA_REGRESSAO_IPA210.md)
 - Dev iOS Wi-Fi: `./run_dev.sh` (`.env.local`)
