@@ -100,11 +100,12 @@ Fonte canônica: `.cursor/rules/soloforte-designer.mdc`
 
 | Data | Decisão |
 |---|---|
+| Ago/2026 | Pin marketing + norte: fix em `main` (PR #39, commits `768e370`/`c33f7c9`). Course-up GNSS removido; `MarkerLayer(rotate: true)` + `topCenter`. **App no dispositivo só recebe após IPA rebuild a partir de `main` (ou port cirúrgico).** `release/build-156` **não** tem esses commits — não usar como base de build para este bug. |
 | Jul/2026 | GNSS multi-constelação via `geolocator` — OS delega constelações |
 | Jul/2026 | Check-in bloqueado se precisão > 30m |
 | Jul/2026 | Agente sempre executa terminal; sync remoto obrigatório |
 | Jul/2026 | MacBook pull local **não acessível** via Cloud Agent — documentado |
-| Jul/2026 | MacBook: pasta `~/appdart`, branch `release/build-156` — NÃO mergear main |
+| Jul/2026 | MacBook: pasta `~/appdart`, branch `release/build-156` — NÃO mergear main cegamente; para pin/norte preferir `main` ou port cirúrgico dos commits acima |
 | Jul/2026 | Prompt Codex merge: `prompt/PROMPT_CODEX_RESOLVER_MERGE_BUILD156.md` |
 | Jul/2026 | HTML reports: logo SoloForte no header; zero ícones genéricos; localização inline; rodapé sem ID/Sync |
 | Ago/2026 | **Ocorrências mapa IPA 206:** pin atômico em `MapSheetState`; blindagem `.agent/PLANO_BLINDAGEM_OCORRENCIAS_MAPA.md` + REGRA-OCC-8..11 |
