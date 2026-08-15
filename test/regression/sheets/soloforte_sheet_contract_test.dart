@@ -61,5 +61,20 @@ void main() {
       expect(source.contains('SoloForteSheetSkinIos.background'), isTrue);
       expect(source.contains('Colors.transparent'), isTrue);
     });
+
+    test(
+      'map_sheet_controller (check-in/layers) usa preserveMaterialDefaults',
+      () {
+        // Host com DraggableScrollableSheet: sem o flag, tema Azul colapsa
+        // o sheet (tela branca no check-in). REGRA-SHEET-BLAST-1.
+        final source = File(
+          'lib/ui/screens/map/controllers/map_sheet_controller.dart',
+        ).readAsStringSync();
+
+        expect(source.contains('backgroundColor: Colors.transparent'), isTrue);
+        expect(source.contains('preserveMaterialDefaults: true'), isTrue);
+        expect(source.contains('MapSheetType.checkIn'), isTrue);
+      },
+    );
   });
 }
