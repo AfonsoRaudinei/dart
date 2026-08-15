@@ -36,6 +36,15 @@ void main() {
       expect(source.contains('ValueKey(\'offlineDownloadButton\')'), isFalse);
     });
 
+    test('map_controls_overlay.dart não referencia mapSheetChromeInsetProvider', () {
+      final source = File(
+        'lib/ui/components/map/widgets/map_controls_overlay.dart',
+      ).readAsStringSync();
+
+      expect(source.contains('mapSheetChromeInsetProvider'), isFalse);
+      expect(source.contains('kMapActionColumnBottomInset'), isTrue);
+    });
+
     testWidgets('coluna direita não contém keys legadas de coordenada/offline', (
       tester,
     ) async {
@@ -104,7 +113,7 @@ void main() {
       expect(actions.bottom, closeTo(checkIn.top - spacing, 0.1));
     });
 
-    testWidgets('coluna inteira sobe uniformemente com sheet inset', (
+    testWidgets('coluna permanece fixa quando sheet inset muda (REGRA-MAP-CHROME-1)', (
       tester,
     ) async {
       SharedPreferences.setMockInitialValues({});
@@ -167,15 +176,8 @@ void main() {
       final insetCheckIn = _buttonBounds(tester, 'map_control_check_in');
       final insetLayers = _buttonBounds(tester, 'map_control_layers_btn');
 
-      const expectedLift = 200.0 * 0.15;
-      expect(
-        baselineCheckIn.bottom - insetCheckIn.bottom,
-        closeTo(expectedLift, 0.1),
-      );
-      expect(
-        baselineLayers.bottom - insetLayers.bottom,
-        closeTo(expectedLift, 0.1),
-      );
+      expect(insetCheckIn.bottom, closeTo(baselineCheckIn.bottom, 0.1));
+      expect(insetLayers.bottom, closeTo(baselineLayers.bottom, 0.1));
     });
 
     testWidgets('modo desenho mantém camadas na posição superior da coluna', (

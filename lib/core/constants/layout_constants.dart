@@ -56,3 +56,27 @@ const double kDrawingBottomToolbarHeight = 64.0;
 ///
 /// Composição: [kFabHeight] (56) + margem direita do shell (16) = 72.
 const double kDrawingBottomToolbarRightInset = kFabHeight + 16.0;
+
+/// Margem direita da coluna de ações do mapa (camadas / + / check-in).
+const double kMapActionColumnRightInset = 16.0;
+
+/// Tamanho dos botões circulares da coluna de ações do mapa.
+const double kMapActionColumnButtonSize = 44.0;
+
+/// Espaçamento vertical uniforme entre botões da coluna de ações do mapa.
+const double kMapActionColumnSpacing = 12.0;
+
+/// Inset inferior fixo da coluna de ações do mapa (âncora do check-in).
+///
+/// Composição: [kFabSafeArea] — alinhado ao SmartButton no AppShell
+/// (`padding.bottom + 16` + 4dp de clearance).
+///
+/// REGRA-MAP-CHROME-1: **não** reagir a `mapSheetChromeInsetProvider` nem a
+/// detent do bottom sheet — a coluna permanece estável enquanto o usuário
+/// arrasta o sheet ou o app retoma do background.
+const double kMapActionColumnBottomInset = kFabSafeArea;
+
+/// Compensação vertical no modo desenho: mantém o botão de camadas na mesma
+/// posição quando ações e check-in são ocultados.
+const double kMapActionColumnDrawModeCompensation =
+    (kMapActionColumnSpacing + kMapActionColumnButtonSize) * 2;
