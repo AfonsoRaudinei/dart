@@ -35,7 +35,7 @@ class MapToolsBottomSheet extends StatefulWidget {
       showDragHandle: true,
       useSafeArea: true,
       maxHeightFraction: 0.78,
-      barrierColor: Colors.black.withValues(alpha: 0.38),
+      barrierColor: Colors.black.withValues(alpha: 0.20),
       builder: (_) => MapToolsBottomSheet(
         drawingController: drawingController,
         onCoordinateSearch: onCoordinateSearch,

@@ -555,7 +555,6 @@ class _MapActionButtonState extends State<_MapActionButton> {
           child: GestureDetector(
             onTap: () {
               HapticFeedback.selectionClick();
-              _showTemporaryLabel();
               widget.onTap();
             },
             onLongPress: _showTemporaryLabel,

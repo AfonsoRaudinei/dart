@@ -40,7 +40,7 @@ class PublicationActionsBottomSheet extends StatelessWidget {
       showDragHandle: false,
       useSafeArea: true,
       backgroundColor: Colors.transparent,
-      barrierColor: Colors.black.withValues(alpha: 0.36),
+      barrierColor: Colors.black.withValues(alpha: 0.20),
       builder: (_) => PublicationActionsBottomSheet(
         onResultado: onResultado,
         onAntesDepois: onAntesDepois,

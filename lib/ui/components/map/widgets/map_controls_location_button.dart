@@ -58,7 +58,6 @@ class _LocationButtonState extends ConsumerState<_LocationButton> {
               borderRadius: BorderRadius.circular(12),
               onTap: () {
                 HapticFeedback.lightImpact();
-                _showTemporaryLabel();
 
                 final nextMode = switch (locationMode) {
                   MapLocationMode.idle => MapLocationMode.following,

@@ -223,12 +223,27 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
       tag: 'PrivateMap',
     );
 
+    final modalOpen = ref.read(isModalOpenProvider);
+    final isStackSheet = state != null &&
+        (state.type == MapSheetType.draw ||
+            state.type == MapSheetType.occurrences);
+    final sameModalAlreadyOpen = modalOpen &&
+        !isStackSheet &&
+        state != null &&
+        currentSheet?.type == state.type;
+
+    // Já há modal do mesmo tipo — só atualiza estado (evita pop+reopen flash).
+    if (sameModalAlreadyOpen) {
+      ref.read(mapSheetStateProvider.notifier).state = state;
+      return;
+    }
+
     // 🐛 BUGFIX: Fechar modal branco (layers/checkIn) antes de renderizar
     // sheet escuro no Stack. Sem isso, o modal fica vivo atrás e reaparece
     // ao fechar o MapBottomSheet. Padrão idêntico ao onTabSelected do orchestrator.
     // R-1: rootNavigator: false garante que o pop nunca escala até o GoRouter raiz,
     // mesmo se isModalOpenProvider dessincronizar por swipe dismiss.
-    if (ref.read(isModalOpenProvider) && context.mounted) {
+    if (modalOpen && context.mounted) {
       Navigator.of(context, rootNavigator: false).pop();
       ref.read(modalGenerationProvider.notifier).state++;
       ref.read(isModalOpenProvider.notifier).state = false;
@@ -238,9 +253,7 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
 
     // 🔧 MODAL: draw e occurrences permanecem no Stack;
     // demais tipos abrem como sheet modal padronizado
-    if (state == null ||
-        state.type == MapSheetType.draw ||
-        state.type == MapSheetType.occurrences) {
+    if (state == null || isStackSheet) {
       return;
     }
     WidgetsBinding.instance.addPostFrameCallback((_) {

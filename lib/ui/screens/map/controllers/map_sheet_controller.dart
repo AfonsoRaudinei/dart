@@ -52,7 +52,7 @@ class MapSheetController {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      barrierColor: Colors.black54,
+      barrierColor: Colors.black.withValues(alpha: 0.20),
       enableDrag: true,
       isDismissible: true,
       showDragHandle: false,

@@ -41,20 +41,15 @@ import 'public_map/public_access_cta_policy.dart';
 import 'side_menu_overlay.dart';
 import 'smart_button.dart';
 
-/// Wrapper que força rebuild do SmartButton a cada mudança de rota.
-/// GoRouterState.of(context) registra dependência no InheritedWidget
-/// do GoRouter, causando rebuild automático quando a rota muda.
+/// Host estável do FAB global.
+///
+/// SmartButton já lê `GoRouterState.of(context)` no próprio build — não usar
+/// `ValueKey(uri)` aqui: remonta o FAB a cada `go`/`push` e causa flash.
 class _SmartButtonWrapper extends StatelessWidget {
   const _SmartButtonWrapper();
 
   @override
-  Widget build(BuildContext context) {
-    // Ler a rota aqui registra a dependência no InheritedWidget do GoRouter.
-    // Quando a rota muda, este widget é reconstruído, e consequentemente
-    // o SmartButton filho também, recebendo a rota atualizada.
-    final uri = GoRouterState.of(context).uri.path;
-    return SmartButton(key: ValueKey(uri));
-  }
+  Widget build(BuildContext context) => const SmartButton();
 }
 
 class AppShell extends ConsumerStatefulWidget {
