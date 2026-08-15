@@ -8,6 +8,7 @@ import '../../../core/html_templates/marketing_html_renderer.dart';
 import '../../../core/session/local_session_identity.dart';
 import '../../../core/session/user_role.dart';
 import '../../../core/ui/sheets/soloforte_sheet.dart';
+import '../../planos/presentation/providers/plano_providers.dart';
 import '../../settings/presentation/providers/user_profile_provider.dart';
 import '../domain/entities/marketing_case.dart';
 import '../domain/enums/marketing_case_status.dart';
@@ -33,8 +34,12 @@ final marketingCaseReportsListImplProvider =
             final visible = cases.where((item) {
               if (item.deletadoEm != null) return false;
               if (!item.ativo) return false;
-              if (item.status != MarketingCaseStatus.published) return false;
+              final isPublished =
+                  item.status == MarketingCaseStatus.published;
+              final isDraft = item.status == MarketingCaseStatus.draft;
+              if (!isPublished && !isDraft) return false;
               if (!role.isProdutor) return true;
+              if (isDraft) return true;
               return MarketingCaseVisibility.isVisibleInReports(
                 marketingCase: item,
                 currentUserId: currentUserId,
@@ -85,6 +90,49 @@ class MarketingCaseReportsLookupAdapter implements IMarketingCaseReportsLookup {
   @override
   Future<void> deleteCase(String id) async {
     await _ref.read(marketingCasesProvider.notifier).deleteCase(id);
+  }
+
+  @override
+  Future<bool> publishDraftCase(BuildContext context, String caseId) async {
+    final cases = _ref.read(marketingCasesProvider).valueOrNull ?? [];
+    final draft = cases.cast<MarketingCase?>().firstWhere(
+      (c) => c?.id == caseId,
+      orElse: () => null,
+    );
+    if (draft == null || draft.status != MarketingCaseStatus.draft) {
+      return false;
+    }
+
+    final plano = _ref.read(planoAtivoProvider).valueOrNull;
+    if (plano?.isAdmin != true) {
+      final casesPublicados = cases
+          .where(
+            (c) =>
+                c.status == MarketingCaseStatus.published &&
+                c.ativo &&
+                c.deletadoEm == null,
+          )
+          .length;
+      final limite = plano?.limiteCases ?? 3;
+      if (casesPublicados >= limite) {
+        if (!context.mounted) return false;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Limite de $limite cases atingido'
+              '${plano?.plano.label != null ? ' no plano ${plano!.plano.label}' : ''}. '
+              'Atualize o plano para publicar.',
+            ),
+          ),
+        );
+        return false;
+      }
+    }
+
+    final saved = await _ref
+        .read(marketingCasesProvider.notifier)
+        .publishDraft(draft);
+    return saved != null;
   }
 
   @override
