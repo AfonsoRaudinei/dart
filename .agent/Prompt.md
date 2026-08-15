@@ -1,44 +1,38 @@
-# Prompt — Travamento da coluna direita do mapa (REGRA-MAP-CHROME-1)
+# Prompt — Coluna direita do mapa (REGRA-MAP-CHROME-1)
 
 ## Status IPA
 
-| IPA | Inclui travamento? |
-|---|---|
-| **208** | ❌ NÃO — código ficou só na branch `cursor/marketing-cliente-limite-493d` (`2685139`), não mergeado em `main` |
-| **209+** | ✅ Obrigatório — regenerar após merge deste fix em `main` |
+| IPA | Travamento inset | Posição canônica (imagem) |
+|---|---|---|
+| **208** | ❌ | ❌ `mapSheetChromeInsetProvider` |
+| **209** | ✅ | ❌ spacing uniforme 12px — coluna ~26px abaixo do layout correto |
+| **210+** | ✅ | ✅ gaps 26dp (camadas↔+) e 16dp (+↔check-in) |
 
-## Sintoma
+## Verdade visual (referência imagem Porto Nacional)
 
-Ícones da coluna direita (camadas, +, check-in) se movem ao arrastar o bottom sheet ou retomar o app.
+Coluna fixa na direita, de cima para baixo:
 
-## Causa
-
-`map_controls_overlay.dart` acoplava `Positioned.bottom` a `mapSheetChromeInsetProvider * 0.15`.
-
-## Verdade (layout canônico)
+1. Camadas (layers)
+2. + (ações)
+3. Check-in
+4. SmartButton ☰ (AppShell — não mover)
 
 ```
-bottom = kMapActionColumnBottomInset + safeBottom
-       = kFabSafeArea (76) + safeBottom
+bottom coluna = kMapActionColumnBottomInset + safeBottom  (= kFabSafeArea + safeBottom)
+gap + ↔ check-in = kMapActionColumnSpacingAboveCheckIn (16)
+gap camadas ↔ + = kMapActionColumnSpacingAboveActions (26)
+offset camadas.bottom − check-in.bottom = 130dp
 ```
 
-Modo desenho: `+ kMapActionColumnDrawModeCompensation`.
-
-## Proibido
-
-- `mapSheetChromeInsetProvider` em `map_controls_overlay.dart`
-- Offsets mágicos fora de `layout_constants.dart`
+**Proibido:** `mapSheetChromeInsetProvider` em `map_controls_overlay.dart`.
 
 ## Validação
 
 ```bash
 flutter test test/regression/map/controls_overlay_regression_test.dart
-./tool/arch_check.sh   # REGRA-MAP-CHROME-1 Exit 0
+./tool/arch_check.sh
 ```
 
 ## MacBook
 
-```bash
-git pull origin main && flutter pub get
-# hot restart ou IPA 209+
-```
+`git pull origin main` → hot restart ou IPA **210+**.
