@@ -30,5 +30,20 @@ void main() {
         isNull,
       );
     });
+
+    test('following e northLocked nunca usam rumo GNSS (sempre 0°)', () {
+      // Regressão do course-up: Position.heading parado deixava norte
+      // nas laterais. Ambos os modos ativos devem forçar 0°.
+      for (final mode in [
+        MapLocationMode.following,
+        MapLocationMode.northLocked,
+      ]) {
+        expect(
+          MapLocationHandler.mapRotationForMode(mode: mode),
+          0,
+          reason: '$mode deve travar norte em 0°',
+        );
+      }
+    });
   });
 }
