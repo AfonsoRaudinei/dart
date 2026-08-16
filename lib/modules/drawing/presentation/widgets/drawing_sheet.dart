@@ -43,6 +43,9 @@ class DrawingSheet extends ConsumerStatefulWidget {
   final VoidCallback? onSaved;
   final VoidCallback? onClose;
 
+  /// Recolhe o chrome do host sem cancelar [DrawingState.editing] (fluxo 1A).
+  final VoidCallback? onCollapseWhileEditing;
+
   const DrawingSheet({
     super.key,
     required this.controller,
@@ -51,6 +54,7 @@ class DrawingSheet extends ConsumerStatefulWidget {
     this.onGpsMeasureStarted,
     this.onSaved,
     this.onClose,
+    this.onCollapseWhileEditing,
   });
 
   @override
@@ -174,6 +178,13 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
     DrawingCloseIntent intent, {
     bool preferSavedCallback = false,
   }) async {
+    // 1A: X / dismiss durante edição só recolhe o sheet — não cancela vértices.
+    if (intent == DrawingCloseIntent.dismissSheet &&
+        widget.controller.currentState == DrawingState.editing) {
+      widget.onCollapseWhileEditing?.call();
+      return;
+    }
+
     final decision = await DrawingCloseCoordinator.handle(
       context,
       controller: widget.controller,

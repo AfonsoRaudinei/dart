@@ -339,13 +339,18 @@ void showAdicionarTalhaoModal(BuildContext context, Client client) {
               title: 'Desenhar no Mapa',
               subtitle: 'Toque no mapa para definir os vértices',
               onTap: () {
-                Navigator.of(context).pop();
                 HapticFeedback.selectionClick();
-                showFarmMapEntrySheet(
-                  context,
-                  client: client,
-                  mode: FarmMapEntryMode.draw,
-                );
+                // Pós-frame: evita race Navigator.pop + showSheet (falha
+                // intermitente quando o route ainda está "locked").
+                Navigator.of(context).pop();
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (!context.mounted) return;
+                  showFarmMapEntrySheet(
+                    context,
+                    client: client,
+                    mode: FarmMapEntryMode.draw,
+                  );
+                });
               },
             ),
             const SizedBox(height: 12),
@@ -355,13 +360,16 @@ void showAdicionarTalhaoModal(BuildContext context, Client client) {
               title: 'Importar KML ou KMZ',
               subtitle: 'Selecione um arquivo do dispositivo',
               onTap: () {
-                Navigator.of(context).pop();
                 HapticFeedback.selectionClick();
-                showFarmMapEntrySheet(
-                  context,
-                  client: client,
-                  mode: FarmMapEntryMode.import,
-                );
+                Navigator.of(context).pop();
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (!context.mounted) return;
+                  showFarmMapEntrySheet(
+                    context,
+                    client: client,
+                    mode: FarmMapEntryMode.import,
+                  );
+                });
               },
             ),
           ],

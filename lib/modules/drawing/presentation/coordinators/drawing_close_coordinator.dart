@@ -55,27 +55,43 @@ class DrawingCloseCoordinator {
             controller.currentTool != DrawingTool.none) {
           return const DrawingCloseDecision(shouldCloseSheet: true);
         }
-        return _handleDismissOrSwitchPanel(context, controller);
+        return _handleDismissOrSwitchPanel(
+          context,
+          controller,
+          intent: DrawingCloseIntent.dismissSheet,
+        );
 
       case DrawingCloseIntent.dismissSheet:
       case DrawingCloseIntent.switchPanel:
-        return _handleDismissOrSwitchPanel(context, controller);
+        return _handleDismissOrSwitchPanel(
+          context,
+          controller,
+          intent: intent,
+        );
     }
   }
 
   static Future<DrawingCloseDecision> _handleDismissOrSwitchPanel(
     BuildContext context,
-    DrawingController controller,
-  ) async {
-    if (controller.interactionMode == DrawingInteraction.editing) {
-      if (controller.hasPendingEditChanges) {
-        final shouldDiscard = await _confirmDiscardEditingChanges(context);
-        if (!shouldDiscard) {
-          return const DrawingCloseDecision(shouldCloseSheet: false);
+    DrawingController controller, {
+    required DrawingCloseIntent intent,
+  }) async {
+    // 1A / REGRA-EDIT: dismiss não cancela edição de vértices.
+    // Sair da edição: Cancelar / Salvar, ou switchPanel com confirmação.
+    if (controller.currentState == DrawingState.editing ||
+        controller.interactionMode == DrawingInteraction.editing) {
+      if (intent == DrawingCloseIntent.switchPanel) {
+        if (controller.hasPendingEditChanges) {
+          final shouldDiscard = await _confirmDiscardEditingChanges(context);
+          if (!shouldDiscard) {
+            return const DrawingCloseDecision(shouldCloseSheet: false);
+          }
         }
+        controller.cancelEdit();
+        return const DrawingCloseDecision(shouldCloseSheet: true);
       }
-      controller.exitDrawingContext();
-      return const DrawingCloseDecision(shouldCloseSheet: true);
+      // dismissSheet: host deve recolher (compact) sem cancelar.
+      return const DrawingCloseDecision(shouldCloseSheet: false);
     }
 
     if (controller.hasSelection) {

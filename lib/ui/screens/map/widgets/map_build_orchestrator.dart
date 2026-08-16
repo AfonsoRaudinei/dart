@@ -143,6 +143,9 @@ class MapBuildOrchestrator extends ConsumerWidget {
             c.selectedSketchVertexIndex != null || c.isDraggingSketchVertex,
       ),
     );
+    final editVertexDragActive = ref.watch(
+      drawingControllerProvider.select((c) => c.isDraggingVertex),
+    );
     final polygonSketchMode = ref.watch(
       drawingControllerProvider.select(
         (c) =>
@@ -161,6 +164,9 @@ class MapBuildOrchestrator extends ConsumerWidget {
       MapLogger.logRenderTime(stopwatch.elapsedMilliseconds);
     });
 
+    // Zoom/pan liberados na edição; bloqueados só enquanto arrasta vértice.
+    final freezeMapGestures = sketchVertexActive || editVertexDragActive;
+
     return DrawingStateOverlay(
       state: drawingMetrics.state,
       tool: drawingMetrics.tool,
@@ -173,9 +179,7 @@ class MapBuildOrchestrator extends ConsumerWidget {
           ),
           MapCanvas(
             mapController: mapController,
-            interactionOptions:
-                drawingMetrics.state == DrawingState.editing ||
-                    sketchVertexActive
+            interactionOptions: freezeMapGestures
                 ? const InteractionOptions(flags: InteractiveFlag.none)
                 : disableMapDrag
                 ? const InteractionOptions(

@@ -10,6 +10,7 @@ import 'map_layers_sheet.dart';
 import '../../../modules/drawing/presentation/widgets/drawing_sheet.dart';
 import '../../../modules/drawing/presentation/controllers/drawing_controller.dart';
 import '../../../modules/drawing/presentation/coordinators/drawing_close_coordinator.dart';
+import '../../../modules/drawing/domain/drawing_state.dart';
 import '../../../modules/drawing/domain/models/drawing_models.dart';
 import '../../../modules/map/presentation/widgets/visit_sheet.dart';
 import '../../../modules/visitas/presentation/controllers/visit_controller.dart';
@@ -75,6 +76,7 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
   final ScrollController _scrollController = ScrollController();
   bool _initialDetentSynced = false;
   OccurrenceFormGuard? _occurrenceFormGuard;
+  DrawingState? _lastDrawingState;
 
   @override
   void initState() {
@@ -90,6 +92,7 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
     );
 
     _heightAnimation = AlwaysStoppedAnimation(0);
+    widget.drawingController.addListener(_onDrawingControllerChanged);
   }
 
   @override
@@ -129,6 +132,7 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
   @override
   void dispose() {
     AppLogger.debug('MapBottomSheet DISPOSE', tag: 'MapSheet');
+    widget.drawingController.removeListener(_onDrawingControllerChanged);
     // Evita inset residual após fechar sheet.
     try {
       ref.read(mapSheetChromeInsetProvider.notifier).state = 0;
@@ -142,6 +146,11 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
   @override
   void didUpdateWidget(MapBottomSheet oldWidget) {
     super.didUpdateWidget(oldWidget);
+
+    if (oldWidget.drawingController != widget.drawingController) {
+      oldWidget.drawingController.removeListener(_onDrawingControllerChanged);
+      widget.drawingController.addListener(_onDrawingControllerChanged);
+    }
 
     // 🛡 REFATORAÇÃO: Apenas reagir a mudanças de tipo para animar detent
     if (widget.state.type != oldWidget.state.type) {
@@ -167,6 +176,26 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
     }
   }
 
+  /// 1A: ao *entrar* em edição de geometria, recolhe para o handle.
+  /// Não re-recolhe a cada notify (métricas/vértice) — senão o usuário
+  /// não consegue expandir métricas / Cancelar / Salvar.
+  void _onDrawingControllerChanged() {
+    if (!mounted) return;
+    if (widget.state.type != MapSheetType.draw) return;
+    final next = widget.drawingController.currentState;
+    final enteredEditing =
+        next == DrawingState.editing &&
+        _lastDrawingState != DrawingState.editing;
+    _lastDrawingState = next;
+    if (!enteredEditing) return;
+    if (_currentDetent == SheetDetent.compact) return;
+    _animateToDetent(SheetDetent.compact);
+  }
+
+  void _collapseDrawingSheetWhileEditing() {
+    _animateToDetent(SheetDetent.compact);
+  }
+
   Future<void> _requestDismissCurrentSheet({
     DrawingCloseIntent intent = DrawingCloseIntent.dismissSheet,
   }) async {
@@ -176,6 +205,14 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
   Future<void> _dismissCurrentSheet({
     DrawingCloseIntent intent = DrawingCloseIntent.dismissSheet,
   }) async {
+    // 1A: swipe/X durante edição → só recolhe; não cancela vértices.
+    if (widget.state.type == MapSheetType.draw &&
+        widget.drawingController.currentState == DrawingState.editing &&
+        intent == DrawingCloseIntent.dismissSheet) {
+      _collapseDrawingSheetWhileEditing();
+      return;
+    }
+
     if (widget.state.type == MapSheetType.draw) {
       final decision = await DrawingCloseCoordinator.handle(
         context,
@@ -183,6 +220,9 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
         intent: intent,
       );
       if (!mounted || !decision.shouldCloseSheet) {
+        if (widget.drawingController.currentState == DrawingState.editing) {
+          _collapseDrawingSheetWhileEditing();
+        }
         return;
       }
     }
@@ -471,6 +511,7 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
       onGpsMeasureStarted: _closeDrawingSheetChrome,
       onSaved: _closeDrawingSheetChrome,
       onClose: _closeDrawingSheetChrome,
+      onCollapseWhileEditing: _collapseDrawingSheetWhileEditing,
     );
   }
 

@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -32,10 +33,31 @@ class _DrawingEditLayerState extends State<DrawingEditLayer> {
   LatLng? _draggingPosition;
   bool _isSketchDrag = false;
 
+  /// Vértice de edição selecionado (mostra gota). Midpoints não usam seleção.
+  int? _selectedEditRingIndex;
+  int? _selectedEditPointIndex;
+
   bool get _isDragging =>
       _draggingVertexIndex != null &&
       _draggingRingIndex != null &&
       _draggingPosition != null;
+
+  void _selectEditVertex({required int ringIndex, required int pointIndex}) {
+    setState(() {
+      _selectedEditRingIndex = ringIndex;
+      _selectedEditPointIndex = pointIndex;
+    });
+  }
+
+  void _clearEditVertexSelection() {
+    if (_selectedEditRingIndex == null && _selectedEditPointIndex == null) {
+      return;
+    }
+    setState(() {
+      _selectedEditRingIndex = null;
+      _selectedEditPointIndex = null;
+    });
+  }
 
   void _startVertexDrag({
     required int ringIndex,
@@ -283,7 +305,16 @@ class _DrawingEditLayerState extends State<DrawingEditLayer> {
           );
         }
 
-        if (!isEditing) return const SizedBox.shrink();
+        if (!isEditing) {
+          if (_selectedEditRingIndex != null ||
+              _selectedEditPointIndex != null) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (!mounted) return;
+              _clearEditVertexSelection();
+            });
+          }
+          return const SizedBox.shrink();
+        }
 
         final geometry = widget.controller.liveGeometry;
         final displayGeometry = _resolveDisplayGeometry(geometry);
@@ -313,23 +344,21 @@ class _DrawingEditLayerState extends State<DrawingEditLayer> {
       final isDragging = _isSketchDrag && _draggingVertexIndex == i;
       final isStart = i == 0;
       final showGota = isSelected || isDragging;
-      // Visual do ponto idle; hitbox do Marker é sempre ≥44dp.
       final dotSize = isStart ? 20.0 : 16.0;
-      final markerSize = showGota
-          ? _SketchVertexHandle.gotaSize
-          : _SketchVertexHandle.minHitSize;
 
+      // Marker tamanho fixo + ponta no LatLng (topCenter) — mesmo contrato
+      // da edição: dedo no corpo da gota, ponta visível no mapa.
       markers.add(
         Marker(
           point: point,
-          width: markerSize,
-          height: markerSize,
-          // Idle e selecionado: centro no vértice geográfico.
-          alignment: Alignment.center,
+          width: _VertexGotaMetrics.width,
+          height: _VertexGotaMetrics.height,
+          alignment: Alignment.topCenter,
           child: _SketchVertexHandle(
             index: i,
             isStart: isStart,
             isSelected: showGota,
+            isDragging: isDragging,
             dotSize: dotSize,
             hasSelfIntersection:
                 isStart && widget.controller.hasSelfIntersection,
@@ -371,17 +400,28 @@ class _DrawingEditLayerState extends State<DrawingEditLayer> {
           final p = ring[i];
           final isDragging =
               _draggingRingIndex == ringIdx && _draggingVertexIndex == i;
+          final isSelected =
+              _selectedEditRingIndex == ringIdx &&
+              _selectedEditPointIndex == i;
+          final showGota = isSelected || isDragging;
 
-          // Vertex Handle
+          // Marker tamanho fixo (gota) para não recriar o hit-target no meio
+          // do pan quando o visual troca ponto → gota.
           markers.add(
             Marker(
               point: p,
-              width: isDragging ? 28 : 20,
-              height: isDragging ? 28 : 20,
-              child: _VertexHandle(
-                index: i,
+              width: _VertexGotaMetrics.width,
+              height: _VertexGotaMetrics.height,
+              alignment: Alignment.topCenter,
+              child: _EditVertexGotaHandle(
                 ringIndex: ringIdx,
+                index: i,
+                isSelected: showGota,
                 isDragging: isDragging,
+                onTap: () => _selectEditVertex(
+                  ringIndex: ringIdx,
+                  pointIndex: i,
+                ),
                 onPanStart: () => _startVertexDrag(
                   ringIndex: ringIdx,
                   pointIndex: i,
@@ -390,9 +430,11 @@ class _DrawingEditLayerState extends State<DrawingEditLayer> {
                 onPanUpdate: (details) => _updateVertexDrag(details, p),
                 onPanEnd: _endVertexDrag,
                 onPanCancel: _cancelVertexDrag,
-                onDoubleTap: () => widget.controller.removeVertex(ringIdx, i),
+                onDoubleTap: () {
+                  widget.controller.removeVertex(ringIdx, i);
+                  _clearEditVertexSelection();
+                },
               ),
-              alignment: Alignment.center,
             ),
           );
 
@@ -477,20 +519,24 @@ class _DrawingEditLayerState extends State<DrawingEditLayer> {
   }
 }
 
-class _VertexHandle extends StatelessWidget {
+class _EditVertexGotaHandle extends StatelessWidget {
   final int index;
   final int ringIndex;
+  final bool isSelected;
   final bool isDragging;
+  final VoidCallback onTap;
   final VoidCallback onPanStart;
   final ValueChanged<DragUpdateDetails> onPanUpdate;
   final VoidCallback onPanEnd;
   final VoidCallback onPanCancel;
   final VoidCallback onDoubleTap;
 
-  const _VertexHandle({
+  const _EditVertexGotaHandle({
     required this.index,
     required this.ringIndex,
+    required this.isSelected,
     required this.isDragging,
+    required this.onTap,
     required this.onPanStart,
     required this.onPanUpdate,
     required this.onPanEnd,
@@ -500,47 +546,167 @@ class _VertexHandle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      key: Key('drawing_vertex_${ringIndex}_$index'),
-      // TODO(drawing): V2 bloquear pan/zoom do mapa durante drag de vértice.
-      // V1: GestureDetector do marker já permite arraste funcional.
-      behavior: HitTestBehavior.opaque,
-      onPanStart: (_) => onPanStart(),
-      onPanUpdate: onPanUpdate,
-      onPanEnd: (_) => onPanEnd(),
-      onPanCancel: onPanCancel,
-      onDoubleTap: onDoubleTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        curve: Curves.easeOut,
-        width: isDragging ? 28 : 20,
-        height: isDragging ? 28 : 20,
+    final vertexKey = Key('drawing_vertex_${ringIndex}_$index');
+
+    return SizedBox(
+      width: _VertexGotaMetrics.width,
+      height: _VertexGotaMetrics.height,
+      child: GestureDetector(
+        key: vertexKey,
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        onDoubleTap: onDoubleTap,
+        onPanStart: (_) {
+          if (!isSelected) onTap();
+          onPanStart();
+        },
+        onPanUpdate: onPanUpdate,
+        onPanEnd: (_) => onPanEnd(),
+        onPanCancel: onPanCancel,
+        child: isSelected
+            ? _VertexGotaVisual(
+                key: Key('drawing_vertex_drag_${ringIndex}_$index'),
+                isDragging: isDragging,
+              )
+            : const _VertexIdleDot(),
+      ),
+    );
+  }
+}
+
+/// Dimensões canônicas da gota ponta-cima (LatLng = topo do marker).
+class _VertexGotaMetrics {
+  static const double width = 56;
+  static const double height = 78;
+  static const Color fill = Color(0xB3C62828);
+  static const Color fillDragging = Color(0xD9E53935);
+}
+
+/// Ponto branco idle ancorado na ponta (topo) do marker tip-up.
+class _VertexIdleDot extends StatelessWidget {
+  final double size;
+  final Color color;
+  final Color borderColor;
+  final double borderWidth;
+
+  const _VertexIdleDot({
+    this.size = 20,
+    this.color = Colors.white,
+    this.borderColor = const Color(0xFFBDBDBD),
+    this.borderWidth = 1.5,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.topCenter,
+      child: Container(
+        width: size,
+        height: size,
+        margin: const EdgeInsets.only(top: 1),
         decoration: BoxDecoration(
-          color: isDragging ? const Color(0xFFFF6B00) : Colors.white,
+          color: color,
           shape: BoxShape.circle,
-          border: Border.all(
-            color: isDragging ? const Color(0xFFCC5500) : Colors.grey.shade400,
-            width: isDragging ? 2.5 : 1.5,
-          ),
-          boxShadow: isDragging
-              ? [
-                  BoxShadow(
-                    color: const Color(0xFFFF6B00).withValues(alpha: 0.4),
-                    blurRadius: 8,
-                    spreadRadius: 2,
-                  ),
-                ]
-              : [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.25),
-                    blurRadius: 3,
-                    offset: const Offset(0, 1),
-                  ),
-                ],
+          border: Border.all(color: borderColor, width: borderWidth),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.25),
+              blurRadius: 3,
+              offset: const Offset(0, 1),
+            ),
+          ],
         ),
       ),
     );
   }
+}
+
+/// Visual compartilhado: gota invertida (ponta no mapa, cruz no corpo).
+class _VertexGotaVisual extends StatelessWidget {
+  final bool isDragging;
+
+  const _VertexGotaVisual({
+    super.key,
+    required this.isDragging,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(
+      painter: _GotaCruzPainter(
+        color: isDragging
+            ? _VertexGotaMetrics.fillDragging
+            : _VertexGotaMetrics.fill,
+      ),
+      child: const Align(
+        // Cruz no corpo (abaixo da ponta) — onde fica o dedo.
+        alignment: Alignment(0, 0.42),
+        child: Icon(
+          Icons.open_with,
+          color: Colors.white,
+          size: 22,
+        ),
+      ),
+    );
+  }
+}
+
+/// Gota com ponta para cima ancorada no vértice (ref. app exemplo img 2).
+///
+/// LatLng = topo do widget (`Alignment.topCenter`). O corpo fica abaixo para
+/// o dedo não cobrir o ponto do mapa enquanto arrasta.
+class _GotaCruzPainter extends CustomPainter {
+  final Color color;
+
+  const _GotaCruzPainter({required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.fill
+      ..isAntiAlias = true;
+
+    final path = ui.Path();
+    // Ponta afiada no topo = ponto do mapa (visível sem soltar o dedo).
+    final tip = Offset(size.width / 2, 0.5);
+    final bodyCy = size.height * 0.68;
+    final bodyR = size.width * 0.40;
+
+    path.moveTo(tip.dx, tip.dy);
+    path.quadraticBezierTo(
+      size.width * 0.08,
+      size.height * 0.22,
+      tip.dx - bodyR,
+      bodyCy,
+    );
+    path.arcToPoint(
+      Offset(tip.dx + bodyR, bodyCy),
+      radius: Radius.circular(bodyR),
+      clockwise: false,
+    );
+    path.quadraticBezierTo(
+      size.width * 0.92,
+      size.height * 0.22,
+      tip.dx,
+      tip.dy,
+    );
+    path.close();
+
+    canvas.drawShadow(path, Colors.black.withValues(alpha: 0.4), 8, true);
+    canvas.drawPath(path, paint);
+
+    final border = Paint()
+      ..color = Colors.white.withValues(alpha: 0.4)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.5
+      ..isAntiAlias = true;
+    canvas.drawPath(path, border);
+  }
+
+  @override
+  bool shouldRepaint(covariant _GotaCruzPainter oldDelegate) =>
+      oldDelegate.color != color;
 }
 
 class _MidpointHandle extends StatelessWidget {
@@ -580,19 +746,12 @@ class _MidpointHandle extends StatelessWidget {
   }
 }
 
-/// Handle mid-draw: toque no ponto branco seleciona; gota = halo vermelho + arraste.
-///
-/// Visual alinhado ao pin de referência: círculo vermelho semitransparente com
-/// ícone `open_with` branco centralizado no vértice.
+/// Handle mid-draw: idle = ponto; selecionado = gota ponta-cima (mesmo contrato da edição).
 class _SketchVertexHandle extends StatelessWidget {
-  static const double minHitSize = 44;
-  static const double gotaSize = 52;
-  static const double haloDiameter = 44;
-  static const Color _gotaRed = Color(0xE6E53935);
-
   final int index;
   final bool isStart;
   final bool isSelected;
+  final bool isDragging;
   final double dotSize;
   final bool hasSelfIntersection;
   final VoidCallback onTap;
@@ -605,6 +764,7 @@ class _SketchVertexHandle extends StatelessWidget {
     required this.index,
     required this.isStart,
     required this.isSelected,
+    required this.isDragging,
     required this.dotSize,
     required this.hasSelfIntersection,
     required this.onTap,
@@ -621,94 +781,32 @@ class _SketchVertexHandle extends StatelessWidget {
         : Colors.white;
     final borderColor = isStart
         ? (hasSelfIntersection ? Colors.red : Colors.green)
-        : Colors.black26;
+        : Colors.grey.shade400;
 
-    if (!isSelected) {
-      // Idle: só toque para selecionar — sem pan no ponto branco.
-      return GestureDetector(
+    return SizedBox(
+      width: _VertexGotaMetrics.width,
+      height: _VertexGotaMetrics.height,
+      child: GestureDetector(
         key: Key('drawing_sketch_vertex_$index'),
         behavior: HitTestBehavior.opaque,
         onTap: onTap,
-        child: Center(
-          child: Container(
-            width: dotSize,
-            height: dotSize,
-            decoration: BoxDecoration(
-              color: dotColor,
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: borderColor,
-                width: isStart ? 2 : 1,
+        onPanStart: isSelected
+            ? (_) => onPanStart()
+            : null,
+        onPanUpdate: isSelected ? onPanUpdate : null,
+        onPanEnd: isSelected ? (_) => onPanEnd() : null,
+        onPanCancel: isSelected ? onPanCancel : null,
+        child: isSelected
+            ? _VertexGotaVisual(
+                key: Key('drawing_sketch_vertex_drag_$index'),
+                isDragging: isDragging,
+              )
+            : _VertexIdleDot(
+                size: dotSize,
+                color: dotColor,
+                borderColor: borderColor,
+                borderWidth: isStart ? 2 : 1.5,
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.3),
-                  blurRadius: 2,
-                  offset: const Offset(0, 1),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-    }
-
-    // Selecionado: halo vermelho difuso + ícone de arraste centralizado no vértice.
-    return SizedBox(
-      key: Key('drawing_sketch_vertex_$index'),
-      width: gotaSize,
-      height: gotaSize,
-      child: GestureDetector(
-        key: Key('drawing_sketch_vertex_drag_$index'),
-        behavior: HitTestBehavior.opaque,
-        onTap: onTap,
-        onPanStart: (_) => onPanStart(),
-        onPanUpdate: onPanUpdate,
-        onPanEnd: (_) => onPanEnd(),
-        onPanCancel: onPanCancel,
-        child: Stack(
-          alignment: Alignment.center,
-          clipBehavior: Clip.none,
-          children: [
-            Container(
-              width: haloDiameter,
-              height: haloDiameter,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: _gotaRed.withValues(alpha: 0.55),
-                border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.45),
-                  width: 1.5,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: _gotaRed.withValues(alpha: 0.45),
-                    blurRadius: 14,
-                    spreadRadius: 5,
-                  ),
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.28),
-                    blurRadius: 6,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-            ),
-            Container(
-              width: haloDiameter * 0.72,
-              height: haloDiameter * 0.72,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: _gotaRed.withValues(alpha: 0.82),
-              ),
-            ),
-            const Icon(
-              Icons.open_with,
-              color: Colors.white,
-              size: 22,
-            ),
-          ],
-        ),
       ),
     );
   }

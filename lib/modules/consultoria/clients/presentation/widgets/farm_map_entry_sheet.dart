@@ -571,10 +571,19 @@ Future<void> showFarmMapEntrySheet(
         return farm;
       },
       onConfirmed: (farm) {
+        final target = buildFarmMapUri(
+          client: client,
+          farm: farm,
+          mode: mode,
+        ).toString();
+        // Pós-frame: evita race pop(sheet) + context.go — em frames
+        // onde o Navigator ainda está locked, o Map-First (`modo=desenho`)
+        // às vezes não abre o DrawingSheet (bug intermitente).
         Navigator.of(context, rootNavigator: false).pop();
-        context.go(
-          buildFarmMapUri(client: client, farm: farm, mode: mode).toString(),
-        );
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!context.mounted) return;
+          context.go(target);
+        });
       },
     ),
   );

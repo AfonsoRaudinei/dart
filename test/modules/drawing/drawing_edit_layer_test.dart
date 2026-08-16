@@ -70,8 +70,11 @@ void main() {
     final before =
         (controller.liveGeometry! as DrawingPolygon).coordinates.first.first;
 
+    // Pan no vértice seleciona + arrasta (gota aparece via isDragging).
     await tester.drag(handle, const Offset(36, 24));
     await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('drawing_vertex_drag_0_0')), findsOneWidget);
 
     final afterDrag =
         (controller.liveGeometry! as DrawingPolygon).coordinates.first.first;
@@ -148,7 +151,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(controller.selectedSketchVertexIndex, 1);
 
-    // Gota selecionada: halo circular 52×52 + handle de arraste com ícone.
+    // Gota selecionada: ponta-cima 56×78 + cruz no corpo (abaixo do dedo).
     expect(find.byIcon(Icons.open_with), findsOneWidget);
     expect(
       find.byKey(const Key('drawing_sketch_vertex_drag_1')),
@@ -157,12 +160,12 @@ void main() {
     final selectedSize = tester.getSize(
       find.byKey(const Key('drawing_sketch_vertex_1')),
     );
-    expect(selectedSize.width, greaterThanOrEqualTo(44));
-    expect(selectedSize.height, greaterThanOrEqualTo(44));
+    expect(selectedSize.width, closeTo(56, 1));
+    expect(selectedSize.height, closeTo(78, 1));
 
     final before = controller.currentPoints[1];
     await tester.timedDrag(
-      find.byKey(const Key('drawing_sketch_vertex_drag_1')),
+      find.byKey(const Key('drawing_sketch_vertex_1')),
       const Offset(64, 48),
       const Duration(milliseconds: 300),
     );
@@ -273,7 +276,7 @@ void main() {
     expect(controller.selectedSketchVertexIndex, 1);
   });
 
-  testWidgets('mid-draw: gota selecionada fica centralizada no vértice', (
+  testWidgets('mid-draw: gota selecionada ancora ponta no vértice (tip-up)', (
     tester,
   ) async {
     tester.view.physicalSize = const Size(800, 800);
@@ -321,11 +324,15 @@ void main() {
     final dragBox = tester.getRect(
       find.byKey(const Key('drawing_sketch_vertex_drag_1')),
     );
+    final iconCenter = tester.getCenter(find.byIcon(Icons.open_with));
 
-    expect(gotaBox.width, closeTo(52, 1));
-    expect(gotaBox.height, closeTo(52, 1));
-    expect(dragBox, equals(gotaBox));
+    expect(gotaBox.width, closeTo(56, 1));
+    expect(gotaBox.height, closeTo(78, 1));
+    expect(dragBox.width, closeTo(56, 1));
+    expect(dragBox.height, closeTo(78, 1));
     expect(find.byIcon(Icons.open_with), findsOneWidget);
+    // Cruz no corpo (abaixo da ponta) — dedo não cobre o LatLng no topo.
+    expect(iconCenter.dy, greaterThan(gotaBox.top + gotaBox.height * 0.35));
   });
 }
 

@@ -111,6 +111,13 @@ void main() {
     await tester.tap(find.byKey(const Key('drawing_selected_edit_button')));
     await tester.pumpAndSettle();
 
+    // 1A: sheet recolhe ao editar — expandir para acessar Salvar/Cancelar.
+    await tester.drag(
+      find.byKey(const Key('map_bottom_sheet_root')),
+      const Offset(0, -280),
+    );
+    await tester.pumpAndSettle();
+
     controller.moveVertex(0, 0, const LatLng(-9.995, -47.995));
     await tester.pumpAndSettle();
 
@@ -148,6 +155,12 @@ void main() {
     await tester.tap(find.byKey(const Key('drawing_selected_edit_button')));
     await tester.pumpAndSettle();
 
+    await tester.drag(
+      find.byKey(const Key('map_bottom_sheet_root')),
+      const Offset(0, -280),
+    );
+    await tester.pumpAndSettle();
+
     controller.moveVertex(0, 0, const LatLng(-9.995, -47.995));
     await tester.pumpAndSettle();
 
@@ -171,7 +184,7 @@ void main() {
     expect(current, equals(original));
   });
 
-  testWidgets('editar e fechar no X pede confirmacao antes de descartar', (
+  testWidgets('1A: dismiss durante edição recolhe sheet e preserva editing', (
     tester,
   ) async {
     final controller = await _createController();
@@ -188,21 +201,20 @@ void main() {
     controller.moveVertex(0, 0, const LatLng(-9.995, -47.995));
     await tester.pumpAndSettle();
 
+    // Expandir e tentar fechar pelo X: 1A não cancela edição.
+    await tester.drag(
+      find.byKey(const Key('map_bottom_sheet_root')),
+      const Offset(0, -280),
+    );
+    await tester.pumpAndSettle();
+
     await tester.tap(find.byKey(const Key('drawing_sheet_close')));
     await tester.pumpAndSettle();
 
-    expect(find.text('Descartar alterações?'), findsOneWidget);
+    expect(find.text('Descartar alterações?'), findsNothing);
     expect(find.byType(MapBottomSheet), findsOneWidget);
     expect(hostKey.currentState!.closeCount, 0);
     expect(controller.currentState, DrawingState.editing);
-
-    await tester.tap(find.text('Descartar'));
-    await tester.pumpAndSettle();
-
-    expect(find.byType(MapBottomSheet), findsNothing);
-    expect(hostKey.currentState!.closeCount, 1);
-    expect(controller.selectedFeature, isNull);
-    expect(controller.currentState, DrawingState.idle);
   });
 
   testWidgets('tap Polígono fecha sheet e preserva ferramenta armed', (
