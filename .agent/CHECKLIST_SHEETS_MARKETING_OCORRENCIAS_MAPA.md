@@ -2,7 +2,7 @@
 
 **Data:** 15/Ago/2026  
 **Status:** **100% design Azul** (código) · smoke QA dispositivo pendente  
-**SHA entrega:** (preencher após push main)
+**SHA entrega:** `be38273` (`origin/main`) · commits `8491329` (ocorrências) · `12213f9` (marketing)
 
 ---
 
