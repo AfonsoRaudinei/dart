@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../../../core/ui/sheets/sheet_tokens.dart';
+import '../../../../core/ui/sheets/soloforte_sheet.dart';
 import '../../../../ui/theme/premium/design_tokens.dart';
 import '../../domain/enums/case_tipo.dart';
 import '../../domain/enums/plano_marketing.dart';
@@ -16,6 +18,18 @@ class CaseTipoSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isIos = soloForteSheetIsIos(context);
+    final selectedBg =
+        isIos ? SoloForteSheetSkinIos.ctaBackground : PremiumTokens.brandGreen;
+    final selectedBorder =
+        isIos ? SoloForteSheetSkinIos.ctaBackground : PremiumTokens.brandGreen;
+    final inactiveBorder =
+        isIos ? SoloForteSheetSkinIos.cardBorder : PremiumTokens.hairlineLight;
+    final selectedFg =
+        isIos ? SoloForteSheetSkinIos.ctaText : Colors.white;
+    final inactiveFg =
+        isIos ? SoloForteSheetSkinIos.subtitleColor : const Color(0xFF8E8E93);
+
     final labels = {
       CaseTipo.resultado: 'Resultado',
       CaseTipo.antesDepois: 'Antes/\nDepois',
@@ -35,23 +49,19 @@ class CaseTipoSelector extends StatelessWidget {
               margin: const EdgeInsets.only(right: 8),
               padding: const EdgeInsets.symmetric(vertical: 12),
               decoration: BoxDecoration(
-                color: isSelected
-                    ? PremiumTokens.brandGreen
-                    : Colors.transparent,
-                borderRadius: BorderRadius.circular(12),
+                color: isSelected ? selectedBg : Colors.transparent,
+                borderRadius: BorderRadius.circular(
+                  isIos ? SoloForteSheetSkinIos.ctaRadius : 12,
+                ),
                 border: Border.all(
-                  color: isSelected
-                      ? PremiumTokens.brandGreen
-                      : PremiumTokens.hairlineLight,
+                  color: isSelected ? selectedBorder : inactiveBorder,
                 ),
               ),
               child: Text(
                 labels[t]!,
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                  color: isSelected
-                      ? Colors.white
-                      : const Color(0xFF8E8E93),
+                  color: isSelected ? selectedFg : inactiveFg,
                   fontWeight: isSelected ? FontWeight.w700 : FontWeight.normal,
                 ),
               ),
@@ -75,6 +85,10 @@ class PlanoMarketingSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isIos = soloForteSheetIsIos(context);
+    final inactiveBorder =
+        isIos ? SoloForteSheetSkinIos.cardBorder : PremiumTokens.hairlineLight;
+
     final colors = {
       PlanoMarketing.ouro: const Color(0xFFFFB800),
       PlanoMarketing.prata: const Color(0xFF9EA9B2),
@@ -98,9 +112,11 @@ class PlanoMarketingSelector extends StatelessWidget {
                 color: isSelected
                     ? color.withValues(alpha: 0.15)
                     : Colors.transparent,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(
+                  isIos ? SoloForteSheetSkinIos.ctaRadius : 12,
+                ),
                 border: Border.all(
-                  color: isSelected ? color : PremiumTokens.hairlineLight,
+                  color: isSelected ? color : inactiveBorder,
                   width: isSelected ? 2.0 : 1.0,
                 ),
               ),

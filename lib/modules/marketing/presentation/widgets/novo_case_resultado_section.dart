@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/ui/sheets/sheet_tokens.dart';
+import '../../../../core/ui/sheets/soloforte_sheet.dart';
 import '../../domain/entities/marketing_roi_calculation.dart';
 import '../../domain/enums/produtividade_unidade.dart';
 import '../widgets/foto_picker_widget.dart';
@@ -130,6 +131,13 @@ class _RoiInputRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isIos = soloForteSheetIsIos(context);
+    final dropdownBg = isIos
+        ? SoloForteSheetSkinIos.cardBackground
+        : SoloForteSheetTokens.inputBackground;
+    final dropdownFg =
+        isIos ? SoloForteSheetSkinIos.titleColor : Colors.white;
+
     return Row(
       children: [
         Expanded(
@@ -145,7 +153,11 @@ class _RoiInputRow extends StatelessWidget {
         DropdownButtonHideUnderline(
           child: DropdownButton<ProdutividadeUnidade>(
             value: unidade,
-            dropdownColor: SoloForteSheetTokens.inputBackground,
+            dropdownColor: dropdownBg,
+            style: TextStyle(fontSize: 13, color: dropdownFg),
+            iconEnabledColor: isIos
+                ? SoloForteSheetSkinIos.subtitleColor
+                : Colors.white54,
             onChanged: (value) {
               if (value == null) return;
               onUnidadeChanged(value);
@@ -155,7 +167,7 @@ class _RoiInputRow extends StatelessWidget {
                 value: item,
                 child: Text(
                   item.toValue(),
-                  style: const TextStyle(fontSize: 13),
+                  style: TextStyle(fontSize: 13, color: dropdownFg),
                 ),
               );
             }).toList(),
@@ -190,29 +202,46 @@ class _RoiPreviewCard extends StatelessWidget {
     final input = _input;
     if (input == null || !input.isComplete) return const SizedBox.shrink();
     final roi = MarketingRoiCalculation(input);
+    final isIos = soloForteSheetIsIos(context);
+    final cardBg = isIos
+        ? SoloForteSheetSkinIos.cardBackground
+        : const Color(0xFF123D2A);
+    final titleColor =
+        isIos ? SoloForteSheetSkinIos.titleColor : Colors.white;
+    final lineLabelColor = isIos
+        ? SoloForteSheetSkinIos.subtitleColor
+        : const Color(0xCCFFFFFF);
+    final lineValueColor =
+        isIos ? SoloForteSheetSkinIos.titleColor : Colors.white;
+    final radius = isIos ? SoloForteSheetSkinIos.cardRadius : 18.0;
 
     return Padding(
       padding: const EdgeInsets.only(top: 16),
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: const Color(0xFF123D2A),
-          borderRadius: BorderRadius.circular(18),
-          boxShadow: const [
-            BoxShadow(
-              color: Color.fromRGBO(0, 0, 0, 0.08),
-              offset: Offset(0, 10),
-              blurRadius: 32,
-            ),
-          ],
+          color: cardBg,
+          borderRadius: BorderRadius.circular(radius),
+          border: isIos
+              ? Border.all(color: SoloForteSheetSkinIos.cardBorder)
+              : null,
+          boxShadow: isIos
+              ? null
+              : const [
+                  BoxShadow(
+                    color: Color.fromRGBO(0, 0, 0, 0.08),
+                    offset: Offset(0, 10),
+                    blurRadius: 32,
+                  ),
+                ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'ROI Calculado',
               style: TextStyle(
-                color: Colors.white,
+                color: titleColor,
                 fontWeight: FontWeight.w700,
                 fontSize: 16,
               ),
@@ -221,16 +250,22 @@ class _RoiPreviewCard extends StatelessWidget {
             _RoiLine(
               label: 'Ganho',
               value: '${_signed(roi.ganhoScHa)} ${input.unidadeProdutividade}',
+              labelColor: lineLabelColor,
+              valueColor: lineValueColor,
             ),
             _RoiLine(
               label: 'ROI líquido',
               value: '${_money(roi.roiLiquidoRsHa)} / ha',
+              labelColor: lineLabelColor,
+              valueColor: lineValueColor,
             ),
             if (roi.roiSacasTalhao != null && roi.roiReaisTalhao != null)
               _RoiLine(
                 label: 'No talhão (${tamanhoHa!.toStringAsFixed(1)} ha)',
                 value:
                     '${_number(roi.roiSacasTalhao!)} sc · ${_money(roi.roiReaisTalhao!)}',
+                labelColor: lineLabelColor,
+                valueColor: lineValueColor,
               ),
             if (roi.roiSacasTotal != null && roi.roiReaisTotal != null) ...[
               _RoiLine(
@@ -238,11 +273,13 @@ class _RoiPreviewCard extends StatelessWidget {
                     'Estimativa área total (${areaTotal!.toStringAsFixed(1)} ha)',
                 value:
                     '${_number(roi.roiSacasTotal!)} sc · ${_money(roi.roiReaisTotal!)}',
+                labelColor: lineLabelColor,
+                valueColor: lineValueColor,
               ),
               const SizedBox(height: 6),
-              const Text(
+              Text(
                 'Estimativa baseada na área total do produtor.',
-                style: TextStyle(color: Color(0xCCFFFFFF), fontSize: 12),
+                style: TextStyle(color: lineLabelColor, fontSize: 12),
               ),
             ],
           ],
@@ -294,8 +331,15 @@ class _RoiPreviewCard extends StatelessWidget {
 class _RoiLine extends StatelessWidget {
   final String label;
   final String value;
+  final Color labelColor;
+  final Color valueColor;
 
-  const _RoiLine({required this.label, required this.value});
+  const _RoiLine({
+    required this.label,
+    required this.value,
+    required this.labelColor,
+    required this.valueColor,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -307,7 +351,7 @@ class _RoiLine extends StatelessWidget {
           Expanded(
             child: Text(
               label,
-              style: const TextStyle(color: Color(0xCCFFFFFF), fontSize: 13),
+              style: TextStyle(color: labelColor, fontSize: 13),
             ),
           ),
           const SizedBox(width: 12),
@@ -315,8 +359,8 @@ class _RoiLine extends StatelessWidget {
             child: Text(
               value,
               textAlign: TextAlign.right,
-              style: const TextStyle(
-                color: Colors.white,
+              style: TextStyle(
+                color: valueColor,
                 fontWeight: FontWeight.w700,
                 fontSize: 13,
               ),

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../../../core/ui/sheets/sheet_tokens.dart';
+import '../../../../core/ui/sheets/soloforte_sheet.dart';
 import '../../data/services/marketing_photo_service.dart';
 import 'package:soloforte_app/core/utils/app_logger.dart';
 
@@ -108,8 +110,12 @@ class _FotoPickerWidgetState extends State<FotoPickerWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final isIos = soloForteSheetIsIos(context);
     final hasPhoto = widget.url != null && widget.url!.isNotEmpty;
     final isEmpty = !hasPhoto && widget.required;
+    final bg = isIos ? SoloForteSheetSkinIos.cardBackground : _bgDark;
+    final border = isIos ? SoloForteSheetSkinIos.cardBorder : _borderDark;
+    final radius = isIos ? SoloForteSheetSkinIos.cardRadius : 14.0;
 
     return GestureDetector(
       onTap: hasPhoto ? null : _pick,
@@ -117,43 +123,48 @@ class _FotoPickerWidgetState extends State<FotoPickerWidget> {
         duration: const Duration(milliseconds: 200),
         height: widget.height,
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(radius),
           border: Border.all(
             color: isEmpty
                 ? Colors.red.shade300
                 : hasPhoto
                 ? Colors.transparent
-                : _borderDark,
+                : border,
             width: isEmpty ? 1.5 : 1,
           ),
-          color: hasPhoto ? null : _bgDark,
+          color: hasPhoto ? null : bg,
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(13),
+          borderRadius: BorderRadius.circular(radius - 1),
           child: _loading
-              ? _buildLoading()
+              ? _buildLoading(isIos)
               : hasPhoto
               ? _buildPreview(widget.url!)
-              : _buildPlaceholder(isEmpty),
+              : _buildPlaceholder(isEmpty, isIos),
         ),
       ),
     );
   }
 
-  Widget _buildLoading() {
-    return const Center(
+  Widget _buildLoading(bool isIos) {
+    final muted =
+        isIos ? SoloForteSheetSkinIos.subtitleColor : Colors.grey;
+    return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           SizedBox(
             width: 32,
             height: 32,
-            child: CircularProgressIndicator(strokeWidth: 2.5),
+            child: CircularProgressIndicator(
+              strokeWidth: 2.5,
+              color: isIos ? SoloForteSheetSkinIos.iconStroke : null,
+            ),
           ),
-          SizedBox(height: 8),
+          const SizedBox(height: 8),
           Text(
             'Enviando foto...',
-            style: TextStyle(fontSize: 12, color: Colors.grey),
+            style: TextStyle(fontSize: 12, color: muted),
           ),
         ],
       ),
@@ -161,6 +172,7 @@ class _FotoPickerWidgetState extends State<FotoPickerWidget> {
   }
 
   Widget _buildPreview(String url) {
+    // White on photo overlays — intentional contrast on images.
     return Stack(
       fit: StackFit.expand,
       children: [
@@ -264,14 +276,25 @@ class _FotoPickerWidgetState extends State<FotoPickerWidget> {
     );
   }
 
-  Widget _buildPlaceholder(bool isError) {
+  Widget _buildPlaceholder(bool isError, bool isIos) {
+    final iconColor = isError
+        ? Colors.red.shade400
+        : (isIos
+            ? SoloForteSheetSkinIos.subtitleColor
+            : Colors.white38);
+    final labelColor = isError
+        ? Colors.red.shade400
+        : (isIos ? SoloForteSheetSkinIos.titleColor : Colors.white);
+    final hintColor =
+        isIos ? SoloForteSheetSkinIos.subtitleColor : Colors.white38;
+
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Icon(
           Icons.add_photo_alternate_outlined,
           size: 28,
-          color: isError ? Colors.red.shade400 : Colors.white38,
+          color: iconColor,
         ),
         const SizedBox(height: 6),
         Text(
@@ -279,14 +302,14 @@ class _FotoPickerWidgetState extends State<FotoPickerWidget> {
           style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w600,
-            color: isError ? Colors.red.shade400 : Colors.white,
+            color: labelColor,
           ),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 4),
-        const Text(
+        Text(
           'Toque para selecionar',
-          style: TextStyle(fontSize: 11, color: Colors.white38),
+          style: TextStyle(fontSize: 11, color: hintColor),
         ),
         if (isError) ...[
           const SizedBox(height: 4),

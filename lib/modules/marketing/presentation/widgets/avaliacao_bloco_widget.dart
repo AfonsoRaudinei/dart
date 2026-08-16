@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../../../core/ui/sheets/sheet_tokens.dart';
+import '../../../../core/ui/sheets/soloforte_sheet.dart';
 import 'foto_picker_widget.dart';
 
 /// Estado editável de um lado de Avaliação (A ou B)
@@ -70,6 +72,7 @@ class _AvaliacaoBlocoWidgetState extends State<AvaliacaoBlocoWidget>
   static const Color _fieldDark = Color(0xFF2C2C2E);
   static const Color _borderDark = Color(0xFF3A3A3C);
   static const Color _focusGreen = Color(0xFF4CAF50);
+  static const Color _headerColor = Color(0xFF3A3F5C);
 
   static const List<String> _culturas = [
     'Soja',
@@ -79,7 +82,6 @@ class _AvaliacaoBlocoWidgetState extends State<AvaliacaoBlocoWidget>
     'Algodão',
     'Outro',
   ];
-  static const Color _headerColor = Color(0xFF3A3F5C);
 
   @override
   void initState() {
@@ -114,11 +116,26 @@ class _AvaliacaoBlocoWidgetState extends State<AvaliacaoBlocoWidget>
 
   @override
   Widget build(BuildContext context) {
+    final isIos = soloForteSheetIsIos(context);
+    final bg = isIos ? SoloForteSheetSkinIos.cardBackground : _bgDark;
+    final border = isIos ? SoloForteSheetSkinIos.cardBorder : _borderDark;
+    final headerBg =
+        isIos ? SoloForteSheetSkinIos.ctaBackground : _headerColor;
+    final headerFg =
+        isIos ? SoloForteSheetSkinIos.ctaText : Colors.white;
+    final headerFgMuted = isIos
+        ? SoloForteSheetSkinIos.ctaText.withValues(alpha: 0.7)
+        : Colors.white70;
+    final badgeBg = isIos
+        ? SoloForteSheetSkinIos.iconBackground
+        : Colors.white.withValues(alpha: 0.15);
+    final radius = isIos ? SoloForteSheetSkinIos.cardRadius : 16.0;
+
     return Container(
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _borderDark, width: 0.5),
-        color: _bgDark,
+        borderRadius: BorderRadius.circular(radius),
+        border: Border.all(color: border, width: 0.5),
+        color: bg,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -130,11 +147,11 @@ class _AvaliacaoBlocoWidgetState extends State<AvaliacaoBlocoWidget>
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
-                color: _headerColor,
+                color: headerBg,
                 borderRadius: BorderRadius.vertical(
-                  top: const Radius.circular(14),
+                  top: Radius.circular(radius - 2),
                   bottom: widget.state.colapsado
-                      ? const Radius.circular(14)
+                      ? Radius.circular(radius - 2)
                       : Radius.zero,
                 ),
               ),
@@ -144,14 +161,16 @@ class _AvaliacaoBlocoWidgetState extends State<AvaliacaoBlocoWidget>
                     width: 24,
                     height: 24,
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.15),
+                      color: badgeBg,
                       shape: BoxShape.circle,
                     ),
                     child: Center(
                       child: Text(
                         '${widget.index + 1}',
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: isIos
+                              ? SoloForteSheetSkinIos.iconStroke
+                              : Colors.white,
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
                         ),
@@ -162,8 +181,8 @@ class _AvaliacaoBlocoWidgetState extends State<AvaliacaoBlocoWidget>
                   Expanded(
                     child: Text(
                       'Avaliação ${widget.index + 1} — ${widget.state.ladoA.labelCtrl.text} vs ${widget.state.ladoB.labelCtrl.text}',
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: headerFg,
                         fontWeight: FontWeight.w600,
                         fontSize: 13,
                       ),
@@ -184,7 +203,7 @@ class _AvaliacaoBlocoWidgetState extends State<AvaliacaoBlocoWidget>
                         widget.state.duasFotos
                             ? Icons.view_agenda_outlined
                             : Icons.crop_portrait_outlined,
-                        color: Colors.white70,
+                        color: headerFgMuted,
                         size: 18,
                       ),
                     ),
@@ -207,9 +226,9 @@ class _AvaliacaoBlocoWidgetState extends State<AvaliacaoBlocoWidget>
                   AnimatedRotation(
                     turns: widget.state.colapsado ? 0 : 0.5,
                     duration: const Duration(milliseconds: 250),
-                    child: const Icon(
+                    child: Icon(
                       Icons.expand_more,
-                      color: Colors.white70,
+                      color: headerFgMuted,
                       size: 20,
                     ),
                   ),
@@ -224,8 +243,8 @@ class _AvaliacaoBlocoWidgetState extends State<AvaliacaoBlocoWidget>
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: widget.state.duasFotos
-                  ? _buildDuasFotos()
-                  : _buildUmaFoto(),
+                  ? _buildDuasFotos(isIos)
+                  : _buildUmaFoto(isIos),
             ),
           ),
         ],
@@ -233,23 +252,43 @@ class _AvaliacaoBlocoWidgetState extends State<AvaliacaoBlocoWidget>
     );
   }
 
-  Widget _buildDuasFotos() {
+  Widget _buildDuasFotos(bool isIos) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Expanded(child: _buildLadoCard(widget.state.ladoA, label: 'Lado A')),
+        Expanded(
+          child: _buildLadoCard(
+            widget.state.ladoA,
+            label: 'Lado A',
+            isIos: isIos,
+          ),
+        ),
         const SizedBox(width: 12),
-        Expanded(child: _buildLadoCard(widget.state.ladoB, label: 'Lado B')),
+        Expanded(
+          child: _buildLadoCard(
+            widget.state.ladoB,
+            label: 'Lado B',
+            isIos: isIos,
+          ),
+        ),
       ],
     );
   }
 
-  Widget _buildUmaFoto() {
+  Widget _buildUmaFoto(bool isIos) {
     return Column(
       children: [
-        _buildLadoCard(widget.state.ladoA, label: 'Produto', fullWidth: true),
+        _buildLadoCard(
+          widget.state.ladoA,
+          label: 'Produto',
+          isIos: isIos,
+        ),
         const SizedBox(height: 12),
-        _buildLadoCard(widget.state.ladoB, label: 'Controle', fullWidth: true),
+        _buildLadoCard(
+          widget.state.ladoB,
+          label: 'Controle',
+          isIos: isIos,
+        ),
       ],
     );
   }
@@ -257,14 +296,30 @@ class _AvaliacaoBlocoWidgetState extends State<AvaliacaoBlocoWidget>
   Widget _buildLadoCard(
     AvaliacaoLadoState lado, {
     required String label,
-    bool fullWidth = false,
+    required bool isIos,
   }) {
+    final bg = isIos ? SoloForteSheetSkinIos.cardBackground : _bgDark;
+    final border = isIos ? SoloForteSheetSkinIos.cardBorder : _borderDark;
+    final field = isIos ? SoloForteSheetSkinIos.background : _fieldDark;
+    final textColor =
+        isIos ? SoloForteSheetSkinIos.titleColor : Colors.white;
+    final hintColor =
+        isIos ? SoloForteSheetSkinIos.subtitleColor : Colors.white38;
+    final mutedColor =
+        isIos ? SoloForteSheetSkinIos.subtitleColor : Colors.white54;
+    final focusBorder =
+        isIos ? SoloForteSheetSkinIos.iconStroke : _focusGreen;
+    final dividerColor = isIos
+        ? SoloForteSheetSkinIos.rowDivider
+        : Colors.white.withValues(alpha: 0.08);
+    final radius = isIos ? SoloForteSheetSkinIos.cardRadius : 12.0;
+
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: _bgDark,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: _borderDark, width: 0.5),
+        color: bg,
+        borderRadius: BorderRadius.circular(radius),
+        border: Border.all(color: border, width: 0.5),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -272,8 +327,8 @@ class _AvaliacaoBlocoWidgetState extends State<AvaliacaoBlocoWidget>
           // Label editável
           TextField(
             controller: lado.labelCtrl,
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: textColor,
               fontWeight: FontWeight.w700,
               fontSize: 13,
             ),
@@ -283,16 +338,16 @@ class _AvaliacaoBlocoWidgetState extends State<AvaliacaoBlocoWidget>
             },
             decoration: InputDecoration(
               hintText: label,
-              hintStyle: const TextStyle(fontSize: 12, color: Colors.white38),
+              hintStyle: TextStyle(fontSize: 12, color: hintColor),
               filled: true,
-              fillColor: _fieldDark,
+              fillColor: field,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
                 borderSide: BorderSide.none,
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
-                borderSide: const BorderSide(color: _focusGreen, width: 1.5),
+                borderSide: BorderSide(color: focusBorder, width: 1.5),
               ),
               isDense: true,
               contentPadding: const EdgeInsets.symmetric(
@@ -301,7 +356,7 @@ class _AvaliacaoBlocoWidgetState extends State<AvaliacaoBlocoWidget>
               ),
             ),
           ),
-          Divider(color: Colors.white.withValues(alpha: 0.08), height: 12),
+          Divider(color: dividerColor, height: 12),
 
           // Foto
           FotoPickerWidget(
@@ -320,8 +375,8 @@ class _AvaliacaoBlocoWidgetState extends State<AvaliacaoBlocoWidget>
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10),
             decoration: BoxDecoration(
-              color: _fieldDark,
-              border: Border.all(color: _borderDark, width: 0.5),
+              color: field,
+              border: Border.all(color: border, width: 0.5),
               borderRadius: BorderRadius.circular(10),
             ),
             child: DropdownButtonHideUnderline(
@@ -332,19 +387,19 @@ class _AvaliacaoBlocoWidgetState extends State<AvaliacaoBlocoWidget>
                   widget.onChanged();
                 },
                 isExpanded: true,
-                hint: const Text(
+                hint: Text(
                   'Cultura',
-                  style: TextStyle(fontSize: 12, color: Colors.white54),
+                  style: TextStyle(fontSize: 12, color: mutedColor),
                 ),
-                style: const TextStyle(fontSize: 12, color: Colors.white),
-                dropdownColor: _fieldDark,
-                iconEnabledColor: Colors.white54,
+                style: TextStyle(fontSize: 12, color: textColor),
+                dropdownColor: field,
+                iconEnabledColor: mutedColor,
                 items: [
-                  const DropdownMenuItem<String>(
+                  DropdownMenuItem<String>(
                     value: null,
                     child: Text(
                       '— Cultura —',
-                      style: TextStyle(fontSize: 12, color: Colors.white54),
+                      style: TextStyle(fontSize: 12, color: mutedColor),
                     ),
                   ),
                   ..._culturas.map(
@@ -352,7 +407,7 @@ class _AvaliacaoBlocoWidgetState extends State<AvaliacaoBlocoWidget>
                       value: c.toLowerCase(),
                       child: Text(
                         c,
-                        style: const TextStyle(fontSize: 12, color: Colors.white),
+                        style: TextStyle(fontSize: 12, color: textColor),
                       ),
                     ),
                   ),
@@ -366,12 +421,12 @@ class _AvaliacaoBlocoWidgetState extends State<AvaliacaoBlocoWidget>
           TextField(
             controller: lado.obsCtrl,
             maxLines: 2,
-            style: const TextStyle(color: Colors.white, fontSize: 12),
+            style: TextStyle(color: textColor, fontSize: 12),
             decoration: InputDecoration(
               hintText: 'Observações...',
-              hintStyle: const TextStyle(fontSize: 11, color: Colors.white38),
+              hintStyle: TextStyle(fontSize: 11, color: hintColor),
               filled: true,
-              fillColor: _fieldDark,
+              fillColor: field,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
                 borderSide: BorderSide.none,
@@ -382,7 +437,7 @@ class _AvaliacaoBlocoWidgetState extends State<AvaliacaoBlocoWidget>
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
-                borderSide: const BorderSide(color: _focusGreen, width: 1.5),
+                borderSide: BorderSide(color: focusBorder, width: 1.5),
               ),
               contentPadding: const EdgeInsets.all(8),
               isDense: true,

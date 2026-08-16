@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../../../core/ui/sheets/sheet_tokens.dart';
+import '../../../../core/ui/sheets/soloforte_sheet.dart';
 
 /// Bloco de ROI gerenciável — cálculo automático
 /// ROI = ((retorno - investimento) / investimento) × 100
@@ -51,13 +53,29 @@ class _RoiBlocoWidgetState extends State<RoiBlocoWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final isIos = soloForteSheetIsIos(context);
     final roi = _roiCalculado;
+    final accent = isIos ? SoloForteSheetSkinIos.iconStroke : _roiGreen;
+    final shellBg = isIos
+        ? SoloForteSheetSkinIos.cardBackground
+        : _roiGreen.withValues(alpha: 0.07);
+    final shellBorder = isIos
+        ? SoloForteSheetSkinIos.cardBorder
+        : _roiGreen.withValues(alpha: 0.4);
+    final headerBg =
+        isIos ? SoloForteSheetSkinIos.ctaBackground : _roiGreen;
+    final headerFg =
+        isIos ? SoloForteSheetSkinIos.ctaText : Colors.white;
+    final headerFgMuted = isIos
+        ? SoloForteSheetSkinIos.ctaText.withValues(alpha: 0.7)
+        : Colors.white70;
+    final radius = isIos ? SoloForteSheetSkinIos.cardRadius : 16.0;
 
     return Container(
       decoration: BoxDecoration(
-        color: _roiGreen.withValues(alpha: 0.07),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _roiGreen.withValues(alpha: 0.4), width: 1.5),
+        color: shellBg,
+        borderRadius: BorderRadius.circular(radius),
+        border: Border.all(color: shellBorder, width: 1.5),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -65,25 +83,25 @@ class _RoiBlocoWidgetState extends State<RoiBlocoWidget> {
           // ── Header ────────────────────────────────────────────
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            decoration: const BoxDecoration(
-              color: _roiGreen,
+            decoration: BoxDecoration(
+              color: headerBg,
               borderRadius: BorderRadius.vertical(
-                top: Radius.circular(14),
+                top: Radius.circular(radius - 2),
               ),
             ),
             child: Row(
               children: [
-                const Icon(
+                Icon(
                   Icons.trending_up_rounded,
-                  color: Colors.white,
+                  color: headerFg,
                   size: 18,
                 ),
                 const SizedBox(width: 8),
-                const Expanded(
+                Expanded(
                   child: Text(
                     'Bloco de ROI',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: headerFg,
                       fontWeight: FontWeight.w700,
                       fontSize: 14,
                     ),
@@ -94,9 +112,9 @@ class _RoiBlocoWidgetState extends State<RoiBlocoWidget> {
                     HapticFeedback.selectionClick();
                     widget.onRemove();
                   },
-                  child: const Icon(
+                  child: Icon(
                     Icons.close,
-                    color: Colors.white70,
+                    color: headerFgMuted,
                     size: 18,
                   ),
                 ),
@@ -115,6 +133,7 @@ class _RoiBlocoWidgetState extends State<RoiBlocoWidget> {
                       child: _buildInput(
                         widget.investimentoCtrl,
                         'Investimento (R\$)',
+                        isIos: isIos,
                         prefixIcon: Icons.arrow_downward_rounded,
                         prefixColor: Colors.red.shade400,
                       ),
@@ -124,8 +143,9 @@ class _RoiBlocoWidgetState extends State<RoiBlocoWidget> {
                       child: _buildInput(
                         widget.retornoCtrl,
                         'Retorno (R\$)',
+                        isIos: isIos,
                         prefixIcon: Icons.arrow_upward_rounded,
-                        prefixColor: _roiGreen,
+                        prefixColor: accent,
                       ),
                     ),
                   ],
@@ -137,15 +157,17 @@ class _RoiBlocoWidgetState extends State<RoiBlocoWidget> {
                   Container(
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     decoration: BoxDecoration(
-                      color: _roiGreen,
-                      borderRadius: BorderRadius.circular(12),
+                      color: headerBg,
+                      borderRadius: BorderRadius.circular(
+                        isIos ? SoloForteSheetSkinIos.ctaRadius : 12,
+                      ),
                     ),
                     child: Column(
                       children: [
                         Text(
                           'ROI Calculado',
                           style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.85),
+                            color: headerFg.withValues(alpha: 0.85),
                             fontSize: 11,
                             fontWeight: FontWeight.w500,
                             letterSpacing: 0.5,
@@ -154,8 +176,8 @@ class _RoiBlocoWidgetState extends State<RoiBlocoWidget> {
                         const SizedBox(height: 4),
                         Text(
                           '${roi >= 0 ? '+' : ''}${roi.toStringAsFixed(1)}%',
-                          style: const TextStyle(
-                            color: Colors.white,
+                          style: TextStyle(
+                            color: headerFg,
                             fontWeight: FontWeight.w900,
                             fontSize: 28,
                           ),
@@ -170,7 +192,7 @@ class _RoiBlocoWidgetState extends State<RoiBlocoWidget> {
                     'Preencha ambos os campos para calcular o ROI',
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      color: _roiGreen.withValues(alpha: 0.7),
+                      color: accent.withValues(alpha: 0.7),
                       fontSize: 12,
                     ),
                   ),
@@ -186,20 +208,37 @@ class _RoiBlocoWidgetState extends State<RoiBlocoWidget> {
   Widget _buildInput(
     TextEditingController ctrl,
     String label, {
+    required bool isIos,
     IconData? prefixIcon,
     Color? prefixColor,
   }) {
+    final fieldBg =
+        isIos ? SoloForteSheetSkinIos.cardBackground : _fieldDark;
+    final fieldBorder =
+        isIos ? SoloForteSheetSkinIos.cardBorder : _fieldBorder;
+    final textColor =
+        isIos ? SoloForteSheetSkinIos.titleColor : Colors.black87;
+    final hintColor =
+        isIos ? SoloForteSheetSkinIos.subtitleColor : Colors.black38;
+    final fillColor =
+        isIos ? SoloForteSheetSkinIos.background : Colors.white;
+
     return Container(
       decoration: BoxDecoration(
-        color: _fieldDark,
+        color: fieldBg,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: _fieldBorder, width: 0.5),
+        border: Border.all(color: fieldBorder, width: 0.5),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       child: Row(
         children: [
           if (prefixIcon != null) ...[
-            Icon(prefixIcon, size: 14, color: prefixColor ?? _roiGreen),
+            Icon(
+              prefixIcon,
+              size: 14,
+              color: prefixColor ??
+                  (isIos ? SoloForteSheetSkinIos.iconStroke : _roiGreen),
+            ),
             const SizedBox(width: 6),
           ],
           Expanded(
@@ -208,16 +247,16 @@ class _RoiBlocoWidgetState extends State<RoiBlocoWidget> {
               keyboardType: const TextInputType.numberWithOptions(
                 decimal: true,
               ),
-              style: const TextStyle(
-                color: Colors.black87,
+              style: TextStyle(
+                color: textColor,
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
               ),
               decoration: InputDecoration(
                 hintText: label,
-                hintStyle: const TextStyle(fontSize: 12, color: Colors.black38),
+                hintStyle: TextStyle(fontSize: 12, color: hintColor),
                 filled: true,
-                fillColor: Colors.white,
+                fillColor: fillColor,
                 border: InputBorder.none,
                 isDense: true,
                 contentPadding: const EdgeInsets.symmetric(vertical: 8),
