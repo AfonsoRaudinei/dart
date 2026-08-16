@@ -2,12 +2,13 @@ import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'auth_bootstrap_redirect.dart';
 import 'router_notifier.dart';
 import '../access/app_access.dart';
 import '../../core/session/session_controller.dart';
 import '../../core/session/session_models.dart';
 import '../../ui/components/app_shell.dart';
-import '../../ui/screens/public_map_screen.dart';
+import '../../ui/screens/public_map_entry_screen.dart';
 import '../../ui/screens/private_map_bootstrap_screen.dart';
 import '../../ui/screens/login_screen.dart';
 import '../../modules/auth/pages/register_page.dart';
@@ -55,26 +56,35 @@ GoRouter router(Ref ref) {
   // Mudanças de auth disparam notifyListeners() via refreshListenable
   // → GoRouter re-avalia apenas o redirect, sem destruir a navigation stack.
   final notifier = ref.read(routerNotifierProvider);
-  final profileAsync = ref.watch(currentUserProfileProvider);
+
+  // BUG-010: NÃO usar ref.watch(currentUserProfileProvider) aqui —
+  // isso recriava o GoRouter inteiro a cada load de perfil (flash no reopen).
+  // Listen + refreshRedirect reavalia só o redirect.
+  ref.listen(currentUserProfileProvider, (_, __) {
+    notifier.refreshRedirect();
+  });
 
   return GoRouter(
     initialLocation: AppRoutes.publicMap,
     refreshListenable: notifier,
     redirect: (context, state) {
-      // 🛡 IPA-109: aguarda bootstrap de autenticação concluir antes de
-      // redirecionar. Enquanto _isInitializing==true o Supabase ainda pode
-      // estar restaurando a sessão do storage local. Sem este guard o router
-      // renderizava PublicMapScreen ou /map prematuramente, causando frame
-      // branco/preto enquanto o SessionUnknown ainda estava ativo.
-      if (notifier.isInitializing) {
-        return AppRoutes.publicMap; // seguro: já é a initialLocation
-      }
-
       final session = ref.read(sessionControllerProvider);
+      final path = state.uri.path;
+
+      // 🛡 IPA-109 + BUG-010: janela de bootstrap.
+      // Autenticado síncrono → /map (sem hop pelo mapa público).
+      // SessionUnknown → null (PublicMapEntryScreen mostra hold estável).
+      final bootRedirect = authBootstrapRedirect(
+        isInitializing: notifier.isInitializing,
+        session: session,
+        currentPath: path,
+      );
+      if (bootRedirect != null) return bootRedirect;
+      if (notifier.isInitializing) return null;
+
       final isAuth = notifier.isAuthenticated;
       final isRecovery = session is SessionPasswordRecovery;
 
-      final path = state.uri.path;
       final isPublicRoute =
           path == AppRoutes.publicMap ||
           path == AppRoutes.login ||
@@ -99,6 +109,7 @@ GoRouter router(Ref ref) {
           return AppRoutes.map;
         }
 
+        final profileAsync = ref.read(currentUserProfileProvider);
         if (profileAsync.isLoading || profileAsync.hasError) {
           return null;
         }
@@ -117,7 +128,7 @@ GoRouter router(Ref ref) {
         routes: [
           GoRoute(
             path: AppRoutes.publicMap,
-            builder: (_, __) => const PublicMapScreen(),
+            builder: (_, __) => const PublicMapEntryScreen(),
           ),
           GoRoute(
             path: AppRoutes.login,

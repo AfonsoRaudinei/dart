@@ -26,6 +26,15 @@ import '../session/session_models.dart';
 /// eliminando o ciclo de vida desnecessário da tela.
 class RouterNotifier extends ChangeNotifier {
   RouterNotifier(this._ref) {
+    // Se currentUser já resolveu a sessão de forma síncrona, o hop por
+    // /public-map é desnecessário (BUG-010). gotrue ainda pode emitir
+    // onAuthStateChange depois — o debounce continua valendo.
+    final initial = _ref.read(sessionControllerProvider);
+    if (initial is SessionAuthenticated ||
+        initial is SessionPasswordRecovery) {
+      _isInitializing = false;
+    }
+
     // Escuta mudanças no SessionController e notifica o GoRouter
     // com debounce para evitar double-fire do Supabase no cold start.
     // fireImmediately: false — o router já lê o estado inicial no redirect.
@@ -82,6 +91,12 @@ class RouterNotifier extends ChangeNotifier {
   bool get isAuthenticated {
     final session = _ref.read(sessionControllerProvider);
     return session is SessionAuthenticated || session is SessionPasswordRecovery;
+  }
+
+  /// Reavalia o `redirect` do GoRouter sem recriar o router.
+  /// Usado quando o perfil carrega (ACL por role) — ver `router()`.
+  void refreshRedirect() {
+    if (!_isDisposed) notifyListeners();
   }
 
   @override
