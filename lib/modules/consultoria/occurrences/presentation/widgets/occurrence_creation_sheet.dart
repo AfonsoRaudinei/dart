@@ -424,11 +424,13 @@ class _OccurrenceCreationSheetState
               ),
               const SizedBox(height: 20),
 
-              const SheetSectionHeader(
+              SheetSectionHeader(
                 icon: Icon(
                   Icons.person_outline,
                   size: 18,
-                  color: Colors.white70,
+                  color: isIos
+                      ? SoloForteSheetSkinIos.iconStroke
+                      : Colors.white70,
                 ),
                 label: 'Cliente',
               ),
@@ -581,15 +583,25 @@ class _OccurrenceCreationSheetState
                             shape: BoxShape.circle,
                             color: isSelected
                                 ? selectedColor.withValues(alpha: 0.2)
-                                : Colors.grey[800],
+                                : (isIos
+                                      ? SoloForteSheetSkinIos.cardBackground
+                                      : Colors.grey[800]),
                             border: isSelected
                                 ? Border.all(color: selectedColor, width: 2)
-                                : null,
+                                : (isIos
+                                      ? Border.all(
+                                          color: SoloForteSheetSkinIos.cardBorder,
+                                        )
+                                      : null),
                           ),
                           child: Icon(
                             cat.icon,
                             size: 28,
-                            color: isSelected ? selectedColor : Colors.white70,
+                            color: isSelected
+                                ? selectedColor
+                                : (isIos
+                                      ? SoloForteSheetSkinIos.subtitleColor
+                                      : Colors.white70),
                           ),
                         ),
                         const SizedBox(height: 4),
@@ -601,7 +613,9 @@ class _OccurrenceCreationSheetState
                               fontSize: 11,
                               color: isSelected
                                   ? selectedColor
-                                  : Colors.white70,
+                                  : (isIos
+                                        ? SoloForteSheetSkinIos.subtitleColor
+                                        : Colors.white70),
                             ),
                             textAlign: TextAlign.center,
                             maxLines: 2,
@@ -656,7 +670,11 @@ class _OccurrenceCreationSheetState
                           child: Text(
                             u,
                             style: TextStyle(
-                              color: sel ? color : Colors.white38,
+                              color: sel
+                                  ? color
+                                  : (isIos
+                                        ? SoloForteSheetSkinIos.subtitleColor
+                                        : Colors.white38),
                               fontWeight: sel
                                   ? FontWeight.bold
                                   : FontWeight.normal,
@@ -713,11 +731,19 @@ class _OccurrenceCreationSheetState
                     child: OutlinedButton(
                       onPressed: _isSaving ? null : _handleCancel,
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.white54,
-                        side: const BorderSide(color: Colors.white24),
+                        foregroundColor: isIos
+                            ? SoloForteSheetSkinIos.ghostText
+                            : Colors.white54,
+                        side: BorderSide(
+                          color: isIos
+                              ? SoloForteSheetSkinIos.ghostBorder
+                              : Colors.white24,
+                        ),
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadius.circular(
+                            isIos ? SoloForteSheetSkinIos.ghostRadius : 16,
+                          ),
                         ),
                       ),
                       child: const Text(
@@ -735,20 +761,28 @@ class _OccurrenceCreationSheetState
                     child: ElevatedButton(
                       onPressed: _isSaving ? null : _submit,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: PremiumTokens.brandGreen,
-                        foregroundColor: Colors.black,
+                        backgroundColor: isIos
+                            ? SoloForteSheetSkinIos.ctaBackground
+                            : PremiumTokens.brandGreen,
+                        foregroundColor: isIos
+                            ? SoloForteSheetSkinIos.ctaText
+                            : Colors.black,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(50),
+                          borderRadius: BorderRadius.circular(
+                            isIos ? SoloForteSheetSkinIos.ctaRadius : 50,
+                          ),
                         ),
                       ),
                       child: _isSaving
-                          ? const SizedBox(
+                          ? SizedBox(
                               width: 22,
                               height: 22,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2.2,
-                                color: Colors.black87,
+                                color: isIos
+                                    ? SoloForteSheetSkinIos.ctaText
+                                    : Colors.black87,
                               ),
                             )
                           : Text(
@@ -767,130 +801,6 @@ class _OccurrenceCreationSheetState
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildCategorySection(OccurrenceCategory cat) {
-    final color = _catColor(cat);
-    final metrics = categoryMetrics(cat.name);
-
-    return AnimatedSize(
-      duration: const Duration(milliseconds: 300),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: .07),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: color.withValues(alpha: .3)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(14),
-              child: Row(
-                children: [
-                  Text(cat.emoji, style: const TextStyle(fontSize: 20)),
-                  const SizedBox(width: 8),
-                  Text(
-                    cat.label,
-                    style: TextStyle(
-                      color: color,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 15,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            if (cat == OccurrenceCategory.nutricional)
-              _buildNutrientGrid(color)
-            else if (cat == OccurrenceCategory.agua)
-              _buildAguaSection(color)
-            else
-              ...metrics.map(
-                (metric) => OccurrenceSliderRow(
-                  label: metricLabel(metric),
-                  value: _metricValue(cat, metric),
-                  color: color,
-                  onChanged: (v) => _setMetric(cat, metric, v),
-                ),
-              ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(14, 4, 14, 8),
-              child: OccurrenceDarkField(
-                controller: _notaCtrl(cat.name),
-                label: 'Notas (${cat.label})',
-                hint: 'Observações específicas…',
-                maxLines: 2,
-              ),
-            ),
-            if (_fotos[cat.name]?.isNotEmpty == true)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(14, 0, 14, 8),
-                child: SizedBox(
-                  height: 72,
-                  child: ListView.separated(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: _fotos[cat.name]!.length,
-                    separatorBuilder: (_, __) => const SizedBox(width: 8),
-                    itemBuilder: (_, i) {
-                      final path = _fotos[cat.name]![i];
-                      return Stack(
-                        children: [
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: Image.file(
-                              File(path),
-                              width: 72,
-                              height: 72,
-                              fit: BoxFit.cover,
-                            ),
-                          ),
-                          Positioned(
-                            top: 2,
-                            right: 2,
-                            child: GestureDetector(
-                              onTap: () => _patchForm(
-                                () => _fotos[cat.name]!.removeAt(i),
-                              ),
-                              child: Container(
-                                padding: const EdgeInsets.all(2),
-                                decoration: BoxDecoration(
-                                  color: Colors.black87,
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: const Icon(
-                                  Icons.close,
-                                  size: 12,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      );
-                    },
-                  ),
-                ),
-              ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(14, 0, 14, 12),
-              child: TextButton.icon(
-                onPressed: () => _pickPhoto(cat),
-                icon: Icon(Icons.camera_alt_outlined, size: 18, color: color),
-                label: Text(
-                  'Adicionar foto',
-                  style: TextStyle(
-                    color: color,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

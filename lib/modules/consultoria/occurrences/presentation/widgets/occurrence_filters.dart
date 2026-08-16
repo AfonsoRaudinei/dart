@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
+import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 
 import '../../domain/occurrence.dart';
@@ -73,11 +75,34 @@ class OccurrenceFilterSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isIos = soloForteSheetIsIos(context);
+    final accent = isIos
+        ? SoloForteSheetSkinIos.iconStroke
+        : PremiumTokens.brandGreen;
+    final chipBg = isIos
+        ? SoloForteSheetSkinIos.cardBackground
+        : Colors.white;
+    final selectedLabel = isIos
+        ? SoloForteSheetSkinIos.ctaText
+        : Colors.white;
+    final unselectedLabel = isIos
+        ? SoloForteSheetSkinIos.subtitleColor
+        : context.premiumTextSecondary;
+    final sectionLabel = isIos
+        ? SoloForteSheetSkinIos.subtitleColor
+        : context.premiumTextSecondary;
+    final barBg = isIos
+        ? SoloForteSheetSkinIos.background.withValues(alpha: 0.9)
+        : context.premiumSurface.withValues(alpha: 0.5);
+    final barBorder = isIos
+        ? SoloForteSheetSkinIos.rowDivider
+        : context.premiumHairline;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: context.premiumSurface.withValues(alpha: 0.5),
-        border: Border(bottom: BorderSide(color: context.premiumHairline)),
+        color: barBg,
+        border: Border(bottom: BorderSide(color: barBorder)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -87,7 +112,8 @@ class OccurrenceFilterSelector extends StatelessWidget {
             children: [
               Text(
                 'Filtros',
-                style: Theme.of(context).textTheme.labelSmall!.copyWith(color: context.premiumTextSecondary).copyWith(
+                style: Theme.of(context).textTheme.labelSmall!.copyWith(
+                  color: sectionLabel,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -95,18 +121,14 @@ class OccurrenceFilterSelector extends StatelessWidget {
               if (filters.hasAnyFilter)
                 TextButton(
                   onPressed: () => onChanged(filters.clear()),
-                  child: const Text(
+                  child: Text(
                     'Limpar',
-                    style: TextStyle(
-                      color: PremiumTokens.brandGreen,
-                      fontSize: 12,
-                    ),
+                    style: TextStyle(color: accent, fontSize: 12),
                   ),
                 ),
             ],
           ),
           const SizedBox(height: 8),
-          // Categorias
           Wrap(
             spacing: 8,
             runSpacing: 8,
@@ -123,16 +145,17 @@ class OccurrenceFilterSelector extends StatelessWidget {
                       category.label,
                       style: TextStyle(
                         fontSize: 11,
-                        color: isSelected
-                            ? Colors.white
-                            : context.premiumTextSecondary,
+                        color: isSelected ? selectedLabel : unselectedLabel,
                       ),
                     ),
                   ],
                 ),
-                selectedColor: PremiumTokens.brandGreen,
-                backgroundColor: Colors.white,
-                checkmarkColor: Colors.white,
+                selectedColor: accent,
+                backgroundColor: chipBg,
+                checkmarkColor: selectedLabel,
+                side: isIos
+                    ? const BorderSide(color: SoloForteSheetSkinIos.cardBorder)
+                    : null,
                 onSelected: (selected) {
                   final newCategories = Set<OccurrenceCategory>.from(
                     filters.categories,
@@ -148,16 +171,26 @@ class OccurrenceFilterSelector extends StatelessWidget {
             }).toList(),
           ),
           const SizedBox(height: 8),
-          // Status
           Wrap(
             spacing: 8,
             children: [
               FilterChip(
                 selected: filters.statuses.contains('draft'),
-                label: const Text('Rascunho', style: TextStyle(fontSize: 11)),
+                label: Text(
+                  'Rascunho',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: filters.statuses.contains('draft')
+                        ? selectedLabel
+                        : unselectedLabel,
+                  ),
+                ),
                 selectedColor: Colors.orange,
-                backgroundColor: Colors.white,
-                checkmarkColor: Colors.white,
+                backgroundColor: chipBg,
+                checkmarkColor: selectedLabel,
+                side: isIos
+                    ? const BorderSide(color: SoloForteSheetSkinIos.cardBorder)
+                    : null,
                 onSelected: (selected) {
                   final newStatuses = Set<String>.from(filters.statuses);
                   if (selected) {
@@ -170,10 +203,21 @@ class OccurrenceFilterSelector extends StatelessWidget {
               ),
               FilterChip(
                 selected: filters.statuses.contains('confirmed'),
-                label: const Text('Confirmada', style: TextStyle(fontSize: 11)),
-                selectedColor: PremiumTokens.brandGreen,
-                backgroundColor: Colors.white,
-                checkmarkColor: Colors.white,
+                label: Text(
+                  'Confirmada',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: filters.statuses.contains('confirmed')
+                        ? selectedLabel
+                        : unselectedLabel,
+                  ),
+                ),
+                selectedColor: accent,
+                backgroundColor: chipBg,
+                checkmarkColor: selectedLabel,
+                side: isIos
+                    ? const BorderSide(color: SoloForteSheetSkinIos.cardBorder)
+                    : null,
                 onSelected: (selected) {
                   final newStatuses = Set<String>.from(filters.statuses);
                   if (selected) {
@@ -190,13 +234,21 @@ class OccurrenceFilterSelector extends StatelessWidget {
             const SizedBox(height: 8),
             FilterChip(
               selected: filters.onlyActiveVisit,
-              label: const Text(
+              label: Text(
                 'Somente desta visita',
-                style: TextStyle(fontSize: 11),
+                style: TextStyle(
+                  fontSize: 11,
+                  color: filters.onlyActiveVisit
+                      ? selectedLabel
+                      : unselectedLabel,
+                ),
               ),
-              selectedColor: PremiumTokens.brandGreen,
-              backgroundColor: Colors.white,
-              checkmarkColor: Colors.white,
+              selectedColor: accent,
+              backgroundColor: chipBg,
+              checkmarkColor: selectedLabel,
+              side: isIos
+                  ? const BorderSide(color: SoloForteSheetSkinIos.cardBorder)
+                  : null,
               onSelected: (selected) {
                 onChanged(filters.copyWith(onlyActiveVisit: selected));
               },

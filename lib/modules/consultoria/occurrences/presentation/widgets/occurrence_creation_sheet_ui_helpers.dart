@@ -329,4 +329,128 @@ extension _OccurrenceCreationSheetUiHelpers on _OccurrenceCreationSheetState {
       ),
     );
   }
+
+  Widget _buildCategorySection(OccurrenceCategory cat) {
+    final color = _catColor(cat);
+    final metrics = categoryMetrics(cat.name);
+
+    return AnimatedSize(
+      duration: const Duration(milliseconds: 300),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: .07),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: color.withValues(alpha: .3)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(14),
+              child: Row(
+                children: [
+                  Text(cat.emoji, style: const TextStyle(fontSize: 20)),
+                  const SizedBox(width: 8),
+                  Text(
+                    cat.label,
+                    style: TextStyle(
+                      color: color,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (cat == OccurrenceCategory.nutricional)
+              _buildNutrientGrid(color)
+            else if (cat == OccurrenceCategory.agua)
+              _buildAguaSection(color)
+            else
+              ...metrics.map(
+                (metric) => OccurrenceSliderRow(
+                  label: metricLabel(metric),
+                  value: _metricValue(cat, metric),
+                  color: color,
+                  onChanged: (v) => _setMetric(cat, metric, v),
+                ),
+              ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 4, 14, 8),
+              child: OccurrenceDarkField(
+                controller: _notaCtrl(cat.name),
+                label: 'Notas (${cat.label})',
+                hint: 'Observações específicas…',
+                maxLines: 2,
+              ),
+            ),
+            if (_fotos[cat.name]?.isNotEmpty == true)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(14, 0, 14, 8),
+                child: SizedBox(
+                  height: 72,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: _fotos[cat.name]!.length,
+                    separatorBuilder: (_, __) => const SizedBox(width: 8),
+                    itemBuilder: (_, i) {
+                      final path = _fotos[cat.name]![i];
+                      return Stack(
+                        children: [
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: Image.file(
+                              File(path),
+                              width: 72,
+                              height: 72,
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                          Positioned(
+                            top: 2,
+                            right: 2,
+                            child: GestureDetector(
+                              onTap: () => _patchForm(
+                                () => _fotos[cat.name]!.removeAt(i),
+                              ),
+                              child: Container(
+                                padding: const EdgeInsets.all(2),
+                                decoration: BoxDecoration(
+                                  color: Colors.black87,
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: const Icon(
+                                  Icons.close,
+                                  size: 12,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                ),
+              ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 0, 14, 12),
+              child: TextButton.icon(
+                onPressed: () => _pickPhoto(cat),
+                icon: Icon(Icons.camera_alt_outlined, size: 18, color: color),
+                label: Text(
+                  'Adicionar foto',
+                  style: TextStyle(
+                    color: color,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }

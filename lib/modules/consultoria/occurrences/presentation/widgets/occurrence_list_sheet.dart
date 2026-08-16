@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
+import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -56,17 +58,43 @@ class _OccurrenceListSheetState extends ConsumerState<OccurrenceListSheet> {
     final activeVisitId = visitState.value?.isActive == true
         ? visitState.value!.id
         : null;
+    final isIos = soloForteSheetIsIos(context);
+    final sheetBg = isIos
+        ? SoloForteSheetSkinIos.background
+        : Colors.white;
+    final handleColor = isIos
+        ? SoloForteSheetSkinIos.handleColor
+        : context.premiumSurface;
+    final titleColor = isIos
+        ? SoloForteSheetSkinIos.titleColor
+        : null;
+    final closeColor = isIos
+        ? SoloForteSheetSkinIos.arrowColor
+        : context.premiumTextSecondary;
+    final dividerColor = isIos
+        ? SoloForteSheetSkinIos.rowDivider
+        : context.premiumHairline;
+    final sheetRadius = isIos
+        ? SoloForteSheetSkinIos.sheetRadius
+        : 16.0;
 
     return Stack(
       children: [
         Container(
           decoration: widget.showDecoration
               ? BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(16.0),
-                    topRight: Radius.circular(16.0),
+                  color: sheetBg,
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(sheetRadius),
+                    topRight: Radius.circular(sheetRadius),
                   ),
+                  border: isIos
+                      ? const Border(
+                          top: BorderSide(
+                            color: SoloForteSheetSkinIos.sheetBorder,
+                          ),
+                        )
+                      : null,
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withValues(alpha: 0.15),
@@ -85,10 +113,10 @@ class _OccurrenceListSheetState extends ConsumerState<OccurrenceListSheet> {
               if (widget.showHandle) ...[
                 Container(
                   margin: const EdgeInsets.only(top: 12),
-                  width: 40,
-                  height: 4,
+                  width: isIos ? SoloForteSheetSkinIos.handleSize.width : 40,
+                  height: isIos ? SoloForteSheetSkinIos.handleSize.height : 4,
                   decoration: BoxDecoration(
-                    color: context.premiumSurface,
+                    color: handleColor,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -103,20 +131,23 @@ class _OccurrenceListSheetState extends ConsumerState<OccurrenceListSheet> {
                       child: Text(
                         'Ocorrências',
                         style: Theme.of(context).textTheme.titleMedium!
-                            .copyWith(fontWeight: FontWeight.w600),
+                            .copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: titleColor,
+                            ),
                       ),
                     ),
                     IconButton(
                       icon: Icon(
                         Icons.close,
-                        color: context.premiumTextSecondary,
+                        color: closeColor,
                       ),
                       onPressed: widget.onClose ?? () => Navigator.pop(context),
                     ),
                   ],
                 ),
               ),
-              Divider(height: 1, color: context.premiumHairline),
+              Divider(height: 1, color: dividerColor),
               // Filtros
               OccurrenceFilterSelector(
                 filters: _filters,
@@ -396,28 +427,42 @@ class _OccurrenceListItem extends StatelessWidget {
     final syncColor = _syncColor();
     final hasPhoto =
         occurrence.photoPath != null && occurrence.photoPath!.isNotEmpty;
+    final isIos = soloForteSheetIsIos(context);
+    final cardBg = isSelected
+        ? color.withValues(alpha: .08)
+        : (isIos
+              ? SoloForteSheetSkinIos.cardBackground
+              : const Color(0xFF1C1C1E));
+    final cardBorder = isSelected
+        ? color
+        : (isIos ? SoloForteSheetSkinIos.cardBorder : Colors.white12);
+    final secondaryText = isIos
+        ? SoloForteSheetSkinIos.subtitleColor
+        : Colors.white54;
+    final mutedText = isIos
+        ? SoloForteSheetSkinIos.subtitleColor
+        : Colors.white24;
+    final cardRadius = isIos ? SoloForteSheetSkinIos.cardRadius : 12.0;
 
     return GestureDetector(
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          color: isSelected
-              ? color.withValues(alpha: .08)
-              : const Color(0xFF1C1C1E),
+          color: cardBg,
           border: Border.all(
-            color: isSelected ? color : Colors.white12,
+            color: cardBorder,
             width: isSelected ? 1.5 : 1,
           ),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(cardRadius),
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // ── Thumbnail ou ícone ──────────────────────────────────
             ClipRRect(
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(12),
-                bottomLeft: Radius.circular(12),
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(cardRadius),
+                bottomLeft: Radius.circular(cardRadius),
               ),
               child: hasPhoto
                   ? Image.file(
@@ -483,14 +528,16 @@ class _OccurrenceListItem extends StatelessWidget {
                           if (occurrence.estadioFenologico != null)
                             _MiniChip(
                               label: '📊 ${occurrence.estadioFenologico}',
-                              color: PremiumTokens.brandGreen,
+                              color: isIos
+                                  ? SoloForteSheetSkinIos.iconStroke
+                                  : PremiumTokens.brandGreen,
                             ),
                           if (occurrence.cultivar != null) ...[
                             const SizedBox(width: 4),
                             Text(
                               occurrence.cultivar!,
-                              style: const TextStyle(
-                                color: Colors.white54,
+                              style: TextStyle(
+                                color: secondaryText,
                                 fontSize: 11,
                               ),
                             ),
@@ -504,8 +551,8 @@ class _OccurrenceListItem extends StatelessWidget {
                       const SizedBox(height: 4),
                       Text(
                         occurrence.description,
-                        style: const TextStyle(
-                          color: Colors.white54,
+                        style: TextStyle(
+                          color: secondaryText,
                           fontSize: 12,
                         ),
                         maxLines: 2,
@@ -531,9 +578,11 @@ class _OccurrenceListItem extends StatelessWidget {
                     Row(
                       children: [
                         if (isFromVisit)
-                          const _MiniChip(
+                          _MiniChip(
                             label: '✓ Em Visita',
-                            color: PremiumTokens.brandGreen,
+                            color: isIos
+                                ? SoloForteSheetSkinIos.iconStroke
+                                : PremiumTokens.brandGreen,
                           ),
                         const Spacer(),
                         // Sync badge
@@ -558,8 +607,8 @@ class _OccurrenceListItem extends StatelessWidget {
                         const SizedBox(width: 6),
                         Text(
                           _formatDate(occurrence.createdAt),
-                          style: const TextStyle(
-                            color: Colors.white24,
+                          style: TextStyle(
+                            color: mutedText,
                             fontSize: 10,
                           ),
                         ),
