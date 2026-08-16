@@ -33,6 +33,22 @@ void main() {
       expect(tapBlock, contains('openOccurrenceSheet(point.latitude'));
     });
 
+    test(
+      'onTap roteia vértices de desenho antes do guard suppressesMapContextTaps',
+      () {
+        final tapBlock = orchestratorSource.substring(
+          orchestratorSource.indexOf('onTap: (tapPos, point)'),
+          orchestratorSource.indexOf('onLongPress: (tapPos, point)'),
+        );
+
+        expect(tapBlock, contains('appendDrawingPoint'));
+        expect(
+          tapBlock.indexOf('appendDrawingPoint'),
+          lessThan(tapBlock.indexOf('suppressesMapContextTaps')),
+        );
+      },
+    );
+
     test('onLongPress com ArmedMode.occurrences abre ocorrência, não marketing', () {
       final longPressBlock = orchestratorSource.substring(
         orchestratorSource.indexOf('onLongPress: (tapPos, point)'),

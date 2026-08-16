@@ -61,6 +61,7 @@ class _MapToolsBottomSheetState extends State<MapToolsBottomSheet> {
   @override
   Widget build(BuildContext context) {
     final bottomPadding = MediaQuery.of(context).padding.bottom;
+    final maxSheetHeight = MediaQuery.sizeOf(context).height * 0.78;
     final isIos = soloForteSheetIsIos(context);
     final bg = isIos
         ? SoloForteSheetSkinIos.background
@@ -78,41 +79,46 @@ class _MapToolsBottomSheetState extends State<MapToolsBottomSheet> {
         top: false,
         child: Padding(
           padding: EdgeInsets.only(bottom: bottomPadding),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const SizedBox(height: 12),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 18),
-                child: _SegmentedHeader(
-                  selectedIndex: _selectedIndex,
-                  onSelected: _selectTab,
-                  isIos: isIos,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxHeight: maxSheetHeight),
+            child: Column(
+              mainAxisSize: MainAxisSize.max,
+              children: [
+                const SizedBox(height: 12),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 18),
+                  child: _SegmentedHeader(
+                    selectedIndex: _selectedIndex,
+                    onSelected: _selectTab,
+                    isIos: isIos,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 12),
-              Flexible(
-                child: IndexedStack(
-                  index: _selectedIndex,
-                  children: [
-                    DrawingSheet(
-                      controller: widget.drawingController,
-                      onClose: () =>
-                          Navigator.of(context, rootNavigator: false).pop(),
-                      onSaved: () =>
-                          Navigator.of(context, rootNavigator: false).pop(),
-                    ),
-                    LayersSheet(
-                      onClose: () =>
-                          Navigator.of(context, rootNavigator: false).pop(),
-                      onCoordinateSearch: widget.onCoordinateSearch,
-                      onMunicipalitySearch: widget.onMunicipalitySearch,
-                      onDownloadOfflineArea: widget.onDownloadOfflineArea,
-                    ),
-                  ],
+                const SizedBox(height: 12),
+                Expanded(
+                  child: _selectedIndex == 0
+                      ? DrawingSheet(
+                          controller: widget.drawingController,
+                          onClose: () => Navigator.of(
+                            context,
+                            rootNavigator: false,
+                          ).pop(),
+                          onSaved: () => Navigator.of(
+                            context,
+                            rootNavigator: false,
+                          ).pop(),
+                        )
+                      : LayersSheet(
+                          onClose: () => Navigator.of(
+                            context,
+                            rootNavigator: false,
+                          ).pop(),
+                          onCoordinateSearch: widget.onCoordinateSearch,
+                          onMunicipalitySearch: widget.onMunicipalitySearch,
+                          onDownloadOfflineArea: widget.onDownloadOfflineArea,
+                        ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

@@ -132,8 +132,8 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
     // Evita inset residual após fechar sheet.
     try {
       ref.read(mapSheetChromeInsetProvider.notifier).state = 0;
+      ref.read(occurrenceFormGuardProvider.notifier).state = null;
     } catch (_) {}
-    ref.read(occurrenceFormGuardProvider.notifier).state = null;
     _heightController.dispose();
     _scrollController.dispose();
     super.dispose();
@@ -202,6 +202,15 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
       _clearOccurrenceDraftAtCurrentPin();
     }
 
+    ref.read(occurrenceFormGuardProvider.notifier).state = null;
+    widget.onClose();
+  }
+
+  /// Fecha apenas o chrome do [MapBottomSheet] após o [DrawingSheet] já ter
+  /// executado [DrawingCloseCoordinator] (ex.: Polígono → dismissSheetPreserveArmed).
+  /// Evita segundo passe com [DrawingCloseIntent.dismissSheet] que cancelaria a
+  /// ferramenta armed.
+  void _closeDrawingSheetChrome() {
     ref.read(occurrenceFormGuardProvider.notifier).state = null;
     widget.onClose();
   }
@@ -459,9 +468,9 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
       controller: widget.drawingController,
       scrollController: _scrollController,
       onFocusFeature: widget.onFocusDrawingFeature,
-      onGpsMeasureStarted: _dismissCurrentSheet,
-      onSaved: _dismissCurrentSheet,
-      onClose: _dismissCurrentSheet,
+      onGpsMeasureStarted: _closeDrawingSheetChrome,
+      onSaved: _closeDrawingSheetChrome,
+      onClose: _closeDrawingSheetChrome,
     );
   }
 

@@ -203,10 +203,6 @@ class MapBuildOrchestrator extends ConsumerWidget {
             onTap: (tapPos, point) {
               final drawCtrl = ref.read(drawingControllerProvider);
 
-              if (drawCtrl.suppressesMapContextTaps) {
-                return;
-              }
-
               // 🎯 Prioridade 1: modos armados do mapa (antes de desenho/talhão)
               final armedMode = ref.read(armedModeProvider);
               if (armedMode == ArmedMode.marketing) {
@@ -223,6 +219,8 @@ class MapBuildOrchestrator extends ConsumerWidget {
                 return;
               }
 
+              // 🎯 Prioridade 2: vértices de desenho (armed/drawing) — antes do
+              // guard contextual que bloqueia talhão/pins em reviewing/editing.
               if (drawCtrl.currentState == DrawingState.drawing ||
                   drawCtrl.currentState == DrawingState.armed) {
                 if (drawCtrl.currentTool != DrawingTool.freehand) {
@@ -233,6 +231,10 @@ class MapBuildOrchestrator extends ConsumerWidget {
                   }
                   drawCtrl.appendDrawingPoint(point);
                 }
+                return;
+              }
+
+              if (drawCtrl.suppressesMapContextTaps) {
                 return;
               }
 

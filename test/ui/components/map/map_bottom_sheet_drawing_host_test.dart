@@ -205,8 +205,29 @@ void main() {
     expect(controller.currentState, DrawingState.idle);
   });
 
-  testWidgets(
-    'nao exibe fallback indisponivel quando flag drawing_v1 esta desabilitada',
+  testWidgets('tap Polígono fecha sheet e preserva ferramenta armed', (
+    tester,
+  ) async {
+    final controller = await _createController();
+    final hostKey = GlobalKey<_MapBottomSheetHostState>();
+    addTearDown(controller.dispose);
+
+    expect(controller.currentState, DrawingState.idle);
+
+    await _pumpHost(tester, hostKey, controller);
+
+    expect(find.text('Polígono'), findsOneWidget);
+
+    await tester.tap(find.text('Polígono'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(MapBottomSheet), findsNothing);
+    expect(hostKey.currentState!.closeCount, 1);
+    expect(controller.currentState, DrawingState.armed);
+    expect(controller.currentTool, DrawingTool.polygon);
+  });
+
+  testWidgets('nao exibe fallback indisponivel quando flag drawing_v1 esta desabilitada',
     (tester) async {
       final controller = await _createController();
       addTearDown(controller.dispose);
