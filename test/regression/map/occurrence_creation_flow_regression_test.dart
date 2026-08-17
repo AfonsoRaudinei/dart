@@ -84,11 +84,23 @@ void main() {
       expect(performanceHostsSource, isNot(contains('clearOccurrenceDraft')));
     });
 
-    test('P0: toggle FAB confirma descarte quando formulário está aberto', () {
-      expect(orchestratorSource, contains('OccurrenceCloseCoordinator'));
-      expect(orchestratorSource, contains('clearOccurrenceDraft'));
-      expect(orchestratorSource, contains('isCreatingOccurrence'));
-    });
+    test(
+      'P0: ações rápidas saem do FAB e vão para long press (sheet de publicação)',
+      () {
+        final privateMapSource =
+            File('lib/ui/screens/private_map_screen.dart').readAsStringSync();
+        final controlsOverlaySource = File(
+          'lib/ui/components/map/widgets/map_controls_overlay.dart',
+        ).readAsStringSync();
+
+        expect(privateMapSource, contains('PublicationActionsBottomSheet'));
+        expect(privateMapSource, contains('_handleMapLongPress'));
+        expect(controlsOverlaySource.contains('MapActionFabMenu'), isFalse);
+        // Descarte de ocorrência continua no MapBottomSheet (REGRA-OCC-2),
+        // não mais via toggle FAB no orchestrator.
+        expect(mapBottomSheetSource, contains('OccurrenceCloseCoordinator'));
+      },
+    );
 
     test('regression shield: arquivos de widget test presentes', () {
       expect(

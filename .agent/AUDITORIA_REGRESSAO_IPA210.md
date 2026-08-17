@@ -151,6 +151,8 @@ flutter test test/regression/sheets/soloforte_sheet_contract_test.dart
 | Drawing — ActionsBar / InfoEdit / Review form tokens iOS | ✅ follow-up Ago/2026 (texto legível no chrome prata) |
 | IPA **211+** com novo build number | ⏳ archive separado — não reutilizar `+210` |
 | WIP local (flash ícones mapa) | ⏳ não misturar |
+| Long press mapa (Ago/2026) — branch `cursor/longpress-acoes-rapidas-mapa` | ⏳ QA físico 10 cenários antes do merge em `main` |
+| 4 falhas pré-existentes `test/ui/components/map/` (occurrence host / isolated markers) | ⏳ débito — fora do escopo long press; abrir issue/plano auditoria |
 
 **Preserve intencionais (layout DSS, não opt-out dark):**
 `map_sheet_controller.dart`, `marketing_case_sheet.dart` — conteúdo via `themeId == 'blue'`.
