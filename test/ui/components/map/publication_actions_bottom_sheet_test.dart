@@ -3,8 +3,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:soloforte_app/ui/components/map/widgets/publication_actions_bottom_sheet.dart';
 
 void main() {
-  testWidgets('exibe e aciona inversão vegetal', (tester) async {
-    var tapped = false;
+  testWidgets('exibe ações de case e ocorrência; sem foto rápida nem inversão vegetal',
+      (tester) async {
+    var ocorrenciaTapped = false;
 
     await tester.pumpWidget(
       MaterialApp(
@@ -18,9 +19,7 @@ void main() {
                     onResultado: () {},
                     onAntesDepois: () {},
                     onAvaliacao: () {},
-                    onOcorrencia: () {},
-                    onFotoRapida: () {},
-                    onInversaoVegetal: () => tapped = true,
+                    onOcorrencia: () => ocorrenciaTapped = true,
                   );
                 },
                 child: const Text('Abrir'),
@@ -34,11 +33,16 @@ void main() {
     await tester.tap(find.text('Abrir'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Inversão vegetal'), findsOneWidget);
+    expect(find.text('Resultado'), findsOneWidget);
+    expect(find.text('Antes/Depois'), findsOneWidget);
+    expect(find.text('Avaliação'), findsOneWidget);
+    expect(find.text('Ocorrência'), findsOneWidget);
+    expect(find.text('Foto rápida'), findsNothing);
+    expect(find.text('Inversão vegetal'), findsNothing);
 
-    await tester.tap(find.text('Inversão vegetal'));
+    await tester.tap(find.text('Ocorrência'));
     await tester.pumpAndSettle();
 
-    expect(tapped, isTrue);
+    expect(ocorrenciaTapped, isTrue);
   });
 }

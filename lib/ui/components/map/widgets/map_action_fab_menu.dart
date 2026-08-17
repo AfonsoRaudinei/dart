@@ -17,8 +17,6 @@ class MapActionFabMenu extends StatefulWidget {
   final VoidCallback onAntesDepois;
   final VoidCallback onAvaliacao;
   final VoidCallback onOcorrencia;
-  final VoidCallback onFotoRapida;
-  final VoidCallback onInversaoVegetal;
   final bool isEnabled;
   final bool isActive;
   final Color activeColor;
@@ -36,8 +34,6 @@ class MapActionFabMenu extends StatefulWidget {
     required this.onAntesDepois,
     required this.onAvaliacao,
     required this.onOcorrencia,
-    required this.onFotoRapida,
-    required this.onInversaoVegetal,
     this.isEnabled = true,
     this.isActive = false,
     required this.activeColor,
@@ -93,8 +89,6 @@ class _MapActionFabMenuState extends State<MapActionFabMenu>
       onAntesDepois: widget.onAntesDepois,
       onAvaliacao: widget.onAvaliacao,
       onOcorrencia: widget.onOcorrencia,
-      onFotoRapida: widget.onFotoRapida,
-      onInversaoVegetal: widget.onInversaoVegetal,
     );
   }
 
@@ -152,13 +146,6 @@ class _MapActionFabMenuState extends State<MapActionFabMenu>
           label: 'Ocorrência',
           color: PremiumTokens.alertWarning,
           onTap: () => _runAction(widget.onOcorrencia),
-        ),
-        const SizedBox(height: 10),
-        _MenuActionButton(
-          icon: SFIcons.leaf,
-          label: 'Inversão vegetal',
-          color: PremiumTokens.brandGreen,
-          onTap: () => _runAction(widget.onInversaoVegetal),
         ),
       ],
     );

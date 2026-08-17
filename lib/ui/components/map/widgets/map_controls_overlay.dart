@@ -8,11 +8,9 @@ import '../../../../../../core/design/sf_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../modules/dashboard/providers/location_providers.dart';
 import '../../../../modules/dashboard/domain/location_state.dart';
-import '../../../../modules/consultoria/quick_photo/presentation/quick_photo_flow.dart';
 import '../../../../modules/map/presentation/providers/map_location_mode_provider.dart';
 import '../../../../modules/settings/presentation/providers/settings_providers.dart';
 import '../../../../core/constants/layout_constants.dart';
-import '../../../../core/contracts/i_visit_session_lookup_provider.dart';
 import '../../../../core/providers/connectivity_provider.dart';
 import '../../../../modules/clima/presentation/providers/radar_providers.dart';
 import '../../../../core/state/map_state.dart';
@@ -117,33 +115,6 @@ class MapControlsOverlay extends ConsumerStatefulWidget {
 
 class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
   bool _showMeasurementDetails = false;
-
-  Future<void> _openQuickPhoto({required bool initialFilterActive}) async {
-    String? visitSessionId;
-    try {
-      final activeSession = await ref
-          .read(visitSessionLookupProvider)
-          .getActiveSession();
-      visitSessionId = activeSession?.isActive == true
-          ? activeSession!.id
-          : null;
-    } catch (error) {
-      AppLogger.warning(
-        'Não foi possível vincular foto rápida à visita ativa',
-        tag: 'QuickPhoto',
-        error: error,
-      );
-    }
-
-    if (!mounted) return;
-    await QuickPhotoFlow.open(
-      context,
-      lat: widget.currentCenter.latitude,
-      lng: widget.currentCenter.longitude,
-      visitSessionId: visitSessionId,
-      initialFilterActive: initialFilterActive,
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -263,12 +234,6 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
                     } else {
                       widget.onTabSelected(2, 'Button_Occurrences');
                     }
-                  },
-                  onFotoRapida: () {
-                    unawaited(_openQuickPhoto(initialFilterActive: false));
-                  },
-                  onInversaoVegetal: () {
-                    unawaited(_openQuickPhoto(initialFilterActive: true));
                   },
                 ),
                 if (widget.showCheckInAction) ...[

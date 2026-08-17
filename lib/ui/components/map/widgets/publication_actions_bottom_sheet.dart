@@ -12,8 +12,6 @@ class PublicationActionsBottomSheet extends StatelessWidget {
   final VoidCallback onAntesDepois;
   final VoidCallback onAvaliacao;
   final VoidCallback onOcorrencia;
-  final VoidCallback onFotoRapida;
-  final VoidCallback onInversaoVegetal;
 
   const PublicationActionsBottomSheet({
     super.key,
@@ -21,8 +19,6 @@ class PublicationActionsBottomSheet extends StatelessWidget {
     required this.onAntesDepois,
     required this.onAvaliacao,
     required this.onOcorrencia,
-    required this.onFotoRapida,
-    required this.onInversaoVegetal,
   });
 
   static Future<void> show({
@@ -31,8 +27,6 @@ class PublicationActionsBottomSheet extends StatelessWidget {
     required VoidCallback onAntesDepois,
     required VoidCallback onAvaliacao,
     required VoidCallback onOcorrencia,
-    required VoidCallback onFotoRapida,
-    required VoidCallback onInversaoVegetal,
   }) {
     return showSoloForteSheet<void>(
       context: context,
@@ -46,8 +40,6 @@ class PublicationActionsBottomSheet extends StatelessWidget {
         onAntesDepois: onAntesDepois,
         onAvaliacao: onAvaliacao,
         onOcorrencia: onOcorrencia,
-        onFotoRapida: onFotoRapida,
-        onInversaoVegetal: onInversaoVegetal,
       ),
     );
   }
@@ -104,22 +96,8 @@ class PublicationActionsBottomSheet extends StatelessWidget {
                   title: 'Ocorrência',
                   color: SoloForteSheetSkinIos.iconStroke,
                   isIos: true,
-                  onTap: () => _select(context, onOcorrencia),
-                ),
-                _ActionRow(
-                  icon: SFIcons.image,
-                  title: 'Foto rápida',
-                  color: SoloForteSheetSkinIos.iconStroke,
-                  isIos: true,
-                  onTap: () => _select(context, onFotoRapida),
-                ),
-                _ActionRow(
-                  icon: SFIcons.leaf,
-                  title: 'Inversão vegetal',
-                  color: SoloForteSheetSkinIos.iconStroke,
-                  isIos: true,
                   showDivider: false,
-                  onTap: () => _select(context, onInversaoVegetal),
+                  onTap: () => _select(context, onOcorrencia),
                 ),
               ],
             ),
@@ -181,20 +159,8 @@ class PublicationActionsBottomSheet extends StatelessWidget {
                   icon: SFIcons.warning,
                   title: 'Ocorrência',
                   color: PremiumTokens.alertWarning,
-                  onTap: () => _select(context, onOcorrencia),
-                ),
-                _ActionRow(
-                  icon: SFIcons.image,
-                  title: 'Foto rápida',
-                  color: const Color(0xFFAF52DE),
-                  onTap: () => _select(context, onFotoRapida),
-                ),
-                _ActionRow(
-                  icon: SFIcons.leaf,
-                  title: 'Inversão vegetal',
-                  color: PremiumTokens.brandGreen,
                   showDivider: false,
-                  onTap: () => _select(context, onInversaoVegetal),
+                  onTap: () => _select(context, onOcorrencia),
                 ),
               ],
             ),
