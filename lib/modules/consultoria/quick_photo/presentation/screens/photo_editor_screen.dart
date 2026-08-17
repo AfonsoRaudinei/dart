@@ -4,14 +4,18 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image/image.dart' as img;
+import 'package:soloforte_app/core/contracts/i_visit_session_lookup_provider.dart';
 
 import '../../data/quick_photo_repository.dart';
 import '../../data/vegetal_filter.dart';
+import '../../domain/save_quick_photo.dart';
+import '../providers/quick_photo_list_provider.dart';
 import '../widgets/annotation_canvas.dart';
 import '../widgets/annotation_toolbar.dart';
 
-class PhotoEditorScreen extends StatefulWidget {
+class PhotoEditorScreen extends ConsumerStatefulWidget {
   final String imagePath;
   final double? lat;
   final double? lng;
@@ -32,10 +36,10 @@ class PhotoEditorScreen extends StatefulWidget {
   });
 
   @override
-  State<PhotoEditorScreen> createState() => _PhotoEditorScreenState();
+  ConsumerState<PhotoEditorScreen> createState() => _PhotoEditorScreenState();
 }
 
-class _PhotoEditorScreenState extends State<PhotoEditorScreen> {
+class _PhotoEditorScreenState extends ConsumerState<PhotoEditorScreen> {
   final _repository = QuickPhotoRepository();
   final List<AnnotationStroke> _strokes = [];
 
@@ -148,7 +152,10 @@ class _PhotoEditorScreenState extends State<PhotoEditorScreen> {
           type: type,
         );
       } else {
-        await _repository.uploadAndInsert(
+        await SaveQuickPhoto(
+          ref.read(quickPhotoRepositoryProvider),
+          ref.read(visitSessionLookupProvider),
+        ).execute(
           bytes: finalBytes,
           localPath: widget.imagePath,
           lat: widget.lat,
