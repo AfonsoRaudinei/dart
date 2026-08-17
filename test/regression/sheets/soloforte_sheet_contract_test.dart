@@ -63,6 +63,24 @@ void main() {
     });
 
     test(
+      'kernel iOS não envolve conteúdo em Column-chrome (anti sheet duplo)',
+      () {
+        // Ago/2026: Column+handle no chrome iOS duplicava o painel e
+        // quebrava drag/scroll (mainAxisSize: min). Fundo só no modal.
+        final source = File(
+          'lib/core/ui/sheets/soloforte_sheet.dart',
+        ).readAsStringSync();
+
+        expect(source.contains('_SoloForteSheetChrome'), isFalse);
+        expect(
+          source.contains('Não envolve o conteúdo em `Column`+handle'),
+          isTrue,
+        );
+        expect(source.contains('resolvedShowDragHandle = showDragHandle'), isTrue);
+      },
+    );
+
+    test(
       'map_sheet_controller (check-in/layers) usa preserveMaterialDefaults',
       () {
         // Host com DraggableScrollableSheet: sem o flag, tema Azul colapsa
