@@ -199,16 +199,20 @@ void main() {
     expect(find.text('Gerado sob demanda'), findsWidgets);
     expect(find.text('Lista de Ocorrências'), findsNothing);
 
-    await _selectSegment(tester, 'Mídia');
-    expect(find.text('Fotos da visita'), findsOneWidget);
-    expect(
-      find.text('Nenhuma foto registrada. Use o botão + no mapa.'),
-      findsOneWidget,
-    );
-    expect(find.text('Todas'), findsOneWidget);
-    expect(find.text('Foto rápida'), findsWidgets);
-    expect(find.text('Inversão vegetal'), findsOneWidget);
-    expect(find.text('Órfãs'), findsOneWidget);
+    // OCULTO — 17/08/2026
+    // Segmento Mídia suspenso temporariamente.
+    // Fotos agora pertencem a cases de marketing.
+    // Reativar quando relatório HTML de marketing estiver pronto.
+    // await _selectSegment(tester, 'Mídia');
+    // expect(find.text('Fotos da visita'), findsOneWidget);
+    // expect(
+    //   find.text('Nenhuma foto registrada. Use o botão + no mapa.'),
+    //   findsOneWidget,
+    // );
+    // expect(find.text('Todas'), findsOneWidget);
+    // expect(find.text('Foto rápida'), findsWidgets);
+    // expect(find.text('Inversão vegetal'), findsOneWidget);
+    // expect(find.text('Órfãs'), findsOneWidget);
 
     await _selectSegment(tester, 'Consolidados');
     await tester.ensureVisible(

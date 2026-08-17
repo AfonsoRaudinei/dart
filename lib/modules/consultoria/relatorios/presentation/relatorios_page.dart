@@ -119,7 +119,8 @@ Future<_ReportBrandingContext> _resolveReportBrandingContext(
 
 /// Tela de Relatórios — Premium iOS com segmentos tipados.
 ///
-/// Segmentos: Visitas | Ocorrências | Marketing | Consolidados | Mídia
+/// Segmentos: Visitas | Ocorrências | Marketing | Consolidados
+/// (Mídia oculta 17/08/2026 — reativar com o relatório HTML de marketing)
 /// Marketing = publicações/cases (ADR-050), incl. não gerados (rascunho).
 class RelatoriosScreen extends ConsumerStatefulWidget {
   const RelatoriosScreen({super.key});

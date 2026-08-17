@@ -139,7 +139,7 @@ class _RelatoriosSegmentBar extends StatelessWidget {
       ),
       child: LayoutBuilder(
         builder: (context, constraints) {
-          // 5 segmentos: scroll horizontal quando a largura não comporta labels.
+          // 4 visíveis: scroll horizontal quando a largura não comporta labels.
           final useScroll = constraints.maxWidth < 420;
           final segments = <Widget>[
             _seg(context, 'Visitas', _RelatoriosSegment.visitas, useScroll),
@@ -156,7 +156,10 @@ class _RelatoriosSegmentBar extends StatelessWidget {
               _RelatoriosSegment.consolidados,
               useScroll,
             ),
-            _seg(context, 'Mídia', _RelatoriosSegment.midia, useScroll),
+            // OCULTO — 17/08/2026
+            // Aba Mídia suspensa temporariamente. Fotos agora pertencem a cases
+            // de marketing. Reativar quando o relatório HTML de marketing estiver pronto.
+            // _seg(context, 'Mídia', _RelatoriosSegment.midia, useScroll),
           ];
           if (useScroll) {
             return SingleChildScrollView(
