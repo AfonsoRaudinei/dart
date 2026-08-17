@@ -17,8 +17,6 @@ import '../../../../core/config/map_config.dart';
 import '../../../../core/session/user_role.dart';
 import '../../../../core/utils/map_logger.dart';
 import '../../../../modules/drawing/presentation/providers/drawing_provider.dart';
-import '../../../../modules/consultoria/occurrences/presentation/coordinators/occurrence_close_coordinator.dart';
-import '../../../../modules/consultoria/occurrences/presentation/providers/occurrence_draft_provider.dart';
 import '../../../../modules/drawing/presentation/coordinators/drawing_close_coordinator.dart';
 import '../../../../modules/drawing/domain/drawing_state.dart';
 import '../../../../modules/drawing/presentation/widgets/drawing_layers.dart';
@@ -30,7 +28,6 @@ import '../../../../modules/map/presentation/providers/map_location_mode_provide
 import '../../../../modules/consultoria/services/talhao_map_adapter.dart';
 import '../../../../modules/consultoria/occurrences/domain/occurrence.dart'
     as occ;
-import '../../../../modules/marketing/domain/enums/case_tipo.dart';
 import '../../../../modules/settings/presentation/providers/user_profile_provider.dart';
 import '../../../../modules/visitas/presentation/controllers/visit_controller.dart';
 import '../../../../modules/dashboard/domain/location_settings.dart';
@@ -45,6 +42,7 @@ import '../../../components/map/widgets/map_markers.dart';
 import '../../../components/map/widgets/map_controls_overlay.dart';
 import '../../../components/map/widgets/map_offline_widgets.dart';
 import '../../../components/map/widgets/isolated_marker_layers.dart';
+import '../../../components/map/widgets/map_long_press_hint.dart';
 import '../../../components/map/widgets/map_state_boundaries_layer.dart';
 import '../../../components/map/widgets/map_tools_bottom_sheet.dart';
 import '../../../components/map/widgets/producer_map_context_card.dart';
@@ -54,7 +52,6 @@ import '../providers/map_armed_mode_provider.dart';
 import '../providers/map_ready_state_provider.dart';
 import '../providers/field_hit_index_provider.dart';
 import '../utils/map_camera_snapshot_throttle.dart';
-import '../providers/occurrence_form_guard_provider.dart';
 import 'armed_mode_banner.dart';
 import '../layers/talhao_polygon_layer.dart';
 import 'drawing_map_behavior_listener.dart';
@@ -77,18 +74,19 @@ class MapBuildOrchestrator extends ConsumerWidget {
   final void Function(MapSheetState? state, String reason) setSheetState;
   final void Function(double lat, double lng) openOccurrenceSheet;
   final void Function(TapPosition tapPos, LatLng latLng) handleMapLongPress;
+  final void Function(TapPosition tapPos, LatLng latLng) placeMarketingCase;
   final Future<void> Function() finishDrawing;
   final void Function() toggleDrawMode;
   final void Function() centerOnUser;
   final ValueChanged<MapLocationMode> onLocationModeChanged;
   final VoidCallback stopFollowing;
-  final void Function() armOccurrenceMode;
-  final void Function(CaseTipo tipo) armMarketingMode;
   final void Function(occ.Occurrence occurrence) handleOccurrencePinTap;
   final void Function() applyInitialViewport;
   final Future<void> Function() openCoordinateSearch;
   final Future<void> Function() openMunicipalitySearch;
   final Future<void> Function() downloadOfflineArea;
+  final bool absorbMapPointers;
+  final bool showLongPressHint;
 
   const MapBuildOrchestrator({
     super.key,
@@ -96,18 +94,19 @@ class MapBuildOrchestrator extends ConsumerWidget {
     required this.setSheetState,
     required this.openOccurrenceSheet,
     required this.handleMapLongPress,
+    required this.placeMarketingCase,
     required this.finishDrawing,
     required this.toggleDrawMode,
     required this.centerOnUser,
     required this.onLocationModeChanged,
     required this.stopFollowing,
-    required this.armOccurrenceMode,
-    required this.armMarketingMode,
     required this.handleOccurrencePinTap,
     required this.applyInitialViewport,
     required this.openCoordinateSearch,
     required this.openMunicipalitySearch,
     required this.downloadOfflineArea,
+    this.absorbMapPointers = false,
+    this.showLongPressHint = false,
   });
 
   @override
@@ -125,11 +124,7 @@ class MapBuildOrchestrator extends ConsumerWidget {
     // Seleciona só campos que afetam drag — evita rebuild do canvas no GPS/métricas.
     final freehandInteraction = ref.watch(
       drawingControllerProvider.select(
-        (c) => (
-          c.currentTool,
-          c.currentState,
-          c.isFreehandStrokeActive,
-        ),
+        (c) => (c.currentTool, c.currentState, c.isFreehandStrokeActive),
       ),
     );
     final disableMapDrag =
@@ -139,8 +134,7 @@ class MapBuildOrchestrator extends ConsumerWidget {
             freehandInteraction.$3);
     final sketchVertexActive = ref.watch(
       drawingControllerProvider.select(
-        (c) =>
-            c.selectedSketchVertexIndex != null || c.isDraggingSketchVertex,
+        (c) => c.selectedSketchVertexIndex != null || c.isDraggingSketchVertex,
       ),
     );
     final editVertexDragActive = ref.watch(
@@ -177,262 +171,272 @@ class MapBuildOrchestrator extends ConsumerWidget {
           MapInitialViewportListener(
             applyInitialViewport: applyInitialViewport,
           ),
-          MapCanvas(
-            mapController: mapController,
-            interactionOptions: freezeMapGestures
-                ? const InteractionOptions(flags: InteractiveFlag.none)
-                : disableMapDrag
-                ? const InteractionOptions(
-                    flags:
-                        InteractiveFlag.all &
-                        ~InteractiveFlag.rotate &
-                        ~InteractiveFlag.drag,
-                  )
-                : null,
-            onMapReady: () {
-              // Norte para cima no boot — evita câmera residual / IPA antigo
-              // com course-up GNSS deixando norte nas laterais.
-              mapController.rotate(0);
-              // ADR-032 F1: _isMapReady → mapReadyStateProvider
-              ref.read(mapReadyStateProvider.notifier).state = true;
-              ref
-                  .read(mapCameraSnapshotProvider.notifier)
-                  .state = MapCameraSnapshot(
-                center: mapController.camera.center,
-                zoom: mapController.camera.zoom,
-                visibleBounds: mapController.camera.visibleBounds,
-              );
-              applyInitialViewport();
-            },
-            onTap: (tapPos, point) {
-              final drawCtrl = ref.read(drawingControllerProvider);
+          AbsorbPointer(
+            absorbing: absorbMapPointers,
+            child: MapCanvas(
+              mapController: mapController,
+              interactionOptions: freezeMapGestures
+                  ? const InteractionOptions(flags: InteractiveFlag.none)
+                  : disableMapDrag
+                  ? const InteractionOptions(
+                      flags:
+                          InteractiveFlag.all &
+                          ~InteractiveFlag.rotate &
+                          ~InteractiveFlag.drag,
+                    )
+                  : null,
+              onMapReady: () {
+                // Norte para cima no boot — evita câmera residual / IPA antigo
+                // com course-up GNSS deixando norte nas laterais.
+                mapController.rotate(0);
+                // ADR-032 F1: _isMapReady → mapReadyStateProvider
+                ref.read(mapReadyStateProvider.notifier).state = true;
+                ref
+                    .read(mapCameraSnapshotProvider.notifier)
+                    .state = MapCameraSnapshot(
+                  center: mapController.camera.center,
+                  zoom: mapController.camera.zoom,
+                  visibleBounds: mapController.camera.visibleBounds,
+                );
+                applyInitialViewport();
+              },
+              onTap: (tapPos, point) {
+                final drawCtrl = ref.read(drawingControllerProvider);
 
-              // 🎯 Prioridade 1: modos armados do mapa (antes de desenho/talhão)
-              final armedMode = ref.read(armedModeProvider);
-              if (armedMode == ArmedMode.marketing) {
-                ref.read(armedModeProvider.notifier).state = ArmedMode.none;
-                ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                handleMapLongPress(tapPos, point);
-                return;
-              }
-
-              if (armedMode == ArmedMode.occurrences) {
-                ref.read(armedModeProvider.notifier).state = ArmedMode.none;
-                ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                openOccurrenceSheet(point.latitude, point.longitude);
-                return;
-              }
-
-              // 🎯 Prioridade 2: vértices de desenho (armed/drawing) — antes do
-              // guard contextual que bloqueia talhão/pins em reviewing/editing.
-              if (drawCtrl.currentState == DrawingState.drawing ||
-                  drawCtrl.currentState == DrawingState.armed) {
-                if (drawCtrl.currentTool != DrawingTool.freehand) {
-                  if (drawCtrl.selectedSketchVertexIndex != null ||
-                      drawCtrl.isDraggingSketchVertex) {
-                    drawCtrl.clearSketchVertexSelection();
-                    return;
-                  }
-                  drawCtrl.appendDrawingPoint(point);
-                }
-                return;
-              }
-
-              if (drawCtrl.suppressesMapContextTaps) {
-                return;
-              }
-
-              if (drawCtrl.isMultiSelectEnabled ||
-                  drawCtrl.currentState == DrawingState.idle ||
-                  drawCtrl.currentState == DrawingState.selected) {
-                final drawingFeature = drawCtrl.findFeatureAt(point);
-                if (drawingFeature != null) {
-                  if (drawCtrl.isMultiSelectEnabled) {
-                    drawCtrl.toggleFeatureSelection(drawingFeature);
-                  } else {
-                    drawCtrl.selectFeature(drawingFeature);
-                  }
-                  HapticFeedback.selectionClick();
-                  // 🔧 FIX-DRAW-SYNC: Reutilizar MapBottomSheet existente
-                  setSheetState(
-                    const MapSheetState(type: MapSheetType.draw),
-                    'Feature tap: editing existing drawing',
-                  );
+                // 🎯 Prioridade 1: modos armados do mapa (antes de desenho/talhão)
+                final armedMode = ref.read(armedModeProvider);
+                if (armedMode == ArmedMode.marketing) {
+                  ref.read(armedModeProvider.notifier).state = ArmedMode.none;
+                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                  placeMarketingCase(tapPos, point);
                   return;
                 }
-              }
 
-              // 🎯 Comportamento normal: Seleção de talhão
-              final selectedTalhaoId = ref.read(selectedTalhaoIdProvider);
-              final hitIndex = ref.read(fieldHitIndexProvider);
-              String? hitId;
-              if (hitIndex != null) {
-                hitId = hitIndex.hitTest(point, TalhaoMapAdapter.isPointInside);
-              }
-
-              if (hitId != null) {
-                ref.read(selectedTalhaoIdProvider.notifier).state = hitId;
-                HapticFeedback.selectionClick();
-              } else if (selectedTalhaoId != null) {
-                // Deselect if tapping empty space
-                ref.read(selectedTalhaoIdProvider.notifier).state = null;
-                HapticFeedback.lightImpact();
-              }
-            },
-            onLongPress: (tapPos, point) {
-              if (ref.read(drawingControllerProvider).suppressesMapContextTaps) {
-                return;
-              }
-
-              final armedMode = ref.read(armedModeProvider);
-              if (armedMode == ArmedMode.occurrences) {
-                ref.read(armedModeProvider.notifier).state = ArmedMode.none;
-                ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                openOccurrenceSheet(point.latitude, point.longitude);
-                return;
-              }
-
-              if (armedMode == ArmedMode.marketing) {
-                ref.read(armedModeProvider.notifier).state = ArmedMode.none;
-                ScaffoldMessenger.of(context).hideCurrentSnackBar();
-              }
-
-              handleMapLongPress(tapPos, point);
-            },
-            onPositionChanged: (pos, hasGesture) {
-              MapCameraSnapshotThrottle.publish(
-                ProviderScope.containerOf(context, listen: false),
-                MapCameraSnapshot(
-                  center: pos.center,
-                  zoom: pos.zoom,
-                  visibleBounds: pos.visibleBounds,
-                ),
-              );
-              if (hasGesture) {
-                final locationMode = ref.read(mapLocationModeProvider);
-                if (locationMode == MapLocationMode.following ||
-                    locationMode == MapLocationMode.northLocked) {
-                  ref.read(mapLocationModeProvider.notifier).state =
-                      MapLocationMode.idle;
-                  stopFollowing();
+                if (armedMode == ArmedMode.occurrences) {
+                  ref.read(armedModeProvider.notifier).state = ArmedMode.none;
+                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                  openOccurrenceSheet(point.latitude, point.longitude);
+                  return;
                 }
 
-                MapLogger.logEvent(
-                  'Pan/Zoom: Center=${pos.center.latitude.toStringAsFixed(4)},'
-                  '${pos.center.longitude.toStringAsFixed(4)} '
-                  'Zoom=${pos.zoom.toStringAsFixed(1)}',
-                );
-                MapLogger.logEvent('Clustering Active: ${pos.zoom < 15}');
-              }
-            },
-            maxZoom: tileConfig.maxZoom,
-            children: [
-              // Layer base de tiles
-              const MapLayersWidget(),
+                // 🎯 Prioridade 2: vértices de desenho (armed/drawing) — antes do
+                // guard contextual que bloqueia talhão/pins em reviewing/editing.
+                if (drawCtrl.currentState == DrawingState.drawing ||
+                    drawCtrl.currentState == DrawingState.armed) {
+                  if (drawCtrl.currentTool != DrawingTool.freehand) {
+                    if (drawCtrl.selectedSketchVertexIndex != null ||
+                        drawCtrl.isDraggingSketchVertex) {
+                      drawCtrl.clearSketchVertexSelection();
+                      return;
+                    }
+                    drawCtrl.appendDrawingPoint(point);
+                  }
+                  return;
+                }
 
-              const MapStateBoundariesLayer(),
+                if (drawCtrl.suppressesMapContextTaps) {
+                  return;
+                }
 
-              // Cobertura offline baixada para a camada ativa
-              const MapOfflineCoverageLayer(),
+                if (drawCtrl.isMultiSelectEnabled ||
+                    drawCtrl.currentState == DrawingState.idle ||
+                    drawCtrl.currentState == DrawingState.selected) {
+                  final drawingFeature = drawCtrl.findFeatureAt(point);
+                  if (drawingFeature != null) {
+                    if (drawCtrl.isMultiSelectEnabled) {
+                      drawCtrl.toggleFeatureSelection(drawingFeature);
+                    } else {
+                      drawCtrl.selectFeature(drawingFeature);
+                    }
+                    HapticFeedback.selectionClick();
+                    // 🔧 FIX-DRAW-SYNC: Reutilizar MapBottomSheet existente
+                    setSheetState(
+                      const MapSheetState(type: MapSheetType.draw),
+                      'Feature tap: editing existing drawing',
+                    );
+                    return;
+                  }
+                }
 
-              // Polígonos de talhões
-              // ADR-030 F3: extraído para TalhaoPolygonLayer
-              const TalhaoPolygonLayer(),
+                // 🎯 Comportamento normal: Seleção de talhão
+                final selectedTalhaoId = ref.read(selectedTalhaoIdProvider);
+                final hitIndex = ref.read(fieldHitIndexProvider);
+                String? hitId;
+                if (hitIndex != null) {
+                  hitId = hitIndex.hitTest(
+                    point,
+                    TalhaoMapAdapter.isPointInside,
+                  );
+                }
 
-              // Camada de Desenho
-              // 🔧 FIX-DRAW-RACE: Usar ref.read() para evitar referência stale
-              DrawingLayerWidget(
-                controller: ref.read(drawingControllerProvider),
-                onFeatureTap: (feature) {
-                  final drawCtrl = ref.read(drawingControllerProvider);
-                  if (drawCtrl.suppressesMapContextTaps) return;
-                  ref.read(drawingControllerProvider).selectFeature(feature);
+                if (hitId != null) {
+                  ref.read(selectedTalhaoIdProvider.notifier).state = hitId;
                   HapticFeedback.selectionClick();
-                },
-                onDrawingComplete: finishDrawing,
-              ),
+                } else if (selectedTalhaoId != null) {
+                  // Deselect if tapping empty space
+                  ref.read(selectedTalhaoIdProvider.notifier).state = null;
+                  HapticFeedback.lightImpact();
+                }
+              },
+              onLongPress: (tapPos, point) {
+                if (ref
+                    .read(drawingControllerProvider)
+                    .suppressesMapContextTaps) {
+                  return;
+                }
 
-              // 🔧 Camada de Edição (Vertex Handles)
-              DrawingEditLayer(
-                controller: ref.read(drawingControllerProvider),
-                mapController: mapController,
-                onPolygonClose: () {
-                  finishDrawing();
-                },
-              ),
+                final armedMode = ref.read(armedModeProvider);
+                if (armedMode == ArmedMode.occurrences) {
+                  ref.read(armedModeProvider.notifier).state = ArmedMode.none;
+                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                  openOccurrenceSheet(point.latitude, point.longitude);
+                  return;
+                }
 
-              // ADR-043 — Radar acima de talhões/desenho, abaixo de markers
-              IgnorePointer(
-                ignoring: polygonSketchMode,
-                child: const ClimaRadarTileLayerWidget(),
-              ),
+                if (armedMode == ArmedMode.marketing) {
+                  ref.read(armedModeProvider.notifier).state = ArmedMode.none;
+                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                  placeMarketingCase(tapPos, point);
+                  return;
+                }
 
-              // 🔒 MARKERS ISOLADOS: Não rebuildam por GPS/zoom/pan
-              AbsorbPointer(
-                absorbing: suppressMapMarkerTaps,
-                child: const MapMarkersWidget(),
-              ),
+                handleMapLongPress(tapPos, point);
+              },
+              onPositionChanged: (pos, hasGesture) {
+                MapCameraSnapshotThrottle.publish(
+                  ProviderScope.containerOf(context, listen: false),
+                  MapCameraSnapshot(
+                    center: pos.center,
+                    zoom: pos.zoom,
+                    visibleBounds: pos.visibleBounds,
+                  ),
+                );
+                if (hasGesture) {
+                  final locationMode = ref.read(mapLocationModeProvider);
+                  if (locationMode == MapLocationMode.following ||
+                      locationMode == MapLocationMode.northLocked) {
+                    ref.read(mapLocationModeProvider.notifier).state =
+                        MapLocationMode.idle;
+                    stopFollowing();
+                  }
 
-              // Markers de ocorrências (isolados)
-              AbsorbPointer(
-                absorbing: suppressMapMarkerTaps,
-                child: IsolatedOccurrenceMarkersLayer(
-                  onOccurrenceTap: handleOccurrencePinTap,
+                  MapLogger.logEvent(
+                    'Pan/Zoom: Center=${pos.center.latitude.toStringAsFixed(4)},'
+                    '${pos.center.longitude.toStringAsFixed(4)} '
+                    'Zoom=${pos.zoom.toStringAsFixed(1)}',
+                  );
+                  MapLogger.logEvent('Clustering Active: ${pos.zoom < 15}');
+                }
+              },
+              maxZoom: tileConfig.maxZoom,
+              children: [
+                // Layer base de tiles
+                const MapLayersWidget(),
+
+                const MapStateBoundariesLayer(),
+
+                // Cobertura offline baixada para a camada ativa
+                const MapOfflineCoverageLayer(),
+
+                // Polígonos de talhões
+                // ADR-030 F3: extraído para TalhaoPolygonLayer
+                const TalhaoPolygonLayer(),
+
+                // Camada de Desenho
+                // 🔧 FIX-DRAW-RACE: Usar ref.read() para evitar referência stale
+                DrawingLayerWidget(
+                  controller: ref.read(drawingControllerProvider),
+                  onFeatureTap: (feature) {
+                    final drawCtrl = ref.read(drawingControllerProvider);
+                    if (drawCtrl.suppressesMapContextTaps) return;
+                    ref.read(drawingControllerProvider).selectFeature(feature);
+                    HapticFeedback.selectionClick();
+                  },
+                  onDrawingComplete: finishDrawing,
                 ),
-              ),
 
-              // Markers de Marketing (isolados — Sprint 8 Performance)
-              AbsorbPointer(
-                absorbing: suppressMapMarkerTaps,
-                child: const IsolatedMarketingMarkersLayer(),
-              ),
+                // 🔧 Camada de Edição (Vertex Handles)
+                DrawingEditLayer(
+                  controller: ref.read(drawingControllerProvider),
+                  mapController: mapController,
+                  onPolygonClose: () {
+                    finishDrawing();
+                  },
+                ),
 
-              Consumer(
-                builder: (context, ref, _) {
-                  final destination = ref.watch(
-                    destinationCoordinateMarkerProvider,
-                  );
-                  if (destination == null) return const SizedBox.shrink();
-                  return MarkerLayer(
-                    markers: [
-                      Marker(
-                        point: destination,
-                        width: 40,
-                        height: 40,
-                        alignment: Alignment.topCenter,
-                        child: const Icon(
-                          SFIcons.pinFill,
-                          size: 36,
-                          color: PremiumTokens.brandGreen,
-                          shadows: [
-                            Shadow(
-                              color: Color(0x66000000),
-                              blurRadius: 6,
-                              offset: Offset(0, 2),
-                            ),
-                          ],
+                // ADR-043 — Radar acima de talhões/desenho, abaixo de markers
+                IgnorePointer(
+                  ignoring: polygonSketchMode,
+                  child: const ClimaRadarTileLayerWidget(),
+                ),
+
+                // 🔒 MARKERS ISOLADOS: Não rebuildam por GPS/zoom/pan
+                AbsorbPointer(
+                  absorbing: suppressMapMarkerTaps,
+                  child: const MapMarkersWidget(),
+                ),
+
+                // Markers de ocorrências (isolados)
+                AbsorbPointer(
+                  absorbing: suppressMapMarkerTaps,
+                  child: IsolatedOccurrenceMarkersLayer(
+                    onOccurrenceTap: handleOccurrencePinTap,
+                  ),
+                ),
+
+                // Markers de Marketing (isolados — Sprint 8 Performance)
+                AbsorbPointer(
+                  absorbing: suppressMapMarkerTaps,
+                  child: const IsolatedMarketingMarkersLayer(),
+                ),
+
+                Consumer(
+                  builder: (context, ref, _) {
+                    final destination = ref.watch(
+                      destinationCoordinateMarkerProvider,
+                    );
+                    if (destination == null) return const SizedBox.shrink();
+                    return MarkerLayer(
+                      markers: [
+                        Marker(
+                          point: destination,
+                          width: 40,
+                          height: 40,
+                          alignment: Alignment.topCenter,
+                          child: const Icon(
+                            SFIcons.pinFill,
+                            size: 36,
+                            color: PremiumTokens.brandGreen,
+                            shadows: [
+                              Shadow(
+                                color: Color(0x66000000),
+                                blurRadius: 6,
+                                offset: Offset(0, 2),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
-                  );
-                },
-              ),
+                      ],
+                    );
+                  },
+                ),
 
-              // 🎯 ÚNICA LAYER QUE REBUILDA: Localização GPS
-              const IsolatedUserLocationLayer(),
+                // 🎯 ÚNICA LAYER QUE REBUILDA: Localização GPS
+                const IsolatedUserLocationLayer(),
 
-              RichAttributionWidget(
-                attributions: [TextSourceAttribution(tileConfig.attribution)],
-                showFlutterMapAttribution: false,
-                alignment: AttributionAlignment.bottomLeft,
-                // Sem auto-expand: o popup preto parecia "sombra" no mapa.
-                // Atribuição continua acessível pelo botão info.
-                popupInitialDisplayDuration:
-                    kMapAttributionPopupInitialDuration,
-                popupBorderRadius: BorderRadius.circular(8),
-                popupBackgroundColor: Colors.black.withValues(alpha: 0.72),
-              ),
-            ],
+                RichAttributionWidget(
+                  attributions: [TextSourceAttribution(tileConfig.attribution)],
+                  showFlutterMapAttribution: false,
+                  alignment: AttributionAlignment.bottomLeft,
+                  // Sem auto-expand: o popup preto parecia "sombra" no mapa.
+                  // Atribuição continua acessível pelo botão info.
+                  popupInitialDisplayDuration:
+                      kMapAttributionPopupInitialDuration,
+                  popupBorderRadius: BorderRadius.circular(8),
+                  popupBackgroundColor: Colors.black.withValues(alpha: 0.72),
+                ),
+              ],
+            ),
           ),
 
           DrawingMapGestureOverlay(
@@ -451,8 +455,6 @@ class MapBuildOrchestrator extends ConsumerWidget {
               openCoordinateSearch: openCoordinateSearch,
               openMunicipalitySearch: openMunicipalitySearch,
               downloadOfflineArea: downloadOfflineArea,
-              armOccurrenceMode: armOccurrenceMode,
-              armMarketingMode: armMarketingMode,
               finishDrawing: finishDrawing,
             ),
           ),
@@ -469,6 +471,7 @@ class MapBuildOrchestrator extends ConsumerWidget {
                 focusDrawingFeatureOnMap(mapController, feature),
           ),
           const ArmedModeBanner(),
+          MapLongPressHint(visible: showLongPressHint),
         ],
       ),
     );
@@ -486,8 +489,6 @@ class _MapControlsHost extends ConsumerWidget {
     required this.openCoordinateSearch,
     required this.openMunicipalitySearch,
     required this.downloadOfflineArea,
-    required this.armOccurrenceMode,
-    required this.armMarketingMode,
     required this.finishDrawing,
   });
 
@@ -500,8 +501,6 @@ class _MapControlsHost extends ConsumerWidget {
   final Future<void> Function() openCoordinateSearch;
   final Future<void> Function() openMunicipalitySearch;
   final Future<void> Function() downloadOfflineArea;
-  final VoidCallback armOccurrenceMode;
-  final void Function(CaseTipo tipo) armMarketingMode;
   final Future<void> Function() finishDrawing;
 
   @override
@@ -513,7 +512,6 @@ class _MapControlsHost extends ConsumerWidget {
     final isProdutor = ref.watch(
       currentUserRoleProvider.select((r) => r.isProdutor),
     );
-    final armedMode = ref.watch(armedModeProvider);
 
     return MapControlsOverlay(
       onCenterUser: centerOnUser,
@@ -526,22 +524,7 @@ class _MapControlsHost extends ConsumerWidget {
         onMunicipalitySearch: openMunicipalitySearch,
         onDownloadOfflineArea: downloadOfflineArea,
       ),
-      onToggleOccurrenceMode: () {
-        unawaited(
-          _handleToggleOccurrenceMode(
-            ref: ref,
-            context: context,
-            armOccurrenceMode: armOccurrenceMode,
-            setSheetState: setSheetState,
-          ),
-        );
-      },
-      onCreateResultadoCase: () => armMarketingMode(CaseTipo.resultado),
-      onCreateAntesDepoisCase: () => armMarketingMode(CaseTipo.antesDepois),
-      onCreateAvaliacaoCase: () => armMarketingMode(CaseTipo.avaliacao),
-      isMarketingMode: armedMode == ArmedMode.marketing,
       isDrawMode: isDrawMode,
-      isOccurrenceMode: armedMode == ArmedMode.occurrences,
       isCheckInActive: ref.watch(
         visitControllerProvider.select(
           (v) => v.valueOrNull?.status == 'active',
@@ -675,41 +658,4 @@ class _MapControlsHost extends ConsumerWidget {
       },
     );
   }
-}
-
-Future<void> _handleToggleOccurrenceMode({
-  required WidgetRef ref,
-  required BuildContext context,
-  required VoidCallback armOccurrenceMode,
-  required void Function(MapSheetState? state, String reason) setSheetState,
-}) async {
-  final armedMode = ref.read(armedModeProvider);
-  if (armedMode != ArmedMode.occurrences) {
-    armOccurrenceMode();
-    return;
-  }
-
-  final sheetState = ref.read(mapSheetStateProvider);
-  if (sheetState?.isCreatingOccurrence == true) {
-    final canClose = await OccurrenceCloseCoordinator.confirmDiscardIfDirty(
-      context,
-      guard: ref.read(occurrenceFormGuardProvider),
-    );
-    if (!canClose || !context.mounted) return;
-
-    final location = ref.read(pendingOccurrenceLocationProvider);
-    if (location != null) {
-      clearOccurrenceDraft(ref, location.latitude, location.longitude);
-    }
-  }
-
-  ref.read(armedModeProvider.notifier).state = ArmedMode.none;
-  if (!context.mounted) return;
-  ScaffoldMessenger.of(context).hideCurrentSnackBar();
-  if (ref.read(isModalOpenProvider)) {
-    Navigator.of(context).pop();
-  }
-  ref.read(pendingOccurrenceLocationProvider.notifier).state = null;
-  ref.read(occurrenceFormGuardProvider.notifier).state = null;
-  setSheetState(null, 'Toggle OFF: Closing occurrence sheet');
 }
