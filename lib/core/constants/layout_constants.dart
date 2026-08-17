@@ -57,7 +57,7 @@ const double kDrawingBottomToolbarHeight = 64.0;
 /// Composição: [kFabHeight] (56) + margem direita do shell (16) = 72.
 const double kDrawingBottomToolbarRightInset = kFabHeight + 16.0;
 
-/// Margem direita da coluna de ações do mapa (camadas / + / check-in).
+/// Margem direita da coluna de ações do mapa (camadas / check-in).
 const double kMapActionColumnRightInset = 16.0;
 
 /// Tamanho dos botões circulares da coluna de ações do mapa.
@@ -68,10 +68,10 @@ const double kMapActionColumnButtonSize = 44.0;
 /// [kMapActionColumnSpacingAboveActions] — posição canônica da coluna.
 const double kMapActionColumnSpacing = 12.0;
 
-/// Gap entre check-in (inferior) e botão de ações (+) — layout canônico 16dp.
+/// Gap entre check-in (inferior) e camadas (superior) — layout canônico 16dp.
 const double kMapActionColumnSpacingAboveCheckIn = 16.0;
 
-/// Gap entre ações (+) e camadas (superior) — layout canônico 26dp.
+/// Gap legado entre ações (+) e camadas — mantido para regressões/compat.
 const double kMapActionColumnSpacingAboveActions = 26.0;
 
 /// Inset inferior fixo da coluna de ações do mapa (âncora do check-in).
@@ -85,9 +85,6 @@ const double kMapActionColumnSpacingAboveActions = 26.0;
 const double kMapActionColumnBottomInset = kFabSafeArea;
 
 /// Compensação vertical no modo desenho: mantém o botão de camadas na mesma
-/// posição quando ações e check-in são ocultados.
+/// posição quando check-in é ocultado.
 const double kMapActionColumnDrawModeCompensation =
-    kMapActionColumnSpacingAboveActions +
-    kMapActionColumnButtonSize +
-    kMapActionColumnSpacingAboveCheckIn +
-    kMapActionColumnButtonSize;
+    kMapActionColumnSpacingAboveCheckIn + kMapActionColumnButtonSize;
