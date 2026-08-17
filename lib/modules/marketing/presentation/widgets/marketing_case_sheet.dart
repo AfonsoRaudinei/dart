@@ -106,10 +106,11 @@ class MarketingCaseSheet extends StatelessWidget {
     return DraggableScrollableSheet(
       expand: false,
       initialChildSize: 0.7,
-      minChildSize: 0.4,
+      minChildSize: 0.35,
       maxChildSize: 0.95,
       snap: true,
-      snapSizes: const [0.5, 0.7, 0.95],
+      snapSizes: const [0.45, 0.7, 0.95],
+      shouldCloseOnMinExtent: true,
       builder: (context, scrollController) {
         return Container(
           decoration: BoxDecoration(
@@ -126,7 +127,7 @@ class MarketingCaseSheet extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // ── Handle ─────────────────────────────────────────
+              // Handle — área de arraste do DraggableScrollableSheet
               Center(
                 child: Container(
                   margin: const EdgeInsets.symmetric(vertical: 12),
@@ -143,7 +144,7 @@ class MarketingCaseSheet extends StatelessWidget {
                 ),
               ),
 
-              // ── Conteúdo scrollável ───────────────────────────
+              // Conteúdo scrollável — controller liga ao DSS
               Expanded(
                 child: ListView(
                   controller: scrollController,

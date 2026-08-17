@@ -39,8 +39,9 @@ class DraftSavedSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isIos = soloForteSheetIsIos(context);
+    // Modal já pinta prata iOS — evitar segundo painel opaco (“dois sheets”).
     final bg = isIos
-        ? SoloForteSheetSkinIos.background
+        ? Colors.transparent
         : SoloForteSheetTokens.sheetBackground;
     final radius = isIos ? SoloForteSheetSkinIos.sheetRadius : 24.0;
     final titleColor = isIos ? SoloForteSheetSkinIos.titleColor : null;
@@ -68,21 +69,17 @@ class DraftSavedSheet extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Handle visual — no iOS o chrome de showSoloForteSheet já desenha.
-          if (!isIos)
-            Center(
-              child: Container(
-                margin: const EdgeInsets.only(bottom: 16),
-                width: 36,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: handleColor,
-                  borderRadius: BorderRadius.circular(2),
-                ),
+          Center(
+            child: Container(
+              margin: const EdgeInsets.only(bottom: 16),
+              width: 36,
+              height: 4,
+              decoration: BoxDecoration(
+                color: handleColor,
+                borderRadius: BorderRadius.circular(2),
               ),
-            )
-          else
-            const SizedBox(height: 4),
+            ),
+          ),
 
           // Ícone
           Container(

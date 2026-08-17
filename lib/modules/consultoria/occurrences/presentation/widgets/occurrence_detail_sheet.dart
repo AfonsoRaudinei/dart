@@ -43,7 +43,9 @@ class OccurrenceDetailSheet extends ConsumerWidget {
     return showSoloForteSheet(
       context: context,
       isScrollControlled: true,
+      // Handle no conteúdo — Material handle + conteúdo = gesto de arraste ok.
       showDragHandle: false,
+      enableDrag: true,
       builder: (_) => OccurrenceDetailSheet(
         occurrence: occurrence,
         backRoute: backRoute,
@@ -344,37 +346,40 @@ class OccurrenceDetailSheet extends ConsumerWidget {
 
     return SafeArea(
       top: false,
-      child: Container(
-        constraints: BoxConstraints(
-          maxHeight: MediaQuery.sizeOf(context).height * 0.9,
-        ),
-        decoration: BoxDecoration(
-          color: sheetBg,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(sheetRadius)),
-          border: isIos
-              ? const Border(
-                  top: BorderSide(color: SoloForteSheetSkinIos.sheetBorder),
-                )
-              : null,
-          boxShadow: isIos ? null : PremiumTokens.premiumShadow,
-        ),
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
+      child: DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.72,
+        minChildSize: 0.35,
+        maxChildSize: 0.95,
+        shouldCloseOnMinExtent: true,
+        builder: (context, scrollController) {
+          return Container(
+            decoration: BoxDecoration(
+              // Modal já pinta prata iOS — evitar segundo painel opaco (“dois sheets”).
+              color: isIos ? Colors.transparent : sheetBg,
+              borderRadius:
+                  BorderRadius.vertical(top: Radius.circular(sheetRadius)),
+              boxShadow: isIos ? null : PremiumTokens.premiumShadow,
+            ),
+            child: ListView(
+              controller: scrollController,
+              children: [
               const SizedBox(height: 12),
-              if (!isIos)
-                Center(
-                  child: Container(
-                    width: 36,
-                    height: 5,
-                    decoration: BoxDecoration(
-                      color: handleColor,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
+              Center(
+                child: Container(
+                  width: isIos
+                      ? SoloForteSheetSkinIos.handleSize.width
+                      : 36,
+                  height: isIos
+                      ? SoloForteSheetSkinIos.handleSize.height
+                      : 5,
+                  decoration: BoxDecoration(
+                    color: handleColor,
+                    borderRadius: BorderRadius.circular(10),
                   ),
                 ),
-              if (!isIos) const SizedBox(height: 16),
+              ),
+              const SizedBox(height: 16),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: Row(
@@ -593,8 +598,9 @@ class OccurrenceDetailSheet extends ConsumerWidget {
               ),
               const SizedBox(height: 16),
             ],
-          ),
-        ),
+            ),
+          );
+        },
       ),
     );
   }

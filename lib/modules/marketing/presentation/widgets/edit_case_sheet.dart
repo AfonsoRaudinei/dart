@@ -241,8 +241,9 @@ class _EditCaseSheetState extends State<EditCaseSheet> {
   @override
   Widget build(BuildContext context) {
     final isIos = soloForteSheetIsIos(context);
+    // Modal já pinta prata iOS — evitar segundo painel opaco (“dois sheets”).
     final sheetBg = isIos
-        ? SoloForteSheetSkinIos.background
+        ? Colors.transparent
         : SoloForteSheetTokens.sheetBackground;
     final sheetRadius = isIos ? SoloForteSheetSkinIos.sheetRadius : 28.0;
     final handleColor = isIos
@@ -299,20 +300,17 @@ class _EditCaseSheetState extends State<EditCaseSheet> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  if (!isIos)
-                    Center(
-                      child: Container(
-                        width: 40,
-                        height: 4,
-                        margin: const EdgeInsets.only(bottom: 16),
-                        decoration: BoxDecoration(
-                          color: handleColor,
-                          borderRadius: BorderRadius.circular(999),
-                        ),
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      margin: const EdgeInsets.only(bottom: 16),
+                      decoration: BoxDecoration(
+                        color: handleColor,
+                        borderRadius: BorderRadius.circular(999),
                       ),
-                    )
-                  else
-                    const SizedBox(height: 8),
+                    ),
+                  ),
                   Row(
                     children: [
                       Expanded(

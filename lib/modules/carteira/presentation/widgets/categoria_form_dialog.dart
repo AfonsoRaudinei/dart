@@ -162,8 +162,9 @@ class _CategoriaFormDialogState extends ConsumerState<CategoriaFormDialog> {
   Widget build(BuildContext context) {
     final tiposAsync = ref.watch(tiposProdutoProvider(widget.userId));
     final isIos = soloForteSheetIsIos(context);
+    // Modal já pinta prata iOS — evitar segundo painel opaco (“dois sheets”).
     final sheetBg = isIos
-        ? SoloForteSheetSkinIos.background
+        ? Colors.transparent
         : Theme.of(context).colorScheme.surface;
     final sheetRadius = isIos
         ? SoloForteSheetSkinIos.sheetRadius
@@ -200,18 +201,19 @@ class _CategoriaFormDialogState extends ConsumerState<CategoriaFormDialog> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (!isIos)
-              Container(
-                margin: const EdgeInsets.only(top: 12, bottom: 8),
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: handleColor,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              )
-            else
-              const SizedBox(height: 8),
+            Container(
+              margin: const EdgeInsets.only(top: 12, bottom: 8),
+              width: isIos
+                  ? SoloForteSheetSkinIos.handleSize.width
+                  : 40,
+              height: isIos
+                  ? SoloForteSheetSkinIos.handleSize.height
+                  : 4,
+              decoration: BoxDecoration(
+                color: handleColor,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
             Flexible(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(24, 8, 24, 0),

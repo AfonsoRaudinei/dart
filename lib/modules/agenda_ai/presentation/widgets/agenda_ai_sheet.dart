@@ -275,8 +275,9 @@ class _AgendaAiSheetState extends ConsumerState<_AgendaAiSheet> {
   Widget build(BuildContext context) {
     final height = MediaQuery.of(context).size.height * 0.86;
     final isIos = soloForteSheetIsIos(context);
+    // Modal já pinta prata iOS — evitar segundo painel opaco (“dois sheets”).
     final sheetBg = isIos
-        ? SoloForteSheetSkinIos.background
+        ? Colors.transparent
         : const Color(0xFF1C1C1E);
     final sheetRadius = isIos
         ? SoloForteSheetSkinIos.sheetRadius
@@ -324,19 +325,20 @@ class _AgendaAiSheetState extends ConsumerState<_AgendaAiSheet> {
       ),
       child: Column(
         children: [
-          if (!isIos) ...[
-            const SizedBox(height: 10),
-            Container(
-              width: 36,
-              height: 4,
-              decoration: BoxDecoration(
-                color: handleColor,
-                borderRadius: BorderRadius.circular(999),
-              ),
+          const SizedBox(height: 10),
+          Container(
+            width: isIos
+                ? SoloForteSheetSkinIos.handleSize.width
+                : 36,
+            height: isIos
+                ? SoloForteSheetSkinIos.handleSize.height
+                : 4,
+            decoration: BoxDecoration(
+              color: handleColor,
+              borderRadius: BorderRadius.circular(999),
             ),
-            const SizedBox(height: 12),
-          ] else
-            const SizedBox(height: 8),
+          ),
+          const SizedBox(height: 12),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Row(

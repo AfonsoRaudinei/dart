@@ -71,18 +71,19 @@ class PlanoBlockSheet extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (!isIos)
-              Container(
-                width: 36,
-                height: 4,
-                margin: const EdgeInsets.only(bottom: 20),
-                decoration: BoxDecoration(
-                  color: handleColor,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              )
-            else
-              const SizedBox(height: 4),
+            Container(
+              width: isIos
+                  ? SoloForteSheetSkinIos.handleSize.width
+                  : 36,
+              height: isIos
+                  ? SoloForteSheetSkinIos.handleSize.height
+                  : 4,
+              margin: const EdgeInsets.only(bottom: 20),
+              decoration: BoxDecoration(
+                color: handleColor,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
             const Icon(
               Icons.lock_outline_rounded,
               color: Color(0xFFFF9F0A),

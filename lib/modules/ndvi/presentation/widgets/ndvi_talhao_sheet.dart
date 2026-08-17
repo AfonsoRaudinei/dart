@@ -28,8 +28,9 @@ class NdviTalhaoSheet extends ConsumerWidget {
     ref.watch(ndviEnsureCurrentDateProvider(fieldId));
     final ndviAsync = ref.watch(ndviImagesProvider(fieldId));
     final isIos = soloForteSheetIsIos(context);
+    // Modal já pinta prata iOS — evitar segundo painel opaco (“dois sheets”).
     final sheetBg = isIos
-        ? SoloForteSheetSkinIos.background
+        ? Colors.transparent
         : const Color(0xFF1C1C1E);
     final sheetRadius = isIos ? SoloForteSheetSkinIos.sheetRadius : 16.0;
     final handleColor = isIos
@@ -52,21 +53,17 @@ class NdviTalhaoSheet extends ConsumerWidget {
       ),
       child: Column(
         children: [
-          // Drag handle — omitido no iOS (chrome do showSoloForteSheet)
-          if (!isIos)
-            Center(
-              child: Container(
-                margin: const EdgeInsets.only(top: 12, bottom: 8),
-                width: 36,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: handleColor,
-                  borderRadius: BorderRadius.circular(10),
-                ),
+          Center(
+            child: Container(
+              margin: const EdgeInsets.only(top: 12, bottom: 8),
+              width: 36,
+              height: 4,
+              decoration: BoxDecoration(
+                color: handleColor,
+                borderRadius: BorderRadius.circular(10),
               ),
-            )
-          else
-            const SizedBox(height: 8),
+            ),
+          ),
 
           Expanded(
             child: Padding(

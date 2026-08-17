@@ -282,8 +282,9 @@ void showAdicionarTalhaoModal(BuildContext context, Client client) {
     clipBehavior: Clip.none,
     builder: (sheetCtx) {
       final isIos = soloForteSheetIsIos(sheetCtx);
+      // Modal já pinta prata iOS — evitar segundo painel opaco (“dois sheets”).
       final surface = isIos
-          ? SoloForteSheetSkinIos.background
+          ? Colors.transparent
           : context.premiumSurface;
       final handle = isIos
           ? SoloForteSheetSkinIos.handleColor
@@ -306,18 +307,19 @@ void showAdicionarTalhaoModal(BuildContext context, Client client) {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (!isIos)
-              Container(
-                width: 36,
-                height: 5,
-                margin: const EdgeInsets.only(bottom: 20),
-                decoration: BoxDecoration(
-                  color: handle,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              )
-            else
-              const SizedBox(height: 8),
+            Container(
+              width: isIos
+                  ? SoloForteSheetSkinIos.handleSize.width
+                  : 36,
+              height: isIos
+                  ? SoloForteSheetSkinIos.handleSize.height
+                  : 5,
+              margin: const EdgeInsets.only(bottom: 20),
+              decoration: BoxDecoration(
+                color: handle,
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
             Text(
               'Adicionar Talhão',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(

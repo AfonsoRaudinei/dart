@@ -16,9 +16,13 @@ class AgendaFiltersSheet extends ConsumerWidget {
     final filters = ref.watch(agendaFiltersProvider);
     final bottomPad = MediaQuery.of(context).viewPadding.bottom;
     final isIos = soloForteSheetIsIos(context);
+    // Modal já pinta prata iOS — evitar segundo painel opaco (“dois sheets”).
     final sheetBg = isIos
-        ? SoloForteSheetSkinIos.background
+        ? Colors.transparent
         : SoloForteSheetTokens.sheetBackground;
+    final handleColor = isIos
+        ? SoloForteSheetSkinIos.handleColor
+        : SoloForteSheetTokens.divider;
     final titleColor = isIos
         ? SoloForteSheetSkinIos.titleColor
         : SoloForteSheetTokens.titleColor;
@@ -47,20 +51,21 @@ class AgendaFiltersSheet extends ConsumerWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (!isIos)
-                Center(
-                  child: Container(
-                    width: 36,
-                    height: 4,
-                    margin: const EdgeInsets.only(top: 8, bottom: 20),
-                    decoration: BoxDecoration(
-                      color: SoloForteSheetTokens.divider,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
+              Center(
+                child: Container(
+                  width: isIos
+                      ? SoloForteSheetSkinIos.handleSize.width
+                      : 36,
+                  height: isIos
+                      ? SoloForteSheetSkinIos.handleSize.height
+                      : 4,
+                  margin: const EdgeInsets.only(top: 8, bottom: 20),
+                  decoration: BoxDecoration(
+                    color: handleColor,
+                    borderRadius: BorderRadius.circular(2),
                   ),
-                )
-              else
-                const SizedBox(height: 8),
+                ),
+              ),
 
               Row(
                 children: [

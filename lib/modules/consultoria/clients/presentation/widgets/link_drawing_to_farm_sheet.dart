@@ -169,10 +169,14 @@ class _LinkDrawingToFarmSheetState
         isIos ? SoloForteSheetSkinIos.ctaText : Colors.white;
     final ctaRadius =
         isIos ? SoloForteSheetSkinIos.ctaRadius : 8.0;
+    // Modal já pinta prata iOS — evitar segundo painel opaco (“dois sheets”).
     final sheetBg =
-        isIos ? SoloForteSheetSkinIos.background : Colors.white;
+        isIos ? Colors.transparent : Colors.white;
     final sheetRadius =
         isIos ? SoloForteSheetSkinIos.sheetRadius : 24.0;
+    final handleColor = isIos
+        ? SoloForteSheetSkinIos.handleColor
+        : const Color(0xFFC5C5C7);
 
     return Container(
       decoration: BoxDecoration(
@@ -191,18 +195,21 @@ class _LinkDrawingToFarmSheetState
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (!isIos)
-                  Center(
-                    child: Container(
-                      width: 36,
-                      height: 5,
-                      margin: const EdgeInsets.only(bottom: 20),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFC5C5C7),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
+                Center(
+                  child: Container(
+                    width: isIos
+                        ? SoloForteSheetSkinIos.handleSize.width
+                        : 36,
+                    height: isIos
+                        ? SoloForteSheetSkinIos.handleSize.height
+                        : 5,
+                    margin: const EdgeInsets.only(bottom: 20),
+                    decoration: BoxDecoration(
+                      color: handleColor,
+                      borderRadius: BorderRadius.circular(10),
                     ),
                   ),
+                ),
                 Text(
                   'Vincular à fazenda',
                   style: TextStyle(
