@@ -22,6 +22,7 @@ import '../widgets/novo_case_header.dart';
 import '../widgets/novo_case_publicar_button.dart';
 import '../widgets/novo_case_resultado_section.dart';
 import '../../../../core/ui/sheets/sheet_tokens.dart';
+import '../../../../core/ui/sheets/soloforte_sheet.dart';
 
 class NovoCaseSheet extends ConsumerStatefulWidget {
   final double lat;
@@ -620,6 +621,13 @@ class _NovoCaseSheetState extends ConsumerState<NovoCaseSheet> {
 
   Widget _buildDataCasePicker() {
     final selected = _dataCase;
+    final isIos = soloForteSheetIsIos(context);
+    final dateColor = isIos
+        ? SoloForteSheetSkinIos.titleColor
+        : SoloForteSheetTokens.inputText;
+    final hintColor = isIos
+        ? SoloForteSheetSkinIos.subtitleColor
+        : SoloForteSheetTokens.inputHint;
     return GestureDetector(
       onTap: _selectDataCase,
       child: novoCaseFieldBox(
@@ -638,16 +646,16 @@ class _NovoCaseSheetState extends ConsumerState<NovoCaseSheet> {
                   selected == null
                       ? 'Selecionar data'
                       : _formatDatePtBr(selected),
-                  style: const TextStyle(
-                    color: SoloForteSheetTokens.inputText,
+                  style: TextStyle(
+                    color: selected == null ? hintColor : dateColor,
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
-              const Icon(
+              Icon(
                 Icons.keyboard_arrow_down_rounded,
-                color: SoloForteSheetTokens.inputHint,
+                color: hintColor,
               ),
             ],
           ),

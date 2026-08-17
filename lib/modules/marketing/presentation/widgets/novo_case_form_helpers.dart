@@ -66,8 +66,10 @@ Widget novoCaseTextInput(
       final hintColor = isIos
           ? SoloForteSheetSkinIos.subtitleColor
           : SoloForteSheetTokens.inputHint;
+      // Um único card: o chrome vem de [novoCaseFieldBox]. Sem fill/borda
+      // do InputDecorationTheme (OutlineInputBorder) — evita quadro-no-card.
       final fill = isIos
-          ? SoloForteSheetSkinIos.cardBackground
+          ? Colors.transparent
           : SoloForteSheetTokens.inputBackground;
 
       return TextFormField(
@@ -85,6 +87,11 @@ Widget novoCaseTextInput(
           filled: true,
           fillColor: fill,
           border: InputBorder.none,
+          enabledBorder: InputBorder.none,
+          focusedBorder: InputBorder.none,
+          errorBorder: InputBorder.none,
+          focusedErrorBorder: InputBorder.none,
+          disabledBorder: InputBorder.none,
           contentPadding: const EdgeInsets.symmetric(vertical: 12),
           isDense: true,
         ),
