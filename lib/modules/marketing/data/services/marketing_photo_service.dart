@@ -44,9 +44,25 @@ class MarketingPhotoService {
       imageQuality: _quality,
     );
     if (picked == null) return null;
+    if (!context.mounted) return null;
 
-    // Validar tamanho
-    final file = File(picked.path);
+    return uploadPickedPath(
+      context: context,
+      path: picked.path,
+      folder: folder,
+    );
+  }
+
+  /// Faz upload de um arquivo já resolvido (ex.: path do picker compartilhado).
+  /// Retorna `null` se o arquivo for inválido ou exceder o limite.
+  Future<String?> uploadPickedPath({
+    required BuildContext context,
+    required String path,
+    String? folder,
+  }) async {
+    final file = File(path);
+    if (!await file.exists()) return null;
+
     final fileSize = await file.length();
     if (fileSize > _maxFileSizeBytes) {
       if (context.mounted) {

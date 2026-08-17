@@ -4,6 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/ui/sheets/sheet_tokens.dart';
 import '../../../../core/ui/sheets/soloforte_sheet.dart';
+import '../../../../core/widgets/photo/soloforte_photo_picker_sheet.dart';
 import '../../data/services/marketing_photo_service.dart';
 import 'package:soloforte_app/core/utils/app_logger.dart';
 
@@ -29,6 +30,7 @@ class FotoPickerWidget extends StatefulWidget {
   final String? folder;
   final double height;
   final bool required;
+  final bool includeVegetalInversion;
 
   const FotoPickerWidget({
     super.key,
@@ -38,6 +40,7 @@ class FotoPickerWidget extends StatefulWidget {
     this.folder,
     this.height = 160,
     this.required = false,
+    this.includeVegetalInversion = false,
   });
 
   @override
@@ -55,10 +58,26 @@ class _FotoPickerWidgetState extends State<FotoPickerWidget> {
 
     try {
       final service = MarketingPhotoService(Supabase.instance.client);
-      final url = await service.pickAndUpload(
-        context: context,
-        folder: widget.folder,
-      );
+      String? url;
+      if (widget.includeVegetalInversion) {
+        await showSoloFortePhotoPicker(
+          context: context,
+          label: widget.label,
+          onPhotoSelected: (path) async {
+            if (!context.mounted) return;
+            url = await service.uploadPickedPath(
+              context: context,
+              path: path,
+              folder: widget.folder,
+            );
+          },
+        );
+      } else {
+        url = await service.pickAndUpload(
+          context: context,
+          folder: widget.folder,
+        );
+      }
 
       if (mounted) {
         // 🔧 FIX: Atualizar estado interno primeiro, depois notificar pai (Bug B)
