@@ -54,48 +54,17 @@ bool soloForteSheetIsIos(BuildContext context) {
   return ext?.themeId == 'blue';
 }
 
-/// Chrome privado: handle + borda iOS quando [isIos]; senão passa o child.
-class _SoloForteSheetChrome extends StatelessWidget {
-  final bool isIos;
-  final Widget child;
-
-  const _SoloForteSheetChrome({
-    required this.isIos,
-    required this.child,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    if (!isIos) return child;
-
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(top: 10, bottom: 8),
-          child: Center(
-            child: Container(
-              width: SoloForteSheetSkinIos.handleSize.width,
-              height: SoloForteSheetSkinIos.handleSize.height,
-              decoration: BoxDecoration(
-                color: SoloForteSheetSkinIos.handleColor,
-                borderRadius: BorderRadius.circular(999),
-              ),
-            ),
-          ),
-        ),
-        child,
-      ],
-    );
-  }
-}
-
 /// Wrapper padrão para todos os bottom sheets do SoloForte.
 ///
 /// Encapsula parâmetros visuais fixos definidos em [SoloForteSheetTokens].
 /// Com tema azul (`SoloForteThemeExtension.themeId == 'blue'`), aplica
 /// [SoloForteSheetSkinIos] automaticamente — zero mudança nos chamadores.
+///
+/// **Chrome iOS (Ago/2026):** fundo/borda/radius no [ModalBottomSheet] apenas.
+/// Não envolve o conteúdo em `Column`+handle — isso duplicava o painel
+/// (“dois sheets”) e quebrava drag/scroll (`mainAxisSize: min`).
+/// Handle: `showDragHandle` do Material (respeita o caller) ou handle
+/// desenhado pelo conteúdo.
 ///
 /// Uso:
 /// ```dart
@@ -146,10 +115,19 @@ Future<T?> showSoloForteSheet<T>({
                 : BorderSide.none,
           ));
 
-  // Handle nativo do Material só no skin escuro; iOS usa handle do chrome.
-  final resolvedShowDragHandle = preserveMaterialDefaults
-      ? showDragHandle
-      : (isIos ? false : showDragHandle);
+  // Respeita o caller em todos os temas. Antes o Azul forçava `false` e
+  // desenhava handle no Column-chrome — causa de drag quebrado + sheet duplo.
+  final resolvedShowDragHandle = showDragHandle;
+
+  final baseTheme = Theme.of(context);
+  final sheetTheme = isIos
+      ? baseTheme.copyWith(
+          bottomSheetTheme: baseTheme.bottomSheetTheme.copyWith(
+            dragHandleColor: SoloForteSheetSkinIos.handleColor,
+            dragHandleSize: SoloForteSheetSkinIos.handleSize,
+          ),
+        )
+      : baseTheme;
 
   return showModalBottomSheet<T>(
     context: context,
@@ -182,9 +160,9 @@ Future<T?> showSoloForteSheet<T>({
       // Flutter 3.44+ exige ancestral Material para ListTile dentro de sheet
       // com backgroundColor (DecoratedBox). Material transparente satisfaz o
       // contrato sem alterar a aparência do token visual.
-      return SoloForteSheetSkinScope(
-        isIos: isIos,
-        child: _SoloForteSheetChrome(
+      return Theme(
+        data: sheetTheme,
+        child: SoloForteSheetSkinScope(
           isIos: isIos,
           child: Material(
             color: Colors.transparent,
