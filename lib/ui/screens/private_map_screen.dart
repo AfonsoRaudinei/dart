@@ -310,10 +310,26 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
     setState(() => _actionsSheetOpen = true);
     PublicationActionsBottomSheet.show(
       context: context,
-      onResultado: () => _armMarketingMode(CaseTipo.resultado),
-      onAntesDepois: () => _armMarketingMode(CaseTipo.antesDepois),
-      onAvaliacao: () => _armMarketingMode(CaseTipo.avaliacao),
-      onOcorrencia: _armOccurrenceMode,
+      onResultado: () => NovoCaseModalLauncher.launch(
+        position: latLng,
+        context: context,
+        ref: ref,
+        initialTipo: CaseTipo.resultado,
+      ),
+      onAntesDepois: () => NovoCaseModalLauncher.launch(
+        position: latLng,
+        context: context,
+        ref: ref,
+        initialTipo: CaseTipo.antesDepois,
+      ),
+      onAvaliacao: () => NovoCaseModalLauncher.launch(
+        position: latLng,
+        context: context,
+        ref: ref,
+        initialTipo: CaseTipo.avaliacao,
+      ),
+      onOcorrencia: () =>
+          _openOccurrenceSheet(latLng.latitude, latLng.longitude),
     ).whenComplete(() {
       if (!mounted) return;
       setState(() => _actionsSheetOpen = false);
@@ -750,13 +766,6 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
       ),
       'OpenOccurrenceSheet (Create Mode)',
     );
-  }
-
-  void _armMarketingMode(CaseTipo tipo) {
-    _pendingMarketingCaseTipo = tipo;
-    ref.read(armedModeProvider.notifier).state = ArmedMode.marketing;
-    HapticFeedback.lightImpact();
-    // Feedback visual: ArmedModeBanner (glass) — sem snackbar duplicado.
   }
 
   // Feedback visual de armed modes: ArmedModeBanner (glass).
