@@ -74,7 +74,6 @@ class MapBuildOrchestrator extends ConsumerWidget {
   final void Function(MapSheetState? state, String reason) setSheetState;
   final void Function(double lat, double lng) openOccurrenceSheet;
   final void Function(TapPosition tapPos, LatLng latLng) handleMapLongPress;
-  final void Function(TapPosition tapPos, LatLng latLng) placeMarketingCase;
   final Future<void> Function() finishDrawing;
   final void Function() toggleDrawMode;
   final void Function() centerOnUser;
@@ -94,7 +93,6 @@ class MapBuildOrchestrator extends ConsumerWidget {
     required this.setSheetState,
     required this.openOccurrenceSheet,
     required this.handleMapLongPress,
-    required this.placeMarketingCase,
     required this.finishDrawing,
     required this.toggleDrawMode,
     required this.centerOnUser,
@@ -205,13 +203,6 @@ class MapBuildOrchestrator extends ConsumerWidget {
 
                 // 🎯 Prioridade 1: modos armados do mapa (antes de desenho/talhão)
                 final armedMode = ref.read(armedModeProvider);
-                if (armedMode == ArmedMode.marketing) {
-                  ref.read(armedModeProvider.notifier).state = ArmedMode.none;
-                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                  placeMarketingCase(tapPos, point);
-                  return;
-                }
-
                 if (armedMode == ArmedMode.occurrences) {
                   ref.read(armedModeProvider.notifier).state = ArmedMode.none;
                   ScaffoldMessenger.of(context).hideCurrentSnackBar();
@@ -290,13 +281,6 @@ class MapBuildOrchestrator extends ConsumerWidget {
                   ref.read(armedModeProvider.notifier).state = ArmedMode.none;
                   ScaffoldMessenger.of(context).hideCurrentSnackBar();
                   openOccurrenceSheet(point.latitude, point.longitude);
-                  return;
-                }
-
-                if (armedMode == ArmedMode.marketing) {
-                  ref.read(armedModeProvider.notifier).state = ArmedMode.none;
-                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                  placeMarketingCase(tapPos, point);
                   return;
                 }
 
