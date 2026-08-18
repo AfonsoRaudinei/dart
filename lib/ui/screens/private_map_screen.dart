@@ -68,7 +68,6 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
   // Capturada no build() para uso seguro no dispose() SEM ref.read().
   // ref é invalidado em deactivate() (antes de dispose()) — ADR-008.
   dynamic _drawingController;
-  CaseTipo? _pendingMarketingCaseTipo;
   String? _handledMapFirstUri;
   bool _actionsSheetOpen = false;
   bool _showLongPressHint = false;
@@ -237,9 +236,6 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
 
   // 🔎 INSTRUMENTATION: Rastrear quem altera o estado
   void _setSheetState(MapSheetState? state, String reason) {
-    if (state != null) {
-      _pendingMarketingCaseTipo = null;
-    }
     final currentSheet = ref.read(mapSheetStateProvider);
     AppLogger.debug(
       'SHEET CHANGE | old=${currentSheet?.type} | new=${state?.type} | reason=$reason',
@@ -334,18 +330,6 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
       if (!mounted) return;
       setState(() => _actionsSheetOpen = false);
     });
-  }
-
-  void _placePendingMarketingCase(TapPosition tapPos, LatLng latLng) {
-    if (ref.read(drawingControllerProvider).suppressesMapContextTaps) return;
-    final initialTipo = _pendingMarketingCaseTipo;
-    _pendingMarketingCaseTipo = null;
-    NovoCaseModalLauncher.launch(
-      position: latLng,
-      context: context,
-      ref: ref,
-      initialTipo: initialTipo,
-    );
   }
 
   bool _isEmptyMapArea(LatLng point) {
@@ -470,7 +454,6 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
 
   void _armOccurrenceMode() {
     // FIX 1: Entrar em modo seleção — usuário toca no mapa para capturar LatLng
-    _pendingMarketingCaseTipo = null;
     final drawCtrl = ref.read(drawingControllerProvider);
     if (drawCtrl.currentState == DrawingState.drawing ||
         drawCtrl.currentState == DrawingState.armed) {
@@ -791,7 +774,6 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
       setSheetState: _setSheetState,
       openOccurrenceSheet: _openOccurrenceSheet,
       handleMapLongPress: _handleMapLongPress,
-      placeMarketingCase: _placePendingMarketingCase,
       finishDrawing: _finishDrawing,
       toggleDrawMode: _toggleDrawMode,
       centerOnUser: _centerOnUser,
