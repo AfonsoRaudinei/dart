@@ -493,8 +493,8 @@ class _MapActionButtonState extends State<_MapActionButton> {
             behavior: HitTestBehavior.opaque,
             child: Container(
               key: widget.buttonKey,
-              width: 44,
-              height: 44,
+              width: kMapActionColumnButtonSize,
+              height: kMapActionColumnButtonSize,
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(12),
@@ -546,8 +546,8 @@ class _MapToolsFab extends StatelessWidget {
           key: const Key('map_control_layers_btn'),
           duration: const Duration(milliseconds: 180),
           curve: Curves.easeOutCubic,
-          width: 44,
-          height: 44,
+          width: kMapActionColumnButtonSize,
+          height: kMapActionColumnButtonSize,
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(12),
