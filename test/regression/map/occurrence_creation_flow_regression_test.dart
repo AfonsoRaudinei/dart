@@ -135,6 +135,71 @@ void main() {
       );
     });
 
+    // ── Cenários de QA do long press → ações rápidas (Ago/2026) ────────────
+    // Travam por contrato o que antes só era verificável em QA físico.
+
+    test('QA-1: long press entrega o LatLng às 4 ações, sem armar modo', () {
+      final privateMapSource =
+          File('lib/ui/screens/private_map_screen.dart').readAsStringSync();
+
+      // Resultado / Antes-Depois / Avaliação recebem a posição do gesto.
+      expect(
+        'position: latLng'.allMatches(privateMapSource).length,
+        greaterThanOrEqualTo(3),
+      );
+      // Ocorrência recebe as coordenadas do mesmo gesto.
+      expect(
+        privateMapSource,
+        contains('_openOccurrenceSheet(latLng.latitude, latLng.longitude)'),
+      );
+      // Nenhuma das 4 ações volta a armar modo antes de abrir o formulário.
+      expect(privateMapSource, isNot(contains('_armMarketingMode')));
+      expect(privateMapSource, isNot(contains('ArmedMode.marketing')));
+    });
+
+    test('QA-2: tap no mapa continua abrindo ocorrência via ArmedMode', () {
+      final privateMapSource =
+          File('lib/ui/screens/private_map_screen.dart').readAsStringSync();
+
+      expect(privateMapSource, contains('ArmedMode.occurrences'));
+      expect(orchestratorSource, contains('armedMode == ArmedMode.occurrences'));
+    });
+
+    test('QA-3: fechar o sheet limpa pin e guard (sem estado residual)', () {
+      expect(
+        performanceHostsSource,
+        contains('ref.read(pendingOccurrenceLocationProvider.notifier).state = null'),
+      );
+      expect(
+        performanceHostsSource,
+        contains('ref.read(occurrenceFormGuardProvider.notifier).state = null'),
+      );
+    });
+
+    test('QA-4: rascunho por pin sobrevive ao fechar o sheet', () {
+      // autoDispose descartava o rascunho exatamente quando ele precisava
+      // sobreviver: ninguém faz `watch` neste provider, só `read`.
+      final draftProviderSource = File(
+        'lib/modules/consultoria/occurrences/presentation/providers/occurrence_draft_provider.dart',
+      ).readAsStringSync();
+
+      expect(draftProviderSource, isNot(contains('StateProvider.autoDispose')));
+      expect(draftProviderSource, contains('StateProvider.family'));
+    });
+
+    test('QA-5: rascunho não é gravado em dispose/deactivate', () {
+      // Mexer em provider nesses lifecycles é proibido pelo Riverpod e lançava
+      // StateError em produção; a persistência acontece a cada mutação.
+      expect(creationSheetSource, isNot(contains('void deactivate()')));
+      final disposeStart = creationSheetSource.indexOf('void dispose()');
+      expect(disposeStart, greaterThan(-1));
+      final disposeBody = creationSheetSource.substring(
+        disposeStart,
+        disposeStart + 500,
+      );
+      expect(disposeBody, isNot(contains('_persistDraft()')));
+    });
+
     test('regression shield: arquivos de widget test presentes', () {
       expect(
         File(
