@@ -151,8 +151,10 @@ flutter test test/regression/sheets/soloforte_sheet_contract_test.dart
 | Drawing — ActionsBar / InfoEdit / Review form tokens iOS | ✅ follow-up Ago/2026 (texto legível no chrome prata) |
 | IPA **211+** com novo build number | ⏳ archive separado — não reutilizar `+210` |
 | WIP local (flash ícones mapa) | ⏳ não misturar |
-| Long press mapa (Ago/2026) — branch `cursor/longpress-acoes-rapidas-mapa` | ⏳ QA físico 10 cenários antes do merge em `main` |
-| 4 falhas pré-existentes `test/ui/components/map/` (occurrence host / isolated markers) | ⏳ débito — fora do escopo long press; abrir issue/plano auditoria |
+| Long press mapa (Ago/2026) — ações rápidas + LatLng direto | ✅ em `main` — IPA **222** (ver "Incidente autoDispose" abaixo) |
+| 4 falhas pré-existentes `test/ui/components/map/` (occurrence host / isolated markers) | ✅ resolvido Ago/2026 — testes estavam obsoletos (ListView lazy + `MarkerLayer` pré-ADR-035) |
+| `agenda/start_event_use_case_test` — "falha no espelho não impede persistência" | ⏳ débito **agenda** — produto faz rethrow intencional (IPA 187 "mirror rethrow"); decidir se o teste ou o contrato ADR-048 muda |
+| `drawing/drawing_selected_sheet_test` — "Descartar alterações?" | ⏳ débito **drawing** — rótulo/fluxo do diálogo mudou; teste desatualizado |
 
 **Preserve intencionais (layout DSS, não opt-out dark):**
 `map_sheet_controller.dart`, `marketing_case_sheet.dart` — conteúdo via `themeId == 'blue'`.
