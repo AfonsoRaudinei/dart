@@ -817,21 +817,34 @@ echo ""
 # =============================================================================
 # REGRA-MAP-CHROME-1 — coluna direita do mapa com posição travada
 #
-# A coluna (camadas / + / check-in) não pode reagir ao detent do bottom sheet.
-# Posição canônica: kMapActionColumnBottomInset + safe-area (+ compensação draw).
+# Coluna atual: camadas / check-in (sem botão +). Não reage ao detent do sheet.
+# Posição: kMapActionColumnBottomInset + safe-area (+ compensação draw = 16+44).
 # =============================================================================
 echo -e "── ${CYAN}REGRA-MAP-CHROME-1${NC}: coluna direita do mapa — posição travada ───────────────"
 echo ""
 
 MAP_CONTROLS_OVERLAY="lib/ui/components/map/widgets/map_controls_overlay.dart"
+LAYOUT_CONSTANTS="lib/core/constants/layout_constants.dart"
 if [ ! -f "$MAP_CONTROLS_OVERLAY" ]; then
   fail "REGRA-MAP-CHROME-1: $MAP_CONTROLS_OVERLAY ausente"
 elif grep -q "mapSheetChromeInsetProvider" "$MAP_CONTROLS_OVERLAY"; then
   fail "REGRA-MAP-CHROME-1: coluna de ações não pode depender de mapSheetChromeInsetProvider"
 elif ! grep -q "kMapActionColumnBottomInset" "$MAP_CONTROLS_OVERLAY"; then
   fail "REGRA-MAP-CHROME-1: usar kMapActionColumnBottomInset em map_controls_overlay.dart"
+elif ! grep -q "kMapActionColumnSpacingAboveCheckIn" "$MAP_CONTROLS_OVERLAY"; then
+  fail "REGRA-MAP-CHROME-1: usar kMapActionColumnSpacingAboveCheckIn (gap 16) no overlay"
+elif ! grep -q "kMapActionColumnButtonSize" "$MAP_CONTROLS_OVERLAY"; then
+  fail "REGRA-MAP-CHROME-1: usar kMapActionColumnButtonSize (não magic 44) no overlay"
+elif grep -q "MapActionFabMenu" "$MAP_CONTROLS_OVERLAY"; then
+  fail "REGRA-MAP-CHROME-1: MapActionFabMenu não pode voltar à coluna sem ADR"
+elif grep -q "map_control_actions_btn" "$MAP_CONTROLS_OVERLAY"; then
+  fail "REGRA-MAP-CHROME-1: map_control_actions_btn não pode voltar à coluna sem ADR"
+elif ! grep -q "kMapActionColumnSpacingAboveCheckIn + kMapActionColumnButtonSize" "$LAYOUT_CONSTANTS"; then
+  fail "REGRA-MAP-CHROME-1: DrawModeCompensation deve ser SpacingAboveCheckIn + ButtonSize"
+elif grep -q "kMapActionColumnSpacingAboveActions" "$LAYOUT_CONSTANTS"; then
+  fail "REGRA-MAP-CHROME-1: constante morta kMapActionColumnSpacingAboveActions não deve existir"
 else
-  pass "coluna direita do mapa ancorada em kMapActionColumnBottomInset (sem sheet inset)"
+  pass "coluna direita ancorada (inset + gap 16 + buttonSize; sem sheet/+ morto)"
 fi
 
 echo ""
