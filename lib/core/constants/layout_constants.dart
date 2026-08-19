@@ -60,19 +60,13 @@ const double kDrawingBottomToolbarRightInset = kFabHeight + 16.0;
 /// Margem direita da coluna de ações do mapa (camadas / check-in).
 const double kMapActionColumnRightInset = 16.0;
 
-/// Tamanho dos botões circulares da coluna de ações do mapa.
+/// Tamanho dos botões da coluna de ações do mapa (camadas / check-in).
 const double kMapActionColumnButtonSize = 44.0;
 
-/// Espaçamento vertical uniforme entre botões da coluna de ações do mapa.
-/// @Deprecated Preferir [kMapActionColumnSpacingAboveCheckIn] e
-/// [kMapActionColumnSpacingAboveActions] — posição canônica da coluna.
-const double kMapActionColumnSpacing = 12.0;
-
-/// Gap entre check-in (inferior) e camadas (superior) — layout canônico 16dp.
+/// Gap entre camadas (superior) e check-in (inferior) — layout canônico 16dp.
+///
+/// Coluna atual (pós-remoção do botão +): layers → check-in → SmartButton.
 const double kMapActionColumnSpacingAboveCheckIn = 16.0;
-
-/// Gap legado entre ações (+) e camadas — mantido para regressões/compat.
-const double kMapActionColumnSpacingAboveActions = 26.0;
 
 /// Inset inferior fixo da coluna de ações do mapa (âncora do check-in).
 ///
@@ -86,5 +80,7 @@ const double kMapActionColumnBottomInset = kFabSafeArea;
 
 /// Compensação vertical no modo desenho: mantém o botão de camadas na mesma
 /// posição quando check-in é ocultado.
+///
+/// Composição: gap 16 + botão 44 = 60dp.
 const double kMapActionColumnDrawModeCompensation =
     kMapActionColumnSpacingAboveCheckIn + kMapActionColumnButtonSize;
