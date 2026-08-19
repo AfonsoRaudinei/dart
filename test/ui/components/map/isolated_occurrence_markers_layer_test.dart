@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:flutter_map_marker_cluster/flutter_map_marker_cluster.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:latlong2/latlong.dart';
@@ -40,7 +41,7 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      expect(find.byType(MarkerLayer), findsNothing);
+      expect(find.byType(MarkerClusterLayerWidget), findsNothing);
     },
   );
 
@@ -77,7 +78,8 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      expect(find.byType(MarkerLayer), findsOneWidget);
+      // ADR-035: ocorrências passaram a renderizar via cluster layer.
+      expect(find.byType(MarkerClusterLayerWidget), findsOneWidget);
 
       await tester.tap(find.byType(GestureDetector).first);
       await tester.pump();
