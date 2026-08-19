@@ -77,6 +77,31 @@ Ao tocar `lib/core/ui/sheets/` ou widgets de sheet compartilhados:
 
 ---
 
+## REGRA-AUTODISPOSE-1 — `autoDispose` sem `watch` mata o estado no pior momento
+
+> Incidente Ago/2026: **dois** recursos quebrados pela mesma causa. O pin do long press
+> (`pendingOccurrenceLocationProvider`) e o rascunho por pin (`occurrenceDraftProvider`).
+
+Um `StateProvider.autoDispose` só sobrevive enquanto **alguém observa** (`watch`). Escrever
+com `read` e ler depois com `read` **não** mantém o valor vivo: ele é descartado no fim do
+frame, justamente quando o sheet ainda não montou ou acabou de fechar.
+
+| Situação | Ação |
+|---|---|
+| Provider escrito antes do consumidor existir | `watch` no host **antes** de qualquer early-return |
+| Provider só lido com `read` em todo o `lib/` | **Remover `autoDispose`** + limpeza explícita |
+| Auditar antes de usar autoDispose | `rg "<provider>" lib/ \| rg -v "\.notifier"` — se não houver `watch`, o autoDispose é armadilha |
+
+**Proibido** gravar provider dentro de `build`, `initState`, `dispose`, `deactivate` ou
+`didChangeDependencies`. Em `dispose`/`deactivate` o `ref` do Riverpod lança `StateError`
+**incondicional** (não é assert de debug — quebra em release). Usar `addPostFrameCallback`
+ou mover a gravação para o callback que originou a mudança.
+
+**Validação:** `flutter test test/regression/map/occurrence_creation_flow_regression_test.dart`
+(shields QA-1..QA-5 + ordem do `watch` do pin).
+
+---
+
 ## Ocorrências no mapa (REGRA-OCC)
 
 Ver `.agent/PLANO_BLINDAGEM_OCORRENCIAS_MAPA.md` · REGRA-OCC-8..11 em `arch_check.sh`
