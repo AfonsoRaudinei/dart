@@ -191,11 +191,21 @@ class _OccurrenceCreationSheetState
   }
 
   @override
+  void deactivate() {
+    // O rascunho precisa ser gravado aqui: em dispose() o ref do Riverpod já
+    // está invalidado e qualquer leitura lança StateError, perdendo o rascunho.
+    // O container pode já ter sido descartado quando a árvore inteira cai.
+    try {
+      _persistDraft();
+    } catch (_) {}
+    super.deactivate();
+  }
+
+  @override
   void dispose() {
     _cultivarCtrl.removeListener(_persistDraft);
     _descCtrl.removeListener(_persistDraft);
     _recomCtrl.removeListener(_persistDraft);
-    _persistDraft();
     if (widget.formGuard?.readIsDirty == _hasUnsavedChanges) {
       widget.formGuard?.readIsDirty = null;
     }
@@ -488,19 +498,21 @@ class _OccurrenceCreationSheetState
                             : Colors.white54,
                       ),
                       const SizedBox(width: 10),
-                      Text(
-                        _dataPlantio != null
-                            ? _formatDate(_dataPlantio!)
-                            : 'Data de Plantio (opcional)',
-                        style: TextStyle(
-                          color: _dataPlantio != null
-                              ? titleColor
-                              : muted,
-                          fontSize: 14,
+                      Expanded(
+                        child: Text(
+                          _dataPlantio != null
+                              ? _formatDate(_dataPlantio!)
+                              : 'Data de Plantio (opcional)',
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: _dataPlantio != null
+                                ? titleColor
+                                : muted,
+                            fontSize: 14,
+                          ),
                         ),
                       ),
                       if (_dataPlantio != null) ...[
-                        const Spacer(),
                         GestureDetector(
                           onTap: () => _patchForm(() => _dataPlantio = null),
                           child: Icon(
