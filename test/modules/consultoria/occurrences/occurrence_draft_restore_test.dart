@@ -63,8 +63,16 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Ferrugem detectada no talhão norte'), findsOneWidget);
+      // Asserção na ordem do ListView: urgência aparece antes da descrição e
+      // sai da viewport (deixando de existir na árvore) ao rolar adiante.
+      await _scrollUntilVisible(tester, find.text('Alta'));
       expect(find.text('Alta'), findsWidgets);
+
+      await _scrollUntilVisible(
+        tester,
+        find.text('Ferrugem detectada no talhão norte'),
+      );
+      expect(find.text('Ferrugem detectada no talhão norte'), findsOneWidget);
     });
 
     testWidgets('persiste rascunho no dispose e restaura no remount', (
@@ -98,10 +106,13 @@ void main() {
       await tester.pumpWidget(buildSheet());
       await tester.pumpAndSettle();
 
-      await tester.enterText(
-        find.widgetWithText(TextField, 'Descreva a ocorrência…'),
-        'Dados antes da câmera',
+      final descField = find.widgetWithText(
+        TextField,
+        'Descreva a ocorrência…',
       );
+      await _scrollUntilVisible(tester, descField);
+
+      await tester.enterText(descField, 'Dados antes da câmera');
       await tester.pump();
 
       await tester.pumpWidget(const SizedBox.shrink());
@@ -114,9 +125,21 @@ void main() {
       await tester.pumpWidget(buildSheet());
       await tester.pumpAndSettle();
 
+      await _scrollUntilVisible(tester, find.text('Dados antes da câmera'));
+
       expect(find.text('Dados antes da câmera'), findsOneWidget);
     });
   });
 }
 
 Future<void> _noopConfirm(_) async {}
+
+/// O formulário é um [ListView]: campos fora da viewport não existem na árvore.
+Future<void> _scrollUntilVisible(WidgetTester tester, Finder target) async {
+  await tester.dragUntilVisible(
+    target,
+    find.byType(ListView).first,
+    const Offset(0, -150),
+  );
+  await tester.pumpAndSettle();
+}
