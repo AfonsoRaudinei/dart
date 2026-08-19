@@ -91,10 +91,10 @@ Ao tocar `map_controls_overlay.dart` ou constantes de layout do mapa:
 |---|---|
 | Posição travada | Usar `kMapActionColumnBottomInset` + `safeBottom` — **nunca** `mapSheetChromeInsetProvider` |
 | Constantes | Tamanho/espaçamento em `layout_constants.dart` (`kMapActionColumn*`) |
-| SmartButton | Coluna ancorada ao FAB global (`kFabSafeArea` = 100dp acima da safe-area) |
-| Modo desenho | Compensar com `kMapActionColumnDrawModeCompensation` (130dp) |
-| Espaçamento canônico | 26dp (camadas↔+) · 16dp (+↔check-in) — ver `layout_constants.dart` |
-| IPA | **209** travou inset mas spacing 12px errado — **210+** com gaps 26/16 |
+| SmartButton | Coluna ancorada ao FAB global (`kFabSafeArea` = **76dp** acima da safe-area) |
+| Coluna atual | layers → check-in → SmartButton (sem botão `+` no overlay) |
+| Modo desenho | Compensar com `kMapActionColumnDrawModeCompensation` (**60dp** = 16 + 44) |
+| Espaçamento canônico | **16dp** (camadas↔check-in) — `kMapActionColumnSpacingAboveCheckIn` |
 | Validação | `flutter test test/regression/map/controls_overlay_regression_test.dart` + `arch_check.sh` REGRA-MAP-CHROME-1 |
 
 ---

@@ -28,7 +28,7 @@ Ver tabela completa em `AGENTS.md` (raiz) → “Fronteira Map-First (política 
 
 - Evoluir componentes reutilizaveis sem criar dependencia circular com modulos.
 - Ajustar telas globais quando o fluxo for realmente transversal.
-- Usar `kFabSafeArea = 100dp` em layouts com scroll ou acoes proximas ao FAB.
+- Usar `kFabSafeArea = 76dp` em layouts com scroll ou acoes proximas ao FAB.
 
 ## Proibido
 

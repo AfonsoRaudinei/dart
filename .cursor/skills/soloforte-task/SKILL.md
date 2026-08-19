@@ -35,7 +35,7 @@ Fronteira:    altera? sim/não → se sim, ADR necessário
 - Navegação: `context.go('/map')` para retorno; rotas em `app_routes.dart`
 - Persistência: `user_id` + `sync_status`; schema SQLite v41
 - Sheets: `lib/core/ui/sheets/soloforte_sheet.dart`
-- Scroll com FAB: `kFabSafeArea = 100dp`
+- Scroll com FAB: `kFabSafeArea = 76dp`
 - **Se tocar sheets:** `rg showSoloForteSheet` + `rg 'backgroundColor: Colors.transparent'` (REGRA-SHEET-BLAST-1)
 - **Se tocar map chrome:** `kMapActionColumnBottomInset` — nunca `mapSheetChromeInsetProvider` (REGRA-MAP-CHROME-1)
 - **Host UI do mapa:** `lib/ui/screens/map/` + `lib/ui/components/map/` (política 4A) — `modules/map/` é só adapters/providers leves

@@ -102,7 +102,7 @@ no `openSheet` (mesmo padrão dos demais hosts transparent).
 - `.agent/` mais novo que `prompt/AGENT_*`.
 - `AGENTS.md` sem REGRA-MAP-CHROME-1 nem REGRA-SHEET-BLAST-1.
 - `lib/modules/map/AGENTS.md` e `lib/modules/consultoria/AGENTS.md` sem aviso de chrome compartilhado.
-- `kFabSafeArea`: 100dp em `AGENTS.md` vs 76dp em `.agent/AGENT_REGRAS.md` (corrigido para 100dp).
+- `kFabSafeArea`: **76dp** no código (`layout_constants.dart`) — docs devem espelhar 76, não 100.
 
 ---
 

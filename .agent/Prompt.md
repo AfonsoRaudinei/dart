@@ -35,31 +35,37 @@ antes de responder "correção feita".
 
 # Prompt — Coluna direita do mapa (REGRA-MAP-CHROME-1)
 
-## Status IPA
+## Status IPA / contrato atual
 
-| IPA | Travamento inset | Posição canônica (imagem) |
+| IPA / era | Travamento inset | Coluna |
 |---|---|---|
-| **208** | ❌ | ❌ `mapSheetChromeInsetProvider` |
-| **209** | ✅ | ❌ spacing uniforme 12px — coluna ~26px abaixo do layout correto |
-| **210+** | ✅ | ✅ gaps 26dp (camadas↔+) e 16dp (+↔check-in) |
+| **208** | ❌ | `mapSheetChromeInsetProvider` |
+| **209** | ✅ | spacing 12px errado |
+| **210–221+** | ✅ | layers + check-in (gap 16); botão `+` **removido** do overlay (`bae1943`) |
 
-## Verdade visual (referência imagem Porto Nacional)
+## Verdade visual (contrato atual)
 
 Coluna fixa na direita, de cima para baixo:
 
-1. Camadas (layers)
-2. + (ações)
-3. Check-in
-4. SmartButton ☰ (AppShell — não mover)
+1. Camadas (layers) — abre ferramentas do mapa
+2. Check-in (oculto no modo produtor / desenho)
+3. SmartButton ☰ (AppShell — não mover)
 
 ```
-bottom coluna = kMapActionColumnBottomInset + safeBottom  (= kFabSafeArea + safeBottom)
-gap + ↔ check-in = kMapActionColumnSpacingAboveCheckIn (16)
-gap camadas ↔ + = kMapActionColumnSpacingAboveActions (26)
-offset camadas.bottom − check-in.bottom = 130dp
+bottom coluna = kMapActionColumnBottomInset + safeBottom  (= kFabSafeArea 76 + safeBottom)
+gap camadas ↔ check-in = kMapActionColumnSpacingAboveCheckIn (16)
+draw compensation = kMapActionColumnDrawModeCompensation (60 = 16 + 44)
+clearance check-in ↔ FAB = kFabContentClearance (4)
 ```
 
-**Proibido:** `mapSheetChromeInsetProvider` em `map_controls_overlay.dart`.
+**Proibido:** `mapSheetChromeInsetProvider` em `map_controls_overlay.dart`.  
+**Proibido:** remontar `MapActionFabMenu` / `map_control_actions_btn` na coluna sem ADR.
+
+## Blindagem de teste (fechada)
+
+- [x] Integração overlay + âncora FAB (`safeBottom` real, clearance 4)
+- [x] BUG-009 widget (longPress label + Element estável do SmartButton)
+- [x] Modo produtor (`showCheckInAction: false`)
 
 ## Validação
 
@@ -70,7 +76,7 @@ flutter test test/regression/map/controls_overlay_regression_test.dart
 
 ## MacBook
 
-`git pull origin main` → hot restart ou IPA **210+**.
+`git pull origin main` → hot restart ou IPA novo (hot restart não basta se binário antigo).
 
 ---
 
@@ -81,7 +87,7 @@ flutter test test/regression/map/controls_overlay_regression_test.dart
 | IPA | Conteúdo principal | Regressão conhecida |
 |---|---|---|
 | **209** | `ddf7f56` — chrome travado, spacing 12px | coluna ~26px abaixo do layout |
-| **210** | `78d32f2` — gaps 26/16 + SheetSkin Fase 2 | Relatórios/Marketing/Agenda ilegíveis (chrome prata + texto branco) |
+| **210** | `78d32f2` — gaps + SheetSkin Fase 2 | Relatórios/Marketing/Agenda ilegíveis (chrome prata + texto branco) |
 
 **Causa:** commit `6c0b3ae` — `Colors.transparent` passou a resolver para fundo prata iOS. Relatórios **não** teve commit no delta 209→210.
 
