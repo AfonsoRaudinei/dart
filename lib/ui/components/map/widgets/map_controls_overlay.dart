@@ -19,7 +19,6 @@ import '../../../../modules/drawing/presentation/widgets/drawing_bottom_toolbar_
 import '../../../../core/utils/app_logger.dart';
 import '../../../../modules/map/presentation/widgets/visit_active_card.dart';
 import '../../../theme/premium/design_tokens.dart';
-import 'map_action_fab_menu.dart';
 import 'selected_talhao_card.dart';
 
 part 'map_controls_location_button.dart';
@@ -44,14 +43,8 @@ class MapControlsOverlay extends ConsumerStatefulWidget {
   final ValueChanged<MapLocationMode> onLocationModeChanged;
   final VoidCallback onToggleDrawMode;
   final VoidCallback onOpenMapTools;
-  final VoidCallback? onToggleOccurrenceMode;
-  final VoidCallback? onCreateResultadoCase;
-  final VoidCallback? onCreateAntesDepoisCase;
-  final VoidCallback? onCreateAvaliacaoCase;
-  final bool isMarketingMode;
   final Function(int, String) onTabSelected;
   final bool isDrawMode;
-  final bool isOccurrenceMode;
   final bool isCheckInActive;
   final bool showCheckInAction;
   final Widget? topLeftCard;
@@ -79,13 +72,7 @@ class MapControlsOverlay extends ConsumerStatefulWidget {
     required this.onLocationModeChanged,
     required this.onToggleDrawMode,
     required this.onOpenMapTools,
-    this.onToggleOccurrenceMode,
-    this.onCreateResultadoCase,
-    this.onCreateAntesDepoisCase,
-    this.onCreateAvaliacaoCase,
-    this.isMarketingMode = false,
     required this.isDrawMode,
-    this.isOccurrenceMode = false,
     this.isCheckInActive = false,
     this.showCheckInAction = true,
     this.topLeftCard,
@@ -204,7 +191,8 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
         // Não reage ao sheet: evita “pulo” ao arrastar detent ou retomar o app.
         Positioned(
           right: kMapActionColumnRightInset,
-          bottom: kMapActionColumnBottomInset +
+          bottom:
+              kMapActionColumnBottomInset +
               safeBottom +
               (widget.isDrawMode ? kMapActionColumnDrawModeCompensation : 0),
           child: Column(
@@ -216,37 +204,16 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
                 activeColor: activeColor,
                 onTap: widget.onOpenMapTools,
               ),
-              if (!widget.isDrawMode) ...[
-                const SizedBox(height: kMapActionColumnSpacingAboveActions),
-                MapActionFabMenu(
-                  embedded: true,
-                  padding: EdgeInsets.zero,
-                  direction: MapActionFabMenuDirection.left,
-                  isActive:
-                      widget.isMarketingMode || widget.isOccurrenceMode,
+              if (!widget.isDrawMode && widget.showCheckInAction) ...[
+                const SizedBox(height: kMapActionColumnSpacingAboveCheckIn),
+                _MapActionButton(
+                  buttonKey: const Key('map_control_check_in'),
+                  icon: SFIcons.checkCircle,
+                  label: 'Check-in',
+                  isActive: widget.isCheckInActive,
                   activeColor: activeColor,
-                  onResultado: widget.onCreateResultadoCase ?? () {},
-                  onAntesDepois: widget.onCreateAntesDepoisCase ?? () {},
-                  onAvaliacao: widget.onCreateAvaliacaoCase ?? () {},
-                  onOcorrencia: () {
-                    if (widget.onToggleOccurrenceMode != null) {
-                      widget.onToggleOccurrenceMode!();
-                    } else {
-                      widget.onTabSelected(2, 'Button_Occurrences');
-                    }
-                  },
+                  onTap: () => widget.onTabSelected(3, 'Button_CheckIn'),
                 ),
-                if (widget.showCheckInAction) ...[
-                  const SizedBox(height: kMapActionColumnSpacingAboveCheckIn),
-                  _MapActionButton(
-                    buttonKey: const Key('map_control_check_in'),
-                    icon: SFIcons.checkCircle,
-                    label: 'Check-in',
-                    isActive: widget.isCheckInActive,
-                    activeColor: activeColor,
-                    onTap: () => widget.onTabSelected(3, 'Button_CheckIn'),
-                  ),
-                ],
               ],
             ],
           ),

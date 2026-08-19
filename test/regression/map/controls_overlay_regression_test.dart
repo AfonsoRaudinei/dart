@@ -20,7 +20,6 @@ import 'package:soloforte_app/modules/visitas/presentation/controllers/visit_con
 import 'package:soloforte_app/modules/clima/presentation/providers/radar_providers.dart';
 import 'package:soloforte_app/core/constants/layout_constants.dart';
 import 'package:soloforte_app/core/state/map_ui_providers.dart';
-import 'package:soloforte_app/ui/components/map/widgets/map_action_fab_menu.dart';
 import 'package:soloforte_app/ui/components/map/widgets/map_controls_overlay.dart';
 
 /// BUG-002 / BUG-005 — Map: botões errados na coluna direita / publicações removidas.
@@ -56,12 +55,12 @@ void main() {
     });
 
     testWidgets(
-      'coluna direita mantém ferramentas essenciais do mapa (layers, ações, check-in)',
+      'coluna direita mantém ferramentas essenciais do mapa (layers, check-in)',
       (tester) async {
         await _pumpMapControlsOverlay(tester);
 
         expect(find.byTooltip('Ferramentas do mapa'), findsOneWidget);
-        expect(find.byType(MapActionFabMenu), findsOneWidget);
+        expect(find.byKey(const Key('map_control_actions_btn')), findsNothing);
         expect(find.byTooltip('Check-in'), findsOneWidget);
       },
     );
@@ -99,21 +98,19 @@ void main() {
       );
 
       final layers = _buttonBounds(tester, 'map_control_layers_btn');
-      final actions = _buttonBounds(tester, 'map_control_actions_btn');
       final checkIn = _buttonBounds(tester, 'map_control_check_in');
 
       expect(layers.width, closeTo(44, 0.1));
-      expect(actions.width, closeTo(44, 0.1));
       expect(checkIn.width, closeTo(44, 0.1));
 
-      expect(layers.right, closeTo(actions.right, 0.1));
-      expect(actions.right, closeTo(checkIn.right, 0.1));
+      expect(layers.right, closeTo(checkIn.right, 0.1));
 
       const spacingAboveCheckIn = kMapActionColumnSpacingAboveCheckIn;
-      const spacingAboveActions = kMapActionColumnSpacingAboveActions;
-      expect(layers.bottom, closeTo(actions.top - spacingAboveActions, 0.1));
-      expect(actions.bottom, closeTo(checkIn.top - spacingAboveCheckIn, 0.1));
-      expect(checkIn.bottom - layers.bottom, closeTo(130.0, 0.1));
+      expect(layers.bottom, closeTo(checkIn.top - spacingAboveCheckIn, 0.1));
+      expect(
+        checkIn.bottom - layers.bottom,
+        closeTo(kMapActionColumnButtonSize + spacingAboveCheckIn, 0.1),
+      );
     });
 
     testWidgets('coluna permanece fixa quando sheet inset muda (REGRA-MAP-CHROME-1)', (

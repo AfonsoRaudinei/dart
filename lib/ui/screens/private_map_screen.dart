@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/infra/preferences_service.dart';
 import '../../core/state/map_ui_providers.dart';
 import '../../core/state/map_state.dart';
 import '../../core/config/map_config.dart';
@@ -21,12 +22,17 @@ import '../../modules/drawing/domain/models/drawing_models.dart';
 import '../../modules/dashboard/providers/location_providers.dart';
 import '../../modules/dashboard/services/location_service.dart';
 import '../../modules/consultoria/occurrences/domain/occurrence.dart' as occ;
+import '../../modules/consultoria/occurrences/presentation/controllers/occurrence_controller.dart';
 import '../../modules/marketing/domain/enums/case_tipo.dart';
 import '../../modules/marketing/presentation/providers/marketing_providers.dart';
 import '../components/map/map_camera_ease.dart';
 import '../components/map/map_municipality_search_sheet.dart';
 import '../components/map/map_sheet_state.dart';
+import '../components/map/widgets/publication_actions_bottom_sheet.dart';
 import 'map/utils/map_camera_snapshot_throttle.dart';
+import 'map/utils/map_empty_area_hit_test.dart';
+import 'map/utils/map_long_press_prefs.dart';
+import 'map/providers/field_hit_index_provider.dart';
 // 🔧 MODAL: imports para sheets dos tipos não-draw
 // (conteúdo migrado para map_sheet_content_builder.dart — ADR-031 F3)
 import '../../modules/consultoria/occurrences/presentation/widgets/occurrence_detail_sheet.dart';
@@ -62,8 +68,10 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
   // Capturada no build() para uso seguro no dispose() SEM ref.read().
   // ref é invalidado em deactivate() (antes de dispose()) — ADR-008.
   dynamic _drawingController;
-  CaseTipo? _pendingMarketingCaseTipo;
   String? _handledMapFirstUri;
+  bool _actionsSheetOpen = false;
+  bool _showLongPressHint = false;
+  Timer? _longPressHintTimer;
 
   @override
   void initState() {
@@ -78,6 +86,7 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
       ref.read(marketingCasesProvider.notifier).load();
       ref.read(locationStateProvider.notifier).init();
       _requestLocationPermission();
+      _bootstrapLongPressHint();
 
       // Bootstrap silencioso: garantir perfil completo.
       // Fire-and-forget — sem await, sem loading, sem rebuild.
@@ -92,6 +101,18 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
           );
         },
       );
+    });
+  }
+
+  void _bootstrapLongPressHint() {
+    final prefs = ref.read(preferencesServiceProvider);
+    if (hasUsedMapLongPress(prefs)) return;
+    if (!mounted) return;
+    setState(() => _showLongPressHint = true);
+    _longPressHintTimer?.cancel();
+    _longPressHintTimer = Timer(const Duration(seconds: 3), () {
+      if (!mounted) return;
+      setState(() => _showLongPressHint = false);
     });
   }
 
@@ -204,6 +225,7 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
     // 🛡 ADR-008: ref é invalidado em deactivate() (antes de dispose()).
     // Usar referência cacheada em _drawingController, capturada no build().
     // NUNCA usar ref.read() aqui — causa BadState crash.
+    _longPressHintTimer?.cancel();
     _drawingController?.cancelOperation(notify: false);
     MapLocationHandler.stopFollowing(mapController: _mapController);
     MapCameraSnapshotThrottle.cancel();
@@ -214,9 +236,6 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
 
   // 🔎 INSTRUMENTATION: Rastrear quem altera o estado
   void _setSheetState(MapSheetState? state, String reason) {
-    if (state != null) {
-      _pendingMarketingCaseTipo = null;
-    }
     final currentSheet = ref.read(mapSheetStateProvider);
     AppLogger.debug(
       'SHEET CHANGE | old=${currentSheet?.type} | new=${state?.type} | reason=$reason',
@@ -224,10 +243,12 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
     );
 
     final modalOpen = ref.read(isModalOpenProvider);
-    final isStackSheet = state != null &&
+    final isStackSheet =
+        state != null &&
         (state.type == MapSheetType.draw ||
             state.type == MapSheetType.occurrences);
-    final sameModalAlreadyOpen = modalOpen &&
+    final sameModalAlreadyOpen =
+        modalOpen &&
         !isStackSheet &&
         state != null &&
         currentSheet?.type == state.type;
@@ -266,16 +287,82 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
     ref.read(isModalOpenProvider.notifier).state = value;
   }
 
-  // ── _handleMapLongPress ── delegate ADR-031 F5 ─────────────────────────
+  // ── _handleMapLongPress ── abre ações rápidas em área vazia ─────────────
   void _handleMapLongPress(TapPosition tapPos, LatLng latLng) {
     if (ref.read(drawingControllerProvider).suppressesMapContextTaps) return;
-    final initialTipo = _pendingMarketingCaseTipo;
-    _pendingMarketingCaseTipo = null;
-    NovoCaseModalLauncher.launch(
-      position: latLng,
+    if (_actionsSheetOpen) return;
+    if (!_isEmptyMapArea(latLng)) return;
+
+    final prefs = ref.read(preferencesServiceProvider);
+    if (!hasUsedMapLongPress(prefs)) {
+      unawaited(markMapLongPressUsed(prefs));
+    }
+    _longPressHintTimer?.cancel();
+    if (_showLongPressHint) {
+      setState(() => _showLongPressHint = false);
+    }
+
+    HapticFeedback.mediumImpact();
+    setState(() => _actionsSheetOpen = true);
+    PublicationActionsBottomSheet.show(
       context: context,
-      ref: ref,
-      initialTipo: initialTipo,
+      onResultado: () => NovoCaseModalLauncher.launch(
+        position: latLng,
+        context: context,
+        ref: ref,
+        initialTipo: CaseTipo.resultado,
+      ),
+      onAntesDepois: () => NovoCaseModalLauncher.launch(
+        position: latLng,
+        context: context,
+        ref: ref,
+        initialTipo: CaseTipo.antesDepois,
+      ),
+      onAvaliacao: () => NovoCaseModalLauncher.launch(
+        position: latLng,
+        context: context,
+        ref: ref,
+        initialTipo: CaseTipo.avaliacao,
+      ),
+      onOcorrencia: () =>
+          _openOccurrenceSheet(latLng.latitude, latLng.longitude),
+    ).whenComplete(() {
+      if (!mounted) return;
+      setState(() => _actionsSheetOpen = false);
+    });
+  }
+
+  bool _isEmptyMapArea(LatLng point) {
+    if (!ref.read(mapReadyStateProvider)) return false;
+
+    final pinPoints = <LatLng>[];
+
+    final occurrences =
+        ref.read(occurrencesListProvider).valueOrNull ?? const [];
+    for (final occurrence in occurrences) {
+      final lat = occurrence.lat;
+      final lng = occurrence.long;
+      if (lat == null || lng == null) continue;
+      pinPoints.add(LatLng(lat, lng));
+    }
+
+    final cases = ref.read(marketingCasesProvider).valueOrNull ?? const [];
+    for (final mCase in cases) {
+      pinPoints.add(LatLng(mCase.lat, mCase.lng));
+    }
+
+    final publications =
+        ref.read(publicacoesDataProvider).valueOrNull ?? const [];
+    for (final pub in publications) {
+      pinPoints.add(LatLng(pub.latitude, pub.longitude));
+    }
+
+    return isEmptyMapArea(
+      point: point,
+      camera: _mapController.camera,
+      drawingController: ref.read(drawingControllerProvider),
+      fieldHitIndex: ref.read(fieldHitIndexProvider),
+      pinPoints: pinPoints,
     );
   }
 
@@ -367,7 +454,6 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
 
   void _armOccurrenceMode() {
     // FIX 1: Entrar em modo seleção — usuário toca no mapa para capturar LatLng
-    _pendingMarketingCaseTipo = null;
     final drawCtrl = ref.read(drawingControllerProvider);
     if (drawCtrl.currentState == DrawingState.drawing ||
         drawCtrl.currentState == DrawingState.armed) {
@@ -665,13 +751,6 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
     );
   }
 
-  void _armMarketingMode(CaseTipo tipo) {
-    _pendingMarketingCaseTipo = tipo;
-    ref.read(armedModeProvider.notifier).state = ArmedMode.marketing;
-    HapticFeedback.lightImpact();
-    // Feedback visual: ArmedModeBanner (glass) — sem snackbar duplicado.
-  }
-
   // Feedback visual de armed modes: ArmedModeBanner (glass).
 
   void _handleOccurrencePinTap(occ.Occurrence occurrence) {
@@ -701,13 +780,13 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
       onLocationModeChanged: _handleLocationModeChanged,
       stopFollowing: () =>
           MapLocationHandler.stopFollowing(mapController: _mapController),
-      armOccurrenceMode: _armOccurrenceMode,
-      armMarketingMode: _armMarketingMode,
       handleOccurrencePinTap: _handleOccurrencePinTap,
       applyInitialViewport: _applyInitialViewport,
       openCoordinateSearch: _openCoordinateSearch,
       openMunicipalitySearch: _openMunicipalitySearch,
       downloadOfflineArea: _downloadOfflineArea,
+      absorbMapPointers: _actionsSheetOpen,
+      showLongPressHint: _showLongPressHint,
     );
   }
 }

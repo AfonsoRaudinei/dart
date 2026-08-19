@@ -1,4 +1,4 @@
-// Indicador visual glass: modo armado ocorrência / marketing.
+// Indicador visual glass: modo armado ocorrência.
 
 import 'dart:ui' as ui;
 
@@ -9,7 +9,7 @@ import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 
 import '../providers/map_armed_mode_provider.dart';
 
-/// Banner glass unificado para [ArmedMode.occurrences] e [ArmedMode.marketing].
+/// Banner glass para [ArmedMode.occurrences].
 /// Posicionado no topo; ignora ponteiro (IgnorePointer).
 class ArmedModeBanner extends ConsumerWidget {
   const ArmedModeBanner({super.key});
@@ -17,15 +17,10 @@ class ArmedModeBanner extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final armedMode = ref.watch(armedModeProvider);
-    if (armedMode == ArmedMode.none) return const SizedBox.shrink();
+    if (armedMode != ArmedMode.occurrences) return const SizedBox.shrink();
 
-    final isOccurrence = armedMode == ArmedMode.occurrences;
-    final label = isOccurrence
-        ? 'Toque no mapa para marcar o ponto'
-        : 'Toque no mapa para localizar o case';
-    final accent = isOccurrence
-        ? const Color(0xFFFF9F0A)
-        : PremiumTokens.brandGreen;
+    const label = 'Toque no mapa para marcar o ponto';
+    const accent = Color(0xFFFF9F0A);
 
     return Positioned(
       top: MediaQuery.of(context).padding.top + 8,
@@ -61,7 +56,7 @@ class ArmedModeBanner extends ConsumerWidget {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(SFIcons.pinFill, color: accent, size: 16),
+                      const Icon(SFIcons.pinFill, color: accent, size: 16),
                       const SizedBox(width: 8),
                       Flexible(
                         child: Text(
