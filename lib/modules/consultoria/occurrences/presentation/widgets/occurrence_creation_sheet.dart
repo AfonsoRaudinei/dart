@@ -191,18 +191,10 @@ class _OccurrenceCreationSheetState
   }
 
   @override
-  void deactivate() {
-    // O rascunho precisa ser gravado aqui: em dispose() o ref do Riverpod já
-    // está invalidado e qualquer leitura lança StateError, perdendo o rascunho.
-    // O container pode já ter sido descartado quando a árvore inteira cai.
-    try {
-      _persistDraft();
-    } catch (_) {}
-    super.deactivate();
-  }
-
-  @override
   void dispose() {
+    // Sem gravação de rascunho aqui: mexer em provider durante dispose/deactivate
+    // é proibido pelo Riverpod. Toda mutação do formulário já persiste na hora
+    // (via _patchForm e listeners dos controllers).
     _cultivarCtrl.removeListener(_persistDraft);
     _descCtrl.removeListener(_persistDraft);
     _recomCtrl.removeListener(_persistDraft);
