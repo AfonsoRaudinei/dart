@@ -102,6 +102,39 @@ void main() {
       },
     );
 
+    test('P0: host observa o pin antes do early-return do sheet', () {
+      // pendingOccurrenceLocationProvider é autoDispose. Se o watch voltar para
+      // depois do early-return, o LatLng gravado pelo long press com o sheet
+      // ainda fechado é descartado e o usuário cai no placeholder
+      // "Marque o ponto no mapa" em vez do formulário.
+      final hostStart = performanceHostsSource.indexOf(
+        'class MapBottomSheetOverlayHost',
+      );
+      expect(hostStart, greaterThan(-1));
+      final hostSource = performanceHostsSource.substring(hostStart);
+
+      final watchPin = hostSource.indexOf(
+        'ref.watch(pendingOccurrenceLocationProvider)',
+      );
+      final earlyReturn = hostSource.indexOf(
+        'return const SizedBox.shrink();',
+      );
+
+      expect(watchPin, greaterThan(-1));
+      expect(earlyReturn, greaterThan(-1));
+      expect(watchPin, lessThan(earlyReturn));
+    });
+
+    test('P1: guard do formulário não é publicado durante o build', () {
+      // Escrever provider dentro do build dispara assert do Riverpod e mascara
+      // falhas reais nos widget tests do host de ocorrência.
+      expect(mapBottomSheetSource, contains('_publishOccurrenceFormGuard'));
+      expect(
+        mapBottomSheetSource,
+        contains('WidgetsBinding.instance.addPostFrameCallback'),
+      );
+    });
+
     test('regression shield: arquivos de widget test presentes', () {
       expect(
         File(
