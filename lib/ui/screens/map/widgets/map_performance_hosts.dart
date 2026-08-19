@@ -16,7 +16,6 @@ import '../../../../modules/drawing/presentation/widgets/gps_tracking_overlay.da
 import '../../../../modules/consultoria/clients/presentation/providers/field_providers.dart';
 import '../../../../modules/dashboard/providers/location_providers.dart';
 import '../../../../modules/visitas/presentation/controllers/geofence_controller.dart';
-import '../../../../core/state/map_ui_providers.dart';
 import '../../../components/map/map_bottom_sheet.dart';
 import '../../../components/map/map_sheet_state.dart';
 import '../providers/map_ready_state_provider.dart';
@@ -134,14 +133,15 @@ class MapBottomSheetOverlayHost extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Observar o pin antes do early-return: evita race com autoDispose quando
+    // _openOccurrenceSheet escreve LatLng com o sheet ainda fechado.
+    final creationLocation = ref.watch(pendingOccurrenceLocationProvider);
     final sheetState = ref.watch(mapSheetStateProvider);
     if (sheetState == null ||
         (sheetState.type != MapSheetType.draw &&
             sheetState.type != MapSheetType.occurrences)) {
       return const SizedBox.shrink();
     }
-
-    final creationLocation = ref.watch(pendingOccurrenceLocationProvider);
 
     return Positioned(
       bottom: 0,
