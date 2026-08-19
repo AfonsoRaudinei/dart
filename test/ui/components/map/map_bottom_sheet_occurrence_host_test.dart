@@ -69,11 +69,7 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.enterText(
-      find.byWidgetPredicate(
-        (widget) =>
-            widget is TextField &&
-            widget.decoration?.hintText == 'Descreva a ocorrência…',
-      ),
+      await _scrollToDescriptionField(tester),
       'Lagarta na soja',
     );
     await tester.pump();
@@ -102,11 +98,7 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.enterText(
-      find.byWidgetPredicate(
-        (widget) =>
-            widget is TextField &&
-            widget.decoration?.hintText == 'Descreva a ocorrência…',
-      ),
+      await _scrollToDescriptionField(tester),
       'Perda de dados não deve ocorrer',
     );
     await tester.pump();
@@ -141,6 +133,23 @@ void main() {
       expect(find.text('Salvar Ocorrência'), findsNothing);
     },
   );
+}
+
+/// O formulário vive num [ListView]: campos fora da viewport não são
+/// construídos, então é preciso rolar antes de interagir.
+Future<Finder> _scrollToDescriptionField(WidgetTester tester) async {
+  final field = find.byWidgetPredicate(
+    (widget) =>
+        widget is TextField &&
+        widget.decoration?.hintText == 'Descreva a ocorrência…',
+  );
+  await tester.dragUntilVisible(
+    field,
+    find.byType(ListView).first,
+    const Offset(0, -150),
+  );
+  await tester.pumpAndSettle();
+  return field;
 }
 
 Future<void> _pumpOccurrenceHost(
