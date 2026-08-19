@@ -122,11 +122,20 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
   void _ensureOccurrenceFormGuard() {
     if (!widget.state.isCreatingOccurrence) {
       _occurrenceFormGuard = null;
-      ref.read(occurrenceFormGuardProvider.notifier).state = null;
+      _publishOccurrenceFormGuard(null);
       return;
     }
     _occurrenceFormGuard ??= OccurrenceFormGuard();
-    ref.read(occurrenceFormGuardProvider.notifier).state = _occurrenceFormGuard;
+    _publishOccurrenceFormGuard(_occurrenceFormGuard);
+  }
+
+  /// Chamado a partir do build: escrever provider durante o build dispara
+  /// assert do Riverpod, então a publicação é adiada para o pós-frame.
+  void _publishOccurrenceFormGuard(OccurrenceFormGuard? guard) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      ref.read(occurrenceFormGuardProvider.notifier).state = guard;
+    });
   }
 
   @override
@@ -681,7 +690,7 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
     final creationLocation = widget.creationLocation;
     if (!_hasValidOccurrencePin(creationLocation)) {
       _occurrenceFormGuard = null;
-      ref.read(occurrenceFormGuardProvider.notifier).state = null;
+      _publishOccurrenceFormGuard(null);
       return _buildOccurrencePinRequiredPlaceholder();
     }
 
