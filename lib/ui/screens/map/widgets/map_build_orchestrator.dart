@@ -446,6 +446,7 @@ class MapBuildOrchestrator extends ConsumerWidget {
               openMunicipalitySearch: openMunicipalitySearch,
               downloadOfflineArea: downloadOfflineArea,
               finishDrawing: finishDrawing,
+              onMapUserInteraction: onMapUserInteraction,
             ),
           ),
           DrawingMapBehaviorListener(
@@ -480,6 +481,7 @@ class _MapControlsHost extends ConsumerWidget {
     required this.openMunicipalitySearch,
     required this.downloadOfflineArea,
     required this.finishDrawing,
+    this.onMapUserInteraction,
   });
 
   final MapController mapController;
@@ -492,6 +494,7 @@ class _MapControlsHost extends ConsumerWidget {
   final Future<void> Function() openMunicipalitySearch;
   final Future<void> Function() downloadOfflineArea;
   final Future<void> Function() finishDrawing;
+  final VoidCallback? onMapUserInteraction;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -507,13 +510,16 @@ class _MapControlsHost extends ConsumerWidget {
       onCenterUser: centerOnUser,
       onLocationModeChanged: onLocationModeChanged,
       onToggleDrawMode: toggleDrawMode,
-      onOpenMapTools: () => MapToolsBottomSheet.show(
-        context: context,
-        drawingController: ref.read(drawingControllerProvider),
-        onCoordinateSearch: openCoordinateSearch,
-        onMunicipalitySearch: openMunicipalitySearch,
-        onDownloadOfflineArea: downloadOfflineArea,
-      ),
+      onOpenMapTools: () {
+        onMapUserInteraction?.call();
+        MapToolsBottomSheet.show(
+          context: context,
+          drawingController: ref.read(drawingControllerProvider),
+          onCoordinateSearch: openCoordinateSearch,
+          onMunicipalitySearch: openMunicipalitySearch,
+          onDownloadOfflineArea: downloadOfflineArea,
+        );
+      },
       isDrawMode: isDrawMode,
       isCheckInActive: ref.watch(
         visitControllerProvider.select(

@@ -160,6 +160,18 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
     _dismissLongPressHint();
   }
 
+  void _listenLongPressHintDismissals() {
+    ref.listen<MapSheetState?>(mapSheetStateProvider, (prev, next) {
+      if (next != null) _dismissLongPressHint();
+    });
+    ref.listen<bool>(isModalOpenProvider, (prev, next) {
+      if (next) _dismissLongPressHint();
+    });
+    ref.listen<ArmedMode>(armedModeProvider, (prev, next) {
+      if (next != ArmedMode.none) _dismissLongPressHint();
+    });
+  }
+
   void _scheduleMapFirstQueryHandling(Uri uri) {
     final key = uri.toString();
     if (_handledMapFirstUri == key) return;
@@ -738,6 +750,7 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
     // seguro no dispose() — ref é invalidado antes de dispose() ser chamado.
     _drawingController = ref.read(drawingControllerProvider);
     _scheduleMapFirstQueryHandling(GoRouterState.of(context).uri);
+    _listenLongPressHintDismissals();
 
     // ADR-032 F3: Build orchestrado por MapBuildOrchestrator.
     // Todo o conteúdo do Stack (canvas, layers, overlays, controls, sheet)
