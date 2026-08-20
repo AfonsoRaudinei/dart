@@ -86,6 +86,7 @@ class MapBuildOrchestrator extends ConsumerWidget {
   final Future<void> Function() downloadOfflineArea;
   final bool absorbMapPointers;
   final bool showLongPressHint;
+  final VoidCallback? onMapUserInteraction;
 
   const MapBuildOrchestrator({
     super.key,
@@ -105,6 +106,7 @@ class MapBuildOrchestrator extends ConsumerWidget {
     required this.downloadOfflineArea,
     this.absorbMapPointers = false,
     this.showLongPressHint = false,
+    this.onMapUserInteraction,
   });
 
   @override
@@ -199,6 +201,7 @@ class MapBuildOrchestrator extends ConsumerWidget {
                 applyInitialViewport();
               },
               onTap: (tapPos, point) {
+                onMapUserInteraction?.call();
                 final drawCtrl = ref.read(drawingControllerProvider);
 
                 // 🎯 Prioridade 1: modos armados do mapa (antes de desenho/talhão)
@@ -287,6 +290,9 @@ class MapBuildOrchestrator extends ConsumerWidget {
                 handleMapLongPress(tapPos, point);
               },
               onPositionChanged: (pos, hasGesture) {
+                if (hasGesture) {
+                  onMapUserInteraction?.call();
+                }
                 MapCameraSnapshotThrottle.publish(
                   ProviderScope.containerOf(context, listen: false),
                   MapCameraSnapshot(

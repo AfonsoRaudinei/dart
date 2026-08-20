@@ -251,8 +251,12 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
         // 5. Editing Controls (Conditional)
         if (widget.drawingState == DrawingState.editing)
           Positioned(
-            bottom: 120,
-            right: 16,
+            right: kMapActionColumnRightInset,
+            bottom: mapEditingControlsBottomInset(
+              safeBottom: safeBottom,
+              showCheckInInColumn:
+                  !widget.isDrawMode && widget.showCheckInAction,
+            ),
             child: EditingControlsCluster(
               onSave: widget.onSaveEdit,
               onCancel: widget.onCancelEdit,
@@ -481,38 +485,34 @@ class _MapActionButtonState extends State<_MapActionButton> {
       children: [
         _MapButtonLabel(text: widget.label, isVisible: _showLabel),
         const SizedBox(width: 8),
-        Tooltip(
-          message: widget.label,
-          waitDuration: const Duration(milliseconds: 450),
-          child: GestureDetector(
-            onTap: () {
-              HapticFeedback.selectionClick();
-              widget.onTap();
-            },
-            onLongPress: _showTemporaryLabel,
-            behavior: HitTestBehavior.opaque,
-            child: Container(
-              key: widget.buttonKey,
-              width: kMapActionColumnButtonSize,
-              height: kMapActionColumnButtonSize,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.15),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Icon(
-                widget.icon,
-                size: 22,
-                color: widget.isActive
-                    ? widget.activeColor
-                    : Colors.grey.shade600,
-              ),
+        GestureDetector(
+          onTap: () {
+            HapticFeedback.selectionClick();
+            widget.onTap();
+          },
+          onLongPress: _showTemporaryLabel,
+          behavior: HitTestBehavior.opaque,
+          child: Container(
+            key: widget.buttonKey,
+            width: kMapActionColumnButtonSize,
+            height: kMapActionColumnButtonSize,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.15),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Icon(
+              widget.icon,
+              size: 22,
+              color: widget.isActive
+                  ? widget.activeColor
+                  : Colors.grey.shade600,
             ),
           ),
         ),
@@ -534,36 +534,33 @@ class _MapToolsFab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Tooltip(
-      message: 'Ferramentas do mapa',
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: () {
-          HapticFeedback.selectionClick();
-          onTap();
-        },
-        child: AnimatedContainer(
-          key: const Key('map_control_layers_btn'),
-          duration: const Duration(milliseconds: 180),
-          curve: Curves.easeOutCubic,
-          width: kMapActionColumnButtonSize,
-          height: kMapActionColumnButtonSize,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.15),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Icon(
-            SFIcons.layers,
-            color: isActive ? activeColor : Colors.grey.shade600,
-            size: 22,
-          ),
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () {
+        HapticFeedback.selectionClick();
+        onTap();
+      },
+      child: AnimatedContainer(
+        key: const Key('map_control_layers_btn'),
+        duration: const Duration(milliseconds: 180),
+        curve: Curves.easeOutCubic,
+        width: kMapActionColumnButtonSize,
+        height: kMapActionColumnButtonSize,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.15),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Icon(
+          SFIcons.layers,
+          color: isActive ? activeColor : Colors.grey.shade600,
+          size: 22,
         ),
       ),
     );
@@ -588,29 +585,24 @@ class _MapButtonLabel extends StatelessWidget {
                 opacity: 1,
                 duration: const Duration(milliseconds: 160),
                 curve: Curves.easeOut,
-                child: AnimatedScale(
-                  scale: 1,
-                  duration: const Duration(milliseconds: 160),
-                  curve: Curves.easeOut,
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: 0.72),
-                      borderRadius: BorderRadius.circular(14),
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.72),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 7,
                     ),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 7,
-                      ),
-                      child: Text(
-                        text,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                        ),
+                    child: Text(
+                      text,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),
@@ -624,7 +616,8 @@ class _MapButtonLabel extends StatelessWidget {
 
 /// Indicador unificado do mapa:
 /// vermelho = sem internet · verde = online · azul Samsung = online + chuva no mapa.
-class _MapStatusIndicator extends ConsumerWidget {
+/// Long-press exibe rótulo; offline usa ícone wifi_off (canal não-cromático).
+class _MapStatusIndicator extends ConsumerStatefulWidget {
   static const Color _offlineColor = Color(0xFFFF3B30);
   static const Color _onlineColor = Color(0xFF34C759);
   static const Color _climaActiveColor = Color(0xFF1428A0);
@@ -632,43 +625,105 @@ class _MapStatusIndicator extends ConsumerWidget {
   const _MapStatusIndicator();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_MapStatusIndicator> createState() =>
+      _MapStatusIndicatorState();
+}
+
+class _MapStatusIndicatorState extends ConsumerState<_MapStatusIndicator> {
+  Timer? _labelTimer;
+  bool _showLabel = false;
+
+  @override
+  void dispose() {
+    _labelTimer?.cancel();
+    super.dispose();
+  }
+
+  void _showTemporaryLabel() {
+    _labelTimer?.cancel();
+    setState(() => _showLabel = true);
+    _labelTimer = Timer(const Duration(milliseconds: 1600), () {
+      if (mounted) setState(() => _showLabel = false);
+    });
+  }
+
+  String _statusLabel({required bool isOnline, required bool isRadarEnabled}) {
+    if (!isOnline) return 'Sem conexão';
+    if (isRadarEnabled) return 'Online · chuva no mapa';
+    return 'Online';
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final isOnline = ref.watch(isOnlineProvider).asData?.value ?? false;
     final isRadarEnabled = ref.watch(climaRadarEnabledProvider);
+    final label = _statusLabel(
+      isOnline: isOnline,
+      isRadarEnabled: isRadarEnabled,
+    );
 
     final color = !isOnline
-        ? _offlineColor
+        ? _MapStatusIndicator._offlineColor
         : isRadarEnabled
-        ? _climaActiveColor
-        : _onlineColor;
+        ? _MapStatusIndicator._climaActiveColor
+        : _MapStatusIndicator._onlineColor;
 
-    return Semantics(
-      label: !isOnline
-          ? 'Sem conexão com a internet'
-          : isRadarEnabled
-          ? 'Online com camada de chuva ativa'
-          : 'Online',
-      child: Container(
-        key: const Key('map_status_indicator'),
-        width: 16,
-        height: 16,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: color,
-          boxShadow: [
-            BoxShadow(
-              color: color.withValues(alpha: 0.55),
-              blurRadius: 10,
-              spreadRadius: 3,
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _MapButtonLabel(text: label, isVisible: _showLabel),
+        const SizedBox(width: 6),
+        Semantics(
+          button: true,
+          label: label,
+          child: GestureDetector(
+            onLongPress: _showTemporaryLabel,
+            behavior: HitTestBehavior.opaque,
+            child: SizedBox(
+              width: kMapActionColumnButtonSize,
+              height: kMapActionColumnButtonSize,
+              child: Center(
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Container(
+                      key: const Key('map_status_indicator'),
+                      width: 16,
+                      height: 16,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: color,
+                        border: !isOnline
+                            ? Border.all(color: Colors.white, width: 2)
+                            : null,
+                        boxShadow: [
+                          BoxShadow(
+                            color: color.withValues(alpha: 0.45),
+                            blurRadius: 6,
+                            spreadRadius: 1,
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (!isOnline)
+                      const Icon(
+                        Icons.wifi_off_rounded,
+                        size: 10,
+                        color: Colors.white,
+                      )
+                    else if (isRadarEnabled)
+                      Icon(
+                        Icons.water_drop_rounded,
+                        size: 9,
+                        color: Colors.white.withValues(alpha: 0.85),
+                      ),
+                  ],
+                ),
+              ),
             ),
-            BoxShadow(
-              color: color.withValues(alpha: 0.28),
-              blurRadius: 18,
-              spreadRadius: 6,
-            ),
-          ],
+          ),
         ),
-      ),
+      ],
     );
   }
 }

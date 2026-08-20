@@ -60,8 +60,37 @@ const double kDrawingBottomToolbarRightInset = kFabHeight + 16.0;
 /// Margem direita da coluna de ações do mapa (camadas / check-in).
 const double kMapActionColumnRightInset = 16.0;
 
-/// Tamanho dos botões da coluna de ações do mapa (camadas / check-in).
-const double kMapActionColumnButtonSize = 44.0;
+/// Tamanho visual e de toque dos botões da coluna de ações do mapa (Material 48dp).
+const double kMapActionColumnButtonSize = 48.0;
+
+/// Largura canônica dos cards de medição no mapa (área + detalhes empilhados).
+const double kMapMeasurementCardWidth = 200.0;
+
+/// Altura mínima de toque dos chips de unidade (ha/m²/alq, km/m).
+const double kMapMeasurementUnitChipMinHeight = 34.0;
+
+/// Área mínima de toque do toggle de detalhes de medição.
+const double kMapMeasurementDetailsToggleMinSize = 36.0;
+
+/// Folga entre a coluna de ações e o cluster de edição de desenho.
+const double kMapEditingControlsBottomGap = 16.0;
+
+/// Offset acima do FAB para posicionar o hint de long press.
+const double kMapLongPressHintBottomOffset = 24.0;
+
+/// Inset inferior do cluster de edição — acima da coluna de ações do mapa.
+double mapEditingControlsBottomInset({
+  required double safeBottom,
+  required bool showCheckInInColumn,
+}) {
+  final columnHeight = showCheckInInColumn
+      ? kMapActionColumnButtonSize * 2 + kMapActionColumnSpacingAboveCheckIn
+      : kMapActionColumnButtonSize;
+  return kMapActionColumnBottomInset +
+      safeBottom +
+      columnHeight +
+      kMapEditingControlsBottomGap;
+}
 
 /// Gap entre camadas (superior) e check-in (inferior) — layout canônico 16dp.
 ///
@@ -81,6 +110,6 @@ const double kMapActionColumnBottomInset = kFabSafeArea;
 /// Compensação vertical no modo desenho: mantém o botão de camadas na mesma
 /// posição quando check-in é ocultado.
 ///
-/// Composição: gap 16 + botão 44 = 60dp.
+/// Composição: gap 16 + botão 48 = 64dp.
 const double kMapActionColumnDrawModeCompensation =
     kMapActionColumnSpacingAboveCheckIn + kMapActionColumnButtonSize;

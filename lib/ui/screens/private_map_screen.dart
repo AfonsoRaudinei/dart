@@ -71,6 +71,7 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
   String? _handledMapFirstUri;
   bool _actionsSheetOpen = false;
   bool _showLongPressHint = false;
+  bool _longPressHintSessionRecorded = false;
   Timer? _longPressHintTimer;
 
   @override
@@ -106,14 +107,31 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
 
   void _bootstrapLongPressHint() {
     final prefs = ref.read(preferencesServiceProvider);
-    if (hasUsedMapLongPress(prefs)) return;
+    if (!shouldShowMapLongPressHint(prefs)) return;
     if (!mounted) return;
+
+    if (!_longPressHintSessionRecorded) {
+      _longPressHintSessionRecorded = true;
+      unawaited(recordMapLongPressHintSession(prefs));
+    }
+
     setState(() => _showLongPressHint = true);
     _longPressHintTimer?.cancel();
-    _longPressHintTimer = Timer(const Duration(seconds: 3), () {
-      if (!mounted) return;
-      setState(() => _showLongPressHint = false);
-    });
+    _longPressHintTimer = Timer(
+      const Duration(seconds: kMapLongPressHintVisibleSeconds),
+      _dismissLongPressHint,
+    );
+  }
+
+  void _dismissLongPressHint() {
+    if (!mounted || !_showLongPressHint) return;
+    _longPressHintTimer?.cancel();
+    _longPressHintTimer = null;
+    setState(() => _showLongPressHint = false);
+  }
+
+  void _onMapUserInteraction() {
+    _dismissLongPressHint();
   }
 
   void _scheduleMapFirstQueryHandling(Uri uri) {
@@ -287,20 +305,32 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
     ref.read(isModalOpenProvider.notifier).state = value;
   }
 
+  void _showLongPressOccupiedFeedback() {
+    if (!mounted) return;
+    HapticFeedback.selectionClick();
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(kMapLongPressOccupiedFeedbackMessage),
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
+
   // ── _handleMapLongPress ── abre ações rápidas em área vazia ─────────────
   void _handleMapLongPress(TapPosition tapPos, LatLng latLng) {
     if (ref.read(drawingControllerProvider).suppressesMapContextTaps) return;
     if (_actionsSheetOpen) return;
-    if (!_isEmptyMapArea(latLng)) return;
+    if (!_isEmptyMapArea(latLng)) {
+      _showLongPressOccupiedFeedback();
+      return;
+    }
 
     final prefs = ref.read(preferencesServiceProvider);
     if (!hasUsedMapLongPress(prefs)) {
       unawaited(markMapLongPressUsed(prefs));
     }
-    _longPressHintTimer?.cancel();
-    if (_showLongPressHint) {
-      setState(() => _showLongPressHint = false);
-    }
+    _dismissLongPressHint();
 
     HapticFeedback.mediumImpact();
     setState(() => _actionsSheetOpen = true);
@@ -787,6 +817,7 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
       downloadOfflineArea: _downloadOfflineArea,
       absorbMapPointers: _actionsSheetOpen,
       showLongPressHint: _showLongPressHint,
+      onMapUserInteraction: _onMapUserInteraction,
     );
   }
 }
