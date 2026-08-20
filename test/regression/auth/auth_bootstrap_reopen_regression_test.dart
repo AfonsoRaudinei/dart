@@ -109,6 +109,16 @@ void main() {
       expect(source.contains('void refreshRedirect()'), isTrue);
     });
 
+    test('RouterNotifier: SessionPublic sync também encerra isInitializing',
+        () {
+      final source =
+          File('lib/core/router/router_notifier.dart').readAsStringSync();
+
+      expect(source.contains('initial is SessionPublic'), isTrue);
+      expect(source.contains('_kBootstrapTimeout'), isTrue);
+      expect(source.contains('_forceBootstrapComplete'), isTrue);
+    });
+
     test('PublicMapEntryScreen hold durante bootstrap (sem PublicMapScreen)',
         () {
       final source = File('lib/ui/screens/public_map_entry_screen.dart')
@@ -117,6 +127,47 @@ void main() {
       expect(source.contains('isInitializing'), isTrue);
       expect(source.contains('_AuthBootstrapHold'), isTrue);
       expect(source.contains('PublicMapScreen'), isTrue);
+    });
+
+    // ─── Anti hang: cold start / fresh install ───────────────────────────
+    test(
+      'initialSession sem user → SessionPublic (não SessionUnknown→Unknown)',
+      () {
+        final source =
+            File('lib/core/session/session_controller.dart').readAsStringSync();
+
+        // Bloco initialSession deve promover a SessionPublic.
+        expect(
+          source.contains('AuthChangeEvent.initialSession'),
+          isTrue,
+        );
+        expect(
+          RegExp(
+            r'AuthChangeEvent\.initialSession[\s\S]*?'
+            r'state = const SessionPublic\(\);',
+          ).hasMatch(source),
+          isTrue,
+        );
+        // Regressão: SessionUnknown→SessionUnknown não notifica Riverpod.
+        expect(
+          RegExp(
+            r'AuthChangeEvent\.initialSession[\s\S]*?'
+            r'state = const SessionUnknown\(\);',
+          ).hasMatch(source),
+          isFalse,
+        );
+      },
+    );
+
+    test('authBootstrap: SessionPublic durante init não força /map', () {
+      expect(
+        authBootstrapRedirect(
+          isInitializing: true,
+          session: const SessionPublic(),
+          currentPath: AppRoutes.publicMap,
+        ),
+        isNull,
+      );
     });
   });
 }
