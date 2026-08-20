@@ -256,6 +256,7 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
               safeBottom: safeBottom,
               showCheckInInColumn:
                   !widget.isDrawMode && widget.showCheckInAction,
+              isDrawMode: widget.isDrawMode,
             ),
             child: EditingControlsCluster(
               onSave: widget.onSaveEdit,
@@ -485,34 +486,38 @@ class _MapActionButtonState extends State<_MapActionButton> {
       children: [
         _MapButtonLabel(text: widget.label, isVisible: _showLabel),
         const SizedBox(width: 8),
-        GestureDetector(
-          onTap: () {
-            HapticFeedback.selectionClick();
-            widget.onTap();
-          },
-          onLongPress: _showTemporaryLabel,
-          behavior: HitTestBehavior.opaque,
-          child: Container(
-            key: widget.buttonKey,
-            width: kMapActionColumnButtonSize,
-            height: kMapActionColumnButtonSize,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.15),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Icon(
-              widget.icon,
-              size: 22,
-              color: widget.isActive
-                  ? widget.activeColor
-                  : Colors.grey.shade600,
+        Semantics(
+          button: true,
+          label: widget.label,
+          child: GestureDetector(
+            onTap: () {
+              HapticFeedback.selectionClick();
+              widget.onTap();
+            },
+            onLongPress: _showTemporaryLabel,
+            behavior: HitTestBehavior.opaque,
+            child: Container(
+              key: widget.buttonKey,
+              width: kMapActionColumnButtonSize,
+              height: kMapActionColumnButtonSize,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.15),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Icon(
+                widget.icon,
+                size: 22,
+                color: widget.isActive
+                    ? widget.activeColor
+                    : Colors.grey.shade600,
+              ),
             ),
           ),
         ),
@@ -534,33 +539,37 @@ class _MapToolsFab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: () {
-        HapticFeedback.selectionClick();
-        onTap();
-      },
-      child: AnimatedContainer(
-        key: const Key('map_control_layers_btn'),
-        duration: const Duration(milliseconds: 180),
-        curve: Curves.easeOutCubic,
-        width: kMapActionColumnButtonSize,
-        height: kMapActionColumnButtonSize,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.15),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Icon(
-          SFIcons.layers,
-          color: isActive ? activeColor : Colors.grey.shade600,
-          size: 22,
+    return Semantics(
+      button: true,
+      label: 'Ferramentas do mapa',
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () {
+          HapticFeedback.selectionClick();
+          onTap();
+        },
+        child: AnimatedContainer(
+          key: const Key('map_control_layers_btn'),
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeOutCubic,
+          width: kMapActionColumnButtonSize,
+          height: kMapActionColumnButtonSize,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.15),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Icon(
+            SFIcons.layers,
+            color: isActive ? activeColor : Colors.grey.shade600,
+            size: 22,
+          ),
         ),
       ),
     );
