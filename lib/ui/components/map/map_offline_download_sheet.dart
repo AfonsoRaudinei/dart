@@ -124,13 +124,13 @@ class _MapOfflineDownloadSheetState extends State<MapOfflineDownloadSheet> {
             SheetInputField(
               controller: _minZoomController,
               keyboardType: TextInputType.number,
-              labelText: 'Zoom mínimo',
+              hintText: 'Zoom mínimo',
             ),
             const SizedBox(height: 12),
             SheetInputField(
               controller: _maxZoomController,
               keyboardType: TextInputType.number,
-              labelText: 'Zoom máximo',
+              hintText: 'Zoom máximo',
             ),
             const SizedBox(height: 20),
             Row(

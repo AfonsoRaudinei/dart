@@ -88,10 +88,7 @@ class _MapCoordinateSearchSheetState extends State<MapCoordinateSearchSheet> {
             const SizedBox(height: 16),
             SheetInputField(
               controller: _controller,
-              autofocus: true,
               hintText: 'Ex: -10.1823,-48.3331 | 22K 788000 8872000',
-              textInputAction: TextInputAction.done,
-              onSubmitted: (_) => _submit(),
             ),
             const SizedBox(height: 20),
             Row(
