@@ -79,16 +79,24 @@ const double kMapEditingControlsBottomGap = 16.0;
 const double kMapLongPressHintBottomOffset = 24.0;
 
 /// Inset inferior do cluster de edição — acima da coluna de ações do mapa.
+///
+/// Em modo desenho (`isDrawMode`), a coluna sobe com
+/// [kMapActionColumnDrawModeCompensation]; o cluster deve subir junto para
+/// não sobrepor o botão de camadas.
 double mapEditingControlsBottomInset({
   required double safeBottom,
   required bool showCheckInInColumn,
+  bool isDrawMode = false,
 }) {
   final columnHeight = showCheckInInColumn
       ? kMapActionColumnButtonSize * 2 + kMapActionColumnSpacingAboveCheckIn
       : kMapActionColumnButtonSize;
+  final drawCompensation =
+      isDrawMode ? kMapActionColumnDrawModeCompensation : 0.0;
   return kMapActionColumnBottomInset +
       safeBottom +
       columnHeight +
+      drawCompensation +
       kMapEditingControlsBottomGap;
 }
 
