@@ -108,10 +108,11 @@ class SessionController extends _$SessionController {
 
         // Sem user na sessão:
         // - signedOut → logout real: limpa identidade e vai a público
-        // - initialSession null → bootstrap ainda pode restaurar token;
-        //   NÃO bloquear lastKnown (senão o mapa carrega vazio e “some” dado)
+        // - initialSession null → confirma visitante (SessionPublic).
+        //   NÃO usar SessionUnknown de novo: Riverpod não notifica
+        //   SessionUnknown→SessionUnknown (const idêntico) → spinner/hold infinito.
+        //   markSessionPublic() não apaga lastKnown persistido (só clear() remove).
         // - demais eventos sem sessão → sessão pública sem apagar lastKnown
-        //   persistido (só clear() remove), mas bloqueia fallback em memória
         if (data.event == AuthChangeEvent.signedOut) {
           LocalSessionIdentity.clear();
           state = const SessionPublic();
@@ -119,9 +120,12 @@ class SessionController extends _$SessionController {
         }
 
         if (data.event == AuthChangeEvent.initialSession) {
-          // Mantém SessionUnknown + lastKnown disponível até signedIn/signedOut.
+          // Se não há user na sessão inicial, confirma estado público.
+          // SessionUnknown→SessionUnknown não notifica listeners (Riverpod equality),
+          // causando spinner infinito no AppShell / hold branco em fresh install.
           if (state is! SessionAuthenticated) {
-            state = const SessionUnknown();
+            LocalSessionIdentity.markSessionPublic();
+            state = const SessionPublic();
           }
           return;
         }
