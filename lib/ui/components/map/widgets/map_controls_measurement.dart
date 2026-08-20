@@ -30,7 +30,7 @@ class _FieldMeasurementCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       key: const Key('measurement_area_card'),
-      width: 200,
+      width: kMapMeasurementCardWidth,
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         color: Colors.black.withValues(alpha: 0.72),
@@ -55,8 +55,9 @@ class _FieldMeasurementCard extends StatelessWidget {
                 key: const Key('measurement_details_toggle'),
                 behavior: HitTestBehavior.opaque,
                 onTap: onToggleDetails,
-                child: Padding(
-                  padding: const EdgeInsets.all(2),
+                child: SizedBox(
+                  width: kMapMeasurementDetailsToggleMinSize,
+                  height: kMapMeasurementDetailsToggleMinSize,
                   child: Icon(
                     showDetails ? Icons.expand_less : Icons.info_outline,
                     size: 20,
@@ -126,7 +127,7 @@ class _MeasurementDetailsCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       key: const Key('measurement_details_card'),
-      width: 188,
+      width: kMapMeasurementCardWidth,
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
         color: const Color(0xEE1A1A1D),
@@ -189,15 +190,22 @@ class _UnitChip extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        decoration: BoxDecoration(
-          color: selected ? const Color(0xFF34C759) : Colors.white12,
-          borderRadius: BorderRadius.circular(8),
+      behavior: HitTestBehavior.opaque,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(
+          minHeight: kMapMeasurementUnitChipMinHeight,
         ),
-        child: Text(
-          label,
-          style: const TextStyle(color: Colors.white, fontSize: 12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          decoration: BoxDecoration(
+            color: selected ? const Color(0xFF34C759) : Colors.white12,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            label,
+            style: const TextStyle(color: Colors.white, fontSize: 12),
+          ),
         ),
       ),
     );

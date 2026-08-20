@@ -69,9 +69,9 @@ void main() {
       (tester) async {
         await _pumpMapControlsOverlay(tester);
 
-        expect(find.byTooltip('Ferramentas do mapa'), findsOneWidget);
+        expect(find.byKey(const Key('map_control_layers_btn')), findsOneWidget);
         expect(find.byKey(const Key('map_control_actions_btn')), findsNothing);
-        expect(find.byTooltip('Check-in'), findsOneWidget);
+        expect(find.byKey(const Key('map_control_check_in')), findsOneWidget);
       },
     );
   });

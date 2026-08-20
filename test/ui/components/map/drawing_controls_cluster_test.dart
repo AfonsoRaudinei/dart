@@ -331,7 +331,7 @@ void main() {
   ) async {
     await _pumpMapControlsOverlay(tester, showCheckInAction: true);
 
-    expect(find.byTooltip('Check-in'), findsOneWidget);
+    expect(find.byKey(const Key('map_control_check_in')), findsOneWidget);
   });
 
   testWidgets(
@@ -339,7 +339,7 @@ void main() {
     (tester) async {
       await _pumpMapControlsOverlay(tester, showCheckInAction: false);
 
-      expect(find.byTooltip('Check-in'), findsNothing);
+      expect(find.byKey(const Key('map_control_check_in')), findsNothing);
     },
   );
 
@@ -353,7 +353,7 @@ void main() {
       );
 
       expect(find.text('Contexto produtor'), findsOneWidget);
-      expect(find.byTooltip('Check-in'), findsNothing);
+      expect(find.byKey(const Key('map_control_check_in')), findsNothing);
     },
   );
 

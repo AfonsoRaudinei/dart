@@ -48,9 +48,9 @@ class _LocationButtonState extends ConsumerState<_LocationButton> {
       children: [
         _MapButtonLabel(text: label, isVisible: _showLabel),
         const SizedBox(width: 8),
-        Tooltip(
-          message: label,
-          waitDuration: const Duration(milliseconds: 450),
+        Semantics(
+          button: true,
+          label: label,
           child: Material(
             color: Colors.transparent,
             borderRadius: BorderRadius.circular(12),
@@ -82,8 +82,8 @@ class _LocationButtonState extends ConsumerState<_LocationButton> {
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
                 curve: Curves.easeOutCubic,
-                width: 44,
-                height: 44,
+                width: kMapActionColumnButtonSize,
+                height: kMapActionColumnButtonSize,
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(12),

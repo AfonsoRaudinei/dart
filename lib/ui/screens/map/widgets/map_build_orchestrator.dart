@@ -86,6 +86,7 @@ class MapBuildOrchestrator extends ConsumerWidget {
   final Future<void> Function() downloadOfflineArea;
   final bool absorbMapPointers;
   final bool showLongPressHint;
+  final VoidCallback? onMapUserInteraction;
 
   const MapBuildOrchestrator({
     super.key,
@@ -105,6 +106,7 @@ class MapBuildOrchestrator extends ConsumerWidget {
     required this.downloadOfflineArea,
     this.absorbMapPointers = false,
     this.showLongPressHint = false,
+    this.onMapUserInteraction,
   });
 
   @override
@@ -199,6 +201,7 @@ class MapBuildOrchestrator extends ConsumerWidget {
                 applyInitialViewport();
               },
               onTap: (tapPos, point) {
+                onMapUserInteraction?.call();
                 final drawCtrl = ref.read(drawingControllerProvider);
 
                 // 🎯 Prioridade 1: modos armados do mapa (antes de desenho/talhão)
@@ -287,6 +290,9 @@ class MapBuildOrchestrator extends ConsumerWidget {
                 handleMapLongPress(tapPos, point);
               },
               onPositionChanged: (pos, hasGesture) {
+                if (hasGesture) {
+                  onMapUserInteraction?.call();
+                }
                 MapCameraSnapshotThrottle.publish(
                   ProviderScope.containerOf(context, listen: false),
                   MapCameraSnapshot(
@@ -440,6 +446,7 @@ class MapBuildOrchestrator extends ConsumerWidget {
               openMunicipalitySearch: openMunicipalitySearch,
               downloadOfflineArea: downloadOfflineArea,
               finishDrawing: finishDrawing,
+              onMapUserInteraction: onMapUserInteraction,
             ),
           ),
           DrawingMapBehaviorListener(
@@ -474,6 +481,7 @@ class _MapControlsHost extends ConsumerWidget {
     required this.openMunicipalitySearch,
     required this.downloadOfflineArea,
     required this.finishDrawing,
+    this.onMapUserInteraction,
   });
 
   final MapController mapController;
@@ -486,6 +494,7 @@ class _MapControlsHost extends ConsumerWidget {
   final Future<void> Function() openMunicipalitySearch;
   final Future<void> Function() downloadOfflineArea;
   final Future<void> Function() finishDrawing;
+  final VoidCallback? onMapUserInteraction;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -501,13 +510,16 @@ class _MapControlsHost extends ConsumerWidget {
       onCenterUser: centerOnUser,
       onLocationModeChanged: onLocationModeChanged,
       onToggleDrawMode: toggleDrawMode,
-      onOpenMapTools: () => MapToolsBottomSheet.show(
-        context: context,
-        drawingController: ref.read(drawingControllerProvider),
-        onCoordinateSearch: openCoordinateSearch,
-        onMunicipalitySearch: openMunicipalitySearch,
-        onDownloadOfflineArea: downloadOfflineArea,
-      ),
+      onOpenMapTools: () {
+        onMapUserInteraction?.call();
+        MapToolsBottomSheet.show(
+          context: context,
+          drawingController: ref.read(drawingControllerProvider),
+          onCoordinateSearch: openCoordinateSearch,
+          onMunicipalitySearch: openMunicipalitySearch,
+          onDownloadOfflineArea: downloadOfflineArea,
+        );
+      },
       isDrawMode: isDrawMode,
       isCheckInActive: ref.watch(
         visitControllerProvider.select(

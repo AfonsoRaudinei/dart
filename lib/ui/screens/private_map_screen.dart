@@ -26,7 +26,9 @@ import '../../modules/consultoria/occurrences/presentation/controllers/occurrenc
 import '../../modules/marketing/domain/enums/case_tipo.dart';
 import '../../modules/marketing/presentation/providers/marketing_providers.dart';
 import '../components/map/map_camera_ease.dart';
+import '../components/map/map_coordinate_search_sheet.dart';
 import '../components/map/map_municipality_search_sheet.dart';
+import '../components/map/map_offline_download_sheet.dart';
 import '../components/map/map_sheet_state.dart';
 import '../components/map/widgets/publication_actions_bottom_sheet.dart';
 import 'map/utils/map_camera_snapshot_throttle.dart';
@@ -71,6 +73,7 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
   String? _handledMapFirstUri;
   bool _actionsSheetOpen = false;
   bool _showLongPressHint = false;
+  bool _longPressHintSessionRecorded = false;
   Timer? _longPressHintTimer;
 
   @override
@@ -86,7 +89,7 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
       ref.read(marketingCasesProvider.notifier).load();
       ref.read(locationStateProvider.notifier).init();
       _requestLocationPermission();
-      _bootstrapLongPressHint();
+      _scheduleLongPressHintWhenReady();
 
       // Bootstrap silencioso: garantir perfil completo.
       // Fire-and-forget — sem await, sem loading, sem rebuild.
@@ -104,15 +107,68 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
     });
   }
 
-  void _bootstrapLongPressHint() {
-    final prefs = ref.read(preferencesServiceProvider);
-    if (hasUsedMapLongPress(prefs)) return;
+  bool _canShowLongPressHint() {
+    if (!shouldShowMapLongPressHint(ref.read(preferencesServiceProvider))) {
+      return false;
+    }
+    if (!ref.read(mapReadyStateProvider)) return false;
+    if (ref.read(armedModeProvider) != ArmedMode.none) return false;
+    if (ref.read(mapSheetStateProvider) != null) return false;
+    if (ref.read(isModalOpenProvider)) return false;
+    return true;
+  }
+
+  void _scheduleLongPressHintWhenReady({int attempt = 0}) {
     if (!mounted) return;
+    if (_canShowLongPressHint()) {
+      _startLongPressHint();
+      return;
+    }
+    if (attempt >= 40) return;
+    if (!shouldShowMapLongPressHint(ref.read(preferencesServiceProvider))) {
+      return;
+    }
+    Future<void>.delayed(const Duration(milliseconds: 50), () {
+      if (!mounted) return;
+      _scheduleLongPressHintWhenReady(attempt: attempt + 1);
+    });
+  }
+
+  void _startLongPressHint() {
+    final prefs = ref.read(preferencesServiceProvider);
+    if (!_longPressHintSessionRecorded) {
+      _longPressHintSessionRecorded = true;
+      unawaited(recordMapLongPressHintSession(prefs));
+    }
+
     setState(() => _showLongPressHint = true);
     _longPressHintTimer?.cancel();
-    _longPressHintTimer = Timer(const Duration(seconds: 3), () {
-      if (!mounted) return;
-      setState(() => _showLongPressHint = false);
+    _longPressHintTimer = Timer(
+      const Duration(seconds: kMapLongPressHintVisibleSeconds),
+      _dismissLongPressHint,
+    );
+  }
+
+  void _dismissLongPressHint() {
+    if (!mounted || !_showLongPressHint) return;
+    _longPressHintTimer?.cancel();
+    _longPressHintTimer = null;
+    setState(() => _showLongPressHint = false);
+  }
+
+  void _onMapUserInteraction() {
+    _dismissLongPressHint();
+  }
+
+  void _listenLongPressHintDismissals() {
+    ref.listen<MapSheetState?>(mapSheetStateProvider, (prev, next) {
+      if (next != null) _dismissLongPressHint();
+    });
+    ref.listen<bool>(isModalOpenProvider, (prev, next) {
+      if (next) _dismissLongPressHint();
+    });
+    ref.listen<ArmedMode>(armedModeProvider, (prev, next) {
+      if (next != ArmedMode.none) _dismissLongPressHint();
     });
   }
 
@@ -287,20 +343,32 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
     ref.read(isModalOpenProvider.notifier).state = value;
   }
 
+  void _showLongPressOccupiedFeedback() {
+    if (!mounted) return;
+    HapticFeedback.selectionClick();
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(kMapLongPressOccupiedFeedbackMessage),
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
+
   // ── _handleMapLongPress ── abre ações rápidas em área vazia ─────────────
   void _handleMapLongPress(TapPosition tapPos, LatLng latLng) {
     if (ref.read(drawingControllerProvider).suppressesMapContextTaps) return;
     if (_actionsSheetOpen) return;
-    if (!_isEmptyMapArea(latLng)) return;
+    if (!_isEmptyMapArea(latLng)) {
+      _showLongPressOccupiedFeedback();
+      return;
+    }
 
     final prefs = ref.read(preferencesServiceProvider);
     if (!hasUsedMapLongPress(prefs)) {
       unawaited(markMapLongPressUsed(prefs));
     }
-    _longPressHintTimer?.cancel();
-    if (_showLongPressHint) {
-      setState(() => _showLongPressHint = false);
-    }
+    _dismissLongPressHint();
 
     HapticFeedback.mediumImpact();
     setState(() => _actionsSheetOpen = true);
@@ -465,32 +533,7 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
   }
 
   Future<void> _openCoordinateSearch() async {
-    final controller = TextEditingController();
-    final value = await showDialog<String>(
-      context: context,
-      builder: (ctx) {
-        return AlertDialog(
-          title: const Text('Ir para coordenada'),
-          content: TextField(
-            controller: controller,
-            autofocus: true,
-            decoration: const InputDecoration(
-              hintText: 'Ex: -10.1823,-48.3331 | 22K 788000 8872000',
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text('Cancelar'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.of(ctx).pop(controller.text.trim()),
-              child: const Text('Ir'),
-            ),
-          ],
-        );
-      },
-    );
+    final value = await showMapCoordinateSearchSheet(context);
     if (!mounted || value == null || value.isEmpty) return;
 
     final parsed = CoordinateParser.parse(value);
@@ -509,12 +552,9 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
     ref.read(destinationCoordinateMarkerProvider.notifier).state = parsed;
     HapticFeedback.lightImpact();
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'Destino: ${parsed.latitude.toStringAsFixed(6)}, '
-          '${parsed.longitude.toStringAsFixed(6)}',
-        ),
-        duration: const Duration(seconds: 3),
+      const SnackBar(
+        content: Text('Destino marcado no mapa'),
+        duration: Duration(seconds: 2),
       ),
     );
   }
@@ -550,48 +590,11 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
       return;
     }
 
-    final minZoomController = TextEditingController(text: '12');
-    final maxZoomController = TextEditingController(text: '18');
+    final params = await showMapOfflineDownloadSheet(context);
+    if (!mounted || params == null) return;
 
-    final submitted = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Baixar área offline'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              'Será usada a área visível atual do mapa (bounding box).',
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: minZoomController,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: 'Zoom mínimo'),
-            ),
-            TextField(
-              controller: maxZoomController,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: 'Zoom máximo'),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Cancelar'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Baixar'),
-          ),
-        ],
-      ),
-    );
-    if (!mounted || submitted != true) return;
-
-    final minZoom = int.tryParse(minZoomController.text) ?? 12;
-    final maxZoom = int.tryParse(maxZoomController.text) ?? 18;
+    final minZoom = params.minZoom;
+    final maxZoom = params.maxZoom;
     final bounds = _mapController.camera.visibleBounds;
     final south = bounds.south;
     final north = bounds.north;
@@ -639,29 +642,11 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
         failed: 0,
       ),
     );
-    showDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Baixando área offline'),
-        content: ValueListenableBuilder<OfflinePrefetchProgress>(
-          valueListenable: progress,
-          builder: (_, value, _) => Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              LinearProgressIndicator(value: value.fraction),
-              const SizedBox(height: 12),
-              Text('${value.processed} de ${value.total} tiles'),
-              if (value.failed > 0) Text('Falhas: ${value.failed}'),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => cancelRequested = true,
-            child: const Text('Cancelar'),
-          ),
-        ],
+    unawaited(
+      showMapOfflineDownloadProgressSheet(
+        context,
+        progress: progress,
+        onCancel: () => cancelRequested = true,
       ),
     );
 
@@ -682,7 +667,7 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
         shouldCancel: () => cancelRequested,
       );
     } on OfflineTileCacheException catch (e) {
-      if (mounted) Navigator.of(context, rootNavigator: true).pop();
+      if (mounted) Navigator.of(context, rootNavigator: false).pop();
       progress.dispose();
       if (!mounted) return;
       ScaffoldMessenger.of(
@@ -690,7 +675,7 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
       ).showSnackBar(SnackBar(content: Text(e.message)));
       return;
     }
-    if (mounted) Navigator.of(context, rootNavigator: true).pop();
+    if (mounted) Navigator.of(context, rootNavigator: false).pop();
     progress.dispose();
     if (!mounted) return;
     if (!result.isComplete) {
@@ -765,6 +750,7 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
     // seguro no dispose() — ref é invalidado antes de dispose() ser chamado.
     _drawingController = ref.read(drawingControllerProvider);
     _scheduleMapFirstQueryHandling(GoRouterState.of(context).uri);
+    _listenLongPressHintDismissals();
 
     // ADR-032 F3: Build orchestrado por MapBuildOrchestrator.
     // Todo o conteúdo do Stack (canvas, layers, overlays, controls, sheet)
@@ -787,6 +773,7 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
       downloadOfflineArea: _downloadOfflineArea,
       absorbMapPointers: _actionsSheetOpen,
       showLongPressHint: _showLongPressHint,
+      onMapUserInteraction: _onMapUserInteraction,
     );
   }
 }
