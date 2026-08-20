@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/constants/layout_constants.dart';
+import '../../../../core/constants/layout_constants.dart';
 import '../../../screens/map/utils/map_long_press_prefs.dart';
 
 /// Hint progressivo: long press no mapa para ações rápidas.
