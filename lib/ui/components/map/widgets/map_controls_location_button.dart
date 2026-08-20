@@ -48,62 +48,58 @@ class _LocationButtonState extends ConsumerState<_LocationButton> {
       children: [
         _MapButtonLabel(text: label, isVisible: _showLabel),
         const SizedBox(width: 8),
-        Tooltip(
-          message: label,
-          waitDuration: const Duration(milliseconds: 450),
-          child: Material(
-            color: Colors.transparent,
+        Material(
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+          child: InkWell(
             borderRadius: BorderRadius.circular(12),
-            child: InkWell(
-              borderRadius: BorderRadius.circular(12),
-              onTap: () {
-                HapticFeedback.lightImpact();
+            onTap: () {
+              HapticFeedback.lightImpact();
 
-                final nextMode = switch (locationMode) {
-                  MapLocationMode.idle => MapLocationMode.following,
-                  MapLocationMode.following => MapLocationMode.northLocked,
-                  MapLocationMode.northLocked => MapLocationMode.idle,
-                };
+              final nextMode = switch (locationMode) {
+                MapLocationMode.idle => MapLocationMode.following,
+                MapLocationMode.following => MapLocationMode.northLocked,
+                MapLocationMode.northLocked => MapLocationMode.idle,
+              };
 
-                ref.read(mapLocationModeProvider.notifier).state = nextMode;
-                widget.onLocationModeChanged(nextMode);
+              ref.read(mapLocationModeProvider.notifier).state = nextMode;
+              widget.onLocationModeChanged(nextMode);
 
-                if (nextMode == MapLocationMode.following ||
-                    nextMode == MapLocationMode.northLocked) {
-                  widget.onCenterUser();
-                }
+              if (nextMode == MapLocationMode.following ||
+                  nextMode == MapLocationMode.northLocked) {
+                widget.onCenterUser();
+              }
 
-                AppLogger.debug(
-                  'MapOverlay: Modo de localização mudou para $nextMode',
-                  tag: 'MapControls',
-                );
-              },
-              onLongPress: _showTemporaryLabel,
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                curve: Curves.easeOutCubic,
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.15),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Icon(
-                  _iconForMode(locationMode),
-                  size: 22,
-                  color: isAvailable
-                      ? isActive
-                            ? widget.activeColor
-                            : Colors.grey.shade600
-                      : Colors.grey.shade500,
-                ),
+              AppLogger.debug(
+                'MapOverlay: Modo de localização mudou para $nextMode',
+                tag: 'MapControls',
+              );
+            },
+            onLongPress: _showTemporaryLabel,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeOutCubic,
+              width: kMapActionColumnButtonSize,
+              height: kMapActionColumnButtonSize,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.15),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Icon(
+                _iconForMode(locationMode),
+                size: 22,
+                color: isAvailable
+                    ? isActive
+                          ? widget.activeColor
+                          : Colors.grey.shade600
+                    : Colors.grey.shade500,
               ),
             ),
           ),
