@@ -31,8 +31,13 @@ class RouterNotifier extends ChangeNotifier {
     // onAuthStateChange depois — o debounce continua valendo.
     final initial = _ref.read(sessionControllerProvider);
     if (initial is SessionAuthenticated ||
-        initial is SessionPasswordRecovery) {
+        initial is SessionPasswordRecovery ||
+        initial is SessionPublic) {
       _isInitializing = false;
+    } else {
+      // 🛡 Blindagem: se o stream de auth nunca emitir mudança (ex. equality
+      // SessionUnknown→SessionUnknown), o hold branco não pode ser eterno.
+      _bootstrapTimeout = Timer(_kBootstrapTimeout, _forceBootstrapComplete);
     }
 
     // Escuta mudanças no SessionController e notifica o GoRouter
@@ -46,7 +51,7 @@ class RouterNotifier extends ChangeNotifier {
         // após restaurar (ou não encontrar) sessão no storage local.
         // gotrue 2.18.0: pode haver janela onde currentSession == null
         // mesmo com sessão válida armazenada — este flag elimina a corrida.
-        _isInitializing = false;
+        _completeBootstrap();
 
         // 🛡 DEBOUNCE: cancela notificação anterior e agenda nova.
         // Colapsa eventos duplicados do Supabase (cache + rede) em
@@ -71,7 +76,12 @@ class RouterNotifier extends ChangeNotifier {
   /// sem introduzir latência perceptível na troca de tela de login → mapa.
   static const _kDebounceDuration = Duration(milliseconds: 300);
 
+  /// Escape hatch se onAuthStateChange não produzir mudança observável.
+  /// 4s cobre restore lento sem segurar o hold branco indefinidamente.
+  static const _kBootstrapTimeout = Duration(seconds: 4);
+
   Timer? _debounce;
+  Timer? _bootstrapTimeout;
   bool _isDisposed = false;
 
   /// Flag de bootstrap: `true` até o primeiro evento real do
@@ -83,7 +93,8 @@ class RouterNotifier extends ChangeNotifier {
   bool _isInitializing = true;
 
   /// `true` enquanto o bootstrap de autenticação ainda não concluiu.
-  /// Torna-se `false` na primeira emissão do [onAuthStateChange].
+  /// Torna-se `false` na primeira emissão do [onAuthStateChange]
+  /// (ou no timeout de blindagem).
   bool get isInitializing => _isInitializing;
 
   /// Retorna true se o usuário está autenticado no momento.
@@ -91,6 +102,18 @@ class RouterNotifier extends ChangeNotifier {
   bool get isAuthenticated {
     final session = _ref.read(sessionControllerProvider);
     return session is SessionAuthenticated || session is SessionPasswordRecovery;
+  }
+
+  void _completeBootstrap() {
+    _bootstrapTimeout?.cancel();
+    _bootstrapTimeout = null;
+    _isInitializing = false;
+  }
+
+  void _forceBootstrapComplete() {
+    if (_isDisposed || !_isInitializing) return;
+    _isInitializing = false;
+    notifyListeners();
   }
 
   /// Reavalia o `redirect` do GoRouter sem recriar o router.
@@ -103,6 +126,7 @@ class RouterNotifier extends ChangeNotifier {
   void dispose() {
     _isDisposed = true;
     _debounce?.cancel();
+    _bootstrapTimeout?.cancel();
     super.dispose();
   }
 }
