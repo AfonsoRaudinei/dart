@@ -346,10 +346,8 @@ class _SoloForteAppState extends ConsumerState<SoloForteApp> {
       if (mounted) {
         final orchestrator = ref.read(syncOrchestratorProvider);
         registerSyncModules(orchestrator);
-        // 🛡 IPA-109: sync em background — não bloqueia o primeiro frame.
-        // SyncPriority.immediate forçava as 31 migrações SQLite durante
-        // a renderização inicial, causando tela preta (FALHA-1 removida).
-        orchestrator.triggerSync(SyncPriority.background);
+        // Sync só após JWT (SessionAuthenticated). Timer 15 min e
+        // listener de conectividade do orquestrador continuam.
         ref.read(
           visitCompletionObserverProvider,
         ); // ADR-010: ativa listener agenda → relatorio
