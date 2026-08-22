@@ -98,9 +98,9 @@ flowchart TB
 - `carteira_safras`, `carteira_metas`, `carteira_lancamentos`
 - `carteira_tipos_produto`
 
-Persistência **local only** — sem tabela no Supabase e sem `SyncModule`. Lançamentos permitem hard delete (`carteira_repository_impl.dart`).
+Persistência **offline-first com espelho remoto** (ADR-051). As 7 tabelas sincronizam via `CarteiraSyncService` / `CarteiraSyncModule` (tier 1, depois do agronômico). Lançamentos usam **soft delete** (`deleted_at` + `pending_sync`); hard delete é proibido. Listagens ignoram `deleted_at IS NOT NULL`.
 
-**Desinstalar o app apaga a carteira.** O SQLite vive no sandbox (`soloforte.db`). Logout **não** apaga; apagar o app sim. Depois de reinstalar e logar na mesma conta, categorias, safras, metas, tipos de produto e lançamentos **não voltam**. Clientes da consultoria podem voltar (pull agronômico); o pipeline comercial não. Restore remoto exige ADR novo + migration + sync — fora do P0 (não misturar no PR de hidratar o mapa).
+**Desinstalar o app apaga o SQLite local.** Logout **não** apaga. Depois de reinstalar e logar na mesma conta, categorias, safras, metas, tipos de produto e lançamentos **voltam** se já tinham sido sincronizados (pull LWW). Clientes da consultoria voltam no pull agronômico (tier 0).
 
 ---
 
