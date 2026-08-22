@@ -10,6 +10,8 @@ import '../modules/produtor/data/producer_link_repository.dart';
 import '../modules/produtor/infra/occurrence_access_reader_adapter.dart';
 import '../modules/consultoria/relatorios/data/relatorio_sync_service.dart';
 import '../modules/consultoria/relatorios/repositories/relatorio_repository_impl.dart';
+import '../modules/marketing/data/repositories/marketing_case_repository_impl.dart';
+import '../modules/marketing/data/services/marketing_sync_service.dart';
 
 void registerSyncModules(SyncOrchestrator orchestrator) {
   final supabase = Supabase.instance.client;
@@ -19,6 +21,7 @@ void registerSyncModules(SyncOrchestrator orchestrator) {
   orchestrator.registerModule(VisitSyncModule(supabase));
   orchestrator.registerModule(AgendaSyncModule(supabase));
   orchestrator.registerModule(RelatorioSyncModule(supabase));
+  orchestrator.registerModule(MarketingSyncModule(supabase));
 }
 
 class AgronomicSyncModule implements SyncModule {
@@ -91,5 +94,19 @@ class RelatorioSyncModule implements SyncModule {
   Future<void> sync() => RelatorioSyncService(
     repository: RelatorioRepositoryImpl(),
     supabase: supabase,
+  ).syncNow();
+}
+
+class MarketingSyncModule implements SyncModule {
+  final SupabaseClient supabase;
+  MarketingSyncModule(this.supabase);
+  @override
+  String get name => 'Marketing';
+  @override
+  int get syncTier => 1;
+  @override
+  Future<void> sync() => MarketingSyncService(
+    MarketingCaseRepositoryImpl(supabase),
+    currentUserId: () => supabase.auth.currentUser?.id,
   ).syncNow();
 }
