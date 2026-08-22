@@ -8,6 +8,8 @@ import '../modules/agenda/data/services/agenda_sync_service.dart';
 import '../modules/agenda/data/repositories/agenda_repository.dart';
 import '../modules/produtor/data/producer_link_repository.dart';
 import '../modules/produtor/infra/occurrence_access_reader_adapter.dart';
+import '../modules/consultoria/relatorios/data/relatorio_sync_service.dart';
+import '../modules/consultoria/relatorios/repositories/relatorio_repository_impl.dart';
 
 void registerSyncModules(SyncOrchestrator orchestrator) {
   final supabase = Supabase.instance.client;
@@ -16,6 +18,7 @@ void registerSyncModules(SyncOrchestrator orchestrator) {
   orchestrator.registerModule(OccurrenceSyncModule(supabase));
   orchestrator.registerModule(VisitSyncModule(supabase));
   orchestrator.registerModule(AgendaSyncModule(supabase));
+  orchestrator.registerModule(RelatorioSyncModule(supabase));
 }
 
 class AgronomicSyncModule implements SyncModule {
@@ -75,4 +78,18 @@ class AgendaSyncModule implements SyncModule {
     final repository = AgendaRepository();
     return AgendaSyncService(supabase, repository).sync();
   }
+}
+
+class RelatorioSyncModule implements SyncModule {
+  final SupabaseClient supabase;
+  RelatorioSyncModule(this.supabase);
+  @override
+  String get name => 'Relatórios';
+  @override
+  int get syncTier => 1;
+  @override
+  Future<void> sync() => RelatorioSyncService(
+    repository: RelatorioRepositoryImpl(),
+    supabase: supabase,
+  ).syncNow();
 }
