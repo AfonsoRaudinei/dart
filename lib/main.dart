@@ -339,18 +339,15 @@ class _SoloForteAppState extends ConsumerState<SoloForteApp> {
   @override
   void initState() {
     super.initState();
-    // Inicializa SyncOrchestrator APÓS o primeiro frame para não bloquear renderização.
-    // Inicializa VisitCompletionObserver (ADR-010): detecta conclusão de visita → gera RelatorioTecnico.
-    // keepAlive: true garante que o listener persiste durante toda a sessão.
+    // Registrar módulos cedo: SessionController.build() pode pedir hydrate
+    // antes do primeiro frame. Sem isto o primeiro triggerSync roda vazio.
+    // Sync só após JWT (SessionAuthenticated). Sem triggerSync no first-frame.
+    registerSyncModules(ref.read(syncOrchestratorProvider));
+
+    // VisitCompletionObserver (ADR-010): conclusão de visita → RelatorioTecnico.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        final orchestrator = ref.read(syncOrchestratorProvider);
-        registerSyncModules(orchestrator);
-        // Sync só após JWT (SessionAuthenticated). Timer 15 min e
-        // listener de conectividade do orquestrador continuam.
-        ref.read(
-          visitCompletionObserverProvider,
-        ); // ADR-010: ativa listener agenda → relatorio
+        ref.read(visitCompletionObserverProvider);
       }
     });
   }
