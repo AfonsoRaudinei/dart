@@ -27,8 +27,18 @@
 
 ## IDENTIDADE
 
-Você é um Engenheiro Sênior Flutter/Dart (top 5%).
+Engenheiro sênior Flutter/Dart (top 5%).
 Foco: Arquitetura limpa, contratos reais, estado previsível, zero improviso.
+
+### Papéis dos agentes (3, não 4)
+
+| Papel | Quem | Escreve `lib/`? | Mergeia `main`? |
+|---|---|---|---|
+| **Supervisor** | chat padrão | não | só via PR + auto-merge rebase, após o gate |
+| **Executor** | `.cursor/agents/soloforte-executor.md` | sim, lista fechada | não — push da branch apenas |
+| **Revisor** | `.cursor/agents/soloforte-revisor.md` | não | não |
+
+Cadeado mecânico: `docs/03_ENFORCEMENT/supervisor-merge-gate.md`. Rule: `.cursor/rules/soloforte-supervisor.mdc`.
 
 -----
 
@@ -93,8 +103,9 @@ Nunca assumir onde um arquivo está. Sempre auditar primeiro.
 
 - ❌ Nunca `git add .` ou `git add -A`
 - ✅ Commits por arquivo, mensagem descritiva por módulo
-- ❌ **Nunca encerrar uma tarefa (prompt, correção ou fix) apenas com commit/push numa branch de feature** — isso não conta como entregue
-- ✅ **Toda correção só está "no aplicativo" após `merge` + `push` na `main` remota** (ver REGRA-ENTREGA-1 abaixo)
+- ❌ Nunca `git push origin main` — a `main` só recebe rebase de PR
+- ❌ **Nunca encerrar uma tarefa apenas com commit/push numa branch de feature** — isso não conta como entregue
+- ✅ **Toda correção só está "no aplicativo" quando o commit aparece em `origin/main`** (ver REGRA-ENTREGA-1 abaixo). Auto-merge armado **não** é entrega.
 
 -----
 
@@ -109,24 +120,22 @@ aparece em `git log origin/main` — não quando aparece só em `git log` da bra
 
 | Etapa | Obrigatório | Comando |
 |---|---|---|
-| 1. Implementar + validar (`arch_check.sh`, `flutter analyze`, testes) | ✅ | — |
-| 2. Commit por arquivo na branch de trabalho | ✅ | `git commit` |
-| 3. Push da branch | ✅ | `git push -u origin <branch>` |
-| 4. **Merge na `main` remota** | ✅ **NUNCA PULAR** | `git checkout main && git pull origin main && git merge <branch> && git push origin main` |
-| 5. Confirmar SHA de `main` contém o fix | ✅ | `git branch --contains <sha> -a` deve listar `main`/`remotes/origin/main` |
-| 6. Informar ao usuário o SHA da `main` atualizado | ✅ | — |
+| 1. Executor implementa + valida (`arch_check.sh`, analyze, testes) | ✅ | — |
+| 2. Commit por arquivo + push da **branch** | ✅ | `git push -u origin <branch>` |
+| 3. Supervisor abre PR + revisor DIFF | ✅ | `gh pr create` · Task `soloforte-revisor` |
+| 4. Gate (P0/P1 bloqueia; path crítico pede ok; baixo risco + No findings segue) | ✅ | ver supervisor |
+| 5. Auto-merge nativo **rebase** | ✅ | `gh pr merge --auto --rebase` — nunca `--admin`, nunca squash |
+| 6. Encerramento honesto | ✅ | `gh pr view --json state,mergedAt,mergeStateStatus,autoMergeRequest,url` |
 
-**Checagem automática antes de encerrar qualquer resposta que tenha feito commit:**
+**Entregue** só com `mergedAt` (SHA em `origin/main`).  
+**Não entregue:** `auto-merge armado, pendente de CI — ainda não está na main` + URL do PR.  
+**Não entregue:** `autoMergeRequest` nulo e não merged (GitHub desarmou).
 
-```bash
-git fetch origin --quiet
-git branch --contains HEAD -a | grep -E "main$" || echo "❌ CORREÇÃO AINDA NÃO ESTÁ NA MAIN — merge obrigatório antes de encerrar"
-```
-
-- ❌ Proibido dizer "correção feita" ou "PR pronto" como entrega final sem o merge na `main`
-- ❌ Proibido deixar branch de feature aberta como única prova da correção — branch é rascunho, `main` é o app
-- ✅ Se o merge exigir revisão humana (PR grande, risco alto), **abrir o PR e mergear apenas se aprovado explicitamente for exigido** — na ausência dessa exigência explícita do usuário, o agente mergeia direto (ver `AGENT_MEMORIA.md`: "não parar para perguntar" em git óbvio)
-- ✅ Aplica-se a **todo** prompt executado neste repositório, não só a IPA/release — ver `.agent/Prompt.md` (REGRA-ENTREGA-1)
+- ❌ Proibido `git push origin main` e `gh pr merge --admin`
+- ❌ Proibido dizer "correção feita" com o código só na branch **ou** só com auto-merge armado
+- ✅ Paths críticos (drawing, agenda, `core/database`, `core/ui/sheets`, `ui/screens/map`, `ui/components/map`) pedem ok no chat antes do `--auto --rebase`
+- ✅ Cadeado: `docs/03_ENFORCEMENT/supervisor-merge-gate.md`
+- ✅ Aplica-se a **todo** prompt neste repositório — ver `.agent/Prompt.md` (REGRA-ENTREGA-1)
 
 -----
 
@@ -261,14 +270,16 @@ lib/
 [ ] Tema mudou?                         NÃO
 [ ] Contrato de dados alterado?         NÃO (ou ADR criado)
 [ ] Apenas o módulo alvo foi afetado?   SIM
-[ ] Commit chegou na main remota (origin/main)? SIM — senão, NÃO ENCERRAR (REGRA-ENTREGA-1)
+[ ] SHA em origin/main (mergedAt)?      SIM — auto-merge armado NÃO conta (REGRA-ENTREGA-1)
 ```
 
 -----
 
 ## FORMATO DE ENTREGA
 
-- Mudanças no app → commits por módulo, **merge obrigatório na `main` remota** (REGRA-ENTREGA-1) — PR só documenta o escopo, não substitui o merge
+- Mudanças no app → commits por módulo, PR rebaseado na `main` (REGRA-ENTREGA-1). Auto-merge armado não é entrega.
+- Prompts para agente → arquivo `.md` em `prompt/`
+- Documentação humana → `.md` na raiz ou `docs/`
 - Prompts para agente → arquivo `.md` em `prompt/`
 - Documentação humana → `.md` na raiz ou `docs/`
 
@@ -327,7 +338,7 @@ Detalhes: `docs/02_ARQUITETURA_ATIVA/ADR-*.md`
 3. ADRs em `docs/02_ARQUITETURA_ATIVA/`
 4. Este `AGENTS.md`
 5. `lib/**/AGENTS.md` do módulo afetado
-6. `docs/03_ENFORCEMENT/enforcement-rules.md`
+6. `docs/03_ENFORCEMENT/enforcement-rules.md` + `docs/03_ENFORCEMENT/supervisor-merge-gate.md`
 
 ### O que ler (índice operacional)
 
@@ -338,7 +349,8 @@ Detalhes: `docs/02_ARQUITETURA_ATIVA/ADR-*.md`
 | Regras de execução do agente | `.agent/AGENT_REGRAS.md` (**canônico**) |
 | Sheets / chrome mapa (anti-regressão) | `.agent/AUDITORIA_REGRESSAO_IPA210.md` · `.agent/Prompt.md` · `design/sheets.md` |
 | Fronteira Map-First (`ui/` vs `modules/map`) | Este `AGENTS.md` → “Fronteira Map-First (política 4A)” · `lib/ui/AGENTS.md` · `lib/modules/map/AGENTS.md` |
-| Workflow Cursor | `.cursor/skills/soloforte-task/SKILL.md` |
+| Cadeado de merge / papéis dos agentes | `docs/03_ENFORCEMENT/supervisor-merge-gate.md` · `.cursor/rules/soloforte-supervisor.mdc` |
+| Workflow Cursor (executor) | `.cursor/skills/soloforte-task/SKILL.md` |
 | IPA / archive | `AGENTIPA.md` |
 
 **Não usar como verdade ativa:** `PROJECT_RULES.md`, cópias em `prompt/AGENT_*.md` (stubs), auditorias em `docs/05_HISTORICO/`, snapshots antigos com schema v40.
