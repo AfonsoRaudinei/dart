@@ -49,10 +49,11 @@ Coluna fixa na direita, de cima para baixo:
 3. SmartButton ☰ (AppShell — não mover)
 
 ```
-bottom coluna = kMapActionColumnBottomInset + safeBottom  (= kFabSafeArea 76 + safeBottom)
+bottom coluna = kMapActionColumnBottomInset + safeBottom
+  (= kFabSafeArea 76 + kMapActionColumnSpacingAboveFab 16 + safeBottom)
 gap camadas ↔ check-in = kMapActionColumnSpacingAboveCheckIn (16)
 draw compensation = kMapActionColumnDrawModeCompensation (60 = 16 + 44)
-clearance check-in ↔ FAB = kFabContentClearance (4)
+clearance check-in ↔ FAB = kFabContentClearance (4) + kMapActionColumnSpacingAboveFab (16) = 20
 ```
 
 **Proibido:** `mapSheetChromeInsetProvider` em `map_controls_overlay.dart`.  
