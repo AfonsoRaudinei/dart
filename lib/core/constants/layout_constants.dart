@@ -105,15 +105,20 @@ double mapEditingControlsBottomInset({
 /// Coluna atual (pós-remoção do botão +): layers → check-in → SmartButton.
 const double kMapActionColumnSpacingAboveCheckIn = 16.0;
 
+/// Folga extra entre o topo do SmartButton e a base da coluna (check-in).
+/// 16dp no ritmo canônico da coluna — evita toque duplo FAB + check-in.
+const double kMapActionColumnSpacingAboveFab = 16.0;
+
 /// Inset inferior fixo da coluna de ações do mapa (âncora do check-in).
 ///
-/// Composição: [kFabSafeArea] — alinhado ao SmartButton no AppShell
-/// (`padding.bottom + 16` + 4dp de clearance).
+/// Composição: [kFabSafeArea] + [kMapActionColumnSpacingAboveFab]
+/// → gap visual FAB↔check-in = kFabContentClearance + 16 = 20dp.
 ///
 /// REGRA-MAP-CHROME-1: **não** reagir a `mapSheetChromeInsetProvider` nem a
 /// detent do bottom sheet — a coluna permanece estável enquanto o usuário
 /// arrasta o sheet ou o app retoma do background.
-const double kMapActionColumnBottomInset = kFabSafeArea;
+const double kMapActionColumnBottomInset =
+    kFabSafeArea + kMapActionColumnSpacingAboveFab;
 
 /// Compensação vertical no modo desenho: mantém o botão de camadas na mesma
 /// posição quando check-in é ocultado.
