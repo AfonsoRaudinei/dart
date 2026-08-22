@@ -16,20 +16,17 @@ Checklist obrigatório antes de encerrar QUALQUER resposta que tenha alterado c�
 # 1) validar
 ./tool/arch_check.sh && flutter analyze lib/ && flutter test
 
-# 2) commit por arquivo + push da branch
+# 2) commit por arquivo + push da branch (executor)
 git push -u origin <branch>
 
-# 3) merge obrigatório na main (nunca pular)
-git checkout main && git pull origin main
-git merge <branch> && git push origin main
+# 3) supervisor: PR + revisor + auto-merge rebase (nunca push em main)
+gh pr merge --auto --rebase
 
-# 4) provar que a correção está na main
-git fetch origin --quiet
-git branch --contains <sha-do-fix> -a   # deve listar "main" / "remotes/origin/main"
+# 4) encerramento honesto — mergedAt ou "pendente de CI", nunca fingir entrega
+gh pr view <n> --json state,mergedAt,mergeStateStatus,autoMergeRequest,url
 ```
 
-Se o passo 4 não listar `main`, a tarefa **não está pronta** — o agente deve mergear
-antes de responder "correção feita".
+Se não houver `mergedAt`, a tarefa **não está pronta**. Texto obrigatório se o auto-merge estiver armado: `auto-merge armado, pendente de CI — ainda não está na main`.
 
 ---
 

@@ -6,6 +6,7 @@ alwaysApply: true
 # Cursor Desktop — padrão oficial de sync local
 
 Documentação completa: `prompt/FLUXO_OFICIAL_CURSOR_DESKTOP.md`
+Cadeado de merge: `docs/03_ENFORCEMENT/supervisor-merge-gate.md`
 
 ## Quando workspace é local (MacBook)
 
@@ -19,18 +20,17 @@ flutter pub get
 git status && git log -1 --oneline
 ```
 
-Confirmar SHA local = SHA remoto do Cloud Agent.
+Confirmar SHA local = SHA de `origin/main` (não o SHA da branch de feature).
 
 ## Quando workspace é cloud (Linux /workspace)
 
-Executar sync remoto completo:
-
 ```bash
 git fetch origin && git checkout main && git pull origin main
-git merge <branch> && git push origin main
-git status && git log -1 --oneline
+git push -u origin <branch>
+# supervisor: gh pr create + gh pr merge --auto --rebase — nunca git push origin main
+gh pr view <n> --json state,mergedAt,mergeStateStatus,autoMergeRequest,url
 ```
 
-Informar SHA e indicar Fase 2 no Cursor Desktop Mac.
+Informar SHA da `main` **ou** pendente de CI, e indicar Fase 2 no Cursor Desktop Mac.
 
-## Serviço completo = Fase 1 (cloud) + Fase 2 (desktop local)
+## Serviço completo = Fase 1 (cloud, PR rebase) + Fase 2 (desktop local)
