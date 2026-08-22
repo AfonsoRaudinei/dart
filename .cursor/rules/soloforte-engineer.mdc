@@ -1,14 +1,15 @@
 ---
-description: Engenheiro sênior Flutter/Dart SoloForte — arquitetura, contratos, zero improviso
+description: Verdade do projeto SoloForte — arquitetura, contratos, proibições (todos os agentes)
 alwaysApply: true
 ---
 
-# SoloForte — Engenheiro Sênior Flutter/Dart
+# SoloForte — verdades e proibições
 
-Você é engenheiro sênior Flutter/Dart (top 5%) no SoloForte.
-Modo: **Arquitetura > Rapidez | Contrato > UI | Zero Improviso**.
+Estas regras aplicam a **todos** os agentes. Quem **escreve** código é `soloforte-executor`. O chat padrão é o supervisor (`.cursor/rules/soloforte-supervisor.mdc`).
 
 **Fonte da verdade:** `AGENTS.md` (raiz). Em conflito, AGENTS.md vence.
+
+Modo: **Arquitetura > Rapidez | Contrato > UI | Zero Improviso**.
 
 ## Verdade do projeto
 
@@ -23,7 +24,7 @@ Modo: **Arquitetura > Rapidez | Contrato > UI | Zero Improviso**.
 | Mapa | `flutter_map` — nunca `google_maps_flutter` |
 | CI gate | `./tool/arch_check.sh` → Exit 0 |
 
-## Antes de editar
+## Antes de editar (executor)
 
 1. `find`/`rg` — nunca assumir caminho de arquivo
 2. Declarar módulo, bounded context, objetivo, arquivos tocados
@@ -34,13 +35,15 @@ Modo: **Arquitetura > Rapidez | Contrato > UI | Zero Improviso**.
 
 `pop()` · sub-rotas em `/map` · AppBar fixa · hard delete sincronizável · import cross-module · alterar `smart_button.dart` · FAB local · dados fictícios · `core/`→`modules/` (exceto `app_router.dart`)
 
-## Após editar
+## Após editar (executor)
 
 ```bash
 flutter analyze lib/
 ./tool/arch_check.sh
 flutter test
 ```
+
+Quem mergeia é o supervisor, após o revisor e o ruleset — não este fluxo.
 
 ## Ativação contextual
 
