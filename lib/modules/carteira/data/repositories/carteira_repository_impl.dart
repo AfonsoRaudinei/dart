@@ -2,6 +2,7 @@ import 'package:sqflite/sqflite.dart';
 import 'package:uuid/uuid.dart';
 
 import 'package:soloforte_app/core/database/database_helper.dart';
+import 'package:soloforte_app/core/services/sync_status_contract.dart';
 import 'package:soloforte_app/modules/carteira/domain/entities/carteira_lancamento.dart';
 import 'package:soloforte_app/modules/carteira/domain/entities/carteira_meta.dart';
 import 'package:soloforte_app/modules/carteira/domain/entities/carteira_safra.dart';
@@ -35,7 +36,7 @@ class CarteiraRepositoryImpl implements ICarteiraRepository {
 
     final rows = await db.query(
       'carteira_categorias',
-      where: 'user_id = ? AND ativo = 1',
+      where: 'user_id = ? AND ativo = 1 AND deleted_at IS NULL',
       whereArgs: [userId],
       orderBy: 'ordem ASC',
     );
@@ -51,7 +52,7 @@ class CarteiraRepositoryImpl implements ICarteiraRepository {
     final db = await _dbHelper.database;
     final rows = await db.query(
       'carteira_tipos_produto',
-      where: 'user_id = ? AND ativo = 1',
+      where: 'user_id = ? AND ativo = 1 AND deleted_at IS NULL',
       whereArgs: [userId],
       orderBy: 'ordem ASC, label ASC',
     );
@@ -63,7 +64,7 @@ class CarteiraRepositoryImpl implements ICarteiraRepository {
     final db = await _dbHelper.database;
     await db.insert(
       'carteira_tipos_produto',
-      tipo.toMap(),
+      _withPendingSync(tipo.toMap()),
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
   }
@@ -84,7 +85,7 @@ class CarteiraRepositoryImpl implements ICarteiraRepository {
     for (final tipo in seeds) {
       await db.insert(
         'carteira_tipos_produto',
-        tipo.toMap(),
+        _withPendingSync(tipo.toMap()),
         conflictAlgorithm: ConflictAlgorithm.ignore,
       );
     }
@@ -155,7 +156,7 @@ class CarteiraRepositoryImpl implements ICarteiraRepository {
     final db = await _dbHelper.database;
     await db.insert(
       'carteira_categorias',
-      _categoriaToMap(categoria),
+      _withPendingSync(_categoriaToMap(categoria)),
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
   }
@@ -165,7 +166,7 @@ class CarteiraRepositoryImpl implements ICarteiraRepository {
     final db = await _dbHelper.database;
     await db.update(
       'carteira_categorias',
-      _categoriaToMap(categoria),
+      _withPendingSync(_categoriaToMap(categoria)),
       where: 'id = ?',
       whereArgs: [categoria.id],
     );
@@ -176,7 +177,11 @@ class CarteiraRepositoryImpl implements ICarteiraRepository {
     final db = await _dbHelper.database;
     await db.update(
       'carteira_categorias',
-      {'ativo': 0, 'updated_at': DateTime.now().toIso8601String()},
+      {
+        'ativo': 0,
+        'updated_at': DateTime.now().toIso8601String(),
+        'sync_status': SyncStatusContract.pendingSync,
+      },
       where: 'id = ?',
       whereArgs: [id],
     );
@@ -190,7 +195,7 @@ class CarteiraRepositoryImpl implements ICarteiraRepository {
     final db = await _dbHelper.database;
     final rows = await db.query(
       'carteira_cliente_categorias',
-      where: 'user_id = ? AND cliente_id = ?',
+      where: 'user_id = ? AND cliente_id = ? AND deleted_at IS NULL',
       whereArgs: [userId, clienteId],
       orderBy: 'updated_at DESC',
     );
@@ -202,7 +207,7 @@ class CarteiraRepositoryImpl implements ICarteiraRepository {
     final db = await _dbHelper.database;
     final rows = await db.query(
       'carteira_cliente_categorias',
-      where: 'user_id = ?',
+      where: 'user_id = ? AND deleted_at IS NULL',
       whereArgs: [userId],
       orderBy: 'updated_at DESC',
     );
@@ -222,7 +227,7 @@ class CarteiraRepositoryImpl implements ICarteiraRepository {
     final db = await _dbHelper.database;
     await db.insert(
       'carteira_cliente_categorias',
-      _clienteCategoriaToMap(registro),
+      _withPendingSync(_clienteCategoriaToMap(registro)),
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
   }
@@ -254,6 +259,7 @@ class CarteiraRepositoryImpl implements ICarteiraRepository {
         'ordem': i,
         'created_at': now,
         'updated_at': now,
+        'sync_status': SyncStatusContract.pendingSync,
       }, conflictAlgorithm: ConflictAlgorithm.replace);
     }
     await batch.commit(noResult: true);
@@ -281,6 +287,7 @@ class CarteiraRepositoryImpl implements ICarteiraRepository {
       'user_id': userId,
       'valor_grao': valor,
       'updated_at': DateTime.now().toIso8601String(),
+      'sync_status': SyncStatusContract.pendingSync,
     }, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
@@ -291,7 +298,7 @@ class CarteiraRepositoryImpl implements ICarteiraRepository {
     final db = await _dbHelper.database;
     final rows = await db.query(
       'carteira_safras',
-      where: 'user_id = ?',
+      where: 'user_id = ? AND deleted_at IS NULL',
       whereArgs: [userId],
       orderBy: 'data_inicio DESC',
     );
@@ -303,7 +310,7 @@ class CarteiraRepositoryImpl implements ICarteiraRepository {
     final db = await _dbHelper.database;
     final rows = await db.query(
       'carteira_safras',
-      where: 'user_id = ? AND ativa = 1',
+      where: 'user_id = ? AND ativa = 1 AND deleted_at IS NULL',
       whereArgs: [userId],
       limit: 1,
     );
@@ -316,7 +323,7 @@ class CarteiraRepositoryImpl implements ICarteiraRepository {
     final db = await _dbHelper.database;
     await db.insert(
       'carteira_safras',
-      safra.toMap(),
+      _withPendingSync(safra.toMap()),
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
   }
@@ -328,14 +335,22 @@ class CarteiraRepositoryImpl implements ICarteiraRepository {
       // Desativa todas as safras do usuário
       await txn.update(
         'carteira_safras',
-        {'ativa': 0, 'updated_at': DateTime.now().toIso8601String()},
+        {
+          'ativa': 0,
+          'updated_at': DateTime.now().toIso8601String(),
+          'sync_status': SyncStatusContract.pendingSync,
+        },
         where: 'user_id = ?',
         whereArgs: [userId],
       );
       // Ativa a safra selecionada
       await txn.update(
         'carteira_safras',
-        {'ativa': 1, 'updated_at': DateTime.now().toIso8601String()},
+        {
+          'ativa': 1,
+          'updated_at': DateTime.now().toIso8601String(),
+          'sync_status': SyncStatusContract.pendingSync,
+        },
         where: 'id = ? AND user_id = ?',
         whereArgs: [safraId, userId],
       );
@@ -381,7 +396,7 @@ class CarteiraRepositoryImpl implements ICarteiraRepository {
     final db = await _dbHelper.database;
     final rows = await db.query(
       'carteira_metas',
-      where: 'safra_id = ? AND user_id = ?',
+      where: 'safra_id = ? AND user_id = ? AND deleted_at IS NULL',
       whereArgs: [safraId, userId],
     );
     return rows.map(CarteiraMeta.fromMap).toList();
@@ -392,7 +407,7 @@ class CarteiraRepositoryImpl implements ICarteiraRepository {
     final db = await _dbHelper.database;
     await db.insert(
       'carteira_metas',
-      meta.toMap(),
+      _withPendingSync(meta.toMap()),
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
   }
@@ -402,7 +417,7 @@ class CarteiraRepositoryImpl implements ICarteiraRepository {
     final db = await _dbHelper.database;
     await db.update(
       'carteira_metas',
-      meta.toMap(),
+      _withPendingSync(meta.toMap()),
       where: 'id = ? AND user_id = ?',
       whereArgs: [meta.id, meta.userId],
     );
@@ -418,7 +433,9 @@ class CarteiraRepositoryImpl implements ICarteiraRepository {
     String? clienteId,
   }) async {
     final db = await _dbHelper.database;
-    final where = StringBuffer('user_id = ? AND safra_id = ?');
+    final where = StringBuffer(
+      'user_id = ? AND safra_id = ? AND deleted_at IS NULL',
+    );
     final args = <dynamic>[userId, safraId];
     if (categoriaId != null) {
       where.write(' AND categoria_id = ?');
@@ -453,18 +470,23 @@ class CarteiraRepositoryImpl implements ICarteiraRepository {
     final db = await _dbHelper.database;
     await db.insert(
       'carteira_lancamentos',
-      sanitizado.toMap(),
+      _withPendingSync(sanitizado.toMap()),
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
   }
 
-  // Hard delete permitido: `carteira_lancamentos` é local-only —
-  // sem sync_status nem espelho remoto.
+  // Soft delete (ADR-051): tombstone local para push remoto.
   @override
   Future<void> deleteLancamento(String id, String userId) async {
     final db = await _dbHelper.database;
-    await db.delete(
+    final now = DateTime.now().toIso8601String();
+    await db.update(
       'carteira_lancamentos',
+      {
+        'deleted_at': now,
+        'updated_at': now,
+        'sync_status': SyncStatusContract.pendingSync,
+      },
       where: 'id = ? AND user_id = ?',
       whereArgs: [id, userId],
     );
@@ -482,7 +504,8 @@ class CarteiraRepositoryImpl implements ICarteiraRepository {
     final result = await db.rawQuery(
       'SELECT COALESCE(SUM(quantidade), 0.0) AS total '
       'FROM carteira_lancamentos '
-      'WHERE safra_id = ? AND categoria_id = ? AND user_id = ?',
+      'WHERE safra_id = ? AND categoria_id = ? AND user_id = ? '
+      'AND deleted_at IS NULL',
       [safraId, categoriaId, userId],
     );
     return (result.first['total'] as num?)?.toDouble() ?? 0.0;
@@ -500,7 +523,7 @@ class CarteiraRepositoryImpl implements ICarteiraRepository {
       'SELECT COALESCE(SUM(quantidade), 0.0) AS total '
       'FROM carteira_lancamentos '
       'WHERE cliente_id = ? AND categoria_id = ? '
-      'AND safra_id = ? AND user_id = ?',
+      'AND safra_id = ? AND user_id = ? AND deleted_at IS NULL',
       [clienteId, categoriaId, safraId, userId],
     );
     return (result.first['total'] as num?)?.toDouble() ?? 0.0;
@@ -516,7 +539,8 @@ class CarteiraRepositoryImpl implements ICarteiraRepository {
     final result = await db.rawQuery(
       'SELECT COALESCE(SUM(closed_percent), 0.0) AS total '
       'FROM carteira_lancamentos '
-      'WHERE cliente_id = ? AND categoria_id = ? AND user_id = ?',
+      'WHERE cliente_id = ? AND categoria_id = ? AND user_id = ? '
+      'AND deleted_at IS NULL',
       [clienteId, categoriaId, userId],
     );
     final total = (result.first['total'] as num?)?.toDouble() ?? 0.0;
@@ -570,6 +594,14 @@ class CarteiraRepositoryImpl implements ICarteiraRepository {
       'observacao': registro.observacao,
       'updated_at': registro.updatedAt.toIso8601String(),
     };
+  }
+
+  Map<String, Object?> _withPendingSync(Map<String, dynamic> map) {
+    final pending = Map<String, Object?>.from(map);
+    pending['sync_status'] = SyncStatusContract.pendingSync;
+    pending['updated_at'] =
+        pending['updated_at'] ?? DateTime.now().toIso8601String();
+    return pending;
   }
 
   ClienteCategoria _clienteCategoriaFromMap(Map<String, Object?> map) {
