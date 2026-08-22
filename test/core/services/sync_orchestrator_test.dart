@@ -48,6 +48,20 @@ ProviderContainer _container({required bool connected}) {
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  test('triggerSync com módulos vazios não abre ciclo', () async {
+    final container = _container(connected: true);
+    addTearDown(container.dispose);
+
+    final orchestrator = container.read(syncOrchestratorProvider);
+
+    await orchestrator.triggerSync(SyncPriority.immediate);
+
+    expect(orchestrator.lastResults, isEmpty);
+    expect(orchestrator.isSyncing, isFalse);
+    expect(orchestrator.progress, 0);
+    expect(orchestrator.lastError, isNull);
+  });
+
   test('triggerSync offline não executa módulos', () async {
     final container = _container(connected: false);
     addTearDown(container.dispose);
