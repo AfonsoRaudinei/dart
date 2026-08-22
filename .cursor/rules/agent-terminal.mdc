@@ -1,5 +1,5 @@
 ---
-description: Terminal daqui; sync remoto completo; MacBook pull só em workspace local
+description: Terminal daqui; branch + PR rebase; MacBook pull só em workspace local
 alwaysApply: true
 ---
 
@@ -9,41 +9,41 @@ alwaysApply: true
 
 ```bash
 git fetch origin && git checkout main && git pull origin main
-# após implementação:
+# após implementação (executor):
 git push -u origin <branch>
-git merge <branch> && git push origin main
-git status && git log -1 --oneline
+# supervisor: PR + gh pr merge --auto --rebase
+# nunca: git push origin main · gh pr merge --admin
+gh pr view <n> --json state,mergedAt,mergeStateStatus,autoMergeRequest,url
 ```
 
 ## MacBook — limitação e solução
 
 - **Cloud Agent (Linux `/workspace`):** NÃO acessa MacBook. Não consegue `git pull` na pasta local do Mac.
 - **Cursor Desktop (MacBook):** PODE executar `git pull origin main` no projeto local — fazer quando workspace for local.
-- **Serviço completo:** Cloud Agent garante `main` remota atualizada; MacBook recebe via pull local.
+- **Serviço completo:** Cloud Agent garante PR rebaseado na `main` remota; MacBook recebe via pull local.
 
 ## Memória
 
-Ler `prompt/AGENT_MEMORIA.md` e `prompt/FLUXO_OFICIAL_CURSOR_DESKTOP.md`.
+Ler `.agent/AGENT_MEMORIA.md` e `prompt/FLUXO_OFICIAL_CURSOR_DESKTOP.md`.
+Cadeado: `docs/03_ENFORCEMENT/supervisor-merge-gate.md`.
 
 ## Padrão oficial SoloForte
 
-Serviço completo = Cloud Agent (push main) + Cursor Desktop Mac (`git pull origin main`).
+Serviço completo = Cloud Agent (PR + auto-merge rebase) + Cursor Desktop Mac (`git pull origin main`).
 Ver `.cursor/rules/cursor-desktop-sync.mdc`.
 
 ## Proibido
 
-- Encerrar sem push/merge na `main` remota
+- Encerrar sem SHA em `origin/main` **nem** o rótulo obrigatório de auto-merge pendente
+- `git push origin main` · `gh pr merge --admin`
 - Dizer "não dá" sem executar o que é possível daqui
 - Delegar git remoto ao usuário
-- **Reportar uma correção como "feita"/"pronta" enquanto o commit só existe numa branch
-  `cursor/...`** — correção só está no app quando está em `origin/main` (REGRA-ENTREGA-1,
-  ver `AGENTS.md` raiz e `.agent/Prompt.md`)
+- Reportar correção como "feita" só na branch `cursor/...` ou só com auto-merge armado (REGRA-ENTREGA-1)
 
 ## Verificação final obrigatória (REGRA-ENTREGA-1)
 
-Antes de encerrar qualquer resposta que tenha feito commit:
-
 ```bash
-git fetch origin --quiet
-git branch --contains HEAD -a | grep -E "(^|/)main$" || echo "❌ merge pendente — não encerrar"
+gh pr view <n> --json state,mergedAt,mergeStateStatus,autoMergeRequest,url
 ```
+
+`mergedAt` → entregue. Auto-merge vivo → `auto-merge armado, pendente de CI — ainda não está na main`. Senão → bloqueado, não entregue.

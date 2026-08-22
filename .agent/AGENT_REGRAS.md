@@ -11,11 +11,14 @@ O agente **DEVE executar** comandos no Cursor — nunca só listar para o usuár
 
 ## Sync remoto (obrigatório ao encerrar)
 
+Push da **branch**. A `main` só recebe PR com auto-merge rebase. Nunca `git push origin main`.
+
 ```bash
 git fetch origin && git checkout main && git pull origin main
-# após feature:
-git push -u origin <branch> && git merge <branch> && git push origin main
-git status && git log -1 --oneline
+# após feature (executor):
+git push -u origin <branch>
+# supervisor: gh pr create → revisor → gh pr merge --auto --rebase
+gh pr view <n> --json state,mergedAt,mergeStateStatus,autoMergeRequest,url
 ```
 
 **MacBook (Fase 2 local):** `git pull origin main` no Cursor Desktop.
@@ -24,15 +27,14 @@ git status && git log -1 --oneline
 
 ## REGRA-ENTREGA-1 — Correção só vale se estiver na `main` (no app)
 
-> Todo prompt que resultar em código alterado (fix, feature, doc) só está concluído
-> quando o commit está em `origin/main`. Commit + push só na branch de feature = **tarefa
-> incompleta**, mesmo que o código esteja correto e testado.
+> Todo prompt que resultar em código alterado só está concluído quando o commit
+> está em `origin/main`. Auto-merge armado **não** é entrega.
 
-- ❌ **Nunca** encerrar a resposta relatando "correção feita" com o código preso numa branch `cursor/...`
-- ✅ Sempre fechar o ciclo: `push da branch` → `checkout main` → `pull` → `merge` → `push origin main`
-- ✅ Confirmar com `git branch --contains <sha> -a` que a `main`/`origin/main` contém o commit
-- ✅ Reportar ao usuário o SHA final da `main`, não o SHA da branch
-- Referência completa: `AGENTS.md` (raiz) → seção REGRA-ENTREGA-1 · `.agent/Prompt.md`
+- ❌ Nunca `git push origin main` nem `gh pr merge --admin`
+- ❌ Nunca encerrar com "correção feita" na branch `cursor/...` ou só com auto-merge armado
+- ✅ `gh pr merge --auto --rebase` após o gate; depois `gh pr view` (mergedAt / pendente / desarmado)
+- ✅ Reportar o SHA da `main` ou o texto obrigatório de pendente + URL do PR
+- Referência: `AGENTS.md` · `docs/03_ENFORCEMENT/supervisor-merge-gate.md`
 
 ---
 

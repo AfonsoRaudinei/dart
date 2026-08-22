@@ -10,10 +10,9 @@
 
 1. **Sempre executar comandos no terminal daqui** — nunca só passar instruções para copiar
 2. **Sempre sincronizar MacBook** ao encerrar tarefa — serviço completo
-3. **Não parar para perguntar** se deve executar git push/merge/pull óbvios
+3. **Não parar para perguntar** se deve executar git push da **branch** ou pull óbvios. Merge na `main` segue o gate (revisor + path crítico + auto-merge). P0/P1/P2 e path crítico **param**.
 4. **Salvar regras** em `.agent/` + `.cursor/rules/` (canônico); `prompt/` só para prompts de execução
-5. **Correção não é entrega enquanto estiver só na branch** — o merge na `main` é parte
-   obrigatória da tarefa, não uma etapa opcional/posterior (REGRA-ENTREGA-1, ver `AGENTS.md`)
+5. **Correção não é entrega enquanto não estiver em `origin/main`** — auto-merge armado não conta (REGRA-ENTREGA-1, ver `AGENTS.md`)
 
 ---
 
@@ -26,7 +25,7 @@
 
 ### Conclusão
 
-- **Daqui (Cloud Agent):** o agente executa `git pull/push/merge` no **repositório remoto (GitHub)**. Isso **prepara** o MacBook, mas **não substitui** o pull local.
+- **Daqui (Cloud Agent):** o agente faz push da **branch** e o supervisor arma auto-merge do PR. Isso **prepara** o MacBook, mas **não substitui** o pull local. Nunca `git push origin main`.
 - **No MacBook:** só é possível quando o agente roda **localmente** no Cursor Desktop com o workspace aberto na pasta do projeto.
 
 ---
@@ -39,10 +38,9 @@
 git fetch origin
 git checkout main
 git pull origin main
-# se houve código:
-git add . && git commit -m "..." && git push -u origin <branch>
-git checkout main && git pull origin main
-git merge <branch> && git push origin main
+# se houve código (executor):
+git push -u origin <branch>
+# supervisor: PR + gh pr merge --auto --rebase — nunca git push origin main
 git status && git log -1 --oneline
 ```
 
@@ -70,8 +68,8 @@ git status && git log -1 --oneline
 ### Parte C — Encerramento obrigatório na resposta
 
 O agente **sempre informa**:
-- Commit SHA na `main`
-- Confirmação `git push origin main` executado
+- SHA em `origin/main` **ou** `auto-merge armado, pendente de CI — ainda não está na main` + URL do PR
+- Nunca `git push origin main`
 - Próximo passo: **Cursor Desktop Mac** executa Fase 2 (ver fluxo oficial)
 
 ---
@@ -82,7 +80,7 @@ O agente **sempre informa**:
 
 | Fase | Ambiente | Ação |
 |---|---|---|
-| 1 | Cloud Agent | Implementar + push/merge `main` remota |
+| 1 | Cloud Agent | Branch + PR + auto-merge rebase (nunca push em `main`) |
 | 2 | **Cursor Desktop Mac** | `git pull origin main` + `flutter pub get` |
 | 3 | Cursor Desktop Mac | Validar (`flutter run`, testes) |
 
@@ -127,4 +125,4 @@ Fonte canônica: `.cursor/rules/soloforte-designer.mdc`
 | Ago/2026 | **Long press → ações rápidas (IPA 222):** botão `+` removido; gesto em área vazia abre `PublicationActionsBottomSheet` já com o `LatLng`; `ArmedMode.marketing` eliminado de ponta a ponta. Tap normal segue via `ArmedMode.occurrences` |
 | Ago/2026 | **Incidente autoDispose (REGRA-AUTODISPOSE-1):** pin do long press e rascunho por pin morriam porque ninguém fazia `watch` nos providers `autoDispose`. Sintoma no app: Ocorrência abria "Marque o ponto no mapa" ignorando o gesto, e rascunho nunca voltava. Gravar rascunho em `dispose`/`deactivate` também lançava `StateError`. Fix: `watch` antes do early-return no host + provider de rascunho sem `autoDispose` + persistência a cada mutação |
 | Ago/2026 | **Suíte de testes:** 13 → 2 falhas. As 11 fechadas eram testes obsoletos (campos em `ListView` lazy nunca construídos, `MarkerLayer` pré-ADR-035, rótulo do botão salvar virando spinner). Débito restante: `agenda/start_event_use_case` (rethrow intencional do espelho) e `drawing_selected_sheet` (rótulo do diálogo) |
-| Ago/2026 | **Incidente IPA 210 — regressão transversal:** Relatórios (e outros) quebraram sem commit em `relatorios/` — causa: SheetSkin Fase 2 (`6c0b3ae`) inverteu contrato de `Colors.transparent` em `showSoloForteSheet`. Blast radius 20+ callers. Doc: `.agent/AUDITORIA_REGRESSAO_IPA210.md` · **REGRA-SHEET-BLAST-1** |
+| Ago/2026 | **Supervisor + cadeado de merge:** chat padrão não escreve `lib/`; executor/revisor separados; `main` só via PR rebase. Hook `tool/hooks/pre-push` (humano: `git config core.hooksPath tool/hooks` uma vez). Auto-merge armado não é entrega. Doc: `docs/03_ENFORCEMENT/supervisor-merge-gate.md` |
