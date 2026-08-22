@@ -35,6 +35,7 @@ void main() {
           return hanging.future;
         },
         lastError: () => null,
+        ranModules: () => true,
         isOnline: () async => true,
         timeout: const Duration(milliseconds: 30),
       );
@@ -57,6 +58,7 @@ void main() {
           syncCalls++;
         },
         lastError: () => null,
+        ranModules: () => false,
         isOnline: () async => true,
       );
 
@@ -80,6 +82,7 @@ void main() {
           return gate.future;
         },
         lastError: () => null,
+        ranModules: () => true,
         isOnline: () async => true,
       );
 
@@ -105,10 +108,28 @@ void main() {
         recountAgenda: () async => 0,
         triggerImmediateSync: () async {},
         lastError: () => null,
+        ranModules: () => true,
         isOnline: () async => true,
       );
 
       expect(result.clientsCount, 0);
+    });
+
+    test('sync sem módulos e recount 0 não conta como restore OK', () async {
+      await expectLater(
+        restorePrivateMapLocalData(
+          userId: 'user-1',
+          clientsCount: 0,
+          agendaEventsCount: 0,
+          recountClients: () async => 0,
+          recountAgenda: () async => 0,
+          triggerImmediateSync: () async {},
+          lastError: () => null,
+          ranModules: () => false,
+          isOnline: () async => true,
+        ),
+        throwsA(isA<PrivateMapRestoreException>()),
+      );
     });
 
     test('timeout falha com PrivateMapRestoreException', () async {
@@ -121,6 +142,7 @@ void main() {
           recountAgenda: () async => 0,
           triggerImmediateSync: () => Completer<void>().future,
           lastError: () => null,
+          ranModules: () => false,
           isOnline: () async => true,
           timeout: const Duration(milliseconds: 20),
         ),
@@ -138,6 +160,7 @@ void main() {
           recountAgenda: () async => 0,
           triggerImmediateSync: () async {},
           lastError: () => 'Erro em clientes: jwt',
+          ranModules: () => true,
           isOnline: () async => true,
         ),
         throwsA(isA<PrivateMapRestoreException>()),
@@ -154,6 +177,7 @@ void main() {
           recountAgenda: () async => 0,
           triggerImmediateSync: () async {},
           lastError: () => null,
+          ranModules: () => false,
           isOnline: () async => false,
         ),
         throwsA(isA<PrivateMapRestoreException>()),
