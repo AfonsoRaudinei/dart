@@ -31,6 +31,7 @@ class SyncOrchestrator extends ChangeNotifier {
   final List<SyncModule> _modules = [];
   bool _isSyncing = false;
   bool _pendingImmediateSync = false;
+  Future<void>? _inFlightSync;
   Timer? _periodicTimer;
 
   // 🛡 LIFECYCLE: Flag para evitar notifyListeners() após dispose().
@@ -71,13 +72,33 @@ class SyncOrchestrator extends ChangeNotifier {
   }
 
   Future<void> triggerSync(SyncPriority priority) async {
-    if (_isSyncing) {
+    final inFlight = _inFlightSync;
+    if (inFlight != null) {
       if (priority == SyncPriority.immediate) {
         _pendingImmediateSync = true;
       }
+      await inFlight;
       return;
     }
 
+    final completer = Completer<void>();
+    _inFlightSync = completer.future;
+
+    try {
+      await _runSyncCycle();
+      while (_pendingImmediateSync && !_isDisposed) {
+        _pendingImmediateSync = false;
+        await _runSyncCycle();
+      }
+    } finally {
+      _inFlightSync = null;
+      if (!completer.isCompleted) {
+        completer.complete();
+      }
+    }
+  }
+
+  Future<void> _runSyncCycle() async {
     final connectivity = _ref.read(connectivityServiceProvider);
     final isConnected = await connectivity.isConnected;
     if (!isConnected || _isDisposed) return;
@@ -114,8 +135,8 @@ class SyncOrchestrator extends ChangeNotifier {
       }
     } finally {
       // Sem `return` dentro de finally: engoliria exceções vindas do try.
+      _isSyncing = false;
       if (!_isDisposed) {
-        _isSyncing = false;
         _progress = 1.0;
         _notifyIfAlive();
 
@@ -124,11 +145,6 @@ class SyncOrchestrator extends ChangeNotifier {
           _progress = 0;
           _notifyIfAlive();
         });
-
-        if (_pendingImmediateSync) {
-          _pendingImmediateSync = false;
-          scheduleMicrotask(() => triggerSync(SyncPriority.immediate));
-        }
       }
     }
   }
