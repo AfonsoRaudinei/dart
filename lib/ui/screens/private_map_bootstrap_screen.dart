@@ -1,75 +1,153 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sqflite/sqflite.dart';
 import '../../core/session/local_session_identity.dart';
 import '../../core/database/database_helper.dart';
+import '../../core/services/connectivity_service.dart';
 import '../../core/services/sync_orchestrator.dart';
 import '../../core/utils/app_logger.dart';
 import 'private_map_screen.dart';
 
-typedef _BootstrapResult = ({
+typedef PrivateMapBootstrapResult = ({
   int clientsCount,
   int agendaEventsCount,
 });
 
-final _privateMapBootstrapProvider =
-    FutureProvider.autoDispose<_BootstrapResult>((ref) async {
-      // Força migrações/abertura de DB antes de construir o mapa privado.
+class PrivateMapRestoreException implements Exception {
+  const PrivateMapRestoreException();
+
+  @override
+  String toString() =>
+      'Não foi possível restaurar os dados. Verifique a conexão.';
+}
+
+const _kRestoreTimeout = Duration(seconds: 30);
+
+@visibleForTesting
+Future<PrivateMapBootstrapResult> restorePrivateMapLocalData({
+  required String userId,
+  required int clientsCount,
+  required int agendaEventsCount,
+  required Future<int> Function() recountClients,
+  required Future<int> Function() recountAgenda,
+  required Future<void> Function() triggerImmediateSync,
+  required String? Function() lastError,
+  required Future<bool> Function() isOnline,
+  Duration timeout = _kRestoreTimeout,
+}) async {
+  if (clientsCount > 0 || userId.isEmpty) {
+    return (clientsCount: clientsCount, agendaEventsCount: agendaEventsCount);
+  }
+
+  try {
+    await triggerImmediateSync().timeout(timeout);
+  } on TimeoutException {
+    throw const PrivateMapRestoreException();
+  } catch (_) {
+    throw const PrivateMapRestoreException();
+  }
+
+  final error = lastError();
+  if (error != null && error.isNotEmpty) {
+    throw const PrivateMapRestoreException();
+  }
+
+  final nextClients = await recountClients();
+  final nextAgenda = await recountAgenda();
+
+  if (nextClients == 0 && !await isOnline()) {
+    throw const PrivateMapRestoreException();
+  }
+
+  return (clientsCount: nextClients, agendaEventsCount: nextAgenda);
+}
+
+final privateMapBootstrapProvider =
+    FutureProvider.autoDispose<PrivateMapBootstrapResult>((ref) async {
       final db = await DatabaseHelper.instance.database;
       final userId = LocalSessionIdentity.resolveUserId();
 
-      final clientsCount = userId.isEmpty
-          ? 0
-          : Sqflite.firstIntValue(
-                await db.rawQuery(
-                  'SELECT COUNT(*) FROM clients WHERE user_id = ?',
-                  [userId],
-                ),
-              ) ??
-              0;
-      final agendaEventsCount = userId.isEmpty
-          ? 0
-          : Sqflite.firstIntValue(
-                await db.rawQuery(
-                  'SELECT COUNT(*) FROM agenda_events WHERE user_id = ?',
-                  [userId],
-                ),
-              ) ??
-              0;
+      Future<int> countClients() async {
+        if (userId.isEmpty) return 0;
+        return Sqflite.firstIntValue(
+              await db.rawQuery(
+                'SELECT COUNT(*) FROM clients WHERE user_id = ?',
+                [userId],
+              ),
+            ) ??
+            0;
+      }
 
-      return (clientsCount: clientsCount, agendaEventsCount: agendaEventsCount);
+      Future<int> countAgenda() async {
+        if (userId.isEmpty) return 0;
+        return Sqflite.firstIntValue(
+              await db.rawQuery(
+                'SELECT COUNT(*) FROM agenda_events WHERE user_id = ?',
+                [userId],
+              ),
+            ) ??
+            0;
+      }
+
+      final clientsCount = await countClients();
+      final agendaEventsCount = await countAgenda();
+      final orchestrator = ref.read(syncOrchestratorProvider);
+
+      return restorePrivateMapLocalData(
+        userId: userId,
+        clientsCount: clientsCount,
+        agendaEventsCount: agendaEventsCount,
+        recountClients: countClients,
+        recountAgenda: countAgenda,
+        triggerImmediateSync: () =>
+            orchestrator.triggerSync(SyncPriority.immediate),
+        lastError: () => orchestrator.lastError,
+        isOnline: () => ref.read(connectivityServiceProvider).isConnected,
+      );
     });
 
 class PrivateMapBootstrapScreen extends ConsumerWidget {
-  const PrivateMapBootstrapScreen({super.key});
+  const PrivateMapBootstrapScreen({super.key, this.mapOverride});
+
+  @visibleForTesting
+  final Widget? mapOverride;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final bootstrap = ref.watch(_privateMapBootstrapProvider);
+    final bootstrap = ref.watch(privateMapBootstrapProvider);
     final orchestrator = ref.watch(syncOrchestratorProvider);
 
     return bootstrap.when(
       loading: () => _BootstrapScaffold(
-        title: 'Carregando dados…',
+        title: 'Sincronizando seus dados…',
         subtitle: 'Preparando banco de dados local.',
         showProgress: orchestrator.isSyncing,
         progress: orchestrator.progress,
       ),
       error: (error, st) {
-        AppLogger.error(
-          'Falha ao inicializar DB no boot do mapa privado',
-          tag: 'Bootstrap',
-          error: error,
-          stackTrace: st,
-        );
+        final isRestore = error is PrivateMapRestoreException;
+        if (!isRestore) {
+          AppLogger.error(
+            'Falha ao inicializar DB no boot do mapa privado',
+            tag: 'Bootstrap',
+            error: error,
+            stackTrace: st,
+          );
+        }
         return _BootstrapScaffold(
-          title: 'Erro ao iniciar',
-          subtitle: 'Não foi possível preparar os dados locais. Tente novamente.',
+          title: isRestore
+              ? 'Não foi possível restaurar os dados. Verifique a conexão.'
+              : 'Erro ao iniciar',
+          subtitle: isRestore
+              ? ''
+              : 'Não foi possível preparar os dados locais. Tente novamente.',
           actionLabel: 'Tentar novamente',
-          onAction: () => ref.invalidate(_privateMapBootstrapProvider),
+          onAction: () => ref.invalidate(privateMapBootstrapProvider),
         );
       },
-      data: (_) => const PrivateMapScreen(),
+      data: (_) => mapOverride ?? const PrivateMapScreen(),
     );
   }
 }
@@ -122,17 +200,19 @@ class _BootstrapScaffold extends StatelessWidget {
                     ),
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 10),
-                  Text(
-                    subtitle,
-                    style: const TextStyle(
-                      color: Color(0xFF666666),
-                      fontSize: 14,
-                      height: 1.4,
-                      fontFamily: null,
+                  if (subtitle.isNotEmpty) ...[
+                    const SizedBox(height: 10),
+                    Text(
+                      subtitle,
+                      style: const TextStyle(
+                        color: Color(0xFF666666),
+                        fontSize: 14,
+                        height: 1.4,
+                        fontFamily: null,
+                      ),
+                      textAlign: TextAlign.center,
                     ),
-                    textAlign: TextAlign.center,
-                  ),
+                  ],
                   if (showProgress) ...[
                     const SizedBox(height: 22),
                     LinearProgressIndicator(
