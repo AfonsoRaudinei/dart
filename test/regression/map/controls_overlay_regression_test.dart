@@ -136,7 +136,7 @@ void main() {
     );
 
     testWidgets(
-      'integração overlay + âncora FAB: clearance 4dp com safeBottom real',
+      'integração overlay + âncora FAB: clearance FAB↔check-in com safeBottom real',
       (tester) async {
         await _pumpOverlayWithFabHarness(
           tester,
@@ -162,7 +162,10 @@ void main() {
         );
         expect(
           fab.top - checkIn.bottom,
-          closeTo(kFabContentClearance, 0.1),
+          closeTo(
+            kFabContentClearance + kMapActionColumnSpacingAboveFab,
+            0.1,
+          ),
         );
       },
     );
