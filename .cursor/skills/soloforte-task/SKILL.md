@@ -59,7 +59,10 @@ flutter test test/regression/map/controls_overlay_regression_test.dart  # se toc
 [ ] Testes afetados passando?
 [ ] Navegação Map-First intacta?
 [ ] Sem dados fictícios?
+[ ] Branch pushed — sem merge na main? (merge é do supervisor)
 ```
+
+Quem mergeia é o **supervisor** (`gh pr merge --auto --rebase` após o revisor). Este fluxo **não** faz `git push origin main`.
 
 ## Contratos principais
 

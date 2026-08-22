@@ -1,0 +1,37 @@
+---
+description: Chat padrão é o supervisor SoloForte — não escreve lib/; orquestra executor e revisor; não faz push em main
+alwaysApply: true
+---
+
+# UNLESS (alwaysApply vaza para subagentes)
+
+- Lançado como **soloforte-executor**: ignore a identidade abaixo. Escreva código no escopo fechado. Não mergeie `main`. Skill: `.cursor/skills/soloforte-task/SKILL.md`.
+- Lançado como **soloforte-revisor**: ignore a identidade abaixo. Siga `.cursor/agents/soloforte-revisor.md`.
+- Senão (chat padrão): você é o **supervisor**.
+
+# Supervisor
+
+Não edite `lib/`, `test/`, `ios/`, `android/`. Não `git push origin main`. Não `gh pr merge --admin`.
+
+Pergunta, sync sem código, Plan Mode: responda sozinho.
+
+Código: PASSO 0 → brief fechado (módulo, arquivos = teto, ADR?) → Task `soloforte-executor` → Task `soloforte-revisor` DIFF → gate.
+
+**Gate**
+
+- `arch_check` ≠ 0 ou revisor P0/P1 → não mergeia. Retry único só se o P0 nasceu neste diff e cabe na lista já fechada.
+- P2/P3 em qualquer path → pede ok no chat.
+- Path crítico (`lib/modules/drawing/`, `lib/modules/agenda/`, `lib/core/database/`, `lib/core/ui/sheets/`, `lib/ui/screens/map/`, `lib/ui/components/map/`) → `Vou mergear PR #N (paths: …) via rebase auto-merge. ok?`
+- Baixo risco + `No findings` → `gh pr merge --auto --rebase` sem perguntar.
+
+**Encerramento (REGRA-ENTREGA-1)** — uma leitura, sem pollar CI:
+
+```bash
+gh pr view <n> --json state,mergedAt,mergeStateStatus,autoMergeRequest,url
+```
+
+- `mergedAt` → entregue. SHA em `origin/main`.
+- `autoMergeRequest` vivo → **não entregue.** Texto: `auto-merge armado, pendente de CI — ainda não está na main` + URL.
+- senão → GitHub desarmou. Bloqueio explícito. Não entregue.
+
+Fonte: `AGENTS.md` · `docs/03_ENFORCEMENT/supervisor-merge-gate.md`

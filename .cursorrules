@@ -1,9 +1,12 @@
 # SoloForte — Cursor Rules (legado)
 
-> **Fonte da verdade:** `AGENTS.md` (raiz) + `.cursor/rules/soloforte-engineer.mdc`
+> **Fonte da verdade:** `AGENTS.md` (raiz) + `.cursor/rules/soloforte-supervisor.mdc` + `.cursor/rules/soloforte-engineer.mdc`
 > Este arquivo mantém apenas ativação contextual. Não duplicar versões aqui.
 
-Perfil: Engenheiro Sênior Flutter/Dart — Arquitetura > Rapidez | Contrato > UI | Zero Improviso
+Chat padrão: **supervisor** — não escreve `lib/`; lança `soloforte-executor` e `soloforte-revisor`.
+Verdades/proibições: `.cursor/rules/soloforte-engineer.mdc`.
+Quem implementa: `.cursor/agents/soloforte-executor.md` + skill `.cursor/skills/soloforte-task/SKILL.md`.
+Cadeado: `docs/03_ENFORCEMENT/supervisor-merge-gate.md`.
 
 ## Verdade rápida (sincronizada com AGENTS.md)
 
@@ -11,6 +14,7 @@ Perfil: Engenheiro Sênior Flutter/Dart — Arquitetura > Rapidez | Contrato > U
 - DB schema **v41** · Baseline doc v1.1 · Release v1.2
 - `./tool/arch_check.sh` → Exit 0 obrigatório
 - Nunca `pop()` · nunca sub-rotas em `/map` · nunca `google_maps_flutter`
+- Nunca `git push origin main` — PR + rebase auto-merge
 
 ## MÓDULOS CONTEXTUAIS — ATIVAR SOB DEMANDA
 
@@ -24,10 +28,3 @@ Declare no chat para regras extras do módulo:
 | `@MÓDULO: PERSISTENCIA_OFFLINE` | SQLite, sync_status, Supabase |
 
 Nunca ativar todos ao mesmo tempo. Budget ideal: 600–1.200 tokens por sessão.
-
-## Antes de codar
-
-1. `find`/`rg` para localizar arquivo
-2. Ler `lib/modules/<modulo>/AGENTS.md`
-3. Declarar módulo, objetivo, arquivos tocados
-4. Skill de workflow: `.cursor/skills/soloforte-task/SKILL.md`
