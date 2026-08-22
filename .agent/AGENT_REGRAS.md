@@ -118,7 +118,7 @@ Ao tocar `map_controls_overlay.dart` ou constantes de layout do mapa:
 |---|---|
 | Posição travada | Usar `kMapActionColumnBottomInset` + `safeBottom` — **nunca** `mapSheetChromeInsetProvider` |
 | Constantes | Tamanho/espaçamento em `layout_constants.dart` (`kMapActionColumn*`) |
-| SmartButton | Coluna ancorada ao FAB global (`kFabSafeArea` = **76dp** acima da safe-area) |
+| SmartButton | Coluna ancorada ao FAB: `kMapActionColumnBottomInset` = `kFabSafeArea` 76 + `kMapActionColumnSpacingAboveFab` 16; clearance FAB↔check-in = 4+16 = **20dp** |
 | Coluna atual | layers → check-in → SmartButton (sem botão `+` no overlay) |
 | Modo desenho | Compensar com `kMapActionColumnDrawModeCompensation` (**60dp** = 16 + 44) |
 | Espaçamento canônico | **16dp** (camadas↔check-in) — `kMapActionColumnSpacingAboveCheckIn` |
