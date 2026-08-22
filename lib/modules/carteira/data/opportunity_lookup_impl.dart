@@ -1,3 +1,6 @@
+import 'package:flutter/foundation.dart';
+import 'package:sqflite/sqflite.dart';
+
 import 'package:soloforte_app/core/contracts/i_opportunity_lookup.dart';
 import 'package:soloforte_app/core/session/local_session_identity.dart';
 import 'package:soloforte_app/core/contracts/opportunity_summary.dart';
@@ -16,11 +19,14 @@ class OpportunityLookupImpl implements IOpportunityLookup {
   OpportunityLookupImpl({
     required ICarteiraRepository repository,
     required DatabaseHelper db,
+    @visibleForTesting Database? databaseForTesting,
   }) : _repository = repository,
-       _db = db;
+       _db = db,
+       _databaseForTesting = databaseForTesting;
 
   final ICarteiraRepository _repository;
   final DatabaseHelper _db;
+  final Database? _databaseForTesting;
 
   String get _userId => LocalSessionIdentity.resolveUserId();
 
@@ -33,7 +39,7 @@ class OpportunityLookupImpl implements IOpportunityLookup {
       final categorias = await _repository.getCategorias(userId);
       if (categorias.isEmpty) return [];
 
-      final database = await _db.database;
+      final database = _databaseForTesting ?? await _db.database;
 
       final clientRows = await database.query(
         'clients',
@@ -54,7 +60,8 @@ class OpportunityLookupImpl implements IOpportunityLookup {
         final result = await database.rawQuery(
           'SELECT COALESCE(SUM(closed_percent), 0.0) AS total '
           'FROM carteira_lancamentos '
-          'WHERE cliente_id = ? AND categoria_id = ? AND user_id = ?',
+          'WHERE cliente_id = ? AND categoria_id = ? AND user_id = ? '
+          'AND deleted_at IS NULL',
           [clientId, categoria.id, userId],
         );
         final rawPct = (result.first['total'] as num?)?.toDouble() ?? 0.0;
