@@ -46,6 +46,9 @@ class CarteiraLancamento {
   final DateTime? dataFechamento;
   final DateTime dataLancamento;
   final DateTime createdAt;
+  final DateTime? updatedAt;
+  final DateTime? deletedAt;
+  final String syncStatus;
 
   /// Compatibilidade com sistema legado de metas.
   /// Derivado de closedPercent — nunca lido do banco diretamente.
@@ -113,6 +116,9 @@ class CarteiraLancamento {
       tipoFechamento: lancamento.tipoFechamento,
       dataLancamento: lancamento.dataLancamento,
       createdAt: lancamento.createdAt,
+      updatedAt: lancamento.updatedAt,
+      deletedAt: lancamento.deletedAt,
+      syncStatus: lancamento.syncStatus,
     );
   }
 
@@ -131,6 +137,9 @@ class CarteiraLancamento {
     this.dataFechamento,
     required this.dataLancamento,
     required this.createdAt,
+    this.updatedAt,
+    this.deletedAt,
+    this.syncStatus = 'pending_sync',
   });
 
   factory CarteiraLancamento.fromMap(Map<String, Object?> map) {
@@ -151,6 +160,13 @@ class CarteiraLancamento {
           : null,
       dataLancamento: DateTime.parse(map['data_lancamento'] as String),
       createdAt: DateTime.parse(map['created_at'] as String),
+      updatedAt: map['updated_at'] != null
+          ? DateTime.tryParse(map['updated_at'] as String)
+          : null,
+      deletedAt: map['deleted_at'] != null
+          ? DateTime.tryParse(map['deleted_at'] as String)
+          : null,
+      syncStatus: (map['sync_status'] as String?) ?? 'pending_sync',
     );
   }
 
@@ -170,6 +186,9 @@ class CarteiraLancamento {
       'data_fechamento': dataFechamento?.toIso8601String(),
       'data_lancamento': dataLancamento.toIso8601String(),
       'created_at': createdAt.toIso8601String(),
+      'updated_at': (updatedAt ?? createdAt).toIso8601String(),
+      'deleted_at': deletedAt?.toIso8601String(),
+      'sync_status': syncStatus,
     };
   }
 
@@ -188,6 +207,9 @@ class CarteiraLancamento {
     DateTime? dataFechamento,
     DateTime? dataLancamento,
     DateTime? createdAt,
+    DateTime? updatedAt,
+    DateTime? deletedAt,
+    String? syncStatus,
   }) {
     return CarteiraLancamento(
       id: id ?? this.id,
@@ -204,6 +226,9 @@ class CarteiraLancamento {
       dataFechamento: dataFechamento ?? this.dataFechamento,
       dataLancamento: dataLancamento ?? this.dataLancamento,
       createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      deletedAt: deletedAt ?? this.deletedAt,
+      syncStatus: syncStatus ?? this.syncStatus,
     );
   }
 }
