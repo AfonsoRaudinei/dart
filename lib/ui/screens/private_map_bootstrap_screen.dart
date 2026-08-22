@@ -34,6 +34,7 @@ Future<PrivateMapBootstrapResult> restorePrivateMapLocalData({
   required Future<int> Function() recountAgenda,
   required Future<void> Function() triggerImmediateSync,
   required String? Function() lastError,
+  required bool Function() ranModules,
   required Future<bool> Function() isOnline,
   Duration timeout = _kRestoreTimeout,
 }) async {
@@ -58,6 +59,11 @@ Future<PrivateMapBootstrapResult> restorePrivateMapLocalData({
   final nextAgenda = await recountAgenda();
 
   if (nextClients == 0 && !await isOnline()) {
+    throw const PrivateMapRestoreException();
+  }
+
+  // Sync sem módulos (hydrate antes de registerSyncModules) não é conta nova.
+  if (nextClients == 0 && !ranModules()) {
     throw const PrivateMapRestoreException();
   }
 
@@ -104,6 +110,7 @@ final privateMapBootstrapProvider =
         triggerImmediateSync: () =>
             orchestrator.triggerSync(SyncPriority.immediate),
         lastError: () => orchestrator.lastError,
+        ranModules: () => orchestrator.lastResults.isNotEmpty,
         isOnline: () => ref.read(connectivityServiceProvider).isConnected,
       );
     });
