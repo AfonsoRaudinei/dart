@@ -68,6 +68,9 @@ abstract class ICarteiraRepository {
     String? clienteId,
   });
   Future<void> saveLancamento(CarteiraLancamento lancamento);
+
+  /// Soft-delete (ADR-051): preenche `deleted_at` e `sync_status=pending_sync`.
+  /// Hard delete de lançamento é proibido.
   Future<void> deleteLancamento(String id, String userId);
 
   // ── Cálculos ────────────────────────────────────────────────────
