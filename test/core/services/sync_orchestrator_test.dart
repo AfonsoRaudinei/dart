@@ -94,6 +94,32 @@ void main() {
     expect(module.callCount, 2);
   });
 
+  test('caller concorrente de triggerSync espera o ciclo em voo', () async {
+    final container = _container(connected: true);
+    addTearDown(container.dispose);
+
+    final orchestrator = container.read(syncOrchestratorProvider);
+    final module = _RecordingModule(
+      'slow',
+      delay: const Duration(milliseconds: 80),
+    );
+    orchestrator.registerModule(module);
+
+    final first = orchestrator.triggerSync(SyncPriority.normal);
+    await Future<void>.delayed(const Duration(milliseconds: 10));
+    expect(orchestrator.isSyncing, isTrue);
+    expect(module.callCount, 1);
+
+    final waited = Stopwatch()..start();
+    await orchestrator.triggerSync(SyncPriority.background);
+    waited.stop();
+
+    expect(waited.elapsedMilliseconds, greaterThanOrEqualTo(50));
+    expect(module.callCount, 1);
+    await first;
+    expect(orchestrator.isSyncing, isFalse);
+  });
+
   test('notifyListeners após dispose não lança', () async {
     final container = _container(connected: true);
 
