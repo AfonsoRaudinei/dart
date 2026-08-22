@@ -1,5 +1,8 @@
 name: Flutter CI
 
+# LOAD-BEARING: o ruleset SoloForte depende de on.pull_request para main.
+# Não remover — sem ele o check analyze-and-test não corre no PR.
+# Ver docs/03_ENFORCEMENT/supervisor-merge-gate.md
 on:
   push:
     branches: [main, 'cursor/**']

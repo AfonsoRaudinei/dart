@@ -1,0 +1,17 @@
+#!/bin/sh
+# SoloForte — recusa push direto para main e release/*.
+# Cadeado local (defesa). O cadeado real é o ruleset do GitHub.
+# Não consulta marcador de revisão. Ver docs/03_ENFORCEMENT/supervisor-merge-gate.md
+
+while read -r local_ref local_sha remote_ref remote_sha
+do
+  case "$remote_ref" in
+    refs/heads/main|refs/heads/release/*)
+      echo "SoloForte: push direto para ${remote_ref#refs/heads/} recusado."
+      echo "Abra um PR. docs/03_ENFORCEMENT/supervisor-merge-gate.md"
+      exit 1
+      ;;
+  esac
+done
+
+exit 0
