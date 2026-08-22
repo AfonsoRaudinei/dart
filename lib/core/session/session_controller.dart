@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -7,6 +8,7 @@ import '../infra/preferences_service.dart';
 import '../../core/network/network_policy.dart';
 import '../../core/state/map_state.dart';
 import '../database/database_helper.dart';
+import '../services/sync_orchestrator.dart';
 import 'local_session_identity.dart';
 import 'pending_signup_role_store.dart';
 import 'profile_role_resolver.dart';
@@ -34,6 +36,7 @@ class SessionController extends _$SessionController {
   }
 
   StreamSubscription<AuthState>? _authSubscription;
+  String? _lastHydrateUserId;
 
   @override
   SessionState build() {
@@ -55,6 +58,7 @@ class SessionController extends _$SessionController {
       final currentUser = Supabase.instance.client.auth.currentUser;
       if (currentUser != null) {
         LocalSessionIdentity.remember(currentUser.id);
+        requestHydrateAfterAuth(currentUser.id);
         return SessionAuthenticated(currentUser);
       }
     } catch (_) {
@@ -86,6 +90,7 @@ class SessionController extends _$SessionController {
         if (user != null) {
           LocalSessionIdentity.remember(user.id);
           state = SessionAuthenticated(user);
+          requestHydrateAfterAuth(user.id);
           unawaited(() async {
             try {
               await DatabaseHelper.instance.repairOrphanUserIds(user.id);
@@ -114,6 +119,7 @@ class SessionController extends _$SessionController {
         //   markSessionPublic() não apaga lastKnown persistido (só clear() remove).
         // - demais eventos sem sessão → sessão pública sem apagar lastKnown
         if (data.event == AuthChangeEvent.signedOut) {
+          resetHydrateAfterAuth();
           LocalSessionIdentity.clear();
           state = const SessionPublic();
           return;
@@ -371,12 +377,40 @@ class SessionController extends _$SessionController {
     // O stream onAuthStateChange atualiza o state automaticamente.
   }
 
+  /// Pede pull imediato após JWT. Uma vez por [userId]; rebuild não dispara de novo.
+  /// Usado no `build()` (sessão persistida / iOS keychain) e no `onAuthStateChange`.
+  @visibleForTesting
+  void requestHydrateAfterAuth(String userId) {
+    final normalized = userId.trim();
+    if (normalized.isEmpty || normalized == _lastHydrateUserId) return;
+    _lastHydrateUserId = normalized;
+    try {
+      unawaited(
+        ref.read(syncOrchestratorProvider).triggerSync(SyncPriority.immediate),
+      );
+    } catch (e, st) {
+      _lastHydrateUserId = null;
+      AppLogger.error(
+        'hydrate após auth falhou ao disparar sync',
+        tag: 'SessionController',
+        error: e,
+        stackTrace: st,
+      );
+    }
+  }
+
+  @visibleForTesting
+  void resetHydrateAfterAuth() {
+    _lastHydrateUserId = null;
+  }
+
   /// Logout real via Supabase Auth.
   ///
   /// 🛡 Preservação de dados: logout **não** chama [clearUserLocalData].
   /// SQLite do usuário permanece no aparelho para o próximo login.
   /// Wipe local só ocorre em [deleteAccount].
   Future<void> logout() async {
+    resetHydrateAfterAuth();
     _invalidateUserScopedProviders();
     LocalSessionIdentity.clear();
 
@@ -424,6 +458,7 @@ class SessionController extends _$SessionController {
     }
 
     // 3. Invalidar providers
+    resetHydrateAfterAuth();
     _invalidateUserScopedProviders();
     LocalSessionIdentity.clear();
 
