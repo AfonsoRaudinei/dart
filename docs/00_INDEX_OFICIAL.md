@@ -76,6 +76,7 @@ Toda decisão estrutural deve ser comparada contra este documento.
 |---|---|
 | `03_ENFORCEMENT/enforcement-rules.md` | Regras de fronteira documentadas |
 | `03_ENFORCEMENT/arch_check_documentation.md` | Documentação do script `arch_check.sh` |
+| `03_ENFORCEMENT/supervisor-merge-gate.md` | Cadeado de merge: ruleset + hook + papéis supervisor/executor/revisor |
 
 ---
 
@@ -100,7 +101,8 @@ Se algum passo for ignorado → **alteração estrutural inválida**.
 
 **Script:** `tool/arch_check.sh`  
 **CI:** `.github/workflows/architecture.yml`  
-**Comportamento:** bloqueia PR se houver violação de fronteira arquitetural.
+**Merge:** `docs/03_ENFORCEMENT/supervisor-merge-gate.md` (ruleset + hook; `main` só via PR rebase)  
+**Comportamento:** bloqueia PR se houver violação de fronteira arquitetural. Push direto na `main` é recusado pelo ruleset.
 
 Regras implementadas automaticamente:
 - REGRA 1: `core/` não importa `modules/` (exceto `app_router.dart`)
