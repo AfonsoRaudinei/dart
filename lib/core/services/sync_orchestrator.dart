@@ -72,6 +72,8 @@ class SyncOrchestrator extends ChangeNotifier {
   }
 
   Future<void> triggerSync(SyncPriority priority) async {
+    if (_modules.isEmpty) return;
+
     final inFlight = _inFlightSync;
     if (inFlight != null) {
       if (priority == SyncPriority.immediate) {
@@ -99,6 +101,8 @@ class SyncOrchestrator extends ChangeNotifier {
   }
 
   Future<void> _runSyncCycle() async {
+    if (_modules.isEmpty) return;
+
     final connectivity = _ref.read(connectivityServiceProvider);
     final isConnected = await connectivity.isConnected;
     if (!isConnected || _isDisposed) return;
@@ -110,7 +114,6 @@ class SyncOrchestrator extends ChangeNotifier {
     _notifyIfAlive();
 
     try {
-      if (_modules.isEmpty) return;
 
       _lastResults = await runSyncModulesByTier(
         List<SyncModule>.unmodifiable(_modules),
