@@ -28,6 +28,8 @@ gh pr view <n> --json state,mergedAt,mergeStateStatus,autoMergeRequest,url
 
 Se não houver `mergedAt`, a tarefa **não está pronta**. Texto obrigatório se o auto-merge estiver armado: `auto-merge armado, pendente de CI — ainda não está na main`.
 
+Trilha restore após reinstall (hydrate + sync + SQL live): `.agent/CHECKLIST_RESTORE_REINSTALL.md` — não marcar “feito” só com SQL no repo ou hot restart.
+
 ---
 
 # Prompt — Coluna direita do mapa (REGRA-MAP-CHROME-1)
