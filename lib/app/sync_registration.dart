@@ -12,10 +12,12 @@ import '../modules/consultoria/relatorios/data/relatorio_sync_service.dart';
 import '../modules/consultoria/relatorios/repositories/relatorio_repository_impl.dart';
 import '../modules/marketing/data/repositories/marketing_case_repository_impl.dart';
 import '../modules/marketing/data/services/marketing_sync_service.dart';
+import '../modules/carteira/data/carteira_sync_service.dart';
 
 void registerSyncModules(SyncOrchestrator orchestrator) {
   final supabase = Supabase.instance.client;
   orchestrator.registerModule(AgronomicSyncModule(supabase));
+  orchestrator.registerModule(CarteiraSyncModule(supabase));
   orchestrator.registerModule(DrawingSyncModule());
   orchestrator.registerModule(OccurrenceSyncModule(supabase));
   orchestrator.registerModule(VisitSyncModule(supabase));
@@ -33,6 +35,20 @@ class AgronomicSyncModule implements SyncModule {
   int get syncTier => 0;
   @override
   Future<void> sync() => AgronomicSyncService(supabase).syncNow();
+}
+
+class CarteiraSyncModule implements SyncModule {
+  final SupabaseClient supabase;
+  CarteiraSyncModule(this.supabase);
+  @override
+  String get name => 'Carteira';
+  @override
+  int get syncTier => 1;
+  @override
+  Future<void> sync() => CarteiraSyncService(
+    supabase: supabase,
+    currentUserId: () => supabase.auth.currentUser?.id,
+  ).syncNow();
 }
 
 class DrawingSyncModule implements SyncModule {
