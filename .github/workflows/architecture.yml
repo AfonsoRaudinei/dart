@@ -1,7 +1,10 @@
 name: Enforcement Arquitetural
 
 # Dispara em Pull Request para qualquer branch protegida
-# e em push direto para main e release/* (fallback de segurança)
+# e em push direto para main e release/* (fallback de segurança).
+# LOAD-BEARING: o ruleset SoloForte exige o check deste workflow no PR.
+# Não remover on.pull_request — sem ele o merge trava ou libera sem gate.
+# Ver docs/03_ENFORCEMENT/supervisor-merge-gate.md
 on:
   pull_request:
     branches:
