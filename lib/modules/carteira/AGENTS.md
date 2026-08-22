@@ -16,6 +16,13 @@ Documentação completa: `docs/02_ARQUITETURA_ATIVA/MODULO_CARTEIRA.md`
 - Importar outros `modules/*` diretamente.
 - Duplicar entidades de consultoria para contornar contrato.
 - Persistir oportunidade sem `user_id` e `sync_status` quando sincronizavel.
+- Hard delete de lançamento (`carteira_lancamentos`) — usar soft delete (`deleted_at` + `pending_sync`). ADR-051.
+
+## Sync remoto (ADR-051)
+
+- As 7 tabelas SQLite têm espelho no Supabase. `CarteiraSyncModule` (tier 1) hidrata no login.
+- `sync_status` obrigatório. Sem JWT o `syncNow()` é no-op.
+- Depois de reinstalar, metas/safras/lançamentos/categorias/tipos voltam se já tinham sido sincronizados.
 
 ## Qualidade obrigatoria
 
