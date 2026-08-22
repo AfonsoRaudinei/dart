@@ -38,6 +38,13 @@ gh pr view <n> --json state,mergedAt,mergeStateStatus,autoMergeRequest,url
 
 ---
 
+## Restore pós-reinstall (mesmo login)
+
+Checklist vivo de **conclusão / não conclusão:** `.agent/CHECKLIST_RESTORE_REINSTALL.md`.  
+Schema live da carteira (ADR-051) **não** é entrega só porque o SQL está no Git — tem de existir no projeto `pyoejhhkjlrjijiviryq`. Código Flutter só conta com `mergedAt`. QA no aparelho é item separado (hot restart não basta).
+
+---
+
 ## Memória persistente
 
 Ler: `.agent/AGENT_MEMORIA.md` (**canônico**). `prompt/AGENT_MEMORIA.md` só redireciona.
