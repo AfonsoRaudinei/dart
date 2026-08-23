@@ -38,6 +38,13 @@ gh pr view <n> --json state,mergedAt,mergeStateStatus,autoMergeRequest,url
 
 ---
 
+## Restore pós-reinstall (mesmo login)
+
+Checklist: `.agent/CHECKLIST_RESTORE_REINSTALL.md` · PRD: `docs/PRD_RESTORE_REINSTALL_IPA.md`.  
+Código + SQL live + IPA 224 **não** são 100% da trilha. 100% exige live counts > 0 (F2) e wipe (F3). Tela Sincronizando ok + nuvem 0 = SQLite deste install vazio ou push sem gravar — **não** desinstalar para “provar restore”.
+
+---
+
 ## Memória persistente
 
 Ler: `.agent/AGENT_MEMORIA.md` (**canônico**). `prompt/AGENT_MEMORIA.md` só redireciona.
