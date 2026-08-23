@@ -167,3 +167,4 @@ flutter test test/regression/sheets/soloforte_sheet_contract_test.dart
 - `.agent/AGENT_REGRAS.md` — REGRA-SHEET-BLAST-1 + REGRA-MAP-CHROME-1
 - `AGENTIPA.md` — histórico de builds
 - `test/regression/sheets/soloforte_sheet_contract_test.dart` — gate de contrato
+- `.agent/CHECKLIST_RESTORE_REINSTALL.md` — trilha restore pós-reinstall (fora do escopo SheetSkin desta auditoria)
