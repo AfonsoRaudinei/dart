@@ -3,7 +3,7 @@
 **Produto:** SoloForte App (Flutter · iOS · Android · Map-First)  
 **Versão do documento:** 1.0  
 **Data:** 22/Ago/2026  
-**Status:** ATIVO — execução  
+**Status 22/Ago noite:** F0+F1 feitos (55%). F2.4 **não** subiu o live (counts ainda 0 após IPA 224 + tela Sincronizando). F3 **bloqueada** — wipe não restaura o que nunca foi enviado.  
 **Placar vivo:** `.agent/CHECKLIST_RESTORE_REINSTALL.md`  
 **Cadeado:** `docs/03_ENFORCEMENT/supervisor-merge-gate.md` · REGRA-ENTREGA-1  
 **Contrato remoto carteira:** ADR-051  
@@ -15,10 +15,10 @@
 
 Desinstalar o app apaga o sandbox (`soloforte.db`). Logout **não** apaga. O consultor precisa reabrir a **mesma conta** e ver de volta o que já estava no remoto.
 
-O código e o SQL live **já estão prontos** (40/100). Os 60 pontos que faltam **não são feature nova**: são um IPA que contém `173ce7b` e um ciclo de prova no iPhone.
+O código e o SQL live **já estão prontos** (40/100). F1 (IPA 224) **feito** neste Mac (55/100). F2 não empurrou linhas ao live. F3 não fecha restore.
 
-**Estado agora:** 40%  
-**Meta deste PRD:** 100% da trilha restore (tabela de 8 itens)  
+**Estado agora:** 55%  
+**Meta deste PRD:** 100% da trilha restore (tabela de 8 itens) — **ainda aberto** enquanto live mapa/carteira = 0  
 **Prova:** IPA. Não é `flutter run`. Não é hot restart.
 
 ---
@@ -48,8 +48,8 @@ Consultor com IPA `1.34.0+224` (ou maior, desde que o SHA do archive contenha `1
 |---|---|---:|---|
 | 1 | Código `main` hydrate + relatórios + marketing (#67) | 25 | feito |
 | 2 | Código `main` carteira + SQL live (#68) | 15 | feito |
-| 3 | IPA contendo `173ce7b`+ (`+224`, não reutilizar `+223`) | 15 | **falta** |
-| 4 | Fase A: IPA por cima + live counts sobem | 20 | **falta** |
+| 3 | IPA contendo `173ce7b`+ (`+224`, não reutilizar `+223`) | 15 | **feito** · archive `./build_testflight.sh` Exit 0 · bump PR [#70](https://github.com/AfonsoRaudinei/dart/pull/70) `bd1fabb` |
+| 4 | Fase A: IPA por cima + live counts sobem | 20 | **0** · 22/Ago noite: live `clients`/`carteira_*`/`relatorios_v2`/`marketing_cases` ainda 0 após tela Sincronizando |
 | 5 | Fase B mapa | 7 | **falta** |
 | 6 | Fase B carteira | 8 | **falta** |
 | 7 | Fase B lista de relatórios | 5 | **falta** |
@@ -129,9 +129,10 @@ Código #67/#68 na `main` + 7 tabelas carteira no live.
 | F1.2 | Humano Mac | `git pull origin main` · `./build_testflight.sh` · `./tool/release_store_check.sh` | IPA em `build/ios/ipa/soloforte_app.ipa`, `CFBundleVersion=224`, `SUPABASE_URL` do live |
 | F1.3 | Humano Mac | Enviar TestFlight (ou ad hoc no mesmo UDID) · registrar em `AGENTIPA.md` | Build processável no aparelho |
 
-**Proibido:** archive em cima de `+223`; archive de SHA anterior a `173ce7b`.
+**Proibido:** archive em cima de `+223`; archive de SHA anterior a `173ce7b`.  
+**Bloqueio típico:** codesign / “No Accounts” — parar; não marcar F1.
 
-**Bloqueio típico:** codesign / “No Accounts” — parar; não marcar F1. Capacidade extra: restaurar certificado, não “inventar” IPA velho.
+**Feito 22/Ago:** F1.1 `mergedAt` PR #70 `bd1fabb`. F1.2 `./build_testflight.sh` Exit 0 (`1.34.0+224`, MinOS 15, `SUPABASE_URL` no binário). F1.3: enviar Transporter se o aparelho ainda não tiver o 224 via TestFlight.
 
 ---
 
@@ -147,6 +148,10 @@ Código #67/#68 na `main` + 7 tabelas carteira no live.
 | F2.4 | Supervisor | Counts live, sem PII | Para cada superfície com N>0 no aparelho, a tabela remota correspondente `> 0` |
 
 **Não desinstalar** se F2.4 falhar. Investigar sync/JWT/rede. Placar F2 permanece 0.
+
+**Resultado 22/Ago noite:** utilizador abriu o 224, viu Sincronizando, ciclo ok. Supervisor recontou o live: mapa/carteira/relatórios/marketing cases = **0**. Interpretação: SQLite deste install estava vazio (TestFlight como app novo, ou uninstall prévio) **ou** push não gravou. Nuvem vazia + local vazio = app vazio — não é bug da tela de sync. **Não avançar F3 neste aparelho.**
+
+---
 
 ---
 
@@ -213,14 +218,18 @@ Gate: P0/P1 não mergeia; path crítico pede ok; depois IPA novo.
 
 ## 9. Critérios de aceite (produto)
 
-- [ ] IPA `CFBundleVersion ≥ 224` gerado de `origin/main` que contém `173ce7b`
+- [x] IPA `CFBundleVersion ≥ 224` gerado de `origin/main` que contém `173ce7b`
 - [ ] Fase A sem uninstall; live counts sobem onde N>0
 - [ ] Fase B: mesmo IPA, mesmo login; superfícies aplicáveis restauram
 - [ ] Placar 100/100 (ou N/A comprovado nos itens 5–8 vazios)
-- [ ] Nenhuma das linhas “fora de escopo” usada como critério de passa
+- [x] Nenhuma das linhas “fora de escopo” usada como critério de passa
 
 ---
 
 ## 10. Próxima ação única
 
-**F1.1 + F1.2:** bump `1.34.0+224` na `main` e archive neste Mac. Sem esse IPA, F2 e F3 têm capacidade zero.
+**Não desinstalar o 224 esperando restore.** Live mapa/carteira ainda 0.
+
+Se existir **outro** iPhone com o SQLite antigo (app **não** apagado): instalar 224 **por cima** e repetir F2.4.
+
+Se não existir original local: os reparos de **código** (#67/#68 + SQL live + IPA 224) estão entregues; a prova F3 desta conta **não** fecha. Não inventar dados.
