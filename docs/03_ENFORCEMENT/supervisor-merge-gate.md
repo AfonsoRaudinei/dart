@@ -25,7 +25,7 @@ Não existe `.review-ok` nem trailer de aprovação: quem escreveria o marcador 
 
 ## Ruleset — verificado na API (não copiado de memória)
 
-GET `repos/AfonsoRaudinei/dart/rulesets/21199633` em 22/Ago/2026:
+GET `repos/AfonsoRaudinei/dart/rulesets/21199633` em 24/Ago/2026 (reconfirmado; criado 22/Ago):
 
 - `enforcement`: `active`
 - `bypass_actors`: `[]`
@@ -89,3 +89,13 @@ O hook recusa `refs/heads/main` e `refs/heads/release/*`. Não consulta marcador
 ## Prova do cadeado
 
 `current_user_can_bypass: never` no GET. Push direto na `main` com a conta admin deve ser rejeitado. Se passar, o ruleset é teatro — corrigir antes de declarar o gate ativo.
+
+**Prova 24/Ago/2026** (conta admin, `git push origin HEAD:main` com commit vazio, depois `reset` local):
+
+```
+remote: error: GH013: Repository rule violations found for refs/heads/main.
+remote: - Changes must be made through a pull request.
+remote: - Required status check "Verificação de Fronteiras Arquiteturais" is expected.
+```
+
+Push recusado (`PUSH_EXIT:1`). Settings do repo no mesmo dia: `allow_auto_merge=true`, `allow_rebase_merge=true`, `allow_squash_merge=false`, `allow_merge_commit=false`.
