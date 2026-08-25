@@ -49,6 +49,62 @@ void main() {
       );
     });
 
+    test('fromRemote com lat/long legado popula local lat/long', () {
+      final local = OccurrenceRemoteMapper.fromRemote(
+        {
+          'id': 'remote-legacy',
+          'user_id': 'consultant-1',
+          'lat': -10.25,
+          'long': -48.32,
+          'created_at': '2026-06-21T10:00:00Z',
+          'updated_at': '2026-06-21T11:00:00Z',
+        },
+        localId: 'remote-legacy',
+        cachedByUserId: null,
+      );
+
+      expect(local['lat'], -10.25);
+      expect(local['long'], -48.32);
+    });
+
+    test('fromRemote com latitude/longitude canônico popula local lat/long', () {
+      final local = OccurrenceRemoteMapper.fromRemote(
+        {
+          'id': 'remote-canonical',
+          'user_id': 'consultant-1',
+          'latitude': -12.5,
+          'longitude': -45.8,
+          'created_at': '2026-06-21T10:00:00Z',
+          'updated_at': '2026-06-21T11:00:00Z',
+        },
+        localId: 'remote-canonical',
+        cachedByUserId: null,
+      );
+
+      expect(local['lat'], -12.5);
+      expect(local['long'], -45.8);
+    });
+
+    test('toRemote envia latitude/longitude e lat/long sem sync_status', () {
+      final occurrence = Occurrence(
+        id: 'local-1',
+        type: 'Info',
+        description: 'Teste',
+        lat: -10.25,
+        long: -48.32,
+        createdAt: DateTime.utc(2026, 6, 21),
+        syncStatus: 'pending_sync',
+      );
+
+      final remote = OccurrenceRemoteMapper.toRemote(occurrence, 'owner-1');
+
+      expect(remote['latitude'], -10.25);
+      expect(remote['longitude'], -48.32);
+      expect(remote['lat'], -10.25);
+      expect(remote['long'], -48.32);
+      expect(remote.containsKey('sync_status'), isFalse);
+    });
+
     test('preserva owner, identidade externa e payload completo no cache', () {
       final local = OccurrenceRemoteMapper.fromRemote(
         {
