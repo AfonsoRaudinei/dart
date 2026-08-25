@@ -145,21 +145,31 @@ class VisitSyncService {
       'farm_id': visit.farmId,
       'area_id': visit.areaId,
       'activity_type': visit.activityType,
-      'started_at': visit.startTime.toIso8601String(),
-      'ended_at': visit.endTime?.toIso8601String(),
-      'sync_status': 'synced',
+      'start_time': visit.startTime.toIso8601String(),
+      'end_time': visit.endTime?.toIso8601String(),
+      'initial_lat': visit.initialLat,
+      'initial_long': visit.initialLong,
+      'status': visit.status,
+      'created_at': visit.createdAt.toIso8601String(),
       'updated_at': visit.updatedAt.toIso8601String(),
     };
   }
 
   @visibleForTesting
   static Map<String, dynamic> fromSupabasePayload(Map<String, dynamic> remote) {
-    final startedAt = remote['started_at'] != null
+    final startTime = remote['start_time'] != null
+        ? DateTime.parse(remote['start_time'] as String)
+        : remote['started_at'] != null
         ? DateTime.parse(remote['started_at'] as String)
         : DateTime.now();
-    final endedAt = remote['ended_at'] != null
+    final endTime = remote['end_time'] != null
+        ? DateTime.parse(remote['end_time'] as String)
+        : remote['ended_at'] != null
         ? DateTime.parse(remote['ended_at'] as String)
         : null;
+
+    final status = remote['status'] as String? ??
+        (endTime != null ? 'finished' : 'active');
 
     return {
       'id': remote['id'],
@@ -168,12 +178,14 @@ class VisitSyncService {
       'farm_id': remote['farm_id'],
       'area_id': remote['area_id'],
       'activity_type': remote['activity_type'],
-      'start_time': startedAt.toIso8601String(),
-      'end_time': endedAt?.toIso8601String(),
-      'initial_lat': 0.0,
-      'initial_long': 0.0,
-      'status': endedAt != null ? 'finished' : 'active',
-      'created_at': startedAt.toIso8601String(),
+      'start_time': startTime.toIso8601String(),
+      'end_time': endTime?.toIso8601String(),
+      'initial_lat': (remote['initial_lat'] as num?)?.toDouble() ?? 0.0,
+      'initial_long': (remote['initial_long'] as num?)?.toDouble() ?? 0.0,
+      'status': status,
+      'created_at': remote['created_at'] != null
+          ? DateTime.parse(remote['created_at'] as String).toIso8601String()
+          : startTime.toIso8601String(),
       'updated_at': remote['updated_at'] ?? DateTime.now().toIso8601String(),
       'sync_status': 0,
     };
