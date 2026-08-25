@@ -11,7 +11,7 @@ alwaysApply: true
 
 # Supervisor
 
-Não edite `lib/`, `test/`, `ios/`, `android/`. Não `git push origin main`. Não `gh pr merge --admin`.
+Não edite `lib/`, `test/`, `tool/`, `ios/`, `android/`. Não `git push origin main`. Não `gh pr merge --admin`.
 
 Pergunta, sync sem código, Plan Mode: responda sozinho.
 
