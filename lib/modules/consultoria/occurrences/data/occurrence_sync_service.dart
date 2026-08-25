@@ -329,8 +329,9 @@ class OccurrenceRemoteMapper {
       'photo_path': occurrence.photoPath,
       'latitude': coordinates?.latitude,
       'longitude': coordinates?.longitude,
+      'lat': coordinates?.latitude,
+      'long': coordinates?.longitude,
       'geometry': coordinates?.geometry,
-      'sync_status': isDeleted ? 'deleted_local' : 'synced',
       'updated_at': occurrence.updatedAt.toUtc().toIso8601String(),
       'category': occurrence.category,
       'status': occurrence.status,
@@ -359,8 +360,8 @@ class OccurrenceRemoteMapper {
   }) {
     final geometry = _geometryJson(remote['geometry']);
     final coordinates = resolveCoordinates(
-      latitude: _asDouble(remote['latitude']),
-      longitude: _asDouble(remote['longitude']),
+      latitude: _asDouble(_first(remote, ['latitude', 'lat'])),
+      longitude: _asDouble(_first(remote, ['longitude', 'long'])),
       geometry: geometry,
     );
     return {
@@ -451,6 +452,14 @@ class OccurrenceRemoteMapper {
   static String? _geometryJson(Object? value) {
     if (value == null) return null;
     return value is String ? value : jsonEncode(value);
+  }
+
+  static Object? _first(Map<String, dynamic> row, List<String> keys) {
+    for (final key in keys) {
+      final value = row[key];
+      if (value != null) return value;
+    }
+    return null;
   }
 
   static double? _asDouble(Object? value) {
