@@ -4,7 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 void main() {
   group('AgronomicSyncService mappers', () {
-    test('clientLocalToRemote envia schema completo e aliases legados', () {
+    test('clientLocalToRemote envia schema PT sem aliases EN', () {
       final payload = AgronomicSyncService.clientLocalToRemote({
         'id': 'client-1',
         'user_id': 'user-1',
@@ -22,17 +22,17 @@ void main() {
       });
 
       expect(payload['nome'], 'Jose Augusto Miranda');
-      expect(payload['name'], 'Jose Augusto Miranda');
       expect(payload['telefone'], '63999990000');
-      expect(payload['phone'], '63999990000');
       expect(payload['cidade'], 'Crixas');
-      expect(payload['city'], 'Crixas');
       expect(payload['uf'], 'TO');
-      expect(payload['state'], 'TO');
       expect(payload['cpf_cnpj'], '12345678901');
-      expect(payload['document'], '12345678901');
       expect(payload['area_total'], 120.5);
-      expect(payload['area_ha'], 120.5);
+      expect(payload.containsKey('name'), isFalse);
+      expect(payload.containsKey('phone'), isFalse);
+      expect(payload.containsKey('city'), isFalse);
+      expect(payload.containsKey('state'), isFalse);
+      expect(payload.containsKey('document'), isFalse);
+      expect(payload.containsKey('area_ha'), isFalse);
       expect(payload.containsKey('sync_status'), isFalse);
     });
 
@@ -117,11 +117,32 @@ void main() {
       });
 
       expect(farmPayload['cliente_id'], 'client-1');
-      expect(farmPayload['client_id'], 'client-1');
       expect(farmPayload['nome'], 'Fazenda Boa Vista');
-      expect(farmPayload['name'], 'Fazenda Boa Vista');
       expect(farmPayload['area_total'], 80.0);
-      expect(farmPayload['area_ha'], 80.0);
+      expect(farmPayload.containsKey('client_id'), isFalse);
+      expect(farmPayload.containsKey('name'), isFalse);
+      expect(farmPayload.containsKey('area_ha'), isFalse);
+
+      final fieldPayload = AgronomicSyncService.fieldLocalToRemote({
+        'id': 'field-1',
+        'user_id': 'user-1',
+        'fazenda_id': 'farm-1',
+        'codigo': 'T1',
+        'nome': 'Talhao 1',
+        'area_produtiva': 22.3,
+        'bordadura_geo': '{"type":"Polygon"}',
+        'created_at': '2026-06-05T10:00:00.000',
+        'updated_at': '2026-06-05T10:00:00.000',
+      });
+
+      expect(fieldPayload['fazenda_id'], 'farm-1');
+      expect(fieldPayload['nome'], 'Talhao 1');
+      expect(fieldPayload['area_produtiva'], 22.3);
+      expect(fieldPayload['bordadura_geo'], '{"type":"Polygon"}');
+      expect(fieldPayload.containsKey('farm_id'), isFalse);
+      expect(fieldPayload.containsKey('name'), isFalse);
+      expect(fieldPayload.containsKey('area_ha'), isFalse);
+      expect(fieldPayload.containsKey('geometry'), isFalse);
 
       final fieldLocal = AgronomicSyncService.fieldRemoteToLocal({
         'id': 'field-1',
