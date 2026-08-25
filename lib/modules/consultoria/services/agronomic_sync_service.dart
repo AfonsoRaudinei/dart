@@ -408,32 +408,22 @@ class AgronomicSyncService {
     Map<String, Object?> row, {
     bool includeNullDeletedAt = false,
   }) {
-    final nome = row['nome'];
-    final telefone = row['telefone'];
-    final documento = row['documento'] ?? row['cpf_cnpj'];
-    final cidade = row['cidade'];
-    final uf = row['uf'];
-
+    // Push só no contrato PT (20260605). Aliases EN (name/phone/…) geram
+    // PGRST204 no live que ainda não tem essas colunas; o upsert inteiro cai.
     final payload = _withoutNulls({
       'id': row['id'],
       'user_id': row['user_id'],
-      'nome': nome,
-      'name': nome,
+      'nome': row['nome'],
       'documento': row['documento'],
-      'document': documento,
-      'telefone': telefone,
-      'phone': telefone,
+      'telefone': row['telefone'],
       'email': row['email'],
-      'cidade': cidade,
-      'city': cidade,
-      'uf': uf,
-      'state': uf,
+      'cidade': row['cidade'],
+      'uf': row['uf'],
       'foto_path': row['foto_path'],
       'observacoes': row['observacoes'],
       'data_nascimento': row['data_nascimento'],
       'cpf_cnpj': row['cpf_cnpj'],
       'area_total': row['area_total'],
-      'area_ha': row['area_total'],
       'tipo_propriedade': row['tipo_propriedade'],
       'sistema_irrigacao': row['sistema_irrigacao'],
       'solo_tipo': row['solo_tipo'],
@@ -457,25 +447,14 @@ class AgronomicSyncService {
 
   @visibleForTesting
   static Map<String, dynamic> farmLocalToRemote(Map<String, Object?> row) {
-    final nome = row['nome'];
-    final clienteId = row['cliente_id'];
-    final municipio = row['municipio'];
-    final uf = row['uf'];
-    final area = row['area_total'];
-
     return _withoutNulls({
       'id': row['id'],
       'user_id': row['user_id'],
-      'cliente_id': clienteId,
-      'client_id': clienteId,
-      'nome': nome,
-      'name': nome,
-      'municipio': municipio,
-      'city': municipio,
-      'uf': uf,
-      'state': uf,
-      'area_total': area,
-      'area_ha': area,
+      'cliente_id': row['cliente_id'],
+      'nome': row['nome'],
+      'municipio': row['municipio'],
+      'uf': row['uf'],
+      'area_total': row['area_total'],
       'created_at': row['created_at'],
       'updated_at': row['updated_at'],
       'deleted_at': row['deleted_at'],
@@ -484,23 +463,14 @@ class AgronomicSyncService {
 
   @visibleForTesting
   static Map<String, dynamic> fieldLocalToRemote(Map<String, Object?> row) {
-    final nome = row['nome'];
-    final fazendaId = row['fazenda_id'];
-    final area = row['area_produtiva'];
-    final geometry = row['bordadura_geo'];
-
     return _withoutNulls({
       'id': row['id'],
       'user_id': row['user_id'],
-      'fazenda_id': fazendaId,
-      'farm_id': fazendaId,
+      'fazenda_id': row['fazenda_id'],
       'codigo': row['codigo'],
-      'nome': nome,
-      'name': nome,
-      'area_produtiva': area,
-      'area_ha': area,
-      'bordadura_geo': geometry,
-      'geometry': _localGeometryToRemote(geometry),
+      'nome': row['nome'],
+      'area_produtiva': row['area_produtiva'],
+      'bordadura_geo': row['bordadura_geo'],
       'centro_geo': row['centro_geo'],
       'created_at': row['created_at'],
       'updated_at': row['updated_at'],
@@ -636,15 +606,6 @@ class AgronomicSyncService {
   static DateTime? _parseDate(Object? value) {
     if (value is String) return DateTime.tryParse(value);
     return null;
-  }
-
-  static Object? _localGeometryToRemote(Object? value) {
-    if (value is! String || value.isEmpty) return value;
-    try {
-      return jsonDecode(value);
-    } catch (_) {
-      return value;
-    }
   }
 
   static String? _remoteGeometryToLocalString(Object? value) {
