@@ -14,6 +14,16 @@
 4. **Salvar regras** em `.agent/` + `.cursor/rules/` (canônico); `prompt/` só para prompts de execução
 5. **Correção não é entrega enquanto não estiver em `origin/main`** — auto-merge armado não conta (REGRA-ENTREGA-1, ver `AGENTS.md`)
 
+### Hook local (uma vez, humano)
+
+Agentes **não** rodam `git config`. No clone:
+
+```bash
+git config core.hooksPath tool/hooks
+```
+
+O hook `tool/hooks/pre-push` recusa `main` e `release/*`. Cadeado: `docs/03_ENFORCEMENT/supervisor-merge-gate.md`.
+
 ---
 
 ## Dois ambientes — limitação técnica real
