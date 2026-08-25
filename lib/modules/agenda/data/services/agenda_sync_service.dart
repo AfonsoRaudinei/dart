@@ -83,32 +83,9 @@ class AgendaSyncService {
         }
 
         await NetworkPolicy.withTimeout(
-          () => _supabase.from('agenda_events').upsert({
-            'id': event.id,
-            'user_id': userId,
-            'tipo': event.tipo.name,
-            'cliente_id': event.clienteId,
-            'fazenda_id': event.fazendaId,
-            'talhao_id': event.talhaoId,
-            'titulo': event.titulo,
-            'data_inicio_planejada': event.dataInicioPlanejada
-                .toIso8601String(),
-            'data_fim_planejada': event.dataFimPlanejada.toIso8601String(),
-            'status': event.status.name,
-            'visit_session_id': event.visitSessionId,
-            'serie_id': event.serieId,
-            'created_at': event.createdAt.toIso8601String(),
-            'updated_at': event.updatedAt.toIso8601String(),
-            'start_time': event.startTime == null
-                ? null
-                : '${event.startTime!.hour.toString().padLeft(2, '0')}:${event.startTime!.minute.toString().padLeft(2, '0')}',
-            'end_time': event.endTime == null
-                ? null
-                : '${event.endTime!.hour.toString().padLeft(2, '0')}:${event.endTime!.minute.toString().padLeft(2, '0')}',
-            'priority': event.priority.name,
-            'latitude': event.latitude,
-            'longitude': event.longitude,
-          }),
+          () => _supabase.from('agenda_events').upsert(
+            AgendaEventRemoteMapper.eventLocalToRemote(event, userId),
+          ),
         );
 
         await _repository.markEventAsSynced(event.id);
@@ -250,40 +227,32 @@ class AgendaSyncService {
   // ═══════════════════════════════════════════════════════════════════
 
   Event _mapToEvent(Map<String, dynamic> map) {
-    TimeOfDay? parseTime(dynamic value) {
-      if (value == null) return null;
-      final text = value.toString().trim();
-      if (text.isEmpty) return null;
-      final parts = text.split(':');
-      if (parts.length < 2) return null;
-      final hour = int.tryParse(parts[0]);
-      final minute = int.tryParse(parts[1]);
-      if (hour == null || minute == null) return null;
-      return TimeOfDay(hour: hour, minute: minute);
-    }
+    final local = AgendaEventRemoteMapper.eventRemoteToLocal(map);
 
     return Event(
-      id: map['id'],
-      tipo: EventType.values.byName(map['tipo']),
-      clienteId: map['cliente_id'],
-      fazendaId: map['fazenda_id'],
-      talhaoId: map['talhao_id'],
-      titulo: map['titulo'],
-      dataInicioPlanejada: DateTime.parse(map['data_inicio_planejada']),
-      dataFimPlanejada: DateTime.parse(map['data_fim_planejada']),
-      status: EventStatus.values.byName(map['status']),
-      visitSessionId: map['visit_session_id'],
-      serieId: map['serie_id'],
-      createdAt: DateTime.parse(map['created_at']),
-      updatedAt: DateTime.parse(map['updated_at']),
-      syncStatus: 'synced',
-      startTime: parseTime(map['start_time']),
-      endTime: parseTime(map['end_time']),
-      priority: VisitPriority.fromString(
-        map['priority']?.toString() ?? 'normal',
+      id: local['id'],
+      tipo: EventType.values.byName(local['tipo'] as String),
+      clienteId: local['cliente_id'] as String,
+      fazendaId: local['fazenda_id'] as String?,
+      talhaoId: local['talhao_id'] as String?,
+      titulo: local['titulo'] as String,
+      dataInicioPlanejada: DateTime.parse(
+        local['data_inicio_planejada'] as String,
       ),
-      latitude: (map['latitude'] as num?)?.toDouble(),
-      longitude: (map['longitude'] as num?)?.toDouble(),
+      dataFimPlanejada: DateTime.parse(local['data_fim_planejada'] as String),
+      status: EventStatus.values.byName(local['status'] as String),
+      visitSessionId: local['visit_session_id'] as String?,
+      serieId: local['serie_id'] as String?,
+      createdAt: DateTime.parse(local['created_at'] as String),
+      updatedAt: DateTime.parse(local['updated_at'] as String),
+      syncStatus: 'synced',
+      startTime: AgendaEventRemoteMapper.parseTime(local['start_time']),
+      endTime: AgendaEventRemoteMapper.parseTime(local['end_time']),
+      priority: VisitPriority.fromString(
+        local['priority']?.toString() ?? 'normal',
+      ),
+      latitude: (local['latitude'] as num?)?.toDouble(),
+      longitude: (local['longitude'] as num?)?.toDouble(),
     );
   }
 
@@ -302,5 +271,138 @@ class AgendaSyncService {
       createdAt: DateTime.parse(map['created_at']),
       syncStatus: 'synced',
     );
+  }
+}
+
+/// Mapper dual PT + EN legado para `agenda_events` remoto.
+class AgendaEventRemoteMapper {
+  const AgendaEventRemoteMapper._();
+
+  @visibleForTesting
+  static Map<String, dynamic> eventLocalToRemote(Event event, String userId) {
+    final dataInicio = event.dataInicioPlanejada.toIso8601String();
+    final dataFim = event.dataFimPlanejada.toIso8601String();
+    final areaId = event.talhaoId ?? event.fazendaId;
+    final realizedAt = event.status.isFinished ? dataFim : null;
+
+    return {
+      'id': event.id,
+      'user_id': userId,
+      'tipo': event.tipo.name,
+      'cliente_id': event.clienteId,
+      'fazenda_id': event.fazendaId,
+      'talhao_id': event.talhaoId,
+      'titulo': event.titulo,
+      'data_inicio_planejada': dataInicio,
+      'data_fim_planejada': dataFim,
+      'status': event.status.name,
+      'visit_session_id': event.visitSessionId,
+      'serie_id': event.serieId,
+      'created_at': event.createdAt.toIso8601String(),
+      'updated_at': event.updatedAt.toIso8601String(),
+      'start_time': formatTime(event.startTime),
+      'end_time': formatTime(event.endTime),
+      'priority': event.priority.name,
+      'latitude': event.latitude,
+      'longitude': event.longitude,
+      'producer_id': event.clienteId.isEmpty ? null : event.clienteId,
+      'area_id': areaId,
+      'activity_type': event.tipo.name,
+      'scheduled_date': dataInicio,
+      'description': event.titulo,
+      'realized_at': realizedAt,
+    };
+  }
+
+  @visibleForTesting
+  static Map<String, dynamic> eventRemoteToLocal(Map<String, dynamic> remote) {
+    final dataInicioRaw = _first(remote, [
+      'data_inicio_planejada',
+      'scheduled_date',
+    ]);
+    final dataInicio = dataInicioRaw != null
+        ? DateTime.parse(dataInicioRaw.toString())
+        : DateTime.now();
+
+    final dataFimRaw = _first(remote, ['data_fim_planejada', 'realized_at']);
+    final dataFim = dataFimRaw != null
+        ? DateTime.parse(dataFimRaw.toString())
+        : dataInicio.add(const Duration(hours: 1));
+
+    return {
+      'id': remote['id'],
+      'tipo': _parseTipoName(_first(remote, ['tipo', 'activity_type'])),
+      'cliente_id': _first(remote, ['cliente_id', 'producer_id'])?.toString() ??
+          '',
+      'fazenda_id': remote['fazenda_id']?.toString(),
+      'talhao_id':
+          _first(remote, ['talhao_id', 'area_id'])?.toString(),
+      'titulo': _first(remote, ['titulo', 'description'])?.toString() ?? '',
+      'data_inicio_planejada':
+          dataInicioRaw?.toString() ?? dataInicio.toIso8601String(),
+      'data_fim_planejada':
+          dataFimRaw?.toString() ?? dataFim.toIso8601String(),
+      'status': _parseStatusName(remote['status']),
+      'visit_session_id': remote['visit_session_id']?.toString(),
+      'serie_id': remote['serie_id']?.toString(),
+      'created_at':
+          remote['created_at']?.toString() ?? DateTime.now().toIso8601String(),
+      'updated_at':
+          remote['updated_at']?.toString() ?? DateTime.now().toIso8601String(),
+      'start_time': remote['start_time'],
+      'end_time': remote['end_time'],
+      'priority': remote['priority']?.toString() ?? 'normal',
+      'latitude': remote['latitude'],
+      'longitude': remote['longitude'],
+    };
+  }
+
+  @visibleForTesting
+  static TimeOfDay? parseTime(dynamic value) {
+    if (value == null) return null;
+    final text = value.toString().trim();
+    if (text.isEmpty) return null;
+    final parts = text.split(':');
+    if (parts.length < 2) return null;
+    final hour = int.tryParse(parts[0]);
+    final minute = int.tryParse(parts[1]);
+    if (hour == null || minute == null) return null;
+    return TimeOfDay(hour: hour, minute: minute);
+  }
+
+  @visibleForTesting
+  static String? formatTime(TimeOfDay? time) {
+    if (time == null) return null;
+    return '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
+  }
+
+  static dynamic _first(Map<String, dynamic> map, List<String> keys) {
+    for (final key in keys) {
+      final value = map[key];
+      if (value == null) continue;
+      if (value is String && value.trim().isEmpty) continue;
+      return value;
+    }
+    return null;
+  }
+
+  static String _parseTipoName(dynamic raw) {
+    if (raw == null) return EventType.personalizado.name;
+    final text = raw.toString().trim();
+    if (text.isEmpty) return EventType.personalizado.name;
+    for (final type in EventType.values) {
+      if (type.name == text) return type.name;
+    }
+    return EventType.personalizado.name;
+  }
+
+  static String _parseStatusName(dynamic raw) {
+    if (raw == null) return EventStatus.agendado.name;
+    final text = raw.toString().trim();
+    if (text.isEmpty) return EventStatus.agendado.name;
+    for (final status in EventStatus.values) {
+      if (status.name == text) return status.name;
+    }
+    return EventStatus.agendado.name;
   }
 }
