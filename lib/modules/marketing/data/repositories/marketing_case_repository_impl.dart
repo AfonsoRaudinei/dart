@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -13,6 +14,49 @@ class MarketingCaseRepositoryImpl implements IMarketingCaseRepository {
   Database? _db;
 
   MarketingCaseRepositoryImpl(this._supabase);
+
+  @visibleForTesting
+  static const remoteColumns = <String>{
+    'id', 'user_id', 'tipo', 'visibilidade', 'lat', 'lng',
+    'localizacao_texto', 'produtor_fazenda', 'produto_utilizado',
+    'data_case', 'produtividade_valor', 'produtividade_unidade',
+    'nome_vendedor', 'telefone_vendedor', 'descricao',
+    'foto_principal_url', 'quantidade_produzida',
+    'prod_sem_produto', 'prod_com_produto', 'unidade_produtividade',
+    'custo_produto_por_ha', 'valor_grao', 'client_id',
+    'foto_antes_url', 'foto_depois_url', 'ganho_produtividade',
+    'economia_gerada', 'parametros_json', 'avaliacoes_json',
+    'nome_talhao', 'tamanho_ha',
+    'roi_investimento', 'roi_retorno', 'roi_calculado',
+    'conclusao', 'conclusao_tecnica', 'ativo', 'status',
+    'criado_em', 'atualizado_em', 'sync_status', 'deletado_em',
+  };
+
+  @visibleForTesting
+  static Map<String, dynamic> toRemoteRow(
+    MarketingCase marketingCase, {
+    required String userId,
+    required String syncStatus,
+    DateTime? atualizadoEm,
+  }) {
+    final json = Map<String, dynamic>.from(marketingCase.toJson())
+      ..remove('avaliacoes');
+    json['user_id'] = userId;
+    json['sync_status'] = syncStatus;
+    if (atualizadoEm != null) {
+      json['atualizado_em'] = atualizadoEm.toIso8601String();
+    }
+    json.removeWhere((key, value) => !remoteColumns.contains(key));
+    json.removeWhere((key, value) {
+      if (key == 'deletado_em') return false; // pode ser null (não-tombstone)
+      if (value == null) return true;
+      if (key == 'client_id' && value is String && value.trim().isEmpty) {
+        return true;
+      }
+      return false;
+    });
+    return json;
+  }
 
   String _scopedUserId() => LocalSessionIdentity.resolveUserId();
 
@@ -268,15 +312,14 @@ class MarketingCaseRepositoryImpl implements IMarketingCaseRepository {
     });
     await saveSingleToCache(pendingCase);
 
-    // 1. Dados do case principal (exclui avaliacoes — tabela separada)
-    final caseJson = marketingCase.toJson()
-      ..remove('avaliacoes'); // Não existe na tabela principal
-
-    // Campos ROI ficam no próprio registro (já estão em toJson via spread de roi)
-    // atualizado_em é o momento local — o DB tem default now() mas podemos forçar
-    caseJson['user_id'] = userId;
-    caseJson['atualizado_em'] = DateTime.now().toIso8601String();
-    caseJson['sync_status'] = 'synced';
+    // 1. Payload remoto: só colunas do live (evita PGRST204).
+    //    Cache local continua com toJson() completo (pending acima / synced abaixo).
+    final caseJson = toRemoteRow(
+      marketingCase,
+      userId: userId,
+      syncStatus: 'synced',
+      atualizadoEm: DateTime.now(),
+    );
 
     // 2. Upsert do case principal
     final response = await _supabase
@@ -391,12 +434,12 @@ class MarketingCaseRepositoryImpl implements IMarketingCaseRepository {
     await saveSingleToCache(pendingDelete);
 
     try {
-      final caseJson = pendingDelete.toJson()..remove('avaliacoes');
-      caseJson['user_id'] = userId;
-      caseJson['deletado_em'] = now.toIso8601String();
-      caseJson['ativo'] = false;
-      caseJson['sync_status'] = 'synced';
-      caseJson['atualizado_em'] = now.toIso8601String();
+      final caseJson = toRemoteRow(
+        pendingDelete,
+        userId: userId,
+        syncStatus: 'synced',
+        atualizadoEm: now,
+      );
 
       final response = await _supabase
           .from('marketing_cases')
