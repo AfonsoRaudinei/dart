@@ -23,6 +23,12 @@
 - Testes esperados: `test/modules/consultoria/`.
 - Rodar `flutter analyze lib/modules/consultoria/` e `./tool/arch_check.sh`.
 
+## Restore / sync agronômico (REGRA-RESTORE-1)
+
+Push de cliente/fazenda/talhão é **só PT** (`nome`, `telefone`, `cidade`, `uf`, `cliente_id`, `fazenda_id`, `area_produtiva`). Aliases EN no upsert geram PGRST204 e esvaziam o live.
+Validação: `flutter test test/regression/consultoria/agronomic_restore_push_regression_test.dart` (BUG-011) + `arch_check.sh` REGRA-RESTORE-1.
+Não grep o mapper inteiro: pull ainda aceita `name` legado.
+
 ## Relatorios — cautela (IPA 210)
 
 `relatorios/` herda chrome de `showSoloForteSheet` — regressao visual pode ocorrer **sem commit em relatorios/**.
