@@ -17,6 +17,7 @@
 #   REGRA-MARKETING — blindagem de pins, fronteiras e bottom sheets
 #   REGRA-OCCURRENCE-SHEET — blindagem criação ocorrência P0/P1 (BUG-006)
 #   REGRA-UI-MAP-CTA — anti-regressão CTA fantasma + sombra de atribuição
+#   REGRA-RESTORE-1 — push agronômico PT-only (BUG-011 restore pós-reinstall)
 # =============================================================================
 
 set -uo pipefail
@@ -1021,6 +1022,62 @@ if [ -f "$OCC_REGRESSION_TEST" ]; then
   pass "REGRA-OCC-7: regression shield BUG-006 presente"
 else
   fail "REGRA-OCC-7: test/regression/map/occurrence_creation_flow_regression_test.dart obrigatório"
+fi
+
+echo ""
+
+# =============================================================================
+# REGRA-RESTORE-1 — push agronômico PT-only (BUG-011 restore pós-reinstall)
+#
+# Aliases EN no upsert (name/phone/city/state/document/area_ha) geram PGRST204
+# no live; o upsert inteiro cai e wipe+pull deixa public.clients=0.
+# Grep só o intervalo de cada *LocalToRemote — pull ainda aceita name legado.
+# =============================================================================
+echo -e "── ${CYAN}REGRA-RESTORE-1${NC}: push agronômico PT-only (BUG-011) ────────────────────────"
+echo ""
+
+RESTORE_MAPPER="lib/modules/consultoria/services/agronomic_sync_service.dart"
+RESTORE_TEST="test/regression/consultoria/agronomic_restore_push_regression_test.dart"
+DRAWINGS_MIGRATION="supabase/migrations/20260825050000_drawings_remote_sync.sql"
+
+if [ ! -f "$RESTORE_TEST" ] || ! grep -q "BUG-011" "$RESTORE_TEST"; then
+  fail "REGRA-RESTORE-1: $RESTORE_TEST ausente ou sem BUG-011"
+else
+  pass "regression shield BUG-011 presente"
+fi
+
+if [ ! -f "$DRAWINGS_MIGRATION" ]; then
+  fail "REGRA-RESTORE-1: $DRAWINGS_MIGRATION ausente"
+else
+  pass "migration drawings remote sync presente"
+fi
+
+if [ ! -f "$RESTORE_MAPPER" ]; then
+  fail "REGRA-RESTORE-1: $RESTORE_MAPPER ausente"
+else
+  CLIENT_PUSH=$(sed -n '/static Map<String, dynamic> clientLocalToRemote/,/static Map<String, dynamic> farmLocalToRemote/p' "$RESTORE_MAPPER")
+  FARM_PUSH=$(sed -n '/static Map<String, dynamic> farmLocalToRemote/,/static Map<String, dynamic> fieldLocalToRemote/p' "$RESTORE_MAPPER")
+  FIELD_PUSH=$(sed -n '/static Map<String, dynamic> fieldLocalToRemote/,/static Map<String, dynamic> clientCulturaLocalToRemote/p' "$RESTORE_MAPPER")
+
+  if [ -z "$CLIENT_PUSH" ] || [ -z "$FARM_PUSH" ] || [ -z "$FIELD_PUSH" ]; then
+    fail "REGRA-RESTORE-1: não encontrou intervalo *LocalToRemote no mapper"
+  elif echo "$CLIENT_PUSH" | grep -E -q "'(name|phone|city|state|document|area_ha)':"; then
+    fail "REGRA-RESTORE-1: clientLocalToRemote não pode enviar aliases EN (name/phone/city/state/document/area_ha)"
+  else
+    pass "clientLocalToRemote PT-only (sem aliases EN)"
+  fi
+
+  if echo "$FARM_PUSH" | grep -E -q "'(client_id|name|area_ha)':"; then
+    fail "REGRA-RESTORE-1: farmLocalToRemote não pode enviar client_id/name/area_ha"
+  else
+    pass "farmLocalToRemote PT-only (cliente_id/nome/area_total)"
+  fi
+
+  if echo "$FIELD_PUSH" | grep -E -q "'(farm_id|geometry|area_ha)':"; then
+    fail "REGRA-RESTORE-1: fieldLocalToRemote não pode enviar farm_id/geometry/area_ha"
+  else
+    pass "fieldLocalToRemote PT-only (fazenda_id/nome/area_produtiva)"
+  fi
 fi
 
 echo ""
