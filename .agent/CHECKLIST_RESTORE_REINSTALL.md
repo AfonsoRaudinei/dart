@@ -25,7 +25,9 @@
 | 8 | Fase B — marketing publicado | 5 | **0%** · sem prova no IPA 227 | **0** |
 | | **Trilha restore** | **100** | | **82** |
 
-Mapa/cliente fechou prova no IPA 227. Carteira, relatórios e marketing **não** — itens 6–8 permanecem 0.
+Mapa/cliente fechou prova no IPA 227. Carteira, relatórios e marketing **não** — itens 6–8 permanecem 0 até wipe-prova.
+
+**Contingência (31/Ago/2026, sem wipe):** live counts carteira/relatórios/marketing = 0. Push de marketing no IPA 227 ia falhar (PGRST204: `toJson()` com chaves ausentes). Live ganhou as colunas; PR [#84](https://github.com/AfonsoRaudinei/dart/pull/84) `d7582c1` whitelist `toRemoteRow`. Carteira (`allowedColumns`) e relatórios (`toRemoteRow`) já batiam com o live. IPA 227 sem wipe ainda precisa **criar/publicar** nas 3 superfícies para os counts subirem.
 
 ---
 
@@ -51,5 +53,4 @@ Publicações técnicas, corpo rico do relatório, foto de sheet, `local_only` /
 
 ## Próximo passo único
 
-**Não desinstalar** sem live > 0 nas superfícies ainda sem prova (carteira, relatórios, marketing).  
-Cliente/mapa já voltou no IPA 227 — wipe dessas outras superfícies só depois de live counts > 0.
+No **mesmo IPA 227, sem desinstalar**: criar/editar carteira; gerar relatório e **Publicar**; criar case de marketing e **Publicar**. Avisar `sincronizei carteira/relatorio/marketing`. Wipe só depois de live counts > 0 nessas três tabelas.
