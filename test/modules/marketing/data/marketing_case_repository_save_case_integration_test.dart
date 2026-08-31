@@ -76,6 +76,13 @@ void main() {
             : Map<String, dynamic>.from(decoded as Map);
         expect(row['ativo'], isFalse);
         expect(row['deletado_em'], isNotNull);
+        expect(row.containsKey('avaliacoes'), isFalse);
+        expect(row.containsKey('title'), isFalse);
+        expect(row.containsKey('roi_data'), isFalse);
+        expect(
+          row.keys.every(MarketingCaseRepositoryImpl.remoteColumns.contains),
+          isTrue,
+        );
 
         final responseRow = Map<String, dynamic>.from(row)
           ..remove('ativo')
