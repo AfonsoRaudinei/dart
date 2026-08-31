@@ -133,6 +133,19 @@ Ao tocar `map_controls_overlay.dart` ou constantes de layout do mapa:
 
 ---
 
+## Restore agronômico — push PT-only (REGRA-RESTORE-1)
+
+Push de cliente/fazenda/talhão para o live **só no contrato PT**. Aliases EN (`name`/`phone`/`city`/`state`/`document`/`area_ha`) geram PGRST204 e o upsert inteiro cai — wipe deixa `public.clients=0`.
+
+| Regra | Ação |
+|---|---|
+| Push cliente | Só `nome`/`telefone`/`cidade`/`uf` — nunca aliases EN |
+| Push fazenda | Só `cliente_id`/`nome`/`area_total` |
+| Push talhão | Só `fazenda_id`/`nome`/`area_produtiva` — nunca `geometry` |
+| Validação | `flutter test test/regression/consultoria/agronomic_restore_push_regression_test.dart` + `arch_check.sh` REGRA-RESTORE-1 |
+
+---
+
 ## Relatórios HTML
 
 Obedecer `.cursor/rules/soloforte-designer.mdc` — logo SoloForte, zero ícones genéricos.
