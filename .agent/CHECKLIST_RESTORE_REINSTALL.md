@@ -53,4 +53,4 @@ Publicações técnicas, corpo rico do relatório, foto de sheet, `local_only` /
 
 ## Próximo passo único
 
-No **mesmo IPA 227, sem desinstalar**: criar/editar carteira; gerar relatório e **Publicar**; criar case de marketing e **Publicar**. Avisar `sincronizei carteira/relatorio/marketing`. Wipe só depois de live counts > 0 nessas três tabelas.
+Instalar **IPA 228 por cima** (não desinstalar o 227). Criar/editar carteira; gerar relatório e **Publicar**; criar case de marketing e **Publicar**. Avisar `sincronizei carteira/relatorio/marketing`. Wipe só depois de live counts > 0 nessas três tabelas.
