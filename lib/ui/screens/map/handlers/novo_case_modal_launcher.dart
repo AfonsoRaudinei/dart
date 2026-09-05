@@ -1,12 +1,10 @@
 // ignore_for_file: use_build_context_synchronously
 import 'dart:async';
-import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:http/http.dart' show ClientException;
 import 'package:latlong2/latlong.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -136,6 +134,7 @@ class NovoCaseModalLauncher {
       plano = await _resolvePlanoAtivo(ref);
     } catch (error) {
       if (!context.mounted) return;
+      Navigator.of(context).pop();
       _showPlanoLookupError(context, ref, error);
       return;
     }
@@ -286,11 +285,7 @@ class NovoCaseModalLauncher {
 
   static bool isNetworkError(Object? error, {bool? isOnline}) {
     if (isOnline == false) return true;
-    if (error == null) return false;
-    return error is SocketException ||
-        error is TimeoutException ||
-        error is HttpException ||
-        error is ClientException;
+    return isTransientNetworkPublishError(error);
   }
 
   static void _showPlanoLookupError(
