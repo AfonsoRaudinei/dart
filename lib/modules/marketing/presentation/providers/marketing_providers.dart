@@ -1,4 +1,8 @@
+import 'dart:async';
+import 'dart:io';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:http/http.dart' show ClientException;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/services/connectivity_service.dart';
 import '../../../../core/session/session_controller.dart';
@@ -31,6 +35,15 @@ class PublishOutcome {
   final Object? error;
 
   bool get isSuccess => publishedCase != null;
+}
+
+/// Falha transitória de rede — offline-first legítimo (mantém published + pending_sync).
+bool isTransientNetworkPublishError(Object? error) {
+  if (error == null) return false;
+  return error is SocketException ||
+      error is TimeoutException ||
+      error is HttpException ||
+      error is ClientException;
 }
 
 // ── State do provider: a lista de cases ───────────────────────
@@ -97,9 +110,11 @@ class MarketingCasesNotifier
   /// Envia o case ao Supabase, atualiza a lista imediatamente (optimistic).
   /// Em falha, preserva o erro original para a UI classificar a causa.
   Future<PublishOutcome> publishCaseDetailed(MarketingCase newCase) async {
-    // 1. Optimistic update: adiciona à lista com syncStatus=local_only
+    // 1. Optimistic update idempotente por id (retry não duplica)
     final previousCases = state.valueOrNull ?? [];
-    state = AsyncData([...previousCases, newCase]);
+    final withoutDuplicate =
+        previousCases.where((c) => c.id != newCase.id).toList(growable: false);
+    state = AsyncData([...withoutDuplicate, newCase]);
 
     try {
       // 2. Enviar ao Supabase
@@ -114,21 +129,45 @@ class MarketingCasesNotifier
       return PublishOutcome.success(savedCase);
     } catch (e, st) {
       AppLogger.error('Erro ao publicar case', error: e, stackTrace: st);
-      // Rollback: remover da lista em caso de falha remota mas manter no cache local
       final updatedCases = state.valueOrNull ?? [];
-      // Marcar como pending_sync em vez de remover (offline-first)
-      state = AsyncData(
-        updatedCases
-            .map(
-              (c) => c.id == newCase.id
-                  ? MarketingCase.fromJson({
-                      ...newCase.toJson(),
-                      'sync_status': 'pending_sync',
-                    })
-                  : c,
-            )
-            .toList(),
-      );
+
+      if (isTransientNetworkPublishError(e)) {
+        // Offline-first: mantém published + pending_sync para retry automático
+        state = AsyncData(
+          updatedCases
+              .map(
+                (c) => c.id == newCase.id
+                    ? MarketingCase.fromJson({
+                        ...newCase.toJson(),
+                        'sync_status': 'pending_sync',
+                      })
+                    : c,
+              )
+              .toList(),
+        );
+      } else {
+        // Erro permanente (sessão, RLS, schema): reverte para draft recuperável
+        final draftCase = MarketingCase.fromJson({
+          ...newCase.toJson(),
+          'status': MarketingCaseStatus.draft.toValue(),
+          'sync_status': 'local_only',
+        });
+        state = AsyncData(
+          updatedCases
+              .map((c) => c.id == newCase.id ? draftCase : c)
+              .toList(),
+        );
+        try {
+          await _repository.saveAsDraft(draftCase);
+        } catch (draftError, draftSt) {
+          AppLogger.error(
+            'Erro ao reverter case para rascunho após falha permanente',
+            tag: 'MarketingProvider',
+            error: draftError,
+            stackTrace: draftSt,
+          );
+        }
+      }
       return PublishOutcome.failure(e);
     }
   }
