@@ -2,7 +2,7 @@
 **Status:** APROVADO — versão corrigida pós-implementação
 **Data:** 28/02/2026
 **Substitui:** ADR-011-MARKETING-PINS.md (desatualizado)
-**Módulos afetados:** marketing/ (EXISTENTE), map/ (integração pendente)
+**Módulos afetados:** marketing/ (EXISTENTE), map/ (integração concluída)
 
 ---
 
@@ -12,8 +12,42 @@ O módulo marketing/ foi implementado com estrutura mais rica que o ADR-011
 original descreve. A entidade central é MarketingCase (não MarketingPin).
 NovoCaseSheet já recebe lat/lng como parâmetros obrigatórios.
 
-O que falta: o gatilho no mapa que captura a coordenada e abre o sheet,
-e a renderização dos pins do MarketingCase sobre o mapa.
+O gatilho no mapa (long-press → PublicationActionsBottomSheet → NovoCaseModalLauncher)
+e a renderização dos pins (IsolatedMarketingMarkersLayer) estão implementados.
+
+---
+
+## INTEGRAÇÃO MAPA — CONCLUÍDA (PASSO 6 e 7)
+
+### PASSO 6 — Integração mapa: captura de coordenada + abertura do sheet ✅
+
+Implementado em:
+- `lib/ui/screens/private_map_screen.dart` — `_handleMapLongPress`
+- `lib/ui/screens/map/handlers/novo_case_modal_launcher.dart` — `launch` + `submitCaseFromMap`
+- `lib/ui/components/map/widgets/publication_actions_bottom_sheet.dart`
+
+Fluxo:
+```
+Usuário long-press em área vazia do mapa
+  → private_map_screen captura LatLng do evento
+  → PublicationActionsBottomSheet (Resultado / AntesDepois / Avaliação)
+  → NovoCaseModalLauncher.launch(position: latLng)
+  → verifica planoAtivoProvider (ADR-012) via _resolvePlanoAtivo
+  → limite atingido → saveAsDraft + DraftSavedSheet → /planos
+  → dentro do limite → promove status=published → publishCaseDetailed
+  → sheet fecha → snackbar com causa real (sucesso / offline / sessão / genérico)
+```
+
+### PASSO 7 — Renderização dos pins no mapa ✅
+
+Implementado em:
+- `lib/ui/components/map/widgets/isolated_marker_layers.dart` — `IsolatedMarketingMarkersLayer`
+- `lib/ui/screens/map/widgets/map_build_orchestrator.dart` — monta a layer
+
+MarketingCaseMarker em:
+`lib/modules/marketing/presentation/widgets/marketing_case_marker.dart`
+
+Filtra cases com `status=published`, `ativo=true`, `deletadoEm=null`.
 
 ---
 
@@ -28,40 +62,13 @@ nomeVendedor, telefoneVendedor, nomeTalhao, tamanhoHa
 
 ### Provider: `marketingCasesProvider`
 StateNotifierProvider com keepAlive.
-Métodos: load(), publishCase(), retryPendingCases()
+Métodos: load(), publishCase(), publishCaseDetailed(), retryPendingCases()
 Offline-first com optimistic update e rollback para pending_sync.
 
 ### NovoCaseSheet
 Recebe: lat (double), lng (double), onClose (VoidCallback),
 onPublicar (void Function(MarketingCase))
 Já implementado. Não alterar.
-
----
-
-## O QUE FALTA IMPLEMENTAR (PASSO 6 e 7 do ADR original)
-
-### PASSO 6 — Integração mapa: captura de coordenada + abertura do sheet
-
-Fluxo:
-```
-Usuário toca no mapa (long press ou tap em modo "publicar case")
-  → private_map_screen captura LatLng do evento
-  → verifica planoAtivoProvider (ADR-012)
-  → sem plano → bottom sheet de bloqueio → /planos
-  → com plano e dentro do limite → showModalBottomSheet(NovoCaseSheet)
-  → usuário preenche e confirma
-  → onPublicar chama marketingCasesNotifier.publishCase(case)
-  → sheet fecha
-  → pin aparece no mapa via rebuild do provider
-```
-
-### PASSO 7 — Renderização dos pins no mapa
-
-MarketingCaseMarker já existe em:
-lib/modules/marketing/presentation/widgets/marketing_case_marker.dart
-
-Falta: integrar no mapa em private_map_screen — assistir
-marketingCasesProvider e renderizar os markers sobre o mapa.
 
 ---
 
@@ -83,16 +90,15 @@ map/       → PODE depender de: marketing/ (lê providers, renderiza markers)
 
 ---
 
-## ARQUIVOS A CRIAR/ALTERAR NESTA INTEGRAÇÃO
+## ARQUIVOS DA INTEGRAÇÃO MAPA (concluída)
 
-Alterar: lib/ui/screens/private_map_screen.dart
-  → adicionar long press handler para captura de coordenada
-  → assistir marketingCasesProvider para renderizar pins
-  → chamar NovoCaseSheet com lat/lng capturados
-  → verificar plano antes de abrir sheet (planoAtivoProvider)
+Alterados:
+- `lib/ui/screens/private_map_screen.dart` — long-press handler
+- `lib/ui/screens/map/handlers/novo_case_modal_launcher.dart` — launch + submitCaseFromMap
+- `lib/ui/components/map/widgets/isolated_marker_layers.dart` — pins no mapa
+- `lib/ui/components/map/widgets/publication_actions_bottom_sheet.dart` — menu de ações
 
 NÃO alterar:
-  → NovoCaseSheet (contrato pronto)
-  → MarketingCaseMarker (widget pronto)
-  → marketing_providers.dart (provider pronto)
-  → marketing_case.dart (entidade pronta)
+- NovoCaseSheet (contrato pronto)
+- MarketingCaseMarker (widget pronto)
+- marketing_case.dart (entidade pronta)
