@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -10,7 +8,6 @@ import 'package:soloforte_app/modules/marketing/presentation/providers/marketing
 import 'package:soloforte_app/modules/planos/domain/entities/user_plan.dart';
 import 'package:soloforte_app/modules/planos/presentation/providers/plano_providers.dart';
 import 'package:soloforte_app/ui/screens/map/handlers/novo_case_modal_launcher.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Garante que o fluxo do mapa promove o case para `published` antes de publicar,
 /// para que o pin apareça em [IsolatedMarketingMarkersLayer].
@@ -80,6 +77,23 @@ void main() {
 
       expect(isPinVisible(published), isTrue);
       expect(isPinVisible(draft), isFalse);
+    });
+
+    test('publishCaseDetailed idempotente por id no retry', () async {
+      final repo = _StatusTrackingRepo();
+      final sync = MarketingSyncService(repo);
+      final notifier = _StubMarketingCasesNotifier(repo, sync, const []);
+
+      final caseToPublish = _draftCase();
+      final published = MarketingCase.fromJson({
+        ...caseToPublish.toJson(),
+        'status': 'published',
+      });
+
+      await notifier.publishCaseDetailed(published);
+      await notifier.publishCaseDetailed(published);
+
+      expect(notifier.state.valueOrNull?.where((c) => c.id == published.id).length, 1);
     });
   });
 }

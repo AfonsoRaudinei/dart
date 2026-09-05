@@ -4,7 +4,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:http/http.dart' show ClientException;
 import 'package:soloforte_app/core/services/connectivity_service.dart';
 import 'package:soloforte_app/modules/marketing/data/repositories/i_marketing_case_repository.dart';
 import 'package:soloforte_app/modules/marketing/data/services/marketing_sync_service.dart';
@@ -195,6 +194,28 @@ void main() {
         findsOneWidget,
       );
       expect(repo.saveCalls, 0);
+    });
+
+    test('falha permanente reverte case para draft no state', () async {
+      final repo = _ThrowingRepo(
+        const PostgrestException(code: '42501', message: 'RLS'),
+      );
+      final sync = MarketingSyncService(repo);
+      final notifier = _StubMarketingCasesNotifier(repo, sync, const []);
+
+      final published = MarketingCase.fromJson({
+        ..._draftCase().toJson(),
+        'status': 'published',
+      });
+
+      final outcome = await notifier.publishCaseDetailed(published);
+      expect(outcome.isSuccess, isFalse);
+
+      final stored = notifier.state.valueOrNull!.singleWhere(
+        (c) => c.id == published.id,
+      );
+      expect(stored.status.toValue(), 'draft');
+      expect(stored.syncStatus, 'local_only');
     });
   });
 }
