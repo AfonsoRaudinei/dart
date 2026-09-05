@@ -22,6 +22,17 @@ final marketingSyncServiceProvider = Provider<MarketingSyncService>((ref) {
   return MarketingSyncService(repo);
 });
 
+/// Resultado detalhado de [MarketingCasesNotifier.publishCaseDetailed].
+class PublishOutcome {
+  const PublishOutcome.success(this.publishedCase) : error = null;
+  const PublishOutcome.failure(this.error) : publishedCase = null;
+
+  final MarketingCase? publishedCase;
+  final Object? error;
+
+  bool get isSuccess => publishedCase != null;
+}
+
 // ── State do provider: a lista de cases ───────────────────────
 class MarketingCasesNotifier
     extends StateNotifier<AsyncValue<List<MarketingCase>>> {
@@ -83,8 +94,9 @@ class MarketingCasesNotifier
     }
   }
 
-  /// Envia o case ao Supabase, atualiza a lista imediatamente (optimistic)
-  Future<MarketingCase?> publishCase(MarketingCase newCase) async {
+  /// Envia o case ao Supabase, atualiza a lista imediatamente (optimistic).
+  /// Em falha, preserva o erro original para a UI classificar a causa.
+  Future<PublishOutcome> publishCaseDetailed(MarketingCase newCase) async {
     // 1. Optimistic update: adiciona à lista com syncStatus=local_only
     final previousCases = state.valueOrNull ?? [];
     state = AsyncData([...previousCases, newCase]);
@@ -99,7 +111,7 @@ class MarketingCasesNotifier
         updatedCases.map((c) => c.id == newCase.id ? savedCase : c).toList(),
       );
 
-      return savedCase;
+      return PublishOutcome.success(savedCase);
     } catch (e, st) {
       AppLogger.error('Erro ao publicar case', error: e, stackTrace: st);
       // Rollback: remover da lista em caso de falha remota mas manter no cache local
@@ -117,8 +129,14 @@ class MarketingCasesNotifier
             )
             .toList(),
       );
-      return null;
+      return PublishOutcome.failure(e);
     }
+  }
+
+  /// Wrapper de compatibilidade — retorna `null` em qualquer falha.
+  Future<MarketingCase?> publishCase(MarketingCase newCase) async {
+    final outcome = await publishCaseDetailed(newCase);
+    return outcome.publishedCase;
   }
 
   /// Salva o case como rascunho (apenas local, não sincroniza)
