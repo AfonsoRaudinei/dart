@@ -398,14 +398,21 @@ final marketingCasesProvider =
         final isConnectedNow = next.value == true;
 
         if (wasDisconnected && isConnectedNow) {
-          unawaited(
-            notifier.retryPendingCases().whenComplete(() async {
-              try {
-                final plano = await ref.read(planoAtivoProvider.future);
-                await notifier.reconcileOfflinePublishes(plano);
-              } catch (_) {}
-            }),
-          );
+          unawaited(() async {
+            try {
+              ref.invalidate(planoAtivoProvider);
+              final plano = await ref.read(planoAtivoProvider.future);
+              await notifier.reconcileOfflinePublishes(plano);
+            } catch (e, st) {
+              AppLogger.error(
+                'Falha ao reconciliar pins offline após reconexão',
+                tag: 'MarketingProvider',
+                error: e,
+                stackTrace: st,
+              );
+            }
+            await notifier.retryPendingCases();
+          }());
         }
       });
 

@@ -6,7 +6,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../core/access/producer_create_context_resolver.dart';
 import '../../../../core/contracts/i_active_visit_context_lookup.dart';
@@ -136,7 +135,18 @@ class NovoCaseModalLauncher {
     } catch (error) {
       if (!context.mounted) return;
       Navigator.of(context).pop();
-      _showPlanoLookupError(context, ref, error);
+      var savedDraft = false;
+      try {
+        await ref.read(marketingCasesProvider.notifier).saveAsDraft(newCase);
+        savedDraft = true;
+      } catch (_) {}
+      if (!context.mounted) return;
+      _showPlanoLookupError(
+        context,
+        ref,
+        error,
+        savedAsDraft: savedDraft,
+      );
       return;
     }
 
@@ -269,14 +279,10 @@ class NovoCaseModalLauncher {
 
   static bool isSessionOrRlsError(Object? error) {
     if (error == null) return false;
-    if (error is AuthException) return true;
+    if (isPlanoSessionOrRlsError(error)) return true;
     if (error is StateError &&
         error.message.contains('Usuario nao autenticado')) {
       return true;
-    }
-    if (error is PostgrestException) {
-      final code = error.code ?? '';
-      return code == '42501' || code == 'PGRST301';
     }
     final text = error.toString().toLowerCase();
     return text.contains('jwt') ||
@@ -292,12 +298,16 @@ class NovoCaseModalLauncher {
   static void _showPlanoLookupError(
     BuildContext context,
     WidgetRef ref,
-    Object error,
-  ) {
+    Object error, {
+    bool savedAsDraft = false,
+  }) {
+    final draftSuffix = savedAsDraft
+        ? ' Case salvo como rascunho em Relatórios → Marketing.'
+        : '';
     if (error is PlanoCacheUnavailableException) {
       _showSnackBar(
         context: context,
-        message: error.toString(),
+        message: '${error.toString()}$draftSuffix',
         backgroundColor: Colors.orange,
         icon: Icons.wifi_off,
         actionLabel: 'Tentar novamente',
@@ -312,7 +322,7 @@ class NovoCaseModalLauncher {
     if (isSessionOrRlsError(error)) {
       _showSnackBar(
         context: context,
-        message: 'Sessão expirada. Entre novamente para publicar.',
+        message: 'Sessão expirada. Entre novamente para publicar.$draftSuffix',
         backgroundColor: Colors.red,
         icon: Icons.lock_outline,
         actionLabel: 'Entrar',
@@ -324,7 +334,8 @@ class NovoCaseModalLauncher {
     if (isNetworkError(error, isOnline: isOnline)) {
       _showSnackBar(
         context: context,
-        message: 'Sem conexão. Não foi possível verificar seu plano.',
+        message:
+            'Sem conexão. Não foi possível verificar seu plano.$draftSuffix',
         backgroundColor: Colors.orange,
         icon: Icons.wifi_off,
         actionLabel: 'Tentar novamente',
@@ -337,7 +348,8 @@ class NovoCaseModalLauncher {
 
     _showSnackBar(
       context: context,
-      message: 'Não foi possível verificar seu plano. Tente novamente.',
+      message:
+          'Não foi possível verificar seu plano. Tente novamente.$draftSuffix',
       backgroundColor: Colors.orange,
       icon: Icons.error_outline,
       actionLabel: 'Tentar novamente',

@@ -88,9 +88,10 @@ Future<UserPlan> planoAtivo(PlanoAtivoRef ref) async {
       );
     }
     return plan;
-  } on AuthException {
-    rethrow; // sessão/RLS — nunca servir cache
   } catch (e, st) {
+    if (isPlanoSessionOrRlsError(e)) {
+      Error.throwWithStackTrace(e, st);
+    }
     final cached = cache.readValid(userId);
     if (cached != null) {
       AppLogger.warning(
