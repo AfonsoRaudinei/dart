@@ -16,6 +16,13 @@
 - Misturar regra financeira com UI sem camada de dominio/data.
 - Simular pagamento real com dado ficticio.
 
+## Cache local (Adendo 1)
+
+`PlanoLocalCache` persiste o último `UserPlan` verificado online em
+`PreferencesService` (não SQLite), namespaced por `userId`, com TTL de 24h.
+`planoAtivoProvider` usa esse cache em falhas não-auth (offline / timeout).
+`AuthException` nunca serve cache.
+
 ## Qualidade obrigatoria
 
 - Fluxos financeiros devem ter estados explicitos: pendente, confirmado, erro/cancelado.

@@ -7,8 +7,9 @@ import 'i_plano_repository.dart';
 
 /// Implementação do repositório de planos via Supabase.
 ///
-/// Fonte da verdade: remoto (online-only — ADR-012).
-/// Sem cache SQLite: publicar cases é fluxo que exige conectividade.
+/// Fonte da verdade: remoto (ADR-012). Sem cache SQLite neste repositório.
+/// Fallback offline (TTL 24h) é responsabilidade de `PlanoLocalCache`
+/// no `planoAtivoProvider` — Adendo 1.
 class PlanoRepositoryImpl implements IPlanoRepository {
   final SupabaseClient _client;
 

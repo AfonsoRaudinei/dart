@@ -5,8 +5,9 @@ import '../../domain/entities/referral_code.dart';
 
 /// Contrato do repositório de planos.
 ///
-/// Fonte da verdade: Supabase (remoto). Sem cache local.
-/// Toda operação exige conectividade (online-only por decisão de negócio).
+/// Fonte da verdade: Supabase (remoto). Este repositório NÃO persiste em SQLite.
+/// Cache de leitura (TTL 24h) vive em `PlanoLocalCache` via PreferencesService
+/// — ADR-012 Adendo 1. Não colocar cache neste contrato.
 abstract class IPlanoRepository {
   /// Retorna o plano ativo do usuário, ou [UserPlan.free()] se não possui plano.
   Future<UserPlan> getPlanoAtivo(String userId);
