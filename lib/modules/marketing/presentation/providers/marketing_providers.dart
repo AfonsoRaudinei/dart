@@ -6,6 +6,8 @@ import 'package:http/http.dart' show ClientException;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/services/connectivity_service.dart';
 import '../../../../core/session/session_controller.dart';
+import '../../../planos/domain/entities/user_plan.dart';
+import '../../../planos/presentation/providers/plano_providers.dart';
 import '../../data/repositories/i_marketing_case_repository.dart';
 import '../../data/repositories/marketing_case_repository_impl.dart';
 import '../../data/services/marketing_sync_service.dart';
@@ -183,18 +185,78 @@ class MarketingCasesNotifier
     try {
       final draftCase = await _repository.saveAsDraft(newCase);
 
-      // Adiciona à lista local se necessário (para futuras consultas)
       final currentCases = state.valueOrNull ?? [];
-      final exists = currentCases.any((c) => c.id == draftCase.id);
-
-      if (!exists) {
+      final index = currentCases.indexWhere((c) => c.id == draftCase.id);
+      if (index < 0) {
         state = AsyncData([...currentCases, draftCase]);
+      } else {
+        final updated = List<MarketingCase>.from(currentCases);
+        updated[index] = draftCase;
+        state = AsyncData(updated);
       }
 
       return draftCase;
     } catch (e, st) {
       AppLogger.error('Erro ao salvar rascunho', error: e, stackTrace: st);
       rethrow;
+    }
+  }
+
+  /// Reconcilia pins publicados offline (`pending_sync`) com o plano atual.
+  ///
+  /// Nunca faz hard-delete: demote via [saveAsDraft].
+  /// - Plano expirado/inativo: todos os published + pending_sync voltam a draft.
+  /// - Acima do limite: demote os pending_sync mais novos até caber; synced ficam.
+  Future<void> reconcileOfflinePublishes(UserPlan plano) async {
+    final currentCases = List<MarketingCase>.from(state.valueOrNull ?? const []);
+    if (currentCases.isEmpty) return;
+
+    bool isPendingPublished(MarketingCase c) =>
+        c.syncStatus == 'pending_sync' &&
+        c.status == MarketingCaseStatus.published;
+
+    if (plano.expirado || !plano.ativo) {
+      for (final c in currentCases.where(isPendingPublished)) {
+        try {
+          await saveAsDraft(c);
+        } catch (e, st) {
+          AppLogger.error(
+            'Falha ao rebaixar case ${c.id} após plano inválido',
+            tag: 'MarketingProvider',
+            error: e,
+            stackTrace: st,
+          );
+        }
+      }
+      return;
+    }
+
+    final published = currentCases
+        .where(
+          (c) =>
+              c.status == MarketingCaseStatus.published &&
+              c.ativo &&
+              c.deletadoEm == null,
+        )
+        .toList();
+
+    final overflow = published.length - plano.limiteCases;
+    if (overflow <= 0) return;
+
+    final pendingNewest = published.where(isPendingPublished).toList()
+      ..sort((a, b) => b.atualizadoEm.compareTo(a.atualizadoEm));
+
+    for (final c in pendingNewest.take(overflow)) {
+      try {
+        await saveAsDraft(c);
+      } catch (e, st) {
+        AppLogger.error(
+          'Falha ao rebaixar case ${c.id} acima do limite do plano',
+          tag: 'MarketingProvider',
+          error: e,
+          stackTrace: st,
+        );
+      }
     }
   }
 
@@ -336,7 +398,14 @@ final marketingCasesProvider =
         final isConnectedNow = next.value == true;
 
         if (wasDisconnected && isConnectedNow) {
-          notifier.retryPendingCases();
+          unawaited(
+            notifier.retryPendingCases().whenComplete(() async {
+              try {
+                final plano = await ref.read(planoAtivoProvider.future);
+                await notifier.reconcileOfflinePublishes(plano);
+              } catch (_) {}
+            }),
+          );
         }
       });
 
