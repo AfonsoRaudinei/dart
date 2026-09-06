@@ -134,9 +134,9 @@ abstract class IPlanoRepository {
 }
 ```
 
-**Fonte da verdade:** Supabase (remoto). Sem cache SQLite para planos — requer conectividade
-para verificação de plano ativo. Esta é uma decisão explícita: publicar cases é fluxo
-online-only.
+**Fonte da verdade:** Supabase (remoto). Sem cache SQLite / `database_helper` para planos.
+Cache de leitura em `PreferencesService` com TTL 24h — ver **Adendo 1**.
+~~Online-only / “Sem cache SQLite” como bloqueio de publicação~~ — substituído pelo Adendo 1.
 
 ---
 
@@ -388,12 +388,55 @@ Se qualquer resposta divergir → rollback parcial do passo.
 
 **Negativas / Riscos:**
 - `marketing/` passa a depender de `planos/` — acoplamento novo e explícito (mitigado pelo PRD)
-- Publicar cases é online-only — usuários sem rede não podem publicar (decisão de negócio aceita)
+- ~~Publicar cases é online-only — usuários sem rede não podem publicar~~ — ver **Adendo 1**: offline permitido com cache `UserPlan` válido (TTL 24h); sem cache, a publicação é bloqueada até reconectar
 - Webhook Mercado Pago requer endpoint público — configuração de segurança HMAC obrigatória
 
 **Classificação de risco:** MÉDIO  
 Motivo: Novo bounded context com acoplamentos em módulos existentes (`marketing/` e `map/`).
 Não quebra contratos existentes — apenas adiciona dependências.
+
+---
+
+---
+
+## ADENDO 1 — Cache local `UserPlan` (TTL 24h)
+
+**Data:** 05/09/2026  
+**Status:** APROVADO  
+**Motivação:** pins de marketing devem funcionar offline quando o plano foi verificado online nas últimas 24h (mesmo espírito das ocorrências). Supabase permanece a fonte da verdade.
+
+### Decisão
+
+- **Não** é cache SQLite / `database_helper`. Sem mudança de schema.
+- Persistência: `PreferencesService` (`SharedPreferences`), namespaced por `userId`:
+  - `plano_cache_v1_$userId` — JSON de `UserPlan.toJson()`
+  - `plano_cache_v1_${userId}_verified_at` — epoch millis da última verificação online
+- TTL = **24 horas** a partir da última verificação remota bem-sucedida.
+- Serviço: `PlanoLocalCache` em `planos/data/services/`. Fora de `IPlanoRepository`.
+- `planoAtivoProvider` (`Future<UserPlan>`, nunca null):
+  1. tenta `IPlanoRepository.getPlanoAtivo` (Supabase)
+  2. sucesso → grava cache e retorna o plano
+  3. `AuthException` → rethrow (sessão/RLS **não** é offline; nunca serve cache)
+  4. demais erros (offline, timeout, HTTP) → se o cache ainda é válido, loga warning e retorna o plano em cache; senão lança `PlanoCacheUnavailableException`
+- UI Map-First (`novo_case_modal_launcher.dart`): `PlanoCacheUnavailableException` exibe a mensagem de 24h, distinta de “Sem conexão. Não foi possível verificar seu plano.”
+- Reconexão (`marketing_providers.dart`): após `retryPendingCases()`, `reconcileOfflinePublishes(UserPlan)`:
+  - plano expirado/inativo → demote `pending_sync` + `published` para draft via `saveAsDraft` (nunca hard-delete)
+  - senão, se publicados ativos > `plano.limiteCases` → demote os `pending_sync` mais novos até caber; published já `synced` permanecem
+- `planos/` não importa connectivity; `marketing/` pode importar `planos/` (já autorizado neste ADR).
+
+### Limites de cases (código vigente — não alterar neste adendo)
+
+O texto original das seções 7 e 10 (bronze=1, prata=2, ouro=3) **não** é reescrito aqui. Os limites **implementados** em `UserPlan.limiteCases` permanecem:
+
+- Bronze: 3
+- Prata: 5
+- Ouro: ilimitado (admin também ilimitado)
+
+Pins offline não exigem mudança desses limites.
+
+### Consequência
+
+Usuário com plano verificado online nas últimas 24h pode publicar pin de marketing sem rede. Sem verificação no TTL, a publicação é recusada até reconectar. Ao voltar a rede, pins `pending_sync` são reconciliados com o plano vigente.
 
 ---
 
