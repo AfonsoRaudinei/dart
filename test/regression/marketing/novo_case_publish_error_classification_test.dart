@@ -153,7 +153,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 250));
 
       expect(
-        find.text('Sessão expirada. Entre novamente para publicar.'),
+        find.textContaining('Sessão expirada. Entre novamente para publicar.'),
         findsOneWidget,
       );
       expect(find.textContaining('Sem conexão'), findsNothing);
@@ -190,7 +190,9 @@ void main() {
       await tester.pump(const Duration(milliseconds: 250));
 
       expect(
-        find.text('Sem conexão. Não foi possível verificar seu plano.'),
+        find.textContaining(
+          'Sem conexão. Não foi possível verificar seu plano.',
+        ),
         findsOneWidget,
       );
       expect(repo.saveCalls, 0);

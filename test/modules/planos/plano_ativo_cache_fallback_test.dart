@@ -99,6 +99,21 @@ void main() {
         throwsA(isA<AuthException>()),
       );
     });
+
+    test('PostgrestException PGRST301 não serve cache', () async {
+      final container = await _container(
+        repoError: const PostgrestException(
+          message: 'JWT expired',
+          code: 'PGRST301',
+        ),
+        seedCache: true,
+      );
+
+      await expectLater(
+        container.read(planoAtivoProvider.future),
+        throwsA(isA<PostgrestException>()),
+      );
+    });
   });
 }
 

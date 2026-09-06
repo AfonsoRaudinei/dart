@@ -49,12 +49,19 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 250));
 
-        expect(find.text(cacheMessage), findsOneWidget);
+        expect(find.textContaining(cacheMessage), findsOneWidget);
+        expect(
+          find.textContaining(
+            'Case salvo como rascunho em Relatórios → Marketing',
+          ),
+          findsOneWidget,
+        );
         expect(
           find.text('Sem conexão. Não foi possível verificar seu plano.'),
           findsNothing,
         );
         expect(repo.saveCalls, 0);
+        expect(repo.draftSaveCalls, 1);
       },
     );
 
@@ -244,6 +251,7 @@ class _StubMarketingCasesNotifier extends MarketingCasesNotifier {
 
 class _StatusOkRepo implements IMarketingCaseRepository {
   int saveCalls = 0;
+  int draftSaveCalls = 0;
 
   @override
   Future<List<MarketingCase>> fetchMarketingCases() async => const [];
@@ -264,8 +272,10 @@ class _StatusOkRepo implements IMarketingCaseRepository {
   }
 
   @override
-  Future<MarketingCase> saveAsDraft(MarketingCase marketingCase) async =>
-      marketingCase;
+  Future<MarketingCase> saveAsDraft(MarketingCase marketingCase) async {
+    draftSaveCalls++;
+    return marketingCase;
+  }
 
   @override
   Future<MarketingCase> getById(String id) async => throw UnimplementedError();
