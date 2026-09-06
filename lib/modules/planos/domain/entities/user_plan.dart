@@ -4,8 +4,9 @@ import '../enums/plano_origem.dart';
 
 /// Entidade de domínio — plano ativo de um usuário.
 ///
-/// Fonte da verdade: Supabase (remoto). Sem cache local.
-/// Verificação de plano é fluxo online-only (ADR-012).
+/// Fonte da verdade: Supabase (remoto). Sem schema SQLite para esta entidade.
+/// Cache de leitura (TTL 24h) em PreferencesService via `PlanoLocalCache`
+/// — ADR-012 Adendo 1.
 class UserPlan {
   final String id;
   final String userId;
