@@ -10,7 +10,7 @@ String _$planoRepositoryHash() => r'35b99fb75f3581dda4794d1bf54ce8f28cb4751f';
 
 /// See also [planoRepository].
 @ProviderFor(planoRepository)
-final planoRepositoryProvider = Provider<PlanoRepositoryImpl>.internal(
+final planoRepositoryProvider = Provider<IPlanoRepository>.internal(
   planoRepository,
   name: r'planoRepositoryProvider',
   debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
@@ -22,7 +22,7 @@ final planoRepositoryProvider = Provider<PlanoRepositoryImpl>.internal(
 
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
-typedef PlanoRepositoryRef = ProviderRef<PlanoRepositoryImpl>;
+typedef PlanoRepositoryRef = ProviderRef<IPlanoRepository>;
 String _$referralServiceHash() => r'80cae8a382b8072405b988220967085f420cdd8c';
 
 /// See also [referralService].
@@ -40,6 +40,25 @@ final referralServiceProvider = Provider<ReferralService>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef ReferralServiceRef = ProviderRef<ReferralService>;
+String _$planoLocalCacheHash() => r'a1b2c3d4e5f6plano_local_cache_adr012';
+
+/// Cache local do último plano verificado online (TTL 24h — ADR-012 Adendo 1).
+///
+/// Copied from [planoLocalCache].
+@ProviderFor(planoLocalCache)
+final planoLocalCacheProvider = Provider<PlanoLocalCache>.internal(
+  planoLocalCache,
+  name: r'planoLocalCacheProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$planoLocalCacheHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef PlanoLocalCacheRef = ProviderRef<PlanoLocalCache>;
 String _$planoAtivoHash() => r'9a78bb2f9eb936140350256bed41b22f62648d83';
 
 /// Plano ativo do usuário autenticado.
@@ -52,6 +71,9 @@ String _$planoAtivoHash() => r'9a78bb2f9eb936140350256bed41b22f62648d83';
 ///
 /// Observa [sessionControllerProvider] para reagir automaticamente ao
 /// logout: quando a sessão vira [SessionPublic], retorna UserPlan.free().
+///
+/// Offline / timeout: serve [PlanoLocalCache] se a verificação online
+/// ocorreu nas últimas 24h. [AuthException] nunca usa cache (Adendo 1).
 ///
 /// Copied from [planoAtivo].
 @ProviderFor(planoAtivo)
