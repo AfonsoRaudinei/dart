@@ -23,6 +23,7 @@ import '../../../../modules/marketing/presentation/providers/marketing_providers
 import '../../../../modules/marketing/presentation/screens/novo_case_type_sheets.dart';
 import '../../../../modules/marketing/presentation/widgets/draft_saved_sheet.dart';
 import '../../../../modules/planos/domain/entities/user_plan.dart';
+import '../../../../modules/planos/domain/plano_cache_unavailable_exception.dart';
 import '../../../../modules/planos/presentation/providers/plano_providers.dart';
 import '../../../../modules/settings/presentation/providers/user_profile_provider.dart';
 import '../../../../ui/components/map/widgets/producer_map_context_card.dart';
@@ -293,6 +294,20 @@ class NovoCaseModalLauncher {
     WidgetRef ref,
     Object error,
   ) {
+    if (error is PlanoCacheUnavailableException) {
+      _showSnackBar(
+        context: context,
+        message: error.toString(),
+        backgroundColor: Colors.orange,
+        icon: Icons.wifi_off,
+        actionLabel: 'Tentar novamente',
+        onAction: () {
+          ref.invalidate(planoAtivoProvider);
+        },
+      );
+      return;
+    }
+
     final isOnline = ref.read(connectivityStateProvider).valueOrNull;
     if (isSessionOrRlsError(error)) {
       _showSnackBar(
