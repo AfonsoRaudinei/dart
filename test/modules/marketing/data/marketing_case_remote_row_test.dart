@@ -21,7 +21,11 @@ const _forbiddenRemoteKeys = <String>{
   'roi_data',
 };
 
-MarketingCase _filledCase({String? clientId, DateTime? deletadoEm}) {
+MarketingCase _filledCase({
+  String? clientId,
+  bool withNullClientId = false,
+  DateTime? deletadoEm,
+}) {
   final now = DateTime.utc(2026, 3, 15, 12);
   return MarketingCase(
     id: 'mkt-remote-row-1',
@@ -35,7 +39,7 @@ MarketingCase _filledCase({String? clientId, DateTime? deletadoEm}) {
     dataCase: DateTime.utc(2026, 3, 15),
     prodSemProduto: 40.0,
     prodComProduto: 55.0,
-    clientId: clientId ?? 'client-abc',
+    clientId: withNullClientId ? null : (clientId ?? 'client-abc'),
     avaliacoesJson: '[{"id":"av-1"}]',
     conclusaoTecnica: 'Ganho consistente',
     roi: const RoiBloco(
@@ -78,6 +82,16 @@ void main() {
 
     expect(row.containsKey('deletado_em'), isTrue);
     expect(row['deletado_em'], isNull);
+  });
+
+  test('toRemoteRow preserva client_id null para limpar no upsert', () {
+    final row = MarketingCaseRepositoryImpl.toRemoteRow(
+      _filledCase(withNullClientId: true),
+      userId: 'user-1',
+      syncStatus: 'synced',
+    );
+    expect(row.containsKey('client_id'), isTrue);
+    expect(row['client_id'], isNull);
   });
 
   test('toRemoteRow omite client_id vazio ou só whitespace', () {
