@@ -108,13 +108,14 @@ void main() {
       visitSessionWriter.throwOnCreate = true;
       final evento = makeEvent(id: 'evt-1', status: EventStatus.agendado);
 
-      final (:updatedEvent, :session) = await useCase.execute(
-        event: evento,
-        currentUserId: 'user-1',
+      await expectLater(
+        () => useCase.execute(event: evento, currentUserId: 'user-1'),
+        throwsA(isA<Exception>()),
       );
 
-      expect(repo.sessionById(session.id), isNotNull);
-      expect(updatedEvent.status, equals(EventStatus.emAndamento));
+      expect(repo.eventById('evt-1')?.status, EventStatus.emAndamento);
+      expect(repo.sessions, isNotEmpty);
+      expect(visitSessionWriter.createdSessions, isEmpty);
     });
   });
 
