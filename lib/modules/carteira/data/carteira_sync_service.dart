@@ -183,7 +183,7 @@ class CarteiraSyncService {
     if (resolveUserId != null) {
       return (resolveUserId() ?? '').trim();
     }
-    return LocalSessionIdentity.resolveUserId().trim();
+    return LocalSessionIdentity.resolveUserId(allowLastKnown: false).trim();
   }
 
   Future<void> _push(SupabaseClient client, String userId) async {
