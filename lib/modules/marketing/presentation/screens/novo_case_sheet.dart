@@ -106,6 +106,8 @@ class _NovoCaseSheetState extends ConsumerState<NovoCaseSheet> {
     final initialContext = widget.initialVisitContext;
     if (initialContext == null) return;
     _clientId = initialContext.clientId;
+    _lastAutoFilledClientName =
+        initialContext.producerFarmLabel ?? initialContext.clientName;
     _produtorCtrl.text = initialContext.producerFarmLabel ?? '';
     _localizacaoCtrl.text = initialContext.locationLabel ?? '';
     _nomeTalhaoCtrl.text = initialContext.fieldName ?? '';
