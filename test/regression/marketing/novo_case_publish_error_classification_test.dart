@@ -94,7 +94,9 @@ void main() {
       await tester.pump(const Duration(milliseconds: 250));
 
       expect(
-        find.text('Não foi possível publicar o case. Tente novamente.'),
+        find.text(
+          'Não foi possível publicar o case. Salvo como rascunho em Relatórios → Marketing.',
+        ),
         findsOneWidget,
       );
       expect(find.textContaining('Sem conexão'), findsNothing);
@@ -122,6 +124,36 @@ void main() {
         findsOneWidget,
       );
     });
+
+    testWidgets(
+      'offline com erro permanente não promete sincronização automática',
+      (tester) async {
+        final repo = _ThrowingRepo(
+          Exception('PGRST204: column marketing_cases.foo does not exist'),
+        );
+
+        await tester.pumpWidget(
+          _buildHarness(
+            repo: repo,
+            connectivity: const AsyncData(false),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byKey(const Key('submit_case')));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 250));
+
+        expect(
+          find.text(
+            'Não foi possível publicar o case. Salvo como rascunho em Relatórios → Marketing.',
+          ),
+          findsOneWidget,
+        );
+        expect(find.textContaining('será sincronizado'), findsNothing);
+        expect(find.textContaining('Sem conexão'), findsNothing);
+      },
+    );
 
     testWidgets('planoAtivoProvider em erro de sessão não exibe offline', (
       tester,
@@ -212,6 +244,7 @@ void main() {
 
       final outcome = await notifier.publishCaseDetailed(published);
       expect(outcome.isSuccess, isFalse);
+      expect(outcome.revertedToDraft, isTrue);
 
       final stored = notifier.state.valueOrNull!.singleWhere(
         (c) => c.id == published.id,
@@ -219,6 +252,55 @@ void main() {
       expect(stored.status.toValue(), 'draft');
       expect(stored.syncStatus, 'local_only');
     });
+
+    test('falha permanente sem persistir rascunho não marca revertedToDraft',
+        () async {
+      final repo = _ThrowingPublishAndDraftRepo(
+        Exception('PGRST204: column marketing_cases.foo does not exist'),
+      );
+      final sync = MarketingSyncService(repo);
+      final notifier = _StubMarketingCasesNotifier(repo, sync, const []);
+
+      final published = MarketingCase.fromJson({
+        ..._draftCase().toJson(),
+        'status': 'published',
+      });
+
+      final outcome = await notifier.publishCaseDetailed(published);
+      expect(outcome.isSuccess, isFalse);
+      expect(outcome.revertedToDraft, isFalse);
+      expect(outcome.savedForOfflineSync, isFalse);
+    });
+
+    testWidgets(
+      'falha permanente com saveAsDraft quebrado exibe retry, não rascunho',
+      (tester) async {
+        final repo = _ThrowingPublishAndDraftRepo(
+          Exception('PGRST204: column marketing_cases.foo does not exist'),
+        );
+
+        await tester.pumpWidget(
+          _buildHarness(
+            repo: repo,
+            connectivity: const AsyncData(true),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byKey(const Key('submit_case')));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 250));
+
+        expect(
+          find.text('Não foi possível publicar o case. Tente novamente.'),
+          findsOneWidget,
+        );
+        expect(
+          find.textContaining('Salvo como rascunho em Relatórios → Marketing'),
+          findsNothing,
+        );
+      },
+    );
   });
 }
 
@@ -285,10 +367,10 @@ MarketingCase _draftCase() {
 
 class _StubMarketingCasesNotifier extends MarketingCasesNotifier {
   _StubMarketingCasesNotifier(
-    IMarketingCaseRepository repo,
-    MarketingSyncService sync,
+    super._repository,
+    super._syncService,
     List<MarketingCase> seed,
-  ) : super(repo, sync) {
+  ) {
     state = AsyncData(seed);
   }
 
@@ -321,6 +403,43 @@ class _ThrowingRepo implements IMarketingCaseRepository {
   @override
   Future<MarketingCase> saveAsDraft(MarketingCase marketingCase) async =>
       marketingCase;
+
+  @override
+  Future<MarketingCase> getById(String id) async => throw UnimplementedError();
+
+  @override
+  Future<void> updateCase(MarketingCase marketingCase) async {}
+
+  @override
+  Future<MarketingCase> softDelete(String id) async => throw UnimplementedError();
+}
+
+class _ThrowingPublishAndDraftRepo implements IMarketingCaseRepository {
+  _ThrowingPublishAndDraftRepo(this.error);
+
+  final Object error;
+
+  @override
+  Future<List<MarketingCase>> fetchMarketingCases() async => const [];
+
+  @override
+  Future<List<MarketingCase>> getLocalCases() async => const [];
+
+  @override
+  Future<void> saveToCache(List<MarketingCase> cases) async {}
+
+  @override
+  Future<void> saveSingleToCache(MarketingCase marketingCase) async {}
+
+  @override
+  Future<MarketingCase> saveCase(MarketingCase marketingCase) async {
+    throw error;
+  }
+
+  @override
+  Future<MarketingCase> saveAsDraft(MarketingCase marketingCase) async {
+    throw error;
+  }
 
   @override
   Future<MarketingCase> getById(String id) async => throw UnimplementedError();

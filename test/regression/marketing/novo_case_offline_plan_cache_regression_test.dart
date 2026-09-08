@@ -65,6 +65,50 @@ void main() {
       },
     );
 
+    testWidgets(
+      'falha ao salvar rascunho após erro de plano exibe mensagem explícita',
+      (tester) async {
+        final repo = _StatusOkRepo();
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              marketingCaseRepositoryProvider.overrideWithValue(repo),
+              marketingCasesProvider.overrideWith((ref) {
+                return _ThrowingDraftNotifier(repo, const []);
+              }),
+              planoAtivoProvider.overrideWith(
+                (ref) async => throw const PlanoCacheUnavailableException(
+                  expired: false,
+                ),
+              ),
+              connectivityStateProvider.overrideWith(
+                (ref) => Stream.value(false),
+              ),
+            ],
+            child: const MaterialApp(home: _PublishHarness()),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byKey(const Key('submit_case')));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 250));
+
+        expect(find.textContaining(cacheMessage), findsOneWidget);
+        expect(
+          find.textContaining('Não foi possível salvar o rascunho. Tente novamente.'),
+          findsOneWidget,
+        );
+        expect(
+          find.textContaining(
+            'Case salvo como rascunho em Relatórios → Marketing',
+          ),
+          findsNothing,
+        );
+      },
+    );
+
     test('plano expirado rebaixa pending_sync published para draft', () async {
       final pending = _publishedCase('pend-1', syncStatus: 'pending_sync');
       final synced = _publishedCase('sync-1', syncStatus: 'synced');
@@ -238,15 +282,32 @@ MarketingCase _publishedCase(
 
 class _StubMarketingCasesNotifier extends MarketingCasesNotifier {
   _StubMarketingCasesNotifier(
-    IMarketingCaseRepository repo,
-    MarketingSyncService sync,
+    super._repository,
+    super._syncService,
     List<MarketingCase> seed,
-  ) : super(repo, sync) {
+  ) {
     state = AsyncData(seed);
   }
 
   @override
   Future<void> load({bool forceSync = false}) async {}
+}
+
+class _ThrowingDraftNotifier extends MarketingCasesNotifier {
+  _ThrowingDraftNotifier(
+    IMarketingCaseRepository repo,
+    List<MarketingCase> seed,
+  ) : super(repo, MarketingSyncService(repo)) {
+    state = AsyncData(seed);
+  }
+
+  @override
+  Future<void> load({bool forceSync = false}) async {}
+
+  @override
+  Future<MarketingCase> saveAsDraft(MarketingCase newCase) async {
+    throw Exception('Falha ao persistir rascunho');
+  }
 }
 
 class _StatusOkRepo implements IMarketingCaseRepository {
