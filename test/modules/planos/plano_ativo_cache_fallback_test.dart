@@ -20,7 +20,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 void main() {
   const userId = 'user-plano-cache';
 
-  UserPlan _cachedPlan() => UserPlan(
+  UserPlan cachedPlan() => UserPlan(
         id: 'plan-cached',
         userId: userId,
         plano: PlanoTipo.prata,
@@ -31,14 +31,14 @@ void main() {
         criadoEm: DateTime.utc(2026, 8, 1),
       );
 
-  Future<ProviderContainer> _container({
+  Future<ProviderContainer> buildContainer({
     required Object repoError,
     bool seedCache = false,
   }) async {
     SharedPreferences.setMockInitialValues({});
     final prefs = PreferencesService(await SharedPreferences.getInstance());
     if (seedCache) {
-      await PlanoLocalCache(prefs).save(_cachedPlan());
+      await PlanoLocalCache(prefs).save(cachedPlan());
     }
 
     final container = ProviderContainer(
@@ -59,7 +59,7 @@ void main() {
   group('planoAtivoProvider cache fallback', () {
     test('SocketException com cache válido retorna o UserPlan em cache',
         () async {
-      final container = await _container(
+      final container = await buildContainer(
         repoError: const SocketException('Failed host lookup'),
         seedCache: true,
       );
@@ -72,7 +72,7 @@ void main() {
 
     test('SocketException sem cache lança PlanoCacheUnavailableException',
         () async {
-      final container = await _container(
+      final container = await buildContainer(
         repoError: const SocketException('Failed host lookup'),
       );
 
@@ -89,7 +89,7 @@ void main() {
     });
 
     test('AuthException não serve cache mesmo com UserPlan gravado', () async {
-      final container = await _container(
+      final container = await buildContainer(
         repoError: const AuthException('JWT expired'),
         seedCache: true,
       );
@@ -101,7 +101,7 @@ void main() {
     });
 
     test('PostgrestException PGRST301 não serve cache', () async {
-      final container = await _container(
+      final container = await buildContainer(
         repoError: const PostgrestException(
           message: 'JWT expired',
           code: 'PGRST301',
