@@ -42,6 +42,8 @@ import '../../../components/map/widgets/map_markers.dart';
 import '../../../components/map/widgets/map_controls_overlay.dart';
 import '../../../components/map/widgets/map_offline_widgets.dart';
 import '../../../components/map/widgets/isolated_marker_layers.dart';
+import '../../../components/map/widgets/draggable_pin_layer.dart';
+import '../../../components/map/widgets/pin_position_correction_overlay.dart';
 import '../../../components/map/widgets/map_long_press_hint.dart';
 import '../../../components/map/widgets/map_state_boundaries_layer.dart';
 import '../../../components/map/widgets/map_tools_bottom_sheet.dart';
@@ -366,18 +368,18 @@ class MapBuildOrchestrator extends ConsumerWidget {
                   child: const MapMarkersWidget(),
                 ),
 
-                // Markers de ocorrências (isolados)
+                // Markers de ocorrências (isolados; suprime pin em correção)
                 AbsorbPointer(
                   absorbing: suppressMapMarkerTaps,
-                  child: IsolatedOccurrenceMarkersLayer(
+                  child: PinCorrectionAwareOccurrenceMarkersLayer(
                     onOccurrenceTap: handleOccurrencePinTap,
                   ),
                 ),
 
-                // Markers de Marketing (isolados — Sprint 8 Performance)
+                // Markers de Marketing (isolados; suprime pin em correção)
                 AbsorbPointer(
                   absorbing: suppressMapMarkerTaps,
-                  child: const IsolatedMarketingMarkersLayer(),
+                  child: const PinCorrectionAwareMarketingMarkersLayer(),
                 ),
 
                 Consumer(
@@ -462,6 +464,8 @@ class MapBuildOrchestrator extends ConsumerWidget {
                 focusDrawingFeatureOnMap(mapController, feature),
           ),
           const ArmedModeBanner(),
+          DraggablePinLayer(mapController: mapController),
+          const PinPositionCorrectionOverlay(),
           MapLongPressHint(visible: showLongPressHint),
         ],
       ),
