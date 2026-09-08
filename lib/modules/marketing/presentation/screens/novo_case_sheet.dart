@@ -18,9 +18,11 @@ import '../widgets/case_selectors_widget.dart';
 import '../widgets/novo_case_antes_depois_section.dart';
 import '../widgets/novo_case_avaliacao_section.dart';
 import '../widgets/novo_case_form_helpers.dart';
+import '../widgets/marketing_client_selector.dart';
 import '../widgets/novo_case_header.dart';
 import '../widgets/novo_case_publicar_button.dart';
 import '../widgets/novo_case_resultado_section.dart';
+import '../../../../core/contracts/i_client_lookup.dart';
 import '../../../../core/ui/sheets/sheet_tokens.dart';
 import '../../../../core/ui/sheets/soloforte_sheet.dart';
 
@@ -61,6 +63,7 @@ class _NovoCaseSheetState extends ConsumerState<NovoCaseSheet> {
   final _descricaoCtrl = TextEditingController();
   DateTime? _dataCase;
   String? _clientId;
+  String? _lastAutoFilledClientName;
 
   // ── Produtividade ──────────────────────────────────────────────
   final _produtividadeCtrl = TextEditingController();
@@ -412,6 +415,24 @@ class _NovoCaseSheetState extends ConsumerState<NovoCaseSheet> {
     HapticFeedback.selectionClick();
   }
 
+  void _handleClientChanged(ClientSummary? client) {
+    setState(() {
+      if (client == null) {
+        _clientId = null;
+        return;
+      }
+
+      _clientId = client.id;
+      final current = _produtorCtrl.text.trim();
+      if (current.isEmpty ||
+          (_lastAutoFilledClientName != null &&
+              current == _lastAutoFilledClientName)) {
+        _produtorCtrl.text = client.name;
+        _lastAutoFilledClientName = client.name;
+      }
+    });
+  }
+
   // ── Build ──────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
@@ -442,6 +463,11 @@ class _NovoCaseSheetState extends ConsumerState<NovoCaseSheet> {
             ),
             const SizedBox(height: 20),
             novoCaseSectionLabel('Identificação'),
+            const SizedBox(height: 8),
+            MarketingClientSelector(
+              selectedClientId: _clientId,
+              onChanged: _handleClientChanged,
+            ),
             const SizedBox(height: 8),
             novoCaseFieldBox(
               child: Column(
