@@ -44,6 +44,7 @@ import '../../../components/map/widgets/map_offline_widgets.dart';
 import '../../../components/map/widgets/isolated_marker_layers.dart';
 import '../../../components/map/widgets/draggable_pin_layer.dart';
 import '../../../components/map/widgets/pin_position_correction_overlay.dart';
+import '../../map/providers/pin_position_correction_provider.dart';
 import '../../../components/map/widgets/map_long_press_hint.dart';
 import '../../../components/map/widgets/map_state_boundaries_layer.dart';
 import '../../../components/map/widgets/map_tools_bottom_sheet.dart';
@@ -151,8 +152,20 @@ class MapBuildOrchestrator extends ConsumerWidget {
             c.currentPoints.isNotEmpty,
       ),
     );
-    final suppressMapMarkerTaps = ref.watch(
-      drawingControllerProvider.select((c) => c.suppressesMapContextTaps),
+    final suppressMapMarkerTaps =
+        ref.watch(
+          drawingControllerProvider.select((c) => c.suppressesMapContextTaps),
+        ) ||
+        ref.watch(pinPositionCorrectionProvider.select((s) => s != null));
+    final excludedOccurrenceMarkerId = ref.watch(
+      pinPositionCorrectionProvider.select(
+        (s) => s?.kind == PinCorrectionKind.occurrence ? s?.entityId : null,
+      ),
+    );
+    final excludedMarketingMarkerId = ref.watch(
+      pinPositionCorrectionProvider.select(
+        (s) => s?.kind == PinCorrectionKind.marketing ? s?.entityId : null,
+      ),
     );
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -371,15 +384,18 @@ class MapBuildOrchestrator extends ConsumerWidget {
                 // Markers de ocorrências (isolados; suprime pin em correção)
                 AbsorbPointer(
                   absorbing: suppressMapMarkerTaps,
-                  child: PinCorrectionAwareOccurrenceMarkersLayer(
+                  child: IsolatedOccurrenceMarkersLayer(
                     onOccurrenceTap: handleOccurrencePinTap,
+                    excludedMarkerId: excludedOccurrenceMarkerId,
                   ),
                 ),
 
                 // Markers de Marketing (isolados; suprime pin em correção)
                 AbsorbPointer(
                   absorbing: suppressMapMarkerTaps,
-                  child: const PinCorrectionAwareMarketingMarkersLayer(),
+                  child: IsolatedMarketingMarkersLayer(
+                    excludedMarkerId: excludedMarketingMarkerId,
+                  ),
                 ),
 
                 Consumer(
