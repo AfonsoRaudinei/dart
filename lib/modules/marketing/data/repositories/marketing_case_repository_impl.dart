@@ -49,6 +49,7 @@ class MarketingCaseRepositoryImpl implements IMarketingCaseRepository {
     json.removeWhere((key, value) => !remoteColumns.contains(key));
     json.removeWhere((key, value) {
       if (key == 'deletado_em') return false; // pode ser null (não-tombstone)
+      if (key == 'client_id' && value == null) return false; // limpar cliente
       if (value == null) return true;
       if (key == 'client_id' && value is String && value.trim().isEmpty) {
         return true;
