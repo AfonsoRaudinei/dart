@@ -14,7 +14,7 @@ void main() {
 
     const userId = 'user-cache-1';
 
-    UserPlan _plan({String id = 'plan-1'}) => UserPlan(
+    UserPlan plan({String id = 'plan-1'}) => UserPlan(
           id: id,
           userId: userId,
           plano: PlanoTipo.prata,
@@ -37,7 +37,7 @@ void main() {
     });
 
     test('save + readValid retorna o plano dentro do TTL', () async {
-      await cache.save(_plan());
+      await cache.save(plan());
 
       final cached = cache.readValid(userId);
       expect(cached, isNotNull);
@@ -48,7 +48,7 @@ void main() {
     });
 
     test('readValid é miss e isExpired é true após o TTL', () async {
-      await cache.save(_plan());
+      await cache.save(plan());
       now = now.add(const Duration(hours: 24));
 
       expect(cache.readValid(userId), isNull);
@@ -71,7 +71,7 @@ void main() {
     });
 
     test('clear remove o cache do userId', () async {
-      await cache.save(_plan());
+      await cache.save(plan());
       await cache.clear(userId);
 
       expect(cache.readValid(userId), isNull);
