@@ -63,6 +63,68 @@ void main() {
     );
   });
 
+  testWidgets(
+    'após pré-preenchimento da visita, trocar cliente atualiza produtor',
+    (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            clientLookupProvider.overrideWithValue(_FakeClientLookup()),
+          ],
+          child: MaterialApp(
+            home: Scaffold(
+              body: NovoCaseSheet(
+                lat: -10.0,
+                lng: -48.0,
+                tipo: CaseTipo.avaliacao,
+                initialVisitContext: const ActiveVisitContext(
+                  sessionId: 'visit-1',
+                  clientId: 'client-1',
+                  clientName: 'José Augusto Miranda',
+                  farmId: 'farm-1',
+                  farmName: 'Fazenda Boa Vista',
+                  fieldId: 'field-1',
+                  fieldName: 'Talhão Norte',
+                  fieldAreaHa: 42.5,
+                  city: 'Porto Nacional',
+                  state: 'TO',
+                ),
+                onClose: () {},
+                onPublicar: (_) {},
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        tester
+            .widget<TextFormField>(
+              find.widgetWithText(TextFormField, 'Produtor / Fazenda *'),
+            )
+            .controller!
+            .text,
+        'José Augusto Miranda / Fazenda Boa Vista',
+      );
+
+      await tester.tap(find.byType(DropdownButton<String?>));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Cliente Selecionável').last);
+      await tester.pumpAndSettle();
+
+      expect(
+        tester
+            .widget<TextFormField>(
+              find.widgetWithText(TextFormField, 'Produtor / Fazenda *'),
+            )
+            .controller!
+            .text,
+        'Cliente Selecionável',
+      );
+    },
+  );
+
   testWidgets('Antes/Depois mantém valor digitado em Teste produto', (
     tester,
   ) async {
