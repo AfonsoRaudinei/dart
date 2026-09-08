@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -17,6 +19,20 @@ import 'package:soloforte_app/modules/marketing/presentation/providers/marketing
 import 'package:soloforte_app/modules/marketing/presentation/widgets/marketing_case_sheet.dart';
 import 'package:soloforte_app/ui/components/map/widgets/pin_position_correction_overlay.dart';
 import 'package:soloforte_app/ui/screens/map/providers/pin_position_correction_provider.dart';
+
+bool _occurrenceShowsPinCorrection(
+  Occurrence occurrence, {
+  required bool allowPinCorrection,
+}) =>
+    allowPinCorrection &&
+    OccurrenceDetailSheet.occurrencePinCorrectionEligible(occurrence);
+
+bool _marketingShowsPinCorrection(
+  MarketingCase marketingCase, {
+  required bool allowPinCorrection,
+}) =>
+    allowPinCorrection &&
+    MarketingCaseSheet.marketingCasePinCorrectionEligible(marketingCase);
 
 void main() {
   tearDown(LocalSessionIdentity.resetForTesting);
@@ -47,7 +63,7 @@ void main() {
         kind: PinCorrectionKind.occurrence,
         entityId: 'occ-1',
         position: const LatLng(-10, -50),
-        entitySnapshot: _sampleOccurrence(),
+        onConfirm: (_, __) async => true,
       );
 
       pinCorrectionUpdateCurrent(container, const LatLng(-11, -51));
@@ -64,7 +80,19 @@ void main() {
         kind: PinCorrectionKind.occurrence,
         entityId: occurrence.id,
         position: const LatLng(-10, -50),
-        entitySnapshot: occurrence,
+        onConfirm: (newLat, newLng) async {
+          await fakeOccurrenceRepo.updateOccurrence(
+            occurrence.copyWith(
+              lat: newLat,
+              long: newLng,
+              geometry: jsonEncode({
+                'type': 'Point',
+                'coordinates': [newLng, newLat],
+              }),
+            ),
+          );
+          return true;
+        },
       );
       pinCorrectionUpdateCurrent(container, const LatLng(-12.5, -48.2));
 
@@ -84,7 +112,15 @@ void main() {
         kind: PinCorrectionKind.marketing,
         entityId: marketingCase.id,
         position: LatLng(marketingCase.lat, marketingCase.lng),
-        entitySnapshot: marketingCase,
+        onConfirm: (newLat, newLng) async {
+          final updated = MarketingCase.fromJson({
+            ...marketingCase.toJson(),
+            'lat': newLat,
+            'lng': newLng,
+          });
+          await marketingNotifier.updateCase(updated);
+          return true;
+        },
       );
       pinCorrectionUpdateCurrent(container, const LatLng(-15.2, -47.8));
 
@@ -97,29 +133,21 @@ void main() {
       expect(container.read(pinPositionCorrectionProvider), isNull);
     });
 
-    test('confirm occurrence returns false when repository throws', () async {
-      final throwingRepo = _ThrowingOccurrenceRepository();
-      final errorContainer = ProviderContainer(
-        overrides: [
-          occurrenceRepositoryProvider.overrideWithValue(throwingRepo),
-          marketingCasesProvider.overrideWith((_) => marketingNotifier),
-        ],
-      );
-
-      final occurrence = _sampleOccurrence();
+    test('confirm occurrence returns false when onConfirm throws', () async {
       pinCorrectionStartSession(
-        errorContainer,
+        container,
         kind: PinCorrectionKind.occurrence,
-        entityId: occurrence.id,
+        entityId: 'occ-1',
         position: const LatLng(-10, -50),
-        entitySnapshot: occurrence,
+        onConfirm: (_, __) async {
+          throw StateError('persist failed');
+        },
       );
 
-      final saved = await pinCorrectionConfirm(errorContainer);
+      final saved = await pinCorrectionConfirm(container);
 
       expect(saved, isFalse);
-      expect(errorContainer.read(pinPositionCorrectionProvider), isNotNull);
-      errorContainer.dispose();
+      expect(container.read(pinPositionCorrectionProvider), isNotNull);
     });
 
     test('startSession replaces active session (cancel-first)', () {
@@ -128,7 +156,7 @@ void main() {
         kind: PinCorrectionKind.occurrence,
         entityId: 'occ-1',
         position: const LatLng(-10, -50),
-        entitySnapshot: _sampleOccurrence(),
+        onConfirm: (_, __) async => true,
       );
 
       pinCorrectionStartSession(
@@ -136,7 +164,7 @@ void main() {
         kind: PinCorrectionKind.marketing,
         entityId: 'mkt-2',
         position: const LatLng(-11, -51),
-        entitySnapshot: _sampleMarketingCase(ownerUserId: 'user-1'),
+        onConfirm: (_, __) async => true,
       );
 
       final session = container.read(pinPositionCorrectionProvider);
@@ -145,17 +173,8 @@ void main() {
     });
 
     testWidgets('overlay shows snackbar when confirm fails', (tester) async {
-      final throwingRepo = _ThrowingOccurrenceRepository();
-      final occurrence = _sampleOccurrence();
-
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [
-            occurrenceRepositoryProvider.overrideWithValue(throwingRepo),
-            marketingCasesProvider.overrideWith(
-              (_) => _TrackingMarketingNotifier(),
-            ),
-          ],
           child: MaterialApp(
             home: Scaffold(
               body: Stack(
@@ -166,9 +185,11 @@ void main() {
                         pinCorrectionStartSession(
                           ProviderScope.containerOf(context),
                           kind: PinCorrectionKind.occurrence,
-                          entityId: occurrence.id,
+                          entityId: 'occ-1',
                           position: const LatLng(-10, -50),
-                          entitySnapshot: occurrence,
+                          onConfirm: (_, __) async {
+                            throw StateError('persist failed');
+                          },
                         );
                       });
                       return const PinPositionCorrectionOverlay();
@@ -200,7 +221,7 @@ void main() {
         kind: PinCorrectionKind.occurrence,
         entityId: 'occ-1',
         position: const LatLng(-10, -50),
-        entitySnapshot: _sampleOccurrence(),
+        onConfirm: (_, __) async => true,
       );
 
       pinCorrectionCancel(container);
@@ -247,6 +268,33 @@ void main() {
         isTrue,
       );
     });
+
+    test('allowPinCorrection false hides occurrence action when eligible', () {
+      final editable = _sampleOccurrence();
+
+      expect(
+        _occurrenceShowsPinCorrection(editable, allowPinCorrection: false),
+        isFalse,
+      );
+      expect(
+        _occurrenceShowsPinCorrection(editable, allowPinCorrection: true),
+        isTrue,
+      );
+    });
+
+    test('allowPinCorrection false hides marketing action when eligible', () {
+      LocalSessionIdentity.remember('owner-a');
+      final ownedCase = _sampleMarketingCase(ownerUserId: 'owner-a');
+
+      expect(
+        _marketingShowsPinCorrection(ownedCase, allowPinCorrection: false),
+        isFalse,
+      );
+      expect(
+        _marketingShowsPinCorrection(ownedCase, allowPinCorrection: true),
+        isTrue,
+      );
+    });
   });
 }
 
@@ -289,22 +337,6 @@ class FakeOccurrenceRepository extends OccurrenceRepository {
   }
 }
 
-class _ThrowingOccurrenceRepository extends OccurrenceRepository {
-  @override
-  Future<void> updateOccurrence(Occurrence occurrence) async {
-    throw StateError('persist failed');
-  }
-}
-
-class _NoopMarketingRepo implements IMarketingCaseRepository {
-  @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
-}
-
-class _NoopMarketingSync extends MarketingSyncService {
-  _NoopMarketingSync() : super(_NoopMarketingRepo());
-}
-
 class _TrackingMarketingNotifier extends MarketingCasesNotifier {
   MarketingCase? lastUpdated;
 
@@ -318,4 +350,13 @@ class _TrackingMarketingNotifier extends MarketingCasesNotifier {
 
   @override
   Future<void> load({bool forceSync = false}) async {}
+}
+
+class _NoopMarketingRepo implements IMarketingCaseRepository {
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+class _NoopMarketingSync extends MarketingSyncService {
+  _NoopMarketingSync() : super(_NoopMarketingRepo());
 }
