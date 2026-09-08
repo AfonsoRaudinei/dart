@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:latlong2/latlong.dart';
@@ -14,6 +15,7 @@ import 'package:soloforte_app/modules/marketing/domain/enums/marketing_case_stat
 import 'package:soloforte_app/modules/marketing/domain/enums/plano_marketing.dart';
 import 'package:soloforte_app/modules/marketing/presentation/providers/marketing_providers.dart';
 import 'package:soloforte_app/modules/marketing/presentation/widgets/marketing_case_sheet.dart';
+import 'package:soloforte_app/ui/components/map/widgets/pin_position_correction_overlay.dart';
 import 'package:soloforte_app/ui/screens/map/providers/pin_position_correction_provider.dart';
 
 void main() {
@@ -93,6 +95,103 @@ void main() {
       expect(marketingNotifier.lastUpdated!.lat, -15.2);
       expect(marketingNotifier.lastUpdated!.lng, -47.8);
       expect(container.read(pinPositionCorrectionProvider), isNull);
+    });
+
+    test('confirm occurrence returns false when repository throws', () async {
+      final throwingRepo = _ThrowingOccurrenceRepository();
+      final errorContainer = ProviderContainer(
+        overrides: [
+          occurrenceRepositoryProvider.overrideWithValue(throwingRepo),
+          marketingCasesProvider.overrideWith((_) => marketingNotifier),
+        ],
+      );
+
+      final occurrence = _sampleOccurrence();
+      pinCorrectionStartSession(
+        errorContainer,
+        kind: PinCorrectionKind.occurrence,
+        entityId: occurrence.id,
+        position: const LatLng(-10, -50),
+        entitySnapshot: occurrence,
+      );
+
+      final saved = await pinCorrectionConfirm(errorContainer);
+
+      expect(saved, isFalse);
+      expect(errorContainer.read(pinPositionCorrectionProvider), isNotNull);
+      errorContainer.dispose();
+    });
+
+    test('startSession replaces active session (cancel-first)', () {
+      pinCorrectionStartSession(
+        container,
+        kind: PinCorrectionKind.occurrence,
+        entityId: 'occ-1',
+        position: const LatLng(-10, -50),
+        entitySnapshot: _sampleOccurrence(),
+      );
+
+      pinCorrectionStartSession(
+        container,
+        kind: PinCorrectionKind.marketing,
+        entityId: 'mkt-2',
+        position: const LatLng(-11, -51),
+        entitySnapshot: _sampleMarketingCase(ownerUserId: 'user-1'),
+      );
+
+      final session = container.read(pinPositionCorrectionProvider);
+      expect(session?.kind, PinCorrectionKind.marketing);
+      expect(session?.entityId, 'mkt-2');
+    });
+
+    testWidgets('overlay shows snackbar when confirm fails', (tester) async {
+      final throwingRepo = _ThrowingOccurrenceRepository();
+      final occurrence = _sampleOccurrence();
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            occurrenceRepositoryProvider.overrideWithValue(throwingRepo),
+            marketingCasesProvider.overrideWith(
+              (_) => _TrackingMarketingNotifier(),
+            ),
+          ],
+          child: MaterialApp(
+            home: Scaffold(
+              body: Stack(
+                children: [
+                  Builder(
+                    builder: (context) {
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        pinCorrectionStartSession(
+                          ProviderScope.containerOf(context),
+                          kind: PinCorrectionKind.occurrence,
+                          entityId: occurrence.id,
+                          position: const LatLng(-10, -50),
+                          entitySnapshot: occurrence,
+                        );
+                      });
+                      return const PinPositionCorrectionOverlay();
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Salvar posição'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text(
+          'Não foi possível salvar a posição. Verifique as coordenadas.',
+        ),
+        findsOneWidget,
+      );
     });
 
     test('cancel discards session without repository calls', () async {
@@ -187,6 +286,13 @@ class FakeOccurrenceRepository extends OccurrenceRepository {
   @override
   Future<void> updateOccurrence(Occurrence occurrence) async {
     lastUpdated = occurrence;
+  }
+}
+
+class _ThrowingOccurrenceRepository extends OccurrenceRepository {
+  @override
+  Future<void> updateOccurrence(Occurrence occurrence) async {
+    throw StateError('persist failed');
   }
 }
 
