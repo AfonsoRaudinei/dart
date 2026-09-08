@@ -742,7 +742,11 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
   void _handleOccurrencePinTap(occ.Occurrence occurrence) {
     if (!mounted) return;
     if (ref.read(drawingControllerProvider).suppressesMapContextTaps) return;
-    OccurrenceDetailSheet.show(context, occurrence);
+    OccurrenceDetailSheet.show(
+      context,
+      occurrence,
+      allowPinCorrection: true,
+    );
   }
 
   @override
