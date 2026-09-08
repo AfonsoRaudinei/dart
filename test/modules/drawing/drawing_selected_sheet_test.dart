@@ -8,6 +8,7 @@ import 'package:soloforte_app/modules/drawing/data/repositories/drawing_reposito
 import 'package:soloforte_app/modules/drawing/domain/models/drawing_models.dart';
 import 'package:soloforte_app/modules/drawing/domain/repositories/i_clients_repository.dart';
 import 'package:soloforte_app/modules/drawing/infra/clients/i_clients_repository_provider.dart';
+import 'package:soloforte_app/modules/drawing/presentation/coordinators/drawing_close_coordinator.dart';
 import 'package:soloforte_app/modules/drawing/presentation/controllers/drawing_controller.dart';
 import 'package:soloforte_app/modules/drawing/presentation/widgets/drawing_sheet.dart';
 import 'package:soloforte_app/modules/drawing/domain/drawing_state.dart';
@@ -379,7 +380,7 @@ void main() {
   );
 
   testWidgets(
-    'fechar com alteracoes pendentes pede confirmacao antes de descartar',
+    'x com alteracoes pendentes nao descarta nem fecha (fluxo 1A)',
     (tester) async {
       tester.view.physicalSize = const Size(800, 1400);
       tester.view.devicePixelRatio = 1;
@@ -425,25 +426,87 @@ void main() {
       await tester.tap(find.byKey(const Key('drawing_sheet_close')));
       await tester.pumpAndSettle();
 
-      expect(find.text('Descartar alterações?'), findsOneWidget);
+      expect(find.text('Descartar alterações?'), findsNothing);
       expect(closeCount, 0);
+      expect(controller.currentState, DrawingState.editing);
+      expect(controller.hasPendingEditChanges, isTrue);
+    },
+  );
+
+  testWidgets(
+    'trocar painel com alteracoes pendentes pede confirmacao antes de descartar',
+    (tester) async {
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final repository = _DrawingRepository(_feature());
+      final controller = DrawingController(repository: repository);
+      addTearDown(controller.dispose);
+      await controller.loadFeatures();
+      controller.selectFeature(controller.features.single);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            drawingClientsRepositoryProvider.overrideWithValue(
+              _ClientsRepository(),
+            ),
+          ],
+          child: MaterialApp(
+            home: Scaffold(
+              body: SizedBox(
+                height: 900,
+                child: DrawingSheet(controller: controller),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('drawing_selected_edit_button')));
+      await tester.pumpAndSettle();
+
+      controller.moveVertex(0, 0, const LatLng(-9.995, -47.995));
+      await tester.pumpAndSettle();
+      expect(controller.hasPendingEditChanges, isTrue);
+
+      final sheetContext = tester.element(find.byType(DrawingSheet));
+      final firstSwitchFuture = DrawingCloseCoordinator.handle(
+        sheetContext,
+        controller: controller,
+        intent: DrawingCloseIntent.switchPanel,
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Descartar alterações?'), findsOneWidget);
       expect(controller.currentState, DrawingState.editing);
 
       await tester.tap(find.text('Continuar editando'));
       await tester.pumpAndSettle();
+      final firstDecision = await firstSwitchFuture;
 
       expect(find.text('Descartar alterações?'), findsNothing);
+      expect(firstDecision.shouldCloseSheet, isFalse);
       expect(controller.currentState, DrawingState.editing);
-      expect(closeCount, 0);
+      expect(controller.hasPendingEditChanges, isTrue);
 
-      await tester.tap(find.byKey(const Key('drawing_sheet_close')));
+      final secondSwitchFuture = DrawingCloseCoordinator.handle(
+        sheetContext,
+        controller: controller,
+        intent: DrawingCloseIntent.switchPanel,
+      );
       await tester.pumpAndSettle();
+
       await tester.tap(find.text('Descartar'));
       await tester.pumpAndSettle();
+      final secondDecision = await secondSwitchFuture;
 
-      expect(closeCount, 1);
-      expect(controller.currentState, DrawingState.idle);
-      expect(controller.selectedFeature, isNull);
+      expect(secondDecision.shouldCloseSheet, isTrue);
+      expect(controller.currentState, DrawingState.selected);
+      expect(controller.hasPendingEditChanges, isFalse);
     },
   );
 }
