@@ -30,11 +30,25 @@ final marketingSyncServiceProvider = Provider<MarketingSyncService>((ref) {
 
 /// Resultado detalhado de [MarketingCasesNotifier.publishCaseDetailed].
 class PublishOutcome {
-  const PublishOutcome.success(this.publishedCase) : error = null;
-  const PublishOutcome.failure(this.error) : publishedCase = null;
+  const PublishOutcome.success(this.publishedCase)
+      : error = null,
+        savedForOfflineSync = false,
+        revertedToDraft = false;
+
+  const PublishOutcome.failure(
+    this.error, {
+    this.savedForOfflineSync = false,
+    this.revertedToDraft = false,
+  }) : publishedCase = null;
 
   final MarketingCase? publishedCase;
   final Object? error;
+
+  /// Falha transitória: case permanece `published` + `pending_sync` para retry.
+  final bool savedForOfflineSync;
+
+  /// Falha permanente: case revertido para `draft` + `local_only`.
+  final bool revertedToDraft;
 
   bool get isSuccess => publishedCase != null;
 }
@@ -132,8 +146,10 @@ class MarketingCasesNotifier
     } catch (e, st) {
       AppLogger.error('Erro ao publicar case', error: e, stackTrace: st);
       final updatedCases = state.valueOrNull ?? [];
+      final isTransient = isTransientNetworkPublishError(e);
+      var draftPersisted = false;
 
-      if (isTransientNetworkPublishError(e)) {
+      if (isTransient) {
         // Offline-first: mantém published + pending_sync para retry automático
         state = AsyncData(
           updatedCases
@@ -161,6 +177,7 @@ class MarketingCasesNotifier
         );
         try {
           await _repository.saveAsDraft(draftCase);
+          draftPersisted = true;
         } catch (draftError, draftSt) {
           AppLogger.error(
             'Erro ao reverter case para rascunho após falha permanente',
@@ -170,7 +187,11 @@ class MarketingCasesNotifier
           );
         }
       }
-      return PublishOutcome.failure(e);
+      return PublishOutcome.failure(
+        e,
+        savedForOfflineSync: isTransient,
+        revertedToDraft: draftPersisted,
+      );
     }
   }
 
