@@ -6,7 +6,7 @@ part of 'plano_providers.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$planoRepositoryHash() => r'35b99fb75f3581dda4794d1bf54ce8f28cb4751f';
+String _$planoRepositoryHash() => r'7ab1f3ac6fc2348dc08b8f5bfea9016642ebd8ef';
 
 /// See also [planoRepository].
 @ProviderFor(planoRepository)
@@ -40,7 +40,7 @@ final referralServiceProvider = Provider<ReferralService>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef ReferralServiceRef = ProviderRef<ReferralService>;
-String _$planoLocalCacheHash() => r'a1b2c3d4e5f6plano_local_cache_adr012';
+String _$planoLocalCacheHash() => r'775591c8f21a1a6334602ce7868786ce9a61e9ee';
 
 /// Cache local do último plano verificado online (TTL 24h — ADR-012 Adendo 1).
 ///
@@ -59,7 +59,7 @@ final planoLocalCacheProvider = Provider<PlanoLocalCache>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef PlanoLocalCacheRef = ProviderRef<PlanoLocalCache>;
-String _$planoAtivoHash() => r'9a78bb2f9eb936140350256bed41b22f62648d83';
+String _$planoAtivoHash() => r'3ff61a56fa8651c01e14fb96e6fcc9334cc9f041';
 
 /// Plano ativo do usuário autenticado.
 ///
@@ -90,7 +90,7 @@ final planoAtivoProvider = FutureProvider<UserPlan>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef PlanoAtivoRef = FutureProviderRef<UserPlan>;
-String _$referralsHash() => r'34fe3c3dd0706c3eba9e8a440c8cce2912cecf49';
+String _$referralsHash() => r'8ee9bcef79b3a1c5bad665d693772ca429c3bcc0';
 
 /// See also [referrals].
 @ProviderFor(referrals)
@@ -108,7 +108,7 @@ final referralsProvider = AutoDisposeFutureProvider<List<Referral>>.internal(
 // ignore: unused_element
 typedef ReferralsRef = AutoDisposeFutureProviderRef<List<Referral>>;
 String _$meuCodigoIndicacaoHash() =>
-    r'52771184c0c75dabdbff60c90ec214f6c96a1015';
+    r'80ecceb8605b57619064fd340ae87ee3d84e3f31';
 
 /// See also [meuCodigoIndicacao].
 @ProviderFor(meuCodigoIndicacao)
