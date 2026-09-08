@@ -41,6 +41,7 @@ import '../../modules/consultoria/occurrences/presentation/widgets/occurrence_de
 import 'map/providers/map_armed_mode_provider.dart';
 import 'map/providers/map_ready_state_provider.dart';
 import '../../modules/map/presentation/providers/map_location_mode_provider.dart';
+import 'map/providers/pin_position_correction_provider.dart';
 import 'map/widgets/map_build_orchestrator.dart';
 import 'map/handlers/map_location_handler.dart';
 import 'map/controllers/map_viewport_controller.dart';
@@ -755,7 +756,16 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
     // ADR-032 F3: Build orchestrado por MapBuildOrchestrator.
     // Todo o conteúdo do Stack (canvas, layers, overlays, controls, sheet)
     // vive em map/widgets/map_build_orchestrator.dart.
-    return MapBuildOrchestrator(
+    final pinCorrectionActive = ref.watch(pinPositionCorrectionProvider) != null;
+
+    return PopScope(
+      canPop: !pinCorrectionActive,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop && ref.read(pinPositionCorrectionProvider) != null) {
+          ref.cancelPinCorrection();
+        }
+      },
+      child: MapBuildOrchestrator(
       mapController: _mapController,
       setSheetState: _setSheetState,
       openOccurrenceSheet: _openOccurrenceSheet,
@@ -774,6 +784,7 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
       absorbMapPointers: _actionsSheetOpen,
       showLongPressHint: _showLongPressHint,
       onMapUserInteraction: _onMapUserInteraction,
+      ),
     );
   }
 }
