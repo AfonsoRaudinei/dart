@@ -235,7 +235,11 @@ class IsolatedMarketingMarkersLayer extends ConsumerWidget {
                 marketingCase: mCase,
                 onTap: () {
                   HapticFeedback.lightImpact();
-                  MarketingCaseSheet.show(context, mCase);
+                  MarketingCaseSheet.show(
+                    context,
+                    mCase,
+                    allowPinCorrection: true,
+                  );
                 },
               ),
             ),
