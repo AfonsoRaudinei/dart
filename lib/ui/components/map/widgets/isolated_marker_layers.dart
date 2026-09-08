@@ -54,23 +54,36 @@ class IsolatedPublicationMarkersLayer extends ConsumerWidget {
 /// Mesmas otimizações de IsolatedPublicationMarkersLayer + cluster.
 class IsolatedOccurrenceMarkersLayer extends ConsumerWidget {
   final void Function(Occurrence) onOccurrenceTap;
+  final String? excludedMarkerId;
 
   const IsolatedOccurrenceMarkersLayer({
     super.key,
     required this.onOccurrenceTap,
+    this.excludedMarkerId,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // 🎯 OBSERVA SOMENTE markers finais
     final markers = ref.watch(occurrenceMarkersProvider(onOccurrenceTap));
+    final filtered = excludedMarkerId == null
+        ? markers
+        : markers
+              .where((marker) {
+                final key = marker.key;
+                if (key is ValueKey<String>) {
+                  return key.value != 'occ_$excludedMarkerId';
+                }
+                return true;
+              })
+              .toList(growable: false);
 
     final showMarkers = ref.watch(showMarkersProvider);
     if (!showMarkers) {
       return const SizedBox.shrink();
     }
 
-    if (markers.isEmpty) return const SizedBox.shrink();
+    if (filtered.isEmpty) return const SizedBox.shrink();
 
     return MarkerClusterLayerWidget(
       options: MarkerClusterLayerOptions(
@@ -79,7 +92,7 @@ class IsolatedOccurrenceMarkersLayer extends ConsumerWidget {
         alignment: Alignment.center,
         padding: const EdgeInsets.all(40),
         maxZoom: 15,
-        markers: markers,
+        markers: filtered,
         builder: (context, clusterMarkers) {
           return Container(
             decoration: BoxDecoration(
@@ -142,7 +155,9 @@ class IsolatedLocalPublicationMarkersLayer extends ConsumerWidget {
 /// ✅ Filtra e ordena dentro do widget isolado
 /// ✅ Rebuild apenas se a lista filtrada mudar
 class IsolatedMarketingMarkersLayer extends ConsumerWidget {
-  const IsolatedMarketingMarkersLayer({super.key});
+  final String? excludedMarkerId;
+
+  const IsolatedMarketingMarkersLayer({super.key, this.excludedMarkerId});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -172,7 +187,8 @@ class IsolatedMarketingMarkersLayer extends ConsumerWidget {
               (c) =>
                   c.status.toValue() == 'published' &&
                   c.ativo &&
-                  c.deletadoEm == null,
+                  c.deletadoEm == null &&
+                  (excludedMarkerId == null || c.id != excludedMarkerId),
             )
             .toList(growable: false);
       }),
