@@ -251,10 +251,11 @@ if (plano == null) {
 }
 ```
 
-Limites por plano:
-- Bronze: 1 case ativo no mapa
-- Prata: 2 cases ativos no mapa
-- Ouro: 3 cases ativos no mapa
+Limites por plano (implementado em `UserPlan.limiteCases`):
+- Bronze: 3 cases ativos no mapa
+- Prata: 5 cases ativos no mapa
+- Ouro: ilimitado
+- Admin: ilimitado (independente do plano)
 
 ---
 
@@ -290,11 +291,12 @@ Estados do item "Meu Plano":
 
 ## 10. REGRAS DE VISIBILIDADE DE PINS
 
-| Plano | Cases ativos no mapa | Visível sem login |
+| Plano | Cases ativos no mapa (`limiteCases`) | Visível sem login |
 |---|---|---|
-| Bronze | 1 | Não |
-| Prata | 2 | Não |
-| Ouro | 3 | Sim |
+| Bronze | 3 | Não |
+| Prata | 5 | Não |
+| Ouro | Ilimitado | Sim |
+| Admin | Ilimitado | Sim |
 
 Ao expirar: pins somem do mapa imediatamente. Cases permanecem no banco.  
 Ao reativar: pins voltam imediatamente após confirmação de pagamento.  
@@ -425,15 +427,16 @@ Não quebra contratos existentes — apenas adiciona dependências.
   - só então o retry sobe o que restou como `pending_sync`
 - `planos/` não importa connectivity; `marketing/` pode importar `planos/` (já autorizado neste ADR).
 
-### Limites de cases (código vigente — não alterar neste adendo)
+### Limites de cases (código vigente)
 
-O texto original das seções 7 e 10 (bronze=1, prata=2, ouro=3) **não** é reescrito aqui. Os limites **implementados** em `UserPlan.limiteCases` permanecem:
+Fonte: `UserPlan.limiteCases` em `lib/modules/planos/domain/entities/user_plan.dart`:
 
 - Bronze: 3
 - Prata: 5
-- Ouro: ilimitado (admin também ilimitado)
+- Ouro: ilimitado (`999999`)
+- Admin: ilimitado (`999999`)
 
-Pins offline não exigem mudança desses limites.
+Seções 7 e 10 deste ADR foram alinhadas a esses valores (Set/2026). Pins offline respeitam o mesmo limite via cache + contagem local de `pending_sync`.
 
 ### Consequência
 
