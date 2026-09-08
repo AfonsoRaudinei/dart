@@ -1,13 +1,7 @@
-import 'dart:convert';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 
 import '../../../../core/utils/app_logger.dart';
-import '../../../../modules/consultoria/occurrences/domain/occurrence.dart';
-import '../../../../modules/consultoria/occurrences/presentation/controllers/occurrence_controller.dart';
-import '../../../../modules/marketing/domain/entities/marketing_case.dart';
-import '../../../../modules/marketing/presentation/providers/marketing_providers.dart';
 
 enum PinCorrectionKind { occurrence, marketing }
 
@@ -16,14 +10,14 @@ class PinPositionCorrectionSession {
   final String entityId;
   final LatLng original;
   LatLng current;
-  final Object? entitySnapshot;
+  final Future<bool> Function(double lat, double lng) onConfirm;
 
   PinPositionCorrectionSession({
     required this.kind,
     required this.entityId,
     required this.original,
     required this.current,
-    this.entitySnapshot,
+    required this.onConfirm,
   });
 }
 
@@ -42,14 +36,14 @@ extension PinPositionCorrectionActions on WidgetRef {
     required PinCorrectionKind kind,
     required String entityId,
     required LatLng position,
-    Object? entitySnapshot,
+    required Future<bool> Function(double lat, double lng) onConfirm,
   }) {
     pinCorrectionStartSession(
       this,
       kind: kind,
       entityId: entityId,
       position: position,
-      entitySnapshot: entitySnapshot,
+      onConfirm: onConfirm,
     );
   }
 
@@ -69,7 +63,7 @@ void pinCorrectionStartSession(
   required PinCorrectionKind kind,
   required String entityId,
   required LatLng position,
-  Object? entitySnapshot,
+  required Future<bool> Function(double lat, double lng) onConfirm,
 }) {
   final existing = ref.read(pinPositionCorrectionProvider);
   if (existing != null) {
@@ -85,7 +79,7 @@ void pinCorrectionStartSession(
         entityId: entityId,
         original: position,
         current: position,
-        entitySnapshot: entitySnapshot,
+        onConfirm: onConfirm,
       );
 }
 
@@ -98,7 +92,7 @@ void pinCorrectionUpdateCurrent(dynamic ref, LatLng position) {
         entityId: session.entityId,
         original: session.original,
         current: position,
-        entitySnapshot: session.entitySnapshot,
+        onConfirm: session.onConfirm,
       );
 }
 
@@ -117,31 +111,8 @@ Future<bool> pinCorrectionConfirm(dynamic ref) async {
   }
 
   try {
-    switch (session.kind) {
-      case PinCorrectionKind.occurrence:
-        final occurrence = session.entitySnapshot as Occurrence?;
-        if (occurrence == null) return false;
-        await ref.read(occurrenceRepositoryProvider).updateOccurrence(
-          occurrence.copyWith(
-            lat: newLat,
-            long: newLng,
-            geometry: jsonEncode({
-              'type': 'Point',
-              'coordinates': [newLng, newLat],
-            }),
-          ),
-        );
-        ref.invalidate(occurrencesListProvider);
-      case PinCorrectionKind.marketing:
-        final marketingCase = session.entitySnapshot as MarketingCase?;
-        if (marketingCase == null) return false;
-        final updated = MarketingCase.fromJson({
-          ...marketingCase.toJson(),
-          'lat': newLat,
-          'lng': newLng,
-        });
-        await ref.read(marketingCasesProvider.notifier).updateCase(updated);
-    }
+    final saved = await session.onConfirm(newLat, newLng);
+    if (!saved) return false;
   } catch (error, stackTrace) {
     AppLogger.error(
       'Falha ao persistir correção de posição do pin',
