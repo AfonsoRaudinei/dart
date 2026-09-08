@@ -45,10 +45,7 @@ class CarteiraSyncModule implements SyncModule {
   @override
   int get syncTier => 1;
   @override
-  Future<void> sync() => CarteiraSyncService(
-    supabase: supabase,
-    currentUserId: () => supabase.auth.currentUser?.id,
-  ).syncNow();
+  Future<void> sync() => CarteiraSyncService(supabase: supabase).syncNow();
 }
 
 class DrawingSyncModule implements SyncModule {
