@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:soloforte_app/core/session/local_session_identity.dart';
 import 'package:soloforte_app/modules/consultoria/occurrences/data/occurrence_repository.dart';
@@ -34,7 +35,20 @@ bool _marketingShowsPinCorrection(
     allowPinCorrection &&
     MarketingCaseSheet.marketingCasePinCorrectionEligible(marketingCase);
 
+/// Keeps [pinPositionCorrectionProvider] alive after sheet pop (autoDispose).
+class _PinCorrectionSessionWatcher extends ConsumerWidget {
+  const _PinCorrectionSessionWatcher();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(pinPositionCorrectionProvider);
+    return const SizedBox.shrink();
+  }
+}
+
 void main() {
+  setUpAll(() => initializeDateFormatting('pt_BR'));
+
   tearDown(LocalSessionIdentity.resetForTesting);
 
   group('pin_position_correction', () {
@@ -295,6 +309,67 @@ void main() {
         isTrue,
       );
     });
+
+    testWidgets(
+      'occurrence detail sheet onConfirm persists via captured container',
+      (tester) async {
+        final occurrence = _sampleOccurrence();
+        final testContainer = ProviderContainer(
+          overrides: [
+            occurrenceRepositoryProvider.overrideWithValue(fakeOccurrenceRepo),
+            marketingCasesProvider.overrideWith((_) => marketingNotifier),
+          ],
+        );
+
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: testContainer,
+            child: MaterialApp(
+              home: Scaffold(
+                body: Stack(
+                  children: [
+                    Builder(
+                      builder: (context) => TextButton(
+                        onPressed: () => OccurrenceDetailSheet.show(
+                          context,
+                          occurrence,
+                          allowPinCorrection: true,
+                        ),
+                        child: const Text('open-sheet'),
+                      ),
+                    ),
+                    const _PinCorrectionSessionWatcher(),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('open-sheet'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Corrigir posição'), findsOneWidget);
+
+        await tester.tap(find.text('Corrigir posição'));
+        await tester.pumpAndSettle();
+
+        expect(testContainer.read(pinPositionCorrectionProvider), isNotNull);
+
+        pinCorrectionUpdateCurrent(testContainer, const LatLng(-12.5, -48.2));
+
+        final saved = await pinCorrectionConfirm(testContainer);
+
+        expect(saved, isTrue);
+        expect(fakeOccurrenceRepo.lastUpdated, isNotNull);
+        expect(fakeOccurrenceRepo.lastUpdated!.lat, -12.5);
+        expect(fakeOccurrenceRepo.lastUpdated!.long, -48.2);
+        expect(testContainer.read(pinPositionCorrectionProvider), isNull);
+
+        testContainer.dispose();
+      },
+    );
   });
 }
 
