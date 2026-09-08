@@ -139,10 +139,10 @@ MarketingCase _draftCase() {
 
 class _StubMarketingCasesNotifier extends MarketingCasesNotifier {
   _StubMarketingCasesNotifier(
-    IMarketingCaseRepository repo,
-    MarketingSyncService sync,
+    super._repository,
+    super._syncService,
     List<MarketingCase> seed,
-  ) : super(repo, sync) {
+  ) {
     state = AsyncData(seed);
   }
 
