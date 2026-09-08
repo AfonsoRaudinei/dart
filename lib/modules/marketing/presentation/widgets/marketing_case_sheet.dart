@@ -44,23 +44,22 @@ class MarketingCaseSheet extends ConsumerWidget {
 
   void _startPinCorrection(BuildContext context, WidgetRef ref) {
     HapticFeedback.selectionClick();
+    final notifier = ref.read(marketingCasesProvider.notifier);
+    final container = ProviderScope.containerOf(context, listen: false);
     Navigator.of(context).pop();
-    ref.startPinCorrectionSession(
+    pinCorrectionStartSession(
+      container,
       kind: PinCorrectionKind.marketing,
       entityId: marketingCase.id,
       position: LatLng(marketingCase.lat, marketingCase.lng),
       onConfirm: (newLat, newLng) async {
-        try {
-          final updated = MarketingCase.fromJson({
-            ...marketingCase.toJson(),
-            'lat': newLat,
-            'lng': newLng,
-          });
-          await ref.read(marketingCasesProvider.notifier).updateCase(updated);
-          return true;
-        } catch (_) {
-          return false;
-        }
+        final updated = MarketingCase.fromJson({
+          ...marketingCase.toJson(),
+          'lat': newLat,
+          'lng': newLng,
+        });
+        await notifier.updateCase(updated);
+        return true;
       },
     );
   }
