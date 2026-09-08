@@ -45,28 +45,27 @@ class OccurrenceDetailSheet extends ConsumerWidget {
     final coords = occurrence.getCoordinates();
     if (coords == null) return;
     HapticFeedback.selectionClick();
+    final repository = ref.read(occurrenceRepositoryProvider);
+    final container = ProviderScope.containerOf(context, listen: false);
     Navigator.of(context).pop();
-    ref.startPinCorrectionSession(
+    pinCorrectionStartSession(
+      container,
       kind: PinCorrectionKind.occurrence,
       entityId: occurrence.id,
       position: LatLng(coords['lat']!, coords['long']!),
       onConfirm: (newLat, newLng) async {
-        try {
-          await ref.read(occurrenceRepositoryProvider).updateOccurrence(
-            occurrence.copyWith(
-              lat: newLat,
-              long: newLng,
-              geometry: jsonEncode({
-                'type': 'Point',
-                'coordinates': [newLng, newLat],
-              }),
-            ),
-          );
-          ref.invalidate(occurrencesListProvider);
-          return true;
-        } catch (_) {
-          return false;
-        }
+        await repository.updateOccurrence(
+          occurrence.copyWith(
+            lat: newLat,
+            long: newLng,
+            geometry: jsonEncode({
+              'type': 'Point',
+              'coordinates': [newLng, newLat],
+            }),
+          ),
+        );
+        container.invalidate(occurrencesListProvider);
+        return true;
       },
     );
   }
