@@ -12,6 +12,7 @@ import '../../domain/entities/marketing_case.dart';
 import '../../domain/enums/case_tipo.dart';
 import '../../domain/enums/marketing_case_status.dart';
 import '../../domain/enums/plano_marketing.dart';
+import '../providers/marketing_providers.dart';
 import 'comparativo_chart.dart';
 import 'marketing_case_resultado_read_only_section.dart';
 import 'marketing_case_story_entry_button.dart';
@@ -24,8 +25,13 @@ part 'marketing_case_sheet_avaliacao.dart';
 /// Aberto ao tocar num pin no mapa (Passo 8)
 class MarketingCaseSheet extends ConsumerWidget {
   final MarketingCase marketingCase;
+  final bool allowPinCorrection;
 
-  const MarketingCaseSheet({super.key, required this.marketingCase});
+  const MarketingCaseSheet({
+    super.key,
+    required this.marketingCase,
+    this.allowPinCorrection = false,
+  });
 
   static bool marketingCasePinCorrectionEligible(MarketingCase marketingCase) {
     final userId = LocalSessionIdentity.resolveUserId();
@@ -43,12 +49,28 @@ class MarketingCaseSheet extends ConsumerWidget {
       kind: PinCorrectionKind.marketing,
       entityId: marketingCase.id,
       position: LatLng(marketingCase.lat, marketingCase.lng),
-      entitySnapshot: marketingCase,
+      onConfirm: (newLat, newLng) async {
+        try {
+          final updated = MarketingCase.fromJson({
+            ...marketingCase.toJson(),
+            'lat': newLat,
+            'lng': newLng,
+          });
+          await ref.read(marketingCasesProvider.notifier).updateCase(updated);
+          return true;
+        } catch (_) {
+          return false;
+        }
+      },
     );
   }
 
   /// Exibe o sheet como modal drag‑to‑dismiss
-  static void show(BuildContext context, MarketingCase marketingCase) {
+  static void show(
+    BuildContext context,
+    MarketingCase marketingCase, {
+    bool allowPinCorrection = false,
+  }) {
     HapticFeedback.lightImpact();
     showSoloForteSheet(
       context: context,
@@ -58,7 +80,10 @@ class MarketingCaseSheet extends ConsumerWidget {
       // (mesmo padrão de VisitSheet / map sheets).
       preserveMaterialDefaults: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => MarketingCaseSheet(marketingCase: marketingCase),
+      builder: (_) => MarketingCaseSheet(
+        marketingCase: marketingCase,
+        allowPinCorrection: allowPinCorrection,
+      ),
     );
   }
 
@@ -392,7 +417,8 @@ class MarketingCaseSheet extends ConsumerWidget {
                     ],
 
                     const SizedBox(height: 24),
-                    if (marketingCasePinCorrectionEligible(marketingCase)) ...[
+                    if (allowPinCorrection &&
+                        marketingCasePinCorrectionEligible(marketingCase)) ...[
                       SizedBox(
                         width: double.infinity,
                         child: OutlinedButton.icon(
