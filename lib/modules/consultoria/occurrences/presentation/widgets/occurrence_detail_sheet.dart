@@ -25,11 +25,13 @@ import 'occurrence_creation_sheet.dart';
 class OccurrenceDetailSheet extends ConsumerWidget {
   final Occurrence occurrence;
   final String? backRoute;
+  final bool allowPinCorrection;
 
   const OccurrenceDetailSheet({
     super.key,
     required this.occurrence,
     this.backRoute,
+    this.allowPinCorrection = false,
   });
 
   bool get _isReadOnly => occurrence.cachedByUserId != null;
@@ -48,7 +50,24 @@ class OccurrenceDetailSheet extends ConsumerWidget {
       kind: PinCorrectionKind.occurrence,
       entityId: occurrence.id,
       position: LatLng(coords['lat']!, coords['long']!),
-      entitySnapshot: occurrence,
+      onConfirm: (newLat, newLng) async {
+        try {
+          await ref.read(occurrenceRepositoryProvider).updateOccurrence(
+            occurrence.copyWith(
+              lat: newLat,
+              long: newLng,
+              geometry: jsonEncode({
+                'type': 'Point',
+                'coordinates': [newLng, newLat],
+              }),
+            ),
+          );
+          ref.invalidate(occurrencesListProvider);
+          return true;
+        } catch (_) {
+          return false;
+        }
+      },
     );
   }
 
@@ -58,6 +77,7 @@ class OccurrenceDetailSheet extends ConsumerWidget {
     BuildContext context,
     Occurrence occurrence, {
     String? backRoute,
+    bool allowPinCorrection = false,
   }) {
     HapticFeedback.lightImpact();
     return showSoloForteSheet(
@@ -69,6 +89,7 @@ class OccurrenceDetailSheet extends ConsumerWidget {
       builder: (_) => OccurrenceDetailSheet(
         occurrence: occurrence,
         backRoute: backRoute,
+        allowPinCorrection: allowPinCorrection,
       ),
     );
   }
@@ -562,7 +583,8 @@ class OccurrenceDetailSheet extends ConsumerWidget {
                   ),
                 ),
               ],
-              if (occurrencePinCorrectionEligible(occurrence)) ...[
+              if (allowPinCorrection &&
+                  occurrencePinCorrectionEligible(occurrence)) ...[
                 const SizedBox(height: 12),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
