@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:latlong2/latlong.dart';
+import 'package:soloforte_app/core/session/local_session_identity.dart';
 import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
+import '../../../../ui/screens/map/providers/pin_position_correction_provider.dart';
 import '../../../../ui/theme/premium/design_tokens.dart';
 import '../../domain/entities/avaliacao_item.dart';
 import '../../domain/entities/marketing_case.dart';
 import '../../domain/enums/case_tipo.dart';
+import '../../domain/enums/marketing_case_status.dart';
 import '../../domain/enums/plano_marketing.dart';
 import 'comparativo_chart.dart';
 import 'marketing_case_resultado_read_only_section.dart';
@@ -17,10 +22,30 @@ part 'marketing_case_sheet_avaliacao.dart';
 
 /// Bottom Sheet de visualização detalhada de um Case de Marketing
 /// Aberto ao tocar num pin no mapa (Passo 8)
-class MarketingCaseSheet extends StatelessWidget {
+class MarketingCaseSheet extends ConsumerWidget {
   final MarketingCase marketingCase;
 
   const MarketingCaseSheet({super.key, required this.marketingCase});
+
+  static bool marketingCasePinCorrectionEligible(MarketingCase marketingCase) {
+    final userId = LocalSessionIdentity.resolveUserId();
+    return marketingCase.status == MarketingCaseStatus.published &&
+        marketingCase.ativo &&
+        marketingCase.deletadoEm == null &&
+        marketingCase.ownerUserId != null &&
+        marketingCase.ownerUserId == userId;
+  }
+
+  void _startPinCorrection(BuildContext context, WidgetRef ref) {
+    HapticFeedback.selectionClick();
+    Navigator.of(context).pop();
+    ref.startPinCorrectionSession(
+      kind: PinCorrectionKind.marketing,
+      entityId: marketingCase.id,
+      position: LatLng(marketingCase.lat, marketingCase.lng),
+      entitySnapshot: marketingCase,
+    );
+  }
 
   /// Exibe o sheet como modal drag‑to‑dismiss
   static void show(BuildContext context, MarketingCase marketingCase) {
@@ -79,7 +104,7 @@ class MarketingCaseSheet extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final isIos = _isIosBlue(context);
     final sheetBg = isIos
         ? SoloForteSheetSkinIos.background
@@ -367,6 +392,37 @@ class MarketingCaseSheet extends StatelessWidget {
                     ],
 
                     const SizedBox(height: 24),
+                    if (marketingCasePinCorrectionEligible(marketingCase)) ...[
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: () => _startPinCorrection(context, ref),
+                          style: isIos
+                              ? OutlinedButton.styleFrom(
+                                  foregroundColor:
+                                      SoloForteSheetSkinIos.ghostText,
+                                  side: const BorderSide(
+                                    color: SoloForteSheetSkinIos.ghostBorder,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(
+                                      SoloForteSheetSkinIos.ghostRadius,
+                                    ),
+                                  ),
+                                )
+                              : null,
+                          icon: Icon(
+                            Icons.open_with_rounded,
+                            size: 18,
+                            color: isIos
+                                ? SoloForteSheetSkinIos.iconStroke
+                                : PremiumTokens.brandGreen,
+                          ),
+                          label: const Text('Corrigir posição'),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
                     MarketingCaseStoryEntryButton(marketingCase: marketingCase),
                     const SizedBox(height: 80),
                   ],
