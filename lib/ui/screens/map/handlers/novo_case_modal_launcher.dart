@@ -15,6 +15,7 @@ import '../../../../core/services/connectivity_service.dart';
 import '../../../../core/session/user_role.dart';
 import '../../../../core/ui/sheets/sheet_tokens.dart';
 import '../../../../core/ui/sheets/soloforte_sheet.dart';
+import '../../../../core/utils/app_logger.dart';
 import '../../../../modules/marketing/domain/entities/marketing_case.dart';
 import '../../../../modules/marketing/domain/enums/case_tipo.dart';
 import '../../../../modules/marketing/domain/enums/marketing_case_status.dart';
@@ -136,16 +137,26 @@ class NovoCaseModalLauncher {
       if (!context.mounted) return;
       Navigator.of(context).pop();
       var savedDraft = false;
+      var draftSaveFailed = false;
       try {
         await ref.read(marketingCasesProvider.notifier).saveAsDraft(newCase);
         savedDraft = true;
-      } catch (_) {}
+      } catch (error, stackTrace) {
+        draftSaveFailed = true;
+        AppLogger.error(
+          'Erro ao salvar rascunho após falha na verificação do plano',
+          tag: 'NovoCaseModalLauncher',
+          error: error,
+          stackTrace: stackTrace,
+        );
+      }
       if (!context.mounted) return;
       _showPlanoLookupError(
         context,
         ref,
         error,
         savedAsDraft: savedDraft,
+        draftSaveFailed: draftSaveFailed,
       );
       return;
     }
@@ -300,10 +311,13 @@ class NovoCaseModalLauncher {
     WidgetRef ref,
     Object error, {
     bool savedAsDraft = false,
+    bool draftSaveFailed = false,
   }) {
     final draftSuffix = savedAsDraft
         ? ' Case salvo como rascunho em Relatórios → Marketing.'
-        : '';
+        : draftSaveFailed
+            ? ' Não foi possível salvar o rascunho. Tente novamente.'
+            : '';
     if (error is PlanoCacheUnavailableException) {
       _showSnackBar(
         context: context,
@@ -377,7 +391,16 @@ class NovoCaseModalLauncher {
     }
 
     final error = outcome.error;
-    final isOnline = ref.read(connectivityStateProvider).valueOrNull;
+
+    if (outcome.savedForOfflineSync) {
+      _showSnackBar(
+        context: context,
+        message: 'Sem conexão — case salvo localmente e será sincronizado.',
+        backgroundColor: Colors.orange,
+        icon: Icons.cloud_off,
+      );
+      return;
+    }
 
     if (isSessionOrRlsError(error)) {
       _showSnackBar(
@@ -391,12 +414,13 @@ class NovoCaseModalLauncher {
       return;
     }
 
-    if (isNetworkError(error, isOnline: isOnline)) {
+    if (outcome.revertedToDraft) {
       _showSnackBar(
         context: context,
-        message: 'Sem conexão — case salvo localmente e será sincronizado.',
+        message:
+            'Não foi possível publicar o case. Salvo como rascunho em Relatórios → Marketing.',
         backgroundColor: Colors.orange,
-        icon: Icons.cloud_off,
+        icon: Icons.error_outline,
       );
       return;
     }
