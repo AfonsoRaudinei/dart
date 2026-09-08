@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:soloforte_app/core/contracts/i_client_lookup_provider.dart';
 import 'package:soloforte_app/core/router/app_routes.dart';
 import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
@@ -12,6 +13,7 @@ import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 
 import '../../../../../../core/design/sf_icons.dart';
 import '../../../../../../ui/theme/premium/design_tokens.dart';
+import '../../../../../../ui/screens/map/providers/pin_position_correction_provider.dart';
 import '../../domain/occurrence.dart';
 import '../controllers/occurrence_controller.dart';
 import 'occurrence_creation_sheet.dart';
@@ -31,6 +33,24 @@ class OccurrenceDetailSheet extends ConsumerWidget {
   });
 
   bool get _isReadOnly => occurrence.cachedByUserId != null;
+
+  static bool occurrencePinCorrectionEligible(Occurrence occurrence) {
+    return occurrence.cachedByUserId == null &&
+        occurrence.getCoordinates() != null;
+  }
+
+  void _startPinCorrection(BuildContext context, WidgetRef ref) {
+    final coords = occurrence.getCoordinates();
+    if (coords == null) return;
+    HapticFeedback.selectionClick();
+    Navigator.of(context).pop();
+    ref.startPinCorrectionSession(
+      kind: PinCorrectionKind.occurrence,
+      entityId: occurrence.id,
+      position: LatLng(coords['lat']!, coords['long']!),
+      entitySnapshot: occurrence,
+    );
+  }
 
   // ── API pública ──────────────────────────────────────────────────────────
 
@@ -538,6 +558,39 @@ class OccurrenceDetailSheet extends ConsumerWidget {
                             : categoryColor,
                       ),
                       label: const Text('Ver ponto no mapa'),
+                    ),
+                  ),
+                ),
+              ],
+              if (occurrencePinCorrectionEligible(occurrence)) ...[
+                const SizedBox(height: 12),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () => _startPinCorrection(context, ref),
+                      style: isIos
+                          ? OutlinedButton.styleFrom(
+                              foregroundColor: SoloForteSheetSkinIos.ghostText,
+                              side: const BorderSide(
+                                color: SoloForteSheetSkinIos.ghostBorder,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(
+                                  SoloForteSheetSkinIos.ghostRadius,
+                                ),
+                              ),
+                            )
+                          : null,
+                      icon: Icon(
+                        Icons.open_with_rounded,
+                        size: 18,
+                        color: isIos
+                            ? SoloForteSheetSkinIos.iconStroke
+                            : categoryColor,
+                      ),
+                      label: const Text('Corrigir posição'),
                     ),
                   ),
                 ),
