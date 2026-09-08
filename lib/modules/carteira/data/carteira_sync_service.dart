@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:soloforte_app/core/database/database_helper.dart';
 import 'package:soloforte_app/core/network/network_policy.dart';
+import 'package:soloforte_app/core/session/local_session_identity.dart';
 import 'package:soloforte_app/core/services/sync_status_contract.dart';
 import 'package:soloforte_app/core/utils/app_logger.dart';
 
@@ -182,7 +183,7 @@ class CarteiraSyncService {
     if (resolveUserId != null) {
       return (resolveUserId() ?? '').trim();
     }
-    return _supabase?.auth.currentUser?.id.trim() ?? '';
+    return LocalSessionIdentity.resolveUserId().trim();
   }
 
   Future<void> _push(SupabaseClient client, String userId) async {
