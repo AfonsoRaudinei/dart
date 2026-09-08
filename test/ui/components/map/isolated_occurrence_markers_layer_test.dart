@@ -87,6 +87,61 @@ void main() {
       expect(tappedOccurrence?.id, occurrence.id);
     },
   );
+
+  testWidgets(
+    'IsolatedOccurrenceMarkersLayer exclui marker quando excludedMarkerId coincide',
+    (tester) async {
+      final preferencesService = await _buildPreferencesService(
+        showMarkers: true,
+      );
+      final occurrence = _buildOccurrence();
+      final otherOccurrence = Occurrence(
+        id: 'occ-2',
+        type: 'Média',
+        description: 'Outra ocorrência',
+        lat: -10.26,
+        long: -48.33,
+        category: 'praga',
+        createdAt: DateTime.utc(2026, 7, 21),
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            preferencesServiceProvider.overrideWithValue(preferencesService),
+            occurrencesListProvider.overrideWith(
+              (ref) async => [occurrence, otherOccurrence],
+            ),
+          ],
+          child: MaterialApp(
+            home: FlutterMap(
+              options: const MapOptions(
+                initialCenter: LatLng(-10.25, -48.32),
+                initialZoom: 14,
+              ),
+              children: [
+                IsolatedOccurrenceMarkersLayer(
+                  onOccurrenceTap: (_) {},
+                  excludedMarkerId: occurrence.id,
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      final cluster = tester.widget<MarkerClusterLayerWidget>(
+        find.byType(MarkerClusterLayerWidget),
+      );
+      expect(cluster.options.markers.length, 1);
+      expect(
+        (cluster.options.markers.first.key as ValueKey<String>).value,
+        'occ_${otherOccurrence.id}',
+      );
+    },
+  );
 }
 
 Future<PreferencesService> _buildPreferencesService({
