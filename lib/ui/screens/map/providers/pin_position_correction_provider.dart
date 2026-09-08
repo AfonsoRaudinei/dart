@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 
+import '../../../../core/utils/app_logger.dart';
 import '../../../../modules/consultoria/occurrences/domain/occurrence.dart';
 import '../../../../modules/consultoria/occurrences/presentation/controllers/occurrence_controller.dart';
 import '../../../../modules/marketing/domain/entities/marketing_case.dart';
@@ -70,6 +71,14 @@ void pinCorrectionStartSession(
   required LatLng position,
   Object? entitySnapshot,
 }) {
+  final existing = ref.read(pinPositionCorrectionProvider);
+  if (existing != null) {
+    AppLogger.debug(
+      'Substituindo sessão ativa de correção de pin (${existing.entityId} → $entityId)',
+      tag: 'PinCorrection',
+    );
+  }
+
   ref.read(pinPositionCorrectionProvider.notifier).state =
       PinPositionCorrectionSession(
         kind: kind,
@@ -107,30 +116,40 @@ Future<bool> pinCorrectionConfirm(dynamic ref) async {
     return false;
   }
 
-  switch (session.kind) {
-    case PinCorrectionKind.occurrence:
-      final occurrence = session.entitySnapshot as Occurrence?;
-      if (occurrence == null) return false;
-      await ref.read(occurrenceRepositoryProvider).updateOccurrence(
-        occurrence.copyWith(
-          lat: newLat,
-          long: newLng,
-          geometry: jsonEncode({
-            'type': 'Point',
-            'coordinates': [newLng, newLat],
-          }),
-        ),
-      );
-      ref.invalidate(occurrencesListProvider);
-    case PinCorrectionKind.marketing:
-      final marketingCase = session.entitySnapshot as MarketingCase?;
-      if (marketingCase == null) return false;
-      final updated = MarketingCase.fromJson({
-        ...marketingCase.toJson(),
-        'lat': newLat,
-        'lng': newLng,
-      });
-      await ref.read(marketingCasesProvider.notifier).updateCase(updated);
+  try {
+    switch (session.kind) {
+      case PinCorrectionKind.occurrence:
+        final occurrence = session.entitySnapshot as Occurrence?;
+        if (occurrence == null) return false;
+        await ref.read(occurrenceRepositoryProvider).updateOccurrence(
+          occurrence.copyWith(
+            lat: newLat,
+            long: newLng,
+            geometry: jsonEncode({
+              'type': 'Point',
+              'coordinates': [newLng, newLat],
+            }),
+          ),
+        );
+        ref.invalidate(occurrencesListProvider);
+      case PinCorrectionKind.marketing:
+        final marketingCase = session.entitySnapshot as MarketingCase?;
+        if (marketingCase == null) return false;
+        final updated = MarketingCase.fromJson({
+          ...marketingCase.toJson(),
+          'lat': newLat,
+          'lng': newLng,
+        });
+        await ref.read(marketingCasesProvider.notifier).updateCase(updated);
+    }
+  } catch (error, stackTrace) {
+    AppLogger.error(
+      'Falha ao persistir correção de posição do pin',
+      tag: 'PinCorrection',
+      error: error,
+      stackTrace: stackTrace,
+    );
+    return false;
   }
 
   ref.read(pinPositionCorrectionProvider.notifier).state = null;
