@@ -1,9 +1,13 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:soloforte_app/core/session/local_session_identity.dart';
 import 'package:soloforte_app/core/services/sync_status_contract.dart';
 import 'package:soloforte_app/modules/carteira/data/carteira_sync_service.dart';
 
 void main() {
   group('CarteiraSyncService.syncNow', () {
+    setUp(LocalSessionIdentity.resetForTesting);
+    tearDown(LocalSessionIdentity.resetForTesting);
+
     test('no-op sem JWT', () async {
       final service = CarteiraSyncService(
         currentUserId: () => null,
@@ -19,6 +23,15 @@ void main() {
       );
       await service.syncNow();
     });
+
+    test(
+      'no-op no caminho de produção sem JWT hidratado mesmo com lastKnown',
+      () async {
+        LocalSessionIdentity.remember('user-last-known');
+        final service = CarteiraSyncService(supabase: null);
+        await service.syncNow();
+      },
+    );
   });
 
   group('rowToRemote', () {
