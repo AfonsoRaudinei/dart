@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../../../core/contracts/i_client_lookup.dart';
 import '../../../../core/ui/sheets/sheet_tokens.dart';
 import '../../../../core/ui/sheets/soloforte_sheet.dart';
 import '../../../../ui/theme/premium/design_tokens.dart';
@@ -9,6 +10,7 @@ import '../../domain/enums/case_tipo.dart';
 import '../../domain/enums/plano_marketing.dart';
 import '../../domain/enums/produtividade_unidade.dart';
 import 'case_selectors_widget.dart';
+import 'marketing_client_selector.dart';
 import 'novo_case_form_helpers.dart';
 
 class EditCaseSheet extends StatefulWidget {
@@ -42,6 +44,8 @@ class _EditCaseSheetState extends State<EditCaseSheet> {
   late final CaseTipo _tipo;
   late PlanoMarketing _visibilidade;
   ProdutividadeUnidade? _produtividadeUnidade;
+  String? _clientId;
+  String? _lastAutoFilledClientName;
   bool _isSaving = false;
 
   @override
@@ -50,6 +54,7 @@ class _EditCaseSheetState extends State<EditCaseSheet> {
     final caso = widget.caso;
     _tipo = caso.tipo;
     _visibilidade = caso.visibilidade;
+    _clientId = caso.clientId;
     _produtividadeUnidade = caso.produtividadeUnidade;
     _produtorCtrl.text = caso.produtorFazenda;
     _produtoCtrl.text = caso.produtoUtilizado;
@@ -117,7 +122,7 @@ class _EditCaseSheetState extends State<EditCaseSheet> {
       unidadeProdutividade: casoOriginal.unidadeProdutividade,
       custoProdutoPorHa: casoOriginal.custoProdutoPorHa,
       valorGrao: casoOriginal.valorGrao,
-      clientId: casoOriginal.clientId,
+      clientId: _clientId,
       ownerUserId: casoOriginal.ownerUserId,
       fotoAntesUrl: casoOriginal.fotoAntesUrl,
       fotoDepoisUrl: casoOriginal.fotoDepoisUrl,
@@ -222,6 +227,24 @@ class _EditCaseSheetState extends State<EditCaseSheet> {
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  void _handleClientChanged(ClientSummary? client) {
+    setState(() {
+      if (client == null) {
+        _clientId = null;
+        return;
+      }
+
+      _clientId = client.id;
+      final current = _produtorCtrl.text.trim();
+      if (current.isEmpty ||
+          (_lastAutoFilledClientName != null &&
+              current == _lastAutoFilledClientName)) {
+        _produtorCtrl.text = client.name;
+        _lastAutoFilledClientName = client.name;
+      }
+    });
   }
 
   String get _tipoLabel {
@@ -378,6 +401,11 @@ class _EditCaseSheetState extends State<EditCaseSheet> {
                   const SizedBox(height: 20),
                   novoCaseSectionLabel('Dados principais'),
                   const SizedBox(height: 10),
+                  MarketingClientSelector(
+                    selectedClientId: _clientId,
+                    onChanged: _handleClientChanged,
+                  ),
+                  const SizedBox(height: 8),
                   novoCaseFieldBox(
                     child: Column(
                       children: [
