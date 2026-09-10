@@ -6,12 +6,13 @@ part of 'map_style_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$publicMapStyleHash() => r'944c941862057dc7d334d10a0cb4a24953a80c3d';
+String _$publicMapStyleHash() => r'30df09a0a58241ec176d0427b6f00ecde0312a16';
 
-/// Provider do estilo de mapa ativo no mapa público.
+/// Provider legado do estilo de mapa no mapa público.
 ///
-/// Permite alternar entre diferentes estilos de mapa
-/// com design iOS-like e fallback automático.
+/// Tiles da vitrine vêm de [MapConfig.tileConfigForPublicMap], não deste
+/// provider. Default OSM para não ressuscitar Carto Voyager se alguém ainda
+/// watchar.
 ///
 /// Copied from [PublicMapStyle].
 @ProviderFor(PublicMapStyle)
