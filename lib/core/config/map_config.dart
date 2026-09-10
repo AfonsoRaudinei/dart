@@ -129,9 +129,10 @@ class MapConfig {
   // CONFIGURAÇÃO ATIVA
   // ═══════════════════════════════════════════════════════════
 
-  /// Estilo padrão para mapa público (iOS-style)
-  /// Carto Voyager: melhor equilíbrio entre estética iOS e disponibilidade
-  static const String publicMapDefaultStyle = cartoVoyager;
+  /// Estilo padrão da vitrine /public-map: MapTiler Hybrid com key, OSM sem key.
+  /// Nunca Carto Voyager — ver [tileConfigForPublicMap].
+  static String get publicMapDefaultStyle =>
+      tileConfigForPublicMap(mapTilerApiKey: kMapTilerApiKey).urlTemplate;
 
   /// Fallback se o estilo principal falhar
   static const String fallbackStyle = openStreetMap;
@@ -290,6 +291,30 @@ class MapConfig {
           retinaMode: true,
         );
     }
+  }
+
+  /// Basemap da vitrine `/public-map` — isolado de `/map`.
+  ///
+  /// Com MapTiler key: o mesmo Hybrid de
+  /// `tileConfigForLayer(LayerType.satellite, satelliteWithLabels: true)`.
+  /// Sem key: OSM. Nunca Carto Voyager.
+  static MapLayerTileConfig tileConfigForPublicMap({
+    required String mapTilerApiKey,
+  }) {
+    if (hasMapTilerApiKey(mapTilerApiKey)) {
+      return tileConfigForLayer(
+        LayerType.satellite,
+        mapTilerApiKey: mapTilerApiKey,
+        satelliteWithLabels: true,
+      );
+    }
+    return const MapLayerTileConfig(
+      urlTemplate: openStreetMap,
+      attribution: osmAttribution,
+      maxZoom: defaultLayerMaxZoom,
+      maxNativeZoom: defaultLayerMaxNativeZoom,
+      isFallback: true,
+    );
   }
 
   // ═══════════════════════════════════════════════════════════
