@@ -13,7 +13,6 @@ import '../components/public_map/public_publication_preview.dart';
 import '../components/public_map/error_overlay.dart';
 import '../components/public_map/loading_overlay.dart';
 import '../../modules/public/providers/public_location_provider.dart';
-import '../../modules/public/providers/map_style_provider.dart';
 import '../../modules/public/providers/public_publications_provider.dart';
 import '../../modules/marketing/presentation/providers/marketing_providers.dart';
 import '../../modules/marketing/domain/enums/plano_marketing.dart';
@@ -74,19 +73,26 @@ class _PublicMapScreenState extends ConsumerState<PublicMapScreen> {
     }
   }
 
+  MapLayerTileConfig get _publicTileConfig =>
+      MapConfig.tileConfigForPublicMap(
+        mapTilerApiKey: MapConfig.kMapTilerApiKey,
+      );
+
   void _zoomIn() {
+    final maxZoom = _publicTileConfig.maxZoom;
     final currentZoom = _mapController.camera.zoom;
-    if (currentZoom < 18.0) {
-      final newZoom = (currentZoom + 1).clamp(3.0, 18.0);
+    if (currentZoom < maxZoom) {
+      final newZoom = (currentZoom + 1).clamp(3.0, maxZoom);
       _mapController.move(_mapController.camera.center, newZoom);
       setState(() => _currentZoom = newZoom);
     }
   }
 
   void _zoomOut() {
+    final maxZoom = _publicTileConfig.maxZoom;
     final currentZoom = _mapController.camera.zoom;
     if (currentZoom > 3.0) {
-      final newZoom = (currentZoom - 1).clamp(3.0, 18.0);
+      final newZoom = (currentZoom - 1).clamp(3.0, maxZoom);
       _mapController.move(_mapController.camera.center, newZoom);
       setState(() => _currentZoom = newZoom);
     }
@@ -125,7 +131,7 @@ class _PublicMapScreenState extends ConsumerState<PublicMapScreen> {
   @override
   Widget build(BuildContext context) {
     final locationState = ref.watch(publicLocationNotifierProvider);
-    final mapStyle = ref.watch(publicMapStyleProvider);
+    final tileConfig = _publicTileConfig;
     final publicationsAsync = ref.watch(publicPublicationsProvider);
     // CTA só para visitante confirmado — oculto no bootstrap (SessionUnknown)
     // e quando a sessão autenticada ainda não redirecionou para /map.
@@ -145,7 +151,7 @@ class _PublicMapScreenState extends ConsumerState<PublicMapScreen> {
               initialCenter: const LatLng(-23.5505, -46.6333), // SP Default
               initialZoom: _defaultZoom,
               minZoom: 3.0,
-              maxZoom: 18.0,
+              maxZoom: tileConfig.maxZoom,
               // Norte sempre para cima — mesmo contrato do MapCanvas privado.
               // Sem isso o gesto de dois dedos girava a câmera e o norte
               // ficava nas laterais sem caminho de volta (pins já usam rotate:true).
@@ -161,16 +167,17 @@ class _PublicMapScreenState extends ConsumerState<PublicMapScreen> {
               },
             ),
             children: [
-              // TileLayer com estilo iOS
               TileLayer(
-                urlTemplate: mapStyle.tileUrl,
+                urlTemplate: tileConfig.urlTemplate,
                 userAgentPackageName: MapConfig.userAgent,
-                subdomains: mapStyle.subdomains ?? const [],
+                subdomains: tileConfig.subdomains,
+                maxZoom: tileConfig.maxZoom,
+                maxNativeZoom: tileConfig.maxNativeZoom,
+                retinaMode: tileConfig.retinaMode,
                 additionalOptions: const {
                   'attribution': '', // Atribuição será no rodapé
                 },
-                // Fallback para OpenStreetMap em caso de erro
-                fallbackUrl: MapConfig.fallbackStyle,
+                fallbackUrl: tileConfig.fallbackUrl ?? MapConfig.fallbackStyle,
               ),
 
               // Pins de publicações públicas com animação fade in
