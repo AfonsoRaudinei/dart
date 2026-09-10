@@ -114,4 +114,28 @@ void main() {
       }
     });
   });
+
+  group('MapConfig.tileConfigForPublicMap', () {
+    test('com key usa MapTiler Hybrid (não satellite-v4 nem Carto)', () {
+      final config = MapConfig.tileConfigForPublicMap(
+        mapTilerApiKey: 'test-key',
+      );
+
+      expect(config.urlTemplate, contains('/maps/hybrid/256/'));
+      expect(config.urlTemplate, contains('key=test-key'));
+      expect(config.urlTemplate, isNot(contains('satellite-v4')));
+      expect(config.urlTemplate, isNot(contains('cartocdn')));
+      expect(config.urlTemplate, isNot(contains('voyager')));
+    });
+
+    test('sem key usa OSM (nunca Carto)', () {
+      final config = MapConfig.tileConfigForPublicMap(mapTilerApiKey: '');
+
+      expect(config.urlTemplate, MapConfig.openStreetMap);
+      expect(config.attribution, MapConfig.osmAttribution);
+      expect(config.isFallback, isTrue);
+      expect(config.urlTemplate, isNot(contains('cartocdn')));
+      expect(config.urlTemplate, isNot(contains('voyager')));
+    });
+  });
 }
