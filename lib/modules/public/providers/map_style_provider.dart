@@ -3,16 +3,16 @@ import '../../../core/config/map_config.dart';
 
 part 'map_style_provider.g.dart';
 
-/// Provider do estilo de mapa ativo no mapa público.
+/// Provider legado do estilo de mapa no mapa público.
 ///
-/// Permite alternar entre diferentes estilos de mapa
-/// com design iOS-like e fallback automático.
+/// Tiles da vitrine vêm de [MapConfig.tileConfigForPublicMap], não deste
+/// provider. Default OSM para não ressuscitar Carto Voyager se alguém ainda
+/// watchar.
 @riverpod
 class PublicMapStyle extends _$PublicMapStyle {
   @override
   MapStyle build() {
-    // Estilo padrão: Carto Voyager (iOS-like)
-    return MapStyle.iosLight;
+    return MapStyle.standard;
   }
 
   /// Altera o estilo do mapa
@@ -22,7 +22,7 @@ class PublicMapStyle extends _$PublicMapStyle {
 
   /// Retorna para o estilo padrão
   void resetToDefault() {
-    state = MapStyle.iosLight;
+    state = MapStyle.standard;
   }
 
   /// Alterna para fallback (OpenStreetMap)
