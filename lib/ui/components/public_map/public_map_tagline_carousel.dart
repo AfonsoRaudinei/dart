@@ -22,6 +22,10 @@ class PublicMapTaglineCarousel extends StatefulWidget {
   static const Duration interval = Duration(milliseconds: 4500);
   static const Duration fadeDuration = Duration(milliseconds: 400);
 
+  /// 2 linhas de headline (16×1.2) + gap 4 + 2 linhas de support (12.5×1.25)
+  /// = 73.65, com folga de métrica de fonte para os 3 slides caberem iguais.
+  static const double blockHeight = 80;
+
   static const List<PublicMapTaglineSlide> slides = [
     PublicMapTaglineSlide(
       headline: 'Simples. Poderoso. Teu.',
@@ -76,38 +80,45 @@ class _PublicMapTaglineCarouselState extends State<PublicMapTaglineCarousel> {
     return IgnorePointer(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24),
-        child: AnimatedSwitcher(
-          duration: PublicMapTaglineCarousel.fadeDuration,
-          child: Column(
-            key: ValueKey<int>(_index),
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                slide.headline,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 16,
-                  height: 1.2,
-                  letterSpacing: -0.2,
-                  shadows: [_textShadow],
+        child: SizedBox(
+          height: PublicMapTaglineCarousel.blockHeight,
+          width: double.infinity,
+          child: AnimatedSwitcher(
+            duration: PublicMapTaglineCarousel.fadeDuration,
+            child: Column(
+              key: ValueKey<int>(_index),
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  slide.headline,
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 16,
+                    height: 1.2,
+                    letterSpacing: -0.2,
+                    shadows: [_textShadow],
+                  ),
                 ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                slide.support,
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.82),
-                  fontWeight: FontWeight.w500,
-                  fontSize: 12.5,
-                  shadows: const [_textShadow],
+                const SizedBox(height: 4),
+                Text(
+                  slide.support,
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.82),
+                    fontWeight: FontWeight.w500,
+                    fontSize: 12.5,
+                    height: 1.25,
+                    shadows: const [_textShadow],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
