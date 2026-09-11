@@ -4,7 +4,7 @@ import '../../../core/router/app_routes.dart';
 
 /// CTA de acesso ao SoloForte na tela de mapa público.
 ///
-/// Banner inferior: imagem com tap navegando para `/login`.
+/// Wordmark compacto (máx. 220×56) com tap navegando para `/login`.
 class AccessSoloForteButton extends StatelessWidget {
   const AccessSoloForteButton({super.key});
 
@@ -17,21 +17,27 @@ class AccessSoloForteButton extends StatelessWidget {
       label: 'Acessar SoloForte - Fazer login ou criar conta',
       button: true,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: () => context.go(AppRoutes.login),
-            borderRadius: BorderRadius.circular(20),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(20),
-              child: AspectRatio(
-                aspectRatio: 3,
-                child: Image.asset(
-                  _bannerAsset,
-                  fit: BoxFit.contain,
-                  width: double.infinity,
-                  excludeFromSemantics: true,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 220, maxHeight: 56),
+            child: SizedBox(
+              width: 220,
+              height: 56,
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () => context.go(AppRoutes.login),
+                  borderRadius: BorderRadius.circular(20),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(20),
+                    child: Image.asset(
+                      _bannerAsset,
+                      fit: BoxFit.contain,
+                      alignment: Alignment.center,
+                      excludeFromSemantics: true,
+                    ),
+                  ),
                 ),
               ),
             ),
