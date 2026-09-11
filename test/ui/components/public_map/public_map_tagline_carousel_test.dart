@@ -28,4 +28,27 @@ void main() {
       findsOneWidget,
     );
   });
+
+  testWidgets('bloco reserva altura fixa entre slides', (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(body: PublicMapTaglineCarousel()),
+      ),
+    );
+    await tester.pump();
+
+    final firstHeight =
+        tester.getSize(find.byType(PublicMapTaglineCarousel)).height;
+    expect(firstHeight, PublicMapTaglineCarousel.blockHeight);
+
+    await tester.pump(
+      PublicMapTaglineCarousel.interval +
+          PublicMapTaglineCarousel.fadeDuration,
+    );
+
+    expect(
+      tester.getSize(find.byType(PublicMapTaglineCarousel)).height,
+      PublicMapTaglineCarousel.blockHeight,
+    );
+  });
 }
