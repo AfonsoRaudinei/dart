@@ -26,6 +26,7 @@ void main() {
     await tester.pump();
 
     expect(find.byType(AccessSoloForteButton), findsOneWidget);
+    expect(find.byType(AspectRatio), findsNothing);
 
     await tester.tap(find.byType(InkWell));
     await tester.pumpAndSettle();
