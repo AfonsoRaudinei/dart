@@ -8,6 +8,7 @@ import 'package:latlong2/latlong.dart';
 
 import '../components/public_map/access_button.dart';
 import '../components/public_map/public_access_cta_policy.dart';
+import '../components/public_map/public_map_tagline_carousel.dart';
 import '../components/public_map/public_publication_pins.dart';
 import '../components/public_map/public_publication_preview.dart';
 import '../components/public_map/error_overlay.dart';
@@ -339,14 +340,47 @@ class _PublicMapScreenState extends ConsumerState<PublicMapScreen> {
           // Loading overlay para publicações
           if (publicationsAsync.isLoading) const PublicationsLoadingOverlay(),
 
-          // Card "Acessar SoloForte" — apenas visitante (SessionPublic).
-          // Função: login/criar conta. Oculto no reopen autenticado.
+          // Faixa inferior: tagline fade + CTA compacto (SessionPublic).
+          // Degradê e carrossel são IgnorePointer — só o InkWell do CTA
+          // captura toque; o mapa continua pan/zoom no restante.
           if (showAccessCta)
-            const Positioned(
+            Positioned(
               left: 0,
               right: 0,
-              bottom: 40,
-              child: Center(child: AccessSoloForteButton()),
+              bottom: 0,
+              child: Stack(
+                alignment: Alignment.bottomCenter,
+                children: [
+                  IgnorePointer(
+                    child: Container(
+                      height: 120,
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.transparent,
+                            Colors.black.withValues(alpha: 0.35),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding: EdgeInsets.only(
+                      bottom: MediaQuery.of(context).padding.bottom + 8,
+                    ),
+                    child: const Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        PublicMapTaglineCarousel(),
+                        AccessSoloForteButton(),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
         ],
       ),
