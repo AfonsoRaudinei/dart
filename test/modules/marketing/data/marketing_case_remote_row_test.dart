@@ -7,14 +7,12 @@ import 'package:soloforte_app/modules/marketing/domain/enums/plano_marketing.dar
 
 const _forbiddenRemoteKeys = <String>{
   'avaliacoes',
-  'title',
   'description',
   'product',
   'culture',
   'latitude',
   'longitude',
   'photo_url',
-  'visibility',
   'created_at',
   'updated_at',
   'deleted_at',
@@ -25,6 +23,7 @@ MarketingCase _filledCase({
   String? clientId,
   bool withNullClientId = false,
   DateTime? deletadoEm,
+  String produtoUtilizado = 'Produto Y',
 }) {
   final now = DateTime.utc(2026, 3, 15, 12);
   return MarketingCase(
@@ -35,7 +34,7 @@ MarketingCase _filledCase({
     lng: -47.93,
     localizacaoTexto: 'Brasília, DF',
     produtorFazenda: 'Fazenda Teste',
-    produtoUtilizado: 'Produto Y',
+    produtoUtilizado: produtoUtilizado,
     dataCase: DateTime.utc(2026, 3, 15),
     prodSemProduto: 40.0,
     prodComProduto: 55.0,
@@ -70,6 +69,8 @@ void main() {
     expect(row['client_id'], 'client-abc');
     expect(row['roi_investimento'], 100);
     expect(row['avaliacoes_json'], '[{"id":"av-1"}]');
+    expect(row['title'], 'Produto Y');
+    expect(row['visibility'], 'ouro');
 
     for (final key in _forbiddenRemoteKeys) {
       expect(row.containsKey(key), isFalse, reason: 'chave proibida: $key');
@@ -108,5 +109,15 @@ void main() {
       syncStatus: 'synced',
     );
     expect(whitespace.containsKey('client_id'), isFalse);
+  });
+
+  test('toRemoteRow usa produtor_fazenda como title se produto_utilizado vazio', () {
+    final row = MarketingCaseRepositoryImpl.toRemoteRow(
+      _filledCase(produtoUtilizado: ''),
+      userId: 'user-1',
+      syncStatus: 'synced',
+    );
+    expect(row['title'], 'Fazenda Teste');
+    expect(row['visibility'], 'ouro');
   });
 }
