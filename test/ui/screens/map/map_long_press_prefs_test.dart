@@ -35,9 +35,16 @@ void main() {
       expect(shouldShowMapLongPressHint(prefs), isTrue);
     });
 
-    test('hint copy references free map area', () {
-      expect(kMapLongPressHintMessage, contains('área livre'));
-      expect(kMapLongPressOccupiedFeedbackMessage, contains('área livre'));
+    test('hint copy references long-press gesture, not free area', () {
+      expect(kMapLongPressHintMessage, contains('Toque e segure'));
+      expect(kMapLongPressHintMessage, contains('marketing'));
+      expect(kMapLongPressOccupiedFeedbackMessage, contains('Toque e segure'));
+      expect(kMapLongPressOccupiedFeedbackMessage, contains('pin'));
+      expect(kMapLongPressHintMessage, isNot(contains('área livre')));
+      expect(
+        kMapLongPressOccupiedFeedbackMessage,
+        isNot(contains('área livre')),
+      );
     });
   });
 
