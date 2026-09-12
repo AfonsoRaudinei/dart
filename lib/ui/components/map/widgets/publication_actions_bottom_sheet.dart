@@ -47,7 +47,9 @@ class PublicationActionsBottomSheet extends StatelessWidget {
   void _select(BuildContext context, VoidCallback action) {
     HapticFeedback.lightImpact();
     Navigator.of(context).pop();
-    action();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      action();
+    });
   }
 
   @override
