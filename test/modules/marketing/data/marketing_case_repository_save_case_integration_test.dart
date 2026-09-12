@@ -77,7 +77,8 @@ void main() {
         expect(row['ativo'], isFalse);
         expect(row['deletado_em'], isNotNull);
         expect(row.containsKey('avaliacoes'), isFalse);
-        expect(row.containsKey('title'), isFalse);
+        expect(row['title'], 'Produto X');
+        expect(row['visibility'], 'ouro');
         expect(row.containsKey('roi_data'), isFalse);
         expect(
           row.keys.every(MarketingCaseRepositoryImpl.remoteColumns.contains),
