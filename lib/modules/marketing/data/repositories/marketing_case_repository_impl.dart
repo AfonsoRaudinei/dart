@@ -30,6 +30,7 @@ class MarketingCaseRepositoryImpl implements IMarketingCaseRepository {
     'roi_investimento', 'roi_retorno', 'roi_calculado',
     'conclusao', 'conclusao_tecnica', 'ativo', 'status',
     'criado_em', 'atualizado_em', 'sync_status', 'deletado_em',
+    'title', 'visibility',
   };
 
   @visibleForTesting
@@ -46,6 +47,13 @@ class MarketingCaseRepositoryImpl implements IMarketingCaseRepository {
     if (atualizadoEm != null) {
       json['atualizado_em'] = atualizadoEm.toIso8601String();
     }
+    // Live legado: title TEXT NOT NULL sem default (23502 se omitido).
+    final produto = marketingCase.produtoUtilizado.trim();
+    final fazenda = marketingCase.produtorFazenda.trim();
+    json['title'] = produto.isNotEmpty
+        ? produto
+        : (fazenda.isNotEmpty ? fazenda : 'Case');
+    json['visibility'] = marketingCase.visibilidade.toValue();
     json.removeWhere((key, value) => !remoteColumns.contains(key));
     json.removeWhere((key, value) {
       if (key == 'deletado_em') return false; // pode ser null (não-tombstone)
