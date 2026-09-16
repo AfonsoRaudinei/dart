@@ -76,9 +76,10 @@ class _MarketingCasesReportsSectionState
   }
 
   HtmlReportViewerActions _marketingViewerActions(
-    WidgetRef ref,
+    ProviderContainer container,
     MarketingCaseReportSnapshot item,
   ) {
+    final lookup = container.read(marketingCaseReportsLookupProvider);
     final lat = item.lat;
     final lng = item.lng;
     final hasLocation =
@@ -86,9 +87,10 @@ class _MarketingCasesReportsSectionState
     final isDraft = item.statusValue.toLowerCase() == 'draft';
 
     return HtmlReportViewerActions(
-      onEdit: (viewerContext) => ref
-          .read(marketingCaseReportsLookupProvider)
-          .showEditSheet(viewerContext, item.id),
+      onEdit: (viewerContext) async {
+        Navigator.of(viewerContext).pop();
+        await lookup.showEditSheet(viewerContext, item.id);
+      },
       onViewLocation: hasLocation
           ? (viewerContext) async {
               Navigator.of(viewerContext).pop();
@@ -100,9 +102,8 @@ class _MarketingCasesReportsSectionState
           : null,
       onPublish: isDraft
           ? (viewerContext) async {
-              final published = await ref
-                  .read(marketingCaseReportsLookupProvider)
-                  .publishDraftCase(viewerContext, item.id);
+              final published =
+                  await lookup.publishDraftCase(viewerContext, item.id);
               if (published && viewerContext.mounted) {
                 ScaffoldMessenger.of(viewerContext).showSnackBar(
                   const SnackBar(content: Text('Case publicado com sucesso!')),
@@ -115,7 +116,7 @@ class _MarketingCasesReportsSectionState
       publishDialogMessage:
           'O case será publicado no mapa conforme seu plano.',
       onDelete: (viewerContext) async {
-        await ref.read(marketingCaseReportsLookupProvider).deleteCase(item.id);
+        await lookup.deleteCase(item.id);
         return true;
       },
       deleteDialogTitle: 'Excluir publicação?',
@@ -215,7 +216,10 @@ class _MarketingCasesReportsSectionState
                       statusLabel: _marketingStatusLabel(item.statusValue),
                       statusColor: _marketingStatusColor(item.statusValue),
                       buildPayload: () => _buildMarketingPayload(ref, item),
-                      viewerActions: _marketingViewerActions(ref, item),
+                      viewerActions: _marketingViewerActions(
+                        ProviderScope.containerOf(context, listen: false),
+                        item,
+                      ),
                     ),
                   ),
                 ];
