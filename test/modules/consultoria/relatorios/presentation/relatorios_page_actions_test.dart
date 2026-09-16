@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:soloforte_app/core/contracts/i_client_lookup.dart';
 import 'package:soloforte_app/core/contracts/i_client_lookup_provider.dart';
 import 'package:soloforte_app/core/session/user_role.dart';
@@ -23,6 +25,8 @@ import 'package:soloforte_app/modules/marketing/infra/marketing_case_reports_loo
 import 'package:soloforte_app/modules/marketing/presentation/providers/marketing_providers.dart';
 import 'package:soloforte_app/modules/planos/domain/entities/user_plan.dart';
 import 'package:soloforte_app/modules/planos/presentation/providers/plano_providers.dart';
+import 'package:soloforte_app/modules/settings/data/settings_repository.dart';
+import 'package:soloforte_app/modules/settings/presentation/providers/settings_providers.dart';
 import 'package:soloforte_app/modules/settings/presentation/providers/user_profile_provider.dart';
 
 import '../../helpers/consultoria_test_factories.dart';
@@ -32,7 +36,16 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   setUpAll(() async {
+    SharedPreferences.setMockInitialValues({});
     await initializeDateFormatting('pt_BR');
+    try {
+      Supabase.instance;
+    } catch (_) {
+      await Supabase.initialize(
+        url: 'https://mock-supabase-for-tests.co',
+        anonKey: 'mock-anon-key-1234567890abcdef',
+      );
+    }
   });
 
   testWidgets('ações reais de relatório publicam e excluem', (
@@ -62,12 +75,11 @@ void main() {
     expect(find.text('Relatórios de Visita'), findsOneWidget);
     expect(find.text('Fazenda Rascunho'), findsWidgets);
 
-    await _openReportMenu(tester, index: 0);
-    expect(find.text('Pré-visualizar HTML'), findsOneWidget);
-    expect(find.text('Exportar'), findsOneWidget);
-    expect(find.text('Publicar'), findsOneWidget);
-    await tester.tap(find.text('Publicar'));
-    await _pumpActionFrame(tester);
+    await _openReportCardByTitle(tester, 'Fazenda Rascunho');
+    expect(find.text('Pré-visualização HTML'), findsOneWidget);
+    expect(find.byTooltip('Exportar'), findsOneWidget);
+    expect(find.byTooltip('Publicar'), findsOneWidget);
+    await _tapViewerToolbar(tester, 'Publicar');
     expect(find.text('Publicar relatório?'), findsOneWidget);
     await tester.tap(find.widgetWithText(FilledButton, 'Publicar'));
     await _pumpActionFrame(tester);
@@ -81,9 +93,8 @@ void main() {
       RelatorioSyncStatus.pending_sync,
     );
 
-    await _openReportMenu(tester, index: 0);
-    await tester.tap(find.text('Excluir').last);
-    await _pumpActionFrame(tester);
+    await _openReportCardByTitle(tester, 'Fazenda Rascunho');
+    await _tapViewerToolbar(tester, 'Excluir');
     expect(find.text('Excluir relatório?'), findsOneWidget);
     await tester.tap(find.widgetWithText(FilledButton, 'Excluir'));
     await _pumpActionFrame(tester);
@@ -118,17 +129,18 @@ void main() {
     expect(find.textContaining('Insetos'), findsWidgets);
     expect(find.text('Urgência: Média'), findsOneWidget);
 
-    await _openOccurrenceMenu(tester, index: 0);
-    expect(find.text('Confirmar'), findsOneWidget);
-    await tester.tap(find.text('Confirmar'));
+    await _openReportCardByTitle(tester, '🐛 Insetos');
+    expect(find.byTooltip('Confirmar'), findsOneWidget);
+    await _tapViewerToolbar(tester, 'Confirmar');
+    expect(find.text('Confirmar ocorrência?'), findsOneWidget);
+    await tester.tap(find.widgetWithText(FilledButton, 'Confirmar'));
     await _pumpActionFrame(tester);
 
     expect(occurrenceRepository.get('occ-1')?.status, 'confirmed');
     expect(find.text('Confirmada'), findsOneWidget);
 
-    await _openOccurrenceMenu(tester, index: 0);
-    await tester.tap(find.text('Excluir').last);
-    await _pumpActionFrame(tester);
+    await _openReportCardByTitle(tester, '🐛 Insetos');
+    await _tapViewerToolbar(tester, 'Excluir');
     expect(find.text('Excluir ocorrência?'), findsOneWidget);
     await tester.tap(find.widgetWithText(FilledButton, 'Excluir'));
     await _pumpActionFrame(tester);
@@ -215,13 +227,10 @@ void main() {
     // expect(find.text('Órfãs'), findsOneWidget);
 
     await _selectSegment(tester, 'Consolidados');
-    await tester.ensureVisible(
-      find.byTooltip('Ações do relatório consolidado').first,
-    );
-    await tester.tap(find.byTooltip('Ações do relatório consolidado').first);
-    await tester.pumpAndSettle();
-    expect(find.text('Pré-visualizar HTML'), findsOneWidget);
-    expect(find.text('Exportar'), findsOneWidget);
+    await _openReportCardByTitle(tester, 'Resumo da Propriedade');
+    expect(find.text('Pré-visualização HTML'), findsOneWidget);
+    expect(find.byTooltip('Exportar'), findsOneWidget);
+    expect(find.byTooltip('Excluir'), findsNothing);
   });
 
   testWidgets(
@@ -331,10 +340,8 @@ void main() {
 
     expect(find.text('Produtor Teste - Fazenda Marketing'), findsOneWidget);
 
-    await tester.tap(find.byTooltip('Ações da publicação').first);
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Excluir').last);
-    await _pumpActionFrame(tester);
+    await _openReportCardByTitle(tester, 'Produtor Teste - Fazenda Marketing');
+    await _tapViewerToolbar(tester, 'Excluir');
     expect(find.text('Excluir publicação?'), findsOneWidget);
     await tester.tap(find.widgetWithText(FilledButton, 'Excluir'));
     await tester.pumpAndSettle();
@@ -360,15 +367,18 @@ void main() {
 
     await _selectSegment(tester, 'Marketing');
 
-    await tester.tap(find.byTooltip('Ações da publicação').first);
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Excluir').last);
-    await _pumpActionFrame(tester);
+    await _openReportCardByTitle(tester, 'Produtor Teste - Fazenda Marketing');
+    await _tapViewerToolbar(tester, 'Excluir');
     await tester.tap(find.text('Cancelar'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Produtor Teste - Fazenda Marketing'), findsOneWidget);
     expect(marketingRepo.cases.first.deletadoEm, isNull);
+    expect(find.byTooltip('Excluir'), findsOneWidget);
+
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+
+    expect(find.text('Produtor Teste - Fazenda Marketing'), findsOneWidget);
   });
 
   testWidgets('consolidados na aba Consolidados não exibem opção Excluir', (
@@ -390,12 +400,11 @@ void main() {
     );
 
     await _selectSegment(tester, 'Consolidados');
-    await tester.tap(find.byTooltip('Ações do relatório consolidado').first);
-    await tester.pumpAndSettle();
+    await _openReportCardByTitle(tester, 'Resumo da Propriedade');
 
-    expect(find.text('Pré-visualizar HTML'), findsOneWidget);
-    expect(find.text('Exportar'), findsOneWidget);
-    expect(find.text('Excluir'), findsNothing);
+    expect(find.text('Pré-visualização HTML'), findsOneWidget);
+    expect(find.byTooltip('Exportar'), findsOneWidget);
+    expect(find.byTooltip('Excluir'), findsNothing);
   });
 
   testWidgets('consolidados exige seleção de produtor com múltiplos clientes', (
@@ -531,11 +540,12 @@ void main() {
     );
 
     await _selectSegment(tester, 'Marketing');
-    await tester.tap(find.byTooltip('Ações da publicação').first);
-    await tester.pumpAndSettle();
-    expect(find.text('Publicar'), findsOneWidget);
+    await _openReportCardByTitle(tester, 'Case para publicar');
+    expect(find.byTooltip('Publicar'), findsOneWidget);
 
-    await tester.tap(find.text('Publicar'));
+    await _tapViewerToolbar(tester, 'Publicar');
+    expect(find.text('Publicar case?'), findsOneWidget);
+    await tester.tap(find.widgetWithText(FilledButton, 'Publicar'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
 
@@ -557,11 +567,10 @@ void main() {
     );
 
     await _selectSegment(tester, 'Marketing');
-    await tester.tap(find.byTooltip('Ações da publicação').first);
-    await tester.pumpAndSettle();
+    await _openReportCardByTitle(tester, 'Produtor Teste - Fazenda Marketing');
 
     expect(find.text('Compartilhar pack'), findsNothing);
-    expect(find.text('Editar'), findsOneWidget);
+    expect(find.byTooltip('Editar'), findsOneWidget);
   });
 
   testWidgets('filtro status Marketing oculta rascunhos e Não gerados oculta publicados', (
@@ -625,11 +634,10 @@ void main() {
       );
 
       await _selectSegment(tester, 'Marketing');
-      await tester.tap(find.text('Draft no limite'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.byTooltip('Ações da publicação').first);
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Publicar'));
+      await _openReportCardByTitle(tester, 'Draft no limite');
+      await _tapViewerToolbar(tester, 'Publicar');
+      expect(find.text('Publicar case?'), findsOneWidget);
+      await tester.tap(find.widgetWithText(FilledButton, 'Publicar'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 250));
 
@@ -685,6 +693,13 @@ Future<void> _pumpScreen(
     );
   }
 
+  final preferences = await SharedPreferences.getInstance();
+  overrides.add(
+    settingsRepositoryProvider.overrideWithValue(
+      SettingsRepository(preferences),
+    ),
+  );
+
   await tester.pumpWidget(
     ProviderScope(
       overrides: overrides,
@@ -694,17 +709,16 @@ Future<void> _pumpScreen(
   await tester.pumpAndSettle();
 }
 
-Future<void> _openReportMenu(WidgetTester tester, {required int index}) async {
-  await tester.tap(find.byTooltip('Ações do relatório').at(index));
+Future<void> _openReportCardByTitle(WidgetTester tester, String title) async {
+  final target = find.text(title);
+  await tester.ensureVisible(target.first);
+  await tester.tap(target.first);
   await tester.pumpAndSettle();
 }
 
-Future<void> _openOccurrenceMenu(
-  WidgetTester tester, {
-  required int index,
-}) async {
-  await tester.tap(find.byTooltip('Ações da ocorrência').at(index));
-  await tester.pumpAndSettle();
+Future<void> _tapViewerToolbar(WidgetTester tester, String tooltip) async {
+  await tester.tap(find.byTooltip(tooltip));
+  await _pumpActionFrame(tester);
 }
 
 Future<void> _pumpActionFrame(WidgetTester tester) async {
