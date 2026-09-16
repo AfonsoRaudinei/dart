@@ -59,6 +59,9 @@ class HtmlReportViewer extends StatefulWidget {
   /// Gerador opcional de PDF secundário (ex.: planejamento semanal).
   final Future<Uint8List> Function()? pdfBytesProvider;
 
+  /// Substitui o corpo WebView (somente testes). Produção: omitir (`null`).
+  final WidgetBuilder? bodyBuilder;
+
   const HtmlReportViewer({
     super.key,
     required this.title,
@@ -68,16 +71,12 @@ class HtmlReportViewer extends StatefulWidget {
     this.csvData,
     this.exportService = const ReportExportService(),
     this.pdfBytesProvider,
+    this.bodyBuilder,
     this.actions,
   });
 
   @override
   State<HtmlReportViewer> createState() => _HtmlReportViewerState();
-}
-
-bool _htmlReportViewerUseTestBody() {
-  if (kIsWeb) return false;
-  return Platform.environment.containsKey('FLUTTER_TEST');
 }
 
 class _HtmlReportViewerState extends State<HtmlReportViewer> {
@@ -86,10 +85,12 @@ class _HtmlReportViewerState extends State<HtmlReportViewer> {
   bool _actionBusy = false;
   final GlobalKey _exportButtonKey = GlobalKey();
 
+  bool get _usesCustomBody => widget.bodyBuilder != null;
+
   @override
   void initState() {
     super.initState();
-    if (_htmlReportViewerUseTestBody()) {
+    if (_usesCustomBody) {
       _loading = false;
       return;
     }
@@ -335,13 +336,8 @@ class _HtmlReportViewerState extends State<HtmlReportViewer> {
             ),
         ],
       ),
-      body: _htmlReportViewerUseTestBody()
-          ? const Center(
-              child: Text(
-                'Pré-visualização HTML',
-                style: TextStyle(color: Colors.white70),
-              ),
-            )
+      body: _usesCustomBody
+          ? widget.bodyBuilder!(context)
           : Stack(
               children: [
                 WebViewWidget(controller: _controller!),
@@ -417,4 +413,15 @@ class _HtmlReportViewerState extends State<HtmlReportViewer> {
       }
     }
   }
+}
+
+/// Corpo placeholder para testes widget (substitui WebView).
+@visibleForTesting
+Widget htmlReportViewerPlaceholderBody(BuildContext context) {
+  return const Center(
+    child: Text(
+      'Pré-visualização HTML',
+      style: TextStyle(color: Colors.white70),
+    ),
+  );
 }
