@@ -325,22 +325,34 @@ class _RelatorioCard extends ConsumerWidget {
   }
 
   Future<void> _openHtml(BuildContext context, WidgetRef ref) async {
-    final html = await buildRelatorioVisitHtml(ref, relatorio);
-    if (!context.mounted) return;
-    await Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => HtmlReportViewer(
-          title: 'Relatório de Visita',
-          htmlContent: html,
-          fileBaseName: ConsultoriaReportExportData.reportFileBaseName(
-            relatorio,
+    try {
+      final html = await buildRelatorioVisitHtml(ref, relatorio);
+      if (!context.mounted) return;
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => HtmlReportViewer(
+            title: 'Relatório de Visita',
+            htmlContent: html,
+            fileBaseName: ConsultoriaReportExportData.reportFileBaseName(
+              relatorio,
+            ),
+            jsonData: ConsultoriaReportExportData.reportJson(relatorio),
+            csvData: ConsultoriaReportExportData.reportCsv(relatorio),
+            actions: _visitViewerActions(ref),
           ),
-          jsonData: ConsultoriaReportExportData.reportJson(relatorio),
-          csvData: ConsultoriaReportExportData.reportCsv(relatorio),
-          actions: _visitViewerActions(ref),
         ),
-      ),
-    );
+      );
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              userFacingError(e, action: 'Erro ao abrir relatório'),
+            ),
+          ),
+        );
+      }
+    }
   }
 
   String _statusLabel(RelatorioStatus status) {
@@ -559,22 +571,34 @@ class _OccurrenciaCard extends ConsumerWidget {
   }
 
   Future<void> _openHtml(BuildContext context, WidgetRef ref) async {
-    final html = await _buildHtml(ref);
-    if (!context.mounted) return;
-    await Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => HtmlReportViewer(
-          title: 'Ocorrência ${RelatorioHtmlRenderer.shortId(occurrence.id)}',
-          htmlContent: html,
-          fileBaseName: ConsultoriaReportExportData.occurrenceFileBaseName(
-            occurrence,
+    try {
+      final html = await _buildHtml(ref);
+      if (!context.mounted) return;
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => HtmlReportViewer(
+            title: 'Ocorrência ${RelatorioHtmlRenderer.shortId(occurrence.id)}',
+            htmlContent: html,
+            fileBaseName: ConsultoriaReportExportData.occurrenceFileBaseName(
+              occurrence,
+            ),
+            jsonData: ConsultoriaReportExportData.occurrenceJson(occurrence),
+            csvData: ConsultoriaReportExportData.occurrenceCsv(occurrence),
+            actions: _occurrenceViewerActions(ref),
           ),
-          jsonData: ConsultoriaReportExportData.occurrenceJson(occurrence),
-          csvData: ConsultoriaReportExportData.occurrenceCsv(occurrence),
-          actions: _occurrenceViewerActions(ref),
         ),
-      ),
-    );
+      );
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              userFacingError(e, action: 'Erro ao abrir relatório'),
+            ),
+          ),
+        );
+      }
+    }
   }
 
   Future<String> _buildHtml(WidgetRef ref) async {
