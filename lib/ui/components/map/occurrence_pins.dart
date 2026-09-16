@@ -190,6 +190,9 @@ class OccurrenceMapPin extends StatelessWidget {
       case 'amostra_solo':
       case 'amostra solo':
         return Icons.biotech_outlined;
+      case 'area_visitada':
+      case 'area visitada':
+        return Icons.place_outlined;
       default:
         return Icons.place_outlined;
     }
@@ -201,6 +204,7 @@ class OccurrenceMapPin extends StatelessWidget {
     final urgencyColor = _colorForUrgency(data.urgency);
     final icon = _iconForCategory(data.category);
     final isDraft = data.status == 'draft';
+    final pendingLink = data.occurrence.pendingClientLink;
     final opacity = isDraft ? 0.65 : 1.0;
 
     return SizedBox(
@@ -233,19 +237,42 @@ class OccurrenceMapPin extends StatelessWidget {
               size: 18,
             ),
           ),
-          Positioned(
-            top: -1,
-            right: -1,
-            child: Container(
-              width: 12,
-              height: 12,
-              decoration: BoxDecoration(
-                color: urgencyColor,
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.white, width: 1.5),
+          if (pendingLink)
+            Positioned(
+              bottom: -2,
+              left: -2,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 1),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFF9500),
+                  borderRadius: BorderRadius.circular(4),
+                  border: Border.all(color: Colors.white, width: 1),
+                ),
+                child: const Text(
+                  '!',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 8,
+                    fontWeight: FontWeight.bold,
+                    height: 1,
+                  ),
+                ),
+              ),
+            )
+          else
+            Positioned(
+              top: -1,
+              right: -1,
+              child: Container(
+                width: 12,
+                height: 12,
+                decoration: BoxDecoration(
+                  color: urgencyColor,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white, width: 1.5),
+                ),
               ),
             ),
-          ),
         ],
       ),
     );
