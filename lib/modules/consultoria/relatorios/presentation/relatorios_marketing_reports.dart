@@ -75,46 +75,52 @@ class _MarketingCasesReportsSectionState
     return {for (final key in keys) key: map[key]!};
   }
 
-  Future<void> _confirmDelete(
-    BuildContext context,
+  HtmlReportViewerActions _marketingViewerActions(
     WidgetRef ref,
     MarketingCaseReportSnapshot item,
-  ) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Excluir publicação?'),
-        content: const Text(
-          'A publicação será removida da lista e marcada para sincronização.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('Cancelar'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: Colors.red),
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('Excluir'),
-          ),
-        ],
-      ),
-    );
-    if (confirmed != true) return;
-    await ref.read(marketingCaseReportsLookupProvider).deleteCase(item.id);
-  }
+  ) {
+    final lat = item.lat;
+    final lng = item.lng;
+    final hasLocation =
+        lat.isFinite && lng.isFinite && !(lat == 0 && lng == 0);
+    final isDraft = item.statusValue.toLowerCase() == 'draft';
 
-  Future<void> _publishDraft(
-    BuildContext context,
-    WidgetRef ref,
-    MarketingCaseReportSnapshot item,
-  ) async {
-    final published = await ref
-        .read(marketingCaseReportsLookupProvider)
-        .publishDraftCase(context, item.id);
-    if (!context.mounted || !published) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Case publicado com sucesso!')),
+    return HtmlReportViewerActions(
+      onEdit: (viewerContext) => ref
+          .read(marketingCaseReportsLookupProvider)
+          .showEditSheet(viewerContext, item.id),
+      onViewLocation: hasLocation
+          ? (viewerContext) async {
+              Navigator.of(viewerContext).pop();
+              viewerContext.go(
+                '${AppRoutes.map}?modo=foco&lat=${lat.toStringAsFixed(6)}'
+                '&lng=${lng.toStringAsFixed(6)}',
+              );
+            }
+          : null,
+      onPublish: isDraft
+          ? (viewerContext) async {
+              final published = await ref
+                  .read(marketingCaseReportsLookupProvider)
+                  .publishDraftCase(viewerContext, item.id);
+              if (published && viewerContext.mounted) {
+                ScaffoldMessenger.of(viewerContext).showSnackBar(
+                  const SnackBar(content: Text('Case publicado com sucesso!')),
+                );
+              }
+              return published;
+            }
+          : null,
+      publishDialogTitle: 'Publicar case?',
+      publishDialogMessage:
+          'O case será publicado no mapa conforme seu plano.',
+      onDelete: (viewerContext) async {
+        await ref.read(marketingCaseReportsLookupProvider).deleteCase(item.id);
+        return true;
+      },
+      deleteDialogTitle: 'Excluir publicação?',
+      deleteDialogMessage:
+          'A publicação será removida da lista e marcada para sincronização.',
     );
   }
 
@@ -208,34 +214,8 @@ class _MarketingCasesReportsSectionState
                       enabled: true,
                       statusLabel: _marketingStatusLabel(item.statusValue),
                       statusColor: _marketingStatusColor(item.statusValue),
-                      menuTooltip: 'Ações da publicação',
                       buildPayload: () => _buildMarketingPayload(ref, item),
-                      showPackShare: false,
-                      onEdit: () => ref
-                          .read(marketingCaseReportsLookupProvider)
-                          .showEditSheet(context, item.id),
-                      onPublish: item.statusValue.toLowerCase() == 'draft'
-                          ? () => _publishDraft(context, ref, item)
-                          : null,
-                      onViewLocation: () {
-                        final lat = item.lat;
-                        final lng = item.lng;
-                        if (!lat.isFinite ||
-                            !lng.isFinite ||
-                            (lat == 0 && lng == 0)) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Coordenadas da mídia inválidas.'),
-                            ),
-                          );
-                          return;
-                        }
-                        context.go(
-                          '${AppRoutes.map}?modo=foco&lat=${lat.toStringAsFixed(6)}'
-                          '&lng=${lng.toStringAsFixed(6)}',
-                        );
-                      },
-                      onDelete: () => _confirmDelete(context, ref, item),
+                      viewerActions: _marketingViewerActions(ref, item),
                     ),
                   ),
                 ];
