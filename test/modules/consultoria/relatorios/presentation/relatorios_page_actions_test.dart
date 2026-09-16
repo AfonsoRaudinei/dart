@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:soloforte_app/core/html_templates/html_report_viewer.dart';
 import 'package:soloforte_app/core/contracts/i_client_lookup.dart';
 import 'package:soloforte_app/core/contracts/i_client_lookup_provider.dart';
 import 'package:soloforte_app/core/session/user_role.dart';
@@ -668,6 +669,9 @@ Future<void> _pumpScreen(
   UserPlan? planoOverride,
 }) async {
   final overrides = <Override>[
+    htmlReportViewerBodyBuilderProvider.overrideWithValue(
+      htmlReportViewerPlaceholderBody,
+    ),
     currentUserRoleProvider.overrideWithValue(UserRole.consultor),
     clientLookupProvider.overrideWithValue(_RelatoriosTestClientLookup()),
     relatorioRepositoryProvider.overrideWithValue(relatorioRepository),
