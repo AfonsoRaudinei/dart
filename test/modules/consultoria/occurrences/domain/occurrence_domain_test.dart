@@ -18,6 +18,10 @@ void main() {
         OccurrenceCategory.fromString('desconhecido'),
         OccurrenceCategory.doenca,
       );
+      expect(
+        OccurrenceCategory.fromString('area_visitada'),
+        OccurrenceCategory.areaVisitada,
+      );
     });
   });
 
