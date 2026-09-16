@@ -26,7 +26,7 @@ class _GeneratedReportPayload {
   }
 }
 
-class _GeneratedReportCard extends StatelessWidget {
+class _GeneratedReportCard extends ConsumerStatefulWidget {
   final String eyebrow;
   final String title;
   final String subtitle;
@@ -50,22 +50,15 @@ class _GeneratedReportCard extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    return _DataCard(
-      eyebrow: eyebrow,
-      title: title,
-      subtitle: enabled ? subtitle : '$subtitle • sem dados',
-      date: date,
-      statusLabel: statusLabel ?? (enabled ? 'Disponível' : 'Vazio'),
-      statusColor:
-          statusColor ?? (enabled ? PremiumTokens.brandGreen : Colors.grey),
-      onTap: enabled ? () => _openPreview(context) : null,
-    );
-  }
+  ConsumerState<_GeneratedReportCard> createState() =>
+      _GeneratedReportCardState();
+}
 
+class _GeneratedReportCardState extends ConsumerState<_GeneratedReportCard> {
   Future<void> _openPreview(BuildContext context) async {
+    final bodyBuilder = ref.read(htmlReportViewerBodyBuilderProvider);
     try {
-      final payload = await buildPayload();
+      final payload = await widget.buildPayload();
       if (!context.mounted) return;
 
       await Navigator.of(context).push(
@@ -76,7 +69,8 @@ class _GeneratedReportCard extends StatelessWidget {
             fileBaseName: payload.fileBaseName,
             jsonData: payload.json,
             csvData: payload.csv,
-            actions: viewerActions,
+            bodyBuilder: bodyBuilder,
+            actions: widget.viewerActions,
           ),
         ),
       );
@@ -91,6 +85,23 @@ class _GeneratedReportCard extends StatelessWidget {
         );
       }
     }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return _AsyncDataCard(
+      eyebrow: widget.eyebrow,
+      title: widget.title,
+      subtitle: widget.enabled
+          ? widget.subtitle
+          : '${widget.subtitle} • sem dados',
+      date: widget.date,
+      statusLabel:
+          widget.statusLabel ?? (widget.enabled ? 'Disponível' : 'Vazio'),
+      statusColor: widget.statusColor ??
+          (widget.enabled ? PremiumTokens.brandGreen : Colors.grey),
+      onTapAsync: widget.enabled ? () => _openPreview(context) : null,
+    );
   }
 }
 

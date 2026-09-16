@@ -469,6 +469,68 @@ class _DataCard extends StatelessWidget {
   }
 }
 
+/// Card com tap assíncrono — spinner no trailing enquanto aguarda (ex.: build HTML).
+class _AsyncDataCard extends StatefulWidget {
+  final String? eyebrow;
+  final String title;
+  final String? subtitle;
+  final String date;
+  final String statusLabel;
+  final Color statusColor;
+  final Future<void> Function()? onTapAsync;
+
+  const _AsyncDataCard({
+    this.eyebrow,
+    required this.title,
+    this.subtitle,
+    required this.date,
+    required this.statusLabel,
+    required this.statusColor,
+    this.onTapAsync,
+  });
+
+  @override
+  State<_AsyncDataCard> createState() => _AsyncDataCardState();
+}
+
+class _AsyncDataCardState extends State<_AsyncDataCard> {
+  bool _busy = false;
+
+  Future<void> _handleTap() async {
+    if (_busy || widget.onTapAsync == null) return;
+    setState(() => _busy = true);
+    try {
+      await widget.onTapAsync!();
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return _DataCard(
+      eyebrow: widget.eyebrow,
+      title: widget.title,
+      subtitle: widget.subtitle,
+      date: widget.date,
+      statusLabel: widget.statusLabel,
+      statusColor: widget.statusColor,
+      trailing: _busy
+          ? const SizedBox.square(
+              dimension: 40,
+              child: Center(
+                child: SizedBox.square(
+                  dimension: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              ),
+            )
+          : null,
+      onTap: widget.onTapAsync == null || _busy ? null : _handleTap,
+    );
+  }
+}
+
 class _InsetGroupHeader extends StatelessWidget {
   final String title;
   final int count;
