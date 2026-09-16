@@ -64,21 +64,33 @@ class _GeneratedReportCard extends StatelessWidget {
   }
 
   Future<void> _openPreview(BuildContext context) async {
-    final payload = await buildPayload();
-    if (!context.mounted) return;
+    try {
+      final payload = await buildPayload();
+      if (!context.mounted) return;
 
-    await Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => HtmlReportViewer(
-          title: payload.title,
-          htmlContent: payload.html,
-          fileBaseName: payload.fileBaseName,
-          jsonData: payload.json,
-          csvData: payload.csv,
-          actions: viewerActions,
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => HtmlReportViewer(
+            title: payload.title,
+            htmlContent: payload.html,
+            fileBaseName: payload.fileBaseName,
+            jsonData: payload.json,
+            csvData: payload.csv,
+            actions: viewerActions,
+          ),
         ),
-      ),
-    );
+      );
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              userFacingError(e, action: 'Erro ao abrir relatório'),
+            ),
+          ),
+        );
+      }
+    }
   }
 }
 
