@@ -17,7 +17,6 @@ import '../../../../core/html_templates/propriedade_html_renderer.dart';
 import '../../../../core/html_templates/relatorio_html_renderer.dart';
 import '../../../../core/html_templates/report_export_service.dart';
 import '../../../../core/session/user_role.dart';
-import '../../../../core/utils/share_position.dart';
 import '../../../../core/ui/sheets/soloforte_sheet.dart';
 import '../../../../core/ui/sheets/sheet_tokens.dart';
 import '../../../../ui/theme/premium/design_tokens.dart';
@@ -38,7 +37,6 @@ import '../../../settings/presentation/providers/user_profile_provider.dart';
 // Ocorrências — mesmo bounded context (consultoria/)
 import '../../occurrences/presentation/controllers/occurrence_controller.dart';
 import '../../occurrences/presentation/widgets/occurrence_creation_sheet.dart';
-import '../../occurrences/presentation/widgets/occurrence_detail_sheet.dart';
 // hide SyncStatus para evitar conflito com o enum de relatorio.dart
 import '../../occurrences/domain/occurrence.dart' hide SyncStatus;
 import '../../../../core/contracts/marketing_case_reports_list_provider.dart';
@@ -294,51 +292,36 @@ class _RelatorioCard extends ConsumerWidget {
       date: dateFormat.format(relatorio.createdAt.toLocal()),
       statusLabel: statusLabel,
       statusColor: statusColor,
-      onTap: () => context.go('/consultoria/relatorios/${relatorio.id}'),
-      trailing: _AsyncActionMenu(
-        tooltip: 'Ações do relatório',
-        itemBuilder: (context) => [
-          const PopupMenuItem(
-            value: 'html',
-            child: Text('Pré-visualizar HTML'),
-          ),
-          const PopupMenuItem(value: 'export', child: Text('Exportar')),
-          if (relatorio.status == RelatorioStatus.pendente_revisao)
-            const PopupMenuItem(value: 'edit', child: Text('Editar')),
-          if (relatorio.status == RelatorioStatus.pendente_revisao)
-            const PopupMenuItem(value: 'publish', child: Text('Publicar')),
-          const PopupMenuItem(
-            value: 'delete',
-            child: Text('Excluir', style: TextStyle(color: Colors.red)),
-          ),
-        ],
-        onSelected: (value) => _handleAction(context, ref, value),
-      ),
+      onTap: () => _openHtml(context, ref),
     );
   }
 
-  Future<void> _handleAction(
-    BuildContext context,
-    WidgetRef ref,
-    String value,
-  ) async {
-    switch (value) {
-      case 'edit':
-        context.go('/consultoria/relatorios/${relatorio.id}/edit');
-        return;
-      case 'html':
-        await _openHtml(context, ref);
-        return;
-      case 'export':
-        await _export(context, ref, ReportExportFormat.html);
-        return;
-      case 'publish':
-        await _publish(context, ref);
-        return;
-      case 'delete':
-        await _delete(context, ref);
-        return;
-    }
+  HtmlReportViewerActions _visitViewerActions(WidgetRef ref) {
+    final isDraft = relatorio.status == RelatorioStatus.pendente_revisao;
+    return HtmlReportViewerActions(
+      onEdit: isDraft
+          ? (viewerContext) async {
+              Navigator.of(viewerContext).pop();
+              viewerContext.go('/consultoria/relatorios/${relatorio.id}/edit');
+            }
+          : null,
+      onPublish: isDraft
+          ? (viewerContext) async {
+              await ref.read(publishRelatorioProvider(relatorio.id).future);
+              ref.invalidate(_relatoriosTecnicosListProvider);
+              return true;
+            }
+          : null,
+      publishDialogTitle: 'Publicar relatório?',
+      publishDialogMessage: 'O relatório ficará marcado como publicado.',
+      onDelete: (viewerContext) async {
+        await ref.read(tech.relatorioRepositoryProvider).softDelete(relatorio.id);
+        ref.invalidate(_relatoriosTecnicosListProvider);
+        return true;
+      },
+      deleteDialogTitle: 'Excluir relatório?',
+      deleteDialogMessage: 'A exclusão é lógica e será sincronizada depois.',
+    );
   }
 
   Future<void> _openHtml(BuildContext context, WidgetRef ref) async {
@@ -354,86 +337,8 @@ class _RelatorioCard extends ConsumerWidget {
           ),
           jsonData: ConsultoriaReportExportData.reportJson(relatorio),
           csvData: ConsultoriaReportExportData.reportCsv(relatorio),
+          actions: _visitViewerActions(ref),
         ),
-      ),
-    );
-  }
-
-  Future<void> _export(
-    BuildContext context,
-    WidgetRef ref,
-    ReportExportFormat format,
-  ) async {
-    final shareOrigin = resolveSharePositionOrigin(context);
-    final html = await buildRelatorioVisitHtml(ref, relatorio);
-    final payload = ReportExportPayload(
-      title: 'Relatório de Visita',
-      html: html,
-      fileBaseName: ConsultoriaReportExportData.reportFileBaseName(relatorio),
-      json: ConsultoriaReportExportData.reportJson(relatorio),
-      csv: ConsultoriaReportExportData.reportCsv(relatorio),
-    );
-    await const ReportExportService().export(
-      format,
-      payload,
-      sharePositionOrigin: shareOrigin,
-    );
-    if (!context.mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Exportação iniciada.')));
-  }
-
-  Future<void> _publish(BuildContext context, WidgetRef ref) async {
-    final confirm = await _confirm(
-      context,
-      title: 'Publicar relatório?',
-      message: 'O relatório ficará marcado como publicado.',
-      action: 'Publicar',
-    );
-    if (confirm != true) return;
-    await ref.read(publishRelatorioProvider(relatorio.id).future);
-    ref.invalidate(_relatoriosTecnicosListProvider);
-  }
-
-  Future<void> _delete(BuildContext context, WidgetRef ref) async {
-    final confirm = await _confirm(
-      context,
-      title: 'Excluir relatório?',
-      message: 'A exclusão é lógica e será sincronizada depois.',
-      action: 'Excluir',
-      destructive: true,
-    );
-    if (confirm != true) return;
-    await ref.read(tech.relatorioRepositoryProvider).softDelete(relatorio.id);
-    ref.invalidate(_relatoriosTecnicosListProvider);
-  }
-
-  Future<bool?> _confirm(
-    BuildContext context, {
-    required String title,
-    required String message,
-    required String action,
-    bool destructive = false,
-  }) {
-    return showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(title),
-        content: Text(message),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancelar'),
-          ),
-          FilledButton(
-            style: destructive
-                ? FilledButton.styleFrom(backgroundColor: Colors.red)
-                : null,
-            onPressed: () => Navigator.pop(context, true),
-            child: Text(action),
-          ),
-        ],
       ),
     );
   }
@@ -606,57 +511,51 @@ class _OccurrenciaCard extends ConsumerWidget {
       date: dateFormat.format(occurrence.createdAt.toLocal()),
       statusLabel: statusLabel,
       statusColor: statusColor,
-      onTap: () => OccurrenceDetailSheet.show(
-        context,
-        occurrence,
-        backRoute: AppRoutes.reports,
-      ),
-      trailing: _AsyncActionMenu(
-        tooltip: 'Ações da ocorrência',
-        itemBuilder: (context) => [
-          const PopupMenuItem(
-            value: 'html',
-            child: Text('Pré-visualizar HTML'),
-          ),
-          const PopupMenuItem(value: 'export', child: Text('Exportar')),
-          const PopupMenuItem(value: 'edit', child: Text('Editar')),
-          if (occurrence.status != 'confirmed')
-            const PopupMenuItem(value: 'confirm', child: Text('Confirmar')),
-          const PopupMenuItem(
-            value: 'delete',
-            child: Text('Excluir', style: TextStyle(color: Colors.red)),
-          ),
-        ],
-        onSelected: (value) => _handleAction(context, ref, value),
-      ),
+      onTap: () => _openHtml(context, ref),
     );
   }
 
-  Future<void> _handleAction(
-    BuildContext context,
-    WidgetRef ref,
-    String value,
-  ) async {
-    switch (value) {
-      case 'html':
-        await _openHtml(context, ref);
-        return;
-      case 'export':
-        await _export(context, ref, ReportExportFormat.html);
-        return;
-      case 'edit':
-        await _showEditSheet(context, ref);
-        return;
-      case 'confirm':
+  HtmlReportViewerActions _occurrenceViewerActions(WidgetRef ref) {
+    final lat = occurrence.lat;
+    final lng = occurrence.long;
+    final hasLocation = lat != null &&
+        lng != null &&
+        lat.isFinite &&
+        lng.isFinite &&
+        !(lat == 0 && lng == 0);
+
+    return HtmlReportViewerActions(
+      onEdit: (viewerContext) => _showEditSheet(viewerContext, ref),
+      onViewLocation: hasLocation
+          ? (viewerContext) async {
+              Navigator.of(viewerContext).pop();
+              viewerContext.go(
+                '${AppRoutes.map}?modo=foco&lat=${lat.toStringAsFixed(6)}'
+                '&lng=${lng.toStringAsFixed(6)}',
+              );
+            }
+          : null,
+      onConfirm: occurrence.status != 'confirmed'
+          ? (viewerContext) async {
+              await ref.read(occurrenceRepositoryProvider).updateOccurrence(
+                    occurrence.copyWith(status: 'confirmed'),
+                  );
+              ref.invalidate(occurrencesListProvider);
+              return true;
+            }
+          : null,
+      confirmDialogTitle: 'Confirmar ocorrência?',
+      confirmDialogMessage: 'Marcar esta ocorrência como confirmada?',
+      onDelete: (viewerContext) async {
         await ref
             .read(occurrenceRepositoryProvider)
-            .updateOccurrence(occurrence.copyWith(status: 'confirmed'));
+            .softDeleteOccurrence(occurrence.id);
         ref.invalidate(occurrencesListProvider);
-        return;
-      case 'delete':
-        await _delete(context, ref);
-        return;
-    }
+        return true;
+      },
+      deleteDialogTitle: 'Excluir ocorrência?',
+      deleteDialogMessage: 'A ocorrência será ocultada e marcada para sync.',
+    );
   }
 
   Future<void> _openHtml(BuildContext context, WidgetRef ref) async {
@@ -672,35 +571,10 @@ class _OccurrenciaCard extends ConsumerWidget {
           ),
           jsonData: ConsultoriaReportExportData.occurrenceJson(occurrence),
           csvData: ConsultoriaReportExportData.occurrenceCsv(occurrence),
+          actions: _occurrenceViewerActions(ref),
         ),
       ),
     );
-  }
-
-  Future<void> _export(
-    BuildContext context,
-    WidgetRef ref,
-    ReportExportFormat format,
-  ) async {
-    final shareOrigin = resolveSharePositionOrigin(context);
-    final html = await _buildHtml(ref);
-    await const ReportExportService().export(
-      format,
-      ReportExportPayload(
-        title: 'Ocorrência ${RelatorioHtmlRenderer.shortId(occurrence.id)}',
-        html: html,
-        fileBaseName: ConsultoriaReportExportData.occurrenceFileBaseName(
-          occurrence,
-        ),
-        json: ConsultoriaReportExportData.occurrenceJson(occurrence),
-        csv: ConsultoriaReportExportData.occurrenceCsv(occurrence),
-      ),
-      sharePositionOrigin: shareOrigin,
-    );
-    if (!context.mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Exportação iniciada.')));
   }
 
   Future<String> _buildHtml(WidgetRef ref) async {
@@ -763,32 +637,6 @@ class _OccurrenciaCard extends ConsumerWidget {
         ),
       ),
     );
-  }
-
-  Future<void> _delete(BuildContext context, WidgetRef ref) async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Excluir ocorrência?'),
-        content: const Text('A ocorrência será ocultada e marcada para sync.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancelar'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: Colors.red),
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Excluir'),
-          ),
-        ],
-      ),
-    );
-    if (confirm != true) return;
-    await ref
-        .read(occurrenceRepositoryProvider)
-        .softDeleteOccurrence(occurrence.id);
-    ref.invalidate(occurrencesListProvider);
   }
 
   String _occStatusLabel(String? status) {
