@@ -22,6 +22,10 @@ import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 ///
 /// Rota: [AppRoutes.relatorioDetail] (/consultoria/relatorios/:id) — L2+
 ///
+/// **Entrada:** retorno do formulário `/edit` após salvar ou voltar
+/// ([RelatorioFormScreen]). A lista em [RelatoriosScreen] abre HTML direto
+/// no tap do card — não navega para esta tela.
+///
 /// Layout: CustomScrollView com slivers
 ///
 /// Comportamento por status:
