@@ -213,6 +213,9 @@ class _OccurrenceCreationSheetState
   TextEditingController _notaCtrl(String catName) =>
       _notasCtrls.putIfAbsent(catName, () => TextEditingController());
 
+  bool get _isAreaVisitada =>
+      _selectedCategoryValue == kOccurrenceAreaVisitadaCategory;
+
   Color _catColor(OccurrenceCategory cat) {
     switch (cat) {
       case OccurrenceCategory.doenca:
@@ -227,6 +230,8 @@ class _OccurrenceCreationSheetState
         return const Color(0xFF30B0C7);
       case OccurrenceCategory.amostraSolo:
         return const Color(0xFF8B5CF6);
+      case OccurrenceCategory.areaVisitada:
+        return const Color(0xFF607D8B);
     }
   }
 
@@ -441,8 +446,99 @@ class _OccurrenceCreationSheetState
                 selectedClient: _selectedClient,
                 onChanged: (value) => _patchForm(() => _selectedClient = value),
               ),
+              if (_isAreaVisitada && _selectedClient == null) ...[
+                const SizedBox(height: 8),
+                Text(
+                  'Pendente de vínculo — você pode associar um cliente depois.',
+                  style: TextStyle(color: muted, fontSize: 12, height: 1.35),
+                ),
+              ],
               const SizedBox(height: 20),
 
+              const OccurrenceSectionHeader(
+                icon: '🏷',
+                title: 'Categorias da Ocorrência',
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                alignment: WrapAlignment.center,
+                children: _categories.map((cat) {
+                  final isSelected = _selectedCategoryValue == cat.value;
+                  final selectedColor =
+                      cat.enumValue?.markerColor ?? const Color(0xFF795548);
+                  return GestureDetector(
+                    onTap: () {
+                      HapticFeedback.selectionClick();
+                      _patchForm(() {
+                        _selectedCategoryValue = cat.value;
+                        _cats.clear();
+                        if (cat.enumValue != null) {
+                          _cats.add(cat.enumValue!);
+                        }
+                        if (cat.value == kOccurrenceAreaVisitadaCategory) {
+                          _selectedClient = null;
+                        }
+                      });
+                    },
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 56,
+                          height: 56,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: isSelected
+                                ? selectedColor.withValues(alpha: 0.2)
+                                : (isIos
+                                      ? SoloForteSheetSkinIos.cardBackground
+                                      : Colors.grey[800]),
+                            border: isSelected
+                                ? Border.all(color: selectedColor, width: 2)
+                                : (isIos
+                                      ? Border.all(
+                                          color: SoloForteSheetSkinIos.cardBorder,
+                                        )
+                                      : null),
+                          ),
+                          child: Icon(
+                            cat.icon,
+                            size: 28,
+                            color: isSelected
+                                ? selectedColor
+                                : (isIos
+                                      ? SoloForteSheetSkinIos.subtitleColor
+                                      : Colors.white70),
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        SizedBox(
+                          width: 64,
+                          child: Text(
+                            cat.label,
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: isSelected
+                                  ? selectedColor
+                                  : (isIos
+                                        ? SoloForteSheetSkinIos.subtitleColor
+                                        : Colors.white70),
+                            ),
+                            textAlign: TextAlign.center,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 16),
+
+              if (!_isAreaVisitada) ...[
               const OccurrenceSectionHeader(
                 icon: '🌱',
                 title: 'Cultivar & Plantio',
@@ -552,88 +648,9 @@ class _OccurrenceCreationSheetState
               ),
               const SizedBox(height: 20),
 
-              const OccurrenceSectionHeader(
-                icon: '🏷',
-                title: 'Categorias da Ocorrência',
-              ),
-              const SizedBox(height: 8),
-              // FIX 4: grid compacto de ícones circulares (seleção única)
-              Wrap(
-                spacing: 12,
-                runSpacing: 12,
-                alignment: WrapAlignment.center,
-                children: _categories.map((cat) {
-                  final isSelected = _selectedCategoryValue == cat.value;
-                  final selectedColor =
-                      cat.enumValue?.markerColor ?? const Color(0xFF795548);
-                  return GestureDetector(
-                    onTap: () {
-                      HapticFeedback.selectionClick();
-                      _patchForm(() {
-                        _selectedCategoryValue = cat.value;
-                        _cats.clear();
-                        if (cat.enumValue != null) {
-                          _cats.add(cat.enumValue!);
-                        }
-                      });
-                    },
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          width: 56,
-                          height: 56,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: isSelected
-                                ? selectedColor.withValues(alpha: 0.2)
-                                : (isIos
-                                      ? SoloForteSheetSkinIos.cardBackground
-                                      : Colors.grey[800]),
-                            border: isSelected
-                                ? Border.all(color: selectedColor, width: 2)
-                                : (isIos
-                                      ? Border.all(
-                                          color: SoloForteSheetSkinIos.cardBorder,
-                                        )
-                                      : null),
-                          ),
-                          child: Icon(
-                            cat.icon,
-                            size: 28,
-                            color: isSelected
-                                ? selectedColor
-                                : (isIos
-                                      ? SoloForteSheetSkinIos.subtitleColor
-                                      : Colors.white70),
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        SizedBox(
-                          width: 64,
-                          child: Text(
-                            cat.label,
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: isSelected
-                                  ? selectedColor
-                                  : (isIos
-                                        ? SoloForteSheetSkinIos.subtitleColor
-                                        : Colors.white70),
-                            ),
-                            textAlign: TextAlign.center,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                }).toList(),
-              ),
-              const SizedBox(height: 16),
-
-              ..._cats.map((cat) => _buildCategorySection(cat)),
+              ..._cats
+                  .where((cat) => cat != OccurrenceCategory.areaVisitada)
+                  .map((cat) => _buildCategorySection(cat)),
 
               const OccurrenceSectionHeader(icon: '⚡', title: 'Urgência'),
               const SizedBox(height: 8),
@@ -692,31 +709,40 @@ class _OccurrenceCreationSheetState
                 }).toList(),
               ),
               const SizedBox(height: 20),
+              ],
 
-              const OccurrenceSectionHeader(
+              OccurrenceSectionHeader(
                 icon: '📝',
-                title: 'Observações Gerais',
-              ),
+                title: _isAreaVisitada
+                    ? 'Observações (opcional)'
+                    : 'Observações Gerais',
+              ), // ignore: prefer_const_constructors — title dinâmico
               const SizedBox(height: 8),
               OccurrenceDarkField(
                 controller: _descCtrl,
                 label: 'Descrição',
-                hint: 'Descreva a ocorrência…',
+                hint: _isAreaVisitada
+                    ? 'Notas sobre a área visitada…'
+                    : 'Descreva a ocorrência…',
                 maxLines: 4,
               ),
-              const SizedBox(height: 20),
-
-              const OccurrenceSectionHeader(icon: '✅', title: 'Recomendações'),
-              const SizedBox(height: 8),
-              OccurrenceDarkField(
-                controller: _recomCtrl,
-                label: 'Recomendações',
-                hint: 'Ações sugeridas para correção…',
-                maxLines: 3,
-              ),
-              const SizedBox(height: 24),
-              _buildPhotoActionSection(),
-              const SizedBox(height: 20),
+              if (!_isAreaVisitada) ...[
+                const SizedBox(height: 20),
+                const OccurrenceSectionHeader(
+                  icon: '✅',
+                  title: 'Recomendações',
+                ),
+                const SizedBox(height: 8),
+                OccurrenceDarkField(
+                  controller: _recomCtrl,
+                  label: 'Recomendações',
+                  hint: 'Ações sugeridas para correção…',
+                  maxLines: 3,
+                ),
+                const SizedBox(height: 24),
+                _buildPhotoActionSection(),
+                const SizedBox(height: 20),
+              ],
             ],
           ),
           ),

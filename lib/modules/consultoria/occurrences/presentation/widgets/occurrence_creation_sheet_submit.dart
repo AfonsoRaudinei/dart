@@ -78,7 +78,12 @@ extension _OccurrenceCreationSheetSubmit on _OccurrenceCreationSheetState {
       );
       return;
     }
-    if (_selectedCategoryValue == null && _cats.isEmpty && desc.isEmpty) {
+    final isAreaVisitada =
+        _selectedCategoryValue == kOccurrenceAreaVisitadaCategory;
+    if (!isAreaVisitada &&
+        _selectedCategoryValue == null &&
+        _cats.isEmpty &&
+        desc.isEmpty) {
       _showSubmitError(
         'Selecione ao menos uma categoria ou adicione uma descrição.',
       );
