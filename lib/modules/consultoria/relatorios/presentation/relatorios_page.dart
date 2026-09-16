@@ -52,6 +52,11 @@ part 'relatorios_consolidated_reports.dart';
 part 'relatorios_shared_widgets.dart';
 part 'relatorios_visit_photos_section.dart';
 
+/// Testes injetam corpo fake via override; produção permanece `null` (WebView).
+final htmlReportViewerBodyBuilderProvider = Provider<WidgetBuilder?>(
+  (ref) => null,
+);
+
 final _relatoriosTecnicosListProvider =
     FutureProvider.autoDispose<List<RelatorioTecnico>>((ref) async {
       final role = ref.watch(currentUserRoleProvider);
@@ -271,33 +276,21 @@ class _RelatoriosSection extends ConsumerWidget {
   }
 }
 
-class _RelatorioCard extends ConsumerWidget {
+class _RelatorioCard extends ConsumerStatefulWidget {
   final RelatorioTecnico relatorio;
   final DateFormat dateFormat;
 
   const _RelatorioCard({required this.relatorio, required this.dateFormat});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final statusLabel = _statusLabel(relatorio.status);
-    final statusColor = _statusColor(relatorio.status);
-    final title = relatorio.title?.isNotEmpty == true
-        ? relatorio.title!
-        : relatorio.farmName;
+  ConsumerState<_RelatorioCard> createState() => _RelatorioCardState();
+}
 
-    return _DataCard(
-      eyebrow: 'Visita técnica',
-      title: title,
-      subtitle: title == relatorio.farmName ? null : relatorio.farmName,
-      date: dateFormat.format(relatorio.createdAt.toLocal()),
-      statusLabel: statusLabel,
-      statusColor: statusColor,
-      onTap: () => _openHtml(context, ref),
-    );
-  }
-
-  HtmlReportViewerActions _visitViewerActions(WidgetRef ref) {
+class _RelatorioCardState extends ConsumerState<_RelatorioCard> {
+  HtmlReportViewerActions _visitViewerActions(ProviderContainer container) {
+    final relatorio = widget.relatorio;
     final isDraft = relatorio.status == RelatorioStatus.pendente_revisao;
+    final repository = container.read(tech.relatorioRepositoryProvider);
     return HtmlReportViewerActions(
       onEdit: isDraft
           ? (viewerContext) async {
@@ -307,16 +300,16 @@ class _RelatorioCard extends ConsumerWidget {
           : null,
       onPublish: isDraft
           ? (viewerContext) async {
-              await ref.read(publishRelatorioProvider(relatorio.id).future);
-              ref.invalidate(_relatoriosTecnicosListProvider);
+              await container.read(publishRelatorioProvider(relatorio.id).future);
+              container.invalidate(_relatoriosTecnicosListProvider);
               return true;
             }
           : null,
       publishDialogTitle: 'Publicar relatório?',
       publishDialogMessage: 'O relatório ficará marcado como publicado.',
       onDelete: (viewerContext) async {
-        await ref.read(tech.relatorioRepositoryProvider).softDelete(relatorio.id);
-        ref.invalidate(_relatoriosTecnicosListProvider);
+        await repository.softDelete(relatorio.id);
+        container.invalidate(_relatoriosTecnicosListProvider);
         return true;
       },
       deleteDialogTitle: 'Excluir relatório?',
@@ -324,7 +317,10 @@ class _RelatorioCard extends ConsumerWidget {
     );
   }
 
-  Future<void> _openHtml(BuildContext context, WidgetRef ref) async {
+  Future<void> _openHtml(BuildContext context) async {
+    final relatorio = widget.relatorio;
+    final container = ProviderScope.containerOf(context, listen: false);
+    final bodyBuilder = ref.read(htmlReportViewerBodyBuilderProvider);
     try {
       final html = await buildRelatorioVisitHtml(ref, relatorio);
       if (!context.mounted) return;
@@ -338,7 +334,8 @@ class _RelatorioCard extends ConsumerWidget {
             ),
             jsonData: ConsultoriaReportExportData.reportJson(relatorio),
             csvData: ConsultoriaReportExportData.reportCsv(relatorio),
-            actions: _visitViewerActions(ref),
+            bodyBuilder: bodyBuilder,
+            actions: _visitViewerActions(container),
           ),
         ),
       );
@@ -353,6 +350,26 @@ class _RelatorioCard extends ConsumerWidget {
         );
       }
     }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final relatorio = widget.relatorio;
+    final statusLabel = _statusLabel(relatorio.status);
+    final statusColor = _statusColor(relatorio.status);
+    final title = relatorio.title?.isNotEmpty == true
+        ? relatorio.title!
+        : relatorio.farmName;
+
+    return _AsyncDataCard(
+      eyebrow: 'Visita técnica',
+      title: title,
+      subtitle: title == relatorio.farmName ? null : relatorio.farmName,
+      date: widget.dateFormat.format(relatorio.createdAt.toLocal()),
+      statusLabel: statusLabel,
+      statusColor: statusColor,
+      onTapAsync: () => _openHtml(context),
+    );
   }
 
   String _statusLabel(RelatorioStatus status) {
@@ -505,29 +522,20 @@ class _OccurrenciasSectionState extends ConsumerState<_OccurrenciasSection> {
   }
 }
 
-class _OccurrenciaCard extends ConsumerWidget {
+class _OccurrenciaCard extends ConsumerStatefulWidget {
   final Occurrence occurrence;
   final DateFormat dateFormat;
 
   const _OccurrenciaCard({required this.occurrence, required this.dateFormat});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final statusLabel = _occStatusLabel(occurrence.status);
-    final statusColor = _occStatusColor(occurrence.status);
+  ConsumerState<_OccurrenciaCard> createState() => _OccurrenciaCardState();
+}
 
-    return _DataCard(
-      eyebrow: 'Ocorrência',
-      title: _occurrenceCardTitle(occurrence),
-      subtitle: _occurrenceCardSubtitle(occurrence),
-      date: dateFormat.format(occurrence.createdAt.toLocal()),
-      statusLabel: statusLabel,
-      statusColor: statusColor,
-      onTap: () => _openHtml(context, ref),
-    );
-  }
-
-  HtmlReportViewerActions _occurrenceViewerActions(WidgetRef ref) {
+class _OccurrenciaCardState extends ConsumerState<_OccurrenciaCard> {
+  HtmlReportViewerActions _occurrenceViewerActions(ProviderContainer container) {
+    final occurrence = widget.occurrence;
+    final repository = container.read(occurrenceRepositoryProvider);
     final lat = occurrence.lat;
     final lng = occurrence.long;
     final hasLocation = lat != null &&
@@ -537,7 +545,10 @@ class _OccurrenciaCard extends ConsumerWidget {
         !(lat == 0 && lng == 0);
 
     return HtmlReportViewerActions(
-      onEdit: (viewerContext) => _showEditSheet(viewerContext, ref),
+      onEdit: (viewerContext) async {
+        Navigator.of(viewerContext).pop();
+        await _showEditSheet(viewerContext, container, occurrence);
+      },
       onViewLocation: hasLocation
           ? (viewerContext) async {
               Navigator.of(viewerContext).pop();
@@ -549,20 +560,18 @@ class _OccurrenciaCard extends ConsumerWidget {
           : null,
       onConfirm: occurrence.status != 'confirmed'
           ? (viewerContext) async {
-              await ref.read(occurrenceRepositoryProvider).updateOccurrence(
-                    occurrence.copyWith(status: 'confirmed'),
-                  );
-              ref.invalidate(occurrencesListProvider);
+              await repository.updateOccurrence(
+                occurrence.copyWith(status: 'confirmed'),
+              );
+              container.invalidate(occurrencesListProvider);
               return true;
             }
           : null,
       confirmDialogTitle: 'Confirmar ocorrência?',
       confirmDialogMessage: 'Marcar esta ocorrência como confirmada?',
       onDelete: (viewerContext) async {
-        await ref
-            .read(occurrenceRepositoryProvider)
-            .softDeleteOccurrence(occurrence.id);
-        ref.invalidate(occurrencesListProvider);
+        await repository.softDeleteOccurrence(occurrence.id);
+        container.invalidate(occurrencesListProvider);
         return true;
       },
       deleteDialogTitle: 'Excluir ocorrência?',
@@ -570,9 +579,12 @@ class _OccurrenciaCard extends ConsumerWidget {
     );
   }
 
-  Future<void> _openHtml(BuildContext context, WidgetRef ref) async {
+  Future<void> _openHtml(BuildContext context) async {
+    final container = ProviderScope.containerOf(context, listen: false);
+    final bodyBuilder = ref.read(htmlReportViewerBodyBuilderProvider);
+    final occurrence = widget.occurrence;
     try {
-      final html = await _buildHtml(ref);
+      final html = await _buildHtml(ref, occurrence);
       if (!context.mounted) return;
       await Navigator.of(context).push(
         MaterialPageRoute(
@@ -584,7 +596,8 @@ class _OccurrenciaCard extends ConsumerWidget {
             ),
             jsonData: ConsultoriaReportExportData.occurrenceJson(occurrence),
             csvData: ConsultoriaReportExportData.occurrenceCsv(occurrence),
-            actions: _occurrenceViewerActions(ref),
+            bodyBuilder: bodyBuilder,
+            actions: _occurrenceViewerActions(container),
           ),
         ),
       );
@@ -601,7 +614,21 @@ class _OccurrenciaCard extends ConsumerWidget {
     }
   }
 
-  Future<String> _buildHtml(WidgetRef ref) async {
+  @override
+  Widget build(BuildContext context) {
+    final occurrence = widget.occurrence;
+    return _AsyncDataCard(
+      eyebrow: 'Ocorrência',
+      title: _occurrenceCardTitle(occurrence),
+      subtitle: _occurrenceCardSubtitle(occurrence),
+      date: widget.dateFormat.format(occurrence.createdAt.toLocal()),
+      statusLabel: _occStatusLabel(occurrence.status),
+      statusColor: _occStatusColor(occurrence.status),
+      onTapAsync: () => _openHtml(context),
+    );
+  }
+
+  Future<String> _buildHtml(WidgetRef ref, Occurrence occurrence) async {
     final data = occurrence.toMap();
     data['foto_base64'] =
         await RelatorioHtmlRenderer.photoPathToBase64(occurrence.photoPath) ??
@@ -620,7 +647,12 @@ class _OccurrenciaCard extends ConsumerWidget {
     );
   }
 
-  Future<void> _showEditSheet(BuildContext context, WidgetRef ref) {
+  Future<void> _showEditSheet(
+    BuildContext context,
+    ProviderContainer container,
+    Occurrence occurrence,
+  ) {
+    final repository = container.read(occurrenceRepositoryProvider);
     return showSoloForteSheet<void>(
       context: context,
       backgroundColor: Colors.transparent,
@@ -632,9 +664,7 @@ class _OccurrenciaCard extends ConsumerWidget {
           initialOccurrence: occurrence,
           onCancel: () => Navigator.of(sheetContext).pop(),
           onConfirm: (data) async {
-            await ref
-                .read(occurrenceRepositoryProvider)
-                .updateOccurrence(
+            await repository.updateOccurrence(
                   occurrence.copyWith(
                     type: data.type,
                     description: data.description,
@@ -655,7 +685,7 @@ class _OccurrenciaCard extends ConsumerWidget {
                     fotosCategoriasJson: data.fotosCategoriasJson,
                   ),
                 );
-            ref.invalidate(occurrencesListProvider);
+            container.invalidate(occurrencesListProvider);
             if (sheetContext.mounted) Navigator.of(sheetContext).pop();
           },
         ),
