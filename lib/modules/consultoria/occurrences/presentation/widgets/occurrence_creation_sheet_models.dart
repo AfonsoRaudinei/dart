@@ -50,6 +50,12 @@ const _categories = [
     value: 'amostra_solo',
     enumValue: OccurrenceCategory.amostraSolo,
   ),
+  _OccurrenceCategory(
+    label: 'Área\nVisitada',
+    icon: Icons.place_outlined,
+    value: kOccurrenceAreaVisitadaCategory,
+    enumValue: OccurrenceCategory.areaVisitada,
+  ),
 ];
 
 /// Empacota todos os campos coletados pelo formulário agronômico v14.

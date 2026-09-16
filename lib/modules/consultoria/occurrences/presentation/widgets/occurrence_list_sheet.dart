@@ -321,6 +321,8 @@ class _OccurrenceListItem extends StatelessWidget {
         return const Color(0xFF30B0C7);
       case OccurrenceCategory.amostraSolo:
         return const Color(0xFF8B5CF6);
+      case OccurrenceCategory.areaVisitada:
+        return const Color(0xFF607D8B);
     }
   }
 
@@ -514,6 +516,11 @@ class _OccurrenceListItem extends StatelessWidget {
                         if (isDraft)
                           const _MiniChip(
                             label: 'Rascunho',
+                            color: Color(0xFFFF9500),
+                          ),
+                        if (occurrence.pendingClientLink)
+                          const _MiniChip(
+                            label: 'Pendente vínculo',
                             color: Color(0xFFFF9500),
                           ),
                       ],
