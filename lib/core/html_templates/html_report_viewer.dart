@@ -153,6 +153,14 @@ class _HtmlReportViewerState extends State<HtmlReportViewer> {
       final done = await action(context);
       if (!mounted) return;
       if (done) Navigator.of(context).pop();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(userFacingError(e, action: 'Erro na ação')),
+          ),
+        );
+      }
     } finally {
       if (mounted) setState(() => _actionBusy = false);
     }
@@ -165,6 +173,14 @@ class _HtmlReportViewerState extends State<HtmlReportViewer> {
     setState(() => _actionBusy = true);
     try {
       await action(context);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(userFacingError(e, action: 'Erro na ação')),
+          ),
+        );
+      }
     } finally {
       if (mounted) setState(() => _actionBusy = false);
     }
