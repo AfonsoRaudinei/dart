@@ -32,7 +32,8 @@ enum OccurrenceCategory {
   daninhas('Ervas Daninhas', '🌿'),
   nutricional('Nutrientes', '⚗️'),
   agua('Água', '💧'),
-  amostraSolo('Amostra de Solo', '🧪');
+  amostraSolo('Amostra de Solo', '🧪'),
+  areaVisitada('Área Visitada', '📍');
 
   final String label;
   final String emoji;
@@ -62,6 +63,9 @@ enum OccurrenceCategory {
       case 'amostra solo':
       case 'amostra de solo':
         return OccurrenceCategory.amostraSolo;
+      case 'area_visitada':
+      case 'area visitada':
+        return OccurrenceCategory.areaVisitada;
       default:
         return OccurrenceCategory.doenca;
     }
@@ -88,8 +92,24 @@ extension OccurrenceCategoryColor on OccurrenceCategory {
     if (this == OccurrenceCategory.amostraSolo) {
       return const Color(0xFF8B5CF6);
     }
+    if (this == OccurrenceCategory.areaVisitada) {
+      return const Color(0xFF607D8B);
+    }
     return const Color(0xFF616161);
   }
+}
+
+/// Valor persistido em [Occurrence.category] para pins de área visitada (A1).
+const kOccurrenceAreaVisitadaCategory = 'area_visitada';
+
+extension OccurrenceAreaVisitadaX on Occurrence {
+  bool get isAreaVisitada =>
+      category == kOccurrenceAreaVisitadaCategory ||
+      OccurrenceCategory.fromString(category) == OccurrenceCategory.areaVisitada;
+
+  /// Área visitada sem cliente vinculado — indicador "pendente de vínculo".
+  bool get pendingClientLink =>
+      isAreaVisitada && (clientId == null || clientId!.trim().isEmpty);
 }
 
 enum OccurrenceStatus {
