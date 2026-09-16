@@ -33,14 +33,9 @@ class _GeneratedReportCard extends StatelessWidget {
   final String date;
   final bool enabled;
   final Future<_GeneratedReportPayload> Function() buildPayload;
-  final String menuTooltip;
+  final HtmlReportViewerActions? viewerActions;
   final String? statusLabel;
   final Color? statusColor;
-  final bool showPackShare;
-  final VoidCallback? onEdit;
-  final VoidCallback? onViewLocation;
-  final Future<void> Function()? onPublish;
-  final Future<void> Function()? onDelete;
 
   const _GeneratedReportCard({
     required this.eyebrow,
@@ -49,14 +44,9 @@ class _GeneratedReportCard extends StatelessWidget {
     required this.date,
     required this.enabled,
     required this.buildPayload,
-    this.menuTooltip = 'Ações do relatório consolidado',
+    this.viewerActions,
     this.statusLabel,
     this.statusColor,
-    this.showPackShare = false,
-    this.onEdit,
-    this.onViewLocation,
-    this.onPublish,
-    this.onDelete,
   });
 
   @override
@@ -69,130 +59,24 @@ class _GeneratedReportCard extends StatelessWidget {
       statusLabel: statusLabel ?? (enabled ? 'Disponível' : 'Vazio'),
       statusColor:
           statusColor ?? (enabled ? PremiumTokens.brandGreen : Colors.grey),
-      trailing: _AsyncActionMenu(
-        tooltip: menuTooltip,
-        itemBuilder: (context) => [
-          PopupMenuItem(
-            value: 'html',
-            enabled: enabled,
-            child: const Text('Pré-visualizar HTML'),
-          ),
-          PopupMenuItem(
-            value: 'export',
-            enabled: enabled,
-            child: const Text('Exportar'),
-          ),
-          if (showPackShare)
-            PopupMenuItem(
-              value: 'pack',
-              enabled: enabled,
-              child: const Text('Compartilhar pack'),
-            ),
-          if (onPublish != null)
-            PopupMenuItem(
-              value: 'publish',
-              enabled: enabled,
-              child: const Text('Publicar'),
-            ),
-          if (onEdit != null)
-            PopupMenuItem(
-              value: 'edit',
-              enabled: enabled,
-              child: const Text('Editar'),
-            ),
-          if (onViewLocation != null)
-            PopupMenuItem(
-              value: 'location',
-              enabled: enabled,
-              child: const Text('Ver Localização'),
-            ),
-          if (onDelete != null)
-            const PopupMenuItem(
-              value: 'delete',
-              child: Text('Excluir', style: TextStyle(color: Colors.red)),
-            ),
-        ],
-        onSelected: (value) => _handleAction(context, value),
-      ),
+      onTap: enabled ? () => _openPreview(context) : null,
     );
   }
 
-  Future<void> _handleAction(BuildContext context, String value) async {
-    if (!enabled && value != 'delete') return;
-    if (value == 'edit') {
-      onEdit?.call();
-      return;
-    }
-    if (value == 'publish') {
-      final publish = onPublish;
-      if (publish != null) await publish();
-      return;
-    }
-    if (value == 'location') {
-      onViewLocation?.call();
-      return;
-    }
-    if (value == 'delete') {
-      final delete = onDelete;
-      if (delete != null) await delete();
-      return;
-    }
+  Future<void> _openPreview(BuildContext context) async {
     final payload = await buildPayload();
     if (!context.mounted) return;
 
-    switch (value) {
-      case 'html':
-        await Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) => HtmlReportViewer(
-              title: payload.title,
-              htmlContent: payload.html,
-              fileBaseName: payload.fileBaseName,
-              jsonData: payload.json,
-              csvData: payload.csv,
-            ),
-          ),
-        );
-        return;
-      case 'export':
-        await _export(context, ReportExportFormat.html, payload);
-        return;
-      case 'pack':
-        await _exportPack(context, payload);
-        return;
-    }
-  }
-
-  Future<void> _export(
-    BuildContext context,
-    ReportExportFormat format,
-    _GeneratedReportPayload payload,
-  ) async {
-    final shareOrigin = resolveSharePositionOrigin(context);
-    await const ReportExportService().export(
-      format,
-      payload.toExportPayload(),
-      sharePositionOrigin: shareOrigin,
-    );
-    if (!context.mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Exportação iniciada.')));
-  }
-
-  Future<void> _exportPack(
-    BuildContext context,
-    _GeneratedReportPayload payload,
-  ) async {
-    final shareOrigin = resolveSharePositionOrigin(context);
-    await const ReportExportService().exportPack(
-      payload.toExportPayload(),
-      sharePositionOrigin: shareOrigin,
-    );
-    if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Pack (HTML + CSV + JSON) pronto para compartilhar.'),
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => HtmlReportViewer(
+          title: payload.title,
+          htmlContent: payload.html,
+          fileBaseName: payload.fileBaseName,
+          jsonData: payload.json,
+          csvData: payload.csv,
+          actions: viewerActions,
+        ),
       ),
     );
   }
