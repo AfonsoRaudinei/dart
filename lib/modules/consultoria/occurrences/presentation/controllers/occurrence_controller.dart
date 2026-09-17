@@ -54,9 +54,13 @@ class OccurrenceController {
     final String? sessionId = activeSession?.isActive == true
         ? activeSession!.id
         : null;
-    final resolvedClientId =
-        clientId ??
-        (activeSession?.isActive == true ? activeSession!.producerId : null);
+    // Área visitada: client_id só por ação explícita — nunca herda sessão ativa.
+    final resolvedClientId = isAreaVisitadaCategory(category)
+        ? clientId
+        : (clientId ??
+              (activeSession?.isActive == true
+                  ? activeSession!.producerId
+                  : null));
 
     String? geometry;
     if (lat != null && long != null) {
