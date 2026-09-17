@@ -42,13 +42,14 @@ void main() {
     expect(editLayer, contains('_VertexGotaVisual'));
     expect(editLayer, contains('drawing_vertex_drag_'));
     expect(editLayer, contains('_MidpointHandle'));
-    expect(editLayer, contains('Alignment.topCenter'));
+    expect(editLayer, contains('Alignment.bottomCenter'));
   });
 
   test('gota mid-draw e edição: ponta no LatLng, não halo centrado', () {
     // Contrato img2: tip-up, corpo abaixo do dedo.
     expect(editLayer, contains('_VertexGotaMetrics'));
-    expect(editLayer, contains('Alignment.topCenter'));
+    // flutter_map 7: bottomCenter = LatLng no topo do widget (ponta da gota).
+    expect(editLayer, contains('Alignment.bottomCenter'));
     // Halo circular antigo (centrado no ponto) removido do sketch.
     expect(editLayer.contains('haloDiameter'), isFalse);
     expect(editLayer.contains('shape: BoxShape.circle,\n                color: _gotaRed'), isFalse);
