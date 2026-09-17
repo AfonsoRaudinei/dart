@@ -16,6 +16,7 @@ class MapActionFabMenu extends StatefulWidget {
   final VoidCallback onResultado;
   final VoidCallback onAntesDepois;
   final VoidCallback onAvaliacao;
+  final VoidCallback onAreaVisitada;
   final VoidCallback onOcorrencia;
   final bool isEnabled;
   final bool isActive;
@@ -33,6 +34,7 @@ class MapActionFabMenu extends StatefulWidget {
     required this.onResultado,
     required this.onAntesDepois,
     required this.onAvaliacao,
+    required this.onAreaVisitada,
     required this.onOcorrencia,
     this.isEnabled = true,
     this.isActive = false,
@@ -88,6 +90,7 @@ class _MapActionFabMenuState extends State<MapActionFabMenu>
       onResultado: widget.onResultado,
       onAntesDepois: widget.onAntesDepois,
       onAvaliacao: widget.onAvaliacao,
+      onAreaVisitada: widget.onAreaVisitada,
       onOcorrencia: widget.onOcorrencia,
     );
   }
@@ -139,6 +142,13 @@ class _MapActionFabMenuState extends State<MapActionFabMenu>
           label: 'Avaliação',
           color: const Color(0xFF3B82F6),
           onTap: () => _runAction(widget.onAvaliacao),
+        ),
+        const SizedBox(height: 10),
+        _MenuActionButton(
+          icon: SFIcons.pinFill,
+          label: 'Área Visitada',
+          color: const Color(0xFF607D8B),
+          onTap: () => _runAction(widget.onAreaVisitada),
         ),
         const SizedBox(height: 10),
         _MenuActionButton(

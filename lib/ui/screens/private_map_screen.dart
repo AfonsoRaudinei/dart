@@ -393,6 +393,11 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
         ref: ref,
         initialTipo: CaseTipo.avaliacao,
       ),
+      onAreaVisitada: () => _openOccurrenceSheet(
+        latLng.latitude,
+        latLng.longitude,
+        initialOccurrenceCategory: occ.kOccurrenceAreaVisitadaCategory,
+      ),
       onOcorrencia: () =>
           _openOccurrenceSheet(latLng.latitude, latLng.longitude),
     ).whenComplete(() {
@@ -717,7 +722,11 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
     );
   }
 
-  void _openOccurrenceSheet(double lat, double lng) async {
+  void _openOccurrenceSheet(
+    double lat,
+    double lng, {
+    String? initialOccurrenceCategory,
+  }) async {
     // 🛡 CONSOLIDATION: Redirect to MapBottomSheet
     if (!mounted) return;
 
@@ -729,11 +738,14 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
 
     // Usando setter instrumentado
     _setSheetState(
-      const MapSheetState(
+      MapSheetState(
         type: MapSheetType.occurrences,
         isCreatingOccurrence: true,
+        initialOccurrenceCategory: initialOccurrenceCategory,
       ),
-      'OpenOccurrenceSheet (Create Mode)',
+      initialOccurrenceCategory == occ.kOccurrenceAreaVisitadaCategory
+          ? 'OpenOccurrenceSheet (Área Visitada)'
+          : 'OpenOccurrenceSheet (Create Mode)',
     );
   }
 

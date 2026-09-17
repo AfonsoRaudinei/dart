@@ -703,6 +703,7 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
       longitude: lng,
       scrollController: _scrollController,
       formGuard: _occurrenceFormGuard,
+      initialCategoryValue: widget.state.initialOccurrenceCategory,
       onCancel: () async {
         final canClose = await OccurrenceCloseCoordinator.confirmDiscardIfDirty(
           context,
