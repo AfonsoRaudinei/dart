@@ -346,14 +346,14 @@ class _DrawingEditLayerState extends State<DrawingEditLayer> {
       final showGota = isSelected || isDragging;
       final dotSize = isStart ? 20.0 : 16.0;
 
-      // Marker tamanho fixo + ponta no LatLng (topCenter) — mesmo contrato
-      // da edição: dedo no corpo da gota, ponta visível no mapa.
+      // Marker tamanho fixo + ponta no LatLng (bottomCenter no flutter_map 7:
+      // LatLng = topo do widget; gota/círculo idle descem a partir do vértice).
       markers.add(
         Marker(
           point: point,
           width: _VertexGotaMetrics.width,
           height: _VertexGotaMetrics.height,
-          alignment: Alignment.topCenter,
+          alignment: Alignment.bottomCenter,
           child: _SketchVertexHandle(
             index: i,
             isStart: isStart,
@@ -412,7 +412,7 @@ class _DrawingEditLayerState extends State<DrawingEditLayer> {
               point: p,
               width: _VertexGotaMetrics.width,
               height: _VertexGotaMetrics.height,
-              alignment: Alignment.topCenter,
+              alignment: Alignment.bottomCenter,
               child: _EditVertexGotaHandle(
                 ringIndex: ringIdx,
                 index: i,
@@ -574,7 +574,7 @@ class _EditVertexGotaHandle extends StatelessWidget {
   }
 }
 
-/// Dimensões canônicas da gota ponta-cima (LatLng = topo do marker).
+/// Dimensões canônicas da gota ponta-cima (LatLng = topo do marker via bottomCenter).
 class _VertexGotaMetrics {
   static const double width = 56;
   static const double height = 78;
@@ -653,8 +653,9 @@ class _VertexGotaVisual extends StatelessWidget {
 
 /// Gota com ponta para cima ancorada no vértice (ref. app exemplo img 2).
 ///
-/// LatLng = topo do widget (`Alignment.topCenter`). O corpo fica abaixo para
-/// o dedo não cobrir o ponto do mapa enquanto arrasta.
+/// No flutter_map 7, `Alignment.bottomCenter` ancora o LatLng no topo do widget;
+/// a ponta da gota e o ponto idle coincidem com o vértice. O corpo fica abaixo
+/// para o dedo não cobrir o ponto do mapa enquanto arrasta.
 class _GotaCruzPainter extends CustomPainter {
   final Color color;
 
