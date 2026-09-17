@@ -79,6 +79,32 @@ void main() {
   );
 
   test(
+    'createOccurrence area visitada não herda clientId da sessão ativa',
+    () async {
+      fakeVisitLookup.session = VisitSessionSummary(
+        id: 'visit-active-2',
+        producerId: 'producer-session',
+        status: 'active',
+        startTime: DateTime(2025, 1, 1, 9, 0),
+      );
+
+      final controller = container.read(occurrenceControllerProvider);
+
+      await controller.createOccurrence(
+        type: 'Média',
+        description: '',
+        category: kOccurrenceAreaVisitadaCategory,
+        lat: -15.0,
+        long: -47.0,
+      );
+
+      expect(fakeOccurrenceRepository.lastSaved, isNotNull);
+      expect(fakeOccurrenceRepository.lastSaved!.visitSessionId, 'visit-active-2');
+      expect(fakeOccurrenceRepository.lastSaved!.clientId, isNull);
+    },
+  );
+
+  test(
     'createOccurrence mantém visitSessionId nulo quando não há sessão ativa',
     () async {
       fakeVisitLookup.session = null;

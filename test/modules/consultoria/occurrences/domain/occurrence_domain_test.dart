@@ -22,6 +22,11 @@ void main() {
         OccurrenceCategory.fromString('area_visitada'),
         OccurrenceCategory.areaVisitada,
       );
+      expect(
+        OccurrenceCategory.fromString('areaVisitada'),
+        OccurrenceCategory.areaVisitada,
+      );
+      expect(isAreaVisitadaCategory('areaVisitada'), isTrue);
     });
   });
 

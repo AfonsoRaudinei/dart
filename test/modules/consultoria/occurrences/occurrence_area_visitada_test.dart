@@ -64,9 +64,13 @@ Future<void> _tapSave(WidgetTester tester) async {
 
 void main() {
   group('OccurrenceCategory.areaVisitada', () {
-    test('fromString reconhece area_visitada', () {
+    test('fromString reconhece area_visitada e areaVisitada (enum name)', () {
       expect(
         OccurrenceCategory.fromString('area_visitada'),
+        OccurrenceCategory.areaVisitada,
+      );
+      expect(
+        OccurrenceCategory.fromString('areaVisitada'),
         OccurrenceCategory.areaVisitada,
       );
     });
