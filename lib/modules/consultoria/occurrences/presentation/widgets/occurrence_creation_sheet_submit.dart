@@ -78,9 +78,7 @@ extension _OccurrenceCreationSheetSubmit on _OccurrenceCreationSheetState {
       );
       return;
     }
-    final isAreaVisitada =
-        _selectedCategoryValue == kOccurrenceAreaVisitadaCategory;
-    if (!isAreaVisitada &&
+    if (!_isAreaVisitada &&
         _selectedCategoryValue == null &&
         _cats.isEmpty &&
         desc.isEmpty) {
@@ -106,7 +104,9 @@ extension _OccurrenceCreationSheetSubmit on _OccurrenceCreationSheetState {
           description: desc,
           latitude: _pinLatitude,
           longitude: _pinLongitude,
-          clientId: _selectedClient?.id,
+          clientId: _isAreaVisitada && widget.initialOccurrence == null
+              ? null
+              : _selectedClient?.id,
           photoPath: firstPhoto,
           category: _selectedCategoryValue ?? primaryCat,
           cultivar: _cultivarCtrl.text.trim().isEmpty
