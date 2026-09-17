@@ -65,6 +65,7 @@ enum OccurrenceCategory {
         return OccurrenceCategory.amostraSolo;
       case 'area_visitada':
       case 'area visitada':
+      case 'areavisitada':
         return OccurrenceCategory.areaVisitada;
       default:
         return OccurrenceCategory.doenca;
@@ -102,10 +103,16 @@ extension OccurrenceCategoryColor on OccurrenceCategory {
 /// Valor persistido em [Occurrence.category] para pins de área visitada (A1).
 const kOccurrenceAreaVisitadaCategory = 'area_visitada';
 
+/// Parsing de categoria — aceita snake (`area_visitada`) e nome enum (`areaVisitada`).
+bool isAreaVisitadaCategory(String? category) {
+  if (category == null || category.trim().isEmpty) return false;
+  if (category == kOccurrenceAreaVisitadaCategory) return true;
+  return OccurrenceCategory.fromString(category) ==
+      OccurrenceCategory.areaVisitada;
+}
+
 extension OccurrenceAreaVisitadaX on Occurrence {
-  bool get isAreaVisitada =>
-      category == kOccurrenceAreaVisitadaCategory ||
-      OccurrenceCategory.fromString(category) == OccurrenceCategory.areaVisitada;
+  bool get isAreaVisitada => isAreaVisitadaCategory(category);
 
   /// Área visitada sem cliente vinculado — indicador "pendente de vínculo".
   bool get pendingClientLink =>
