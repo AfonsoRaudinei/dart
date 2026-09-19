@@ -13,6 +13,7 @@ import 'package:soloforte_app/modules/marketing/domain/enums/case_tipo.dart';
 import 'package:soloforte_app/modules/marketing/domain/enums/plano_marketing.dart';
 import 'package:soloforte_app/modules/marketing/domain/enums/produtividade_unidade.dart';
 import 'package:soloforte_app/modules/marketing/presentation/widgets/edit_case_sheet.dart';
+import 'package:soloforte_app/modules/marketing/presentation/widgets/foto_picker_widget.dart';
 
 void main() {
   group('EditCaseSheet', () {
@@ -56,6 +57,101 @@ void main() {
       expect(savedCase!.parametros, isEmpty);
     });
 
+    testWidgets('exibe seção de foto principal para case tipo resultado', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _wrap(
+          EditCaseSheet(
+            caso: _caseResultadoCompleto(),
+            onClose: () {},
+            onSalvar: (_) async {},
+          ),
+        ),
+      );
+      await tester.pump();
+
+      await tester.scrollUntilVisible(
+        find.text('FOTO PRINCIPAL'),
+        500,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pump();
+
+      expect(find.text('FOTO PRINCIPAL'), findsOneWidget);
+      expect(find.byType(FotoPickerWidget), findsOneWidget);
+      expect(find.text('Trocar'), findsOneWidget);
+    });
+
+    testWidgets('propaga nova URL de foto ao salvar case resultado', (
+      tester,
+    ) async {
+      MarketingCase? savedCase;
+
+      await tester.pumpWidget(
+        _wrap(
+          EditCaseSheet(
+            caso: _caseResultadoCompleto(),
+            onClose: () {},
+            onSalvar: (updatedCase) async {
+              savedCase = updatedCase;
+            },
+          ),
+        ),
+      );
+
+      await tester.scrollUntilVisible(
+        find.byType(FotoPickerWidget),
+        500,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pump();
+
+      final picker = tester.widget<FotoPickerWidget>(
+        find.byType(FotoPickerWidget),
+      );
+      picker.onChanged('https://example.com/nova-foto.jpg');
+      await tester.pump();
+
+      await tester.scrollUntilVisible(
+        find.text('Salvar'),
+        500,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pump();
+      await tester.tap(find.text('Salvar'));
+      await tester.pump();
+
+      expect(savedCase, isNotNull);
+      expect(savedCase!.fotoPrincipalUrl, 'https://example.com/nova-foto.jpg');
+    });
+
+    testWidgets('exibe dois pickers de foto para case antes/depois', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _wrap(
+          EditCaseSheet(
+            caso: _caseAntesDepois(),
+            onClose: () {},
+            onSalvar: (_) async {},
+          ),
+        ),
+      );
+
+      await tester.scrollUntilVisible(
+        find.text('FOTOS'),
+        500,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pump();
+
+      expect(find.text('FOTOS'), findsOneWidget);
+      expect(find.byType(FotoPickerWidget), findsNWidgets(2));
+      expect(find.text('Antes'), findsOneWidget);
+      expect(find.text('Depois'), findsOneWidget);
+    });
+
     testWidgets('mantém tipo resultado fixo ao salvar edição', (
       tester,
     ) async {
@@ -81,9 +177,9 @@ void main() {
         500,
         scrollable: find.byType(Scrollable).first,
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
       await tester.tap(find.text('Salvar'));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(savedCase, isNotNull);
       expect(savedCase!.tipo, CaseTipo.resultado);
@@ -108,8 +204,12 @@ void main() {
         ),
       );
 
-      await tester.ensureVisible(find.text('Salvar'));
-      await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(
+        find.text('Salvar'),
+        500,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pump();
       await tester.tap(find.text('Salvar'));
       await tester.pump();
 
@@ -170,6 +270,25 @@ MarketingCase _caseAvaliacao() {
     telefoneVendedor: '63992418349',
     nomeTalhao: 'São domingos',
     tamanhoHa: 100,
+    criadoEm: now,
+    atualizadoEm: now,
+  );
+}
+
+MarketingCase _caseAntesDepois() {
+  final now = DateTime.utc(2026, 8, 15, 12);
+  return MarketingCase(
+    id: 'case-antes-depois',
+    tipo: CaseTipo.antesDepois,
+    visibilidade: PlanoMarketing.ouro,
+    lat: -12.345,
+    lng: -47.89,
+    localizacaoTexto: 'Fazenda Sul',
+    produtorFazenda: 'Produtor B',
+    produtoUtilizado: 'Produto Y',
+    dataCase: now,
+    fotoAntesUrl: 'https://example.com/antes.jpg',
+    fotoDepoisUrl: 'https://example.com/depois.jpg',
     criadoEm: now,
     atualizadoEm: now,
   );
