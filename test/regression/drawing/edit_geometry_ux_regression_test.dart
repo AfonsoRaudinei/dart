@@ -42,13 +42,13 @@ void main() {
     expect(editLayer, contains('_VertexGotaVisual'));
     expect(editLayer, contains('drawing_vertex_drag_'));
     expect(editLayer, contains('_MidpointHandle'));
-    expect(_vertexMarkerBottomCenterCount(editLayer), 2);
+    expect(_vertexMarkerBottomCenterCount(editLayer), 3);
   });
 
   test('gota mid-draw e edição: ponta no LatLng, não halo centrado', () {
     // Contrato img2: tip-up, corpo abaixo do dedo.
     expect(editLayer, contains('_VertexGotaMetrics'));
-    expect(_vertexMarkerBottomCenterCount(editLayer), 2);
+    expect(_vertexMarkerBottomCenterCount(editLayer), 3);
     expect(
       editLayer.contains(
         'alignment: Alignment.topCenter,\n              child: _EditVertexGotaHandle',
