@@ -106,34 +106,38 @@ class _PublicMapScreenState extends ConsumerState<PublicMapScreen> {
 
   Future<void> _centerOnUserAtEntryZoom() async {
     final position = await _resolveUserPosition();
-    if (position != null) {
-      _mapController.move(
-        position,
-        PublicMapEntryConstants.kPublicMapEntryZoom,
-      );
-      setState(
-        () => _currentZoom = PublicMapEntryConstants.kPublicMapEntryZoom,
-      );
-    }
+    if (!mounted || position == null) return;
+    _mapController.move(
+      position,
+      PublicMapEntryConstants.kPublicMapEntryZoom,
+    );
+    setState(() => _currentZoom = PublicMapEntryConstants.kPublicMapEntryZoom);
   }
 
-  void _onLocationTap() async {
+  Future<void> _moveToUserAtZoom(double zoom) async {
+    final position = await _resolveUserPosition();
+    if (!mounted || position == null) return;
+    _mapController.move(position, zoom);
+    setState(() => _currentZoom = zoom);
+  }
+
+  Future<void> _onLocationTap() async {
     final permission = await ref.read(locationPermissionProvider.future);
+    if (!mounted) return;
+
     if (permission == LocationPermission.denied) {
       final newPermission = await LocationPermissionGate.request();
-      _handlePermissionResult(newPermission);
+      if (!mounted) return;
+      if (newPermission == LocationPermission.whileInUse ||
+          newPermission == LocationPermission.always) {
+        await _moveToUserAtZoom(PublicMapEntryConstants.kPublicMapLocationTapZoom);
+      }
       return;
     }
 
-    final position = await _resolveUserPosition();
-    if (position != null) {
-      _mapController.move(
-        position,
-        PublicMapEntryConstants.kPublicMapLocationTapZoom,
-      );
-      setState(
-        () => _currentZoom = PublicMapEntryConstants.kPublicMapLocationTapZoom,
-      );
+    if (permission == LocationPermission.whileInUse ||
+        permission == LocationPermission.always) {
+      await _moveToUserAtZoom(PublicMapEntryConstants.kPublicMapLocationTapZoom);
     }
   }
 
