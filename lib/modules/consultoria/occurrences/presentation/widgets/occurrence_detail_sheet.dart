@@ -17,6 +17,7 @@ import '../../../../../../ui/screens/map/providers/pin_position_correction_provi
 import '../../domain/occurrence.dart';
 import '../controllers/occurrence_controller.dart';
 import 'occurrence_creation_sheet.dart';
+import 'occurrence_detail_pin_actions.dart';
 
 /// Sheet de detalhe de uma ocorrência existente.
 ///
@@ -550,36 +551,11 @@ class OccurrenceDetailSheet extends ConsumerWidget {
               ),
               if (hasMapPin) ...[
                 const SizedBox(height: 12),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: SizedBox(
-                    width: double.infinity,
-                    height: 48,
-                    child: OutlinedButton.icon(
-                      onPressed: () => _goToMapPin(context),
-                      style: isIos
-                          ? OutlinedButton.styleFrom(
-                              foregroundColor: SoloForteSheetSkinIos.ghostText,
-                              side: const BorderSide(
-                                color: SoloForteSheetSkinIos.ghostBorder,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(
-                                  SoloForteSheetSkinIos.ghostRadius,
-                                ),
-                              ),
-                            )
-                          : null,
-                      icon: Icon(
-                        SFIcons.pinFill,
-                        size: 18,
-                        color: isIos
-                            ? SoloForteSheetSkinIos.iconStroke
-                            : categoryColor,
-                      ),
-                      label: const Text('Ver ponto no mapa'),
-                    ),
-                  ),
+                OccurrenceDetailPinActions(
+                  occurrence: occurrence,
+                  categoryColor: categoryColor,
+                  isIos: isIos,
+                  onViewOnMap: () => _goToMapPin(context),
                 ),
               ],
               if (allowPinCorrection &&
