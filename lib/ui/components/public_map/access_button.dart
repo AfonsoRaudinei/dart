@@ -21,21 +21,33 @@ class AccessSoloForteButton extends StatelessWidget {
         child: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 220, maxHeight: 56),
-            child: SizedBox(
-              width: 220,
-              height: 56,
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: () => context.go(AppRoutes.login),
-                  borderRadius: BorderRadius.circular(20),
-                  child: ClipRRect(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.25),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: SizedBox(
+                width: 220,
+                height: 56,
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () => context.go(AppRoutes.login),
                     borderRadius: BorderRadius.circular(20),
-                    child: Image.asset(
-                      _bannerAsset,
-                      fit: BoxFit.contain,
-                      alignment: Alignment.center,
-                      excludeFromSemantics: true,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(20),
+                      child: Image.asset(
+                        _bannerAsset,
+                        fit: BoxFit.contain,
+                        alignment: Alignment.center,
+                        excludeFromSemantics: true,
+                      ),
                     ),
                   ),
                 ),
