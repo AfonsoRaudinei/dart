@@ -263,8 +263,9 @@ class MapConfig {
             isFallback: true,
           );
         }
+        // Outdoor v2: verde vivo + relevo (substitui Landscape bege em Relevo).
         return MapLayerTileConfig(
-          urlTemplate: mapTilerLandscapeUrl(mapTilerApiKey),
+          urlTemplate: mapTilerOutdoorUrl(mapTilerApiKey),
           attribution: mapTilerAttribution,
           maxZoom: mapTilerStyledMaxZoom,
           maxNativeZoom: mapTilerStyledMaxNativeZoom,
