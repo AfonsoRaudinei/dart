@@ -28,5 +28,14 @@ void main() {
       expect(source.contains('kPublicMapEntryZoom'), isTrue);
       expect(source.contains('kPublicMapLocationTapZoom'), isTrue);
     });
+
+    test('toque de localização não delega para zoom de entrada', () {
+      final source = File('lib/ui/screens/public_map_screen.dart').readAsStringSync();
+      final tapBlock = source.split('Future<void> _onLocationTap()')[1]
+          .split('Future<LatLng?> _resolveUserPosition()')[0];
+      expect(tapBlock.contains('_handlePermissionResult'), isFalse);
+      expect(tapBlock.contains('_centerOnUserAtEntryZoom'), isFalse);
+      expect(tapBlock.contains('kPublicMapLocationTapZoom'), isTrue);
+    });
   });
 }
