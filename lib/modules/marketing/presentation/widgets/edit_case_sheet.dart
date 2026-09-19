@@ -97,6 +97,16 @@ class _EditCaseSheetState extends State<EditCaseSheet> {
       return;
     }
 
+    if (_tipo == CaseTipo.resultado && _fotoPrincipalUrl == null) {
+      _showError('Foto principal obrigatória para o tipo Resultado.');
+      return;
+    }
+    if (_tipo == CaseTipo.antesDepois &&
+        (_fotoAntesUrl == null || _fotoDepoisUrl == null)) {
+      _showError('Adicione as fotos Antes e Depois.');
+      return;
+    }
+
     final produtividadeValor = _parseDouble(_produtividadeCtrl.text);
     final tamanhoHa = _parseDouble(_tamanhoHaCtrl.text);
     final produtividadeUnidade = produtividadeValor == null
@@ -281,6 +291,7 @@ class _EditCaseSheetState extends State<EditCaseSheet> {
               url: _fotoPrincipalUrl,
               folder: 'resultado',
               height: 180,
+              required: _fotoPrincipalUrl == null,
               onChanged: (url) => setState(() => _fotoPrincipalUrl = url),
             ),
           ],
@@ -311,6 +322,7 @@ class _EditCaseSheetState extends State<EditCaseSheet> {
                         url: _fotoAntesUrl,
                         folder: 'antes_depois',
                         height: 140,
+                        required: _fotoAntesUrl == null,
                         includeVegetalInversion: true,
                         onChanged: (url) => setState(() => _fotoAntesUrl = url),
                       ),
@@ -336,6 +348,7 @@ class _EditCaseSheetState extends State<EditCaseSheet> {
                         url: _fotoDepoisUrl,
                         folder: 'antes_depois',
                         height: 140,
+                        required: _fotoDepoisUrl == null,
                         includeVegetalInversion: true,
                         onChanged: (url) => setState(() => _fotoDepoisUrl = url),
                       ),
