@@ -27,6 +27,8 @@
 Handles de vertice (sketch + edicao) em `presentation/widgets/drawing_edit_layer.dart`:
 
 - Gota tip-up 56x78: `Marker.alignment = Alignment.bottomCenter` — o LatLng fica no **topo** do widget (ponta da gota / topo do hitbox).
+- Ponto idle (`_VertexIdleDot`): centro do circulo no vertice (`Transform.translate` com `-size/2 + 0.5`).
+- Label de segmento na edicao: `bottomCenter` + `padding top 4` — texto abaixo do midpoint.
 - `Alignment.topCenter` desloca o vertice ~altura do marker acima do contorno (bug IPA poligono).
 - Pins tip-down (marketing): `Alignment.topCenter` + `MarkerLayer(rotate: true)` — ver `lib/ui/components/map/widgets/isolated_marker_layers.dart`.
 - Teste de ancoragem: `test/modules/drawing/drawing_edit_layer_test.dart` (`expectMarkerTopAnchorsLatLng`).
