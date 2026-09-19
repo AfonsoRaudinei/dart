@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:soloforte_app/ui/components/premium/premium_glass_panel.dart';
 import 'package:soloforte_app/ui/components/public_map/public_map_tagline_carousel.dart';
 
 void main() {
@@ -17,6 +18,7 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('Simples. Poderoso. Teu.'), findsOneWidget);
+    expect(find.byType(PremiumGlassPanel), findsOneWidget);
 
     await tester.pump(
       PublicMapTaglineCarousel.interval +
@@ -50,5 +52,16 @@ void main() {
       tester.getSize(find.byType(PublicMapTaglineCarousel)).height,
       PublicMapTaglineCarousel.blockHeight,
     );
+  });
+
+  testWidgets('carrossel exibe indicadores de página', (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(body: PublicMapTaglineCarousel()),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.byType(AnimatedContainer), findsNWidgets(3));
   });
 }
