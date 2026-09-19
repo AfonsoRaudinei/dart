@@ -16,11 +16,15 @@ git push -u origin <branch>
 gh pr view <n> --json state,mergedAt,mergeStateStatus,autoMergeRequest,url
 ```
 
-## MacBook — limitação e solução
+## MacBook — sync automático (sem pedir terminal ao usuário)
 
-- **Cloud Agent (Linux `/workspace`):** NÃO acessa MacBook. Não consegue `git pull` na pasta local do Mac.
-- **Cursor Desktop (MacBook):** PODE executar `git pull origin main` no projeto local — fazer quando workspace for local.
-- **Serviço completo:** Cloud Agent garante PR rebaseado na `main` remota; MacBook recebe via pull local.
+- **Proibido** encerrar resposta com bloco `No MacBook:` / `git fetch origin...` para o Raudinei copiar.
+- **Mac sincroniza sozinho** via:
+  1. `./tool/install_mac_sync_launchd.sh` (launchd a cada 5 min — cobre entregas do smartphone/cloud)
+  2. Hook Cursor `stop` → `.cursor/hooks/sync_mac_on_stop.sh` (após cada turno no Desktop Mac)
+  3. Agente no workspace local: executar `./tool/sync_mac.sh` antes de encerrar (não instruir)
+- **Cloud Agent (Linux `/workspace`):** não acessa Mac — informar só: *"Mac sincroniza automaticamente (launchd ≤5 min)"* + SHA em `origin/main`.
+- **Cursor Desktop (MacBook / Private Worker):** executar `./tool/sync_mac.sh` e informar SHA pós-sync.
 
 ## Memória
 
@@ -38,6 +42,7 @@ Ver `.cursor/rules/cursor-desktop-sync.mdc`.
 - `git push origin main` · `gh pr merge --admin`
 - Dizer "não dá" sem executar o que é possível daqui
 - Delegar git remoto ao usuário
+- **Bloco "No MacBook:" com comandos git** — sync é automático (launchd + hook); ver acima
 - Reportar correção como "feita" só na branch `cursor/...` ou só com auto-merge armado (REGRA-ENTREGA-1)
 
 ## Verificação final obrigatória (REGRA-ENTREGA-1)
