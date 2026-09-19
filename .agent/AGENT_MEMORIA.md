@@ -9,7 +9,7 @@
 ## Preferências do Raudinei
 
 1. **Sempre executar comandos no terminal daqui** — nunca só passar instruções para copiar
-2. **Sempre sincronizar MacBook** ao encerrar tarefa — serviço completo
+2. **Sempre sincronizar MacBook automaticamente** ao encerrar entrega cloud (`mergedAt`) ou quando o usuário pedir sync — **executar** o bloco abaixo no terminal local (não só informar "Fase 2")
 3. **Não parar para perguntar** se deve executar git push da **branch** ou pull óbvios. Merge na `main` segue o gate (revisor + path crítico + auto-merge). P0/P1/P2 e path crítico **param**.
 4. **Salvar regras** em `.agent/` + `.cursor/rules/` (canônico); `prompt/` só para prompts de execução
 5. **Correção não é entrega enquanto não estiver em `origin/main`** — auto-merge armado não conta (REGRA-ENTREGA-1, ver `AGENTS.md`)
@@ -61,13 +61,14 @@ git status && git log -1 --oneline
 **Preferência atual (IPA 209+ / pin-norte / coluna direita):**
 
 ```bash
-# já dentro da pasta do projeto:
+# Fase 2 Mac — OBRIGATÓRIO executar no terminal quando workspace é local:
 git fetch origin
 git checkout main
 git pull origin main
 flutter pub get
-git status && git log -1 --oneline
-# esperado: SHA = origin/main (ex.: ddf7f56+)
+git log -1 --oneline
+# atalho: ./tool/sync_mac.sh
+# esperado: SHA = origin/main
 # depois: flutter run  OU  archive IPA novo — hot restart nao basta
 ```
 
@@ -80,7 +81,8 @@ git status && git log -1 --oneline
 O agente **sempre informa**:
 - SHA em `origin/main` **ou** `auto-merge armado, pendente de CI — ainda não está na main` + URL do PR
 - Nunca `git push origin main`
-- Próximo passo: **Cursor Desktop Mac** executa Fase 2 (ver fluxo oficial)
+- **Workspace local (Mac):** já executou `./tool/sync_mac.sh` (ou bloco equivalente) — informar SHA pós-pull, não delegar ao usuário
+- **Workspace cloud (Linux):** indicar que Fase 2 corre no Cursor Desktop Mac quando o agente local não estiver disponível
 
 ---
 
@@ -139,4 +141,4 @@ Fonte canônica: `.cursor/rules/soloforte-designer.mdc`
 | Ago/2026 | **Restore pós-reinstall:** código #67/#68 + SQL carteira no live + IPA 224 (`bd1fabb`, `./build_testflight.sh` Exit 0). Placar **55%**. F2.4 falhou: live `clients`/carteira/relatórios/marketing cases ainda 0 após Sincronizar no 224 (install sem SQLite para push, ou push sem gravar). F3 wipe **proibida** neste aparelho. PRD: `docs/PRD_RESTORE_REINSTALL_IPA.md` · checklist: `.agent/CHECKLIST_RESTORE_REINSTALL.md`. Hot restart não basta. |
 | Ago/2026 | **Restore cliente IPA 227 + BUG-011:** 31/Ago wipe+reinstall — cliente voltou. Causa raiz histórica PGRST204 (aliases EN no push). Blindagem `agronomic_restore_push_regression_test.dart` + REGRA-RESTORE-1. |
 | Ago/2026 | **Restore marketing PGRST204:** `saveCase` upsertava `toJson()` com chaves ausentes no live. Colunas adicionadas no live + whitelist `toRemoteRow` PR #84 `d7582c1`. Carteira/relatórios já alinhados. IPA **228** gerado (`90d5d81`) para prova no aparelho. Itens 6–8 ainda 0. |
-| Set/2026 | **Revisor:** modelo migrado de `opus` → `cursor-grok-4.6-high` (`.cursor/agents/soloforte-revisor.md` v1.3). `force-default-model: true` impede override pelo supervisor. Executor continua `inherit`. |
+| Set/2026 | **Sync Mac automático:** launchd `com.soloforte.sync-main` (5 min) + hook Cursor `stop` + `./tool/sync_mac.sh`. **Proibido** bloco "No MacBook:" nas respostas. Instalar: `./tool/install_mac_sync_launchd.sh` |

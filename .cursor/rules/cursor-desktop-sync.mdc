@@ -10,17 +10,31 @@ Cadeado de merge: `docs/03_ENFORCEMENT/supervisor-merge-gate.md`
 
 ## Quando workspace é local (MacBook)
 
-Ao encerrar tarefa ou quando usuário pedir sync, executar:
+**Obrigatório e automático** — sem pedir confirmação ao Raudinei — sempre que:
+
+1. Uma entrega cloud tiver `mergedAt` em `origin/main` (REGRA-ENTREGA-1), **ou**
+2. O usuário pedir sync / encerrar tarefa feita no smartphone (Cloud Agent).
+
+Executar **daqui** (terminal do Mac, pasta do projeto):
 
 ```bash
 git fetch origin
 git checkout main
 git pull origin main
 flutter pub get
-git status && git log -1 --oneline
+git log -1 --oneline
 ```
 
-Confirmar SHA local = SHA de `origin/main` (não o SHA da branch de feature).
+Atalho canônico: `./tool/sync_mac.sh`
+
+Confirmar SHA local = SHA de `origin/main` (não o SHA da branch de feature).  
+**Nunca** só colar o bloco na resposta — **executar** quando workspace for local, **ou** informar sync automático via launchd quando for cloud.
+
+Instalação única no Mac (humano ou agente local):
+
+```bash
+./tool/install_mac_sync_launchd.sh
+```
 
 ## Quando workspace é cloud (Linux /workspace)
 
