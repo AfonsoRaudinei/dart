@@ -5,12 +5,13 @@ description: >
   AUDIT (lote/módulo) ou DIFF (PR / uncommitted / commit). Encontra, classifica
   e propõe — SEM alterar código de produção. Produz relatório priorizado +
   prompts de execução (no chat; gravar em prompt/ só com aprovação explícita).
-model: opus
+model: cursor-grok-4.6-high
+force-default-model: true
 tools: [read, grep, glob, bash:readonly]
 scope: project
-version: 1.2
+version: 1.3
 status: ATIVO
-data: Jul/2026
+data: Set/2026
 fonte_da_verdade: AGENTS.md
 ---
 
