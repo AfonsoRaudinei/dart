@@ -42,14 +42,25 @@ void main() {
     expect(editLayer, contains('_VertexGotaVisual'));
     expect(editLayer, contains('drawing_vertex_drag_'));
     expect(editLayer, contains('_MidpointHandle'));
-    expect(editLayer, contains('Alignment.bottomCenter'));
+    expect(_vertexMarkerBottomCenterCount(editLayer), 2);
   });
 
   test('gota mid-draw e edição: ponta no LatLng, não halo centrado', () {
     // Contrato img2: tip-up, corpo abaixo do dedo.
     expect(editLayer, contains('_VertexGotaMetrics'));
-    // flutter_map 7: bottomCenter = LatLng no topo do widget (ponta da gota).
-    expect(editLayer, contains('Alignment.bottomCenter'));
+    expect(_vertexMarkerBottomCenterCount(editLayer), 2);
+    expect(
+      editLayer.contains(
+        'alignment: Alignment.topCenter,\n              child: _EditVertexGotaHandle',
+      ),
+      isFalse,
+    );
+    expect(
+      editLayer.contains(
+        'alignment: Alignment.topCenter,\n          child: _SketchVertexHandle',
+      ),
+      isFalse,
+    );
     // Halo circular antigo (centrado no ponto) removido do sketch.
     expect(editLayer.contains('haloDiameter'), isFalse);
     expect(editLayer.contains('shape: BoxShape.circle,\n                color: _gotaRed'), isFalse);
@@ -70,4 +81,13 @@ void main() {
       contains('host deve recolher (compact) sem cancelar'),
     );
   });
+}
+
+/// Conta `alignment: Alignment.bottomCenter` em código (ignora comentários `///`).
+int _vertexMarkerBottomCenterCount(String source) {
+  return source
+      .split('\n')
+      .where((line) => !line.trimLeft().startsWith('///'))
+      .where((line) => line.contains('alignment: Alignment.bottomCenter,'))
+      .length;
 }
