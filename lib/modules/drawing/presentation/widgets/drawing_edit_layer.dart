@@ -484,10 +484,10 @@ class _DrawingEditLayerState extends State<DrawingEditLayer> {
                 point: mid,
                 width: 80,
                 height: 30, // Enough for text
-                alignment: Alignment.topCenter,
+                alignment: Alignment.bottomCenter,
                 child: IgnorePointer(
-                  child: Transform.translate(
-                    offset: const Offset(0, 10), // Push below midpoint
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 4),
                     child: Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 4,
@@ -582,7 +582,7 @@ class _VertexGotaMetrics {
   static const Color fillDragging = Color(0xD9E53935);
 }
 
-/// Ponto branco idle ancorado na ponta (topo) do marker tip-up.
+/// Ponto branco idle centrado no vértice (topo do marker = LatLng via bottomCenter).
 class _VertexIdleDot extends StatelessWidget {
   final double size;
   final Color color;
@@ -598,12 +598,14 @@ class _VertexIdleDot extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Mesma referência da ponta da gota (y ≈ 0.5): centro do círculo no LatLng.
     return Align(
       alignment: Alignment.topCenter,
-      child: Container(
+      child: Transform.translate(
+        offset: Offset(0, -size / 2 + 0.5),
+        child: Container(
         width: size,
         height: size,
-        margin: const EdgeInsets.only(top: 1),
         decoration: BoxDecoration(
           color: color,
           shape: BoxShape.circle,
@@ -615,6 +617,7 @@ class _VertexIdleDot extends StatelessWidget {
               offset: const Offset(0, 1),
             ),
           ],
+        ),
         ),
       ),
     );
