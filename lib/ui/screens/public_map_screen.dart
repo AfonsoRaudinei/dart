@@ -8,6 +8,7 @@ import 'package:latlong2/latlong.dart';
 
 import '../components/public_map/access_button.dart';
 import '../components/public_map/public_access_cta_policy.dart';
+import '../components/public_map/public_map_entry_constants.dart';
 import '../components/public_map/public_map_tagline_carousel.dart';
 import '../components/public_map/public_publication_pins.dart';
 import '../components/public_map/public_publication_preview.dart';
@@ -33,9 +34,7 @@ class PublicMapScreen extends ConsumerStatefulWidget {
 
 class _PublicMapScreenState extends ConsumerState<PublicMapScreen> {
   final MapController _mapController = MapController();
-  static const double _defaultZoom = 13.0;
-  static const double _userLocationZoom = 16.0;
-  double _currentZoom = _defaultZoom;
+  double _currentZoom = PublicMapEntryConstants.kPublicMapEntryZoom;
 
   @override
   void initState() {
@@ -59,7 +58,7 @@ class _PublicMapScreenState extends ConsumerState<PublicMapScreen> {
     if (permission == LocationPermission.whileInUse ||
         permission == LocationPermission.always) {
       await ref.read(publicLocationNotifierProvider.notifier).requestLocation();
-      _onLocationTap();
+      _centerOnUserAtEntryZoom();
     } else if (permission == LocationPermission.deniedForever) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -105,6 +104,19 @@ class _PublicMapScreenState extends ConsumerState<PublicMapScreen> {
     super.dispose();
   }
 
+  Future<void> _centerOnUserAtEntryZoom() async {
+    final position = await _resolveUserPosition();
+    if (position != null) {
+      _mapController.move(
+        position,
+        PublicMapEntryConstants.kPublicMapEntryZoom,
+      );
+      setState(
+        () => _currentZoom = PublicMapEntryConstants.kPublicMapEntryZoom,
+      );
+    }
+  }
+
   void _onLocationTap() async {
     final permission = await ref.read(locationPermissionProvider.future);
     if (permission == LocationPermission.denied) {
@@ -113,20 +125,33 @@ class _PublicMapScreenState extends ConsumerState<PublicMapScreen> {
       return;
     }
 
+    final position = await _resolveUserPosition();
+    if (position != null) {
+      _mapController.move(
+        position,
+        PublicMapEntryConstants.kPublicMapLocationTapZoom,
+      );
+      setState(
+        () => _currentZoom = PublicMapEntryConstants.kPublicMapLocationTapZoom,
+      );
+    }
+  }
+
+  Future<LatLng?> _resolveUserPosition() async {
     final locationState = ref.read(publicLocationNotifierProvider);
 
     if (locationState.status == PublicLocationStatus.available &&
         locationState.position != null) {
-      // Animação suave ao centralizar
-      _mapController.move(locationState.position!, _userLocationZoom);
-    } else {
-      await ref.read(publicLocationNotifierProvider.notifier).requestLocation();
-      final updatedState = ref.read(publicLocationNotifierProvider);
-      if (updatedState.status == PublicLocationStatus.available &&
-          updatedState.position != null) {
-        _mapController.move(updatedState.position!, _userLocationZoom);
-      }
+      return locationState.position;
     }
+
+    await ref.read(publicLocationNotifierProvider.notifier).requestLocation();
+    final updatedState = ref.read(publicLocationNotifierProvider);
+    if (updatedState.status == PublicLocationStatus.available &&
+        updatedState.position != null) {
+      return updatedState.position;
+    }
+    return null;
   }
 
   @override
@@ -150,7 +175,7 @@ class _PublicMapScreenState extends ConsumerState<PublicMapScreen> {
             mapController: _mapController,
             options: MapOptions(
               initialCenter: const LatLng(-23.5505, -46.6333), // SP Default
-              initialZoom: _defaultZoom,
+              initialZoom: PublicMapEntryConstants.kPublicMapEntryZoom,
               minZoom: 3.0,
               maxZoom: tileConfig.maxZoom,
               // Norte sempre para cima — mesmo contrato do MapCanvas privado.
@@ -267,13 +292,6 @@ class _PublicMapScreenState extends ConsumerState<PublicMapScreen> {
             ],
           ),
 
-          // Marca d'água SoloForte no topo esquerdo
-          Positioned(
-            top: MediaQuery.of(context).padding.top + 16,
-            left: 20,
-            child: const _SoloForteWatermark(),
-          ),
-
           // Pill vertical: zoom + localização
           Positioned(
             top: MediaQuery.of(context).padding.top + 16,
@@ -353,7 +371,7 @@ class _PublicMapScreenState extends ConsumerState<PublicMapScreen> {
                 children: [
                   IgnorePointer(
                     child: Container(
-                      height: 120,
+                      height: PublicMapEntryConstants.kPublicMapBottomScrimHeight,
                       width: double.infinity,
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
@@ -361,8 +379,11 @@ class _PublicMapScreenState extends ConsumerState<PublicMapScreen> {
                           end: Alignment.bottomCenter,
                           colors: [
                             Colors.transparent,
-                            Colors.black.withValues(alpha: 0.35),
+                            Colors.black.withValues(alpha: 0.15),
+                            Colors.black.withValues(alpha: 0.45),
+                            Colors.black.withValues(alpha: 0.65),
                           ],
+                          stops: const [0.0, 0.35, 0.7, 1.0],
                         ),
                       ),
                     ),
@@ -382,42 +403,6 @@ class _PublicMapScreenState extends ConsumerState<PublicMapScreen> {
                 ],
               ),
             ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Marca d'água de sistema, flutuante sobre o mapa.
-class _SoloForteWatermark extends StatelessWidget {
-  const _SoloForteWatermark();
-
-  @override
-  Widget build(BuildContext context) {
-    return Opacity(
-      opacity: 0.72,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          const Icon(Icons.eco_outlined, color: Colors.white, size: 18),
-          const SizedBox(width: 6),
-          Text(
-            'SoloForte',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 0.3,
-              shadows: [
-                Shadow(
-                  color: Colors.black.withValues(alpha: 0.35),
-                  blurRadius: 8,
-                  offset: const Offset(0, 1),
-                ),
-              ],
-            ),
-          ),
         ],
       ),
     );
