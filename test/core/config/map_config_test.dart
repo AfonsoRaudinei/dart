@@ -79,7 +79,7 @@ void main() {
     });
 
     test(
-      'relevo com MapTiler key usa Landscape iOS-like sem fallback Esri',
+      'relevo com MapTiler key usa Outdoor v2 verde vivo sem fallback Esri',
       () {
         final config = MapConfig.tileConfigForLayer(
           LayerType.relevo,
@@ -87,7 +87,7 @@ void main() {
         );
 
         expect(config.requiresApiKey, isTrue);
-        expect(config.urlTemplate, contains('/landscape/256/'));
+        expect(config.urlTemplate, contains('/outdoor-v2/256/'));
         expect(config.urlTemplate, contains('{y}{r}.png'));
         expect(config.fallbackUrl, isNull);
         expect(config.maxZoom, MapConfig.mapTilerStyledMaxZoom);
