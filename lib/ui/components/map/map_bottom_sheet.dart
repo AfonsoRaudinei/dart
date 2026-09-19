@@ -16,6 +16,7 @@ import '../../../modules/map/presentation/widgets/visit_sheet.dart';
 import '../../../modules/visitas/presentation/controllers/visit_controller.dart';
 import '../../../../modules/consultoria/occurrences/presentation/widgets/occurrence_list_sheet.dart';
 import '../../../../modules/consultoria/occurrences/presentation/widgets/occurrence_creation_sheet.dart';
+import 'map_occurrence_post_create.dart';
 import '../../../../modules/consultoria/occurrences/presentation/providers/occurrence_draft_provider.dart';
 import '../../../../modules/consultoria/occurrences/presentation/coordinators/occurrence_close_coordinator.dart';
 import '../../../../modules/consultoria/occurrences/presentation/coordinators/occurrence_form_guard.dart';
@@ -748,14 +749,13 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
 
         clearOccurrenceDraft(ref, data.latitude, data.longitude);
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Ocorrência registrada com sucesso!'),
-            backgroundColor: PremiumTokens.brandGreen,
-          ),
-        );
+        if (!mounted) return;
 
-        widget.onClose();
+        await handleMapOccurrencePostCreate(
+          context: context,
+          data: data,
+          onClose: widget.onClose,
+        );
       },
     );
   }
