@@ -333,7 +333,145 @@ void main() {
     expect(find.byIcon(Icons.open_with), findsOneWidget);
     // Cruz no corpo (abaixo da ponta) — dedo não cobre o LatLng no topo.
     expect(iconCenter.dy, greaterThan(gotaBox.top + gotaBox.height * 0.35));
+
+    // flutter_map 7 + bottomCenter: topo do marker = LatLng na tela (regressão tip-up).
+    final vertex = controller.currentPoints[1];
+    expectMarkerTopAnchorsLatLng(
+      mapController: mapController,
+      markerRect: gotaBox,
+      latLng: vertex,
+    );
   });
+
+  testWidgets('mid-draw: ponto idle ancora topo do marker no vértice (bottomCenter)', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(800, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final controller = DrawingController(
+      repository: _UpsertDrawingRepository(_feature()),
+    );
+    addTearDown(controller.dispose);
+    controller.selectTool('polygon');
+    controller.appendDrawingPoint(const LatLng(-0.05, -0.05));
+    controller.appendDrawingPoint(const LatLng(0.05, -0.05));
+    controller.appendDrawingPoint(const LatLng(0.05, 0.05));
+
+    final mapController = MapController();
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: FlutterMap(
+            mapController: mapController,
+            options: const MapOptions(
+              initialCenter: LatLng(0, 0),
+              initialZoom: 11,
+              interactionOptions: InteractionOptions(
+                flags: InteractiveFlag.none,
+              ),
+            ),
+            children: [
+              DrawingEditLayer(
+                controller: controller,
+                mapController: mapController,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    const vertexIndex = 1;
+    final latLng = controller.currentPoints[vertexIndex];
+    final markerRect = tester.getRect(
+      find.byKey(Key('drawing_sketch_vertex_$vertexIndex')),
+    );
+
+    expectMarkerTopAnchorsLatLng(
+      mapController: mapController,
+      markerRect: markerRect,
+      latLng: latLng,
+    );
+
+    // Círculo idle no topo interno (_VertexIdleDot: margin 1, size 16) — centro abaixo do vértice.
+    const dotSize = 16.0;
+    const dotTopInset = 1.0;
+    final screenY = mapController.camera.latLngToScreenPoint(latLng).y;
+    final dotCenterY = markerRect.top + dotTopInset + dotSize / 2;
+    expect(dotCenterY - screenY, closeTo(dotTopInset + dotSize / 2, 2));
+  });
+
+  testWidgets('edição: marker de vértice ancora topo no LatLng (bottomCenter)', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(800, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final repository = _UpsertDrawingRepository(_feature());
+    final controller = DrawingController(repository: repository);
+    addTearDown(controller.dispose);
+    await controller.loadFeatures();
+    controller.selectFeature(controller.features.single);
+    controller.startEditMode();
+
+    final mapController = MapController();
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: FlutterMap(
+            mapController: mapController,
+            options: const MapOptions(
+              initialCenter: LatLng(0, 0),
+              initialZoom: 13,
+              interactionOptions: InteractionOptions(
+                flags: InteractiveFlag.none,
+              ),
+            ),
+            children: [
+              DrawingEditLayer(
+                controller: controller,
+                mapController: mapController,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final ring =
+        (controller.liveGeometry! as DrawingPolygon).coordinates.first;
+    final latLng = LatLng(ring[0][1], ring[0][0]);
+    final markerRect = tester.getRect(find.byKey(const Key('drawing_vertex_0_0')));
+
+    expectMarkerTopAnchorsLatLng(
+      mapController: mapController,
+      markerRect: markerRect,
+      latLng: latLng,
+    );
+  });
+}
+
+/// Contrato flutter_map 7: [Alignment.bottomCenter] ancora o LatLng no topo do marker.
+void expectMarkerTopAnchorsLatLng({
+  required MapController mapController,
+  required Rect markerRect,
+  required LatLng latLng,
+  double tolerancePx = 2,
+}) {
+  final screen = mapController.camera.latLngToScreenPoint(latLng);
+  expect(
+    markerRect.top,
+    closeTo(screen.y, tolerancePx),
+    reason:
+        'topCenter no marker desloca ~78px; bottomCenter mantém topo = vértice',
+  );
 }
 
 /// Espelha o freeze do [MapBuildOrchestrator] quando há vértice sketch ativo.
