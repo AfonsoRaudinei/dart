@@ -10,6 +10,7 @@ import '../../domain/enums/case_tipo.dart';
 import '../../domain/enums/plano_marketing.dart';
 import '../../domain/enums/produtividade_unidade.dart';
 import 'case_selectors_widget.dart';
+import 'foto_picker_widget.dart';
 import 'marketing_client_selector.dart';
 import 'novo_case_form_helpers.dart';
 
@@ -46,6 +47,9 @@ class _EditCaseSheetState extends State<EditCaseSheet> {
   ProdutividadeUnidade? _produtividadeUnidade;
   String? _clientId;
   String? _lastAutoFilledClientName;
+  String? _fotoPrincipalUrl;
+  String? _fotoAntesUrl;
+  String? _fotoDepoisUrl;
   bool _isSaving = false;
 
   @override
@@ -65,6 +69,9 @@ class _EditCaseSheetState extends State<EditCaseSheet> {
     _tamanhoHaCtrl.text = caso.tamanhoHa?.toString() ?? '';
     _conclusaoCtrl.text = caso.conclusao ?? '';
     _conclusaoTecnicaCtrl.text = caso.conclusaoTecnica ?? '';
+    _fotoPrincipalUrl = caso.fotoPrincipalUrl;
+    _fotoAntesUrl = caso.fotoAntesUrl;
+    _fotoDepoisUrl = caso.fotoDepoisUrl;
   }
 
   @override
@@ -115,7 +122,7 @@ class _EditCaseSheetState extends State<EditCaseSheet> {
       nomeVendedor: _trimmedOrNull(_nomeVendedorCtrl.text),
       telefoneVendedor: _trimmedOrNull(_telefoneCtrl.text),
       descricao: casoOriginal.descricao,
-      fotoPrincipalUrl: casoOriginal.fotoPrincipalUrl,
+      fotoPrincipalUrl: _fotoPrincipalUrl,
       quantidadeProduzida: casoOriginal.quantidadeProduzida,
       prodSemProduto: casoOriginal.prodSemProduto,
       prodComProduto: casoOriginal.prodComProduto,
@@ -124,8 +131,8 @@ class _EditCaseSheetState extends State<EditCaseSheet> {
       valorGrao: casoOriginal.valorGrao,
       clientId: _clientId,
       ownerUserId: casoOriginal.ownerUserId,
-      fotoAntesUrl: casoOriginal.fotoAntesUrl,
-      fotoDepoisUrl: casoOriginal.fotoDepoisUrl,
+      fotoAntesUrl: _fotoAntesUrl,
+      fotoDepoisUrl: _fotoDepoisUrl,
       ganhoProdutividade: casoOriginal.ganhoProdutividade,
       economiaGerada: casoOriginal.economiaGerada,
       parametrosJson: casoOriginal.parametrosJson,
@@ -261,6 +268,89 @@ class _EditCaseSheetState extends State<EditCaseSheet> {
   String get _produtividadeLabel =>
       _tipo == CaseTipo.avaliacao ? 'Produção ideal' : 'Valor da produtividade';
 
+  Widget? _buildFotoSection() {
+    switch (_tipo) {
+      case CaseTipo.resultado:
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            novoCaseSectionLabel('Foto Principal'),
+            const SizedBox(height: 10),
+            FotoPickerWidget(
+              label: 'Foto do Resultado',
+              url: _fotoPrincipalUrl,
+              folder: 'resultado',
+              height: 180,
+              onChanged: (url) => setState(() => _fotoPrincipalUrl = url),
+            ),
+          ],
+        );
+      case CaseTipo.antesDepois:
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            novoCaseSectionLabel('Fotos'),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      const Text(
+                        'Antes',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 12,
+                          color: SoloForteSheetTokens.inputHint,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      FotoPickerWidget(
+                        label: 'Foto Antes',
+                        url: _fotoAntesUrl,
+                        folder: 'antes_depois',
+                        height: 140,
+                        includeVegetalInversion: true,
+                        onChanged: (url) => setState(() => _fotoAntesUrl = url),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      const Text(
+                        'Depois',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 12,
+                          color: SoloForteSheetTokens.inputHint,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      FotoPickerWidget(
+                        label: 'Foto Depois',
+                        url: _fotoDepoisUrl,
+                        folder: 'antes_depois',
+                        height: 140,
+                        includeVegetalInversion: true,
+                        onChanged: (url) => setState(() => _fotoDepoisUrl = url),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ],
+        );
+      case CaseTipo.avaliacao:
+        return null;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isIos = soloForteSheetIsIos(context);
@@ -296,6 +386,7 @@ class _EditCaseSheetState extends State<EditCaseSheet> {
     final ghostFg = isIos
         ? SoloForteSheetSkinIos.ghostText
         : Colors.white;
+    final fotoSection = _buildFotoSection();
 
     return SafeArea(
       top: false,
@@ -499,6 +590,10 @@ class _EditCaseSheetState extends State<EditCaseSheet> {
                       ],
                     ),
                   ),
+                  if (fotoSection != null) ...[
+                    const SizedBox(height: 20),
+                    fotoSection,
+                  ],
                   const SizedBox(height: 20),
                   novoCaseSectionLabel('Conclusão'),
                   const SizedBox(height: 10),
