@@ -189,6 +189,95 @@ void main() {
       expect(savedCase!.prodComProduto, 68);
     });
 
+    testWidgets('bloqueia salvar resultado sem foto principal', (
+      tester,
+    ) async {
+      var saveCalled = false;
+
+      await tester.pumpWidget(
+        _wrap(
+          EditCaseSheet(
+            caso: _caseResultadoCompleto(),
+            onClose: () {},
+            onSalvar: (_) async {
+              saveCalled = true;
+            },
+          ),
+        ),
+      );
+
+      await tester.scrollUntilVisible(
+        find.byType(FotoPickerWidget),
+        500,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pump();
+
+      final picker = tester.widget<FotoPickerWidget>(
+        find.byType(FotoPickerWidget),
+      );
+      picker.onChanged(null);
+      await tester.pump();
+
+      await tester.scrollUntilVisible(
+        find.text('Salvar'),
+        500,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pump();
+      await tester.tap(find.text('Salvar'));
+      await tester.pump();
+
+      expect(saveCalled, isFalse);
+      expect(
+        find.text('Foto principal obrigatória para o tipo Resultado.'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('bloqueia salvar antes/depois sem ambas as fotos', (
+      tester,
+    ) async {
+      var saveCalled = false;
+
+      await tester.pumpWidget(
+        _wrap(
+          EditCaseSheet(
+            caso: _caseAntesDepois(),
+            onClose: () {},
+            onSalvar: (_) async {
+              saveCalled = true;
+            },
+          ),
+        ),
+      );
+
+      await tester.scrollUntilVisible(
+        find.byType(FotoPickerWidget).first,
+        500,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pump();
+
+      final pickers = tester.widgetList<FotoPickerWidget>(
+        find.byType(FotoPickerWidget),
+      );
+      pickers.first.onChanged(null);
+      await tester.pump();
+
+      await tester.scrollUntilVisible(
+        find.text('Salvar'),
+        500,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pump();
+      await tester.tap(find.text('Salvar'));
+      await tester.pump();
+
+      expect(saveCalled, isFalse);
+      expect(find.text('Adicione as fotos Antes e Depois.'), findsOneWidget);
+    });
+
     testWidgets('mantém loading até o save terminar e mostra erro em falha', (
       tester,
     ) async {
