@@ -397,12 +397,13 @@ void main() {
       latLng: latLng,
     );
 
-    // Círculo idle no topo interno (_VertexIdleDot: margin 1, size 16) — centro abaixo do vértice.
+    // Centro do círculo idle coincide com o vértice (topo do marker).
     const dotSize = 16.0;
-    const dotTopInset = 1.0;
     final screenY = mapController.camera.latLngToScreenPoint(latLng).y;
-    final dotCenterY = markerRect.top + dotTopInset + dotSize / 2;
-    expect(dotCenterY - screenY, closeTo(dotTopInset + dotSize / 2, 2));
+    final dotCenterY = markerRect.top + 0.5;
+    expect(dotCenterY, closeTo(screenY, 2));
+    expect(dotCenterY, closeTo(markerRect.top + 0.5, 0.5));
+    expect(dotSize, 16.0);
   });
 
   testWidgets('edição: marker de vértice ancora topo no LatLng (bottomCenter)', (
