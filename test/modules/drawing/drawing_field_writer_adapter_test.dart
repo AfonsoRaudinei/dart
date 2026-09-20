@@ -139,6 +139,41 @@ void main() {
       );
     });
   });
+
+  group('DrawingFieldWriterAdapter.updateFieldName', () {
+    test('persiste nome atualizado', () async {
+      const fieldId = 'drawing-rename-1';
+      final feature = _feature(fieldId, syncStatus: SyncStatus.synced);
+      await repository.saveFeature(feature);
+
+      await adapter.updateFieldName(
+        fieldId: fieldId,
+        name: 'Talhão Renomeado',
+      );
+
+      final updated = await repository.getFeatureById(fieldId);
+      expect(updated, isNotNull);
+      expect(updated!.properties.nome, 'Talhão Renomeado');
+      expect(updated.properties.syncStatus, SyncStatus.local_only);
+    });
+
+    test('nome vazio lança ArgumentError', () async {
+      expect(
+        () => adapter.updateFieldName(fieldId: 'field-1', name: '   '),
+        throwsA(isA<ArgumentError>()),
+      );
+    });
+
+    test('feature inexistente lança StateError', () async {
+      expect(
+        () => adapter.updateFieldName(
+          fieldId: 'missing-id',
+          name: 'Novo nome',
+        ),
+        throwsA(isA<StateError>()),
+      );
+    });
+  });
 }
 
 DrawingFeature _feature(
