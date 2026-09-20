@@ -116,11 +116,9 @@ MapOfflineStatusPresentation buildMapOfflineStatusPresentation({
 String mapLayerLabel(LayerType layerType) {
   switch (layerType) {
     case LayerType.standard:
-      return 'Padrão';
+      return 'Mapa';
     case LayerType.satellite:
       return 'Satélite';
-    case LayerType.relevo:
-      return 'Relevo';
   }
 }
 
