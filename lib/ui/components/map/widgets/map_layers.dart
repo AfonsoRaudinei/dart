@@ -22,6 +22,22 @@ bool shouldUseOfflineTileLayer({
       isOnline != true;
 }
 
+/// Overlay INPE só online — offline usa cache local sem WMS bloqueando tiles.
+bool shouldShowCerradoSatelliteOverlay({
+  required LayerType activeLayer,
+  required bool cerradoOverlayEnabled,
+  required bool isOnline,
+  required double? cameraLat,
+  required double? cameraLng,
+}) {
+  return activeLayer == LayerType.satellite &&
+      cerradoOverlayEnabled &&
+      isOnline &&
+      cameraLat != null &&
+      cameraLng != null &&
+      CerradoSatelliteOverlay.isWithinBounds(cameraLat, cameraLng);
+}
+
 /// Widget que observa apenas activeLayerProvider e renderiza o TileLayer.
 /// Rebuild isolado quando a camada muda.
 class MapLayersWidget extends ConsumerWidget {
@@ -73,14 +89,13 @@ class MapLayersWidget extends ConsumerWidget {
       offlineTemplate: offlineTemplate,
       isOnline: isOnline,
     );
-    final showCerradoOverlay =
-        activeLayer == LayerType.satellite &&
-        cerradoOverlayEnabled &&
-        camera != null &&
-        CerradoSatelliteOverlay.isWithinBounds(
-          camera.center.latitude,
-          camera.center.longitude,
-        );
+    final showCerradoOverlay = shouldShowCerradoSatelliteOverlay(
+      activeLayer: activeLayer,
+      cerradoOverlayEnabled: cerradoOverlayEnabled,
+      isOnline: isOnline == true,
+      cameraLat: camera?.center.latitude,
+      cameraLng: camera?.center.longitude,
+    );
 
     return Stack(
       children: [
@@ -131,6 +146,7 @@ class MapLayersWidget extends ConsumerWidget {
                 transparent: CerradoSatelliteOverlay.wmsTransparent,
                 crs: _resolveWmsCrs(CerradoSatelliteOverlay.wmsCrs),
               ),
+              tileBounds: CerradoSatelliteOverlay.tileBounds,
               userAgentPackageName: MapConfig.userAgent,
               maxZoom: 22,
               maxNativeZoom: 22,
