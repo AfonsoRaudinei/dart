@@ -182,6 +182,34 @@ void main() {
     },
   );
 
+  testWidgets(
+    'MapControlsOverlay oculta check-in na edição de vértices',
+    (tester) async {
+      await _pumpMapControlsOverlay(
+        tester,
+        drawingState: DrawingState.editing,
+        isDrawMode: true,
+        showCheckInAction: true,
+      );
+
+      expect(find.byKey(const Key('map_control_check_in')), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'MapControlsOverlay oculta check-in em editing mesmo com isDrawMode stale',
+    (tester) async {
+      await _pumpMapControlsOverlay(
+        tester,
+        drawingState: DrawingState.editing,
+        isDrawMode: false,
+        showCheckInAction: true,
+      );
+
+      expect(find.byKey(const Key('map_control_check_in')), findsNothing);
+    },
+  );
+
   testWidgets('MapControlsOverlay exibe check-in quando ação está habilitada', (
     tester,
   ) async {
