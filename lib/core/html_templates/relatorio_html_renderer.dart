@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
@@ -149,6 +148,12 @@ abstract class RelatorioHtmlRenderer {
     if (path == null || path.isEmpty) return null;
     if (path.startsWith('http://') || path.startsWith('https://')) {
       return path;
+    }
+    if (path.contains('"') ||
+        path.contains("'") ||
+        path.contains('<') ||
+        path.contains('>')) {
+      return null;
     }
     final resolved = await LocalMediaPathResolver.resolveLocalPath(path);
     if (resolved == null) return null;
