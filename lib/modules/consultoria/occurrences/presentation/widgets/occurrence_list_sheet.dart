@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
 import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
@@ -14,6 +13,8 @@ import 'package:soloforte_app/core/contracts/i_visit_session_lookup.dart';
 import 'package:soloforte_app/core/contracts/i_visit_session_lookup_provider.dart';
 import './occurrence_filters.dart';
 import './occurrence_fenologia_data.dart';
+import './occurrence_photo_gallery.dart';
+import '../../domain/occurrence_photo_paths.dart';
 
 final _activeVisitSessionProvider =
     FutureProvider.autoDispose<VisitSessionSummary?>(
@@ -427,8 +428,7 @@ class _OccurrenceListItem extends StatelessWidget {
         occurrence.visitSessionId == activeVisitId && activeVisitId != null;
     final firstMetric = _firstMetricLabel();
     final syncColor = _syncColor();
-    final hasPhoto =
-        occurrence.photoPath != null && occurrence.photoPath!.isNotEmpty;
+    final hasPhoto = allPhotoPaths(occurrence).isNotEmpty;
     final isIos = soloForteSheetIsIos(context);
     final cardBg = isSelected
         ? color.withValues(alpha: .08)
@@ -467,13 +467,11 @@ class _OccurrenceListItem extends StatelessWidget {
                 bottomLeft: Radius.circular(cardRadius),
               ),
               child: hasPhoto
-                  ? Image.file(
-                      File(occurrence.photoPath!),
+                  ? OccurrenceCoverThumbnail(
+                      occurrence: occurrence,
                       width: 60,
                       height: 80,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) =>
-                          _CategoryIcon(cat: primaryCat, color: color),
+                      fallback: _CategoryIcon(cat: primaryCat, color: color),
                     )
                   : _CategoryIcon(cat: primaryCat, color: color),
             ),
