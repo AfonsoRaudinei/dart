@@ -33,31 +33,10 @@ class _DrawingEditLayerState extends State<DrawingEditLayer> {
   LatLng? _draggingPosition;
   bool _isSketchDrag = false;
 
-  /// Vértice de edição selecionado (mostra gota). Midpoints não usam seleção.
-  int? _selectedEditRingIndex;
-  int? _selectedEditPointIndex;
-
   bool get _isDragging =>
       _draggingVertexIndex != null &&
       _draggingRingIndex != null &&
       _draggingPosition != null;
-
-  void _selectEditVertex({required int ringIndex, required int pointIndex}) {
-    setState(() {
-      _selectedEditRingIndex = ringIndex;
-      _selectedEditPointIndex = pointIndex;
-    });
-  }
-
-  void _clearEditVertexSelection() {
-    if (_selectedEditRingIndex == null && _selectedEditPointIndex == null) {
-      return;
-    }
-    setState(() {
-      _selectedEditRingIndex = null;
-      _selectedEditPointIndex = null;
-    });
-  }
 
   void _startVertexDrag({
     required int ringIndex,
@@ -306,11 +285,11 @@ class _DrawingEditLayerState extends State<DrawingEditLayer> {
         }
 
         if (!isEditing) {
-          if (_selectedEditRingIndex != null ||
-              _selectedEditPointIndex != null) {
+          if (widget.controller.selectedEditRingIndex != null ||
+              widget.controller.selectedEditPointIndex != null) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
               if (!mounted) return;
-              _clearEditVertexSelection();
+              widget.controller.clearEditVertexSelection();
             });
           }
           return const SizedBox.shrink();
@@ -401,8 +380,8 @@ class _DrawingEditLayerState extends State<DrawingEditLayer> {
           final isDragging =
               _draggingRingIndex == ringIdx && _draggingVertexIndex == i;
           final isSelected =
-              _selectedEditRingIndex == ringIdx &&
-              _selectedEditPointIndex == i;
+              widget.controller.selectedEditRingIndex == ringIdx &&
+              widget.controller.selectedEditPointIndex == i;
           final showGota = isSelected || isDragging;
 
           // Marker tamanho fixo (gota) para não recriar o hit-target no meio
@@ -418,10 +397,7 @@ class _DrawingEditLayerState extends State<DrawingEditLayer> {
                 index: i,
                 isSelected: showGota,
                 isDragging: isDragging,
-                onTap: () => _selectEditVertex(
-                  ringIndex: ringIdx,
-                  pointIndex: i,
-                ),
+                onTap: () => widget.controller.selectEditVertex(ringIdx, i),
                 onPanStart: () => _startVertexDrag(
                   ringIndex: ringIdx,
                   pointIndex: i,
@@ -432,7 +408,7 @@ class _DrawingEditLayerState extends State<DrawingEditLayer> {
                 onPanCancel: _cancelVertexDrag,
                 onDoubleTap: () {
                   widget.controller.removeVertex(ringIdx, i);
-                  _clearEditVertexSelection();
+                  widget.controller.clearEditVertexSelection();
                 },
               ),
             ),
