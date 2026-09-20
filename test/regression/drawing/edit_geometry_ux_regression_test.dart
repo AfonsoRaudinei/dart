@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   late String orchestrator;
   late String editLayer;
+  late String drawingLayers;
   late String bottomSheet;
   late String closeCoordinator;
 
@@ -15,6 +16,9 @@ void main() {
     ).readAsStringSync();
     editLayer = File(
       'lib/modules/drawing/presentation/widgets/drawing_edit_layer.dart',
+    ).readAsStringSync();
+    drawingLayers = File(
+      'lib/modules/drawing/presentation/widgets/drawing_layers.dart',
     ).readAsStringSync();
     bottomSheet = File(
       'lib/ui/components/map/map_bottom_sheet.dart',
@@ -34,6 +38,17 @@ void main() {
     expect(orchestrator, contains('editVertexDragActive'));
     expect(orchestrator, contains('isDraggingVertex'));
     expect(orchestrator, contains('freezeMapGestures'));
+  });
+
+  test('drawing_layers não emite _vertexMarker decorativo em editing', () {
+    expect(drawingLayers, contains('hideDecorativeVertexMarkers'));
+    expect(drawingLayers, contains('currentState == DrawingState.editing'));
+    expect(
+      drawingLayers.contains(
+        '!hideDecorativeVertexMarkers',
+      ),
+      isTrue,
+    );
   });
 
   test('edição usa gota com cruz e midpoints sem gota automática', () {
