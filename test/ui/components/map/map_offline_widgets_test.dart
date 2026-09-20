@@ -37,6 +37,88 @@ void main() {
       expect(merged.createdAt, _refreshDate);
     });
 
+    test('preserva createdAt quando merge nao recebe refresh explicito', () {
+      final existing = OfflineMapAreaConfig(
+        id: 'area-1',
+        layerKey: 'layer-a',
+        south: -15,
+        west: -55,
+        north: -12,
+        east: -50,
+        minZoom: 10,
+        maxZoom: 18,
+        createdAt: _fixedDate,
+      );
+      final merged = existing.mergeWithViewport(
+        south: -14,
+        west: -54,
+        north: -13,
+        east: -53,
+        minZoom: 14,
+        maxZoom: 16,
+      );
+
+      expect(merged.createdAt, _fixedDate);
+    });
+
+    test('simula TTL honesto: refresh sem tiles novos mantem createdAt', () {
+      final existingCreatedAt = _fixedDate;
+      final existing = OfflineMapAreaConfig(
+        id: 'area-1',
+        layerKey: 'layer-a',
+        south: -15,
+        west: -55,
+        north: -12,
+        east: -50,
+        minZoom: 10,
+        maxZoom: 18,
+        createdAt: existingCreatedAt,
+      );
+      const downloaded = 0;
+      final refreshedCreatedAt =
+          downloaded > 0 ? _refreshDate : existingCreatedAt;
+      final merged = existing.mergeWithViewport(
+        south: -14,
+        west: -54,
+        north: -13,
+        east: -53,
+        minZoom: 14,
+        maxZoom: 16,
+        createdAt: refreshedCreatedAt,
+      );
+
+      expect(merged.createdAt, existingCreatedAt);
+    });
+
+    test('simula TTL honesto: refresh com tiles novos atualiza createdAt', () {
+      final existingCreatedAt = _fixedDate;
+      final existing = OfflineMapAreaConfig(
+        id: 'area-1',
+        layerKey: 'layer-a',
+        south: -15,
+        west: -55,
+        north: -12,
+        east: -50,
+        minZoom: 10,
+        maxZoom: 18,
+        createdAt: existingCreatedAt,
+      );
+      const downloaded = 12;
+      final refreshedCreatedAt =
+          downloaded > 0 ? _refreshDate : existingCreatedAt;
+      final merged = existing.mergeWithViewport(
+        south: -14,
+        west: -54,
+        north: -13,
+        east: -53,
+        minZoom: 14,
+        maxZoom: 16,
+        createdAt: refreshedCreatedAt,
+      );
+
+      expect(merged.createdAt, _refreshDate);
+    });
+
     test('expande bbox e zoom quando viewport ultrapassa area existente', () {
       final existing = OfflineMapAreaConfig(
         id: 'area-2',
