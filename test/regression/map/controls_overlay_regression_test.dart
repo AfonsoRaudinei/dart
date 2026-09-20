@@ -290,6 +290,18 @@ void main() {
       expect(find.byKey(const Key('map_control_actions_btn')), findsNothing);
       expect(find.byKey(const Key('map_control_check_in')), findsNothing);
     });
+
+    testWidgets(
+      'edição de vértices oculta Check-in com isDrawMode coerente',
+      (tester) async {
+        await _pumpMapControlsOverlay(
+          tester,
+          isDrawMode: true,
+          drawingState: DrawingState.editing,
+        );
+        expect(find.byKey(const Key('map_control_check_in')), findsNothing);
+      },
+    );
   });
 
   group('map status indicator', () {
@@ -461,6 +473,7 @@ Future<void> _pumpMapControlsOverlay(
   bool radarEnabled = false,
   bool isDrawMode = false,
   bool showCheckInAction = true,
+  DrawingState drawingState = DrawingState.idle,
   EdgeInsets safePadding = EdgeInsets.zero,
 }) async {
   _setViewport(tester, safePadding);
@@ -497,7 +510,7 @@ Future<void> _pumpMapControlsOverlay(
             showCheckInAction: showCheckInAction,
             currentCenter: const LatLng(-10.2, -48.3),
             currentZoom: 13,
-            drawingState: DrawingState.idle,
+            drawingState: drawingState,
             onFinishDrawing: () {},
             onCancelDrawing: () {},
             onSaveEdit: () {},
