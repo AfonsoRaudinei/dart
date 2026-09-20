@@ -72,33 +72,8 @@ const double kMapMeasurementUnitChipMinHeight = 34.0;
 /// Área mínima de toque do toggle de detalhes de medição.
 const double kMapMeasurementDetailsToggleMinSize = 36.0;
 
-/// Folga entre a coluna de ações e o cluster de edição de desenho.
-const double kMapEditingControlsBottomGap = 16.0;
-
 /// Offset acima do FAB para posicionar o hint de long press.
 const double kMapLongPressHintBottomOffset = 24.0;
-
-/// Inset inferior do cluster de edição — acima da coluna de ações do mapa.
-///
-/// Em modo desenho (`isDrawMode`), a coluna sobe com
-/// [kMapActionColumnDrawModeCompensation]; o cluster deve subir junto para
-/// não sobrepor o botão de camadas.
-double mapEditingControlsBottomInset({
-  required double safeBottom,
-  required bool showCheckInInColumn,
-  bool isDrawMode = false,
-}) {
-  final columnHeight = showCheckInInColumn
-      ? kMapActionColumnButtonSize * 2 + kMapActionColumnSpacingAboveCheckIn
-      : kMapActionColumnButtonSize;
-  final drawCompensation =
-      isDrawMode ? kMapActionColumnDrawModeCompensation : 0.0;
-  return kMapActionColumnBottomInset +
-      safeBottom +
-      columnHeight +
-      drawCompensation +
-      kMapEditingControlsBottomGap;
-}
 
 /// Gap entre camadas (superior) e check-in (inferior) — layout canônico 16dp.
 ///
