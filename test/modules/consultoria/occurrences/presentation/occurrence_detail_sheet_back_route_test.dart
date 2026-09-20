@@ -109,6 +109,12 @@ void main() {
       await tester.tap(find.text('abrir-mapa'));
       await tester.pumpAndSettle();
 
+      await tester.scrollUntilVisible(
+        find.text('Editar'),
+        500,
+        scrollable: find.byType(Scrollable).last,
+      );
+
       expect(find.text('Editar'), findsOneWidget);
       expect(find.text('Excluir'), findsOneWidget);
       expect(find.text('Ferrugem no talhão 3'), findsOneWidget);

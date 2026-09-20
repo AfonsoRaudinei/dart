@@ -221,7 +221,9 @@ class _PhotoPickerTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
+    return Material(
+      color: Colors.transparent,
+      child: ListTile(
       leading: Container(
         width: 44,
         height: 44,
@@ -234,6 +236,7 @@ class _PhotoPickerTile extends StatelessWidget {
       title: Text(title, style: TextStyle(color: titleColor)),
       subtitle: Text(subtitle, style: TextStyle(color: subtitleColor)),
       onTap: onTap,
+      ),
     );
   }
 }
