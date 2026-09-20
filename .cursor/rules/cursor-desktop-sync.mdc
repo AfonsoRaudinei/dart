@@ -27,7 +27,7 @@ git log -1 --oneline
 
 Atalho canônico: `./tool/sync_mac.sh`
 
-**Auto-merge no Mac (Fase 1 local):** `./tool/arm_auto_merge.sh` arma `gh pr merge --auto --rebase` em PRs `cursor/*` (branch atual ou `--all`). Automático via hook Cursor `stop` e launchd (≤5 min).
+**Auto-merge no Mac (Fase 1 local):** `./tool/arm_auto_merge.sh [branch]` arma `gh pr merge --auto --rebase` só no PR da branch `cursor/*` com base `main`. Automático **apenas** via hook Cursor `stop` (branch corrente). Launchd só faz Fase 2 (`sync_mac`). `--all` existe só para uso manual explícito no terminal.
 
 Confirmar SHA local = SHA de `origin/main` (não o SHA da branch de feature).  
 **Nunca** só colar o bloco na resposta — **executar** quando workspace for local, **ou** informar sync automático via launchd quando for cloud.
@@ -55,7 +55,7 @@ Informar SHA da `main` **ou** pendente de CI, e indicar Fase 2 no Cursor Desktop
 
 | Fase | Ambiente | Ação |
 |---|---|---|
-| **1** | Cloud Agent **ou** MacBook | Branch `cursor/*` + PR + `gh pr merge --auto --rebase` (Mac: `./tool/arm_auto_merge.sh`) |
-| **2** | Cursor Desktop Mac | `./tool/sync_mac.sh` — `git pull origin main` + `flutter pub get` |
+| **1** | Cloud Agent (supervisor) **ou** MacBook (hook `stop`) | Branch `cursor/*` + PR + `gh pr merge --auto --rebase` (Mac: `./tool/arm_auto_merge.sh` da branch corrente, base `main`) |
+| **2** | Cursor Desktop Mac (launchd + hook) | `./tool/sync_mac.sh` — `git pull origin main` + `flutter pub get` |
 
-No MacBook, Fase 1 e Fase 2 rodam automaticamente (hook `stop` + launchd). Cloud Agent faz Fase 1 na VM; Mac faz Fase 1 (auto-merge) + Fase 2 (pull) localmente.
+No MacBook: hook `stop` arma auto-merge **só** do PR da branch corrente (após gate do supervisor); launchd **não** arma merge — só sync (≤5 min). Cloud Agent faz Fase 1 na VM.

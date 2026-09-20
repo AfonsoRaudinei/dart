@@ -20,11 +20,11 @@ gh pr view <n> --json state,mergedAt,mergeStateStatus,autoMergeRequest,url
 
 - **Proibido** encerrar resposta com bloco `No MacBook:` / `git fetch origin...` para o Raudinei copiar.
 - **Mac executa sozinho** via:
-  1. `./tool/install_mac_sync_launchd.sh` — launchd a cada 5 min: `mac_periodic.sh` = `sync_mac` + `arm_auto_merge --all`
-  2. Hook Cursor `stop` → `.cursor/hooks/sync_mac_on_stop.sh` — sync + `arm_auto_merge` (branch atual + `--all` em background)
-  3. Agente no workspace local: `./tool/sync_mac.sh` + `./tool/arm_auto_merge.sh` antes de encerrar (não instruir)
-- **Cloud Agent (Linux `/workspace`):** não acessa Mac — informar: *"Mac arma auto-merge e sincroniza automaticamente (launchd ≤5 min)"* + SHA em `origin/main`.
-- **Cursor Desktop (MacBook / Private Worker):** executar `./tool/sync_mac.sh` e `./tool/arm_auto_merge.sh`; informar SHA pós-sync.
+  1. `./tool/install_mac_sync_launchd.sh` — launchd a cada 5 min: `mac_periodic.sh` = `sync_mac` apenas (Fase 2)
+  2. Hook Cursor `stop` → `.cursor/hooks/sync_mac_on_stop.sh` — sync + `arm_auto_merge` **só** da branch corrente `cursor/*` → `main`
+  3. Agente no workspace local: `./tool/sync_mac.sh` + `./tool/arm_auto_merge.sh` (branch corrente) antes de encerrar (não instruir)
+- **Cloud Agent (Linux `/workspace`):** não acessa Mac — informar: *"Mac sincroniza automaticamente (launchd ≤5 min); auto-merge só da branch corrente no hook stop"* + SHA em `origin/main`.
+- **Cursor Desktop (MacBook / Private Worker):** executar `./tool/sync_mac.sh` e `./tool/arm_auto_merge.sh` (branch corrente); informar SHA pós-sync.
 
 ## Memória
 
