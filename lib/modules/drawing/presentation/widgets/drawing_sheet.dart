@@ -22,6 +22,7 @@ import '../../../../core/utils/share_position.dart';
 import 'components/drawing_tool_selector.dart';
 import 'components/drawing_actions_bar.dart';
 import 'drawing_info_edit_sheet.dart';
+import 'drawing_delete_undo_snackbar.dart';
 import '../../../../ui/theme/premium/design_tokens.dart';
 import 'gps_walk_controls_overlay.dart';
 import '../../../../core/ui/sheets/sheet_tokens.dart';
