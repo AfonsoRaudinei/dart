@@ -34,7 +34,6 @@ import '../components/map/widgets/publication_actions_bottom_sheet.dart';
 import 'map/utils/map_camera_snapshot_throttle.dart';
 import 'map/utils/map_empty_area_hit_test.dart';
 import 'map/utils/map_long_press_prefs.dart';
-import 'map/providers/field_hit_index_provider.dart';
 // 🔧 MODAL: imports para sheets dos tipos não-draw
 // (conteúdo migrado para map_sheet_content_builder.dart — ADR-031 F3)
 import '../../modules/consultoria/occurrences/presentation/widgets/occurrence_detail_sheet.dart';
@@ -430,7 +429,6 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
       point: point,
       camera: _mapController.camera,
       drawingController: ref.read(drawingControllerProvider),
-      fieldHitIndex: ref.read(fieldHitIndexProvider),
       pinPoints: pinPoints,
     );
   }

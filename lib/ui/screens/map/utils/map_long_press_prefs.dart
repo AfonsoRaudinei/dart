@@ -13,13 +13,13 @@ const int kMapLongPressHintMaxSessions = 3;
 /// Duração máxima do hint na tela antes do auto-dismiss (segundos).
 const int kMapLongPressHintVisibleSeconds = 6;
 
-/// Copy do hint progressivo (área livre — alinhado ao hit-test).
+/// Copy do hint progressivo (gesto de toque e segure — alinhado ao hit-test).
 const String kMapLongPressHintMessage =
-    'Toque e segure numa área livre do mapa para ações rápidas';
+    'Toque e segure no mapa para ações rápidas (marketing ou ocorrência)';
 
-/// Feedback curto quando long press cai sobre talhão, pin ou desenho.
+/// Feedback curto quando long press cai sobre pin ou desenho.
 const String kMapLongPressOccupiedFeedbackMessage =
-    'Toque e segure numa área livre do mapa';
+    'Toque e segure fora de um pin ou desenho para ações rápidas';
 
 bool hasUsedMapLongPress(PreferencesService prefs) {
   final value = prefs.getString(kMapLongPressUsedAtKey);
