@@ -26,6 +26,17 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
       onUnion: widget.controller.startUnionMode,
       onDifference: widget.controller.startDifferenceMode,
       onIntersection: widget.controller.startIntersectionMode,
+      onSplitPolygons: widget.controller.polygonPartCount(feature.geometry) > 1
+          ? () async {
+              final count =
+                  widget.controller.polygonPartCount(feature.geometry);
+              await widget.controller.splitSelectedFeature();
+              if (!context.mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('$count talhões separados com sucesso')),
+              );
+            }
+          : null,
       onExport: () => _exportSelected(context, feature),
       onExportAll: () => _exportAll(context),
       onToggleMultiSelect: () {
@@ -56,16 +67,9 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
       isMultiSelectEnabled: widget.controller.isMultiSelectEnabled,
       selectedCount: widget.controller.selectedFeatureIds.length,
       onDelete: () async {
-        // 1. Guardar referência para undo
         final deletedFeature = feature;
-
-        // 2. Deletar imediatamente
         widget.controller.deleteFeature(feature.id);
-
-        // 3. Fechar o sheet pelo controlador do mapa, sem navegar.
         widget.onSaved?.call();
-
-        // 4. Mostrar feedback com Undo
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('"${deletedFeature.properties.nome}" removido'),
@@ -151,15 +155,13 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
     );
   }
 
-  // 🆕 ESTADO LOCAL JÁ DEFINIDO NO INÍCIO DA CLASSE
-  // init state logic merged above
-
-  // ... (dispose and other methods remain)
-
-  // 🆕 FORMULÁRIO DE METADADOS (Climate FieldView Style - Hierárquico)
+  // FORMULÁRIO DE METADADOS (Climate FieldView Style - Hierárquico)
   Widget _buildReviewingMode(BuildContext context) {
     final area = widget.controller.liveAreaHa;
     final perimeter = widget.controller.livePerimeterKm;
+    final detectedParts =
+        widget.controller.polygonPartCount(widget.controller.liveGeometry);
+    final isMultiPartSave = detectedParts > 1;
     final f = NumberFormat("##0.##", "pt_BR");
     final isIos = soloForteSheetIsIos(context);
     final sectionLabelStyle = TextStyle(
@@ -262,8 +264,16 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
               _buildSelfIntersectionWarning(),
               const SizedBox(height: 12),
             ],
+            if (isMultiPartSave)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Text(
+                  '$detectedParts talhões detectados. Serão salvos separadamente '
+                  'a partir do prefixo abaixo.',
+                  style: TextStyle(fontSize: 13.5, color: muted),
+                ),
+              ),
 
-            // 📊 Métricas
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -294,26 +304,26 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
             ),
             const SizedBox(height: 24),
 
-            // 1. Selecionar Cliente
             Text('Cliente', style: sectionLabelStyle),
             const SizedBox(height: 8),
             _buildClientField(),
             const SizedBox(height: 16),
 
-            // 2. Selecionar Fazenda
             Text('Fazenda / Grupo', style: sectionLabelStyle),
             const SizedBox(height: 8),
             _buildFarmField(),
             const SizedBox(height: 16),
 
-            // 3. Nome do Talhão
-            Text('Nome do Talhão', style: sectionLabelStyle),
+            Text(
+              isMultiPartSave ? 'Prefixo do talhão' : 'Nome do Talhão',
+              style: sectionLabelStyle,
+            ),
             const SizedBox(height: 8),
             TextFormField(
               controller: _nomeController,
               style: TextStyle(color: inputText),
               decoration: InputDecoration(
-                hintText: 'Ex: Talhão Norte',
+                hintText: isMultiPartSave ? 'Ex: Talhão' : 'Ex: Talhão Norte',
                 hintStyle: TextStyle(color: inputHint),
                 suffixText: '${f.format(area)} ha',
                 suffixStyle: TextStyle(color: inputHint),
@@ -345,7 +355,6 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
             ),
             const SizedBox(height: 16),
 
-            // 4. Cor e Ações
             Row(
               children: [
                 // Seletor de cor simplificado
