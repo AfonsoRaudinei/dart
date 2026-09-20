@@ -99,6 +99,24 @@ extension DrawingControllerSketch on DrawingController {
     _notify();
   }
 
+  /// Hit-test por proximidade para vértices do sketch (fallback via onTap do mapa).
+  int? findSketchVertexIndexNear(LatLng tap, double toleranceMeters) {
+    if (_stateMachine.currentTool != DrawingTool.polygon) return null;
+    if (!_canAcceptSketchInput()) return null;
+    if (_currentPoints.isEmpty) return null;
+
+    int? closest;
+    var closestDist = toleranceMeters;
+    for (var i = 0; i < _currentPoints.length; i++) {
+      final dist = _distanceMeters(_currentPoints[i], tap);
+      if (dist <= closestDist) {
+        closestDist = dist;
+        closest = i;
+      }
+    }
+    return closest;
+  }
+
   /// Move vértice do sketch (permanece em [DrawingState.drawing]).
   bool moveSketchVertex(int index, LatLng newPos) {
     if (_isDisposed) return false;
