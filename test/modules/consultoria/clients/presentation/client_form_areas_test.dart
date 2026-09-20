@@ -101,6 +101,102 @@ void main() {
     );
   });
 
+  Future<void> preencherSheetCultura(
+    WidgetTester tester, {
+    required String area,
+    String? variedadeText,
+    bool tapAddVariedade = false,
+  }) async {
+    await tester.tap(find.text('Cultura *'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Soja').last);
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Área (ha) *'),
+      area,
+    );
+
+    if (variedadeText != null) {
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Variedades / Cultivares'),
+        variedadeText,
+      );
+      if (tapAddVariedade) {
+        await tester.tap(find.byTooltip('Adicionar variedade'));
+        await tester.pumpAndSettle();
+      }
+    }
+  }
+
+  testWidgets('flush variedade pendente ao confirmar sem +', (tester) async {
+    ClientCultura? saved;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Builder(
+          builder: (context) => Scaffold(
+            body: ElevatedButton(
+              onPressed: () async {
+                saved = await showAddCulturaSheet(
+                  context: context,
+                  clientId: 'client-1',
+                  inputDecoration: (label) => InputDecoration(labelText: label),
+                );
+              },
+              child: const Text('Abrir'),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Abrir'));
+    await tester.pumpAndSettle();
+    await preencherSheetCultura(tester, area: '50', variedadeText: 'BRS 284');
+    await tester.tap(find.widgetWithText(ElevatedButton, 'Confirmar'));
+    await tester.pumpAndSettle();
+
+    expect(saved?.variedade, 'BRS 284');
+  });
+
+  testWidgets('flush aceita multiplas variedades com virgula sem +', (
+    tester,
+  ) async {
+    ClientCultura? saved;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Builder(
+          builder: (context) => Scaffold(
+            body: ElevatedButton(
+              onPressed: () async {
+                saved = await showAddCulturaSheet(
+                  context: context,
+                  clientId: 'client-1',
+                  inputDecoration: (label) => InputDecoration(labelText: label),
+                );
+              },
+              child: const Text('Abrir'),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Abrir'));
+    await tester.pumpAndSettle();
+    await preencherSheetCultura(
+      tester,
+      area: '50',
+      variedadeText: 'BRS 284, M 6410',
+    );
+    await tester.tap(find.widgetWithText(ElevatedButton, 'Confirmar'));
+    await tester.pumpAndSettle();
+
+    expect(saved?.variedade, 'BRS 284, M 6410');
+  });
+
   testWidgets('cultura item exibe multiplas variedades legiveis', (
     tester,
   ) async {
