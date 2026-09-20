@@ -62,13 +62,13 @@ void main() {
       expect(config.urlTemplate, contains('key=test-key'));
     });
 
-    test('relevo sem MapTiler key usa fallback limpo sem Esri', () {
+    test('standard sem MapTiler key usa Carto Voyager retina', () {
       final config = MapConfig.tileConfigForLayer(
-        LayerType.relevo,
+        LayerType.standard,
         mapTilerApiKey: '',
       );
 
-      expect(config.isFallback, isTrue);
+      expect(config.isFallback, isFalse);
       expect(config.urlTemplate, MapConfig.cartoVoyagerRetina);
       expect(config.attribution, MapConfig.cartoAttribution);
       expect(config.subdomains, MapConfig.cartoSubdomains);
@@ -78,23 +78,21 @@ void main() {
       expect(config.fallbackUrl, isNull);
     });
 
-    test(
-      'relevo com MapTiler key usa Outdoor v2 verde vivo sem fallback Esri',
-      () {
-        final config = MapConfig.tileConfigForLayer(
-          LayerType.relevo,
-          mapTilerApiKey: 'test-key',
-        );
+    test('standard com MapTiler key usa streets-v2', () {
+      final config = MapConfig.tileConfigForLayer(
+        LayerType.standard,
+        mapTilerApiKey: 'test-key',
+      );
 
-        expect(config.requiresApiKey, isTrue);
-        expect(config.urlTemplate, contains('/outdoor-v2/256/'));
-        expect(config.urlTemplate, contains('{y}{r}.png'));
-        expect(config.fallbackUrl, isNull);
-        expect(config.maxZoom, MapConfig.mapTilerStyledMaxZoom);
-        expect(config.maxNativeZoom, MapConfig.mapTilerStyledMaxNativeZoom);
-        expect(config.retinaMode, isTrue);
-      },
-    );
+      expect(config.requiresApiKey, isTrue);
+      expect(config.urlTemplate, contains('/maps/streets-v2/256/'));
+      expect(config.urlTemplate, contains('{y}{r}.png'));
+      expect(config.urlTemplate, contains('key=test-key'));
+      expect(config.fallbackUrl, isNull);
+      expect(config.maxZoom, MapConfig.mapTilerStyledMaxZoom);
+      expect(config.maxNativeZoom, MapConfig.mapTilerStyledMaxNativeZoom);
+      expect(config.retinaMode, isTrue);
+    });
 
     test('camadas base não usam Esri como fallback automático', () {
       for (final layer in LayerType.values) {
