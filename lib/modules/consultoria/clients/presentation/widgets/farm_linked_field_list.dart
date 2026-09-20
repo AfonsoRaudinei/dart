@@ -5,7 +5,7 @@ import 'package:soloforte_app/core/contracts/i_drawing_field_writer_provider.dar
 import 'package:soloforte_app/core/router/app_routes.dart';
 import 'package:soloforte_app/modules/consultoria/clients/presentation/providers/clients_providers.dart';
 import 'package:soloforte_app/modules/consultoria/clients/presentation/providers/field_providers.dart';
-import 'package:soloforte_app/modules/consultoria/clients/presentation/widgets/rename_field_sheet.dart';
+import 'package:soloforte_app/modules/consultoria/clients/presentation/widgets/talhao_actions_sheet.dart';
 import 'package:soloforte_app/modules/consultoria/clients/presentation/widgets/talhao_map_preview.dart';
 
 String formatLinkedFieldAreaHa(double areaHa) {
@@ -77,27 +77,16 @@ class FarmLinkedFieldList extends ConsumerWidget {
       IconButton(
         tooltip: 'Abrir no mapa',
         icon: const Icon(Icons.open_in_full, size: 20),
-        onPressed: () => _openField(context, field),
+        onPressed: () => context.go(_mapViewUri(field.id)),
       ),
     ];
 
     if (field.isDrawing) {
       actions.addAll([
         IconButton(
-          tooltip: 'Renomear talhão',
-          icon: const Icon(Icons.drive_file_rename_outline, size: 20),
-          onPressed: () => showRenameFieldSheet(
-            context,
-            clientId: clientId,
-            farmId: farmId,
-            fieldId: field.id,
-            initialName: field.name,
-          ),
-        ),
-        IconButton(
-          tooltip: 'Editar geometria no mapa',
+          tooltip: 'Ações do talhão',
           icon: const Icon(Icons.edit_outlined, size: 20),
-          onPressed: () => context.go(_mapEditUri(field.id)),
+          onPressed: () => _openActions(context, field),
         ),
         IconButton(
           tooltip: 'Excluir talhão',
@@ -112,11 +101,24 @@ class FarmLinkedFieldList extends ConsumerWidget {
 
   void _openField(BuildContext context, FarmLinkedFieldSummary field) {
     if (field.isDrawing) {
-      context.go(_mapViewUri(field.id));
+      _openActions(context, field);
       return;
     }
 
     context.go(AppRoutes.fieldDetail(clientId, farmId, field.id));
+  }
+
+  Future<void> _openActions(
+    BuildContext context,
+    FarmLinkedFieldSummary field,
+  ) {
+    return showTalhaoActionsSheet(
+      context,
+      clientId: clientId,
+      farmId: farmId,
+      fieldId: field.id,
+      fieldName: field.name,
+    );
   }
 
   Future<void> _confirmDeleteDrawing(
@@ -162,27 +164,12 @@ class FarmLinkedFieldList extends ConsumerWidget {
   }
 
   String _mapViewUri(String drawingId) {
-    return Uri(
-      path: AppRoutes.map,
-      queryParameters: {
-        'modo': 'desenho',
-        'clienteId': clientId,
-        'fazendaId': farmId,
-        'drawingId': drawingId,
-      },
-    ).toString();
-  }
-
-  String _mapEditUri(String drawingId) {
-    return Uri(
-      path: AppRoutes.map,
-      queryParameters: {
-        'modo': 'editar',
-        'clienteId': clientId,
-        'fazendaId': farmId,
-        'drawingId': drawingId,
-      },
-    ).toString();
+    return talhaoMapUri(
+      modo: 'desenho',
+      clientId: clientId,
+      farmId: farmId,
+      drawingId: drawingId,
+    );
   }
 }
 
