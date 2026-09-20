@@ -12,6 +12,7 @@ import '../widgets/client_detail_sub_widgets.dart';
 import '../widgets/farm_linked_field_list.dart';
 import '../widgets/link_drawing_to_farm_sheet.dart';
 import '../widgets/talhao_actions_sheet.dart';
+import '../widgets/talhao_union_sheet.dart';
 import '../widgets/talhao_map_preview.dart';
 
 class ClientFarmWithTalhoesSection extends ConsumerWidget {
@@ -179,7 +180,7 @@ class ClientDrawingFieldsSection extends ConsumerWidget {
                   nome: field.name,
                   areaHa: field.areaHa,
                   subtitle: 'Sem fazenda vinculada',
-                  onTap: () => _openActions(context, field),
+                  onTap: () => _openActions(context, field, fields),
                   actions: [
                     IconButton(
                       tooltip: 'Vincular à fazenda',
@@ -199,7 +200,7 @@ class ClientDrawingFieldsSection extends ConsumerWidget {
                     IconButton(
                       tooltip: 'Ações do talhão',
                       icon: const Icon(Icons.edit_outlined, size: 20),
-                      onPressed: () => _openActions(context, field),
+                      onPressed: () => _openActions(context, field, fields),
                     ),
                     IconButton(
                       tooltip: 'Excluir talhão',
@@ -225,9 +226,26 @@ class ClientDrawingFieldsSection extends ConsumerWidget {
     );
   }
 
+  List<TalhaoUnionCandidate> _unionCandidates(
+    ClientDrawingFieldSummary field,
+    List<ClientDrawingFieldSummary> allFields,
+  ) {
+    return allFields
+        .where((candidate) => candidate.id != field.id)
+        .map(
+          (candidate) => TalhaoUnionCandidate(
+            id: candidate.id,
+            name: candidate.name,
+            areaHa: candidate.areaHa,
+          ),
+        )
+        .toList();
+  }
+
   Future<void> _openActions(
     BuildContext context,
     ClientDrawingFieldSummary field,
+    List<ClientDrawingFieldSummary> allFields,
   ) {
     return showTalhaoActionsSheet(
       context,
@@ -237,6 +255,8 @@ class ClientDrawingFieldsSection extends ConsumerWidget {
       fieldName: field.name,
       initialCultura: field.crop,
       initialSafra: field.harvest,
+      showUnionAction: true,
+      unionCandidates: _unionCandidates(field, allFields),
     );
   }
 
