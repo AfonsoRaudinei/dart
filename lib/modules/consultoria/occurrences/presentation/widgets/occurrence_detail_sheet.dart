@@ -18,6 +18,7 @@ import '../../domain/occurrence.dart';
 import '../controllers/occurrence_controller.dart';
 import 'occurrence_creation_sheet.dart';
 import 'occurrence_detail_pin_actions.dart';
+import 'occurrence_detail_photo_section.dart';
 
 /// Sheet de detalhe de uma ocorrência existente.
 ///
@@ -299,7 +300,6 @@ class OccurrenceDetailSheet extends ConsumerWidget {
       "dd 'de' MMMM 'de' yyyy 'às' HH:mm",
       'pt_BR',
     ).format(occurrence.createdAt);
-
     final detailRows = <_DetailRowData>[
       if (occurrence.clientId != null && occurrence.clientId!.isNotEmpty)
         _DetailRowData(
@@ -523,6 +523,13 @@ class OccurrenceDetailSheet extends ConsumerWidget {
                 ),
               ),
               const SizedBox(height: 16),
+              OccurrenceDetailPhotoSection(
+                occurrence: occurrence,
+                cardBg: cardBg,
+                cardRadius: cardRadius,
+                isIos: isIos,
+                isDark: isDark,
+              ),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Container(
