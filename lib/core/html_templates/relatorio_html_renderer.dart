@@ -7,6 +7,8 @@ import 'package:http/http.dart' as http;
 import 'package:image/image.dart' as img;
 import 'package:intl/intl.dart';
 
+import '../utils/local_media_path_resolver.dart';
+
 /// Utilitários base compartilhados por todos os renderers HTML.
 /// Não depende de nenhum módulo de domínio.
 abstract class RelatorioHtmlRenderer {
@@ -148,7 +150,9 @@ abstract class RelatorioHtmlRenderer {
     if (path.startsWith('http://') || path.startsWith('https://')) {
       return path;
     }
-    final file = File(path);
+    final resolved = await LocalMediaPathResolver.resolveLocalPath(path);
+    if (resolved == null) return null;
+    final file = File(resolved);
     if (!await file.exists()) return null;
     var bytes = await file.readAsBytes();
     var mime = _mimeFromPath(path);
