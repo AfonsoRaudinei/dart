@@ -5,6 +5,75 @@ extension DrawingControllerVertexEditing on DrawingController {
   // VERTEX EDITING (RT-DRAW-06)
   // ===========================================================================
 
+  /// Seleciona vértice em edição (mostra gota).
+  bool selectEditVertex(int ringIndex, int pointIndex) {
+    if (_isDisposed) return false;
+    if (_stateMachine.currentState != DrawingState.editing) return false;
+    if (_editGeometry is! DrawingPolygon) return false;
+
+    final poly = _editGeometry as DrawingPolygon;
+    if (ringIndex < 0 || ringIndex >= poly.coordinates.length) return false;
+    final ring = poly.coordinates[ringIndex];
+    if (pointIndex < 0 || pointIndex >= ring.length) return false;
+
+    final isClosed =
+        ring.length > 1 &&
+        ring.first[0] == ring.last[0] &&
+        ring.first[1] == ring.last[1];
+    final logicalLength = isClosed ? ring.length - 1 : ring.length;
+    if (pointIndex >= logicalLength) return false;
+
+    _selectedEditRingIndex = ringIndex;
+    _selectedEditPointIndex = pointIndex;
+    _notify();
+    return true;
+  }
+
+  void clearEditVertexSelection() {
+    if (_selectedEditRingIndex == null && _selectedEditPointIndex == null) {
+      return;
+    }
+    _selectedEditRingIndex = null;
+    _selectedEditPointIndex = null;
+    _notify();
+  }
+
+  /// Hit-test por proximidade para vértices em edição (fallback via onTap do mapa).
+  ({int ring, int point})? findEditVertexNear(
+    LatLng tap,
+    double toleranceMeters,
+  ) {
+    if (_stateMachine.currentState != DrawingState.editing) return null;
+    if (_editGeometry is! DrawingPolygon) return null;
+
+    final poly = _editGeometry as DrawingPolygon;
+    int? bestRing;
+    int? bestPoint;
+    var closestDist = toleranceMeters;
+
+    for (var ringIdx = 0; ringIdx < poly.coordinates.length; ringIdx++) {
+      final ringRaw = poly.coordinates[ringIdx];
+      final ring = ringRaw.map((p) => LatLng(p[1], p[0])).toList();
+      final isClosed =
+          ring.isNotEmpty &&
+          ring.first.latitude == ring.last.latitude &&
+          ring.first.longitude == ring.last.longitude;
+      final logicalLength = isClosed ? ring.length - 1 : ring.length;
+
+      for (var i = 0; i < logicalLength; i++) {
+        final dist = const Distance().as(LengthUnit.Meter, ring[i], tap);
+        if (dist <= closestDist) {
+          closestDist = dist;
+          bestRing = ringIdx;
+          bestPoint = i;
+        }
+      }
+    }
+
+    if (bestRing == null || bestPoint == null) return null;
+    return (ring: bestRing, point: bestPoint);
+  }
+
   void _throttledValidate() {
     // Logic from old updateEditGeometry
     final count = DrawingUtils.getVertexCount(_editGeometry);
