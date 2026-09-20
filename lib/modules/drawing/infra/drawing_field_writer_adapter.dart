@@ -1,15 +1,22 @@
 import 'package:soloforte_app/core/contracts/i_drawing_field_writer.dart';
 import 'package:soloforte_app/modules/drawing/data/repositories/drawing_repository.dart';
+import 'package:soloforte_app/modules/drawing/domain/drawing_utils.dart';
 import 'package:soloforte_app/modules/drawing/domain/models/drawing_models.dart';
+import 'package:soloforte_app/modules/drawing/domain/services/drawing_boolean_ops_service.dart';
 
 /// Adapter de comandos de talhao do mapa.
 ///
 /// Mantem drawing/ como dono da escrita em `drawings` e expõe apenas o contrato
 /// neutro para outros bounded contexts.
 class DrawingFieldWriterAdapter implements IDrawingFieldWriter {
-  const DrawingFieldWriterAdapter(this._repository);
+  const DrawingFieldWriterAdapter(
+    this._repository, {
+    DrawingBooleanOpsService booleanOpsService =
+        const DrawingBooleanOpsService(),
+  }) : _booleanOpsService = booleanOpsService;
 
   final DrawingRepository _repository;
+  final DrawingBooleanOpsService _booleanOpsService;
 
   @override
   Future<void> deleteFieldAndRecalculateClientArea({
@@ -139,6 +146,82 @@ class DrawingFieldWriterAdapter implements IDrawingFieldWriter {
     );
 
     await _repository.saveFeature(updated);
+  }
+
+  @override
+  Future<void> unionDrawingFields({
+    required String primaryFieldId,
+    required String secondaryFieldId,
+    required String clientId,
+  }) async {
+    if (primaryFieldId.isEmpty || secondaryFieldId.isEmpty) {
+      throw ArgumentError(
+        'primaryFieldId e secondaryFieldId são obrigatórios para união.',
+      );
+    }
+    if (primaryFieldId == secondaryFieldId) {
+      throw StateError('Selecione um talhão diferente para combinar.');
+    }
+
+    final primary = await _repository.getFeatureById(primaryFieldId);
+    final secondary = await _repository.getFeatureById(secondaryFieldId);
+
+    if (primary == null || !primary.properties.ativo) {
+      throw StateError('Talhão principal não encontrado: $primaryFieldId');
+    }
+    if (secondary == null || !secondary.properties.ativo) {
+      throw StateError('Talhão secundário não encontrado: $secondaryFieldId');
+    }
+
+    final primaryClientId = primary.properties.clienteId;
+    final secondaryClientId = secondary.properties.clienteId;
+    if (primaryClientId != null &&
+        primaryClientId.isNotEmpty &&
+        secondaryClientId != null &&
+        secondaryClientId.isNotEmpty &&
+        primaryClientId != secondaryClientId) {
+      throw StateError('Os talhões precisam pertencer ao mesmo cliente.');
+    }
+
+    final rawUnion = _booleanOpsService.calculate(
+      primary,
+      secondary,
+      DrawingInteraction.unionSelection,
+    );
+    if (rawUnion == null) {
+      throw StateError('Não foi possível combinar as áreas selecionadas.');
+    }
+
+    final unionGeometry = _booleanOpsService.finalizeResult(rawUnion);
+    final validation = DrawingUtils.validateTopology(unionGeometry);
+    if (!validation.isValid) {
+      throw StateError(
+        validation.message ?? 'Geometria resultante inválida para união.',
+      );
+    }
+
+    final areaHa = DrawingUtils.calculateGeometryArea(unionGeometry);
+    final syncStatus = primary.properties.syncStatus == SyncStatus.synced
+        ? SyncStatus.local_only
+        : primary.properties.syncStatus;
+
+    final updatedPrimary = DrawingFeature(
+      id: primary.id,
+      geometry: unionGeometry,
+      properties: primary.properties.copyWith(
+        areaHa: areaHa,
+        updatedAt: DateTime.now(),
+        syncStatus: syncStatus,
+      ),
+    );
+
+    await _repository.saveFeature(updatedPrimary);
+    await _repository.deleteFeature(secondaryFieldId);
+
+    if (clientId.isEmpty) return;
+
+    final totalAreaHa = await _repository.getTotalAreaByClienteId(clientId);
+    await _repository.updateClientAreaTotal(clientId, totalAreaHa);
   }
 
   String? _resolveMetadataField(String? value, String? current) {
