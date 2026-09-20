@@ -235,6 +235,8 @@ class ClientDrawingFieldsSection extends ConsumerWidget {
       farmId: field.farmId,
       fieldId: field.id,
       fieldName: field.name,
+      initialCultura: field.crop,
+      initialSafra: field.harvest,
     );
   }
 
