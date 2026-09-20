@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:soloforte_app/core/config/cerrado_satellite_overlay.dart';
+import 'package:soloforte_app/core/config/satellite_freshness_policy.dart';
 
 void main() {
   group('CerradoSatelliteOverlay', () {
@@ -11,6 +12,15 @@ void main() {
       expect(CerradoSatelliteOverlay.layerName, 'mosaic-s2-cerrado-2m');
       expect(CerradoSatelliteOverlay.acquisitionLabel, 'nov/2023 – ago/2024');
       expect(CerradoSatelliteOverlay.defaultOpacity, 1.0);
+      expect(CerradoSatelliteOverlay.wmsTransparent, isTrue);
+    });
+
+    test('tileBounds cobre bbox do Cerrado', () {
+      final bounds = CerradoSatelliteOverlay.tileBounds;
+      expect(bounds.southWest.latitude, kCerradoSouth);
+      expect(bounds.southWest.longitude, kCerradoWest);
+      expect(bounds.northEast.latitude, kCerradoNorth);
+      expect(bounds.northEast.longitude, kCerradoEast);
     });
 
     test('isWithinBounds segue bbox do Cerrado', () {
