@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_map/flutter_map.dart';
-import 'package:flutter_map_marker_cluster/flutter_map_marker_cluster.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 import '../../../../core/contracts/i_occurrence_access_reader_provider.dart';
@@ -51,7 +50,7 @@ class IsolatedPublicationMarkersLayer extends ConsumerWidget {
 
 /// 🔒 WIDGET 100% ISOLADO: Markers de Ocorrências
 ///
-/// Mesmas otimizações de IsolatedPublicationMarkersLayer + cluster.
+/// Mesmas otimizações de IsolatedPublicationMarkersLayer.
 class IsolatedOccurrenceMarkersLayer extends ConsumerWidget {
   final void Function(Occurrence) onOccurrenceTap;
   final String? excludedMarkerId;
@@ -85,30 +84,7 @@ class IsolatedOccurrenceMarkersLayer extends ConsumerWidget {
 
     if (filtered.isEmpty) return const SizedBox.shrink();
 
-    return MarkerClusterLayerWidget(
-      options: MarkerClusterLayerOptions(
-        maxClusterRadius: 100,
-        size: const Size(40, 40),
-        alignment: Alignment.center,
-        padding: const EdgeInsets.all(40),
-        maxZoom: 15,
-        markers: filtered,
-        builder: (context, clusterMarkers) {
-          return Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(20),
-              color: Colors.orange.shade700,
-            ),
-            child: Center(
-              child: Text(
-                clusterMarkers.length.toString(),
-                style: const TextStyle(color: Colors.white),
-              ),
-            ),
-          );
-        },
-      ),
-    );
+    return MarkerLayer(markers: filtered);
   }
 }
 
