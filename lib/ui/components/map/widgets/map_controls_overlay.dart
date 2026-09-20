@@ -56,10 +56,8 @@ class MapControlsOverlay extends ConsumerStatefulWidget {
   final VoidCallback onSaveEdit;
   final VoidCallback onCancelEdit;
   final VoidCallback onUndoEdit;
-  final VoidCallback? onRedoEdit;
   final VoidCallback? onUndoDrawing; // Undo no modo drawing
   final bool canUndo;
-  final bool canRedo;
   final bool hasSelfIntersection;
   final double measurementAreaHa;
   final double measurementPerimeterKm;
@@ -85,10 +83,8 @@ class MapControlsOverlay extends ConsumerStatefulWidget {
     required this.onSaveEdit,
     required this.onCancelEdit,
     required this.onUndoEdit,
-    this.onRedoEdit,
     this.onUndoDrawing,
     this.canUndo = false,
-    this.canRedo = false,
     this.hasSelfIntersection = false,
     this.measurementAreaHa = 0,
     this.measurementPerimeterKm = 0,
@@ -221,6 +217,8 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
         ),
 
         // 4. Drawing / editing actions — mesmo chrome inferior (toolbar + medição).
+        // Redo não entra na toolbar (paridade com desenho / modelo Imagem 4).
+        // DrawingController.redoEdit() permanece no domínio para uso futuro.
         if (widget.drawingState == DrawingState.drawing ||
             widget.drawingState == DrawingState.editing)
           DrawingBottomToolbarOverlay(
