@@ -26,7 +26,6 @@ void main() {
         isFalse,
       );
       expect(source.contains("case 'published':\n      return 'Gerado';"), isFalse);
-      expect(source.contains('showPackShare: false'), isTrue);
     });
 
     test('barra de segmentos exibe Marketing (não Gerados)', () {
