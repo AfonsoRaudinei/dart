@@ -17,4 +17,10 @@ abstract interface class IDrawingFieldWriter {
     required String clientId,
     required String farmId,
   });
+
+  /// Renomeia um talhão do mapa (`drawings`) sem alterar a geometria.
+  Future<void> updateFieldName({
+    required String fieldId,
+    required String name,
+  });
 }
