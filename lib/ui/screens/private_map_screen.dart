@@ -678,6 +678,11 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
     }
     final forceRefresh = hasExistingCoverage;
 
+    if (!mounted) {
+      progress.dispose();
+      return;
+    }
+
     unawaited(
       showMapOfflineDownloadProgressSheet(
         context,
@@ -726,19 +731,27 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
     }
 
     ref.read(offlineMapAreasProvider.notifier).updateArea(
-          OfflineMapAreaConfig(
-            id:
-                existingCoveringArea?.id ??
-                DateTime.now().millisecondsSinceEpoch.toString(),
-            layerKey: layerKey,
-            south: south,
-            west: west,
-            north: north,
-            east: east,
-            minZoom: minZoom.toDouble(),
-            maxZoom: maxZoom.toDouble(),
-            createdAt: DateTime.now(),
-          ),
+          existingCoveringArea != null
+              ? existingCoveringArea.mergeWithViewport(
+                  south: south,
+                  west: west,
+                  north: north,
+                  east: east,
+                  minZoom: minZoom.toDouble(),
+                  maxZoom: maxZoom.toDouble(),
+                  createdAt: DateTime.now(),
+                )
+              : OfflineMapAreaConfig(
+                  id: DateTime.now().millisecondsSinceEpoch.toString(),
+                  layerKey: layerKey,
+                  south: south,
+                  west: west,
+                  north: north,
+                  east: east,
+                  minZoom: minZoom.toDouble(),
+                  maxZoom: maxZoom.toDouble(),
+                  createdAt: DateTime.now(),
+                ),
         );
 
     ScaffoldMessenger.of(context).showSnackBar(
