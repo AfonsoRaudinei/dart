@@ -86,4 +86,64 @@ class DrawingFieldWriterAdapter implements IDrawingFieldWriter {
 
     await _repository.saveFeature(updated);
   }
+
+  @override
+  Future<void> updateFieldMetadata({
+    required String fieldId,
+    String? cultura,
+    String? safra,
+  }) async {
+    if (fieldId.isEmpty) {
+      throw ArgumentError('fieldId é obrigatório para atualizar metadados.');
+    }
+
+    final existing = await _repository.getFeatureById(fieldId);
+    if (existing == null || !existing.properties.ativo) {
+      throw StateError('Talhão do mapa não encontrado: $fieldId');
+    }
+
+    final syncStatus = existing.properties.syncStatus == SyncStatus.synced
+        ? SyncStatus.local_only
+        : existing.properties.syncStatus;
+
+    final base = existing.properties;
+    final updated = DrawingFeature(
+      id: existing.id,
+      geometry: existing.geometry,
+      properties: DrawingProperties(
+        nome: base.nome,
+        tipo: base.tipo,
+        origem: base.origem,
+        status: base.status,
+        autorId: base.autorId,
+        autorTipo: base.autorTipo,
+        operacaoId: base.operacaoId,
+        clienteId: base.clienteId,
+        fazendaId: base.fazendaId,
+        areaHa: base.areaHa,
+        versao: base.versao,
+        ativo: base.ativo,
+        createdAt: base.createdAt,
+        updatedAt: DateTime.now(),
+        syncStatus: syncStatus,
+        subtipo: base.subtipo,
+        raioMetros: base.raioMetros,
+        grupo: base.grupo,
+        cor: base.cor,
+        versaoAnteriorId: base.versaoAnteriorId,
+        cultura: _resolveMetadataField(cultura, base.cultura),
+        safra: _resolveMetadataField(safra, base.safra),
+        soilSamplingScheme: base.soilSamplingScheme,
+        recByNutrient: base.recByNutrient,
+      ),
+    );
+
+    await _repository.saveFeature(updated);
+  }
+
+  String? _resolveMetadataField(String? value, String? current) {
+    if (value == null) return current;
+    final trimmed = value.trim();
+    return trimmed.isEmpty ? null : trimmed;
+  }
 }
