@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:soloforte_app/modules/consultoria/clients/domain/client.dart';
+import 'package:soloforte_app/modules/consultoria/clients/domain/client_cultura.dart';
 import 'package:soloforte_app/modules/consultoria/clients/presentation/widgets/client_edit_form.dart';
+import 'package:soloforte_app/modules/consultoria/clients/presentation/widgets/cultura_item_widget.dart';
 import 'package:soloforte_app/modules/consultoria/clients/presentation/screens/client_form_screen.dart';
 
 void main() {
@@ -51,6 +53,76 @@ void main() {
 
     expect(find.text('Adicionar Cultura'), findsOneWidget);
     expect(find.text('+ Adicionar Cultura'), findsNothing);
+  });
+
+  testWidgets('edicao exibe somente um sinal de adicionar cultura', (
+    tester,
+  ) async {
+    final client = Client(
+      id: 'client-edit-cultura',
+      name: 'Cliente Cultura',
+      phone: '63999999999',
+      city: 'Pugmil',
+      state: 'TO',
+      createdAt: DateTime(2026),
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: ClientEditForm(
+            client: client,
+            culturas: const [],
+            onCancel: () {},
+            onSave: (_, __) {},
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Adicionar Cultura'), findsOneWidget);
+    expect(find.text('+ Adicionar Cultura'), findsNothing);
+  });
+
+  test('parse, join e format de multi-variedade', () {
+    expect(ClientCultura.parseVariedades(null), isEmpty);
+    expect(
+      ClientCultura.parseVariedades('BRS 284, M 6410'),
+      ['BRS 284', 'M 6410'],
+    );
+    expect(
+      ClientCultura.joinVariedades(['BRS 284', 'M 6410']),
+      'BRS 284, M 6410',
+    );
+    expect(
+      ClientCultura.formatVariedades('BRS 284, M 6410'),
+      'BRS 284 • M 6410',
+    );
+  });
+
+  testWidgets('cultura item exibe multiplas variedades legiveis', (
+    tester,
+  ) async {
+    final cultura = ClientCultura(
+      id: 'cult-1',
+      clientId: 'client-1',
+      cultura: 'soja',
+      areaHa: 120,
+      variedade: 'BRS 284, M 6410',
+      createdAt: DateTime(2026),
+      updatedAt: DateTime(2026),
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: CulturaItemWidget(cultura: cultura),
+        ),
+      ),
+    );
+
+    expect(find.text('BRS 284 • M 6410'), findsOneWidget);
   });
 
   testWidgets('edicao reaproveita area simples salva e mostra percentual', (
