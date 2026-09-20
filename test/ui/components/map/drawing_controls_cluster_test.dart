@@ -16,7 +16,6 @@ import 'package:soloforte_app/modules/settings/presentation/providers/settings_p
 import 'package:soloforte_app/modules/visitas/data/repositories/visit_repository.dart';
 import 'package:soloforte_app/modules/visitas/domain/models/visit_session.dart';
 import 'package:soloforte_app/modules/visitas/presentation/controllers/visit_controller.dart';
-import 'package:soloforte_app/ui/components/map/widgets/editing_controls_overlay.dart';
 import 'package:soloforte_app/ui/components/map/widgets/map_controls_overlay.dart';
 
 void main() {
@@ -47,156 +46,15 @@ void main() {
     expect(find.byIcon(Icons.check_rounded), findsOneWidget);
   });
 
-  testWidgets(
-    'modo editing usa cluster lateral e não renderiza overlay branco legado',
-    (tester) async {
-      var saveCalls = 0;
-      var cancelCalls = 0;
-      var undoCalls = 0;
-      var redoCalls = 0;
-
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: EditingControlsCluster(
-              onSave: () => saveCalls++,
-              onCancel: () => cancelCalls++,
-              onUndo: () => undoCalls++,
-              onRedo: () => redoCalls++,
-              canUndo: true,
-              canRedo: true,
-            ),
-          ),
-        ),
-      );
-
-      expect(
-        find.byKey(const Key('editing_controls_backplate')),
-        findsOneWidget,
-      );
-      expect(find.byType(EditingControlsOverlay), findsNothing);
-
-      await tester.tap(find.byKey(const Key('editing_control_save')));
-      await tester.pump();
-      await tester.tap(find.byKey(const Key('editing_control_undo')));
-      await tester.pump();
-      await tester.tap(find.byKey(const Key('editing_control_redo')));
-      await tester.pump();
-      await tester.tap(find.byKey(const Key('editing_control_cancel')));
-      await tester.pump();
-
-      expect(saveCalls, 1);
-      expect(undoCalls, 1);
-      expect(redoCalls, 1);
-      expect(cancelCalls, 1);
-    },
-  );
-
-  testWidgets(
-    'backplate do cluster lateral não bloqueia toque fora dos botões',
-    (tester) async {
-      var backgroundTaps = 0;
-
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: Stack(
-              children: [
-                Positioned.fill(
-                  child: GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onTap: () => backgroundTaps++,
-                  ),
-                ),
-                const Align(
-                  alignment: Alignment.bottomRight,
-                  child: Padding(
-                    padding: EdgeInsets.only(right: 16, bottom: 120),
-                    child: EditingControlsCluster(
-                      onSave: _noop,
-                      onCancel: _noop,
-                      onUndo: _noop,
-                      onRedo: _noop,
-                      canUndo: true,
-                      canRedo: true,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-
-      final backplate = tester.getRect(
-        find.byKey(const Key('editing_controls_backplate')),
-      );
-      final saveButton = tester.getRect(
-        find.byKey(const Key('editing_control_save')),
-      );
-
-      final tapPoint = Offset(
-        backplate.left + backplate.width / 2,
-        (saveButton.bottom +
-                tester
-                    .getRect(find.byKey(const Key('editing_control_undo')))
-                    .top) /
-            2,
-      );
-
-      await tester.tapAt(tapPoint);
-      await tester.pump();
-
-      expect(backgroundTaps, 1);
-    },
-  );
-
   testWidgets('MapControlsOverlay monta toolbar inferior no estado editing', (
     tester,
   ) async {
-    SharedPreferences.setMockInitialValues({});
-    final settingsRepository = SettingsRepository(
-      await SharedPreferences.getInstance(),
-    );
-    final preferencesService = PreferencesService(
-      await SharedPreferences.getInstance(),
-    );
-
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          preferencesServiceProvider.overrideWithValue(preferencesService),
-          settingsRepositoryProvider.overrideWithValue(settingsRepository),
-          isOnlineProvider.overrideWith((ref) => Stream.value(true)),
-          visitRepositoryProvider.overrideWithValue(_NoActiveVisitRepository()),
-          agendaSessionBridgeProvider.overrideWithValue(_NoopAgendaBridge()),
-          // Sessão pública fake: MapAgendaAiButton não deve exigir Supabase.
-          sessionControllerProvider.overrideWith(_PublicSessionController.new),
-        ],
-        child: MaterialApp(
-          home: Scaffold(
-            body: MapControlsOverlay(
-              onCenterUser: _noop,
-              onLocationModeChanged: (_) {},
-              onToggleDrawMode: _noop,
-              onOpenMapTools: _noop,
-              onTabSelected: (_, _) {},
-              isDrawMode: true,
-              currentCenter: const LatLng(0, 0),
-              currentZoom: 13,
-              drawingState: DrawingState.editing,
-              measurementAreaHa: 750.718,
-              measurementPerimeterKm: 1.2,
-              onFinishDrawing: _noop,
-              onCancelDrawing: _noop,
-              onSaveEdit: _noop,
-              onCancelEdit: _noop,
-              onUndoEdit: _noop,
-              canUndo: true,
-            ),
-          ),
-        ),
-      ),
+    await _pumpMapControlsOverlay(
+      tester,
+      drawingState: DrawingState.editing,
+      isDrawMode: true,
+      measurementAreaHa: 750.718,
+      measurementPerimeterKm: 1.2,
     );
 
     await tester.pump(const Duration(milliseconds: 200));
@@ -206,53 +64,15 @@ void main() {
     expect(find.text('Cancelar'), findsOneWidget);
     expect(find.text('Confirmar'), findsOneWidget);
     expect(find.byKey(const Key('editing_controls_backplate')), findsNothing);
-    expect(find.byType(EditingControlsOverlay), findsNothing);
   });
 
   testWidgets('MapControlsOverlay monta toolbar inferior no estado drawing', (
     tester,
   ) async {
-    SharedPreferences.setMockInitialValues({});
-    final settingsRepository = SettingsRepository(
-      await SharedPreferences.getInstance(),
-    );
-    final preferencesService = PreferencesService(
-      await SharedPreferences.getInstance(),
-    );
-
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          preferencesServiceProvider.overrideWithValue(preferencesService),
-          settingsRepositoryProvider.overrideWithValue(settingsRepository),
-          isOnlineProvider.overrideWith((ref) => Stream.value(true)),
-          visitRepositoryProvider.overrideWithValue(_NoActiveVisitRepository()),
-          agendaSessionBridgeProvider.overrideWithValue(_NoopAgendaBridge()),
-          sessionControllerProvider.overrideWith(_PublicSessionController.new),
-        ],
-        child: MaterialApp(
-          home: Scaffold(
-            body: MapControlsOverlay(
-              onCenterUser: _noop,
-              onLocationModeChanged: (_) {},
-              onToggleDrawMode: _noop,
-              onOpenMapTools: _noop,
-              onTabSelected: (_, _) {},
-              isDrawMode: true,
-              currentCenter: const LatLng(0, 0),
-              currentZoom: 13,
-              drawingState: DrawingState.drawing,
-              onFinishDrawing: _noop,
-              onCancelDrawing: _noop,
-              onSaveEdit: _noop,
-              onCancelEdit: _noop,
-              onUndoEdit: _noop,
-              onUndoDrawing: _noop,
-              canUndo: true,
-            ),
-          ),
-        ),
-      ),
+    await _pumpMapControlsOverlay(
+      tester,
+      drawingState: DrawingState.drawing,
+      isDrawMode: true,
     );
 
     await tester.pump(const Duration(milliseconds: 200));
@@ -265,53 +85,12 @@ void main() {
   testWidgets(
     'modo drawing integra medição no card inferior (não no topo)',
     (tester) async {
-      SharedPreferences.setMockInitialValues({});
-      final settingsRepository = SettingsRepository(
-        await SharedPreferences.getInstance(),
-      );
-      final preferencesService = PreferencesService(
-        await SharedPreferences.getInstance(),
-      );
-
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            preferencesServiceProvider.overrideWithValue(preferencesService),
-            settingsRepositoryProvider.overrideWithValue(settingsRepository),
-            isOnlineProvider.overrideWith((ref) => Stream.value(true)),
-            visitRepositoryProvider.overrideWithValue(
-              _NoActiveVisitRepository(),
-            ),
-            agendaSessionBridgeProvider.overrideWithValue(_NoopAgendaBridge()),
-            sessionControllerProvider.overrideWith(
-              _PublicSessionController.new,
-            ),
-          ],
-          child: MaterialApp(
-            home: Scaffold(
-              body: MapControlsOverlay(
-                onCenterUser: _noop,
-                onLocationModeChanged: (_) {},
-                onToggleDrawMode: _noop,
-                onOpenMapTools: _noop,
-                onTabSelected: (_, _) {},
-                isDrawMode: true,
-                currentCenter: const LatLng(0, 0),
-                currentZoom: 13,
-                drawingState: DrawingState.drawing,
-                measurementAreaHa: 1.033,
-                measurementPerimeterKm: 0.829,
-                onFinishDrawing: _noop,
-                onCancelDrawing: _noop,
-                onSaveEdit: _noop,
-                onCancelEdit: _noop,
-                onUndoEdit: _noop,
-                onUndoDrawing: _noop,
-                canUndo: true,
-              ),
-            ),
-          ),
-        ),
+      await _pumpMapControlsOverlay(
+        tester,
+        drawingState: DrawingState.drawing,
+        isDrawMode: true,
+        measurementAreaHa: 1.033,
+        measurementPerimeterKm: 0.829,
       );
 
       await tester.pump(const Duration(milliseconds: 200));
@@ -328,6 +107,78 @@ void main() {
       );
       expect(measurementBox.top, greaterThan(toolbarBox.top));
       expect(measurementBox.bottom, lessThanOrEqualTo(toolbarBox.bottom + 1));
+
+      final screenHeight = tester.getSize(find.byType(Scaffold)).height;
+      expect(measurementBox.top, greaterThan(screenHeight * 0.4));
+    },
+  );
+
+  testWidgets(
+    'modo editing integra medição no card inferior (não no topo)',
+    (tester) async {
+      await _pumpMapControlsOverlay(
+        tester,
+        drawingState: DrawingState.editing,
+        isDrawMode: true,
+        measurementAreaHa: 446.292,
+        measurementPerimeterKm: 2.1,
+      );
+
+      await tester.pump(const Duration(milliseconds: 200));
+
+      expect(find.text('446.292 ha'), findsOneWidget);
+      expect(find.byKey(const Key('measurement_area_card')), findsOneWidget);
+
+      final toolbarBox = tester.getRect(
+        find.byKey(const Key('drawing_bottom_toolbar')),
+      );
+      final measurementBox = tester.getRect(
+        find.byKey(const Key('measurement_area_card')),
+      );
+      expect(measurementBox.top, greaterThan(toolbarBox.top));
+      expect(measurementBox.bottom, lessThanOrEqualTo(toolbarBox.bottom + 1));
+
+      final screenHeight = tester.getSize(find.byType(Scaffold)).height;
+      expect(measurementBox.top, greaterThan(screenHeight * 0.4));
+    },
+  );
+
+  testWidgets(
+    'modo editing dispara callbacks de edição na toolbar inferior',
+    (tester) async {
+      var saveCalls = 0;
+      var cancelCalls = 0;
+      var undoCalls = 0;
+      var finishCalls = 0;
+      var cancelDrawingCalls = 0;
+
+      await _pumpMapControlsOverlay(
+        tester,
+        drawingState: DrawingState.editing,
+        isDrawMode: true,
+        measurementAreaHa: 10,
+        onFinishDrawing: () => finishCalls++,
+        onCancelDrawing: () => cancelDrawingCalls++,
+        onSaveEdit: () => saveCalls++,
+        onCancelEdit: () => cancelCalls++,
+        onUndoEdit: () => undoCalls++,
+        canUndo: true,
+      );
+
+      await tester.pump(const Duration(milliseconds: 200));
+
+      await tester.tap(find.text('Confirmar'));
+      await tester.pump();
+      await tester.tap(find.text('Desfazer'));
+      await tester.pump();
+      await tester.tap(find.text('Cancelar'));
+      await tester.pump();
+
+      expect(saveCalls, 1);
+      expect(undoCalls, 1);
+      expect(cancelCalls, 1);
+      expect(finishCalls, 0);
+      expect(cancelDrawingCalls, 0);
     },
   );
 
@@ -414,12 +265,21 @@ void _noop() {}
 
 Future<void> _pumpMapControlsOverlay(
   WidgetTester tester, {
-  required bool showCheckInAction,
+  bool showCheckInAction = true,
   Widget? topLeftCard,
+  DrawingState drawingState = DrawingState.idle,
+  bool isDrawMode = false,
   double measurementAreaHa = 0,
   double measurementPerimeterKm = 0,
   double? measurementAzimuthDeg,
   double gpsAccuracyM = 0,
+  VoidCallback onFinishDrawing = _noop,
+  VoidCallback onCancelDrawing = _noop,
+  VoidCallback onSaveEdit = _noop,
+  VoidCallback onCancelEdit = _noop,
+  VoidCallback onUndoEdit = _noop,
+  VoidCallback? onUndoDrawing,
+  bool canUndo = false,
 }) async {
   SharedPreferences.setMockInitialValues({});
   final settingsRepository = SettingsRepository(
@@ -437,7 +297,6 @@ Future<void> _pumpMapControlsOverlay(
         isOnlineProvider.overrideWith((ref) => Stream.value(true)),
         visitRepositoryProvider.overrideWithValue(_NoActiveVisitRepository()),
         agendaSessionBridgeProvider.overrideWithValue(_NoopAgendaBridge()),
-        // Sessão pública fake: MapAgendaAiButton não deve exigir Supabase.
         sessionControllerProvider.overrideWith(_PublicSessionController.new),
       ],
       child: MaterialApp(
@@ -448,7 +307,7 @@ Future<void> _pumpMapControlsOverlay(
             onToggleDrawMode: _noop,
             onOpenMapTools: _noop,
             onTabSelected: (_, _) {},
-            isDrawMode: false,
+            isDrawMode: isDrawMode,
             showCheckInAction: showCheckInAction,
             topLeftCard: topLeftCard,
             currentCenter: const LatLng(0, 0),
@@ -457,12 +316,14 @@ Future<void> _pumpMapControlsOverlay(
             measurementPerimeterKm: measurementPerimeterKm,
             measurementAzimuthDeg: measurementAzimuthDeg,
             gpsAccuracyM: gpsAccuracyM,
-            drawingState: DrawingState.idle,
-            onFinishDrawing: _noop,
-            onCancelDrawing: _noop,
-            onSaveEdit: _noop,
-            onCancelEdit: _noop,
-            onUndoEdit: _noop,
+            drawingState: drawingState,
+            onFinishDrawing: onFinishDrawing,
+            onCancelDrawing: onCancelDrawing,
+            onSaveEdit: onSaveEdit,
+            onCancelEdit: onCancelEdit,
+            onUndoEdit: onUndoEdit,
+            onUndoDrawing: onUndoDrawing,
+            canUndo: canUndo,
           ),
         ),
       ),
