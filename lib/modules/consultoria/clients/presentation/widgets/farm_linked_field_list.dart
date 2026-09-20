@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:soloforte_app/core/contracts/i_drawing_field_writer_provider.dart';
 import 'package:soloforte_app/core/router/app_routes.dart';
+import 'package:soloforte_app/modules/consultoria/clients/presentation/providers/clients_providers.dart';
 import 'package:soloforte_app/modules/consultoria/clients/presentation/providers/field_providers.dart';
 import 'package:soloforte_app/modules/consultoria/clients/presentation/widgets/rename_field_sheet.dart';
 import 'package:soloforte_app/modules/consultoria/clients/presentation/widgets/talhao_map_preview.dart';
@@ -152,6 +153,7 @@ class FarmLinkedFieldList extends ConsumerWidget {
 
     ref.invalidate(farmLinkedFieldsProvider(farmId));
     ref.invalidate(clientDrawingFieldsProvider(clientId));
+    ref.invalidate(clientDetailProvider(clientId));
 
     if (!context.mounted) return;
     ScaffoldMessenger.of(
