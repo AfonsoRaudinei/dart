@@ -100,6 +100,12 @@ class MapConfig {
   static String mapTilerHybridUrl(String apiKey) =>
       'https://api.maptiler.com/maps/hybrid/256/{z}/{x}/{y}{r}.jpg?key=$apiKey';
 
+  /// MapTiler Streets v2 — mapa vetorial rasterizado, estilo urbano/rodoviário limpo.
+  /// Requer API key via --dart-define=MAPTILER_API_KEY=[key]
+  /// Free tier: 100k requests/mês — https://www.maptiler.com/cloud/
+  static String mapTilerStreetsUrl(String apiKey) =>
+      'https://api.maptiler.com/maps/streets-v2/256/{z}/{x}/{y}{r}.png?key=$apiKey';
+
   /// MapTiler Landscape — Estilo natural com relevo suave.
   /// Visual mais vivo, próximo do Apple Maps: verdes, água azul e estradas limpas.
   /// Requer API key via --dart-define=MAPTILER_API_KEY=[key]
@@ -242,40 +248,10 @@ class MapConfig {
           retinaMode: true,
           isFallback: true,
         );
-      case LayerType.relevo:
-        if (!hasMapTilerApiKey(mapTilerApiKey)) {
-          if (hasStadiaApiKey) {
-            return MapLayerTileConfig(
-              urlTemplate: stadiaStamenTerrainUrl,
-              attribution: stadiaAttribution,
-              maxZoom: defaultLayerMaxZoom,
-              maxNativeZoom: defaultLayerMaxNativeZoom,
-              isFallback: true,
-            );
-          }
-          return const MapLayerTileConfig(
-            urlTemplate: cartoVoyagerRetina,
-            attribution: cartoAttribution,
-            subdomains: cartoSubdomains,
-            maxZoom: defaultLayerMaxZoom,
-            maxNativeZoom: defaultLayerMaxNativeZoom,
-            retinaMode: true,
-            isFallback: true,
-          );
-        }
-        // Outdoor v2: verde vivo + relevo (substitui Landscape bege em Relevo).
-        return MapLayerTileConfig(
-          urlTemplate: mapTilerOutdoorUrl(mapTilerApiKey),
-          attribution: mapTilerAttribution,
-          maxZoom: mapTilerStyledMaxZoom,
-          maxNativeZoom: mapTilerStyledMaxNativeZoom,
-          retinaMode: true,
-          requiresApiKey: true,
-        );
       case LayerType.standard:
         if (hasMapTilerApiKey(mapTilerApiKey)) {
           return MapLayerTileConfig(
-            urlTemplate: mapTilerLandscapeUrl(mapTilerApiKey),
+            urlTemplate: mapTilerStreetsUrl(mapTilerApiKey),
             attribution: mapTilerAttribution,
             maxZoom: mapTilerStyledMaxZoom,
             maxNativeZoom: mapTilerStyledMaxNativeZoom,
