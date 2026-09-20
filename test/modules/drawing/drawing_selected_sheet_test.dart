@@ -433,6 +433,62 @@ void main() {
     },
   );
 
+  testWidgets('snackbar de exclusao exibe DESFAZER e botao fechar', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(800, 2000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final repository = _DrawingRepository(_feature());
+    final controller = DrawingController(repository: repository);
+    addTearDown(controller.dispose);
+    await controller.loadFeatures();
+    controller.selectFeature(controller.features.single);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          drawingClientsRepositoryProvider.overrideWithValue(
+            _ClientsRepository(),
+          ),
+        ],
+        child: MaterialApp(
+          home: Scaffold(
+            body: SizedBox(
+              height: 1200,
+              child: DrawingSheet(controller: controller),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.ensureVisible(find.text('Excluir').last);
+    await tester.tap(find.text('Excluir').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(TextButton, 'Excluir'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('"Talhão Norte" removido'), findsOneWidget);
+    expect(find.text('DESFAZER'), findsOneWidget);
+    expect(
+      find.byKey(const Key('drawing_delete_snackbar_close')),
+      findsOneWidget,
+    );
+    expect(controller.features, isEmpty);
+
+    final closeButton = find.byKey(const Key('drawing_delete_snackbar_close'));
+    await tester.ensureVisible(closeButton);
+    await tester.tap(closeButton);
+    await tester.pumpAndSettle();
+
+    expect(find.byType(SnackBar), findsNothing);
+    expect(controller.features, isEmpty);
+  });
+
   testWidgets(
     'trocar painel com alteracoes pendentes pede confirmacao antes de descartar',
     (tester) async {
