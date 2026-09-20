@@ -33,6 +33,13 @@ class _FakeDrawingFieldWriter implements IDrawingFieldWriter {
     String? cultura,
     String? safra,
   }) async {}
+
+  @override
+  Future<void> unionDrawingFields({
+    required String primaryFieldId,
+    required String secondaryFieldId,
+    required String clientId,
+  }) async {}
 }
 
 void main() {
