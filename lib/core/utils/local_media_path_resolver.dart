@@ -31,6 +31,11 @@ abstract class LocalMediaPathResolver {
     }
 
     final normalized = stored.replaceAll(r'\', '/');
+
+    if (p.isAbsolute(normalized) && await File(normalized).exists()) {
+      return normalized;
+    }
+
     final directory = await getApplicationDocumentsDirectory();
     final storedRelative = toStoredPath(normalized);
     final candidates = <String>[];
