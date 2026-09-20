@@ -39,6 +39,48 @@ void main() {
       expect(result.state, MapOfflineVisualState.onlineUncovered);
       expect(result.canDownloadCurrentArea, isTrue);
       expect(result.title, 'Baixe a área visível');
+      expect(result.downloadActionLabel, 'Baixar área');
+    });
+
+    test('sinaliza area desatualizada quando online e TTL expirado', () {
+      final result = buildMapOfflineStatusPresentation(
+        isOnline: true,
+        hasOfflineAreasForLayer: true,
+        hasOfflineCoverageForViewport: true,
+        isCheckingCoverage: false,
+        isOfflineAreaStale: true,
+      );
+
+      expect(result.state, MapOfflineVisualState.onlineStale);
+      expect(result.title, 'Área offline desatualizada');
+      expect(result.canDownloadCurrentArea, isTrue);
+      expect(result.downloadActionLabel, 'Atualizar área');
+      expect(result.message, contains('180 dias'));
+    });
+
+    test('avisa imagem desatualizada quando offline e TTL expirado', () {
+      final result = buildMapOfflineStatusPresentation(
+        isOnline: false,
+        hasOfflineAreasForLayer: true,
+        hasOfflineCoverageForViewport: true,
+        isCheckingCoverage: false,
+        isOfflineAreaStale: true,
+      );
+
+      expect(result.state, MapOfflineVisualState.offlineStale);
+      expect(result.canDownloadCurrentArea, isFalse);
+      expect(result.message, contains('desatualizadas'));
+    });
+
+    test('online coberto usa label Atualizar area', () {
+      final result = buildMapOfflineStatusPresentation(
+        isOnline: true,
+        hasOfflineAreasForLayer: true,
+        hasOfflineCoverageForViewport: true,
+        isCheckingCoverage: false,
+      );
+
+      expect(result.downloadActionLabel, 'Atualizar área');
     });
   });
 }
