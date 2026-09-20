@@ -298,7 +298,10 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen> {
                         client.safraAtual != null) ...[
                       _sectionTitle('Propriedade'),
                       if (client.areaTotal != null)
-                        _infoRow('Área Total', '${client.areaTotal} ha'),
+                        _infoRow(
+                          'Área Total',
+                          '${_formatAreaHa(client.areaTotal!)} ha',
+                        ),
                       if (client.tipoPropriedade != null)
                         _infoRow('Tipo', client.tipoPropriedade!),
                       if (client.sistemaIrrigacao != null)
@@ -494,6 +497,10 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen> {
 
   String _formatDate(DateTime d) =>
       '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
+
+  String _formatAreaHa(double value) => value % 1 == 0
+      ? value.toStringAsFixed(0)
+      : value.toStringAsFixed(1);
 
   void _launchURL(String url) async {
     final uri = Uri.parse(url);
