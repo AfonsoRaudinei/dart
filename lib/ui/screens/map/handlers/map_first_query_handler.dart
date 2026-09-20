@@ -18,7 +18,11 @@ class MapFirstQueryHandler {
     required WidgetRef ref,
     required void Function(MapSheetState state, String reason) setSheetState,
     required VoidCallback armOccurrenceMode,
-    required Future<void> Function(String drawingId, {required bool edit})
+    required Future<void> Function(
+      String drawingId, {
+      required bool edit,
+      bool union,
+    })
     focusDrawing,
     required void Function(LatLng point) focusCoordinate,
   }) {
@@ -29,7 +33,8 @@ class MapFirstQueryHandler {
     final fazendaNome = uri.queryParameters['fazendaNome'];
     final drawingId = uri.queryParameters['drawingId'];
 
-    if ((modo == 'desenho' || modo == 'editar') && clienteId != null) {
+    if ((modo == 'desenho' || modo == 'editar' || modo == 'uniao') &&
+        clienteId != null) {
       AppLogger.debug(
         'MAP-FIRST: recebido modo=$modo clienteId=$clienteId fazendaId=$fazendaId drawingId=$drawingId',
         tag: 'PrivateMap',
@@ -42,13 +47,21 @@ class MapFirstQueryHandler {
             farmId: fazendaId,
             farmName: fazendaNome,
           );
-      setSheetState(
-        const MapSheetState(type: MapSheetType.draw),
-        'query_param_modo_desenho',
-      );
+      if (modo != 'editar') {
+        setSheetState(
+          const MapSheetState(type: MapSheetType.draw),
+          modo == 'uniao'
+              ? 'query_param_modo_uniao'
+              : 'query_param_modo_desenho',
+        );
+      }
       if (drawingId != null && drawingId.isNotEmpty) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          focusDrawing(drawingId, edit: modo == 'editar');
+          focusDrawing(
+            drawingId,
+            edit: modo == 'editar',
+            union: modo == 'uniao',
+          );
         });
       }
       return;
