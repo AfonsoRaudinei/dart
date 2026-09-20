@@ -517,9 +517,14 @@ class _MapControlsHost extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isDrawMode = ref.watch(
+    final sheetIsDraw = ref.watch(
       mapSheetStateProvider.select((s) => s?.type == MapSheetType.draw),
     );
+    // Fatia A fecha o sheet em editing; Check-in/coluna continuam em modo desenho.
+    final drawingActive =
+        drawingMetrics.state == DrawingState.drawing ||
+        drawingMetrics.state == DrawingState.editing;
+    final isDrawMode = sheetIsDraw || drawingActive;
     final isMapReady = ref.watch(mapReadyStateProvider);
     final isProdutor = ref.watch(
       currentUserRoleProvider.select((r) => r.isProdutor),
