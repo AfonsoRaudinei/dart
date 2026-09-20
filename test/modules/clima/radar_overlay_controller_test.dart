@@ -26,7 +26,7 @@ void main() {
       );
       addTearDown(container.dispose);
 
-      container.read(activeLayerProvider.notifier).setLayer(LayerType.relevo);
+      container.read(activeLayerProvider.notifier).setLayer(LayerType.standard);
 
       container.read(radarOverlayControllerProvider).setEnabled(
         true,
@@ -53,13 +53,13 @@ void main() {
       );
       addTearDown(container.dispose);
 
-      container.read(activeLayerProvider.notifier).setLayer(LayerType.relevo);
+      container.read(activeLayerProvider.notifier).setLayer(LayerType.standard);
       container.read(climaRadarEnabledProvider.notifier).setEnabled(true);
 
       container.read(radarOverlayControllerProvider).setEnabled(false);
 
       expect(container.read(climaRadarEnabledProvider), isFalse);
-      expect(container.read(activeLayerProvider), LayerType.relevo);
+      expect(container.read(activeLayerProvider), LayerType.standard);
     });
   });
 }
