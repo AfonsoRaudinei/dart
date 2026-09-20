@@ -92,7 +92,7 @@ O agente **sempre informa**:
 
 | Fase | Ambiente | Ação |
 |---|---|---|
-| 1 | Cloud Agent **ou** MacBook | Branch + PR + auto-merge rebase (Mac: `./tool/arm_auto_merge.sh`; nunca push em `main`) |
+| 1 | Cloud Agent (supervisor) **ou** MacBook (hook `stop`, branch corrente) | Branch + PR + auto-merge rebase (Mac: `./tool/arm_auto_merge.sh` base `main`; nunca push em `main`) |
 | 2 | **Cursor Desktop Mac** | `./tool/sync_mac.sh` — `git pull origin main` + `flutter pub get` |
 | 3 | Cursor Desktop Mac | Validar (`flutter run`, testes) |
 
@@ -142,4 +142,4 @@ Fonte canônica: `.cursor/rules/soloforte-designer.mdc`
 | Ago/2026 | **Restore cliente IPA 227 + BUG-011:** 31/Ago wipe+reinstall — cliente voltou. Causa raiz histórica PGRST204 (aliases EN no push). Blindagem `agronomic_restore_push_regression_test.dart` + REGRA-RESTORE-1. |
 | Ago/2026 | **Restore marketing PGRST204:** `saveCase` upsertava `toJson()` com chaves ausentes no live. Colunas adicionadas no live + whitelist `toRemoteRow` PR #84 `d7582c1`. Carteira/relatórios já alinhados. IPA **228** gerado (`90d5d81`) para prova no aparelho. Itens 6–8 ainda 0. |
 | Set/2026 | **Sync Mac automático:** launchd `com.soloforte.sync-main` (5 min) + hook Cursor `stop` + `./tool/sync_mac.sh`. **Proibido** bloco "No MacBook:" nas respostas. Instalar: `./tool/install_mac_sync_launchd.sh` |
-| Set/2026 | **Auto-merge Mac automático:** `./tool/arm_auto_merge.sh` (`--all` no launchd via `mac_periodic.sh`; branch atual + `--all` no hook `stop`). Mesmo fluxo da Fase 1 cloud, sem `gh` manual no Mac. Reinstalar: `./tool/install_mac_sync_launchd.sh` |
+| Set/2026 | **Auto-merge Mac (gate):** hook `stop` chama `./tool/arm_auto_merge.sh` **só** da branch corrente `cursor/*` com base `main` (captura branch antes do `sync_mac`). Launchd (`mac_periodic.sh`) **não** arma merge — só `sync_mac` (Fase 2). `--all` só manual no terminal. Reinstalar: `./tool/install_mac_sync_launchd.sh` |
