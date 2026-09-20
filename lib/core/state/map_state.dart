@@ -410,6 +410,29 @@ class OfflineMapAreaConfig {
         zoom >= minZoom &&
         zoom <= maxZoom;
   }
+
+  /// Une bbox e faixa de zoom com a viewport atual, preservando [id] e [layerKey].
+  OfflineMapAreaConfig mergeWithViewport({
+    required double south,
+    required double west,
+    required double north,
+    required double east,
+    required double minZoom,
+    required double maxZoom,
+    DateTime? createdAt,
+  }) {
+    return OfflineMapAreaConfig(
+      id: id,
+      layerKey: layerKey,
+      south: south < this.south ? south : this.south,
+      west: west < this.west ? west : this.west,
+      north: north > this.north ? north : this.north,
+      east: east > this.east ? east : this.east,
+      minZoom: minZoom < this.minZoom ? minZoom : this.minZoom,
+      maxZoom: maxZoom > this.maxZoom ? maxZoom : this.maxZoom,
+      createdAt: createdAt ?? DateTime.now(),
+    );
+  }
 }
 
 class OfflineMapAreasNotifier extends Notifier<List<OfflineMapAreaConfig>> {
