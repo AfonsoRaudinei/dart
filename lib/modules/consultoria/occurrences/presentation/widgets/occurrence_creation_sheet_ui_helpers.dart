@@ -159,6 +159,27 @@ extension _OccurrenceCreationSheetUiHelpers on _OccurrenceCreationSheetState {
   int get _totalFotosCount =>
       _fotos.values.fold<int>(0, (sum, list) => sum + list.length);
 
+  List<String> _flatFotoPaths() {
+    final paths = <String>[];
+    for (final entry in _fotos.entries) {
+      paths.addAll(entry.value);
+    }
+    return paths;
+  }
+
+  void _removeFlatPhoto(int flatIndex) {
+    var cursor = 0;
+    for (final entry in _fotos.entries) {
+      for (var i = 0; i < entry.value.length; i++) {
+        if (cursor == flatIndex) {
+          _patchForm(() => entry.value.removeAt(i));
+          return;
+        }
+        cursor++;
+      }
+    }
+  }
+
   Future<void> _pickPhoto(OccurrenceCategory cat) async {
     await showSoloForteSheet<void>(
       context: context,
@@ -270,35 +291,19 @@ extension _OccurrenceCreationSheetUiHelpers on _OccurrenceCreationSheetState {
             title: 'Fotos da ocorrência',
           ),
           const SizedBox(height: 6),
-          Text(
-            total == 0
-                ? 'Anexe foto para aparecer no relatório. Selecione a categoria e toque abaixo.'
-                : '$total foto(s) pronta(s) para o relatório.',
-            style: TextStyle(color: hint, fontSize: 12),
+          OccurrencePhotoStatusText(
+            paths: _flatFotoPaths(),
+            emptyHint:
+                'Anexe foto para aparecer no relatório. Selecione a categoria e toque abaixo.',
+            hintColor: hint,
           ),
           if (total > 0) ...[
             const SizedBox(height: 10),
-            SizedBox(
-              height: 56,
-              child: ListView(
-                scrollDirection: Axis.horizontal,
-                children: [
-                  for (final entry in _fotos.entries)
-                    for (final path in entry.value)
-                      Padding(
-                        padding: const EdgeInsets.only(right: 8),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: Image.file(
-                            File(path),
-                            width: 56,
-                            height: 56,
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                      ),
-                ],
-              ),
+            OccurrencePhotoGallery(
+              paths: _flatFotoPaths(),
+              thumbnailSize: 56,
+              readOnly: false,
+              onRemove: _removeFlatPhoto,
             ),
           ],
           const SizedBox(height: 12),
@@ -388,49 +393,12 @@ extension _OccurrenceCreationSheetUiHelpers on _OccurrenceCreationSheetState {
             if (_fotos[cat.name]?.isNotEmpty == true)
               Padding(
                 padding: const EdgeInsets.fromLTRB(14, 0, 14, 8),
-                child: SizedBox(
-                  height: 72,
-                  child: ListView.separated(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: _fotos[cat.name]!.length,
-                    separatorBuilder: (_, __) => const SizedBox(width: 8),
-                    itemBuilder: (_, i) {
-                      final path = _fotos[cat.name]![i];
-                      return Stack(
-                        children: [
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: Image.file(
-                              File(path),
-                              width: 72,
-                              height: 72,
-                              fit: BoxFit.cover,
-                            ),
-                          ),
-                          Positioned(
-                            top: 2,
-                            right: 2,
-                            child: GestureDetector(
-                              onTap: () => _patchForm(
-                                () => _fotos[cat.name]!.removeAt(i),
-                              ),
-                              child: Container(
-                                padding: const EdgeInsets.all(2),
-                                decoration: BoxDecoration(
-                                  color: Colors.black87,
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: const Icon(
-                                  Icons.close,
-                                  size: 12,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      );
-                    },
+                child: OccurrencePhotoGallery(
+                  paths: List<String>.from(_fotos[cat.name]!),
+                  thumbnailSize: 72,
+                  readOnly: false,
+                  onRemove: (index) => _patchForm(
+                    () => _fotos[cat.name]!.removeAt(index),
                   ),
                 ),
               ),

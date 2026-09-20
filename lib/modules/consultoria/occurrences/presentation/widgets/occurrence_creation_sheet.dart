@@ -1,7 +1,6 @@
 // ignore_for_file: use_build_context_synchronously
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
@@ -26,6 +25,7 @@ import '../models/occurrence_form_draft.dart';
 import 'occurrence_client_selector.dart';
 import 'occurrence_fenologia_data.dart';
 import 'occurrence_form_widgets.dart';
+import 'occurrence_photo_gallery.dart';
 
 part 'occurrence_creation_sheet_models.dart';
 part 'occurrence_creation_sheet_ui_helpers.dart';
@@ -140,6 +140,12 @@ class _OccurrenceCreationSheetState
     _metrics.addAll(_decodeNestedIntMap(occurrence.metricasJson));
     _nutrientes.addAll(_decodeStringSet(occurrence.nutrientesJson));
     _fotos.addAll(_decodeStringListMap(occurrence.fotosCategoriasJson));
+    if (_fotos.isEmpty &&
+        occurrence.photoPath != null &&
+        occurrence.photoPath!.isNotEmpty) {
+      final catKey = cat?.name ?? occurrence.category ?? 'geral';
+      _fotos[catKey] = [occurrence.photoPath!];
+    }
     final notas = _decodeStringMap(occurrence.notasCategoriasJson);
     for (final entry in notas.entries) {
       _notaCtrl(entry.key).text = entry.value;
