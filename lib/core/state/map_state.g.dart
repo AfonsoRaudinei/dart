@@ -72,6 +72,25 @@ final mapSatelliteLabelsEnabledProvider =
     );
 
 typedef _$MapSatelliteLabelsEnabled = Notifier<bool>;
+String _$cerradoSatelliteOverlayEnabledHash() =>
+    r'ea9eef54a4ab3f97dbf136003bd130b8a5f82695';
+
+/// Overlay INPE Sentinel-2 Cerrado (nov/2023–ago/2024) sobre a base MapTiler.
+///
+/// Copied from [CerradoSatelliteOverlayEnabled].
+@ProviderFor(CerradoSatelliteOverlayEnabled)
+final cerradoSatelliteOverlayEnabledProvider =
+    NotifierProvider<CerradoSatelliteOverlayEnabled, bool>.internal(
+      CerradoSatelliteOverlayEnabled.new,
+      name: r'cerradoSatelliteOverlayEnabledProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$cerradoSatelliteOverlayEnabledHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+typedef _$CerradoSatelliteOverlayEnabled = Notifier<bool>;
 String _$mapStateBoundariesEnabledHash() =>
     r'fbfa0e443724e0e47ea410b1ecd4e062014c15d4';
 

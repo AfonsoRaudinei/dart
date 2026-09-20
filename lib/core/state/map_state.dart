@@ -110,6 +110,23 @@ class MapSatelliteLabelsEnabled extends _$MapSatelliteLabelsEnabled {
   }
 }
 
+/// Overlay INPE Sentinel-2 Cerrado (nov/2023–ago/2024) sobre a base MapTiler.
+@Riverpod(keepAlive: true)
+class CerradoSatelliteOverlayEnabled extends _$CerradoSatelliteOverlayEnabled {
+  static const _kKey = 'map_cerrado_satellite_overlay_v1';
+
+  @override
+  bool build() {
+    final prefs = ref.read(preferencesServiceProvider);
+    return prefs.getBool(_kKey) ?? false;
+  }
+
+  void setEnabled(bool enabled) {
+    state = enabled;
+    ref.read(preferencesServiceProvider).setBool(_kKey, enabled);
+  }
+}
+
 /// Divisas estaduais (UF) — malha IBGE sobre o mapa.
 @Riverpod(keepAlive: true)
 class MapStateBoundariesEnabled extends _$MapStateBoundariesEnabled {
@@ -416,6 +433,37 @@ class OfflineMapAreasNotifier extends Notifier<List<OfflineMapAreaConfig>> {
   void addArea(OfflineMapAreaConfig area) {
     state = [...state, area];
     _persist();
+  }
+
+  /// Atualiza área existente por [OfflineMapAreaConfig.id] ou substitui área
+  /// que já cobre o mesmo bbox/layer. Caso contrário, adiciona nova entrada.
+  void updateArea(OfflineMapAreaConfig area) {
+    final byIdIndex = state.indexWhere((existing) => existing.id == area.id);
+    if (byIdIndex >= 0) {
+      final next = [...state];
+      next[byIdIndex] = area;
+      state = next;
+      _persist();
+      return;
+    }
+
+    final coveringIndex = state.indexWhere(
+      (existing) =>
+          existing.layerKey == area.layerKey &&
+          existing.south <= area.south &&
+          existing.north >= area.north &&
+          existing.west <= area.west &&
+          existing.east >= area.east,
+    );
+    if (coveringIndex >= 0) {
+      final next = [...state];
+      next[coveringIndex] = area;
+      state = next;
+      _persist();
+      return;
+    }
+
+    addArea(area);
   }
 
   void clear() {
