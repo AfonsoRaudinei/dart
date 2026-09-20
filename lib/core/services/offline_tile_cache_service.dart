@@ -48,6 +48,10 @@ class OfflinePrefetchResult extends OfflinePrefetchProgress {
   bool get isComplete => !cancelled && failed == 0 && processed == total;
 }
 
+/// TTL padrão do cache offline de tiles — após esse prazo a área é considerada
+/// desatualizada e o usuário pode forçar atualização.
+const kOfflineTileCacheTtl = Duration(days: 180);
+
 class OfflineTileCacheService {
   const OfflineTileCacheService();
 
@@ -57,6 +61,11 @@ class OfflineTileCacheService {
 
   String layerKeyFromTemplate(String template) =>
       sha256.convert(utf8.encode(template)).toString();
+
+  /// Retorna `true` quando a área offline excedeu o [kOfflineTileCacheTtl].
+  static bool isAreaExpired(DateTime createdAt) {
+    return DateTime.now().difference(createdAt) > kOfflineTileCacheTtl;
+  }
 
   Future<Directory> _baseDir() async {
     final dir = await getApplicationDocumentsDirectory();
@@ -173,6 +182,7 @@ class OfflineTileCacheService {
     Map<String, String> headers = const {},
     void Function(OfflinePrefetchProgress progress)? onProgress,
     bool Function()? shouldCancel,
+    bool forceRefresh = false,
   }) async {
     final total = estimateTileCount(
       south: south,
@@ -225,7 +235,9 @@ class OfflineTileCacheService {
               break;
             }
             final file = await tileFile(layerKey: layerKey, z: z, x: x, y: y);
-            if (file.existsSync() && file.lengthSync() > 0) {
+            if (!forceRefresh &&
+                file.existsSync() &&
+                file.lengthSync() > 0) {
               skipped++;
               processed++;
               emitProgress();
