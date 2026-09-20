@@ -140,15 +140,15 @@ class LayersSheet extends ConsumerWidget {
                           width: itemWidth,
                           height: itemHeight,
                           tileConfig: MapConfig.tileConfigForLayer(
-                            LayerType.relevo,
+                            LayerType.standard,
                             mapTilerApiKey: MapConfig.kMapTilerApiKey,
                           ),
-                          label: 'Relevo',
-                          isSelected: currentLayer == LayerType.relevo,
+                          label: 'Mapa',
+                          isSelected: currentLayer == LayerType.standard,
                           renderTilePreview: renderTilePreviews,
                           onTap: () => ref
                               .read(activeLayerProvider.notifier)
-                              .setLayer(LayerType.relevo),
+                              .setLayer(LayerType.standard),
                         ),
                         _OverlayToggleTile(
                           width: itemWidth,
@@ -677,7 +677,7 @@ class _OverlayToggleTile extends StatelessWidget {
   }
 }
 
-/// Moldura unificada dos quatro tiles da grade (satélite, relevo, pinos, chuva).
+/// Moldura unificada dos quatro tiles da grade (satélite, mapa, pinos, chuva).
 ///
 /// A borda de seleção é pintada por cima, sem alterar o tamanho do conteúdo —
 /// evita desalinhamento visual entre tiles com imagem e tiles com mapa.
