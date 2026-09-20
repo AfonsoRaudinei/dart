@@ -3,6 +3,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:soloforte_app/core/widgets/photo/soloforte_photo_picker_sheet.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   testWidgets('SoloFortePhotoPickerSheet mostra câmera, galeria e inversão vegetal',
       (tester) async {
     await tester.pumpWidget(

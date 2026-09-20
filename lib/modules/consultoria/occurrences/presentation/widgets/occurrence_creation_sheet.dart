@@ -82,6 +82,11 @@ class _OccurrenceCreationSheetState
   late final double _pinLatitude;
   late final double _pinLongitude;
 
+  void _patchForm(VoidCallback fn) {
+    setState(fn);
+    _persistDraft();
+  }
+
   @override
   void initState() {
     super.initState();

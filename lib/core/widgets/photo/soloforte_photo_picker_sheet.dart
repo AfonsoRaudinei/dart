@@ -41,11 +41,11 @@ Future<String?> _resolvePhotoPath(_PhotoPickerOrigin origin) async {
   try {
     switch (origin) {
       case _PhotoPickerOrigin.camera:
-        return _pickRaw(ImageSource.camera);
+        return await _pickRaw(ImageSource.camera);
       case _PhotoPickerOrigin.gallery:
-        return _pickRaw(ImageSource.gallery);
+        return await _pickRaw(ImageSource.gallery);
       case _PhotoPickerOrigin.vegetal:
-        return _pickVegetalInversion();
+        return await _pickVegetalInversion();
     }
   } catch (e, st) {
     AppLogger.error(
@@ -221,7 +221,9 @@ class _PhotoPickerTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
+    return Material(
+      color: Colors.transparent,
+      child: ListTile(
       leading: Container(
         width: 44,
         height: 44,
@@ -234,6 +236,7 @@ class _PhotoPickerTile extends StatelessWidget {
       title: Text(title, style: TextStyle(color: titleColor)),
       subtitle: Text(subtitle, style: TextStyle(color: subtitleColor)),
       onTap: onTap,
+      ),
     );
   }
 }

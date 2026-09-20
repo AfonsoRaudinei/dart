@@ -51,7 +51,7 @@ void main() {
       final resolved = await ImageStorageService().resolveLocalPath(persisted!);
       expect(resolved, isNotNull);
       expect(File(resolved!).existsSync(), isTrue);
-      expect(await File(resolved!).readAsBytes(), List<int>.filled(64, 7));
+      expect(await File(resolved).readAsBytes(), List<int>.filled(64, 7));
     });
 
     test('retorna null quando origem não existe', () async {

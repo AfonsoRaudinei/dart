@@ -563,8 +563,8 @@ Future<void> _pumpOverlayWithFabHarness(
               Positioned(
                 bottom: safeBottom + kFabShellBottomInset,
                 right: 16,
-                child: SizedBox(
-                  key: const Key('map_chrome_fab_harness'),
+                child: const SizedBox(
+                  key: Key('map_chrome_fab_harness'),
                   width: kFabHeight,
                   height: kFabHeight,
                 ),
