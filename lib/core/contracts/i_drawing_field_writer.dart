@@ -33,4 +33,15 @@ abstract interface class IDrawingFieldWriter {
     String? cultura,
     String? safra,
   });
+
+  /// Combina dois talhões do mapa em um único polígono.
+  ///
+  /// Mescla a geometria do secundário no primário, preserva o ID do primário
+  /// (sem `createNewVersion`), soft-deleta o secundário e recalcula a área
+  /// total do cliente. Geometria inválida lança [StateError]. Ver ADR-038.
+  Future<void> unionDrawingFields({
+    required String primaryFieldId,
+    required String secondaryFieldId,
+    required String clientId,
+  });
 }
