@@ -330,7 +330,6 @@ class MapBuildOrchestrator extends ConsumerWidget {
                     '${pos.center.longitude.toStringAsFixed(4)} '
                     'Zoom=${pos.zoom.toStringAsFixed(1)}',
                   );
-                  MapLogger.logEvent('Clustering Active: ${pos.zoom < 15}');
                 }
               },
               maxZoom: tileConfig.maxZoom,
