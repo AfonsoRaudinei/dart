@@ -290,6 +290,9 @@ class DrawingController extends ChangeNotifier {
   /// Vértice selecionado durante sketch de polígono (mid-draw).
   int? _selectedSketchVertexIndex;
   bool _isDraggingSketchVertex = false;
+  /// Vértice selecionado durante edição de polígono (gota).
+  int? _selectedEditRingIndex;
+  int? _selectedEditPointIndex;
   static const int _complexityThreshold = 2000;
   static const int _validationDebounceMs = 300;
   static const int _notifyThrottleMs = 16;
@@ -314,6 +317,8 @@ class DrawingController extends ChangeNotifier {
   int? get draggedVertexIndex => _draggedVertexIndex;
   int? get selectedSketchVertexIndex => _selectedSketchVertexIndex;
   bool get isDraggingSketchVertex => _isDraggingSketchVertex;
+  int? get selectedEditRingIndex => _selectedEditRingIndex;
+  int? get selectedEditPointIndex => _selectedEditPointIndex;
 
   /// ⚡ COMPUTED PROPERTY: Evita cálculo no build()
   int get pendingSyncCount => _features
@@ -1472,6 +1477,8 @@ class DrawingController extends ChangeNotifier {
     _draggedVertexIndex = null;
     _selectedSketchVertexIndex = null;
     _isDraggingSketchVertex = false;
+    _selectedEditRingIndex = null;
+    _selectedEditPointIndex = null;
     _stateMachine.cancel();
     if (notify) {
       notifyListeners();
@@ -1589,6 +1596,8 @@ class DrawingController extends ChangeNotifier {
     _editGeometry = null;
     _editGeometrySnapshotJson = null;
     _history.clear();
+    _selectedEditRingIndex = null;
+    _selectedEditPointIndex = null;
     _interactionMode = DrawingInteraction.normal;
     // 🔧 FASE3: Se feature ainda selecionada, volta para selected em vez de idle
     if (_selectedFeature != null) {
