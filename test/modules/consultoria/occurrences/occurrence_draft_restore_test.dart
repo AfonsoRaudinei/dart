@@ -91,7 +91,7 @@ void main() {
       Widget buildSheet() {
         return UncontrolledProviderScope(
           container: container,
-          child: MaterialApp(
+          child: const MaterialApp(
             home: Scaffold(
               body: OccurrenceCreationSheet(
                 latitude: lat,
