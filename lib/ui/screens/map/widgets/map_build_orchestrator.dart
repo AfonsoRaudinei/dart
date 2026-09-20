@@ -588,11 +588,9 @@ class _MapControlsHost extends ConsumerWidget {
       onSaveEdit: () => ref.read(drawingControllerProvider).saveEdit(),
       onCancelEdit: () => ref.read(drawingControllerProvider).cancelEdit(),
       onUndoEdit: () => ref.read(drawingControllerProvider).undoEdit(),
-      onRedoEdit: () => ref.read(drawingControllerProvider).redoEdit(),
       onUndoDrawing: () =>
           ref.read(drawingControllerProvider).undoDrawingPoint(),
       canUndo: drawingMetrics.canUndo,
-      canRedo: drawingMetrics.canRedo,
       hasSelfIntersection: drawingMetrics.hasSelfIntersection,
       measurementAreaHa: drawingMetrics.measureAreaHa,
       measurementPerimeterKm: drawingMetrics.measurePerimeterKm,
