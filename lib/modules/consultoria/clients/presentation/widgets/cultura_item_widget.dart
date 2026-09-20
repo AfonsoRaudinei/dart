@@ -76,6 +76,24 @@ class CulturaItemWidget extends StatelessWidget {
   }
 }
 
+/// Incorpora texto pendente no campo (inclui vírgulas) à lista de chips.
+void flushVariedadesPendentes({
+  required TextEditingController controller,
+  required List<String> variedades,
+  required StateSetter setState,
+}) {
+  final pending = ClientCultura.parseVariedades(controller.text);
+  if (pending.isEmpty) return;
+  setState(() {
+    for (final item in pending) {
+      if (!variedades.contains(item)) {
+        variedades.add(item);
+      }
+    }
+    controller.clear();
+  });
+}
+
 /// Campo de texto livre + chips para múltiplas variedades/cultivares.
 class VariedadesCultivaresInput extends StatelessWidget {
   final TextEditingController controller;
@@ -169,15 +187,11 @@ Future<ClientCultura?> showAddCulturaSheet({
       final ctaRadius = ios ? SoloForteSheetSkinIos.ctaRadius : 8.0;
 
       void addVariedade(StateSetter setS) {
-        final text = variedadeCtrl.text.trim();
-        if (text.isEmpty || variedades.contains(text)) {
-          variedadeCtrl.clear();
-          return;
-        }
-        setS(() {
-          variedades.add(text);
-          variedadeCtrl.clear();
-        });
+        flushVariedadesPendentes(
+          controller: variedadeCtrl,
+          variedades: variedades,
+          setState: setS,
+        );
       }
 
       return StatefulBuilder(
@@ -265,6 +279,11 @@ Future<ClientCultura?> showAddCulturaSheet({
                         ),
                         onPressed: () {
                           if (formKey.currentState?.validate() != true) return;
+                          flushVariedadesPendentes(
+                            controller: variedadeCtrl,
+                            variedades: variedades,
+                            setState: setS,
+                          );
                           result = ClientCultura(
                             id: const Uuid().v4(),
                             clientId: clientId,
