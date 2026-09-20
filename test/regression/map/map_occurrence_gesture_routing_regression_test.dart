@@ -41,10 +41,18 @@ void main() {
           orchestratorSource.indexOf('onLongPress: (tapPos, point)'),
         );
 
-        expect(tapBlock, contains('appendDrawingPoint'));
+        expect(tapBlock, contains('findSketchVertexIndexNear'));
+        expect(tapBlock, contains('findEditVertexNear'));
+        final contextTapGuard = tapBlock.indexOf(
+          'if (drawCtrl.suppressesMapContextTaps)',
+        );
         expect(
-          tapBlock.indexOf('appendDrawingPoint'),
-          lessThan(tapBlock.indexOf('suppressesMapContextTaps')),
+          tapBlock.indexOf('findSketchVertexIndexNear'),
+          lessThan(contextTapGuard),
+        );
+        expect(
+          tapBlock.indexOf('findEditVertexNear'),
+          lessThan(contextTapGuard),
         );
       },
     );
