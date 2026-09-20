@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
-import 'package:flutter_map_marker_cluster/flutter_map_marker_cluster.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:latlong2/latlong.dart';
@@ -41,7 +40,7 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      expect(find.byType(MarkerClusterLayerWidget), findsNothing);
+      expect(find.byType(MarkerLayer), findsNothing);
     },
   );
 
@@ -78,8 +77,7 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      // ADR-035: ocorrências passaram a renderizar via cluster layer.
-      expect(find.byType(MarkerClusterLayerWidget), findsOneWidget);
+      expect(find.byType(MarkerLayer), findsOneWidget);
 
       await tester.tap(find.byType(GestureDetector).first);
       await tester.pump();
@@ -132,12 +130,10 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      final cluster = tester.widget<MarkerClusterLayerWidget>(
-        find.byType(MarkerClusterLayerWidget),
-      );
-      expect(cluster.options.markers.length, 1);
+      final markerLayer = tester.widget<MarkerLayer>(find.byType(MarkerLayer));
+      expect(markerLayer.markers.length, 1);
       expect(
-        (cluster.options.markers.first.key as ValueKey<String>).value,
+        (markerLayer.markers.first.key as ValueKey<String>).value,
         'occ_${otherOccurrence.id}',
       );
     },
