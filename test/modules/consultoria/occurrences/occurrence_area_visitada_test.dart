@@ -107,6 +107,36 @@ void main() {
   });
 
   group('OccurrenceCreationSheet — Área Visitada', () {
+    testWidgets('initialCategoryValue pré-seleciona Área Visitada', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            currentUserRoleProvider.overrideWithValue(UserRole.consultor),
+            clientLookupProvider.overrideWithValue(_FakeClientLookup(const [])),
+            activeVisitContextLookupProvider.overrideWithValue(
+              _EmptyVisitLookup(),
+            ),
+          ],
+          child: MaterialApp(
+            home: Scaffold(
+              body: OccurrenceCreationSheet(
+                latitude: -10.5,
+                longitude: -48.2,
+                initialCategoryValue: kOccurrenceAreaVisitadaCategory,
+                onConfirm: (_) async {},
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Área Visitada'), findsWidgets);
+      expect(find.text('Cultivar & Plantio'), findsNothing);
+    });
+
     testWidgets('salva sem cliente e sem descrição quando categoria selecionada', (
       tester,
     ) async {
