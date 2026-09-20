@@ -71,6 +71,11 @@ extension _DrawingSheetBuildersA on _DrawingSheetState {
   }
 
   Widget _buildErrorState(BuildContext context) {
+    final isIos = soloForteSheetIsIos(context);
+    final bodyColor = isIos
+        ? SoloForteSheetSkinIos.subtitleColor
+        : SoloForteSheetTokens.sectionLabel;
+
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -80,7 +85,7 @@ extension _DrawingSheetBuildersA on _DrawingSheetState {
           Text(
             widget.controller.errorMessage!,
             textAlign: TextAlign.center,
-            style: const TextStyle(color: SoloForteSheetTokens.sectionLabel),
+            style: TextStyle(color: bodyColor),
           ),
           const SizedBox(height: 16),
           ElevatedButton(
@@ -353,24 +358,32 @@ extension _DrawingSheetBuildersA on _DrawingSheetState {
   // 🆕 REFATORADO: Métodos de construção de modo
 
   Widget _buildImportingMode(BuildContext context) {
+    final isIos = soloForteSheetIsIos(context);
+    final titleColor = isIos
+        ? SoloForteSheetSkinIos.titleColor
+        : SoloForteSheetTokens.sectionLabel;
+    final bodyColor = isIos
+        ? SoloForteSheetSkinIos.subtitleColor
+        : SoloForteSheetTokens.inputHint;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Text(
+          Text(
             'Importar Arquivo',
             style: TextStyle(
-              color: SoloForteSheetTokens.sectionLabel,
+              color: titleColor,
               fontSize: 16,
               fontWeight: FontWeight.w600,
             ),
           ),
           const SizedBox(height: 8),
-          const Text(
+          Text(
             'Selecione o arquivo KML ou KMZ para importar:',
-            style: TextStyle(color: SoloForteSheetTokens.inputHint),
+            style: TextStyle(color: bodyColor),
           ),
           const SizedBox(height: 24),
           _FormatButton(
@@ -429,6 +442,14 @@ extension _DrawingSheetBuildersA on _DrawingSheetState {
     String instructions,
     VoidCallback onConfirm,
   ) {
+    final isIos = soloForteSheetIsIos(context);
+    final titleColor = isIos
+        ? SoloForteSheetSkinIos.titleColor
+        : SoloForteSheetTokens.sectionLabel;
+    final bodyColor = isIos
+        ? SoloForteSheetSkinIos.subtitleColor
+        : SoloForteSheetTokens.inputHint;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
@@ -437,8 +458,8 @@ extension _DrawingSheetBuildersA on _DrawingSheetState {
         children: [
           Text(
             title,
-            style: const TextStyle(
-              color: SoloForteSheetTokens.sectionLabel,
+            style: TextStyle(
+              color: titleColor,
               fontSize: 16,
               fontWeight: FontWeight.w600,
             ),
@@ -449,7 +470,7 @@ extension _DrawingSheetBuildersA on _DrawingSheetState {
             child: Text(
               instructions,
               textAlign: TextAlign.center,
-              style: const TextStyle(color: SoloForteSheetTokens.inputHint),
+              style: TextStyle(color: bodyColor),
             ),
           ),
           if (widget.controller.errorMessage != null)
@@ -502,6 +523,13 @@ extension _DrawingSheetBuildersA on _DrawingSheetState {
 
   Widget _buildImportPreviewMode(BuildContext context) {
     final hasImportWarning = widget.controller.hasPendingImportWarning;
+    final isIos = soloForteSheetIsIos(context);
+    final titleColor = isIos
+        ? SoloForteSheetSkinIos.titleColor
+        : SoloForteSheetTokens.sectionLabel;
+    final bodyColor = isIos
+        ? SoloForteSheetSkinIos.subtitleColor
+        : SoloForteSheetTokens.sectionLabel;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -509,17 +537,21 @@ extension _DrawingSheetBuildersA on _DrawingSheetState {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Text(
+          Text(
             'Visualizar Importação',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+            style: TextStyle(
+              color: titleColor,
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
           ),
           const Divider(),
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 20),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 20),
             child: Text(
               'A geometria foi carregada no mapa como visualização.\nConfirme para adicionar ao desenho.',
               textAlign: TextAlign.center,
-              style: TextStyle(color: SoloForteSheetTokens.sectionLabel),
+              style: TextStyle(color: bodyColor),
             ),
           ),
           if (hasImportWarning) ...[
