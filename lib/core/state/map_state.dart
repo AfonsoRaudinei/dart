@@ -430,7 +430,7 @@ class OfflineMapAreaConfig {
       east: east > this.east ? east : this.east,
       minZoom: minZoom < this.minZoom ? minZoom : this.minZoom,
       maxZoom: maxZoom > this.maxZoom ? maxZoom : this.maxZoom,
-      createdAt: createdAt ?? DateTime.now(),
+      createdAt: createdAt ?? this.createdAt,
     );
   }
 }
@@ -464,7 +464,7 @@ class OfflineMapAreasNotifier extends Notifier<List<OfflineMapAreaConfig>> {
     final byIdIndex = state.indexWhere((existing) => existing.id == area.id);
     if (byIdIndex >= 0) {
       final next = [...state];
-      next[byIdIndex] = area;
+      next[byIdIndex] = _mergeAreaUpdate(state[byIdIndex], area);
       state = next;
       _persist();
       return;
@@ -480,13 +480,28 @@ class OfflineMapAreasNotifier extends Notifier<List<OfflineMapAreaConfig>> {
     );
     if (coveringIndex >= 0) {
       final next = [...state];
-      next[coveringIndex] = area;
+      next[coveringIndex] = _mergeAreaUpdate(state[coveringIndex], area);
       state = next;
       _persist();
       return;
     }
 
     addArea(area);
+  }
+
+  OfflineMapAreaConfig _mergeAreaUpdate(
+    OfflineMapAreaConfig existing,
+    OfflineMapAreaConfig incoming,
+  ) {
+    return existing.mergeWithViewport(
+      south: incoming.south,
+      west: incoming.west,
+      north: incoming.north,
+      east: incoming.east,
+      minZoom: incoming.minZoom,
+      maxZoom: incoming.maxZoom,
+      createdAt: incoming.createdAt,
+    );
   }
 
   void clear() {
