@@ -11,6 +11,7 @@ import 'package:soloforte_app/modules/consultoria/clients/domain/agronomic_model
 import 'package:soloforte_app/modules/consultoria/clients/presentation/providers/clients_providers.dart';
 import 'package:soloforte_app/modules/consultoria/clients/presentation/providers/field_providers.dart';
 import 'package:soloforte_app/modules/consultoria/clients/presentation/widgets/client_sheet_form_padding.dart';
+import 'package:soloforte_app/modules/consultoria/clients/presentation/widgets/talhao_union_sheet.dart';
 import 'package:soloforte_app/modules/consultoria/farms/data/repositories/farm_repository.dart';
 import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 
@@ -41,6 +42,8 @@ Future<void> showTalhaoActionsSheet(
   required String fieldName,
   String? initialCultura,
   String? initialSafra,
+  bool showUnionAction = false,
+  List<TalhaoUnionCandidate> unionCandidates = const [],
 }) async {
   final action = await showSoloForteSheet<TalhaoShortAction>(
     context: context,
@@ -51,6 +54,7 @@ Future<void> showTalhaoActionsSheet(
     clipBehavior: Clip.none,
     builder: (sheetContext) => TalhaoActionsSheet(
       fieldName: fieldName,
+      showUnionAction: showUnionAction && unionCandidates.isNotEmpty,
       onSelected: (selected) => Navigator.of(sheetContext).pop(selected),
     ),
   );
@@ -68,13 +72,13 @@ Future<void> showTalhaoActionsSheet(
         ),
       );
     case TalhaoShortAction.union:
-      context.go(
-        talhaoMapUri(
-          modo: 'uniao',
-          clientId: clientId,
-          farmId: farmId,
-          drawingId: fieldId,
-        ),
+      await showTalhaoUnionSheet(
+        context,
+        clientId: clientId,
+        farmId: farmId,
+        primaryFieldId: fieldId,
+        primaryFieldName: fieldName,
+        candidates: unionCandidates,
       );
     case TalhaoShortAction.editData:
       await showTalhaoDadosSheet(
@@ -94,10 +98,12 @@ class TalhaoActionsSheet extends StatelessWidget {
     super.key,
     required this.fieldName,
     required this.onSelected,
+    this.showUnionAction = false,
   });
 
   final String fieldName;
   final ValueChanged<TalhaoShortAction> onSelected;
+  final bool showUnionAction;
 
   @override
   Widget build(BuildContext context) {
@@ -165,17 +171,18 @@ class TalhaoActionsSheet extends StatelessWidget {
                 onSelected(TalhaoShortAction.editData);
               },
             ),
-            _TalhaoActionTile(
-              icon: Icons.add_circle_outline,
-              label: 'União',
-              description: 'Combinar com outra área',
-              muted: muted,
-              titleColor: titleColor,
-              onTap: () {
-                HapticFeedback.lightImpact();
-                onSelected(TalhaoShortAction.union);
-              },
-            ),
+            if (showUnionAction)
+              _TalhaoActionTile(
+                icon: Icons.add_circle_outline,
+                label: 'União',
+                description: 'Combinar com outra área',
+                muted: muted,
+                titleColor: titleColor,
+                onTap: () {
+                  HapticFeedback.lightImpact();
+                  onSelected(TalhaoShortAction.union);
+                },
+              ),
           ],
         ),
       ),
