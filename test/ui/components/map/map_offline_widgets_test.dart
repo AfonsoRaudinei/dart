@@ -1,7 +1,73 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:soloforte_app/core/state/map_state.dart';
 import 'package:soloforte_app/ui/components/map/widgets/map_offline_widgets.dart';
 
 void main() {
+  group('OfflineMapAreaConfig.mergeWithViewport', () {
+    test('nao encolhe bbox quando viewport e subconjunto da area existente', () {
+      final existing = OfflineMapAreaConfig(
+        id: 'area-1',
+        layerKey: 'layer-a',
+        south: -15,
+        west: -55,
+        north: -12,
+        east: -50,
+        minZoom: 10,
+        maxZoom: 18,
+        createdAt: _fixedDate,
+      );
+      final merged = existing.mergeWithViewport(
+        south: -14,
+        west: -54,
+        north: -13,
+        east: -53,
+        minZoom: 14,
+        maxZoom: 16,
+        createdAt: _refreshDate,
+      );
+
+      expect(merged.id, 'area-1');
+      expect(merged.layerKey, 'layer-a');
+      expect(merged.south, -15);
+      expect(merged.west, -55);
+      expect(merged.north, -12);
+      expect(merged.east, -50);
+      expect(merged.minZoom, 10);
+      expect(merged.maxZoom, 18);
+      expect(merged.createdAt, _refreshDate);
+    });
+
+    test('expande bbox e zoom quando viewport ultrapassa area existente', () {
+      final existing = OfflineMapAreaConfig(
+        id: 'area-2',
+        layerKey: 'layer-a',
+        south: -14,
+        west: -54,
+        north: -13,
+        east: -53,
+        minZoom: 14,
+        maxZoom: 16,
+        createdAt: _fixedDate,
+      );
+      final merged = existing.mergeWithViewport(
+        south: -15,
+        west: -55,
+        north: -12,
+        east: -50,
+        minZoom: 12,
+        maxZoom: 18,
+        createdAt: _refreshDate,
+      );
+
+      expect(merged.south, -15);
+      expect(merged.west, -55);
+      expect(merged.north, -12);
+      expect(merged.east, -50);
+      expect(merged.minZoom, 12);
+      expect(merged.maxZoom, 18);
+    });
+  });
+
   group('buildMapOfflineStatusPresentation', () {
     test('sinaliza mapa offline ativo quando viewport ja esta coberto', () {
       final result = buildMapOfflineStatusPresentation(
@@ -84,3 +150,6 @@ void main() {
     });
   });
 }
+
+final _fixedDate = DateTime(2020, 1, 1);
+final _refreshDate = DateTime(2026, 9, 19);
