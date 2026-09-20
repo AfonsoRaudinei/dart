@@ -174,12 +174,65 @@ void main() {
       );
     });
   });
+
+  group('DrawingFieldWriterAdapter.updateFieldMetadata', () {
+    test('persiste cultura e safra atualizadas', () async {
+      const fieldId = 'drawing-metadata-1';
+      final feature = _feature(fieldId, syncStatus: SyncStatus.synced);
+      await repository.saveFeature(feature);
+
+      await adapter.updateFieldMetadata(
+        fieldId: fieldId,
+        cultura: 'Soja',
+        safra: '2025/2026',
+      );
+
+      final updated = await repository.getFeatureById(fieldId);
+      expect(updated, isNotNull);
+      expect(updated!.properties.cultura, 'Soja');
+      expect(updated.properties.safra, '2025/2026');
+      expect(updated.properties.syncStatus, SyncStatus.local_only);
+    });
+
+    test('strings vazias normalizam para null', () async {
+      const fieldId = 'drawing-metadata-clear';
+      final feature = _feature(
+        fieldId,
+        cultura: 'Milho',
+        safra: '2024/2025',
+      );
+      await repository.saveFeature(feature);
+
+      await adapter.updateFieldMetadata(
+        fieldId: fieldId,
+        cultura: '   ',
+        safra: '',
+      );
+
+      final updated = await repository.getFeatureById(fieldId);
+      expect(updated, isNotNull);
+      expect(updated!.properties.cultura, isNull);
+      expect(updated.properties.safra, isNull);
+    });
+
+    test('feature inexistente lança StateError', () async {
+      expect(
+        () => adapter.updateFieldMetadata(
+          fieldId: 'missing-id',
+          cultura: 'Soja',
+        ),
+        throwsA(isA<StateError>()),
+      );
+    });
+  });
 }
 
 DrawingFeature _feature(
   String id, {
   String? clienteId,
   String? fazendaId,
+  String? cultura,
+  String? safra,
   bool ativo = true,
   SyncStatus syncStatus = SyncStatus.local_only,
 }) {
@@ -204,6 +257,8 @@ DrawingFeature _feature(
       autorTipo: AuthorType.consultor,
       clienteId: clienteId,
       fazendaId: fazendaId,
+      cultura: cultura,
+      safra: safra,
       areaHa: 1.2,
       versao: 1,
       ativo: ativo,
