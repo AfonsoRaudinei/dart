@@ -6,6 +6,7 @@ import 'package:soloforte_app/core/router/app_routes.dart';
 import 'package:soloforte_app/modules/consultoria/clients/presentation/providers/clients_providers.dart';
 import 'package:soloforte_app/modules/consultoria/clients/presentation/providers/field_providers.dart';
 import 'package:soloforte_app/modules/consultoria/clients/presentation/widgets/talhao_actions_sheet.dart';
+import 'package:soloforte_app/modules/consultoria/clients/presentation/widgets/talhao_union_sheet.dart';
 import 'package:soloforte_app/modules/consultoria/clients/presentation/widgets/talhao_map_preview.dart';
 
 String formatLinkedFieldAreaHa(double areaHa) {
@@ -108,6 +109,19 @@ class FarmLinkedFieldList extends ConsumerWidget {
     context.go(AppRoutes.fieldDetail(clientId, farmId, field.id));
   }
 
+  List<TalhaoUnionCandidate> _unionCandidates(FarmLinkedFieldSummary field) {
+    return fields
+        .where((candidate) => candidate.isDrawing && candidate.id != field.id)
+        .map(
+          (candidate) => TalhaoUnionCandidate(
+            id: candidate.id,
+            name: candidate.name,
+            areaHa: candidate.areaHa,
+          ),
+        )
+        .toList();
+  }
+
   Future<void> _openActions(
     BuildContext context,
     FarmLinkedFieldSummary field,
@@ -120,6 +134,8 @@ class FarmLinkedFieldList extends ConsumerWidget {
       fieldName: field.name,
       initialCultura: field.crop,
       initialSafra: field.harvest,
+      showUnionAction: field.isDrawing,
+      unionCandidates: _unionCandidates(field),
     );
   }
 
