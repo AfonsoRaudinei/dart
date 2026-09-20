@@ -16,7 +16,9 @@ class ImageStorageService {
   final ImagePicker _picker = ImagePicker();
 
   /// Captura uma imagem da câmera e salva no diretório de documentos do app.
-  /// Retorna o caminho relativo (`media/img_….jpg`) ou null se cancelado.
+  /// Retorna o caminho absoluto do arquivo salvo ou null se cancelado.
+  ///
+  /// Ocorrências devem usar [persistLocalCopy] (path relativo para SQLite).
   Future<String?> captureAndSaveImage() async {
     try {
       final XFile? pickedFile = await _picker.pickImage(
@@ -27,7 +29,7 @@ class ImageStorageService {
       if (pickedFile == null) return null;
 
       final savedFile = await _saveToAppDirectory(File(pickedFile.path));
-      return toStoredPath(savedFile.path);
+      return savedFile.path;
     } catch (e) {
       AppLogger.warning(
         'Erro ao capturar/salvar imagem',
