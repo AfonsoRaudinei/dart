@@ -5,6 +5,9 @@ import 'package:soloforte_app/modules/consultoria/clients/presentation/providers
 const _orphanDrawingsWhereSuffix =
     'AND (fazenda_id IS NULL OR fazenda_id = \'\')';
 
+/// Espelha colunas agronômicas em [clientDrawingFieldsProvider].
+const _clientDrawingCropHarvestColumns = ['cultura', 'safra'];
+
 void main() {
   group('mergeFarmLinkedFieldSummaries', () {
     test('combina fields e drawings vinculados sem duplicar ids', () {
@@ -64,9 +67,29 @@ void main() {
     });
   });
 
+  group('ClientDrawingFieldSummary', () {
+    test('expõe cultura e safra como crop e harvest', () {
+      const summary = ClientDrawingFieldSummary(
+        id: 'drawing-1',
+        name: 'Talhão Avulso',
+        areaHa: 12.5,
+        vertices: [],
+        crop: 'Soja',
+        harvest: '2025/2026',
+      );
+
+      expect(summary.crop, 'Soja');
+      expect(summary.harvest, '2025/2026');
+    });
+  });
+
   group('clientDrawingFieldsProvider', () {
     test('consulta apenas talhões avulsos (sem fazenda_id)', () {
       expect(_orphanDrawingsWhereSuffix, contains('fazenda_id IS NULL'));
+    });
+
+    test('seleciona cultura e safra para preencher ações do talhão', () {
+      expect(_clientDrawingCropHarvestColumns, ['cultura', 'safra']);
     });
   });
 }
