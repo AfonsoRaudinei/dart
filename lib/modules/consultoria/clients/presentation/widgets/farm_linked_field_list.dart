@@ -118,6 +118,8 @@ class FarmLinkedFieldList extends ConsumerWidget {
       farmId: farmId,
       fieldId: field.id,
       fieldName: field.name,
+      initialCultura: field.crop,
+      initialSafra: field.harvest,
     );
   }
 
