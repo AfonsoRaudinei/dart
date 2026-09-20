@@ -466,27 +466,64 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.ensureVisible(find.text('Excluir').last);
-    await tester.tap(find.text('Excluir').last);
-    await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(TextButton, 'Excluir'));
-    await tester.pumpAndSettle();
+    await _deleteSelectedField(tester);
 
     expect(find.text('"Talhão Norte" removido'), findsOneWidget);
     expect(find.text('DESFAZER'), findsOneWidget);
-    expect(
-      find.byKey(const Key('drawing_delete_snackbar_close')),
-      findsOneWidget,
-    );
+    expect(find.byTooltip('Close'), findsOneWidget);
     expect(controller.features, isEmpty);
 
-    final closeButton = find.byKey(const Key('drawing_delete_snackbar_close'));
+    final closeButton = find.byTooltip('Close');
     await tester.ensureVisible(closeButton);
     await tester.tap(closeButton);
     await tester.pumpAndSettle();
 
     expect(find.byType(SnackBar), findsNothing);
     expect(controller.features, isEmpty);
+  });
+
+  testWidgets('snackbar de exclusao DESFAZER restaura talhao no controller', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(800, 2000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final repository = _DrawingRepository(_localOnlyFeature());
+    final controller = DrawingController(repository: repository);
+    addTearDown(controller.dispose);
+    await controller.loadFeatures();
+    controller.selectFeature(controller.features.single);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          drawingClientsRepositoryProvider.overrideWithValue(
+            _ClientsRepository(),
+          ),
+        ],
+        child: MaterialApp(
+          home: Scaffold(
+            body: SizedBox(
+              height: 1200,
+              child: DrawingSheet(controller: controller),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await _deleteSelectedField(tester);
+    expect(controller.features, isEmpty);
+
+    await tester.tap(find.byType(SnackBarAction));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(SnackBar), findsNothing);
+    expect(controller.features, hasLength(1));
+    expect(controller.features.single.properties.nome, 'Talhão Norte');
   });
 
   testWidgets(
@@ -567,6 +604,14 @@ void main() {
   );
 }
 
+Future<void> _deleteSelectedField(WidgetTester tester) async {
+  await tester.ensureVisible(find.text('Excluir').last);
+  await tester.tap(find.text('Excluir').last);
+  await tester.pumpAndSettle();
+  await tester.tap(find.widgetWithText(TextButton, 'Excluir'));
+  await tester.pumpAndSettle();
+}
+
 class _DrawingRepository extends DrawingRepository {
   final DrawingFeature initial;
   final List<DrawingFeature> saved = [];
@@ -604,6 +649,14 @@ class _ClientsRepository implements IClientsRepository {
 }
 
 DrawingFeature _feature() {
+  return _drawingFeature(syncStatus: SyncStatus.synced);
+}
+
+DrawingFeature _localOnlyFeature() {
+  return _drawingFeature(syncStatus: SyncStatus.local_only);
+}
+
+DrawingFeature _drawingFeature({required SyncStatus syncStatus}) {
   final now = DateTime(2026);
   return DrawingFeature(
     id: 'field-1',
@@ -629,7 +682,7 @@ DrawingFeature _feature() {
       ativo: true,
       createdAt: now,
       updatedAt: now,
-      syncStatus: SyncStatus.synced,
+      syncStatus: syncStatus,
     ),
   );
 }
