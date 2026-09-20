@@ -151,7 +151,7 @@ void main() {
     },
   );
 
-  testWidgets('MapControlsOverlay monta cluster lateral no estado editing', (
+  testWidgets('MapControlsOverlay monta toolbar inferior no estado editing', (
     tester,
   ) async {
     SharedPreferences.setMockInitialValues({});
@@ -185,6 +185,8 @@ void main() {
               currentCenter: const LatLng(0, 0),
               currentZoom: 13,
               drawingState: DrawingState.editing,
+              measurementAreaHa: 750.718,
+              measurementPerimeterKm: 1.2,
               onFinishDrawing: _noop,
               onCancelDrawing: _noop,
               onSaveEdit: _noop,
@@ -199,9 +201,14 @@ void main() {
       ),
     );
 
-    expect(find.byKey(const Key('editing_controls_backplate')), findsOneWidget);
+    await tester.pump(const Duration(milliseconds: 200));
+
+    expect(find.byKey(const Key('drawing_bottom_toolbar')), findsOneWidget);
+    expect(find.text('750.718 ha'), findsOneWidget);
+    expect(find.text('Cancelar'), findsOneWidget);
+    expect(find.text('Confirmar'), findsOneWidget);
+    expect(find.byKey(const Key('editing_controls_backplate')), findsNothing);
     expect(find.byType(EditingControlsOverlay), findsNothing);
-    expect(find.byKey(const Key('drawing_bottom_toolbar')), findsNothing);
   });
 
   testWidgets('MapControlsOverlay monta toolbar inferior no estado drawing', (

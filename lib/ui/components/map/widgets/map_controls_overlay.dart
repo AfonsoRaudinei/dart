@@ -152,7 +152,8 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
         ),
         if ((widget.measurementAreaHa > 0 ||
                 widget.measurementPerimeterKm > 0) &&
-            widget.drawingState != DrawingState.drawing)
+            widget.drawingState != DrawingState.drawing &&
+            widget.drawingState != DrawingState.editing)
           Positioned(
             top: safeTop + 56,
             left: 12,
@@ -219,17 +220,26 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
           ),
         ),
 
-        // 4. Drawing Actions (Conditional)
-        if (widget.drawingState == DrawingState.drawing)
+        // 4. Drawing / editing actions — mesmo chrome inferior (toolbar + medição).
+        if (widget.drawingState == DrawingState.drawing ||
+            widget.drawingState == DrawingState.editing)
           DrawingBottomToolbarOverlay(
-            onConfirm: widget.onFinishDrawing,
-            onUndo: widget.onUndoDrawing ?? () {},
-            onCancel: widget.onCancelDrawing,
+            onConfirm: widget.drawingState == DrawingState.editing
+                ? widget.onSaveEdit
+                : widget.onFinishDrawing,
+            onUndo: widget.drawingState == DrawingState.editing
+                ? widget.onUndoEdit
+                : (widget.onUndoDrawing ?? () {}),
+            onCancel: widget.drawingState == DrawingState.editing
+                ? widget.onCancelEdit
+                : widget.onCancelDrawing,
             canUndo: widget.canUndo,
             // canConfirm espelha DrawingController.hasSelfIntersection
             // (_updateRealTimeIntersection → findSelfIntersectingSegments).
             // Widget permanece puro; validação de geometria fica no host.
-            canConfirm: !widget.hasSelfIntersection,
+            canConfirm: widget.drawingState == DrawingState.editing
+                ? true
+                : !widget.hasSelfIntersection,
             measurementAreaHa: widget.measurementAreaHa,
             measurementPerimeterKm: widget.measurementPerimeterKm,
             measurementAzimuthDeg: widget.measurementAzimuthDeg,
@@ -246,26 +256,6 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
             distanceUnit: distanceUnit,
             onDistanceUnit: (u) =>
                 ref.read(distanceDisplayUnitProvider.notifier).setUnit(u),
-          ),
-
-        // 5. Editing Controls (Conditional)
-        if (widget.drawingState == DrawingState.editing)
-          Positioned(
-            right: kMapActionColumnRightInset,
-            bottom: mapEditingControlsBottomInset(
-              safeBottom: safeBottom,
-              showCheckInInColumn:
-                  !widget.isDrawMode && widget.showCheckInAction,
-              isDrawMode: widget.isDrawMode,
-            ),
-            child: EditingControlsCluster(
-              onSave: widget.onSaveEdit,
-              onCancel: widget.onCancelEdit,
-              onUndo: widget.onUndoEdit,
-              onRedo: widget.onRedoEdit,
-              canUndo: widget.canUndo,
-              canRedo: widget.canRedo,
-            ),
           ),
       ],
     );
