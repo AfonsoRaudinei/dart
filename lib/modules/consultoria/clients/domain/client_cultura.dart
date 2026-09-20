@@ -26,6 +26,33 @@ class ClientCultura {
 
   CulturaTipo get culturaTipo => CulturaTipo.fromName(cultura);
 
+  /// Variedades/cultivares parseadas do campo [variedade] (vírgula).
+  List<String> get variedadesList => parseVariedades(variedade);
+
+  /// Divide o valor persistido em variedades individuais (trim, sem vazios).
+  static List<String> parseVariedades(String? raw) {
+    if (raw == null || raw.trim().isEmpty) return [];
+    return raw
+        .split(',')
+        .map((s) => s.trim())
+        .where((s) => s.isNotEmpty)
+        .toList();
+  }
+
+  /// Serializa lista de variedades para o campo TEXT (vírgula + espaço).
+  static String? joinVariedades(List<String> items) {
+    final trimmed = items.map((s) => s.trim()).where((s) => s.isNotEmpty).toList();
+    if (trimmed.isEmpty) return null;
+    return trimmed.join(', ');
+  }
+
+  /// Exibição legível das variedades (ex.: "BRS 284 • M 6410").
+  static String formatVariedades(String? raw) {
+    final list = parseVariedades(raw);
+    if (list.isEmpty) return '';
+    return list.join(' • ');
+  }
+
   factory ClientCultura.fromMap(Map<String, Object?> map) {
     return ClientCultura(
       id: map['id'] as String,
