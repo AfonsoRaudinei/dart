@@ -40,6 +40,8 @@ class OccurrenceCreationSheet extends ConsumerStatefulWidget {
   final ScrollController? scrollController;
   final Occurrence? initialOccurrence;
   final OccurrenceFormGuard? formGuard;
+  /// Pré-seleciona categoria na criação (ex.: `area_visitada` via ações rápidas).
+  final String? initialCategoryValue;
 
   const OccurrenceCreationSheet({
     super.key,
@@ -50,6 +52,7 @@ class OccurrenceCreationSheet extends ConsumerStatefulWidget {
     this.scrollController,
     this.initialOccurrence,
     this.formGuard,
+    this.initialCategoryValue,
   });
 
   @override
@@ -90,14 +93,33 @@ class _OccurrenceCreationSheetState
     widget.formGuard?.readIsDirty = _hasUnsavedChanges;
     _clientsFuture = _loadClientsForCurrentRole();
     _hydrateInitialOccurrence();
+    _applyInitialCategoryValue();
     _restoreDraftIfAny();
     _cultivarCtrl.addListener(_persistDraft);
     _descCtrl.addListener(_persistDraft);
     _recomCtrl.addListener(_persistDraft);
     if (widget.initialOccurrence != null) {
       _prefillInitialClient();
-    } else if (_selectedClient == null) {
+    } else if (_selectedClient == null && !_isAreaVisitada) {
       _prefillActiveVisitClient();
+    }
+  }
+
+  void _applyInitialCategoryValue() {
+    if (widget.initialOccurrence != null) return;
+    final value = widget.initialCategoryValue;
+    if (value == null || value.isEmpty) return;
+
+    final cat = _categories.where((item) => item.value == value).firstOrNull;
+    if (cat == null) return;
+
+    _selectedCategoryValue = cat.value;
+    _cats.clear();
+    if (cat.enumValue != null) {
+      _cats.add(cat.enumValue!);
+    }
+    if (value == kOccurrenceAreaVisitadaCategory) {
+      _selectedClient = null;
     }
   }
 
@@ -409,7 +431,9 @@ class _OccurrenceCreationSheetState
                       children: [
                         Text(
                           widget.initialOccurrence == null
-                              ? 'Nova Ocorrência'
+                              ? (_isAreaVisitada
+                                    ? 'Área Visitada'
+                                    : 'Nova Ocorrência')
                               : 'Editar Ocorrência',
                           style: TextStyle(
                             color: titleColor,
