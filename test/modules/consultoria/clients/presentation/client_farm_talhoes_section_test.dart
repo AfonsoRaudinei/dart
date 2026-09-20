@@ -69,5 +69,6 @@ void main() {
     expect(find.byTooltip('Renomear talhão'), findsOneWidget);
     expect(find.text('Talhão Norte'), findsOneWidget);
     expect(find.text('Área Total'), findsOneWidget);
+    expect(find.byIcon(Icons.chevron_right), findsNothing);
   });
 }
