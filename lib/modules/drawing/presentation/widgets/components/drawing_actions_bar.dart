@@ -22,6 +22,7 @@ class DrawingActionsBar extends StatelessWidget {
   final VoidCallback? onUnion;
   final VoidCallback? onDifference;
   final VoidCallback? onIntersection;
+  final VoidCallback? onSplitPolygons;
   final VoidCallback? onDelete;
 
   /// Exporta este talhão no formato escolhido.
@@ -45,6 +46,7 @@ class DrawingActionsBar extends StatelessWidget {
     this.onUnion,
     this.onDifference,
     this.onIntersection,
+    this.onSplitPolygons,
     this.onDelete,
     this.onExport,
     this.onExportAll,
@@ -60,6 +62,10 @@ class DrawingActionsBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isIos = soloForteSheetIsIos(context);
+    final showSplitAction =
+        onSplitPolygons != null &&
+        selectedFeature.geometry is DrawingMultiPolygon &&
+        (selectedFeature.geometry as DrawingMultiPolygon).coordinates.length > 1;
     final panelBg = isIos
         ? Colors.transparent
         : SoloForteSheetTokens.sheetBackground;
@@ -187,6 +193,18 @@ class DrawingActionsBar extends StatelessWidget {
               onIntersection?.call();
             },
           ),
+          if (showSplitAction) ...[
+            const SizedBox(height: 12),
+            _ActionButton(
+              icon: Icons.call_split,
+              label: 'Separar talhões',
+              description: 'Divide em talhões individuais',
+              onTap: () {
+                HapticFeedback.lightImpact();
+                onSplitPolygons?.call();
+              },
+            ),
+          ],
           const SizedBox(height: 16),
           const Divider(height: 1),
           const SizedBox(height: 16),
