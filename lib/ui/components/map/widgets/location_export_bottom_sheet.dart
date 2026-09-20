@@ -126,7 +126,7 @@ class LocationExportBottomSheet extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
+                          const Text(
                             'Exportar localização',
                             style: TextStyle(
                               color: SoloForteSheetSkinIos.titleColor,
@@ -137,7 +137,7 @@ class LocationExportBottomSheet extends StatelessWidget {
                           const SizedBox(height: 4),
                           Text(
                             coordsPreview,
-                            style: TextStyle(
+                            style: const TextStyle(
                               color: SoloForteSheetSkinIos.subtitleColor,
                               fontSize: 13,
                             ),
@@ -189,7 +189,7 @@ class LocationExportBottomSheet extends StatelessWidget {
                 height: 50,
                 child: TextButton(
                   onPressed: () => _dismiss(context),
-                  child: Text(
+                  child: const Text(
                     'Concluído',
                     style: TextStyle(
                       color: SoloForteSheetSkinIos.titleColor,
