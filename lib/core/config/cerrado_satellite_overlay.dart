@@ -1,3 +1,6 @@
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
+
 import 'satellite_freshness_policy.dart';
 
 /// Configuração da camada WMS INPE para satélite Cerrado (Sentinel-2).
@@ -12,7 +15,14 @@ class CerradoSatelliteOverlay {
   static const wmsFormat = 'image/png';
   static const wmsVersion = '1.1.1';
   static const wmsCrs = 'EPSG:3857';
-  static const wmsTransparent = false;
+  /// Tiles transparentes evitam ocultar satélite offline/cache quando WMS falha.
+  static const wmsTransparent = true;
+
+  /// Limite geográfico do mosaico INPE — restringe pedidos WMS ao bioma Cerrado.
+  static LatLngBounds get tileBounds => LatLngBounds(
+    const LatLng(kCerradoSouth, kCerradoWest),
+    const LatLng(kCerradoNorth, kCerradoEast),
+  );
 
   /// Retorna `true` quando o ponto está dentro do bbox do overlay Cerrado.
   static bool isWithinBounds(double lat, double lng) =>
