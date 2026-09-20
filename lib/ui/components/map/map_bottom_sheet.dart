@@ -186,9 +186,9 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
     }
   }
 
-  /// 1A: ao *entrar* em edição de geometria, recolhe para o handle.
-  /// Não re-recolhe a cada notify (métricas/vértice) — senão o usuário
-  /// não consegue expandir métricas / Cancelar / Salvar.
+  /// 1A: ao *entrar* em edição de geometria, fecha o sheet de desenho
+  /// para deixar só a toolbar flutuante (Cancelar/Desfazer/Confirmar).
+  /// Não cancela vértices — o chrome some, a edição permanece ativa.
   void _onDrawingControllerChanged() {
     if (!mounted) return;
     if (widget.state.type != MapSheetType.draw) return;
@@ -198,8 +198,7 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
         _lastDrawingState != DrawingState.editing;
     _lastDrawingState = next;
     if (!enteredEditing) return;
-    if (_currentDetent == SheetDetent.compact) return;
-    _animateToDetent(SheetDetent.compact);
+    _closeDrawingSheetChrome();
   }
 
   void _collapseDrawingSheetWhileEditing() {
@@ -215,14 +214,6 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
   Future<void> _dismissCurrentSheet({
     DrawingCloseIntent intent = DrawingCloseIntent.dismissSheet,
   }) async {
-    // 1A: swipe/X durante edição → só recolhe; não cancela vértices.
-    if (widget.state.type == MapSheetType.draw &&
-        widget.drawingController.currentState == DrawingState.editing &&
-        intent == DrawingCloseIntent.dismissSheet) {
-      _collapseDrawingSheetWhileEditing();
-      return;
-    }
-
     if (widget.state.type == MapSheetType.draw) {
       final decision = await DrawingCloseCoordinator.handle(
         context,
