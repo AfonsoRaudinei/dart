@@ -6,6 +6,7 @@ import 'package:latlong2/latlong.dart';
 import '../../../../core/config/map_config.dart';
 import '../../../../core/domain/map_models.dart';
 import '../../../../core/providers/connectivity_provider.dart';
+import '../../../../core/services/offline_tile_cache_service.dart';
 import '../../../../core/state/map_ui_providers.dart';
 import '../../../../core/state/map_state.dart';
 import '../../../../core/ui/sheets/sheet_tokens.dart';
@@ -15,9 +16,11 @@ import '../../../theme/premium/design_tokens.dart';
 enum MapOfflineVisualState {
   checking,
   offlineActive,
+  offlineStale,
   offlineOutOfCoverage,
   offlineUnavailable,
   onlineCovered,
+  onlineStale,
   onlineUncovered,
 }
 
@@ -28,6 +31,7 @@ class MapOfflineStatusPresentation {
   final bool canDownloadCurrentArea;
   final Color accentColor;
   final IconData icon;
+  final String downloadActionLabel;
 
   const MapOfflineStatusPresentation({
     required this.state,
@@ -36,6 +40,7 @@ class MapOfflineStatusPresentation {
     required this.canDownloadCurrentArea,
     required this.accentColor,
     required this.icon,
+    this.downloadActionLabel = 'Baixar área',
   });
 }
 
@@ -44,6 +49,7 @@ MapOfflineStatusPresentation buildMapOfflineStatusPresentation({
   required bool hasOfflineAreasForLayer,
   required bool hasOfflineCoverageForViewport,
   required bool isCheckingCoverage,
+  bool isOfflineAreaStale = false,
 }) {
   if (isCheckingCoverage) {
     return const MapOfflineStatusPresentation(
@@ -57,6 +63,18 @@ MapOfflineStatusPresentation buildMapOfflineStatusPresentation({
   }
 
   if (!isOnline && hasOfflineCoverageForViewport) {
+    if (isOfflineAreaStale) {
+      return const MapOfflineStatusPresentation(
+        state: MapOfflineVisualState.offlineStale,
+        title: 'Mapa offline ativo',
+        message:
+            'A área visível está coberta, mas as imagens podem estar desatualizadas '
+            '(limite de 180 dias). Conecte-se para atualizar.',
+        canDownloadCurrentArea: false,
+        accentColor: Color(0xFFFF9F0A),
+        icon: Icons.warning_amber_rounded,
+      );
+    }
     return const MapOfflineStatusPresentation(
       state: MapOfflineVisualState.offlineActive,
       title: 'Mapa offline ativo',
@@ -92,6 +110,19 @@ MapOfflineStatusPresentation buildMapOfflineStatusPresentation({
   }
 
   if (hasOfflineCoverageForViewport) {
+    if (isOfflineAreaStale) {
+      return const MapOfflineStatusPresentation(
+        state: MapOfflineVisualState.onlineStale,
+        title: 'Área offline desatualizada',
+        message:
+            'Esta área foi baixada há mais de 180 dias. Atualize para obter '
+            'imagens de satélite mais recentes.',
+        canDownloadCurrentArea: true,
+        accentColor: Color(0xFFFF9F0A),
+        icon: Icons.update_rounded,
+        downloadActionLabel: 'Atualizar área',
+      );
+    }
     return const MapOfflineStatusPresentation(
       state: MapOfflineVisualState.onlineCovered,
       title: 'Área disponível offline',
@@ -99,6 +130,7 @@ MapOfflineStatusPresentation buildMapOfflineStatusPresentation({
       canDownloadCurrentArea: true,
       accentColor: PremiumTokens.brandGreen,
       icon: Icons.verified_rounded,
+      downloadActionLabel: 'Atualizar área',
     );
   }
 
@@ -110,6 +142,7 @@ MapOfflineStatusPresentation buildMapOfflineStatusPresentation({
     canDownloadCurrentArea: true,
     accentColor: Color(0xFF0A84FF),
     icon: Icons.download_for_offline_rounded,
+    downloadActionLabel: 'Baixar área',
   );
 }
 
@@ -162,11 +195,27 @@ _OfflineStatusSnapshot? _watchOfflineStatusSnapshot(WidgetRef ref) {
   );
   final coverageAsync = ref.watch(offlineCoverageProvider(coverageQuery));
   final isOnline = ref.watch(isOnlineProvider).asData?.value ?? false;
+  OfflineMapAreaConfig? coveringArea;
+  for (final area in areasForLayer) {
+    if (area.covers(
+      layerKey: layerKey,
+      lat: camera.center.latitude,
+      lng: camera.center.longitude,
+      zoom: camera.zoom,
+    )) {
+      coveringArea = area;
+      break;
+    }
+  }
+  final isOfflineAreaStale =
+      coveringArea != null &&
+      OfflineTileCacheService.isAreaExpired(coveringArea.createdAt);
   final presentation = buildMapOfflineStatusPresentation(
     isOnline: isOnline,
     hasOfflineAreasForLayer: areasForLayer.isNotEmpty,
     hasOfflineCoverageForViewport: coverageAsync.asData?.value ?? false,
     isCheckingCoverage: coverageAsync.isLoading,
+    isOfflineAreaStale: isOfflineAreaStale,
   );
 
   return _OfflineStatusSnapshot(
@@ -264,12 +313,7 @@ class MapOfflineStatusOverlay extends ConsumerWidget {
                     child: FilledButton.tonalIcon(
                       onPressed: onDownloadOfflineArea,
                       icon: const Icon(Icons.download_for_offline_rounded),
-                      label: Text(
-                        presentation.state ==
-                                MapOfflineVisualState.onlineCovered
-                            ? 'Atualizar área'
-                            : 'Baixar área',
-                      ),
+                      label: Text(presentation.downloadActionLabel),
                       style: FilledButton.styleFrom(
                         backgroundColor: presentation.accentColor.withValues(
                           alpha: 0.18,
@@ -333,7 +377,9 @@ class MapOfflineStatusCard extends ConsumerWidget {
 
     return Semantics(
       button: canDownload,
-      label: canDownload ? 'Baixar área visível' : presentation.title,
+      label: canDownload
+          ? presentation.downloadActionLabel
+          : presentation.title,
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
         onTap: canDownload ? onDownloadOfflineArea : null,
@@ -368,7 +414,9 @@ class MapOfflineStatusCard extends ConsumerWidget {
                     ),
                     const SizedBox(height: 3),
                     Text(
-                      canDownload ? 'Baixar área visível' : presentation.title,
+                      canDownload
+                          ? presentation.downloadActionLabel
+                          : presentation.title,
                       style: TextStyle(
                         color: titleColor,
                         fontSize: 14,
