@@ -69,7 +69,7 @@ extension _OccurrenceCreationSheetDraft on _OccurrenceCreationSheetState {
       final selected =
           clients.where((client) => client.id == clientId).firstOrNull;
       if (selected != null) {
-        setState(() => _selectedClient = selected);
+        _patchForm(() => _selectedClient = selected);
       }
     } catch (_) {
       // Cliente pode ter sido removido — rascunho segue sem pré-seleção.
@@ -105,14 +105,5 @@ extension _OccurrenceCreationSheetDraft on _OccurrenceCreationSheetState {
     }
 
     ref.read(occurrenceDraftProvider(_draftPinKey).notifier).state = draft;
-  }
-
-  void _clearDraft() {
-    ref.read(occurrenceDraftProvider(_draftPinKey).notifier).state = null;
-  }
-
-  void _patchForm(VoidCallback fn) {
-    setState(fn);
-    _persistDraft();
   }
 }
