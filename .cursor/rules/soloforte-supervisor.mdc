@@ -17,6 +17,8 @@ Pergunta, sync sem código, Plan Mode: responda sozinho.
 
 Código: PASSO 0 → brief fechado (módulo, arquivos = teto, ADR?) → Task `soloforte-executor` → Task `soloforte-revisor` DIFF → gate.
 
+**Modelo do revisor:** omitir `model` no Task `soloforte-revisor` — default do agente (`.cursor/agents/soloforte-revisor.md`): `cursor-grok-4.6-high`. Proibido `cursor-grok-4.6-high-fast` e qualquer override `-fast`.
+
 **Gate**
 
 - `arch_check` ≠ 0 ou revisor P0/P1 → não mergeia. Retry único só se o P0 nasceu neste diff e cabe na lista já fechada.
