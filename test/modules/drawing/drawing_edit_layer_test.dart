@@ -406,6 +406,32 @@ void main() {
     expect(dotSize, 16.0);
   });
 
+  test('edição: findEditVertexNear e selectEditVertex no controller', () async {
+    final repository = _UpsertDrawingRepository(_feature());
+    final controller = DrawingController(repository: repository);
+    addTearDown(controller.dispose);
+    await controller.loadFeatures();
+    controller.selectFeature(controller.features.single);
+    controller.startEditMode();
+
+    final ring =
+        (controller.liveGeometry! as DrawingPolygon).coordinates.first;
+    final vertex = LatLng(ring[0][1], ring[0][0]);
+
+    final hit = controller.findEditVertexNear(vertex, 5.0);
+    expect(hit, isNotNull);
+    expect(hit!.ring, 0);
+    expect(hit.point, 0);
+
+    expect(controller.selectEditVertex(hit.ring, hit.point), isTrue);
+    expect(controller.selectedEditRingIndex, 0);
+    expect(controller.selectedEditPointIndex, 0);
+
+    controller.clearEditVertexSelection();
+    expect(controller.selectedEditRingIndex, isNull);
+    expect(controller.selectedEditPointIndex, isNull);
+  });
+
   testWidgets('edição: marker de vértice ancora topo no LatLng (bottomCenter)', (
     tester,
   ) async {
