@@ -471,6 +471,7 @@ class _DataCard extends StatelessWidget {
 
 /// Card com tap assíncrono — spinner no trailing enquanto aguarda (ex.: build HTML).
 class _AsyncDataCard extends StatefulWidget {
+  final Widget? leading;
   final String? eyebrow;
   final String title;
   final String? subtitle;
@@ -480,6 +481,7 @@ class _AsyncDataCard extends StatefulWidget {
   final Future<void> Function()? onTapAsync;
 
   const _AsyncDataCard({
+    this.leading,
     this.eyebrow,
     required this.title,
     this.subtitle,
@@ -509,6 +511,7 @@ class _AsyncDataCardState extends State<_AsyncDataCard> {
   @override
   Widget build(BuildContext context) {
     return _DataCard(
+      leading: widget.leading,
       eyebrow: widget.eyebrow,
       title: widget.title,
       subtitle: widget.subtitle,

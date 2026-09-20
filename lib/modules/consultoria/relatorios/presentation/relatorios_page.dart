@@ -37,6 +37,9 @@ import '../../../settings/presentation/providers/user_profile_provider.dart';
 // Ocorrências — mesmo bounded context (consultoria/)
 import '../../occurrences/presentation/controllers/occurrence_controller.dart';
 import '../../occurrences/presentation/widgets/occurrence_creation_sheet.dart';
+import '../../occurrences/presentation/widgets/occurrence_photo_gallery.dart';
+import '../../occurrences/domain/occurrence_photo_paths.dart';
+import '../../relatorio_visita/data/image_storage_service.dart';
 // hide SyncStatus para evitar conflito com o enum de relatorio.dart
 import '../../occurrences/domain/occurrence.dart' hide SyncStatus;
 import '../../../../core/contracts/marketing_case_reports_list_provider.dart';
@@ -614,10 +617,31 @@ class _OccurrenciaCardState extends ConsumerState<_OccurrenciaCard> {
     }
   }
 
+  Widget? _occurrenceCardLeading(Occurrence occurrence) {
+    if (allPhotoPaths(occurrence).isEmpty) return null;
+    final category = OccurrenceCategory.fromString(occurrence.category);
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(8),
+      child: OccurrenceCoverThumbnail(
+        occurrence: occurrence,
+        width: 60,
+        height: 80,
+        fallback: Container(
+          width: 60,
+          height: 80,
+          color: category.markerColor.withValues(alpha: 0.12),
+          alignment: Alignment.center,
+          child: Text(category.emoji, style: const TextStyle(fontSize: 24)),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final occurrence = widget.occurrence;
     return _AsyncDataCard(
+      leading: _occurrenceCardLeading(occurrence),
       eyebrow: 'Ocorrência',
       title: _occurrenceCardTitle(occurrence),
       subtitle: _occurrenceCardSubtitle(occurrence),
@@ -630,9 +654,18 @@ class _OccurrenciaCardState extends ConsumerState<_OccurrenciaCard> {
 
   Future<String> _buildHtml(WidgetRef ref, Occurrence occurrence) async {
     final data = occurrence.toMap();
+    final cover = coverPhotoPath(occurrence);
     data['foto_base64'] =
-        await RelatorioHtmlRenderer.photoPathToBase64(occurrence.photoPath) ??
-        '';
+        await RelatorioHtmlRenderer.photoPathToBase64(cover) ?? '';
+    if (occurrence.fotosCategoriasJson != null) {
+      data['fotos_categorias_json'] = encodeFotosCategoriasJson(
+        occurrence.fotosCategoriasJson,
+        ImageStorageService().toStoredPath,
+      );
+    }
+    if (cover != null) {
+      data['photo_path'] = ImageStorageService().toStoredPath(cover);
+    }
     final branding = await resolveReportBrandingContext(
       ref,
       fallbackConsultantName: 'Equipe técnica',
