@@ -9,7 +9,6 @@ import 'package:uuid/uuid.dart';
 import '../providers/clients_providers.dart';
 import '../../domain/client.dart';
 import '../../domain/client_cultura.dart';
-import '../../domain/enums/cultura_tipo.dart';
 import '../widgets/client_avatar_widget.dart';
 import '../widgets/cultura_item_widget.dart';
 import '../../../../../ui/theme/premium/design_tokens.dart';
@@ -139,146 +138,13 @@ class _ClientFormScreenState extends ConsumerState<ClientFormScreen> {
   }
 
   Future<void> _abrirBottomSheetCultura() async {
-    final formKey = GlobalKey<FormState>();
-    CulturaTipo? culturaSelecionada;
-    final areaController = TextEditingController();
-    final variedadeController = TextEditingController();
-    final safraController = TextEditingController();
-    final obsController = TextEditingController();
-
-    await showSoloForteSheet<void>(
+    final nova = await showAddCulturaSheet(
       context: context,
-      isScrollControlled: true,
-      showDragHandle: false,
-      useSafeArea: false,
-      builder: (ctx) {
-        final isIos = soloForteSheetIsIos(ctx);
-        final titleColor =
-            isIos ? SoloForteSheetSkinIos.titleColor : null;
-        final ctaBg = isIos
-            ? SoloForteSheetSkinIos.ctaBackground
-            : PremiumTokens.brandGreen;
-        final ctaFg =
-            isIos ? SoloForteSheetSkinIos.ctaText : Colors.white;
-        final ctaRadius =
-            isIos ? SoloForteSheetSkinIos.ctaRadius : 8.0;
-        return StatefulBuilder(
-          builder: (ctx, setModalState) => Theme(
-            data: ThemeData.light().copyWith(
-              colorScheme: ColorScheme.light(primary: ctaBg),
-            ),
-            child: Padding(
-              padding: EdgeInsets.only(
-                bottom: MediaQuery.of(ctx).viewInsets.bottom,
-              ),
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(20),
-                child: Form(
-                  key: formKey,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        'Adicionar Cultura',
-                        style: Theme.of(ctx).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: titleColor,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      DropdownButtonFormField<CulturaTipo>(
-                        decoration: _inputDeco('Cultura *'),
-                        items: CulturaTipo.values
-                            .map(
-                              (c) => DropdownMenuItem(
-                                value: c,
-                                child: Text(c.label),
-                              ),
-                            )
-                            .toList(),
-                        onChanged: (v) =>
-                            setModalState(() => culturaSelecionada = v),
-                        validator: (v) =>
-                            v == null ? 'Selecione uma cultura' : null,
-                      ),
-                      const SizedBox(height: 12),
-                      TextFormField(
-                        controller: areaController,
-                        decoration: _inputDeco('Área (ha) *'),
-                        keyboardType: const TextInputType.numberWithOptions(
-                          decimal: true,
-                        ),
-                        validator: (v) {
-                          final d = double.tryParse(v ?? '');
-                          if (d == null || d <= 0) return 'Informe área > 0';
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 12),
-                      TextFormField(
-                        controller: variedadeController,
-                        decoration: _inputDeco('Variedade / Cultivar'),
-                      ),
-                      const SizedBox(height: 12),
-                      TextFormField(
-                        controller: safraController,
-                        decoration: _inputDeco('Safra (ex: 2024/2025)'),
-                      ),
-                      const SizedBox(height: 12),
-                      TextFormField(
-                        controller: obsController,
-                        decoration: _inputDeco('Observação'),
-                        maxLines: 2,
-                      ),
-                      const SizedBox(height: 20),
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: ctaBg,
-                            foregroundColor: ctaFg,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(ctaRadius),
-                            ),
-                          ),
-                          onPressed: () {
-                            if (formKey.currentState?.validate() != true) {
-                              return;
-                            }
-                            final nova = ClientCultura(
-                              id: const Uuid().v4(),
-                              clientId: '',
-                              cultura: culturaSelecionada!.name,
-                              areaHa: double.parse(areaController.text),
-                              variedade: variedadeController.text.isEmpty
-                                  ? null
-                                  : variedadeController.text,
-                              safra: safraController.text.isEmpty
-                                  ? null
-                                  : safraController.text,
-                              observacao: obsController.text.isEmpty
-                                  ? null
-                                  : obsController.text,
-                              createdAt: DateTime.now(),
-                              updatedAt: DateTime.now(),
-                            );
-                            Navigator.of(ctx).pop();
-                            setState(() => _culturas.add(nova));
-                          },
-                          child: const Text('Confirmar'),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-        );
-      },
+      clientId: '',
+      inputDecoration: _inputDeco,
+      safraLabel: 'Safra (ex: 2024/2025)',
     );
+    if (nova != null) setState(() => _culturas.add(nova));
   }
 
   Future<void> _abrirBottomSheetArea() async {
