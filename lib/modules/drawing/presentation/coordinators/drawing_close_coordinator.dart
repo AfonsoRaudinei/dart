@@ -90,8 +90,9 @@ class DrawingCloseCoordinator {
         controller.cancelEdit();
         return const DrawingCloseDecision(shouldCloseSheet: true);
       }
-      // dismissSheet: host deve recolher (compact) sem cancelar.
-      return const DrawingCloseDecision(shouldCloseSheet: false);
+      // dismissSheet: fecha o chrome sem cancelar; edição permanece ativa
+      // (toolbar flutuante). Sair da edição: Cancelar / Salvar.
+      return const DrawingCloseDecision(shouldCloseSheet: true);
     }
 
     if (controller.hasSelection) {
