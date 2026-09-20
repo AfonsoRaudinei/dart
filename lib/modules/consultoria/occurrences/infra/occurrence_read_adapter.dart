@@ -10,6 +10,7 @@
 import 'package:soloforte_app/core/contracts/i_occurrence_read.dart';
 import '../data/occurrence_repository.dart';
 import '../domain/occurrence.dart';
+import '../domain/occurrence_photo_paths.dart';
 
 /// Implementação concreta de IOccurrenceRead.
 /// Vive em consultoria/occurrences/infra/ — dona dos dados de ocorrência.
@@ -31,9 +32,12 @@ class OccurrenceReadAdapter implements IOccurrenceRead {
       description: o.description,
       lat: o.lat,
       lng: o.long,
-      fotoPath: o.photoPath,
+      fotoPath: coverPhotoPath(o),
       registradaEm: o.createdAt,
-      fotoPaths: o.photoPath == null ? null : <String>[o.photoPath!],
+      fotoPaths: () {
+        final paths = allPhotoPaths(o);
+        return paths.isEmpty ? null : paths;
+      }(),
       categoria: o.category,
       severity: null,
       geometry: o.geometry,
