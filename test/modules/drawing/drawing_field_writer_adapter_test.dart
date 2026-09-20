@@ -175,6 +175,82 @@ void main() {
     });
   });
 
+  group('DrawingFieldWriterAdapter.unionDrawingFields', () {
+    test('mescla geometrias no primário e remove o secundário', () async {
+      const primaryId = 'drawing-primary';
+      const secondaryId = 'drawing-secondary';
+      const clientId = 'client-union';
+
+      final primary = _feature(
+        primaryId,
+        clienteId: clientId,
+        areaHa: 1.0,
+        coordinates: [
+          [
+            [-48.0, -10.0],
+            [-47.99, -10.0],
+            [-47.99, -9.99],
+            [-48.0, -10.0],
+          ],
+        ],
+      );
+      final secondary = _feature(
+        secondaryId,
+        clienteId: clientId,
+        areaHa: 0.8,
+        coordinates: [
+          [
+            [-47.98, -10.0],
+            [-47.97, -10.0],
+            [-47.97, -9.99],
+            [-47.98, -10.0],
+          ],
+        ],
+      );
+
+      await repository.saveFeature(primary);
+      await repository.saveFeature(secondary);
+
+      await adapter.unionDrawingFields(
+        primaryFieldId: primaryId,
+        secondaryFieldId: secondaryId,
+        clientId: clientId,
+      );
+
+      final updatedPrimary = await repository.getFeatureById(primaryId);
+      final deletedSecondary = await repository.getFeatureById(secondaryId);
+
+      expect(updatedPrimary, isNotNull);
+      expect(updatedPrimary!.id, primaryId);
+      expect(updatedPrimary.geometry.type, 'MultiPolygon');
+      expect(updatedPrimary.properties.areaHa, greaterThan(1.0));
+      expect(updatedPrimary.properties.syncStatus, SyncStatus.local_only);
+      expect(deletedSecondary, isNull);
+    });
+
+    test('ids iguais lançam StateError', () async {
+      expect(
+        () => adapter.unionDrawingFields(
+          primaryFieldId: 'same-id',
+          secondaryFieldId: 'same-id',
+          clientId: 'client-1',
+        ),
+        throwsA(isA<StateError>()),
+      );
+    });
+
+    test('feature inexistente lança StateError', () async {
+      expect(
+        () => adapter.unionDrawingFields(
+          primaryFieldId: 'missing-primary',
+          secondaryFieldId: 'missing-secondary',
+          clientId: 'client-1',
+        ),
+        throwsA(isA<StateError>()),
+      );
+    });
+  });
+
   group('DrawingFieldWriterAdapter.updateFieldMetadata', () {
     test('persiste cultura e safra atualizadas', () async {
       const fieldId = 'drawing-metadata-1';
@@ -233,20 +309,24 @@ DrawingFeature _feature(
   String? fazendaId,
   String? cultura,
   String? safra,
+  double areaHa = 1.2,
+  List<List<List<double>>>? coordinates,
   bool ativo = true,
   SyncStatus syncStatus = SyncStatus.local_only,
 }) {
   return DrawingFeature(
     id: id,
     geometry: DrawingPolygon(
-      coordinates: [
-        [
-          [-48.0, -10.0],
-          [-47.99, -10.0],
-          [-47.99, -9.99],
-          [-48.0, -10.0],
-        ],
-      ],
+      coordinates:
+          coordinates ??
+          [
+            [
+              [-48.0, -10.0],
+              [-47.99, -10.0],
+              [-47.99, -9.99],
+              [-48.0, -10.0],
+            ],
+          ],
     ),
     properties: DrawingProperties(
       nome: 'Talhão $id',
@@ -259,7 +339,7 @@ DrawingFeature _feature(
       fazendaId: fazendaId,
       cultura: cultura,
       safra: safra,
-      areaHa: 1.2,
+      areaHa: areaHa,
       versao: 1,
       ativo: ativo,
       createdAt: DateTime.utc(2026, 7, 20, 12),
