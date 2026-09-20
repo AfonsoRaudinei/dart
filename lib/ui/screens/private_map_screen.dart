@@ -193,6 +193,7 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
   Future<void> _focusDrawingFromQuery(
     String drawingId, {
     required bool edit,
+    bool union = false,
     int attempt = 0,
   }) async {
     if (!ref.read(mapReadyStateProvider)) {
@@ -205,7 +206,12 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
       }
       Future<void>.delayed(const Duration(milliseconds: 50), () {
         if (!mounted) return;
-        _focusDrawingFromQuery(drawingId, edit: edit, attempt: attempt + 1);
+        _focusDrawingFromQuery(
+          drawingId,
+          edit: edit,
+          union: union,
+          attempt: attempt + 1,
+        );
       });
       return;
     }
@@ -242,11 +248,16 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
 
     if (edit) {
       controller.startEditMode();
+      return;
+    }
+
+    if (union) {
+      controller.startUnionMode();
     }
 
     _setSheetState(
       const MapSheetState(type: MapSheetType.draw),
-      edit ? 'query_param_modo_editar_drawing' : 'query_param_focus_drawing',
+      union ? 'query_param_modo_uniao_drawing' : 'query_param_focus_drawing',
     );
   }
 
