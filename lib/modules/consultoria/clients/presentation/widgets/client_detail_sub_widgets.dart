@@ -94,16 +94,20 @@ class ClientFarmItem extends StatelessWidget {
   final String name;
   final String area;
   final VoidCallback? onTap;
+  final bool showChevron;
 
   const ClientFarmItem({
     super.key,
     required this.name,
     required this.area,
     this.onTap,
+    this.showChevron = true,
   });
 
   @override
   Widget build(BuildContext context) {
+    final displayChevron = showChevron && onTap != null;
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -140,12 +144,14 @@ class ClientFarmItem extends StatelessWidget {
                     fontSize: 14,
                   ),
                 ),
-                const SizedBox(width: 4),
-                const Icon(
-                  Icons.chevron_right,
-                  color: Color(0xFFC7C7CC),
-                  size: 20,
-                ),
+                if (displayChevron) ...[
+                  const SizedBox(width: 4),
+                  const Icon(
+                    Icons.chevron_right,
+                    color: Color(0xFFC7C7CC),
+                    size: 20,
+                  ),
+                ],
               ],
             ),
           ],
