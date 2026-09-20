@@ -730,6 +730,10 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
       return;
     }
 
+    final refreshedCreatedAt = existingCoveringArea == null || result.downloaded > 0
+        ? DateTime.now()
+        : existingCoveringArea.createdAt;
+
     ref.read(offlineMapAreasProvider.notifier).updateArea(
           existingCoveringArea != null
               ? existingCoveringArea.mergeWithViewport(
@@ -739,7 +743,7 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
                   east: east,
                   minZoom: minZoom.toDouble(),
                   maxZoom: maxZoom.toDouble(),
-                  createdAt: DateTime.now(),
+                  createdAt: refreshedCreatedAt,
                 )
               : OfflineMapAreaConfig(
                   id: DateTime.now().millisecondsSinceEpoch.toString(),
@@ -750,7 +754,7 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
                   east: east,
                   minZoom: minZoom.toDouble(),
                   maxZoom: maxZoom.toDouble(),
-                  createdAt: DateTime.now(),
+                  createdAt: refreshedCreatedAt,
                 ),
         );
 
