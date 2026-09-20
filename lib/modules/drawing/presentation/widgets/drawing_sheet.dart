@@ -453,9 +453,9 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
     if (geometry == null) return;
 
     setState(() => _isSaving = true);
-    final DrawingFeature? savedFeature;
+    final List<DrawingFeature> savedFeatures;
     try {
-      savedFeature = await widget.controller.addFeature(
+      savedFeatures = await widget.controller.addFeaturesFromGeometry(
         geometry: geometry,
         nome: _nomeController.text.trim(),
         tipo: DrawingType.talhao,
@@ -478,7 +478,7 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
     }
 
     if (!mounted) return;
-    if (savedFeature == null) return;
+    if (savedFeatures.isEmpty) return;
 
     _resetReviewForm();
     await _requestClose(
