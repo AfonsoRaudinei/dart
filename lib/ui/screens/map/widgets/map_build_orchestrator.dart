@@ -19,6 +19,8 @@ import '../../../../core/utils/map_logger.dart';
 import '../../../../modules/drawing/presentation/providers/drawing_provider.dart';
 import '../../../../modules/drawing/presentation/coordinators/drawing_close_coordinator.dart';
 import '../../../../modules/drawing/domain/drawing_state.dart';
+import '../../../../modules/drawing/domain/drawing_utils.dart';
+import '../../../../modules/drawing/domain/models/drawing_models.dart';
 import '../../../../modules/drawing/presentation/widgets/drawing_layers.dart';
 import '../../../../modules/drawing/presentation/widgets/drawing_map_gesture_overlay.dart';
 import '../../../../modules/drawing/presentation/widgets/drawing_state_indicator.dart';
@@ -233,12 +235,46 @@ class MapBuildOrchestrator extends ConsumerWidget {
                 if (drawCtrl.currentState == DrawingState.drawing ||
                     drawCtrl.currentState == DrawingState.armed) {
                   if (drawCtrl.currentTool != DrawingTool.freehand) {
+                    final tol = DrawingUtils.vertexHitToleranceMeters(
+                      mapController.camera,
+                    );
+                    final hit = drawCtrl.findSketchVertexIndexNear(point, tol);
+                    if (hit != null) {
+                      if (hit == 0 &&
+                          drawCtrl.selectedSketchVertexIndex == 0 &&
+                          drawCtrl.canFinishDrawing &&
+                          !drawCtrl.hasSelfIntersection) {
+                        finishDrawing();
+                      } else {
+                        drawCtrl.selectSketchVertex(hit);
+                      }
+                      return;
+                    }
                     if (drawCtrl.selectedSketchVertexIndex != null ||
                         drawCtrl.isDraggingSketchVertex) {
                       drawCtrl.clearSketchVertexSelection();
                       return;
                     }
                     drawCtrl.appendDrawingPoint(point);
+                  }
+                  return;
+                }
+
+                // 🎯 Prioridade 3: seleção de vértice em edição — antes do guard
+                // contextual (marker pode falhar; map onTap é fallback).
+                if (drawCtrl.currentState == DrawingState.editing &&
+                    drawCtrl.liveGeometry is DrawingPolygon) {
+                  final tol = DrawingUtils.vertexHitToleranceMeters(
+                    mapController.camera,
+                  );
+                  final hit = drawCtrl.findEditVertexNear(point, tol);
+                  if (hit != null) {
+                    drawCtrl.selectEditVertex(hit.ring, hit.point);
+                    return;
+                  }
+                  if (drawCtrl.selectedEditRingIndex != null) {
+                    drawCtrl.clearEditVertexSelection();
+                    return;
                   }
                   return;
                 }
