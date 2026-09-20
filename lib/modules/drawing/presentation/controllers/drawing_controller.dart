@@ -692,6 +692,18 @@ class DrawingController extends ChangeNotifier {
     }
   }
 
+  /// Returns the number of selectable polygon parts in [geometry].
+  int polygonPartCount(DrawingGeometry? geometry) {
+    if (geometry == null) return 0;
+    if (geometry is DrawingPolygon) {
+      return geometry.coordinates.isNotEmpty ? 1 : 0;
+    }
+    if (geometry is DrawingMultiPolygon) {
+      return geometry.coordinates.where((poly) => poly.isNotEmpty).length;
+    }
+    return 0;
+  }
+
   /// Adiciona uma nova feature ao mapa após validação.
   ///
   /// Delega construção para [DrawingFeatureCrudService.buildFeature].
@@ -762,6 +774,153 @@ class DrawingController extends ChangeNotifier {
     _interactionMode = DrawingInteraction.normal;
     notifyListeners();
     return newFeature;
+  }
+
+  /// Adiciona uma ou várias features a partir de uma geometria composta.
+  ///
+  /// MultiPolygon com N partes vira N talhões individuais com nomes sequenciais.
+  /// Atualiza a área do cliente apenas uma vez ao final.
+  Future<List<DrawingFeature>> addFeaturesFromGeometry({
+    required DrawingGeometry geometry,
+    required String nome,
+    required DrawingType tipo,
+    required DrawingOrigin origem,
+    required String autorId,
+    required AuthorType autorTipo,
+    String? subtipo,
+    double? raioMetros,
+    String? clienteId,
+    String? fazendaId,
+    String? grupo,
+    int? cor,
+  }) async {
+    geometry = DrawingUtils.normalizeGeometry(geometry);
+    final parts = DrawingUtils.explodeToPolygons(geometry);
+    if (parts.isEmpty) return const [];
+
+    if (parts.length == 1) {
+      final single = await addFeature(
+        geometry: parts.first,
+        nome: nome,
+        tipo: tipo,
+        origem: origem,
+        autorId: autorId,
+        autorTipo: autorTipo,
+        subtipo: subtipo,
+        raioMetros: raioMetros,
+        clienteId: clienteId,
+        fazendaId: fazendaId,
+        grupo: grupo,
+        cor: cor,
+      );
+      return single != null ? [single] : const [];
+    }
+
+    validateGeometry(geometry);
+    if (!_validationResult.isValid) {
+      if (_isImportedOrigin(origem) &&
+          _isImportedWarningMessage(_validationResult.message)) {
+        _intersectionWarningMessage = _importWarningMessageFor(
+          _validationResult.message,
+        );
+        _errorMessage = null;
+      } else if (_isSelfIntersectionMessage(_validationResult.message)) {
+        _intersectionWarningMessage =
+            'Linhas se cruzam. Salve e edite os vértices depois.';
+      } else {
+        _errorMessage = _validationResult.message;
+        notifyListeners();
+        return const [];
+      }
+    }
+
+    final names = DrawingUtils.buildSequentialFieldNames(nome, parts.length);
+    final created = <DrawingFeature>[];
+
+    for (var i = 0; i < parts.length; i++) {
+      final partGeometry = DrawingUtils.normalizeGeometry(parts[i]);
+      final newFeature = await _crudService.saveFeature(
+        geometry: partGeometry,
+        nome: names[i],
+        tipo: tipo,
+        origem: origem,
+        autorId: autorId,
+        autorTipo: autorTipo,
+        persistFeature: _repository.saveFeature,
+        subtipo: subtipo,
+        raioMetros: raioMetros,
+        clienteId: clienteId,
+        fazendaId: fazendaId,
+        grupo: grupo,
+        cor: cor,
+      );
+      _features.add(newFeature);
+      created.add(newFeature);
+    }
+
+    if (clienteId != null && clienteId.isNotEmpty) {
+      final total = await _repository.getTotalAreaByClienteId(clienteId);
+      await _onClientAreaUpdate(clienteId, total);
+    }
+
+    _selectedFeature = created.first;
+    _isDirty = true;
+    _stateMachine.confirm();
+    _importOrchestrator.clearPendingImportOrigin();
+    _intersectionWarningMessage = null;
+    _reviewAreaHa = 0.0;
+    _reviewPerimeterKm = 0.0;
+    _reviewGeometrySnapshot = null;
+    _clearSketchState();
+    _manualSketch = null;
+    _previewGeometry = null;
+    _interactionMode = DrawingInteraction.normal;
+    notifyListeners();
+    return created;
+  }
+
+  /// Divide a feature selecionada quando ela contém um MultiPolygon composto.
+  Future<void> splitSelectedFeature() async {
+    final feature = _selectedFeature;
+    if (feature == null) return;
+
+    final polygons = DrawingUtils.explodeToPolygons(feature.geometry);
+    if (polygons.length <= 1) return;
+
+    final names = DrawingUtils.buildSequentialFieldNames(
+      feature.properties.nome,
+      polygons.length,
+    );
+    final originalId = feature.id;
+    final clienteId = feature.properties.clienteId;
+    final created = <DrawingFeature>[];
+
+    for (var i = 0; i < polygons.length; i++) {
+      final newFeature = await _crudService.saveFeature(
+        geometry: DrawingUtils.normalizeGeometry(polygons[i]),
+        nome: names[i],
+        tipo: feature.properties.tipo,
+        origem: feature.properties.origem,
+        autorId: feature.properties.autorId,
+        autorTipo: feature.properties.autorTipo,
+        persistFeature: _repository.saveFeature,
+        subtipo: feature.properties.subtipo,
+        raioMetros: feature.properties.raioMetros,
+        clienteId: clienteId,
+        fazendaId: feature.properties.fazendaId,
+        grupo: feature.properties.grupo,
+        cor: feature.properties.cor,
+      );
+      _features.add(newFeature);
+      created.add(newFeature);
+    }
+
+    deleteFeature(originalId);
+
+    _selectedFeature = created.first;
+    _selectedFeatureIds.clear();
+    _isDirty = true;
+    notifyListeners();
   }
 
   /// Updates an existing feature (Attributes or Geometry).
@@ -1570,26 +1729,40 @@ class DrawingController extends ChangeNotifier {
       if (!f.properties.ativo) continue;
 
       if (f.geometry is DrawingPolygon) {
-        final poly = f.geometry as DrawingPolygon;
-        if (poly.coordinates.isEmpty) continue;
-
-        // Check outer ring
-        if (DrawingUtils.isPointInPolygon(point, poly.coordinates.first)) {
-          // Check holes
-          bool inHole = false;
-          if (poly.coordinates.length > 1) {
-            for (var j = 1; j < poly.coordinates.length; j++) {
-              if (DrawingUtils.isPointInPolygon(point, poly.coordinates[j])) {
-                inHole = true;
-                break;
-              }
-            }
+        if (_isPointInFeaturePolygon(point, f.geometry as DrawingPolygon)) {
+          return f;
+        }
+      } else if (f.geometry is DrawingMultiPolygon) {
+        final multi = f.geometry as DrawingMultiPolygon;
+        for (final polyCoords in multi.coordinates) {
+          if (polyCoords.isEmpty) continue;
+          if (_isPointInFeaturePolygon(
+            point,
+            DrawingPolygon(coordinates: polyCoords),
+          )) {
+            return f;
           }
-          if (!inHole) return f;
         }
       }
     }
     return null;
+  }
+
+  bool _isPointInFeaturePolygon(LatLng point, DrawingPolygon poly) {
+    if (poly.coordinates.isEmpty) return false;
+
+    if (!DrawingUtils.isPointInPolygon(point, poly.coordinates.first)) {
+      return false;
+    }
+
+    if (poly.coordinates.length > 1) {
+      for (var j = 1; j < poly.coordinates.length; j++) {
+        if (DrawingUtils.isPointInPolygon(point, poly.coordinates[j])) {
+          return false;
+        }
+      }
+    }
+    return true;
   }
 
   // ===========================================================================
