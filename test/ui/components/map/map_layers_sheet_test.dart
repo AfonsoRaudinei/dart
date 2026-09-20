@@ -103,14 +103,14 @@ void main() {
       );
       expect(container.read(activeLayerProvider), LayerType.satellite);
 
-      final relevoLabel = tester.getCenter(find.text('Relevo'));
-      await tester.tapAt(relevoLabel - const Offset(0, 28));
+      final mapaLabel = tester.getCenter(find.text('Mapa'));
+      await tester.tapAt(mapaLabel - const Offset(0, 28));
       await tester.pump();
 
-      expect(container.read(activeLayerProvider), LayerType.relevo);
+      expect(container.read(activeLayerProvider), LayerType.standard);
     });
 
-    testWidgets('ativa chuva e troca para satélite quando estava em relevo', (
+    testWidgets('ativa chuva e troca para satélite quando estava em mapa', (
       tester,
     ) async {
       SharedPreferences.setMockInitialValues({});
@@ -141,10 +141,10 @@ void main() {
       final container = ProviderScope.containerOf(
         tester.element(find.byType(LayersSheet)),
       );
-      container.read(activeLayerProvider.notifier).setLayer(LayerType.relevo);
+      container.read(activeLayerProvider.notifier).setLayer(LayerType.standard);
       await tester.pump();
 
-      expect(container.read(activeLayerProvider), LayerType.relevo);
+      expect(container.read(activeLayerProvider), LayerType.standard);
       expect(container.read(climaRadarEnabledProvider), isFalse);
 
       await tester.tap(find.text('Chuva'));
