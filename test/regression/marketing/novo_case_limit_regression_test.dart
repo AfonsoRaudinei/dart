@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:soloforte_app/modules/marketing/data/repositories/i_marketing_case_repository.dart';
-import 'package:soloforte_app/modules/marketing/data/services/marketing_sync_service.dart';
 import 'package:soloforte_app/modules/marketing/domain/entities/marketing_case.dart';
 import 'package:soloforte_app/modules/marketing/presentation/providers/marketing_providers.dart';
 import 'package:soloforte_app/modules/planos/domain/entities/user_plan.dart';
