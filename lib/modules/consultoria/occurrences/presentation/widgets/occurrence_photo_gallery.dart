@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../../domain/occurrence.dart';
@@ -106,6 +107,7 @@ class OccurrencePhotoGallery extends StatefulWidget {
 
 class _OccurrencePhotoGalleryState extends State<OccurrencePhotoGallery> {
   late List<String?> _resolvedPaths;
+  int _resolveGeneration = 0;
 
   @override
   void initState() {
@@ -117,19 +119,23 @@ class _OccurrencePhotoGalleryState extends State<OccurrencePhotoGallery> {
   @override
   void didUpdateWidget(covariant OccurrencePhotoGallery oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.paths != widget.paths) {
-      _resolvedPaths = List<String?>.filled(widget.paths.length, null);
+    if (!listEquals(oldWidget.paths, widget.paths)) {
+      if (_resolvedPaths.length != widget.paths.length) {
+        _resolvedPaths = List<String?>.filled(widget.paths.length, null);
+      }
       _resolvePaths();
     }
   }
 
   Future<void> _resolvePaths() async {
+    final generation = ++_resolveGeneration;
     final storage = ImageStorageService();
-    final resolved = <String?>[];
-    for (final path in widget.paths) {
-      resolved.add(await storage.resolveLocalPath(path));
+    final resolved = List<String?>.filled(widget.paths.length, null);
+    for (var i = 0; i < widget.paths.length; i++) {
+      if (generation != _resolveGeneration) return;
+      resolved[i] = await storage.resolveLocalPath(widget.paths[i]);
     }
-    if (!mounted) return;
+    if (!mounted || generation != _resolveGeneration) return;
     setState(() {
       _resolvedPaths = resolved;
     });
@@ -196,6 +202,8 @@ class OccurrencePhotoStatusText extends StatefulWidget {
 
 class _OccurrencePhotoStatusTextState extends State<OccurrencePhotoStatusText> {
   int _resolvedCount = 0;
+  bool _counting = false;
+  int _countGeneration = 0;
 
   @override
   void initState() {
@@ -206,22 +214,31 @@ class _OccurrencePhotoStatusTextState extends State<OccurrencePhotoStatusText> {
   @override
   void didUpdateWidget(covariant OccurrencePhotoStatusText oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.paths != widget.paths) _countResolved();
+    if (!listEquals(oldWidget.paths, widget.paths)) _countResolved();
   }
 
   Future<void> _countResolved() async {
+    final generation = ++_countGeneration;
     if (widget.paths.isEmpty) {
       if (!mounted) return;
-      setState(() => _resolvedCount = 0);
+      setState(() {
+        _resolvedCount = 0;
+        _counting = false;
+      });
       return;
     }
+    if (mounted) setState(() => _counting = true);
     final storage = ImageStorageService();
     var count = 0;
     for (final path in widget.paths) {
+      if (generation != _countGeneration) return;
       if (await storage.resolveLocalPath(path) != null) count++;
     }
-    if (!mounted) return;
-    setState(() => _resolvedCount = count);
+    if (!mounted || generation != _countGeneration) return;
+    setState(() {
+      _resolvedCount = count;
+      _counting = false;
+    });
   }
 
   @override
@@ -232,7 +249,7 @@ class _OccurrencePhotoStatusTextState extends State<OccurrencePhotoStatusText> {
         style: TextStyle(color: widget.hintColor, fontSize: 12),
       );
     }
-    if (_resolvedCount == widget.paths.length) {
+    if (_counting || _resolvedCount == widget.paths.length) {
       return Text(
         '${widget.paths.length} foto(s) pronta(s) para o relatório.',
         style: TextStyle(color: widget.hintColor, fontSize: 12),
