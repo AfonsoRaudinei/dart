@@ -168,6 +168,28 @@ void main() {
       expect(controller.selectedSketchVertexIndex, isNull);
     });
 
+    test('polígono: findSketchVertexIndexNear respeita tolerância', () {
+      controller.selectTool('polygon');
+      controller.appendDrawingPoint(const LatLng(-15.0, -47.0));
+      controller.appendDrawingPoint(const LatLng(-15.001, -47.0));
+
+      expect(
+        controller.findSketchVertexIndexNear(const LatLng(-15.0, -47.0), 5.0),
+        0,
+      );
+      expect(
+        controller.findSketchVertexIndexNear(
+          const LatLng(-15.001, -47.0),
+          5.0,
+        ),
+        1,
+      );
+      expect(
+        controller.findSketchVertexIndexNear(const LatLng(-20.0, -50.0), 5.0),
+        isNull,
+      );
+    });
+
     test('polígono: beginSketchVertexDrag marca dragging sem notify', () {
       controller.selectTool('polygon');
       controller.appendDrawingPoint(const LatLng(-15.0, -47.0));
