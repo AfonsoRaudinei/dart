@@ -51,4 +51,39 @@ class DrawingFieldWriterAdapter implements IDrawingFieldWriter {
 
     await _repository.saveFeature(updated);
   }
+
+  @override
+  Future<void> updateFieldName({
+    required String fieldId,
+    required String name,
+  }) async {
+    final trimmed = name.trim();
+    if (fieldId.isEmpty) {
+      throw ArgumentError('fieldId é obrigatório para renomear.');
+    }
+    if (trimmed.isEmpty) {
+      throw ArgumentError('Nome do talhão não pode ser vazio.');
+    }
+
+    final existing = await _repository.getFeatureById(fieldId);
+    if (existing == null || !existing.properties.ativo) {
+      throw StateError('Talhão do mapa não encontrado: $fieldId');
+    }
+
+    final syncStatus = existing.properties.syncStatus == SyncStatus.synced
+        ? SyncStatus.local_only
+        : existing.properties.syncStatus;
+
+    final updated = DrawingFeature(
+      id: existing.id,
+      geometry: existing.geometry,
+      properties: existing.properties.copyWith(
+        nome: trimmed,
+        updatedAt: DateTime.now(),
+        syncStatus: syncStatus,
+      ),
+    );
+
+    await _repository.saveFeature(updated);
+  }
 }
