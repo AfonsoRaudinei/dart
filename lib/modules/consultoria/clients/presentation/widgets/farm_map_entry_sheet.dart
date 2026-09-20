@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:soloforte_app/core/router/app_routes.dart';
 import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
 import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 import 'package:soloforte_app/modules/consultoria/clients/domain/agronomic_models.dart';
 import 'package:soloforte_app/modules/consultoria/clients/domain/client.dart';
+import 'package:soloforte_app/modules/consultoria/clients/presentation/widgets/brazilian_state_dropdown.dart';
 import 'package:soloforte_app/modules/consultoria/farms/data/repositories/farm_repository.dart';
 import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 import 'package:uuid/uuid.dart';
@@ -85,8 +85,8 @@ class _FarmMapEntrySheetState extends State<FarmMapEntrySheet> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _cityController = TextEditingController();
-  final _stateController = TextEditingController();
   final _areaController = TextEditingController();
+  String? _selectedUf;
 
   List<Farm> _farms = const [];
   bool _isLoading = true;
@@ -98,7 +98,7 @@ class _FarmMapEntrySheetState extends State<FarmMapEntrySheet> {
   void initState() {
     super.initState();
     _cityController.text = widget.client.city;
-    _stateController.text = widget.client.state;
+    _selectedUf = BrazilianStateDropdown.resolveInitialUf(widget.client.state);
     _loadFarms();
   }
 
@@ -106,7 +106,6 @@ class _FarmMapEntrySheetState extends State<FarmMapEntrySheet> {
   void dispose() {
     _nameController.dispose();
     _cityController.dispose();
-    _stateController.dispose();
     _areaController.dispose();
     super.dispose();
   }
@@ -162,7 +161,7 @@ class _FarmMapEntrySheetState extends State<FarmMapEntrySheet> {
           FarmDraftData(
             name: _nameController.text.trim(),
             city: _cityController.text.trim(),
-            state: _stateController.text.trim().toUpperCase(),
+            state: _selectedUf!.toUpperCase(),
             areaHa: _parseArea(_areaController.text),
           ),
         );
@@ -513,17 +512,12 @@ class _FarmMapEntrySheetState extends State<FarmMapEntrySheet> {
             },
           ),
           const SizedBox(height: 12),
-          TextFormField(
-            controller: _stateController,
-            textCapitalization: TextCapitalization.characters,
-            inputFormatters: [
-              LengthLimitingTextInputFormatter(2),
-              FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z]')),
-            ],
-            decoration: const InputDecoration(labelText: 'UF'),
+          BrazilianStateDropdown(
+            value: _selectedUf,
+            onChanged: (value) => setState(() => _selectedUf = value),
             validator: (value) {
-              if (value == null || value.trim().length != 2) {
-                return 'Informe a UF com 2 letras';
+              if (value == null || value.isEmpty) {
+                return 'Selecione a UF';
               }
               return null;
             },
