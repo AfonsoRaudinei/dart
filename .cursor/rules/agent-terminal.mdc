@@ -16,15 +16,15 @@ git push -u origin <branch>
 gh pr view <n> --json state,mergedAt,mergeStateStatus,autoMergeRequest,url
 ```
 
-## MacBook — sync automático (sem pedir terminal ao usuário)
+## MacBook — Fase 1 (auto-merge) + Fase 2 (sync) automáticos
 
 - **Proibido** encerrar resposta com bloco `No MacBook:` / `git fetch origin...` para o Raudinei copiar.
-- **Mac sincroniza sozinho** via:
-  1. `./tool/install_mac_sync_launchd.sh` (launchd a cada 5 min — cobre entregas do smartphone/cloud)
-  2. Hook Cursor `stop` → `.cursor/hooks/sync_mac_on_stop.sh` (após cada turno no Desktop Mac)
-  3. Agente no workspace local: executar `./tool/sync_mac.sh` antes de encerrar (não instruir)
-- **Cloud Agent (Linux `/workspace`):** não acessa Mac — informar só: *"Mac sincroniza automaticamente (launchd ≤5 min)"* + SHA em `origin/main`.
-- **Cursor Desktop (MacBook / Private Worker):** executar `./tool/sync_mac.sh` e informar SHA pós-sync.
+- **Mac executa sozinho** via:
+  1. `./tool/install_mac_sync_launchd.sh` — launchd a cada 5 min: `mac_periodic.sh` = `sync_mac` + `arm_auto_merge --all`
+  2. Hook Cursor `stop` → `.cursor/hooks/sync_mac_on_stop.sh` — sync + `arm_auto_merge` (branch atual + `--all` em background)
+  3. Agente no workspace local: `./tool/sync_mac.sh` + `./tool/arm_auto_merge.sh` antes de encerrar (não instruir)
+- **Cloud Agent (Linux `/workspace`):** não acessa Mac — informar: *"Mac arma auto-merge e sincroniza automaticamente (launchd ≤5 min)"* + SHA em `origin/main`.
+- **Cursor Desktop (MacBook / Private Worker):** executar `./tool/sync_mac.sh` e `./tool/arm_auto_merge.sh`; informar SHA pós-sync.
 
 ## Memória
 
@@ -33,7 +33,7 @@ Cadeado: `docs/03_ENFORCEMENT/supervisor-merge-gate.md`.
 
 ## Padrão oficial SoloForte
 
-Serviço completo = Cloud Agent (PR + auto-merge rebase) + Cursor Desktop Mac (`git pull origin main`).
+Serviço completo = Fase 1 (PR + auto-merge rebase — cloud ou `./tool/arm_auto_merge.sh` no Mac) + Fase 2 Mac (`./tool/sync_mac.sh`).
 Ver `.cursor/rules/cursor-desktop-sync.mdc`.
 
 ## Proibido
