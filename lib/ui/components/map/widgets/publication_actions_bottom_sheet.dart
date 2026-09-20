@@ -11,6 +11,7 @@ class PublicationActionsBottomSheet extends StatelessWidget {
   final VoidCallback onResultado;
   final VoidCallback onAntesDepois;
   final VoidCallback onAvaliacao;
+  final VoidCallback onAreaVisitada;
   final VoidCallback onOcorrencia;
 
   const PublicationActionsBottomSheet({
@@ -18,6 +19,7 @@ class PublicationActionsBottomSheet extends StatelessWidget {
     required this.onResultado,
     required this.onAntesDepois,
     required this.onAvaliacao,
+    required this.onAreaVisitada,
     required this.onOcorrencia,
   });
 
@@ -26,6 +28,7 @@ class PublicationActionsBottomSheet extends StatelessWidget {
     required VoidCallback onResultado,
     required VoidCallback onAntesDepois,
     required VoidCallback onAvaliacao,
+    required VoidCallback onAreaVisitada,
     required VoidCallback onOcorrencia,
   }) {
     return showSoloForteSheet<void>(
@@ -39,6 +42,7 @@ class PublicationActionsBottomSheet extends StatelessWidget {
         onResultado: onResultado,
         onAntesDepois: onAntesDepois,
         onAvaliacao: onAvaliacao,
+        onAreaVisitada: onAreaVisitada,
         onOcorrencia: onOcorrencia,
       ),
     );
@@ -90,6 +94,13 @@ class PublicationActionsBottomSheet extends StatelessWidget {
                   color: SoloForteSheetSkinIos.iconStroke,
                   isIos: true,
                   onTap: () => _select(context, onAvaliacao),
+                ),
+                _ActionRow(
+                  icon: SFIcons.pinFill,
+                  title: 'Área Visitada',
+                  color: SoloForteSheetSkinIos.iconStroke,
+                  isIos: true,
+                  onTap: () => _select(context, onAreaVisitada),
                 ),
                 _ActionRow(
                   icon: SFIcons.warning,
@@ -154,6 +165,12 @@ class PublicationActionsBottomSheet extends StatelessWidget {
                   title: 'Avaliação',
                   color: const Color(0xFF3B82F6),
                   onTap: () => _select(context, onAvaliacao),
+                ),
+                _ActionRow(
+                  icon: SFIcons.pinFill,
+                  title: 'Área Visitada',
+                  color: const Color(0xFF607D8B),
+                  onTap: () => _select(context, onAreaVisitada),
                 ),
                 _ActionRow(
                   icon: SFIcons.warning,
