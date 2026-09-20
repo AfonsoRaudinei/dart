@@ -39,6 +39,8 @@ Future<void> showTalhaoActionsSheet(
   String? farmId,
   required String fieldId,
   required String fieldName,
+  String? initialCultura,
+  String? initialSafra,
 }) async {
   final action = await showSoloForteSheet<TalhaoShortAction>(
     context: context,
@@ -81,6 +83,8 @@ Future<void> showTalhaoActionsSheet(
         farmId: farmId,
         fieldId: fieldId,
         initialName: fieldName,
+        initialCultura: initialCultura,
+        initialSafra: initialSafra,
       );
   }
 }
@@ -153,7 +157,7 @@ class TalhaoActionsSheet extends StatelessWidget {
             _TalhaoActionTile(
               icon: Icons.edit_note,
               label: 'Vincular / editar dados',
-              description: 'Nome e fazenda',
+              description: 'Nome, fazenda, cultura e safra',
               muted: muted,
               titleColor: titleColor,
               onTap: () {
@@ -223,6 +227,8 @@ Future<bool> showTalhaoDadosSheet(
   String? farmId,
   required String fieldId,
   required String initialName,
+  String? initialCultura,
+  String? initialSafra,
 }) async {
   final saved = await showSoloForteSheet<bool>(
     context: context,
@@ -236,6 +242,8 @@ Future<bool> showTalhaoDadosSheet(
       farmId: farmId,
       fieldId: fieldId,
       initialName: initialName,
+      initialCultura: initialCultura,
+      initialSafra: initialSafra,
     ),
   );
 
@@ -255,12 +263,16 @@ class TalhaoDadosSheet extends ConsumerStatefulWidget {
     this.farmId,
     required this.fieldId,
     required this.initialName,
+    this.initialCultura,
+    this.initialSafra,
   });
 
   final String clientId;
   final String? farmId;
   final String fieldId;
   final String initialName;
+  final String? initialCultura;
+  final String? initialSafra;
 
   @override
   ConsumerState<TalhaoDadosSheet> createState() => _TalhaoDadosSheetState();
@@ -269,6 +281,8 @@ class TalhaoDadosSheet extends ConsumerStatefulWidget {
 class _TalhaoDadosSheetState extends ConsumerState<TalhaoDadosSheet> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameController;
+  late final TextEditingController _culturaController;
+  late final TextEditingController _safraController;
   final _repository = FarmRepository();
   List<Farm> _farms = const [];
   bool _isLoadingFarms = true;
@@ -279,6 +293,8 @@ class _TalhaoDadosSheetState extends ConsumerState<TalhaoDadosSheet> {
   void initState() {
     super.initState();
     _nameController = TextEditingController(text: widget.initialName);
+    _culturaController = TextEditingController(text: widget.initialCultura ?? '');
+    _safraController = TextEditingController(text: widget.initialSafra ?? '');
     _selectedFarmId = widget.farmId;
     _loadFarms();
   }
@@ -286,6 +302,8 @@ class _TalhaoDadosSheetState extends ConsumerState<TalhaoDadosSheet> {
   @override
   void dispose() {
     _nameController.dispose();
+    _culturaController.dispose();
+    _safraController.dispose();
     super.dispose();
   }
 
@@ -323,6 +341,12 @@ class _TalhaoDadosSheetState extends ConsumerState<TalhaoDadosSheet> {
       await writer.updateFieldName(
         fieldId: widget.fieldId,
         name: _nameController.text,
+      );
+
+      await writer.updateFieldMetadata(
+        fieldId: widget.fieldId,
+        cultura: _culturaController.text,
+        safra: _safraController.text,
       );
 
       final nextFarmId = _selectedFarmId;
@@ -409,6 +433,22 @@ class _TalhaoDadosSheetState extends ConsumerState<TalhaoDadosSheet> {
                   }
                   return null;
                 },
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _culturaController,
+                decoration: const InputDecoration(
+                  labelText: 'Cultura',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _safraController,
+                decoration: const InputDecoration(
+                  labelText: 'Safra',
+                  border: OutlineInputBorder(),
+                ),
               ),
               if (_isLoadingFarms) ...[
                 const SizedBox(height: 16),
