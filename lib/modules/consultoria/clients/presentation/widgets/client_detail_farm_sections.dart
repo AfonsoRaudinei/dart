@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -12,6 +10,7 @@ import '../../domain/client.dart';
 import '../providers/clients_providers.dart';
 import '../providers/field_providers.dart';
 import '../widgets/client_detail_sub_widgets.dart';
+import '../widgets/farm_linked_field_list.dart';
 import '../widgets/link_drawing_to_farm_sheet.dart';
 import '../widgets/talhao_map_preview.dart';
 
@@ -38,115 +37,83 @@ class ClientFarmWithTalhoesSection extends ConsumerWidget {
       children: [
         ClientFarmItem(
           name: farm.name,
-          area: '${_formatAreaHa(displayedAreaHa)} ha',
-          onTap: () => context.go(AppRoutes.farmDetail(client.id, farm.id)),
+          area: '${formatLinkedFieldAreaHa(displayedAreaHa)} ha',
         ),
-        fieldsAsync.when(
-          data: (fields) {
-            if (fields.isEmpty) return const SizedBox.shrink();
-            return Padding(
-              padding: const EdgeInsets.only(left: 16, bottom: 12),
-              child: Column(
-                children: fields.map((field) {
-                  return Container(
-                    margin: const EdgeInsets.only(bottom: 8),
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.grey.shade200),
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 48,
-                          height: 48,
-                          decoration: BoxDecoration(
-                            color: Colors.grey.shade100,
-                            borderRadius: BorderRadius.circular(8),
-                            image: field.thumbnailPath != null
-                                ? DecorationImage(
-                                    image: FileImage(
-                                      File(field.thumbnailPath!),
-                                    ),
-                                    fit: BoxFit.cover,
-                                  )
-                                : null,
-                          ),
-                          child: field.thumbnailPath == null
-                              ? Icon(
-                                  field.isDrawing
-                                      ? Icons.map_outlined
-                                      : Icons.terrain,
-                                  color: Colors.grey.shade400,
-                                )
-                              : null,
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                field.name,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 14,
-                                ),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                _farmFieldSubtitle(field),
-                                style: TextStyle(
-                                  color: Colors.grey.shade600,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        if (field.syncStatus != 0)
-                          const Padding(
-                            padding: EdgeInsets.only(left: 8.0),
-                            child: Tooltip(
-                              message: 'Sincronização Pendente',
-                              child: Icon(
-                                Icons.cloud_off,
-                                color: Colors.orange,
-                                size: 20,
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                  );
-                }).toList(),
+        const SizedBox(height: 12),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.grey[100],
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Área Total',
+                style: TextStyle(color: Colors.grey[600]),
               ),
+              Text(
+                '${formatLinkedFieldAreaHa(displayedAreaHa)} ha',
+                style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '${farm.city} - ${farm.state}',
+                style: const TextStyle(fontSize: 16),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 24),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text(
+              'Talhões',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            TextButton.icon(
+              onPressed: () => context.go(
+                farmMapCreateUri(clientId: client.id, farmId: farm.id),
+              ),
+              icon: const Icon(Icons.add, color: PremiumTokens.brandGreen),
+              label: const Text(
+                'Novo',
+                style: TextStyle(
+                  color: PremiumTokens.brandGreen,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        fieldsAsync.when(
+          data: (fields) => FarmLinkedFieldList(
+            clientId: client.id,
+            farmId: farm.id,
+            fields: fields,
+          ),
+          loading: () {
+            if ((linkedFields ?? const []).isEmpty) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            return FarmLinkedFieldList(
+              clientId: client.id,
+              farmId: farm.id,
+              fields: linkedFields!,
             );
           },
-          loading: () => const Padding(
-            padding: EdgeInsets.only(bottom: 12.0),
-            child: Center(child: CircularProgressIndicator()),
-          ),
           error: (err, stack) => const SizedBox.shrink(),
         ),
+        const SizedBox(height: 12),
       ],
     );
-  }
-
-  String _farmFieldSubtitle(FarmLinkedFieldSummary field) {
-    final parts = <String>['Área: ${_formatAreaHa(field.areaHa)} ha'];
-    if (field.perimeter != null) {
-      parts.add('Perímetro: ${field.perimeter!.toStringAsFixed(2)} km');
-    }
-    if (field.isDrawing) {
-      parts.add('Talhão do mapa');
-    }
-    return parts.join(' • ');
-  }
-
-  String _formatAreaHa(double areaHa) {
-    return areaHa.toStringAsFixed(areaHa >= 100 ? 1 : 2);
   }
 }
 
