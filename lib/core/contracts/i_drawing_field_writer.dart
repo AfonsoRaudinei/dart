@@ -23,4 +23,14 @@ abstract interface class IDrawingFieldWriter {
     required String fieldId,
     required String name,
   });
+
+  /// Atualiza cultura e safra de um talhão do mapa sem alterar a geometria.
+  ///
+  /// Strings vazias são normalizadas para `null`. Feature inexistente ou inativa
+  /// lança [StateError]. Ver ADR-038.
+  Future<void> updateFieldMetadata({
+    required String fieldId,
+    String? cultura,
+    String? safra,
+  });
 }
