@@ -297,4 +297,69 @@ void main() {
       expect(count, equals(8)); // 4 + 4
     });
   });
+
+  group('DrawingUtils - explodeToPolygons', () {
+    test('Polygon retorna lista com um elemento', () {
+      final polygon = DrawingPolygon(coordinates: [
+        [
+          [0.0, 0.0],
+          [1.0, 0.0],
+          [1.0, 1.0],
+          [0.0, 0.0],
+        ],
+      ]);
+
+      final parts = DrawingUtils.explodeToPolygons(polygon);
+      expect(parts, hasLength(1));
+      expect(parts.first, same(polygon));
+    });
+
+    test('MultiPolygon retorna um polígono por parte', () {
+      final multi = DrawingMultiPolygon(coordinates: [
+        [
+          [
+            [0.0, 0.0],
+            [1.0, 0.0],
+            [1.0, 1.0],
+            [0.0, 0.0],
+          ],
+        ],
+        [
+          [
+            [2.0, 2.0],
+            [3.0, 2.0],
+            [3.0, 3.0],
+            [2.0, 2.0],
+          ],
+        ],
+      ]);
+
+      final parts = DrawingUtils.explodeToPolygons(multi);
+      expect(parts, hasLength(2));
+      expect(parts.every((p) => p is DrawingPolygon), isTrue);
+    });
+  });
+
+  group('DrawingUtils - buildSequentialFieldNames', () {
+    test('count 1 retorna baseName trimado', () {
+      expect(
+        DrawingUtils.buildSequentialFieldNames('  Talhão Norte  ', 1),
+        equals(['Talhão Norte']),
+      );
+    });
+
+    test('Talhão Novo gera Talhão 1, Talhão 2', () {
+      expect(
+        DrawingUtils.buildSequentialFieldNames('Talhão Novo', 3),
+        equals(['Talhão 1', 'Talhão 2', 'Talhão 3']),
+      );
+    });
+
+    test('prefixo customizado mantém base e numera', () {
+      expect(
+        DrawingUtils.buildSequentialFieldNames('Safra Soja', 2),
+        equals(['Safra Soja 1', 'Safra Soja 2']),
+      );
+    });
+  });
 }
