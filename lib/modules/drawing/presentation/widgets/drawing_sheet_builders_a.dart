@@ -502,6 +502,8 @@ extension _DrawingSheetBuildersA on _DrawingSheetState {
 
   Widget _buildImportPreviewMode(BuildContext context) {
     final hasImportWarning = widget.controller.hasPendingImportWarning;
+    final previewGeometry = widget.controller.liveGeometry;
+    final detectedParts = widget.controller.polygonPartCount(previewGeometry);
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -522,6 +524,28 @@ extension _DrawingSheetBuildersA on _DrawingSheetState {
               style: TextStyle(color: SoloForteSheetTokens.sectionLabel),
             ),
           ),
+          if (detectedParts > 1) ...[
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: PremiumTokens.brandGreen.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: PremiumTokens.brandGreen.withValues(alpha: 0.2),
+                ),
+              ),
+              child: Text(
+                '$detectedParts talhões detectados no arquivo. '
+                'Cada um será salvo separadamente.',
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 13.5,
+                  color: SoloForteSheetTokens.sectionLabel,
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
           if (hasImportWarning) ...[
             _buildSelfIntersectionWarning(),
             const SizedBox(height: 16),
