@@ -8,6 +8,8 @@ import 'package:latlong2/latlong.dart';
 import '../../../core/config/map_config.dart';
 import '../../../core/constants/layout_constants.dart';
 import '../../../core/design/sf_icons.dart';
+import '../../../core/config/cerrado_satellite_overlay.dart';
+import '../../../core/state/map_ui_providers.dart';
 import '../../../core/domain/map_models.dart';
 import '../../../core/services/local_geotiff_service.dart';
 import '../../../core/contracts/i_radar_overlay_controller_provider.dart';
@@ -42,7 +44,14 @@ class LayersSheet extends ConsumerWidget {
     final showMarkers = ref.watch(showMarkersProvider);
     final showRadar = ref.watch(climaRadarEnabledProvider);
     final satelliteLabelsEnabled = ref.watch(mapSatelliteLabelsEnabledProvider);
+    final cerradoOverlayEnabled = ref.watch(cerradoSatelliteOverlayEnabledProvider);
     final stateBoundariesEnabled = ref.watch(mapStateBoundariesEnabledProvider);
+    final camera = ref.watch(mapCameraSnapshotProvider);
+    final inCerrado = camera != null &&
+        CerradoSatelliteOverlay.isWithinBounds(
+          camera.center.latitude,
+          camera.center.longitude,
+        );
     final wms = ref.watch(externalWmsLayerProvider);
     final raster = ref.watch(externalRasterLayerProvider);
 
@@ -227,6 +236,25 @@ class LayersSheet extends ConsumerWidget {
                       HapticFeedback.selectionClick();
                       ref
                           .read(mapSatelliteLabelsEnabledProvider.notifier)
+                          .setEnabled(enabled);
+                    },
+                    onConfigure: () {},
+                  ),
+                  _AdvancedLayerTile(
+                    icon: SFIcons.layers,
+                    title: 'Satélite Cerrado (INPE)',
+                    statusLabel: cerradoOverlayEnabled ? 'Ativo' : 'Desativado',
+                    enabled: cerradoOverlayEnabled,
+                    hint: inCerrado
+                        ? 'Base MapTiler (~2020–2021). ${cerradoOverlayEnabled ? 'Exibe' : 'Ative'} '
+                              'mosaico INPE (${CerradoSatelliteOverlay.acquisitionLabel}).'
+                        : 'Base MapTiler (~2020–2021). Disponível no bioma Cerrado '
+                              '(aproxime MT/GO/MS). Imagens INPE '
+                              '${CerradoSatelliteOverlay.acquisitionLabel}.',
+                    onToggle: (enabled) {
+                      HapticFeedback.selectionClick();
+                      ref
+                          .read(cerradoSatelliteOverlayEnabledProvider.notifier)
                           .setEnabled(enabled);
                     },
                     onConfigure: () {},
