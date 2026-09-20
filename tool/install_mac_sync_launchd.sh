@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Instala sync automático da main + auto-merge no Mac (launchd, a cada 5 min).
+# Instala sync automático da main no Mac (launchd, a cada 5 min).
 # Uso: ./tool/install_mac_sync_launchd.sh
 set -euo pipefail
 
@@ -31,8 +31,8 @@ launchctl enable "gui/$(id -u)/com.soloforte.sync-main" 2>/dev/null || true
 echo "OK: com.soloforte.sync-main instalado"
 echo "  plist: $PLIST_DEST"
 echo "  log:   $LOG_FILE"
-echo "  sync:  a cada 5 min + RunAtLoad (sync_mac + arm_auto_merge --all)"
-echo "  hook:  .cursor/hooks/sync_mac_on_stop.sh (sync + arm branch atual + --all)"
+echo "  sync:  a cada 5 min + RunAtLoad (sync_mac apenas — Fase 2)"
+echo "  hook:  .cursor/hooks/sync_mac_on_stop.sh (sync + arm_auto_merge da branch corrente cursor/* → main)"
 
 "$PERIODIC_SCRIPT" || true
 tail -n 5 "$LOG_FILE" 2>/dev/null || true
