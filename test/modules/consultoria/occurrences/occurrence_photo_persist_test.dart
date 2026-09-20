@@ -102,5 +102,22 @@ void main() {
         'media/img_uuid.jpg',
       );
     });
+
+    test('remapeia path absoluto stale para media no container atual', () async {
+      final mediaDir = Directory(p.join(docsDir.path, 'media'));
+      await mediaDir.create(recursive: true);
+      final file = File(p.join(mediaDir.path, 'legacy_stale.jpg'));
+      await file.writeAsBytes([7, 8, 9]);
+
+      final staleAbsolute = p.join(
+        '/var/mobile/Containers/Data/Application/OLD-UUID/Documents',
+        'media',
+        'legacy_stale.jpg',
+      );
+
+      final resolved =
+          await LocalMediaPathResolver.resolveLocalPath(staleAbsolute);
+      expect(resolved, file.path);
+    });
   });
 }
