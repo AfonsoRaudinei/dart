@@ -137,8 +137,15 @@ void main() {
       'Fazenda Nova Esperança',
     );
     await tester.enterText(find.byType(TextFormField).at(1), 'Pugmil');
-    await tester.enterText(find.byType(TextFormField).at(2), 'to');
-    await tester.enterText(find.byType(TextFormField).at(3), '320,5');
+
+    final ufField = find.byType(DropdownButtonFormField<String>).first;
+    await tester.ensureVisible(ufField);
+    await tester.tap(ufField);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Tocantins (TO)').last);
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextFormField).at(2), '320,5');
 
     await tester.ensureVisible(find.text('Continuar para importar'));
     await tester.tap(find.text('Continuar para importar'));
