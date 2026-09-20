@@ -98,6 +98,11 @@ class MapControlsOverlay extends ConsumerStatefulWidget {
 class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
   bool _showMeasurementDetails = false;
 
+  bool get _hidesCheckInForDrawing =>
+      widget.isDrawMode ||
+      widget.drawingState == DrawingState.drawing ||
+      widget.drawingState == DrawingState.editing;
+
   @override
   Widget build(BuildContext context) {
     // Use SafeArea top padding to ensure elements are below the status bar/notch
@@ -200,7 +205,7 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
                 activeColor: activeColor,
                 onTap: widget.onOpenMapTools,
               ),
-              if (!widget.isDrawMode && widget.showCheckInAction) ...[
+              if (!_hidesCheckInForDrawing && widget.showCheckInAction) ...[
                 const SizedBox(height: kMapActionColumnSpacingAboveCheckIn),
                 _MapActionButton(
                   buttonKey: const Key('map_control_check_in'),
