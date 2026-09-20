@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math' as math;
 import 'package:file_picker/file_picker.dart';
-import 'package:flutter_map/flutter_map.dart' show LatLngBounds;
+import 'package:flutter_map/flutter_map.dart' show LatLngBounds, MapCamera;
 import 'package:xml/xml.dart';
 import 'package:archive/archive.dart';
 import 'package:latlong2/latlong.dart';
@@ -30,6 +30,17 @@ class DrawingUtils {
   static const double toleranciaSimplificacaoMetros = 0.5;
   static const double toleranciaMinDistanciaVertice = 0.1;
   static const double toleranciaImportacaoVerticeDuplicadoMetros = 0.3;
+
+  /// Tolerância geodésica (~44dp) para hit-test de vértice via tap no mapa.
+  static double vertexHitToleranceMeters(
+    MapCamera camera, {
+    double hitPx = 44,
+  }) {
+    final center = camera.center;
+    final c = camera.latLngToScreenPoint(center);
+    final edge = camera.pointToLatLng(math.Point(c.x + hitPx, c.y));
+    return const Distance().as(LengthUnit.Meter, center, edge);
+  }
 
   /// Generates a new UUID v4
   static String generateId() => _uuid.v4();
