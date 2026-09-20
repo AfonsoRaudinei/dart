@@ -15,6 +15,8 @@ class ClientDrawingFieldSummary {
     required this.areaHa,
     required this.vertices,
     this.farmId,
+    this.crop,
+    this.harvest,
     this.updatedAt,
     this.syncStatus,
   });
@@ -24,6 +26,8 @@ class ClientDrawingFieldSummary {
   final double areaHa;
   final List<LatLng> vertices;
   final String? farmId;
+  final String? crop;
+  final String? harvest;
   final DateTime? updatedAt;
   final int? syncStatus;
 }
@@ -121,6 +125,8 @@ final clientDrawingFieldsProvider = FutureProvider.family
           'geojson',
           'updated_at',
           'sync_status',
+          'cultura',
+          'safra',
         ],
         where:
             'user_id = ? AND cliente_id = ? AND deleted_at IS NULL AND ativo = 1 AND (fazenda_id IS NULL OR fazenda_id = \'\')',
@@ -136,6 +142,8 @@ final clientDrawingFieldsProvider = FutureProvider.family
           areaHa: (row['area_ha'] as num?)?.toDouble() ?? 0,
           vertices: _verticesFromGeoJson(row['geojson'] as String?),
           farmId: row['fazenda_id'] as String?,
+          crop: _nullableNonEmptyString(row['cultura']),
+          harvest: _nullableNonEmptyString(row['safra']),
           updatedAt: row['updated_at'] != null
               ? DateTime.tryParse(row['updated_at'] as String)
               : null,
@@ -225,6 +233,11 @@ int? _syncStatusFromValue(Object? value) {
   if (value is int) return value;
   if (value is String) return int.tryParse(value);
   return null;
+}
+
+String? _nullableNonEmptyString(Object? value) {
+  if (value is! String) return null;
+  return value.isEmpty ? null : value;
 }
 
 List<LatLng> _verticesFromGeometry(Map<String, dynamic>? geometry) {
