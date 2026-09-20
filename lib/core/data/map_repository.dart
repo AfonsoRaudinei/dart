@@ -471,7 +471,7 @@ class MapRepository {
   List<MapLayer> _getDefaultLayers() {
     return [
       MapLayer(id: 'sat', name: 'Satélite', type: LayerType.satellite),
-      MapLayer(id: 'ter', name: 'Relevo', type: LayerType.relevo),
+      MapLayer(id: 'map', name: 'Mapa', type: LayerType.standard),
     ];
   }
 }
