@@ -7,6 +7,7 @@ import 'package:latlong2/latlong.dart';
 import '../../../../core/state/map_state.dart';
 import '../../../../core/state/map_ui_providers.dart';
 import '../../../../core/config/map_config.dart';
+import '../../../../core/config/cerrado_satellite_overlay.dart';
 import '../../../../core/domain/map_models.dart';
 import '../../../../core/utils/map_logger.dart';
 import '../../../../core/providers/connectivity_provider.dart';
@@ -30,6 +31,7 @@ class MapLayersWidget extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final activeLayer = ref.watch(activeLayerProvider);
     final satelliteLabelsEnabled = ref.watch(mapSatelliteLabelsEnabledProvider);
+    final cerradoOverlayEnabled = ref.watch(cerradoSatelliteOverlayEnabledProvider);
     final wms = ref.watch(externalWmsLayerProvider);
     final raster = ref.watch(externalRasterLayerProvider);
     final isOnline = ref.watch(isOnlineProvider).asData?.value;
@@ -71,6 +73,14 @@ class MapLayersWidget extends ConsumerWidget {
       offlineTemplate: offlineTemplate,
       isOnline: isOnline,
     );
+    final showCerradoOverlay =
+        activeLayer == LayerType.satellite &&
+        cerradoOverlayEnabled &&
+        camera != null &&
+        CerradoSatelliteOverlay.isWithinBounds(
+          camera.center.latitude,
+          camera.center.longitude,
+        );
 
     return Stack(
       children: [
@@ -108,6 +118,23 @@ class MapLayersWidget extends ConsumerWidget {
                 stackTrace,
               );
             },
+          ),
+        if (showCerradoOverlay)
+          Opacity(
+            opacity: CerradoSatelliteOverlay.defaultOpacity,
+            child: TileLayer(
+              wmsOptions: WMSTileLayerOptions(
+                baseUrl: _normalizeWmsBaseUrl(CerradoSatelliteOverlay.wmsBaseUrl),
+                layers: const [CerradoSatelliteOverlay.layerName],
+                format: CerradoSatelliteOverlay.wmsFormat,
+                version: CerradoSatelliteOverlay.wmsVersion,
+                transparent: CerradoSatelliteOverlay.wmsTransparent,
+                crs: _resolveWmsCrs(CerradoSatelliteOverlay.wmsCrs),
+              ),
+              userAgentPackageName: MapConfig.userAgent,
+              maxZoom: 22,
+              maxNativeZoom: 22,
+            ),
           ),
         if (raster.enabled && raster.hasLocalGeoTiff)
           OverlayImageLayer(
