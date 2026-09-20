@@ -72,13 +72,17 @@ void main() {
     );
   });
 
-  test('1A: host recolhe sheet na edição sem cancelar', () {
-    expect(bottomSheet, contains('_collapseDrawingSheetWhileEditing'));
-    expect(bottomSheet, contains('onCollapseWhileEditing'));
+  test('1A: host fecha sheet na edição sem cancelar vértices', () {
     expect(bottomSheet, contains('_onDrawingControllerChanged'));
+    expect(bottomSheet, contains('_closeDrawingSheetChrome'));
+    expect(bottomSheet, contains('onCollapseWhileEditing'));
     expect(
       closeCoordinator,
-      contains('host deve recolher (compact) sem cancelar'),
+      contains('fecha o chrome sem cancelar; edição permanece ativa'),
+    );
+    expect(
+      closeCoordinator,
+      contains('return const DrawingCloseDecision(shouldCloseSheet: true);'),
     );
   });
 }
