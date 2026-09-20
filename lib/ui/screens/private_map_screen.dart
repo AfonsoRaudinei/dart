@@ -648,6 +648,36 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
         failed: 0,
       ),
     );
+
+    final coverageQuery = OfflineCoverageQuery(
+      layerKey: layerKey,
+      lat: _mapController.camera.center.latitude,
+      lng: _mapController.camera.center.longitude,
+      south: south,
+      west: west,
+      north: north,
+      east: east,
+      zoom: _mapController.camera.zoom.round(),
+    );
+    final hasExistingCoverage =
+        await ref.read(offlineCoverageProvider(coverageQuery).future);
+    OfflineMapAreaConfig? existingCoveringArea;
+    if (hasExistingCoverage) {
+      for (final area in ref.read(offlineMapAreasProvider)) {
+        if (area.layerKey == layerKey &&
+            area.covers(
+              layerKey: layerKey,
+              lat: coverageQuery.lat,
+              lng: coverageQuery.lng,
+              zoom: coverageQuery.zoom.toDouble(),
+            )) {
+          existingCoveringArea = area;
+          break;
+        }
+      }
+    }
+    final forceRefresh = hasExistingCoverage;
+
     unawaited(
       showMapOfflineDownloadProgressSheet(
         context,
@@ -671,6 +701,7 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
         headers: {'User-Agent': MapConfig.userAgent},
         onProgress: (value) => progress.value = value,
         shouldCancel: () => cancelRequested,
+        forceRefresh: forceRefresh,
       );
     } on OfflineTileCacheException catch (e) {
       if (mounted) Navigator.of(context, rootNavigator: false).pop();
@@ -694,11 +725,11 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
       return;
     }
 
-    ref
-        .read(offlineMapAreasProvider.notifier)
-        .addArea(
+    ref.read(offlineMapAreasProvider.notifier).updateArea(
           OfflineMapAreaConfig(
-            id: DateTime.now().millisecondsSinceEpoch.toString(),
+            id:
+                existingCoveringArea?.id ??
+                DateTime.now().millisecondsSinceEpoch.toString(),
             layerKey: layerKey,
             south: south,
             west: west,
