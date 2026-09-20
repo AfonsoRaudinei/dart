@@ -6,11 +6,8 @@ import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
 import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:uuid/uuid.dart';
-
 import '../../domain/client.dart';
 import '../../domain/client_cultura.dart';
-import '../../domain/enums/cultura_tipo.dart';
 import '../widgets/client_avatar_widget.dart';
 import '../widgets/cultura_item_widget.dart';
 import '../widgets/client_detail_sub_widgets.dart';
@@ -604,7 +601,7 @@ class _ClientEditFormState extends State<ClientEditForm> {
                       color: PremiumTokens.brandGreen,
                     ),
                     label: const Text(
-                      '+ Adicionar Cultura',
+                      'Adicionar Cultura',
                       style: TextStyle(color: PremiumTokens.brandGreen),
                     ),
                     onPressed: _abrirBottomSheetCultura,
