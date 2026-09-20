@@ -31,22 +31,27 @@ abstract class LocalMediaPathResolver {
     }
 
     final normalized = stored.replaceAll(r'\', '/');
+    final directory = await getApplicationDocumentsDirectory();
+    final storedRelative = toStoredPath(normalized);
     final candidates = <String>[];
 
     if (p.isAbsolute(normalized)) {
       candidates.add(normalized);
-    } else {
-      final directory = await getApplicationDocumentsDirectory();
-      candidates.add(p.join(directory.path, normalized));
-      if (!normalized.startsWith('$mediaSegment/')) {
-        candidates.add(
-          p.join(directory.path, mediaSegment, p.basename(normalized)),
-        );
-      }
+    }
+    if (storedRelative.isNotEmpty) {
+      candidates.add(p.join(directory.path, storedRelative));
+    }
+    if (!normalized.startsWith('$mediaSegment/')) {
+      candidates.add(
+        p.join(directory.path, mediaSegment, p.basename(normalized)),
+      );
     }
 
+    final seen = <String>{};
     for (final candidate in candidates) {
-      if (await File(candidate).exists()) return candidate;
+      if (seen.add(candidate) && await File(candidate).exists()) {
+        return candidate;
+      }
     }
     return null;
   }
