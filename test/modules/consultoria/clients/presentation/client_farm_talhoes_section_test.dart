@@ -66,9 +66,53 @@ void main() {
     await tester.pump(const Duration(milliseconds: 100));
 
     expect(find.byType(TalhaoMapPreviewWidget), findsOneWidget);
-    expect(find.byTooltip('Renomear talhão'), findsOneWidget);
+    expect(find.byTooltip('Abrir no mapa'), findsOneWidget);
+    expect(find.byTooltip('Ações do talhão'), findsOneWidget);
     expect(find.text('Talhão Norte'), findsOneWidget);
     expect(find.text('Área Total'), findsOneWidget);
     expect(find.byIcon(Icons.chevron_right), findsNothing);
+  });
+
+  testWidgets('lápis abre menu curto e não navega imediatamente', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(800, 1600);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          farmLinkedFieldsProvider.overrideWith(
+            (ref, farmId) async => linkedFields,
+          ),
+        ],
+        child: MaterialApp(
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: ClientFarmWithTalhoesSection(
+                client: client,
+                farm: farm,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(find.byTooltip('Abrir no mapa'), findsOneWidget);
+    expect(find.text('Editar geometria'), findsNothing);
+
+    await tester.tap(find.byIcon(Icons.edit_outlined));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    expect(find.text('Editar geometria'), findsOneWidget);
+    expect(find.text('Vincular / editar dados'), findsOneWidget);
+    expect(find.text('União'), findsOneWidget);
+    expect(find.byTooltip('Abrir no mapa'), findsOneWidget);
   });
 }
