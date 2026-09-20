@@ -1157,6 +1157,60 @@ class DrawingUtils {
     return math.sqrt(dx * dx + dy * dy);
   }
 
+  /// Explode any geometry into individual [DrawingPolygon] parts.
+  ///
+  /// Polygon → single-element list; MultiPolygon → one polygon per part.
+  static List<DrawingPolygon> explodeToPolygons(DrawingGeometry geometry) {
+    if (geometry is DrawingPolygon) {
+      if (geometry.coordinates.isEmpty) return const [];
+      return [geometry];
+    }
+    if (geometry is DrawingMultiPolygon) {
+      return geometry.coordinates
+          .where((poly) => poly.isNotEmpty)
+          .map((poly) => DrawingPolygon(coordinates: poly))
+          .toList(growable: false);
+    }
+    return const [];
+  }
+
+  /// Builds sequential talhão names from a base label.
+  ///
+  /// When [count] is 1, returns `[baseName.trim()]`.
+  /// Generic names like "Talhão Novo" become "Talhão 1", "Talhão 2", …
+  static List<String> buildSequentialFieldNames(String baseName, int count) {
+    if (count <= 0) return const [];
+    final trimmed = baseName.trim();
+    if (count == 1) {
+      return [trimmed.isEmpty ? 'Talhão' : trimmed];
+    }
+
+    final prefix = _sequentialFieldNamePrefix(trimmed);
+    return List.generate(count, (index) => '$prefix ${index + 1}');
+  }
+
+  static String _sequentialFieldNamePrefix(String baseName) {
+    if (baseName.isEmpty) return 'Talhão';
+
+    final lower = baseName.toLowerCase();
+    const genericPatterns = <String>{
+      'talhão novo',
+      'talhao novo',
+      'talhão',
+      'talhao',
+      'novo',
+      'nova',
+    };
+    if (genericPatterns.contains(lower)) return 'Talhão';
+
+    if (RegExp(r'^talh[aã]o\s+(novo|nova|new)$', caseSensitive: false)
+        .hasMatch(baseName)) {
+      return 'Talhão';
+    }
+
+    return baseName;
+  }
+
   /// Tests if a point [lng, lat] is inside a polygon ring [[lng, lat], ...].
   /// Uses Ray Casting algorithm.
   /// Point is LatLng. Ring is `List<List<double>>`, i.e. [[lng, lat], ...]
