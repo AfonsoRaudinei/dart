@@ -66,6 +66,9 @@ class _DrawingLayerWidgetState extends State<DrawingLayerWidget> {
             (currentState == DrawingState.drawing ||
                 currentState == DrawingState.armed) &&
             currentPoints.isNotEmpty;
+        final hideDecorativeVertexMarkers =
+            sketchVerticesOwnedByEditLayer ||
+            currentState == DrawingState.editing;
 
         final needsRebuild =
             _lastFeatures != features ||
@@ -139,7 +142,7 @@ class _DrawingLayerWidgetState extends State<DrawingLayerWidget> {
           }
         }
 
-        if (!sketchVerticesOwnedByEditLayer &&
+        if (!hideDecorativeVertexMarkers &&
             currentTool == DrawingTool.polygon &&
             liveGeo == null &&
             currentPoints.length == 1) {
@@ -253,8 +256,8 @@ class _DrawingLayerWidgetState extends State<DrawingLayerWidget> {
                 );
               }
 
-              // Vértices interativos mid-draw ficam no DrawingEditLayer.
-              if (!sketchVerticesOwnedByEditLayer) {
+              // Vértices interativos mid-draw/edição ficam no DrawingEditLayer.
+              if (!hideDecorativeVertexMarkers) {
                 markers.add(_vertexMarker(point, index: i, size: size));
               }
             }
