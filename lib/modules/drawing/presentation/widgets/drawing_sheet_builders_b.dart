@@ -70,17 +70,10 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
         final deletedFeature = feature;
         widget.controller.deleteFeature(feature.id);
         widget.onSaved?.call();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('"${deletedFeature.properties.nome}" removido'),
-            action: SnackBarAction(
-              label: 'DESFAZER',
-              onPressed: () {
-                widget.controller.restoreFeature(deletedFeature);
-              },
-            ),
-            duration: const Duration(seconds: 5),
-          ),
+        showDrawingDeleteUndoSnackBar(
+          context: context,
+          deletedFeature: deletedFeature,
+          controller: widget.controller,
         );
       },
     );
