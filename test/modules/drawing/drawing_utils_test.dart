@@ -336,7 +336,7 @@ void main() {
 
       final parts = DrawingUtils.explodeToPolygons(multi);
       expect(parts, hasLength(2));
-      expect(parts.every((p) => p is DrawingPolygon), isTrue);
+      expect(parts, everyElement(isA<DrawingPolygon>()));
     });
   });
 
