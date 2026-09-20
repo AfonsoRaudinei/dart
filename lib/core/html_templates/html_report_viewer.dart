@@ -96,6 +96,7 @@ class _HtmlReportViewerState extends State<HtmlReportViewer> {
     }
     _controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.disabled)
+      ..setBackgroundColor(const Color(0xFF2C5564))
       ..setNavigationDelegate(
         NavigationDelegate(
           onPageFinished: (_) => setState(() => _loading = false),
@@ -340,7 +341,10 @@ class _HtmlReportViewerState extends State<HtmlReportViewer> {
           ? widget.bodyBuilder!(context)
           : Stack(
               children: [
-                WebViewWidget(controller: _controller!),
+                ColoredBox(
+                  color: const Color(0xFF2C5564),
+                  child: WebViewWidget(controller: _controller!),
+                ),
                 if (_loading)
                   const Center(
                     child: CircularProgressIndicator(color: Color(0xFFF5B935)),
