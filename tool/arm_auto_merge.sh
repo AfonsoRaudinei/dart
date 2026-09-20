@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# SoloForte — arma gh pr merge --auto --rebase em PRs de branches cursor/*.
-# Uso: ./tool/arm_auto_merge.sh [--quiet] [--all] [branch]
+# SoloForte — arma gh pr merge --auto --rebase no PR da branch cursor/* (base main).
+# Uso: ./tool/arm_auto_merge.sh [--quiet] [branch]
+# --all: só uso manual explícito no terminal (nunca hook/launchd).
 # Exit 0 em skips (launchd/hook). Nunca usa --admin.
 set -uo pipefail
 
@@ -70,7 +71,7 @@ process_branch() {
     return 0
   fi
 
-  local pr_number is_draft auto_merge state head_ref
+  local pr_number is_draft auto_merge state head_ref base_ref
   pr_number="$(gh pr list --head "$branch" --state open --json number -q '.[0].number' 2>/dev/null || true)"
 
   if [[ -z "$pr_number" || "$pr_number" == "null" ]]; then
@@ -82,9 +83,15 @@ process_branch() {
   auto_merge="$(gh pr view "$pr_number" --json autoMergeRequest -q '.autoMergeRequest' 2>/dev/null || true)"
   state="$(gh pr view "$pr_number" --json state -q '.state' 2>/dev/null || true)"
   head_ref="$(gh pr view "$pr_number" --json headRefName -q '.headRefName' 2>/dev/null || true)"
+  base_ref="$(gh pr view "$pr_number" --json baseRefName -q '.baseRefName' 2>/dev/null || true)"
 
   if [[ "$state" == "MERGED" || "$state" == "CLOSED" ]]; then
     log "arm_auto_merge: skip PR #$pr_number ($branch) — $state"
+    return 0
+  fi
+
+  if [[ "$base_ref" != "main" ]]; then
+    log "arm_auto_merge: skip PR #$pr_number ($branch) — base não é main ($base_ref)"
     return 0
   fi
 
@@ -103,12 +110,12 @@ process_branch() {
 
 if [[ "$ALL" -eq 1 ]]; then
   pr_list="$(gh pr list --state open \
-    --json number,headRefName,isDraft,autoMergeRequest \
-    -q '.[] | select(.headRefName | startswith("cursor/")) | select(.isDraft == false) | select(.autoMergeRequest == null) | "\(.number) \(.headRefName)"' \
+    --json number,headRefName,isDraft,autoMergeRequest,baseRefName \
+    -q '.[] | select(.headRefName | startswith("cursor/")) | select(.baseRefName == "main") | select(.isDraft == false) | select(.autoMergeRequest == null) | "\(.number) \(.headRefName)"' \
     2>/dev/null || true)"
 
   if [[ -z "$pr_list" ]]; then
-    log "arm_auto_merge: --all — nenhum PR cursor/* pendente de auto-merge"
+    log "arm_auto_merge: --all — nenhum PR cursor/* → main pendente de auto-merge"
     exit 0
   fi
 
