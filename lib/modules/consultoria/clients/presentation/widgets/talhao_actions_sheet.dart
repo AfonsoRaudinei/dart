@@ -10,6 +10,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:soloforte_app/modules/consultoria/clients/domain/agronomic_models.dart';
 import 'package:soloforte_app/modules/consultoria/clients/presentation/providers/clients_providers.dart';
 import 'package:soloforte_app/modules/consultoria/clients/presentation/providers/field_providers.dart';
+import 'package:soloforte_app/modules/consultoria/clients/presentation/widgets/client_sheet_widgets.dart';
 import 'package:soloforte_app/modules/consultoria/clients/presentation/widgets/talhao_sheet_widgets.dart';
 import 'package:soloforte_app/modules/consultoria/clients/presentation/widgets/talhao_union_sheet.dart';
 import 'package:soloforte_app/modules/consultoria/farms/data/repositories/farm_repository.dart';
@@ -190,12 +191,6 @@ Future<bool> showTalhaoDadosSheet(
     ),
   );
 
-  if (saved == true && context.mounted) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Dados do talhão atualizados.')),
-    );
-  }
-
   return saved == true;
 }
 
@@ -230,6 +225,7 @@ class _TalhaoDadosSheetState extends ConsumerState<TalhaoDadosSheet> {
   List<Farm> _farms = const [];
   bool _isLoadingFarms = true;
   bool _isSaving = false;
+  bool _showSuccessBanner = false;
   String? _selectedFarmId;
 
   @override
@@ -314,6 +310,9 @@ class _TalhaoDadosSheetState extends ConsumerState<TalhaoDadosSheet> {
         ref.invalidate(farmLinkedFieldsProvider(nextFarmId));
       }
 
+      if (!mounted) return;
+      setState(() => _showSuccessBanner = true);
+      await Future<void>.delayed(const Duration(milliseconds: 1600));
       if (!mounted) return;
       Navigator.of(context).pop(true);
     } catch (e) {
@@ -428,10 +427,14 @@ class _TalhaoDadosSheetState extends ConsumerState<TalhaoDadosSheet> {
   Widget build(BuildContext context) {
     final visuals = TalhaoSheetVisuals.of(context);
 
-    return TalhaoSheetScaffold(
+    return ClientSheetScaffold(
       title: 'Dados do talhão',
       subtitle: 'Edite sem abrir o mapa',
-      showHandle: false,
+      banner: _showSuccessBanner
+          ? const ClientSheetInlineBanner(
+              message: 'Dados do talhão atualizados.',
+            )
+          : null,
       child: Form(
         key: _formKey,
         child: Column(
@@ -471,7 +474,7 @@ class _TalhaoDadosSheetState extends ConsumerState<TalhaoDadosSheet> {
             const SizedBox(height: 16),
             _buildFarmPicker(visuals),
             const SizedBox(height: 20),
-            TalhaoSheetButtonRow(
+            ClientSheetButtonRow(
               onCancel: () => Navigator.of(context).pop(false),
               onConfirm: () {
                 HapticFeedback.mediumImpact();
@@ -479,6 +482,7 @@ class _TalhaoDadosSheetState extends ConsumerState<TalhaoDadosSheet> {
               },
               confirmLabel: 'Salvar',
               isSaving: _isSaving,
+              confirmEnabled: !_showSuccessBanner,
             ),
           ],
         ),
