@@ -83,13 +83,22 @@ void main() {
 
     expect(find.text('Dados do talhão'), findsOneWidget);
     expect(find.text('Edite sem abrir o mapa'), findsOneWidget);
+    expect(find.text('Nome do talhão'), findsOneWidget);
+    expect(find.text('Cultura'), findsOneWidget);
+    expect(find.text('Safra'), findsOneWidget);
 
-    final fields = find.byType(TextFormField);
-    expect(fields, findsNWidgets(3));
-
-    await tester.enterText(fields.at(0), 'Talhão Atualizado');
-    await tester.enterText(fields.at(1), 'Milho');
-    await tester.enterText(fields.at(2), '2026/2027');
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Talhão Norte'),
+      'Talhão Atualizado',
+    );
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Soja'),
+      'Milho',
+    );
+    await tester.enterText(
+      find.widgetWithText(TextFormField, '2025/2026'),
+      '2026/2027',
+    );
 
     await tester.tap(find.text('Salvar'));
     await tester.pumpAndSettle();
