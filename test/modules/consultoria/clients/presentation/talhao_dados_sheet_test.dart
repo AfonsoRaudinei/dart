@@ -101,10 +101,13 @@ void main() {
     );
 
     await tester.tap(find.text('Salvar'));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
 
     expect(writer.updatedName, 'Talhão Atualizado');
     expect(writer.updatedCultura, 'Milho');
     expect(writer.updatedSafra, '2026/2027');
+    expect(find.text('Dados do talhão atualizados.'), findsOneWidget);
+    await tester.pump(const Duration(milliseconds: 1700));
   });
 }

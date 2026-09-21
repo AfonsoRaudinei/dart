@@ -96,19 +96,12 @@ void main() {
     await tester.tap(find.text('Vincular / editar dados'));
     await tester.pumpAndSettle();
 
-    Finder fieldByLabel(String label) {
-      return find.ancestor(
-        of: find.text(label),
-        matching: find.byType(TextFormField),
-      );
-    }
-
     expect(
-      tester.widget<TextFormField>(fieldByLabel('Cultura')).controller?.text,
+      tester.widget<TextFormField>(find.widgetWithText(TextFormField, 'Soja')).controller?.text,
       'Soja',
     );
     expect(
-      tester.widget<TextFormField>(fieldByLabel('Safra')).controller?.text,
+      tester.widget<TextFormField>(find.widgetWithText(TextFormField, '2025/2026')).controller?.text,
       '2025/2026',
     );
   });
