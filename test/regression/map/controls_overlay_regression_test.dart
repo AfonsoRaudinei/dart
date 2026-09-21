@@ -22,6 +22,7 @@ import 'package:soloforte_app/modules/visitas/presentation/controllers/visit_con
 import 'package:soloforte_app/modules/clima/presentation/providers/radar_providers.dart';
 import 'package:soloforte_app/core/constants/layout_constants.dart';
 import 'package:soloforte_app/core/state/map_ui_providers.dart';
+import 'package:soloforte_app/modules/map/presentation/widgets/visit_active_card.dart';
 import 'package:soloforte_app/ui/components/map/widgets/map_controls_overlay.dart';
 import 'package:soloforte_app/ui/components/smart_button.dart';
 
@@ -74,6 +75,52 @@ void main() {
         expect(find.byKey(const Key('map_control_check_in')), findsOneWidget);
       },
     );
+  });
+
+  group('Fatia A editing chrome regression', () {
+    testWidgets('idle mantém card de contexto em safeTop+8', (tester) async {
+      const safeTop = 50.0;
+      await _pumpMapControlsOverlay(
+        tester,
+        safePadding: const EdgeInsets.only(top: safeTop),
+      );
+
+      final contextTop = tester.getTopLeft(find.byType(VisitActiveCard)).dy;
+      expect(contextTop, safeTop + 8);
+      expect(find.textContaining('Editando:'), findsNothing);
+    });
+
+    testWidgets('editing com nome mostra pill e empurra card de contexto', (
+      tester,
+    ) async {
+      const safeTop = 50.0;
+      await _pumpMapControlsOverlay(
+        tester,
+        safePadding: const EdgeInsets.only(top: safeTop),
+        drawingState: DrawingState.editing,
+        editingFieldName: 'Talhão 2',
+      );
+
+      expect(find.text('Editando: Talhão 2'), findsOneWidget);
+      final contextTop = tester.getTopLeft(find.byType(VisitActiveCard)).dy;
+      expect(contextTop, safeTop + 72);
+    });
+
+    testWidgets('layers FAB não dispara onOpenMapTools durante editing', (
+      tester,
+    ) async {
+      var opened = false;
+      await _pumpMapControlsOverlay(
+        tester,
+        drawingState: DrawingState.editing,
+        editingFieldName: 'Talhão 2',
+        onOpenMapTools: () => opened = true,
+      );
+
+      await tester.tap(find.byKey(const Key('map_control_layers_btn')));
+      await tester.pumpAndSettle();
+      expect(opened, isFalse);
+    });
   });
 
   group('BUG-005 controls_overlay_publicacoes_regression', () {
@@ -474,6 +521,8 @@ Future<void> _pumpMapControlsOverlay(
   bool isDrawMode = false,
   bool showCheckInAction = true,
   DrawingState drawingState = DrawingState.idle,
+  String? editingFieldName,
+  VoidCallback? onOpenMapTools,
   EdgeInsets safePadding = EdgeInsets.zero,
 }) async {
   _setViewport(tester, safePadding);
@@ -504,13 +553,14 @@ Future<void> _pumpMapControlsOverlay(
             onCenterUser: () {},
             onLocationModeChanged: (_) {},
             onToggleDrawMode: () {},
-            onOpenMapTools: () {},
+            onOpenMapTools: onOpenMapTools ?? () {},
             onTabSelected: (_, _) {},
             isDrawMode: isDrawMode,
             showCheckInAction: showCheckInAction,
             currentCenter: const LatLng(-10.2, -48.3),
             currentZoom: 13,
             drawingState: drawingState,
+            editingFieldName: editingFieldName,
             onFinishDrawing: () {},
             onCancelDrawing: () {},
             onSaveEdit: () {},
