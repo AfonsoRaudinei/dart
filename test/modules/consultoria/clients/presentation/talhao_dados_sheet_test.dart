@@ -81,19 +81,15 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Cultura'), findsOneWidget);
-    expect(find.text('Safra'), findsOneWidget);
+    expect(find.text('Dados do talhão'), findsOneWidget);
+    expect(find.text('Edite sem abrir o mapa'), findsOneWidget);
 
-    Finder fieldByLabel(String label) {
-      return find.ancestor(
-        of: find.text(label),
-        matching: find.byType(TextFormField),
-      );
-    }
+    final fields = find.byType(TextFormField);
+    expect(fields, findsNWidgets(3));
 
-    await tester.enterText(fieldByLabel('Nome do talhão'), 'Talhão Atualizado');
-    await tester.enterText(fieldByLabel('Cultura'), 'Milho');
-    await tester.enterText(fieldByLabel('Safra'), '2026/2027');
+    await tester.enterText(fields.at(0), 'Talhão Atualizado');
+    await tester.enterText(fields.at(1), 'Milho');
+    await tester.enterText(fields.at(2), '2026/2027');
 
     await tester.tap(find.text('Salvar'));
     await tester.pumpAndSettle();

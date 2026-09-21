@@ -50,8 +50,16 @@ class _FakeDrawingFieldWriter implements IDrawingFieldWriter {
 
 void main() {
   const candidates = [
-    TalhaoUnionCandidate(id: 'field-b', name: 'Talhão Sul', areaHa: 4.5),
-    TalhaoUnionCandidate(id: 'field-c', name: 'Talhão Leste', areaHa: 2.1),
+    TalhaoUnionCandidate(
+      id: 'field-b',
+      name: 'Talhão Sul',
+      areaHa: 4.5,
+    ),
+    TalhaoUnionCandidate(
+      id: 'field-c',
+      name: 'Talhão Leste',
+      areaHa: 2.1,
+    ),
   ];
 
   testWidgets('TalhaoUnionSheet confirma união via writer', (tester) async {
@@ -74,6 +82,7 @@ void main() {
               farmId: 'farm-1',
               primaryFieldId: 'field-a',
               primaryFieldName: 'Talhão Norte',
+              primaryAreaHa: 10.5,
               candidates: candidates,
             ),
           ),
@@ -86,10 +95,13 @@ void main() {
     expect(find.text('Combinar com outra área'), findsOneWidget);
     expect(find.text('Talhão Sul'), findsOneWidget);
 
+    expect(find.text('Talhão principal'), findsOneWidget);
+    expect(find.text('A segunda área será removida após a união.'), findsOneWidget);
+
     await tester.tap(find.text('Talhão Sul'));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Confirmar'));
+    await tester.tap(find.text('Confirmar união'));
     await tester.pumpAndSettle();
 
     expect(writer.primaryFieldId, 'field-a');
