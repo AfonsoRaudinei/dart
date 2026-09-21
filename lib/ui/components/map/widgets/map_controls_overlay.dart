@@ -113,11 +113,15 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
     final activeColor = _themeColor(ref.watch(themeProvider));
     final areaUnit = ref.watch(areaDisplayUnitProvider);
     final distanceUnit = ref.watch(distanceDisplayUnitProvider);
+    final showEditingPill = widget.drawingState == DrawingState.editing &&
+        widget.editingFieldName != null &&
+        widget.editingFieldName!.trim().isNotEmpty;
+    final contextCardTop = safeTop + (showEditingPill ? 72 : 8);
     return Stack(
       children: [
         // 1. Card de contexto (Top Left) + talhão selected (consultor)
         Positioned(
-            top: safeTop + 72,
+          top: contextCardTop,
           left: 12,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -133,9 +137,7 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
           ),
         ),
 
-        if (widget.drawingState == DrawingState.editing &&
-            widget.editingFieldName != null &&
-            widget.editingFieldName!.trim().isNotEmpty)
+        if (showEditingPill)
           Positioned(
             top: safeTop + 8,
             left: 72,
