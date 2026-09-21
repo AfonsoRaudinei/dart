@@ -1,14 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
 import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 import 'package:soloforte_app/modules/consultoria/clients/domain/agronomic_models.dart';
 import 'package:soloforte_app/modules/consultoria/clients/domain/client.dart';
 import 'package:soloforte_app/modules/consultoria/clients/presentation/widgets/brazilian_state_dropdown.dart';
+import 'package:soloforte_app/modules/consultoria/clients/presentation/widgets/client_sheet_widgets.dart';
 import 'package:soloforte_app/modules/consultoria/clients/presentation/widgets/farm_map_entry_sheet.dart';
 import 'package:soloforte_app/modules/consultoria/farms/data/repositories/farm_repository.dart';
-import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 import 'package:uuid/uuid.dart';
-import 'client_sheet_form_padding.dart';
 
 /// Sheet de cadastro de fazenda por nome (sem forçar abertura do mapa).
 class CreateFarmSheet extends StatefulWidget {
@@ -80,149 +78,75 @@ class _CreateFarmSheetState extends State<CreateFarmSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final isIos = soloForteSheetIsIos(context);
-    final titleColor =
-        isIos ? SoloForteSheetSkinIos.titleColor : null;
-    final subtitleColor =
-        isIos ? SoloForteSheetSkinIos.subtitleColor : Colors.black54;
-    final ctaBg = isIos
-        ? SoloForteSheetSkinIos.ctaBackground
-        : PremiumTokens.brandGreen;
-    final ctaFg =
-        isIos ? SoloForteSheetSkinIos.ctaText : Colors.white;
-    final ctaRadius =
-        isIos ? SoloForteSheetSkinIos.ctaRadius : 8.0;
-    // Modal já pinta prata iOS — evitar segundo painel opaco (“dois sheets”).
-    final sheetBg =
-        isIos ? Colors.transparent : Colors.white;
-    final sheetRadius =
-        isIos ? SoloForteSheetSkinIos.sheetRadius : 24.0;
-    final handleColor = isIos
-        ? SoloForteSheetSkinIos.handleColor
-        : const Color(0xFFC5C5C7);
-
-    return Container(
-      decoration: BoxDecoration(
-        color: sheetBg,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(sheetRadius)),
-      ),
-      padding: clientSheetFormPadding(context),
-      child: SafeArea(
-        top: false,
-        child: SingleChildScrollView(
-          child: Theme(
-            data: ThemeData.light().copyWith(
-              colorScheme: ColorScheme.light(primary: ctaBg),
-            ),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Center(
-                    child: Container(
-                      width: isIos
-                          ? SoloForteSheetSkinIos.handleSize.width
-                          : 36,
-                      height: isIos
-                          ? SoloForteSheetSkinIos.handleSize.height
-                          : 5,
-                      margin: const EdgeInsets.only(bottom: 20),
-                      decoration: BoxDecoration(
-                        color: handleColor,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
-                  ),
-                  Text(
-                    'Nova fazenda',
-                    style: TextStyle(
-                      fontSize: 17,
-                      fontWeight: FontWeight.w600,
-                      color: titleColor,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Cadastre a fazenda por nome. Você pode vincular talhões depois.',
-                    style: TextStyle(fontSize: 14, color: subtitleColor),
-                  ),
-                  const SizedBox(height: 20),
-                  TextFormField(
-                    controller: _nameController,
-                    textCapitalization: TextCapitalization.words,
-                    decoration: const InputDecoration(
-                      labelText: 'Nome da fazenda',
-                    ),
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'Informe o nome da fazenda';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    controller: _cityController,
-                    textCapitalization: TextCapitalization.words,
-                    decoration: const InputDecoration(labelText: 'Município'),
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'Informe o município';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  BrazilianStateDropdown(
-                    value: _selectedUf,
-                    onChanged: (value) => setState(() => _selectedUf = value),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Selecione a UF';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    controller: _areaController,
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true,
-                    ),
-                    decoration: const InputDecoration(
-                      labelText: 'Área total (ha) — opcional',
-                    ),
-                    validator: (value) {
-                      final trimmed = (value ?? '').trim();
-                      if (trimmed.isEmpty) return null;
-                      final area = _parseArea(trimmed);
-                      if (area < 0) {
-                        return 'Informe uma área válida';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 24),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: ctaBg,
-                        foregroundColor: ctaFg,
-                        minimumSize: const Size.fromHeight(52),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(ctaRadius),
-                        ),
-                      ),
-                      onPressed: _isSaving ? null : _submit,
-                      child: Text(_isSaving ? 'Salvando...' : 'Salvar fazenda'),
-                    ),
-                  ),
-                ],
+    return ClientSheetScaffold(
+      title: 'Nova fazenda',
+      subtitle: 'Cadastre a fazenda por nome. Você pode vincular talhões depois.',
+      child: SingleChildScrollView(
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              ClientSheetFormField(
+                controller: _nameController,
+                label: 'Nome da fazenda',
+                textCapitalization: TextCapitalization.words,
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Informe o nome da fazenda';
+                  }
+                  return null;
+                },
               ),
-            ),
+              const SizedBox(height: 16),
+              ClientSheetFormField(
+                controller: _cityController,
+                label: 'Município',
+                textCapitalization: TextCapitalization.words,
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Informe o município';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              ClientSheetSectionLabel(label: 'UF'),
+              BrazilianStateDropdown(
+                value: _selectedUf,
+                onChanged: (value) => setState(() => _selectedUf = value),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Selecione a UF';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              ClientSheetFormField(
+                controller: _areaController,
+                label: 'Área total (ha) — opcional',
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                validator: (value) {
+                  final trimmed = (value ?? '').trim();
+                  if (trimmed.isEmpty) return null;
+                  final area = _parseArea(trimmed);
+                  if (area < 0) {
+                    return 'Informe uma área válida';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 20),
+              ClientSheetPrimaryButton(
+                label: _isSaving ? 'Salvando...' : 'Salvar fazenda',
+                isSaving: _isSaving,
+                onPressed: _submit,
+              ),
+            ],
           ),
         ),
       ),
