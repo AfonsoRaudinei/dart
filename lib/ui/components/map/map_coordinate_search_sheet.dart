@@ -46,7 +46,6 @@ class _MapCoordinateSearchSheetState extends State<MapCoordinateSearchSheet> {
   @override
   Widget build(BuildContext context) {
     final media = MediaQuery.of(context);
-    final keyboardInset = media.viewInsets.bottom;
     final isIos = soloForteSheetIsIos(context);
     final bottom = media.padding.bottom;
     final titleColor = isIos
@@ -66,15 +65,11 @@ class _MapCoordinateSearchSheetState extends State<MapCoordinateSearchSheet> {
         ? SoloForteSheetSkinIos.ghostText
         : SoloForteSheetTokens.chipTextInactive;
 
-    return AnimatedPadding(
-      duration: const Duration(milliseconds: 150),
-      curve: Curves.easeOut,
-      padding: EdgeInsets.only(bottom: keyboardInset),
-      child: SafeArea(
-        top: false,
-        child: SingleChildScrollView(
-          padding: EdgeInsets.fromLTRB(20, 8, 20, 16 + bottom),
-          child: Column(
+    return SafeArea(
+      top: false,
+      child: SingleChildScrollView(
+        padding: EdgeInsets.fromLTRB(20, 8, 20, 16 + bottom),
+        child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -139,7 +134,6 @@ class _MapCoordinateSearchSheetState extends State<MapCoordinateSearchSheet> {
               ],
             ),
           ],
-          ),
         ),
       ),
     );

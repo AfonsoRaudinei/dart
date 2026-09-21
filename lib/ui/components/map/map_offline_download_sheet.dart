@@ -81,7 +81,6 @@ class _MapOfflineDownloadSheetState extends State<MapOfflineDownloadSheet> {
   @override
   Widget build(BuildContext context) {
     final media = MediaQuery.of(context);
-    final keyboardInset = media.viewInsets.bottom;
     final isIos = soloForteSheetIsIos(context);
     final bottom = media.padding.bottom;
     final titleColor = isIos
@@ -101,13 +100,9 @@ class _MapOfflineDownloadSheetState extends State<MapOfflineDownloadSheet> {
         ? SoloForteSheetSkinIos.ghostText
         : SoloForteSheetTokens.chipTextInactive;
 
-    return AnimatedPadding(
-      duration: const Duration(milliseconds: 150),
-      curve: Curves.easeOut,
-      padding: EdgeInsets.only(bottom: keyboardInset),
-      child: SafeArea(
-        top: false,
-        child: SingleChildScrollView(
+    return SafeArea(
+      top: false,
+      child: SingleChildScrollView(
           padding: EdgeInsets.fromLTRB(20, 8, 20, 16 + bottom),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -183,7 +178,6 @@ class _MapOfflineDownloadSheetState extends State<MapOfflineDownloadSheet> {
             ],
           ),
         ),
-      ),
     );
   }
 }

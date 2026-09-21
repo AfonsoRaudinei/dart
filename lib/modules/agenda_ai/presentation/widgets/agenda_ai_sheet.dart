@@ -327,12 +327,7 @@ class _AgendaAiSheetState extends ConsumerState<_AgendaAiSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final media = MediaQuery.of(context);
-    final keyboardInset = media.viewInsets.bottom;
-    final height = (media.size.height * 0.86).clamp(
-      320.0,
-      media.size.height - keyboardInset,
-    );
+    final height = MediaQuery.of(context).size.height * 0.86;
     final isIos = soloForteSheetIsIos(context);
     // Modal já pinta prata iOS — evitar segundo painel opaco (“dois sheets”).
     final sheetBg = isIos
@@ -371,23 +366,19 @@ class _AgendaAiSheetState extends ConsumerState<_AgendaAiSheet> {
     final ctaRadius = isIos ? SoloForteSheetSkinIos.ctaRadius : 12.0;
     final chatTextColor = isIos ? SoloForteSheetSkinIos.titleColor : null;
 
-    return AnimatedPadding(
-      duration: const Duration(milliseconds: 150),
-      curve: Curves.easeOut,
-      padding: EdgeInsets.only(bottom: keyboardInset),
-      child: Container(
-        height: height,
-        decoration: BoxDecoration(
-          color: sheetBg,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(sheetRadius)),
-          border: isIos
-              ? const Border(
-                  top: BorderSide(color: SoloForteSheetSkinIos.sheetBorder),
-                )
-              : null,
-        ),
-        child: Column(
-          children: [
+    return Container(
+      height: height,
+      decoration: BoxDecoration(
+        color: sheetBg,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(sheetRadius)),
+        border: isIos
+            ? const Border(
+                top: BorderSide(color: SoloForteSheetSkinIos.sheetBorder),
+              )
+            : null,
+      ),
+      child: Column(
+        children: [
           const SizedBox(height: 10),
           Container(
             width: isIos
@@ -592,7 +583,6 @@ class _AgendaAiSheetState extends ConsumerState<_AgendaAiSheet> {
             ),
           ),
         ],
-      ),
       ),
     );
   }

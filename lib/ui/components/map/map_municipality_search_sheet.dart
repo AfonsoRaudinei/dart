@@ -207,16 +207,12 @@ class _MapMunicipalitySearchSheetState extends State<MapMunicipalitySearchSheet>
       media.size.height - keyboardInset - 220,
     );
 
-    return AnimatedPadding(
-      duration: const Duration(milliseconds: 150),
-      curve: Curves.easeOut,
-      padding: EdgeInsets.only(bottom: keyboardInset),
-      child: Padding(
-        padding: EdgeInsets.fromLTRB(20, 4, 20, 16 + bottomPad),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+    return Padding(
+      padding: EdgeInsets.fromLTRB(20, 4, 20, 16 + bottomPad),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
           Text(
             'Ir para município',
             style: TextStyle(
@@ -355,8 +351,7 @@ class _MapMunicipalitySearchSheetState extends State<MapMunicipalitySearchSheet>
                     ),
             ),
           ],
-          ],
-        ),
+        ],
       ),
     );
   }
