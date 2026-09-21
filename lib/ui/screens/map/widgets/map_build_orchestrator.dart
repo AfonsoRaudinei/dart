@@ -535,6 +535,9 @@ class _MapControlsHost extends ConsumerWidget {
       onLocationModeChanged: onLocationModeChanged,
       onToggleDrawMode: toggleDrawMode,
       onOpenMapTools: () {
+        if (drawingMetrics.state == DrawingState.editing) {
+          return;
+        }
         onMapUserInteraction?.call();
         MapToolsBottomSheet.show(
           context: context,
@@ -601,6 +604,13 @@ class _MapControlsHost extends ConsumerWidget {
       measurementPerimeterKm: drawingMetrics.measurePerimeterKm,
       measurementAzimuthDeg: drawingMetrics.measureAzimuthDeg,
       gpsAccuracyM: drawingMetrics.gpsAccuracyM ?? 0,
+      editingFieldName: drawingMetrics.state == DrawingState.editing
+          ? ref.watch(
+              drawingControllerProvider.select(
+                (c) => c.selectedFeature?.properties.nome,
+              ),
+            )
+          : null,
       currentCenter: isMapReady
           ? mapController.camera.center
           : const LatLng(0, 0),

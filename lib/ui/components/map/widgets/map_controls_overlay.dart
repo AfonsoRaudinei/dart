@@ -62,6 +62,7 @@ class MapControlsOverlay extends ConsumerStatefulWidget {
   final double measurementPerimeterKm;
   final double? measurementAzimuthDeg;
   final double gpsAccuracyM;
+  final String? editingFieldName;
 
   const MapControlsOverlay({
     super.key,
@@ -89,6 +90,7 @@ class MapControlsOverlay extends ConsumerStatefulWidget {
     this.measurementPerimeterKm = 0,
     this.measurementAzimuthDeg,
     this.gpsAccuracyM = 0,
+    this.editingFieldName,
   });
 
   @override
@@ -130,6 +132,18 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
             ],
           ),
         ),
+
+        if (widget.drawingState == DrawingState.editing &&
+            widget.editingFieldName != null &&
+            widget.editingFieldName!.trim().isNotEmpty)
+          Positioned(
+            top: safeTop + 8,
+            left: 72,
+            right: 72,
+            child: Center(
+              child: _EditingContextPill(label: widget.editingFieldName!),
+            ),
+          ),
 
         // 2. Botão de Localização + Indicador de Conectividade (canto superior direito)
         Positioned(
@@ -559,6 +573,36 @@ class _MapStatusIndicatorState extends ConsumerState<_MapStatusIndicator> {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _EditingContextPill extends StatelessWidget {
+  const _EditingContextPill({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.55),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        child: Text(
+          'Editando: $label',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
     );
   }
 }
