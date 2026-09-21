@@ -574,26 +574,27 @@ class _VertexIdleDot extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Mesma referência da ponta da gota (y ≈ 0.5): centro do círculo no LatLng.
+    // Topo do círculo no vértice (y ≈ 0.5, mesma referência da ponta da gota).
+    // Centro em Offset(0, size/2) — corpo inteiro dentro do hitbox do marker.
     return Align(
       alignment: Alignment.topCenter,
-      child: Transform.translate(
-        offset: Offset(0, -size / 2 + 0.5),
+      child: Padding(
+        padding: const EdgeInsets.only(top: 0.5),
         child: Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(
-          color: color,
-          shape: BoxShape.circle,
-          border: Border.all(color: borderColor, width: borderWidth),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.25),
-              blurRadius: 3,
-              offset: const Offset(0, 1),
-            ),
-          ],
-        ),
+          width: size,
+          height: size,
+          decoration: BoxDecoration(
+            color: color,
+            shape: BoxShape.circle,
+            border: Border.all(color: borderColor, width: borderWidth),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.25),
+                blurRadius: 3,
+                offset: const Offset(0, 1),
+              ),
+            ],
+          ),
         ),
       ),
     );
