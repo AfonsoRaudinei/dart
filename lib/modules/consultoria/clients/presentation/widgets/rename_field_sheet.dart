@@ -1,14 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:soloforte_app/core/contracts/i_drawing_field_writer_provider.dart';
 import 'package:soloforte_app/core/utils/user_facing_error.dart';
-import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
 import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 import 'package:soloforte_app/modules/consultoria/clients/presentation/providers/clients_providers.dart';
 import 'package:soloforte_app/modules/consultoria/clients/presentation/providers/field_providers.dart';
-import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
-
-import 'client_sheet_form_padding.dart';
+import 'package:soloforte_app/modules/consultoria/clients/presentation/widgets/client_sheet_widgets.dart';
 
 class RenameFieldSheet extends ConsumerStatefulWidget {
   final String clientId;
@@ -32,6 +30,7 @@ class _RenameFieldSheetState extends ConsumerState<RenameFieldSheet> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameController;
   bool _isSaving = false;
+  bool _showSuccessBanner = false;
 
   @override
   void initState() {
@@ -60,6 +59,9 @@ class _RenameFieldSheetState extends ConsumerState<RenameFieldSheet> {
       ref.invalidate(clientDetailProvider(widget.clientId));
 
       if (!mounted) return;
+      setState(() => _showSuccessBanner = true);
+      await Future<void>.delayed(const Duration(milliseconds: 1600));
+      if (!mounted) return;
       Navigator.of(context).pop(true);
     } catch (e) {
       if (!mounted) return;
@@ -77,83 +79,42 @@ class _RenameFieldSheetState extends ConsumerState<RenameFieldSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final isIos = soloForteSheetIsIos(context);
-    final titleColor = isIos ? SoloForteSheetSkinIos.titleColor : null;
-    final sheetBg = isIos ? Colors.transparent : Colors.white;
-    final sheetRadius = isIos ? SoloForteSheetSkinIos.sheetRadius : 24.0;
-    final ctaBg = isIos
-        ? SoloForteSheetSkinIos.ctaBackground
-        : PremiumTokens.brandGreen;
-    final ctaFg = isIos ? SoloForteSheetSkinIos.ctaText : Colors.white;
-
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: sheetBg,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(sheetRadius)),
-      ),
-      child: Padding(
-        padding: clientSheetFormPadding(context),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                'Renomear talhão',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: titleColor,
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _nameController,
-                autofocus: true,
-                decoration: const InputDecoration(
-                  labelText: 'Nome do talhão',
-                  border: OutlineInputBorder(),
-                ),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Informe o nome do talhão';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 20),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: _isSaving
-                          ? null
-                          : () => Navigator.of(context).pop(false),
-                      child: const Text('Cancelar'),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: FilledButton(
-                      style: FilledButton.styleFrom(
-                        backgroundColor: ctaBg,
-                        foregroundColor: ctaFg,
-                      ),
-                      onPressed: _isSaving ? null : _submit,
-                      child: _isSaving
-                          ? const SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Text('Salvar'),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
+    return ClientSheetScaffold(
+      title: 'Renomear talhão',
+      banner: _showSuccessBanner
+          ? const ClientSheetInlineBanner(
+              message: 'Nome do talhão atualizado.',
+            )
+          : null,
+      child: Form(
+        key: _formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            ClientSheetFormField(
+              controller: _nameController,
+              label: 'Nome do talhão',
+              autofocus: true,
+              validator: (value) {
+                if (value == null || value.trim().isEmpty) {
+                  return 'Informe o nome do talhão';
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: 20),
+            ClientSheetButtonRow(
+              onCancel: () => Navigator.of(context).pop(false),
+              onConfirm: () {
+                HapticFeedback.mediumImpact();
+                _submit();
+              },
+              confirmLabel: 'Salvar',
+              isSaving: _isSaving,
+              confirmEnabled: !_showSuccessBanner,
+            ),
+          ],
         ),
       ),
     );
@@ -181,12 +142,6 @@ Future<bool> showRenameFieldSheet(
       initialName: initialName,
     ),
   );
-
-  if (saved == true && context.mounted) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Nome do talhão atualizado.')),
-    );
-  }
 
   return saved == true;
 }
