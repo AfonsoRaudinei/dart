@@ -31,10 +31,10 @@ class DrawingUtils {
   static const double toleranciaMinDistanciaVertice = 0.1;
   static const double toleranciaImportacaoVerticeDuplicadoMetros = 0.3;
 
-  /// Tolerância geodésica (~44dp) para hit-test de vértice via tap no mapa.
+  /// Tolerância geodésica (~56dp) para hit-test de vértice via tap no mapa.
   static double vertexHitToleranceMeters(
     MapCamera camera, {
-    double hitPx = 44,
+    double hitPx = 56,
   }) {
     final center = camera.center;
     final c = camera.latLngToScreenPoint(center);
