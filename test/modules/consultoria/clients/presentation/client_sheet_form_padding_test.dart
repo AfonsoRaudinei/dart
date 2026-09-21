@@ -25,4 +25,21 @@ void main() {
 
     expect(padding.bottom, 58);
   });
+
+  test(
+    'clientSheetFormPaddingFromMedia ignora viewInsets quando modal já compensou',
+    () {
+      const media = MediaQueryData(
+        padding: EdgeInsets.only(bottom: 20),
+        viewInsets: EdgeInsets.only(bottom: 300),
+      );
+
+      final padding = clientSheetFormPaddingFromMedia(
+        media,
+        keyboardHandledByModal: true,
+      );
+
+      expect(padding.bottom, 44);
+    },
+  );
 }

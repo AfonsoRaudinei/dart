@@ -420,7 +420,7 @@ class _EditCaseSheetState extends State<EditCaseSheet> {
               20,
               12,
               20,
-              20 + MediaQuery.of(context).viewInsets.bottom,
+              20 + soloForteSheetScrollBottomPadding(context),
             ),
             child: Form(
               key: _formKey,

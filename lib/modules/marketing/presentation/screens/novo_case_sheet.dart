@@ -445,7 +445,7 @@ class _NovoCaseSheetState extends ConsumerState<NovoCaseSheet> {
           left: 20,
           right: 20,
           top: 8,
-          bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+          bottom: soloForteSheetScrollBottomPadding(context, extra: 24),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,

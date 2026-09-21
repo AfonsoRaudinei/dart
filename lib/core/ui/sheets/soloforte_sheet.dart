@@ -54,6 +54,66 @@ bool soloForteSheetIsIos(BuildContext context) {
   return ext?.themeId == 'blue';
 }
 
+/// Indica que [showSoloForteSheet] já compensou o teclado no modal.
+///
+/// Widgets filhos devem omitir `viewInsets` próprios quando este scope está
+/// ativo — evita padding duplo em formulários de sheet.
+class SoloForteSheetKeyboardScope extends InheritedWidget {
+  final bool handledByModal;
+
+  const SoloForteSheetKeyboardScope({
+    required this.handledByModal,
+    required super.child,
+    super.key,
+  });
+
+  static SoloForteSheetKeyboardScope? of(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<SoloForteSheetKeyboardScope>();
+
+  @override
+  bool updateShouldNotify(SoloForteSheetKeyboardScope old) =>
+      old.handledByModal != handledByModal;
+}
+
+/// `true` quando o modal já aplicou `AnimatedPadding` com `viewInsets`.
+bool soloForteSheetKeyboardHandled(BuildContext context) =>
+    SoloForteSheetKeyboardScope.of(context)?.handledByModal ?? false;
+
+/// Padding inferior de scroll em sheets — evita duplicar `viewInsets` no modal.
+@visibleForTesting
+double soloForteSheetScrollBottomPadding(
+  BuildContext context, {
+  double extra = 0,
+}) {
+  if (soloForteSheetKeyboardHandled(context)) return extra;
+  return extra + MediaQuery.viewInsetsOf(context).bottom;
+}
+
+/// Wrapper testável de compensação de teclado para modais.
+@visibleForTesting
+Widget wrapSoloForteSheetKeyboardInsets({
+  required BuildContext context,
+  required Widget child,
+  bool enabled = true,
+}) {
+  if (!enabled) {
+    return SoloForteSheetKeyboardScope(
+      handledByModal: false,
+      child: child,
+    );
+  }
+
+  return SoloForteSheetKeyboardScope(
+    handledByModal: true,
+    child: AnimatedPadding(
+      duration: const Duration(milliseconds: 150),
+      curve: Curves.easeOut,
+      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
+      child: child,
+    ),
+  );
+}
+
 /// Wrapper padrão para todos os bottom sheets do SoloForte.
 ///
 /// Encapsula parâmetros visuais fixos definidos em [SoloForteSheetTokens].
@@ -88,6 +148,9 @@ Future<T?> showSoloForteSheet<T>({
   BoxConstraints? constraints,
   Clip? clipBehavior,
   bool preserveMaterialDefaults = false,
+  /// Quando `true` (padrão), o modal aplica `viewInsets` automaticamente.
+  /// Use `false` apenas em hosts que já compensam o teclado (ex.: embed no mapa).
+  bool respectKeyboardInsets = true,
 }) {
   final ext = Theme.of(context).extension<SoloForteThemeExtension>();
   final bool isIos = !preserveMaterialDefaults && ext?.themeId == 'blue';
@@ -151,24 +214,31 @@ Future<T?> showSoloForteSheet<T>({
               )
             : null),
     builder: (ctx) {
-      final sheet = builder(ctx);
+      Widget sheet = builder(ctx);
       // Opt-out explícito: scope isIos=false evita fallback themeId nos widgets
       // internos quando preserveMaterialDefaults=true.
       if (preserveMaterialDefaults) {
-        return SoloForteSheetSkinScope(isIos: false, child: sheet);
-      }
-      // Flutter 3.44+ exige ancestral Material para ListTile dentro de sheet
-      // com backgroundColor (DecoratedBox). Material transparente satisfaz o
-      // contrato sem alterar a aparência do token visual.
-      return Theme(
-        data: sheetTheme,
-        child: SoloForteSheetSkinScope(
-          isIos: isIos,
-          child: Material(
-            color: Colors.transparent,
-            child: sheet,
+        sheet = SoloForteSheetSkinScope(isIos: false, child: sheet);
+      } else {
+        // Flutter 3.44+ exige ancestral Material para ListTile dentro de sheet
+        // com backgroundColor (DecoratedBox). Material transparente satisfaz o
+        // contrato sem alterar a aparência do token visual.
+        sheet = Theme(
+          data: sheetTheme,
+          child: SoloForteSheetSkinScope(
+            isIos: isIos,
+            child: Material(
+              color: Colors.transparent,
+              child: sheet,
+            ),
           ),
-        ),
+        );
+      }
+
+      return wrapSoloForteSheetKeyboardInsets(
+        context: ctx,
+        enabled: respectKeyboardInsets,
+        child: sheet,
       );
     },
   );

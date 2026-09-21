@@ -31,9 +31,6 @@ Future<T?> showSoloBottomSheet<T>({
         : const RoundedRectangleBorder(
             borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
           ),
-    builder: (ctx) => Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
-      child: SafeArea(child: builder(ctx)),
-    ),
+    builder: (ctx) => SafeArea(child: builder(ctx)),
   );
 }

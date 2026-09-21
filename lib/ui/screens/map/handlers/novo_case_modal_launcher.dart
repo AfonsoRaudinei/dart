@@ -94,31 +94,26 @@ class NovoCaseModalLauncher {
       maxHeightFraction: 0.85,
       builder: (sheetContext) {
         final isIos = soloForteSheetIsIos(sheetContext);
-        return Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Center(
-                child: Container(
-                  margin: const EdgeInsets.symmetric(vertical: 8),
-                  width: isIos ? SoloForteSheetSkinIos.handleSize.width : 36,
-                  height: isIos ? SoloForteSheetSkinIos.handleSize.height : 4,
-                  decoration: BoxDecoration(
-                    color: isIos
-                        ? SoloForteSheetSkinIos.handleColor
-                        : Theme.of(sheetContext)
-                            .dividerColor
-                            .withValues(alpha: 0.3),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Center(
+              child: Container(
+                margin: const EdgeInsets.symmetric(vertical: 8),
+                width: isIos ? SoloForteSheetSkinIos.handleSize.width : 36,
+                height: isIos ? SoloForteSheetSkinIos.handleSize.height : 4,
+                decoration: BoxDecoration(
+                  color: isIos
+                      ? SoloForteSheetSkinIos.handleColor
+                      : Theme.of(sheetContext)
+                          .dividerColor
+                          .withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(2),
                 ),
               ),
-              Flexible(child: buildCaseSheet()),
-            ],
-          ),
+            ),
+            Flexible(child: buildCaseSheet()),
+          ],
         );
       },
     );
