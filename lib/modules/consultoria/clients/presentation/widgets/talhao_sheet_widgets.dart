@@ -1,9 +1,8 @@
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:soloforte_app/core/config/map_config.dart';
-import 'package:soloforte_app/core/domain/map_models.dart';
 import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
 import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 import 'package:soloforte_app/modules/consultoria/clients/presentation/widgets/client_sheet_form_padding.dart';
@@ -492,48 +491,93 @@ class TalhaoPolygonThumb extends StatelessWidget {
       );
     }
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(radius),
-      child: SizedBox(
-        width: size,
-        height: size,
-        child: FlutterMap(
-          options: MapOptions(
-            initialCameraFit: CameraFit.bounds(
-              bounds: LatLngBounds.fromPoints(vertices),
-              padding: const EdgeInsets.all(6),
-            ),
-            interactionOptions: const InteractionOptions(
-              flags: InteractiveFlag.none,
-            ),
-          ),
-          children: [
-            TileLayer(
-              urlTemplate: MapConfig.tileConfigForLayer(
-                LayerType.satellite,
-                mapTilerApiKey: MapConfig.mapTilerApiKey,
-              ).urlTemplate,
-              subdomains: MapConfig.tileConfigForLayer(
-                LayerType.satellite,
-                mapTilerApiKey: MapConfig.mapTilerApiKey,
-              ).subdomains,
-              maxZoom: 18,
-              userAgentPackageName: MapConfig.userAgent,
-            ),
-            PolygonLayer(
-              polygons: [
-                Polygon(
-                  points: vertices,
-                  color: visuals.accent.withValues(alpha: 0.35),
-                  borderColor: visuals.accent,
-                  borderStrokeWidth: 1.5,
-                ),
-              ],
-            ),
-          ],
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: const Color(0xFFF2F2F7),
+        borderRadius: BorderRadius.circular(radius),
+        border: Border.all(color: visuals.cardBorder),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: CustomPaint(
+        painter: _TalhaoPolygonSilhouettePainter(
+          vertices: vertices,
+          fillColor: visuals.accent.withValues(alpha: 0.35),
+          strokeColor: visuals.accent,
         ),
       ),
     );
+  }
+}
+
+class _TalhaoPolygonSilhouettePainter extends CustomPainter {
+  _TalhaoPolygonSilhouettePainter({
+    required this.vertices,
+    required this.fillColor,
+    required this.strokeColor,
+  });
+
+  final List<LatLng> vertices;
+  final Color fillColor;
+  final Color strokeColor;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (vertices.length < 3) return;
+
+    var minLat = vertices.first.latitude;
+    var maxLat = vertices.first.latitude;
+    var minLng = vertices.first.longitude;
+    var maxLng = vertices.first.longitude;
+
+    for (final point in vertices) {
+      minLat = minLat < point.latitude ? minLat : point.latitude;
+      maxLat = maxLat > point.latitude ? maxLat : point.latitude;
+      minLng = minLng < point.longitude ? minLng : point.longitude;
+      maxLng = maxLng > point.longitude ? maxLng : point.longitude;
+    }
+
+    final latSpan = (maxLat - minLat).abs();
+    final lngSpan = (maxLng - minLng).abs();
+    if (latSpan == 0 && lngSpan == 0) return;
+
+    const padding = 6.0;
+    final drawableWidth = size.width - (padding * 2);
+    final drawableHeight = size.height - (padding * 2);
+
+    final path = ui.Path();
+    for (var i = 0; i < vertices.length; i++) {
+      final point = vertices[i];
+      final normalizedX =
+          lngSpan == 0 ? 0.5 : (point.longitude - minLng) / lngSpan;
+      final normalizedY =
+          latSpan == 0 ? 0.5 : (point.latitude - minLat) / latSpan;
+      final dx = padding + (normalizedX * drawableWidth);
+      final dy = padding + ((1 - normalizedY) * drawableHeight);
+      if (i == 0) {
+        path.moveTo(dx, dy);
+      } else {
+        path.lineTo(dx, dy);
+      }
+    }
+    path.close();
+
+    canvas.drawPath(path, Paint()..color = fillColor);
+    canvas.drawPath(
+      path,
+      Paint()
+        ..color = strokeColor
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.5,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _TalhaoPolygonSilhouettePainter oldDelegate) {
+    return oldDelegate.vertices != vertices ||
+        oldDelegate.fillColor != fillColor ||
+        oldDelegate.strokeColor != strokeColor;
   }
 }
 
