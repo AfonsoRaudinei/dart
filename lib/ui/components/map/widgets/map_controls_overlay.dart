@@ -117,7 +117,7 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
       children: [
         // 1. Card de contexto (Top Left) + talhão selected (consultor)
         Positioned(
-          top: safeTop + 8,
+            top: safeTop + 72,
           left: 12,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -216,6 +216,7 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
             children: [
               _MapToolsFab(
                 isActive: widget.isDrawMode,
+                enabled: widget.drawingState != DrawingState.editing,
                 activeColor: activeColor,
                 onTap: widget.onOpenMapTools,
               ),
@@ -368,11 +369,13 @@ class _MapActionButtonState extends State<_MapActionButton> {
 
 class _MapToolsFab extends StatelessWidget {
   final bool isActive;
+  final bool enabled;
   final Color activeColor;
   final VoidCallback onTap;
 
   const _MapToolsFab({
     required this.isActive,
+    this.enabled = true,
     required this.activeColor,
     required this.onTap,
   });
@@ -384,11 +387,16 @@ class _MapToolsFab extends StatelessWidget {
       label: 'Ferramentas do mapa',
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
-        onTap: () {
-          HapticFeedback.selectionClick();
-          onTap();
-        },
-        child: AnimatedContainer(
+        onTap: enabled
+            ? () {
+                HapticFeedback.selectionClick();
+                onTap();
+              }
+            : null,
+        child: AnimatedOpacity(
+          duration: const Duration(milliseconds: 180),
+          opacity: enabled ? 1 : 0.45,
+          child: AnimatedContainer(
           key: const Key('map_control_layers_btn'),
           duration: const Duration(milliseconds: 180),
           curve: Curves.easeOutCubic,
@@ -410,6 +418,7 @@ class _MapToolsFab extends StatelessWidget {
             color: isActive ? activeColor : Colors.grey.shade600,
             size: 22,
           ),
+        ),
         ),
       ),
     );
