@@ -7,6 +7,7 @@ import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 import 'package:soloforte_app/core/utils/user_facing_error.dart';
 import 'package:soloforte_app/modules/consultoria/clients/presentation/providers/clients_providers.dart';
 import 'package:soloforte_app/modules/consultoria/clients/presentation/providers/field_providers.dart';
+import 'package:soloforte_app/modules/consultoria/clients/presentation/widgets/client_sheet_widgets.dart';
 import 'package:soloforte_app/modules/consultoria/clients/presentation/widgets/talhao_sheet_widgets.dart';
 
 class TalhaoUnionCandidate {
@@ -137,10 +138,9 @@ class _TalhaoUnionSheetState extends ConsumerState<TalhaoUnionSheet> {
   Widget build(BuildContext context) {
     final visuals = TalhaoSheetVisuals.of(context);
 
-    return TalhaoSheetScaffold(
+    return ClientSheetScaffold(
       title: 'União',
       subtitle: 'Combinar com outra área',
-      showHandle: false,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
