@@ -237,6 +237,7 @@ class ClientDrawingFieldsSection extends ConsumerWidget {
             id: candidate.id,
             name: candidate.name,
             areaHa: candidate.areaHa,
+            vertices: candidate.vertices,
           ),
         )
         .toList();
@@ -255,6 +256,8 @@ class ClientDrawingFieldsSection extends ConsumerWidget {
       fieldName: field.name,
       initialCultura: field.crop,
       initialSafra: field.harvest,
+      fieldAreaHa: field.areaHa,
+      primaryVertices: field.vertices,
       showUnionAction: true,
       unionCandidates: _unionCandidates(field, allFields),
     );

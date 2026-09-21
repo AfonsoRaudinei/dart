@@ -117,6 +117,7 @@ class FarmLinkedFieldList extends ConsumerWidget {
             id: candidate.id,
             name: candidate.name,
             areaHa: candidate.areaHa,
+            vertices: candidate.vertices,
           ),
         )
         .toList();
@@ -134,6 +135,8 @@ class FarmLinkedFieldList extends ConsumerWidget {
       fieldName: field.name,
       initialCultura: field.crop,
       initialSafra: field.harvest,
+      fieldAreaHa: field.areaHa,
+      primaryVertices: field.vertices,
       showUnionAction: field.isDrawing,
       unionCandidates: _unionCandidates(field),
     );

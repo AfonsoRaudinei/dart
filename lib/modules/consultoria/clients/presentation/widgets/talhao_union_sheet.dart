@@ -1,25 +1,26 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:soloforte_app/core/contracts/i_drawing_field_writer_provider.dart';
-import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
 import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 import 'package:soloforte_app/core/utils/user_facing_error.dart';
 import 'package:soloforte_app/modules/consultoria/clients/presentation/providers/clients_providers.dart';
 import 'package:soloforte_app/modules/consultoria/clients/presentation/providers/field_providers.dart';
-import 'package:soloforte_app/modules/consultoria/clients/presentation/widgets/client_sheet_form_padding.dart';
-import 'package:soloforte_app/modules/consultoria/clients/presentation/widgets/farm_linked_field_list.dart';
-import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
+import 'package:soloforte_app/modules/consultoria/clients/presentation/widgets/talhao_sheet_widgets.dart';
 
 class TalhaoUnionCandidate {
   const TalhaoUnionCandidate({
     required this.id,
     required this.name,
     required this.areaHa,
+    this.vertices = const [],
   });
 
   final String id;
   final String name;
   final double areaHa;
+  final List<LatLng> vertices;
 }
 
 Future<bool> showTalhaoUnionSheet(
@@ -28,6 +29,8 @@ Future<bool> showTalhaoUnionSheet(
   String? farmId,
   required String primaryFieldId,
   required String primaryFieldName,
+  required double primaryAreaHa,
+  List<LatLng> primaryVertices = const [],
   required List<TalhaoUnionCandidate> candidates,
 }) async {
   if (candidates.isEmpty) return false;
@@ -44,6 +47,8 @@ Future<bool> showTalhaoUnionSheet(
       farmId: farmId,
       primaryFieldId: primaryFieldId,
       primaryFieldName: primaryFieldName,
+      primaryAreaHa: primaryAreaHa,
+      primaryVertices: primaryVertices,
       candidates: candidates,
     ),
   );
@@ -64,6 +69,8 @@ class TalhaoUnionSheet extends ConsumerStatefulWidget {
     this.farmId,
     required this.primaryFieldId,
     required this.primaryFieldName,
+    required this.primaryAreaHa,
+    this.primaryVertices = const [],
     required this.candidates,
   });
 
@@ -71,6 +78,8 @@ class TalhaoUnionSheet extends ConsumerStatefulWidget {
   final String? farmId;
   final String primaryFieldId;
   final String primaryFieldName;
+  final double primaryAreaHa;
+  final List<LatLng> primaryVertices;
   final List<TalhaoUnionCandidate> candidates;
 
   @override
@@ -126,123 +135,68 @@ class _TalhaoUnionSheetState extends ConsumerState<TalhaoUnionSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final isIos = soloForteSheetIsIos(context);
-    final titleColor = isIos ? SoloForteSheetSkinIos.titleColor : null;
-    final muted = isIos
-        ? SoloForteSheetSkinIos.subtitleColor
-        : SoloForteSheetTokens.inputHint;
-    final sheetBg = isIos ? Colors.transparent : Colors.white;
-    final sheetRadius = isIos ? SoloForteSheetSkinIos.sheetRadius : 24.0;
-    final ctaBg = isIos
-        ? SoloForteSheetSkinIos.ctaBackground
-        : PremiumTokens.brandGreen;
-    final ctaFg = isIos ? SoloForteSheetSkinIos.ctaText : Colors.white;
+    final visuals = TalhaoSheetVisuals.of(context);
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: sheetBg,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(sheetRadius)),
-      ),
-      child: Padding(
-        padding: clientSheetFormPadding(context),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              'União',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: titleColor,
-              ),
+    return TalhaoSheetScaffold(
+      title: 'União',
+      subtitle: 'Combinar com outra área',
+      showHandle: false,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          TalhaoSheetPrimaryChip(
+            name: widget.primaryFieldName,
+            areaHa: widget.primaryAreaHa,
+            vertices: widget.primaryVertices,
+          ),
+          const SizedBox(height: 16),
+          const TalhaoSheetSectionLabel(label: 'Escolha a segunda área'),
+          const SizedBox(height: 8),
+          DecoratedBox(
+            decoration: BoxDecoration(
+              color: visuals.cardBg,
+              borderRadius: BorderRadius.circular(visuals.cardRadius),
+              border: Border.all(color: visuals.cardBorder),
             ),
-            const SizedBox(height: 4),
-            Text(
-              'Combinar com outra área',
-              style: TextStyle(color: muted, fontSize: 14),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Talhão principal: ${widget.primaryFieldName}',
-              style: TextStyle(
-                color: muted,
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            const SizedBox(height: 16),
-            ConstrainedBox(
+            child: ConstrainedBox(
               constraints: BoxConstraints(
                 maxHeight: MediaQuery.sizeOf(context).height * 0.4,
               ),
-              child: ListView.separated(
+              child: ListView.builder(
                 shrinkWrap: true,
                 itemCount: widget.candidates.length,
-                separatorBuilder: (_, __) => const Divider(height: 1),
                 itemBuilder: (context, index) {
                   final candidate = widget.candidates[index];
-                  final selected = _selectedFieldId == candidate.id;
-                  return ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    leading: Icon(
-                      selected
-                          ? Icons.radio_button_checked
-                          : Icons.radio_button_off,
-                      color: selected
-                          ? PremiumTokens.brandGreen
-                          : muted,
-                    ),
-                    title: Text(
-                      candidate.name,
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        color: titleColor,
-                      ),
-                    ),
-                    subtitle: Text(
-                      '${formatLinkedFieldAreaHa(candidate.areaHa)} ha',
-                      style: TextStyle(color: muted, fontSize: 13),
-                    ),
+                  return TalhaoUnionCandidateRow(
+                    name: candidate.name,
+                    areaHa: candidate.areaHa,
+                    vertices: candidate.vertices,
+                    selected: _selectedFieldId == candidate.id,
                     onTap: () => setState(() => _selectedFieldId = candidate.id),
+                    showDivider: index < widget.candidates.length - 1,
                   );
                 },
               ),
             ),
-            const SizedBox(height: 20),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: _isSaving
-                        ? null
-                        : () => Navigator.of(context).pop(false),
-                    child: const Text('Cancelar'),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: FilledButton(
-                    style: FilledButton.styleFrom(
-                      backgroundColor: ctaBg,
-                      foregroundColor: ctaFg,
-                    ),
-                    onPressed: _isSaving || _selectedFieldId == null
-                        ? null
-                        : _submit,
-                    child: _isSaving
-                        ? const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Text('Confirmar'),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'A segunda área será removida após a união.',
+            style: TextStyle(fontSize: 12, color: visuals.muted),
+          ),
+          const SizedBox(height: 20),
+          TalhaoSheetButtonRow(
+            onCancel: () => Navigator.of(context).pop(false),
+            onConfirm: () {
+              HapticFeedback.mediumImpact();
+              _submit();
+            },
+            confirmLabel: 'Confirmar união',
+            isSaving: _isSaving,
+            confirmEnabled: _selectedFieldId != null,
+          ),
+        ],
       ),
     );
   }
