@@ -397,13 +397,12 @@ void main() {
       latLng: latLng,
     );
 
-    // Centro do círculo idle coincide com o vértice (topo do marker).
+    // Topo do círculo idle no vértice; centro em dotSize/2 (dentro do hitbox).
     const dotSize = 16.0;
     final screenY = mapController.camera.latLngToScreenPoint(latLng).y;
-    final dotCenterY = markerRect.top + 0.5;
-    expect(dotCenterY, closeTo(screenY, 2));
-    expect(dotCenterY, closeTo(markerRect.top + 0.5, 0.5));
-    expect(dotSize, 16.0);
+    expect(markerRect.top + 0.5, closeTo(screenY, 2));
+    final dotCenterY = markerRect.top + 0.5 + dotSize / 2;
+    expect(dotCenterY, closeTo(screenY + dotSize / 2, 2));
   });
 
   test('edição: findEditVertexNear e selectEditVertex no controller', () async {
