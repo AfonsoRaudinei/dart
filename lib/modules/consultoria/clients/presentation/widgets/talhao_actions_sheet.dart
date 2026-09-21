@@ -4,16 +4,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:soloforte_app/core/contracts/i_drawing_field_writer_provider.dart';
 import 'package:soloforte_app/core/router/app_routes.dart';
-import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
 import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 import 'package:soloforte_app/core/utils/user_facing_error.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:soloforte_app/modules/consultoria/clients/domain/agronomic_models.dart';
 import 'package:soloforte_app/modules/consultoria/clients/presentation/providers/clients_providers.dart';
 import 'package:soloforte_app/modules/consultoria/clients/presentation/providers/field_providers.dart';
-import 'package:soloforte_app/modules/consultoria/clients/presentation/widgets/client_sheet_form_padding.dart';
+import 'package:soloforte_app/modules/consultoria/clients/presentation/widgets/talhao_sheet_widgets.dart';
 import 'package:soloforte_app/modules/consultoria/clients/presentation/widgets/talhao_union_sheet.dart';
 import 'package:soloforte_app/modules/consultoria/farms/data/repositories/farm_repository.dart';
-import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 
 enum TalhaoShortAction { editGeometry, editData, union }
 
@@ -42,6 +41,8 @@ Future<void> showTalhaoActionsSheet(
   required String fieldName,
   String? initialCultura,
   String? initialSafra,
+  double? fieldAreaHa,
+  List<LatLng> primaryVertices = const [],
   bool showUnionAction = false,
   List<TalhaoUnionCandidate> unionCandidates = const [],
 }) async {
@@ -54,6 +55,13 @@ Future<void> showTalhaoActionsSheet(
     clipBehavior: Clip.none,
     builder: (sheetContext) => TalhaoActionsSheet(
       fieldName: fieldName,
+      contextLine: fieldAreaHa != null
+          ? buildTalhaoContextLine(
+              areaHa: fieldAreaHa,
+              cultura: initialCultura,
+              safra: initialSafra,
+            )
+          : null,
       showUnionAction: showUnionAction && unionCandidates.isNotEmpty,
       onSelected: (selected) => Navigator.of(sheetContext).pop(selected),
     ),
@@ -78,6 +86,8 @@ Future<void> showTalhaoActionsSheet(
         farmId: farmId,
         primaryFieldId: fieldId,
         primaryFieldName: fieldName,
+        primaryAreaHa: fieldAreaHa ?? 0,
+        primaryVertices: primaryVertices,
         candidates: unionCandidates,
       );
     case TalhaoShortAction.editData:
@@ -98,132 +108,58 @@ class TalhaoActionsSheet extends StatelessWidget {
     super.key,
     required this.fieldName,
     required this.onSelected,
+    this.contextLine,
     this.showUnionAction = false,
   });
 
   final String fieldName;
+  final String? contextLine;
   final ValueChanged<TalhaoShortAction> onSelected;
   final bool showUnionAction;
 
   @override
   Widget build(BuildContext context) {
-    final isIos = soloForteSheetIsIos(context);
-    final titleColor = isIos ? SoloForteSheetSkinIos.titleColor : null;
-    final muted = isIos
-        ? SoloForteSheetSkinIos.subtitleColor
-        : SoloForteSheetTokens.inputHint;
-    final sheetBg = isIos ? Colors.transparent : Colors.white;
-    final sheetRadius = isIos ? SoloForteSheetSkinIos.sheetRadius : 24.0;
-    final handleColor = isIos
-        ? SoloForteSheetSkinIos.handleColor
-        : const Color(0xFFC5C5C7);
-
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: sheetBg,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(sheetRadius)),
+    final specs = <(TalhaoShortAction, IconData, String, String)>[
+      (
+        TalhaoShortAction.editGeometry,
+        Icons.edit_location,
+        'Editar geometria',
+        'Mover e ajustar vértices',
       ),
-      child: Padding(
-        padding: clientSheetFormPadding(context),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Center(
-              child: Container(
-                width: isIos ? SoloForteSheetSkinIos.handleSize.width : 36,
-                height: isIos ? SoloForteSheetSkinIos.handleSize.height : 5,
-                margin: const EdgeInsets.only(bottom: 16),
-                decoration: BoxDecoration(
-                  color: handleColor,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-            ),
-            Text(
-              fieldName,
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: titleColor,
-              ),
-            ),
-            const SizedBox(height: 16),
-            _TalhaoActionTile(
-              icon: Icons.edit_location,
-              label: 'Editar geometria',
-              description: 'Mover e ajustar vértices',
-              muted: muted,
-              titleColor: titleColor,
-              onTap: () {
-                HapticFeedback.lightImpact();
-                onSelected(TalhaoShortAction.editGeometry);
-              },
-            ),
-            _TalhaoActionTile(
-              icon: Icons.edit_note,
-              label: 'Vincular / editar dados',
-              description: 'Nome, fazenda, cultura e safra',
-              muted: muted,
-              titleColor: titleColor,
-              onTap: () {
-                HapticFeedback.lightImpact();
-                onSelected(TalhaoShortAction.editData);
-              },
-            ),
-            if (showUnionAction)
-              _TalhaoActionTile(
-                icon: Icons.add_circle_outline,
-                label: 'União',
-                description: 'Combinar com outra área',
-                muted: muted,
-                titleColor: titleColor,
-                onTap: () {
-                  HapticFeedback.lightImpact();
-                  onSelected(TalhaoShortAction.union);
-                },
-              ),
-          ],
+      (
+        TalhaoShortAction.editData,
+        Icons.edit_note,
+        'Vincular / editar dados',
+        'Nome, fazenda, cultura e safra',
+      ),
+    ];
+    if (showUnionAction) {
+      specs.add((
+        TalhaoShortAction.union,
+        Icons.add_circle_outline,
+        'União',
+        'Combinar com outra área',
+      ));
+    }
+
+    final rows = <Widget>[];
+    for (var i = 0; i < specs.length; i++) {
+      final (action, icon, label, description) = specs[i];
+      rows.add(
+        TalhaoSheetActionRow(
+          icon: icon,
+          label: label,
+          description: description,
+          onTap: () => onSelected(action),
+          showDivider: i < specs.length - 1,
         ),
-      ),
-    );
-  }
-}
+      );
+    }
 
-class _TalhaoActionTile extends StatelessWidget {
-  const _TalhaoActionTile({
-    required this.icon,
-    required this.label,
-    required this.description,
-    required this.muted,
-    required this.titleColor,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String label;
-  final String description;
-  final Color muted;
-  final Color? titleColor;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
-      leading: Icon(icon, color: PremiumTokens.brandGreen),
-      title: Text(
-        label,
-        style: TextStyle(
-          fontWeight: FontWeight.w600,
-          color: titleColor,
-        ),
-      ),
-      subtitle: Text(
-        description,
-        style: TextStyle(color: muted, fontSize: 13),
-      ),
-      onTap: onTap,
+    return TalhaoSheetScaffold(
+      title: fieldName,
+      contextLine: contextLine,
+      child: TalhaoSheetActionCard(children: rows),
     );
   }
 }
@@ -394,125 +330,157 @@ class _TalhaoDadosSheetState extends ConsumerState<TalhaoDadosSheet> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final isIos = soloForteSheetIsIos(context);
-    final titleColor = isIos ? SoloForteSheetSkinIos.titleColor : null;
-    final sheetBg = isIos ? Colors.transparent : Colors.white;
-    final sheetRadius = isIos ? SoloForteSheetSkinIos.sheetRadius : 24.0;
-    final ctaBg = isIos
-        ? SoloForteSheetSkinIos.ctaBackground
-        : PremiumTokens.brandGreen;
-    final ctaFg = isIos ? SoloForteSheetSkinIos.ctaText : Colors.white;
+  Widget _buildFarmPicker(TalhaoSheetVisuals visuals) {
+    if (_isLoadingFarms) {
+      return const Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          TalhaoSheetSectionLabel(label: 'Fazenda'),
+          TalhaoSheetFarmSkeleton(),
+        ],
+      );
+    }
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: sheetBg,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(sheetRadius)),
-      ),
-      child: Padding(
-        padding: clientSheetFormPadding(context),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                'Dados do talhão',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: titleColor,
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _nameController,
-                autofocus: true,
-                decoration: const InputDecoration(
-                  labelText: 'Nome do talhão',
-                  border: OutlineInputBorder(),
-                ),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Informe o nome do talhão';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _culturaController,
-                decoration: const InputDecoration(
-                  labelText: 'Cultura',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _safraController,
-                decoration: const InputDecoration(
-                  labelText: 'Safra',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              if (_isLoadingFarms) ...[
-                const SizedBox(height: 16),
-                const Center(child: CircularProgressIndicator()),
-              ] else if (_farms.isNotEmpty) ...[
-                const SizedBox(height: 16),
-                DropdownButtonFormField<String>(
-                  initialValue: _farms.any((farm) => farm.id == _selectedFarmId)
-                      ? _selectedFarmId
-                      : null,
-                  decoration: const InputDecoration(
-                    labelText: 'Fazenda',
-                    border: OutlineInputBorder(),
+    if (_farms.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    if (_farms.length == 1) {
+      final farm = _farms.first;
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const TalhaoSheetSectionLabel(label: 'Fazenda'),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            decoration: BoxDecoration(
+              color: visuals.inputFill,
+              borderRadius: BorderRadius.circular(visuals.cardRadius),
+              border: Border.all(color: visuals.cardBorder),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    farm.name,
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: visuals.titleColor,
+                    ),
                   ),
-                  items: _farms
-                      .map(
-                        (farm) => DropdownMenuItem(
-                          value: farm.id,
-                          child: Text(farm.name),
-                        ),
-                      )
-                      .toList(),
-                  onChanged: (value) => setState(() => _selectedFarmId = value),
                 ),
+                Icon(Icons.link, size: 18, color: visuals.muted),
               ],
-              const SizedBox(height: 20),
-              Row(
+            ),
+          ),
+        ],
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const TalhaoSheetSectionLabel(label: 'Fazenda'),
+        ..._farms.map((farm) {
+          final selected = farm.id == _selectedFarmId;
+          return GestureDetector(
+            onTap: () => setState(() => _selectedFarmId = farm.id),
+            child: Container(
+              margin: const EdgeInsets.only(bottom: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              decoration: BoxDecoration(
+                color: selected ? visuals.cardBg : visuals.inputFill,
+                borderRadius: BorderRadius.circular(visuals.cardRadius),
+                border: Border.all(
+                  color: selected ? visuals.accent : visuals.cardBorder,
+                ),
+              ),
+              child: Row(
                 children: [
                   Expanded(
-                    child: OutlinedButton(
-                      onPressed: _isSaving
-                          ? null
-                          : () => Navigator.of(context).pop(false),
-                      child: const Text('Cancelar'),
+                    child: Text(
+                      farm.name,
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: visuals.titleColor,
+                      ),
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: FilledButton(
-                      style: FilledButton.styleFrom(
-                        backgroundColor: ctaBg,
-                        foregroundColor: ctaFg,
-                      ),
-                      onPressed: _isSaving ? null : _submit,
-                      child: _isSaving
-                          ? const SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Text('Salvar'),
-                    ),
+                  Icon(
+                    selected
+                        ? Icons.check_circle
+                        : Icons.radio_button_unchecked,
+                    size: 20,
+                    color: selected ? visuals.accent : visuals.muted,
                   ),
                 ],
               ),
-            ],
-          ),
+            ),
+          );
+        }),
+      ],
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final visuals = TalhaoSheetVisuals.of(context);
+
+    return TalhaoSheetScaffold(
+      title: 'Dados do talhão',
+      subtitle: 'Edite sem abrir o mapa',
+      showHandle: false,
+      child: Form(
+        key: _formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            TalhaoSheetFormField(
+              controller: _nameController,
+              label: 'Nome do talhão',
+              autofocus: true,
+              validator: (value) {
+                if (value == null || value.trim().isEmpty) {
+                  return 'Informe o nome do talhão';
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: 16),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: TalhaoSheetFormField(
+                    controller: _culturaController,
+                    label: 'Cultura',
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: TalhaoSheetFormField(
+                    controller: _safraController,
+                    label: 'Safra',
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            _buildFarmPicker(visuals),
+            const SizedBox(height: 20),
+            TalhaoSheetButtonRow(
+              onCancel: () => Navigator.of(context).pop(false),
+              onConfirm: () {
+                HapticFeedback.mediumImpact();
+                _submit();
+              },
+              confirmLabel: 'Salvar',
+              isSaving: _isSaving,
+            ),
+          ],
         ),
       ),
     );
