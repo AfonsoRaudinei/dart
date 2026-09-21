@@ -80,7 +80,6 @@ bool soloForteSheetKeyboardHandled(BuildContext context) =>
     SoloForteSheetKeyboardScope.of(context)?.handledByModal ?? false;
 
 /// Padding inferior de scroll em sheets — evita duplicar `viewInsets` no modal.
-@visibleForTesting
 double soloForteSheetScrollBottomPadding(
   BuildContext context, {
   double extra = 0,

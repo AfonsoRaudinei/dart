@@ -427,8 +427,7 @@ class _ClimaWhatsAppSheetState extends ConsumerState<ClimaWhatsAppSheet> {
               ),
             ),
           ),
-        ],
-      ),
+      ],
     );
   }
 }
