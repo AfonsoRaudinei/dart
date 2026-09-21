@@ -271,9 +271,68 @@ class _AgendaAiSheetState extends ConsumerState<_AgendaAiSheet> {
     }
   }
 
+  Widget _buildChatInputRow({
+    required bool isIos,
+    required Color chatTextColor,
+    required Color inputFill,
+    required Color inputHint,
+    required Color ctaBg,
+    required Color ctaFg,
+    required double ctaRadius,
+  }) {
+    return Row(
+      children: [
+        Expanded(
+          child: TextField(
+            controller: _chatController,
+            style: TextStyle(color: chatTextColor),
+            decoration: InputDecoration(
+              hintText: 'Ex: qual abordagem usar nessa visita?',
+              hintStyle: TextStyle(color: inputHint),
+              filled: true,
+              fillColor: inputFill,
+              border: OutlineInputBorder(
+                borderSide: isIos
+                    ? const BorderSide(color: SoloForteSheetSkinIos.cardBorder)
+                    : BorderSide.none,
+                borderRadius: const BorderRadius.all(Radius.circular(12)),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderSide: isIos
+                    ? const BorderSide(color: SoloForteSheetSkinIos.cardBorder)
+                    : BorderSide.none,
+                borderRadius: const BorderRadius.all(Radius.circular(12)),
+              ),
+              isDense: true,
+            ),
+            onSubmitted: (_) => _sendChat(),
+          ),
+        ),
+        const SizedBox(width: 8),
+        ElevatedButton(
+          onPressed: _sendChat,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: ctaBg,
+            foregroundColor: ctaFg,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(ctaRadius),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          ),
+          child: const Text('Enviar'),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final height = MediaQuery.of(context).size.height * 0.86;
+    final media = MediaQuery.of(context);
+    final keyboardInset = media.viewInsets.bottom;
+    final height = (media.size.height * 0.86).clamp(
+      320.0,
+      media.size.height - keyboardInset,
+    );
     final isIos = soloForteSheetIsIos(context);
     // Modal já pinta prata iOS — evitar segundo painel opaco (“dois sheets”).
     final sheetBg = isIos
@@ -312,19 +371,23 @@ class _AgendaAiSheetState extends ConsumerState<_AgendaAiSheet> {
     final ctaRadius = isIos ? SoloForteSheetSkinIos.ctaRadius : 12.0;
     final chatTextColor = isIos ? SoloForteSheetSkinIos.titleColor : null;
 
-    return Container(
-      height: height,
-      decoration: BoxDecoration(
-        color: sheetBg,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(sheetRadius)),
-        border: isIos
-            ? const Border(
-                top: BorderSide(color: SoloForteSheetSkinIos.sheetBorder),
-              )
-            : null,
-      ),
-      child: Column(
-        children: [
+    return AnimatedPadding(
+      duration: const Duration(milliseconds: 150),
+      curve: Curves.easeOut,
+      padding: EdgeInsets.only(bottom: keyboardInset),
+      child: Container(
+        height: height,
+        decoration: BoxDecoration(
+          color: sheetBg,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(sheetRadius)),
+          border: isIos
+              ? const Border(
+                  top: BorderSide(color: SoloForteSheetSkinIos.sheetBorder),
+                )
+              : null,
+        ),
+        child: Column(
+          children: [
           const SizedBox(height: 10),
           Container(
             width: isIos
@@ -467,122 +530,69 @@ class _AgendaAiSheetState extends ConsumerState<_AgendaAiSheet> {
                         ),
                       ),
                       const SizedBox(height: 8),
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: chatPanelBg,
-                          borderRadius: BorderRadius.circular(chatPanelRadius),
-                          border: isIos
-                              ? Border.all(
-                                  color: SoloForteSheetSkinIos.cardBorder,
-                                )
-                              : null,
-                        ),
-                        child: Column(
-                          children: [
-                            if (_chat.isEmpty)
-                              Align(
-                                alignment: Alignment.centerLeft,
-                                child: Text(
-                                  'Pergunte algo sobre a sugestão e próximos passos.',
-                                  style: TextStyle(color: chatTextColor),
-                                ),
-                              )
-                            else
-                              ..._chat.map(
-                                (m) => Align(
-                                  alignment: m.isUser
-                                      ? Alignment.centerRight
-                                      : Alignment.centerLeft,
-                                  child: Container(
-                                    margin: const EdgeInsets.only(bottom: 8),
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 10,
-                                      vertical: 8,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: m.isUser ? userBubble : aiBubble,
-                                      borderRadius: BorderRadius.circular(10),
-                                      border: isIos
-                                          ? Border.all(
-                                              color: SoloForteSheetSkinIos
-                                                  .cardBorder,
-                                            )
-                                          : null,
-                                    ),
-                                    child: Text(
-                                      m.text,
-                                      style: TextStyle(color: chatTextColor),
-                                    ),
-                                  ),
-                                ),
+                      if (_chat.isEmpty)
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            'Pergunte algo sobre a sugestão e próximos passos.',
+                            style: TextStyle(color: chatTextColor),
+                          ),
+                        )
+                      else
+                        ..._chat.map(
+                          (m) => Align(
+                            alignment: m.isUser
+                                ? Alignment.centerRight
+                                : Alignment.centerLeft,
+                            child: Container(
+                              margin: const EdgeInsets.only(bottom: 8),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 8,
                               ),
-                            const SizedBox(height: 8),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: TextField(
-                                    controller: _chatController,
-                                    style: TextStyle(color: chatTextColor),
-                                    decoration: InputDecoration(
-                                      hintText:
-                                          'Ex: qual abordagem usar nessa visita?',
-                                      hintStyle: TextStyle(color: inputHint),
-                                      filled: true,
-                                      fillColor: inputFill,
-                                      border: OutlineInputBorder(
-                                        borderSide: isIos
-                                            ? const BorderSide(
-                                                color: SoloForteSheetSkinIos
-                                                    .cardBorder,
-                                              )
-                                            : BorderSide.none,
-                                        borderRadius: const BorderRadius.all(
-                                          Radius.circular(12),
-                                        ),
-                                      ),
-                                      enabledBorder: OutlineInputBorder(
-                                        borderSide: isIos
-                                            ? const BorderSide(
-                                                color: SoloForteSheetSkinIos
-                                                    .cardBorder,
-                                              )
-                                            : BorderSide.none,
-                                        borderRadius: const BorderRadius.all(
-                                          Radius.circular(12),
-                                        ),
-                                      ),
-                                      isDense: true,
-                                    ),
-                                    onSubmitted: (_) => _sendChat(),
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                ElevatedButton(
-                                  onPressed: _sendChat,
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: ctaBg,
-                                    foregroundColor: ctaFg,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius:
-                                          BorderRadius.circular(ctaRadius),
-                                    ),
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 16,
-                                      vertical: 10,
-                                    ),
-                                  ),
-                                  child: const Text('Enviar'),
-                                ),
-                              ],
+                              decoration: BoxDecoration(
+                                color: m.isUser ? userBubble : aiBubble,
+                                borderRadius: BorderRadius.circular(10),
+                                border: isIos
+                                    ? Border.all(
+                                        color: SoloForteSheetSkinIos.cardBorder,
+                                      )
+                                    : null,
+                              ),
+                              child: Text(
+                                m.text,
+                                style: TextStyle(color: chatTextColor),
+                              ),
                             ),
-                          ],
+                          ),
                         ),
-                      ),
                     ],
                   ),
           ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: chatPanelBg,
+                borderRadius: BorderRadius.circular(chatPanelRadius),
+                border: isIos
+                    ? Border.all(color: SoloForteSheetSkinIos.cardBorder)
+                    : null,
+              ),
+              child: _buildChatInputRow(
+                isIos: isIos,
+                chatTextColor: chatTextColor ?? Colors.white,
+                inputFill: inputFill,
+                inputHint: inputHint,
+                ctaBg: ctaBg,
+                ctaFg: ctaFg,
+                ctaRadius: ctaRadius,
+              ),
+            ),
+          ),
         ],
+      ),
       ),
     );
   }
