@@ -490,6 +490,53 @@ Falhas (se houver): ___________________________
 
 ---
 
+### BLOCO 5 — Fluxo talhão premium (tema Azul)
+
+**Arquivos:** `talhao_actions_sheet.dart` · `talhao_union_sheet.dart` · `client_sheet_widgets.dart`  
+**Como abrir:** Cliente → Fazenda → talhão → menu curto (⋯ ou tap no card)
+
+#### 5A — Menu curto (Imagem 4)
+
+| # | O que verificar | OK? |
+|---|---|---|
+| 5.1 | Handle azul 40×4 visível no menu | |
+| 5.2 | Card único agrupado (#EBF5FF) com 2 ou 3 rows | |
+| 5.3 | Contexto `ha · cultura` abaixo do nome | |
+| 5.4 | Ícones circulares azuis (#0175C2), chevron direita | |
+| 5.5 | Divisor indentado após ícone (60px) | |
+
+#### 5B — Dados do talhão (Imagem 5)
+
+| # | O que verificar | OK? |
+|---|---|---|
+| 5.6 | Handle azul presente (mesmo padrão do menu) | |
+| 5.7 | Inputs filled iOS + CTAs ghost/primary 50/50 | |
+| 5.8 | Cultura + Safra lado a lado | |
+| 5.9 | Teclado aberto: campos e CTAs sobem (`clientSheetFormPadding`) | |
+| 5.10 | Salvar: banner inline “Dados do talhão atualizados.” (~1,6s) — **sem SnackBar** | |
+
+#### 5C — União (Imagem 6)
+
+| # | O que verificar | OK? |
+|---|---|---|
+| 5.11 | Handle azul presente | |
+| 5.12 | Chip “Talhão principal” fixo no topo + thumb polígono | |
+| 5.13 | Radio circular iOS 22px (não ícone Material verde) | |
+| 5.14 | Footnote “A segunda área será removida…” | |
+| 5.15 | “Confirmar união” desabilitado até seleção | |
+
+#### 5D — Sheets adjacentes (rename / nova fazenda)
+
+| # | O que verificar | OK? |
+|---|---|---|
+| 5.16 | Renomear talhão: `ClientSheetFormField` + banner inline | |
+| 5.17 | Nova fazenda: scaffold + inputs iOS + scroll com teclado | |
+
+**Resultado BLOCO 5:** `PASSOU / FALHOU`  
+Falhas (se houver): ___________________________
+
+---
+
 ### Resultado final (colar aqui após device)
 
 ```
@@ -500,6 +547,7 @@ BLOCO 1 — Regressão Verde/Black:   PASSOU / FALHOU
 BLOCO 2 — Feature Azul:            PASSOU / FALHOU
 BLOCO 3 — Troca dinâmica:          PASSOU / FALHOU
 BLOCO 4 — Edge cases:              PASSOU / FALHOU
+BLOCO 5 — Fluxo talhão premium:    PASSOU / FALHOU
 
 Limitações conhecidas confirmadas (não são falhas):
   [ ] Marketing transparent
