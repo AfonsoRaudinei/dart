@@ -262,6 +262,10 @@ class NovoCaseModalLauncher {
     return ref.read(planoAtivoProvider.future);
   }
 
+  static Future<ActiveVisitContext?> loadActiveVisitContext(WidgetRef ref) {
+    return _loadActiveVisitContext(ref);
+  }
+
   static Future<ActiveVisitContext?> _loadActiveVisitContext(
     WidgetRef ref,
   ) async {
