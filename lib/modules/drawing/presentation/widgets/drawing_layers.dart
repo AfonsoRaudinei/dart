@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:soloforte_app/core/state/map_state.dart';
+import 'package:soloforte_app/core/utils/area_display_format.dart';
 import '../../domain/drawing_state.dart';
 import '../../domain/models/drawing_models.dart';
 import '../../domain/models/drawing_visual_style.dart';
 import '../controllers/drawing_controller.dart';
 
 /// Widget responsável por renderizar as camadas de desenho no mapa.
-class DrawingLayerWidget extends StatefulWidget {
+class DrawingLayerWidget extends ConsumerStatefulWidget {
   final DrawingController controller;
   final Function(DrawingFeature)? onFeatureTap;
   final VoidCallback? onDrawingComplete;
@@ -20,10 +23,11 @@ class DrawingLayerWidget extends StatefulWidget {
   });
 
   @override
-  State<DrawingLayerWidget> createState() => _DrawingLayerWidgetState();
+  ConsumerState<DrawingLayerWidget> createState() => _DrawingLayerWidgetState();
 }
 
-class _DrawingLayerWidgetState extends State<DrawingLayerWidget> {
+class _DrawingLayerWidgetState extends ConsumerState<DrawingLayerWidget> {
+  AreaDisplayUnit? _lastAreaUnit;
   static const Color _manualOutlineColor = Colors.white;
   static const Color _manualOutlineHalo = Color(0xCC111111);
   static const Color _gpsOutlineHalo = Color(0xB3000000);
@@ -48,6 +52,7 @@ class _DrawingLayerWidgetState extends State<DrawingLayerWidget> {
     return ListenableBuilder(
       listenable: widget.controller,
       builder: (context, _) {
+        final areaUnit = ref.watch(areaDisplayUnitProvider);
         final features = widget.controller.features;
         final selectedId = widget.controller.selectedFeature?.id;
         final selectedIds = widget.controller.selectedFeatureIds;
@@ -81,7 +86,8 @@ class _DrawingLayerWidgetState extends State<DrawingLayerWidget> {
             !_samePoints(_lastFreehandTrail, freehandTrail) ||
             _lastPivotCenter != pivotCenter ||
             _lastPivotEdge != pivotEdge ||
-            _lastFreehandActive != isFreehandStrokeActive;
+            _lastFreehandActive != isFreehandStrokeActive ||
+            _lastAreaUnit != areaUnit;
 
         if (!needsRebuild &&
             _cachedPolygons != null &&
@@ -108,6 +114,7 @@ class _DrawingLayerWidgetState extends State<DrawingLayerWidget> {
         _lastFreehandActive = isFreehandStrokeActive;
         _lastTool = currentTool;
         _lastIntersectingIndices = Set.from(intersectingIndices);
+        _lastAreaUnit = areaUnit;
 
         final polygons = <Polygon>[];
         final polylines = <Polyline>[];
@@ -136,7 +143,13 @@ class _DrawingLayerWidgetState extends State<DrawingLayerWidget> {
                 pattern: style.isDashed
                     ? StrokePattern.dashed(segments: const [10, 5])
                     : const StrokePattern.solid(),
-                label: index == 0 ? feature.properties.nome : null,
+                label: index == 0
+                    ? buildTalhaoMapLabel(
+                        feature.properties.nome,
+                        feature.properties.areaHa,
+                        areaUnit,
+                      )
+                    : null,
               ),
             );
           }

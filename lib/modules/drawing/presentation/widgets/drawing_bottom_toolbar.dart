@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:soloforte_app/core/state/map_state.dart';
+import 'package:soloforte_app/core/utils/area_display_format.dart';
 
 /// Toolbar horizontal flutuante para ações de desenho (cancelar, desfazer, confirmar)
 /// com seção opcional de medição de área na base do mesmo card.
@@ -210,16 +211,7 @@ class _DrawingToolbarMeasurementSection extends StatelessWidget {
   final DistanceDisplayUnit distanceUnit;
   final ValueChanged<DistanceDisplayUnit>? onDistanceUnit;
 
-  String _formatArea() {
-    switch (areaUnit) {
-      case AreaDisplayUnit.hectare:
-        return '${areaHa.toStringAsFixed(3)} ha';
-      case AreaDisplayUnit.squareMeter:
-        return '${(areaHa * 10000).toStringAsFixed(0)} m²';
-      case AreaDisplayUnit.alqueire:
-        return '${(areaHa / 4.84).toStringAsFixed(3)} alq GO/MG';
-    }
-  }
+  String _formatArea() => formatAreaFromHectares(areaHa, areaUnit);
 
   String _formatDistance() {
     switch (distanceUnit) {
