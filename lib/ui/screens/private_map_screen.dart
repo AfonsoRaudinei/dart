@@ -23,18 +23,16 @@ import '../../modules/dashboard/providers/location_providers.dart';
 import '../../modules/dashboard/services/location_service.dart';
 import '../../modules/consultoria/occurrences/domain/occurrence.dart' as occ;
 import '../../modules/consultoria/occurrences/presentation/controllers/occurrence_controller.dart';
-import '../../modules/marketing/domain/enums/case_tipo.dart';
 import '../../modules/marketing/presentation/providers/marketing_providers.dart';
 import '../components/map/map_camera_ease.dart';
 import '../components/map/map_coordinate_search_sheet.dart';
 import '../components/map/map_municipality_search_sheet.dart';
 import '../components/map/map_offline_download_sheet.dart';
 import '../components/map/map_sheet_state.dart';
-import '../components/map/widgets/publication_actions_bottom_sheet.dart';
+import '../components/map/widgets/map_mark_sheet.dart';
 import 'map/utils/map_camera_snapshot_throttle.dart';
 import 'map/utils/map_empty_area_hit_test.dart';
 import 'map/utils/map_long_press_prefs.dart';
-import 'map/providers/field_hit_index_provider.dart';
 // 🔧 MODAL: imports para sheets dos tipos não-draw
 // (conteúdo migrado para map_sheet_content_builder.dart — ADR-031 F3)
 import '../../modules/consultoria/occurrences/presentation/widgets/occurrence_detail_sheet.dart';
@@ -46,7 +44,6 @@ import 'map/widgets/map_build_orchestrator.dart';
 import 'map/handlers/map_location_handler.dart';
 import 'map/controllers/map_viewport_controller.dart';
 import 'map/controllers/map_sheet_controller.dart';
-import 'map/handlers/novo_case_modal_launcher.dart';
 import 'map/handlers/map_first_query_handler.dart';
 
 // ADR-032 F1: _isMapReady migrado → mapReadyStateProvider (autoDispose).
@@ -183,7 +180,7 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
         uri: uri,
         ref: ref,
         setSheetState: _setSheetState,
-        armOccurrenceMode: _armOccurrenceMode,
+        openMapMark: _openMapMarkAtCurrentGps,
         focusDrawing: _focusDrawingFromQuery,
         focusCoordinate: _focusCoordinateFromQuery,
       );
@@ -371,7 +368,8 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
   void _handleMapLongPress(TapPosition tapPos, LatLng latLng) {
     if (ref.read(drawingControllerProvider).suppressesMapContextTaps) return;
     if (_actionsSheetOpen) return;
-    if (!_isEmptyMapArea(latLng)) {
+    if (!ref.read(mapReadyStateProvider)) return;
+    if (_isPinHit(latLng)) {
       _showLongPressOccupiedFeedback();
       return;
     }
@@ -383,41 +381,41 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
     _dismissLongPressHint();
 
     HapticFeedback.mediumImpact();
+    _openMapMarkSheet(latLng);
+  }
+
+  void _openMapMarkSheet(LatLng latLng) {
+    if (_actionsSheetOpen) return;
     setState(() => _actionsSheetOpen = true);
-    PublicationActionsBottomSheet.show(
+    MapMarkSheet.show(
       context: context,
-      onResultado: () => NovoCaseModalLauncher.launch(
-        position: latLng,
-        context: context,
-        ref: ref,
-        initialTipo: CaseTipo.resultado,
-      ),
-      onAntesDepois: () => NovoCaseModalLauncher.launch(
-        position: latLng,
-        context: context,
-        ref: ref,
-        initialTipo: CaseTipo.antesDepois,
-      ),
-      onAvaliacao: () => NovoCaseModalLauncher.launch(
-        position: latLng,
-        context: context,
-        ref: ref,
-        initialTipo: CaseTipo.avaliacao,
-      ),
-      onAreaVisitada: () => _openOccurrenceSheet(
-        latLng.latitude,
-        latLng.longitude,
-        initialOccurrenceCategory: occ.kOccurrenceAreaVisitadaCategory,
-      ),
-      onOcorrencia: () =>
-          _openOccurrenceSheet(latLng.latitude, latLng.longitude),
+      ref: ref,
+      position: latLng,
     ).whenComplete(() {
       if (!mounted) return;
       setState(() => _actionsSheetOpen = false);
     });
   }
 
-  bool _isEmptyMapArea(LatLng point) {
+  Future<void> _openMapMarkAtCurrentGps() async {
+    final locationService = LocationService();
+    final isAvailable = await locationService.checkAvailability();
+    final fix = isAvailable ? await locationService.getCurrentPosition() : null;
+    if (!mounted) return;
+    if (fix == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Não foi possível obter sua posição GPS.'),
+        ),
+      );
+      return;
+    }
+    _openMapMarkSheet(
+      LatLng(fix.position.latitude, fix.position.longitude),
+    );
+  }
+
+  bool _isPinHit(LatLng point) {
     if (!ref.read(mapReadyStateProvider)) return false;
 
     final pinPoints = <LatLng>[];
@@ -442,11 +440,9 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
       pinPoints.add(LatLng(pub.latitude, pub.longitude));
     }
 
-    return isEmptyMapArea(
+    return isMapPinHit(
       point: point,
       camera: _mapController.camera,
-      drawingController: ref.read(drawingControllerProvider),
-      fieldHitIndex: ref.read(fieldHitIndexProvider),
       pinPoints: pinPoints,
     );
   }
