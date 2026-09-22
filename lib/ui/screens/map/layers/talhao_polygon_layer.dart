@@ -18,6 +18,7 @@ class TalhaoPolygonLayer extends ConsumerWidget {
     final mapFields = ref.watch(mapFieldsProvider);
     final selectedTalhaoId = ref.watch(selectedTalhaoIdProvider);
     final areaUnit = ref.watch(areaDisplayUnitProvider);
+    final labelMode = ref.watch(talhaoMapLabelModeProvider);
 
     if (!mapFields.hasValue) return const SizedBox.shrink();
 
@@ -31,6 +32,7 @@ class TalhaoPolygonLayer extends ConsumerWidget {
         t,
         isSelected: t.id == selectedTalhaoId,
         unit: areaUnit,
+        labelMode: labelMode,
       );
       if (base.points.isEmpty) continue;
 

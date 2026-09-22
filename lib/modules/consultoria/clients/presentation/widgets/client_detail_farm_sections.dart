@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:soloforte_app/core/contracts/i_drawing_field_writer_provider.dart';
 import 'package:soloforte_app/core/state/map_state.dart';
-import 'package:soloforte_app/core/ui/area_display_unit_chips.dart';
 import 'package:soloforte_app/core/utils/area_display_format.dart';
 import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 
@@ -16,6 +15,7 @@ import '../widgets/farm_linked_field_list.dart';
 import '../widgets/link_drawing_to_farm_sheet.dart';
 import '../widgets/talhao_actions_sheet.dart';
 import '../widgets/talhao_union_sheet.dart';
+import '../widgets/client_map_display_settings.dart';
 import '../widgets/talhao_map_preview.dart';
 
 class ClientFarmWithTalhoesSection extends ConsumerWidget {
@@ -41,9 +41,17 @@ class ClientFarmWithTalhoesSection extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        ClientFarmItem(
-          name: farm.name,
-          area: areaFormatted,
+        Text(
+          farm.name,
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'Produtor: ${client.name}',
+          style: TextStyle(fontSize: 14, color: Colors.grey[600]),
         ),
         const SizedBox(height: 12),
         Container(
@@ -68,12 +76,6 @@ class ClientFarmWithTalhoesSection extends ConsumerWidget {
                 ),
               ),
               const SizedBox(height: 8),
-              AreaDisplayUnitChips(
-                selected: areaUnit,
-                onSelected:
-                    ref.read(areaDisplayUnitProvider.notifier).setUnit,
-              ),
-              const SizedBox(height: 8),
               Text(
                 '${farm.city} - ${farm.state}',
                 style: const TextStyle(fontSize: 16),
@@ -81,7 +83,9 @@ class ClientFarmWithTalhoesSection extends ConsumerWidget {
             ],
           ),
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 20),
+        const ClientMapDisplaySettings(),
+        const SizedBox(height: 20),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [

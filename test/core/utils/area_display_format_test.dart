@@ -27,7 +27,7 @@ void main() {
   });
 
   group('buildTalhaoMapLabel', () {
-    test('omits area when zero or negative', () {
+    test('omits area when zero or negative in nameAndArea', () {
       expect(
         buildTalhaoMapLabel('Talhão A', 0, AreaDisplayUnit.hectare),
         'Talhão A',
@@ -57,6 +57,54 @@ void main() {
       expect(
         formatAreaFromHectares(4.84, AreaDisplayUnit.alqueire),
         '1.000 alq GO/MG',
+      );
+    });
+
+    test('nameOnly retorna só o nome', () {
+      expect(
+        buildTalhaoMapLabel(
+          'Talhão Norte',
+          12.34,
+          AreaDisplayUnit.hectare,
+          TalhaoMapLabelMode.nameOnly,
+        ),
+        'Talhão Norte',
+      );
+    });
+
+    test('areaOnly retorna só a área formatada', () {
+      expect(
+        buildTalhaoMapLabel(
+          'Talhão Norte',
+          1,
+          AreaDisplayUnit.squareMeter,
+          TalhaoMapLabelMode.areaOnly,
+        ),
+        '10000 m²',
+      );
+    });
+
+    test('areaOnly vazio quando área <= 0', () {
+      expect(
+        buildTalhaoMapLabel(
+          'Talhão Norte',
+          0,
+          AreaDisplayUnit.hectare,
+          TalhaoMapLabelMode.areaOnly,
+        ),
+        '',
+      );
+    });
+
+    test('hidden retorna string vazia', () {
+      expect(
+        buildTalhaoMapLabel(
+          'Talhão Norte',
+          12.34,
+          AreaDisplayUnit.hectare,
+          TalhaoMapLabelMode.hidden,
+        ),
+        '',
       );
     });
   });

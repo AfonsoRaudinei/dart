@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:soloforte_app/core/state/map_state.dart';
+import 'package:soloforte_app/core/utils/area_display_format.dart';
 import 'package:soloforte_app/core/utils/user_facing_error.dart';
+import 'package:soloforte_app/modules/consultoria/clients/presentation/providers/clients_providers.dart';
 import 'package:soloforte_app/modules/consultoria/clients/presentation/providers/field_providers.dart';
+import 'package:soloforte_app/modules/consultoria/clients/presentation/widgets/client_map_display_settings.dart';
 import 'package:soloforte_app/modules/consultoria/clients/presentation/widgets/farm_linked_field_list.dart';
 import 'package:soloforte_app/modules/consultoria/farms/data/repositories/farm_repository.dart';
 import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
@@ -29,7 +33,9 @@ class FarmDetailScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final farmAsync = ref.watch(farmDetailProvider(farmId));
+    final clientAsync = ref.watch(clientDetailProvider(clientId));
     final linkedFieldsAsync = ref.watch(farmLinkedFieldsProvider(farmId));
+    final areaUnit = ref.watch(areaDisplayUnitProvider);
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -59,14 +65,38 @@ class FarmDetailScreen extends ConsumerWidget {
                         onPressed: () => Navigator.of(context).pop(),
                       ),
                       Expanded(
-                        child: Text(
-                          farm.name,
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black,
-                          ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              farm.name,
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black,
+                              ),
+                            ),
+                            clientAsync.maybeWhen(
+                              data: (client) {
+                                if (client == null) {
+                                  return const SizedBox.shrink();
+                                }
+                                return Padding(
+                                  padding: const EdgeInsets.only(top: 2),
+                                  child: Text(
+                                    'Produtor: ${client.name}',
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: Colors.grey[600],
+                                    ),
+                                  ),
+                                );
+                              },
+                              orElse: () => const SizedBox.shrink(),
+                            ),
+                          ],
                         ),
                       ),
                       const SizedBox(width: 48),
@@ -94,7 +124,7 @@ class FarmDetailScreen extends ConsumerWidget {
                                 style: TextStyle(color: Colors.grey[600]),
                               ),
                               Text(
-                                '${formatLinkedFieldAreaHa(totalAreaHa)} ha',
+                                formatAreaFromHectares(totalAreaHa, areaUnit),
                                 style: const TextStyle(
                                   fontSize: 24,
                                   fontWeight: FontWeight.bold,
@@ -108,7 +138,9 @@ class FarmDetailScreen extends ConsumerWidget {
                             ],
                           ),
                         ),
-                        const SizedBox(height: 32),
+                        const SizedBox(height: 20),
+                        const ClientMapDisplaySettings(),
+                        const SizedBox(height: 24),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
