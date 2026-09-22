@@ -93,7 +93,7 @@ void main() {
           'lib/ui/components/map/widgets/map_controls_overlay.dart',
         ).readAsStringSync();
 
-        expect(privateMapSource, contains('PublicationActionsBottomSheet'));
+        expect(privateMapSource, contains('MapMarkSheet'));
         expect(privateMapSource, contains('_handleMapLongPress'));
         expect(controlsOverlaySource.contains('MapActionFabMenu'), isFalse);
         // Descarte de ocorrência continua no MapBottomSheet (REGRA-OCC-2),
@@ -138,21 +138,22 @@ void main() {
     // ── Cenários de QA do long press → ações rápidas (Ago/2026) ────────────
     // Travam por contrato o que antes só era verificável em QA físico.
 
-    test('QA-1: long press entrega o LatLng às 4 ações, sem armar modo', () {
+    test('QA-1: long press abre a ficha única no ponto, sem armar modo', () {
       final privateMapSource =
           File('lib/ui/screens/private_map_screen.dart').readAsStringSync();
+      final markSheetSource = File(
+        'lib/ui/components/map/widgets/map_mark_sheet.dart',
+      ).readAsStringSync();
 
-      // Resultado / Antes-Depois / Avaliação recebem a posição do gesto.
-      expect(
-        'position: latLng'.allMatches(privateMapSource).length,
-        greaterThanOrEqualTo(3),
-      );
-      // Ocorrência recebe as coordenadas do mesmo gesto.
-      expect(
-        privateMapSource,
-        contains('_openOccurrenceSheet(latLng.latitude, latLng.longitude)'),
-      );
-      // Nenhuma das 4 ações volta a armar modo antes de abrir o formulário.
+      expect(privateMapSource, contains('_openMapMarkSheet(latLng)'));
+      expect(privateMapSource, contains('position: latLng'));
+      expect(markSheetSource, contains('MapMarkKind.resultado'));
+      expect(markSheetSource, contains('MapMarkKind.antesDepois'));
+      expect(markSheetSource, contains('MapMarkKind.avaliacao'));
+      expect(markSheetSource, contains('MapMarkKind.areaVisitada'));
+      expect(markSheetSource, contains('MapMarkKind.ocorrencia'));
+      expect(markSheetSource, contains('latitude: lat'));
+      expect(markSheetSource, contains('lng: lng'));
       expect(privateMapSource, isNot(contains('_armMarketingMode')));
       expect(privateMapSource, isNot(contains('ArmedMode.marketing')));
     });
