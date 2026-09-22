@@ -143,7 +143,12 @@ class MapBuildOrchestrator extends ConsumerWidget {
       ),
     );
     final editVertexDragActive = ref.watch(
-      drawingControllerProvider.select((c) => c.isDraggingVertex),
+      drawingControllerProvider.select(
+        (c) =>
+            c.isDraggingVertex ||
+            (c.selectedEditRingIndex != null &&
+                c.selectedEditPointIndex != null),
+      ),
     );
     final polygonSketchMode = ref.watch(
       drawingControllerProvider.select(
@@ -175,7 +180,7 @@ class MapBuildOrchestrator extends ConsumerWidget {
       MapLogger.logRenderTime(stopwatch.elapsedMilliseconds);
     });
 
-    // Zoom/pan liberados na edição; bloqueados só enquanto arrasta vértice.
+    // Sketch/edição: congela pan do mapa com gota selecionada ou durante arraste.
     final freezeMapGestures = sketchVertexActive || editVertexDragActive;
 
     return DrawingStateOverlay(
