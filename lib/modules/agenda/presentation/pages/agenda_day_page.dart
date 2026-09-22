@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
@@ -10,6 +11,7 @@ import '../providers/agenda_export_provider.dart';
 import '../providers/agenda_provider.dart';
 import '../widgets/day_event_card.dart';
 import '../../../../core/constants/layout_constants.dart';
+import '../../../../core/router/app_routes.dart';
 import '../../../../core/utils/share_position.dart';
 
 /// Página de visualização dos eventos de um dia específico
@@ -40,6 +42,11 @@ class _AgendaDayPageState extends ConsumerState<AgendaDayPage> {
       appBar: AppBar(
         title: Text(_formatDate(widget.selectedDate)),
         automaticallyImplyLeading: false,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          tooltip: 'Mês',
+          onPressed: () => context.go(AppRoutes.agenda),
+        ),
         actions: [
           _buildExportAction(context, sortedEvents),
           // Indicador de eventos ativos
