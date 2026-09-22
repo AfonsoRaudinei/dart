@@ -176,7 +176,7 @@ void main() {
     expect(controller.currentState, DrawingState.drawing);
   });
 
-  testWidgets('mid-draw: ponto branco idle não arrasta sem selecionar', (
+  testWidgets('mid-draw: pan no ponto idle seleciona e arrasta (mesmo gesto)', (
     tester,
   ) async {
     tester.view.physicalSize = const Size(800, 800);
@@ -226,8 +226,8 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(controller.currentPoints[1], equals(before));
-    expect(controller.selectedSketchVertexIndex, isNull);
+    expect(controller.currentPoints[1], isNot(equals(before)));
+    expect(controller.selectedSketchVertexIndex, 1);
   });
 
   testWidgets('mid-draw: arrasta gota com mapa interativo (pan habilitado)', (
@@ -274,6 +274,70 @@ void main() {
 
     expect(controller.currentPoints[1], isNot(equals(before)));
     expect(controller.selectedSketchVertexIndex, 1);
+  });
+
+  testWidgets('edição: arrasta gota com mapa interativo após seleção', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(800, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final repository = _UpsertDrawingRepository(_feature());
+    final controller = DrawingController(repository: repository);
+    addTearDown(controller.dispose);
+    await controller.loadFeatures();
+    controller.selectFeature(controller.features.single);
+    controller.startEditMode();
+
+    final mapController = MapController();
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: _EditFreezeMapHarness(
+            controller: controller,
+            mapController: mapController,
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    controller.selectEditVertex(0, 0);
+    await tester.pumpAndSettle();
+
+    final before =
+        (controller.liveGeometry! as DrawingPolygon).coordinates.first.first;
+    await tester.timedDrag(
+      find.byKey(const Key('drawing_vertex_drag_0_0')),
+      const Offset(72, 56),
+      const Duration(milliseconds: 350),
+    );
+    await tester.pumpAndSettle();
+
+    final after =
+        (controller.liveGeometry! as DrawingPolygon).coordinates.first.first;
+    expect(after, isNot(equals(before)));
+    expect(controller.selectedEditRingIndex, 0);
+    expect(controller.selectedEditPointIndex, 0);
+  });
+
+  test('edição: beginEditVertexDrag não dispara notify imediato', () {
+    final repository = _UpsertDrawingRepository(_feature());
+    final controller = DrawingController(repository: repository);
+    addTearDown(controller.dispose);
+
+    var notifyCount = 0;
+    controller.addListener(() => notifyCount++);
+
+    controller.beginEditVertexDrag(0);
+    expect(controller.isDraggingVertex, isTrue);
+    expect(notifyCount, 0);
+
+    controller.onDragEnd(persist: false);
+    expect(controller.isDraggingVertex, isFalse);
+    expect(notifyCount, greaterThan(0));
   });
 
   testWidgets('mid-draw: gota selecionada ancora ponta no vértice (tip-up)', (
@@ -498,6 +562,46 @@ void expectMarkerTopAnchorsLatLng({
     reason:
         'topCenter no marker desloca ~78px; bottomCenter mantém topo = vértice',
   );
+}
+
+/// Espelha o freeze do [MapBuildOrchestrator] quando há vértice de edição ativo.
+class _EditFreezeMapHarness extends StatelessWidget {
+  const _EditFreezeMapHarness({
+    required this.controller,
+    required this.mapController,
+  });
+
+  final DrawingController controller;
+  final MapController mapController;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: controller,
+      builder: (context, _) {
+        final freeze =
+            controller.isDraggingVertex ||
+            (controller.selectedEditRingIndex != null &&
+                controller.selectedEditPointIndex != null);
+        return FlutterMap(
+          mapController: mapController,
+          options: MapOptions(
+            initialCenter: const LatLng(0, 0),
+            initialZoom: 13,
+            interactionOptions: InteractionOptions(
+              flags: freeze ? InteractiveFlag.none : InteractiveFlag.all,
+            ),
+          ),
+          children: [
+            DrawingEditLayer(
+              controller: controller,
+              mapController: mapController,
+            ),
+          ],
+        );
+      },
+    );
+  }
 }
 
 /// Espelha o freeze do [MapBuildOrchestrator] quando há vértice sketch ativo.
