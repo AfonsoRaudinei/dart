@@ -28,14 +28,26 @@ bool isEmptyMapArea({
     if (fieldId != null) return false;
   }
 
+  if (isMapPinHit(point: point, camera: camera, pinPoints: pinPoints)) {
+    return false;
+  }
+
+  return true;
+}
+
+/// True quando o gesto cai no raio de um pin já existente (ocorrência, case, publicação).
+bool isMapPinHit({
+  required LatLng point,
+  required MapCamera camera,
+  required Iterable<LatLng> pinPoints,
+}) {
   final press = camera.latLngToScreenPoint(point);
   final radiusSq = kMapPinHitTestRadiusPx * kMapPinHitTestRadiusPx;
   for (final pin in pinPoints) {
     final screen = camera.latLngToScreenPoint(pin);
     final dx = press.x - screen.x;
     final dy = press.y - screen.y;
-    if (dx * dx + dy * dy <= radiusSq) return false;
+    if (dx * dx + dy * dy <= radiusSq) return true;
   }
-
-  return true;
+  return false;
 }
