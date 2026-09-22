@@ -48,7 +48,7 @@ class _DrawingEditLayerState extends State<DrawingEditLayer> {
       _draggingVertexIndex = pointIndex;
       _draggingPosition = point;
     });
-    widget.controller.onDragStart(pointIndex);
+    widget.controller.beginEditVertexDrag(pointIndex);
   }
 
   void _updateVertexDrag(DragUpdateDetails details, LatLng fallbackPoint) {
@@ -771,12 +771,13 @@ class _SketchVertexHandle extends StatelessWidget {
         key: Key('drawing_sketch_vertex_$index'),
         behavior: HitTestBehavior.opaque,
         onTap: onTap,
-        onPanStart: isSelected
-            ? (_) => onPanStart()
-            : null,
-        onPanUpdate: isSelected ? onPanUpdate : null,
-        onPanEnd: isSelected ? (_) => onPanEnd() : null,
-        onPanCancel: isSelected ? onPanCancel : null,
+        onPanStart: (_) {
+          if (!isSelected) onTap();
+          onPanStart();
+        },
+        onPanUpdate: onPanUpdate,
+        onPanEnd: (_) => onPanEnd(),
+        onPanCancel: onPanCancel,
         child: isSelected
             ? _VertexGotaVisual(
                 key: Key('drawing_sketch_vertex_drag_$index'),
