@@ -497,7 +497,7 @@ void main() {
               body: SingleChildScrollView(
                 child: DrawingSheet(
                   controller: controller,
-                  onSaved: () => closeCount++,
+                  onSaved: (_) => closeCount++,
                 ),
               ),
             ),
@@ -542,7 +542,7 @@ void main() {
               body: SingleChildScrollView(
                 child: DrawingSheet(
                   controller: controller,
-                  onSaved: () => closeCount++,
+                  onSaved: (_) => closeCount++,
                 ),
               ),
             ),
