@@ -13,6 +13,7 @@ import '../../../../modules/settings/presentation/providers/settings_providers.d
 import '../../../../core/constants/layout_constants.dart';
 import '../../../../core/providers/connectivity_provider.dart';
 import '../../../../modules/clima/presentation/providers/radar_providers.dart';
+import '../../../../core/contracts/i_radar_overlay_controller_provider.dart';
 import '../../../../core/state/map_state.dart';
 import '../../../../modules/drawing/domain/drawing_state.dart';
 import '../../../../modules/drawing/presentation/widgets/drawing_bottom_toolbar_overlay.dart';
@@ -155,6 +156,8 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
             mainAxisSize: MainAxisSize.min,
             children: [
               // Indicador unificado: offline / online / clima no mapa
+              const _MapPinsToggle(),
+              const SizedBox(width: 6),
               const _MapStatusIndicator(),
               const SizedBox(width: 6),
               // Botão de Localização com 3 estados
@@ -477,6 +480,42 @@ class _MapButtonLabel extends StatelessWidget {
 /// Indicador unificado do mapa:
 /// vermelho = sem internet · verde = online · azul Samsung = online + chuva no mapa.
 /// Long-press exibe rótulo; offline usa ícone wifi_off (canal não-cromático).
+class _MapPinsToggle extends ConsumerWidget {
+  const _MapPinsToggle();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final show = ref.watch(showMarkersProvider);
+    return Semantics(
+      button: true,
+      label: show ? 'Ocultar pinos' : 'Mostrar pinos',
+      child: Material(
+        color: Colors.white,
+        elevation: 2,
+        shadowColor: Colors.black26,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: InkWell(
+          key: const Key('map_control_pins'),
+          onTap: () {
+            HapticFeedback.selectionClick();
+            ref.read(showMarkersProvider.notifier).toggle();
+          },
+          borderRadius: BorderRadius.circular(12),
+          child: SizedBox(
+            width: kMapActionColumnButtonSize,
+            height: kMapActionColumnButtonSize,
+            child: Icon(
+              SFIcons.pinFill,
+              size: 20,
+              color: show ? const Color(0xFF1976D2) : const Color(0xFF8E8E93),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _MapStatusIndicator extends ConsumerStatefulWidget {
   static const Color _offlineColor = Color(0xFFFF3B30);
   static const Color _onlineColor = Color(0xFF34C759);
@@ -537,6 +576,13 @@ class _MapStatusIndicatorState extends ConsumerState<_MapStatusIndicator> {
           button: true,
           label: label,
           child: GestureDetector(
+            onTap: () {
+              final enabling = !ref.read(climaRadarEnabledProvider);
+              ref.read(radarOverlayControllerProvider).setEnabled(
+                    enabling,
+                    preferSatelliteLayer: enabling,
+                  );
+            },
             onLongPress: _showTemporaryLabel,
             behavior: HitTestBehavior.opaque,
             child: SizedBox(
