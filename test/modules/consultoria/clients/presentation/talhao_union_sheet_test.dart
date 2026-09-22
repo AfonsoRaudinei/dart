@@ -102,10 +102,13 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('Confirmar união'));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
 
     expect(writer.primaryFieldId, 'field-a');
     expect(writer.secondaryFieldId, 'field-b');
     expect(writer.clientId, 'client-1');
+    expect(find.text('Talhões combinados com sucesso.'), findsOneWidget);
+    await tester.pump(const Duration(milliseconds: 1700));
   });
 }
