@@ -35,3 +35,5 @@ concreta em `drawing/infra/drawing_field_writer_adapter.dart`.
 - Novos comandos de escrita sobre desenhos devem ser adicionados ao contrato
   somente quando houver consumidor real fora de `drawing/`.
 - Comando `linkFieldToFarm` documentado em ADR-049 (consumidor: hub do cliente).
+- `updateFieldMetadata` inclui `material` (cultivar do talhão, SQLite v43).
+  Consumidor: dados do talhão em `consultoria/clients`.

@@ -1,3 +1,4 @@
+import '../domain/cultura_tipo.dart';
 import '../state/map_state.dart';
 
 /// Formata área em hectares para exibição conforme [unit].
@@ -24,27 +25,36 @@ String _formatAreaShortForMapLabel(double areaHa, AreaDisplayUnit unit) {
   }
 }
 
-/// Label de polígono no mapa conforme [mode] e unidade de área.
+String formatCulturaMaterialLine(String? cultura, String? material) {
+  final crop = CulturaTipo.displayLabel(cultura);
+  final seed = material?.trim() ?? '';
+  if (crop.isEmpty) return seed;
+  if (seed.isEmpty) return crop;
+  return '$crop · $seed';
+}
+
+/// Label de polígono no mapa: nome, cultura/material e área conforme [prefs].
 String buildTalhaoMapLabel(
   String name,
   double areaHa,
-  AreaDisplayUnit unit, [
-  TalhaoMapLabelMode mode = TalhaoMapLabelMode.nameAndArea,
-]) {
-  final trimmedName = name.trim();
+  AreaDisplayUnit unit, {
+  TalhaoMapLabelPrefs prefs = const TalhaoMapLabelPrefs(),
+  String? cultura,
+  String? material,
+}) {
+  if (prefs.isHidden) return '';
 
-  switch (mode) {
-    case TalhaoMapLabelMode.hidden:
-      return '';
-    case TalhaoMapLabelMode.nameOnly:
-      return trimmedName;
-    case TalhaoMapLabelMode.areaOnly:
-      if (areaHa <= 0) return '';
-      return _formatAreaShortForMapLabel(areaHa, unit);
-    case TalhaoMapLabelMode.nameAndArea:
-      if (areaHa <= 0) return trimmedName;
-      final areaText = _formatAreaShortForMapLabel(areaHa, unit);
-      if (trimmedName.isEmpty) return areaText;
-      return '$trimmedName\n$areaText';
+  final lines = <String>[];
+  final trimmedName = name.trim();
+  if (prefs.showName && trimmedName.isNotEmpty) {
+    lines.add(trimmedName);
   }
+  if (prefs.showCultura) {
+    final cropLine = formatCulturaMaterialLine(cultura, material);
+    if (cropLine.isNotEmpty) lines.add(cropLine);
+  }
+  if (prefs.showArea && areaHa > 0) {
+    lines.add(_formatAreaShortForMapLabel(areaHa, unit));
+  }
+  return lines.join('\n');
 }
