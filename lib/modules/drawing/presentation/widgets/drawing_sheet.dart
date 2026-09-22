@@ -36,12 +36,15 @@ part 'drawing_sheet_widgets.dart';
 // (layout, estado e ciclo de vida; não concentra os itens de ferramenta).
 // Os itens de ferramenta ficam em:
 // lib/modules/drawing/presentation/widgets/components/drawing_tool_selector.dart
+
+typedef DrawingSheetSavedCallback = void Function(DrawingFeature? savedFeature);
+
 class DrawingSheet extends ConsumerStatefulWidget {
   final DrawingController controller;
   final ScrollController? scrollController;
   final ValueChanged<DrawingFeature>? onFocusFeature;
   final VoidCallback? onGpsMeasureStarted;
-  final VoidCallback? onSaved;
+  final DrawingSheetSavedCallback? onSaved;
   final VoidCallback? onClose;
 
   /// Recolhe o chrome do host sem cancelar [DrawingState.editing] (fluxo 1A).
@@ -178,6 +181,7 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
   Future<void> _requestClose(
     DrawingCloseIntent intent, {
     bool preferSavedCallback = false,
+    DrawingFeature? savedFeature,
   }) async {
     // 1A: X / dismiss durante edição só recolhe o sheet — não cancela vértices.
     if (intent == DrawingCloseIntent.dismissSheet &&
@@ -192,19 +196,25 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
       intent: intent,
     );
     if (!mounted || !decision.shouldCloseSheet) return;
-    _emitCloseCallback(preferSavedCallback: preferSavedCallback);
+    _emitCloseCallback(
+      preferSavedCallback: preferSavedCallback,
+      savedFeature: savedFeature,
+    );
   }
 
-  void _emitCloseCallback({bool preferSavedCallback = false}) {
+  void _emitCloseCallback({
+    bool preferSavedCallback = false,
+    DrawingFeature? savedFeature,
+  }) {
     if (preferSavedCallback && widget.onSaved != null) {
-      widget.onSaved!.call();
+      widget.onSaved!.call(savedFeature);
       return;
     }
     if (widget.onClose != null) {
       widget.onClose!.call();
       return;
     }
-    widget.onSaved?.call();
+    widget.onSaved?.call(null);
   }
 
   Future<void> _handleClosePressed() async {
@@ -485,6 +495,7 @@ class _DrawingSheetState extends ConsumerState<DrawingSheet> {
     await _requestClose(
       DrawingCloseIntent.completeSaveAndClose,
       preferSavedCallback: true,
+      savedFeature: savedFeatures.first,
     );
   }
 }
