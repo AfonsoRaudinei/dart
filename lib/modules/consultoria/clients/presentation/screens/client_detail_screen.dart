@@ -5,6 +5,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:soloforte_app/core/router/app_routes.dart';
+import 'package:soloforte_app/core/state/map_state.dart';
+import 'package:soloforte_app/core/ui/area_display_unit_chips.dart';
+import 'package:soloforte_app/core/utils/area_display_format.dart';
 import 'package:soloforte_app/core/utils/user_facing_error.dart';
 
 import '../providers/clients_providers.dart';
@@ -298,10 +301,7 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen> {
                         client.safraAtual != null) ...[
                       _sectionTitle('Propriedade'),
                       if (client.areaTotal != null)
-                        _infoRow(
-                          'Área Total',
-                          '${_formatAreaHa(client.areaTotal!)} ha',
-                        ),
+                        _areaTotalRow(client.areaTotal!),
                       if (client.tipoPropriedade != null)
                         _infoRow('Tipo', client.tipoPropriedade!),
                       if (client.sistemaIrrigacao != null)
@@ -478,6 +478,46 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen> {
     ),
   );
 
+  Widget _areaTotalRow(double areaHa) {
+    final unit = ref.watch(areaDisplayUnitProvider);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 110,
+            child: Text(
+              'Área Total',
+              style: TextStyle(color: Colors.grey[600], fontSize: 13),
+            ),
+          ),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  formatAreaFromHectares(areaHa, unit),
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                AreaDisplayUnitChips(
+                  selected: unit,
+                  onSelected: ref
+                      .read(areaDisplayUnitProvider.notifier)
+                      .setUnit,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _infoRow(String label, String value) => Padding(
     padding: const EdgeInsets.only(bottom: 8),
     child: Row(
@@ -497,10 +537,6 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen> {
 
   String _formatDate(DateTime d) =>
       '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
-
-  String _formatAreaHa(double value) => value % 1 == 0
-      ? value.toStringAsFixed(0)
-      : value.toStringAsFixed(1);
 
   void _launchURL(String url) async {
     final uri = Uri.parse(url);
