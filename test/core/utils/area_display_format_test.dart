@@ -44,5 +44,20 @@ void main() {
         'North\n2.000 ha',
       );
     });
+
+    test('uses short unit suffixes for map labels only', () {
+      expect(
+        buildTalhaoMapLabel('South', 4.84, AreaDisplayUnit.alqueire),
+        'South\n1.000 alq',
+      );
+      expect(
+        buildTalhaoMapLabel('East', 1, AreaDisplayUnit.squareMeter),
+        'East\n10000 m²',
+      );
+      expect(
+        formatAreaFromHectares(4.84, AreaDisplayUnit.alqueire),
+        '1.000 alq GO/MG',
+      );
+    });
   });
 }
