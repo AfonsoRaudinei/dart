@@ -102,7 +102,7 @@ class _MapToolsBottomSheetState extends State<MapToolsBottomSheet> {
                             context,
                             rootNavigator: false,
                           ).pop(),
-                          onSaved: () => Navigator.of(
+                          onSaved: (_) => Navigator.of(
                             context,
                             rootNavigator: false,
                           ).pop(),
