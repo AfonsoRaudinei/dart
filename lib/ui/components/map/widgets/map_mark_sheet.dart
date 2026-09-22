@@ -110,23 +110,12 @@ class _MapMarkSheetState extends ConsumerState<MapMarkSheet> {
               ),
             ),
             const SizedBox(height: 12),
-            SizedBox(
-              height: 40,
-              child: ListView(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                children: [
-                  for (final kind in MapMarkKind.values) ...[
-                    _MarkChoice(
-                      label: _label(kind),
-                      icon: _icon(kind),
-                      selected: _kind == kind,
-                      onTap: () => _select(kind),
-                    ),
-                    const SizedBox(width: 8),
-                  ],
-                ],
-              ),
+            _MarkKindToggleBar(
+              selected: _kind,
+              isIos: isIos,
+              labelFor: _label,
+              iconFor: _icon,
+              onSelected: _select,
             ),
             const SizedBox(height: 8),
             Expanded(child: _body()),
@@ -303,50 +292,116 @@ class _MapMarkSheetState extends ConsumerState<MapMarkSheet> {
   }
 }
 
-class _MarkChoice extends StatelessWidget {
-  final String label;
-  final IconData icon;
-  final bool selected;
-  final VoidCallback onTap;
+/// Seletor exclusivo no topo: uma opção ligada por vez (toggle segmentado).
+class _MarkKindToggleBar extends StatelessWidget {
+  final MapMarkKind? selected;
+  final bool isIos;
+  final String Function(MapMarkKind) labelFor;
+  final IconData Function(MapMarkKind) iconFor;
+  final ValueChanged<MapMarkKind> onSelected;
 
-  const _MarkChoice({
-    required this.label,
-    required this.icon,
+  const _MarkKindToggleBar({
     required this.selected,
-    required this.onTap,
+    required this.isIos,
+    required this.labelFor,
+    required this.iconFor,
+    required this.onSelected,
   });
 
   @override
   Widget build(BuildContext context) {
-    final isIos = soloForteSheetIsIos(context);
-    final accent = isIos
-        ? SoloForteSheetSkinIos.iconStroke
-        : const Color(0xFF1976D2);
-    final bg = selected
-        ? accent.withValues(alpha: 0.16)
-        : (isIos
-            ? SoloForteSheetSkinIos.cardBackground
-            : const Color(0xFF2C2C2E));
-    final fg = selected
-        ? accent
-        : (isIos ? SoloForteSheetSkinIos.titleColor : Colors.white);
-    return Material(
-      color: bg,
-      borderRadius: BorderRadius.circular(20),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12),
+    final trackColor = isIos
+        ? SoloForteSheetSkinIos.cardBackground
+        : const Color(0xFF2C2C2E);
+    final trackBorder = isIos
+        ? SoloForteSheetSkinIos.cardBorder
+        : Colors.white.withValues(alpha: 0.08);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Container(
+        height: 44,
+        padding: const EdgeInsets.all(4),
+        decoration: BoxDecoration(
+          color: trackColor,
+          borderRadius: BorderRadius.circular(15),
+          border: Border.all(color: trackBorder, width: 0.5),
+        ),
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
           child: Row(
             children: [
-              Icon(icon, size: 16, color: fg),
+              for (final kind in MapMarkKind.values) ...[
+                _MarkToggleSegment(
+                  label: labelFor(kind),
+                  icon: iconFor(kind),
+                  isSelected: selected == kind,
+                  onTap: () => onSelected(kind),
+                  isIos: isIos,
+                ),
+                if (kind != MapMarkKind.values.last) const SizedBox(width: 4),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MarkToggleSegment extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final bool isSelected;
+  final VoidCallback onTap;
+  final bool isIos;
+
+  const _MarkToggleSegment({
+    required this.label,
+    required this.icon,
+    required this.isSelected,
+    required this.onTap,
+    required this.isIos,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final selectedBg = isIos
+        ? SoloForteSheetSkinIos.ctaBackground
+        : const Color(0xFF1976D2);
+    final idleLabel = isIos
+        ? SoloForteSheetSkinIos.subtitleColor
+        : const Color(0xFFAEAEB2);
+    final selectedLabel =
+        isIos ? SoloForteSheetSkinIos.ctaText : Colors.white;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(11),
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeOutCubic,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: isSelected ? selectedBg : Colors.transparent,
+            borderRadius: BorderRadius.circular(11),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                icon,
+                size: 15,
+                color: isSelected ? selectedLabel : idleLabel,
+              ),
               const SizedBox(width: 6),
               Text(
                 label,
                 style: TextStyle(
-                  color: fg,
-                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                  color: isSelected ? selectedLabel : idleLabel,
+                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                   fontSize: 13,
                 ),
               ),
