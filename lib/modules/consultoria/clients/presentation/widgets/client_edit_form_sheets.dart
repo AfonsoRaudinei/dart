@@ -93,13 +93,9 @@ extension _ClientEditFormSheets on _ClientEditFormState {
         return StatefulBuilder(
           builder: (ctx, setModalState) => Theme(
             data: _lightFormTheme(ios),
-            child: Padding(
-              padding: EdgeInsets.only(
-                bottom: MediaQuery.of(ctx).viewInsets.bottom,
-              ),
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(20),
-                child: Form(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(20),
+              child: Form(
                   key: formKey,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -172,7 +168,6 @@ extension _ClientEditFormSheets on _ClientEditFormState {
                   ),
                 ),
               ),
-            ),
           ),
         );
       },

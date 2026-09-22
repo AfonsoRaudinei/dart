@@ -278,14 +278,10 @@ class _ClimaWhatsAppSheetState extends ConsumerState<ClimaWhatsAppSheet> {
 
     final bottomPad = MediaQuery.paddingOf(context).bottom;
 
-    return Padding(
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 4, 20, 4),
             child: Column(
@@ -431,8 +427,7 @@ class _ClimaWhatsAppSheetState extends ConsumerState<ClimaWhatsAppSheet> {
               ),
             ),
           ),
-        ],
-      ),
+      ],
     );
   }
 }

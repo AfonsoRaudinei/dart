@@ -184,23 +184,19 @@ class _CategoriaFormDialogState extends ConsumerState<CategoriaFormDialog> {
     final ctaRadius = isIos ? SoloForteSheetSkinIos.ctaRadius : 20.0;
     final ghostColor = isIos ? SoloForteSheetSkinIos.ghostText : null;
 
-    return Padding(
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
+    return Container(
+      decoration: BoxDecoration(
+        color: sheetBg,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(sheetRadius)),
+        border: isIos
+            ? const Border(
+                top: BorderSide(color: SoloForteSheetSkinIos.sheetBorder),
+              )
+            : null,
       ),
-      child: Container(
-        decoration: BoxDecoration(
-          color: sheetBg,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(sheetRadius)),
-          border: isIos
-              ? const Border(
-                  top: BorderSide(color: SoloForteSheetSkinIos.sheetBorder),
-                )
-              : null,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
             Container(
               margin: const EdgeInsets.only(top: 12, bottom: 8),
               width: isIos
@@ -455,7 +451,6 @@ class _CategoriaFormDialogState extends ConsumerState<CategoriaFormDialog> {
             ),
           ],
         ),
-      ),
     );
   }
 }

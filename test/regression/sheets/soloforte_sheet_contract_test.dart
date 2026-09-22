@@ -115,6 +115,72 @@ void main() {
       },
     );
 
+    test('showSoloForteSheet aplica wrapper global de viewInsets', () {
+      final source = File(
+        'lib/core/ui/sheets/soloforte_sheet.dart',
+      ).readAsStringSync();
+
+      expect(source.contains('SoloForteSheetKeyboardScope'), isTrue);
+      expect(source.contains('wrapSoloForteSheetKeyboardInsets'), isTrue);
+      expect(source.contains('respectKeyboardInsets = true'), isTrue);
+      expect(source.contains('soloForteSheetScrollBottomPadding'), isTrue);
+    });
+
+    testWidgets('wrapSoloForteSheetKeyboardInsets aplica padding do teclado', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MediaQuery(
+          data: const MediaQueryData(viewInsets: EdgeInsets.only(bottom: 280)),
+          child: Builder(
+            builder: (context) => wrapSoloForteSheetKeyboardInsets(
+              context: context,
+              child: const SizedBox(key: Key('child')),
+            ),
+          ),
+        ),
+      );
+
+      final scope = tester.widget<SoloForteSheetKeyboardScope>(
+        find.byType(SoloForteSheetKeyboardScope),
+      );
+      expect(scope.handledByModal, isTrue);
+
+      final padding = tester.widget<AnimatedPadding>(
+        find.byType(AnimatedPadding),
+      );
+      expect(padding.padding, const EdgeInsets.only(bottom: 280));
+    });
+
+    testWidgets('soloForteSheetScrollBottomPadding evita duplicar viewInsets', (
+      tester,
+    ) async {
+      late BuildContext context;
+      await tester.pumpWidget(
+        MediaQuery(
+          data: const MediaQueryData(viewInsets: EdgeInsets.only(bottom: 200)),
+          child: Builder(
+            builder: (ctx) {
+              context = ctx;
+              return wrapSoloForteSheetKeyboardInsets(
+                context: ctx,
+                child: Builder(
+                  builder: (innerCtx) {
+                    expect(
+                      soloForteSheetScrollBottomPadding(innerCtx, extra: 24),
+                      24,
+                    );
+                    return const SizedBox();
+                  },
+                ),
+              );
+            },
+          ),
+        ),
+      );
+      expect(context.mounted, isTrue);
+    });
+
     test(
       'DrawingActionsBar / InfoEdit usam tokens iOS no tema Azul',
       () {

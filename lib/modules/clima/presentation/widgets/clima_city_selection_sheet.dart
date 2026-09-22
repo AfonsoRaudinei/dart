@@ -205,7 +205,9 @@ class _ClimaCitySelectionSheetState extends State<ClimaCitySelectionSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final bottomPad = MediaQuery.paddingOf(context).bottom;
+    final media = MediaQuery.of(context);
+    final keyboardInset = media.viewInsets.bottom;
+    final bottomPad = media.padding.bottom;
     final isIos = soloForteSheetIsIos(context);
     final titleColor = isIos
         ? SoloForteSheetSkinIos.titleColor
@@ -234,6 +236,11 @@ class _ClimaCitySelectionSheetState extends State<ClimaCitySelectionSheet> {
     final dropdownBg = isIos
         ? SoloForteSheetSkinIos.cardBackground
         : SoloForteSheetTokens.inputBackground;
+
+    final listMaxHeight = (media.size.height * 0.42).clamp(
+      120.0,
+      media.size.height - keyboardInset - 220,
+    );
 
     return Padding(
       padding: EdgeInsets.fromLTRB(20, 4, 20, 16 + bottomPad),
@@ -306,7 +313,7 @@ class _ClimaCitySelectionSheetState extends State<ClimaCitySelectionSheet> {
               ),
             ConstrainedBox(
               constraints: BoxConstraints(
-                maxHeight: MediaQuery.of(context).size.height * 0.42,
+                maxHeight: listMaxHeight,
               ),
               child: _loadingMunicipios || _geocoding
                   ? Center(child: CircularProgressIndicator(color: accent))

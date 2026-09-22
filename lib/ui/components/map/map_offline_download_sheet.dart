@@ -80,8 +80,9 @@ class _MapOfflineDownloadSheetState extends State<MapOfflineDownloadSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final media = MediaQuery.of(context);
     final isIos = soloForteSheetIsIos(context);
-    final bottom = MediaQuery.paddingOf(context).bottom;
+    final bottom = media.padding.bottom;
     final titleColor = isIos
         ? SoloForteSheetSkinIos.titleColor
         : SoloForteSheetTokens.titleColor;
@@ -102,81 +103,81 @@ class _MapOfflineDownloadSheetState extends State<MapOfflineDownloadSheet> {
     return SafeArea(
       top: false,
       child: SingleChildScrollView(
-        padding: EdgeInsets.fromLTRB(20, 8, 20, 16 + bottom),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'Baixar área offline',
-              style: TextStyle(
-                color: titleColor,
-                fontSize: SoloForteSheetTokens.titleFontSize,
-                fontWeight: SoloForteSheetTokens.titleWeight,
+          padding: EdgeInsets.fromLTRB(20, 8, 20, 16 + bottom),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Baixar área offline',
+                style: TextStyle(
+                  color: titleColor,
+                  fontSize: SoloForteSheetTokens.titleFontSize,
+                  fontWeight: SoloForteSheetTokens.titleWeight,
+                ),
               ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Será usada a área visível atual do mapa (bounding box).',
-              style: TextStyle(color: bodyColor, fontSize: 13),
-            ),
-            const SizedBox(height: 16),
-            SheetInputField(
-              controller: _minZoomController,
-              keyboardType: TextInputType.number,
-              hintText: 'Zoom mínimo',
-            ),
-            const SizedBox(height: 12),
-            SheetInputField(
-              controller: _maxZoomController,
-              keyboardType: TextInputType.number,
-              hintText: 'Zoom máximo',
-            ),
-            const SizedBox(height: 20),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: ghostText,
-                      side: BorderSide(color: ghostBorder),
-                      minimumSize: const Size.fromHeight(48),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(
-                          isIos
-                              ? SoloForteSheetSkinIos.ghostRadius
-                              : SoloForteSheetTokens.chipRadius,
+              const SizedBox(height: 8),
+              Text(
+                'Será usada a área visível atual do mapa (bounding box).',
+                style: TextStyle(color: bodyColor, fontSize: 13),
+              ),
+              const SizedBox(height: 16),
+              SheetInputField(
+                controller: _minZoomController,
+                keyboardType: TextInputType.number,
+                hintText: 'Zoom mínimo',
+              ),
+              const SizedBox(height: 12),
+              SheetInputField(
+                controller: _maxZoomController,
+                keyboardType: TextInputType.number,
+                hintText: 'Zoom máximo',
+              ),
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: ghostText,
+                        side: BorderSide(color: ghostBorder),
+                        minimumSize: const Size.fromHeight(48),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(
+                            isIos
+                                ? SoloForteSheetSkinIos.ghostRadius
+                                : SoloForteSheetTokens.chipRadius,
+                          ),
                         ),
                       ),
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: const Text('Cancelar'),
                     ),
-                    onPressed: () => Navigator.of(context).pop(),
-                    child: const Text('Cancelar'),
                   ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: FilledButton(
-                    style: FilledButton.styleFrom(
-                      backgroundColor: ctaBg,
-                      foregroundColor: ctaFg,
-                      minimumSize: const Size.fromHeight(48),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(
-                          isIos
-                              ? SoloForteSheetSkinIos.ctaRadius
-                              : SoloForteSheetTokens.chipRadius,
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: FilledButton(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: ctaBg,
+                        foregroundColor: ctaFg,
+                        minimumSize: const Size.fromHeight(48),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(
+                            isIos
+                                ? SoloForteSheetSkinIos.ctaRadius
+                                : SoloForteSheetTokens.chipRadius,
+                          ),
                         ),
                       ),
+                      onPressed: _submit,
+                      child: const Text('Baixar'),
                     ),
-                    onPressed: _submit,
-                    child: const Text('Baixar'),
                   ),
-                ),
-              ],
-            ),
-          ],
+                ],
+              ),
+            ],
+          ),
         ),
-      ),
     );
   }
 }

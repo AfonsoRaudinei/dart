@@ -45,8 +45,9 @@ class _MapCoordinateSearchSheetState extends State<MapCoordinateSearchSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final media = MediaQuery.of(context);
     final isIos = soloForteSheetIsIos(context);
-    final bottom = MediaQuery.paddingOf(context).bottom;
+    final bottom = media.padding.bottom;
     final titleColor = isIos
         ? SoloForteSheetSkinIos.titleColor
         : SoloForteSheetTokens.titleColor;

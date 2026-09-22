@@ -377,7 +377,9 @@ class _OccurrenceCreationSheetState
 
   @override
   Widget build(BuildContext context) {
-    final safeBottom = MediaQuery.of(context).padding.bottom;
+    final media = MediaQuery.of(context);
+    final safeBottom = media.padding.bottom;
+    final keyboardInset = media.viewInsets.bottom;
     // No map stack o FAB fica fora do sheet — não reservar kFabSafeArea aqui.
     final actionBarBottomPadding = widget.scrollController != null
         ? (safeBottom > 0 ? safeBottom : 12.0)
@@ -394,14 +396,18 @@ class _OccurrenceCreationSheetState
     final muted = isIos
         ? SoloForteSheetSkinIos.subtitleColor
         : const Color(0xFF8E8E93);
-    return Material(
-      color: sheetBg,
-      child: Column(
-        children: [
-          Expanded(
-            child: ListView(
-              controller: widget.scrollController,
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+    return AnimatedPadding(
+      duration: const Duration(milliseconds: 150),
+      curve: Curves.easeOut,
+      padding: EdgeInsets.only(bottom: keyboardInset),
+      child: Material(
+        color: sheetBg,
+        child: Column(
+          children: [
+            Expanded(
+              child: ListView(
+                controller: widget.scrollController,
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
               children: [
               if (_buildSubmitErrorBanner() case final banner?) banner,
               // ── Header padrão ADR-027 (espelha NovoCaseHeader) ──────────
@@ -860,7 +866,8 @@ class _OccurrenceCreationSheetState
               ),
             ),
           ),
-        ],
+          ],
+        ),
       ),
     );
   }

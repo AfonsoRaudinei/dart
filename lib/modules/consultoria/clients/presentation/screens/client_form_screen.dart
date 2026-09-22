@@ -173,13 +173,9 @@ class _ClientFormScreenState extends ConsumerState<ClientFormScreen> {
             data: ThemeData.light().copyWith(
               colorScheme: ColorScheme.light(primary: ctaBg),
             ),
-            child: Padding(
-              padding: EdgeInsets.only(
-                bottom: MediaQuery.of(ctx).viewInsets.bottom,
-              ),
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(20),
-                child: Form(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(20),
+              child: Form(
                   key: formKey,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -258,7 +254,6 @@ class _ClientFormScreenState extends ConsumerState<ClientFormScreen> {
                   ),
                 ),
               ),
-            ),
           ),
         );
       },
