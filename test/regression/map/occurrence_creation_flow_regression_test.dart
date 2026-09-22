@@ -147,7 +147,8 @@ void main() {
 
       expect(privateMapSource, contains('_openMapMarkSheet(latLng)'));
       expect(privateMapSource, contains('position: latLng'));
-      expect(markSheetSource, contains('MapMarkKind.resultado'));
+        expect(markSheetSource, contains('_MarkKindToggleBar'));
+        expect(markSheetSource, contains('MapMarkKind.resultado'));
       expect(markSheetSource, contains('MapMarkKind.antesDepois'));
       expect(markSheetSource, contains('MapMarkKind.avaliacao'));
       expect(markSheetSource, contains('MapMarkKind.areaVisitada'));
