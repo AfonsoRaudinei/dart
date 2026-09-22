@@ -14,7 +14,7 @@ class TalhaoMapAdapter {
     Talhao talhao, {
     bool isSelected = false,
     AreaDisplayUnit unit = AreaDisplayUnit.hectare,
-    TalhaoMapLabelMode labelMode = TalhaoMapLabelMode.nameAndArea,
+    TalhaoMapLabelPrefs labelPrefs = const TalhaoMapLabelPrefs(),
   }) {
     if (talhao.geometry == null) {
       return Polygon(points: []); // Empty if no geometry
@@ -25,7 +25,8 @@ class TalhaoMapAdapter {
       talhao.name,
       talhao.areaHa,
       unit,
-      labelMode,
+      prefs: labelPrefs,
+      cultura: talhao.crop,
     );
 
     return Polygon(

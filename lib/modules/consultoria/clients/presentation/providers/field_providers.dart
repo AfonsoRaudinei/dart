@@ -16,6 +16,7 @@ class ClientDrawingFieldSummary {
     required this.vertices,
     this.farmId,
     this.crop,
+    this.material,
     this.harvest,
     this.updatedAt,
     this.syncStatus,
@@ -27,6 +28,7 @@ class ClientDrawingFieldSummary {
   final List<LatLng> vertices;
   final String? farmId;
   final String? crop;
+  final String? material;
   final String? harvest;
   final DateTime? updatedAt;
   final int? syncStatus;
@@ -42,6 +44,7 @@ class FarmLinkedFieldSummary {
     required this.source,
     this.vertices = const [],
     this.crop,
+    this.material,
     this.harvest,
     this.updatedAt,
     this.syncStatus,
@@ -55,6 +58,7 @@ class FarmLinkedFieldSummary {
   final FarmLinkedFieldSource source;
   final List<LatLng> vertices;
   final String? crop;
+  final String? material;
   final String? harvest;
   final DateTime? updatedAt;
   final int? syncStatus;
@@ -126,6 +130,7 @@ final clientDrawingFieldsProvider = FutureProvider.family
           'updated_at',
           'sync_status',
           'cultura',
+          'material',
           'safra',
         ],
         where:
@@ -143,6 +148,7 @@ final clientDrawingFieldsProvider = FutureProvider.family
           vertices: _verticesFromGeoJson(row['geojson'] as String?),
           farmId: row['fazenda_id'] as String?,
           crop: _nullableNonEmptyString(row['cultura']),
+          material: _nullableNonEmptyString(row['material']),
           harvest: _nullableNonEmptyString(row['safra']),
           updatedAt: row['updated_at'] != null
               ? DateTime.tryParse(row['updated_at'] as String)
@@ -179,6 +185,7 @@ FarmLinkedFieldSummary _linkedSummaryFromField(Talhao field) {
     source: FarmLinkedFieldSource.field,
     vertices: _verticesFromGeometry(field.geometry),
     crop: field.crop.isEmpty ? null : field.crop,
+    material: null,
     harvest: field.harvest.isEmpty ? null : field.harvest,
     updatedAt: field.updatedAt,
     syncStatus: field.syncStatus,
@@ -204,6 +211,7 @@ Future<List<FarmLinkedFieldSummary>> _loadDrawingFieldsByFarmId(
       'updated_at',
       'sync_status',
       'cultura',
+      'material',
       'safra',
     ],
     where:
@@ -220,6 +228,7 @@ Future<List<FarmLinkedFieldSummary>> _loadDrawingFieldsByFarmId(
       source: FarmLinkedFieldSource.drawing,
       vertices: _verticesFromGeoJson(row['geojson'] as String?),
       crop: row['cultura'] as String?,
+      material: row['material'] as String?,
       harvest: row['safra'] as String?,
       updatedAt: row['updated_at'] != null
           ? DateTime.tryParse(row['updated_at'] as String)
@@ -279,6 +288,134 @@ List<LatLng> _ringToLatLngs(List ring) {
       })
       .toList(growable: false);
 }
+
+class ClientTalhaoCulturaSummary {
+  const ClientTalhaoCulturaSummary({
+    required this.cultura,
+    required this.areaHa,
+    required this.materials,
+  });
+
+  final String cultura;
+  final double areaHa;
+  final List<String> materials;
+}
+
+class ClientDrawingCropRow {
+  const ClientDrawingCropRow({
+    required this.cultura,
+    required this.areaHa,
+    this.material,
+  });
+
+  final String cultura;
+  final double areaHa;
+  final String? material;
+}
+
+final clientDrawingCropRowsProvider = FutureProvider.family
+    .autoDispose<List<ClientDrawingCropRow>, String>((ref, clientId) async {
+      final userId = LocalSessionIdentity.resolveUserId();
+      if (userId.isEmpty || clientId.isEmpty) return const [];
+
+      final Database db = await DatabaseHelper.instance.database;
+      final maps = await db.query(
+        'drawings',
+        columns: ['cultura', 'material', 'area_ha'],
+        where:
+            'user_id = ? AND cliente_id = ? AND deleted_at IS NULL AND ativo = 1',
+        whereArgs: [userId, clientId],
+      );
+
+      return maps
+          .map((row) {
+            return ClientDrawingCropRow(
+              cultura: (row['cultura'] as String?)?.trim() ?? '',
+              material: _nullableNonEmptyString(row['material']),
+              areaHa: (row['area_ha'] as num?)?.toDouble() ?? 0,
+            );
+          })
+          .where((row) => row.cultura.isNotEmpty)
+          .toList(growable: false);
+    });
+
+List<ClientTalhaoCulturaSummary> summarizeClientDrawingCrops(
+  List<ClientDrawingCropRow> rows,
+) {
+  final grouped = <String, _CulturaAccumulator>{};
+  for (final row in rows) {
+    final key = row.cultura.toLowerCase();
+    final acc = grouped.putIfAbsent(
+      key,
+      () => _CulturaAccumulator(cultura: row.cultura),
+    );
+    acc.areaHa += row.areaHa;
+    final material = row.material?.trim();
+    if (material != null && material.isNotEmpty) {
+      acc.materials.add(material);
+    }
+  }
+  return grouped.values
+      .map(
+        (acc) => ClientTalhaoCulturaSummary(
+          cultura: acc.cultura,
+          areaHa: acc.areaHa,
+          materials: acc.materials.toList(growable: false),
+        ),
+      )
+      .toList(growable: false);
+}
+
+class _CulturaAccumulator {
+  _CulturaAccumulator({required this.cultura});
+
+  final String cultura;
+  double areaHa = 0;
+  final Set<String> materials = <String>{};
+}
+
+List<String> materialSuggestionsForCultura(
+  List<ClientDrawingCropRow> rows,
+  String? cultura,
+) {
+  if (cultura == null || cultura.trim().isEmpty) return const [];
+  final needle = cultura.trim().toLowerCase();
+  final values = <String>{};
+  for (final row in rows) {
+    if (row.cultura.toLowerCase() != needle) continue;
+    final material = row.material?.trim();
+    if (material == null || material.isEmpty) continue;
+    values.add(material);
+  }
+  return values.toList(growable: false);
+}
+
+class DrawingCulturaMaterial {
+  const DrawingCulturaMaterial({this.cultura, this.material});
+
+  final String? cultura;
+  final String? material;
+}
+
+final drawingCulturaMaterialProvider = FutureProvider.family
+    .autoDispose<DrawingCulturaMaterial?, String>((ref, drawingId) async {
+      final userId = LocalSessionIdentity.resolveUserId();
+      if (userId.isEmpty || drawingId.isEmpty) return null;
+
+      final Database db = await DatabaseHelper.instance.database;
+      final maps = await db.query(
+        'drawings',
+        columns: ['cultura', 'material'],
+        where: 'user_id = ? AND id = ? AND deleted_at IS NULL AND ativo = 1',
+        whereArgs: [userId, drawingId],
+        limit: 1,
+      );
+      if (maps.isEmpty) return null;
+      return DrawingCulturaMaterial(
+        cultura: _nullableNonEmptyString(maps.first['cultura']),
+        material: _nullableNonEmptyString(maps.first['material']),
+      );
+    });
 
 // Selected Talhao ID on Map
 final selectedTalhaoIdProvider = StateProvider<String?>((ref) => null);

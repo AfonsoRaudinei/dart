@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:soloforte_app/core/contracts/i_drawing_field_writer_provider.dart';
+import 'package:soloforte_app/core/domain/cultura_tipo.dart';
 import 'package:soloforte_app/core/state/map_state.dart';
 import 'package:soloforte_app/core/utils/area_display_format.dart';
 import 'package:soloforte_app/core/router/app_routes.dart';
@@ -21,12 +22,16 @@ String farmLinkedFieldSubtitle(
 ) {
   final parts = <String>[formatAreaFromHectares(field.areaHa, unit)];
 
-  if (field.isDrawing) {
-    parts.add('Talhão do mapa');
+  if (field.crop != null && field.crop!.trim().isNotEmpty) {
+    parts.add(CulturaTipo.displayLabel(field.crop));
   }
 
-  if (field.crop != null && field.crop!.trim().isNotEmpty) {
-    parts.add(field.crop!.trim());
+  if (field.material != null && field.material!.trim().isNotEmpty) {
+    parts.add(field.material!.trim());
+  }
+
+  if (field.isDrawing) {
+    parts.add('Talhão do mapa');
   }
 
   return parts.join(' • ');
@@ -109,7 +114,16 @@ class FarmLinkedFieldList extends ConsumerWidget {
 
   void _openField(BuildContext context, FarmLinkedFieldSummary field) {
     if (field.isDrawing) {
-      _openActions(context, field);
+      showTalhaoDadosSheet(
+        context,
+        clientId: clientId,
+        farmId: farmId,
+        fieldId: field.id,
+        initialName: field.name,
+        initialCultura: field.crop,
+        initialMaterial: field.material,
+        initialSafra: field.harvest,
+      );
       return;
     }
 
@@ -141,6 +155,7 @@ class FarmLinkedFieldList extends ConsumerWidget {
       fieldId: field.id,
       fieldName: field.name,
       initialCultura: field.crop,
+      initialMaterial: field.material,
       initialSafra: field.harvest,
       fieldAreaHa: field.areaHa,
       primaryVertices: field.vertices,
@@ -183,6 +198,7 @@ class FarmLinkedFieldList extends ConsumerWidget {
 
     ref.invalidate(farmLinkedFieldsProvider(farmId));
     ref.invalidate(clientDrawingFieldsProvider(clientId));
+    ref.invalidate(clientDrawingCropRowsProvider(clientId));
     ref.invalidate(clientDetailProvider(clientId));
 
     if (!context.mounted) return;

@@ -4,13 +4,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:soloforte_app/core/contracts/i_drawing_field_writer_provider.dart';
 import 'package:soloforte_app/core/router/app_routes.dart';
+import 'package:soloforte_app/core/domain/cultura_tipo.dart';
+import 'package:soloforte_app/core/ui/cultura_material_fields.dart';
 import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 import 'package:soloforte_app/core/utils/user_facing_error.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:soloforte_app/modules/consultoria/clients/domain/agronomic_models.dart';
 import 'package:soloforte_app/modules/consultoria/clients/presentation/providers/clients_providers.dart';
 import 'package:soloforte_app/modules/consultoria/clients/presentation/providers/field_providers.dart';
-import 'package:soloforte_app/modules/consultoria/clients/presentation/widgets/client_sheet_widgets.dart';
 import 'package:soloforte_app/modules/consultoria/clients/presentation/widgets/talhao_sheet_widgets.dart';
 import 'package:soloforte_app/modules/consultoria/clients/presentation/widgets/talhao_union_sheet.dart';
 import 'package:soloforte_app/modules/consultoria/farms/data/repositories/farm_repository.dart';
@@ -41,6 +42,7 @@ Future<void> showTalhaoActionsSheet(
   required String fieldId,
   required String fieldName,
   String? initialCultura,
+  String? initialMaterial,
   String? initialSafra,
   double? fieldAreaHa,
   List<LatLng> primaryVertices = const [],
@@ -99,6 +101,7 @@ Future<void> showTalhaoActionsSheet(
         fieldId: fieldId,
         initialName: fieldName,
         initialCultura: initialCultura,
+        initialMaterial: initialMaterial,
         initialSafra: initialSafra,
       );
   }
@@ -172,6 +175,7 @@ Future<bool> showTalhaoDadosSheet(
   required String fieldId,
   required String initialName,
   String? initialCultura,
+  String? initialMaterial,
   String? initialSafra,
 }) async {
   final saved = await showSoloForteSheet<bool>(
@@ -187,6 +191,7 @@ Future<bool> showTalhaoDadosSheet(
       fieldId: fieldId,
       initialName: initialName,
       initialCultura: initialCultura,
+      initialMaterial: initialMaterial,
       initialSafra: initialSafra,
     ),
   );
@@ -202,6 +207,7 @@ class TalhaoDadosSheet extends ConsumerStatefulWidget {
     required this.fieldId,
     required this.initialName,
     this.initialCultura,
+    this.initialMaterial,
     this.initialSafra,
   });
 
@@ -210,6 +216,7 @@ class TalhaoDadosSheet extends ConsumerStatefulWidget {
   final String fieldId;
   final String initialName;
   final String? initialCultura;
+  final String? initialMaterial;
   final String? initialSafra;
 
   @override
@@ -219,7 +226,8 @@ class TalhaoDadosSheet extends ConsumerStatefulWidget {
 class _TalhaoDadosSheetState extends ConsumerState<TalhaoDadosSheet> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameController;
-  late final TextEditingController _culturaController;
+  late final TextEditingController _culturaLivreController;
+  late final TextEditingController _materialController;
   late final TextEditingController _safraController;
   final _repository = FarmRepository();
   List<Farm> _farms = const [];
@@ -227,12 +235,20 @@ class _TalhaoDadosSheetState extends ConsumerState<TalhaoDadosSheet> {
   bool _isSaving = false;
   bool _showSuccessBanner = false;
   String? _selectedFarmId;
+  CulturaTipo? _selectedCultura;
 
   @override
   void initState() {
     super.initState();
     _nameController = TextEditingController(text: widget.initialName);
-    _culturaController = TextEditingController(text: widget.initialCultura ?? '');
+    _selectedCultura = CulturaTipo.matchStored(widget.initialCultura);
+    final isLivre = _selectedCultura == CulturaTipo.outro;
+    _culturaLivreController = TextEditingController(
+      text: isLivre ? (widget.initialCultura ?? '') : '',
+    );
+    _materialController = TextEditingController(
+      text: widget.initialMaterial ?? '',
+    );
     _safraController = TextEditingController(text: widget.initialSafra ?? '');
     _selectedFarmId = widget.farmId;
     _loadFarms();
@@ -241,7 +257,8 @@ class _TalhaoDadosSheetState extends ConsumerState<TalhaoDadosSheet> {
   @override
   void dispose() {
     _nameController.dispose();
-    _culturaController.dispose();
+    _culturaLivreController.dispose();
+    _materialController.dispose();
     _safraController.dispose();
     super.dispose();
   }
@@ -284,7 +301,11 @@ class _TalhaoDadosSheetState extends ConsumerState<TalhaoDadosSheet> {
 
       await writer.updateFieldMetadata(
         fieldId: widget.fieldId,
-        cultura: _culturaController.text,
+        cultura: persistCulturaValue(
+          selectedTipo: _selectedCultura,
+          culturaLivre: _culturaLivreController.text,
+        ),
+        material: _materialController.text,
         safra: _safraController.text,
       );
 
@@ -301,6 +322,7 @@ class _TalhaoDadosSheetState extends ConsumerState<TalhaoDadosSheet> {
 
       ref.invalidate(clientDetailProvider(widget.clientId));
       ref.invalidate(clientDrawingFieldsProvider(widget.clientId));
+      ref.invalidate(clientDrawingCropRowsProvider(widget.clientId));
       if (widget.farmId != null && widget.farmId!.isNotEmpty) {
         ref.invalidate(farmLinkedFieldsProvider(widget.farmId!));
       }
@@ -453,23 +475,25 @@ class _TalhaoDadosSheetState extends ConsumerState<TalhaoDadosSheet> {
               },
             ),
             const SizedBox(height: 16),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: TalhaoSheetFormField(
-                    controller: _culturaController,
-                    label: 'Cultura',
-                  ),
+            CulturaMaterialFields(
+              selectedTipo: _selectedCultura,
+              culturaLivreController: _culturaLivreController,
+              materialController: _materialController,
+              materialSuggestions: materialSuggestionsForCultura(
+                ref.watch(clientDrawingCropRowsProvider(widget.clientId))
+                        .valueOrNull ??
+                    const [],
+                persistCulturaValue(
+                  selectedTipo: _selectedCultura,
+                  culturaLivre: _culturaLivreController.text,
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: TalhaoSheetFormField(
-                    controller: _safraController,
-                    label: 'Safra',
-                  ),
-                ),
-              ],
+              ),
+              onTipoSelected: (tipo) => setState(() => _selectedCultura = tipo),
+            ),
+            const SizedBox(height: 16),
+            TalhaoSheetFormField(
+              controller: _safraController,
+              label: 'Safra',
             ),
             const SizedBox(height: 16),
             _buildFarmPicker(visuals),

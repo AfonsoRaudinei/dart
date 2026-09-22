@@ -68,15 +68,6 @@ extension _ClientEditFormSheets on _ClientEditFormState {
         ),
       );
 
-  Future<void> _abrirBottomSheetCultura() async {
-    final nova = await showAddCulturaSheet(
-      context: context,
-      clientId: widget.client.id,
-      inputDecoration: _deco,
-    );
-    if (nova != null) _patch(() => _culturasEditadas.add(nova));
-  }
-
   Future<void> _abrirBottomSheetArea() async {
     final formKey = GlobalKey<FormState>();
     final areaCtrl = TextEditingController();

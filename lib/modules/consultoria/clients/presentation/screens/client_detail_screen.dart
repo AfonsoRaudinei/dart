@@ -11,8 +11,10 @@ import 'package:soloforte_app/core/utils/area_display_format.dart';
 import 'package:soloforte_app/core/utils/user_facing_error.dart';
 
 import '../providers/clients_providers.dart';
+import '../providers/field_providers.dart';
 import '../../domain/client.dart';
 import '../../domain/client_cultura.dart';
+import '../../domain/enums/cultura_tipo.dart';
 import '../widgets/client_avatar_widget.dart';
 import '../widgets/cultura_item_widget.dart';
 import '../widgets/client_hub_section.dart';
@@ -323,27 +325,9 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen> {
                       const SizedBox(height: 24),
                     ],
 
-                    // Seção Culturas
+                    // Seção Culturas (resumo dos talhões; fallback client_culturas)
                     _sectionTitle('Culturas'),
-                    if (culturas.isEmpty)
-                      Container(
-                        padding: const EdgeInsets.all(24),
-                        width: double.infinity,
-                        decoration: BoxDecoration(
-                          color: Colors.grey[50],
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.grey[200]!),
-                        ),
-                        child: Text(
-                          'Nenhuma cultura cadastrada',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(color: Colors.grey[600]),
-                        ),
-                      )
-                    else
-                      ...culturas.map(
-                        (c) => CulturaItemWidget(cultura: c, onRemove: null),
-                      ),
+                    ..._buildCulturasSection(client, culturas),
                     const SizedBox(height: 32),
 
                     // Seção Fazendas
@@ -516,6 +500,64 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen> {
         ],
       ),
     );
+  }
+
+  List<Widget> _buildCulturasSection(
+    Client client,
+    List<ClientCultura> fallback,
+  ) {
+    final cropRows =
+        ref.watch(clientDrawingCropRowsProvider(client.id)).valueOrNull ??
+        const [];
+    final summaries = summarizeClientDrawingCrops(cropRows);
+    if (summaries.isNotEmpty) {
+      return [
+        for (final summary in summaries)
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: const CircleAvatar(
+              backgroundColor: Color(0xFFE8F5E9),
+              child: Icon(Icons.eco, color: Color(0xFF2E7D32), size: 20),
+            ),
+            title: Text(
+              CulturaTipo.displayLabel(summary.cultura),
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+            subtitle: summary.materials.isEmpty
+                ? null
+                : Text(summary.materials.join(' • ')),
+            trailing: Text(
+              formatAreaFromHectares(
+                summary.areaHa,
+                ref.watch(areaDisplayUnitProvider),
+              ),
+            ),
+          ),
+      ];
+    }
+
+    if (fallback.isEmpty) {
+      return [
+        Container(
+          padding: const EdgeInsets.all(24),
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: Colors.grey[50],
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.grey[200]!),
+          ),
+          child: Text(
+            'Nenhuma cultura nos talhões. Escolha cultura e material em cada talhão.',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.grey[600]),
+          ),
+        ),
+      ];
+    }
+
+    return [
+      ...fallback.map((c) => CulturaItemWidget(cultura: c, onRemove: null)),
+    ];
   }
 
   Widget _infoRow(String label, String value) => Padding(

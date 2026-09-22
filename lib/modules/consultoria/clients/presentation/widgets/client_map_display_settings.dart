@@ -10,11 +10,8 @@ class ClientMapDisplaySettings extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final labelMode = ref.watch(talhaoMapLabelModeProvider);
-    final modeNotifier = ref.read(talhaoMapLabelModeProvider.notifier);
-    final showUnitChips =
-        labelMode == TalhaoMapLabelMode.nameAndArea ||
-        labelMode == TalhaoMapLabelMode.areaOnly;
+    final prefs = ref.watch(talhaoMapLabelPrefsProvider);
+    final notifier = ref.read(talhaoMapLabelPrefsProvider.notifier);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -29,28 +26,28 @@ class ClientMapDisplaySettings extends ConsumerWidget {
           runSpacing: 8,
           children: [
             _LabelModeChip(
-              label: 'Nome+área',
-              selected: labelMode == TalhaoMapLabelMode.nameAndArea,
-              onTap: () => modeNotifier.setMode(TalhaoMapLabelMode.nameAndArea),
+              label: 'Nome',
+              selected: prefs.showName,
+              onTap: notifier.toggleName,
             ),
             _LabelModeChip(
-              label: 'Nome',
-              selected: labelMode == TalhaoMapLabelMode.nameOnly,
-              onTap: () => modeNotifier.setMode(TalhaoMapLabelMode.nameOnly),
+              label: 'Cultura',
+              selected: prefs.showCultura,
+              onTap: notifier.toggleCultura,
             ),
             _LabelModeChip(
               label: 'Área',
-              selected: labelMode == TalhaoMapLabelMode.areaOnly,
-              onTap: () => modeNotifier.setMode(TalhaoMapLabelMode.areaOnly),
+              selected: prefs.showArea,
+              onTap: notifier.toggleArea,
             ),
             _LabelModeChip(
               label: 'Oculto',
-              selected: labelMode == TalhaoMapLabelMode.hidden,
-              onTap: () => modeNotifier.setMode(TalhaoMapLabelMode.hidden),
+              selected: prefs.isHidden,
+              onTap: notifier.hide,
             ),
           ],
         ),
-        if (showUnitChips) ...[
+        if (prefs.showArea) ...[
           const SizedBox(height: 12),
           Text(
             'Unidade de área',
