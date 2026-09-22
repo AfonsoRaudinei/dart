@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../../core/design/sf_icons.dart';
@@ -256,6 +258,27 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
     widget.onClose();
   }
 
+  /// Visita sem talhão: o desenho salvo vira a área da sessão.
+  /// Visita que já tem área não é sobrescrita.
+  void _onDrawingSaved() {
+    final feature = widget.drawingController.selectedFeature;
+    final session = ref.read(visitControllerProvider).valueOrNull;
+    final areaId = session?.areaId;
+    if (feature != null &&
+        feature.properties.tipo == DrawingType.talhao &&
+        session != null &&
+        (areaId == null || areaId.isEmpty)) {
+      final farmId = feature.properties.fazendaId;
+      unawaited(
+        ref.read(visitControllerProvider.notifier).updateArea(
+          feature.id,
+          farmId: (farmId == null || farmId.isEmpty) ? session.farmId : farmId,
+        ),
+      );
+    }
+    _closeDrawingSheetChrome();
+  }
+
   void _animateToDetent(SheetDetent targetDetent) {
     if (_currentDetent == targetDetent) return;
 
@@ -510,7 +533,7 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
       scrollController: _scrollController,
       onFocusFeature: widget.onFocusDrawingFeature,
       onGpsMeasureStarted: _closeDrawingSheetChrome,
-      onSaved: _closeDrawingSheetChrome,
+      onSaved: _onDrawingSaved,
       onClose: _closeDrawingSheetChrome,
       onCollapseWhileEditing: _collapseDrawingSheetWhileEditing,
     );
