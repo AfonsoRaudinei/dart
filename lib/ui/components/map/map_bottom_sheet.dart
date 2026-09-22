@@ -260,8 +260,7 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
 
   /// Visita sem talhão: o desenho salvo vira a área da sessão.
   /// Visita que já tem área não é sobrescrita.
-  void _onDrawingSaved() {
-    final feature = widget.drawingController.selectedFeature;
+  void _onDrawingSaved(DrawingFeature? feature) {
     final session = ref.read(visitControllerProvider).valueOrNull;
     final areaId = session?.areaId;
     if (feature != null &&
