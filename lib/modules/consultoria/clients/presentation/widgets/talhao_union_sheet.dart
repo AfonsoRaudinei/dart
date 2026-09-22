@@ -54,12 +54,6 @@ Future<bool> showTalhaoUnionSheet(
     ),
   );
 
-  if (saved == true && context.mounted) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Talhões combinados com sucesso.')),
-    );
-  }
-
   return saved == true;
 }
 
@@ -90,6 +84,7 @@ class TalhaoUnionSheet extends ConsumerStatefulWidget {
 class _TalhaoUnionSheetState extends ConsumerState<TalhaoUnionSheet> {
   String? _selectedFieldId;
   bool _isSaving = false;
+  bool _showSuccessBanner = false;
 
   @override
   void initState() {
@@ -119,6 +114,9 @@ class _TalhaoUnionSheetState extends ConsumerState<TalhaoUnionSheet> {
       }
 
       if (!mounted) return;
+      setState(() => _showSuccessBanner = true);
+      await Future<void>.delayed(const Duration(milliseconds: 1600));
+      if (!mounted) return;
       Navigator.of(context).pop(true);
     } catch (e) {
       if (!mounted) return;
@@ -141,6 +139,11 @@ class _TalhaoUnionSheetState extends ConsumerState<TalhaoUnionSheet> {
     return ClientSheetScaffold(
       title: 'União',
       subtitle: 'Combinar com outra área',
+      banner: _showSuccessBanner
+          ? const ClientSheetInlineBanner(
+              message: 'Talhões combinados com sucesso.',
+            )
+          : null,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -194,7 +197,8 @@ class _TalhaoUnionSheetState extends ConsumerState<TalhaoUnionSheet> {
             },
             confirmLabel: 'Confirmar união',
             isSaving: _isSaving,
-            confirmEnabled: _selectedFieldId != null,
+            confirmEnabled:
+                _selectedFieldId != null && !_showSuccessBanner,
           ),
         ],
       ),
