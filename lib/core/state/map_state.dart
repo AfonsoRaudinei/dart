@@ -603,6 +603,48 @@ enum AreaDisplayUnit { hectare, squareMeter, alqueire }
 
 enum DistanceDisplayUnit { kilometer, meter }
 
+class TalhaoMapLabelPrefs {
+  const TalhaoMapLabelPrefs({
+    this.showName = true,
+    this.showCultura = true,
+    this.showArea = false,
+  });
+
+  final bool showName;
+  final bool showCultura;
+  final bool showArea;
+
+  bool get isHidden => !showName && !showCultura && !showArea;
+
+  TalhaoMapLabelPrefs copyWith({
+    bool? showName,
+    bool? showCultura,
+    bool? showArea,
+  }) {
+    return TalhaoMapLabelPrefs(
+      showName: showName ?? this.showName,
+      showCultura: showCultura ?? this.showCultura,
+      showArea: showArea ?? this.showArea,
+    );
+  }
+
+  static const hidden = TalhaoMapLabelPrefs(
+    showName: false,
+    showCultura: false,
+    showArea: false,
+  );
+
+  @override
+  bool operator ==(Object other) =>
+      other is TalhaoMapLabelPrefs &&
+      other.showName == showName &&
+      other.showCultura == showCultura &&
+      other.showArea == showArea;
+
+  @override
+  int get hashCode => Object.hash(showName, showCultura, showArea);
+}
+
 class AreaDisplayUnitNotifier extends Notifier<AreaDisplayUnit> {
   static const _kKey = 'map_area_display_unit_v1';
 
@@ -644,29 +686,42 @@ final areaDisplayUnitProvider =
       AreaDisplayUnitNotifier.new,
     );
 
-enum TalhaoMapLabelMode { nameAndArea, nameOnly, areaOnly, hidden }
-
-class TalhaoMapLabelModeNotifier extends Notifier<TalhaoMapLabelMode> {
-  static const _kKey = 'map_talhao_label_mode_v1';
+class TalhaoMapLabelPrefsNotifier extends Notifier<TalhaoMapLabelPrefs> {
+  static const _kName = 'map_talhao_label_show_name_v2';
+  static const _kCultura = 'map_talhao_label_show_cultura_v2';
+  static const _kArea = 'map_talhao_label_show_area_v2';
 
   @override
-  TalhaoMapLabelMode build() {
-    final raw = ref.read(preferencesServiceProvider).getString(_kKey);
-    return TalhaoMapLabelMode.values.firstWhere(
-      (e) => e.name == raw,
-      orElse: () => TalhaoMapLabelMode.nameAndArea,
+  TalhaoMapLabelPrefs build() {
+    final prefs = ref.read(preferencesServiceProvider);
+    return TalhaoMapLabelPrefs(
+      showName: prefs.getBool(_kName) ?? true,
+      showCultura: prefs.getBool(_kCultura) ?? true,
+      showArea: prefs.getBool(_kArea) ?? false,
     );
   }
 
-  void setMode(TalhaoMapLabelMode mode) {
-    state = mode;
-    ref.read(preferencesServiceProvider).setString(_kKey, mode.name);
+  void setPrefs(TalhaoMapLabelPrefs value) {
+    state = value;
+    final prefs = ref.read(preferencesServiceProvider);
+    prefs.setBool(_kName, value.showName);
+    prefs.setBool(_kCultura, value.showCultura);
+    prefs.setBool(_kArea, value.showArea);
   }
+
+  void toggleName() => setPrefs(state.copyWith(showName: !state.showName));
+
+  void toggleCultura() =>
+      setPrefs(state.copyWith(showCultura: !state.showCultura));
+
+  void toggleArea() => setPrefs(state.copyWith(showArea: !state.showArea));
+
+  void hide() => setPrefs(TalhaoMapLabelPrefs.hidden);
 }
 
-final talhaoMapLabelModeProvider =
-    NotifierProvider<TalhaoMapLabelModeNotifier, TalhaoMapLabelMode>(
-      TalhaoMapLabelModeNotifier.new,
+final talhaoMapLabelPrefsProvider =
+    NotifierProvider<TalhaoMapLabelPrefsNotifier, TalhaoMapLabelPrefs>(
+      TalhaoMapLabelPrefsNotifier.new,
     );
 
 final distanceDisplayUnitProvider =
