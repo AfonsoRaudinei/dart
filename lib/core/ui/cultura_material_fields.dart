@@ -11,6 +11,12 @@ class CulturaMaterialFields extends StatelessWidget {
     required this.onTipoSelected,
     this.materialSuggestions = const [],
     this.accent = const Color(0xFF248A3D),
+    this.labelColor,
+    this.chipUnselectedBackground,
+    this.chipUnselectedForeground,
+    this.fieldFillColor,
+    this.fieldTextColor,
+    this.fieldHintColor,
   });
 
   final CulturaTipo? selectedTipo;
@@ -19,11 +25,18 @@ class CulturaMaterialFields extends StatelessWidget {
   final ValueChanged<CulturaTipo> onTipoSelected;
   final List<String> materialSuggestions;
   final Color accent;
+  final Color? labelColor;
+  final Color? chipUnselectedBackground;
+  final Color? chipUnselectedForeground;
+  final Color? fieldFillColor;
+  final Color? fieldTextColor;
+  final Color? fieldHintColor;
 
   @override
   Widget build(BuildContext context) {
     final showLivre = selectedTipo == CulturaTipo.outro;
     final showMaterial = selectedTipo != null;
+    final titleColor = labelColor ?? Colors.grey[700];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -33,7 +46,7 @@ class CulturaMaterialFields extends StatelessWidget {
           style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w600,
-            color: Colors.grey[700],
+            color: titleColor,
           ),
         ),
         const SizedBox(height: 8),
@@ -46,6 +59,8 @@ class CulturaMaterialFields extends StatelessWidget {
                 label: tipo.label,
                 selected: selectedTipo == tipo,
                 accent: accent,
+                unselectedBackground: chipUnselectedBackground,
+                unselectedForeground: chipUnselectedForeground,
                 onTap: () => onTipoSelected(tipo),
               ),
           ],
@@ -54,7 +69,10 @@ class CulturaMaterialFields extends StatelessWidget {
           const SizedBox(height: 10),
           TextField(
             controller: culturaLivreController,
-            decoration: const InputDecoration(
+            style: fieldTextColor == null
+                ? null
+                : TextStyle(color: fieldTextColor),
+            decoration: _fieldDecoration(
               labelText: 'Qual cultura?',
               hintText: 'Ex.: Girassol',
             ),
@@ -68,13 +86,16 @@ class CulturaMaterialFields extends StatelessWidget {
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,
-              color: Colors.grey[700],
+              color: titleColor,
             ),
           ),
           const SizedBox(height: 8),
           TextField(
             controller: materialController,
-            decoration: const InputDecoration(hintText: 'Ex.: Olimpo RR'),
+            style: fieldTextColor == null
+                ? null
+                : TextStyle(color: fieldTextColor),
+            decoration: _fieldDecoration(hintText: 'Ex.: Olimpo RR'),
             textCapitalization: TextCapitalization.words,
           ),
           if (materialSuggestions.isNotEmpty) ...[
@@ -97,6 +118,30 @@ class CulturaMaterialFields extends StatelessWidget {
       ],
     );
   }
+
+  InputDecoration _fieldDecoration({
+    String? labelText,
+    required String hintText,
+  }) {
+    return InputDecoration(
+      labelText: labelText,
+      hintText: hintText,
+      hintStyle: fieldHintColor == null
+          ? null
+          : TextStyle(color: fieldHintColor),
+      labelStyle: fieldHintColor == null
+          ? null
+          : TextStyle(color: fieldHintColor),
+      filled: fieldFillColor != null,
+      fillColor: fieldFillColor,
+      border: fieldFillColor == null
+          ? null
+          : OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide.none,
+            ),
+    );
+  }
 }
 
 class _CulturaChip extends StatelessWidget {
@@ -105,17 +150,21 @@ class _CulturaChip extends StatelessWidget {
     required this.selected,
     required this.onTap,
     required this.accent,
+    this.unselectedBackground,
+    this.unselectedForeground,
   });
 
   final String label;
   final bool selected;
   final VoidCallback onTap;
   final Color accent;
+  final Color? unselectedBackground;
+  final Color? unselectedForeground;
 
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: selected ? accent : Colors.grey[200],
+      color: selected ? accent : (unselectedBackground ?? Colors.grey[200]),
       borderRadius: BorderRadius.circular(20),
       child: InkWell(
         onTap: onTap,
@@ -127,7 +176,9 @@ class _CulturaChip extends StatelessWidget {
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,
-              color: selected ? Colors.white : Colors.black87,
+              color: selected
+                  ? Colors.white
+                  : (unselectedForeground ?? Colors.black87),
             ),
           ),
         ),

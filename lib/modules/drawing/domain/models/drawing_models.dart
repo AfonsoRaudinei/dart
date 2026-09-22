@@ -334,9 +334,9 @@ class DrawingProperties {
       grupo: grupo ?? this.grupo, // 🆕
       cor: cor ?? this.cor, // 🆕
       versaoAnteriorId: versaoAnteriorId ?? this.versaoAnteriorId,
-      cultura: cultura ?? this.cultura,
-      material: material ?? this.material,
-      safra: safra ?? this.safra,
+      cultura: _copyNullableText(cultura, this.cultura),
+      material: _copyNullableText(material, this.material),
+      safra: _copyNullableText(safra, this.safra),
       soilSamplingScheme: soilSamplingScheme ?? this.soilSamplingScheme,
       recByNutrient: recByNutrient ?? this.recByNutrient,
     );
@@ -409,4 +409,10 @@ class DrawingFeature {
       ),
     );
   }
+}
+
+String? _copyNullableText(String? incoming, String? current) {
+  if (incoming == null) return current;
+  final trimmed = incoming.trim();
+  return trimmed.isEmpty ? null : trimmed;
 }

@@ -130,10 +130,8 @@ class _DrawingInfoEditSheetState extends ConsumerState<DrawingInfoEditSheet> {
         selectedTipo: _selectedCultura,
         culturaLivre: _culturaLivreCtrl.text,
       ),
-      material: _materialCtrl.text.trim().isEmpty
-          ? null
-          : _materialCtrl.text.trim(),
-      safra: _safraCtrl.text.trim().isEmpty ? null : _safraCtrl.text.trim(),
+      material: _materialCtrl.text.trim(),
+      safra: _safraCtrl.text.trim(),
       clienteId: _selectedClient?.id,
       fazendaId: _selectedFarm?.id,
     );
@@ -366,6 +364,12 @@ class _DrawingInfoEditSheetState extends ConsumerState<DrawingInfoEditSheet> {
               culturaLivreController: _culturaLivreCtrl,
               materialController: _materialCtrl,
               onTipoSelected: (tipo) => setState(() => _selectedCultura = tipo),
+              labelColor: labelStyle.color,
+              chipUnselectedBackground: inputBg,
+              chipUnselectedForeground: textStyle.color,
+              fieldFillColor: inputBg,
+              fieldTextColor: textStyle.color,
+              fieldHintColor: hintColor,
             ),
             const SizedBox(height: 16),
 
