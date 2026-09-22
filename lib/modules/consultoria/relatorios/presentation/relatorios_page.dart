@@ -60,6 +60,13 @@ final htmlReportViewerBodyBuilderProvider = Provider<WidgetBuilder?>(
   (ref) => null,
 );
 
+String? _relatoriosRouteClienteId(BuildContext context) {
+  return GoRouter.maybeOf(context)
+      ?.state
+      .uri
+      .queryParameters['clienteId'];
+}
+
 final _relatoriosTecnicosListProvider =
     FutureProvider.autoDispose<List<RelatorioTecnico>>((ref) async {
       final role = ref.watch(currentUserRoleProvider);
@@ -221,8 +228,7 @@ class _RelatoriosSection extends ConsumerWidget {
 
     return relatoriosAsync.when(
       data: (list) {
-        final clienteId =
-            GoRouterState.of(context).uri.queryParameters['clienteId'];
+        final clienteId = _relatoriosRouteClienteId(context);
         final visible = clienteId == null || clienteId.isEmpty
             ? list
             : list.where((relatorio) => relatorio.clientId == clienteId).toList();
@@ -434,8 +440,7 @@ class _OccurrenciasSectionState extends ConsumerState<_OccurrenciasSection> {
         final producerCounts =
             _producerCountsFromIds(list.map((o) => o.clientId));
         final producerIds = producerCounts.keys.toList()..sort();
-        final routeClientId =
-            GoRouterState.of(context).uri.queryParameters['clienteId'];
+        final routeClientId = _relatoriosRouteClienteId(context);
         final effectiveClientId = _selectedClientId ??
             (routeClientId != null && routeClientId.isNotEmpty
                 ? routeClientId
