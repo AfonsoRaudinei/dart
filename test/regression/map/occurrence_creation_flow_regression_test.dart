@@ -158,6 +158,32 @@ void main() {
       expect(privateMapSource, isNot(contains('ArmedMode.marketing')));
     });
 
+    test(
+      'QA-1b: save de talhão entrega feature ao onSaved antes de limpar seleção',
+      () {
+        final drawingSheetSource = File(
+          'lib/modules/drawing/presentation/widgets/drawing_sheet.dart',
+        ).readAsStringSync();
+        final mapBottomSheetSource = File(
+          'lib/ui/components/map/map_bottom_sheet.dart',
+        ).readAsStringSync();
+
+        expect(drawingSheetSource, contains('savedFeature: savedFeatures.first'));
+        expect(
+          drawingSheetSource,
+          contains('typedef DrawingSheetSavedCallback'),
+        );
+        expect(
+          mapBottomSheetSource,
+          contains('void _onDrawingSaved(DrawingFeature? feature)'),
+        );
+        expect(
+          mapBottomSheetSource,
+          isNot(contains('drawingController.selectedFeature')),
+        );
+      },
+    );
+
     test('QA-2: tap no mapa continua abrindo ocorrência via ArmedMode', () {
       final privateMapSource =
           File('lib/ui/screens/private_map_screen.dart').readAsStringSync();
