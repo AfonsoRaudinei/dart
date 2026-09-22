@@ -644,6 +644,31 @@ final areaDisplayUnitProvider =
       AreaDisplayUnitNotifier.new,
     );
 
+enum TalhaoMapLabelMode { nameAndArea, nameOnly, areaOnly, hidden }
+
+class TalhaoMapLabelModeNotifier extends Notifier<TalhaoMapLabelMode> {
+  static const _kKey = 'map_talhao_label_mode_v1';
+
+  @override
+  TalhaoMapLabelMode build() {
+    final raw = ref.read(preferencesServiceProvider).getString(_kKey);
+    return TalhaoMapLabelMode.values.firstWhere(
+      (e) => e.name == raw,
+      orElse: () => TalhaoMapLabelMode.nameAndArea,
+    );
+  }
+
+  void setMode(TalhaoMapLabelMode mode) {
+    state = mode;
+    ref.read(preferencesServiceProvider).setString(_kKey, mode.name);
+  }
+}
+
+final talhaoMapLabelModeProvider =
+    NotifierProvider<TalhaoMapLabelModeNotifier, TalhaoMapLabelMode>(
+      TalhaoMapLabelModeNotifier.new,
+    );
+
 final distanceDisplayUnitProvider =
     NotifierProvider<DistanceDisplayUnitNotifier, DistanceDisplayUnit>(
       DistanceDisplayUnitNotifier.new,

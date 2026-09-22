@@ -14,12 +14,19 @@ class TalhaoMapAdapter {
     Talhao talhao, {
     bool isSelected = false,
     AreaDisplayUnit unit = AreaDisplayUnit.hectare,
+    TalhaoMapLabelMode labelMode = TalhaoMapLabelMode.nameAndArea,
   }) {
     if (talhao.geometry == null) {
       return Polygon(points: []); // Empty if no geometry
     }
 
     final points = _parseGeoJsonCoordinates(talhao.geometry!);
+    final labelText = buildTalhaoMapLabel(
+      talhao.name,
+      talhao.areaHa,
+      unit,
+      labelMode,
+    );
 
     return Polygon(
       points: points,
@@ -28,7 +35,7 @@ class TalhaoMapAdapter {
           : PremiumTokens.brandGreen.withValues(alpha: 0.15),
       borderColor: isSelected ? Colors.white : const Color(0xFF248A3D),
       borderStrokeWidth: isSelected ? 3.0 : 1.5,
-      label: buildTalhaoMapLabel(talhao.name, talhao.areaHa, unit),
+      label: labelText.isEmpty ? null : labelText,
       labelStyle: TextStyle(
         color: Colors.black,
         fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,

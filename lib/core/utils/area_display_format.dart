@@ -24,13 +24,27 @@ String _formatAreaShortForMapLabel(double areaHa, AreaDisplayUnit unit) {
   }
 }
 
-/// Label de polígono no mapa: nome do talhão + área (omitida se [areaHa] <= 0).
+/// Label de polígono no mapa conforme [mode] e unidade de área.
 String buildTalhaoMapLabel(
   String name,
   double areaHa,
-  AreaDisplayUnit unit,
-) {
-  if (areaHa <= 0) return name;
-  final areaText = _formatAreaShortForMapLabel(areaHa, unit);
-  return '$name\n$areaText';
+  AreaDisplayUnit unit, [
+  TalhaoMapLabelMode mode = TalhaoMapLabelMode.nameAndArea,
+]) {
+  final trimmedName = name.trim();
+
+  switch (mode) {
+    case TalhaoMapLabelMode.hidden:
+      return '';
+    case TalhaoMapLabelMode.nameOnly:
+      return trimmedName;
+    case TalhaoMapLabelMode.areaOnly:
+      if (areaHa <= 0) return '';
+      return _formatAreaShortForMapLabel(areaHa, unit);
+    case TalhaoMapLabelMode.nameAndArea:
+      if (areaHa <= 0) return trimmedName;
+      final areaText = _formatAreaShortForMapLabel(areaHa, unit);
+      if (trimmedName.isEmpty) return areaText;
+      return '$trimmedName\n$areaText';
+  }
 }

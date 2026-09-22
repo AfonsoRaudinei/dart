@@ -27,7 +27,6 @@ class DrawingLayerWidget extends ConsumerStatefulWidget {
 }
 
 class _DrawingLayerWidgetState extends ConsumerState<DrawingLayerWidget> {
-  AreaDisplayUnit? _lastAreaUnit;
   static const Color _manualOutlineColor = Colors.white;
   static const Color _manualOutlineHalo = Color(0xCC111111);
   static const Color _gpsOutlineHalo = Color(0xB3000000);
@@ -46,6 +45,8 @@ class _DrawingLayerWidgetState extends ConsumerState<DrawingLayerWidget> {
   bool? _lastFreehandActive;
   DrawingTool? _lastTool;
   Set<int>? _lastIntersectingIndices;
+  AreaDisplayUnit? _lastAreaUnit;
+  TalhaoMapLabelMode? _lastLabelMode;
 
   @override
   Widget build(BuildContext context) {
@@ -53,6 +54,7 @@ class _DrawingLayerWidgetState extends ConsumerState<DrawingLayerWidget> {
       listenable: widget.controller,
       builder: (context, _) {
         final areaUnit = ref.watch(areaDisplayUnitProvider);
+        final labelMode = ref.watch(talhaoMapLabelModeProvider);
         final features = widget.controller.features;
         final selectedId = widget.controller.selectedFeature?.id;
         final selectedIds = widget.controller.selectedFeatureIds;
@@ -87,7 +89,8 @@ class _DrawingLayerWidgetState extends ConsumerState<DrawingLayerWidget> {
             _lastPivotCenter != pivotCenter ||
             _lastPivotEdge != pivotEdge ||
             _lastFreehandActive != isFreehandStrokeActive ||
-            _lastAreaUnit != areaUnit;
+            _lastAreaUnit != areaUnit ||
+            _lastLabelMode != labelMode;
 
         if (!needsRebuild &&
             _cachedPolygons != null &&
@@ -115,6 +118,7 @@ class _DrawingLayerWidgetState extends ConsumerState<DrawingLayerWidget> {
         _lastTool = currentTool;
         _lastIntersectingIndices = Set.from(intersectingIndices);
         _lastAreaUnit = areaUnit;
+        _lastLabelMode = labelMode;
 
         final polygons = <Polygon>[];
         final polylines = <Polyline>[];
@@ -134,6 +138,14 @@ class _DrawingLayerWidgetState extends ConsumerState<DrawingLayerWidget> {
           for (var index = 0; index < parts.length; index++) {
             final rings = parts[index];
             if (rings.isEmpty) continue;
+            final label = index == 0
+                ? buildTalhaoMapLabel(
+                    feature.properties.nome,
+                    feature.properties.areaHa,
+                    areaUnit,
+                    labelMode,
+                  )
+                : null;
             polygons.add(
               _polygonFromRings(
                 rings,
@@ -143,13 +155,7 @@ class _DrawingLayerWidgetState extends ConsumerState<DrawingLayerWidget> {
                 pattern: style.isDashed
                     ? StrokePattern.dashed(segments: const [10, 5])
                     : const StrokePattern.solid(),
-                label: index == 0
-                    ? buildTalhaoMapLabel(
-                        feature.properties.nome,
-                        feature.properties.areaHa,
-                        areaUnit,
-                      )
-                    : null,
+                label: label != null && label.isEmpty ? null : label,
               ),
             );
           }
