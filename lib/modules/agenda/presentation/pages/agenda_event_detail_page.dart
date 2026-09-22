@@ -326,6 +326,18 @@ class AgendaEventDetailPage extends ConsumerWidget {
               padding: const EdgeInsets.symmetric(vertical: 16),
             ),
           ),
+        if (event.status == EventStatus.emAndamento &&
+            event.clienteId.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: OutlinedButton.icon(
+              onPressed: () => context.go(
+                '${AppRoutes.map}?modo=visita&clienteId=${event.clienteId}',
+              ),
+              icon: const Icon(Icons.map_outlined),
+              label: const Text('Ir ao mapa'),
+            ),
+          ),
         if (event.status == EventStatus.emAndamento)
           ElevatedButton.icon(
             onPressed: () async {
