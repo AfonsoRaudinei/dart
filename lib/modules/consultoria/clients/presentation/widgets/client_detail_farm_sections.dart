@@ -195,7 +195,16 @@ class ClientDrawingFieldsSection extends ConsumerWidget {
                   nome: field.name,
                   areaHa: field.areaHa,
                   subtitle: 'Sem fazenda vinculada',
-                  onTap: () => _openActions(context, field, fields),
+                  onTap: () => showTalhaoDadosSheet(
+                    context,
+                    clientId: client.id,
+                    farmId: field.farmId,
+                    fieldId: field.id,
+                    initialName: field.name,
+                    initialCultura: field.crop,
+                    initialMaterial: field.material,
+                    initialSafra: field.harvest,
+                  ),
                   actions: [
                     IconButton(
                       tooltip: 'Vincular à fazenda',
@@ -270,6 +279,7 @@ class ClientDrawingFieldsSection extends ConsumerWidget {
       fieldId: field.id,
       fieldName: field.name,
       initialCultura: field.crop,
+      initialMaterial: field.material,
       initialSafra: field.harvest,
       fieldAreaHa: field.areaHa,
       primaryVertices: field.vertices,
@@ -293,6 +303,7 @@ class ClientDrawingFieldsSection extends ConsumerWidget {
 
     ref.invalidate(clientDetailProvider(client.id));
     ref.invalidate(clientDrawingFieldsProvider(client.id));
+    ref.invalidate(clientDrawingCropRowsProvider(client.id));
     ref.invalidate(farmLinkedFieldsProvider(linkedFarm.id));
     if (previousFarmId != null && previousFarmId != linkedFarm.id) {
       ref.invalidate(farmLinkedFieldsProvider(previousFarmId));
@@ -338,6 +349,7 @@ class ClientDrawingFieldsSection extends ConsumerWidget {
         );
 
     ref.invalidate(clientDrawingFieldsProvider(client.id));
+    ref.invalidate(clientDrawingCropRowsProvider(client.id));
     if (field.farmId != null) {
       ref.invalidate(farmLinkedFieldsProvider(field.farmId!));
     }

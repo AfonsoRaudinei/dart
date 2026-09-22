@@ -595,16 +595,9 @@ class _ClientEditFormState extends State<ClientEditForm> {
                       ),
                     ),
                   const SizedBox(height: 8),
-                  TextButton.icon(
-                    icon: const Icon(
-                      Icons.add,
-                      color: PremiumTokens.brandGreen,
-                    ),
-                    label: const Text(
-                      'Adicionar Cultura',
-                      style: TextStyle(color: PremiumTokens.brandGreen),
-                    ),
-                    onPressed: _abrirBottomSheetCultura,
+                  Text(
+                    'Cultura e material são definidos em cada talhão.',
+                    style: TextStyle(color: Colors.grey[600], fontSize: 13),
                   ),
                   const SizedBox(height: 28),
                   _sectionTitle('Observações'),
