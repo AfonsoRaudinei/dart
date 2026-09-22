@@ -9,6 +9,8 @@ import 'package:soloforte_app/core/contracts/visit_client_hierarchy.dart';
 import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
 import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 import 'package:soloforte_app/modules/visitas/presentation/controllers/visit_controller.dart';
+import 'package:soloforte_app/core/state/map_ui_providers.dart';
+import 'package:soloforte_app/ui/components/map/map_sheet_state.dart';
 import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 
 final _visitClientHierarchyProvider = FutureProvider.autoDispose
@@ -130,6 +132,17 @@ class VisitActiveCard extends ConsumerWidget {
                           currentTalhao,
                         ),
                 ),
+                if (session.areaId == null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: TextButton(
+                      onPressed: () {
+                        ref.read(mapSheetStateProvider.notifier).state =
+                            const MapSheetState(type: MapSheetType.draw);
+                      },
+                      child: const Text('Desenhar talhão'),
+                    ),
+                  ),
                 if (session.areaId != null)
                   Padding(
                     padding: const EdgeInsets.only(top: 8),
