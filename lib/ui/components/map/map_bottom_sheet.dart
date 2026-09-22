@@ -94,7 +94,7 @@ class _MapBottomSheetState extends ConsumerState<MapBottomSheet>
       duration: const Duration(milliseconds: 300),
     );
 
-    _heightAnimation = AlwaysStoppedAnimation(0);
+    _heightAnimation = const AlwaysStoppedAnimation(0);
     widget.drawingController.addListener(_onDrawingControllerChanged);
   }
 
