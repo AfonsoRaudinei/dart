@@ -46,7 +46,7 @@ class _DrawingLayerWidgetState extends ConsumerState<DrawingLayerWidget> {
   DrawingTool? _lastTool;
   Set<int>? _lastIntersectingIndices;
   AreaDisplayUnit? _lastAreaUnit;
-  TalhaoMapLabelMode? _lastLabelMode;
+  TalhaoMapLabelPrefs? _lastLabelPrefs;
 
   @override
   Widget build(BuildContext context) {
@@ -54,7 +54,7 @@ class _DrawingLayerWidgetState extends ConsumerState<DrawingLayerWidget> {
       listenable: widget.controller,
       builder: (context, _) {
         final areaUnit = ref.watch(areaDisplayUnitProvider);
-        final labelMode = ref.watch(talhaoMapLabelModeProvider);
+        final labelPrefs = ref.watch(talhaoMapLabelPrefsProvider);
         final features = widget.controller.features;
         final selectedId = widget.controller.selectedFeature?.id;
         final selectedIds = widget.controller.selectedFeatureIds;
@@ -90,7 +90,7 @@ class _DrawingLayerWidgetState extends ConsumerState<DrawingLayerWidget> {
             _lastPivotEdge != pivotEdge ||
             _lastFreehandActive != isFreehandStrokeActive ||
             _lastAreaUnit != areaUnit ||
-            _lastLabelMode != labelMode;
+            _lastLabelPrefs != labelPrefs;
 
         if (!needsRebuild &&
             _cachedPolygons != null &&
@@ -118,7 +118,7 @@ class _DrawingLayerWidgetState extends ConsumerState<DrawingLayerWidget> {
         _lastTool = currentTool;
         _lastIntersectingIndices = Set.from(intersectingIndices);
         _lastAreaUnit = areaUnit;
-        _lastLabelMode = labelMode;
+        _lastLabelPrefs = labelPrefs;
 
         final polygons = <Polygon>[];
         final polylines = <Polyline>[];
@@ -143,7 +143,9 @@ class _DrawingLayerWidgetState extends ConsumerState<DrawingLayerWidget> {
                     feature.properties.nome,
                     feature.properties.areaHa,
                     areaUnit,
-                    labelMode,
+                    prefs: labelPrefs,
+                    cultura: feature.properties.cultura,
+                    material: feature.properties.material,
                   )
                 : null;
             polygons.add(
