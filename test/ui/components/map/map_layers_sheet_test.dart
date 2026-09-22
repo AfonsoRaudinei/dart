@@ -12,6 +12,7 @@ import 'package:soloforte_app/core/state/map_ui_providers.dart';
 import 'package:soloforte_app/core/state/map_state.dart';
 import 'package:soloforte_app/modules/clima/infra/radar_overlay_controller_adapter.dart';
 import 'package:soloforte_app/modules/clima/presentation/providers/radar_providers.dart';
+import 'package:soloforte_app/ui/components/map/map_layer_preferences_section.dart';
 import 'package:soloforte_app/ui/components/map/map_layers_sheet.dart';
 
 void main() {
@@ -42,14 +43,14 @@ void main() {
 
       final scrollable = find.byType(Scrollable);
       await tester.scrollUntilVisible(
-        find.text('Baixar área visível'),
+        find.text('Baixar área'),
         120,
         scrollable: scrollable,
       );
 
-      expect(find.text('Baixar área visível'), findsOneWidget);
+      expect(find.text('Baixar área'), findsOneWidget);
 
-      await tester.tap(find.text('Baixar área visível'));
+      await tester.tap(find.text('Baixar área'));
       await tester.pump();
       expect(offlineCalls, 1);
     });
@@ -63,24 +64,33 @@ void main() {
       expect(find.text('Baixar área visível'), findsNothing);
     });
 
-    testWidgets('exibe explicações para camadas avançadas WMS e Raster', (
+    testWidgets('exibe explicações de WMS e Raster em Configurações do mapa', (
       tester,
     ) async {
-      await _pumpLayersSheet(tester);
-
-      final scrollable = find.byType(Scrollable);
-      await tester.scrollUntilVisible(
-        find.text('WMS Externa'),
-        120,
-        scrollable: scrollable,
-      );
-      await tester.scrollUntilVisible(
-        find.text('Raster Custom (XYZ/GeoTIFF)'),
-        120,
-        scrollable: scrollable,
+      SharedPreferences.setMockInitialValues({});
+      final preferencesService = PreferencesService(
+        await SharedPreferences.getInstance(),
       );
 
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            preferencesServiceProvider.overrideWithValue(preferencesService),
+          ],
+          child: const MaterialApp(
+            home: Scaffold(
+              body: SingleChildScrollView(
+                child: MapLayerPreferencesSection(),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('WMS Externa'), findsOneWidget);
       expect(find.textContaining('servidor WMS'), findsOneWidget);
+      expect(find.text('Raster Custom (XYZ/GeoTIFF)'), findsOneWidget);
       expect(find.textContaining('GeoTIFF'), findsWidgets);
     });
 
@@ -146,12 +156,8 @@ void main() {
 
       expect(container.read(activeLayerProvider), LayerType.standard);
       expect(container.read(climaRadarEnabledProvider), isFalse);
-
-      await tester.tap(find.text('Chuva'));
-      await tester.pump();
-
-      expect(container.read(climaRadarEnabledProvider), isTrue);
-      expect(container.read(activeLayerProvider), LayerType.satellite);
+      expect(find.text('Chuva'), findsNothing);
+      expect(find.text('Pinos'), findsNothing);
     });
 
     testWidgets('destaca status offline e CTA de download de forma visível', (
@@ -176,7 +182,7 @@ void main() {
 
       expect(find.text('Mapa offline'), findsOneWidget);
       expect(find.text('Satélite • 0 áreas salvas'), findsOneWidget);
-      expect(find.text('Baixar área visível'), findsOneWidget);
+      expect(find.text('Baixar área'), findsOneWidget);
     });
   });
 }
