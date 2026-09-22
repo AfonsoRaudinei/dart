@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
+import '../../../../core/state/map_state.dart';
 import '../../../../modules/consultoria/clients/presentation/providers/field_providers.dart';
 import '../../../../modules/consultoria/services/talhao_map_adapter.dart';
 
@@ -16,6 +17,7 @@ class TalhaoPolygonLayer extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final mapFields = ref.watch(mapFieldsProvider);
     final selectedTalhaoId = ref.watch(selectedTalhaoIdProvider);
+    final areaUnit = ref.watch(areaDisplayUnitProvider);
 
     if (!mapFields.hasValue) return const SizedBox.shrink();
 
@@ -28,6 +30,7 @@ class TalhaoPolygonLayer extends ConsumerWidget {
       final base = TalhaoMapAdapter.toPolygon(
         t,
         isSelected: t.id == selectedTalhaoId,
+        unit: areaUnit,
       );
       if (base.points.isEmpty) continue;
 
