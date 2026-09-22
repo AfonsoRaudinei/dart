@@ -59,13 +59,14 @@ void main() {
     required List<({MapSheetState state, String reason})> sheets,
     required List<({String drawingId, bool edit, bool union})> focuses,
     required Uri uri,
+    List<int>? mapMarks,
   }) {
     MapFirstQueryHandler.handle(
       uri: uri,
       ref: ref,
       setSheetState: (state, reason) =>
           sheets.add((state: state, reason: reason)),
-      armOccurrenceMode: () {},
+      openMapMark: () => mapMarks?.add(1),
       focusDrawing: (drawingId, {required bool edit, bool union = false}) async {
         focuses.add((drawingId: drawingId, edit: edit, union: union));
       },
@@ -130,5 +131,21 @@ void main() {
     expect(host.focuses, hasLength(1));
     expect(host.focuses.single.edit, isFalse);
     expect(host.focuses.single.union, isTrue);
+  });
+
+  testWidgets('modo=ocorrencia abre a ficha no GPS e não arma modo', (tester) async {
+    final host = await pumpHandlerHost(tester);
+    final marks = <int>[];
+    handle(
+      ref: host.ref,
+      sheets: host.sheets,
+      focuses: host.focuses,
+      mapMarks: marks,
+      uri: Uri.parse('/map?modo=ocorrencia'),
+    );
+    await tester.pump();
+
+    expect(marks, [1]);
+    expect(host.sheets, isEmpty);
   });
 }
