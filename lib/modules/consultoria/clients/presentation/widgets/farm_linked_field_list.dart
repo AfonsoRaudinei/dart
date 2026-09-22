@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:soloforte_app/core/contracts/i_drawing_field_writer_provider.dart';
 import 'package:soloforte_app/core/router/app_routes.dart';
+import 'package:soloforte_app/core/state/map_state.dart';
+import 'package:soloforte_app/core/utils/area_display_format.dart';
 import 'package:soloforte_app/modules/consultoria/clients/presentation/providers/clients_providers.dart';
 import 'package:soloforte_app/modules/consultoria/clients/presentation/providers/field_providers.dart';
 import 'package:soloforte_app/modules/consultoria/clients/presentation/widgets/talhao_actions_sheet.dart';
@@ -13,8 +15,11 @@ String formatLinkedFieldAreaHa(double areaHa) {
   return areaHa.toStringAsFixed(areaHa >= 100 ? 1 : 2);
 }
 
-String farmLinkedFieldSubtitle(FarmLinkedFieldSummary field) {
-  final parts = <String>['${formatLinkedFieldAreaHa(field.areaHa)} ha'];
+String farmLinkedFieldSubtitle(
+  FarmLinkedFieldSummary field,
+  AreaDisplayUnit unit,
+) {
+  final parts = <String>[formatAreaFromHectares(field.areaHa, unit)];
 
   if (field.isDrawing) {
     parts.add('Talhão do mapa');
@@ -43,6 +48,8 @@ class FarmLinkedFieldList extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final areaUnit = ref.watch(areaDisplayUnitProvider);
+
     if (fields.isEmpty) {
       return Container(
         padding: const EdgeInsets.all(24),
@@ -61,7 +68,7 @@ class FarmLinkedFieldList extends ConsumerWidget {
           vertices: field.vertices,
           nome: field.name,
           areaHa: field.areaHa,
-          subtitle: farmLinkedFieldSubtitle(field),
+          subtitle: farmLinkedFieldSubtitle(field, areaUnit),
           onTap: () => _openField(context, field),
           actions: _fieldActions(context, ref, field),
         );
