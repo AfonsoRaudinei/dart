@@ -31,6 +31,7 @@ class _FakeDrawingFieldWriter implements IDrawingFieldWriter {
   Future<void> updateFieldMetadata({
     required String fieldId,
     String? cultura,
+    String? material,
     String? safra,
   }) async {}
 
@@ -61,7 +62,7 @@ void main() {
     harvest: '2025/2026',
   );
 
-  testWidgets('avulso repassa cultura e safra ao abrir dados do talhão', (
+  testWidgets('avulso abre dados do talhão com cultura em chip e safra', (
     tester,
   ) async {
     tester.view.physicalSize = const Size(800, 1600);
@@ -90,18 +91,19 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byTooltip('Ações do talhão'));
+    await tester.tap(find.text('Talhão Avulso'));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Vincular / editar dados'));
-    await tester.pumpAndSettle();
-
+    expect(find.text('Dados do talhão'), findsOneWidget);
+    expect(find.text('Soja'), findsWidgets);
+    expect(find.text('Material'), findsOneWidget);
     expect(
-      tester.widget<TextFormField>(find.widgetWithText(TextFormField, 'Soja')).controller?.text,
-      'Soja',
-    );
-    expect(
-      tester.widget<TextFormField>(find.widgetWithText(TextFormField, '2025/2026')).controller?.text,
+      tester
+          .widget<TextFormField>(
+            find.widgetWithText(TextFormField, '2025/2026'),
+          )
+          .controller
+          ?.text,
       '2025/2026',
     );
   });

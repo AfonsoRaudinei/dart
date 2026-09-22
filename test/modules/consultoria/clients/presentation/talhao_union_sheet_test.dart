@@ -33,6 +33,7 @@ class _FakeDrawingFieldWriter implements IDrawingFieldWriter {
   Future<void> updateFieldMetadata({
     required String fieldId,
     String? cultura,
+    String? material,
     String? safra,
   }) async {}
 

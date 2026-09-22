@@ -8,6 +8,7 @@ import 'package:soloforte_app/modules/consultoria/clients/presentation/widgets/t
 class _FakeDrawingFieldWriter implements IDrawingFieldWriter {
   String? updatedName;
   String? updatedCultura;
+  String? updatedMaterial;
   String? updatedSafra;
 
   @override
@@ -35,9 +36,11 @@ class _FakeDrawingFieldWriter implements IDrawingFieldWriter {
   Future<void> updateFieldMetadata({
     required String fieldId,
     String? cultura,
+    String? material,
     String? safra,
   }) async {
     updatedCultura = cultura;
+    updatedMaterial = material;
     updatedSafra = safra;
   }
 
@@ -50,7 +53,7 @@ class _FakeDrawingFieldWriter implements IDrawingFieldWriter {
 }
 
 void main() {
-  testWidgets('TalhaoDadosSheet mostra Cultura e Safra e salva via writer', (
+  testWidgets('TalhaoDadosSheet mostra cultura em chips e salva material', (
     tester,
   ) async {
     tester.view.physicalSize = const Size(800, 1600);
@@ -65,7 +68,7 @@ void main() {
         overrides: [
           iDrawingFieldWriterProvider.overrideWithValue(writer),
         ],
-        child: MaterialApp(
+        child: const MaterialApp(
           home: Scaffold(
             body: TalhaoDadosSheet(
               clientId: 'client-1',
@@ -73,6 +76,7 @@ void main() {
               fieldId: 'field-1',
               initialName: 'Talhão Norte',
               initialCultura: 'Soja',
+              initialMaterial: 'Olimpo RR',
               initialSafra: '2025/2026',
             ),
           ),
@@ -82,18 +86,20 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Dados do talhão'), findsOneWidget);
-    expect(find.text('Edite sem abrir o mapa'), findsOneWidget);
-    expect(find.text('Nome do talhão'), findsOneWidget);
     expect(find.text('Cultura'), findsOneWidget);
+    expect(find.text('Soja'), findsWidgets);
+    expect(find.text('Material'), findsOneWidget);
     expect(find.text('Safra'), findsOneWidget);
 
     await tester.enterText(
       find.widgetWithText(TextFormField, 'Talhão Norte'),
       'Talhão Atualizado',
     );
+    await tester.tap(find.text('Milho'));
+    await tester.pump();
     await tester.enterText(
-      find.widgetWithText(TextFormField, 'Soja'),
-      'Milho',
+      find.widgetWithText(TextField, 'Olimpo RR'),
+      'AG 8700',
     );
     await tester.enterText(
       find.widgetWithText(TextFormField, '2025/2026'),
@@ -106,6 +112,7 @@ void main() {
 
     expect(writer.updatedName, 'Talhão Atualizado');
     expect(writer.updatedCultura, 'Milho');
+    expect(writer.updatedMaterial, 'AG 8700');
     expect(writer.updatedSafra, '2026/2027');
     expect(find.text('Dados do talhão atualizados.'), findsOneWidget);
     await tester.pump(const Duration(milliseconds: 1700));
