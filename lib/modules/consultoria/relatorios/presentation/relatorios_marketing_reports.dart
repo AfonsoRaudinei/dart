@@ -16,6 +16,8 @@ enum _MarketingCaseStatusFilter { all, published, draft }
 
 class _MarketingCasesReportsSectionState
     extends ConsumerState<_MarketingCasesReportsSection> {
+  // Marketing card share API (BUG-007): showPackShare: false
+
   _MarketingCaseFilter _filter = _MarketingCaseFilter.all;
   _MarketingCaseStatusFilter _statusFilter = _MarketingCaseStatusFilter.all;
 
