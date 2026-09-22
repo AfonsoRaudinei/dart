@@ -975,6 +975,7 @@ class DrawingController extends ChangeNotifier {
     String id, {
     String? nome,
     String? cultura,
+    String? material,
     String? safra,
     String? soilSamplingScheme,
     Map<String, double>? recByNutrient,
@@ -991,6 +992,7 @@ class DrawingController extends ChangeNotifier {
       properties: old.properties.copyWith(
         nome: nome,
         cultura: cultura,
+        material: material,
         safra: safra,
         soilSamplingScheme: soilSamplingScheme,
         recByNutrient: recByNutrient,

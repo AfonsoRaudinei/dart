@@ -4,6 +4,8 @@ import '../../domain/models/drawing_models.dart';
 import '../../domain/repositories/i_clients_repository.dart';
 import '../controllers/drawing_controller.dart';
 import '../providers/drawing_client_provider.dart';
+import '../../../../core/domain/cultura_tipo.dart';
+import '../../../../core/ui/cultura_material_fields.dart';
 import '../../../../core/ui/sheets/sheet_tokens.dart';
 import '../../../../core/ui/sheets/soloforte_sheet.dart';
 
@@ -35,8 +37,10 @@ class DrawingInfoEditSheet extends ConsumerStatefulWidget {
 class _DrawingInfoEditSheetState extends ConsumerState<DrawingInfoEditSheet> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _nomeCtrl;
-  late final TextEditingController _culturaCtrl;
+  late final TextEditingController _culturaLivreCtrl;
+  late final TextEditingController _materialCtrl;
   late final TextEditingController _safraCtrl;
+  CulturaTipo? _selectedCultura;
 
   Client? _selectedClient;
   Farm? _selectedFarm;
@@ -46,7 +50,11 @@ class _DrawingInfoEditSheetState extends ConsumerState<DrawingInfoEditSheet> {
     super.initState();
     final props = widget.feature.properties;
     _nomeCtrl = TextEditingController(text: props.nome);
-    _culturaCtrl = TextEditingController(text: props.cultura ?? '');
+    _selectedCultura = CulturaTipo.matchStored(props.cultura);
+    _culturaLivreCtrl = TextEditingController(
+      text: _selectedCultura == CulturaTipo.outro ? (props.cultura ?? '') : '',
+    );
+    _materialCtrl = TextEditingController(text: props.material ?? '');
     _safraCtrl = TextEditingController(text: props.safra ?? '');
 
     WidgetsBinding.instance.addPostFrameCallback((_) => _initSelections());
@@ -89,7 +97,8 @@ class _DrawingInfoEditSheetState extends ConsumerState<DrawingInfoEditSheet> {
   @override
   void dispose() {
     _nomeCtrl.dispose();
-    _culturaCtrl.dispose();
+    _culturaLivreCtrl.dispose();
+    _materialCtrl.dispose();
     _safraCtrl.dispose();
     super.dispose();
   }
@@ -117,9 +126,13 @@ class _DrawingInfoEditSheetState extends ConsumerState<DrawingInfoEditSheet> {
     widget.controller.updateMetadata(
       widget.feature.id,
       nome: _nomeCtrl.text.trim(),
-      cultura: _culturaCtrl.text.trim().isEmpty
+      cultura: persistCulturaValue(
+        selectedTipo: _selectedCultura,
+        culturaLivre: _culturaLivreCtrl.text,
+      ),
+      material: _materialCtrl.text.trim().isEmpty
           ? null
-          : _culturaCtrl.text.trim(),
+          : _materialCtrl.text.trim(),
       safra: _safraCtrl.text.trim().isEmpty ? null : _safraCtrl.text.trim(),
       clienteId: _selectedClient?.id,
       fazendaId: _selectedFarm?.id,
@@ -348,22 +361,11 @@ class _DrawingInfoEditSheetState extends ConsumerState<DrawingInfoEditSheet> {
                   ),
             const SizedBox(height: 16),
 
-            // Cultura
-            Text('Cultura', style: labelStyle),
-            const SizedBox(height: 6),
-            TextFormField(
-              controller: _culturaCtrl,
-              style: textStyle,
-              decoration: InputDecoration(
-                filled: true,
-                fillColor: inputBg,
-                hintText: 'Ex: soja, milho, café',
-                hintStyle: TextStyle(color: hintColor),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide.none,
-                ),
-              ),
+            CulturaMaterialFields(
+              selectedTipo: _selectedCultura,
+              culturaLivreController: _culturaLivreCtrl,
+              materialController: _materialCtrl,
+              onTipoSelected: (tipo) => setState(() => _selectedCultura = tipo),
             ),
             const SizedBox(height: 16),
 

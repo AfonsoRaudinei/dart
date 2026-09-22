@@ -185,6 +185,7 @@ class DrawingProperties {
 
   // 🌱 Sprint 6: Campos agronômicos
   final String? cultura; // ex: soja, milho, café
+  final String? material; // cultivar / material, ex: Olimpo RR
   final String? safra; // ex: 2025/2026
   final String? soilSamplingScheme; // grade | zona | dirigido
   final Map<String, double>? recByNutrient; // N, P, K, S, Ca, Mg …
@@ -211,6 +212,7 @@ class DrawingProperties {
     this.cor, // 🆕
     this.versaoAnteriorId,
     this.cultura,
+    this.material,
     this.safra,
     this.soilSamplingScheme,
     this.recByNutrient,
@@ -239,6 +241,7 @@ class DrawingProperties {
     'versao_anterior_id': versaoAnteriorId,
     // 🌱 Sprint 6
     'cultura': cultura,
+    'material': material,
     'safra': safra,
     'soil_sampling_scheme': soilSamplingScheme,
     'rec_by_nutrient': recByNutrient,
@@ -270,6 +273,7 @@ class DrawingProperties {
       versaoAnteriorId: json['versao_anterior_id'],
       // 🌱 Sprint 6
       cultura: json['cultura'] as String?,
+      material: json['material'] as String?,
       safra: json['safra'] as String?,
       soilSamplingScheme: json['soil_sampling_scheme'] as String?,
       recByNutrient: json['rec_by_nutrient'] != null
@@ -304,6 +308,7 @@ class DrawingProperties {
     int? cor, // 🆕
     String? versaoAnteriorId,
     String? cultura,
+    String? material,
     String? safra,
     String? soilSamplingScheme,
     Map<String, double>? recByNutrient,
@@ -330,6 +335,7 @@ class DrawingProperties {
       cor: cor ?? this.cor, // 🆕
       versaoAnteriorId: versaoAnteriorId ?? this.versaoAnteriorId,
       cultura: cultura ?? this.cultura,
+      material: material ?? this.material,
       safra: safra ?? this.safra,
       soilSamplingScheme: soilSamplingScheme ?? this.soilSamplingScheme,
       recByNutrient: recByNutrient ?? this.recByNutrient,

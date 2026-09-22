@@ -98,6 +98,7 @@ class DrawingFieldWriterAdapter implements IDrawingFieldWriter {
   Future<void> updateFieldMetadata({
     required String fieldId,
     String? cultura,
+    String? material,
     String? safra,
   }) async {
     if (fieldId.isEmpty) {
@@ -139,6 +140,7 @@ class DrawingFieldWriterAdapter implements IDrawingFieldWriter {
         cor: base.cor,
         versaoAnteriorId: base.versaoAnteriorId,
         cultura: _resolveMetadataField(cultura, base.cultura),
+        material: _resolveMetadataField(material, base.material),
         safra: _resolveMetadataField(safra, base.safra),
         soilSamplingScheme: base.soilSamplingScheme,
         recByNutrient: base.recByNutrient,

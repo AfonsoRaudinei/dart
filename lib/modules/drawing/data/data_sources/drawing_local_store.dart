@@ -355,6 +355,7 @@ class DrawingLocalStore {
       'ativo': f.properties.ativo ? 1 : 0,
       // 🌱 Sprint 6
       'cultura': f.properties.cultura,
+      'material': f.properties.material,
       'safra': f.properties.safra,
       'soil_sampling_scheme': f.properties.soilSamplingScheme,
       'rec_by_nutrient': f.properties.recByNutrient != null
@@ -389,6 +390,7 @@ class DrawingLocalStore {
       fazendaId: row['fazenda_id'] as String?,
       // 🌱 Sprint 6
       cultura: row['cultura'] as String?,
+      material: row['material'] as String?,
       safra: row['safra'] as String?,
       soilSamplingScheme: row['soil_sampling_scheme'] as String?,
       recByNutrient: row['rec_by_nutrient'] != null
