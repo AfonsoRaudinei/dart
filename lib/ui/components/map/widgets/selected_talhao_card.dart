@@ -2,6 +2,7 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:soloforte_app/core/utils/area_display_format.dart';
 import 'package:soloforte_app/modules/consultoria/clients/domain/agronomic_models.dart';
 import 'package:soloforte_app/modules/consultoria/clients/presentation/providers/field_providers.dart';
 import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
@@ -18,14 +19,19 @@ class SelectedTalhaoCard extends ConsumerWidget {
     final fields = ref.watch(mapFieldsProvider).valueOrNull;
     if (fields == null) return const SizedBox.shrink();
 
-    final Talhao? field = fields
-        .where((t) => t.id == selectedId)
-        .firstOrNull;
+    final Talhao? field = fields.where((t) => t.id == selectedId).firstOrNull;
     if (field == null) return const SizedBox.shrink();
 
+    final drawingMeta = ref
+        .watch(drawingCulturaMaterialProvider(selectedId))
+        .valueOrNull;
+    final cropLine = formatCulturaMaterialLine(
+      drawingMeta?.cultura ?? field.crop,
+      drawingMeta?.material,
+    );
     final subtitle = [
+      if (cropLine.isNotEmpty) cropLine,
       if (field.areaHa > 0) '${field.areaHa.toStringAsFixed(1)} ha',
-      if (field.crop.isNotEmpty) field.crop,
     ].join(' · ');
 
     return ConstrainedBox(
