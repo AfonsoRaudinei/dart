@@ -23,6 +23,7 @@ import '../../../../modules/drawing/domain/drawing_utils.dart';
 import '../../../../modules/drawing/domain/models/drawing_models.dart';
 import '../../../../modules/drawing/presentation/widgets/drawing_layers.dart';
 import '../../../../modules/drawing/presentation/widgets/drawing_map_gesture_overlay.dart';
+import '../../../../modules/drawing/presentation/widgets/drawing_vertex_drag_overlay.dart';
 import '../../../../modules/drawing/presentation/widgets/drawing_state_indicator.dart';
 import '../../../../modules/drawing/presentation/widgets/drawing_edit_layer.dart';
 import '../../../../modules/consultoria/clients/presentation/providers/field_providers.dart';
@@ -488,6 +489,11 @@ class MapBuildOrchestrator extends ConsumerWidget {
           ),
 
           DrawingMapGestureOverlay(
+            mapController: mapController,
+            isMapReady: isMapReady,
+          ),
+
+          DrawingVertexDragOverlay(
             mapController: mapController,
             isMapReady: isMapReady,
           ),
