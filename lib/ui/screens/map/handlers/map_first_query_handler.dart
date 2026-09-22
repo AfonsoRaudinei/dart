@@ -17,7 +17,7 @@ class MapFirstQueryHandler {
     required Uri uri,
     required WidgetRef ref,
     required void Function(MapSheetState state, String reason) setSheetState,
-    required VoidCallback armOccurrenceMode,
+    required VoidCallback openMapMark,
     required Future<void> Function(
       String drawingId, {
       required bool edit,
@@ -109,7 +109,7 @@ class MapFirstQueryHandler {
 
     if (modo == 'ocorrencia') {
       AppLogger.debug('MAP-FIRST: recebido modo=ocorrencia', tag: 'PrivateMap');
-      armOccurrenceMode();
+      openMapMark();
       return;
     }
 
