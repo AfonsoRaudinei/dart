@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:soloforte_app/core/infra/preferences_service.dart';
 import 'package:soloforte_app/core/router/app_routes.dart';
 import 'package:soloforte_app/core/session/session_controller.dart';
 import 'package:soloforte_app/core/session/session_models.dart';
@@ -265,6 +266,7 @@ void main() {
     (tester) async {
       final repo = _FakeUserProfileRepository(_profile(fullName: 'Raudyney'));
       final prefs = await SharedPreferences.getInstance();
+      final preferencesService = PreferencesService(prefs);
       late final GoRouter router;
       router = GoRouter(
         initialLocation: AppRoutes.settings,
@@ -287,6 +289,7 @@ void main() {
             settingsRepositoryProvider.overrideWith(
               (ref) => SettingsRepository(prefs),
             ),
+            preferencesServiceProvider.overrideWithValue(preferencesService),
             sessionControllerProvider.overrideWith(
               _AuthenticatedSessionController.new,
             ),
