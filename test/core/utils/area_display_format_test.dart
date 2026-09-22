@@ -27,84 +27,78 @@ void main() {
   });
 
   group('buildTalhaoMapLabel', () {
-    test('omits area when zero or negative in nameAndArea', () {
+    test('default is name plus cultura and material', () {
       expect(
-        buildTalhaoMapLabel('Talhão A', 0, AreaDisplayUnit.hectare),
-        'Talhão A',
-      );
-      expect(
-        buildTalhaoMapLabel('Talhão B', -1, AreaDisplayUnit.hectare),
-        'Talhão B',
+        buildTalhaoMapLabel(
+          'Th 10',
+          95,
+          AreaDisplayUnit.hectare,
+          cultura: 'Soja',
+          material: 'Olimpo RR',
+        ),
+        'Th 10\nSoja · Olimpo RR',
       );
     });
 
-    test('includes name and formatted area on separate lines', () {
+    test('omits area by default even when areaHa > 0', () {
       expect(
-        buildTalhaoMapLabel('North', 2, AreaDisplayUnit.hectare),
-        'North\n2.000 ha',
+        buildTalhaoMapLabel('Talhão A', 12.5, AreaDisplayUnit.hectare),
+        'Talhão A',
       );
+    });
+
+    test('includes short area when showArea is true', () {
+      expect(
+        buildTalhaoMapLabel(
+          'South',
+          4.84,
+          AreaDisplayUnit.alqueire,
+          prefs: const TalhaoMapLabelPrefs(showCultura: false, showArea: true),
+        ),
+        'South\n1.000 alq',
+      );
+    });
+
+    test('cultura only when name is hidden', () {
+      expect(
+        buildTalhaoMapLabel(
+          'Th 10',
+          10,
+          AreaDisplayUnit.hectare,
+          prefs: const TalhaoMapLabelPrefs(showName: false),
+          cultura: 'soja',
+          material: 'Olimpo RR',
+        ),
+        'Soja · Olimpo RR',
+      );
+    });
+
+    test('hidden prefs return empty string', () {
+      expect(
+        buildTalhaoMapLabel(
+          'Talhão Norte',
+          12.34,
+          AreaDisplayUnit.hectare,
+          prefs: TalhaoMapLabelPrefs.hidden,
+          cultura: 'Soja',
+        ),
+        '',
+      );
+    });
+
+    test('formatCulturaMaterialLine joins crop and seed', () {
+      expect(
+        formatCulturaMaterialLine('soja', 'Olimpo RR'),
+        'Soja · Olimpo RR',
+      );
+      expect(formatCulturaMaterialLine('Milho', null), 'Milho');
+      expect(formatCulturaMaterialLine(null, 'Olimpo RR'), 'Olimpo RR');
     });
 
     test('uses short unit suffixes for map labels only', () {
       expect(
-        buildTalhaoMapLabel('South', 4.84, AreaDisplayUnit.alqueire),
-        'South\n1.000 alq',
-      );
-      expect(
-        buildTalhaoMapLabel('East', 1, AreaDisplayUnit.squareMeter),
-        'East\n10000 m²',
-      );
-      expect(
         formatAreaFromHectares(4.84, AreaDisplayUnit.alqueire),
         '1.000 alq GO/MG',
-      );
-    });
-
-    test('nameOnly retorna só o nome', () {
-      expect(
-        buildTalhaoMapLabel(
-          'Talhão Norte',
-          12.34,
-          AreaDisplayUnit.hectare,
-          TalhaoMapLabelMode.nameOnly,
-        ),
-        'Talhão Norte',
-      );
-    });
-
-    test('areaOnly retorna só a área formatada', () {
-      expect(
-        buildTalhaoMapLabel(
-          'Talhão Norte',
-          1,
-          AreaDisplayUnit.squareMeter,
-          TalhaoMapLabelMode.areaOnly,
-        ),
-        '10000 m²',
-      );
-    });
-
-    test('areaOnly vazio quando área <= 0', () {
-      expect(
-        buildTalhaoMapLabel(
-          'Talhão Norte',
-          0,
-          AreaDisplayUnit.hectare,
-          TalhaoMapLabelMode.areaOnly,
-        ),
-        '',
-      );
-    });
-
-    test('hidden retorna string vazia', () {
-      expect(
-        buildTalhaoMapLabel(
-          'Talhão Norte',
-          12.34,
-          AreaDisplayUnit.hectare,
-          TalhaoMapLabelMode.hidden,
-        ),
-        '',
       );
     });
   });

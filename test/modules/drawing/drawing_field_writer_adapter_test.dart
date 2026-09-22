@@ -252,7 +252,7 @@ void main() {
   });
 
   group('DrawingFieldWriterAdapter.updateFieldMetadata', () {
-    test('persiste cultura e safra atualizadas', () async {
+    test('persiste cultura, material e safra atualizadas', () async {
       const fieldId = 'drawing-metadata-1';
       final feature = _feature(fieldId, syncStatus: SyncStatus.synced);
       await repository.saveFeature(feature);
@@ -260,12 +260,14 @@ void main() {
       await adapter.updateFieldMetadata(
         fieldId: fieldId,
         cultura: 'Soja',
+        material: 'Olimpo RR',
         safra: '2025/2026',
       );
 
       final updated = await repository.getFeatureById(fieldId);
       expect(updated, isNotNull);
       expect(updated!.properties.cultura, 'Soja');
+      expect(updated.properties.material, 'Olimpo RR');
       expect(updated.properties.safra, '2025/2026');
       expect(updated.properties.syncStatus, SyncStatus.local_only);
     });
@@ -282,12 +284,14 @@ void main() {
       await adapter.updateFieldMetadata(
         fieldId: fieldId,
         cultura: '   ',
+        material: '',
         safra: '',
       );
 
       final updated = await repository.getFeatureById(fieldId);
       expect(updated, isNotNull);
       expect(updated!.properties.cultura, isNull);
+      expect(updated.properties.material, isNull);
       expect(updated.properties.safra, isNull);
     });
 
