@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:soloforte_app/core/contracts/i_drawing_field_writer_provider.dart';
+import 'package:soloforte_app/core/state/map_state.dart';
+import 'package:soloforte_app/core/ui/area_display_unit_chips.dart';
+import 'package:soloforte_app/core/utils/area_display_format.dart';
 import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 
 import '../../domain/agronomic_models.dart';
@@ -32,13 +35,15 @@ class ClientFarmWithTalhoesSection extends ConsumerWidget {
     final displayedAreaHa = linkedFields == null
         ? farm.totalAreaHa
         : totalFarmLinkedAreaHa(linkedFields);
+    final areaUnit = ref.watch(areaDisplayUnitProvider);
+    final areaFormatted = formatAreaFromHectares(displayedAreaHa, areaUnit);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         ClientFarmItem(
           name: farm.name,
-          area: '${formatLinkedFieldAreaHa(displayedAreaHa)} ha',
+          area: areaFormatted,
         ),
         const SizedBox(height: 12),
         Container(
@@ -56,11 +61,17 @@ class ClientFarmWithTalhoesSection extends ConsumerWidget {
                 style: TextStyle(color: Colors.grey[600]),
               ),
               Text(
-                '${formatLinkedFieldAreaHa(displayedAreaHa)} ha',
+                areaFormatted,
                 style: const TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
                 ),
+              ),
+              const SizedBox(height: 8),
+              AreaDisplayUnitChips(
+                selected: areaUnit,
+                onSelected:
+                    ref.read(areaDisplayUnitProvider.notifier).setUnit,
               ),
               const SizedBox(height: 8),
               Text(
