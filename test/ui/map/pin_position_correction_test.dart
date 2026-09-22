@@ -350,6 +350,13 @@ void main() {
         await tester.tap(find.text('open-sheet'));
         await tester.pumpAndSettle();
 
+        final scrollable = find.byType(Scrollable);
+        await tester.scrollUntilVisible(
+          find.text('Corrigir posição'),
+          120,
+          scrollable: scrollable,
+        );
+
         expect(find.text('Corrigir posição'), findsOneWidget);
 
         await tester.tap(find.text('Corrigir posição'));
