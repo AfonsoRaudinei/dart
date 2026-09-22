@@ -101,9 +101,9 @@ class LayersSheet extends ConsumerWidget {
               children: [
                 LayoutBuilder(
                   builder: (context, constraints) {
-                    final itemWidth = ((constraints.maxWidth - 24) / 4).clamp(
+                    final itemWidth = ((constraints.maxWidth - 24) / 2).clamp(
                       72.0,
-                      96.0,
+                      140.0,
                     );
                     final itemHeight = itemWidth * 0.75;
 
