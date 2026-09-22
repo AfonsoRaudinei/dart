@@ -62,14 +62,14 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
       },
       onDeleteSelected: () {
         widget.controller.deleteSelectedFeatures();
-        widget.onSaved?.call();
+        widget.onSaved?.call(null);
       },
       isMultiSelectEnabled: widget.controller.isMultiSelectEnabled,
       selectedCount: widget.controller.selectedFeatureIds.length,
       onDelete: () async {
         final deletedFeature = feature;
         widget.controller.deleteFeature(feature.id);
-        widget.onSaved?.call();
+        widget.onSaved?.call(null);
         showDrawingDeleteUndoSnackBar(
           context: context,
           deletedFeature: deletedFeature,
