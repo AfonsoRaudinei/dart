@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../../../ui/components/map/map_layer_preferences_section.dart';
 import '../../../../ui/theme/premium/design_tokens.dart';
 import '../../../../core/router/app_routes.dart';
 import 'package:soloforte_app/core/design/sf_icons.dart';
@@ -106,6 +107,12 @@ class SettingsScreen extends ConsumerWidget {
                     );
                   },
                 ),
+              ]),
+
+              // Mapa — ajustes que se fazem uma vez
+              _buildSectionHeader('MAPA'),
+              _buildSection(context, const [
+                MapLayerPreferencesSection(),
               ]),
 
               // Dados Offline
