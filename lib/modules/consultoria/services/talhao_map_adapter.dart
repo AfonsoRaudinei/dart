@@ -3,12 +3,18 @@ import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 
+import '../../../core/state/map_state.dart';
 import '../../../core/utils/app_logger.dart';
+import '../../../core/utils/area_display_format.dart';
 import '../clients/domain/agronomic_models.dart';
 
 class TalhaoMapAdapter {
   // Convert Talhao entity to Polygon
-  static Polygon toPolygon(Talhao talhao, {bool isSelected = false}) {
+  static Polygon toPolygon(
+    Talhao talhao, {
+    bool isSelected = false,
+    AreaDisplayUnit unit = AreaDisplayUnit.hectare,
+  }) {
     if (talhao.geometry == null) {
       return Polygon(points: []); // Empty if no geometry
     }
@@ -22,7 +28,7 @@ class TalhaoMapAdapter {
           : PremiumTokens.brandGreen.withValues(alpha: 0.15),
       borderColor: isSelected ? Colors.white : const Color(0xFF248A3D),
       borderStrokeWidth: isSelected ? 3.0 : 1.5,
-      label: talhao.name,
+      label: buildTalhaoMapLabel(talhao.name, talhao.areaHa, unit),
       labelStyle: TextStyle(
         color: Colors.black,
         fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
