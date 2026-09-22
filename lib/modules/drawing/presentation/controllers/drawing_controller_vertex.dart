@@ -162,13 +162,19 @@ extension DrawingControllerVertexEditing on DrawingController {
     _notify();
   }
 
-  /// Call this when starting a drag operation to save state for Undo
-  void onDragStart([int? index]) {
+  /// Início de arraste na UI — sem notify (evita rebuild que cancela o pan no device).
+  void beginEditVertexDrag([int? index]) {
+    if (_isDisposed) return;
     _isDraggingVertex = true;
     _draggedVertexIndex = index;
     if (_editGeometry != null) {
       _history.push(_geomToVertices(_editGeometry!));
     }
+  }
+
+  /// Call this when starting a drag operation to save state for Undo
+  void onDragStart([int? index]) {
+    beginEditVertexDrag(index);
     _notify();
   }
 
