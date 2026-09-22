@@ -15,6 +15,7 @@ import '../../../../core/providers/connectivity_provider.dart';
 import '../../../../modules/clima/presentation/providers/radar_providers.dart';
 import '../../../../core/contracts/i_radar_overlay_controller_provider.dart';
 import '../../../../core/state/map_state.dart';
+import '../../../../core/utils/area_display_format.dart';
 import '../../../../modules/drawing/domain/drawing_state.dart';
 import '../../../../modules/drawing/presentation/widgets/drawing_bottom_toolbar_overlay.dart';
 import '../../../../core/utils/app_logger.dart';

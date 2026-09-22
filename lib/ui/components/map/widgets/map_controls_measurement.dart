@@ -15,16 +15,7 @@ class _FieldMeasurementCard extends StatelessWidget {
     required this.onToggleDetails,
   });
 
-  String _formatArea() {
-    switch (areaUnit) {
-      case AreaDisplayUnit.hectare:
-        return '${areaHa.toStringAsFixed(3)} ha';
-      case AreaDisplayUnit.squareMeter:
-        return '${(areaHa * 10000).toStringAsFixed(0)} m²';
-      case AreaDisplayUnit.alqueire:
-        return '${(areaHa / 4.84).toStringAsFixed(3)} alq GO/MG';
-    }
-  }
+  String _formatArea() => formatAreaFromHectares(areaHa, areaUnit);
 
   @override
   Widget build(BuildContext context) {
