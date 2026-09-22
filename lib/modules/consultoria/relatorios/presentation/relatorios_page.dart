@@ -221,7 +221,12 @@ class _RelatoriosSection extends ConsumerWidget {
 
     return relatoriosAsync.when(
       data: (list) {
-        if (list.isEmpty) {
+        final clienteId =
+            GoRouterState.of(context).uri.queryParameters['clienteId'];
+        final visible = clienteId == null || clienteId.isEmpty
+            ? list
+            : list.where((relatorio) => relatorio.clientId == clienteId).toList();
+        if (visible.isEmpty) {
           return ListView(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
             children: [
@@ -238,19 +243,19 @@ class _RelatoriosSection extends ConsumerWidget {
         }
         return ListView.builder(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-          itemCount: list.length + 2,
+          itemCount: visible.length + 2,
           itemBuilder: (context, index) {
             if (index == 0) {
               return _InsetGroupHeader(
                 title: 'Relatórios de Visita',
-                count: list.length,
+                count: visible.length,
               );
             }
-            if (index == list.length + 1) {
+            if (index == visible.length + 1) {
               return const SizedBox(height: kFabSafeArea);
             }
             return _RelatorioCard(
-              relatorio: list[index - 1],
+              relatorio: visible[index - 1],
               dateFormat: dateFormat,
             );
           },
@@ -429,8 +434,12 @@ class _OccurrenciasSectionState extends ConsumerState<_OccurrenciasSection> {
         final producerCounts =
             _producerCountsFromIds(list.map((o) => o.clientId));
         final producerIds = producerCounts.keys.toList()..sort();
+        final routeClientId =
+            GoRouterState.of(context).uri.queryParameters['clienteId'];
         final effectiveClientId = _selectedClientId ??
-            (producerIds.length == 1 ? producerIds.first : null);
+            (routeClientId != null && routeClientId.isNotEmpty
+                ? routeClientId
+                : (producerIds.length == 1 ? producerIds.first : null));
         final scoped = effectiveClientId == null
             ? const <Occurrence>[]
             : list
