@@ -9,6 +9,8 @@
 - `INdviFieldPresenter` — abre sheet NDVI sem import de `ndvi/`
 - `INdviLatestLookup` + `NdviLatestSummary` — preview em consultoria sem import de `ndvi/`
 
+`NdviLatestSummary` também carrega o caminho local e a URL da última imagem (`localPath` e `imageUrl`, opcionais) para o preview do card de talhão na ficha do cliente. A consultoria lê esses campos pelo contrato e não importa `modules/ndvi/`.
+
 ## Implementadores
 
 | Contrato | Módulo |
