@@ -193,6 +193,7 @@ class _MapMarkSheetState extends ConsumerState<MapMarkSheet> {
           initialVisitContext: widget.visitContext,
           onClose: widget.onClose,
           onPublicar: publicar,
+          compactHeader: true,
         ),
       CaseTipo.antesDepois => NovoAntesDepoisCaseSheet(
           lat: lat,
@@ -200,6 +201,7 @@ class _MapMarkSheetState extends ConsumerState<MapMarkSheet> {
           initialVisitContext: widget.visitContext,
           onClose: widget.onClose,
           onPublicar: publicar,
+          compactHeader: true,
         ),
       CaseTipo.avaliacao => NovaAvaliacaoCaseSheet(
           lat: lat,
@@ -207,6 +209,7 @@ class _MapMarkSheetState extends ConsumerState<MapMarkSheet> {
           initialVisitContext: widget.visitContext,
           onClose: widget.onClose,
           onPublicar: publicar,
+          compactHeader: true,
         ),
     };
     return sheet;
@@ -222,6 +225,7 @@ class _MapMarkSheetState extends ConsumerState<MapMarkSheet> {
       latitude: lat,
       longitude: lng,
       formGuard: guard,
+      compactHeader: true,
       initialCategoryValue: initialCategory,
       onCancel: () async {
         final canClose = await OccurrenceCloseCoordinator.confirmDiscardIfDirty(
