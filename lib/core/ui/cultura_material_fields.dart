@@ -50,20 +50,26 @@ class CulturaMaterialFields extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 8),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            for (final tipo in CulturaTipo.values)
-              _CulturaChip(
-                label: tipo.label,
-                selected: selectedTipo == tipo,
-                accent: accent,
-                unselectedBackground: chipUnselectedBackground,
-                unselectedForeground: chipUnselectedForeground,
-                onTap: () => onTipoSelected(tipo),
-              ),
-          ],
+        SizedBox(
+          height: 34,
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                for (final tipo in CulturaTipo.values) ...[
+                  _CulturaChip(
+                    label: tipo.label,
+                    selected: selectedTipo == tipo,
+                    accent: accent,
+                    unselectedBackground: chipUnselectedBackground,
+                    unselectedForeground: chipUnselectedForeground,
+                    onTap: () => onTipoSelected(tipo),
+                  ),
+                  const SizedBox(width: 6),
+                ],
+              ],
+            ),
+          ),
         ),
         if (showLivre) ...[
           const SizedBox(height: 10),
@@ -104,12 +110,14 @@ class CulturaMaterialFields extends StatelessWidget {
               spacing: 8,
               runSpacing: 8,
               children: [
-                for (final suggestion in materialSuggestions.take(8))
-                  ActionChip(
-                    label: Text(suggestion),
-                    onPressed: () {
-                      materialController.text = suggestion;
-                    },
+                for (final suggestion in materialSuggestions.take(6))
+                  _CulturaChip(
+                    label: suggestion,
+                    selected: materialController.text.trim() == suggestion,
+                    accent: accent,
+                    unselectedBackground: chipUnselectedBackground,
+                    unselectedForeground: chipUnselectedForeground,
+                    onTap: () => materialController.text = suggestion,
                   ),
               ],
             ),
@@ -170,7 +178,7 @@ class _CulturaChip extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(20),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           child: Text(
             label,
             style: TextStyle(

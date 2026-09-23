@@ -30,10 +30,6 @@ String farmLinkedFieldSubtitle(
     parts.add(field.material!.trim());
   }
 
-  if (field.isDrawing) {
-    parts.add('Talhão do mapa');
-  }
-
   return parts.join(' • ');
 }
 
@@ -217,10 +213,7 @@ class FarmLinkedFieldList extends ConsumerWidget {
   }
 }
 
-String farmMapCreateUri({
-  required String clientId,
-  required String farmId,
-}) {
+String farmMapCreateUri({required String clientId, required String farmId}) {
   return Uri(
     path: AppRoutes.map,
     queryParameters: {
