@@ -43,7 +43,7 @@ void main() {
       name: 'Talhão Norte',
       areaHa: 12.5,
       source: FarmLinkedFieldSource.drawing,
-      vertices: const [],
+      vertices: [],
     ),
   ];
 
@@ -53,14 +53,14 @@ void main() {
       name: 'Talhão Norte',
       areaHa: 12.5,
       source: FarmLinkedFieldSource.drawing,
-      vertices: const [],
+      vertices: [],
     ),
     const FarmLinkedFieldSummary(
       id: 'drawing-2',
       name: 'Talhão Sul',
       areaHa: 8.0,
       source: FarmLinkedFieldSource.drawing,
-      vertices: const [],
+      vertices: [],
     ),
   ];
 
