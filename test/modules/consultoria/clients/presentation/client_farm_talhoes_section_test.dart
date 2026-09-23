@@ -244,6 +244,8 @@ class _CountingNdviLookup implements INdviLatestLookup {
       ndviMin: 0.1,
       ndviMax: 0.9,
       sourceLabel: 'Sentinel NDVI',
+      source: 'sentinel',
+      isColormap: true,
       localPath: '/tmp/soloforte-ndvi-card.png',
     );
   }
