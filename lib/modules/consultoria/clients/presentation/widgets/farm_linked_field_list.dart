@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:soloforte_app/core/contracts/i_drawing_field_writer_provider.dart';
+import 'package:soloforte_app/core/contracts/i_ndvi_field_presenter_provider.dart';
+import 'package:soloforte_app/core/contracts/i_ndvi_latest_lookup_provider.dart';
+import 'package:soloforte_app/core/contracts/ndvi_latest_summary.dart';
 import 'package:soloforte_app/core/domain/cultura_tipo.dart';
 import 'package:soloforte_app/core/state/map_state.dart';
 import 'package:soloforte_app/core/utils/area_display_format.dart';
@@ -33,11 +36,31 @@ String farmLinkedFieldSubtitle(
   return parts.join(' • ');
 }
 
+/// Lookup da última imagem só é observado pelo card quando o segmento NDVI
+/// está ligado. No modo Mapa o provider não é lido.
+final talhaoCardNdviLatestProvider = FutureProvider.autoDispose
+    .family<NdviLatestSummary?, String>((ref, fieldId) {
+      return ref.watch(ndviLatestLookupProvider).getLatest(fieldId);
+    });
+
+/// `0.62 · 12/09` — média com 2 casas e dia/mês com 2 dígitos.
+String? talhaoCardNdviCaption(NdviLatestSummary summary) {
+  final hasLocal = summary.localPath != null && summary.localPath!.isNotEmpty;
+  final hasUrl =
+      summary.imageUrl != null && summary.imageUrl!.trim().isNotEmpty;
+  if (!hasLocal && !hasUrl) return null;
+  final mean = summary.ndviMean.toStringAsFixed(2);
+  final day = summary.imageDate.day.toString().padLeft(2, '0');
+  final month = summary.imageDate.month.toString().padLeft(2, '0');
+  return '$mean · $day/$month';
+}
+
 class FarmLinkedFieldList extends ConsumerWidget {
   final String clientId;
   final String farmId;
   final List<FarmLinkedFieldSummary> fields;
   final String emptyMessage;
+  final bool showNdvi;
 
   const FarmLinkedFieldList({
     super.key,
@@ -45,6 +68,7 @@ class FarmLinkedFieldList extends ConsumerWidget {
     required this.farmId,
     required this.fields,
     this.emptyMessage = 'Nenhum talhão cadastrado',
+    this.showNdvi = false,
   });
 
   @override
@@ -64,16 +88,35 @@ class FarmLinkedFieldList extends ConsumerWidget {
     }
 
     return Column(
-      children: fields.map((field) {
-        return TalhaoMapPreviewWidget(
-          vertices: field.vertices,
-          nome: field.name,
-          areaHa: field.areaHa,
-          subtitle: farmLinkedFieldSubtitle(field, areaUnit),
-          onTap: () => _openField(context, field),
-          actions: _fieldActions(context, ref, field),
-        );
-      }).toList(),
+      children: [
+        for (final field in fields)
+          if (showNdvi)
+            _FarmTalhaoNdviCard(
+              field: field,
+              areaUnit: areaUnit,
+              onOpenField: () => _openField(context, field),
+              actions: _fieldActions(context, ref, field),
+              onNdviImageTap: () {
+                ref
+                    .read(ndviFieldPresenterProvider)
+                    .showTalhaoSheet(
+                      context,
+                      fieldId: field.id,
+                      fieldName: field.name,
+                      areaHa: field.areaHa,
+                    );
+              },
+            )
+          else
+            TalhaoMapPreviewWidget(
+              vertices: field.vertices,
+              nome: field.name,
+              areaHa: field.areaHa,
+              subtitle: farmLinkedFieldSubtitle(field, areaUnit),
+              onTap: () => _openField(context, field),
+              actions: _fieldActions(context, ref, field),
+            ),
+      ],
     );
   }
 
@@ -209,6 +252,74 @@ class FarmLinkedFieldList extends ConsumerWidget {
       clientId: clientId,
       farmId: farmId,
       drawingId: drawingId,
+    );
+  }
+}
+
+/// Existe só com o segmento NDVI ligado, para o lookup não rodar no modo Mapa.
+class _FarmTalhaoNdviCard extends ConsumerWidget {
+  const _FarmTalhaoNdviCard({
+    required this.field,
+    required this.areaUnit,
+    required this.onOpenField,
+    required this.actions,
+    required this.onNdviImageTap,
+  });
+
+  final FarmLinkedFieldSummary field;
+  final AreaDisplayUnit areaUnit;
+  final VoidCallback onOpenField;
+  final List<Widget> actions;
+  final VoidCallback onNdviImageTap;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final latestAsync = ref.watch(talhaoCardNdviLatestProvider(field.id));
+    return latestAsync.when(
+      loading: () => Stack(
+        children: [
+          _preview(),
+          const Positioned(
+            top: 8,
+            right: 8,
+            child: SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+          ),
+        ],
+      ),
+      error: (_, _) => _preview(showNdvi: true),
+      data: (summary) => _preview(
+        showNdvi: true,
+        ndviLocalPath: summary?.localPath,
+        ndviImageUrl: summary?.imageUrl,
+        ndviCaption: summary == null ? null : talhaoCardNdviCaption(summary),
+        onNdviImageTap: onNdviImageTap,
+      ),
+    );
+  }
+
+  Widget _preview({
+    bool showNdvi = false,
+    String? ndviLocalPath,
+    String? ndviImageUrl,
+    String? ndviCaption,
+    VoidCallback? onNdviImageTap,
+  }) {
+    return TalhaoMapPreviewWidget(
+      vertices: field.vertices,
+      nome: field.name,
+      areaHa: field.areaHa,
+      subtitle: farmLinkedFieldSubtitle(field, areaUnit),
+      onTap: onOpenField,
+      actions: actions,
+      showNdvi: showNdvi,
+      ndviLocalPath: ndviLocalPath,
+      ndviImageUrl: ndviImageUrl,
+      ndviCaption: ndviCaption,
+      onNdviImageTap: onNdviImageTap,
     );
   }
 }
