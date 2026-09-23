@@ -232,7 +232,7 @@ class _DailySummary extends StatelessWidget {
         color: _menuIconBg(context),
         borderRadius: BorderRadius.circular(16),
       ),
-      child: Row(
+      child: const Row(
         children: [
           _SummaryMetric(icon: Icons.calendar_today_outlined, label: 'Visitas'),
           _SummaryMetric(icon: Icons.people_outline_rounded, label: 'Clientes'),
