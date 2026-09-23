@@ -26,7 +26,7 @@ void main() {
   );
 
   final linkedFields = [
-    FarmLinkedFieldSummary(
+    const FarmLinkedFieldSummary(
       id: 'drawing-1',
       name: 'Talhão Norte',
       areaHa: 12.5,
@@ -36,14 +36,14 @@ void main() {
   ];
 
   final twoDrawingFields = [
-    FarmLinkedFieldSummary(
+    const FarmLinkedFieldSummary(
       id: 'drawing-1',
       name: 'Talhão Norte',
       areaHa: 12.5,
       source: FarmLinkedFieldSource.drawing,
       vertices: const [],
     ),
-    FarmLinkedFieldSummary(
+    const FarmLinkedFieldSummary(
       id: 'drawing-2',
       name: 'Talhão Sul',
       areaHa: 8.0,
