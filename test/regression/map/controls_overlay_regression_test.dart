@@ -352,34 +352,99 @@ void main() {
   });
 
   group('map status indicator', () {
-    testWidgets('vermelho quando offline', (tester) async {
-      await _pumpMapControlsOverlay(tester, isOnline: false, radarEnabled: false);
+    test('topo direito é circular com _IconOffSlash; coluna direita permanece r=12', () {
+      final overlay = File(
+        'lib/ui/components/map/widgets/map_controls_overlay.dart',
+      ).readAsStringSync();
+      final location = File(
+        'lib/ui/components/map/widgets/map_controls_location_button.dart',
+      ).readAsStringSync();
 
-      final indicator = tester.widget<Container>(
-        find.byKey(const Key('map_status_indicator')),
-      );
-      final decoration = indicator.decoration! as BoxDecoration;
-      expect(decoration.color, const Color(0xFFFF3B30));
+      expect(overlay.contains('class _MapRoundToggleButton'), isTrue);
+      expect(overlay.contains('class _IconOffSlash'), isTrue);
+      expect(overlay.contains('BoxShape.circle'), isTrue);
+      expect(overlay.contains('_MapRoundToggleButton('), isTrue);
+      expect(location.contains('_MapRoundToggleButton('), isTrue);
+      expect(location.contains('BorderRadius.circular(12)'), isFalse);
+
+      final pinsStart = overlay.indexOf('class _MapPinsToggle');
+      final pinsEnd = overlay.indexOf('class _MapStatusIndicator', pinsStart);
+      final pinsSource = overlay.substring(pinsStart, pinsEnd);
+      expect(pinsSource.contains('RoundedRectangleBorder'), isFalse);
+      expect(pinsSource.contains('_MapRoundToggleButton'), isTrue);
+
+      final actionStart = overlay.indexOf('class _MapActionButton ');
+      final actionEnd = overlay.indexOf('class _MapToolsFab', actionStart);
+      final actionSource = overlay.substring(actionStart, actionEnd);
+      expect(actionSource.contains('BorderRadius.circular(12)'), isTrue);
+
+      final toolsStart = overlay.indexOf('class _MapToolsFab');
+      final toolsEnd = overlay.indexOf('class _MapButtonLabel', toolsStart);
+      final toolsSource = overlay.substring(toolsStart, toolsEnd);
+      expect(toolsSource.contains('BorderRadius.circular(12)'), isTrue);
     });
 
-    testWidgets('verde quando online sem chuva no mapa', (tester) async {
+    testWidgets('map_status_indicator e map_control_pins existem e são círculos 48dp', (
+      tester,
+    ) async {
+      await _pumpMapControlsOverlay(tester);
+
+      expect(find.byKey(const Key('map_status_indicator')), findsOneWidget);
+      expect(find.byKey(const Key('map_control_pins')), findsOneWidget);
+
+      for (final keyName in ['map_status_indicator', 'map_control_pins']) {
+        final container = tester.widget<Container>(find.byKey(Key(keyName)));
+        final decoration = container.decoration! as BoxDecoration;
+        expect(decoration.shape, BoxShape.circle);
+        expect(
+          tester.getSize(find.byKey(Key(keyName))),
+          const Size(kMapActionColumnButtonSize, kMapActionColumnButtonSize),
+        );
+      }
+    });
+
+    testWidgets('radar off + online: slash presente no indicador de chuva', (
+      tester,
+    ) async {
       await _pumpMapControlsOverlay(tester, isOnline: true, radarEnabled: false);
 
-      final indicator = tester.widget<Container>(
-        find.byKey(const Key('map_status_indicator')),
+      final rain = find.byKey(const Key('map_status_indicator'));
+      expect(rain, findsOneWidget);
+      expect(
+        find.descendant(of: rain, matching: find.byType(CustomPaint)),
+        findsOneWidget,
       );
-      final decoration = indicator.decoration! as BoxDecoration;
-      expect(decoration.color, const Color(0xFF34C759));
     });
 
-    testWidgets('azul Samsung quando online com chuva no mapa', (tester) async {
+    testWidgets('radar on: slash ausente no indicador de chuva', (tester) async {
       await _pumpMapControlsOverlay(tester, isOnline: true, radarEnabled: true);
 
-      final indicator = tester.widget<Container>(
-        find.byKey(const Key('map_status_indicator')),
+      final rain = find.byKey(const Key('map_status_indicator'));
+      expect(rain, findsOneWidget);
+      expect(
+        find.descendant(of: rain, matching: find.byType(CustomPaint)),
+        findsNothing,
       );
-      final decoration = indicator.decoration! as BoxDecoration;
-      expect(decoration.color, const Color(0xFF1428A0));
+    });
+
+    testWidgets('offline: indicador existe sem slash (wifi_off já comunica)', (
+      tester,
+    ) async {
+      await _pumpMapControlsOverlay(tester, isOnline: false, radarEnabled: false);
+
+      final rain = find.byKey(const Key('map_status_indicator'));
+      expect(rain, findsOneWidget);
+      expect(
+        find.descendant(of: rain, matching: find.byType(CustomPaint)),
+        findsNothing,
+      );
+      expect(
+        find.descendant(
+          of: rain,
+          matching: find.byIcon(Icons.wifi_off_rounded),
+        ),
+        findsOneWidget,
+      );
     });
   });
 
