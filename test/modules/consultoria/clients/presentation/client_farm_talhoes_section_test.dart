@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:soloforte_app/core/contracts/i_ndvi_latest_lookup.dart';
 import 'package:soloforte_app/core/contracts/i_ndvi_latest_lookup_provider.dart';
 import 'package:soloforte_app/core/contracts/ndvi_latest_summary.dart';
+import 'package:soloforte_app/core/infra/preferences_service.dart';
 import 'package:soloforte_app/modules/consultoria/clients/domain/agronomic_models.dart';
 import 'package:soloforte_app/modules/consultoria/clients/domain/client.dart';
 import 'package:soloforte_app/modules/consultoria/clients/presentation/providers/field_providers.dart';
@@ -11,6 +13,13 @@ import 'package:soloforte_app/modules/consultoria/clients/presentation/widgets/c
 import 'package:soloforte_app/modules/consultoria/clients/presentation/widgets/talhao_map_preview.dart';
 
 void main() {
+  late PreferencesService preferences;
+
+  setUpAll(() async {
+    SharedPreferences.setMockInitialValues({});
+    preferences = PreferencesService(await SharedPreferences.getInstance());
+  });
+
   final client = Client(
     id: 'client-1',
     name: 'Adriano Gomes Silva',
@@ -66,6 +75,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          preferencesServiceProvider.overrideWithValue(preferences),
           farmLinkedFieldsProvider.overrideWith(
             (ref, farmId) async => linkedFields,
           ),
@@ -101,6 +111,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          preferencesServiceProvider.overrideWithValue(preferences),
           farmLinkedFieldsProvider.overrideWith(
             (ref, farmId) async => linkedFields,
           ),
@@ -141,6 +152,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          preferencesServiceProvider.overrideWithValue(preferences),
           farmLinkedFieldsProvider.overrideWith(
             (ref, farmId) async => twoDrawingFields,
           ),
@@ -182,6 +194,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          preferencesServiceProvider.overrideWithValue(preferences),
           farmLinkedFieldsProvider.overrideWith(
             (ref, farmId) async => linkedFields,
           ),
