@@ -29,5 +29,31 @@ void main() {
     expect(summary!.localPath, '/tmp/ndvi/field-1.png');
     expect(summary.imageUrl, 'https://example.com/ndvi/field-1.png');
     expect(summary.ndviMean, 0.62);
+    expect(summary.source, 'sentinel');
+    expect(summary.isColormap, isTrue);
+  });
+
+  test('getLatest marca planet_preview como não colormap', () async {
+    final repo = FakeNdviRepository();
+    await repo.save(
+      NdviImage(
+        id: 'img-planet',
+        fieldId: 'field-2',
+        imageDate: DateTime(2026, 9, 22),
+        ndviMin: 0,
+        ndviMax: 0,
+        ndviMean: 0,
+        source: 'planet',
+        fetchedAt: DateTime(2026, 9, 22),
+        syncStatus: 0,
+        localPath: '/tmp/ndvi/field-2.png',
+      ),
+    );
+
+    final summary = await NdviLatestLookupAdapter(repo).getLatest('field-2');
+
+    expect(summary, isNotNull);
+    expect(summary!.source, 'planet_preview');
+    expect(summary.isColormap, isFalse);
   });
 }
