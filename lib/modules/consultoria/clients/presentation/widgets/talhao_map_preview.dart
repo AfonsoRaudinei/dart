@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
-import 'package:latlong2/latlong.dart';
+import 'package:latlong2/latlong.dart' hide Path;
 import 'package:soloforte_app/core/config/map_config.dart';
 import 'package:soloforte_app/core/domain/map_models.dart';
 
@@ -16,9 +16,11 @@ class TalhaoMapPreviewWidget extends StatelessWidget {
     this.onTap,
     this.actions = const [],
     this.showNdvi = false,
+    this.ndviIsColormap = false,
     this.ndviLocalPath,
     this.ndviImageUrl,
     this.ndviCaption,
+    this.ndviBadge,
     this.onNdviImageTap,
   });
 
@@ -29,9 +31,15 @@ class TalhaoMapPreviewWidget extends StatelessWidget {
   final VoidCallback? onTap;
   final List<Widget> actions;
   final bool showNdvi;
+
+  /// Raster NDVI georreferenciável. Preview RGB não entra no mapa.
+  final bool ndviIsColormap;
   final String? ndviLocalPath;
   final String? ndviImageUrl;
   final String? ndviCaption;
+
+  /// Selo sobre o mapa, por exemplo `Preview RGB`.
+  final String? ndviBadge;
   final VoidCallback? onNdviImageTap;
 
   @override
@@ -128,7 +136,7 @@ class TalhaoMapPreviewWidget extends StatelessWidget {
 
   /// Imagem NDVI renderizável: arquivo local existente ou URL não vazia.
   ImageProvider<Object>? get _ndviImageProvider {
-    if (!showNdvi) return null;
+    if (!showNdvi || !ndviIsColormap) return null;
     final path = ndviLocalPath;
     if (path != null && path.isNotEmpty) {
       final file = File(path);
@@ -140,16 +148,24 @@ class TalhaoMapPreviewWidget extends StatelessWidget {
   }
 
   Widget _buildMapSlot(ImageProvider<Object>? ndviImage) {
-    final showLegend = showNdvi && ndviImage == null && vertices.length >= 3;
+    final badge = ndviBadge?.trim();
+    final showLegend =
+        showNdvi &&
+        ndviImage == null &&
+        (badge == null || badge.isEmpty) &&
+        vertices.length >= 3;
     Widget body = vertices.length < 3
         ? _buildPlaceholder()
         : _buildMap(ndviImage);
-    if (showLegend) {
+    if (showLegend || (badge != null && badge.isNotEmpty)) {
       body = Stack(
         fit: StackFit.expand,
         children: [
           body,
-          const Positioned(left: 8, bottom: 8, child: _SemNdviLabel()),
+          if (showLegend)
+            const Positioned(left: 8, bottom: 8, child: _SemNdviLabel()),
+          if (badge != null && badge.isNotEmpty)
+            Positioned(left: 8, bottom: 8, child: _NdviBadge(label: badge)),
         ],
       );
     }
@@ -191,13 +207,10 @@ class TalhaoMapPreviewWidget extends StatelessWidget {
             userAgentPackageName: MapConfig.userAgent,
           ),
         if (ndviImage != null)
-          OverlayImageLayer(
-            overlayImages: [
-              OverlayImage(
-                imageProvider: ndviImage,
-                bounds: LatLngBounds.fromPoints(vertices),
-              ),
-            ],
+          _PolygonClippedNdviOverlay(
+            key: const Key('ndvi-polygon-overlay'),
+            imageProvider: ndviImage,
+            vertices: vertices,
           ),
         PolygonLayer(
           polygons: [
@@ -244,16 +257,27 @@ class _SemNdviLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return const _NdviBadge(label: 'Sem NDVI');
+  }
+}
+
+class _NdviBadge extends StatelessWidget {
+  const _NdviBadge({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(
         color: Colors.black.withAlpha(140),
         borderRadius: BorderRadius.circular(6),
       ),
-      child: const Padding(
-        padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         child: Text(
-          'Sem NDVI',
-          style: TextStyle(
+          label,
+          style: const TextStyle(
             color: Colors.white,
             fontSize: 12,
             fontWeight: FontWeight.w600,
@@ -261,5 +285,64 @@ class _SemNdviLabel extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+/// Raster NDVI esticado no bbox e recortado ao anel do talhão.
+class _PolygonClippedNdviOverlay extends StatelessWidget {
+  const _PolygonClippedNdviOverlay({
+    super.key,
+    required this.imageProvider,
+    required this.vertices,
+  });
+
+  final ImageProvider<Object> imageProvider;
+  final List<LatLng> vertices;
+
+  @override
+  Widget build(BuildContext context) {
+    final camera = MapCamera.of(context);
+    final bounds = LatLngBounds.fromPoints(vertices);
+    final northWest = camera.getOffsetFromOrigin(bounds.northWest);
+    final southEast = camera.getOffsetFromOrigin(bounds.southEast);
+    final polygon = [
+      for (final vertex in vertices) camera.getOffsetFromOrigin(vertex),
+    ];
+
+    return ClipPath(
+      clipper: _PolygonClipper(polygon),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          Positioned.fromRect(
+            rect: Rect.fromPoints(northWest, southEast),
+            child: Image(
+              image: imageProvider,
+              fit: BoxFit.fill,
+              gaplessPlayback: true,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PolygonClipper extends CustomClipper<Path> {
+  const _PolygonClipper(this.points);
+
+  final List<Offset> points;
+
+  @override
+  Path getClip(Size size) {
+    final path = Path();
+    if (points.length < 3) return path;
+    path.addPolygon(points, true);
+    return path;
+  }
+
+  @override
+  bool shouldReclip(covariant _PolygonClipper oldClipper) {
+    return oldClipper.points != points;
   }
 }
