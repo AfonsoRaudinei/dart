@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:soloforte_app/core/contracts/i_ndvi_latest_lookup.dart';
+import 'package:soloforte_app/core/contracts/i_ndvi_latest_lookup_provider.dart';
+import 'package:soloforte_app/core/contracts/ndvi_latest_summary.dart';
 import 'package:soloforte_app/modules/consultoria/clients/domain/agronomic_models.dart';
 import 'package:soloforte_app/modules/consultoria/clients/domain/client.dart';
 import 'package:soloforte_app/modules/consultoria/clients/presentation/providers/field_providers.dart';
@@ -70,10 +73,7 @@ void main() {
         child: MaterialApp(
           home: Scaffold(
             body: SingleChildScrollView(
-              child: ClientFarmWithTalhoesSection(
-                client: client,
-                farm: farm,
-              ),
+              child: ClientFarmWithTalhoesSection(client: client, farm: farm),
             ),
           ),
         ),
@@ -108,10 +108,7 @@ void main() {
         child: MaterialApp(
           home: Scaffold(
             body: SingleChildScrollView(
-              child: ClientFarmWithTalhoesSection(
-                client: client,
-                farm: farm,
-              ),
+              child: ClientFarmWithTalhoesSection(client: client, farm: farm),
             ),
           ),
         ),
@@ -151,10 +148,7 @@ void main() {
         child: MaterialApp(
           home: Scaffold(
             body: SingleChildScrollView(
-              child: ClientFarmWithTalhoesSection(
-                client: client,
-                farm: farm,
-              ),
+              child: ClientFarmWithTalhoesSection(client: client, farm: farm),
             ),
           ),
         ),
@@ -174,4 +168,69 @@ void main() {
     expect(find.text('União'), findsOneWidget);
     expect(find.byTooltip('Abrir no mapa'), findsNWidgets(2));
   });
+
+  testWidgets('modo Mapa não consulta NDVI; toque em NDVI consulta', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(800, 1600);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final counter = _NdviLookupCounter();
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          farmLinkedFieldsProvider.overrideWith(
+            (ref, farmId) async => linkedFields,
+          ),
+          ndviLatestLookupProvider.overrideWithValue(
+            _CountingNdviLookup(counter),
+          ),
+        ],
+        child: MaterialApp(
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: ClientFarmWithTalhoesSection(client: client, farm: farm),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(counter.value, 0);
+    expect(find.text('Mapa'), findsOneWidget);
+
+    await tester.tap(find.text('NDVI'));
+    await tester.pump();
+    await tester.pump();
+
+    expect(counter.value, greaterThanOrEqualTo(1));
+  });
+}
+
+class _NdviLookupCounter {
+  int value = 0;
+}
+
+class _CountingNdviLookup implements INdviLatestLookup {
+  _CountingNdviLookup(this.counter);
+
+  final _NdviLookupCounter counter;
+
+  @override
+  Future<NdviLatestSummary?> getLatest(String fieldId) async {
+    counter.value++;
+    return NdviLatestSummary(
+      imageDate: DateTime(2026, 9, 12),
+      ndviMean: 0.62,
+      ndviMin: 0.1,
+      ndviMax: 0.9,
+      sourceLabel: 'Sentinel NDVI',
+      localPath: '/tmp/soloforte-ndvi-card.png',
+    );
+  }
 }
