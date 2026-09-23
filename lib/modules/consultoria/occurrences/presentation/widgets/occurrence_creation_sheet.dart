@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:soloforte_app/core/access/producer_create_context_resolver.dart';
+import 'package:soloforte_app/core/constants/layout_constants.dart';
 import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
 import 'package:soloforte_app/core/contracts/i_client_lookup.dart';
 import 'package:soloforte_app/core/contracts/i_client_lookup_provider.dart';
@@ -42,6 +43,7 @@ class OccurrenceCreationSheet extends ConsumerStatefulWidget {
   final OccurrenceFormGuard? formGuard;
   /// Pré-seleciona categoria na criação (ex.: `area_visitada` via ações rápidas).
   final String? initialCategoryValue;
+  final bool compactHeader;
 
   const OccurrenceCreationSheet({
     super.key,
@@ -53,6 +55,7 @@ class OccurrenceCreationSheet extends ConsumerStatefulWidget {
     this.initialOccurrence,
     this.formGuard,
     this.initialCategoryValue,
+    this.compactHeader = false,
   });
 
   @override
@@ -375,13 +378,30 @@ class _OccurrenceCreationSheetState
     }
   }
 
+  Widget _compactMapHeader({required Color muted}) {
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            'Ponto definido no mapa',
+            style: TextStyle(color: muted, fontSize: 13),
+          ),
+        ),
+        if (widget.onCancel != null)
+          IconButton(
+            icon: const Icon(Icons.close),
+            onPressed: _handleCancel,
+            color: muted,
+            visualDensity: VisualDensity.compact,
+          ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final safeBottom = MediaQuery.of(context).padding.bottom;
-    // No map stack o FAB fica fora do sheet — não reservar kFabSafeArea aqui.
-    final actionBarBottomPadding = widget.scrollController != null
-        ? (safeBottom > 0 ? safeBottom : 12.0)
-        : safeBottom + 24.0;
+    final actionBarBottomPadding = safeBottom + kFabSafeArea;
     final isIos = occurrenceFormIsIos(context);
     final sheetBg = isIos
         ? SoloForteSheetSkinIos.background
@@ -404,7 +424,9 @@ class _OccurrenceCreationSheetState
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
               children: [
               if (_buildSubmitErrorBanner() case final banner?) banner,
-              // ── Header padrão ADR-027 (espelha NovoCaseHeader) ──────────
+              if (widget.compactHeader && widget.initialOccurrence == null)
+                _compactMapHeader(muted: muted)
+              else
               Row(
                 children: [
                   Container(
@@ -516,8 +538,8 @@ class _OccurrenceCreationSheetState
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Container(
-                          width: 56,
-                          height: 56,
+                          width: 44,
+                          height: 44,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             color: isSelected
@@ -535,7 +557,7 @@ class _OccurrenceCreationSheetState
                           ),
                           child: Icon(
                             cat.icon,
-                            size: 28,
+                            size: 22,
                             color: isSelected
                                 ? selectedColor
                                 : (isIos
@@ -787,37 +809,25 @@ class _OccurrenceCreationSheetState
               ),
               child: Row(
                 children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: _isSaving ? null : _handleCancel,
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: isIos
-                            ? SoloForteSheetSkinIos.ghostText
-                            : Colors.white54,
-                        side: BorderSide(
-                          color: isIos
-                              ? SoloForteSheetSkinIos.ghostBorder
-                              : Colors.white24,
-                        ),
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(
-                            isIos ? SoloForteSheetSkinIos.ghostRadius : 16,
-                          ),
-                        ),
-                      ),
-                      child: const Text(
-                        'Cancelar',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: -0.4,
-                        ),
+                  TextButton(
+                    onPressed: _isSaving ? null : _handleCancel,
+                    style: TextButton.styleFrom(
+                      foregroundColor: isIos
+                          ? SoloForteSheetSkinIos.ghostText
+                          : Colors.white70,
+                      minimumSize: const Size(44, 44),
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                    ),
+                    child: const Text(
+                      'Cancelar',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: -0.2,
                       ),
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 8),
                   Expanded(
-                    flex: 2,
                     child: ElevatedButton(
                       onPressed: _isSaving ? null : _submit,
                       style: ElevatedButton.styleFrom(
@@ -827,10 +837,11 @@ class _OccurrenceCreationSheetState
                         foregroundColor: isIos
                             ? SoloForteSheetSkinIos.ctaText
                             : Colors.black,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        minimumSize: const Size(48, 44),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(
-                            isIos ? SoloForteSheetSkinIos.ctaRadius : 50,
+                            SoloForteSheetSkinIos.ctaRadius,
                           ),
                         ),
                       ),
