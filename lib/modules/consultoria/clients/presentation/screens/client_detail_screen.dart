@@ -21,6 +21,7 @@ import '../widgets/client_hub_section.dart';
 import '../widgets/client_detail_sub_widgets.dart';
 import '../widgets/client_edit_form.dart';
 import '../widgets/client_detail_farm_sections.dart';
+import '../widgets/client_map_display_settings.dart';
 import '../widgets/client_farm_post_create_flow.dart';
 import '../widgets/create_farm_sheet.dart';
 import '../widgets/producer_invite_dialog.dart';
@@ -141,7 +142,8 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen> {
           return _buildModoLeitura(client, culturas);
         },
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, _) => Center(child: Text(userFacingError(err, action: 'Erro'))),
+        error: (err, _) =>
+            Center(child: Text(userFacingError(err, action: 'Erro'))),
       ),
     );
   }
@@ -328,6 +330,10 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen> {
                     // Seção Culturas (resumo dos talhões; fallback client_culturas)
                     _sectionTitle('Culturas'),
                     ..._buildCulturasSection(client, culturas),
+                    const SizedBox(height: 20),
+                    ClientMapDisplaySettings(
+                      showUnitSelector: client.areaTotal == null,
+                    ),
                     const SizedBox(height: 32),
 
                     // Seção Fazendas
@@ -354,7 +360,8 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen> {
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-                          onPressed: () => _showCreateFarmSheet(context, client),
+                          onPressed: () =>
+                              _showCreateFarmSheet(context, client),
                         ),
                       ],
                     ),
@@ -386,7 +393,9 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen> {
                     else
                       ...client.farms.map(
                         (farm) => ClientFarmWithTalhoesSection(
-                            client: client, farm: farm),
+                          client: client,
+                          farm: farm,
+                        ),
                       ),
 
                     const SizedBox(height: 20),
@@ -547,7 +556,7 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen> {
             border: Border.all(color: Colors.grey[200]!),
           ),
           child: Text(
-            'Nenhuma cultura nos talhões. Escolha cultura e material em cada talhão.',
+            'Nenhuma ainda. Toque no talhão para escolher cultura e material.',
             textAlign: TextAlign.center,
             style: TextStyle(color: Colors.grey[600]),
           ),

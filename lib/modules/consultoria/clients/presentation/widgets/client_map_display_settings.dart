@@ -6,7 +6,10 @@ import 'package:soloforte_app/core/ui/area_display_unit_chips.dart';
 
 /// Preferências globais de label e unidade de área no mapa principal.
 class ClientMapDisplaySettings extends ConsumerWidget {
-  const ClientMapDisplaySettings({super.key});
+  const ClientMapDisplaySettings({super.key, this.showUnitSelector = true});
+
+  /// Quando a tela já mostra ha / m² / alq junto da área, evita repetir.
+  final bool showUnitSelector;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -47,7 +50,7 @@ class ClientMapDisplaySettings extends ConsumerWidget {
             ),
           ],
         ),
-        if (prefs.showArea) ...[
+        if (showUnitSelector && prefs.showArea) ...[
           const SizedBox(height: 12),
           Text(
             'Unidade de área',
@@ -84,7 +87,7 @@ class _LabelModeChip extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(20),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           child: Text(
             label,
             style: TextStyle(

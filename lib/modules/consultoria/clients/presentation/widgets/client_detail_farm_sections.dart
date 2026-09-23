@@ -15,7 +15,6 @@ import '../widgets/farm_linked_field_list.dart';
 import '../widgets/link_drawing_to_farm_sheet.dart';
 import '../widgets/talhao_actions_sheet.dart';
 import '../widgets/talhao_union_sheet.dart';
-import '../widgets/client_map_display_settings.dart';
 import '../widgets/talhao_map_preview.dart';
 
 class ClientFarmWithTalhoesSection extends ConsumerWidget {
@@ -43,10 +42,7 @@ class ClientFarmWithTalhoesSection extends ConsumerWidget {
       children: [
         Text(
           farm.name,
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 4),
         Text(
@@ -64,10 +60,7 @@ class ClientFarmWithTalhoesSection extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'Área Total',
-                style: TextStyle(color: Colors.grey[600]),
-              ),
+              Text('Área Total', style: TextStyle(color: Colors.grey[600])),
               Text(
                 areaFormatted,
                 style: const TextStyle(
@@ -83,8 +76,6 @@ class ClientFarmWithTalhoesSection extends ConsumerWidget {
             ],
           ),
         ),
-        const SizedBox(height: 20),
-        const ClientMapDisplaySettings(),
         const SizedBox(height: 20),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -157,10 +148,7 @@ class ClientDrawingFieldsSection extends ConsumerWidget {
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 ),
                 TextButton.icon(
-                  icon: const Icon(
-                    Icons.add,
-                    color: PremiumTokens.brandGreen,
-                  ),
+                  icon: const Icon(Icons.add, color: PremiumTokens.brandGreen),
                   label: const Text(
                     'Talhão',
                     style: TextStyle(
@@ -213,8 +201,7 @@ class ClientDrawingFieldsSection extends ConsumerWidget {
                         size: 20,
                         color: PremiumTokens.brandGreen,
                       ),
-                      onPressed: () =>
-                          _linkDrawingToFarm(context, ref, field),
+                      onPressed: () => _linkDrawingToFarm(context, ref, field),
                     ),
                     IconButton(
                       tooltip: 'Abrir no mapa',
