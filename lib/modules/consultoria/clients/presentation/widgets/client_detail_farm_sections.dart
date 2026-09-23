@@ -10,6 +10,7 @@ import '../../domain/agronomic_models.dart';
 import '../../domain/client.dart';
 import '../providers/clients_providers.dart';
 import '../providers/field_providers.dart';
+import '../providers/talhao_card_ndvi_provider.dart';
 import '../widgets/client_detail_sub_widgets.dart';
 import '../widgets/farm_linked_field_list.dart';
 import '../widgets/link_drawing_to_farm_sheet.dart';
@@ -35,6 +36,7 @@ class ClientFarmWithTalhoesSection extends ConsumerWidget {
         ? farm.totalAreaHa
         : totalFarmLinkedAreaHa(linkedFields);
     final areaUnit = ref.watch(areaDisplayUnitProvider);
+    final showNdvi = ref.watch(talhaoCardNdviEnabledProvider(farm.id));
     final areaFormatted = formatAreaFromHectares(displayedAreaHa, areaUnit);
 
     return Column(
@@ -78,12 +80,13 @@ class ClientFarmWithTalhoesSection extends ConsumerWidget {
         ),
         const SizedBox(height: 20),
         Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             const Text(
               'Talhões',
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
+            const Spacer(),
+            TalhaoCardNdviToggle(farmId: farm.id),
             TextButton.icon(
               onPressed: () => context.go(
                 farmMapCreateUri(clientId: client.id, farmId: farm.id),
@@ -105,6 +108,7 @@ class ClientFarmWithTalhoesSection extends ConsumerWidget {
             clientId: client.id,
             farmId: farm.id,
             fields: fields,
+            showNdvi: showNdvi,
           ),
           loading: () {
             if ((linkedFields ?? const []).isEmpty) {
@@ -114,6 +118,7 @@ class ClientFarmWithTalhoesSection extends ConsumerWidget {
               clientId: client.id,
               farmId: farm.id,
               fields: linkedFields!,
+              showNdvi: showNdvi,
             );
           },
           error: (err, stack) => const SizedBox.shrink(),
