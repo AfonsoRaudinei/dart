@@ -292,8 +292,8 @@ class _MapMarkSheetState extends ConsumerState<MapMarkSheet> {
   }
 }
 
-/// Seletor exclusivo no topo: uma opção ligada por vez (toggle segmentado).
-class _MarkKindToggleBar extends StatelessWidget {
+/// Pílulas horizontais (estilo Mail): peek na borda + fade quando há mais conteúdo.
+class _MarkKindToggleBar extends StatefulWidget {
   final MapMarkKind? selected;
   final bool isIos;
   final String Function(MapMarkKind) labelFor;
@@ -309,42 +309,163 @@ class _MarkKindToggleBar extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    final trackColor = isIos
-        ? SoloForteSheetSkinIos.cardBackground
-        : const Color(0xFF2C2C2E);
-    final trackBorder = isIos
-        ? SoloForteSheetSkinIos.cardBorder
-        : Colors.white.withValues(alpha: 0.08);
+  State<_MarkKindToggleBar> createState() => _MarkKindToggleBarState();
+}
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Container(
-        height: 44,
-        padding: const EdgeInsets.all(4),
-        decoration: BoxDecoration(
-          color: trackColor,
-          borderRadius: BorderRadius.circular(15),
-          border: Border.all(color: trackBorder, width: 0.5),
-        ),
-        child: SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
+class _MarkKindToggleBarState extends State<_MarkKindToggleBar> {
+  final ScrollController _scrollController = ScrollController();
+  bool _showLeftFade = false;
+  bool _showRightFade = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_syncEdgeFades);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _syncEdgeFades());
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _syncEdgeFades() {
+    if (!_scrollController.hasClients) return;
+    final position = _scrollController.position;
+    final maxExtent = position.maxScrollExtent;
+    final pixels = position.pixels;
+    final showLeft = pixels > 6;
+    final showRight = maxExtent > 6 && pixels < maxExtent - 6;
+    if (showLeft == _showLeftFade && showRight == _showRightFade) return;
+    setState(() {
+      _showLeftFade = showLeft;
+      _showRightFade = showRight;
+    });
+  }
+
+  Color _sheetFadeColor() {
+    return widget.isIos
+        ? SoloForteSheetSkinIos.background
+        : SoloForteSheetTokens.sheetBackground;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final fadeColor = _sheetFadeColor();
+    return Semantics(
+      label:
+          'Ações para marcar no ponto. Deslize horizontalmente para ver todas.',
+      child: Padding(
+        padding: const EdgeInsets.only(left: 16),
+        child: SizedBox(
+          height: 40,
+          child: Stack(
+            clipBehavior: Clip.none,
             children: [
-              for (final kind in MapMarkKind.values) ...[
-                _MarkToggleSegment(
-                  label: labelFor(kind),
-                  icon: iconFor(kind),
-                  isSelected: selected == kind,
-                  onTap: () => onSelected(kind),
-                  isIos: isIos,
+              ListView.separated(
+                controller: _scrollController,
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.only(right: 12),
+                clipBehavior: Clip.hardEdge,
+                itemCount: MapMarkKind.values.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 8),
+                itemBuilder: (context, index) {
+                  final kind = MapMarkKind.values[index];
+                  return _MarkToggleSegment(
+                    label: widget.labelFor(kind),
+                    icon: widget.iconFor(kind),
+                    isSelected: widget.selected == kind,
+                    onTap: () => widget.onSelected(kind),
+                    isIos: widget.isIos,
+                  );
+                },
+              ),
+              if (_showLeftFade)
+                Positioned(
+                  left: 0,
+                  top: 0,
+                  bottom: 0,
+                  width: 28,
+                  child: IgnorePointer(
+                    child: _MarkScrollEdgeFade(
+                      color: fadeColor,
+                      alignment: Alignment.centerLeft,
+                    ),
+                  ),
                 ),
-                if (kind != MapMarkKind.values.last) const SizedBox(width: 4),
-              ],
+              if (_showRightFade)
+                Positioned(
+                  right: 0,
+                  top: 0,
+                  bottom: 0,
+                  width: 40,
+                  child: IgnorePointer(
+                    child: _MarkScrollEdgeFade(
+                      color: fadeColor,
+                      alignment: Alignment.centerRight,
+                      showChevron: true,
+                      isIos: widget.isIos,
+                    ),
+                  ),
+                ),
             ],
           ),
         ),
       ),
+    );
+  }
+}
+
+class _MarkScrollEdgeFade extends StatelessWidget {
+  final Color color;
+  final Alignment alignment;
+  final bool showChevron;
+  final bool isIos;
+
+  const _MarkScrollEdgeFade({
+    required this.color,
+    required this.alignment,
+    this.showChevron = false,
+    this.isIos = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final begin = alignment == Alignment.centerLeft
+        ? Alignment.centerLeft
+        : Alignment.centerRight;
+    final end = alignment == Alignment.centerLeft
+        ? Alignment.centerRight
+        : Alignment.centerLeft;
+    final chevronColor = isIos
+        ? SoloForteSheetSkinIos.subtitleColor
+        : Colors.white.withValues(alpha: 0.55);
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: begin,
+          end: end,
+          colors: [
+            color,
+            color.withValues(alpha: 0),
+          ],
+        ),
+      ),
+      child: showChevron
+          ? Align(
+              alignment: Alignment.centerRight,
+              child: Padding(
+                padding: const EdgeInsets.only(right: 4),
+                child: Icon(
+                  Icons.chevron_right_rounded,
+                  size: 22,
+                  color: chevronColor,
+                ),
+              ),
+            )
+          : null,
     );
   }
 }
@@ -369,24 +490,33 @@ class _MarkToggleSegment extends StatelessWidget {
     final selectedBg = isIos
         ? SoloForteSheetSkinIos.ctaBackground
         : const Color(0xFF1976D2);
+    final idleBg = isIos
+        ? SoloForteSheetSkinIos.cardBackground
+        : Colors.white.withValues(alpha: 0.08);
+    final idleBorder = isIos
+        ? SoloForteSheetSkinIos.cardBorder
+        : Colors.white.withValues(alpha: 0.06);
     final idleLabel = isIos
-        ? SoloForteSheetSkinIos.subtitleColor
-        : const Color(0xFFAEAEB2);
+        ? SoloForteSheetSkinIos.titleColor
+        : const Color(0xFFE5E5EA);
     final selectedLabel =
         isIos ? SoloForteSheetSkinIos.ctaText : Colors.white;
 
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        borderRadius: BorderRadius.circular(11),
+        borderRadius: BorderRadius.circular(12),
         onTap: onTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
           curve: Curves.easeOutCubic,
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
           decoration: BoxDecoration(
-            color: isSelected ? selectedBg : Colors.transparent,
-            borderRadius: BorderRadius.circular(11),
+            color: isSelected ? selectedBg : idleBg,
+            borderRadius: BorderRadius.circular(12),
+            border: isSelected
+                ? null
+                : Border.all(color: idleBorder, width: 0.5),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
