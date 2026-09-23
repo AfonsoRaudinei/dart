@@ -15,6 +15,7 @@ class NovoResultadoCaseSheet extends StatelessWidget {
   final ActiveVisitContext? initialVisitContext;
   final VoidCallback onClose;
   final void Function(MarketingCase) onPublicar;
+  final bool compactHeader;
 
   const NovoResultadoCaseSheet({
     super.key,
@@ -23,6 +24,7 @@ class NovoResultadoCaseSheet extends StatelessWidget {
     this.initialVisitContext,
     required this.onClose,
     required this.onPublicar,
+    this.compactHeader = false,
   });
 
   @override
@@ -34,6 +36,7 @@ class NovoResultadoCaseSheet extends StatelessWidget {
       initialVisitContext: initialVisitContext,
       onClose: onClose,
       onPublicar: onPublicar,
+      compactHeader: compactHeader,
     );
   }
 }
@@ -44,6 +47,7 @@ class NovoAntesDepoisCaseSheet extends StatelessWidget {
   final ActiveVisitContext? initialVisitContext;
   final VoidCallback onClose;
   final void Function(MarketingCase) onPublicar;
+  final bool compactHeader;
 
   const NovoAntesDepoisCaseSheet({
     super.key,
@@ -52,6 +56,7 @@ class NovoAntesDepoisCaseSheet extends StatelessWidget {
     this.initialVisitContext,
     required this.onClose,
     required this.onPublicar,
+    this.compactHeader = false,
   });
 
   @override
@@ -63,6 +68,7 @@ class NovoAntesDepoisCaseSheet extends StatelessWidget {
       initialVisitContext: initialVisitContext,
       onClose: onClose,
       onPublicar: onPublicar,
+      compactHeader: compactHeader,
     );
   }
 }
@@ -73,6 +79,7 @@ class NovaAvaliacaoCaseSheet extends StatelessWidget {
   final ActiveVisitContext? initialVisitContext;
   final VoidCallback onClose;
   final void Function(MarketingCase) onPublicar;
+  final bool compactHeader;
 
   const NovaAvaliacaoCaseSheet({
     super.key,
@@ -81,6 +88,7 @@ class NovaAvaliacaoCaseSheet extends StatelessWidget {
     this.initialVisitContext,
     required this.onClose,
     required this.onPublicar,
+    this.compactHeader = false,
   });
 
   @override
@@ -92,6 +100,7 @@ class NovaAvaliacaoCaseSheet extends StatelessWidget {
       initialVisitContext: initialVisitContext,
       onClose: onClose,
       onPublicar: onPublicar,
+      compactHeader: compactHeader,
     );
   }
 }
