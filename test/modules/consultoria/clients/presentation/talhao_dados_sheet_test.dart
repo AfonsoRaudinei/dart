@@ -140,7 +140,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Material'), findsNothing);
+    expect(find.text('Material'), findsOneWidget);
 
     await tester.ensureVisible(find.text('Outra'));
     await tester.tap(find.text('Outra'));
