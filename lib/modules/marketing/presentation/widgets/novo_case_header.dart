@@ -8,6 +8,7 @@ class NovoCaseHeader extends StatelessWidget {
   final double lng;
   final String tipoLabel;
   final VoidCallback onClose;
+  final bool showTitle;
 
   const NovoCaseHeader({
     super.key,
@@ -15,6 +16,7 @@ class NovoCaseHeader extends StatelessWidget {
     required this.lng,
     required this.tipoLabel,
     required this.onClose,
+    this.showTitle = true,
   });
 
   @override
@@ -33,14 +35,15 @@ class NovoCaseHeader extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                tipoLabel,
-                style: TextStyle(
-                  color: titleColor,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
+              if (showTitle)
+                Text(
+                  tipoLabel,
+                  style: TextStyle(
+                    color: titleColor,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
-              ),
               Text(
                 'Lat: ${lat.toStringAsFixed(5)}, Lng: ${lng.toStringAsFixed(5)}',
                 style: TextStyle(color: subtitleColor, fontSize: 12),
