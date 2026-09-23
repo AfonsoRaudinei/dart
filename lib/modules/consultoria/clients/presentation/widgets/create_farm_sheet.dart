@@ -112,7 +112,7 @@ class _CreateFarmSheetState extends State<CreateFarmSheet> {
                 },
               ),
               const SizedBox(height: 16),
-              ClientSheetSectionLabel(label: 'UF'),
+              const ClientSheetSectionLabel(label: 'UF'),
               BrazilianStateDropdown(
                 value: _selectedUf,
                 onChanged: (value) => setState(() => _selectedUf = value),
