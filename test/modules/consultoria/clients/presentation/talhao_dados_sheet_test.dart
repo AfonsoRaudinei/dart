@@ -65,9 +65,7 @@ void main() {
 
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [
-          iDrawingFieldWriterProvider.overrideWithValue(writer),
-        ],
+        overrides: [iDrawingFieldWriterProvider.overrideWithValue(writer)],
         child: const MaterialApp(
           home: Scaffold(
             body: TalhaoDadosSheet(
@@ -115,6 +113,55 @@ void main() {
     expect(writer.updatedMaterial, 'AG 8700');
     expect(writer.updatedSafra, '2026/2027');
     expect(find.text('Dados do talhão atualizados.'), findsOneWidget);
+    await tester.pump(const Duration(milliseconds: 1700));
+  });
+
+  testWidgets('Outra abre cultura livre e mantém material', (tester) async {
+    tester.view.physicalSize = const Size(1800, 1600);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final writer = _FakeDrawingFieldWriter();
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [iDrawingFieldWriterProvider.overrideWithValue(writer)],
+        child: const MaterialApp(
+          home: Scaffold(
+            body: TalhaoDadosSheet(
+              clientId: 'client-1',
+              fieldId: 'field-1',
+              initialName: 'Talhão Sul',
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Material'), findsNothing);
+
+    await tester.ensureVisible(find.text('Outra'));
+    await tester.tap(find.text('Outra'));
+    await tester.pump();
+
+    expect(find.text('Qual cultura?'), findsOneWidget);
+    expect(find.text('Material'), findsOneWidget);
+
+    await tester.enterText(
+      find.widgetWithText(TextField, 'Ex.: Girassol'),
+      'Girassol',
+    );
+    await tester.enterText(
+      find.widgetWithText(TextField, 'Ex.: Olimpo RR'),
+      'Híbrido X',
+    );
+    await tester.tap(find.text('Salvar'));
+    await tester.pump();
+
+    expect(writer.updatedCultura, 'Girassol');
+    expect(writer.updatedMaterial, 'Híbrido X');
     await tester.pump(const Duration(milliseconds: 1700));
   });
 }
