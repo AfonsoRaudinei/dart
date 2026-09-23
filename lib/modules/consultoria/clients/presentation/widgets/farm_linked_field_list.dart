@@ -268,6 +268,7 @@ class FarmLinkedFieldList extends ConsumerWidget {
       clientId: clientId,
       farmId: farmId,
       drawingId: drawingId,
+      ndvi: showNdvi,
     );
   }
 }
