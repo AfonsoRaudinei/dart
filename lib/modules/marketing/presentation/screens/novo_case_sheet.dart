@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
 import 'package:uuid/uuid.dart';
+import '../../../../core/constants/layout_constants.dart';
 import '../../../../core/contracts/i_active_visit_context_lookup.dart';
 import '../../../../ui/theme/premium/design_tokens.dart';
 import '../../domain/entities/avaliacao_item.dart';
@@ -33,6 +34,7 @@ class NovoCaseSheet extends ConsumerStatefulWidget {
   final ActiveVisitContext? initialVisitContext;
   final VoidCallback onClose;
   final void Function(MarketingCase) onPublicar;
+  final bool compactHeader;
 
   const NovoCaseSheet({
     super.key,
@@ -42,6 +44,7 @@ class NovoCaseSheet extends ConsumerStatefulWidget {
     this.initialVisitContext,
     required this.onClose,
     required this.onPublicar,
+    this.compactHeader = false,
   });
 
   @override
@@ -438,15 +441,14 @@ class _NovoCaseSheetState extends ConsumerState<NovoCaseSheet> {
   // ── Build ──────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
-    return Form(
+    final keyboard = MediaQuery.of(context).viewInsets.bottom;
+    final fabClearance = MediaQuery.paddingOf(context).bottom + kFabSafeArea;
+    return Padding(
+      padding: EdgeInsets.only(bottom: keyboard > 0 ? keyboard : fabClearance),
+      child: Form(
       key: _formKey,
       child: SingleChildScrollView(
-        padding: EdgeInsets.only(
-          left: 20,
-          right: 20,
-          top: 8,
-          bottom: MediaQuery.of(context).viewInsets.bottom + 24,
-        ),
+        padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -455,8 +457,9 @@ class _NovoCaseSheetState extends ConsumerState<NovoCaseSheet> {
               lng: widget.lng,
               tipoLabel: _tipoLabel,
               onClose: widget.onClose,
+              showTitle: !widget.compactHeader,
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: widget.compactHeader ? 12 : 24),
             novoCaseSectionLabel('Visibilidade'),
             const SizedBox(height: 8),
             PlanoMarketingSelector(
@@ -470,7 +473,7 @@ class _NovoCaseSheetState extends ConsumerState<NovoCaseSheet> {
               selectedClientId: _clientId,
               onChanged: _handleClientChanged,
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 4),
             novoCaseFieldBox(
               child: Column(
                 children: [
@@ -625,6 +628,7 @@ class _NovoCaseSheetState extends ConsumerState<NovoCaseSheet> {
           ],
         ),
       ),
+    ),
     );
   }
 
