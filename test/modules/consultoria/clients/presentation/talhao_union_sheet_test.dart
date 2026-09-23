@@ -76,7 +76,7 @@ void main() {
         overrides: [
           iDrawingFieldWriterProvider.overrideWithValue(writer),
         ],
-        child: MaterialApp(
+        child: const MaterialApp(
           home: Scaffold(
             body: TalhaoUnionSheet(
               clientId: 'client-1',
