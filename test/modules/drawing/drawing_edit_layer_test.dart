@@ -452,7 +452,7 @@ void main() {
     const vertexIndex = 1;
     final latLng = controller.currentPoints[vertexIndex];
     final markerRect = tester.getRect(
-      find.byKey(Key('drawing_sketch_vertex_$vertexIndex')),
+      find.byKey(const Key('drawing_sketch_vertex_$vertexIndex')),
     );
 
     expectMarkerTopAnchorsLatLng(

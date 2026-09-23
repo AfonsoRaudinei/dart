@@ -7,7 +7,7 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
-import 'package:supabase/supabase.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:soloforte_app/core/session/local_session_identity.dart';
 import 'package:soloforte_app/modules/marketing/data/repositories/marketing_case_repository_impl.dart';
 import 'package:soloforte_app/modules/marketing/domain/entities/marketing_case.dart';
