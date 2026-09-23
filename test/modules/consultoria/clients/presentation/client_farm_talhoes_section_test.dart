@@ -94,7 +94,8 @@ void main() {
 
     expect(find.byType(TalhaoMapPreviewWidget), findsOneWidget);
     expect(find.byTooltip('Abrir no mapa'), findsOneWidget);
-    expect(find.byTooltip('Ações do talhão'), findsOneWidget);
+    expect(find.byTooltip('Dados do talhão'), findsOneWidget);
+    expect(find.byTooltip('Geometria e união'), findsOneWidget);
     expect(find.text('Talhão Norte'), findsOneWidget);
     expect(find.text('Área Total'), findsOneWidget);
     expect(find.byIcon(Icons.chevron_right), findsNothing);
@@ -131,7 +132,7 @@ void main() {
     expect(find.byTooltip('Abrir no mapa'), findsOneWidget);
     expect(find.text('Editar geometria'), findsNothing);
 
-    await tester.tap(find.byIcon(Icons.edit_outlined));
+    await tester.tap(find.byTooltip('Geometria e união'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
 
@@ -169,9 +170,9 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
 
-    expect(find.byTooltip('Ações do talhão'), findsNWidgets(2));
+    expect(find.byTooltip('Geometria e união'), findsNWidgets(2));
 
-    await tester.tap(find.byTooltip('Ações do talhão').first);
+    await tester.tap(find.byTooltip('Geometria e união').first);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
 

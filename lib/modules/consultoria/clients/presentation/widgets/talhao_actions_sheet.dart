@@ -479,6 +479,13 @@ class _TalhaoDadosSheetState extends ConsumerState<TalhaoDadosSheet> {
               selectedTipo: _selectedCultura,
               culturaLivreController: _culturaLivreController,
               materialController: _materialController,
+              accent: visuals.accent,
+              labelColor: visuals.titleColor,
+              chipUnselectedBackground: visuals.inputFill,
+              chipUnselectedForeground: visuals.inputText,
+              fieldFillColor: visuals.inputFill,
+              fieldTextColor: visuals.inputText,
+              fieldHintColor: visuals.inputHint,
               materialSuggestions: materialSuggestionsForCultura(
                 ref.watch(clientDrawingCropRowsProvider(widget.clientId))
                         .valueOrNull ??

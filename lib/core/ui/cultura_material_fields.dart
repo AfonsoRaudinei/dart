@@ -35,7 +35,6 @@ class CulturaMaterialFields extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final showLivre = selectedTipo == CulturaTipo.outro;
-    final showMaterial = selectedTipo != null;
     final titleColor = labelColor ?? Colors.grey[700];
 
     return Column(
@@ -85,43 +84,46 @@ class CulturaMaterialFields extends StatelessWidget {
             textCapitalization: TextCapitalization.sentences,
           ),
         ],
-        if (showMaterial) ...[
-          const SizedBox(height: 16),
-          Text(
-            'Material',
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: titleColor,
-            ),
+        const SizedBox(height: 16),
+        Text(
+          'Material',
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: titleColor,
           ),
+        ),
+        const SizedBox(height: 8),
+        TextField(
+          controller: materialController,
+          style: fieldTextColor == null
+              ? null
+              : TextStyle(color: fieldTextColor),
+          decoration: _fieldDecoration(
+            hintText: selectedTipo == null
+                ? 'Escolha a cultura acima'
+                : 'Ex.: Olimpo RR',
+          ),
+          textCapitalization: TextCapitalization.words,
+          enabled: selectedTipo != null,
+        ),
+        if (selectedTipo != null && materialSuggestions.isNotEmpty) ...[
           const SizedBox(height: 8),
-          TextField(
-            controller: materialController,
-            style: fieldTextColor == null
-                ? null
-                : TextStyle(color: fieldTextColor),
-            decoration: _fieldDecoration(hintText: 'Ex.: Olimpo RR'),
-            textCapitalization: TextCapitalization.words,
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final suggestion in materialSuggestions.take(6))
+                _CulturaChip(
+                  label: suggestion,
+                  selected: materialController.text.trim() == suggestion,
+                  accent: accent,
+                  unselectedBackground: chipUnselectedBackground,
+                  unselectedForeground: chipUnselectedForeground,
+                  onTap: () => materialController.text = suggestion,
+                ),
+            ],
           ),
-          if (materialSuggestions.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                for (final suggestion in materialSuggestions.take(6))
-                  _CulturaChip(
-                    label: suggestion,
-                    selected: materialController.text.trim() == suggestion,
-                    accent: accent,
-                    unselectedBackground: chipUnselectedBackground,
-                    unselectedForeground: chipUnselectedForeground,
-                    onTap: () => materialController.text = suggestion,
-                  ),
-              ],
-            ),
-          ],
         ],
       ],
     );

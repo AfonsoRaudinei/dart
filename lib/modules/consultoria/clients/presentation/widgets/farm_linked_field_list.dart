@@ -52,7 +52,7 @@ String? talhaoCardNdviCaption(NdviLatestSummary summary) {
   final mean = summary.ndviMean.toStringAsFixed(2);
   final day = summary.imageDate.day.toString().padLeft(2, '0');
   final month = summary.imageDate.month.toString().padLeft(2, '0');
-  return '$mean · $day/$month';
+  return 'NDVI $mean · $day/$month';
 }
 
 class FarmLinkedFieldList extends ConsumerWidget {
@@ -136,8 +136,13 @@ class FarmLinkedFieldList extends ConsumerWidget {
     if (field.isDrawing) {
       actions.addAll([
         IconButton(
-          tooltip: 'Ações do talhão',
+          tooltip: 'Dados do talhão',
           icon: const Icon(Icons.edit_outlined, size: 20),
+          onPressed: () => _openField(context, field),
+        ),
+        IconButton(
+          tooltip: 'Geometria e união',
+          icon: const Icon(Icons.more_horiz, size: 20),
           onPressed: () => _openActions(context, field),
         ),
         IconButton(

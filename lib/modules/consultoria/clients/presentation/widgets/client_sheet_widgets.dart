@@ -63,14 +63,16 @@ class ClientSheetVisuals {
 
   double get ghostRadius => isIos ? SoloForteSheetSkinIos.ghostRadius : 13.0;
 
+  /// Sheets de cliente usam fundo claro — inputs seguem estilo iOS agrupado,
+  /// não o painel escuro de [SoloForteSheetTokens] (mapa/ocorrências).
   Color get inputFill =>
-      isIos ? SoloForteSheetSkinIos.cardBackground : SoloForteSheetTokens.inputBackground;
+      isIos ? SoloForteSheetSkinIos.cardBackground : const Color(0xFFF2F2F7);
 
   Color get inputText =>
-      isIos ? SoloForteSheetSkinIos.titleColor : SoloForteSheetTokens.inputText;
+      isIos ? SoloForteSheetSkinIos.titleColor : const Color(0xFF1C1C1E);
 
   Color get inputHint =>
-      isIos ? SoloForteSheetSkinIos.subtitleColor : SoloForteSheetTokens.inputHint;
+      isIos ? SoloForteSheetSkinIos.subtitleColor : const Color(0xFF8E8E93);
 }
 
 /// Scaffold padrão: handle, título, subtítulo opcional e corpo.
