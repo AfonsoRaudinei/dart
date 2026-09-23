@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 
 import '../../../components/map/map_sheet_state.dart';
+import '../../../../core/state/map_ndvi_overlay.dart';
 import '../../../../core/utils/app_logger.dart';
 import '../../../../modules/drawing/presentation/providers/drawing_provider.dart';
 
@@ -32,6 +33,11 @@ class MapFirstQueryHandler {
     final fazendaId = uri.queryParameters['fazendaId'];
     final fazendaNome = uri.queryParameters['fazendaNome'];
     final drawingId = uri.queryParameters['drawingId'];
+    final showNdvi = uri.queryParameters['ndvi'] == '1';
+    ref.read(mapNdviOverlayFieldIdProvider.notifier).state =
+        showNdvi && drawingId != null && drawingId.isNotEmpty
+        ? drawingId
+        : null;
 
     if ((modo == 'desenho' || modo == 'editar' || modo == 'uniao') &&
         clienteId != null) {
