@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -8,8 +9,23 @@ import 'package:soloforte_app/modules/drawing/data/repositories/drawing_reposito
 import 'package:soloforte_app/modules/drawing/domain/models/drawing_models.dart';
 import 'package:soloforte_app/modules/drawing/domain/models/drawing_visual_style.dart';
 import 'package:soloforte_app/modules/drawing/presentation/controllers/drawing_controller.dart';
+import 'package:soloforte_app/core/infra/preferences_service.dart';
 import 'package:soloforte_app/modules/drawing/presentation/widgets/drawing_edit_layer.dart';
 import 'package:soloforte_app/modules/drawing/presentation/widgets/drawing_layers.dart';
+
+Future<void> _pumpWithProviders(WidgetTester tester, Widget child) async {
+  final preferencesService = PreferencesService(
+    await SharedPreferences.getInstance(),
+  );
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [
+        preferencesServiceProvider.overrideWithValue(preferencesService),
+      ],
+      child: child,
+    ),
+  );
+}
 
 class _Repository extends DrawingRepository {
   _Repository(this.features);
@@ -51,7 +67,8 @@ void main() {
     await controller.loadFeatures();
     addTearDown(controller.dispose);
 
-    await tester.pumpWidget(
+    await _pumpWithProviders(
+      tester,
       MaterialApp(
         home: Scaffold(
           body: FlutterMap(
@@ -77,7 +94,8 @@ void main() {
     controller.selectTool('polygon');
     controller.appendDrawingPoint(const LatLng(-10.0, -48.0));
 
-    await tester.pumpWidget(
+    await _pumpWithProviders(
+      tester,
       MaterialApp(
         home: Scaffold(
           body: FlutterMap(
@@ -111,7 +129,8 @@ void main() {
       controller.appendDrawingPoint(const LatLng(-10.001, -48.001));
       controller.appendDrawingPoint(const LatLng(-10.002, -48.0));
 
-      await tester.pumpWidget(
+      await _pumpWithProviders(
+        tester,
         MaterialApp(
           home: Scaffold(
             body: FlutterMap(
@@ -144,7 +163,8 @@ void main() {
     await controller.loadFeatures();
     addTearDown(controller.dispose);
 
-    await tester.pumpWidget(
+    await _pumpWithProviders(
+      tester,
       MaterialApp(
         home: Scaffold(
           body: FlutterMap(
@@ -178,7 +198,8 @@ void main() {
     controller.selectFeature(feature);
     addTearDown(controller.dispose);
 
-    await tester.pumpWidget(
+    await _pumpWithProviders(
+      tester,
       MaterialApp(
         home: Scaffold(
           body: FlutterMap(
@@ -215,7 +236,8 @@ void main() {
     await controller.loadFeatures();
     addTearDown(controller.dispose);
 
-    await tester.pumpWidget(
+    await _pumpWithProviders(
+      tester,
       MaterialApp(
         home: Scaffold(
           body: FlutterMap(
