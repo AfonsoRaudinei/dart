@@ -6,6 +6,7 @@ import 'package:soloforte_app/core/utils/area_display_format.dart';
 import 'package:soloforte_app/core/utils/user_facing_error.dart';
 import 'package:soloforte_app/modules/consultoria/clients/presentation/providers/clients_providers.dart';
 import 'package:soloforte_app/modules/consultoria/clients/presentation/providers/field_providers.dart';
+import 'package:soloforte_app/modules/consultoria/clients/presentation/providers/talhao_card_ndvi_provider.dart';
 import 'package:soloforte_app/modules/consultoria/clients/presentation/widgets/client_map_display_settings.dart';
 import 'package:soloforte_app/modules/consultoria/clients/presentation/widgets/farm_linked_field_list.dart';
 import 'package:soloforte_app/modules/consultoria/farms/data/repositories/farm_repository.dart';
@@ -36,6 +37,7 @@ class FarmDetailScreen extends ConsumerWidget {
     final clientAsync = ref.watch(clientDetailProvider(clientId));
     final linkedFieldsAsync = ref.watch(farmLinkedFieldsProvider(farmId));
     final areaUnit = ref.watch(areaDisplayUnitProvider);
+    final showNdvi = ref.watch(talhaoCardNdviEnabledProvider(farmId));
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -142,7 +144,6 @@ class FarmDetailScreen extends ConsumerWidget {
                         const ClientMapDisplaySettings(),
                         const SizedBox(height: 24),
                         Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             const Text(
                               'Talhões',
@@ -151,6 +152,8 @@ class FarmDetailScreen extends ConsumerWidget {
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
+                            const Spacer(),
+                            TalhaoCardNdviToggle(farmId: farmId),
                             TextButton.icon(
                               onPressed: () {
                                 context.go(
@@ -180,6 +183,7 @@ class FarmDetailScreen extends ConsumerWidget {
                             clientId: clientId,
                             farmId: farmId,
                             fields: fields,
+                            showNdvi: showNdvi,
                           ),
                           loading: () {
                             if ((linkedFieldsAsync.asData?.value ?? const [])
@@ -192,6 +196,7 @@ class FarmDetailScreen extends ConsumerWidget {
                               clientId: clientId,
                               farmId: farmId,
                               fields: linkedFields!,
+                              showNdvi: showNdvi,
                             );
                           },
                           error: (e, s) => Center(
@@ -212,7 +217,8 @@ class FarmDetailScreen extends ConsumerWidget {
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, s) => Center(child: Text(userFacingError(e, action: 'Erro'))),
+        error: (e, s) =>
+            Center(child: Text(userFacingError(e, action: 'Erro'))),
       ),
     );
   }
