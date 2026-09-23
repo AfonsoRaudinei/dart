@@ -478,9 +478,117 @@ class _MapButtonLabel extends StatelessWidget {
   }
 }
 
-/// Indicador unificado do mapa:
-/// vermelho = sem internet · verde = online · azul Samsung = online + chuva no mapa.
-/// Long-press exibe rótulo; offline usa ícone wifi_off (canal não-cromático).
+/// Botão circular do topo direito (Pinos / Chuva / Localização).
+/// Diferencia da coluna direita, que permanece quadrado com r=12.
+class _MapRoundToggleButton extends StatelessWidget {
+  const _MapRoundToggleButton({
+    this.buttonKey,
+    required this.icon,
+    required this.iconColor,
+    required this.isOn,
+    this.showSlash,
+    this.iconSize = 22,
+    this.onTap,
+    this.onLongPress,
+  });
+
+  final Key? buttonKey;
+  final IconData icon;
+  final Color iconColor;
+  final bool isOn;
+
+  /// Quando null, o risco segue `!isOn`. Offline da chuva passa `false`
+  /// (`wifi_off` já comunica desligado).
+  final bool? showSlash;
+  final double iconSize;
+  final VoidCallback? onTap;
+  final VoidCallback? onLongPress;
+
+  @override
+  Widget build(BuildContext context) {
+    final slash = showSlash ?? !isOn;
+    return GestureDetector(
+      onTap: onTap,
+      onLongPress: onLongPress,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        key: buttonKey,
+        width: kMapActionColumnButtonSize,
+        height: kMapActionColumnButtonSize,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.15),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: ClipOval(
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              Icon(icon, size: iconSize, color: iconColor),
+              if (slash) const Positioned.fill(child: _IconOffSlash()),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Risco diagonal SW→NE (estilo iOS mute) para estado desligado.
+class _IconOffSlash extends StatelessWidget {
+  const _IconOffSlash();
+
+  @override
+  Widget build(BuildContext context) {
+    return const IgnorePointer(
+      child: CustomPaint(
+        painter: _IconOffSlashPainter(),
+        child: SizedBox.expand(),
+      ),
+    );
+  }
+}
+
+class _IconOffSlashPainter extends CustomPainter {
+  const _IconOffSlashPainter();
+
+  static const _haloWidth = 3.5;
+  static const _strokeWidth = 1.8;
+  static const _strokeColor = Color(0xFF3A3A3C);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final inset = size.shortestSide * 0.22;
+    final start = Offset(inset, size.height - inset);
+    final end = Offset(size.width - inset, inset);
+
+    final halo = Paint()
+      ..color = Colors.white
+      ..strokeWidth = _haloWidth
+      ..strokeCap = StrokeCap.round
+      ..style = PaintingStyle.stroke;
+
+    final stroke = Paint()
+      ..color = _strokeColor
+      ..strokeWidth = _strokeWidth
+      ..strokeCap = StrokeCap.round
+      ..style = PaintingStyle.stroke;
+
+    canvas.drawLine(start, end, halo);
+    canvas.drawLine(start, end, stroke);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+/// Toggle de pinos no mapa (`showMarkersProvider`).
 class _MapPinsToggle extends ConsumerWidget {
   const _MapPinsToggle();
 
@@ -490,36 +598,26 @@ class _MapPinsToggle extends ConsumerWidget {
     return Semantics(
       button: true,
       label: show ? 'Ocultar pinos' : 'Mostrar pinos',
-      child: Material(
-        color: Colors.white,
-        elevation: 2,
-        shadowColor: Colors.black26,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        child: InkWell(
-          key: const Key('map_control_pins'),
-          onTap: () {
-            HapticFeedback.selectionClick();
-            ref.read(showMarkersProvider.notifier).toggle();
-          },
-          borderRadius: BorderRadius.circular(12),
-          child: SizedBox(
-            width: kMapActionColumnButtonSize,
-            height: kMapActionColumnButtonSize,
-            child: Icon(
-              SFIcons.pinFill,
-              size: 20,
-              color: show ? const Color(0xFF1976D2) : const Color(0xFF8E8E93),
-            ),
-          ),
-        ),
+      child: _MapRoundToggleButton(
+        buttonKey: const Key('map_control_pins'),
+        icon: SFIcons.pinFill,
+        iconSize: 20,
+        iconColor: show ? const Color(0xFF1976D2) : Colors.grey.shade600,
+        isOn: show,
+        onTap: () {
+          HapticFeedback.selectionClick();
+          ref.read(showMarkersProvider.notifier).toggle();
+        },
       ),
     );
   }
 }
 
+/// Indicador unificado do mapa:
+/// offline = wifi_off vermelho (sem slash) · online = drop cinza + slash ·
+/// radar on = drop azul. Long-press exibe rótulo.
 class _MapStatusIndicator extends ConsumerStatefulWidget {
   static const Color _offlineColor = Color(0xFFFF3B30);
-  static const Color _onlineColor = Color(0xFF34C759);
   static const Color _climaActiveColor = Color(0xFF1428A0);
 
   const _MapStatusIndicator();
@@ -562,11 +660,22 @@ class _MapStatusIndicatorState extends ConsumerState<_MapStatusIndicator> {
       isRadarEnabled: isRadarEnabled,
     );
 
-    final color = !isOnline
-        ? _MapStatusIndicator._offlineColor
-        : isRadarEnabled
-        ? _MapStatusIndicator._climaActiveColor
-        : _MapStatusIndicator._onlineColor;
+    final IconData icon;
+    final Color iconColor;
+    final bool showSlash;
+    if (!isOnline) {
+      icon = Icons.wifi_off_rounded;
+      iconColor = _MapStatusIndicator._offlineColor;
+      showSlash = false;
+    } else if (isRadarEnabled) {
+      icon = Icons.water_drop_rounded;
+      iconColor = _MapStatusIndicator._climaActiveColor;
+      showSlash = false;
+    } else {
+      icon = Icons.water_drop_rounded;
+      iconColor = Colors.grey.shade600;
+      showSlash = true;
+    }
 
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -576,7 +685,12 @@ class _MapStatusIndicatorState extends ConsumerState<_MapStatusIndicator> {
         Semantics(
           button: true,
           label: label,
-          child: GestureDetector(
+          child: _MapRoundToggleButton(
+            buttonKey: const Key('map_status_indicator'),
+            icon: icon,
+            iconColor: iconColor,
+            isOn: isOnline && isRadarEnabled,
+            showSlash: showSlash,
             onTap: () {
               final enabling = !ref.read(climaRadarEnabledProvider);
               ref.read(radarOverlayControllerProvider).setEnabled(
@@ -585,49 +699,6 @@ class _MapStatusIndicatorState extends ConsumerState<_MapStatusIndicator> {
                   );
             },
             onLongPress: _showTemporaryLabel,
-            behavior: HitTestBehavior.opaque,
-            child: SizedBox(
-              width: kMapActionColumnButtonSize,
-              height: kMapActionColumnButtonSize,
-              child: Center(
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    Container(
-                      key: const Key('map_status_indicator'),
-                      width: 16,
-                      height: 16,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: color,
-                        border: !isOnline
-                            ? Border.all(color: Colors.white, width: 2)
-                            : null,
-                        boxShadow: [
-                          BoxShadow(
-                            color: color.withValues(alpha: 0.45),
-                            blurRadius: 6,
-                            spreadRadius: 1,
-                          ),
-                        ],
-                      ),
-                    ),
-                    if (!isOnline)
-                      const Icon(
-                        Icons.wifi_off_rounded,
-                        size: 10,
-                        color: Colors.white,
-                      )
-                    else if (isRadarEnabled)
-                      Icon(
-                        Icons.water_drop_rounded,
-                        size: 9,
-                        color: Colors.white.withValues(alpha: 0.85),
-                      ),
-                  ],
-                ),
-              ),
-            ),
           ),
         ),
       ],
