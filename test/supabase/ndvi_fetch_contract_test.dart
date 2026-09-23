@@ -36,6 +36,16 @@ void main() {
     expect(edgeFunction, contains('bboxFromGeometry'));
   });
 
+  test('Process API usa bbox como extensao e saida proporcional', () {
+    expect(edgeFunction, contains('function sentinelProcessBounds'));
+    expect(edgeFunction, contains('if (geometry) bounds.geometry = geometry'));
+    expect(edgeFunction, contains('function outputSizeForBbox'));
+    expect(edgeFunction, contains('sentinelProcessBounds(bbox, geometry)'));
+    expect(edgeFunction, contains('outputSizeForBbox(bbox, 512)'));
+    expect(edgeFunction, isNot(contains('width: 512')));
+    expect(edgeFunction, isNot(contains('height: 512')));
+  });
+
   test('404 explicito quando nenhuma imagem esta disponivel', () {
     expect(edgeFunction, contains('no_images_available'));
     expect(edgeFunction, contains('status: 404'));

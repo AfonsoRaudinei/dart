@@ -56,6 +56,44 @@ function bboxFromGeometry(geometry: GeoJsonGeometry): number[] | null {
   return [minLon, minLat, maxLon, maxLat];
 }
 
+/// Extensão geográfica da saída. Geometry, quando existe, só mascara.
+function sentinelProcessBounds(
+  bbox: number[],
+  geometry?: GeoJsonGeometry,
+) {
+  const bounds: {
+    bbox: number[];
+    geometry?: GeoJsonGeometry;
+    properties: { crs: string };
+  } = {
+    bbox,
+    properties: {
+      crs: "http://www.opengis.net/def/crs/EPSG/0/4326",
+    },
+  };
+  if (geometry) bounds.geometry = geometry;
+  return bounds;
+}
+
+/// Lado maior = maxSide. Proporção em graus, a mesma do LatLngBounds do card.
+function outputSizeForBbox(
+  bbox: number[],
+  maxSide: number,
+): { width: number; height: number } {
+  const lonSpan = Math.max(bbox[2] - bbox[0], 1e-9);
+  const latSpan = Math.max(bbox[3] - bbox[1], 1e-9);
+  if (lonSpan >= latSpan) {
+    return {
+      width: maxSide,
+      height: Math.max(1, Math.round(maxSide * (latSpan / lonSpan))),
+    };
+  }
+  return {
+    height: maxSide,
+    width: Math.max(1, Math.round(maxSide * (lonSpan / latSpan))),
+  };
+}
+
 // ── Evalscript amostra NDVI (UINT8) para estatísticas ───────────────────────
 const NDVI_STATS_SAMPLE_EVALSCRIPT = `
 //VERSION=3
@@ -164,19 +202,8 @@ async function fetchSentinelImage(
   geometry?: GeoJsonGeometry,
   cloudCoverageMax = 80
 ): Promise<{ base64: string; cloudCoverage: number } | null> {
-  const bounds = geometry
-    ? {
-        geometry,
-        properties: {
-          crs: "http://www.opengis.net/def/crs/EPSG/0/4326",
-        },
-      }
-    : {
-        bbox,
-        properties: {
-          crs: "http://www.opengis.net/def/crs/EPSG/0/4326",
-        },
-      };
+  const bounds = sentinelProcessBounds(bbox, geometry);
+  const size = outputSizeForBbox(bbox, 512);
 
   const body = {
     input: {
@@ -195,8 +222,8 @@ async function fetchSentinelImage(
       ],
     },
     output: {
-      width: 512,
-      height: 512,
+      width: size.width,
+      height: size.height,
       responses: [
         {
           identifier: "default",
@@ -239,19 +266,8 @@ async function fetchSentinelNdviStats(
   geometry?: GeoJsonGeometry,
   cloudCoverageMax = 80
 ): Promise<NdviStats | null> {
-  const bounds = geometry
-    ? {
-        geometry,
-        properties: {
-          crs: "http://www.opengis.net/def/crs/EPSG/0/4326",
-        },
-      }
-    : {
-        bbox,
-        properties: {
-          crs: "http://www.opengis.net/def/crs/EPSG/0/4326",
-        },
-      };
+  const bounds = sentinelProcessBounds(bbox, geometry);
+  const size = outputSizeForBbox(bbox, 48);
 
   const body = {
     input: {
@@ -270,8 +286,8 @@ async function fetchSentinelNdviStats(
       ],
     },
     output: {
-      width: 48,
-      height: 48,
+      width: size.width,
+      height: size.height,
       responses: [
         {
           identifier: "default",
