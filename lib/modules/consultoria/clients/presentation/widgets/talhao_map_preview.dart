@@ -42,13 +42,13 @@ class TalhaoMapPreviewWidget extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: InkWell(
-        onTap: onTap,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _buildMapSlot(ndviImage),
-            Padding(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _buildMapSlot(ndviImage),
+          InkWell(
+            onTap: onTap,
+            child: Padding(
               padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
               child: Row(
                 children: [
@@ -120,8 +120,8 @@ class TalhaoMapPreviewWidget extends StatelessWidget {
                 ],
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -154,11 +154,12 @@ class TalhaoMapPreviewWidget extends StatelessWidget {
       );
     }
 
-    Widget slot = SizedBox(height: 160, child: body);
-    if (ndviImage != null && vertices.length >= 3 && onNdviImageTap != null) {
-      slot = InkWell(onTap: onNdviImageTap, child: slot);
-    }
-    return slot;
+    final opensNdvi =
+        ndviImage != null && vertices.length >= 3 && onNdviImageTap != null;
+    return InkWell(
+      onTap: opensNdvi ? onNdviImageTap : onTap,
+      child: SizedBox(height: 160, child: body),
+    );
   }
 
   Widget _buildMap(ImageProvider<Object>? ndviImage) {
