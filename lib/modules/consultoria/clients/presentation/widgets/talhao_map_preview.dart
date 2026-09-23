@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
@@ -13,6 +15,11 @@ class TalhaoMapPreviewWidget extends StatelessWidget {
     this.subtitle,
     this.onTap,
     this.actions = const [],
+    this.showNdvi = false,
+    this.ndviLocalPath,
+    this.ndviImageUrl,
+    this.ndviCaption,
+    this.onNdviImageTap,
   });
 
   final List<LatLng> vertices;
@@ -21,9 +28,15 @@ class TalhaoMapPreviewWidget extends StatelessWidget {
   final String? subtitle;
   final VoidCallback? onTap;
   final List<Widget> actions;
+  final bool showNdvi;
+  final String? ndviLocalPath;
+  final String? ndviImageUrl;
+  final String? ndviCaption;
+  final VoidCallback? onNdviImageTap;
 
   @override
   Widget build(BuildContext context) {
+    final ndviImage = _ndviImageProvider;
     return Card(
       elevation: 1,
       margin: const EdgeInsets.only(bottom: 12),
@@ -34,10 +47,7 @@ class TalhaoMapPreviewWidget extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            SizedBox(
-              height: 160,
-              child: vertices.length < 3 ? _buildPlaceholder() : _buildMap(),
-            ),
+            _buildMapSlot(ndviImage),
             Padding(
               padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
               child: Row(
@@ -60,6 +70,20 @@ class TalhaoMapPreviewWidget extends StatelessWidget {
                           const SizedBox(height: 3),
                           Text(
                             subtitle!,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                        ],
+                        if (ndviImage != null &&
+                            ndviCaption != null &&
+                            ndviCaption!.isNotEmpty) ...[
+                          const SizedBox(height: 3),
+                          Text(
+                            ndviCaption!,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
@@ -102,13 +126,50 @@ class TalhaoMapPreviewWidget extends StatelessWidget {
     );
   }
 
-  Widget _buildMap() {
+  /// Imagem NDVI renderizável: arquivo local existente ou URL não vazia.
+  ImageProvider<Object>? get _ndviImageProvider {
+    if (!showNdvi) return null;
+    final path = ndviLocalPath;
+    if (path != null && path.isNotEmpty) {
+      final file = File(path);
+      if (file.existsSync()) return FileImage(file);
+    }
+    final url = ndviImageUrl?.trim();
+    if (url != null && url.isNotEmpty) return NetworkImage(url);
+    return null;
+  }
+
+  Widget _buildMapSlot(ImageProvider<Object>? ndviImage) {
+    final showLegend = showNdvi && ndviImage == null && vertices.length >= 3;
+    Widget body = vertices.length < 3
+        ? _buildPlaceholder()
+        : _buildMap(ndviImage);
+    if (showLegend) {
+      body = Stack(
+        fit: StackFit.expand,
+        children: [
+          body,
+          const Positioned(left: 8, bottom: 8, child: _SemNdviLabel()),
+        ],
+      );
+    }
+
+    Widget slot = SizedBox(height: 160, child: body);
+    if (ndviImage != null && vertices.length >= 3 && onNdviImageTap != null) {
+      slot = InkWell(onTap: onNdviImageTap, child: slot);
+    }
+    return slot;
+  }
+
+  Widget _buildMap(ImageProvider<Object>? ndviImage) {
     // Mesma resolução de provedor da camada satélite do mapa principal
     // (MapTiler com key; fallback licenciado sem key). Auditoria A-001.
-    final tileConfig = MapConfig.tileConfigForLayer(
-      LayerType.satellite,
-      mapTilerApiKey: MapConfig.mapTilerApiKey,
-    );
+    final tileConfig = ndviImage == null
+        ? MapConfig.tileConfigForLayer(
+            LayerType.satellite,
+            mapTilerApiKey: MapConfig.mapTilerApiKey,
+          )
+        : null;
     return FlutterMap(
       options: MapOptions(
         initialCameraFit: CameraFit.bounds(
@@ -120,18 +181,30 @@ class TalhaoMapPreviewWidget extends StatelessWidget {
         ),
       ),
       children: [
-        TileLayer(
-          urlTemplate: tileConfig.urlTemplate,
-          subdomains: tileConfig.subdomains,
-          maxZoom: tileConfig.maxZoom,
-          maxNativeZoom: tileConfig.maxNativeZoom,
-          userAgentPackageName: MapConfig.userAgent,
-        ),
+        if (tileConfig != null)
+          TileLayer(
+            urlTemplate: tileConfig.urlTemplate,
+            subdomains: tileConfig.subdomains,
+            maxZoom: tileConfig.maxZoom,
+            maxNativeZoom: tileConfig.maxNativeZoom,
+            userAgentPackageName: MapConfig.userAgent,
+          ),
+        if (ndviImage != null)
+          OverlayImageLayer(
+            overlayImages: [
+              OverlayImage(
+                imageProvider: ndviImage,
+                bounds: LatLngBounds.fromPoints(vertices),
+              ),
+            ],
+          ),
         PolygonLayer(
           polygons: [
             Polygon(
               points: vertices,
-              color: Colors.blue.withAlpha(77),
+              color: ndviImage == null
+                  ? Colors.blue.withAlpha(77)
+                  : Colors.transparent,
               borderColor: Colors.blue,
               borderStrokeWidth: 2,
             ),
@@ -159,6 +232,31 @@ class TalhaoMapPreviewWidget extends StatelessWidget {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SemNdviLabel extends StatelessWidget {
+  const _SemNdviLabel();
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: Colors.black.withAlpha(140),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: const Padding(
+        padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        child: Text(
+          'Sem NDVI',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ),
     );
