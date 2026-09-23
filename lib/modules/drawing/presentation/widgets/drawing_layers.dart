@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:soloforte_app/core/state/map_ndvi_overlay.dart';
 import 'package:soloforte_app/core/state/map_state.dart';
 import 'package:soloforte_app/core/utils/area_display_format.dart';
 import '../../domain/drawing_state.dart';
@@ -47,6 +48,8 @@ class _DrawingLayerWidgetState extends ConsumerState<DrawingLayerWidget> {
   Set<int>? _lastIntersectingIndices;
   AreaDisplayUnit? _lastAreaUnit;
   TalhaoMapLabelPrefs? _lastLabelPrefs;
+  String? _lastNdviOverlayId;
+  bool _lastNdviCover = false;
 
   @override
   Widget build(BuildContext context) {
@@ -55,6 +58,12 @@ class _DrawingLayerWidgetState extends ConsumerState<DrawingLayerWidget> {
       builder: (context, _) {
         final areaUnit = ref.watch(areaDisplayUnitProvider);
         final labelPrefs = ref.watch(talhaoMapLabelPrefsProvider);
+        final ndviOverlayId = ref.watch(mapNdviOverlayFieldIdProvider);
+        final ndviSummary = ref
+            .watch(mapNdviOverlaySummaryProvider)
+            .asData
+            ?.value;
+        final ndviCover = mapNdviSummaryCoversField(ndviSummary);
         final features = widget.controller.features;
         final selectedId = widget.controller.selectedFeature?.id;
         final selectedIds = widget.controller.selectedFeatureIds;
@@ -90,7 +99,9 @@ class _DrawingLayerWidgetState extends ConsumerState<DrawingLayerWidget> {
             _lastPivotEdge != pivotEdge ||
             _lastFreehandActive != isFreehandStrokeActive ||
             _lastAreaUnit != areaUnit ||
-            _lastLabelPrefs != labelPrefs;
+            _lastLabelPrefs != labelPrefs ||
+            _lastNdviOverlayId != ndviOverlayId ||
+            _lastNdviCover != ndviCover;
 
         if (!needsRebuild &&
             _cachedPolygons != null &&
@@ -119,6 +130,8 @@ class _DrawingLayerWidgetState extends ConsumerState<DrawingLayerWidget> {
         _lastIntersectingIndices = Set.from(intersectingIndices);
         _lastAreaUnit = areaUnit;
         _lastLabelPrefs = labelPrefs;
+        _lastNdviOverlayId = ndviOverlayId;
+        _lastNdviCover = ndviCover;
 
         final polygons = <Polygon>[];
         final polylines = <Polyline>[];
@@ -134,6 +147,10 @@ class _DrawingLayerWidgetState extends ConsumerState<DrawingLayerWidget> {
           final isSelected =
               feature.id == selectedId || selectedIds.contains(feature.id);
           final style = isSelected ? FieldStyle.selected : feature.style;
+          final hideNdviFill =
+              ndviCover &&
+              ndviOverlayId != null &&
+              feature.id == ndviOverlayId;
 
           for (var index = 0; index < parts.length; index++) {
             final rings = parts[index];
@@ -151,7 +168,9 @@ class _DrawingLayerWidgetState extends ConsumerState<DrawingLayerWidget> {
             polygons.add(
               _polygonFromRings(
                 rings,
-                color: style.fillColor.withValues(alpha: style.fillOpacity),
+                color: hideNdviFill
+                    ? const Color(0x00000000)
+                    : style.fillColor.withValues(alpha: style.fillOpacity),
                 borderColor: style.borderColor,
                 borderStrokeWidth: style.borderWidth,
                 pattern: style.isDashed
