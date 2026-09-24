@@ -66,6 +66,12 @@ final destinationCoordinateMarkerProvider = StateProvider.autoDispose<LatLng?>(
   (ref) => null,
 );
 
+/// Case de marketing em foco via query `/map?modo=foco&caseId=...`.
+/// Quando definido, o pin rico do marketing substitui o marcador genérico.
+final focusedMarketingCaseIdProvider = StateProvider.autoDispose<String?>(
+  (ref) => null,
+);
+
 class MapCameraSnapshot {
   final LatLng center;
   final double zoom;
