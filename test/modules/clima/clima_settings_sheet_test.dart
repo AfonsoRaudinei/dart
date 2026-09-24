@@ -48,7 +48,7 @@ void main() {
       expect(optionGroup, findsOneWidget);
     });
 
-    testWidgets('opção selecionada usa chipTextActive', (tester) async {
+    testWidgets('opção selecionada usa branco no tema escuro', (tester) async {
       SharedPreferences.setMockInitialValues({});
       final preferencesService = PreferencesService(
         await SharedPreferences.getInstance(),
@@ -70,7 +70,7 @@ void main() {
       await tester.pumpAndSettle();
 
       final celsius = tester.widget<Text>(find.text('Celsius (°C)'));
-      expect(celsius.style?.color, SoloForteSheetTokens.chipTextActive);
+      expect(celsius.style?.color, SoloForteSheetTokens.titleColor);
     });
   });
 }
