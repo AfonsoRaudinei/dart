@@ -24,6 +24,7 @@ class ClientsRepositoryAdapter implements IClientsRepository {
             name: c.name,
             photoPath: c.photoPath,
             active: c.active,
+            city: c.city,
           ),
         )
         .toList();
