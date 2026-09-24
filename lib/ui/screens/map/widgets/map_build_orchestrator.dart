@@ -247,8 +247,7 @@ class MapBuildOrchestrator extends ConsumerWidget {
                     if (hit != null) {
                       if (hit == 0 &&
                           drawCtrl.selectedSketchVertexIndex == 0 &&
-                          drawCtrl.canFinishDrawing &&
-                          !drawCtrl.hasSelfIntersection) {
+                          drawCtrl.canFinishDrawing) {
                         finishDrawing();
                       } else {
                         drawCtrl.selectSketchVertex(hit);
@@ -640,7 +639,6 @@ class _MapControlsHost extends ConsumerWidget {
       onUndoDrawing: () =>
           ref.read(drawingControllerProvider).undoDrawingPoint(),
       canUndo: drawingMetrics.canUndo,
-      hasSelfIntersection: drawingMetrics.hasSelfIntersection,
       measurementAreaHa: drawingMetrics.measureAreaHa,
       measurementPerimeterKm: drawingMetrics.measurePerimeterKm,
       measurementAzimuthDeg: drawingMetrics.measureAzimuthDeg,

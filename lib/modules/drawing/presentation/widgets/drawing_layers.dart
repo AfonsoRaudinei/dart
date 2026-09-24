@@ -357,21 +357,13 @@ class _DrawingLayerWidgetState extends ConsumerState<DrawingLayerWidget> {
       height: markerSize,
       child: GestureDetector(
         key: Key('drawing_point_$index'),
-        onTap: (allowClose && !widget.controller.hasSelfIntersection)
-            ? widget.onDrawingComplete
-            : null,
+        onTap: allowClose ? widget.onDrawingComplete : null,
         child: Container(
           decoration: BoxDecoration(
-            color: isStart && widget.controller.hasSelfIntersection
-                ? Colors.red.withValues(alpha: 0.5)
-                : Colors.white,
+            color: Colors.white,
             shape: BoxShape.circle,
             border: Border.all(
-              color: isStart
-                  ? (widget.controller.hasSelfIntersection
-                        ? Colors.red
-                        : Colors.green)
-                  : Colors.black26,
+              color: isStart ? Colors.green : Colors.black26,
               width: isStart ? 2 : 1,
             ),
             boxShadow: [
