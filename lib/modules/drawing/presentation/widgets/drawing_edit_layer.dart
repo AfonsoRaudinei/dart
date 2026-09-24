@@ -1,4 +1,3 @@
-import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
@@ -8,19 +7,16 @@ import 'package:latlong2/latlong.dart';
 import '../../domain/drawing_state.dart';
 import '../../domain/models/drawing_models.dart';
 import '../../presentation/controllers/drawing_controller.dart';
+import 'vertex_handle_drag_preview.dart';
 
 class DrawingEditLayer extends StatefulWidget {
   final DrawingController controller;
   final MapController mapController;
 
-  /// Fecha o polígono em sketch (2º toque no vértice inicial selecionado).
-  final VoidCallback? onPolygonClose;
-
   const DrawingEditLayer({
     super.key,
     required this.controller,
     required this.mapController,
-    this.onPolygonClose,
   });
 
   @override
@@ -28,130 +24,23 @@ class DrawingEditLayer extends StatefulWidget {
 }
 
 class _DrawingEditLayerState extends State<DrawingEditLayer> {
-  int? _draggingVertexIndex;
-  int? _draggingRingIndex;
-  LatLng? _draggingPosition;
-  bool _isSketchDrag = false;
-
-  bool get _isDragging =>
-      _draggingVertexIndex != null &&
-      _draggingRingIndex != null &&
-      _draggingPosition != null;
-
-  void _startVertexDrag({
-    required int ringIndex,
-    required int pointIndex,
-    required LatLng point,
-  }) {
-    setState(() {
-      _draggingRingIndex = ringIndex;
-      _draggingVertexIndex = pointIndex;
-      _draggingPosition = point;
-    });
-    widget.controller.beginEditVertexDrag(pointIndex);
-  }
-
-  void _updateVertexDrag(DragUpdateDetails details, LatLng fallbackPoint) {
-    if (!_isDragging) return;
-
-    final basePoint = _draggingPosition ?? fallbackPoint;
-    final screenPoint = widget.mapController.camera.latLngToScreenPoint(
-      basePoint,
-    );
-    final movedPoint = math.Point<double>(
-      screenPoint.x + details.delta.dx,
-      screenPoint.y + details.delta.dy,
-    );
-
-    final newLatLng = widget.mapController.camera.pointToLatLng(movedPoint);
-    setState(() => _draggingPosition = newLatLng);
-  }
-
-  void _endVertexDrag() {
-    final ringIndex = _draggingRingIndex;
-    final pointIndex = _draggingVertexIndex;
-    final position = _draggingPosition;
-    final wasSketch = _isSketchDrag;
-
-    if (ringIndex != null && pointIndex != null && position != null) {
-      if (wasSketch) {
-        widget.controller.moveSketchVertex(pointIndex, position);
-        widget.controller.endSketchVertexDrag();
-      } else {
-        widget.controller.updateVertexPosition(ringIndex, pointIndex, position);
-        widget.controller.onDragEnd(persist: false);
-      }
-    } else if (wasSketch) {
-      widget.controller.endSketchVertexDrag();
-    } else {
-      widget.controller.onDragEnd(persist: false);
-    }
-
-    setState(() {
-      _draggingRingIndex = null;
-      _draggingVertexIndex = null;
-      _draggingPosition = null;
-      _isSketchDrag = false;
-    });
-  }
-
-  void _cancelVertexDrag() {
-    if (_isSketchDrag) {
-      widget.controller.endSketchVertexDrag();
-    } else {
-      widget.controller.onDragEnd(persist: false);
-    }
-    setState(() {
-      _draggingRingIndex = null;
-      _draggingVertexIndex = null;
-      _draggingPosition = null;
-      _isSketchDrag = false;
-    });
-  }
-
-  void _startSketchVertexDrag({
-    required int pointIndex,
-    required LatLng point,
-  }) {
-    setState(() {
-      _isSketchDrag = true;
-      _draggingRingIndex = 0;
-      _draggingVertexIndex = pointIndex;
-      _draggingPosition = point;
-    });
-    widget.controller.beginSketchVertexDrag(pointIndex);
-  }
-
-  void _updateSketchVertexDrag(DragUpdateDetails details, LatLng fallbackPoint) {
-    if (!_isDragging || !_isSketchDrag) return;
-
-    final basePoint = _draggingPosition ?? fallbackPoint;
-    final screenPoint = widget.mapController.camera.latLngToScreenPoint(
-      basePoint,
-    );
-    final movedPoint = math.Point<double>(
-      screenPoint.x + details.delta.dx,
-      screenPoint.y + details.delta.dy,
-    );
-    final newLatLng = widget.mapController.camera.pointToLatLng(movedPoint);
-    // Só estado local durante o pan — evitar notify do controller (cancela gesto).
-    setState(() => _draggingPosition = newLatLng);
-  }
+  VertexHandleDrag? get _drag => widget.controller.vertexDragPreview.drag;
 
   List<LatLng> _sketchDisplayPoints() {
     final points = List<LatLng>.from(widget.controller.currentPoints);
-    if (_isSketchDrag &&
-        _draggingVertexIndex != null &&
-        _draggingPosition != null &&
-        _draggingVertexIndex! >= 0 &&
-        _draggingVertexIndex! < points.length) {
-      points[_draggingVertexIndex!] = _draggingPosition!;
+    final drag = _drag;
+    if (drag != null &&
+        drag.isSketch &&
+        drag.pointIndex >= 0 &&
+        drag.pointIndex < points.length) {
+      points[drag.pointIndex] = drag.position;
     }
     return points;
   }
 
   List<Polyline> _buildSketchDragPreview(List<LatLng> points) {
-    if (!_isSketchDrag || points.length < 2) return const [];
+    final drag = _drag;
+    if (drag == null || !drag.isSketch || points.length < 2) return const [];
     final preview = List<LatLng>.from(points);
     if (preview.length >= 3) {
       preview.add(preview.first);
@@ -165,24 +54,15 @@ class _DrawingEditLayerState extends State<DrawingEditLayer> {
     ];
   }
 
-  void _onSketchVertexTap(int index) {
-    final controller = widget.controller;
-    final alreadySelected = controller.selectedSketchVertexIndex == index;
-    if (index == 0 &&
-        alreadySelected &&
-        controller.canFinishDrawing) {
-      widget.onPolygonClose?.call();
-      return;
-    }
-    controller.selectSketchVertex(index);
-  }
-
   DrawingGeometry? _resolveDisplayGeometry(DrawingGeometry? original) {
-    if (!_isDragging || original is! DrawingPolygon) return original;
+    final drag = _drag;
+    if (drag == null || drag.isSketch || original is! DrawingPolygon) {
+      return original;
+    }
 
-    final ringIndex = _draggingRingIndex!;
-    final pointIndex = _draggingVertexIndex!;
-    final pos = _draggingPosition!;
+    final ringIndex = drag.ringIndex;
+    final pointIndex = drag.pointIndex;
+    final pos = drag.position;
 
     if (ringIndex < 0 || ringIndex >= original.coordinates.length) {
       return original;
@@ -214,7 +94,10 @@ class _DrawingEditLayerState extends State<DrawingEditLayer> {
   }
 
   List<Polygon> _buildDragPreviewPolygons(DrawingGeometry? geometry) {
-    if (!_isDragging || geometry is! DrawingPolygon) return const [];
+    final drag = _drag;
+    if (drag == null || drag.isSketch || geometry is! DrawingPolygon) {
+      return const [];
+    }
     if (geometry.coordinates.isEmpty || geometry.coordinates.first.isEmpty) {
       return const [];
     }
@@ -240,7 +123,10 @@ class _DrawingEditLayerState extends State<DrawingEditLayer> {
   }
 
   List<Polyline> _buildDragPreviewPolylines(DrawingGeometry? geometry) {
-    if (!_isDragging || geometry is! DrawingPolygon) return const [];
+    final drag = _drag;
+    if (drag == null || drag.isSketch || geometry is! DrawingPolygon) {
+      return const [];
+    }
 
     final lines = <Polyline>[];
     for (final ring in geometry.coordinates) {
@@ -267,7 +153,10 @@ class _DrawingEditLayerState extends State<DrawingEditLayer> {
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
-      listenable: widget.controller,
+      listenable: Listenable.merge([
+        widget.controller,
+        widget.controller.vertexDragPreview,
+      ]),
       builder: (context, _) {
         final state = widget.controller.currentState;
         final isEditing = state == DrawingState.editing;
@@ -319,34 +208,30 @@ class _DrawingEditLayerState extends State<DrawingEditLayer> {
     for (var i = 0; i < points.length; i++) {
       final point = points[i];
       final isSelected = selected == i;
-      final isDragging = _isSketchDrag && _draggingVertexIndex == i;
+      final isDragging =
+          _drag != null && _drag!.isSketch && _drag!.pointIndex == i;
       final isStart = i == 0;
       final showGota = isSelected || isDragging;
       final dotSize = isStart ? 20.0 : 16.0;
 
       // Marker tamanho fixo + ponta no LatLng (bottomCenter no flutter_map 7:
       // LatLng = topo do widget; gota/círculo idle descem a partir do vértice).
+      // O pan mora no overlay acima do mapa — o marker só desenha.
       markers.add(
         Marker(
           point: point,
           width: _VertexGotaMetrics.width,
           height: _VertexGotaMetrics.height,
           alignment: Alignment.bottomCenter,
-          child: _SketchVertexHandle(
-            index: i,
-            isStart: isStart,
-            isSelected: showGota,
-            isDragging: isDragging,
-            dotSize: dotSize,
-            hasSelfIntersection: false,
-            onTap: () => _onSketchVertexTap(i),
-            onPanStart: () => _startSketchVertexDrag(
-              pointIndex: i,
-              point: point,
+          child: IgnorePointer(
+            child: _SketchVertexHandle(
+              index: i,
+              isStart: isStart,
+              isSelected: showGota,
+              isDragging: isDragging,
+              dotSize: dotSize,
+              hasSelfIntersection: false,
             ),
-            onPanUpdate: (details) => _updateSketchVertexDrag(details, point),
-            onPanEnd: _endVertexDrag,
-            onPanCancel: _cancelVertexDrag,
           ),
         ),
       );
@@ -376,7 +261,10 @@ class _DrawingEditLayerState extends State<DrawingEditLayer> {
         for (int i = 0; i < logicalLength; i++) {
           final p = ring[i];
           final isDragging =
-              _draggingRingIndex == ringIdx && _draggingVertexIndex == i;
+              _drag != null &&
+              !_drag!.isSketch &&
+              _drag!.ringIndex == ringIdx &&
+              _drag!.pointIndex == i;
           final isSelected =
               widget.controller.selectedEditRingIndex == ringIdx &&
               widget.controller.selectedEditPointIndex == i;
@@ -390,24 +278,13 @@ class _DrawingEditLayerState extends State<DrawingEditLayer> {
               width: _VertexGotaMetrics.width,
               height: _VertexGotaMetrics.height,
               alignment: Alignment.bottomCenter,
-              child: _EditVertexGotaHandle(
-                ringIndex: ringIdx,
-                index: i,
-                isSelected: showGota,
-                isDragging: isDragging,
-                onTap: () => widget.controller.selectEditVertex(ringIdx, i),
-                onPanStart: () => _startVertexDrag(
+              child: IgnorePointer(
+                child: _EditVertexGotaHandle(
                   ringIndex: ringIdx,
-                  pointIndex: i,
-                  point: p,
+                  index: i,
+                  isSelected: showGota,
+                  isDragging: isDragging,
                 ),
-                onPanUpdate: (details) => _updateVertexDrag(details, p),
-                onPanEnd: _endVertexDrag,
-                onPanCancel: _cancelVertexDrag,
-                onDoubleTap: () {
-                  widget.controller.removeVertex(ringIdx, i);
-                  widget.controller.clearEditVertexSelection();
-                },
               ),
             ),
           );
@@ -498,52 +375,26 @@ class _EditVertexGotaHandle extends StatelessWidget {
   final int ringIndex;
   final bool isSelected;
   final bool isDragging;
-  final VoidCallback onTap;
-  final VoidCallback onPanStart;
-  final ValueChanged<DragUpdateDetails> onPanUpdate;
-  final VoidCallback onPanEnd;
-  final VoidCallback onPanCancel;
-  final VoidCallback onDoubleTap;
 
   const _EditVertexGotaHandle({
     required this.index,
     required this.ringIndex,
     required this.isSelected,
     required this.isDragging,
-    required this.onTap,
-    required this.onPanStart,
-    required this.onPanUpdate,
-    required this.onPanEnd,
-    required this.onPanCancel,
-    required this.onDoubleTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    final vertexKey = Key('drawing_vertex_${ringIndex}_$index');
-
     return SizedBox(
+      key: Key('drawing_vertex_${ringIndex}_$index'),
       width: _VertexGotaMetrics.width,
       height: _VertexGotaMetrics.height,
-      child: GestureDetector(
-        key: vertexKey,
-        behavior: HitTestBehavior.opaque,
-        onTap: onTap,
-        onDoubleTap: onDoubleTap,
-        onPanStart: (_) {
-          if (!isSelected) onTap();
-          onPanStart();
-        },
-        onPanUpdate: onPanUpdate,
-        onPanEnd: (_) => onPanEnd(),
-        onPanCancel: onPanCancel,
-        child: isSelected
-            ? _VertexGotaVisual(
-                key: Key('drawing_vertex_drag_${ringIndex}_$index'),
-                isDragging: isDragging,
-              )
-            : const _VertexIdleDot(),
-      ),
+      child: isSelected
+          ? _VertexGotaVisual(
+              key: Key('drawing_vertex_drag_${ringIndex}_$index'),
+              isDragging: isDragging,
+            )
+          : const _VertexIdleDot(),
     );
   }
 }
@@ -733,11 +584,6 @@ class _SketchVertexHandle extends StatelessWidget {
   final bool isDragging;
   final double dotSize;
   final bool hasSelfIntersection;
-  final VoidCallback onTap;
-  final VoidCallback onPanStart;
-  final ValueChanged<DragUpdateDetails> onPanUpdate;
-  final VoidCallback onPanEnd;
-  final VoidCallback onPanCancel;
 
   const _SketchVertexHandle({
     required this.index,
@@ -746,11 +592,6 @@ class _SketchVertexHandle extends StatelessWidget {
     required this.isDragging,
     required this.dotSize,
     required this.hasSelfIntersection,
-    required this.onTap,
-    required this.onPanStart,
-    required this.onPanUpdate,
-    required this.onPanEnd,
-    required this.onPanCancel,
   });
 
   @override
@@ -763,31 +604,20 @@ class _SketchVertexHandle extends StatelessWidget {
         : Colors.grey.shade400;
 
     return SizedBox(
+      key: Key('drawing_sketch_vertex_$index'),
       width: _VertexGotaMetrics.width,
       height: _VertexGotaMetrics.height,
-      child: GestureDetector(
-        key: Key('drawing_sketch_vertex_$index'),
-        behavior: HitTestBehavior.opaque,
-        onTap: onTap,
-        onPanStart: (_) {
-          if (!isSelected) onTap();
-          onPanStart();
-        },
-        onPanUpdate: onPanUpdate,
-        onPanEnd: (_) => onPanEnd(),
-        onPanCancel: onPanCancel,
-        child: isSelected
-            ? _VertexGotaVisual(
-                key: Key('drawing_sketch_vertex_drag_$index'),
-                isDragging: isDragging,
-              )
-            : _VertexIdleDot(
-                size: dotSize,
-                color: dotColor,
-                borderColor: borderColor,
-                borderWidth: isStart ? 2 : 1.5,
-              ),
-      ),
+      child: isSelected
+          ? _VertexGotaVisual(
+              key: Key('drawing_sketch_vertex_drag_$index'),
+              isDragging: isDragging,
+            )
+          : _VertexIdleDot(
+              size: dotSize,
+              color: dotColor,
+              borderColor: borderColor,
+              borderWidth: isStart ? 2 : 1.5,
+            ),
     );
   }
 }

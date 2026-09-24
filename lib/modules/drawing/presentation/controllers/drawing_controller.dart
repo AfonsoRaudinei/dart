@@ -19,6 +19,7 @@ import '../../infra/file_picker/file_picker_adapter.dart';
 import 'drawing_boolean_ops_orchestrator.dart';
 import 'drawing_gps_orchestrator.dart';
 import 'drawing_import_orchestrator.dart';
+import '../widgets/vertex_handle_drag_preview.dart';
 // ─────────────────────────────────────────────────────────────────────────────
 import '../../../../core/utils/app_logger.dart';
 
@@ -184,6 +185,7 @@ class DrawingController extends ChangeNotifier {
     _gpsOrchestrator.dispose();
     _validationDebounce?.cancel();
     _notifyThrottleTimer?.cancel();
+    vertexDragPreview.dispose();
     super.dispose();
   }
 
@@ -290,6 +292,8 @@ class DrawingController extends ChangeNotifier {
   /// Vértice selecionado durante sketch de polígono (mid-draw).
   int? _selectedSketchVertexIndex;
   bool _isDraggingSketchVertex = false;
+  /// Preview do arraste da gota. Não chama [notifyListeners].
+  final VertexHandleDragPreview vertexDragPreview = VertexHandleDragPreview();
   /// Vértice selecionado durante edição de polígono (gota).
   int? _selectedEditRingIndex;
   int? _selectedEditPointIndex;
@@ -1499,6 +1503,7 @@ class DrawingController extends ChangeNotifier {
     _isDraggingSketchVertex = false;
     _selectedEditRingIndex = null;
     _selectedEditPointIndex = null;
+    vertexDragPreview.clear();
     _stateMachine.cancel();
     if (notify) {
       notifyListeners();

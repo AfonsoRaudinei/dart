@@ -18,6 +18,7 @@ import '../../../../core/state/map_state.dart';
 import '../../../../core/utils/area_display_format.dart';
 import '../../../../modules/drawing/domain/drawing_state.dart';
 import '../../../../modules/drawing/presentation/widgets/drawing_bottom_toolbar_overlay.dart';
+import '../../../../modules/drawing/presentation/widgets/vertex_handle_drag_preview.dart';
 import '../../../../core/utils/app_logger.dart';
 import '../../../../modules/map/presentation/widgets/visit_active_card.dart';
 import 'selected_talhao_card.dart';
@@ -62,6 +63,7 @@ class MapControlsOverlay extends ConsumerStatefulWidget {
 
   final double measurementAreaHa;
   final double measurementPerimeterKm;
+  final VertexHandleDragPreview? vertexDragPreview;
   final double? measurementAzimuthDeg;
   final double gpsAccuracyM;
   final String? editingFieldName;
@@ -89,6 +91,7 @@ class MapControlsOverlay extends ConsumerStatefulWidget {
     this.canUndo = false,
     this.measurementAreaHa = 0,
     this.measurementPerimeterKm = 0,
+    this.vertexDragPreview,
     this.measurementAzimuthDeg,
     this.gpsAccuracyM = 0,
     this.editingFieldName,
@@ -261,6 +264,7 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
             canConfirm: true,
             measurementAreaHa: widget.measurementAreaHa,
             measurementPerimeterKm: widget.measurementPerimeterKm,
+            vertexDragPreview: widget.vertexDragPreview,
             measurementAzimuthDeg: widget.measurementAzimuthDeg,
             gpsAccuracyM: widget.gpsAccuracyM,
             areaUnit: areaUnit,
