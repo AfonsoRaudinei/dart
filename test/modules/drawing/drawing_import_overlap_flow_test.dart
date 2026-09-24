@@ -6,6 +6,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:soloforte_app/modules/drawing/data/repositories/drawing_repository.dart';
+import 'package:soloforte_app/modules/drawing/domain/drawing_state.dart';
 import 'package:soloforte_app/modules/drawing/domain/models/drawing_models.dart';
 import 'package:soloforte_app/modules/drawing/domain/services/drawing_import_service.dart';
 import 'package:soloforte_app/modules/drawing/infra/file_picker/i_file_picker.dart';
@@ -177,7 +178,7 @@ void main() {
   });
 
   test(
-    'desenho manual com auto-interseção continua com warning em revisão',
+    'desenho manual com auto-interseção não entra em revisão',
     () async {
       final controller = DrawingController(repository: _Repository());
       addTearDown(controller.dispose);
@@ -188,9 +189,10 @@ void main() {
       controller.appendDrawingPoint(const LatLng(2, 0));
       controller.completeDrawing();
 
+      expect(controller.currentState, DrawingState.drawing);
       expect(
         controller.intersectionWarningMessage,
-        contains('Salve e edite os vértices depois'),
+        'Linhas se cruzam. Ajuste os vértices e confirme de novo.',
       );
       expect(controller.errorMessage, isNull);
     },

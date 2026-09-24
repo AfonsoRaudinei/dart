@@ -473,7 +473,18 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
       return;
     }
     controller.completeDrawing();
-    if (controller.currentState != DrawingState.reviewing) return;
+    if (controller.currentState != DrawingState.reviewing) {
+      final warning = controller.intersectionWarningMessage;
+      if (warning != null && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(warning),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+      return;
+    }
     _setSheetState(
       const MapSheetState(type: MapSheetType.draw),
       'FinishDrawing: Opening draw review sheet',
