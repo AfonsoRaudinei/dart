@@ -427,71 +427,94 @@ class ClimaAlertasBanner extends StatelessWidget {
   };
 }
 
-// ─── Tab Chips ────────────────────────────────────────────────────────────────
+// ─── Period Toggle (Agora | 24h | 7 dias) ─────────────────────────────────────
 
-class ClimaTabChips extends ConsumerWidget {
-  const ClimaTabChips({super.key});
+class ClimaPeriodToggle extends ConsumerWidget {
+  const ClimaPeriodToggle({super.key});
+
+  static const labels = ['Agora', '24h', '7 dias'];
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return Row(
-      children: [
-        Expanded(
-          child: _TabChip(
-            label: '☔  Próximas 24h',
-            onTap: () {
-              HapticFeedback.selectionClick();
-              ref.read(climaTabIndexProvider.notifier).state = 1;
-            },
+    final selected = ref.watch(climaTabIndexProvider).clamp(0, 2);
+
+    return SizedBox(
+      height: 40,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: context.climaSegmentTrack,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(3),
+          child: Row(
+            children: [
+              for (var i = 0; i < labels.length; i++)
+                Expanded(
+                  child: _PeriodSegment(
+                    label: labels[i],
+                    isSelected: selected == i,
+                    onTap: () {
+                      HapticFeedback.selectionClick();
+                      ref.read(climaTabIndexProvider.notifier).state = i;
+                    },
+                  ),
+                ),
+            ],
           ),
         ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _TabChip(
-            label: '📅  7 Dias',
-            onTap: () {
-              HapticFeedback.selectionClick();
-              ref.read(climaTabIndexProvider.notifier).state = 2;
-            },
-          ),
-        ),
-      ],
+      ),
     );
   }
 }
 
-class _TabChip extends StatelessWidget {
-  final String label;
-  final VoidCallback onTap;
+class _PeriodSegment extends StatelessWidget {
+  const _PeriodSegment({
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+  });
 
-  const _TabChip({required this.label, required this.onTap});
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 15),
-        decoration: BoxDecoration(
-          color: context.climaCard,
-          borderRadius: BorderRadius.circular(14),
-          boxShadow: [
-            BoxShadow(
-              color: context.climaShadow,
-              offset: const Offset(0, 4),
-              blurRadius: 12,
-            ),
-          ],
-        ),
-        child: Center(
+    return Semantics(
+      button: true,
+      selected: isSelected,
+      label: label,
+      child: GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeOut,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: isSelected ? context.climaCard : Colors.transparent,
+            borderRadius: BorderRadius.circular(8),
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: context.climaShadow,
+                      offset: const Offset(0, 1),
+                      blurRadius: 4,
+                    ),
+                  ]
+                : null,
+          ),
           child: Text(
             label,
             style: TextStyle(
               fontFamily: 'Inter',
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-              letterSpacing: -0.3,
-              color: context.climaTint,
+              fontSize: 14,
+              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+              letterSpacing: -0.2,
+              color: isSelected
+                  ? context.climaTextPrimary
+                  : context.climaTextSecondary,
             ),
           ),
         ),
