@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../../../../core/config/clima_config.dart';
 import '../../../../core/network/network_policy.dart';
+import '../../domain/clima_fonte.dart';
 import '../../domain/entities/clima_atual.dart';
 import '../../domain/entities/previsao_horaria.dart';
 import '../../domain/entities/previsao_diaria.dart';
@@ -158,6 +159,7 @@ class OpenWeatherRemoteDatasource implements IClimaRemoteDatasource {
       atualizadoEm: DateTime.fromMillisecondsSinceEpoch(
         (current['dt'] as int) * 1000,
       ),
+      fonte: ClimaFonte.openWeather,
     );
   }
 

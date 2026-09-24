@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'package:soloforte_app/modules/clima/domain/clima_dicas_agronomicas.dart';
 import 'package:soloforte_app/modules/clima/domain/entities/previsao_diaria.dart';
 import 'package:soloforte_app/modules/clima/presentation/widgets/clima_tokens.dart';
 
@@ -13,7 +14,7 @@ class ClimaDicaAgronomicaCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dicas = _gerarDicas(previsoes);
+    final dicas = gerarDicasAgronomicas(previsoes);
     if (dicas.isEmpty) return const SizedBox.shrink();
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -85,60 +86,4 @@ class ClimaDicaAgronomicaCard extends StatelessWidget {
       ),
     );
   }
-
-  static List<_Dica> _gerarDicas(List<PrevisaoDiaria> previsoes) {
-    if (previsoes.isEmpty) return [];
-
-    final dicas = <_Dica>[];
-    final proximos2 = previsoes.take(2).toList();
-    final proximos7 = previsoes.take(7).toList();
-
-    final chuvaIntensa = proximos2.any((d) => d.precipitacao > 5);
-    if (chuvaIntensa) {
-      dicas.add(const _Dica(
-        '🌧️',
-        'Chuva prevista nos próximos 2 dias — evite aplicações fitossanitárias e adubações de cobertura.',
-      ));
-    }
-
-    final seco = proximos7.every((d) => d.precipitacao < 1);
-    if (seco) {
-      dicas.add(const _Dica(
-        '🏜️',
-        'Período seco prolongado — monitore a umidade do solo e avalie irrigação suplementar.',
-      ));
-    }
-
-    final ventoForte = proximos2.any((d) => d.ventoMedio > 20);
-    if (ventoForte) {
-      dicas.add(const _Dica(
-        '💨',
-        'Ventos fortes previstos — evite pulverizações e operações com pó nos próximos 2 dias.',
-      ));
-    }
-
-    final temAlerta = proximos7.any((d) => d.temAlerta);
-    if (temAlerta) {
-      dicas.add(const _Dica(
-        '⚠️',
-        'Alerta meteorológico previsto para os próximos dias — fique atento antes de iniciar operações de campo.',
-      ));
-    }
-
-    if (!chuvaIntensa && !seco && !ventoForte && !temAlerta) {
-      dicas.add(const _Dica(
-        '✅',
-        'Condições favoráveis nos próximos dias — bom período para colheita e operações de campo.',
-      ));
-    }
-
-    return dicas;
-  }
-}
-
-class _Dica {
-  final String emoji;
-  final String texto;
-
-  const _Dica(this.emoji, this.texto);
 }

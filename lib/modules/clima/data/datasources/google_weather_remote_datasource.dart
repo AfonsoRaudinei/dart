@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import '../../../../core/config/clima_config.dart';
 import '../../../../core/network/network_policy.dart';
 import '../../domain/entities/alerta_meteorologico.dart';
+import '../../domain/clima_fonte.dart';
 import '../../domain/entities/clima_atual.dart';
 import '../../domain/entities/previsao_diaria.dart';
 import '../../domain/entities/previsao_horaria.dart';
@@ -78,6 +79,7 @@ class GoogleWeatherRemoteDatasource implements IClimaRemoteDatasource {
           longitude: lon,
           cidade: cidade,
           atualizadoEm: _parseDateTime(current['currentTime']) ?? DateTime.now(),
+          fonte: ClimaFonte.googleWeather,
         );
       },
       fallback: () => _fallback?.fetchClimaAtual(lat: lat, lon: lon),

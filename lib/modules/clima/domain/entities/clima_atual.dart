@@ -1,3 +1,5 @@
+import 'package:soloforte_app/modules/clima/domain/clima_fonte.dart';
+
 /// Representa o estado climático atual de uma localização.
 class ClimaAtual {
   final double temperatura;
@@ -18,6 +20,7 @@ class ClimaAtual {
   final double longitude;
   final String cidade;
   final DateTime atualizadoEm;
+  final ClimaFonte fonte;
 
   const ClimaAtual({
     required this.temperatura,
@@ -38,5 +41,6 @@ class ClimaAtual {
     required this.longitude,
     required this.cidade,
     required this.atualizadoEm,
+    this.fonte = ClimaFonte.desconhecida,
   });
 }

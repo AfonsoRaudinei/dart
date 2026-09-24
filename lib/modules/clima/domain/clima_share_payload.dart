@@ -1,11 +1,15 @@
+import 'package:soloforte_app/modules/clima/domain/clima_dicas_agronomicas.dart';
+import 'package:soloforte_app/modules/clima/domain/clima_fonte.dart';
+import 'package:soloforte_app/modules/clima/domain/clima_weather_emoji.dart';
 import 'package:soloforte_app/modules/clima/domain/entities/clima_atual.dart';
 import 'package:soloforte_app/modules/clima/domain/entities/previsao_diaria.dart';
 import 'package:soloforte_app/modules/clima/domain/entities/previsao_horaria.dart';
-import 'package:soloforte_app/modules/clima/presentation/widgets/clima_tokens.dart';
 
-/// Payload de compartilhamento WhatsApp para o módulo clima.
+/// Payload de compartilhamento para o módulo clima.
 sealed class ClimaSharePayload {
   const ClimaSharePayload();
+
+  ClimaFonte get fonte;
 
   String get cidade;
   String get previewTitle;
@@ -13,13 +17,35 @@ sealed class ClimaSharePayload {
   String get previewEmoji;
   List<String> get previewChips;
 
+  String? get previewCampoLinha;
+
   String buildWhatsAppMessage();
 }
 
+String climaShareRodape(ClimaFonte fonte) {
+  final buffer = StringBuffer();
+  final atribuicao = climaFonteAttribution(fonte);
+  if (atribuicao.isNotEmpty) {
+    buffer.writeln(atribuicao);
+  }
+  buffer.write('SoloForte · Inteligência Agronômica');
+  return buffer.toString();
+}
+
+String _formatHora(DateTime dt) =>
+    '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+
 final class ClimaSharePayloadAtual extends ClimaSharePayload {
-  const ClimaSharePayloadAtual(this.clima);
+  const ClimaSharePayloadAtual(
+    this.clima, {
+    this.contextoSemanal = const [],
+  });
 
   final ClimaAtual clima;
+  final List<PrevisaoDiaria> contextoSemanal;
+
+  @override
+  ClimaFonte get fonte => clima.fonte;
 
   @override
   String get cidade => clima.cidade;
@@ -43,14 +69,38 @@ final class ClimaSharePayloadAtual extends ClimaSharePayload {
       ];
 
   @override
+  String? get previewCampoLinha =>
+      primeiraLinhaCampoCompartilhamento(contextoSemanal);
+
+  @override
   String buildWhatsAppMessage() {
-    return '🌤 Previsão do tempo — ${clima.cidade}\n\n'
-        '🌡 ${clima.temperatura.toStringAsFixed(0)}°C — ${clima.condicao}\n'
-        '💧 Umidade: ${clima.umidade}%\n'
-        '🌧 Chuva: ${clima.precipitacao.toStringAsFixed(1)} mm\n'
-        '💨 Vento: ${clima.ventoVelocidade.toStringAsFixed(0)} km/h ${clima.ventoDirecao}\n'
-        '☀️ Índice UV: ${clima.indiceUV}\n\n'
-        'Enviado pelo SoloForte App';
+    final buffer = StringBuffer();
+    buffer.writeln('SoloForte · ${clima.cidade}');
+    buffer.writeln('Agora · ${clima.condicao}');
+    buffer.writeln();
+    buffer.writeln(
+      '${clima.temperatura.toStringAsFixed(0)}°C  ·  '
+      'sensação ${clima.sensacaoTermica.toStringAsFixed(0)}°C',
+    );
+    buffer.writeln(
+      'Umidade ${clima.umidade}%  ·  '
+      'chuva ${clima.precipitacao.toStringAsFixed(1)} mm',
+    );
+    buffer.writeln(
+      'Vento ${clima.ventoVelocidade.toStringAsFixed(0)} km/h '
+      '${clima.ventoDirecao}  ·  UV ${clima.indiceUV}',
+    );
+    buffer.writeln(
+      'Sol ${_formatHora(clima.nascerSol)} – ${_formatHora(clima.porSol)}',
+    );
+    final campo = previewCampoLinha;
+    if (campo != null) {
+      buffer.writeln();
+      buffer.writeln(campo);
+    }
+    buffer.writeln();
+    buffer.write(climaShareRodape(fonte));
+    return buffer.toString();
   }
 }
 
@@ -58,10 +108,15 @@ final class ClimaSharePayloadHoraria extends ClimaSharePayload {
   const ClimaSharePayloadHoraria({
     required this.cidadeLabel,
     required this.previsoes,
+    required this.fonte,
+    this.contextoSemanal = const [],
   });
 
   final String cidadeLabel;
   final List<PrevisaoHoraria> previsoes;
+  @override
+  final ClimaFonte fonte;
+  final List<PrevisaoDiaria> contextoSemanal;
 
   @override
   String get cidade => cidadeLabel;
@@ -104,16 +159,28 @@ final class ClimaSharePayloadHoraria extends ClimaSharePayload {
   }
 
   @override
+  String? get previewCampoLinha =>
+      primeiraLinhaCampoCompartilhamento(contextoSemanal);
+
+  @override
   String buildWhatsAppMessage() {
-    final buffer = StringBuffer('🌤 Próximas 24h — $cidadeLabel\n\n');
+    final buffer = StringBuffer('SoloForte · $cidadeLabel\n');
+    buffer.writeln('Próximas 24 horas\n');
     for (final h in previsoes.take(24)) {
       final hora = '${h.hora.hour.toString().padLeft(2, '0')}h';
+      final emoji = climaWeatherEmoji(h.condicaoCodigo);
       buffer.writeln(
-        '$hora: ${h.temperatura.toStringAsFixed(0)}° — ${h.condicao}, '
+        '$emoji $hora: ${h.temperatura.toStringAsFixed(0)}° — ${h.condicao}, '
         '${h.precipitacao.toStringAsFixed(1)} mm',
       );
     }
-    buffer.writeln('\nEnviado pelo SoloForte App');
+    final campo = previewCampoLinha;
+    if (campo != null) {
+      buffer.writeln();
+      buffer.writeln(campo);
+    }
+    buffer.writeln();
+    buffer.write(climaShareRodape(fonte));
     return buffer.toString().trim();
   }
 }
@@ -122,10 +189,13 @@ final class ClimaSharePayloadSemanal extends ClimaSharePayload {
   const ClimaSharePayloadSemanal({
     required this.cidadeLabel,
     required this.previsoes,
+    required this.fonte,
   });
 
   final String cidadeLabel;
   final List<PrevisaoDiaria> previsoes;
+  @override
+  final ClimaFonte fonte;
 
   static const _diasSemana = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
   static const _meses = [
@@ -162,6 +232,10 @@ final class ClimaSharePayloadSemanal extends ClimaSharePayload {
     ];
   }
 
+  @override
+  String? get previewCampoLinha =>
+      primeiraLinhaCampoCompartilhamento(previsoes);
+
   String _formatDay(PrevisaoDiaria d) {
     final diaNome = _diasSemana[d.data.weekday % 7];
     final mesNome = _meses[d.data.month - 1];
@@ -170,15 +244,23 @@ final class ClimaSharePayloadSemanal extends ClimaSharePayload {
 
   @override
   String buildWhatsAppMessage() {
-    final buffer = StringBuffer('🌤 Previsão semanal — $cidadeLabel\n\n');
+    final buffer = StringBuffer('SoloForte · $cidadeLabel\n');
+    buffer.writeln('Previsão da semana\n');
     for (final d in previsoes) {
+      final emoji = climaWeatherEmoji(d.condicaoCodigo);
       buffer.writeln(
-        '${_formatDay(d)}: ${d.tempMax.toStringAsFixed(0)}°/'
+        '$emoji ${_formatDay(d)}: ${d.tempMax.toStringAsFixed(0)}°/'
         '${d.tempMin.toStringAsFixed(0)}° — ${d.condicao}, '
         '${d.precipitacao.toStringAsFixed(1)} mm',
       );
     }
-    buffer.writeln('\nEnviado pelo SoloForte App');
+    final campo = previewCampoLinha;
+    if (campo != null) {
+      buffer.writeln();
+      buffer.writeln(campo);
+    }
+    buffer.writeln();
+    buffer.write(climaShareRodape(fonte));
     return buffer.toString().trim();
   }
 }

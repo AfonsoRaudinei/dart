@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:sqflite/sqflite.dart';
 import '../../../../core/config/clima_config.dart';
 import '../../../../core/database/database_helper.dart';
+import '../../domain/clima_fonte.dart';
 import '../../domain/entities/clima_atual.dart';
 import '../../domain/entities/previsao_horaria.dart';
 import '../../domain/entities/previsao_diaria.dart';
@@ -51,6 +52,7 @@ class ClimaLocalDatasource implements IClimaLocalDatasource {
         'longitude': clima.longitude,
         'cidade': clima.cidade,
         'atualizado_em': clima.atualizadoEm.toIso8601String(),
+        'fonte': clima.fonte.toStorageKey(),
         'cached_at': DateTime.now().toIso8601String(),
       },
       conflictAlgorithm: ConflictAlgorithm.replace,
@@ -101,6 +103,7 @@ class ClimaLocalDatasource implements IClimaLocalDatasource {
       longitude: (row['longitude'] as num).toDouble(),
       cidade: row['cidade'] as String,
       atualizadoEm: DateTime.parse(row['atualizado_em'] as String),
+      fonte: ClimaFonteCodec.fromStorageKey(row['fonte'] as String?),
     );
   }
 

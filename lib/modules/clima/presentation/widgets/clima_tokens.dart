@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 
+export 'package:soloforte_app/modules/clima/domain/clima_weather_emoji.dart';
+
 // ─── Design Tokens — Módulo Clima (theme-aware) ─────────────────────────────
 
 /// Cores do módulo Clima derivadas do tema ativo (Verde/Azul/Black).
@@ -150,24 +152,6 @@ BoxDecoration climaWeeklyCardDecoration(
       shadowOffset: const Offset(0, 6),
       shadowBlur: 16,
     );
-
-/// Converte o código de ícone da OpenWeatherMap em emoji.
-String climaWeatherEmoji(String code) {
-  final isDay = code.endsWith('d');
-  final base = code.replaceAll(RegExp(r'[dn]$'), '');
-  return switch (base) {
-    '01' => isDay ? '☀️' : '🌙',
-    '02' => '⛅',
-    '03' => '🌥️',
-    '04' => '☁️',
-    '09' => '🌧️',
-    '10' => '🌦️',
-    '11' => '⛈️',
-    '13' => '❄️',
-    '50' => '🌫️',
-    _ => '🌡️',
-  };
-}
 
 // ─── Unidade de temperatura ───────────────────────────────────────────────────
 
