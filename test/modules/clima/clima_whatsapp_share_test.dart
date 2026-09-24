@@ -84,6 +84,14 @@ void main() {
     });
   });
 
+  group('climaCityMatchKey', () {
+    test('ignora UF e maiúsculas', () {
+      expect(climaCityMatchKey('Porto Nacional, TO'), 'porto nacional');
+      expect(climaCityMatchKey('porto nacional'), 'porto nacional');
+      expect(climaCityMatchKey(null), '');
+    });
+  });
+
   group('climaPhoneIsValid', () {
     test('aceita telefone com 10+ dígitos', () {
       expect(climaPhoneIsValid('(63) 99999-1234'), isTrue);
@@ -148,6 +156,65 @@ void main() {
       expect(checkboxes.length, 2);
       expect(checkboxes.first.onChanged, isNotNull);
       expect(checkboxes.last.onChanged, isNull);
+      expect(find.text('Cliente Outra Cidade'), findsNothing);
+      expect(find.text('Enviar pelo WhatsApp'), findsNothing);
+      expect(find.text('Selecione destinatários'), findsOneWidget);
+
+      final enviar = tester.widget<FilledButton>(find.byType(FilledButton));
+      expect(enviar.onPressed, isNull);
+
+      await tester.tap(find.text('Todas'));
+      await tester.pumpAndSettle();
+      expect(find.text('Cliente Outra Cidade'), findsOneWidget);
+
+      await tester.tap(find.text('Palmas'));
+      await tester.pumpAndSettle();
+      expect(find.text('Cliente Outra Cidade'), findsNothing);
+
+      await tester.tap(find.text('Marcar com telefone'));
+      await tester.pumpAndSettle();
+      expect(find.text('Enviar pelo WhatsApp (1)'), findsOneWidget);
+    });
+
+    testWidgets('cidade sem cliente mostra estado vazio', (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            clientLookupProvider.overrideWithValue(_FakeClientLookup()),
+          ],
+          child: MaterialApp(
+            home: Scaffold(
+              body: ClimaWhatsAppSheet(
+                payload: ClimaSharePayloadAtual(
+                  ClimaAtual(
+                    temperatura: 25,
+                    sensacaoTermica: 26,
+                    condicao: 'Ensolarado',
+                    condicaoCodigo: '01d',
+                    ventoVelocidade: 5,
+                    ventoDirecao: 'N',
+                    umidade: 61,
+                    precipitacao: 0,
+                    pressao: 1012,
+                    visibilidade: 10,
+                    coberturaNuvens: 0,
+                    indiceUV: 0,
+                    nascerSol: DateTime(2026, 7, 10, 6, 3),
+                    porSol: DateTime(2026, 7, 10, 18, 10),
+                    latitude: -10.7,
+                    longitude: -48.4,
+                    cidade: 'Gurupi, TO',
+                    atualizadoEm: DateTime(2026, 7, 10, 10),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Nenhum cliente em Gurupi.'), findsOneWidget);
+      expect(find.text('Cliente Com Telefone'), findsNothing);
     });
   });
 }
@@ -160,12 +227,21 @@ class _FakeClientLookup implements IClientLookup {
         id: '1',
         name: 'Cliente Com Telefone',
         phone: '63999991234',
+        city: 'Palmas',
         active: true,
       ),
       ClientSummary(
         id: '2',
         name: 'Cliente Sem Telefone',
         phone: '',
+        city: 'Palmas, TO',
+        active: true,
+      ),
+      ClientSummary(
+        id: '3',
+        name: 'Cliente Outra Cidade',
+        phone: '63988887777',
+        city: 'Porto Nacional',
         active: true,
       ),
     ];
