@@ -6,6 +6,7 @@ import 'package:soloforte_app/modules/clima/data/datasources/i_clima_local_datas
 import 'package:soloforte_app/modules/clima/data/datasources/i_clima_remote_datasource.dart';
 import 'package:soloforte_app/modules/clima/data/repositories/clima_repository_impl.dart';
 import 'package:soloforte_app/modules/clima/domain/entities/alerta_meteorologico.dart';
+import 'package:soloforte_app/modules/clima/domain/clima_fonte.dart';
 import 'package:soloforte_app/modules/clima/domain/entities/clima_atual.dart';
 import 'package:soloforte_app/modules/clima/domain/entities/previsao_diaria.dart';
 import 'package:soloforte_app/modules/clima/domain/entities/previsao_horaria.dart';
@@ -143,8 +144,14 @@ class FakeLocalDatasource implements IClimaLocalDatasource {
   Future<void> saveClimaAtual(ClimaAtual clima) async {}
 
   @override
-  Future<void> savePrevisaoHoraria(List<PrevisaoHoraria> previsoes) async {}
+  Future<void> savePrevisaoHoraria(
+    List<PrevisaoHoraria> previsoes, {
+    ClimaFonte fonte = ClimaFonte.desconhecida,
+  }) async {}
 
   @override
-  Future<void> savePrevisaoSemanal(List<PrevisaoDiaria> previsoes) async {}
+  Future<void> savePrevisaoSemanal(
+    List<PrevisaoDiaria> previsoes, {
+    ClimaFonte fonte = ClimaFonte.desconhecida,
+  }) async {}
 }

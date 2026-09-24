@@ -1,3 +1,4 @@
+import '../../domain/clima_fonte.dart';
 import '../../domain/entities/clima_atual.dart';
 import '../../domain/entities/previsao_horaria.dart';
 import '../../domain/entities/previsao_diaria.dart';
@@ -15,7 +16,10 @@ abstract class IClimaLocalDatasource {
   });
 
   /// Persiste a previsão horária em cache local.
-  Future<void> savePrevisaoHoraria(List<PrevisaoHoraria> previsoes);
+  Future<void> savePrevisaoHoraria(
+    List<PrevisaoHoraria> previsoes, {
+    ClimaFonte fonte = ClimaFonte.desconhecida,
+  });
 
   /// Retorna a previsão horária em cache, ou lista vazia se não houver.
   Future<List<PrevisaoHoraria>> getCachedPrevisaoHoraria({
@@ -24,7 +28,10 @@ abstract class IClimaLocalDatasource {
   });
 
   /// Persiste a previsão semanal em cache local.
-  Future<void> savePrevisaoSemanal(List<PrevisaoDiaria> previsoes);
+  Future<void> savePrevisaoSemanal(
+    List<PrevisaoDiaria> previsoes, {
+    ClimaFonte fonte = ClimaFonte.desconhecida,
+  });
 
   /// Retorna a previsão semanal em cache, ou lista vazia se não houver.
   Future<List<PrevisaoDiaria>> getCachedPrevisaoSemanal({

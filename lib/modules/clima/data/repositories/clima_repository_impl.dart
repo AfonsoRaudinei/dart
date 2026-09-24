@@ -1,3 +1,4 @@
+import '../../domain/clima_fonte.dart';
 import '../../domain/entities/clima_atual.dart';
 import '../../domain/entities/previsao_horaria.dart';
 import '../../domain/entities/previsao_diaria.dart';
@@ -50,7 +51,8 @@ class ClimaRepositoryImpl implements IClimaRepository {
         lon: lon,
         horas: horas,
       );
-      await _local.savePrevisaoHoraria(previsoes);
+      final fonte = await _fonteParaCoordenada(lat: lat, lon: lon);
+      await _local.savePrevisaoHoraria(previsoes, fonte: fonte);
       return previsoes;
     } catch (_) {
       // TODO(H2-debt): distinguish stale cache from empty fallback in the UI.
@@ -70,7 +72,8 @@ class ClimaRepositoryImpl implements IClimaRepository {
         lon: lon,
         dias: dias,
       );
-      await _local.savePrevisaoSemanal(previsoes);
+      final fonte = await _fonteParaCoordenada(lat: lat, lon: lon);
+      await _local.savePrevisaoSemanal(previsoes, fonte: fonte);
       return previsoes;
     } catch (_) {
       // TODO(H2-debt): distinguish stale cache from empty fallback in the UI.
@@ -84,5 +87,13 @@ class ClimaRepositoryImpl implements IClimaRepository {
     required double lon,
   }) async {
     return _remote.fetchAlertas(lat: lat, lon: lon);
+  }
+
+  Future<ClimaFonte> _fonteParaCoordenada({
+    required double lat,
+    required double lon,
+  }) async {
+    final cached = await _local.getCachedClimaAtual(lat: lat, lon: lon);
+    return cached?.fonte ?? ClimaFonte.desconhecida;
   }
 }

@@ -110,7 +110,10 @@ class ClimaLocalDatasource implements IClimaLocalDatasource {
   // ─── Previsão Horária ─────────────────────────────────────────────────────────
 
   @override
-  Future<void> savePrevisaoHoraria(List<PrevisaoHoraria> previsoes) async {
+  Future<void> savePrevisaoHoraria(
+    List<PrevisaoHoraria> previsoes, {
+    ClimaFonte fonte = ClimaFonte.desconhecida,
+  }) async {
     if (previsoes.isEmpty) return;
     final db = await _db;
     // Usa lat/lon do primeiro item não disponível — chave genérica via JSON
@@ -118,7 +121,7 @@ class ClimaLocalDatasource implements IClimaLocalDatasource {
       'clima_horaria_cache',
       {
         'cache_key': 'horaria', // refinado com lat/lon nos próximos steps
-        'payload': jsonEncode(previsoes.map(_horariaToJson).toList()),
+        'payload': jsonEncode(_forecastEnvelope(previsoes.map(_horariaToJson).toList(), fonte)),
         'cached_at': DateTime.now().toIso8601String(),
       },
       conflictAlgorithm: ConflictAlgorithm.replace,
@@ -142,21 +145,23 @@ class ClimaLocalDatasource implements IClimaLocalDatasource {
     final row = rows.first;
     if (_isExpired(row['cached_at'] as String)) return [];
 
-    final list = jsonDecode(row['payload'] as String) as List<dynamic>;
-    return list.map((j) => _horariaFromJson(j as Map<String, dynamic>)).toList();
+    return _decodeHorariaList(row['payload'] as String);
   }
 
   // ─── Previsão Diária ─────────────────────────────────────────────────────────
 
   @override
-  Future<void> savePrevisaoSemanal(List<PrevisaoDiaria> previsoes) async {
+  Future<void> savePrevisaoSemanal(
+    List<PrevisaoDiaria> previsoes, {
+    ClimaFonte fonte = ClimaFonte.desconhecida,
+  }) async {
     if (previsoes.isEmpty) return;
     final db = await _db;
     await db.insert(
       'clima_diaria_cache',
       {
         'cache_key': 'diaria',
-        'payload': jsonEncode(previsoes.map(_diariaToJson).toList()),
+        'payload': jsonEncode(_forecastEnvelope(previsoes.map(_diariaToJson).toList(), fonte)),
         'cached_at': DateTime.now().toIso8601String(),
       },
       conflictAlgorithm: ConflictAlgorithm.replace,
@@ -180,8 +185,7 @@ class ClimaLocalDatasource implements IClimaLocalDatasource {
     final row = rows.first;
     if (_isExpired(row['cached_at'] as String)) return [];
 
-    final list = jsonDecode(row['payload'] as String) as List<dynamic>;
-    return list.map((j) => _diariaFromJson(j as Map<String, dynamic>)).toList();
+    return _decodeDiariaList(row['payload'] as String);
   }
 
   // ─── Evict ───────────────────────────────────────────────────────────────────
@@ -201,6 +205,48 @@ class ClimaLocalDatasource implements IClimaLocalDatasource {
   }
 
   // ─── Helpers ────────────────────────────────────────────────────────────────
+
+  Map<String, dynamic> _forecastEnvelope(
+    List<Map<String, dynamic>> items,
+    ClimaFonte fonte,
+  ) {
+    return {
+      'fonte': fonte.toStorageKey(),
+      'items': items,
+    };
+  }
+
+  List<PrevisaoHoraria> _decodeHorariaList(String payload) {
+    final decoded = jsonDecode(payload);
+    if (decoded is List<dynamic>) {
+      return decoded
+          .map((j) => _horariaFromJson(j as Map<String, dynamic>))
+          .toList();
+    }
+    if (decoded is Map<String, dynamic>) {
+      final items = decoded['items'] as List<dynamic>? ?? const [];
+      return items
+          .map((j) => _horariaFromJson(j as Map<String, dynamic>))
+          .toList();
+    }
+    return [];
+  }
+
+  List<PrevisaoDiaria> _decodeDiariaList(String payload) {
+    final decoded = jsonDecode(payload);
+    if (decoded is List<dynamic>) {
+      return decoded
+          .map((j) => _diariaFromJson(j as Map<String, dynamic>))
+          .toList();
+    }
+    if (decoded is Map<String, dynamic>) {
+      final items = decoded['items'] as List<dynamic>? ?? const [];
+      return items
+          .map((j) => _diariaFromJson(j as Map<String, dynamic>))
+          .toList();
+    }
+    return [];
+  }
 
   bool _isExpired(String cachedAt) {
     final age = DateTime.now().difference(DateTime.parse(cachedAt));
