@@ -15,6 +15,7 @@ bazel-*
 build/
 ios/.generated/
 nosync/
+ios/.asc_issuer_id
 
 # Flutter/Dart/Pub related
 **/doc/api/
