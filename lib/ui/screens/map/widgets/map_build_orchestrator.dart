@@ -25,6 +25,7 @@ import '../../../../modules/drawing/presentation/widgets/drawing_layers.dart';
 import '../../../../modules/drawing/presentation/widgets/drawing_map_gesture_overlay.dart';
 import '../../../../modules/drawing/presentation/widgets/drawing_state_indicator.dart';
 import '../../../../modules/drawing/presentation/widgets/drawing_edit_layer.dart';
+import '../../../../modules/drawing/presentation/widgets/drawing_vertex_handle_overlay.dart';
 import '../../../../modules/consultoria/clients/presentation/providers/field_providers.dart';
 import '../../../../modules/map/presentation/providers/map_location_mode_provider.dart';
 import '../../../../modules/consultoria/services/talhao_map_adapter.dart';
@@ -137,19 +138,6 @@ class MapBuildOrchestrator extends ConsumerWidget {
         (freehandInteraction.$2 == DrawingState.armed ||
             freehandInteraction.$2 == DrawingState.drawing ||
             freehandInteraction.$3);
-    final sketchVertexActive = ref.watch(
-      drawingControllerProvider.select(
-        (c) => c.selectedSketchVertexIndex != null || c.isDraggingSketchVertex,
-      ),
-    );
-    final editVertexDragActive = ref.watch(
-      drawingControllerProvider.select(
-        (c) =>
-            c.isDraggingVertex ||
-            (c.selectedEditRingIndex != null &&
-                c.selectedEditPointIndex != null),
-      ),
-    );
     final polygonSketchMode = ref.watch(
       drawingControllerProvider.select(
         (c) =>
@@ -180,9 +168,6 @@ class MapBuildOrchestrator extends ConsumerWidget {
       MapLogger.logRenderTime(stopwatch.elapsedMilliseconds);
     });
 
-    // Sketch/edição: congela pan do mapa com gota selecionada ou durante arraste.
-    final freezeMapGestures = sketchVertexActive || editVertexDragActive;
-
     return DrawingStateOverlay(
       state: drawingMetrics.state,
       tool: drawingMetrics.tool,
@@ -197,9 +182,7 @@ class MapBuildOrchestrator extends ConsumerWidget {
             absorbing: absorbMapPointers,
             child: MapCanvas(
               mapController: mapController,
-              interactionOptions: freezeMapGestures
-                  ? const InteractionOptions(flags: InteractiveFlag.none)
-                  : disableMapDrag
+              interactionOptions: disableMapDrag
                   ? const InteractionOptions(
                       flags:
                           InteractiveFlag.all &
@@ -403,9 +386,6 @@ class MapBuildOrchestrator extends ConsumerWidget {
                 DrawingEditLayer(
                   controller: ref.read(drawingControllerProvider),
                   mapController: mapController,
-                  onPolygonClose: () {
-                    finishDrawing();
-                  },
                 ),
 
                 // ADR-043 — Radar acima de talhões/desenho, abaixo de markers
@@ -519,6 +499,11 @@ class MapBuildOrchestrator extends ConsumerWidget {
                 focusDrawingFeatureOnMap(mapController, feature),
           ),
           const ArmedModeBanner(),
+          DrawingVertexHandleOverlay(
+            controller: ref.read(drawingControllerProvider),
+            mapController: mapController,
+            onPolygonClose: finishDrawing,
+          ),
           DraggablePinLayer(mapController: mapController),
           const PinPositionCorrectionOverlay(),
           MapLongPressHint(visible: showLongPressHint),
@@ -641,6 +626,7 @@ class _MapControlsHost extends ConsumerWidget {
       canUndo: drawingMetrics.canUndo,
       measurementAreaHa: drawingMetrics.measureAreaHa,
       measurementPerimeterKm: drawingMetrics.measurePerimeterKm,
+      vertexDragPreview: ref.read(drawingControllerProvider).vertexDragPreview,
       measurementAzimuthDeg: drawingMetrics.measureAzimuthDeg,
       gpsAccuracyM: drawingMetrics.gpsAccuracyM ?? 0,
       editingFieldName: drawingMetrics.state == DrawingState.editing

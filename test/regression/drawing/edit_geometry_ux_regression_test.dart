@@ -28,16 +28,16 @@ void main() {
     ).readAsStringSync();
   });
 
-  test('edição não congela mapa com InteractiveFlag.none global', () {
+  test('edição não congela o mapa ao selecionar a gota', () {
     expect(
       orchestrator.contains(
         'drawingMetrics.state == DrawingState.editing ||',
       ),
       isFalse,
     );
-    expect(orchestrator, contains('editVertexDragActive'));
-    expect(orchestrator, contains('isDraggingVertex'));
-    expect(orchestrator, contains('freezeMapGestures'));
+    expect(orchestrator.contains('freezeMapGestures'), isFalse);
+    expect(orchestrator.contains('InteractiveFlag.none'), isFalse);
+    expect(orchestrator, contains('DrawingVertexHandleOverlay'));
   });
 
   test('drawing_layers não emite _vertexMarker decorativo em editing', () {
