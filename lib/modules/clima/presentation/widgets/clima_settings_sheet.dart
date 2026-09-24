@@ -200,7 +200,7 @@ class ClimaSettingsOptionRow extends StatelessWidget {
     final isIos = soloForteSheetIsIos(context);
     final selectedColor = isIos
         ? SoloForteSheetSkinIos.iconStroke
-        : SoloForteSheetTokens.chipTextActive;
+        : SoloForteSheetTokens.titleColor;
     final unselectedColor = isIos
         ? SoloForteSheetSkinIos.titleColor
         : SoloForteSheetTokens.inputText;
