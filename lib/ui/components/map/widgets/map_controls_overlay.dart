@@ -59,7 +59,7 @@ class MapControlsOverlay extends ConsumerStatefulWidget {
   final VoidCallback onUndoEdit;
   final VoidCallback? onUndoDrawing; // Undo no modo drawing
   final bool canUndo;
-  final bool hasSelfIntersection;
+
   final double measurementAreaHa;
   final double measurementPerimeterKm;
   final double? measurementAzimuthDeg;
@@ -87,7 +87,6 @@ class MapControlsOverlay extends ConsumerStatefulWidget {
     required this.onUndoEdit,
     this.onUndoDrawing,
     this.canUndo = false,
-    this.hasSelfIntersection = false,
     this.measurementAreaHa = 0,
     this.measurementPerimeterKm = 0,
     this.measurementAzimuthDeg,
@@ -257,12 +256,9 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
                 ? widget.onCancelEdit
                 : widget.onCancelDrawing,
             canUndo: widget.canUndo,
-            // canConfirm espelha DrawingController.hasSelfIntersection
-            // (_updateRealTimeIntersection → findSelfIntersectingSegments).
-            // Widget permanece puro; validação de geometria fica no host.
-            canConfirm: widget.drawingState == DrawingState.editing
-                ? true
-                : !widget.hasSelfIntersection,
+            // Confirmar fica habilitado no sketch. Cruzamento do anel
+            // fechado é recusado em completeDrawing, não aqui.
+            canConfirm: true,
             measurementAreaHa: widget.measurementAreaHa,
             measurementPerimeterKm: widget.measurementPerimeterKm,
             measurementAzimuthDeg: widget.measurementAzimuthDeg,
