@@ -534,7 +534,7 @@ class _ClimaWhatsAppSheetState extends ConsumerState<ClimaWhatsAppSheet> {
                   label: Text(
                     _sharingCard
                         ? 'Gerando card…'
-                        : 'Compartilhar card (imagem)',
+                        : 'Ver card',
                     style: const TextStyle(
                       fontFamily: 'Inter',
                       fontSize: 15,
@@ -821,13 +821,7 @@ class _ClimaWhatsAppPreview extends StatelessWidget {
     );
   }
 
-  String _fontePreview(ClimaFonte fonte) {
-    final line = climaFonteAttribution(fonte);
-    if (line.isEmpty) {
-      return 'SoloForte · Inteligência Agronômica';
-    }
-    return '$line · SoloForte';
-  }
+  String _fontePreview(ClimaFonte fonte) => climaShareRodape(fonte);
 }
 
 class _PreviewChip extends StatelessWidget {
