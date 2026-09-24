@@ -6,6 +6,8 @@ class NdviLatestSummary {
     required this.ndviMin,
     required this.ndviMax,
     required this.sourceLabel,
+    required this.source,
+    required this.isColormap,
     this.localPath,
     this.imageUrl,
   });
@@ -15,6 +17,13 @@ class NdviLatestSummary {
   final double ndviMin;
   final double ndviMax;
   final String sourceLabel;
+
+  /// Fonte persistida (`sentinel`, `planet_preview`, …). ADR-045.
+  final String source;
+
+  /// True quando a imagem é raster NDVI e pode ser georreferenciada no card.
+  /// Preview RGB (Planet) é false. Calculado pelo adapter com a regra do módulo.
+  final bool isColormap;
 
   /// Arquivo local da última imagem, quando já baixado. ADR-045.
   final String? localPath;

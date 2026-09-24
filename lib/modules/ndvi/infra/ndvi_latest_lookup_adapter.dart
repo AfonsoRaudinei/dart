@@ -20,6 +20,8 @@ class NdviLatestLookupAdapter implements INdviLatestLookup {
       ndviMin: image.ndviMin,
       ndviMax: image.ndviMax,
       sourceLabel: ndviSourceLabel(image.source),
+      source: normalizeNdviSource(image.source),
+      isColormap: ndviIsColormapSource(image.source),
       localPath: image.localPath,
       imageUrl: image.imageUrl,
     );

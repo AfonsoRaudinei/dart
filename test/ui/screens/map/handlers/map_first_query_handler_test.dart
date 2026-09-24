@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:soloforte_app/core/state/map_ndvi_overlay.dart';
 import 'package:soloforte_app/modules/drawing/domain/repositories/i_clients_repository.dart';
 import 'package:soloforte_app/modules/drawing/infra/clients/i_clients_repository_provider.dart';
 import 'package:soloforte_app/ui/components/map/map_sheet_state.dart';
@@ -147,5 +148,33 @@ void main() {
 
     expect(marks, [1]);
     expect(host.sheets, isEmpty);
+    expect(host.ref.read(mapNdviOverlayFieldIdProvider), isNull);
+  });
+
+  testWidgets('ndvi=1 grava o drawingId e outra rota limpa', (tester) async {
+    final host = await pumpHandlerHost(tester);
+    handle(
+      ref: host.ref,
+      sheets: host.sheets,
+      focuses: host.focuses,
+      uri: Uri.parse(
+        '/map?modo=desenho&clienteId=c1&fazendaId=f1&drawingId=d1&ndvi=1',
+      ),
+    );
+    await tester.pump();
+
+    expect(host.ref.read(mapNdviOverlayFieldIdProvider), 'd1');
+    expect(host.focuses.single.drawingId, 'd1');
+
+    handle(
+      ref: host.ref,
+      sheets: host.sheets,
+      focuses: host.focuses,
+      uri: Uri.parse(
+        '/map?modo=desenho&clienteId=c1&fazendaId=f1&drawingId=d1',
+      ),
+    );
+
+    expect(host.ref.read(mapNdviOverlayFieldIdProvider), isNull);
   });
 }

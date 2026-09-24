@@ -44,15 +44,26 @@ final talhaoCardNdviLatestProvider = FutureProvider.autoDispose
     });
 
 /// `0.62 · 12/09` — média com 2 casas e dia/mês com 2 dígitos.
+/// Preview RGB não tem média NDVI; o default 0 não entra na legenda.
 String? talhaoCardNdviCaption(NdviLatestSummary summary) {
-  final hasLocal = summary.localPath != null && summary.localPath!.isNotEmpty;
-  final hasUrl =
-      summary.imageUrl != null && summary.imageUrl!.trim().isNotEmpty;
-  if (!hasLocal && !hasUrl) return null;
+  if (!summary.isColormap || !_summaryHasRenderableImage(summary)) return null;
   final mean = summary.ndviMean.toStringAsFixed(2);
   final day = summary.imageDate.day.toString().padLeft(2, '0');
   final month = summary.imageDate.month.toString().padLeft(2, '0');
-  return 'NDVI $mean · $day/$month';
+  return '$mean · $day/$month';
+}
+
+/// Selo do card quando a imagem existe e não é raster NDVI.
+String? talhaoCardNdviBadge(NdviLatestSummary summary) {
+  if (summary.isColormap || !_summaryHasRenderableImage(summary)) return null;
+  return 'Preview RGB';
+}
+
+bool _summaryHasRenderableImage(NdviLatestSummary summary) {
+  final hasLocal = summary.localPath != null && summary.localPath!.isNotEmpty;
+  final hasUrl =
+      summary.imageUrl != null && summary.imageUrl!.trim().isNotEmpty;
+  return hasLocal || hasUrl;
 }
 
 class FarmLinkedFieldList extends ConsumerWidget {
@@ -257,6 +268,7 @@ class FarmLinkedFieldList extends ConsumerWidget {
       clientId: clientId,
       farmId: farmId,
       drawingId: drawingId,
+      ndvi: showNdvi,
     );
   }
 }
@@ -298,9 +310,11 @@ class _FarmTalhaoNdviCard extends ConsumerWidget {
       error: (_, _) => _preview(showNdvi: true),
       data: (summary) => _preview(
         showNdvi: true,
+        ndviIsColormap: summary?.isColormap ?? false,
         ndviLocalPath: summary?.localPath,
         ndviImageUrl: summary?.imageUrl,
         ndviCaption: summary == null ? null : talhaoCardNdviCaption(summary),
+        ndviBadge: summary == null ? null : talhaoCardNdviBadge(summary),
         onNdviImageTap: onNdviImageTap,
       ),
     );
@@ -308,9 +322,11 @@ class _FarmTalhaoNdviCard extends ConsumerWidget {
 
   Widget _preview({
     bool showNdvi = false,
+    bool ndviIsColormap = false,
     String? ndviLocalPath,
     String? ndviImageUrl,
     String? ndviCaption,
+    String? ndviBadge,
     VoidCallback? onNdviImageTap,
   }) {
     return TalhaoMapPreviewWidget(
@@ -321,9 +337,11 @@ class _FarmTalhaoNdviCard extends ConsumerWidget {
       onTap: onOpenField,
       actions: actions,
       showNdvi: showNdvi,
+      ndviIsColormap: ndviIsColormap,
       ndviLocalPath: ndviLocalPath,
       ndviImageUrl: ndviImageUrl,
       ndviCaption: ndviCaption,
+      ndviBadge: ndviBadge,
       onNdviImageTap: onNdviImageTap,
     );
   }

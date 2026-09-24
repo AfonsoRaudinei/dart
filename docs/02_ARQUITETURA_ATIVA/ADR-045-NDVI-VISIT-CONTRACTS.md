@@ -11,6 +11,8 @@
 
 `NdviLatestSummary` também carrega o caminho local e a URL da última imagem (`localPath` e `imageUrl`, opcionais) para o preview do card de talhão na ficha do cliente. A consultoria lê esses campos pelo contrato e não importa `modules/ndvi/`.
 
+`source` e `isColormap` distinguem o raster Sentinel do preview RGB Planet. Só `isColormap` autoriza o card a georreferenciar a imagem no bbox do talhão. O adapter preenche `isColormap` com `ndviIsColormapSource`.
+
 ## Implementadores
 
 | Contrato | Módulo |
