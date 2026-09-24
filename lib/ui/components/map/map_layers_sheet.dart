@@ -1,9 +1,7 @@
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:latlong2/latlong.dart';
 
 import '../../../core/config/map_config.dart';
 import '../../../core/constants/layout_constants.dart';
@@ -14,6 +12,7 @@ import '../../../core/contracts/i_radar_overlay_controller_provider.dart';
 import '../../../core/state/map_state.dart';
 import '../../../core/ui/sheets/sheet_tokens.dart';
 import 'widgets/map_offline_widgets.dart';
+import 'widgets/map_layer_preview_tiles.dart';
 import '../../theme/premium/design_tokens.dart';
 import '../../../modules/clima/presentation/providers/radar_providers.dart';
 
@@ -104,7 +103,7 @@ class LayersSheet extends ConsumerWidget {
                     return Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        _MapPreviewTile(
+                        MapLayerPreviewTile(
                           width: itemWidth,
                           height: itemHeight,
                           tileConfig: MapConfig.tileConfigForLayer(
@@ -118,7 +117,7 @@ class LayersSheet extends ConsumerWidget {
                               .read(activeLayerProvider.notifier)
                               .setLayer(LayerType.satellite),
                         ),
-                        _MapPreviewTile(
+                        MapLayerPreviewTile(
                           width: itemWidth,
                           height: itemHeight,
                           tileConfig: MapConfig.tileConfigForLayer(
@@ -132,25 +131,33 @@ class LayersSheet extends ConsumerWidget {
                               .read(activeLayerProvider.notifier)
                               .setLayer(LayerType.relevo),
                         ),
-                        _OverlayToggleTile(
+                        MapOverlayPreviewTile(
                           width: itemWidth,
                           height: itemHeight,
                           label: 'Pinos',
+                          kind: MapOverlayPreviewKind.pins,
                           isSelected: showMarkers,
-                          activeAsset: _LayerAssets.pinsActive,
-                          inactiveAsset: _LayerAssets.pinsInactive,
+                          renderTilePreview: renderTilePreviews,
+                          tileConfig: MapConfig.tileConfigForLayer(
+                            LayerType.satellite,
+                            mapTilerApiKey: MapConfig.kMapTilerApiKey,
+                          ),
                           onTap: () {
                             HapticFeedback.lightImpact();
                             ref.read(showMarkersProvider.notifier).toggle();
                           },
                         ),
-                        _OverlayToggleTile(
+                        MapOverlayPreviewTile(
                           width: itemWidth,
                           height: itemHeight,
                           label: 'Chuva',
+                          kind: MapOverlayPreviewKind.rain,
                           isSelected: showRadar,
-                          activeAsset: _LayerAssets.rainActive,
-                          inactiveAsset: _LayerAssets.rainInactive,
+                          renderTilePreview: renderTilePreviews,
+                          tileConfig: MapConfig.tileConfigForLayer(
+                            LayerType.satellite,
+                            mapTilerApiKey: MapConfig.kMapTilerApiKey,
+                          ),
                           onTap: () {
                             HapticFeedback.lightImpact();
                             final enabling = !showRadar;
@@ -514,208 +521,6 @@ class LayersSheet extends ConsumerWidget {
   }
 }
 
-class _MapPreviewTile extends StatelessWidget {
-  static const _accent = PremiumTokens.brandGreenDark;
-
-  final double width;
-  final double height;
-  final MapLayerTileConfig tileConfig;
-  final String label;
-  final bool isSelected;
-  final bool renderTilePreview;
-  final VoidCallback onTap;
-
-  const _MapPreviewTile({
-    required this.width,
-    required this.height,
-    required this.tileConfig,
-    required this.label,
-    required this.isSelected,
-    required this.renderTilePreview,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return _LayerGridTile(
-      width: width,
-      height: height,
-      label: label,
-      isSelected: isSelected,
-      onTap: onTap,
-      child: renderTilePreview
-          ? FlutterMap(
-              options: const MapOptions(
-                initialCenter: LatLng(-10.69, -48.39),
-                initialZoom: 13.0,
-                interactionOptions: InteractionOptions(
-                  flags: InteractiveFlag.none,
-                ),
-              ),
-              children: [
-                TileLayer(
-                  urlTemplate: tileConfig.urlTemplate,
-                  fallbackUrl: tileConfig.fallbackUrl,
-                  subdomains: tileConfig.subdomains,
-                  maxZoom: tileConfig.maxZoom,
-                  maxNativeZoom: tileConfig.maxNativeZoom,
-                  retinaMode:
-                      tileConfig.retinaMode &&
-                      RetinaMode.isHighDensity(context),
-                ),
-              ],
-            )
-          : DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    Colors.white.withValues(alpha: 0.18),
-                    _accent.withValues(alpha: 0.16),
-                  ],
-                ),
-              ),
-              child: const Center(
-                child: Icon(
-                  Icons.map_outlined,
-                  color: Colors.white54,
-                  size: 22,
-                ),
-              ),
-            ),
-    );
-  }
-}
-
-class _LayerAssets {
-  static const pinsInactive = 'assets/images/map_pins_inactive.jpg';
-  static const pinsActive = 'assets/images/map_pins_active.jpg';
-  static const rainInactive = 'assets/images/map_rain_inactive.jpg';
-  static const rainActive = 'assets/images/map_rain_active.jpg';
-}
-
-/// Tile de toggle para Pinos e Radar de Chuva.
-class _OverlayToggleTile extends StatelessWidget {
-  final double width;
-  final double height;
-  final String label;
-  final bool isSelected;
-  final String activeAsset;
-  final String inactiveAsset;
-  final VoidCallback onTap;
-
-  const _OverlayToggleTile({
-    required this.width,
-    required this.height,
-    required this.label,
-    required this.isSelected,
-    required this.activeAsset,
-    required this.inactiveAsset,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return _LayerGridTile(
-      width: width,
-      height: height,
-      label: label,
-      isSelected: isSelected,
-      onTap: onTap,
-      child: Image.asset(
-        isSelected ? activeAsset : inactiveAsset,
-        fit: BoxFit.cover,
-        filterQuality: FilterQuality.medium,
-      ),
-    );
-  }
-}
-
-/// Moldura unificada dos quatro tiles da grade (satélite, relevo, pinos, chuva).
-///
-/// A borda de seleção é pintada por cima, sem alterar o tamanho do conteúdo —
-/// evita desalinhamento visual entre tiles com imagem e tiles com mapa.
-class _LayerGridTile extends StatelessWidget {
-  static const _accent = PremiumTokens.brandGreenDark;
-  static const _radius = 12.0;
-  static const _borderWidth = 2.0;
-
-  final double width;
-  final double height;
-  final String label;
-  final bool isSelected;
-  final VoidCallback onTap;
-  final Widget child;
-
-  const _LayerGridTile({
-    required this.width,
-    required this.height,
-    required this.label,
-    required this.isSelected,
-    required this.onTap,
-    required this.child,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: onTap,
-      child: Column(
-        children: [
-          SizedBox(
-            width: width,
-            height: height,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(_radius),
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  IgnorePointer(child: child),
-                  if (isSelected)
-                    Positioned.fill(
-                      child: DecoratedBox(
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(_radius),
-                          border: Border.all(
-                            color: _accent,
-                            width: _borderWidth,
-                          ),
-                        ),
-                      ),
-                    ),
-                  if (isSelected)
-                    const Positioned(
-                      top: 4,
-                      right: 4,
-                      child: _LayerSelectedBadge(),
-                    ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 6),
-          SizedBox(
-            width: width,
-            child: Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: isSelected ? Colors.white : Colors.white60,
-                fontSize: 12,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _AdvancedLayerTile extends StatelessWidget {
   final IconData icon;
   final String title;
@@ -768,22 +573,6 @@ class _AdvancedLayerTile extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-class _LayerSelectedBadge extends StatelessWidget {
-  const _LayerSelectedBadge();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(2),
-      decoration: const BoxDecoration(
-        color: PremiumTokens.brandGreenDark,
-        shape: BoxShape.circle,
-      ),
-      child: const Icon(Icons.check, color: Colors.white, size: 12),
     );
   }
 }
