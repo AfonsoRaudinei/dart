@@ -42,6 +42,41 @@ class DrawingUtils {
     return const Distance().as(LengthUnit.Meter, center, edge);
   }
 
+  /// Ponto da aresta [a]–[b] mais perto de [tap], em metros locais.
+  static ({LatLng point, double distanceMeters}) closestPointOnSegment(
+    LatLng tap,
+    LatLng a,
+    LatLng b,
+  ) {
+    const metersPerDegLat = 111320.0;
+    final metersPerDegLng =
+        metersPerDegLat * math.cos(tap.latitude * math.pi / 180);
+    double xOf(LatLng p) => (p.longitude - tap.longitude) * metersPerDegLng;
+    double yOf(LatLng p) => (p.latitude - tap.latitude) * metersPerDegLat;
+
+    final ax = xOf(a);
+    final ay = yOf(a);
+    final dx = xOf(b) - ax;
+    final dy = yOf(b) - ay;
+    final len2 = dx * dx + dy * dy;
+    var t = 0.0;
+    if (len2 > 1e-12) {
+      t = (-ax * dx + -ay * dy) / len2;
+      if (t < 0) t = 0;
+      if (t > 1) t = 1;
+    }
+    final px = ax + t * dx;
+    final py = ay + t * dy;
+    final lngScale = metersPerDegLng.abs() < 1e-9 ? 1.0 : metersPerDegLng;
+    return (
+      point: LatLng(
+        tap.latitude + py / metersPerDegLat,
+        tap.longitude + px / lngScale,
+      ),
+      distanceMeters: math.sqrt(px * px + py * py),
+    );
+  }
+
   /// Generates a new UUID v4
   static String generateId() => _uuid.v4();
 
@@ -1214,8 +1249,10 @@ class DrawingUtils {
     };
     if (genericPatterns.contains(lower)) return 'Talhão';
 
-    if (RegExp(r'^talh[aã]o\s+(novo|nova|new)$', caseSensitive: false)
-        .hasMatch(baseName)) {
+    if (RegExp(
+      r'^talh[aã]o\s+(novo|nova|new)$',
+      caseSensitive: false,
+    ).hasMatch(baseName)) {
       return 'Talhão';
     }
 

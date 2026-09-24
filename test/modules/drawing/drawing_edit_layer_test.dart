@@ -384,7 +384,9 @@ void main() {
     await tester.tap(find.byKey(const Key('drawing_sketch_vertex_1')));
     await tester.pumpAndSettle();
 
-    final gotaBox = tester.getRect(find.byKey(const Key('drawing_sketch_vertex_1')));
+    final gotaBox = tester.getRect(
+      find.byKey(const Key('drawing_sketch_vertex_1')),
+    );
     final dragBox = tester.getRect(
       find.byKey(const Key('drawing_sketch_vertex_drag_1')),
     );
@@ -407,67 +409,68 @@ void main() {
     );
   });
 
-  testWidgets('mid-draw: ponto idle ancora topo do marker no vértice (bottomCenter)', (
-    tester,
-  ) async {
-    tester.view.physicalSize = const Size(800, 800);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
+  testWidgets(
+    'mid-draw: ponto idle ancora topo do marker no vértice (bottomCenter)',
+    (tester) async {
+      tester.view.physicalSize = const Size(800, 800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
 
-    final controller = DrawingController(
-      repository: _UpsertDrawingRepository(_feature()),
-    );
-    addTearDown(controller.dispose);
-    controller.selectTool('polygon');
-    controller.appendDrawingPoint(const LatLng(-0.05, -0.05));
-    controller.appendDrawingPoint(const LatLng(0.05, -0.05));
-    controller.appendDrawingPoint(const LatLng(0.05, 0.05));
+      final controller = DrawingController(
+        repository: _UpsertDrawingRepository(_feature()),
+      );
+      addTearDown(controller.dispose);
+      controller.selectTool('polygon');
+      controller.appendDrawingPoint(const LatLng(-0.05, -0.05));
+      controller.appendDrawingPoint(const LatLng(0.05, -0.05));
+      controller.appendDrawingPoint(const LatLng(0.05, 0.05));
 
-    final mapController = MapController();
-    await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: FlutterMap(
-            mapController: mapController,
-            options: const MapOptions(
-              initialCenter: LatLng(0, 0),
-              initialZoom: 11,
-              interactionOptions: InteractionOptions(
-                flags: InteractiveFlag.none,
+      final mapController = MapController();
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: FlutterMap(
+              mapController: mapController,
+              options: const MapOptions(
+                initialCenter: LatLng(0, 0),
+                initialZoom: 11,
+                interactionOptions: InteractionOptions(
+                  flags: InteractiveFlag.none,
+                ),
               ),
+              children: [
+                DrawingEditLayer(
+                  controller: controller,
+                  mapController: mapController,
+                ),
+              ],
             ),
-            children: [
-              DrawingEditLayer(
-                controller: controller,
-                mapController: mapController,
-              ),
-            ],
           ),
         ),
-      ),
-    );
-    await tester.pumpAndSettle();
+      );
+      await tester.pumpAndSettle();
 
-    const vertexIndex = 1;
-    final latLng = controller.currentPoints[vertexIndex];
-    final markerRect = tester.getRect(
-      find.byKey(const Key('drawing_sketch_vertex_$vertexIndex')),
-    );
+      const vertexIndex = 1;
+      final latLng = controller.currentPoints[vertexIndex];
+      final markerRect = tester.getRect(
+        find.byKey(const Key('drawing_sketch_vertex_$vertexIndex')),
+      );
 
-    expectMarkerTopAnchorsLatLng(
-      mapController: mapController,
-      markerRect: markerRect,
-      latLng: latLng,
-    );
+      expectMarkerTopAnchorsLatLng(
+        mapController: mapController,
+        markerRect: markerRect,
+        latLng: latLng,
+      );
 
-    // Topo do círculo idle no vértice; centro em dotSize/2 (dentro do hitbox).
-    const dotSize = 16.0;
-    final screenY = mapController.camera.latLngToScreenPoint(latLng).y;
-    expect(markerRect.top + 0.5, closeTo(screenY, 2));
-    final dotCenterY = markerRect.top + 0.5 + dotSize / 2;
-    expect(dotCenterY, closeTo(screenY + dotSize / 2, 2));
-  });
+      // Topo do círculo idle no vértice; centro em dotSize/2 (dentro do hitbox).
+      const dotSize = 16.0;
+      final screenY = mapController.camera.latLngToScreenPoint(latLng).y;
+      expect(markerRect.top + 0.5, closeTo(screenY, 2));
+      final dotCenterY = markerRect.top + 0.5 + dotSize / 2;
+      expect(dotCenterY, closeTo(screenY + dotSize / 2, 2));
+    },
+  );
 
   test('edição: findEditVertexNear e selectEditVertex no controller', () async {
     final repository = _UpsertDrawingRepository(_feature());
@@ -477,8 +480,7 @@ void main() {
     controller.selectFeature(controller.features.single);
     controller.startEditMode();
 
-    final ring =
-        (controller.liveGeometry! as DrawingPolygon).coordinates.first;
+    final ring = (controller.liveGeometry! as DrawingPolygon).coordinates.first;
     final vertex = LatLng(ring[0][1], ring[0][0]);
 
     final hit = controller.findEditVertexNear(vertex, 5.0);
@@ -495,57 +497,103 @@ void main() {
     expect(controller.selectedEditPointIndex, isNull);
   });
 
-  testWidgets('edição: marker de vértice ancora topo no LatLng (bottomCenter)', (
-    tester,
-  ) async {
-    tester.view.physicalSize = const Size(800, 800);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
+  test(
+    'edição: toque na linha insere e seleciona; vértice e fora não inserem',
+    () async {
+      final repository = _UpsertDrawingRepository(_feature());
+      final controller = DrawingController(repository: repository);
+      addTearDown(controller.dispose);
+      await controller.loadFeatures();
+      controller.selectFeature(controller.features.single);
+      controller.startEditMode();
 
-    final repository = _UpsertDrawingRepository(_feature());
-    final controller = DrawingController(repository: repository);
-    addTearDown(controller.dispose);
-    await controller.loadFeatures();
-    controller.selectFeature(controller.features.single);
-    controller.startEditMode();
+      final before =
+          (controller.liveGeometry! as DrawingPolygon).coordinates.first.length;
 
-    final mapController = MapController();
-    await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: FlutterMap(
-            mapController: mapController,
-            options: const MapOptions(
-              initialCenter: LatLng(0, 0),
-              initialZoom: 13,
-              interactionOptions: InteractionOptions(
-                flags: InteractiveFlag.none,
+      final onEdge = controller.findEditEdgeNear(const LatLng(-0.01, 0), 50);
+      expect(onEdge, isNotNull);
+      controller.insertVertex(onEdge!.ring, onEdge.segment, onEdge.point);
+
+      final after =
+          (controller.liveGeometry! as DrawingPolygon).coordinates.first;
+      expect(after.length, before + 1);
+      expect(controller.selectedEditRingIndex, onEdge.ring);
+      expect(controller.selectedEditPointIndex, onEdge.segment + 1);
+
+      final vertexCount = after.length;
+      final vertexHit = controller.findEditVertexNear(
+        const LatLng(-0.01, -0.01),
+        50,
+      );
+      expect(vertexHit, isNotNull);
+      expect(vertexHit!.point, 0);
+      expect(
+        (controller.liveGeometry! as DrawingPolygon).coordinates.first.length,
+        vertexCount,
+      );
+
+      expect(controller.findEditEdgeNear(const LatLng(1, 1), 20), isNull);
+      expect(
+        (controller.liveGeometry! as DrawingPolygon).coordinates.first.length,
+        vertexCount,
+      );
+    },
+  );
+
+  testWidgets(
+    'edição: marker de vértice ancora topo no LatLng (bottomCenter)',
+    (tester) async {
+      tester.view.physicalSize = const Size(800, 800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final repository = _UpsertDrawingRepository(_feature());
+      final controller = DrawingController(repository: repository);
+      addTearDown(controller.dispose);
+      await controller.loadFeatures();
+      controller.selectFeature(controller.features.single);
+      controller.startEditMode();
+
+      final mapController = MapController();
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: FlutterMap(
+              mapController: mapController,
+              options: const MapOptions(
+                initialCenter: LatLng(0, 0),
+                initialZoom: 13,
+                interactionOptions: InteractionOptions(
+                  flags: InteractiveFlag.none,
+                ),
               ),
+              children: [
+                DrawingEditLayer(
+                  controller: controller,
+                  mapController: mapController,
+                ),
+              ],
             ),
-            children: [
-              DrawingEditLayer(
-                controller: controller,
-                mapController: mapController,
-              ),
-            ],
           ),
         ),
-      ),
-    );
-    await tester.pumpAndSettle();
+      );
+      await tester.pumpAndSettle();
 
-    final ring =
-        (controller.liveGeometry! as DrawingPolygon).coordinates.first;
-    final latLng = LatLng(ring[0][1], ring[0][0]);
-    final markerRect = tester.getRect(find.byKey(const Key('drawing_vertex_0_0')));
+      final ring =
+          (controller.liveGeometry! as DrawingPolygon).coordinates.first;
+      final latLng = LatLng(ring[0][1], ring[0][0]);
+      final markerRect = tester.getRect(
+        find.byKey(const Key('drawing_vertex_0_0')),
+      );
 
-    expectMarkerTopAnchorsLatLng(
-      mapController: mapController,
-      markerRect: markerRect,
-      latLng: latLng,
-    );
-  });
+      expectMarkerTopAnchorsLatLng(
+        mapController: mapController,
+        markerRect: markerRect,
+        latLng: latLng,
+      );
+    },
+  );
 }
 
 /// Contrato flutter_map 7: [Alignment.bottomCenter] ancora o LatLng no topo do marker.
