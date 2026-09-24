@@ -60,6 +60,7 @@ Future<bool> shareClimaCardAsPng(
     if (!context.mounted) return false;
     await Share.shareXFiles(
       [XFile(file.path, mimeType: 'image/png')],
+      text: payload.buildWhatsAppMessage(),
       subject: 'Previsão do tempo — ${payload.cidade}',
       sharePositionOrigin: resolveSharePositionOrigin(context),
     );
