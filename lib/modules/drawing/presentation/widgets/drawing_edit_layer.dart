@@ -8,6 +8,7 @@ import 'package:latlong2/latlong.dart';
 import '../../domain/drawing_state.dart';
 import '../../domain/models/drawing_models.dart';
 import '../../presentation/controllers/drawing_controller.dart';
+import 'drawing_vertex_gota_metrics.dart';
 
 class DrawingEditLayer extends StatefulWidget {
   final DrawingController controller;
@@ -552,8 +553,8 @@ class _EditVertexGotaHandle extends StatelessWidget {
 
 /// Dimensões canônicas da gota ponta-cima (LatLng = topo do marker via bottomCenter).
 class _VertexGotaMetrics {
-  static const double width = 56;
-  static const double height = 78;
+  static const double width = DrawingVertexGotaMetrics.width;
+  static const double height = DrawingVertexGotaMetrics.height;
   static const Color fill = Color(0xB3C62828);
   static const Color fillDragging = Color(0xD9E53935);
 }
