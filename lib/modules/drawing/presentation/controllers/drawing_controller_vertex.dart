@@ -74,6 +74,50 @@ extension DrawingControllerVertexEditing on DrawingController {
     return (ring: bestRing, point: bestPoint);
   }
 
+  /// Hit-test da aresta mais próxima do toque, para inserir um vértice nela.
+  ({int ring, int segment, LatLng point})? findEditEdgeNear(
+    LatLng tap,
+    double toleranceMeters,
+  ) {
+    if (_stateMachine.currentState != DrawingState.editing) return null;
+    if (_editGeometry is! DrawingPolygon) return null;
+
+    final poly = _editGeometry as DrawingPolygon;
+    int? bestRing;
+    int? bestSegment;
+    LatLng? bestPoint;
+    var closestDist = toleranceMeters;
+
+    for (var ringIdx = 0; ringIdx < poly.coordinates.length; ringIdx++) {
+      final ring = poly.coordinates[ringIdx]
+          .map((p) => LatLng(p[1], p[0]))
+          .toList();
+      if (ring.length < 2) continue;
+      final isClosed =
+          ring.first.latitude == ring.last.latitude &&
+          ring.first.longitude == ring.last.longitude;
+      final segmentCount = ring.length - 1;
+
+      for (var i = 0; i < segmentCount; i++) {
+        final next = isClosed && i == segmentCount - 1
+            ? ring.first
+            : ring[i + 1];
+        final hit = DrawingUtils.closestPointOnSegment(tap, ring[i], next);
+        if (hit.distanceMeters <= closestDist) {
+          closestDist = hit.distanceMeters;
+          bestRing = ringIdx;
+          bestSegment = i;
+          bestPoint = hit.point;
+        }
+      }
+    }
+
+    if (bestRing == null || bestSegment == null || bestPoint == null) {
+      return null;
+    }
+    return (ring: bestRing, segment: bestSegment, point: bestPoint);
+  }
+
   void _throttledValidate() {
     // Logic from old updateEditGeometry
     final count = DrawingUtils.getVertexCount(_editGeometry);
@@ -207,7 +251,9 @@ extension DrawingControllerVertexEditing on DrawingController {
   void insertVertex(int ringIndex, int segmentIndex, LatLng point) {
     if (_editGeometry is! DrawingPolygon) return;
 
-    onDragStart(); // salva estado para undo
+    if (_editGeometry != null) {
+      _history.push(_geomToVertices(_editGeometry!));
+    }
 
     final updated = _vertexService.insertVertex(
       _editGeometry as DrawingPolygon,
@@ -220,7 +266,7 @@ extension DrawingControllerVertexEditing on DrawingController {
     _editGeometry = updated;
     _updateRealTimeIntersection();
     validateGeometry(_editGeometry);
-    _notify();
+    selectEditVertex(ringIndex, segmentIndex + 1);
   }
 
   /// Removes a vertex at the specified index.
@@ -248,5 +294,4 @@ extension DrawingControllerVertexEditing on DrawingController {
     validateGeometry(_editGeometry);
     _notify();
   }
-
 }
