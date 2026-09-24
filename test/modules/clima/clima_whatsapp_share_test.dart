@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:soloforte_app/core/contracts/i_client_lookup.dart';
 import 'package:soloforte_app/core/contracts/i_client_lookup_provider.dart';
+import 'package:soloforte_app/modules/clima/domain/clima_fonte.dart';
 import 'package:soloforte_app/modules/clima/domain/clima_share_payload.dart';
 import 'package:soloforte_app/modules/clima/domain/entities/clima_atual.dart';
 import 'package:soloforte_app/modules/clima/domain/entities/previsao_diaria.dart';
@@ -30,6 +31,7 @@ void main() {
       longitude: -48.33,
       cidade: 'Palmas, TO',
       atualizadoEm: DateTime(2026, 7, 10, 10),
+      fonte: ClimaFonte.googleWeather,
     );
 
     test('atual inclui cidade e métricas na mensagem WhatsApp', () {
@@ -38,12 +40,14 @@ void main() {
 
       expect(message, contains('Palmas, TO'));
       expect(message, contains('31°C'));
-      expect(message, contains('Umidade: 48%'));
+      expect(message, contains('Umidade 48%'));
+      expect(message, contains('Fonte: Google Weather'));
     });
 
     test('horaria resume próximas horas', () {
       final payload = ClimaSharePayloadHoraria(
         cidadeLabel: 'Palmas, TO',
+        fonte: ClimaFonte.googleWeather,
         previsoes: [
           PrevisaoHoraria(
             hora: DateTime(2026, 7, 10, 10),
@@ -57,13 +61,14 @@ void main() {
       );
 
       final message = payload.buildWhatsAppMessage();
-      expect(message, contains('Próximas 24h'));
+      expect(message, contains('Próximas 24 horas'));
       expect(message, contains('10h'));
     });
 
     test('semanal resume dias', () {
       final payload = ClimaSharePayloadSemanal(
         cidadeLabel: 'Palmas, TO',
+        fonte: ClimaFonte.googleWeather,
         previsoes: [
           PrevisaoDiaria(
             data: DateTime(2026, 7, 10),
@@ -79,8 +84,9 @@ void main() {
       );
 
       final message = payload.buildWhatsAppMessage();
-      expect(message, contains('Previsão semanal'));
+      expect(message, contains('Previsão da semana'));
       expect(message, contains('34°/23°'));
+      expect(message, contains('Campo:'));
     });
   });
 
@@ -107,6 +113,9 @@ void main() {
     testWidgets('lista clientes e desabilita checkbox sem telefone', (
       tester,
     ) async {
+      await tester.binding.setSurfaceSize(const Size(480, 1200));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
@@ -174,6 +183,7 @@ void main() {
       await tester.tap(find.text('Marcar com telefone'));
       await tester.pumpAndSettle();
       expect(find.text('Enviar pelo WhatsApp (1)'), findsOneWidget);
+      expect(find.text('Compartilhar card (imagem)'), findsOneWidget);
     });
 
     testWidgets('cidade sem cliente mostra estado vazio', (tester) async {
