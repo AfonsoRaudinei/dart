@@ -46,7 +46,7 @@ Future<void> _tapAreaVisitadaCategory(WidgetTester tester) async {
 }
 
 Future<void> _tapSave(WidgetTester tester) async {
-  final save = find.text('Salvar Ocorrência');
+  final save = find.text('Salvar localização');
   if (save.evaluate().isEmpty) {
     await tester.dragUntilVisible(
       save,
@@ -134,6 +134,8 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Área Visitada'), findsWidgets);
+      expect(find.text('Salvar localização'), findsOneWidget);
+      expect(find.text('Categorias da Ocorrência'), findsNothing);
       expect(find.text('Cultivar & Plantio'), findsNothing);
     });
 

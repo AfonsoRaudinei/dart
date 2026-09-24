@@ -247,6 +247,12 @@ class _OccurrenceCreationSheetState
   bool get _isAreaVisitada =>
       _selectedCategoryValue == kOccurrenceAreaVisitadaCategory;
 
+  String get _primarySaveButtonLabel {
+    if (widget.initialOccurrence != null) return 'Salvar Alterações';
+    if (_isAreaVisitada) return 'Salvar localização';
+    return 'Salvar Ocorrência';
+  }
+
   Color _catColor(OccurrenceCategory cat) {
     switch (cat) {
       case OccurrenceCategory.doenca:
@@ -378,14 +384,38 @@ class _OccurrenceCreationSheetState
     }
   }
 
-  Widget _compactMapHeader({required Color muted}) {
+  Widget _compactMapHeader({
+    required Color muted,
+    required Color titleColor,
+  }) {
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Expanded(
-          child: Text(
-            'Ponto definido no mapa',
-            style: TextStyle(color: muted, fontSize: 13),
-          ),
+          child: _isAreaVisitada
+              ? Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Área visitada',
+                      style: TextStyle(
+                        color: titleColor,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: -0.3,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Ponto marcado no mapa',
+                      style: TextStyle(color: muted, fontSize: 13),
+                    ),
+                  ],
+                )
+              : Text(
+                  'Ponto definido no mapa',
+                  style: TextStyle(color: muted, fontSize: 13),
+                ),
         ),
         if (widget.onCancel != null)
           IconButton(
@@ -425,7 +455,7 @@ class _OccurrenceCreationSheetState
               children: [
               if (_buildSubmitErrorBanner() case final banner?) banner,
               if (widget.compactHeader && widget.initialOccurrence == null)
-                _compactMapHeader(muted: muted)
+                _compactMapHeader(muted: muted, titleColor: titleColor)
               else
               Row(
                 children: [
@@ -491,7 +521,7 @@ class _OccurrenceCreationSheetState
                       ? SoloForteSheetSkinIos.iconStroke
                       : Colors.white70,
                 ),
-                label: 'Cliente',
+                label: _isAreaVisitada ? 'Cliente (opcional)' : 'Cliente',
               ),
               OccurrenceClientSelector(
                 clientsFuture: _clientsFuture,
@@ -501,7 +531,7 @@ class _OccurrenceCreationSheetState
               if (_isAreaVisitada && _selectedClient == null) ...[
                 const SizedBox(height: 8),
                 Text(
-                  'Pendente de vínculo — você pode associar um cliente depois.',
+                  'Sem cliente agora? Você pode vincular depois na ficha.',
                   style: TextStyle(color: muted, fontSize: 12, height: 1.35),
                 ),
               ],
@@ -774,9 +804,9 @@ class _OccurrenceCreationSheetState
               const SizedBox(height: 8),
               OccurrenceDarkField(
                 controller: _descCtrl,
-                label: 'Descrição',
+                label: _isAreaVisitada ? 'Notas' : 'Descrição',
                 hint: _isAreaVisitada
-                    ? 'Notas sobre a área visitada…'
+                    ? 'Ex.: trecho da estrada, entrada do talhão…'
                     : 'Descreva a ocorrência…',
                 maxLines: 4,
               ),
@@ -859,9 +889,7 @@ class _OccurrenceCreationSheetState
                               ),
                             )
                           : Text(
-                              widget.initialOccurrence == null
-                                  ? 'Salvar Ocorrência'
-                                  : 'Salvar Alterações',
+                              _primarySaveButtonLabel,
                               style: const TextStyle(
                                 fontWeight: FontWeight.w600,
                                 letterSpacing: -0.4,
