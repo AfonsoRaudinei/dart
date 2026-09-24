@@ -180,14 +180,22 @@ class OccurrenceDetailSheet extends ConsumerWidget {
 
   Future<void> _openEditSheet(BuildContext context, WidgetRef ref) async {
     final coords = occurrence.getCoordinates();
-    if (coords == null) return;
+    if (coords == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Sem ponto no mapa para editar.')),
+      );
+      return;
+    }
 
-    // Capturar antes do pop: o WidgetRef do detalhe morre ao fechar o sheet.
+    // Antes do pop: ref e context do detalhe não sobrevivem.
+    final navigator = Navigator.of(context);
+    final sheetHostContext = navigator.context;
     final repository = ref.read(occurrenceRepositoryProvider);
     final container = ProviderScope.containerOf(context, listen: false);
-    Navigator.of(context).pop();
+    navigator.pop();
+    if (!sheetHostContext.mounted) return;
     await showSoloForteSheet<void>(
-      context: context,
+      context: sheetHostContext,
       backgroundColor: Colors.transparent,
       builder: (sheetContext) => FractionallySizedBox(
         heightFactor: 0.92,
@@ -205,6 +213,12 @@ class OccurrenceDetailSheet extends ConsumerWidget {
                 photoPath: data.photoPath,
                 category: data.category,
                 status: occurrence.status,
+                lat: data.latitude,
+                long: data.longitude,
+                geometry: jsonEncode({
+                  'type': 'Point',
+                  'coordinates': [data.longitude, data.latitude],
+                }),
                 cultivar: data.cultivar,
                 dataPlantio: data.dataPlantio,
                 estadioFenologico: data.estadioFenologico,
