@@ -21,7 +21,8 @@ Future<Uint8List?> _capturePng(GlobalKey boundaryKey) async {
 }
 
 /// Renderiza [ClimaShareCard] off-screen, captura PNG e abre o share sheet.
-Future<void> shareClimaCardAsPng(
+/// Retorna `false` se a captura ou o share falhar.
+Future<bool> shareClimaCardAsPng(
   BuildContext context,
   ClimaSharePayload payload,
 ) async {
@@ -48,7 +49,7 @@ Future<void> shareClimaCardAsPng(
     await WidgetsBinding.instance.endOfFrame;
     await Future<void>.delayed(const Duration(milliseconds: 48));
     final bytes = await _capturePng(boundaryKey);
-    if (bytes == null || !context.mounted) return;
+    if (bytes == null || !context.mounted) return false;
 
     final dir = await getTemporaryDirectory();
     final file = File(
@@ -56,12 +57,15 @@ Future<void> shareClimaCardAsPng(
     );
     await file.writeAsBytes(bytes, flush: true);
 
-    if (!context.mounted) return;
+    if (!context.mounted) return false;
     await Share.shareXFiles(
       [XFile(file.path, mimeType: 'image/png')],
       subject: 'Previsão do tempo — ${payload.cidade}',
       sharePositionOrigin: resolveSharePositionOrigin(context),
     );
+    return true;
+  } catch (_) {
+    return false;
   } finally {
     entry.remove();
   }

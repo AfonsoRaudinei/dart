@@ -316,7 +316,22 @@ class _ClimaWhatsAppSheetState extends ConsumerState<ClimaWhatsAppSheet> {
     if (_sharingCard) return;
     setState(() => _sharingCard = true);
     try {
-      await shareClimaCardAsPng(context, widget.payload);
+      final ok = await shareClimaCardAsPng(context, widget.payload);
+      if (!ok && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Não foi possível gerar o card para compartilhar'),
+          ),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Não foi possível gerar o card para compartilhar'),
+          ),
+        );
+      }
     } finally {
       if (mounted) setState(() => _sharingCard = false);
     }
