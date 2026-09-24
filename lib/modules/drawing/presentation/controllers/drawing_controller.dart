@@ -1827,7 +1827,7 @@ class DrawingController extends ChangeNotifier {
           _hasSelfIntersection = _intersectingSegmentIndices.isNotEmpty;
         }
         _intersectionWarningMessage =
-            'Linhas se cruzam. Salve e edite os vértices depois.';
+            'Linhas se cruzam. Ajuste os vértices e confirme de novo.';
         _errorMessage = null;
         notifyListeners();
         return;
@@ -1836,16 +1836,8 @@ class DrawingController extends ChangeNotifier {
       if (success) {
         _reviewGeometrySnapshot = geometrySnapshot;
         _captureReviewMetrics(geometrySnapshot);
-        // 🔧 FIX-AUDIT: Usar liveGeometry (fonte real dos pontos) em vez de _manualSketch
         validateGeometry(liveGeometry);
-        if (_hasSelfIntersection ||
-            _isSelfIntersectionMessage(_validationResult.message)) {
-          _intersectionWarningMessage =
-              'Linhas se cruzam. Salve e edite os vértices depois.';
-          _errorMessage = null;
-        } else {
-          _intersectionWarningMessage = null;
-        }
+        _intersectionWarningMessage = null;
         notifyListeners();
       }
     }

@@ -191,8 +191,14 @@ void main() {
       controller.completeDrawing();
 
       expect(controller.currentState, DrawingState.drawing, reason: 'Cruzamento real não entra em revisão');
-      expect(controller.intersectionWarningMessage, isNotNull);
-      expect(controller.instructionText, contains('Linhas se cruzam'));
+      expect(
+        controller.intersectionWarningMessage,
+        'Linhas se cruzam. Ajuste os vértices e confirme de novo.',
+      );
+      expect(
+        controller.instructionText,
+        'Linhas se cruzam. Ajuste os vértices e confirme de novo.',
+      );
     });
 
     test('Cenário 6: bico côncavo não trava no meio e confirma', () {
