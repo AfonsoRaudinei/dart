@@ -24,9 +24,9 @@ extension ClimaFonteCodec on ClimaFonte {
   }
 }
 
-/// Linha de atribuição para compartilhamento (contratos de API).
-String climaFonteAttribution(ClimaFonte fonte) => switch (fonte) {
-      ClimaFonte.googleWeather => 'Fonte: Google Weather',
-      ClimaFonte.openWeather => 'Fonte: OpenWeather (openweathermap.org)',
+/// Nome da empresa da API. Vazio quando a fonte não foi gravada.
+String climaFonteEmpresa(ClimaFonte fonte) => switch (fonte) {
+      ClimaFonte.googleWeather => 'Google Weather',
+      ClimaFonte.openWeather => 'OpenWeather',
       ClimaFonte.desconhecida => '',
     };

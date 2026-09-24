@@ -23,17 +23,18 @@ sealed class ClimaSharePayload {
 }
 
 String climaShareRodape(ClimaFonte fonte) {
-  final buffer = StringBuffer();
-  final atribuicao = climaFonteAttribution(fonte);
-  if (atribuicao.isNotEmpty) {
-    buffer.writeln(atribuicao);
-  }
-  buffer.write('SoloForte · Inteligência Agronômica');
-  return buffer.toString();
+  final empresa = climaFonteEmpresa(fonte);
+  if (empresa.isEmpty) return 'SoloForte';
+  return 'SoloForte · Fonte: $empresa';
 }
 
-String _formatHora(DateTime dt) =>
-    '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+String climaChuvaFrase(double mm, {required bool inicioMaiusculo}) {
+  if (mm <= 0) return inicioMaiusculo ? 'Sem chuva' : 'sem chuva';
+  final valor = '${mm.toStringAsFixed(1)} mm';
+  return inicioMaiusculo ? 'Chuva $valor' : valor;
+}
+
+String climaUvFrase(int uv) => uv <= 2 ? 'UV baixo' : 'UV $uv';
 
 final class ClimaSharePayloadAtual extends ClimaSharePayload {
   const ClimaSharePayloadAtual(
@@ -74,32 +75,19 @@ final class ClimaSharePayloadAtual extends ClimaSharePayload {
 
   @override
   String buildWhatsAppMessage() {
-    final buffer = StringBuffer();
-    buffer.writeln('SoloForte · ${clima.cidade}');
-    buffer.writeln('Agora · ${clima.condicao}');
-    buffer.writeln();
-    buffer.writeln(
-      '${clima.temperatura.toStringAsFixed(0)}°C  ·  '
-      'sensação ${clima.sensacaoTermica.toStringAsFixed(0)}°C',
-    );
-    buffer.writeln(
-      'Umidade ${clima.umidade}%  ·  '
-      'chuva ${clima.precipitacao.toStringAsFixed(1)} mm',
-    );
-    buffer.writeln(
-      'Vento ${clima.ventoVelocidade.toStringAsFixed(0)} km/h '
-      '${clima.ventoDirecao}  ·  UV ${clima.indiceUV}',
-    );
-    buffer.writeln(
-      'Sol ${_formatHora(clima.nascerSol)} – ${_formatHora(clima.porSol)}',
-    );
-    final campo = previewCampoLinha;
-    if (campo != null) {
-      buffer.writeln();
-      buffer.writeln(campo);
-    }
-    buffer.writeln();
-    buffer.write(climaShareRodape(fonte));
+    final buffer = StringBuffer()
+      ..writeln(clima.cidade)
+      ..writeln(
+        '${clima.temperatura.toStringAsFixed(0)}° agora. ${clima.condicao}.',
+      )
+      ..writeln(
+        'Umidade ${clima.umidade}%. '
+        '${climaChuvaFrase(clima.precipitacao, inicioMaiusculo: true)}. '
+        'Vento ${clima.ventoVelocidade.toStringAsFixed(0)} km/h '
+        '${clima.ventoDirecao}. ${climaUvFrase(clima.indiceUV)}.',
+      )
+      ..writeln()
+      ..write(climaShareRodape(fonte));
     return buffer.toString();
   }
 }
@@ -164,20 +152,14 @@ final class ClimaSharePayloadHoraria extends ClimaSharePayload {
 
   @override
   String buildWhatsAppMessage() {
-    final buffer = StringBuffer('SoloForte · $cidadeLabel\n');
-    buffer.writeln('Próximas 24 horas\n');
-    for (final h in previsoes.take(24)) {
+    final buffer = StringBuffer('$cidadeLabel\n');
+    buffer.writeln('Próximas horas\n');
+    for (final h in previsoes.take(8)) {
       final hora = '${h.hora.hour.toString().padLeft(2, '0')}h';
-      final emoji = climaWeatherEmoji(h.condicaoCodigo);
       buffer.writeln(
-        '$emoji $hora: ${h.temperatura.toStringAsFixed(0)}° — ${h.condicao}, '
-        '${h.precipitacao.toStringAsFixed(1)} mm',
+        '$hora ${h.temperatura.toStringAsFixed(0)}°, ${h.condicao}, '
+        '${climaChuvaFrase(h.precipitacao, inicioMaiusculo: false)}',
       );
-    }
-    final campo = previewCampoLinha;
-    if (campo != null) {
-      buffer.writeln();
-      buffer.writeln(campo);
     }
     buffer.writeln();
     buffer.write(climaShareRodape(fonte));
@@ -198,10 +180,8 @@ final class ClimaSharePayloadSemanal extends ClimaSharePayload {
   final ClimaFonte fonte;
 
   static const _diasSemana = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
-  static const _meses = [
-    'Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun',
-    'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez',
-  ];
+
+  static String diaCurto(DateTime data) => _diasSemana[data.weekday % 7];
 
   @override
   String get cidade => cidadeLabel;
@@ -236,28 +216,16 @@ final class ClimaSharePayloadSemanal extends ClimaSharePayload {
   String? get previewCampoLinha =>
       primeiraLinhaCampoCompartilhamento(previsoes);
 
-  String _formatDay(PrevisaoDiaria d) {
-    final diaNome = _diasSemana[d.data.weekday % 7];
-    final mesNome = _meses[d.data.month - 1];
-    return '$diaNome ${d.data.day}/$mesNome';
-  }
-
   @override
   String buildWhatsAppMessage() {
-    final buffer = StringBuffer('SoloForte · $cidadeLabel\n');
-    buffer.writeln('Previsão da semana\n');
+    final buffer = StringBuffer('$cidadeLabel\n\n');
     for (final d in previsoes) {
-      final emoji = climaWeatherEmoji(d.condicaoCodigo);
+      final dia = diaCurto(d.data);
       buffer.writeln(
-        '$emoji ${_formatDay(d)}: ${d.tempMax.toStringAsFixed(0)}°/'
-        '${d.tempMin.toStringAsFixed(0)}° — ${d.condicao}, '
-        '${d.precipitacao.toStringAsFixed(1)} mm',
+        '$dia ${d.tempMax.toStringAsFixed(0)}°/${d.tempMin.toStringAsFixed(0)}°, '
+        '${d.condicao}, '
+        '${climaChuvaFrase(d.precipitacao, inicioMaiusculo: false)}',
       );
-    }
-    final campo = previewCampoLinha;
-    if (campo != null) {
-      buffer.writeln();
-      buffer.writeln(campo);
     }
     buffer.writeln();
     buffer.write(climaShareRodape(fonte));
