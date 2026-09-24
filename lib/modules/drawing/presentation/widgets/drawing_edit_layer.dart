@@ -170,8 +170,7 @@ class _DrawingEditLayerState extends State<DrawingEditLayer> {
     final alreadySelected = controller.selectedSketchVertexIndex == index;
     if (index == 0 &&
         alreadySelected &&
-        controller.canFinishDrawing &&
-        !controller.hasSelfIntersection) {
+        controller.canFinishDrawing) {
       widget.onPolygonClose?.call();
       return;
     }
@@ -339,8 +338,7 @@ class _DrawingEditLayerState extends State<DrawingEditLayer> {
             isSelected: showGota,
             isDragging: isDragging,
             dotSize: dotSize,
-            hasSelfIntersection:
-                isStart && widget.controller.hasSelfIntersection,
+            hasSelfIntersection: false,
             onTap: () => _onSketchVertexTap(i),
             onPanStart: () => _startSketchVertexDrag(
               pointIndex: i,

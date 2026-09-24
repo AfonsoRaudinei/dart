@@ -665,16 +665,28 @@ class DrawingUtils {
     return true;
   }
 
-  static Set<int> findSelfIntersectingSegments(DrawingPolygon poly) {
+  static Set<int> findSelfIntersectingSegments(
+    DrawingPolygon poly, {
+    bool ignoreClosingEdge = false,
+  }) {
     final intersectingIndices = <int>{};
     if (poly.coordinates.isEmpty) return intersectingIndices;
 
     final ring = poly.coordinates.first;
+    final isClosed =
+        ring.length > 1 &&
+        ring.first[0] == ring.last[0] &&
+        ring.first[1] == ring.last[1];
     final n = ring.length - 1;
     if (n < 3) return intersectingIndices;
 
-    for (int i = 0; i < n; i++) {
-      for (int j = i + 1; j < n; j++) {
+    // No sketch a aresta de volta ao início é só preview. Bico côncavo
+    // não pode ser marcado como cruzamento por causa dela.
+    final segmentCount = (ignoreClosingEdge && isClosed) ? n - 1 : n;
+    if (segmentCount < 3) return intersectingIndices;
+
+    for (int i = 0; i < segmentCount; i++) {
+      for (int j = i + 1; j < segmentCount; j++) {
         if (j == i + 1) continue;
         if (i == 0 && j == n - 1) continue;
 

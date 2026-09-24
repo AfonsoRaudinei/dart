@@ -91,8 +91,11 @@ void main() {
       // 2: (0,10)->(10,0)
       // 3: (10,0)->(0,0)
       
-      expect(controller.hasSelfIntersection, true, reason: 'Formato ampulheta deve detectar interseção do fechamento automático');
+      // Arestas já colocadas podem cruzar (aviso vermelho). A aresta de
+      // fechamento provisória não trava o sketch.
+      expect(controller.hasSelfIntersection, true, reason: 'Arestas já colocadas se cruzam; o aviso não desliga o desenho');
       expect(controller.intersectingSegmentIndices, isNotEmpty);
+      expect(controller.currentState, DrawingState.drawing);
     });
 
     test('Cenário 3: Pontos fechando formato tocando em borda, alinhados', () {
@@ -175,10 +178,9 @@ void main() {
       expect(controller.hasSelfIntersection, false, reason: 'A interseção sumiu após o vértice ser movido para fora da zona de colisão');
     });
 
-    test('Cenário 5: Tentativa de finalização rejeitada se hasSelfIntersection', () {
+    test('Cenário 5: finalização recusa anel fechado que ainda cruza', () {
       setupPolygonDrawing();
-      
-      // Draw intersecting hour-glass
+
       controller.appendDrawingPoint(const LatLng(0, 0));
       controller.appendDrawingPoint(const LatLng(10, 10));
       controller.appendDrawingPoint(const LatLng(0, 10));
@@ -186,12 +188,47 @@ void main() {
 
       expect(controller.hasSelfIntersection, true);
 
-      // Attempt to finalize
       controller.completeDrawing();
 
-      // State goes to reviewing but with intersection warning
-      expect(controller.currentState, DrawingState.reviewing, reason: 'Vai para reviewing com warning de interseção (salve e edite depois)');
-      expect(controller.hasSelfIntersection, true, reason: 'Deve manter flag de interseção ativa');
+      expect(controller.currentState, DrawingState.drawing, reason: 'Cruzamento real não entra em revisão');
+      expect(
+        controller.intersectionWarningMessage,
+        'Linhas se cruzam. Ajuste os vértices e confirme de novo.',
+      );
+      expect(
+        controller.instructionText,
+        'Linhas se cruzam. Ajuste os vértices e confirme de novo.',
+      );
+    });
+
+    test('Cenário 6: bico côncavo não trava no meio e confirma', () {
+      setupPolygonDrawing();
+
+      // Entalhe para dentro. A linha de fechamento provisória cruza um lado
+      // enquanto o bico não está pronto; as arestas já postas não cruzam.
+      controller.appendDrawingPoint(const LatLng(0, 0));
+      controller.appendDrawingPoint(const LatLng(5, 0));
+      controller.appendDrawingPoint(const LatLng(5, 5));
+      controller.appendDrawingPoint(const LatLng(3, 5));
+      controller.appendDrawingPoint(const LatLng(3, 2));
+      controller.appendDrawingPoint(const LatLng(4, 2));
+      controller.appendDrawingPoint(const LatLng(4, 4));
+
+      expect(controller.hasSelfIntersection, false, reason: 'Bico em andamento não usa a aresta de fechamento');
+      expect(controller.currentState, DrawingState.drawing);
+
+      controller.completeDrawing();
+
+      expect(controller.currentState, DrawingState.drawing, reason: 'Fechar agora ainda cruza, então permanece desenhando');
+
+      // Completa o bico sem cruzar o anel fechado.
+      controller.appendDrawingPoint(const LatLng(4, 5));
+      controller.appendDrawingPoint(const LatLng(0, 5));
+      expect(controller.hasSelfIntersection, false);
+
+      controller.completeDrawing();
+      expect(controller.currentState, DrawingState.reviewing);
+      expect(controller.intersectionWarningMessage, isNull);
     });
   });
 }

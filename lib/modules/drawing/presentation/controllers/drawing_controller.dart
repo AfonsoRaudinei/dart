@@ -517,6 +517,10 @@ class DrawingController extends ChangeNotifier {
 
   /// Returns the text instruction for the tooltip
   String get instructionText {
+    if (_stateMachine.currentState == DrawingState.drawing &&
+        _intersectionWarningMessage != null) {
+      return _intersectionWarningMessage!;
+    }
     if (_errorMessage != null) return "Erro: $_errorMessage";
     if (!_validationResult.isValid) {
       return "⚠️ ${_validationResult.message}"; // Validation Error
@@ -618,14 +622,28 @@ class DrawingController extends ChangeNotifier {
   void _updateRealTimeIntersection() {
     DrawingGeometry? geom = liveGeometry;
     if (geom is DrawingPolygon) {
+      final sketch =
+          (_stateMachine.currentState == DrawingState.drawing ||
+              _stateMachine.currentState == DrawingState.armed) &&
+          _stateMachine.currentTool == DrawingTool.polygon;
       _intersectingSegmentIndices = DrawingUtils.findSelfIntersectingSegments(
         geom,
+        ignoreClosingEdge: sketch,
       );
       _hasSelfIntersection = _intersectingSegmentIndices.isNotEmpty;
+      if (sketch) _intersectionWarningMessage = null;
     } else {
       _intersectingSegmentIndices = {};
       _hasSelfIntersection = false;
     }
+  }
+
+  /// Anel fechado, incluindo a aresta de volta ao início. Só na hora de terminar.
+  bool _closedRingCrosses() {
+    if (_stateMachine.currentTool != DrawingTool.polygon) return false;
+    final geom = liveGeometry;
+    if (geom is! DrawingPolygon) return false;
+    return DrawingUtils.findSelfIntersectingSegments(geom).isNotEmpty;
   }
 
   void _captureReviewMetrics(DrawingGeometry? geometry) {
@@ -1801,20 +1819,25 @@ class DrawingController extends ChangeNotifier {
   void completeDrawing() {
     final geometrySnapshot = liveGeometry;
     if (_stateMachine.currentState == DrawingState.drawing) {
+      if (_closedRingCrosses()) {
+        final geom = liveGeometry;
+        if (geom is DrawingPolygon) {
+          _intersectingSegmentIndices =
+              DrawingUtils.findSelfIntersectingSegments(geom);
+          _hasSelfIntersection = _intersectingSegmentIndices.isNotEmpty;
+        }
+        _intersectionWarningMessage =
+            'Linhas se cruzam. Ajuste os vértices e confirme de novo.';
+        _errorMessage = null;
+        notifyListeners();
+        return;
+      }
       final success = _stateMachine.completeDrawing();
       if (success) {
         _reviewGeometrySnapshot = geometrySnapshot;
         _captureReviewMetrics(geometrySnapshot);
-        // 🔧 FIX-AUDIT: Usar liveGeometry (fonte real dos pontos) em vez de _manualSketch
         validateGeometry(liveGeometry);
-        if (_hasSelfIntersection ||
-            _isSelfIntersectionMessage(_validationResult.message)) {
-          _intersectionWarningMessage =
-              'Linhas se cruzam. Salve e edite os vértices depois.';
-          _errorMessage = null;
-        } else {
-          _intersectionWarningMessage = null;
-        }
+        _intersectionWarningMessage = null;
         notifyListeners();
       }
     }
