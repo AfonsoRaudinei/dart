@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import 'package:soloforte_app/core/constants/layout_constants.dart';
 import 'package:soloforte_app/core/contracts/i_client_lookup.dart';
 import 'package:soloforte_app/core/contracts/i_client_lookup_provider.dart';
 import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
@@ -222,18 +223,75 @@ class _ClimaWhatsAppSheetState extends ConsumerState<ClimaWhatsAppSheet> {
   final Set<String> _selecionados = {};
   bool _loading = true;
 
+  /// Chave da cidade filtrada. `null` = Todas.
+  String? _filtroCidade;
+
   @override
   void initState() {
     super.initState();
     _carregarClientes();
   }
 
+  String get _cidadePrevisaoKey => climaCityMatchKey(widget.payload.cidade);
+
+  String get _filtroLabel {
+    if (_filtroCidade == null || _filtroCidade == _cidadePrevisaoKey) {
+      return _cidadePrevisaoLabel;
+    }
+    for (final cliente in _clientes) {
+      if (climaCityMatchKey(cliente.city) == _filtroCidade) {
+        return cliente.city!.trim();
+      }
+    }
+    return _cidadePrevisaoLabel;
+  }
+
+  String get _cidadePrevisaoLabel {
+    final raw = widget.payload.cidade.split(',').first.trim();
+    return raw.isEmpty ? widget.payload.cidade : raw;
+  }
+
+  List<String> get _cidades {
+    final seen = <String>{};
+    final labels = <String>[];
+    final previsao = _cidadePrevisaoKey;
+    if (previsao.isNotEmpty) {
+      seen.add(previsao);
+      labels.add(_cidadePrevisaoLabel);
+    }
+    for (final cliente in _clientes) {
+      final key = climaCityMatchKey(cliente.city);
+      if (key.isEmpty || !seen.add(key)) continue;
+      labels.add(cliente.city!.trim());
+    }
+    return labels;
+  }
+
+  List<ClientSummary> get _visiveis {
+    final filtro = _filtroCidade;
+    if (filtro == null) return _clientes;
+    return _clientes
+        .where((c) => climaCityMatchKey(c.city) == filtro)
+        .toList();
+  }
+
   Future<void> _carregarClientes() async {
     final clientes = await ref.read(clientLookupProvider).listAtivos();
     if (!mounted) return;
+    final previsao = _cidadePrevisaoKey;
     setState(() {
       _clientes = clientes;
+      _filtroCidade = previsao.isEmpty ? null : previsao;
       _loading = false;
+    });
+  }
+
+  void _marcarComTelefone() {
+    setState(() {
+      for (final cliente in _visiveis) {
+        final tel = cliente.phone;
+        if (climaPhoneIsValid(tel)) _selecionados.add(tel!);
+      }
     });
   }
 
@@ -277,13 +335,14 @@ class _ClimaWhatsAppSheetState extends ConsumerState<ClimaWhatsAppSheet> {
     final ctaRadius = isIos ? SoloForteSheetSkinIos.ctaRadius : 12.0;
 
     final bottomPad = MediaQuery.paddingOf(context).bottom;
+    final visiveis = _visiveis;
+    final cidades = _cidades;
 
     return Padding(
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom,
       ),
       child: Column(
-        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
@@ -313,11 +372,19 @@ class _ClimaWhatsAppSheetState extends ConsumerState<ClimaWhatsAppSheet> {
           ),
           Divider(color: divider, height: 1),
           _ClimaWhatsAppPreview(payload: payload),
-          Divider(color: divider, height: 1),
-          ConstrainedBox(
-            constraints: BoxConstraints(
-              maxHeight: MediaQuery.of(context).size.height * 0.45,
+          if (!_loading && cidades.isNotEmpty)
+            _ClimaCityFilter(
+              cidades: cidades,
+              selecionada: _filtroCidade,
+              accent: accent,
+              labelColor: categoryLabel,
+              onSelected: (key) => setState(() => _filtroCidade = key),
+              onMarcar: visiveis.any((c) => climaPhoneIsValid(c.phone))
+                  ? _marcarComTelefone
+                  : null,
             ),
+          Divider(color: divider, height: 1),
+          Expanded(
             child: _loading
                 ? Padding(
                     padding: const EdgeInsets.all(32),
@@ -343,13 +410,27 @@ class _ClimaWhatsAppSheetState extends ConsumerState<ClimaWhatsAppSheet> {
                       ),
                     ),
                   )
+                : visiveis.isEmpty
+                ? Padding(
+                    padding: const EdgeInsets.all(32),
+                    child: Center(
+                      child: Text(
+                        'Nenhum cliente em $_filtroLabel.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 14,
+                          color: categoryLabel,
+                        ),
+                      ),
+                    ),
+                  )
                 : ListView.separated(
-                    shrinkWrap: true,
-                    itemCount: _clientes.length,
+                    itemCount: visiveis.length,
                     separatorBuilder: (_, __) =>
                         Divider(color: divider, height: 1),
                     itemBuilder: (_, i) {
-                      final cliente = _clientes[i];
+                      final cliente = visiveis[i];
                       final tel = cliente.phone;
                       final hasPhone = climaPhoneIsValid(tel);
                       return CheckboxListTile(
@@ -393,7 +474,12 @@ class _ClimaWhatsAppSheetState extends ConsumerState<ClimaWhatsAppSheet> {
           ),
           Divider(color: divider, height: 1),
           Padding(
-            padding: EdgeInsets.fromLTRB(20, 12, 20, 16 + bottomPad),
+            padding: EdgeInsets.fromLTRB(
+              20,
+              12,
+              20,
+              16 + bottomPad + kFabSafeArea,
+            ),
             child: SizedBox(
               width: double.infinity,
               child: Tooltip(
@@ -432,6 +518,117 @@ class _ClimaWhatsAppSheetState extends ConsumerState<ClimaWhatsAppSheet> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _ClimaCityFilter extends StatelessWidget {
+  const _ClimaCityFilter({
+    required this.cidades,
+    required this.selecionada,
+    required this.accent,
+    required this.labelColor,
+    required this.onSelected,
+    required this.onMarcar,
+  });
+
+  final List<String> cidades;
+  final String? selecionada;
+  final Color accent;
+  final Color labelColor;
+  final ValueChanged<String?> onSelected;
+  final VoidCallback? onMarcar;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            height: 36,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              children: [
+                _CityChip(
+                  label: 'Todas',
+                  selected: selecionada == null,
+                  accent: accent,
+                  labelColor: labelColor,
+                  onTap: () => onSelected(null),
+                ),
+                for (final cidade in cidades) ...[
+                  const SizedBox(width: 8),
+                  _CityChip(
+                    label: cidade,
+                    selected: climaCityMatchKey(cidade) == selecionada,
+                    accent: accent,
+                    labelColor: labelColor,
+                    onTap: () => onSelected(climaCityMatchKey(cidade)),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          if (onMarcar != null)
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton(
+                onPressed: onMarcar,
+                style: TextButton.styleFrom(
+                  foregroundColor: accent,
+                  padding: const EdgeInsets.symmetric(horizontal: 0),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                child: const Text('Marcar com telefone'),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CityChip extends StatelessWidget {
+  const _CityChip({
+    required this.label,
+    required this.selected,
+    required this.accent,
+    required this.labelColor,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final Color accent;
+  final Color labelColor;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: selected ? accent : Colors.transparent,
+      shape: StadiumBorder(
+        side: BorderSide(color: selected ? accent : labelColor),
+      ),
+      child: InkWell(
+        onTap: onTap,
+        customBorder: const StadiumBorder(),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          child: Text(
+            label,
+            style: TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: selected ? Colors.white : labelColor,
+            ),
+          ),
+        ),
       ),
     );
   }

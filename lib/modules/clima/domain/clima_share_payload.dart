@@ -183,6 +183,12 @@ final class ClimaSharePayloadSemanal extends ClimaSharePayload {
   }
 }
 
+/// Nome de cidade sem UF, para comparar a previsão com o cliente.
+String climaCityMatchKey(String? raw) {
+  if (raw == null) return '';
+  return raw.split(',').first.trim().toLowerCase();
+}
+
 /// Telefone válido para WhatsApp (≥ 10 dígitos).
 bool climaPhoneIsValid(String? phone) {
   if (phone == null || phone.trim().isEmpty) return false;
