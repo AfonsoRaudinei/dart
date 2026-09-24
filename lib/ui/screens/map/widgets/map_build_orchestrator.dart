@@ -277,6 +277,11 @@ class MapBuildOrchestrator extends ConsumerWidget {
                     drawCtrl.selectEditVertex(hit.ring, hit.point);
                     return;
                   }
+                  final edge = drawCtrl.findEditEdgeNear(point, tol);
+                  if (edge != null) {
+                    drawCtrl.insertVertex(edge.ring, edge.segment, edge.point);
+                    return;
+                  }
                   if (drawCtrl.selectedEditRingIndex != null) {
                     drawCtrl.clearEditVertexSelection();
                     return;

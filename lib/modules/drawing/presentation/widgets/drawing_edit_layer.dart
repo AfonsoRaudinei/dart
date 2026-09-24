@@ -122,7 +122,10 @@ class _DrawingEditLayerState extends State<DrawingEditLayer> {
     widget.controller.beginSketchVertexDrag(pointIndex);
   }
 
-  void _updateSketchVertexDrag(DragUpdateDetails details, LatLng fallbackPoint) {
+  void _updateSketchVertexDrag(
+    DragUpdateDetails details,
+    LatLng fallbackPoint,
+  ) {
     if (!_isDragging || !_isSketchDrag) return;
 
     final basePoint = _draggingPosition ?? fallbackPoint;
@@ -157,11 +160,7 @@ class _DrawingEditLayerState extends State<DrawingEditLayer> {
       preview.add(preview.first);
     }
     return [
-      Polyline(
-        points: preview,
-        color: const Color(0xE6E53935),
-        strokeWidth: 3,
-      ),
+      Polyline(points: preview, color: const Color(0xE6E53935), strokeWidth: 3),
     ];
   }
 
@@ -342,10 +341,8 @@ class _DrawingEditLayerState extends State<DrawingEditLayer> {
             hasSelfIntersection:
                 isStart && widget.controller.hasSelfIntersection,
             onTap: () => _onSketchVertexTap(i),
-            onPanStart: () => _startSketchVertexDrag(
-              pointIndex: i,
-              point: point,
-            ),
+            onPanStart: () =>
+                _startSketchVertexDrag(pointIndex: i, point: point),
             onPanUpdate: (details) => _updateSketchVertexDrag(details, point),
             onPanEnd: _endVertexDrag,
             onPanCancel: _cancelVertexDrag,
@@ -432,22 +429,6 @@ class _DrawingEditLayerState extends State<DrawingEditLayer> {
             final midLat = (p.latitude + nextP.latitude) / 2;
             final midLng = (p.longitude + nextP.longitude) / 2;
             final mid = LatLng(midLat, midLng);
-
-            // Midpoint Insert Handle
-            markers.add(
-              Marker(
-                point: mid,
-                width: 16,
-                height: 16,
-                child: _MidpointHandle(
-                  segmentIndex: i,
-                  ringIndex: ringIdx,
-                  point: mid,
-                  controller: widget.controller,
-                ),
-                alignment: Alignment.center,
-              ),
-            );
 
             // Segment Distance Label
             final dist = const Distance().as(LengthUnit.Meter, p, nextP);
@@ -605,10 +586,7 @@ class _VertexIdleDot extends StatelessWidget {
 class _VertexGotaVisual extends StatelessWidget {
   final bool isDragging;
 
-  const _VertexGotaVisual({
-    super.key,
-    required this.isDragging,
-  });
+  const _VertexGotaVisual({super.key, required this.isDragging});
 
   @override
   Widget build(BuildContext context) {
@@ -621,11 +599,7 @@ class _VertexGotaVisual extends StatelessWidget {
       child: const Align(
         // Cruz no corpo (abaixo da ponta) — onde fica o dedo.
         alignment: Alignment(0, 0.42),
-        child: Icon(
-          Icons.open_with,
-          color: Colors.white,
-          size: 22,
-        ),
+        child: Icon(Icons.open_with, color: Colors.white, size: 22),
       ),
     );
   }
@@ -688,43 +662,6 @@ class _GotaCruzPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _GotaCruzPainter oldDelegate) =>
       oldDelegate.color != color;
-}
-
-class _MidpointHandle extends StatelessWidget {
-  final int segmentIndex;
-  final int ringIndex;
-  final LatLng point;
-  final DrawingController controller;
-
-  const _MidpointHandle({
-    required this.segmentIndex,
-    required this.ringIndex,
-    required this.point,
-    required this.controller,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        controller.insertVertex(ringIndex, segmentIndex, point);
-      },
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.8),
-          shape: BoxShape.circle,
-          border: Border.all(color: Colors.black26, width: 1),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.2),
-              blurRadius: 2,
-              offset: const Offset(0, 1),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 }
 
 /// Handle mid-draw: idle = ponto; selecionado = gota ponta-cima (mesmo contrato da edição).
