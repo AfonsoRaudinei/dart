@@ -8,6 +8,7 @@ import 'package:soloforte_app/modules/drawing/domain/drawing_state.dart';
 import 'package:soloforte_app/modules/drawing/domain/models/drawing_models.dart';
 import 'package:soloforte_app/modules/drawing/presentation/controllers/drawing_controller.dart';
 import 'package:soloforte_app/modules/drawing/presentation/widgets/drawing_edit_layer.dart';
+import 'package:soloforte_app/modules/drawing/presentation/widgets/drawing_vertex_handle_overlay.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 void main() {
@@ -41,31 +42,15 @@ void main() {
     controller.startEditMode();
 
     final mapController = MapController();
-    await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: FlutterMap(
-            mapController: mapController,
-            options: const MapOptions(
-              initialCenter: LatLng(0, 0),
-              initialZoom: 13,
-              interactionOptions: InteractionOptions(
-                flags: InteractiveFlag.none,
-              ),
-            ),
-            children: [
-              DrawingEditLayer(
-                controller: controller,
-                mapController: mapController,
-              ),
-            ],
-          ),
-        ),
-      ),
+    await _pumpInteractiveHandles(
+      tester,
+      controller: controller,
+      mapController: mapController,
+      center: const LatLng(0, 0),
+      zoom: 13,
     );
-    await tester.pumpAndSettle();
 
-    final handle = find.byKey(const Key('drawing_vertex_0_0'));
+    final handle = find.byKey(const Key('drawing_vertex_hit_0_0'));
     expect(handle, findsOneWidget);
     final before =
         (controller.liveGeometry! as DrawingPolygon).coordinates.first.first;
@@ -115,39 +100,25 @@ void main() {
     controller.appendDrawingPoint(const LatLng(0.05, 0.05));
 
     final mapController = MapController();
-    await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: FlutterMap(
-            mapController: mapController,
-            options: const MapOptions(
-              initialCenter: LatLng(0, 0),
-              initialZoom: 11,
-              interactionOptions: InteractionOptions(
-                flags: InteractiveFlag.none,
-              ),
-            ),
-            children: [
-              DrawingEditLayer(
-                controller: controller,
-                mapController: mapController,
-              ),
-            ],
-          ),
-        ),
-      ),
+    await _pumpInteractiveHandles(
+      tester,
+      controller: controller,
+      mapController: mapController,
+      center: const LatLng(0, 0),
+      zoom: 11,
     );
-    await tester.pumpAndSettle();
 
     final vertex = find.byKey(const Key('drawing_sketch_vertex_1'));
     expect(vertex, findsOneWidget);
 
-    // Hitbox idle ≥44dp (não o círculo visual 16–20px).
-    final idleSize = tester.getSize(vertex);
+    // Hitbox da alça (corpo da gota) ≥44dp — o visual idle fica dentro.
+    final hit = find.byKey(const Key('drawing_sketch_vertex_hit_1'));
+    expect(hit, findsOneWidget);
+    final idleSize = tester.getSize(hit);
     expect(idleSize.width, greaterThanOrEqualTo(44));
     expect(idleSize.height, greaterThanOrEqualTo(44));
 
-    await tester.tap(vertex);
+    await tester.tap(hit);
     await tester.pumpAndSettle();
     expect(controller.selectedSketchVertexIndex, 1);
 
@@ -165,7 +136,7 @@ void main() {
 
     final before = controller.currentPoints[1];
     await tester.timedDrag(
-      find.byKey(const Key('drawing_sketch_vertex_1')),
+      hit,
       const Offset(64, 48),
       const Duration(milliseconds: 300),
     );
@@ -194,33 +165,17 @@ void main() {
     controller.appendDrawingPoint(const LatLng(0.05, 0.05));
 
     final mapController = MapController();
-    await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: FlutterMap(
-            mapController: mapController,
-            options: const MapOptions(
-              initialCenter: LatLng(0, 0),
-              initialZoom: 11,
-              interactionOptions: InteractionOptions(
-                flags: InteractiveFlag.none,
-              ),
-            ),
-            children: [
-              DrawingEditLayer(
-                controller: controller,
-                mapController: mapController,
-              ),
-            ],
-          ),
-        ),
-      ),
+    await _pumpInteractiveHandles(
+      tester,
+      controller: controller,
+      mapController: mapController,
+      center: const LatLng(0, 0),
+      zoom: 11,
     );
-    await tester.pumpAndSettle();
 
     final before = controller.currentPoints[1];
     await tester.timedDrag(
-      find.byKey(const Key('drawing_sketch_vertex_1')),
+      find.byKey(const Key('drawing_sketch_vertex_hit_1')),
       const Offset(64, 48),
       const Duration(milliseconds: 300),
     );
@@ -248,25 +203,25 @@ void main() {
     controller.appendDrawingPoint(const LatLng(0.05, 0.05));
 
     final mapController = MapController();
-    await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: _SketchFreezeMapHarness(
-            controller: controller,
-            mapController: mapController,
-          ),
-        ),
-      ),
+    await _pumpInteractiveHandles(
+      tester,
+      controller: controller,
+      mapController: mapController,
+      center: const LatLng(0, 0),
+      zoom: 11,
     );
-    await tester.pumpAndSettle();
 
-    await tester.tap(find.byKey(const Key('drawing_sketch_vertex_1')));
+    final hit = find.byKey(const Key('drawing_sketch_vertex_hit_1'));
+    await tester.tap(hit);
     await tester.pumpAndSettle();
     expect(controller.selectedSketchVertexIndex, 1);
 
     final before = controller.currentPoints[1];
+    final hitBox = tester.getRect(hit);
+    expect(hitBox.height, closeTo(78, 1));
+    expect(hitBox.center.dy, greaterThan(hitBox.top + 20));
     await tester.timedDrag(
-      find.byKey(const Key('drawing_sketch_vertex_drag_1')),
+      hit,
       const Offset(72, 56),
       const Duration(milliseconds: 350),
     );
@@ -292,25 +247,24 @@ void main() {
     controller.startEditMode();
 
     final mapController = MapController();
-    await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: _EditFreezeMapHarness(
-            controller: controller,
-            mapController: mapController,
-          ),
-        ),
-      ),
+    await _pumpInteractiveHandles(
+      tester,
+      controller: controller,
+      mapController: mapController,
+      center: const LatLng(0, 0),
+      zoom: 13,
     );
-    await tester.pumpAndSettle();
 
     controller.selectEditVertex(0, 0);
     await tester.pumpAndSettle();
 
     final before =
         (controller.liveGeometry! as DrawingPolygon).coordinates.first.first;
+    final hit = find.byKey(const Key('drawing_vertex_hit_0_0'));
+    final hitBox = tester.getRect(hit);
+    expect(hitBox.center.dy, greaterThan(hitBox.top + 20));
     await tester.timedDrag(
-      find.byKey(const Key('drawing_vertex_drag_0_0')),
+      hit,
       const Offset(72, 56),
       const Duration(milliseconds: 350),
     );
@@ -381,7 +335,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byKey(const Key('drawing_sketch_vertex_1')));
+    controller.selectSketchVertex(1);
     await tester.pumpAndSettle();
 
     final gotaBox = tester.getRect(find.byKey(const Key('drawing_sketch_vertex_1')));
@@ -564,83 +518,45 @@ void expectMarkerTopAnchorsLatLng({
   );
 }
 
-/// Espelha o freeze do [MapBuildOrchestrator] quando há vértice de edição ativo.
-class _EditFreezeMapHarness extends StatelessWidget {
-  const _EditFreezeMapHarness({
-    required this.controller,
-    required this.mapController,
-  });
-
-  final DrawingController controller;
-  final MapController mapController;
-
-  @override
-  Widget build(BuildContext context) {
-    return ListenableBuilder(
-      listenable: controller,
-      builder: (context, _) {
-        final freeze =
-            controller.isDraggingVertex ||
-            (controller.selectedEditRingIndex != null &&
-                controller.selectedEditPointIndex != null);
-        return FlutterMap(
-          mapController: mapController,
-          options: MapOptions(
-            initialCenter: const LatLng(0, 0),
-            initialZoom: 13,
-            interactionOptions: InteractionOptions(
-              flags: freeze ? InteractiveFlag.none : InteractiveFlag.all,
-            ),
-          ),
+/// Mapa com pan ligado e alça da gota acima do FlutterMap.
+Future<void> _pumpInteractiveHandles(
+  WidgetTester tester, {
+  required DrawingController controller,
+  required MapController mapController,
+  required LatLng center,
+  required double zoom,
+}) async {
+  await tester.pumpWidget(
+    MaterialApp(
+      home: Scaffold(
+        body: Stack(
           children: [
-            DrawingEditLayer(
+            FlutterMap(
+              mapController: mapController,
+              options: MapOptions(
+                initialCenter: center,
+                initialZoom: zoom,
+                interactionOptions: const InteractionOptions(
+                  flags: InteractiveFlag.all,
+                ),
+              ),
+              children: [
+                DrawingEditLayer(
+                  controller: controller,
+                  mapController: mapController,
+                ),
+              ],
+            ),
+            DrawingVertexHandleOverlay(
               controller: controller,
               mapController: mapController,
             ),
           ],
-        );
-      },
-    );
-  }
-}
-
-/// Espelha o freeze do [MapBuildOrchestrator] quando há vértice sketch ativo.
-class _SketchFreezeMapHarness extends StatelessWidget {
-  const _SketchFreezeMapHarness({
-    required this.controller,
-    required this.mapController,
-  });
-
-  final DrawingController controller;
-  final MapController mapController;
-
-  @override
-  Widget build(BuildContext context) {
-    return ListenableBuilder(
-      listenable: controller,
-      builder: (context, _) {
-        final freeze =
-            controller.selectedSketchVertexIndex != null ||
-            controller.isDraggingSketchVertex;
-        return FlutterMap(
-          mapController: mapController,
-          options: MapOptions(
-            initialCenter: const LatLng(0, 0),
-            initialZoom: 11,
-            interactionOptions: InteractionOptions(
-              flags: freeze ? InteractiveFlag.none : InteractiveFlag.all,
-            ),
-          ),
-          children: [
-            DrawingEditLayer(
-              controller: controller,
-              mapController: mapController,
-            ),
-          ],
-        );
-      },
-    );
-  }
+        ),
+      ),
+    ),
+  );
+  await tester.pumpAndSettle();
 }
 
 class _UpsertDrawingRepository extends DrawingRepository {

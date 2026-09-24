@@ -162,11 +162,15 @@ extension DrawingControllerVertexEditing on DrawingController {
     _notify();
   }
 
-  /// Início de arraste na UI — sem notify (evita rebuild que cancela o pan no device).
-  void beginEditVertexDrag([int? index]) {
+  /// Início de arraste na UI — sem notify (o overlay não pode reconstruir o mapa).
+  void beginEditVertexDrag([int? index, int ringIndex = 0]) {
     if (_isDisposed) return;
     _isDraggingVertex = true;
     _draggedVertexIndex = index;
+    if (index != null) {
+      _selectedEditRingIndex = ringIndex;
+      _selectedEditPointIndex = index;
+    }
     if (_editGeometry != null) {
       _history.push(_geomToVertices(_editGeometry!));
     }

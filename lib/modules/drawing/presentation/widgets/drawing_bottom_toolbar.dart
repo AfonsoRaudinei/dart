@@ -5,6 +5,8 @@ import 'package:flutter/services.dart';
 import 'package:soloforte_app/core/state/map_state.dart';
 import 'package:soloforte_app/core/utils/area_display_format.dart';
 
+import 'vertex_handle_drag_preview.dart';
+
 /// Toolbar horizontal flutuante para ações de desenho (cancelar, desfazer, confirmar)
 /// com seção opcional de medição de área na base do mesmo card.
 ///
@@ -19,6 +21,7 @@ class DrawingBottomToolbar extends StatefulWidget {
     this.canConfirm = true,
     this.measurementAreaHa = 0,
     this.measurementPerimeterKm = 0,
+    this.vertexDragPreview,
     this.measurementAzimuthDeg,
     this.gpsAccuracyM = 0,
     this.areaUnit = AreaDisplayUnit.hectare,
@@ -37,6 +40,7 @@ class DrawingBottomToolbar extends StatefulWidget {
 
   final double measurementAreaHa;
   final double measurementPerimeterKm;
+  final VertexHandleDragPreview? vertexDragPreview;
   final double? measurementAzimuthDeg;
   final double gpsAccuracyM;
   final AreaDisplayUnit areaUnit;
@@ -47,7 +51,8 @@ class DrawingBottomToolbar extends StatefulWidget {
   final ValueChanged<DistanceDisplayUnit>? onDistanceUnit;
 
   bool get _showsMeasurement =>
-      measurementAreaHa > 0 || measurementPerimeterKm > 0;
+      (vertexDragPreview?.areaHa ?? measurementAreaHa) > 0 ||
+      (vertexDragPreview?.perimeterKm ?? measurementPerimeterKm) > 0;
 
   @override
   State<DrawingBottomToolbar> createState() => _DrawingBottomToolbarState();
@@ -78,10 +83,25 @@ class _DrawingBottomToolbarState extends State<DrawingBottomToolbar>
       ),
     );
     _entryController.forward();
+    widget.vertexDragPreview?.addListener(_onDragPreview);
+  }
+
+  @override
+  void didUpdateWidget(covariant DrawingBottomToolbar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.vertexDragPreview != widget.vertexDragPreview) {
+      oldWidget.vertexDragPreview?.removeListener(_onDragPreview);
+      widget.vertexDragPreview?.addListener(_onDragPreview);
+    }
+  }
+
+  void _onDragPreview() {
+    if (mounted) setState(() {});
   }
 
   @override
   void dispose() {
+    widget.vertexDragPreview?.removeListener(_onDragPreview);
     _entryController.dispose();
     super.dispose();
   }
@@ -165,8 +185,12 @@ class _DrawingBottomToolbarState extends State<DrawingBottomToolbar>
                     ),
                   ),
                   _DrawingToolbarMeasurementSection(
-                    areaHa: widget.measurementAreaHa,
-                    perimeterKm: widget.measurementPerimeterKm,
+                    areaHa:
+                        widget.vertexDragPreview?.areaHa ??
+                        widget.measurementAreaHa,
+                    perimeterKm:
+                        widget.vertexDragPreview?.perimeterKm ??
+                        widget.measurementPerimeterKm,
                     azimuthDeg: widget.measurementAzimuthDeg,
                     gpsAccuracyM: widget.gpsAccuracyM,
                     areaUnit: widget.areaUnit,
