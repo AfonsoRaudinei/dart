@@ -12,6 +12,8 @@ import 'package:soloforte_app/core/permissions/location_permission_gate.dart';
 import 'package:soloforte_app/core/router/app_routes.dart';
 import 'package:soloforte_app/modules/clima/domain/entities/alerta_meteorologico.dart';
 import 'package:soloforte_app/modules/clima/domain/entities/clima_atual.dart';
+import 'package:soloforte_app/modules/clima/domain/entities/previsao_diaria.dart';
+import 'package:soloforte_app/modules/clima/domain/entities/previsao_horaria.dart';
 import 'package:soloforte_app/modules/clima/presentation/providers/clima_providers.dart';
 import 'package:soloforte_app/modules/clima/presentation/widgets/clima_current_widgets.dart';
 import 'package:soloforte_app/modules/clima/presentation/widgets/clima_forecast_widgets.dart';
@@ -38,6 +40,7 @@ class ClimaScreen extends ConsumerWidget {
           children: [
             if (fallback != ClimaLocationFallback.none)
               _ClimaFallbackBanner(state: fallback),
+            const _ClimaChrome(),
             Expanded(
               child: AnimatedSwitcher(
                 duration: const Duration(milliseconds: 260),
@@ -57,57 +60,10 @@ class ClimaScreen extends ConsumerWidget {
   }
 }
 
-// ─── Fallback Banner ──────────────────────────────────────────────────────────
-class _ClimaFallbackBanner extends StatelessWidget {
-  const _ClimaFallbackBanner({required this.state});
+// ─── Chrome persistente (título, cidade, toggle) ──────────────────────────────
 
-  final ClimaLocationFallback state;
-
-  @override
-  Widget build(BuildContext context) {
-    final (String message, IconData icon, Color color) = switch (state) {
-      ClimaLocationFallback.userDenied => (
-        'Permissão de localização negada. Exibindo Brasília-DF.',
-        Icons.location_off_outlined,
-        Colors.orange,
-      ),
-      ClimaLocationFallback.timeout => (
-        'GPS não respondeu. Exibindo Brasília-DF.',
-        Icons.access_time_outlined,
-        Colors.amber,
-      ),
-      ClimaLocationFallback.unavailable => (
-        'GPS desabilitado. Exibindo Brasília-DF.',
-        Icons.gps_off_outlined,
-        Colors.redAccent,
-      ),
-      ClimaLocationFallback.none => ('', Icons.check, Colors.transparent),
-    };
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      color: color.withValues(alpha: 0.15),
-      child: Row(
-        children: [
-          Icon(icon, color: color, size: 18),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              message,
-              style: TextStyle(color: color, fontSize: 13, fontFamily: 'Inter'),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ─── Current View ─────────────────────────────────────────────────────────────
-
-class _CurrentView extends ConsumerWidget {
-  const _CurrentView({super.key});
+class _ClimaChrome extends ConsumerWidget {
+  const _ClimaChrome();
 
   Future<void> _refreshCurrentLocation(WidgetRef ref) async {
     HapticFeedback.lightImpact();
@@ -172,6 +128,166 @@ class _CurrentView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final tab = ref.watch(climaTabIndexProvider);
+    final climaAsync = ref.watch(climaAtualProvider);
+    final horariaAsync = ref.watch(previsaoHorariaProvider);
+    final semanalAsync = ref.watch(previsaoSemanalProvider);
+
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Clima',
+                style: TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 34,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.37,
+                  color: context.climaTextPrimary,
+                ),
+              ),
+              Row(
+                children: [
+                  ClimaIconBtn(
+                    icon: Icons.my_location_outlined,
+                    onTap: () => _refreshCurrentLocation(ref),
+                  ),
+                  const SizedBox(width: 8),
+                  ClimaIconBtn(
+                    icon: Icons.tune_outlined,
+                    onTap: () {
+                      HapticFeedback.lightImpact();
+                      showClimaSettings(context);
+                    },
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+          child: climaAsync.when(
+            data: (ClimaAtual clima) => Row(
+              children: [
+                Expanded(
+                  child: ClimaLocationRow(
+                    cidade: clima.cidade,
+                    atualizadoEm: clima.atualizadoEm,
+                    padding: EdgeInsets.zero,
+                    onTap: () => showClimaCitySelection(context, ref),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                _shareButton(
+                  tab: tab,
+                  clima: clima,
+                  horaria: horariaAsync,
+                  semanal: semanalAsync,
+                ),
+              ],
+            ),
+            loading: () => const SizedBox.shrink(),
+            error: (_, __) => const SizedBox.shrink(),
+          ),
+        ),
+        // Toggle persistente: Agora | 24h | 7 dias (sem emoji; sem chips no rodapé).
+        const Padding(
+          padding: EdgeInsets.fromLTRB(20, 12, 20, 0),
+          child: ClimaPeriodToggle(),
+        ),
+      ],
+    );
+  }
+
+  Widget _shareButton({
+    required int tab,
+    required ClimaAtual clima,
+    required AsyncValue<List<PrevisaoHoraria>> horaria,
+    required AsyncValue<List<PrevisaoDiaria>> semanal,
+  }) {
+    return switch (tab) {
+      1 => horaria.maybeWhen(
+        data: (previsoes) => ClimaShareButton(
+          payload: ClimaSharePayloadHoraria(
+            cidadeLabel: clima.cidade,
+            previsoes: previsoes.take(24).toList(),
+          ),
+        ),
+        orElse: () => const SizedBox(width: 44, height: 44),
+      ),
+      2 => semanal.maybeWhen(
+        data: (previsoes) => ClimaShareButton(
+          payload: ClimaSharePayloadSemanal(
+            cidadeLabel: clima.cidade,
+            previsoes: previsoes,
+          ),
+        ),
+        orElse: () => const SizedBox(width: 44, height: 44),
+      ),
+      _ => ClimaShareButton(payload: ClimaSharePayloadAtual(clima)),
+    };
+  }
+}
+
+// ─── Fallback Banner ──────────────────────────────────────────────────────────
+class _ClimaFallbackBanner extends StatelessWidget {
+  const _ClimaFallbackBanner({required this.state});
+
+  final ClimaLocationFallback state;
+
+  @override
+  Widget build(BuildContext context) {
+    final (String message, IconData icon, Color color) = switch (state) {
+      ClimaLocationFallback.userDenied => (
+        'Permissão de localização negada. Exibindo Brasília-DF.',
+        Icons.location_off_outlined,
+        Colors.orange,
+      ),
+      ClimaLocationFallback.timeout => (
+        'GPS não respondeu. Exibindo Brasília-DF.',
+        Icons.access_time_outlined,
+        Colors.amber,
+      ),
+      ClimaLocationFallback.unavailable => (
+        'GPS desabilitado. Exibindo Brasília-DF.',
+        Icons.gps_off_outlined,
+        Colors.redAccent,
+      ),
+      ClimaLocationFallback.none => ('', Icons.check, Colors.transparent),
+    };
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      color: color.withValues(alpha: 0.15),
+      child: Row(
+        children: [
+          Icon(icon, color: color, size: 18),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              message,
+              style: TextStyle(color: color, fontSize: 13, fontFamily: 'Inter'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Current View ─────────────────────────────────────────────────────────────
+
+class _CurrentView extends ConsumerWidget {
+  const _CurrentView({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
     final climaAsync = ref.watch(climaAtualProvider);
     final alertasAsync = ref.watch(alertasClimaProvider);
     final unidade = ref.watch(climaUnidadeProvider);
@@ -181,69 +297,21 @@ class _CurrentView extends ConsumerWidget {
         parent: AlwaysScrollableScrollPhysics(),
       ),
       slivers: [
-        // ── Título grande (Large Title iOS) ──────────────────────────────────
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Clima',
-                  style: TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 34,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.37,
-                    color: context.climaTextPrimary,
-                  ),
-                ),
-                Row(
-                  children: [
-                    ClimaIconBtn(
-                      icon: Icons.my_location_outlined,
-                      onTap: () => _refreshCurrentLocation(ref),
-                    ),
-                    const SizedBox(width: 8),
-                    ClimaIconBtn(
-                      icon: Icons.tune_outlined,
-                      onTap: () {
-                        HapticFeedback.lightImpact();
-                        showClimaSettings(context);
-                      },
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
-
-        // ── Dados principais ──────────────────────────────────────────────────
         SliverToBoxAdapter(
           child: climaAsync.when(
             data: (ClimaAtual clima) => Column(
               children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: ClimaLocationRow(
-                          cidade: clima.cidade,
-                          atualizadoEm: clima.atualizadoEm,
-                          padding: EdgeInsets.zero,
-                          onTap: () => showClimaCitySelection(context, ref),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      ClimaShareButton(
-                        payload: ClimaSharePayloadAtual(clima),
-                      ),
-                    ],
-                  ),
-                ),
                 ClimaCurrentWeatherCard(clima: clima, unidade: unidade),
+                alertasAsync.when(
+                  data: (List<AlertaMeteorologico> alertas) {
+                    final ativos = alertas.where((a) => a.ativo).toList();
+                    return ativos.isEmpty
+                        ? const SizedBox.shrink()
+                        : ClimaAlertasBanner(alertas: ativos);
+                  },
+                  loading: () => const SizedBox.shrink(),
+                  error: (_, __) => const SizedBox.shrink(),
+                ),
                 ClimaDetailsCard(clima: clima),
                 const _ClimaMapRadarButton(),
               ],
@@ -252,29 +320,6 @@ class _CurrentView extends ConsumerWidget {
             error: (e, _) => ClimaErrorState(message: e.toString()),
           ),
         ),
-
-        // ── Alertas ───────────────────────────────────────────────────────────
-        SliverToBoxAdapter(
-          child: alertasAsync.when(
-            data: (List<AlertaMeteorologico> alertas) {
-              final ativos = alertas.where((a) => a.ativo).toList();
-              return ativos.isEmpty
-                  ? const SizedBox.shrink()
-                  : ClimaAlertasBanner(alertas: ativos);
-            },
-            loading: () => const SizedBox.shrink(),
-            error: (_, __) => const SizedBox.shrink(),
-          ),
-        ),
-
-        // ── Tab chips ─────────────────────────────────────────────────────────
-        const SliverToBoxAdapter(
-          child: Padding(
-            padding: EdgeInsets.fromLTRB(20, 20, 20, 0),
-            child: ClimaTabChips(),
-          ),
-        ),
-
         const SliverToBoxAdapter(child: SizedBox(height: kFabSafeArea)),
       ],
     );
@@ -326,7 +371,6 @@ class _HoraryView extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final previsaoAsync = ref.watch(previsaoHorariaProvider);
-    final climaAsync = ref.watch(climaAtualProvider);
     final unidade = ref.watch(climaUnidadeProvider);
 
     return CustomScrollView(
@@ -334,31 +378,6 @@ class _HoraryView extends ConsumerWidget {
         parent: AlwaysScrollableScrollPhysics(),
       ),
       slivers: [
-        SliverToBoxAdapter(
-          child: climaAsync.when(
-            data: (clima) => ClimaSubViewHeader(
-              title: 'Próximas 24 Horas',
-              onBack: () => ref.read(climaTabIndexProvider.notifier).state = 0,
-              trailing: previsaoAsync.maybeWhen(
-                data: (previsoes) => ClimaShareButton(
-                  payload: ClimaSharePayloadHoraria(
-                    cidadeLabel: clima.cidade,
-                    previsoes: previsoes.take(24).toList(),
-                  ),
-                ),
-                orElse: () => null,
-              ),
-            ),
-            loading: () => ClimaSubViewHeader(
-              title: 'Próximas 24 Horas',
-              onBack: () => ref.read(climaTabIndexProvider.notifier).state = 0,
-            ),
-            error: (_, __) => ClimaSubViewHeader(
-              title: 'Próximas 24 Horas',
-              onBack: () => ref.read(climaTabIndexProvider.notifier).state = 0,
-            ),
-          ),
-        ),
         SliverToBoxAdapter(
           child: previsaoAsync.when(
             data: (p) => ClimaHoraryContent(
@@ -383,7 +402,6 @@ class _WeeklyView extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final previsaoAsync = ref.watch(previsaoSemanalProvider);
-    final climaAsync = ref.watch(climaAtualProvider);
     final unidade = ref.watch(climaUnidadeProvider);
 
     return CustomScrollView(
@@ -391,31 +409,6 @@ class _WeeklyView extends ConsumerWidget {
         parent: AlwaysScrollableScrollPhysics(),
       ),
       slivers: [
-        SliverToBoxAdapter(
-          child: climaAsync.when(
-            data: (clima) => ClimaSubViewHeader(
-              title: 'Previsão Semanal',
-              onBack: () => ref.read(climaTabIndexProvider.notifier).state = 0,
-              trailing: previsaoAsync.maybeWhen(
-                data: (previsoes) => ClimaShareButton(
-                  payload: ClimaSharePayloadSemanal(
-                    cidadeLabel: clima.cidade,
-                    previsoes: previsoes,
-                  ),
-                ),
-                orElse: () => null,
-              ),
-            ),
-            loading: () => ClimaSubViewHeader(
-              title: 'Previsão Semanal',
-              onBack: () => ref.read(climaTabIndexProvider.notifier).state = 0,
-            ),
-            error: (_, __) => ClimaSubViewHeader(
-              title: 'Previsão Semanal',
-              onBack: () => ref.read(climaTabIndexProvider.notifier).state = 0,
-            ),
-          ),
-        ),
         SliverToBoxAdapter(
           child: previsaoAsync.when(
             data: (p) => ClimaWeeklyContent(previsoes: p, unidade: unidade),
