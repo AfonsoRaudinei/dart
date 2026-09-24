@@ -210,12 +210,15 @@ class _ClimaChrome extends ConsumerWidget {
     required AsyncValue<List<PrevisaoHoraria>> horaria,
     required AsyncValue<List<PrevisaoDiaria>> semanal,
   }) {
+    final semanalData = semanal.asData?.value ?? const <PrevisaoDiaria>[];
     return switch (tab) {
       1 => horaria.maybeWhen(
         data: (previsoes) => ClimaShareButton(
           payload: ClimaSharePayloadHoraria(
             cidadeLabel: clima.cidade,
             previsoes: previsoes.take(24).toList(),
+            fonte: clima.fonte,
+            contextoSemanal: semanalData,
           ),
         ),
         orElse: () => const SizedBox(width: 44, height: 44),
@@ -225,11 +228,17 @@ class _ClimaChrome extends ConsumerWidget {
           payload: ClimaSharePayloadSemanal(
             cidadeLabel: clima.cidade,
             previsoes: previsoes,
+            fonte: clima.fonte,
           ),
         ),
         orElse: () => const SizedBox(width: 44, height: 44),
       ),
-      _ => ClimaShareButton(payload: ClimaSharePayloadAtual(clima)),
+      _ => ClimaShareButton(
+        payload: ClimaSharePayloadAtual(
+          clima,
+          contextoSemanal: semanalData,
+        ),
+      ),
     };
   }
 }

@@ -8,7 +8,9 @@ import 'package:soloforte_app/core/contracts/i_client_lookup.dart';
 import 'package:soloforte_app/core/contracts/i_client_lookup_provider.dart';
 import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
 import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
+import 'package:soloforte_app/modules/clima/domain/clima_fonte.dart';
 import 'package:soloforte_app/modules/clima/domain/clima_share_payload.dart';
+import 'package:soloforte_app/modules/clima/presentation/widgets/clima_share_png.dart';
 import 'package:soloforte_app/modules/clima/presentation/widgets/clima_tokens.dart';
 
 // ─── Sub-View Header ──────────────────────────────────────────────────────────
@@ -222,6 +224,7 @@ class _ClimaWhatsAppSheetState extends ConsumerState<ClimaWhatsAppSheet> {
   List<ClientSummary> _clientes = [];
   final Set<String> _selecionados = {};
   bool _loading = true;
+  bool _sharingCard = false;
 
   /// Chave da cidade filtrada. `null` = Todas.
   String? _filtroCidade;
@@ -307,6 +310,16 @@ class _ClimaWhatsAppSheetState extends ConsumerState<ClimaWhatsAppSheet> {
       await _enviarWhatsApp(telefone);
     }
     if (mounted) Navigator.of(context).pop();
+  }
+
+  Future<void> _compartilharCardImagem() async {
+    if (_sharingCard) return;
+    setState(() => _sharingCard = true);
+    try {
+      await shareClimaCardAsPng(context, widget.payload);
+    } finally {
+      if (mounted) setState(() => _sharingCard = false);
+    }
   }
 
   @override
@@ -476,37 +489,37 @@ class _ClimaWhatsAppSheetState extends ConsumerState<ClimaWhatsAppSheet> {
           Padding(
             padding: EdgeInsets.fromLTRB(
               20,
-              12,
+              8,
               20,
               16 + bottomPad + kFabSafeArea,
             ),
-            child: SizedBox(
-              width: double.infinity,
-              child: Tooltip(
-                message: total == 0
-                    ? 'Selecione ao menos um destinatário'
-                    : 'Enviar previsão pelo WhatsApp',
-                child: FilledButton.icon(
-                  onPressed: total == 0 ? null : _enviarParaSelecionados,
-                  style: FilledButton.styleFrom(
-                    backgroundColor: accent,
-                    disabledBackgroundColor: inputBg,
-                    foregroundColor: isIos
-                        ? SoloForteSheetSkinIos.ctaText
-                        : Theme.of(context).colorScheme.onPrimary,
-                    disabledForegroundColor: categoryLabel,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                OutlinedButton.icon(
+                  onPressed: _sharingCard ? null : _compartilharCardImagem,
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: accent,
+                    side: BorderSide(color: accent.withValues(alpha: 0.6)),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(ctaRadius),
                     ),
                   ),
-                  icon: const Icon(Icons.send_rounded, size: 18),
+                  icon: _sharingCard
+                      ? SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: accent,
+                          ),
+                        )
+                      : const Icon(Icons.image_outlined, size: 18),
                   label: Text(
-                    total == 0
-                        ? 'Selecione destinatários'
-                        : 'Enviar pelo WhatsApp ($total)',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                    _sharingCard
+                        ? 'Gerando card…'
+                        : 'Compartilhar card (imagem)',
                     style: const TextStyle(
                       fontFamily: 'Inter',
                       fontSize: 15,
@@ -514,7 +527,41 @@ class _ClimaWhatsAppSheetState extends ConsumerState<ClimaWhatsAppSheet> {
                     ),
                   ),
                 ),
-              ),
+                const SizedBox(height: 10),
+                Tooltip(
+                  message: total == 0
+                      ? 'Selecione ao menos um destinatário'
+                      : 'Enviar previsão pelo WhatsApp',
+                  child: FilledButton.icon(
+                    onPressed: total == 0 ? null : _enviarParaSelecionados,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: accent,
+                      disabledBackgroundColor: inputBg,
+                      foregroundColor: isIos
+                          ? SoloForteSheetSkinIos.ctaText
+                          : Theme.of(context).colorScheme.onPrimary,
+                      disabledForegroundColor: categoryLabel,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(ctaRadius),
+                      ),
+                    ),
+                    icon: const Icon(Icons.send_rounded, size: 18),
+                    label: Text(
+                      total == 0
+                          ? 'Selecione destinatários'
+                          : 'Enviar pelo WhatsApp ($total)',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -727,10 +774,44 @@ class _ClimaWhatsAppPreview extends StatelessWidget {
                   .map((label) => _PreviewChip(label: label))
                   .toList(),
             ),
+            if (payload.previewCampoLinha != null) ...[
+              const SizedBox(height: 10),
+              Text(
+                payload.previewCampoLinha!,
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 12,
+                  height: 1.35,
+                  fontWeight: FontWeight.w500,
+                  color: titleColor,
+                ),
+              ),
+            ],
+            const SizedBox(height: 8),
+            Text(
+              _fontePreview(payload.fonte),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 11,
+                color: labelColor,
+              ),
+            ),
           ],
         ),
       ),
     );
+  }
+
+  String _fontePreview(ClimaFonte fonte) {
+    final line = climaFonteAttribution(fonte);
+    if (line.isEmpty) {
+      return 'SoloForte · Inteligência Agronômica';
+    }
+    return '$line · SoloForte';
   }
 }
 
