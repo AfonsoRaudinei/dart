@@ -30,9 +30,7 @@ void main() {
 
   test('edição não congela o mapa ao selecionar a gota', () {
     expect(
-      orchestrator.contains(
-        'drawingMetrics.state == DrawingState.editing ||',
-      ),
+      orchestrator.contains('drawingMetrics.state == DrawingState.editing ||'),
       isFalse,
     );
     expect(orchestrator.contains('freezeMapGestures'), isFalse);
@@ -43,20 +41,15 @@ void main() {
   test('drawing_layers não emite _vertexMarker decorativo em editing', () {
     expect(drawingLayers, contains('hideDecorativeVertexMarkers'));
     expect(drawingLayers, contains('currentState == DrawingState.editing'));
-    expect(
-      drawingLayers.contains(
-        '!hideDecorativeVertexMarkers',
-      ),
-      isTrue,
-    );
+    expect(drawingLayers.contains('!hideDecorativeVertexMarkers'), isTrue);
   });
 
-  test('edição usa gota com cruz e midpoints sem gota automática', () {
+  test('edição usa gota com cruz e a linha não tem bolinha fixa no meio', () {
     expect(editLayer, contains('_EditVertexGotaHandle'));
     expect(editLayer, contains('_GotaCruzPainter'));
     expect(editLayer, contains('_VertexGotaVisual'));
     expect(editLayer, contains('drawing_vertex_drag_'));
-    expect(editLayer, contains('_MidpointHandle'));
+    expect(editLayer.contains('_MidpointHandle'), isFalse);
     expect(_vertexMarkerBottomCenterCount(editLayer), 3);
   });
 
@@ -78,7 +71,12 @@ void main() {
     );
     // Halo circular antigo (centrado no ponto) removido do sketch.
     expect(editLayer.contains('haloDiameter'), isFalse);
-    expect(editLayer.contains('shape: BoxShape.circle,\n                color: _gotaRed'), isFalse);
+    expect(
+      editLayer.contains(
+        'shape: BoxShape.circle,\n                color: _gotaRed',
+      ),
+      isFalse,
+    );
     // Sketch usa o mesmo visual tip-up.
     expect(editLayer, contains('_SketchVertexHandle'));
     expect(
