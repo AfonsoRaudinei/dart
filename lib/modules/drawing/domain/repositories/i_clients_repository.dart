@@ -6,7 +6,6 @@ import 'package:soloforte_app/core/contracts/i_farm_lookup.dart';
 /// Mantém compatibilidade de tipo para UI legada enquanto desacopla
 /// drawing/ dos modelos de consultoria/.
 class Client extends ClientSummary {
-  final String city;
   final String state;
   final DateTime? createdAt;
   final List<Farm> farms;
@@ -16,7 +15,7 @@ class Client extends ClientSummary {
     required super.name,
     super.photoPath,
     super.phone = '',
-    this.city = '',
+    super.city,
     this.state = '',
     this.createdAt,
     super.active = true,
