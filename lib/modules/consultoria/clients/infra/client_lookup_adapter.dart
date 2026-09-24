@@ -23,6 +23,7 @@ class ClientLookupAdapter implements IClientLookup {
             phone: c.phone.isNotEmpty ? c.phone : null,
             active: c.active,
             areaTotal: c.areaTotal ?? 0.0,
+            city: c.city.trim().isEmpty ? null : c.city.trim(),
           ),
         )
         .toList();
@@ -39,6 +40,7 @@ class ClientLookupAdapter implements IClientLookup {
       phone: client.phone.isNotEmpty ? client.phone : null,
       active: client.active,
       areaTotal: client.areaTotal ?? 0.0,
+      city: client.city.trim().isEmpty ? null : client.city.trim(),
     );
   }
 }
