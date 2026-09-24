@@ -507,6 +507,7 @@ class _OccurrenceCreationSheetState
               ],
               const SizedBox(height: 20),
 
+              if (!_isAreaVisitada) ...[
               const OccurrenceSectionHeader(
                 icon: '🏷',
                 title: 'Categorias da Ocorrência',
@@ -589,6 +590,7 @@ class _OccurrenceCreationSheetState
                 }).toList(),
               ),
               const SizedBox(height: 16),
+              ],
 
               if (!_isAreaVisitada) ...[
               const OccurrenceSectionHeader(
