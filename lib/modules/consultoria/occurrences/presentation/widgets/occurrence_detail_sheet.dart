@@ -182,6 +182,9 @@ class OccurrenceDetailSheet extends ConsumerWidget {
     final coords = occurrence.getCoordinates();
     if (coords == null) return;
 
+    // Capturar antes do pop: o WidgetRef do detalhe morre ao fechar o sheet.
+    final repository = ref.read(occurrenceRepositoryProvider);
+    final container = ProviderScope.containerOf(context, listen: false);
     Navigator.of(context).pop();
     await showSoloForteSheet<void>(
       context: context,
@@ -194,7 +197,7 @@ class OccurrenceDetailSheet extends ConsumerWidget {
           initialOccurrence: occurrence,
           onCancel: () => Navigator.of(sheetContext).pop(),
           onConfirm: (data) async {
-            await ref.read(occurrenceRepositoryProvider).updateOccurrence(
+            await repository.updateOccurrence(
               occurrence.copyWith(
                 type: data.type,
                 description: data.description,
@@ -215,7 +218,7 @@ class OccurrenceDetailSheet extends ConsumerWidget {
                 fotosCategoriasJson: data.fotosCategoriasJson,
               ),
             );
-            ref.invalidate(occurrencesListProvider);
+            container.invalidate(occurrencesListProvider);
             if (sheetContext.mounted) Navigator.of(sheetContext).pop();
           },
         ),
