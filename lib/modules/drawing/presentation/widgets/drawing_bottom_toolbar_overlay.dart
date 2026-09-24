@@ -3,6 +3,7 @@ import 'package:soloforte_app/core/state/map_state.dart';
 
 import '../../../../core/constants/layout_constants.dart';
 import 'drawing_bottom_toolbar.dart';
+import 'vertex_handle_drag_preview.dart';
 
 /// Posiciona [DrawingBottomToolbar] na base da tela durante o desenho.
 ///
@@ -18,6 +19,7 @@ class DrawingBottomToolbarOverlay extends StatelessWidget {
     this.canConfirm = true,
     this.measurementAreaHa = 0,
     this.measurementPerimeterKm = 0,
+    this.vertexDragPreview,
     this.measurementAzimuthDeg,
     this.gpsAccuracyM = 0,
     this.areaUnit = AreaDisplayUnit.hectare,
@@ -36,6 +38,7 @@ class DrawingBottomToolbarOverlay extends StatelessWidget {
 
   final double measurementAreaHa;
   final double measurementPerimeterKm;
+  final VertexHandleDragPreview? vertexDragPreview;
   final double? measurementAzimuthDeg;
   final double gpsAccuracyM;
   final AreaDisplayUnit areaUnit;
@@ -63,6 +66,7 @@ class DrawingBottomToolbarOverlay extends StatelessWidget {
           canConfirm: canConfirm,
           measurementAreaHa: measurementAreaHa,
           measurementPerimeterKm: measurementPerimeterKm,
+          vertexDragPreview: vertexDragPreview,
           measurementAzimuthDeg: measurementAzimuthDeg,
           gpsAccuracyM: gpsAccuracyM,
           areaUnit: areaUnit,
