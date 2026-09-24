@@ -247,12 +247,6 @@ class _OccurrenceCreationSheetState
   bool get _isAreaVisitada =>
       _selectedCategoryValue == kOccurrenceAreaVisitadaCategory;
 
-  String get _primarySaveButtonLabel {
-    if (widget.initialOccurrence != null) return 'Salvar Alterações';
-    if (_isAreaVisitada) return 'Salvar localização';
-    return 'Salvar Ocorrência';
-  }
-
   Color _catColor(OccurrenceCategory cat) {
     switch (cat) {
       case OccurrenceCategory.doenca:
@@ -382,50 +376,6 @@ class _OccurrenceCreationSheetState
     } catch (_) {
       return {};
     }
-  }
-
-  Widget _compactMapHeader({
-    required Color muted,
-    required Color titleColor,
-  }) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Expanded(
-          child: _isAreaVisitada
-              ? Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Área visitada',
-                      style: TextStyle(
-                        color: titleColor,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: -0.3,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'Ponto marcado no mapa',
-                      style: TextStyle(color: muted, fontSize: 13),
-                    ),
-                  ],
-                )
-              : Text(
-                  'Ponto definido no mapa',
-                  style: TextStyle(color: muted, fontSize: 13),
-                ),
-        ),
-        if (widget.onCancel != null)
-          IconButton(
-            icon: const Icon(Icons.close),
-            onPressed: _handleCancel,
-            color: muted,
-            visualDensity: VisualDensity.compact,
-          ),
-      ],
-    );
   }
 
   @override
