@@ -34,35 +34,72 @@ void main() {
       fonte: ClimaFonte.googleWeather,
     );
 
-    test('atual inclui cidade e métricas na mensagem WhatsApp', () {
+    test('atual inclui frase curta, sem chuva e fonte', () {
       final payload = ClimaSharePayloadAtual(clima);
       final message = payload.buildWhatsAppMessage();
 
       expect(message, contains('Palmas, TO'));
-      expect(message, contains('31°C'));
+      expect(message, contains('31° agora. Parcialmente ensolarado.'));
       expect(message, contains('Umidade 48%'));
-      expect(message, contains('Fonte: Google Weather'));
+      expect(message, contains('Sem chuva'));
+      expect(message, contains('SoloForte · Fonte: Google Weather'));
+      expect(message, isNot(contains('0.0 mm')));
     });
 
-    test('horaria resume próximas horas', () {
+    test('sem fonte o rodapé não inventa empresa', () {
+      final semFonte = ClimaSharePayloadAtual(
+        ClimaAtual(
+          temperatura: 25,
+          sensacaoTermica: 26,
+          condicao: 'Ensolarado',
+          condicaoCodigo: '01d',
+          ventoVelocidade: 5,
+          ventoDirecao: 'SO',
+          umidade: 61,
+          precipitacao: 0,
+          pressao: 1012,
+          visibilidade: 10,
+          coberturaNuvens: 0,
+          indiceUV: 0,
+          nascerSol: DateTime(2026, 7, 10, 6, 3),
+          porSol: DateTime(2026, 7, 10, 18, 10),
+          latitude: -10.7,
+          longitude: -48.4,
+          cidade: 'Porto Nacional, TO',
+          atualizadoEm: DateTime(2026, 7, 10, 6),
+        ),
+      );
+      final message = semFonte.buildWhatsAppMessage();
+      expect(message, endsWith('SoloForte'));
+      expect(message, contains('UV baixo'));
+      expect(message, isNot(contains('Fonte:')));
+    });
+
+    test('horaria resume no máximo 8 horas', () {
       final payload = ClimaSharePayloadHoraria(
         cidadeLabel: 'Palmas, TO',
         fonte: ClimaFonte.googleWeather,
         previsoes: [
-          PrevisaoHoraria(
-            hora: DateTime(2026, 7, 10, 10),
-            temperatura: 30,
-            precipitacao: 0,
-            probabilidadeChuva: 0,
-            condicao: 'Parcialmente ensolarado',
-            condicaoCodigo: '02d',
-          ),
+          for (var h = 0; h < 9; h++)
+            PrevisaoHoraria(
+              hora: DateTime(2026, 7, 10, 10 + h),
+              temperatura: 30,
+              precipitacao: h == 8 ? 1.2 : 0,
+              probabilidadeChuva: 0,
+              condicao: 'Parcialmente ensolarado',
+              condicaoCodigo: '02d',
+            ),
         ],
       );
 
       final message = payload.buildWhatsAppMessage();
-      expect(message, contains('Próximas 24 horas'));
-      expect(message, contains('10h'));
+      expect(message, contains('Próximas horas'));
+      expect(message, contains('10h 30°'));
+      expect(message, contains('17h 30°'));
+      expect(message, isNot(contains('18h')));
+      expect(message, contains('sem chuva'));
+      expect(message, isNot(contains('0.0 mm')));
+      expect(message, isNot(contains('1.2 mm')));
     });
 
     test('semanal resume dias', () {
@@ -84,9 +121,10 @@ void main() {
       );
 
       final message = payload.buildWhatsAppMessage();
-      expect(message, contains('Previsão da semana'));
       expect(message, contains('34°/23°'));
-      expect(message, contains('Campo:'));
+      expect(message, contains('sem chuva'));
+      expect(message, isNot(contains('0.0 mm')));
+      expect(message, contains('SoloForte · Fonte: Google Weather'));
     });
   });
 
@@ -183,7 +221,7 @@ void main() {
       await tester.tap(find.text('Marcar com telefone'));
       await tester.pumpAndSettle();
       expect(find.text('Enviar pelo WhatsApp (1)'), findsOneWidget);
-      expect(find.text('Compartilhar card (imagem)'), findsOneWidget);
+      expect(find.text('Ver card'), findsOneWidget);
     });
 
     testWidgets('cidade sem cliente mostra estado vazio', (tester) async {
