@@ -8,6 +8,7 @@ class ClientSummary {
   final String? phone;
   final bool active;
   final double areaTotal;
+  final String? city;
 
   const ClientSummary({
     required this.id,
@@ -16,6 +17,7 @@ class ClientSummary {
     this.phone,
     required this.active,
     this.areaTotal = 0.0,
+    this.city,
   });
 }
 
