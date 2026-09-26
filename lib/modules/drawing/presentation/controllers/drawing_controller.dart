@@ -1591,7 +1591,8 @@ class DrawingController extends ChangeNotifier {
     if (_selectedFeature == null) return;
 
     // Delega deep copy ao DrawingVertexEditService
-    _editGeometry = _vertexService.cloneGeometry(_selectedFeature!.geometry);
+    final cloned = _vertexService.cloneGeometry(_selectedFeature!.geometry);
+    _editGeometry = _vertexService.normalizeForVertexEdit(cloned);
     _editGeometrySnapshotJson = _serializeGeometry(_editGeometry!);
     _history.clear();
     _history.push(_geomToVertices(_editGeometry!));
@@ -1655,9 +1656,17 @@ class DrawingController extends ChangeNotifier {
     }
 
     if (_selectedFeature != null && _editGeometry != null) {
+      var geometryToSave = _editGeometry!;
+      final original = _selectedFeature!.geometry;
+      if (_vertexService.isSingleShellMultiPolygon(original) &&
+          geometryToSave is DrawingPolygon) {
+        geometryToSave = _vertexService.wrapAsSingleShellMultiPolygon(
+          geometryToSave,
+        );
+      }
       updateFeature(
         _selectedFeature!.id,
-        newGeometry: _editGeometry,
+        newGeometry: geometryToSave,
         editorId: "sistema", // Placeholder, usually would be current user
         editorType: AuthorType.sistema,
       );
