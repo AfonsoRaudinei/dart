@@ -235,11 +235,14 @@ class _Barra extends StatelessWidget {
   }
 }
 
-/// `0`, `0.7`, `12` — rótulo curto de milímetros.
+/// `0`, `0.7`, `1`, `13` — rótulo curto de milímetros, sem `,0` sobrando.
 String climaShareMmCurto(double mm) {
   if (mm <= 0) return '0';
   if (mm >= 10) return mm.toStringAsFixed(0);
-  return mm.toStringAsFixed(1);
+  final comDecimal = mm.toStringAsFixed(1);
+  return comDecimal.endsWith('.0')
+      ? comDecimal.substring(0, comDecimal.length - 2)
+      : comDecimal;
 }
 
 /// Dias da semana no card compartilhado, no modelo da aba 7 dias: gradiente
