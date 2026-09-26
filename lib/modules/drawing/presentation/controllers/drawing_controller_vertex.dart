@@ -120,8 +120,9 @@ extension DrawingControllerVertexEditing on DrawingController {
 
   /// Toque no mapa em edição.
   ///
-  /// Projeção no meio do trecho insere o vértice ali. Projeção na ponta
-  /// seleciona a bolinha, sem duplicar. Fora da linha, limpa a gota.
+  /// Bolinha embaixo do dedo liga/desliga a gota. Fora dela, qualquer toque na
+  /// linha cria o vértice ali — inclusive em trechos longos, longe das pontas.
+  /// Fora da linha, limpa a gota.
   ///
   /// Retorna false quando o toque não altera seleção nem geometria.
   bool applyEditMapTap(
@@ -133,21 +134,19 @@ extension DrawingControllerVertexEditing on DrawingController {
     if (_stateMachine.currentState != DrawingState.editing) return false;
     if (_editGeometry is! DrawingPolygon) return false;
 
-    final edge = findEditEdgeNear(tap, edgeToleranceMeters);
-    if (edge != null && _editEdgePointIsInterior(edge, vertexToleranceMeters)) {
-      insertVertex(edge.ring, edge.segment, edge.point);
-      return true;
-    }
-
     final hit = findEditVertexNear(tap, vertexToleranceMeters);
     if (hit != null) {
       _toggleEditVertex(hit.ring, hit.point);
       return true;
     }
 
+    final edge = findEditEdgeNear(tap, edgeToleranceMeters);
     if (edge != null) {
-      final end = _closerEdgeEndpoint(edge);
-      _toggleEditVertex(end.ring, end.point);
+      insertVertex(
+        edge.ring,
+        edge.segment,
+        _edgeInsertionPoint(edge, vertexToleranceMeters),
+      );
       return true;
     }
 
@@ -166,39 +165,32 @@ extension DrawingControllerVertexEditing on DrawingController {
     selectEditVertex(ring, point);
   }
 
-  /// A projeção está longe das duas pontas do trecho (não é a bolinha).
-  bool _editEdgePointIsInterior(
+  /// Afasta o ponto novo das pontas para ele não nascer embaixo de uma bolinha.
+  ///
+  /// Em trecho curto o recuo cai para um terço do trecho, então o toque na
+  /// linha continua criando vértice em vez de pular para o vértice vizinho.
+  LatLng _edgeInsertionPoint(
     ({int ring, int segment, LatLng point}) edge,
     double minMetersFromEnds,
   ) {
     final ends = _edgeEndpoints(edge);
-    if (ends == null) return false;
+    if (ends == null) return edge.point;
     const distance = Distance();
-    final fromStart = distance.as(LengthUnit.Meter, edge.point, ends.$1);
-    final fromEnd = distance.as(LengthUnit.Meter, edge.point, ends.$2);
-    return fromStart > minMetersFromEnds && fromEnd > minMetersFromEnds;
-  }
+    final (start, end) = ends;
+    final length = distance.as(LengthUnit.Meter, start, end);
+    if (length <= 0) return edge.point;
 
-  ({int ring, int point}) _closerEdgeEndpoint(
-    ({int ring, int segment, LatLng point}) edge,
-  ) {
-    final ends = _edgeEndpoints(edge);
-    if (ends == null) return (ring: edge.ring, point: edge.segment);
-    const distance = Distance();
-    final fromStart = distance.as(LengthUnit.Meter, edge.point, ends.$1);
-    final fromEnd = distance.as(LengthUnit.Meter, edge.point, ends.$2);
-    if (fromStart <= fromEnd) {
-      return (ring: edge.ring, point: edge.segment);
+    final third = length / 3;
+    final gap = minMetersFromEnds < third ? minMetersFromEnds : third;
+    final fromStart = distance.as(LengthUnit.Meter, edge.point, start);
+    if (fromStart < gap) {
+      return distance.offset(start, gap, distance.bearing(start, end));
     }
-    final poly = _editGeometry! as DrawingPolygon;
-    final ring = poly.coordinates[edge.ring];
-    final isClosed =
-        ring.length > 1 &&
-        ring.first[0] == ring.last[0] &&
-        ring.first[1] == ring.last[1];
-    final logicalLength = isClosed ? ring.length - 1 : ring.length;
-    final next = edge.segment + 1;
-    return (ring: edge.ring, point: next >= logicalLength ? 0 : next);
+    final fromEnd = distance.as(LengthUnit.Meter, edge.point, end);
+    if (fromEnd < gap) {
+      return distance.offset(end, gap, distance.bearing(end, start));
+    }
+    return edge.point;
   }
 
   (LatLng, LatLng)? _edgeEndpoints(
