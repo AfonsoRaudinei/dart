@@ -55,8 +55,9 @@ void main() {
     final before =
         (controller.liveGeometry! as DrawingPolygon).coordinates.first.first;
 
-    // Pan no vértice seleciona + arrasta (gota aparece via isDragging).
-    await tester.drag(handle, const Offset(36, 24));
+    // Pan na bolinha (não no retângulo vazio) seleciona e arrasta.
+    final dot = tester.getRect(handle).topCenter + const Offset(0, 14);
+    await tester.dragFrom(dot, const Offset(36, 24));
     await tester.pumpAndSettle();
 
     expect(find.byKey(const Key('drawing_vertex_drag_0_0')), findsOneWidget);
@@ -277,6 +278,48 @@ void main() {
     expect(controller.selectedEditPointIndex, 0);
   });
 
+  testWidgets(
+    'edição: canto da alça não seleciona; toque na gota volta à bolinha',
+    (tester) async {
+      tester.view.physicalSize = const Size(800, 800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final repository = _UpsertDrawingRepository(_feature());
+      final controller = DrawingController(repository: repository);
+      addTearDown(controller.dispose);
+      await controller.loadFeatures();
+      controller.selectFeature(controller.features.single);
+      controller.startEditMode();
+
+      final mapController = MapController();
+      await _pumpInteractiveHandles(
+        tester,
+        controller: controller,
+        mapController: mapController,
+        center: const LatLng(0, 0),
+        zoom: 13,
+      );
+
+      final handle = find.byKey(const Key('drawing_vertex_hit_0_0'));
+      final rect = tester.getRect(handle);
+      await tester.tapAt(rect.topLeft + const Offset(2, 40));
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(controller.selectedEditPointIndex, isNull);
+
+      await tester.tapAt(rect.topCenter + const Offset(0, 14));
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(controller.selectedEditRingIndex, 0);
+      expect(controller.selectedEditPointIndex, 0);
+
+      await tester.tapAt(rect.center);
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(controller.selectedEditRingIndex, isNull);
+      expect(controller.selectedEditPointIndex, isNull);
+    },
+  );
+
   test('edição: beginEditVertexDrag não dispara notify imediato', () {
     final repository = _UpsertDrawingRepository(_feature());
     final controller = DrawingController(repository: repository);
@@ -485,6 +528,92 @@ void main() {
         vertexCount,
       );
       expect(controller.findEditEdgeNear(const LatLng(1, 1), 20), isNull);
+    },
+  );
+
+  test('gota contém o corpo e ignora o canto transparente', () {
+    const size = Size(56, 78);
+    expect(vertexGotaContainsLocal(const Offset(28, 39), size), isTrue);
+    expect(vertexGotaContainsLocal(const Offset(1, 1), size), isFalse);
+    expect(vertexGotaContainsLocal(const Offset(2, 76), size), isFalse);
+  });
+
+  test(
+    'edição: linha perto do vértice insere a gota; toque no vértice e no vazio desligam',
+    () async {
+      final repository = _UpsertDrawingRepository(_feature());
+      final controller = DrawingController(repository: repository);
+      addTearDown(controller.dispose);
+      await controller.loadFeatures();
+      controller.selectFeature(controller.features.single);
+      controller.startEditMode();
+
+      final ring =
+          (controller.liveGeometry! as DrawingPolygon).coordinates.first;
+      final start = LatLng(ring[0][1], ring[0][0]);
+      final next = LatLng(ring[1][1], ring[1][0]);
+      const distance = Distance();
+      final nearLine = distance.offset(
+        start,
+        40,
+        distance.bearing(start, next),
+      );
+      final before = ring.length;
+
+      expect(
+        controller.applyEditMapTap(
+          nearLine,
+          vertexToleranceMeters: 20,
+          edgeToleranceMeters: 80,
+        ),
+        isTrue,
+      );
+      final afterInsert =
+          (controller.liveGeometry! as DrawingPolygon).coordinates.first;
+      expect(afterInsert.length, before + 1);
+      expect(controller.selectedEditPointIndex, isNotNull);
+
+      final onVertex = LatLng(afterInsert[0][1], afterInsert[0][0]);
+      final lengthWithVertex = afterInsert.length;
+      expect(
+        controller.applyEditMapTap(
+          onVertex,
+          vertexToleranceMeters: 20,
+          edgeToleranceMeters: 80,
+        ),
+        isTrue,
+      );
+      expect(controller.selectedEditPointIndex, 0);
+      expect(
+        (controller.liveGeometry! as DrawingPolygon).coordinates.first.length,
+        lengthWithVertex,
+      );
+
+      expect(
+        controller.applyEditMapTap(
+          onVertex,
+          vertexToleranceMeters: 20,
+          edgeToleranceMeters: 80,
+        ),
+        isTrue,
+      );
+      expect(controller.selectedEditRingIndex, isNull);
+      expect(controller.selectedEditPointIndex, isNull);
+
+      controller.selectEditVertex(0, 0);
+      expect(
+        controller.applyEditMapTap(
+          const LatLng(1, 1),
+          vertexToleranceMeters: 20,
+          edgeToleranceMeters: 80,
+        ),
+        isTrue,
+      );
+      expect(controller.selectedEditPointIndex, isNull);
+      expect(
+        (controller.liveGeometry! as DrawingPolygon).coordinates.first.length,
+        lengthWithVertex,
+      );
     },
   );
 

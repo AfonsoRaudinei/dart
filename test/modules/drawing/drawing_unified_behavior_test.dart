@@ -166,7 +166,9 @@ void main() {
       expect(orchestrator.contains('freezeMapGestures'), isFalse);
       expect(orchestrator.contains('InteractiveFlag.none'), isFalse);
       expect(orchestrator, contains('DrawingVertexHandleOverlay'));
-      expect(orchestrator, contains('findEditEdgeNear'));
+      expect(orchestrator, contains('applyEditMapTap'));
+      expect(orchestrator, contains('editVertexHitPx'));
+      expect(orchestrator, contains('editEdgeHitPx'));
 
       final editLayer = File(
         'lib/modules/drawing/presentation/widgets/drawing_edit_layer.dart',

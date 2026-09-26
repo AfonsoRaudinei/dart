@@ -31,6 +31,12 @@ class DrawingUtils {
   static const double toleranciaMinDistanciaVertice = 0.1;
   static const double toleranciaImportacaoVerticeDuplicadoMetros = 0.3;
 
+  /// Bolinha branca na edição: o toque no vértice não come a linha ao lado.
+  static const double editVertexHitPx = 24;
+
+  /// Dedo na aresta na edição, depois do teste curto do vértice.
+  static const double editEdgeHitPx = 44;
+
   /// Tolerância geodésica (~56dp) para hit-test de vértice via tap no mapa.
   static double vertexHitToleranceMeters(
     MapCamera camera, {

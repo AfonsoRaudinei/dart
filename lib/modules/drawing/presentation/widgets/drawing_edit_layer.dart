@@ -429,6 +429,41 @@ class _VertexIdleDot extends StatelessWidget {
   }
 }
 
+/// Corpo da gota ponta-cima. O topo do [size] é o LatLng.
+ui.Path vertexGotaPath(Size size) {
+  final path = ui.Path();
+  final tip = Offset(size.width / 2, 0.5);
+  final bodyCy = size.height * 0.68;
+  final bodyR = size.width * 0.40;
+
+  path.moveTo(tip.dx, tip.dy);
+  path.quadraticBezierTo(
+    size.width * 0.08,
+    size.height * 0.22,
+    tip.dx - bodyR,
+    bodyCy,
+  );
+  path.arcToPoint(
+    Offset(tip.dx + bodyR, bodyCy),
+    radius: Radius.circular(bodyR),
+    clockwise: false,
+  );
+  path.quadraticBezierTo(size.width * 0.92, size.height * 0.22, tip.dx, tip.dy);
+  path.close();
+  return path;
+}
+
+/// Cantos transparentes do retângulo 56×78 não capturam o dedo.
+bool vertexGotaContainsLocal(Offset local, Size size) {
+  if (local.dx < 0 ||
+      local.dy < 0 ||
+      local.dx > size.width ||
+      local.dy > size.height) {
+    return false;
+  }
+  return vertexGotaPath(size).contains(local);
+}
+
 /// Visual compartilhado: gota invertida (ponta no mapa, cruz no corpo).
 class _VertexGotaVisual extends StatelessWidget {
   final bool isDragging;
@@ -469,31 +504,7 @@ class _GotaCruzPainter extends CustomPainter {
       ..style = PaintingStyle.fill
       ..isAntiAlias = true;
 
-    final path = ui.Path();
-    // Ponta afiada no topo = ponto do mapa (visível sem soltar o dedo).
-    final tip = Offset(size.width / 2, 0.5);
-    final bodyCy = size.height * 0.68;
-    final bodyR = size.width * 0.40;
-
-    path.moveTo(tip.dx, tip.dy);
-    path.quadraticBezierTo(
-      size.width * 0.08,
-      size.height * 0.22,
-      tip.dx - bodyR,
-      bodyCy,
-    );
-    path.arcToPoint(
-      Offset(tip.dx + bodyR, bodyCy),
-      radius: Radius.circular(bodyR),
-      clockwise: false,
-    );
-    path.quadraticBezierTo(
-      size.width * 0.92,
-      size.height * 0.22,
-      tip.dx,
-      tip.dy,
-    );
-    path.close();
+    final path = vertexGotaPath(size);
 
     canvas.drawShadow(path, Colors.black.withValues(alpha: 0.4), 8, true);
     canvas.drawPath(path, paint);

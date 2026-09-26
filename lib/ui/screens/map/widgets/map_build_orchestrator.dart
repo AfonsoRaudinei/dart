@@ -251,23 +251,18 @@ class MapBuildOrchestrator extends ConsumerWidget {
                 // contextual (marker pode falhar; map onTap é fallback).
                 if (drawCtrl.currentState == DrawingState.editing &&
                     drawCtrl.liveGeometry is DrawingPolygon) {
-                  final tol = DrawingUtils.vertexHitToleranceMeters(
-                    mapController.camera,
+                  drawCtrl.applyEditMapTap(
+                    point,
+                    vertexToleranceMeters:
+                        DrawingUtils.vertexHitToleranceMeters(
+                          mapController.camera,
+                          hitPx: DrawingUtils.editVertexHitPx,
+                        ),
+                    edgeToleranceMeters: DrawingUtils.vertexHitToleranceMeters(
+                      mapController.camera,
+                      hitPx: DrawingUtils.editEdgeHitPx,
+                    ),
                   );
-                  final hit = drawCtrl.findEditVertexNear(point, tol);
-                  if (hit != null) {
-                    drawCtrl.selectEditVertex(hit.ring, hit.point);
-                    return;
-                  }
-                  final edge = drawCtrl.findEditEdgeNear(point, tol);
-                  if (edge != null) {
-                    drawCtrl.insertVertex(edge.ring, edge.segment, edge.point);
-                    return;
-                  }
-                  if (drawCtrl.selectedEditRingIndex != null) {
-                    drawCtrl.clearEditVertexSelection();
-                    return;
-                  }
                   return;
                 }
 
