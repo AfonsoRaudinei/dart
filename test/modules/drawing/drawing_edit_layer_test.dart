@@ -553,6 +553,45 @@ void main() {
   });
 
   test(
+    'edição: MultiPolygon de um talhão normaliza e aceita toque na linha',
+    () async {
+      final repository = _UpsertDrawingRepository(_singleShellMultiFeature());
+      final controller = DrawingController(repository: repository);
+      addTearDown(controller.dispose);
+      await controller.loadFeatures();
+      controller.selectFeature(controller.features.single);
+      controller.startEditMode();
+
+      expect(controller.liveGeometry, isA<DrawingPolygon>());
+
+      final ring =
+          (controller.liveGeometry! as DrawingPolygon).coordinates.first;
+      final start = LatLng(ring[0][1], ring[0][0]);
+      final next = LatLng(ring[1][1], ring[1][0]);
+      const distance = Distance();
+      final nearLine = distance.offset(
+        start,
+        40,
+        distance.bearing(start, next),
+      );
+      final before = ring.length;
+
+      expect(
+        controller.applyEditMapTap(
+          nearLine,
+          vertexToleranceMeters: 20,
+          edgeToleranceMeters: 80,
+        ),
+        isTrue,
+      );
+      expect(
+        (controller.liveGeometry! as DrawingPolygon).coordinates.first.length,
+        before + 1,
+      );
+    },
+  );
+
+  test(
     'edição: linha perto do vértice insere a gota; toque no vértice e no vazio desligam',
     () async {
       final repository = _UpsertDrawingRepository(_feature());
@@ -792,6 +831,17 @@ class _UpsertDrawingRepository extends DrawingRepository {
       features[index] = feature;
     }
   }
+}
+
+DrawingFeature _singleShellMultiFeature() {
+  final base = _feature();
+  return DrawingFeature(
+    id: base.id,
+    geometry: DrawingMultiPolygon(
+      coordinates: [(base.geometry as DrawingPolygon).coordinates],
+    ),
+    properties: base.properties,
+  );
 }
 
 DrawingFeature _feature() {

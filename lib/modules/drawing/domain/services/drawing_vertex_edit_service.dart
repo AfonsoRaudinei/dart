@@ -31,6 +31,23 @@ class DrawingVertexEditService {
     return g;
   }
 
+  /// Talhões costumam vir como MultiPolygon com um único polígono; a edição
+  /// (gota, toque na linha) opera só em [DrawingPolygon].
+  DrawingGeometry normalizeForVertexEdit(DrawingGeometry geometry) {
+    if (geometry is DrawingMultiPolygon && geometry.coordinates.length == 1) {
+      return DrawingPolygon(coordinates: geometry.coordinates.first);
+    }
+    return geometry;
+  }
+
+  bool isSingleShellMultiPolygon(DrawingGeometry geometry) {
+    return geometry is DrawingMultiPolygon && geometry.coordinates.length == 1;
+  }
+
+  DrawingMultiPolygon wrapAsSingleShellMultiPolygon(DrawingPolygon polygon) {
+    return DrawingMultiPolygon(coordinates: [polygon.coordinates]);
+  }
+
   /// Move o vértice [pointIndex] do ring [ringIndex] para [newPos].
   /// Mantém o fechamento do polígono automaticamente.
   /// Retorna null se os índices forem inválidos.

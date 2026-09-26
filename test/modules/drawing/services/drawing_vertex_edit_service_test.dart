@@ -155,4 +155,25 @@ void main() {
       expect(geometry, isNull);
     });
   });
+
+  group('normalizeForVertexEdit', () {
+    test('MultiPolygon de um único polígono vira Polygon para a gota', () {
+      final multi = DrawingMultiPolygon(
+        coordinates: [_triangle().coordinates],
+      );
+      final normalized = service.normalizeForVertexEdit(multi);
+      expect(normalized, isA<DrawingPolygon>());
+      expect(
+        (normalized as DrawingPolygon).coordinates,
+        equals(_triangle().coordinates),
+      );
+    });
+
+    test('restaura MultiPolygon ao salvar talhão de um polígono', () {
+      final poly = _triangle();
+      final wrapped = service.wrapAsSingleShellMultiPolygon(poly);
+      expect(wrapped.coordinates.length, 1);
+      expect(wrapped.coordinates.first, equals(poly.coordinates));
+    });
+  });
 }
