@@ -190,6 +190,49 @@ void main() {
     expect(find.text('☔ 5%   🌧️ 0 mm'), findsOneWidget);
   });
 
+  testWidgets('card semanal cabe em 360px com 7 dias', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(400, 2400));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Align(
+          alignment: Alignment.topLeft,
+          child: ClimaShareCard(
+            payload: ClimaSharePayloadSemanal(
+              cidadeLabel: 'Porto Nacional, TO',
+              fonte: ClimaFonte.googleWeather,
+              previsoes: [
+                for (var i = 0; i < 7; i++)
+                  PrevisaoDiaria(
+                    data: DateTime(2026, 9, 26).add(Duration(days: i)),
+                    tempMin: 23 + i % 3,
+                    tempMax: 35 + i % 4,
+                    precipitacao: i == 3 ? 18.4 : i * 0.6,
+                    probabilidadeChuva: i == 3 ? 100 : i * 12,
+                    ventoMedio: 8,
+                    condicao: i.isEven
+                        ? 'Predominantemente ensolarado'
+                        : 'Pancadas de chuva à tarde',
+                    condicaoCodigo: i.isEven ? '01d' : '10d',
+                    temAlerta: false,
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(
+      tester.getSize(find.byType(ClimaShareCard)).width,
+      ClimaShareCard.cardWidth,
+    );
+    expect(find.text('100%'), findsOneWidget);
+    expect(find.text('18'), findsOneWidget);
+    expect(find.text('Sex 02/Out'), findsOneWidget);
+  });
+
   group('climaCityMatchKey', () {
     test('ignora UF e maiúsculas', () {
       expect(climaCityMatchKey('Porto Nacional, TO'), 'porto nacional');
