@@ -221,19 +221,24 @@ class _PhotoPickerTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      leading: Container(
-        width: 44,
-        height: 44,
-        decoration: BoxDecoration(
-          color: iconBg,
-          shape: BoxShape.circle,
+    // Material transparente: o card do sheet pinta o fundo num BoxDecoration,
+    // e sem ele o ripple do ListTile fica atrás dessa cor.
+    return Material(
+      type: MaterialType.transparency,
+      child: ListTile(
+        leading: Container(
+          width: 44,
+          height: 44,
+          decoration: BoxDecoration(
+            color: iconBg,
+            shape: BoxShape.circle,
+          ),
+          child: Icon(icon, color: iconFg),
         ),
-        child: Icon(icon, color: iconFg),
+        title: Text(title, style: TextStyle(color: titleColor)),
+        subtitle: Text(subtitle, style: TextStyle(color: subtitleColor)),
+        onTap: onTap,
       ),
-      title: Text(title, style: TextStyle(color: titleColor)),
-      subtitle: Text(subtitle, style: TextStyle(color: subtitleColor)),
-      onTap: onTap,
     );
   }
 }
