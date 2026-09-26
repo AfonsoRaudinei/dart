@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -211,6 +213,54 @@ class ClimaErrorState extends StatelessWidget {
 
 // ─── WhatsApp Sheet ───────────────────────────────────────────────────────────
 
+/// Altura mínima da lista de produtores (cerca de 3 linhas com checkbox).
+const double kClimaProducerListMinHeight = 168;
+
+/// Teto da prévia quando a lista já tem a altura mínima.
+const double kClimaSharePreviewMaxHeight = 220;
+
+/// Chrome fixo estimado (título, chips, divisores, botões e inset do FAB).
+/// Superestima de propósito: o que sobra vai para a lista, não para cortá-la.
+const double kClimaShareSheetChromeEstimate = 460;
+
+/// Reparte a altura do sheet entre a prévia e a lista de produtores.
+///
+/// A lista fica com pelo menos [kClimaProducerListMinHeight] sempre que o
+/// espaço livre cabe esse mínimo. A prévia encolhe (e some) antes da lista.
+@visibleForTesting
+ClimaWhatsAppSheetBudget climaWhatsAppSheetBudget(double maxHeight) {
+  if (!maxHeight.isFinite || maxHeight <= 0) {
+    return const ClimaWhatsAppSheetBudget(previewFlex: 1, listFlex: 2);
+  }
+
+  final free = maxHeight - kClimaShareSheetChromeEstimate;
+  if (free <= kClimaProducerListMinHeight) {
+    return const ClimaWhatsAppSheetBudget(previewFlex: 0, listFlex: 1);
+  }
+
+  final preview = math.min(
+    kClimaSharePreviewMaxHeight,
+    free - kClimaProducerListMinHeight,
+  );
+  final list = free - preview;
+  final previewFlex = preview.round();
+  final listFlex = math.max(1, list.round());
+  if (previewFlex <= 0) {
+    return ClimaWhatsAppSheetBudget(previewFlex: 0, listFlex: listFlex);
+  }
+  return ClimaWhatsAppSheetBudget(previewFlex: previewFlex, listFlex: listFlex);
+}
+
+class ClimaWhatsAppSheetBudget {
+  final int previewFlex;
+  final int listFlex;
+
+  const ClimaWhatsAppSheetBudget({
+    required this.previewFlex,
+    required this.listFlex,
+  });
+}
+
 class ClimaWhatsAppSheet extends ConsumerStatefulWidget {
   final ClimaSharePayload payload;
 
@@ -273,9 +323,7 @@ class _ClimaWhatsAppSheetState extends ConsumerState<ClimaWhatsAppSheet> {
   List<ClientSummary> get _visiveis {
     final filtro = _filtroCidade;
     if (filtro == null) return _clientes;
-    return _clientes
-        .where((c) => climaCityMatchKey(c.city) == filtro)
-        .toList();
+    return _clientes.where((c) => climaCityMatchKey(c.city) == filtro).toList();
   }
 
   Future<void> _carregarClientes() async {
@@ -370,216 +418,226 @@ class _ClimaWhatsAppSheetState extends ConsumerState<ClimaWhatsAppSheet> {
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom,
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 4, 20, 4),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Compartilhar previsão por WhatsApp',
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: SoloForteSheetTokens.titleFontSize,
-                    fontWeight: SoloForteSheetTokens.titleWeight,
-                    color: titleColor,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  payload.cidade,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontSize: 13, color: categoryLabel),
-                ),
-              ],
-            ),
-          ),
-          Divider(color: divider, height: 1),
-          _ClimaWhatsAppPreview(payload: payload),
-          if (!_loading && cidades.isNotEmpty)
-            _ClimaCityFilter(
-              cidades: cidades,
-              selecionada: _filtroCidade,
-              accent: accent,
-              labelColor: categoryLabel,
-              onSelected: (key) => setState(() => _filtroCidade = key),
-              onMarcar: visiveis.any((c) => climaPhoneIsValid(c.phone))
-                  ? _marcarComTelefone
-                  : null,
-            ),
-          Divider(color: divider, height: 1),
-          Expanded(
-            child: _loading
-                ? Padding(
-                    padding: const EdgeInsets.all(32),
-                    child: Center(
-                      child: CircularProgressIndicator(
-                        color: accent,
-                        strokeWidth: 2.5,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final budget = climaWhatsAppSheetBudget(constraints.maxHeight);
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 4, 20, 4),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Compartilhar previsão por WhatsApp',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: SoloForteSheetTokens.titleFontSize,
+                        fontWeight: SoloForteSheetTokens.titleWeight,
+                        color: titleColor,
                       ),
                     ),
-                  )
-                : _clientes.isEmpty
-                ? Padding(
-                    padding: const EdgeInsets.all(32),
-                    child: Center(
-                      child: Text(
-                        'Nenhum cliente cadastrado.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontFamily: 'Inter',
-                          fontSize: 14,
-                          color: categoryLabel,
-                        ),
-                      ),
-                    ),
-                  )
-                : visiveis.isEmpty
-                ? Padding(
-                    padding: const EdgeInsets.all(32),
-                    child: Center(
-                      child: Text(
-                        'Nenhum cliente em $_filtroLabel.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontFamily: 'Inter',
-                          fontSize: 14,
-                          color: categoryLabel,
-                        ),
-                      ),
-                    ),
-                  )
-                : ListView.separated(
-                    itemCount: visiveis.length,
-                    separatorBuilder: (_, __) =>
-                        Divider(color: divider, height: 1),
-                    itemBuilder: (_, i) {
-                      final cliente = visiveis[i];
-                      final tel = cliente.phone;
-                      final hasPhone = climaPhoneIsValid(tel);
-                      return CheckboxListTile(
-                        tileColor: inputBg,
-                        activeColor: accent,
-                        checkColor: isIos
-                            ? SoloForteSheetSkinIos.ctaText
-                            : Theme.of(context).colorScheme.onPrimary,
-                        value: hasPhone && _selecionados.contains(tel),
-                        onChanged: hasPhone
-                            ? (checked) {
-                                setState(() {
-                                  if (checked == true && tel != null) {
-                                    _selecionados.add(tel);
-                                  } else if (tel != null) {
-                                    _selecionados.remove(tel);
-                                  }
-                                });
-                              }
-                            : null,
-                        title: Text(
-                          cliente.name,
-                          style: TextStyle(
-                            fontFamily: 'Inter',
-                            fontSize: 15,
-                            fontWeight: FontWeight.w500,
-                            color: hasPhone ? inputText : categoryLabel,
-                          ),
-                        ),
-                        subtitle: Text(
-                          hasPhone ? tel! : 'Sem telefone cadastrado',
-                          style: TextStyle(
-                            fontFamily: 'Inter',
-                            fontSize: 13,
-                            color: categoryLabel,
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-          ),
-          Divider(color: divider, height: 1),
-          Padding(
-            padding: EdgeInsets.fromLTRB(
-              20,
-              8,
-              20,
-              16 + bottomPad + kFabSafeArea,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                OutlinedButton.icon(
-                  onPressed: _sharingCard ? null : _compartilharCardImagem,
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: accent,
-                    side: BorderSide(color: accent.withValues(alpha: 0.6)),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(ctaRadius),
-                    ),
-                  ),
-                  icon: _sharingCard
-                      ? SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: accent,
-                          ),
-                        )
-                      : const Icon(Icons.image_outlined, size: 18),
-                  label: Text(
-                    _sharingCard
-                        ? 'Gerando card…'
-                        : 'Ver card',
-                    style: const TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Tooltip(
-                  message: total == 0
-                      ? 'Selecione ao menos um destinatário'
-                      : 'Enviar previsão pelo WhatsApp',
-                  child: FilledButton.icon(
-                    onPressed: total == 0 ? null : _enviarParaSelecionados,
-                    style: FilledButton.styleFrom(
-                      backgroundColor: accent,
-                      disabledBackgroundColor: inputBg,
-                      foregroundColor: isIos
-                          ? SoloForteSheetSkinIos.ctaText
-                          : Theme.of(context).colorScheme.onPrimary,
-                      disabledForegroundColor: categoryLabel,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(ctaRadius),
-                      ),
-                    ),
-                    icon: const Icon(Icons.send_rounded, size: 18),
-                    label: Text(
-                      total == 0
-                          ? 'Selecione destinatários'
-                          : 'Enviar pelo WhatsApp ($total)',
+                    const SizedBox(height: 4),
+                    Text(
+                      payload.cidade,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontFamily: 'Inter',
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                      ),
+                      style: TextStyle(fontSize: 13, color: categoryLabel),
                     ),
+                  ],
+                ),
+              ),
+              Divider(color: divider, height: 1),
+              if (budget.previewFlex > 0)
+                Flexible(
+                  flex: budget.previewFlex,
+                  child: SingleChildScrollView(
+                    child: _ClimaWhatsAppPreview(payload: payload),
                   ),
                 ),
-              ],
-            ),
-          ),
-        ],
+              if (!_loading && cidades.isNotEmpty)
+                _ClimaCityFilter(
+                  cidades: cidades,
+                  selecionada: _filtroCidade,
+                  accent: accent,
+                  labelColor: categoryLabel,
+                  onSelected: (key) => setState(() => _filtroCidade = key),
+                  onMarcar: visiveis.any((c) => climaPhoneIsValid(c.phone))
+                      ? _marcarComTelefone
+                      : null,
+                ),
+              Divider(color: divider, height: 1),
+              Expanded(
+                flex: budget.listFlex,
+                child: _loading
+                    ? Padding(
+                        padding: const EdgeInsets.all(32),
+                        child: Center(
+                          child: CircularProgressIndicator(
+                            color: accent,
+                            strokeWidth: 2.5,
+                          ),
+                        ),
+                      )
+                    : _clientes.isEmpty
+                    ? Padding(
+                        padding: const EdgeInsets.all(32),
+                        child: Center(
+                          child: Text(
+                            'Nenhum cliente cadastrado.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontFamily: 'Inter',
+                              fontSize: 14,
+                              color: categoryLabel,
+                            ),
+                          ),
+                        ),
+                      )
+                    : visiveis.isEmpty
+                    ? Padding(
+                        padding: const EdgeInsets.all(32),
+                        child: Center(
+                          child: Text(
+                            'Nenhum cliente em $_filtroLabel.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontFamily: 'Inter',
+                              fontSize: 14,
+                              color: categoryLabel,
+                            ),
+                          ),
+                        ),
+                      )
+                    : ListView.separated(
+                        itemCount: visiveis.length,
+                        separatorBuilder: (_, __) =>
+                            Divider(color: divider, height: 1),
+                        itemBuilder: (_, i) {
+                          final cliente = visiveis[i];
+                          final tel = cliente.phone;
+                          final hasPhone = climaPhoneIsValid(tel);
+                          return CheckboxListTile(
+                            tileColor: inputBg,
+                            activeColor: accent,
+                            checkColor: isIos
+                                ? SoloForteSheetSkinIos.ctaText
+                                : Theme.of(context).colorScheme.onPrimary,
+                            value: hasPhone && _selecionados.contains(tel),
+                            onChanged: hasPhone
+                                ? (checked) {
+                                    setState(() {
+                                      if (checked == true && tel != null) {
+                                        _selecionados.add(tel);
+                                      } else if (tel != null) {
+                                        _selecionados.remove(tel);
+                                      }
+                                    });
+                                  }
+                                : null,
+                            title: Text(
+                              cliente.name,
+                              style: TextStyle(
+                                fontFamily: 'Inter',
+                                fontSize: 15,
+                                fontWeight: FontWeight.w500,
+                                color: hasPhone ? inputText : categoryLabel,
+                              ),
+                            ),
+                            subtitle: Text(
+                              hasPhone ? tel! : 'Sem telefone cadastrado',
+                              style: TextStyle(
+                                fontFamily: 'Inter',
+                                fontSize: 13,
+                                color: categoryLabel,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+              ),
+              Divider(color: divider, height: 1),
+              Padding(
+                padding: EdgeInsets.fromLTRB(
+                  20,
+                  8,
+                  20,
+                  16 + bottomPad + kFabSafeArea,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    OutlinedButton.icon(
+                      onPressed: _sharingCard ? null : _compartilharCardImagem,
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: accent,
+                        side: BorderSide(color: accent.withValues(alpha: 0.6)),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(ctaRadius),
+                        ),
+                      ),
+                      icon: _sharingCard
+                          ? SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: accent,
+                              ),
+                            )
+                          : const Icon(Icons.image_outlined, size: 18),
+                      label: Text(
+                        _sharingCard ? 'Gerando card…' : 'Ver card',
+                        style: const TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Tooltip(
+                      message: total == 0
+                          ? 'Selecione ao menos um destinatário'
+                          : 'Enviar previsão pelo WhatsApp',
+                      child: FilledButton.icon(
+                        onPressed: total == 0 ? null : _enviarParaSelecionados,
+                        style: FilledButton.styleFrom(
+                          backgroundColor: accent,
+                          disabledBackgroundColor: inputBg,
+                          foregroundColor: isIos
+                              ? SoloForteSheetSkinIos.ctaText
+                              : Theme.of(context).colorScheme.onPrimary,
+                          disabledForegroundColor: categoryLabel,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(ctaRadius),
+                          ),
+                        ),
+                        icon: const Icon(Icons.send_rounded, size: 18),
+                        label: Text(
+                          total == 0
+                              ? 'Selecione destinatários'
+                              : 'Enviar pelo WhatsApp ($total)',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
