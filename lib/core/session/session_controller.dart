@@ -350,7 +350,7 @@ class SessionController extends _$SessionController {
 
   Future<String?> _readPendingSignupRole(String? email) async {
     try {
-      return _pendingSignupRoleStore().readValidRole(email);
+      return await _pendingSignupRoleStore().readValidRole(email);
     } catch (_) {
       return null;
     }
