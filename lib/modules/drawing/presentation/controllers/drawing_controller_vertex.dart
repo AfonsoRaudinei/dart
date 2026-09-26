@@ -118,7 +118,10 @@ extension DrawingControllerVertexEditing on DrawingController {
     return (ring: bestRing, segment: bestSegment, point: bestPoint);
   }
 
-  /// Toque no mapa em edição: vértice curto, depois a linha, senão limpa a gota.
+  /// Toque no mapa em edição.
+  ///
+  /// Projeção no meio do trecho insere o vértice ali. Projeção na ponta
+  /// seleciona a bolinha, sem duplicar. Fora da linha, limpa a gota.
   ///
   /// Retorna false quando o toque não altera seleção nem geometria.
   bool applyEditMapTap(
@@ -130,20 +133,21 @@ extension DrawingControllerVertexEditing on DrawingController {
     if (_stateMachine.currentState != DrawingState.editing) return false;
     if (_editGeometry is! DrawingPolygon) return false;
 
-    final hit = findEditVertexNear(tap, vertexToleranceMeters);
-    if (hit != null) {
-      if (_selectedEditRingIndex == hit.ring &&
-          _selectedEditPointIndex == hit.point) {
-        clearEditVertexSelection();
-      } else {
-        selectEditVertex(hit.ring, hit.point);
-      }
+    final edge = findEditEdgeNear(tap, edgeToleranceMeters);
+    if (edge != null && _editEdgePointIsInterior(edge, vertexToleranceMeters)) {
+      insertVertex(edge.ring, edge.segment, edge.point);
       return true;
     }
 
-    final edge = findEditEdgeNear(tap, edgeToleranceMeters);
+    final hit = findEditVertexNear(tap, vertexToleranceMeters);
+    if (hit != null) {
+      _toggleEditVertex(hit.ring, hit.point);
+      return true;
+    }
+
     if (edge != null) {
-      insertVertex(edge.ring, edge.segment, edge.point);
+      final end = _closerEdgeEndpoint(edge);
+      _toggleEditVertex(end.ring, end.point);
       return true;
     }
 
@@ -152,6 +156,62 @@ extension DrawingControllerVertexEditing on DrawingController {
       return true;
     }
     return false;
+  }
+
+  void _toggleEditVertex(int ring, int point) {
+    if (_selectedEditRingIndex == ring && _selectedEditPointIndex == point) {
+      clearEditVertexSelection();
+      return;
+    }
+    selectEditVertex(ring, point);
+  }
+
+  /// A projeção está longe das duas pontas do trecho (não é a bolinha).
+  bool _editEdgePointIsInterior(
+    ({int ring, int segment, LatLng point}) edge,
+    double minMetersFromEnds,
+  ) {
+    final ends = _edgeEndpoints(edge);
+    if (ends == null) return false;
+    const distance = Distance();
+    final fromStart = distance.as(LengthUnit.Meter, edge.point, ends.$1);
+    final fromEnd = distance.as(LengthUnit.Meter, edge.point, ends.$2);
+    return fromStart > minMetersFromEnds && fromEnd > minMetersFromEnds;
+  }
+
+  ({int ring, int point}) _closerEdgeEndpoint(
+    ({int ring, int segment, LatLng point}) edge,
+  ) {
+    final ends = _edgeEndpoints(edge);
+    if (ends == null) return (ring: edge.ring, point: edge.segment);
+    const distance = Distance();
+    final fromStart = distance.as(LengthUnit.Meter, edge.point, ends.$1);
+    final fromEnd = distance.as(LengthUnit.Meter, edge.point, ends.$2);
+    if (fromStart <= fromEnd) {
+      return (ring: edge.ring, point: edge.segment);
+    }
+    final poly = _editGeometry! as DrawingPolygon;
+    final ring = poly.coordinates[edge.ring];
+    final isClosed =
+        ring.length > 1 &&
+        ring.first[0] == ring.last[0] &&
+        ring.first[1] == ring.last[1];
+    final logicalLength = isClosed ? ring.length - 1 : ring.length;
+    final next = edge.segment + 1;
+    return (ring: edge.ring, point: next >= logicalLength ? 0 : next);
+  }
+
+  (LatLng, LatLng)? _edgeEndpoints(
+    ({int ring, int segment, LatLng point}) edge,
+  ) {
+    final geometry = _editGeometry;
+    if (geometry is! DrawingPolygon) return null;
+    if (edge.ring < 0 || edge.ring >= geometry.coordinates.length) return null;
+    final ring = geometry.coordinates[edge.ring];
+    if (edge.segment < 0 || edge.segment + 1 >= ring.length) return null;
+    final start = ring[edge.segment];
+    final end = ring[edge.segment + 1];
+    return (LatLng(start[1], start[0]), LatLng(end[1], end[0]));
   }
 
   void _throttledValidate() {

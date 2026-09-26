@@ -136,15 +136,47 @@ void main() {
       await edit.loadFeatures();
       edit.selectFeature(edit.features.single);
       edit.startEditMode();
-      final beforeLen =
-          (edit.liveGeometry! as DrawingPolygon).coordinates.first.length;
+      final beforeRing =
+          (edit.liveGeometry! as DrawingPolygon).coordinates.first;
+      final beforeLen = beforeRing.length;
+      final original = beforeRing.map((p) => [p[0], p[1]]).toList();
+
+      const distance = Distance();
+      final edgeStart = LatLng(beforeRing[0][1], beforeRing[0][0]);
+      final edgeNext = LatLng(beforeRing[1][1], beforeRing[1][0]);
+      final onEdge = distance.offset(
+        edgeStart,
+        40,
+        distance.bearing(edgeStart, edgeNext),
+      );
+      expect(
+        edit.applyEditMapTap(
+          onEdge,
+          vertexToleranceMeters: 20,
+          edgeToleranceMeters: 80,
+        ),
+        isTrue,
+      );
+      final insertedRing =
+          (edit.liveGeometry! as DrawingPolygon).coordinates.first;
+      expect(insertedRing.length, beforeLen + 1);
+      expect(edit.selectedEditPointIndex, 1);
+      expect(edit.isDraggingVertex, isFalse);
+      for (var i = 0; i < original.length; i++) {
+        final index = i == 0 ? 0 : i + 1;
+        expect(insertedRing[index][0], original[i][0]);
+        expect(insertedRing[index][1], original[i][1]);
+      }
+      edit.clearEditVertexSelection();
 
       final edge = edit.findEditEdgeNear(const LatLng(-0.01, 0), 50);
       expect(edge, isNotNull);
+      final lenAfterLineTap =
+          (edit.liveGeometry! as DrawingPolygon).coordinates.first.length;
       edit.insertVertex(edge!.ring, edge.segment, edge.point);
       expect(
         (edit.liveGeometry! as DrawingPolygon).coordinates.first.length,
-        beforeLen + 1,
+        lenAfterLineTap + 1,
       );
       expect(edit.selectedEditRingIndex, edge.ring);
       expect(edit.selectedEditPointIndex, edge.segment + 1);

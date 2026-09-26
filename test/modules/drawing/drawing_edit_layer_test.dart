@@ -55,9 +55,23 @@ void main() {
     final before =
         (controller.liveGeometry! as DrawingPolygon).coordinates.first.first;
 
-    // Pan na bolinha (não no retângulo vazio) seleciona e arrasta.
+    // Arrastar a bolinha idle não puxa o polígono.
     final dot = tester.getRect(handle).topCenter + const Offset(0, 14);
     await tester.dragFrom(dot, const Offset(36, 24));
+    await tester.pumpAndSettle();
+    expect(
+      (controller.liveGeometry! as DrawingPolygon).coordinates.first.first,
+      equals(before),
+    );
+    expect(controller.isDraggingVertex, isFalse);
+
+    controller.selectEditVertex(0, 0);
+    await tester.pumpAndSettle();
+    await tester.timedDrag(
+      handle,
+      const Offset(36, 24),
+      const Duration(milliseconds: 300),
+    );
     await tester.pumpAndSettle();
 
     expect(find.byKey(const Key('drawing_vertex_drag_0_0')), findsOneWidget);
@@ -559,6 +573,23 @@ void main() {
         distance.bearing(start, next),
       );
       final before = ring.length;
+      final original = ring.map((p) => [p[0], p[1]]).toList();
+
+      final onTip = distance.offset(start, 8, distance.bearing(start, next));
+      expect(
+        controller.applyEditMapTap(
+          onTip,
+          vertexToleranceMeters: 20,
+          edgeToleranceMeters: 80,
+        ),
+        isTrue,
+      );
+      expect(controller.selectedEditPointIndex, 0);
+      expect(
+        (controller.liveGeometry! as DrawingPolygon).coordinates.first.length,
+        before,
+      );
+      controller.clearEditVertexSelection();
 
       expect(
         controller.applyEditMapTap(
@@ -571,7 +602,21 @@ void main() {
       final afterInsert =
           (controller.liveGeometry! as DrawingPolygon).coordinates.first;
       expect(afterInsert.length, before + 1);
-      expect(controller.selectedEditPointIndex, isNotNull);
+      expect(controller.selectedEditPointIndex, 1);
+      for (var i = 0; i < original.length; i++) {
+        final index = i < 1 ? i : i + 1;
+        expect(afterInsert[index][0], original[i][0]);
+        expect(afterInsert[index][1], original[i][1]);
+      }
+      final inserted = LatLng(afterInsert[1][1], afterInsert[1][0]);
+      expect(
+        const Distance().as(LengthUnit.Meter, inserted, start),
+        greaterThan(20),
+      );
+      expect(
+        const Distance().as(LengthUnit.Meter, inserted, next),
+        greaterThan(20),
+      );
 
       final onVertex = LatLng(afterInsert[0][1], afterInsert[0][0]);
       final lengthWithVertex = afterInsert.length;

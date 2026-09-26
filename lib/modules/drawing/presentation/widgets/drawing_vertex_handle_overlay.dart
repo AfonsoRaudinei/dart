@@ -178,15 +178,16 @@ class _DrawingVertexHandleOverlayState
   Widget _positioned(_VertexHandleTarget handle) {
     final screen = _screenOf(handle.point);
     if (screen == null) return const SizedBox.shrink();
+    final canDrag = handle.isSketch || handle.showGota;
     final detector = GestureDetector(
       key: handle.key,
       behavior: HitTestBehavior.opaque,
       onTap: () => _onTap(handle),
       onDoubleTap: handle.isSketch ? null : () => _onDoubleTap(handle),
-      onPanStart: (_) => _onPanStart(handle),
-      onPanUpdate: (details) => _onPanUpdate(details, handle),
-      onPanEnd: (_) => _onPanEnd(handle),
-      onPanCancel: _onPanCancel,
+      onPanStart: canDrag ? (_) => _onPanStart(handle) : null,
+      onPanUpdate: canDrag ? (details) => _onPanUpdate(details, handle) : null,
+      onPanEnd: canDrag ? (_) => _onPanEnd(handle) : null,
+      onPanCancel: canDrag ? _onPanCancel : null,
       child: const SizedBox.expand(),
     );
     return Positioned(
