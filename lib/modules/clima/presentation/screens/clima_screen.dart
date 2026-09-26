@@ -359,7 +359,7 @@ class _ClimaMapRadarButton extends ConsumerWidget {
           },
           icon: const Icon(Icons.map_outlined, size: 20),
           label: const Text(
-            'Ver nuvens no mapa',
+            'Ver chuva no mapa',
             style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600),
           ),
         ),
