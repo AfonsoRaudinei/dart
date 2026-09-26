@@ -131,9 +131,12 @@ void main() {
     });
   });
 
-  testWidgets('card semanal desenha chance e mm no lugar da lista', (
+  testWidgets('card semanal traz gráfico de chuva e cards de dia do app', (
     tester,
   ) async {
+    await tester.binding.setSurfaceSize(const Size(480, 1200));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
     await tester.pumpWidget(
       MaterialApp(
         home: ClimaShareCard(
@@ -169,6 +172,7 @@ void main() {
       ),
     );
 
+    expect(find.text('☔  Chuva na semana'), findsOneWidget);
     expect(find.text('Chance %'), findsOneWidget);
     expect(find.text('mm'), findsOneWidget);
     expect(find.text('40%'), findsOneWidget);
@@ -177,8 +181,13 @@ void main() {
     expect(find.text('0'), findsOneWidget);
     expect(find.text('Sáb'), findsOneWidget);
     expect(find.text('Dom'), findsOneWidget);
-    expect(find.textContaining('Parcialmente ensolarado'), findsNothing);
-    expect(find.textContaining('35°'), findsNothing);
+
+    expect(find.text('Sáb 26/Set'), findsOneWidget);
+    expect(find.text('Dom 27/Set'), findsOneWidget);
+    expect(find.text('Parcialmente ensolarado'), findsOneWidget);
+    expect(find.text('35° / 24°'), findsOneWidget);
+    expect(find.text('☔ 40%   🌧️ 0.7 mm'), findsOneWidget);
+    expect(find.text('☔ 5%   🌧️ 0 mm'), findsOneWidget);
   });
 
   group('climaCityMatchKey', () {
