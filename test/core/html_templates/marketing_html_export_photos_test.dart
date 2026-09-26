@@ -4,8 +4,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:soloforte_app/core/html_templates/marketing_html_renderer.dart';
 import 'package:soloforte_app/core/html_templates/relatorio_html_renderer.dart';
 
+import '../../support/path_provider_test_bindings.dart';
+
 void main() {
-  TestWidgetsFlutterBinding.ensureInitialized();
+  installPathProviderTestBindings();
 
   const remoteUrl = 'https://cdn.test/marketing/resultado.jpg';
   final fakeBytes = Uint8List.fromList([0xFF, 0xD8, 0xFF, 0xD9]);

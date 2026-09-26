@@ -254,15 +254,18 @@ void main() {
       find.widgetWithText(TextFormField, 'Nome do Talhão *'),
       'Talhão 1',
     );
-
-    await tester.scrollUntilVisible(
-      find.text('Publicar Case'),
-      200,
-      scrollable: find.byType(Scrollable).first,
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Tamanho (ha)'),
+      '12.5',
     );
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Publicar Case'));
-    await tester.pumpAndSettle();
+
+    final publishButton = find.ancestor(
+      of: find.text('Publicar Case'),
+      matching: find.byType(ElevatedButton),
+    );
+    await tester.ensureVisible(publishButton);
+    await tester.tap(publishButton);
+    await tester.pump();
 
     expect(published, isNotNull);
     expect(published!.clientId, 'client-2');
