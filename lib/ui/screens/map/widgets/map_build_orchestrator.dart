@@ -40,7 +40,6 @@ import '../../../components/map/map_attribution_policy.dart';
 import '../../../components/map/widgets/map_canvas.dart';
 import '../../../components/map/widgets/map_layers.dart';
 import '../../../../modules/clima/presentation/providers/radar_providers.dart';
-import '../../../../modules/clima/presentation/widgets/clima_cloud_layer_widget.dart';
 import '../../../../modules/clima/presentation/widgets/clima_radar_zoom_guard.dart';
 import '../../../../modules/clima/presentation/widgets/radar_layer_widget.dart';
 import '../../../components/map/widgets/map_markers.dart';
@@ -390,12 +389,6 @@ class MapBuildOrchestrator extends ConsumerWidget {
                   mapController: mapController,
                 ),
 
-                // Nuvens (infravermelho) sob o radar, acima do desenho.
-                IgnorePointer(
-                  ignoring: polygonSketchMode,
-                  child: const ClimaCloudTileLayerWidget(),
-                ),
-
                 // ADR-043 — Radar acima de talhões/desenho, abaixo de markers
                 IgnorePointer(
                   ignoring: polygonSketchMode,
@@ -461,14 +454,12 @@ class MapBuildOrchestrator extends ConsumerWidget {
 
                 Consumer(
                   builder: (context, ref, _) {
-                    final cloudsOn = ref.watch(climaRadarEnabledProvider);
+                    final radarOn = ref.watch(climaRadarEnabledProvider);
                     return RichAttributionWidget(
                       attributions: [
                         TextSourceAttribution(tileConfig.attribution),
-                        if (cloudsOn)
-                          const TextSourceAttribution(
-                            'Nuvens © SSEC/CIMSS RealEarth',
-                          ),
+                        if (radarOn)
+                          const TextSourceAttribution('Radar © RainViewer'),
                       ],
                       showFlutterMapAttribution: false,
                       alignment: AttributionAlignment.bottomLeft,
