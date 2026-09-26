@@ -8,6 +8,7 @@ import 'package:soloforte_app/modules/clima/domain/clima_share_payload.dart';
 import 'package:soloforte_app/modules/clima/domain/entities/clima_atual.dart';
 import 'package:soloforte_app/modules/clima/domain/entities/previsao_diaria.dart';
 import 'package:soloforte_app/modules/clima/domain/entities/previsao_horaria.dart';
+import 'package:soloforte_app/modules/clima/presentation/widgets/clima_share_card.dart';
 import 'package:soloforte_app/modules/clima/presentation/widgets/clima_shared_widgets.dart';
 
 void main() {
@@ -112,6 +113,7 @@ void main() {
             tempMin: 23,
             tempMax: 34,
             precipitacao: 0,
+            probabilidadeChuva: 0,
             ventoMedio: 8,
             condicao: 'Predominantemente ensolarado',
             condicaoCodigo: '01d',
@@ -122,10 +124,61 @@ void main() {
 
       final message = payload.buildWhatsAppMessage();
       expect(message, contains('34°/23°'));
+      expect(message, contains('0% de chuva'));
       expect(message, contains('sem chuva'));
       expect(message, isNot(contains('0.0 mm')));
       expect(message, contains('SoloForte · Fonte: Google Weather'));
     });
+  });
+
+  testWidgets('card semanal desenha chance e mm no lugar da lista', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: ClimaShareCard(
+          payload: ClimaSharePayloadSemanal(
+            cidadeLabel: 'Porto Nacional, TO',
+            fonte: ClimaFonte.googleWeather,
+            previsoes: [
+              PrevisaoDiaria(
+                data: DateTime(2026, 9, 26),
+                tempMin: 24,
+                tempMax: 35,
+                precipitacao: 0.7,
+                probabilidadeChuva: 40,
+                ventoMedio: 8,
+                condicao: 'Parcialmente ensolarado',
+                condicaoCodigo: '02d',
+                temAlerta: false,
+              ),
+              PrevisaoDiaria(
+                data: DateTime(2026, 9, 27),
+                tempMin: 24,
+                tempMax: 39,
+                precipitacao: 0,
+                probabilidadeChuva: 5,
+                ventoMedio: 6,
+                condicao: 'Predominantemente ensolarado',
+                condicaoCodigo: '01d',
+                temAlerta: false,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('Chance %'), findsOneWidget);
+    expect(find.text('mm'), findsOneWidget);
+    expect(find.text('40%'), findsOneWidget);
+    expect(find.text('0.7'), findsOneWidget);
+    expect(find.text('5%'), findsOneWidget);
+    expect(find.text('0'), findsOneWidget);
+    expect(find.text('Sáb'), findsOneWidget);
+    expect(find.text('Dom'), findsOneWidget);
+    expect(find.textContaining('Parcialmente ensolarado'), findsNothing);
+    expect(find.textContaining('35°'), findsNothing);
   });
 
   group('climaCityMatchKey', () {

@@ -101,6 +101,7 @@ class _FakeRemote implements IClimaRemoteDatasource {
           tempMin: 22,
           tempMax: 34,
           precipitacao: 0,
+          probabilidadeChuva: 0,
           ventoMedio: 8,
           condicao: 'Ensolarado',
           condicaoCodigo: '01d',
