@@ -173,6 +173,12 @@ class _Dias extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ClimaShareRainChart(dias: payload.previsoes);
+    return Column(
+      children: [
+        ClimaShareRainChart(dias: payload.previsoes),
+        const SizedBox(height: 12),
+        ClimaShareWeeklyDays(dias: payload.previsoes),
+      ],
+    );
   }
 }
