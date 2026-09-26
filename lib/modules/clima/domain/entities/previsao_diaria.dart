@@ -4,6 +4,7 @@ class PrevisaoDiaria {
   final double tempMin;
   final double tempMax;
   final double precipitacao; // mm acumulado no dia
+  final int probabilidadeChuva; // % de chance no dia
   final double ventoMedio; // km/h
   final String condicao;
   final String condicaoCodigo;
@@ -14,6 +15,7 @@ class PrevisaoDiaria {
     required this.tempMin,
     required this.tempMax,
     required this.precipitacao,
+    required this.probabilidadeChuva,
     required this.ventoMedio,
     required this.condicao,
     required this.condicaoCodigo,
