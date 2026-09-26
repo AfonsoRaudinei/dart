@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 
@@ -9,11 +10,15 @@ import '../../domain/drawing_state.dart';
 import '../../domain/drawing_utils.dart';
 import '../../domain/models/drawing_models.dart';
 import '../controllers/drawing_controller.dart';
+import 'drawing_edit_layer.dart';
 import 'vertex_handle_drag_preview.dart';
 
 /// Igual a [_VertexGotaMetrics] em drawing_edit_layer.dart (ponta no LatLng).
 const double _kHandleWidth = 56;
 const double _kHandleHeight = 78;
+
+/// Bolinha idle na edição. Menor que o retângulo da gota para a linha passar.
+const double _kEditIdleHitDiameter = 28;
 
 /// Alças de vértice acima do [FlutterMap].
 ///
@@ -36,7 +41,8 @@ class DrawingVertexHandleOverlay extends StatefulWidget {
       _DrawingVertexHandleOverlayState();
 }
 
-class _DrawingVertexHandleOverlayState extends State<DrawingVertexHandleOverlay> {
+class _DrawingVertexHandleOverlayState
+    extends State<DrawingVertexHandleOverlay> {
   StreamSubscription<MapEvent>? _cameraSub;
   VertexHandleDrag? _active;
 
@@ -91,11 +97,7 @@ class _DrawingVertexHandleOverlayState extends State<DrawingVertexHandleOverlay>
     final handles = _handles();
     if (handles.isEmpty) return const SizedBox.shrink();
 
-    return Stack(
-      children: [
-        for (final handle in handles) _positioned(handle),
-      ],
-    );
+    return Stack(children: [for (final handle in handles) _positioned(handle)]);
   }
 
   List<_VertexHandleTarget> _handles() {
@@ -143,6 +145,13 @@ class _DrawingVertexHandleOverlayState extends State<DrawingVertexHandleOverlay>
             preview.pointIndex == i) {
           point = preview.position;
         }
+        final showGota =
+            (controller.selectedEditRingIndex == ringIdx &&
+                controller.selectedEditPointIndex == i) ||
+            (preview != null &&
+                !preview.isSketch &&
+                preview.ringIndex == ringIdx &&
+                preview.pointIndex == i);
         targets.add(
           _VertexHandleTarget(
             key: Key('drawing_vertex_hit_${ringIdx}_$i'),
@@ -150,6 +159,7 @@ class _DrawingVertexHandleOverlayState extends State<DrawingVertexHandleOverlay>
             isSketch: false,
             ringIndex: ringIdx,
             pointIndex: i,
+            showGota: showGota,
           ),
         );
       }
@@ -168,22 +178,25 @@ class _DrawingVertexHandleOverlayState extends State<DrawingVertexHandleOverlay>
   Widget _positioned(_VertexHandleTarget handle) {
     final screen = _screenOf(handle.point);
     if (screen == null) return const SizedBox.shrink();
+    final detector = GestureDetector(
+      key: handle.key,
+      behavior: HitTestBehavior.opaque,
+      onTap: () => _onTap(handle),
+      onDoubleTap: handle.isSketch ? null : () => _onDoubleTap(handle),
+      onPanStart: (_) => _onPanStart(handle),
+      onPanUpdate: (details) => _onPanUpdate(details, handle),
+      onPanEnd: (_) => _onPanEnd(handle),
+      onPanCancel: _onPanCancel,
+      child: const SizedBox.expand(),
+    );
     return Positioned(
       left: screen.x - _kHandleWidth / 2,
       top: screen.y,
       width: _kHandleWidth,
       height: _kHandleHeight,
-      child: GestureDetector(
-        key: handle.key,
-        behavior: HitTestBehavior.opaque,
-        onTap: () => _onTap(handle),
-        onDoubleTap: handle.isSketch ? null : () => _onDoubleTap(handle),
-        onPanStart: (_) => _onPanStart(handle),
-        onPanUpdate: (details) => _onPanUpdate(details, handle),
-        onPanEnd: (_) => _onPanEnd(handle),
-        onPanCancel: _onPanCancel,
-        child: const SizedBox.expand(),
-      ),
+      child: handle.isSketch
+          ? detector
+          : _EditVertexHitBox(showGota: handle.showGota, child: detector),
     );
   }
 
@@ -200,13 +213,18 @@ class _DrawingVertexHandleOverlayState extends State<DrawingVertexHandleOverlay>
     final controller = widget.controller;
     if (handle.isSketch) {
       final already = controller.selectedSketchVertexIndex == handle.pointIndex;
-      if (handle.pointIndex == 0 &&
-          already &&
-          controller.canFinishDrawing) {
+      if (handle.pointIndex == 0 && already && controller.canFinishDrawing) {
         widget.onPolygonClose?.call();
         return;
       }
       controller.selectSketchVertex(handle.pointIndex);
+      return;
+    }
+    final already =
+        controller.selectedEditRingIndex == handle.ringIndex &&
+        controller.selectedEditPointIndex == handle.pointIndex;
+    if (already) {
+      controller.clearEditVertexSelection();
       return;
     }
     controller.selectEditVertex(handle.ringIndex, handle.pointIndex);
@@ -364,6 +382,7 @@ class _VertexHandleTarget {
     required this.isSketch,
     required this.ringIndex,
     required this.pointIndex,
+    this.showGota = false,
   });
 
   final Key key;
@@ -371,4 +390,51 @@ class _VertexHandleTarget {
   final bool isSketch;
   final int ringIndex;
   final int pointIndex;
+  final bool showGota;
+}
+
+/// Em edição, só a bolinha ou o corpo da gota capturam o dedo.
+class _EditVertexHitBox extends SingleChildRenderObjectWidget {
+  const _EditVertexHitBox({required this.showGota, required super.child});
+
+  final bool showGota;
+
+  @override
+  RenderObject createRenderObject(BuildContext context) {
+    return _RenderEditVertexHitBox(showGota: showGota);
+  }
+
+  @override
+  void updateRenderObject(
+    BuildContext context,
+    _RenderEditVertexHitBox renderObject,
+  ) {
+    renderObject.showGota = showGota;
+  }
+}
+
+class _RenderEditVertexHitBox extends RenderProxyBox {
+  _RenderEditVertexHitBox({required bool showGota}) : _showGota = showGota;
+
+  bool _showGota;
+
+  set showGota(bool value) {
+    if (_showGota == value) return;
+    _showGota = value;
+  }
+
+  @override
+  bool hitTest(BoxHitTestResult result, {required Offset position}) {
+    if (!size.contains(position) || !_contains(position)) return false;
+    return super.hitTest(result, position: position);
+  }
+
+  bool _contains(Offset position) {
+    if (_showGota) {
+      return vertexGotaContainsLocal(position, size);
+    }
+    const radius = _kEditIdleHitDiameter / 2;
+    final center = Offset(size.width / 2, radius);
+    return (position - center).distance <= radius;
+  }
 }

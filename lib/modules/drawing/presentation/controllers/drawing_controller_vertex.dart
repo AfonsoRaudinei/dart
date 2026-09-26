@@ -118,6 +118,42 @@ extension DrawingControllerVertexEditing on DrawingController {
     return (ring: bestRing, segment: bestSegment, point: bestPoint);
   }
 
+  /// Toque no mapa em edição: vértice curto, depois a linha, senão limpa a gota.
+  ///
+  /// Retorna false quando o toque não altera seleção nem geometria.
+  bool applyEditMapTap(
+    LatLng tap, {
+    required double vertexToleranceMeters,
+    required double edgeToleranceMeters,
+  }) {
+    if (_isDisposed) return false;
+    if (_stateMachine.currentState != DrawingState.editing) return false;
+    if (_editGeometry is! DrawingPolygon) return false;
+
+    final hit = findEditVertexNear(tap, vertexToleranceMeters);
+    if (hit != null) {
+      if (_selectedEditRingIndex == hit.ring &&
+          _selectedEditPointIndex == hit.point) {
+        clearEditVertexSelection();
+      } else {
+        selectEditVertex(hit.ring, hit.point);
+      }
+      return true;
+    }
+
+    final edge = findEditEdgeNear(tap, edgeToleranceMeters);
+    if (edge != null) {
+      insertVertex(edge.ring, edge.segment, edge.point);
+      return true;
+    }
+
+    if (_selectedEditRingIndex != null || _selectedEditPointIndex != null) {
+      clearEditVertexSelection();
+      return true;
+    }
+    return false;
+  }
+
   void _throttledValidate() {
     // Logic from old updateEditGeometry
     final count = DrawingUtils.getVertexCount(_editGeometry);
