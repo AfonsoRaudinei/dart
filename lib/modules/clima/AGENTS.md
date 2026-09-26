@@ -12,14 +12,13 @@
 - Adapter: `infra/radar_overlay_controller_adapter.dart` (registrado em `main.dart`)
 - Toggle: `climaRadarEnabledProvider` — **nao** usar `ArmedMode`
 
-## Nuvens no mapa
+## Chuva, não nuvem
 
-O mesmo toggle liga as nuvens. RainViewer descontinuou `satellite.infrared` em 2026-01-01; o radar que restou é só precipitação e some onde não chove.
-
-- Fonte: RealEarth `globalir` (infravermelho global, SSEC/CIMSS), sem API key
-- Datasource: `data/datasources/realearth_cloud_datasource.dart`
-- Widget: `ClimaCloudTileLayerWidget` — sob o radar, acima do desenho
-- Extração: `domain/clima_cloud_extract.dart` (chão quente transparente, topo frio branco)
+O toggle do mapa mostra **precipitação** (radar RainViewer) e nada mais. O overlay
+de nuvens infravermelho (RealEarth `globalir`) foi removido: cobria o mapa de branco
+onde não estava chovendo e escondia a informação que interessa. RainViewer
+descontinuou `satellite.infrared` em 2026-01-01, então o radar some onde não chove —
+isso é o comportamento esperado, não falta de camada.
 
 ## Contratos e dependencias
 
