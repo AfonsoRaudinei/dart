@@ -42,7 +42,7 @@ void main() {
         );
 
         expect(tapBlock, contains('findSketchVertexIndexNear'));
-        expect(tapBlock, contains('findEditVertexNear'));
+        expect(tapBlock, contains('applyEditMapTap'));
         final contextTapGuard = tapBlock.indexOf(
           'if (drawCtrl.suppressesMapContextTaps)',
         );
@@ -51,7 +51,7 @@ void main() {
           lessThan(contextTapGuard),
         );
         expect(
-          tapBlock.indexOf('findEditVertexNear'),
+          tapBlock.indexOf('applyEditMapTap'),
           lessThan(contextTapGuard),
         );
       },
