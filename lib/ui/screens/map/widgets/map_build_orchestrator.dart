@@ -39,6 +39,8 @@ import '../handlers/map_location_handler.dart';
 import '../../../components/map/map_attribution_policy.dart';
 import '../../../components/map/widgets/map_canvas.dart';
 import '../../../components/map/widgets/map_layers.dart';
+import '../../../../modules/clima/presentation/providers/radar_providers.dart';
+import '../../../../modules/clima/presentation/widgets/clima_cloud_layer_widget.dart';
 import '../../../../modules/clima/presentation/widgets/clima_radar_zoom_guard.dart';
 import '../../../../modules/clima/presentation/widgets/radar_layer_widget.dart';
 import '../../../components/map/widgets/map_markers.dart';
@@ -388,6 +390,12 @@ class MapBuildOrchestrator extends ConsumerWidget {
                   mapController: mapController,
                 ),
 
+                // Nuvens (infravermelho) sob o radar, acima do desenho.
+                IgnorePointer(
+                  ignoring: polygonSketchMode,
+                  child: const ClimaCloudTileLayerWidget(),
+                ),
+
                 // ADR-043 — Radar acima de talhões/desenho, abaixo de markers
                 IgnorePointer(
                   ignoring: polygonSketchMode,
@@ -451,16 +459,29 @@ class MapBuildOrchestrator extends ConsumerWidget {
                 // 🎯 ÚNICA LAYER QUE REBUILDA: Localização GPS
                 const IsolatedUserLocationLayer(),
 
-                RichAttributionWidget(
-                  attributions: [TextSourceAttribution(tileConfig.attribution)],
-                  showFlutterMapAttribution: false,
-                  alignment: AttributionAlignment.bottomLeft,
-                  // Sem auto-expand: o popup preto parecia "sombra" no mapa.
-                  // Atribuição continua acessível pelo botão info.
-                  popupInitialDisplayDuration:
-                      kMapAttributionPopupInitialDuration,
-                  popupBorderRadius: BorderRadius.circular(8),
-                  popupBackgroundColor: Colors.black.withValues(alpha: 0.72),
+                Consumer(
+                  builder: (context, ref, _) {
+                    final cloudsOn = ref.watch(climaRadarEnabledProvider);
+                    return RichAttributionWidget(
+                      attributions: [
+                        TextSourceAttribution(tileConfig.attribution),
+                        if (cloudsOn)
+                          const TextSourceAttribution(
+                            'Nuvens © SSEC/CIMSS RealEarth',
+                          ),
+                      ],
+                      showFlutterMapAttribution: false,
+                      alignment: AttributionAlignment.bottomLeft,
+                      // Sem auto-expand: o popup preto parecia "sombra" no mapa.
+                      // Atribuição continua acessível pelo botão info.
+                      popupInitialDisplayDuration:
+                          kMapAttributionPopupInitialDuration,
+                      popupBorderRadius: BorderRadius.circular(8),
+                      popupBackgroundColor: Colors.black.withValues(
+                        alpha: 0.72,
+                      ),
+                    );
+                  },
                 ),
               ],
             ),

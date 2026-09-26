@@ -117,7 +117,8 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
     final activeColor = _themeColor(ref.watch(themeProvider));
     final areaUnit = ref.watch(areaDisplayUnitProvider);
     final distanceUnit = ref.watch(distanceDisplayUnitProvider);
-    final showEditingPill = widget.drawingState == DrawingState.editing &&
+    final showEditingPill =
+        widget.drawingState == DrawingState.editing &&
         widget.editingFieldName != null &&
         widget.editingFieldName!.trim().isNotEmpty;
     final contextCardTop = safeTop + (showEditingPill ? 72 : 8);
@@ -403,28 +404,28 @@ class _MapToolsFab extends StatelessWidget {
           duration: const Duration(milliseconds: 180),
           opacity: enabled ? 1 : 0.45,
           child: AnimatedContainer(
-          key: const Key('map_control_layers_btn'),
-          duration: const Duration(milliseconds: 180),
-          curve: Curves.easeOutCubic,
-          width: kMapActionColumnButtonSize,
-          height: kMapActionColumnButtonSize,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.15),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
+            key: const Key('map_control_layers_btn'),
+            duration: const Duration(milliseconds: 180),
+            curve: Curves.easeOutCubic,
+            width: kMapActionColumnButtonSize,
+            height: kMapActionColumnButtonSize,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.15),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Icon(
+              SFIcons.layers,
+              color: isActive ? activeColor : Colors.grey.shade600,
+              size: 22,
+            ),
           ),
-          child: Icon(
-            SFIcons.layers,
-            color: isActive ? activeColor : Colors.grey.shade600,
-            size: 22,
-          ),
-        ),
         ),
       ),
     );
@@ -647,7 +648,7 @@ class _MapStatusIndicatorState extends ConsumerState<_MapStatusIndicator> {
 
   String _statusLabel({required bool isOnline, required bool isRadarEnabled}) {
     if (!isOnline) return 'Sem conexão';
-    if (isRadarEnabled) return 'Online · chuva no mapa';
+    if (isRadarEnabled) return 'Online · nuvens no mapa';
     return 'Online';
   }
 
@@ -693,10 +694,9 @@ class _MapStatusIndicatorState extends ConsumerState<_MapStatusIndicator> {
             showSlash: showSlash,
             onTap: () {
               final enabling = !ref.read(climaRadarEnabledProvider);
-              ref.read(radarOverlayControllerProvider).setEnabled(
-                    enabling,
-                    preferSatelliteLayer: enabling,
-                  );
+              ref
+                  .read(radarOverlayControllerProvider)
+                  .setEnabled(enabling, preferSatelliteLayer: enabling);
             },
             onLongPress: _showTemporaryLabel,
           ),

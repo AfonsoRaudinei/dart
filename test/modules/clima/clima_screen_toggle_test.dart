@@ -50,7 +50,7 @@ void main() {
 
   group('ClimaScreen — toggle persistente', () {
     testWidgets(
-      'chrome Agora/24h/7 dias; Ver chuva some na 24h; sem header de volta',
+      'chrome Agora/24h/7 dias; Ver nuvens some na 24h; sem header de volta',
       (tester) async {
         await tester.pumpWidget(
           ProviderScope(
@@ -64,14 +64,14 @@ void main() {
         expect(find.text('Agora'), findsWidgets);
         expect(find.text('24h'), findsOneWidget);
         expect(find.text('7 dias'), findsOneWidget);
-        expect(find.text('Ver chuva no mapa'), findsOneWidget);
+        expect(find.text('Ver nuvens no mapa'), findsOneWidget);
         expect(find.text('☔  Próximas 24h'), findsNothing);
 
         await tester.tap(find.text('24h'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        expect(find.text('Ver chuva no mapa'), findsNothing);
+        expect(find.text('Ver nuvens no mapa'), findsNothing);
         expect(find.text('Próximas 24 Horas'), findsNothing);
         expect(find.byIcon(Icons.arrow_back_ios_new_rounded), findsNothing);
         expect(find.byIcon(Icons.arrow_back_ios), findsNothing);

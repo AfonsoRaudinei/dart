@@ -234,10 +234,7 @@ class _ClimaChrome extends ConsumerWidget {
         orElse: () => const SizedBox(width: 44, height: 44),
       ),
       _ => ClimaShareButton(
-        payload: ClimaSharePayloadAtual(
-          clima,
-          contextoSemanal: semanalData,
-        ),
+        payload: ClimaSharePayloadAtual(clima, contextoSemanal: semanalData),
       ),
     };
   }
@@ -355,15 +352,14 @@ class _ClimaMapRadarButton extends ConsumerWidget {
           ),
           onPressed: () {
             HapticFeedback.lightImpact();
-            ref.read(radarOverlayControllerProvider).setEnabled(
-              true,
-              preferSatelliteLayer: true,
-            );
+            ref
+                .read(radarOverlayControllerProvider)
+                .setEnabled(true, preferSatelliteLayer: true);
             context.go(AppRoutes.map);
           },
           icon: const Icon(Icons.map_outlined, size: 20),
           label: const Text(
-            'Ver chuva no mapa',
+            'Ver nuvens no mapa',
             style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600),
           ),
         ),

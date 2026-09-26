@@ -350,6 +350,33 @@ class MapConfig {
   static const Duration rainViewerAnimationFrameInterval = Duration(
     milliseconds: 700,
   );
+
+  // ═══════════════════════════════════════════════════════════
+  // NUVENS — infravermelho global (SSEC RealEarth)
+  // RainViewer descontinuou satellite.infrared em 2026-01-01.
+  // ═══════════════════════════════════════════════════════════
+
+  /// Chave do produto no manifesto de horários.
+  static const String realEarthCloudProduct = 'globalir';
+
+  /// Manifesto de horários do composto global de infravermelho.
+  /// Forma: `{ "globalir": ["YYYYMMDD.HHMMSS", ...] }`, o último é o mais novo.
+  static const String realEarthCloudTimesUrl =
+      'https://realearth.ssec.wisc.edu/api/times?products=$realEarthCloudProduct';
+
+  /// Base dos tiles XYZ (256 px, Web Mercator) do produto `globalir`.
+  static const String realEarthCloudTileBase =
+      'https://realearth.ssec.wisc.edu/tiles/globalir';
+
+  /// Tile mais recente, sem carimbo. Usado se o manifesto falhar.
+  static const String realEarthCloudLatestTileTemplate =
+      '$realEarthCloudTileBase/{z}/{x}/{y}.png';
+
+  /// Zoom nativo máximo publicado pelo RealEarth para este produto.
+  static const int realEarthCloudMaxNativeZoom = 7;
+
+  static String realEarthCloudTileTemplate(String date, String clock) =>
+      '$realEarthCloudTileBase/$date/$clock/{z}/{x}/{y}.png';
 }
 
 /// Enum para facilitar seleção de estilos

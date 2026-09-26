@@ -4,10 +4,15 @@ import 'package:http/http.dart' as http;
 import '../../../../core/session/session_controller.dart';
 import '../../../../core/infra/preferences_service.dart';
 import '../../data/datasources/rainviewer_radar_datasource.dart';
+import '../../data/datasources/realearth_cloud_datasource.dart';
+import '../../domain/entities/clima_cloud_frame.dart';
 import '../../domain/entities/radar_fetch_result.dart';
 
 export '../../data/datasources/rainviewer_radar_datasource.dart'
     show ClimaRadarFetch, parseClimaRadarFrames;
+export '../../data/datasources/realearth_cloud_datasource.dart'
+    show ClimaCloudFetch, parseClimaCloudFrame, climaCloudLatestFallbackFrame;
+export '../../domain/entities/clima_cloud_frame.dart';
 export '../../domain/entities/radar_fetch_result.dart';
 export '../../domain/radar_frame_age_label.dart';
 export '../../domain/entities/radar_rain_frame.dart';
@@ -25,8 +30,9 @@ final climaRadarDatasourceProvider = Provider<RainviewerRadarDatasource>((ref) {
 });
 
 /// Liga/desliga o overlay de radar de chuva no mapa (persistido offline).
-final climaRadarEnabledProvider =
-    NotifierProvider<ClimaRadarEnabled, bool>(ClimaRadarEnabled.new);
+final climaRadarEnabledProvider = NotifierProvider<ClimaRadarEnabled, bool>(
+  ClimaRadarEnabled.new,
+);
 
 class ClimaRadarEnabled extends Notifier<bool> {
   @override
@@ -35,19 +41,18 @@ class ClimaRadarEnabled extends Notifier<bool> {
       key: 'climaRadarEnabledProvider',
       invalidate: (ref) => ref.invalidate(climaRadarEnabledProvider),
     );
-    return ref.read(preferencesServiceProvider).getBool(
-          climaRadarEnabledPreferenceKey,
-        ) ??
+    return ref
+            .read(preferencesServiceProvider)
+            .getBool(climaRadarEnabledPreferenceKey) ??
         false;
   }
 
   void setEnabled(bool enabled) {
     if (state == enabled) return;
     state = enabled;
-    ref.read(preferencesServiceProvider).setBool(
-      climaRadarEnabledPreferenceKey,
-      enabled,
-    );
+    ref
+        .read(preferencesServiceProvider)
+        .setBool(climaRadarEnabledPreferenceKey, enabled);
   }
 }
 
@@ -59,3 +64,18 @@ final climaRadarFramesProvider =
     FutureProvider.autoDispose<ClimaRadarFetchResult>((ref) async {
       return ref.watch(climaRadarDatasourceProvider).fetchPastFrames();
     });
+
+final climaCloudFetchProvider = Provider<ClimaCloudFetch>((ref) {
+  return (uri) => http.get(uri).timeout(const Duration(seconds: 8));
+});
+
+final climaCloudDatasourceProvider = Provider<RealEarthCloudDatasource>((ref) {
+  return RealEarthCloudDatasource(fetch: ref.watch(climaCloudFetchProvider));
+});
+
+/// Frame de nuvens mais recente. Sempre devolve um template pintável.
+final climaCloudFrameProvider = FutureProvider.autoDispose<ClimaCloudFrame>((
+  ref,
+) async {
+  return ref.watch(climaCloudDatasourceProvider).fetchLatestFrame();
+});
