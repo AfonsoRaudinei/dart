@@ -1,3 +1,4 @@
+import 'package:soloforte_app/modules/clima/domain/clima_date_labels.dart';
 import 'package:soloforte_app/modules/clima/domain/clima_dicas_agronomicas.dart';
 import 'package:soloforte_app/modules/clima/domain/clima_fonte.dart';
 import 'package:soloforte_app/modules/clima/domain/clima_weather_emoji.dart';
@@ -179,9 +180,7 @@ final class ClimaSharePayloadSemanal extends ClimaSharePayload {
   @override
   final ClimaFonte fonte;
 
-  static const _diasSemana = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
-
-  static String diaCurto(DateTime data) => _diasSemana[data.weekday % 7];
+  static String diaCurto(DateTime data) => climaDiaSemanaCurto(data);
 
   @override
   String get cidade => cidadeLabel;

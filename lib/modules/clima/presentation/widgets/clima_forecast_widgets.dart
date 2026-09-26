@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'package:soloforte_app/modules/clima/domain/clima_date_labels.dart';
 import 'package:soloforte_app/modules/clima/domain/entities/previsao_diaria.dart';
 import 'package:soloforte_app/modules/clima/domain/entities/previsao_horaria.dart';
 import 'package:soloforte_app/modules/clima/presentation/widgets/clima_charts.dart';
@@ -194,12 +195,6 @@ class ClimaWeeklyContent extends StatelessWidget {
     required this.unidade,
   });
 
-  static const _diasSemana = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
-  static const _meses = [
-    'Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun',
-    'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez',
-  ];
-
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -208,10 +203,7 @@ class ClimaWeeklyContent extends StatelessWidget {
         children: [
           ClimaDicaAgronomicaCard(previsoes: previsoes),
           ...previsoes.map((d) {
-          final diaNome = _diasSemana[d.data.weekday % 7];
-          final mesNome = _meses[d.data.month - 1];
-          final dataStr =
-              '$diaNome ${d.data.day.toString().padLeft(2, '0')}/$mesNome';
+          final dataStr = climaDataDiaMes(d.data);
 
           return Padding(
             padding: const EdgeInsets.only(bottom: 10),
