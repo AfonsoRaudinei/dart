@@ -4,15 +4,10 @@ import 'package:http/http.dart' as http;
 import '../../../../core/session/session_controller.dart';
 import '../../../../core/infra/preferences_service.dart';
 import '../../data/datasources/rainviewer_radar_datasource.dart';
-import '../../data/datasources/realearth_cloud_datasource.dart';
-import '../../domain/entities/clima_cloud_frame.dart';
 import '../../domain/entities/radar_fetch_result.dart';
 
 export '../../data/datasources/rainviewer_radar_datasource.dart'
     show ClimaRadarFetch, parseClimaRadarFrames;
-export '../../data/datasources/realearth_cloud_datasource.dart'
-    show ClimaCloudFetch, parseClimaCloudFrame, climaCloudLatestFallbackFrame;
-export '../../domain/entities/clima_cloud_frame.dart';
 export '../../domain/entities/radar_fetch_result.dart';
 export '../../domain/radar_frame_age_label.dart';
 export '../../domain/entities/radar_rain_frame.dart';
@@ -64,18 +59,3 @@ final climaRadarFramesProvider =
     FutureProvider.autoDispose<ClimaRadarFetchResult>((ref) async {
       return ref.watch(climaRadarDatasourceProvider).fetchPastFrames();
     });
-
-final climaCloudFetchProvider = Provider<ClimaCloudFetch>((ref) {
-  return (uri) => http.get(uri).timeout(const Duration(seconds: 8));
-});
-
-final climaCloudDatasourceProvider = Provider<RealEarthCloudDatasource>((ref) {
-  return RealEarthCloudDatasource(fetch: ref.watch(climaCloudFetchProvider));
-});
-
-/// Frame de nuvens mais recente. Sempre devolve um template pintável.
-final climaCloudFrameProvider = FutureProvider.autoDispose<ClimaCloudFrame>((
-  ref,
-) async {
-  return ref.watch(climaCloudDatasourceProvider).fetchLatestFrame();
-});
