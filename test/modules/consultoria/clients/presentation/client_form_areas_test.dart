@@ -55,7 +55,7 @@ void main() {
     expect(find.text('+ Adicionar Cultura'), findsNothing);
   });
 
-  testWidgets('edicao exibe somente um sinal de adicionar cultura', (
+  testWidgets('edicao lista culturas vazias e orienta talhão (sem botão +)', (
     tester,
   ) async {
     final client = Client(
@@ -81,7 +81,12 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Adicionar Cultura'), findsOneWidget);
+    expect(find.text('Nenhuma cultura'), findsOneWidget);
+    expect(
+      find.text('Cultura e material são definidos em cada talhão.'),
+      findsOneWidget,
+    );
+    expect(find.text('Adicionar Cultura'), findsNothing);
     expect(find.text('+ Adicionar Cultura'), findsNothing);
   });
 

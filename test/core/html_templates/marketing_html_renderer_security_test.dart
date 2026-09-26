@@ -2,8 +2,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:soloforte_app/core/html_templates/marketing_html_renderer.dart';
 import 'package:soloforte_app/core/html_templates/relatorio_html_renderer.dart';
 
+import '../../support/path_provider_test_bindings.dart';
+
 void main() {
-  TestWidgetsFlutterBinding.ensureInitialized();
+  installPathProviderTestBindings();
 
   group('RelatorioHtmlRenderer.sanitizePhotoSrc', () {
     test('rejeita payload XSS em URL', () {

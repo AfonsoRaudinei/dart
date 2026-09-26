@@ -5,8 +5,10 @@ import 'package:image/image.dart' as img;
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:soloforte_app/core/html_templates/visita_html_renderer.dart';
 
+import '../../support/path_provider_test_bindings.dart';
+
 void main() {
-  TestWidgetsFlutterBinding.ensureInitialized();
+  installPathProviderTestBindings();
 
   setUpAll(() async {
     await initializeDateFormatting('pt_BR');
