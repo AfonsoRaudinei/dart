@@ -553,6 +553,58 @@ void main() {
   });
 
   test(
+    'edição: toque na linha cria vértice mesmo com a ponta do trecho longe',
+    () async {
+      final repository = _UpsertDrawingRepository(_feature());
+      final controller = DrawingController(repository: repository);
+      addTearDown(controller.dispose);
+      await controller.loadFeatures();
+      controller.selectFeature(controller.features.single);
+      controller.startEditMode();
+
+      final ring =
+          (controller.liveGeometry! as DrawingPolygon).coordinates.first;
+      final start = LatLng(ring[0][1], ring[0][0]);
+      final next = LatLng(ring[1][1], ring[1][0]);
+      const distance = Distance();
+      final bearing = distance.bearing(start, next);
+      final before = ring.length;
+
+      // Dedo fora da bolinha (25 m do vértice), mas sobre a linha: a projeção
+      // cai a 20 m do vértice. Antes isso mandava a gota para o vértice.
+      final onLine = distance.offset(
+        distance.offset(start, 20, bearing),
+        15,
+        bearing + 90,
+      );
+      expect(
+        distance.as(LengthUnit.Meter, onLine, start),
+        greaterThan(24),
+      );
+
+      expect(
+        controller.applyEditMapTap(
+          onLine,
+          vertexToleranceMeters: 24,
+          edgeToleranceMeters: 44,
+        ),
+        isTrue,
+      );
+
+      final after = (controller.liveGeometry! as DrawingPolygon)
+          .coordinates
+          .first;
+      expect(after.length, before + 1);
+      expect(controller.selectedEditPointIndex, 1);
+      final inserted = LatLng(after[1][1], after[1][0]);
+      expect(
+        distance.as(LengthUnit.Meter, inserted, start),
+        greaterThanOrEqualTo(23),
+      );
+    },
+  );
+
+  test(
     'edição: MultiPolygon de um talhão normaliza e aceita toque na linha',
     () async {
       final repository = _UpsertDrawingRepository(_singleShellMultiFeature());
