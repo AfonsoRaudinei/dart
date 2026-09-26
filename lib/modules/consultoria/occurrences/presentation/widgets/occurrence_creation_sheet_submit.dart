@@ -9,7 +9,7 @@ extension _OccurrenceCreationSheetSubmit on _OccurrenceCreationSheetState {
   }
 
   void _showSubmitError(String message) {
-    setState(() => _submitError = message);
+    _notifyStateChanged(() => _submitError = message);
     _scrollToSubmitError();
   }
 
@@ -88,7 +88,7 @@ extension _OccurrenceCreationSheetSubmit on _OccurrenceCreationSheetState {
       return;
     }
 
-    setState(() {
+    _notifyStateChanged(() {
       _submitError = null;
       _isSaving = true;
     });
@@ -133,7 +133,7 @@ extension _OccurrenceCreationSheetSubmit on _OccurrenceCreationSheetState {
             ? error.message
             : 'Não foi possível salvar a ocorrência. Tente novamente.',
       );
-      setState(() => _isSaving = false);
+      _notifyStateChanged(() => _isSaving = false);
     }
   }
 }

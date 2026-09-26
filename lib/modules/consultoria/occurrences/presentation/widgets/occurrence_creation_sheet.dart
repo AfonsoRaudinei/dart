@@ -108,6 +108,9 @@ class _OccurrenceCreationSheetState
     }
   }
 
+  /// Usado pelos `part` files — evita `invalid_use_of_protected_member` no analyzer CI.
+  void _notifyStateChanged(VoidCallback fn) => setState(fn);
+
   void _applyInitialCategoryValue() {
     if (widget.initialOccurrence != null) return;
     final value = widget.initialCategoryValue;
