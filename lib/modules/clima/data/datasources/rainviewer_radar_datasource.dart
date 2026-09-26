@@ -13,7 +13,7 @@ import '../../domain/radar_overlay_logger.dart';
 typedef ClimaRadarFetch = Future<http.Response> Function(Uri uri);
 
 /// Lê só `radar.past`. `satellite.infrared` ficou vazio em 2026-01-01
-/// (satélite IR descontinuado). Nuvens no mapa vêm do RealEarth `globalir`.
+/// (satélite IR descontinuado em 2026-01-01): o mapa mostra chuva, não nuvem.
 @visibleForTesting
 List<ClimaRadarFrame> parseClimaRadarFrames(Map<String, dynamic> json) {
   final radarMap = json['radar'] as Map<String, dynamic>?;
