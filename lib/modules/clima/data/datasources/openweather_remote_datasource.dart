@@ -188,6 +188,7 @@ class OpenWeatherRemoteDatasource implements IClimaRemoteDatasource {
       tempMin: (temp['min'] as num).toDouble(),
       tempMax: (temp['max'] as num).toDouble(),
       precipitacao: ((d['rain'] as num?) ?? 0).toDouble(),
+      probabilidadeChuva: (((d['pop'] as num?) ?? 0) * 100).round(),
       ventoMedio: ((d['wind_speed'] as num) * 3.6).toDouble(), // m/s → km/h
       condicao: weather['description'] as String,
       condicaoCodigo: weather['icon'] as String,

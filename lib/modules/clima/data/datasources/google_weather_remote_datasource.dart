@@ -265,6 +265,12 @@ class GoogleWeatherRemoteDatasource implements IClimaRemoteDatasource {
     final nightWeather = _map(nighttime['weatherCondition']);
     final dayPrecip = _map(_map(daytime['precipitation'])['qpf']);
     final nightPrecip = _map(_map(nighttime['precipitation'])['qpf']);
+    final dayChance = _readInt(
+      _map(_map(daytime['precipitation'])['probability'])['percent'],
+    );
+    final nightChance = _readInt(
+      _map(_map(nighttime['precipitation'])['probability'])['percent'],
+    );
 
     final dayWindSpeed = _readNum(_map(_map(daytime['wind'])['speed'])['value']);
     final nightWindSpeed = _readNum(_map(_map(nighttime['wind'])['speed'])['value']);
@@ -283,6 +289,7 @@ class GoogleWeatherRemoteDatasource implements IClimaRemoteDatasource {
       tempMin: _readDegrees(d['minTemperature']),
       tempMax: _readDegrees(d['maxTemperature']),
       precipitacao: _readNum(dayPrecip['quantity']) + _readNum(nightPrecip['quantity']),
+      probabilidadeChuva: dayChance > nightChance ? dayChance : nightChance,
       ventoMedio: _avg([dayWindSpeed, nightWindSpeed]),
       condicao: condText,
       condicaoCodigo: _googleTypeToOwmIcon(condType, true),
