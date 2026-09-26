@@ -65,6 +65,7 @@ void main() {
                     tempMin: 22,
                     tempMax: 33,
                     precipitacao: 5,
+                    probabilidadeChuva: 40,
                     ventoMedio: 8,
                     condicao: 'Chuvas isoladas',
                     condicaoCodigo: '10d',

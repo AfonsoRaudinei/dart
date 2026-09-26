@@ -223,7 +223,7 @@ final class ClimaSharePayloadSemanal extends ClimaSharePayload {
       final dia = diaCurto(d.data);
       buffer.writeln(
         '$dia ${d.tempMax.toStringAsFixed(0)}°/${d.tempMin.toStringAsFixed(0)}°, '
-        '${d.condicao}, '
+        '${d.probabilidadeChuva}% de chuva, '
         '${climaChuvaFrase(d.precipitacao, inicioMaiusculo: false)}',
       );
     }
