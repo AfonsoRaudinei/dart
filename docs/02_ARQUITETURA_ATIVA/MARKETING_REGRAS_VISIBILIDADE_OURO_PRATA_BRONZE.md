@@ -14,7 +14,8 @@
 
 | Dimensão | Ouro | Prata | Bronze |
 |---|---|---|---|
-| Tamanho do pin (código) | maior `120×100` | médio `100×84` | pequeno `84×70` |
+| Tamanho do pin (zoom &lt; 15) | maior `120×100` | médio `100×84` | pequeno `84×70` |
+| Leitura (zoom ≥ 15) | largura `184`, nome 15 px, resultado 14 px | igual | igual |
 | Alcance / zoom mínimo (código) | ≥ **10** | ≥ **12** | ≥ **14** |
 | Tempo visível ao **público** (produto) | **6 meses** | **4 meses** | **2 meses** |
 | Após expirar a janela pública | some do **público** | some do **público** | some do **público** |
@@ -30,10 +31,21 @@ Fonte: `lib/modules/marketing/presentation/widgets/marketing_case_marker.dart`
 
 ### 2.1 Tamanho
 
+Compacto, zoom &lt; 15 — a foto é o marco; o texto fica pequeno:
+
 ```
 Ouro   → 120 × 100   (maior)
 Prata  → 100 × 84    (médio)
 Bronze →  84 × 70    (menor)
+```
+
+Leitura, zoom ≥ 15 — igual para os três planos, para Bronze não ficar ilegível:
+
+```
+largura 184
+foto 96 + faixa 49 (duas linhas: nome 15 px, resultado 14 px)
+altura do corpo = foto + faixa + 2× borda do tier
+ponteiro 10
 ```
 
 ### 2.2 Alcance (zoom mínimo no mapa)
@@ -42,9 +54,11 @@ Bronze →  84 × 70    (menor)
 Ouro   → zoom ≥ 10   (visível mais cedo / de mais longe)
 Prata  → zoom ≥ 12
 Bronze → zoom ≥ 14   (precisa aproximar mais)
+Leitura → zoom ≥ 15  (nome e resultado maiores; o pin não cresce antes disso)
 ```
 
-API: `MarketingCaseMarker.minZoomForTier` / `isVisibleAtZoom`.
+API: `MarketingCaseMarker.minZoomForTier` / `isVisibleAtZoom` / `isReadingZoom`.
+`pinWidth` e `pinHeight` recebem `zoom` opcional (default `0` = compacto).
 
 ---
 
