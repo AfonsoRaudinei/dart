@@ -16,24 +16,55 @@ class MarketingCaseMarker extends StatelessWidget {
   final MarketingCase marketingCase;
   final VoidCallback onTap;
 
+  /// Zoom do mapa. `0` (desconhecido) mantém o pin compacto.
+  final double zoom;
+
   const MarketingCaseMarker({
     super.key,
     required this.marketingCase,
     required this.onTap,
+    this.zoom = 0,
   });
 
-  // ─── Dimensões por tier ───────────────────────────────────────
-  static double pinWidth(PlanoMarketing tier) => switch (tier) {
-    PlanoMarketing.ouro => 120,
-    PlanoMarketing.prata => 100,
-    PlanoMarketing.bronze => 84,
-  };
+  /// A partir daqui o pin vira cartão de leitura (nome 15 px, resultado 14 px).
+  /// Longe disso o pin compacto continua igual — a foto é o marco.
+  static const double readingZoom = 15;
 
-  static double pinHeight(PlanoMarketing tier) => switch (tier) {
-    PlanoMarketing.ouro => 100,
-    PlanoMarketing.prata => 84,
-    PlanoMarketing.bronze => 70,
-  };
+  static const double readingPinWidth = 184;
+  static const double readingPhotoHeight = 96;
+
+  /// 6+15+4+18+6: padding, nome (height 1), vão, pílula do resultado, padding.
+  static const double readingBarHeight = 49;
+  static const double pointerHeight = 10;
+
+  static const double compactNameFontSize = 8;
+  static const double compactResultFontSize = 7;
+  static const double readingNameFontSize = 15;
+  static const double readingResultFontSize = 14;
+
+  static bool isReadingZoom(double zoom) => zoom >= readingZoom;
+
+  // ─── Dimensões por tier ───────────────────────────────────────
+  /// Corpo do pin, sem o ponteiro. Call sites somam [pointerHeight].
+  static double pinWidth(PlanoMarketing tier, {double zoom = 0}) {
+    if (isReadingZoom(zoom)) return readingPinWidth;
+    return switch (tier) {
+      PlanoMarketing.ouro => 120,
+      PlanoMarketing.prata => 100,
+      PlanoMarketing.bronze => 84,
+    };
+  }
+
+  static double pinHeight(PlanoMarketing tier, {double zoom = 0}) {
+    if (isReadingZoom(zoom)) {
+      return readingPhotoHeight + readingBarHeight + 2 * _borderWidth(tier);
+    }
+    return switch (tier) {
+      PlanoMarketing.ouro => 100,
+      PlanoMarketing.prata => 84,
+      PlanoMarketing.bronze => 70,
+    };
+  }
 
   // Zoom mínimo por tier. Ouro aparece antes; Prata e Bronze exigem
   // aproximação progressiva para não poluir o mapa em visão regional.
@@ -119,12 +150,12 @@ class MarketingCaseMarker extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tier = marketingCase.visibilidade;
-    final w = pinWidth(tier);
-    final h = pinHeight(tier);
+    final reading = isReadingZoom(zoom);
+    final w = pinWidth(tier, zoom: zoom);
+    final h = pinHeight(tier, zoom: zoom);
     final border = _borderWidth(tier);
     final borderColor = _borderColor(tier);
     final resultText = _resultText();
-    const pointerH = 10.0;
 
     return GestureDetector(
       onTap: onTap,
@@ -134,7 +165,7 @@ class MarketingCaseMarker extends StatelessWidget {
         button: true,
         child: SizedBox(
           width: w,
-          height: h + pointerH,
+          height: h + pointerHeight,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -149,37 +180,64 @@ class MarketingCaseMarker extends StatelessWidget {
                     borderRadius: BorderRadius.all(
                       Radius.circular(10 - border),
                     ),
-                    child: Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        // 1. Foto de fundo
-                        _buildPhoto(tier),
-
-                        // 2. Barra inferior: produto + ROI
-                        Positioned(
-                          bottom: 0,
-                          left: 0,
-                          right: 0,
-                          child: _InfoBar(
-                            produto: marketingCase.produtoUtilizado,
-                            resultText: resultText,
-                          ),
-                        ),
-                      ],
-                    ),
+                    child: reading
+                        ? _readingBody(tier, resultText)
+                        : _compactBody(tier, resultText),
                   ),
                 ),
               ),
 
               // ── Ponteiro triangular ───────────────────────────
               CustomPaint(
-                size: const Size(16, pointerH),
+                size: const Size(16, pointerHeight),
                 painter: _PointerPainter(color: borderColor),
               ),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  /// Foto em tela cheia e faixa sobreposta. O texto cabe pequeno de propósito.
+  Widget _compactBody(PlanoMarketing tier, String? resultText) {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        _buildPhoto(tier),
+        Positioned(
+          bottom: 0,
+          left: 0,
+          right: 0,
+          child: _InfoBar(
+            produto: marketingCase.produtoUtilizado,
+            resultText: resultText,
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Foto com a altura de hoje e a faixa abaixo, em duas linhas legíveis.
+  /// A borda do container come 2× a espessura; [pinHeight] já reserva isso.
+  Widget _readingBody(PlanoMarketing tier, String? resultText) {
+    return Column(
+      children: [
+        SizedBox(
+          height: readingPhotoHeight,
+          width: double.infinity,
+          child: _buildPhoto(tier),
+        ),
+        SizedBox(
+          height: readingBarHeight,
+          width: double.infinity,
+          child: _InfoBar(
+            produto: marketingCase.produtoUtilizado,
+            resultText: resultText,
+            reading: true,
+          ),
+        ),
+      ],
     );
   }
 
@@ -203,11 +261,21 @@ class MarketingCaseMarker extends StatelessWidget {
 class _InfoBar extends StatelessWidget {
   final String produto;
   final String? resultText;
+  final bool reading;
 
-  const _InfoBar({required this.produto, this.resultText});
+  const _InfoBar({
+    required this.produto,
+    this.resultText,
+    this.reading = false,
+  });
 
   @override
   Widget build(BuildContext context) {
+    if (reading) return _readingBar();
+    return _compactBar();
+  }
+
+  Widget _compactBar() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 3),
       decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.65)),
@@ -219,7 +287,7 @@ class _InfoBar extends StatelessWidget {
               produto,
               style: const TextStyle(
                 fontFamily: 'Inter',
-                fontSize: 8,
+                fontSize: MarketingCaseMarker.compactNameFontSize,
                 fontWeight: FontWeight.w600,
                 color: Colors.white,
               ),
@@ -242,7 +310,57 @@ class _InfoBar extends StatelessWidget {
                 maxLines: 1,
                 style: const TextStyle(
                   fontFamily: 'Inter',
-                  fontSize: 7,
+                  fontSize: MarketingCaseMarker.compactResultFontSize,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  /// Nome numa linha, resultado na de baixo. A altura fecha com
+  /// [MarketingCaseMarker.readingBarHeight] para o Marker não cortar.
+  Widget _readingBar() {
+    return Container(
+      height: MarketingCaseMarker.readingBarHeight,
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      alignment: Alignment.centerLeft,
+      decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.65)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            produto,
+            style: const TextStyle(
+              fontFamily: 'Inter',
+              fontSize: MarketingCaseMarker.readingNameFontSize,
+              height: 1,
+              fontWeight: FontWeight.w600,
+              color: Colors.white,
+            ),
+            overflow: TextOverflow.ellipsis,
+            maxLines: 1,
+          ),
+          if (resultText != null) ...[
+            const SizedBox(height: 4),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: const Color(0xFF0A84FF),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                resultText!,
+                softWrap: false,
+                maxLines: 1,
+                style: const TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: MarketingCaseMarker.readingResultFontSize,
+                  height: 1,
                   fontWeight: FontWeight.w700,
                   color: Colors.white,
                 ),
