@@ -8,6 +8,35 @@ import 'package:soloforte_app/modules/marketing/presentation/widgets/marketing_c
 
 void main() {
   group('MarketingCaseMarker', () {
+    test(
+      'mantém pin compacto longe e cartão de leitura a partir do zoom 15',
+      () {
+        expect(MarketingCaseMarker.isReadingZoom(14.9), isFalse);
+        expect(MarketingCaseMarker.isReadingZoom(15), isTrue);
+
+        expect(
+          MarketingCaseMarker.pinWidth(PlanoMarketing.prata, zoom: 12),
+          100,
+        );
+        expect(
+          MarketingCaseMarker.pinHeight(PlanoMarketing.prata, zoom: 12),
+          84,
+        );
+        expect(
+          MarketingCaseMarker.pinWidth(PlanoMarketing.ouro, zoom: 15),
+          MarketingCaseMarker.readingPinWidth,
+        );
+        expect(
+          MarketingCaseMarker.pinWidth(PlanoMarketing.bronze, zoom: 15),
+          184,
+        );
+        expect(
+          MarketingCaseMarker.pinHeight(PlanoMarketing.prata, zoom: 15),
+          greaterThan(84),
+        );
+      },
+    );
+
     test('aplica zoom mínimo progressivo por plano', () {
       expect(
         MarketingCaseMarker.isVisibleAtZoom(PlanoMarketing.ouro, 9.9),
@@ -121,6 +150,60 @@ void main() {
       final roiText = tester.widget<Text>(find.text('R\$980/ha'));
       expect(roiText.overflow, isNot(TextOverflow.ellipsis));
       expect(roiText.softWrap, isFalse);
+      expect(roiText.style?.fontSize, 7);
+
+      final produto = tester.widget<Text>(find.text('coach'));
+      expect(produto.style?.fontSize, 8);
+    });
+
+    testWidgets('zoom 15 aumenta nome e resultado sem ellipsis no valor', (
+      tester,
+    ) async {
+      final marketingCase = _case(
+        tipo: CaseTipo.resultado,
+        fotoPrincipalUrl: 'https://example.com/resultado.jpg',
+        prodSemProduto: 55,
+        prodComProduto: 65,
+        unidadeProdutividade: 'sc/ha',
+        custoProdutoPorHa: 70,
+        valorGrao: 105,
+      );
+      const zoom = 15.0;
+      final width = MarketingCaseMarker.pinWidth(
+        PlanoMarketing.prata,
+        zoom: zoom,
+      );
+      final height =
+          MarketingCaseMarker.pinHeight(PlanoMarketing.prata, zoom: zoom) +
+          MarketingCaseMarker.pointerHeight;
+
+      await tester.pumpWidget(
+        _wrap(
+          SizedBox(
+            width: width,
+            height: height,
+            child: MarketingCaseMarker(
+              marketingCase: marketingCase,
+              zoom: zoom,
+              onTap: () {},
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('R\$980/ha'), findsOneWidget);
+      final roiText = tester.widget<Text>(find.text('R\$980/ha'));
+      expect(roiText.style?.fontSize, 14);
+      expect(roiText.overflow, isNot(TextOverflow.ellipsis));
+      expect(roiText.softWrap, isFalse);
+
+      final produto = tester.widget<Text>(find.text('coach'));
+      expect(produto.style?.fontSize, 15);
+      expect(produto.maxLines, 1);
+      expect(produto.overflow, TextOverflow.ellipsis);
+
+      expect(tester.takeException(), isNull);
     });
   });
 }
