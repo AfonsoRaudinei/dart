@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:soloforte_app/core/state/map_state.dart';
 import 'package:soloforte_app/core/utils/area_display_format.dart';
 import 'package:soloforte_app/core/utils/user_facing_error.dart';
+import 'package:soloforte_app/modules/consultoria/clients/presentation/farm_map_download.dart';
 import 'package:soloforte_app/modules/consultoria/clients/presentation/providers/clients_providers.dart';
 import 'package:soloforte_app/modules/consultoria/clients/presentation/providers/field_providers.dart';
 import 'package:soloforte_app/modules/consultoria/clients/presentation/providers/talhao_card_ndvi_provider.dart';
@@ -177,7 +178,11 @@ class FarmDetailScreen extends ConsumerWidget {
                             ),
                           ],
                         ),
-                        const SizedBox(height: 16),
+                        FarmMapDownloadButton(
+                          farmId: farmId,
+                          fields: linkedFields,
+                        ),
+                        const SizedBox(height: 8),
                         linkedFieldsAsync.when(
                           data: (fields) => FarmLinkedFieldList(
                             clientId: clientId,
