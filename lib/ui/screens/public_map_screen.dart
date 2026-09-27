@@ -247,15 +247,18 @@ class _PublicMapScreenState extends ConsumerState<PublicMapScreen> {
                           point: LatLng(mCase.lat, mCase.lng),
                           width: MarketingCaseMarker.pinWidth(
                             mCase.visibilidade,
+                            zoom: _currentZoom,
                           ),
                           height:
                               MarketingCaseMarker.pinHeight(
                                 mCase.visibilidade,
+                                zoom: _currentZoom,
                               ) +
-                              10,
+                              MarketingCaseMarker.pointerHeight,
                           alignment: Alignment.topCenter,
                           child: MarketingCaseMarker(
                             marketingCase: mCase,
+                            zoom: _currentZoom,
                             onTap: () {
                               HapticFeedback.lightImpact();
                               MarketingCaseSheet.show(context, mCase);
