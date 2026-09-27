@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:soloforte_app/core/state/map_state.dart';
 import 'package:soloforte_app/core/utils/area_display_format.dart';
 import 'package:soloforte_app/core/utils/user_facing_error.dart';
+import 'package:soloforte_app/modules/consultoria/clients/presentation/farm_map_download.dart';
 import 'package:soloforte_app/modules/consultoria/clients/presentation/providers/clients_providers.dart';
 import 'package:soloforte_app/modules/consultoria/clients/presentation/providers/field_providers.dart';
 import 'package:soloforte_app/modules/consultoria/clients/presentation/providers/talhao_card_ndvi_provider.dart';
@@ -20,6 +21,11 @@ final farmDetailProvider = FutureProvider.family.autoDispose<dynamic, String>((
   final farm = await repo.getFarmById(id);
   return farm;
 });
+
+bool _canDownloadFarmMap(List<FarmLinkedFieldSummary>? fields) {
+  if (fields == null) return false;
+  return fields.any((field) => field.vertices.length >= 3);
+}
 
 class FarmDetailScreen extends ConsumerWidget {
   final String clientId;
@@ -153,6 +159,31 @@ class FarmDetailScreen extends ConsumerWidget {
                               ),
                             ),
                             const Spacer(),
+                            TextButton.icon(
+                              onPressed: _canDownloadFarmMap(linkedFields)
+                                  ? () => downloadFarmSatelliteMap(
+                                        context: context,
+                                        ref: ref,
+                                        farmId: farmId,
+                                        fields: linkedFields!,
+                                      )
+                                  : null,
+                              icon: Icon(
+                                Icons.download_rounded,
+                                color: _canDownloadFarmMap(linkedFields)
+                                    ? PremiumTokens.brandGreen
+                                    : Colors.grey,
+                              ),
+                              label: Text(
+                                'Baixar mapa',
+                                style: TextStyle(
+                                  color: _canDownloadFarmMap(linkedFields)
+                                      ? PremiumTokens.brandGreen
+                                      : Colors.grey,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
                             TalhaoCardNdviToggle(farmId: farmId),
                             TextButton.icon(
                               onPressed: () {
