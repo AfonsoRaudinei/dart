@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:soloforte_app/modules/clima/domain/clima_share_payload.dart';
-import 'package:soloforte_app/modules/clima/presentation/widgets/clima_share_rain_chart.dart';
+import 'package:soloforte_app/modules/clima/presentation/widgets/clima_share_weekly_days.dart';
 
 /// Card visual para captura PNG e compartilhamento como imagem.
 class ClimaShareCard extends StatelessWidget {
@@ -173,12 +173,6 @@ class _Dias extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        ClimaShareRainChart(dias: payload.previsoes),
-        const SizedBox(height: 12),
-        ClimaShareWeeklyDays(dias: payload.previsoes),
-      ],
-    );
+    return ClimaShareWeeklyDays(dias: payload.previsoes);
   }
 }
