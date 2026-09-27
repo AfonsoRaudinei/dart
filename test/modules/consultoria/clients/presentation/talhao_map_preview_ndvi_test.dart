@@ -112,6 +112,45 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pump();
   });
+
+  testWidgets('arrastar para a esquerda mostra a data mais antiga', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _host(
+        TalhaoMapPreviewWidget(
+          vertices: _triangle,
+          nome: 'Th 10',
+          areaHa: 95,
+          showNdvi: true,
+          ndviScenes: [
+            TalhaoNdviScene(
+              imageDateKey: '2026-09-12',
+              isColormap: true,
+              localPath: png.path,
+              caption: '0.62 · 12/09',
+            ),
+            TalhaoNdviScene(
+              imageDateKey: '2026-09-01',
+              isColormap: true,
+              localPath: png.path,
+              caption: '0.40 · 01/09',
+            ),
+          ],
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.byKey(const Key('ndvi-scene-pager')), findsOneWidget);
+    await tester.drag(
+      find.byKey(const Key('ndvi-scene-pager')),
+      const Offset(-400, 0),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('0.40 · 01/09'), findsOneWidget);
+  });
 }
 
 const _triangle = <LatLng>[
@@ -122,8 +161,6 @@ const _triangle = <LatLng>[
 
 Widget _host(Widget child) {
   return MaterialApp(
-    home: Scaffold(
-      body: SizedBox(width: 360, height: 420, child: child),
-    ),
+    home: Scaffold(body: SizedBox(width: 360, height: 420, child: child)),
   );
 }

@@ -26,5 +26,19 @@ void main() {
     expect(ndvi.queryParameters['ndvi'], '1');
     expect(ndvi.queryParameters['drawingId'], 'd1');
     expect(ndvi.queryParameters['modo'], 'desenho');
+    expect(ndvi.queryParameters.containsKey('ndviDate'), isFalse);
+
+    final dated = Uri.parse(
+      talhaoMapUri(
+        modo: 'desenho',
+        clientId: 'c1',
+        farmId: 'f1',
+        drawingId: 'd1',
+        ndvi: true,
+        ndviDate: '2026-09-12',
+      ),
+    );
+    expect(dated.queryParameters['ndviDate'], '2026-09-12');
+    expect(dated.path, '/map');
   });
 }

@@ -238,6 +238,25 @@ class _CountingNdviLookup implements INdviLatestLookup {
   @override
   Future<NdviLatestSummary?> getLatest(String fieldId) async {
     counter.value++;
+    return _summary();
+  }
+
+  @override
+  Future<List<NdviLatestSummary>> getHistory(String fieldId) async {
+    counter.value++;
+    return [_summary()];
+  }
+
+  @override
+  Future<NdviLatestSummary?> getForDate(
+    String fieldId,
+    String imageDate,
+  ) async {
+    counter.value++;
+    return _summary();
+  }
+
+  NdviLatestSummary _summary() {
     return NdviLatestSummary(
       imageDate: DateTime(2026, 9, 12),
       ndviMean: 0.62,

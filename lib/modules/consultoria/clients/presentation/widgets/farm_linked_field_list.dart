@@ -6,6 +6,7 @@ import 'package:soloforte_app/core/contracts/i_ndvi_field_presenter_provider.dar
 import 'package:soloforte_app/core/contracts/i_ndvi_latest_lookup_provider.dart';
 import 'package:soloforte_app/core/contracts/ndvi_latest_summary.dart';
 import 'package:soloforte_app/core/domain/cultura_tipo.dart';
+import 'package:soloforte_app/core/state/field_ndvi_selected_date.dart';
 import 'package:soloforte_app/core/state/map_state.dart';
 import 'package:soloforte_app/core/utils/area_display_format.dart';
 import 'package:soloforte_app/core/router/app_routes.dart';
@@ -42,6 +43,57 @@ final talhaoCardNdviLatestProvider = FutureProvider.autoDispose
     .family<NdviLatestSummary?, String>((ref, fieldId) {
       return ref.watch(ndviLatestLookupProvider).getLatest(fieldId);
     });
+
+/// Histórico local do talhão, da data mais nova para a mais antiga.
+final talhaoCardNdviHistoryProvider = FutureProvider.autoDispose
+    .family<List<NdviLatestSummary>, String>((ref, fieldId) {
+      return ref.watch(ndviLatestLookupProvider).getHistory(fieldId);
+    });
+
+/// Evita buscar a mesma data de novo quando o fetch não muda a cena.
+final talhaoCardNdviFetchAttemptProvider = StateProvider.autoDispose
+    .family<bool, String>((ref, attemptKey) => false);
+
+/// Baixa a data visível no card quando ainda não há colormap no aparelho.
+final talhaoCardNdviEnsureProvider = FutureProvider.autoDispose
+    .family<void, String>((ref, fieldId) async {
+      final history = await ref.watch(
+        talhaoCardNdviHistoryProvider(fieldId).future,
+      );
+      if (history.isEmpty) return;
+
+      final selected = ref.watch(fieldNdviSelectedDateProvider(fieldId));
+      final current = history.firstWhere(
+        (scene) => talhaoNdviDateKey(scene.imageDate) == selected,
+        orElse: () => history.first,
+      );
+      final dateKey = talhaoNdviDateKey(current.imageDate);
+      if (current.isColormap && _summaryHasRenderableImage(current)) return;
+
+      final attemptKey = '$fieldId|$dateKey';
+      if (ref.read(talhaoCardNdviFetchAttemptProvider(attemptKey))) return;
+      ref.read(talhaoCardNdviFetchAttemptProvider(attemptKey).notifier).state =
+          true;
+
+      final updated = await ref
+          .read(ndviLatestLookupProvider)
+          .getForDate(fieldId, dateKey);
+      if (updated == null) return;
+      final changed =
+          updated.localPath != current.localPath ||
+          updated.imageUrl != current.imageUrl ||
+          updated.isColormap != current.isColormap;
+      if (changed) {
+        ref.invalidate(talhaoCardNdviHistoryProvider(fieldId));
+      }
+    });
+
+String talhaoNdviDateKey(DateTime date) {
+  final year = date.year.toString().padLeft(4, '0');
+  final month = date.month.toString().padLeft(2, '0');
+  final day = date.day.toString().padLeft(2, '0');
+  return '$year-$month-$day';
+}
 
 /// `0.62 · 12/09` — média com 2 casas e dia/mês com 2 dígitos.
 /// Preview RGB não tem média NDVI; o default 0 não entra na legenda.
@@ -140,7 +192,7 @@ class FarmLinkedFieldList extends ConsumerWidget {
       IconButton(
         tooltip: 'Abrir no mapa',
         icon: const Icon(Icons.open_in_full, size: 20),
-        onPressed: () => context.go(_mapViewUri(field.id)),
+        onPressed: () => context.go(_mapViewUri(ref, field.id)),
       ),
     ];
 
@@ -262,13 +314,24 @@ class FarmLinkedFieldList extends ConsumerWidget {
     ).showSnackBar(const SnackBar(content: Text('Talhão excluído.')));
   }
 
-  String _mapViewUri(String drawingId) {
+  String _mapViewUri(WidgetRef ref, String drawingId) {
+    final selected = ref.read(fieldNdviSelectedDateProvider(drawingId));
+    final history = ref
+        .read(talhaoCardNdviHistoryProvider(drawingId))
+        .asData
+        ?.value;
+    final date =
+        selected ??
+        (history != null && history.isNotEmpty
+            ? talhaoNdviDateKey(history.first.imageDate)
+            : null);
     return talhaoMapUri(
       modo: 'desenho',
       clientId: clientId,
       farmId: farmId,
       drawingId: drawingId,
       ndvi: showNdvi,
+      ndviDate: date,
     );
   }
 }
@@ -291,8 +354,10 @@ class _FarmTalhaoNdviCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final latestAsync = ref.watch(talhaoCardNdviLatestProvider(field.id));
-    return latestAsync.when(
+    ref.watch(talhaoCardNdviEnsureProvider(field.id));
+    final historyAsync = ref.watch(talhaoCardNdviHistoryProvider(field.id));
+    return historyAsync.when(
+      skipLoadingOnReload: true,
       loading: () => Stack(
         children: [
           _preview(),
@@ -308,15 +373,41 @@ class _FarmTalhaoNdviCard extends ConsumerWidget {
         ],
       ),
       error: (_, _) => _preview(showNdvi: true),
-      data: (summary) => _preview(
-        showNdvi: true,
-        ndviIsColormap: summary?.isColormap ?? false,
-        ndviLocalPath: summary?.localPath,
-        ndviImageUrl: summary?.imageUrl,
-        ndviCaption: summary == null ? null : talhaoCardNdviCaption(summary),
-        ndviBadge: summary == null ? null : talhaoCardNdviBadge(summary),
-        onNdviImageTap: onNdviImageTap,
-      ),
+      data: (history) {
+        if (history.isEmpty) {
+          return _preview(showNdvi: true);
+        }
+        final selected = ref.watch(fieldNdviSelectedDateProvider(field.id));
+        final current = history.firstWhere(
+          (scene) => talhaoNdviDateKey(scene.imageDate) == selected,
+          orElse: () => history.first,
+        );
+        final scenes = [
+          for (final scene in history)
+            TalhaoNdviScene(
+              imageDateKey: talhaoNdviDateKey(scene.imageDate),
+              isColormap: scene.isColormap,
+              localPath: scene.localPath,
+              imageUrl: scene.imageUrl,
+              caption: talhaoCardNdviCaption(scene),
+              badge: talhaoCardNdviBadge(scene),
+            ),
+        ];
+        return _preview(
+          showNdvi: true,
+          ndviIsColormap: current.isColormap,
+          ndviLocalPath: current.localPath,
+          ndviImageUrl: current.imageUrl,
+          ndviCaption: talhaoCardNdviCaption(current),
+          ndviBadge: talhaoCardNdviBadge(current),
+          ndviScenes: scenes,
+          onNdviSceneChanged: (scene) {
+            ref.read(fieldNdviSelectedDateProvider(field.id).notifier).state =
+                scene.imageDateKey;
+          },
+          onNdviImageTap: onNdviImageTap,
+        );
+      },
     );
   }
 
@@ -327,6 +418,8 @@ class _FarmTalhaoNdviCard extends ConsumerWidget {
     String? ndviImageUrl,
     String? ndviCaption,
     String? ndviBadge,
+    List<TalhaoNdviScene> ndviScenes = const [],
+    ValueChanged<TalhaoNdviScene>? onNdviSceneChanged,
     VoidCallback? onNdviImageTap,
   }) {
     return TalhaoMapPreviewWidget(
@@ -342,6 +435,8 @@ class _FarmTalhaoNdviCard extends ConsumerWidget {
       ndviImageUrl: ndviImageUrl,
       ndviCaption: ndviCaption,
       ndviBadge: ndviBadge,
+      ndviScenes: ndviScenes,
+      onNdviSceneChanged: onNdviSceneChanged,
       onNdviImageTap: onNdviImageTap,
     );
   }
