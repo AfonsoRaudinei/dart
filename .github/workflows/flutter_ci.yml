@@ -9,6 +9,13 @@ on:
   pull_request:
     branches: [main]
 
+# Versão fixa, não `channel: stable` flutuante: em Set/2026 o stable saltou de
+# 3.41.6 para 3.47.5 e a main ficou vermelha sem ninguém tocar em código.
+# Bump é decisão explícita — subir aqui junto com o Flutter da máquina de build.
+# Ver .github/workflows/architecture.yml (mesmo pin).
+env:
+  FLUTTER_VERSION: "3.41.6"
+
 jobs:
   analyze-and-test:
     runs-on: ubuntu-latest
@@ -17,6 +24,7 @@ jobs:
 
       - uses: subosito/flutter-action@v2
         with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
           channel: stable
           cache: true
 
