@@ -48,11 +48,7 @@ void main() {
       ),
     );
 
-    return (
-      ref: capturedRef,
-      sheets: sheets,
-      focuses: focuses,
-    );
+    return (ref: capturedRef, sheets: sheets, focuses: focuses);
   }
 
   void handle({
@@ -68,9 +64,10 @@ void main() {
       setSheetState: (state, reason) =>
           sheets.add((state: state, reason: reason)),
       openMapMark: () => mapMarks?.add(1),
-      focusDrawing: (drawingId, {required bool edit, bool union = false}) async {
-        focuses.add((drawingId: drawingId, edit: edit, union: union));
-      },
+      focusDrawing:
+          (drawingId, {required bool edit, bool union = false}) async {
+            focuses.add((drawingId: drawingId, edit: edit, union: union));
+          },
       focusCoordinate: (LatLng point) {},
     );
   }
@@ -81,9 +78,7 @@ void main() {
       ref: host.ref,
       sheets: host.sheets,
       focuses: host.focuses,
-      uri: Uri.parse(
-        '/map?modo=editar&clienteId=c1&fazendaId=f1&drawingId=d1',
-      ),
+      uri: Uri.parse('/map?modo=editar&clienteId=c1&fazendaId=f1&drawingId=d1'),
     );
     await tester.pump();
 
@@ -120,9 +115,7 @@ void main() {
       ref: host.ref,
       sheets: host.sheets,
       focuses: host.focuses,
-      uri: Uri.parse(
-        '/map?modo=uniao&clienteId=c1&fazendaId=f1&drawingId=d1',
-      ),
+      uri: Uri.parse('/map?modo=uniao&clienteId=c1&fazendaId=f1&drawingId=d1'),
     );
     await tester.pump();
 
@@ -134,7 +127,9 @@ void main() {
     expect(host.focuses.single.union, isTrue);
   });
 
-  testWidgets('modo=ocorrencia abre a ficha no GPS e não arma modo', (tester) async {
+  testWidgets('modo=ocorrencia abre a ficha no GPS e não arma modo', (
+    tester,
+  ) async {
     final host = await pumpHandlerHost(tester);
     final marks = <int>[];
     handle(
@@ -164,6 +159,7 @@ void main() {
     await tester.pump();
 
     expect(host.ref.read(mapNdviOverlayFieldIdProvider), 'd1');
+    expect(host.ref.read(mapNdviOverlayDateProvider), isNull);
     expect(host.focuses.single.drawingId, 'd1');
 
     handle(
@@ -176,5 +172,16 @@ void main() {
     );
 
     expect(host.ref.read(mapNdviOverlayFieldIdProvider), isNull);
+    expect(host.ref.read(mapNdviOverlayDateProvider), isNull);
+
+    handle(
+      ref: host.ref,
+      sheets: host.sheets,
+      focuses: host.focuses,
+      uri: Uri.parse(
+        '/map?modo=desenho&clienteId=c1&fazendaId=f1&drawingId=d1&ndvi=1&ndviDate=2026-09-12',
+      ),
+    );
+    expect(host.ref.read(mapNdviOverlayDateProvider), '2026-09-12');
   });
 }

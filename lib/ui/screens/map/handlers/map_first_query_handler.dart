@@ -34,10 +34,13 @@ class MapFirstQueryHandler {
     final fazendaNome = uri.queryParameters['fazendaNome'];
     final drawingId = uri.queryParameters['drawingId'];
     final showNdvi = uri.queryParameters['ndvi'] == '1';
-    ref.read(mapNdviOverlayFieldIdProvider.notifier).state =
-        showNdvi && drawingId != null && drawingId.isNotEmpty
+    final ndviField = showNdvi && drawingId != null && drawingId.isNotEmpty
         ? drawingId
         : null;
+    ref.read(mapNdviOverlayFieldIdProvider.notifier).state = ndviField;
+    ref.read(mapNdviOverlayDateProvider.notifier).state = ndviField == null
+        ? null
+        : uri.queryParameters['ndviDate'];
 
     if ((modo == 'desenho' || modo == 'editar' || modo == 'uniao') &&
         clienteId != null) {
