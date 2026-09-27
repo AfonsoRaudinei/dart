@@ -52,6 +52,17 @@ class FakeLocalDataSource implements NdviLocalDatasource {
   }
 
   @override
+  Future<void> deleteByFieldAndDate(String fieldId, String imageDate) async {
+    _byDate.remove('$fieldId|$imageDate');
+    nextList = nextList
+        .where(
+          (model) =>
+              !(model.fieldId == fieldId && model.imageDate == imageDate),
+        )
+        .toList();
+  }
+
+  @override
   Future<void> deleteAll(String fieldId) async {
     _byDate.removeWhere((_, model) => model.fieldId == fieldId);
     nextList = const [];
@@ -106,38 +117,35 @@ class EmptyDrawingLookup implements IFieldLookup {
 }
 
 void main() {
-  test(
-    'FieldLookupGeofenceAdapter expõe bbox derivado da geometry',
-    () async {
-      final repo = FakeFieldRepository()
-        ..nextReturn = Talhao(
-          id: 'FIELD-CONSULT',
-          name: 'Talhão consultoria',
-          areaHa: 12.5,
-          crop: '',
-          harvest: '',
-          geometry: {
-            'type': 'Polygon',
-            'coordinates': [
-              [
-                [-50.0, -20.0],
-                [-49.0, -20.0],
-                [-49.0, -19.0],
-                [-50.0, -19.0],
-                [-50.0, -20.0],
-              ],
+  test('FieldLookupGeofenceAdapter expõe bbox derivado da geometry', () async {
+    final repo = FakeFieldRepository()
+      ..nextReturn = Talhao(
+        id: 'FIELD-CONSULT',
+        name: 'Talhão consultoria',
+        areaHa: 12.5,
+        crop: '',
+        harvest: '',
+        geometry: {
+          'type': 'Polygon',
+          'coordinates': [
+            [
+              [-50.0, -20.0],
+              [-49.0, -20.0],
+              [-49.0, -19.0],
+              [-50.0, -19.0],
+              [-50.0, -20.0],
             ],
-          },
-        );
-      final adapter = FieldLookupGeofenceAdapter(repo);
+          ],
+        },
+      );
+    final adapter = FieldLookupGeofenceAdapter(repo);
 
-      final summary = await adapter.findById('FIELD-CONSULT');
+    final summary = await adapter.findById('FIELD-CONSULT');
 
-      expect(summary, isNotNull);
-      expect(summary!.bbox, [-50.0, -20.0, -49.0, -19.0]);
-      expect(summary.geometry, isNotNull);
-    },
-  );
+    expect(summary, isNotNull);
+    expect(summary!.bbox, [-50.0, -20.0, -49.0, -19.0]);
+    expect(summary.geometry, isNotNull);
+  });
 
   test(
     'talhão só em consultoria via ChainedFieldLookup dispara fetch remoto',

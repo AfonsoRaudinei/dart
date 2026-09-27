@@ -38,6 +38,17 @@ class FakeLocalDataSource implements NdviLocalDatasource {
   }
 
   @override
+  Future<void> deleteByFieldAndDate(String fieldId, String imageDate) async {
+    _saved.remove('$fieldId|$imageDate');
+    nextList = nextList
+        .where(
+          (model) =>
+              !(model.fieldId == fieldId && model.imageDate == imageDate),
+        )
+        .toList();
+  }
+
+  @override
   Future<void> deleteAll(String fieldId) async {
     _saved.removeWhere((_, model) => model.fieldId == fieldId);
     nextList = const [];
@@ -343,9 +354,6 @@ void main() {
     );
     remote.throwOnFetch = true;
 
-    expect(
-      () => repository.getByFieldId(fieldId),
-      throwsA(isA<Exception>()),
-    );
+    expect(() => repository.getByFieldId(fieldId), throwsA(isA<Exception>()));
   });
 }

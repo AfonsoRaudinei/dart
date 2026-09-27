@@ -12,6 +12,7 @@ import 'package:soloforte_app/modules/ndvi/data/ndvi_cache_policy.dart';
 import 'package:soloforte_app/modules/ndvi/data/repositories/i_ndvi_repository.dart';
 import 'package:soloforte_app/modules/ndvi/data/repositories/ndvi_repository_impl.dart';
 import 'package:soloforte_app/modules/ndvi/domain/entities/ndvi_image.dart';
+import 'package:soloforte_app/modules/ndvi/domain/ndvi_image_utils.dart';
 import 'package:soloforte_app/modules/ndvi/infra/chained_field_lookup.dart';
 import 'package:soloforte_app/modules/ndvi/presentation/providers/ndvi_providers.dart';
 import 'package:soloforte_app/modules/ndvi/presentation/widgets/ndvi_talhao_sheet.dart';
@@ -191,6 +192,11 @@ class _InMemoryLocal implements NdviLocalDatasource {
   final Map<String, NdviImageModel> _saved = {};
 
   @override
+  Future<void> deleteByFieldAndDate(String fieldId, String imageDate) async {
+    _saved.remove('$fieldId|$imageDate');
+  }
+
+  @override
   Future<void> deleteAll(String fieldId) async {
     _saved.removeWhere((_, model) => model.fieldId == fieldId);
   }
@@ -234,11 +240,15 @@ class _RecordingRemote implements NdviRemoteDatasource {
     String source = 'auto',
   }) async {
     called = true;
+    final today = DateTime.now();
+    final day = DateTime(today.year, today.month, today.day);
+    final newest = ndviImageDateKey(day.subtract(const Duration(days: 1)));
+    final older = ndviImageDateKey(day.subtract(const Duration(days: 20)));
     return NdviRemoteFetchResult(
       image: NdviImageModel(
-        id: 'IMG-2026-03-01',
+        id: 'IMG-$newest',
         fieldId: fieldId,
-        imageDate: '2026-03-01',
+        imageDate: newest,
         ndviMin: 0.2,
         ndviMax: 0.85,
         ndviMean: 0.62,
@@ -247,7 +257,7 @@ class _RecordingRemote implements NdviRemoteDatasource {
         syncStatus: 0,
         localPath: '/tmp/ndvi.png',
       ),
-      availableDates: const ['2026-03-01', '2026-02-01'],
+      availableDates: [newest, older],
     );
   }
 

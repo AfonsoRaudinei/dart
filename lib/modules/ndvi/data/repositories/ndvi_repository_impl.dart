@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:soloforte_app/core/contracts/i_field_lookup.dart';
 import 'package:soloforte_app/core/utils/app_logger.dart';
 import 'package:soloforte_app/modules/ndvi/data/datasources/ndvi_local_datasource.dart';
@@ -5,6 +7,7 @@ import 'package:soloforte_app/modules/ndvi/data/datasources/ndvi_remote_datasour
 import 'package:soloforte_app/modules/ndvi/data/ndvi_cache_policy.dart';
 import 'package:soloforte_app/modules/ndvi/data/repositories/i_ndvi_repository.dart';
 import 'package:soloforte_app/modules/ndvi/domain/entities/ndvi_image.dart';
+import 'package:soloforte_app/modules/ndvi/domain/ndvi_history.dart';
 import 'package:soloforte_app/modules/ndvi/domain/ndvi_image_utils.dart';
 
 class NdviRepositoryImpl implements INdviRepository {
@@ -26,6 +29,12 @@ class NdviRepositoryImpl implements INdviRepository {
     if (images.isEmpty) return null;
 
     for (final image in images) {
+      if (ndviIsColormapSource(image.source) &&
+          ndviImageHasRenderableData(image)) {
+        return image;
+      }
+    }
+    for (final image in images) {
       if (ndviImageHasRenderableData(image)) return image;
     }
     return images.first;
@@ -43,19 +52,28 @@ class NdviRepositoryImpl implements INdviRepository {
         'NDVI cache hit fieldId=$fieldId count=${cached.length}',
         tag: 'NDVI.Repository',
       );
-      return cached.map((model) => model.toEntity()).toList();
+      final kept = await _capHistory(
+        fieldId,
+        cached.map((model) => model.toEntity()).toList(),
+      );
+      return _preferSentinel(fieldId, summary, kept, force: false);
     }
 
     if (cached.isNotEmpty) {
       AppLogger.debug(
-        'NDVI cache invalidado fieldId=$fieldId',
+        'NDVI índice desatualizado fieldId=$fieldId',
         tag: 'NDVI.Repository',
       );
-      await _local.deleteAll(fieldId);
-      await _cachePolicy.clear(fieldId);
     }
 
-    return _refreshIndex(fieldId, summary);
+    final refreshed = await _refreshIndex(fieldId, summary);
+    if (refreshed.isEmpty) {
+      return _capHistory(
+        fieldId,
+        cached.map((model) => model.toEntity()).toList(),
+      );
+    }
+    return _preferSentinel(fieldId, summary, refreshed, force: true);
   }
 
   @override
@@ -64,13 +82,14 @@ class NdviRepositoryImpl implements INdviRepository {
     String imageDate,
   ) async {
     final cached = await _local.getByFieldIdAndDate(fieldId, imageDate);
-    if (cached != null && ndviModelHasRenderableData(cached)) {
+    if (cached != null &&
+        ndviModelHasRenderableData(cached) &&
+        ndviIsColormapSource(cached.source)) {
       return cached.toEntity();
     }
 
     final summary = await _fieldLookup.findById(fieldId);
-    if (summary == null ||
-        (summary.bbox == null && summary.geometry == null)) {
+    if (summary == null || (summary.bbox == null && summary.geometry == null)) {
       AppLogger.warning(
         'NDVI indisponivel: talhao sem bbox/geometry fieldId=$fieldId',
         tag: 'NDVI.Repository',
@@ -88,6 +107,9 @@ class NdviRepositoryImpl implements INdviRepository {
       bbox: summary.bbox,
       geometry: summary.geometry,
       date: imageDate,
+      source: cached != null && !ndviIsColormapSource(cached.source)
+          ? 'sentinel'
+          : 'auto',
     );
     if (result?.image == null) return cached?.toEntity();
 
@@ -100,8 +122,7 @@ class NdviRepositoryImpl implements INdviRepository {
     String fieldId,
     FieldSummary? summary,
   ) async {
-    if (summary == null ||
-        (summary.bbox == null && summary.geometry == null)) {
+    if (summary == null || (summary.bbox == null && summary.geometry == null)) {
       AppLogger.warning(
         'NDVI indisponivel: talhao sem bbox/geometry fieldId=$fieldId',
         tag: 'NDVI.Repository',
@@ -132,12 +153,84 @@ class NdviRepositoryImpl implements INdviRepository {
       final existing = await _local.getByFieldIdAndDate(fieldId, date);
       if (existing != null && ndviModelHasRenderableData(existing)) continue;
 
-      await _local.save(_dateStub(fieldId: fieldId, imageDate: date, source: source));
+      await _local.save(
+        _dateStub(fieldId: fieldId, imageDate: date, source: source),
+      );
     }
 
     await _cachePolicy.markSynced(fieldId, ndviOriginFingerprint(summary));
     final all = await _local.getAll(fieldId);
-    return all.map((model) => model.toEntity()).toList();
+    return _capHistory(fieldId, all.map((model) => model.toEntity()).toList());
+  }
+
+  Future<List<NdviImage>> _preferSentinel(
+    String fieldId,
+    FieldSummary? summary,
+    List<NdviImage> images, {
+    required bool force,
+  }) async {
+    if (images.isEmpty ||
+        summary == null ||
+        (summary.bbox == null && summary.geometry == null)) {
+      return images;
+    }
+    final newest = images.first;
+    if (ndviIsColormapSource(newest.source) &&
+        ndviImageHasRenderableData(newest)) {
+      return images;
+    }
+    if (!force &&
+        DateTime.now().difference(newest.fetchedAt) <
+            const Duration(hours: 24)) {
+      return images;
+    }
+
+    try {
+      final result = await _remote.fetchNdvi(
+        fieldId: fieldId,
+        bbox: summary.bbox,
+        geometry: summary.geometry,
+        date: ndviImageDateKey(newest.imageDate),
+        source: 'sentinel',
+      );
+      if (result?.image != null) {
+        await _local.save(result!.image!.toEntity());
+      }
+    } catch (error) {
+      AppLogger.warning(
+        'NDVI sentinel retry falhou fieldId=$fieldId',
+        tag: 'NDVI.Repository',
+        error: error,
+      );
+    }
+
+    final all = await _local.getAll(fieldId);
+    return _capHistory(fieldId, all.map((model) => model.toEntity()).toList());
+  }
+
+  Future<List<NdviImage>> _capHistory(
+    String fieldId,
+    List<NdviImage> images,
+  ) async {
+    final kept = ndviHistoryKept(images);
+    final keptKeys = kept
+        .map((image) => ndviImageDateKey(image.imageDate))
+        .toSet();
+    for (final image in images) {
+      final key = ndviImageDateKey(image.imageDate);
+      if (keptKeys.contains(key)) continue;
+      await _local.deleteByFieldAndDate(fieldId, key);
+      _deleteLocalFile(image.localPath);
+    }
+    return kept;
+  }
+
+  void _deleteLocalFile(String? path) {
+    if (path == null || path.isEmpty) return;
+    try {
+      final file = File(path);
+      if (file.existsSync()) file.deleteSync();
+    } catch (_) {}
   }
 
   NdviImage _dateStub({
@@ -177,7 +270,10 @@ class _NoOpNdviCachePolicy implements NdviCachePolicy {
   Future<void> markSynced(String fieldId, String originFingerprint) async {}
 
   @override
-  Future<bool> shouldInvalidate(String fieldId, String originFingerprint) async {
+  Future<bool> shouldInvalidate(
+    String fieldId,
+    String originFingerprint,
+  ) async {
     return false;
   }
 }
