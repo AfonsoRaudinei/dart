@@ -8,6 +8,7 @@ import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 
 import '../../domain/agronomic_models.dart';
 import '../../domain/client.dart';
+import '../farm_map_download.dart';
 import '../providers/clients_providers.dart';
 import '../providers/field_providers.dart';
 import '../providers/talhao_card_ndvi_provider.dart';
@@ -102,7 +103,8 @@ class ClientFarmWithTalhoesSection extends ConsumerWidget {
             ),
           ],
         ),
-        const SizedBox(height: 16),
+        FarmMapDownloadButton(farmId: farm.id, fields: linkedFields),
+        const SizedBox(height: 8),
         fieldsAsync.when(
           data: (fields) => FarmLinkedFieldList(
             clientId: client.id,
