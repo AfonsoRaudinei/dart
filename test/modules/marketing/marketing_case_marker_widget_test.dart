@@ -205,6 +205,51 @@ void main() {
 
       expect(tester.takeException(), isNull);
     });
+
+    testWidgets('zoom 15 não estoura com textScaleFactor 1.3 do sistema', (
+      tester,
+    ) async {
+      final marketingCase = _case(
+        tipo: CaseTipo.resultado,
+        fotoPrincipalUrl: 'https://example.com/resultado.jpg',
+        prodSemProduto: 55,
+        prodComProduto: 65,
+        unidadeProdutividade: 'sc/ha',
+        custoProdutoPorHa: 70,
+        valorGrao: 105,
+      );
+      const zoom = 15.0;
+      final width = MarketingCaseMarker.pinWidth(
+        PlanoMarketing.prata,
+        zoom: zoom,
+      );
+      final height =
+          MarketingCaseMarker.pinHeight(PlanoMarketing.prata, zoom: zoom) +
+          MarketingCaseMarker.pointerHeight;
+
+      tester.platformDispatcher.textScaleFactorTestValue = 1.3;
+      addTearDown(
+        () => tester.platformDispatcher.clearTextScaleFactorTestValue(),
+      );
+
+      await tester.pumpWidget(
+        _wrap(
+          SizedBox(
+            width: width,
+            height: height,
+            child: MarketingCaseMarker(
+              marketingCase: marketingCase,
+              zoom: zoom,
+              onTap: () {},
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      expect(find.text('R\$980/ha'), findsOneWidget);
+    });
   });
 }
 
