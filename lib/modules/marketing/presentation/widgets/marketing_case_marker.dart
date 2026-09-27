@@ -157,42 +157,46 @@ class MarketingCaseMarker extends StatelessWidget {
     final borderColor = _borderColor(tier);
     final resultText = _resultText();
 
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Semantics(
-        label: 'Case de Marketing: ${marketingCase.produtoUtilizado}',
-        button: true,
-        child: SizedBox(
-          width: w,
-          height: h + pointerHeight,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // ── Pin body ─────────────────────────────────────
-              Expanded(
-                child: Container(
-                  decoration: BoxDecoration(
-                    borderRadius: const BorderRadius.all(Radius.circular(10)),
-                    border: Border.all(color: borderColor, width: border),
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.all(
-                      Radius.circular(10 - border),
+    // Pin de mapa: tamanho fixo em dp. Não segue Dynamic Type (evita overflow na faixa).
+    return MediaQuery.withClampedTextScaling(
+      maxScaleFactor: 1,
+      child: GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: Semantics(
+          label: 'Case de Marketing: ${marketingCase.produtoUtilizado}',
+          button: true,
+          child: SizedBox(
+            width: w,
+            height: h + pointerHeight,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // ── Pin body ─────────────────────────────────────
+                Expanded(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: const BorderRadius.all(Radius.circular(10)),
+                      border: Border.all(color: borderColor, width: border),
                     ),
-                    child: reading
-                        ? _readingBody(tier, resultText)
-                        : _compactBody(tier, resultText),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.all(
+                        Radius.circular(10 - border),
+                      ),
+                      child: reading
+                          ? _readingBody(tier, resultText)
+                          : _compactBody(tier, resultText),
+                    ),
                   ),
                 ),
-              ),
 
-              // ── Ponteiro triangular ───────────────────────────
-              CustomPaint(
-                size: const Size(16, pointerHeight),
-                painter: _PointerPainter(color: borderColor),
-              ),
-            ],
+                // ── Ponteiro triangular ───────────────────────────
+                CustomPaint(
+                  size: const Size(16, pointerHeight),
+                  painter: _PointerPainter(color: borderColor),
+                ),
+              ],
+            ),
           ),
         ),
       ),
