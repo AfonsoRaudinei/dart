@@ -131,7 +131,7 @@ void main() {
     });
   });
 
-  testWidgets('card semanal traz gráfico de chuva e cards de dia do app', (
+  testWidgets('card semanal traz só os cards de dia, com chuva em destaque', (
     tester,
   ) async {
     await tester.binding.setSurfaceSize(const Size(480, 1200));
@@ -172,22 +172,25 @@ void main() {
       ),
     );
 
-    expect(find.text('☔  Chuva na semana'), findsOneWidget);
-    expect(find.text('Chance %'), findsOneWidget);
-    expect(find.text('mm'), findsOneWidget);
-    expect(find.text('40%'), findsOneWidget);
-    expect(find.text('0.7'), findsOneWidget);
-    expect(find.text('5%'), findsOneWidget);
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('Sáb'), findsOneWidget);
-    expect(find.text('Dom'), findsOneWidget);
-
     expect(find.text('Sáb 26/Set'), findsOneWidget);
     expect(find.text('Dom 27/Set'), findsOneWidget);
     expect(find.text('Parcialmente ensolarado'), findsOneWidget);
-    expect(find.text('35° / 24°'), findsOneWidget);
-    expect(find.text('☔ 40%   🌧️ 0.7 mm'), findsOneWidget);
-    expect(find.text('☔ 5%   🌧️ 0 mm'), findsOneWidget);
+
+    // Chuva em destaque: chance maior que a temperatura, mm ao lado.
+    expect(find.text('40%'), findsOneWidget);
+    expect(find.text('0.7 mm'), findsOneWidget);
+    expect(find.text('5%'), findsOneWidget);
+    expect(find.text('0 mm'), findsOneWidget);
+
+    final chance = tester.widget<Text>(find.text('40%')).style!;
+    final temperatura = tester.widget<Text>(find.text('35° / 24°')).style!;
+    expect(chance.fontSize, greaterThan(temperatura.fontSize!));
+    expect(chance.fontWeight, FontWeight.w700);
+
+    // Sem o card de gráfico: legenda e rótulos de coluna saíram.
+    expect(find.text('☔  Chuva na semana'), findsNothing);
+    expect(find.text('Chance %'), findsNothing);
+    expect(find.text('Sáb'), findsNothing);
   });
 
   testWidgets('card semanal cabe em 360px com 7 dias', (tester) async {
@@ -229,8 +232,9 @@ void main() {
       ClimaShareCard.cardWidth,
     );
     expect(find.text('100%'), findsOneWidget);
-    expect(find.text('18'), findsOneWidget);
+    expect(find.text('18 mm'), findsOneWidget);
     expect(find.text('Sex 02/Out'), findsOneWidget);
+    expect(find.text('Qui 01/Out'), findsOneWidget);
   });
 
   group('climaCityMatchKey', () {
