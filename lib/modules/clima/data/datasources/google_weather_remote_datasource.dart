@@ -22,6 +22,45 @@ import 'package:soloforte_app/core/utils/app_logger.dart';
 /// - /v1/publicAlerts:lookup
 ///
 /// Se falhar e houver fallback configurado, delega para o datasource fallback.
+
+/// Uma página de resposta paginada da Weather API.
+class GoogleWeatherPagina {
+  const GoogleWeatherPagina({required this.itens, this.nextPageToken});
+
+  final List<Map<String, dynamic>> itens;
+  final String? nextPageToken;
+}
+
+typedef GoogleWeatherBuscarPagina = Future<GoogleWeatherPagina> Function(
+  String? pageToken,
+);
+
+/// Teto de requisições por coleta — trava contra `nextPageToken` em loop.
+const int kGoogleWeatherMaxPaginas = 3;
+
+/// `days:lookup` devolve no máximo 5 dias por página mesmo pedindo `days=7`:
+/// sem seguir `nextPageToken` a semana chega truncada.
+Future<List<Map<String, dynamic>>> coletarPaginasGoogleWeather({
+  required GoogleWeatherBuscarPagina buscarPagina,
+  required int limite,
+  int maxPaginas = kGoogleWeatherMaxPaginas,
+}) async {
+  final itens = <Map<String, dynamic>>[];
+  String? pageToken;
+
+  for (var pagina = 0; pagina < maxPaginas; pagina++) {
+    final resultado = await buscarPagina(pageToken);
+    itens.addAll(resultado.itens);
+    if (itens.length >= limite || resultado.itens.isEmpty) break;
+
+    final proximo = resultado.nextPageToken;
+    if (proximo == null || proximo.isEmpty) break;
+    pageToken = proximo;
+  }
+
+  return itens.take(limite).toList();
+}
+
 class GoogleWeatherRemoteDatasource implements IClimaRemoteDatasource {
   final http.Client _client;
   final IClimaRemoteDatasource? _fallback;
@@ -127,22 +166,28 @@ class GoogleWeatherRemoteDatasource implements IClimaRemoteDatasource {
   }) async {
     return _withFallback(
       () async {
-        final data = await _get(
-          '/v1/forecast/days:lookup',
-          params: {
-            'location.latitude': lat.toStringAsFixed(6),
-            'location.longitude': lon.toStringAsFixed(6),
-            'days': dias.toString(),
-            'unitsSystem': 'METRIC',
-            'languageCode': 'pt-BR',
+        final brutos = await coletarPaginasGoogleWeather(
+          limite: dias,
+          buscarPagina: (pageToken) async {
+            final data = await _get(
+              '/v1/forecast/days:lookup',
+              params: {
+                'location.latitude': lat.toStringAsFixed(6),
+                'location.longitude': lon.toStringAsFixed(6),
+                'days': dias.toString(),
+                'unitsSystem': 'METRIC',
+                'languageCode': 'pt-BR',
+                if (pageToken != null) 'pageToken': pageToken,
+              },
+            );
+            return GoogleWeatherPagina(
+              itens: _list(data['forecastDays']).map(_map).toList(),
+              nextPageToken: _readString(data['nextPageToken']),
+            );
           },
         );
 
-        final list = _list(data['forecastDays']);
-        return list
-            .map((e) => _parsePrevisaoDiaria(_map(e)))
-            .take(dias)
-            .toList();
+        return brutos.map(_parsePrevisaoDiaria).toList();
       },
       fallback: () => _fallback?.fetchPrevisaoSemanal(
         lat: lat,
