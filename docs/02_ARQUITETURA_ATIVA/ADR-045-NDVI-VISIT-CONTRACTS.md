@@ -13,6 +13,8 @@
 
 `source` e `isColormap` distinguem o raster Sentinel do preview RGB Planet. Só `isColormap` autoriza o card a georreferenciar a imagem no bbox do talhão. O adapter preenche `isColormap` com `ndviIsColormapSource`.
 
+`getHistory` e `getForDate` expõem as cenas já gravadas no celular (mais nova primeiro). Card e sheet compartilham `fieldNdviSelectedDateProvider`. `/map?ndvi=1&ndviDate=` pinta essa mesma cena.
+
 ## Implementadores
 
 | Contrato | Módulo |

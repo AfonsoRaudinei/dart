@@ -3,6 +3,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:soloforte_app/core/constants/layout_constants.dart';
+import 'package:soloforte_app/core/state/field_ndvi_selected_date.dart';
 import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
 import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 import 'package:soloforte_app/modules/ndvi/domain/entities/ndvi_image.dart';
@@ -23,15 +24,31 @@ class NdviTalhaoSheet extends ConsumerWidget {
     this.areaHa,
   });
 
+  int _selectedIndex(WidgetRef ref, List<NdviImage> images) {
+    final selected = ref.watch(fieldNdviSelectedDateProvider(fieldId));
+    if (selected != null && selected.isNotEmpty) {
+      final found = images.indexWhere(
+        (image) => ndviImageDateKey(image.imageDate) == selected,
+      );
+      if (found >= 0) return found;
+    }
+    final stored = ref.watch(ndviDateIndexProvider(fieldId));
+    return stored.clamp(0, images.length - 1);
+  }
+
+  void _selectDate(WidgetRef ref, NdviImage image, int index) {
+    ref.read(fieldNdviSelectedDateProvider(fieldId).notifier).state =
+        ndviImageDateKey(image.imageDate);
+    ref.read(ndviDateIndexProvider(fieldId).notifier).state = index;
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     ref.watch(ndviEnsureCurrentDateProvider(fieldId));
     final ndviAsync = ref.watch(ndviImagesProvider(fieldId));
     final isIos = soloForteSheetIsIos(context);
     // Modal já pinta prata iOS — evitar segundo painel opaco (“dois sheets”).
-    final sheetBg = isIos
-        ? Colors.transparent
-        : const Color(0xFF1C1C1E);
+    final sheetBg = isIos ? Colors.transparent : const Color(0xFF1C1C1E);
     final sheetRadius = isIos ? SoloForteSheetSkinIos.sheetRadius : 16.0;
     final handleColor = isIos
         ? SoloForteSheetSkinIos.handleColor
@@ -79,8 +96,7 @@ class NdviTalhaoSheet extends ConsumerWidget {
                 data: (images) {
                   if (images.isEmpty) return const _EmptyState();
 
-                  final index = ref.watch(ndviDateIndexProvider(fieldId));
-                  final safeIndex = index.clamp(0, images.length - 1);
+                  final safeIndex = _selectedIndex(ref, images);
                   final current = images[safeIndex];
                   final modeKey =
                       '$fieldId:${current.id}:${current.imageDate.toIso8601String()}';
@@ -148,14 +164,11 @@ class NdviTalhaoSheet extends ConsumerWidget {
                                   label: Text(_shortDate(image.imageDate)),
                                   selected: chipIndex == safeIndex,
                                   onSelected: (_) {
-                                    ref
-                                            .read(
-                                              ndviDateIndexProvider(
-                                                fieldId,
-                                              ).notifier,
-                                            )
-                                            .state =
-                                        chipIndex;
+                                    _selectDate(
+                                      ref,
+                                      images[chipIndex],
+                                      chipIndex,
+                                    );
                                   },
                                 );
                               },
@@ -203,7 +216,9 @@ class NdviTalhaoSheet extends ConsumerWidget {
                             selected: {displayMode},
                             onSelectionChanged: (selection) {
                               ref
-                                  .read(ndviDisplayModeProvider(modeKey).notifier)
+                                  .read(
+                                    ndviDisplayModeProvider(modeKey).notifier,
+                                  )
                                   .state = selection
                                   .first;
                             },
@@ -246,15 +261,11 @@ class NdviTalhaoSheet extends ConsumerWidget {
                           children: [
                             IconButton(
                               onPressed: safeIndex < images.length - 1
-                                  ? () =>
-                                        ref
-                                                .read(
-                                                  ndviDateIndexProvider(
-                                                    fieldId,
-                                                  ).notifier,
-                                                )
-                                                .state =
-                                            safeIndex + 1
+                                  ? () => _selectDate(
+                                      ref,
+                                      images[safeIndex + 1],
+                                      safeIndex + 1,
+                                    )
                                   : null,
                               icon: Icon(
                                 Icons.chevron_left_rounded,
@@ -275,15 +286,11 @@ class NdviTalhaoSheet extends ConsumerWidget {
                             ),
                             IconButton(
                               onPressed: safeIndex > 0
-                                  ? () =>
-                                        ref
-                                                .read(
-                                                  ndviDateIndexProvider(
-                                                    fieldId,
-                                                  ).notifier,
-                                                )
-                                                .state =
-                                            safeIndex - 1
+                                  ? () => _selectDate(
+                                      ref,
+                                      images[safeIndex - 1],
+                                      safeIndex - 1,
+                                    )
                                   : null,
                               icon: Icon(
                                 Icons.chevron_right_rounded,
@@ -306,8 +313,9 @@ class NdviTalhaoSheet extends ConsumerWidget {
                         const SizedBox(height: 4),
                         Text(
                           'Mín: ${current.ndviMin.toStringAsFixed(2)}   Máx: ${current.ndviMax.toStringAsFixed(2)}',
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(color: subtitleColor),
+                          style: Theme.of(
+                            context,
+                          ).textTheme.bodySmall?.copyWith(color: subtitleColor),
                         ),
 
                         const SizedBox(height: kFabSafeArea),
@@ -433,9 +441,7 @@ class _EmptyState extends StatelessWidget {
         child: Text(
           'Nenhuma imagem disponível para este talhão',
           style: TextStyle(
-            color: isIos
-                ? SoloForteSheetSkinIos.subtitleColor
-                : Colors.grey,
+            color: isIos ? SoloForteSheetSkinIos.subtitleColor : Colors.grey,
           ),
         ),
       ),

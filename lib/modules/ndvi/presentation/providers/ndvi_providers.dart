@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:soloforte_app/core/contracts/i_field_lookup_provider.dart';
+import 'package:soloforte_app/core/state/field_ndvi_selected_date.dart';
 import 'package:soloforte_app/core/infra/preferences_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:soloforte_app/modules/ndvi/data/datasources/ndvi_local_datasource.dart';
@@ -28,7 +29,12 @@ final ndviRepositoryProvider = Provider<INdviRepository>((ref) {
   final remote = ref.watch(ndviRemoteDatasourceProvider);
   final fieldLookup = ref.watch(iFieldLookupProvider);
   final cachePolicy = ref.watch(ndviCachePolicyProvider);
-  return NdviRepositoryImpl(local, remote, fieldLookup, cachePolicy: cachePolicy);
+  return NdviRepositoryImpl(
+    local,
+    remote,
+    fieldLookup,
+    cachePolicy: cachePolicy,
+  );
 });
 
 final ndviImagesProvider = FutureProvider.family
@@ -48,8 +54,17 @@ final ndviEnsureCurrentDateProvider = FutureProvider.family
       final images = await ref.watch(ndviImagesProvider(fieldId).future);
       if (images.isEmpty) return;
 
-      final index = ref.watch(ndviDateIndexProvider(fieldId));
-      final safeIndex = index.clamp(0, images.length - 1);
+      final selected = ref.watch(fieldNdviSelectedDateProvider(fieldId));
+      var safeIndex = 0;
+      if (selected != null && selected.isNotEmpty) {
+        final found = images.indexWhere(
+          (image) => ndviImageDateKey(image.imageDate) == selected,
+        );
+        if (found >= 0) safeIndex = found;
+      } else {
+        final index = ref.watch(ndviDateIndexProvider(fieldId));
+        safeIndex = index.clamp(0, images.length - 1);
+      }
       final current = images[safeIndex];
       if (ndviImageHasRenderableData(current)) return;
 
