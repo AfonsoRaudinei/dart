@@ -125,6 +125,9 @@ class IsolatedLocalPublicationMarkersLayer extends ConsumerWidget {
 ///   Prata  → zoom ≥ MarketingCaseMarker.minZoomForTier(prata)
 ///   Bronze → zoom ≥ MarketingCaseMarker.minZoomForTier(bronze)
 ///
+/// Tamanho: compacto abaixo de [MarketingCaseMarker.readingZoom];
+/// cartão de leitura (nome e resultado maiores) a partir desse zoom.
+///
 /// Otimizações:
 /// ✅ Observa SOMENTE marketingCasesProvider.select (published + ativo)
 /// ✅ Não rebuilda o mapa inteiro quando cases mudam
@@ -204,11 +207,20 @@ class IsolatedMarketingMarkersLayer extends ConsumerWidget {
             (mCase) => Marker(
               key: ValueKey('mkt_${mCase.id}'),
               point: LatLng(mCase.lat, mCase.lng),
-              width: MarketingCaseMarker.pinWidth(mCase.visibilidade),
-              height: MarketingCaseMarker.pinHeight(mCase.visibilidade) + 10,
+              width: MarketingCaseMarker.pinWidth(
+                mCase.visibilidade,
+                zoom: currentZoom,
+              ),
+              height:
+                  MarketingCaseMarker.pinHeight(
+                    mCase.visibilidade,
+                    zoom: currentZoom,
+                  ) +
+                  MarketingCaseMarker.pointerHeight,
               alignment: Alignment.topCenter,
               child: MarketingCaseMarker(
                 marketingCase: mCase,
+                zoom: currentZoom,
                 onTap: () {
                   HapticFeedback.lightImpact();
                   MarketingCaseSheet.show(
