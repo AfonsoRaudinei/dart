@@ -21,6 +21,8 @@ class TalhaoMapPreviewWidget extends StatelessWidget {
     this.ndviImageUrl,
     this.ndviCaption,
     this.ndviBadge,
+    this.ndviScenes = const [],
+    this.onNdviSceneChanged,
     this.onNdviImageTap,
   });
 
@@ -40,6 +42,10 @@ class TalhaoMapPreviewWidget extends StatelessWidget {
 
   /// Selo sobre o mapa, por exemplo `Preview RGB`.
   final String? ndviBadge;
+
+  /// Cenas do histórico. Com mais de uma, o arrasto horizontal troca a data.
+  final List<TalhaoNdviScene> ndviScenes;
+  final ValueChanged<TalhaoNdviScene>? onNdviSceneChanged;
   final VoidCallback? onNdviImageTap;
 
   @override
@@ -148,6 +154,20 @@ class TalhaoMapPreviewWidget extends StatelessWidget {
   }
 
   Widget _buildMapSlot(ImageProvider<Object>? ndviImage) {
+    if (ndviScenes.length > 1) {
+      return SizedBox(
+        height: 160,
+        child: _NdviScenePager(
+          key: const Key('ndvi-scene-pager'),
+          scenes: ndviScenes,
+          onChanged: onNdviSceneChanged,
+          pageBuilder: (scene) {
+            final image = _sceneImage(scene);
+            return _sceneFrame(scene, image, child: _mapForImage(image));
+          },
+        ),
+      );
+    }
     final badge = ndviBadge?.trim();
     final showLegend =
         showNdvi &&
@@ -176,6 +196,48 @@ class TalhaoMapPreviewWidget extends StatelessWidget {
       onTap: opensNdvi ? onNdviImageTap : onTap,
       child: SizedBox(height: 160, child: body),
     );
+  }
+
+  ImageProvider<Object>? _sceneImage(TalhaoNdviScene scene) {
+    if (!scene.isColormap) return null;
+    final path = scene.localPath;
+    if (path != null && path.isNotEmpty) {
+      final file = File(path);
+      if (file.existsSync()) return FileImage(file);
+    }
+    final url = scene.imageUrl?.trim();
+    if (url != null && url.isNotEmpty) return NetworkImage(url);
+    return null;
+  }
+
+  Widget _sceneFrame(
+    TalhaoNdviScene scene,
+    ImageProvider<Object>? image, {
+    required Widget child,
+  }) {
+    final badge = scene.badge?.trim();
+    final showLegend = image == null && (badge == null || badge.isEmpty);
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        child,
+        if (showLegend)
+          const Positioned(left: 8, bottom: 8, child: _SemNdviLabel()),
+        if (badge != null && badge.isNotEmpty)
+          Positioned(left: 8, bottom: 8, child: _NdviBadge(label: badge)),
+        if (scene.caption != null && scene.caption!.isNotEmpty)
+          Positioned(
+            right: 8,
+            bottom: 8,
+            child: _NdviBadge(label: scene.caption!),
+          ),
+      ],
+    );
+  }
+
+  Widget _mapForImage(ImageProvider<Object>? ndviImage) {
+    if (vertices.length < 3) return _buildPlaceholder();
+    return _buildMap(ndviImage);
   }
 
   Widget _buildMap(ImageProvider<Object>? ndviImage) {
@@ -248,6 +310,75 @@ class TalhaoMapPreviewWidget extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Uma data do histórico NDVI mostrada no card.
+class TalhaoNdviScene {
+  const TalhaoNdviScene({
+    required this.imageDateKey,
+    required this.isColormap,
+    this.localPath,
+    this.imageUrl,
+    this.caption,
+    this.badge,
+  });
+
+  final String imageDateKey;
+  final bool isColormap;
+  final String? localPath;
+  final String? imageUrl;
+  final String? caption;
+  final String? badge;
+}
+
+/// Dedo para a esquerda: data mais antiga. Dedo para a direita: data mais recente.
+class _NdviScenePager extends StatefulWidget {
+  const _NdviScenePager({
+    super.key,
+    required this.scenes,
+    required this.pageBuilder,
+    this.onChanged,
+  });
+
+  final List<TalhaoNdviScene> scenes;
+  final Widget Function(TalhaoNdviScene scene) pageBuilder;
+  final ValueChanged<TalhaoNdviScene>? onChanged;
+
+  @override
+  State<_NdviScenePager> createState() => _NdviScenePagerState();
+}
+
+class _NdviScenePagerState extends State<_NdviScenePager> {
+  late final PageController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = PageController();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _notify(0));
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _notify(int index) {
+    if (!mounted || widget.scenes.isEmpty) return;
+    final safe = index.clamp(0, widget.scenes.length - 1);
+    widget.onChanged?.call(widget.scenes[safe]);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return PageView.builder(
+      controller: _controller,
+      itemCount: widget.scenes.length,
+      onPageChanged: _notify,
+      itemBuilder: (context, index) => widget.pageBuilder(widget.scenes[index]),
     );
   }
 }

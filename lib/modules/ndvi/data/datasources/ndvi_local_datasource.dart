@@ -66,10 +66,18 @@ class NdviLocalDatasource {
     final db = await _db;
     final model = NdviImageModel.fromEntity(image);
     final map = model.toMap()..['user_id'] = userId;
-    await db.insert(
+    await db.insert(_table, map, conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  Future<void> deleteByFieldAndDate(String fieldId, String imageDate) async {
+    final userId = _userId;
+    if (userId.isEmpty) return;
+
+    final db = await _db;
+    await db.delete(
       _table,
-      map,
-      conflictAlgorithm: ConflictAlgorithm.replace,
+      where: 'field_id = ? AND image_date = ? AND user_id = ?',
+      whereArgs: [fieldId, imageDate, userId],
     );
   }
 

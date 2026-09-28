@@ -24,6 +24,7 @@ String talhaoMapUri({
   String? farmId,
   required String drawingId,
   bool ndvi = false,
+  String? ndviDate,
 }) {
   return Uri(
     path: AppRoutes.map,
@@ -33,6 +34,7 @@ String talhaoMapUri({
       if (farmId != null && farmId.isNotEmpty) 'fazendaId': farmId,
       'drawingId': drawingId,
       if (ndvi) 'ndvi': '1',
+      if (ndvi && ndviDate != null && ndviDate.isNotEmpty) 'ndviDate': ndviDate,
     },
   ).toString();
 }
@@ -489,7 +491,8 @@ class _TalhaoDadosSheetState extends ConsumerState<TalhaoDadosSheet> {
               fieldTextColor: visuals.inputText,
               fieldHintColor: visuals.inputHint,
               materialSuggestions: materialSuggestionsForCultura(
-                ref.watch(clientDrawingCropRowsProvider(widget.clientId))
+                ref
+                        .watch(clientDrawingCropRowsProvider(widget.clientId))
                         .valueOrNull ??
                     const [],
                 persistCulturaValue(
@@ -500,10 +503,7 @@ class _TalhaoDadosSheetState extends ConsumerState<TalhaoDadosSheet> {
               onTipoSelected: (tipo) => setState(() => _selectedCultura = tipo),
             ),
             const SizedBox(height: 16),
-            TalhaoSheetFormField(
-              controller: _safraController,
-              label: 'Safra',
-            ),
+            TalhaoSheetFormField(controller: _safraController, label: 'Safra'),
             const SizedBox(height: 16),
             _buildFarmPicker(visuals),
             const SizedBox(height: 20),

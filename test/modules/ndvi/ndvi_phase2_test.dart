@@ -28,8 +28,14 @@ class FakeLocalDataSource implements NdviLocalDatasource {
 
   @override
   Future<List<NdviImageModel>> getAll(String fieldId) async {
-    if (seeded.isNotEmpty) return seeded;
-    return _saved.values.where((model) => model.fieldId == fieldId).toList()
+    final byDate = <String, NdviImageModel>{};
+    for (final model in seeded) {
+      if (model.fieldId == fieldId) byDate[model.imageDate] = model;
+    }
+    for (final model in _saved.values) {
+      if (model.fieldId == fieldId) byDate[model.imageDate] = model;
+    }
+    return byDate.values.toList()
       ..sort((a, b) => b.imageDate.compareTo(a.imageDate));
   }
 
@@ -37,6 +43,17 @@ class FakeLocalDataSource implements NdviLocalDatasource {
   Future<void> save(NdviImage image) async {
     final model = NdviImageModel.fromEntity(image);
     _saved['${model.fieldId}|${model.imageDate}'] = model;
+  }
+
+  @override
+  Future<void> deleteByFieldAndDate(String fieldId, String imageDate) async {
+    seeded = seeded
+        .where(
+          (model) =>
+              !(model.fieldId == fieldId && model.imageDate == imageDate),
+        )
+        .toList();
+    _saved.remove('$fieldId|$imageDate');
   }
 
   @override
@@ -112,26 +129,35 @@ void main() {
   });
 
   test('refresh index salva imagem e stubs para available_dates', () async {
-    remote.nextResult = const NdviRemoteFetchResult(
+    final today = DateTime.now();
+    final day = DateTime(today.year, today.month, today.day);
+    final newest = day.subtract(const Duration(days: 1));
+    final mid = day.subtract(const Duration(days: 20));
+    final older = day.subtract(const Duration(days: 50));
+    final newestKey = ndviImageDateKey(newest);
+    final midKey = ndviImageDateKey(mid);
+    final olderKey = ndviImageDateKey(older);
+
+    remote.nextResult = NdviRemoteFetchResult(
       image: NdviImageModel(
-        id: 'IMG-2026-03-01',
+        id: 'IMG-$newestKey',
         fieldId: 'F1',
-        imageDate: '2026-03-01',
+        imageDate: newestKey,
         ndviMin: 0.2,
         ndviMax: 0.8,
         ndviMean: 0.5,
         source: 'sentinel',
-        fetchedAt: '2026-03-01T10:00:00',
+        fetchedAt: newest.toIso8601String(),
         syncStatus: 0,
         localPath: '/tmp/ndvi.png',
       ),
-      availableDates: ['2026-03-01', '2026-02-15', '2026-01-20'],
+      availableDates: [newestKey, midKey, olderKey],
     );
 
     final result = await repository.getByFieldId('F1');
 
     expect(result, hasLength(3));
-    expect(result.first.imageDate, DateTime(2026, 3, 1));
+    expect(ndviImageDateKey(result.first.imageDate), newestKey);
     expect(ndviImageHasRenderableData(result.first), isTrue);
     expect(
       result.where((image) => !ndviImageHasRenderableData(image)),
@@ -180,43 +206,46 @@ void main() {
     expect(result.single.id, 'NEW');
   });
 
-  test('ensureImageForDate busca remoto com date quando stub não tem imagem', () async {
-    await local.save(
-      NdviImage(
-        id: 'F1_2026-02-15',
-        fieldId: 'F1',
-        imageDate: DateTime(2026, 2, 15),
-        ndviMin: 0,
-        ndviMax: 0,
-        ndviMean: 0,
-        source: 'sentinel',
-        fetchedAt: DateTime(2026, 2, 15),
-        syncStatus: 0,
-      ),
-    );
+  test(
+    'ensureImageForDate busca remoto com date quando stub não tem imagem',
+    () async {
+      await local.save(
+        NdviImage(
+          id: 'F1_2026-02-15',
+          fieldId: 'F1',
+          imageDate: DateTime(2026, 2, 15),
+          ndviMin: 0,
+          ndviMax: 0,
+          ndviMean: 0,
+          source: 'sentinel',
+          fetchedAt: DateTime(2026, 2, 15),
+          syncStatus: 0,
+        ),
+      );
 
-    remote.nextResult = const NdviRemoteFetchResult(
-      image: NdviImageModel(
-        id: 'IMG-2026-02-15',
-        fieldId: 'F1',
-        imageDate: '2026-02-15',
-        ndviMin: 0.25,
-        ndviMax: 0.75,
-        ndviMean: 0.5,
-        source: 'sentinel',
-        fetchedAt: '2026-02-15T10:00:00',
-        syncStatus: 0,
-        localPath: '/tmp/fev.png',
-      ),
-    );
+      remote.nextResult = const NdviRemoteFetchResult(
+        image: NdviImageModel(
+          id: 'IMG-2026-02-15',
+          fieldId: 'F1',
+          imageDate: '2026-02-15',
+          ndviMin: 0.25,
+          ndviMax: 0.75,
+          ndviMean: 0.5,
+          source: 'sentinel',
+          fetchedAt: '2026-02-15T10:00:00',
+          syncStatus: 0,
+          localPath: '/tmp/fev.png',
+        ),
+      );
 
-    final image = await repository.ensureImageForDate('F1', '2026-02-15');
+      final image = await repository.ensureImageForDate('F1', '2026-02-15');
 
-    expect(remote.lastDate, '2026-02-15');
-    expect(image, isNotNull);
-    expect(ndviImageHasRenderableData(image!), isTrue);
-    expect(image.ndviMean, 0.5);
-  });
+      expect(remote.lastDate, '2026-02-15');
+      expect(image, isNotNull);
+      expect(ndviImageHasRenderableData(image!), isTrue);
+      expect(image.ndviMean, 0.5);
+    },
+  );
 
   test('mudança de geometry invalida cache e refaz fetch', () async {
     cachePolicy.markSynced('F1', ndviOriginFingerprint(_summary));

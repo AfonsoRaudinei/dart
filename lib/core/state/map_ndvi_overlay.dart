@@ -8,13 +8,22 @@ import '../contracts/ndvi_latest_summary.dart';
 /// Talhão cujo raster NDVI deve cobrir o polígono no mapa. Sessão apenas.
 final mapNdviOverlayFieldIdProvider = StateProvider<String?>((ref) => null);
 
-/// Última imagem do talhão pedido pela rota `/map?ndvi=1`.
-final mapNdviOverlaySummaryProvider =
-    FutureProvider<NdviLatestSummary?>((ref) async {
-      final fieldId = ref.watch(mapNdviOverlayFieldIdProvider);
-      if (fieldId == null || fieldId.isEmpty) return null;
-      return ref.watch(ndviLatestLookupProvider).getLatest(fieldId);
-    });
+/// Data `yyyy-MM-dd` da cena pedida por `/map?ndvi=1&ndviDate=`.
+final mapNdviOverlayDateProvider = StateProvider<String?>((ref) => null);
+
+/// Cena do talhão pedido pela rota `/map?ndvi=1`.
+final mapNdviOverlaySummaryProvider = FutureProvider<NdviLatestSummary?>((
+  ref,
+) async {
+  final fieldId = ref.watch(mapNdviOverlayFieldIdProvider);
+  if (fieldId == null || fieldId.isEmpty) return null;
+  final lookup = ref.watch(ndviLatestLookupProvider);
+  final date = ref.watch(mapNdviOverlayDateProvider);
+  if (date != null && date.isNotEmpty) {
+    return lookup.getForDate(fieldId, date);
+  }
+  return lookup.getLatest(fieldId);
+});
 
 /// Colormap com arquivo local existente ou URL. Preview RGB não cobre o mapa.
 bool mapNdviSummaryCoversField(NdviLatestSummary? summary) {
