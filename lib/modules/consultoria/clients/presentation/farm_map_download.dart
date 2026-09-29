@@ -66,10 +66,12 @@ Future<void> downloadFarmSatelliteMap({
     return;
   }
 
+  NavigatorState? progressDialogNavigator;
   showDialog<void>(
     context: context,
     barrierDismissible: false,
     builder: (dialogContext) {
+      progressDialogNavigator = Navigator.of(dialogContext);
       return AlertDialog(
         title: const Text('Baixando mapa da fazenda'),
         content: ValueListenableBuilder<OfflinePrefetchProgress>(
@@ -96,92 +98,107 @@ Future<void> downloadFarmSatelliteMap({
     },
   );
 
-  late final OfflinePrefetchResult result;
-  try {
-    result = await cacheService.prefetchArea(
-      layerKey: layerKey,
-      urlTemplate: tileConfig.urlTemplate,
-      subdomains: tileConfig.subdomains,
-      south: plan.south,
-      west: plan.west,
-      north: plan.north,
-      east: plan.east,
-      minZoom: plan.minZoom,
-      maxZoom: plan.maxZoom,
-      headers: {'User-Agent': MapConfig.userAgent},
-      onProgress: (value) => progress.value = value,
-      shouldCancel: () => cancelRequested,
-    );
-  } on OfflineTileCacheException catch (error) {
-    if (context.mounted) Navigator.of(context).pop();
-    progress.dispose();
-    if (context.mounted) _snack(context, error.message);
-    return;
-  }
-
-  if (context.mounted) Navigator.of(context).pop();
-  progress.dispose();
-  if (!context.mounted) return;
-
-  if (!result.isComplete) {
-    _snack(
-      context,
-      result.cancelled
-          ? 'Download do mapa cancelado.'
-          : 'Download incompleto: ${result.failed} tile(s) falharam. Tente novamente.',
-    );
-    return;
-  }
-
-  final center = LatLng(
-    (plan.south + plan.north) / 2,
-    (plan.west + plan.east) / 2,
-  );
-  OfflineMapAreaConfig? existing;
-  for (final area in ref.read(offlineMapAreasProvider)) {
-    if (area.layerKey == layerKey &&
-        area.covers(
-          layerKey: layerKey,
-          lat: center.latitude,
-          lng: center.longitude,
-          zoom: plan.minZoom.toDouble(),
-        )) {
-      existing = area;
-      break;
+  void dismissProgressDialog() {
+    final nav = progressDialogNavigator;
+    if (nav != null && nav.mounted && nav.canPop()) {
+      nav.pop();
     }
   }
 
-  ref.read(offlineMapAreasProvider.notifier).updateArea(
-        existing != null
-            ? existing.mergeWithViewport(
-                south: plan.south,
-                west: plan.west,
-                north: plan.north,
-                east: plan.east,
-                minZoom: plan.minZoom.toDouble(),
-                maxZoom: plan.maxZoom.toDouble(),
-                createdAt: result.downloaded > 0
-                    ? DateTime.now()
-                    : existing.createdAt,
-              )
-            : OfflineMapAreaConfig(
-                id: 'farm:$farmId',
-                layerKey: layerKey,
-                south: plan.south,
-                west: plan.west,
-                north: plan.north,
-                east: plan.east,
-                minZoom: plan.minZoom.toDouble(),
-                maxZoom: plan.maxZoom.toDouble(),
-                createdAt: DateTime.now(),
-              ),
+  late final OfflinePrefetchResult result;
+  try {
+    try {
+      result = await cacheService.prefetchArea(
+        layerKey: layerKey,
+        urlTemplate: tileConfig.urlTemplate,
+        subdomains: tileConfig.subdomains,
+        south: plan.south,
+        west: plan.west,
+        north: plan.north,
+        east: plan.east,
+        minZoom: plan.minZoom,
+        maxZoom: plan.maxZoom,
+        headers: {'User-Agent': MapConfig.userAgent},
+        onProgress: (value) => progress.value = value,
+        shouldCancel: () => cancelRequested,
       );
+    } on OfflineTileCacheException catch (error) {
+      if (context.mounted) _snack(context, error.message);
+      return;
+    } catch (_) {
+      if (context.mounted) {
+        _snack(context, 'Falha ao baixar o mapa. Tente novamente.');
+      }
+      return;
+    }
 
-  _snack(
-    context,
-    'Mapa da fazenda baixado: ${result.downloaded} tile(s) novo(s), '
-    '${result.skipped} já existente(s).',
-  );
+    if (!result.isComplete) {
+      if (context.mounted) {
+        _snack(
+          context,
+          result.cancelled
+              ? 'Download do mapa cancelado.'
+              : 'Download incompleto: ${result.failed} tile(s) falharam. Tente novamente.',
+        );
+      }
+      return;
+    }
+
+    final center = LatLng(
+      (plan.south + plan.north) / 2,
+      (plan.west + plan.east) / 2,
+    );
+    OfflineMapAreaConfig? existing;
+    for (final area in ref.read(offlineMapAreasProvider)) {
+      if (area.layerKey == layerKey &&
+          area.covers(
+            layerKey: layerKey,
+            lat: center.latitude,
+            lng: center.longitude,
+            zoom: plan.minZoom.toDouble(),
+          )) {
+        existing = area;
+        break;
+      }
+    }
+
+    ref.read(offlineMapAreasProvider.notifier).updateArea(
+          existing != null
+              ? existing.mergeWithViewport(
+                  south: plan.south,
+                  west: plan.west,
+                  north: plan.north,
+                  east: plan.east,
+                  minZoom: plan.minZoom.toDouble(),
+                  maxZoom: plan.maxZoom.toDouble(),
+                  createdAt: result.downloaded > 0
+                      ? DateTime.now()
+                      : existing.createdAt,
+                )
+              : OfflineMapAreaConfig(
+                  id: 'farm:$farmId',
+                  layerKey: layerKey,
+                  south: plan.south,
+                  west: plan.west,
+                  north: plan.north,
+                  east: plan.east,
+                  minZoom: plan.minZoom.toDouble(),
+                  maxZoom: plan.maxZoom.toDouble(),
+                  createdAt: DateTime.now(),
+                ),
+        );
+
+    if (context.mounted) {
+      _snack(
+        context,
+        'Mapa da fazenda baixado: ${result.downloaded} tile(s) novo(s), '
+        '${result.skipped} já existente(s).',
+      );
+    }
+  } finally {
+    dismissProgressDialog();
+    progress.dispose();
+  }
 }
 
 void _snack(BuildContext context, String message) {
