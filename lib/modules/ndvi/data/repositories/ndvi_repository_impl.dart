@@ -13,6 +13,9 @@ class NdviRepositoryImpl implements INdviRepository {
   final IFieldLookup _fieldLookup;
   final NdviCachePolicy _cachePolicy;
 
+  /// Evita repetir `source: sentinel` para o mesmo Preview RGB nesta sessão.
+  final Set<String> _sentinelRetried = {};
+
   NdviRepositoryImpl(
     this._local,
     this._remote,
@@ -43,7 +46,11 @@ class NdviRepositoryImpl implements INdviRepository {
         'NDVI cache hit fieldId=$fieldId count=${cached.length}',
         tag: 'NDVI.Repository',
       );
-      return cached.map((model) => model.toEntity()).toList();
+      return _replacePlanetPreview(
+        fieldId,
+        summary,
+        cached.map((model) => model.toEntity()).toList(),
+      );
     }
 
     if (cached.isNotEmpty) {
@@ -69,8 +76,7 @@ class NdviRepositoryImpl implements INdviRepository {
     }
 
     final summary = await _fieldLookup.findById(fieldId);
-    if (summary == null ||
-        (summary.bbox == null && summary.geometry == null)) {
+    if (summary == null || (summary.bbox == null && summary.geometry == null)) {
       AppLogger.warning(
         'NDVI indisponivel: talhao sem bbox/geometry fieldId=$fieldId',
         tag: 'NDVI.Repository',
@@ -96,12 +102,67 @@ class NdviRepositoryImpl implements INdviRepository {
     return image;
   }
 
+  /// Preview RGB fica no disco, mas não cobre o mapa. Pede Sentinel e grava
+  /// o PNG no mesmo `Documents/ndvi`.
+  Future<List<NdviImage>> _replacePlanetPreview(
+    String fieldId,
+    FieldSummary? summary,
+    List<NdviImage> images,
+  ) async {
+    if (images.isEmpty ||
+        summary == null ||
+        (summary.bbox == null && summary.geometry == null)) {
+      return images;
+    }
+
+    final latest = _firstRenderable(images);
+    if (ndviIsColormapSource(latest.source)) return images;
+
+    final dateKey = ndviImageDateKey(latest.imageDate);
+    final attemptKey = '$fieldId|$dateKey';
+    if (_sentinelRetried.contains(attemptKey)) return images;
+    _sentinelRetried.add(attemptKey);
+
+    try {
+      final result = await _remote.fetchNdvi(
+        fieldId: fieldId,
+        bbox: summary.bbox,
+        geometry: summary.geometry,
+        date: dateKey,
+        source: 'sentinel',
+      );
+      final image = result?.image?.toEntity();
+      if (image == null) return images;
+      await _local.save(image);
+      final kept = [
+        for (final item in images)
+          if (ndviImageDateKey(item.imageDate) != dateKey) item,
+      ];
+      kept.add(image);
+      kept.sort((a, b) => b.imageDate.compareTo(a.imageDate));
+      return kept;
+    } catch (error) {
+      AppLogger.warning(
+        'NDVI sentinel retry falhou fieldId=$fieldId',
+        tag: 'NDVI.Repository',
+        error: error,
+      );
+      return images;
+    }
+  }
+
+  NdviImage _firstRenderable(List<NdviImage> images) {
+    for (final image in images) {
+      if (ndviImageHasRenderableData(image)) return image;
+    }
+    return images.first;
+  }
+
   Future<List<NdviImage>> _refreshIndex(
     String fieldId,
     FieldSummary? summary,
   ) async {
-    if (summary == null ||
-        (summary.bbox == null && summary.geometry == null)) {
+    if (summary == null || (summary.bbox == null && summary.geometry == null)) {
       AppLogger.warning(
         'NDVI indisponivel: talhao sem bbox/geometry fieldId=$fieldId',
         tag: 'NDVI.Repository',
@@ -132,7 +193,9 @@ class NdviRepositoryImpl implements INdviRepository {
       final existing = await _local.getByFieldIdAndDate(fieldId, date);
       if (existing != null && ndviModelHasRenderableData(existing)) continue;
 
-      await _local.save(_dateStub(fieldId: fieldId, imageDate: date, source: source));
+      await _local.save(
+        _dateStub(fieldId: fieldId, imageDate: date, source: source),
+      );
     }
 
     await _cachePolicy.markSynced(fieldId, ndviOriginFingerprint(summary));
@@ -177,7 +240,10 @@ class _NoOpNdviCachePolicy implements NdviCachePolicy {
   Future<void> markSynced(String fieldId, String originFingerprint) async {}
 
   @override
-  Future<bool> shouldInvalidate(String fieldId, String originFingerprint) async {
+  Future<bool> shouldInvalidate(
+    String fieldId,
+    String originFingerprint,
+  ) async {
     return false;
   }
 }
