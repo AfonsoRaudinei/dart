@@ -5,6 +5,7 @@ import 'package:soloforte_app/modules/ndvi/data/datasources/ndvi_remote_datasour
 import 'package:soloforte_app/modules/ndvi/data/models/ndvi_image_model.dart';
 import 'package:soloforte_app/modules/ndvi/data/repositories/ndvi_repository_impl.dart';
 import 'package:soloforte_app/modules/ndvi/domain/entities/ndvi_image.dart';
+import 'package:soloforte_app/modules/ndvi/domain/ndvi_image_utils.dart';
 
 class FakeLocalDataSource implements NdviLocalDatasource {
   NdviImageModel? lastSaved;
@@ -53,6 +54,7 @@ class FakeRemoteDataSource implements NdviRemoteDatasource {
   bool called = false;
   bool throwOnFetch = false;
   String? lastDate;
+  String? lastSource;
 
   @override
   Future<NdviRemoteFetchResult?> fetchNdvi({
@@ -66,6 +68,7 @@ class FakeRemoteDataSource implements NdviRemoteDatasource {
     lastBbox = bbox;
     lastGeometry = geometry;
     lastDate = date;
+    lastSource = source;
     if (throwOnFetch) throw Exception('remote unavailable');
     if (nextResult != null) return nextResult;
     if (nextReturn != null) {
@@ -297,6 +300,60 @@ void main() {
 
       expect(result.single.id, 'IMG_CACHE');
       expect(remote.called, isFalse);
+    },
+  );
+
+  test(
+    'cache planet_preview pede sentinel e grava no mesmo índice',
+    () async {
+      const fieldId = 'F1';
+      lookup.nextReturn = const FieldSummary(
+        id: fieldId,
+        name: 'Teste',
+        farmId: 'FAZ1',
+        bbox: [-50.0, -20.0, -49.0, -19.0],
+      );
+      local.nextList = const [
+        NdviImageModel(
+          id: 'PLANET',
+          fieldId: fieldId,
+          imageDate: '2026-09-12',
+          ndviMin: 0,
+          ndviMax: 0,
+          ndviMean: 0,
+          source: 'planet_preview',
+          fetchedAt: '2026-09-12T00:00:00',
+          syncStatus: 0,
+          localPath: '/tmp/planet.png',
+        ),
+      ];
+      remote.nextReturn = const NdviImageModel(
+        id: 'SENTINEL',
+        fieldId: fieldId,
+        imageDate: '2026-09-12',
+        ndviMin: 0.1,
+        ndviMax: 0.8,
+        ndviMean: 0.62,
+        source: 'sentinel',
+        fetchedAt: '2026-09-27T00:00:00',
+        syncStatus: 0,
+        localPath: '/tmp/ndvi.png',
+      );
+
+      final result = await repository.getByFieldId(fieldId);
+
+      expect(remote.called, isTrue);
+      expect(remote.lastSource, 'sentinel');
+      expect(remote.lastDate, '2026-09-12');
+      expect(result.single.source, 'sentinel');
+      expect(ndviIsColormapSource(result.single.source), isTrue);
+      expect(local.lastSaved?.localPath, '/tmp/ndvi.png');
+
+      remote.called = false;
+      local.nextList = [local.lastSaved!];
+      final again = await repository.getByFieldId(fieldId);
+      expect(remote.called, isFalse);
+      expect(again.single.source, 'sentinel');
     },
   );
 
