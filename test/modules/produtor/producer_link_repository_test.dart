@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:soloforte_app/modules/produtor/data/producer_link_models.dart';
 import 'package:soloforte_app/modules/produtor/data/producer_link_repository.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -89,5 +90,55 @@ void main() {
 
       expect(report.title, 'Relatório técnico');
     });
+  });
+
+  test('offline mantém o vínculo e a fazenda salva do produtor', () {
+    final now = DateTime.utc(2026, 6, 1);
+    final link = ProducerClientLink(
+      id: 'link-1',
+      consultorUserId: 'consultor-1',
+      clientId: 'produtor-1',
+      producerUserId: 'produtor-1',
+      status: 'active',
+      expiresAt: now.add(const Duration(days: 7)),
+      usedAt: now,
+      createdAt: now,
+      updatedAt: now,
+    );
+
+    final client = ProducerLinkRepository.linkedClientFromLocalRows(
+      link: link,
+      clientRow: {
+        'id': 'produtor-1',
+        'nome': 'Sítio Boa Vista',
+        'telefone': '62999990000',
+        'cidade': 'Rio Verde',
+        'uf': 'GO',
+      },
+      farmRows: [
+        {
+          'id': 'farm-1',
+          'nome': 'Fazenda Norte',
+          'municipio': 'Rio Verde',
+          'uf': 'GO',
+          'area_total': 120.5,
+        },
+      ],
+      fieldRows: [
+        {
+          'id': 'field-1',
+          'fazenda_id': 'farm-1',
+          'nome': 'Talhão A',
+          'area_produtiva': 40,
+        },
+      ],
+    );
+
+    expect(client.link.clientId, 'produtor-1');
+    expect(client.name, 'Sítio Boa Vista');
+    expect(client.farms, hasLength(1));
+    expect(client.farms.single.name, 'Fazenda Norte');
+    expect(client.farms.single.fields.single.name, 'Talhão A');
+    expect(client.farms.single.fields.single.areaHa, 40);
   });
 }
