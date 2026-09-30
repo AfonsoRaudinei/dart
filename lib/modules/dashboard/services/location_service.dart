@@ -9,6 +9,35 @@ import 'package:soloforte_app/modules/dashboard/domain/location_settings.dart';
 typedef PositionStreamFactory =
     Stream<Position> Function(LocationSettings locationSettings);
 
+/// Fix atual, ou a última posição conhecida quando o GNSS demora (offline).
+@visibleForTesting
+Future<UserLocationFix?> resolveCurrentOrLastKnown({
+  required Future<Position> Function() readCurrent,
+  required Future<Position?> Function() readLastKnown,
+  Duration timeout = const Duration(seconds: 10),
+}) async {
+  try {
+    final position = await readCurrent().timeout(timeout);
+    return userLocationFixFromPosition(position);
+  } catch (_) {
+    try {
+      return userLocationFixFromPosition(await readLastKnown());
+    } catch (_) {
+      return null;
+    }
+  }
+}
+
+@visibleForTesting
+UserLocationFix? userLocationFixFromPosition(Position? position) {
+  if (position == null) return null;
+  return UserLocationFix(
+    position: LatLng(position.latitude, position.longitude),
+    accuracyM: position.accuracy,
+    headingDeg: position.heading >= 0 ? position.heading : null,
+  );
+}
+
 /// 🌍 SERVIÇO DE LOCALIZAÇÃO GPS - STREAM REAL
 ///
 /// Responsabilidades:
@@ -46,7 +75,9 @@ class LocationService {
   Stream<UserLocationFix> get locationStream {
     // Criar stream apenas uma vez
     if (_controller == null || _controller!.isClosed) {
-      _controller = StreamController<UserLocationFix>.broadcast(onCancel: _onCancel);
+      _controller = StreamController<UserLocationFix>.broadcast(
+        onCancel: _onCancel,
+      );
       _startListening();
     }
 
@@ -54,26 +85,27 @@ class LocationService {
   }
 
   void _startListening() {
-    _subscription = _positionStreamFactory(soloforteGnssLocationSettings).listen(
-      (Position position) {
-        if (_controller != null && !_controller!.isClosed) {
-          _controller!.add(
-            UserLocationFix(
-              position: LatLng(position.latitude, position.longitude),
-              accuracyM: position.accuracy,
-              headingDeg: position.heading >= 0 ? position.heading : null,
-            ),
-          );
-        }
-      },
-      onError: (error) {
-        // Emitir erro no stream (widget pode tratar)
-        if (_controller != null && !_controller!.isClosed) {
-          _controller!.addError(error);
-        }
-      },
-      cancelOnError: false, // Continuar ouvindo mesmo após erro
-    );
+    _subscription = _positionStreamFactory(soloforteGnssLocationSettings)
+        .listen(
+          (Position position) {
+            if (_controller != null && !_controller!.isClosed) {
+              _controller!.add(
+                UserLocationFix(
+                  position: LatLng(position.latitude, position.longitude),
+                  accuracyM: position.accuracy,
+                  headingDeg: position.heading >= 0 ? position.heading : null,
+                ),
+              );
+            }
+          },
+          onError: (error) {
+            // Emitir erro no stream (widget pode tratar)
+            if (_controller != null && !_controller!.isClosed) {
+              _controller!.addError(error);
+            }
+          },
+          cancelOnError: false, // Continuar ouvindo mesmo após erro
+        );
   }
 
   void _onCancel() {
@@ -115,18 +147,12 @@ class LocationService {
   /// Obter posição atual uma vez (sem stream)
   /// Útil para centralizar mapa na primeira vez
   Future<UserLocationFix?> getCurrentPosition() async {
-    try {
-      final position = await Geolocator.getCurrentPosition(
+    return resolveCurrentOrLastKnown(
+      readCurrent: () => Geolocator.getCurrentPosition(
         locationSettings: soloforteGnssLocationSettings,
-      ).timeout(const Duration(seconds: 10));
-      return UserLocationFix(
-        position: LatLng(position.latitude, position.longitude),
-        accuracyM: position.accuracy,
-        headingDeg: position.heading >= 0 ? position.heading : null,
-      );
-    } catch (e) {
-      return null;
-    }
+      ),
+      readLastKnown: Geolocator.getLastKnownPosition,
+    );
   }
 
   void dispose() {
