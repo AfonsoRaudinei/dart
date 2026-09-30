@@ -16,6 +16,13 @@ import '../../../../modules/dashboard/providers/location_providers.dart';
 import '../../../../modules/dashboard/services/location_service.dart';
 import '../../../../modules/drawing/domain/models/drawing_models.dart';
 
+/// Produtor com papel conhecido encaixa nos talhões. Sem usuário, o mapa
+/// segue o GPS — offline o JWT pode estar ausente e a câmera não pode esperar.
+@visibleForTesting
+bool viewportUsesProducerStrategy(User? user) {
+  return user?.userMetadata?['role'] == 'produtor';
+}
+
 class MapViewportController {
   MapViewportController._();
 
@@ -50,15 +57,7 @@ class MapViewportController {
     }
 
     final user = Supabase.instance.client.auth.currentUser;
-    // 🔒 Gate 2: Role Ready
-    if (user == null) {
-      ref.read(viewportStateProvider.notifier).state =
-          InitialViewportState.waitingForData;
-      return;
-    }
-
-    final role = user.userMetadata?['role'] as String?;
-    final isProducer = role == 'produtor';
+    final isProducer = viewportUsesProducerStrategy(user);
 
     // 🔒 Gate 3: Decisão de Estratégia
     if (isProducer) {
