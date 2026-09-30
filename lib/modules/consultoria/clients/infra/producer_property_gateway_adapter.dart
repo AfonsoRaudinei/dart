@@ -1,4 +1,5 @@
 import 'package:soloforte_app/core/contracts/i_producer_property_gateway.dart';
+import 'package:soloforte_app/core/session/local_session_identity.dart';
 import 'package:soloforte_app/modules/consultoria/clients/data/clients_repository.dart';
 import 'package:soloforte_app/modules/consultoria/clients/domain/agronomic_models.dart';
 import 'package:soloforte_app/modules/consultoria/clients/domain/client.dart';
@@ -106,6 +107,12 @@ class ProducerPropertyGatewayAdapter implements IProducerPropertyGateway {
       _fieldRepository.deleteField(fieldId);
 
   Future<Client> _ensureOwnClient() async {
+    final localUserId = LocalSessionIdentity.resolveUserId();
+    if (localUserId.isNotEmpty) {
+      final existing = await _clientsRepository.getClientById(localUserId);
+      if (existing != null) return existing;
+    }
+
     final user = _currentUser();
     final existing = await _clientsRepository.getClientById(user.id);
     if (existing != null) return existing;

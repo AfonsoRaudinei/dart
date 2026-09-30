@@ -145,12 +145,59 @@ void main() {
     });
   });
 
+  group('resolveCurrentOrLastKnown', () {
+    Position sample(double lat) => Position(
+      latitude: lat,
+      longitude: -48,
+      timestamp: DateTime.utc(2026, 7, 6),
+      accuracy: 6,
+      altitude: 0,
+      altitudeAccuracy: 0,
+      heading: 90,
+      headingAccuracy: 0,
+      speed: 0,
+      speedAccuracy: 0,
+    );
+
+    test('usa o fix atual quando o GNSS responde', () async {
+      final fix = await resolveCurrentOrLastKnown(
+        readCurrent: () async => sample(-15),
+        readLastKnown: () async => sample(-1),
+      );
+
+      expect(fix?.position, const LatLng(-15, -48));
+      expect(fix?.headingDeg, 90);
+    });
+
+    test(
+      'cai para a última posição quando o fix atual estoura o tempo',
+      () async {
+        final fix = await resolveCurrentOrLastKnown(
+          readCurrent: () => Future<Position>.delayed(
+            const Duration(seconds: 2),
+            () => sample(-15),
+          ),
+          readLastKnown: () async => sample(-16),
+          timeout: const Duration(milliseconds: 20),
+        );
+
+        expect(fix?.position, const LatLng(-16, -48));
+      },
+    );
+
+    test('retorna null quando não há fix nem última posição', () async {
+      final fix = await resolveCurrentOrLastKnown(
+        readCurrent: () => Future<Position>.error(TimeoutException('gps')),
+        readLastKnown: () async => null,
+      );
+
+      expect(fix, isNull);
+    });
+  });
+
   group('UserLocationFix', () {
     test('effectiveAccuracyM usa fallback 12m quando accuracy inválida', () {
-      const fix = UserLocationFix(
-        position: LatLng(-10, -48),
-        accuracyM: 0,
-      );
+      const fix = UserLocationFix(position: LatLng(-10, -48), accuracyM: 0);
       expect(fix.effectiveAccuracyM, 12.0);
     });
 

@@ -647,7 +647,7 @@ class _MapStatusIndicatorState extends ConsumerState<_MapStatusIndicator> {
   }
 
   String _statusLabel({required bool isOnline, required bool isRadarEnabled}) {
-    if (!isOnline) return 'Sem conexão';
+    if (!isOnline) return 'Sem internet';
     if (isRadarEnabled) return 'Online · chuva no mapa';
     return 'Online';
   }

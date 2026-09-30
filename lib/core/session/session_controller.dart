@@ -11,6 +11,7 @@ import '../database/database_helper.dart';
 import '../services/sync_orchestrator.dart';
 import 'local_session_identity.dart';
 import 'pending_signup_role_store.dart';
+import 'session_auth_decision.dart';
 import 'profile_role_resolver.dart';
 import 'user_role.dart';
 import 'session_models.dart';
@@ -77,16 +78,22 @@ class SessionController extends _$SessionController {
     _authSubscription?.cancel();
     _authSubscription = Supabase.instance.client.auth.onAuthStateChange.listen(
       (data) {
+        final sessionUser = data.session?.user;
+        final resolution = resolveAuthStreamEvent(
+          event: data.event,
+          sessionUser: sessionUser,
+          previous: state,
+        );
+
         // P3.2 — estado preciso para recovery
         if (data.event == AuthChangeEvent.passwordRecovery) {
-          final user = data.session?.user;
-          if (user != null) {
-            state = SessionPasswordRecovery(user);
+          if (resolution.nextState != null) {
+            state = resolution.nextState!;
           }
           return;
         }
 
-        final user = data.session?.user;
+        final user = sessionUser;
         if (user != null) {
           LocalSessionIdentity.remember(user.id);
           state = SessionAuthenticated(user);
@@ -129,20 +136,46 @@ class SessionController extends _$SessionController {
           // Se não há user na sessão inicial, confirma estado público.
           // SessionUnknown→SessionUnknown não notifica listeners (Riverpod equality),
           // causando spinner infinito no AppShell / hold branco em fresh install.
-          if (state is! SessionAuthenticated) {
+          if (resolution.nextState is SessionPublic) {
             LocalSessionIdentity.markSessionPublic();
             state = const SessionPublic();
           }
           return;
         }
 
-        LocalSessionIdentity.markSessionPublic();
-        state = const SessionPublic();
+        if (resolution.identity == SessionIdentityEffect.markPublic) {
+          LocalSessionIdentity.markSessionPublic();
+        }
+        if (resolution.nextState != null) {
+          state = resolution.nextState!;
+        }
       },
       onError: (error) {
-        // Erro de stream ≠ logout explícito: não apagar lastKnown persistido.
-        LocalSessionIdentity.markSessionPublic();
-        state = const SessionPublic();
+        // Refresh offline emite AuthRetryableFetchException e mantém currentUser.
+        // Isso não é logout: derrubar para SessionPublic manda o app ao login.
+        User? currentUser;
+        try {
+          currentUser = Supabase.instance.client.auth.currentUser;
+        } catch (_) {}
+        final resolution = resolveAuthStreamError(
+          error: error,
+          currentUser: currentUser,
+          previous: state,
+        );
+        switch (resolution.identity) {
+          case SessionIdentityEffect.remember:
+            final id = currentUser?.id.trim() ?? '';
+            if (id.isNotEmpty) LocalSessionIdentity.remember(id);
+          case SessionIdentityEffect.markPublic:
+            LocalSessionIdentity.markSessionPublic();
+          case SessionIdentityEffect.clear:
+            resetHydrateAfterAuth();
+            LocalSessionIdentity.clear();
+          case SessionIdentityEffect.none:
+            break;
+        }
+        final next = resolution.nextState;
+        if (next != null) state = next;
       },
     );
   }

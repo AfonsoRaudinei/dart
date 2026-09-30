@@ -88,7 +88,9 @@ class ProducerLinkRepository implements ProducerLinkReader {
   String _authenticatedUserId() {
     final userId = _client.auth.currentUser?.id.trim() ?? '';
     if (userId.isEmpty) {
-      throw Exception('Sessão expirada. Faça login novamente para gerar o token.');
+      throw Exception(
+        'Sessão expirada. Faça login novamente para gerar o token.',
+      );
     }
     return userId;
   }
@@ -165,7 +167,8 @@ class ProducerLinkRepository implements ProducerLinkReader {
       await _removeStaleCachedProducerLinks(userId, links);
       return links.map((link) => link.clientId).toList(growable: false);
     } catch (_) {
-      return const [];
+      final cached = await _loadCachedActiveLinks(userId);
+      return cached.map((link) => link.clientId).toList(growable: false);
     }
   }
 
@@ -192,6 +195,16 @@ class ProducerLinkRepository implements ProducerLinkReader {
   }
 
   Future<ProducerLinkedClient?> _loadLinkedClient(
+    ProducerClientLink link,
+  ) async {
+    try {
+      return await _loadLinkedClientRemote(link);
+    } catch (_) {
+      return _loadLinkedClientLocal(link);
+    }
+  }
+
+  Future<ProducerLinkedClient?> _loadLinkedClientRemote(
     ProducerClientLink link,
   ) async {
     final clientRows = await _client
@@ -241,6 +254,95 @@ class ProducerLinkRepository implements ProducerLinkReader {
       );
     }
     return farms;
+  }
+
+  Future<ProducerLinkedClient> _loadLinkedClientLocal(
+    ProducerClientLink link,
+  ) async {
+    final userId = _currentUserId();
+    final db = await DatabaseHelper.instance.database;
+    final clientRows = await db.query(
+      'clients',
+      where: 'id = ? AND user_id = ? AND deleted_at IS NULL',
+      whereArgs: [link.clientId, userId],
+      limit: 1,
+    );
+    final farmRows = await db.query(
+      'farms',
+      where: 'cliente_id = ? AND user_id = ? AND deleted_at IS NULL',
+      whereArgs: [link.clientId, userId],
+      orderBy: 'nome',
+    );
+    final fieldRows = <Map<String, Object?>>[];
+    for (final farm in farmRows) {
+      final farmId = farm['id'] as String?;
+      if (farmId == null || farmId.isEmpty) continue;
+      fieldRows.addAll(
+        await db.query(
+          'fields',
+          where: 'fazenda_id = ? AND user_id = ? AND deleted_at IS NULL',
+          whereArgs: [farmId, userId],
+          orderBy: 'nome',
+        ),
+      );
+    }
+    return linkedClientFromLocalRows(
+      link: link,
+      clientRow: clientRows.isEmpty ? null : clientRows.first,
+      farmRows: farmRows,
+      fieldRows: fieldRows,
+    );
+  }
+
+  /// Vínculo do produtor com a fazenda já salva no SQLite, sem rede.
+  @visibleForTesting
+  static ProducerLinkedClient linkedClientFromLocalRows({
+    required ProducerClientLink link,
+    Map<String, Object?>? clientRow,
+    List<Map<String, Object?>> farmRows = const [],
+    List<Map<String, Object?>> fieldRows = const [],
+  }) {
+    final name = (clientRow?['nome'] as String?)?.trim();
+    final farms = <ProducerLinkedFarm>[];
+    for (final farm in farmRows) {
+      final farmId = farm['id'] as String?;
+      if (farmId == null || farmId.isEmpty) continue;
+      final fields = fieldRows
+          .where((field) => field['fazenda_id'] == farmId)
+          .map(
+            (field) => ProducerLinkedField(
+              id: field['id'] as String,
+              name: (field['nome'] as String?)?.trim().isNotEmpty == true
+                  ? (field['nome'] as String).trim()
+                  : 'Talhão',
+              areaHa: _asDouble(field['area_produtiva']),
+            ),
+          )
+          .toList(growable: false);
+      farms.add(
+        ProducerLinkedFarm(
+          id: farmId,
+          name: (farm['nome'] as String?)?.trim().isNotEmpty == true
+              ? (farm['nome'] as String).trim()
+              : 'Fazenda',
+          city: farm['municipio'] as String?,
+          state: farm['uf'] as String?,
+          areaHa: _asDouble(farm['area_total']),
+          fields: fields,
+        ),
+      );
+    }
+
+    return ProducerLinkedClient(
+      link: link,
+      name: (name == null || name.isEmpty) ? 'Produtor' : name,
+      phone: clientRow?['telefone'] as String?,
+      email: clientRow?['email'] as String?,
+      city: clientRow?['cidade'] as String?,
+      state: clientRow?['uf'] as String?,
+      farms: farms,
+      reports: const [],
+    );
   }
 
   Future<List<ProducerLinkedField>> _loadFields(String farmId) async {
