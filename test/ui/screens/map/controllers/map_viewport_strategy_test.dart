@@ -1,4 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:latlong2/latlong.dart';
+import 'package:soloforte_app/modules/consultoria/clients/domain/agronomic_models.dart';
 import 'package:soloforte_app/ui/screens/map/controllers/map_viewport_controller.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -29,5 +31,68 @@ void main() {
     })!;
 
     expect(viewportUsesProducerStrategy(user), isFalse);
+  });
+
+  test('produtor com polígono salvo abre na fazenda', () {
+    expect(
+      resolveOfflineCamera(
+        isProducer: true,
+        hasStoredFarmPoints: true,
+        fieldsLoading: false,
+        gpsFixAvailable: false,
+      ),
+      OfflineCameraChoice.storedFarm,
+    );
+  });
+
+  test('sem GPS a coordenada da fazenda salva ainda vale', () {
+    expect(
+      resolveOfflineCamera(
+        isProducer: false,
+        hasStoredFarmPoints: true,
+        fieldsLoading: false,
+        gpsFixAvailable: false,
+      ),
+      OfflineCameraChoice.storedFarm,
+    );
+  });
+
+  test('consultor com GPS não substitui o fix pela fazenda', () {
+    expect(
+      resolveOfflineCamera(
+        isProducer: false,
+        hasStoredFarmPoints: true,
+        fieldsLoading: false,
+        gpsFixAvailable: true,
+      ),
+      OfflineCameraChoice.gps,
+    );
+  });
+
+  test('polígono local vira pontos da câmera', () {
+    final fields = [
+      Talhao(
+        id: 'talhao-1',
+        name: 'Talhão 1',
+        areaHa: 10,
+        crop: '',
+        harvest: '',
+        geometry: {
+          'type': 'Polygon',
+          'coordinates': [
+            [
+              [-48.0, -15.0],
+              [-48.1, -15.0],
+              [-48.1, -15.1],
+              [-48.0, -15.0],
+            ],
+          ],
+        },
+      ),
+    ];
+
+    final points = polygonPointsFromFields(fields);
+    expect(points, isNotEmpty);
+    expect(points.first, const LatLng(-15.0, -48.0));
   });
 }

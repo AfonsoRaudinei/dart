@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/state/map_ui_providers.dart';
+import '../../../../modules/consultoria/clients/domain/agronomic_models.dart';
 import '../../../../modules/consultoria/clients/presentation/providers/field_providers.dart';
 import '../../../../modules/consultoria/services/talhao_map_adapter.dart';
 import '../../../../modules/dashboard/domain/location_state.dart';
@@ -17,10 +18,42 @@ import '../../../../modules/dashboard/services/location_service.dart';
 import '../../../../modules/drawing/domain/models/drawing_models.dart';
 
 /// Produtor com papel conhecido encaixa nos talhões. Sem usuário, o mapa
-/// segue o GPS — offline o JWT pode estar ausente e a câmera não pode esperar.
+/// segue o GPS — e, se o fix não chega, as coordenadas já salvas da fazenda.
 @visibleForTesting
 bool viewportUsesProducerStrategy(User? user) {
   return user?.userMetadata?['role'] == 'produtor';
+}
+
+/// Pontos do polígono já persistido em `fields.bordadura_geo`.
+@visibleForTesting
+List<LatLng> polygonPointsFromFields(List<Talhao>? fields) {
+  if (fields == null) return const [];
+  final points = <LatLng>[];
+  for (final field in fields) {
+    points.addAll(TalhaoMapAdapter.toPolygon(field).points);
+  }
+  return points;
+}
+
+enum OfflineCameraChoice { storedFarm, gps, wait }
+
+/// Produtor abre na fazenda salva. Sem fix GNSS, a fazenda do produtor
+/// ainda é a coordenada — o GPS só entra quando não há polígono local.
+@visibleForTesting
+OfflineCameraChoice resolveOfflineCamera({
+  required bool isProducer,
+  required bool hasStoredFarmPoints,
+  required bool fieldsLoading,
+  required bool gpsFixAvailable,
+}) {
+  if (isProducer && hasStoredFarmPoints) {
+    return OfflineCameraChoice.storedFarm;
+  }
+  if (isProducer && fieldsLoading) return OfflineCameraChoice.wait;
+  if (gpsFixAvailable) return OfflineCameraChoice.gps;
+  if (hasStoredFarmPoints) return OfflineCameraChoice.storedFarm;
+  if (fieldsLoading) return OfflineCameraChoice.wait;
+  return OfflineCameraChoice.gps;
 }
 
 class MapViewportController {
@@ -29,7 +62,8 @@ class MapViewportController {
   /// Aplica o viewport inicial do mapa.
   ///
   /// Estratégia A (produtor): encaixa câmera nos bounds dos talhões.
-  /// Estratégia B (consumidor): move câmera para posição GPS.
+  /// Estratégia B (consumidor): move câmera para posição GPS e, sem fix,
+  /// usa o polígono da fazenda já salvo no aparelho.
   ///
   /// Requer [isMapReady] e [isMounted] como guards de ciclo de vida,
   /// pois o método é assíncrono e pode executar após dispose.
@@ -39,17 +73,14 @@ class MapViewportController {
     required bool isMapReady,
     required bool isMounted,
   }) async {
-    // 🛡 LIFECYCLE GUARD: método async pode executar após dispose.
     if (!isMounted) return;
 
-    // 🔒 Gate 0: Se já aplicado ou abortado, TERMINAR IMEDIATAMENTE.
     final vp = ref.read(viewportStateProvider);
     if (vp == InitialViewportState.applied ||
         vp == InitialViewportState.aborted) {
       return;
     }
 
-    // 🔒 Gate 1: Map Ready
     if (!isMapReady) {
       ref.read(viewportStateProvider.notifier).state =
           InitialViewportState.waitingForMap;
@@ -58,66 +89,60 @@ class MapViewportController {
 
     final user = Supabase.instance.client.auth.currentUser;
     final isProducer = viewportUsesProducerStrategy(user);
+    final fieldsState = ref.read(mapFieldsProvider);
+    final farmPoints = polygonPointsFromFields(fieldsState.valueOrNull);
+    final choice = resolveOfflineCamera(
+      isProducer: isProducer,
+      hasStoredFarmPoints: farmPoints.isNotEmpty,
+      fieldsLoading: fieldsState.isLoading,
+      gpsFixAvailable: true,
+    );
 
-    // 🔒 Gate 3: Decisão de Estratégia
-    if (isProducer) {
-      // 🚜 ESTRATÉGIA PRODUTOR
-      final fieldsState = ref.read(mapFieldsProvider);
-
-      if (fieldsState.isLoading) {
-        ref.read(viewportStateProvider.notifier).state =
-            InitialViewportState.waitingForData;
-        return;
-      }
-
-      if (fieldsState.hasError ||
-          !fieldsState.hasValue ||
-          fieldsState.value == null ||
-          fieldsState.value!.isEmpty) {
-        // Sem talhão disponível no primeiro acesso do produtor: usar GPS.
-        await _applyGpsViewport(
-          ref: ref,
-          mapController: mapController,
-          isMounted: isMounted,
-        );
-        return;
-      }
-
-      // Sucesso: Aplicar Viewport
-      final fields = fieldsState.value!;
-      final allPoints = fields
-          .expand((f) => TalhaoMapAdapter.toPolygon(f).points)
-          .toList();
-
-      if (allPoints.isNotEmpty) {
-        final bounds = LatLngBounds.fromPoints(allPoints);
-        try {
-          mapController.fitCamera(
-            CameraFit.bounds(bounds: bounds, padding: const EdgeInsets.all(50)),
-          );
-          ref.read(viewportStateProvider.notifier).state =
-              InitialViewportState.applied; // ✅ FINALIZADO
-        } catch (_) {
-          await _applyGpsViewport(
-            ref: ref,
-            mapController: mapController,
-            isMounted: isMounted,
-          );
-        }
-      } else {
-        await _applyGpsViewport(
-          ref: ref,
-          mapController: mapController,
-          isMounted: isMounted,
-        );
-      }
-    } else {
-      // 👤 ESTRATÉGIA CONSUMIDOR (GPS)
-      await _applyGpsViewport(
+    if (choice == OfflineCameraChoice.storedFarm) {
+      if (_fitFarmPoints(
         ref: ref,
         mapController: mapController,
         isMounted: isMounted,
+        points: farmPoints,
+      )) {
+        return;
+      }
+    }
+
+    if (choice == OfflineCameraChoice.wait) {
+      ref.read(viewportStateProvider.notifier).state =
+          InitialViewportState.waitingForData;
+      return;
+    }
+
+    await _applyGpsViewport(
+      ref: ref,
+      mapController: mapController,
+      isMounted: isMounted,
+      farmPoints: farmPoints,
+      fieldsLoading: fieldsState.isLoading,
+    );
+  }
+
+  static bool _fitFarmPoints({
+    required WidgetRef ref,
+    required MapController mapController,
+    required bool isMounted,
+    required List<LatLng> points,
+  }) {
+    if (!isMounted || points.isEmpty) return false;
+    try {
+      mapController.fitCamera(
+        CameraFit.bounds(
+          bounds: LatLngBounds.fromPoints(points),
+          padding: const EdgeInsets.all(50),
+        ),
       );
+      ref.read(viewportStateProvider.notifier).state =
+          InitialViewportState.applied;
+      return true;
+    } catch (_) {
+      return false;
     }
   }
 
@@ -125,11 +150,12 @@ class MapViewportController {
     required WidgetRef ref,
     required MapController mapController,
     required bool isMounted,
+    required List<LatLng> farmPoints,
+    required bool fieldsLoading,
   }) async {
     final locationState = ref.read(locationStateProvider);
 
     if (locationState == LocationState.checking) {
-      // Ainda verificando → Aguardar
       ref.read(viewportStateProvider.notifier).state =
           InitialViewportState.waitingForData;
       return;
@@ -137,7 +163,14 @@ class MapViewportController {
 
     if (locationState == LocationState.permissionDenied ||
         locationState == LocationState.serviceDisabled) {
-      // Erro permanente → Abortar (evita loop)
+      if (_fitFarmPoints(
+        ref: ref,
+        mapController: mapController,
+        isMounted: isMounted,
+        points: farmPoints,
+      )) {
+        return;
+      }
       ref.read(viewportStateProvider.notifier).state =
           InitialViewportState.aborted;
       return;
@@ -150,12 +183,28 @@ class MapViewportController {
       if (position != null && isMounted) {
         mapController.move(position.position, 16.0);
         ref.read(viewportStateProvider.notifier).state =
-            InitialViewportState.applied; // ✅ FINALIZADO
-      } else if (isMounted) {
-        // Disponível mas posição nula? Aguardar.
-        ref.read(viewportStateProvider.notifier).state =
-            InitialViewportState.waitingForData;
+            InitialViewportState.applied;
+        return;
       }
+
+      if (!isMounted) return;
+      final fallback = resolveOfflineCamera(
+        isProducer: false,
+        hasStoredFarmPoints: farmPoints.isNotEmpty,
+        fieldsLoading: fieldsLoading,
+        gpsFixAvailable: false,
+      );
+      if (fallback == OfflineCameraChoice.storedFarm &&
+          _fitFarmPoints(
+            ref: ref,
+            mapController: mapController,
+            isMounted: isMounted,
+            points: farmPoints,
+          )) {
+        return;
+      }
+      ref.read(viewportStateProvider.notifier).state =
+          InitialViewportState.waitingForData;
     }
   }
 
