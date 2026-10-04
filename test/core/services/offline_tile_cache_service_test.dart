@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter_test/flutter_test.dart';
@@ -106,6 +107,129 @@ void main() {
         maxInFlight,
         lessThanOrEqualTo(OfflineTileCacheService.prefetchConcurrency),
       );
+    });
+  });
+
+  group('OfflineTileCacheService.prefetchArea resume', () {
+    const south = -10.0;
+    const west = -50.0;
+    const north = -9.9;
+    const east = -49.9;
+    const zoom = 0;
+
+    test('GET que nunca completa respeita timeout e não trava', () async {
+      installPathProviderTestBindings();
+      final started = DateTime.now();
+      final result = await service.prefetchArea(
+        layerKey: 'test-timeout-${started.microsecondsSinceEpoch}',
+        urlTemplate: 'https://example.test/{z}/{x}/{y}.png',
+        subdomains: const [],
+        south: south,
+        west: west,
+        north: north,
+        east: east,
+        minZoom: zoom,
+        maxZoom: zoom,
+        forceRefresh: true,
+        requestTimeout: const Duration(milliseconds: 40),
+        pausePoll: const Duration(milliseconds: 5),
+        tileHttpGet: (client, uri, headers) => Completer<http.Response>().future,
+      );
+
+      expect(DateTime.now().difference(started).inSeconds, lessThan(3));
+      expect(result.cancelled, isFalse);
+      expect(result.failed, result.total);
+      expect(result.isComplete, isFalse);
+    });
+
+    test('segundo prefetch pula tiles já gravados no disco', () async {
+      installPathProviderTestBindings();
+      final layerKey = 'test-skip-${DateTime.now().microsecondsSinceEpoch}';
+
+      Future<http.Response> okGet(
+        http.Client client,
+        Uri uri,
+        Map<String, String> headers,
+      ) async {
+        return http.Response.bytes(const [1, 2, 3], 200);
+      }
+
+      final first = await service.prefetchArea(
+        layerKey: layerKey,
+        urlTemplate: 'https://example.test/{z}/{x}/{y}.png',
+        subdomains: const [],
+        south: south,
+        west: west,
+        north: north,
+        east: east,
+        minZoom: zoom,
+        maxZoom: zoom,
+        tileHttpGet: okGet,
+      );
+      expect(first.isComplete, isTrue);
+      expect(first.downloaded, first.total);
+
+      final second = await service.prefetchArea(
+        layerKey: layerKey,
+        urlTemplate: 'https://example.test/{z}/{x}/{y}.png',
+        subdomains: const [],
+        south: south,
+        west: west,
+        north: north,
+        east: east,
+        minZoom: zoom,
+        maxZoom: zoom,
+        tileHttpGet: okGet,
+      );
+      expect(second.isComplete, isTrue);
+      expect(second.skipped, second.total);
+      expect(second.downloaded, 0);
+      expect(second.failed, 0);
+    });
+
+    test('shouldPause não incrementa failed e retoma depois', () async {
+      installPathProviderTestBindings();
+      var paused = false;
+      var downloads = 0;
+      final pauseHit = Completer<void>();
+
+      Future<http.Response> okGet(
+        http.Client client,
+        Uri uri,
+        Map<String, String> headers,
+      ) async {
+        downloads++;
+        if (downloads == 1 && !pauseHit.isCompleted) {
+          paused = true;
+          pauseHit.complete();
+        }
+        return http.Response.bytes(const [1, 2, 3], 200);
+      }
+
+      final future = service.prefetchArea(
+        layerKey: 'test-pause-${DateTime.now().microsecondsSinceEpoch}',
+        urlTemplate: 'https://example.test/{z}/{x}/{y}.png',
+        subdomains: const [],
+        south: -10,
+        west: -50,
+        north: -9,
+        east: -47,
+        minZoom: 8,
+        maxZoom: 8,
+        forceRefresh: true,
+        pausePoll: const Duration(milliseconds: 5),
+        shouldPause: () => paused,
+        tileHttpGet: okGet,
+      );
+
+      await pauseHit.future.timeout(const Duration(seconds: 2));
+      await Future<void>.delayed(const Duration(milliseconds: 30));
+      paused = false;
+      final result = await future;
+
+      expect(result.failed, 0);
+      expect(result.isComplete, isTrue);
+      expect(result.cancelled, isFalse);
     });
   });
 }
