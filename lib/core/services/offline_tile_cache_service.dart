@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart';
+
 import 'package:crypto/crypto.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
@@ -56,6 +58,7 @@ class OfflineTileCacheService {
   const OfflineTileCacheService();
 
   static const maxTileDownloadCount = 5000;
+  static const prefetchConcurrency = 8;
   static const maxZoom = 22;
   static const _maxWebMercatorLatitude = 85.05112878;
 
@@ -183,6 +186,13 @@ class OfflineTileCacheService {
     void Function(OfflinePrefetchProgress progress)? onProgress,
     bool Function()? shouldCancel,
     bool forceRefresh = false,
+    @visibleForTesting
+    Future<http.Response> Function(
+      http.Client client,
+      Uri uri,
+      Map<String, String> headers,
+    )?
+    tileHttpGet,
   }) async {
     final total = estimateTileCount(
       south: south,
@@ -205,6 +215,10 @@ class OfflineTileCacheService {
     int failed = 0;
     bool cancelled = false;
     final client = http.Client();
+    final getTile =
+        tileHttpGet ??
+        ((http.Client c, Uri uri, Map<String, String> h) =>
+            c.get(uri, headers: h));
 
     void emitProgress() {
       onProgress?.call(
@@ -218,55 +232,83 @@ class OfflineTileCacheService {
       );
     }
 
-    emitProgress();
-    try {
-      for (int z = minZoom; z <= maxZoom && !cancelled; z++) {
-        final range = _rangeFor(
-          south: south,
-          west: west,
-          north: north,
-          east: east,
-          zoom: z,
-        );
-        for (int x = range.xMin; x <= range.xMax && !cancelled; x++) {
-          for (int y = range.yMin; y <= range.yMax; y++) {
-            if (shouldCancel?.call() ?? false) {
-              cancelled = true;
-              break;
-            }
-            final file = await tileFile(layerKey: layerKey, z: z, x: x, y: y);
-            if (!forceRefresh &&
-                file.existsSync() &&
-                file.lengthSync() > 0) {
-              skipped++;
-              processed++;
-              emitProgress();
-              continue;
-            }
-
-            final url = _resolveUrl(
-              urlTemplate: urlTemplate,
-              z: z,
-              x: x,
-              y: y,
-              subdomains: subdomains,
-            );
-
-            try {
-              final res = await client.get(Uri.parse(url), headers: headers);
-              if (res.statusCode >= 200 && res.statusCode < 300) {
-                await file.writeAsBytes(res.bodyBytes, flush: true);
-                downloaded++;
-              } else {
-                failed++;
-              }
-            } catch (_) {
-              failed++;
-            }
-            processed++;
-            emitProgress();
-          }
+    final coords = <(int z, int x, int y)>[];
+    for (int z = minZoom; z <= maxZoom; z++) {
+      final range = _rangeFor(
+        south: south,
+        west: west,
+        north: north,
+        east: east,
+        zoom: z,
+      );
+      for (int x = range.xMin; x <= range.xMax; x++) {
+        for (int y = range.yMin; y <= range.yMax; y++) {
+          coords.add((z, x, y));
         }
+      }
+    }
+
+    emitProgress();
+    var nextIndex = 0;
+
+    int claimNext() {
+      if (nextIndex >= coords.length) {
+        return -1;
+      }
+      return nextIndex++;
+    }
+
+    Future<void> worker() async {
+      while (!cancelled) {
+        if (shouldCancel?.call() ?? false) {
+          cancelled = true;
+          return;
+        }
+        final i = claimNext();
+        if (i < 0) {
+          return;
+        }
+        final (z, x, y) = coords[i];
+        final file = await tileFile(layerKey: layerKey, z: z, x: x, y: y);
+        if (!forceRefresh && file.existsSync() && file.lengthSync() > 0) {
+          skipped++;
+          processed++;
+          emitProgress();
+          continue;
+        }
+
+        final url = _resolveUrl(
+          urlTemplate: urlTemplate,
+          z: z,
+          x: x,
+          y: y,
+          subdomains: subdomains,
+        );
+
+        try {
+          final res = await getTile(client, Uri.parse(url), headers);
+          if (res.statusCode >= 200 && res.statusCode < 300) {
+            await file.writeAsBytes(res.bodyBytes, flush: true);
+            downloaded++;
+          } else {
+            failed++;
+          }
+        } catch (_) {
+          failed++;
+        }
+        processed++;
+        emitProgress();
+      }
+    }
+
+    final workers = prefetchConcurrency < coords.length
+        ? prefetchConcurrency
+        : coords.length;
+    try {
+      if (workers == 0) {
+        // total == 0
+      } else {
+        await Future.wait(List.generate(workers, (_) => worker()));
       }
     } finally {
       client.close();
