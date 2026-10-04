@@ -115,7 +115,11 @@ class _FarmMapDownloadProgressDialogState
         );
 
     return AlertDialog(
-      title: const Text('Baixando mapa da fazenda'),
+      title: Text(
+        job?.isPaused == true
+            ? 'Mapa da fazenda em pausa'
+            : 'Baixando mapa da fazenda',
+      ),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -123,6 +127,12 @@ class _FarmMapDownloadProgressDialogState
           LinearProgressIndicator(value: progress.fraction),
           const SizedBox(height: 12),
           Text('${progress.processed} de ${progress.total} tiles'),
+          if (job?.isPaused == true) ...[
+            const SizedBox(height: 8),
+            const Text(
+              'Sem internet. Retomando quando conectar…',
+            ),
+          ],
         ],
       ),
       actions: [
@@ -197,7 +207,9 @@ class FarmMapDownloadButton extends ConsumerWidget {
             Padding(
               padding: const EdgeInsets.only(left: 12, bottom: 4),
               child: Text(
-                'Baixando mapa… ${job!.percent}%',
+                job!.isPaused
+                    ? 'Sem internet. Retomando quando conectar… ${job.percent}%'
+                    : 'Baixando mapa… ${job.percent}%',
                 style: const TextStyle(
                   color: PremiumTokens.brandGreen,
                   fontSize: 12,
