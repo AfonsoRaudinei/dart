@@ -108,6 +108,14 @@ O agente **sempre informa**:
 
 ---
 
+## Filosofia de marca
+
+Canônico: `docs/01_BASELINE/FILOSOFIA_MARCA.md`  
+Posicionamento: **SIMPLES. PODEROSO. TEU.**  
+Propósito: transformar complexidade em decisões simples e produtivas.
+
+---
+
 ## Relatórios HTML — branding (corrigir sempre)
 
 Fonte canônica: `.cursor/rules/soloforte-designer.mdc`
