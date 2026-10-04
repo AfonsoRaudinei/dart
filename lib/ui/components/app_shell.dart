@@ -37,6 +37,7 @@ import '../../core/session/auth_deep_link.dart';
 import '../../core/session/session_controller.dart';
 import '../../core/session/session_models.dart';
 import '../../core/utils/app_logger.dart';
+import '../../modules/consultoria/clients/presentation/farm_map_download_controller.dart';
 import 'public_map/public_access_cta_policy.dart';
 import 'side_menu_overlay.dart';
 import 'smart_button.dart';
@@ -281,6 +282,24 @@ class _AppShellState extends ConsumerState<AppShell> {
     final showShellChrome = shouldShowShellChrome(
       isAuthenticated: isAuth,
       isPublicRoute: isPublicRoute,
+    );
+
+    ref.listen<Map<String, FarmMapDownloadJob>>(
+      farmMapDownloadControllerProvider,
+      (previous, next) {
+        if (!showShellChrome) return;
+        for (final item in farmMapDownloadNewSnackbars(
+          previous: previous,
+          next: next,
+        )) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(item.message)),
+          );
+          ref
+              .read(farmMapDownloadControllerProvider.notifier)
+              .acknowledgeSnackbar(item.farmId);
+        }
+      },
     );
 
     // ═══════════════════════════════════════════════════════════════
