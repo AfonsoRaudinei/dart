@@ -149,27 +149,6 @@ void _snack(BuildContext context, String message) {
   ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
 }
 
-void _listenFarmMapDownloadSnackbar(
-  WidgetRef ref,
-  BuildContext context,
-  String farmId,
-) {
-  ref.listen<Map<String, FarmMapDownloadJob>>(
-    farmMapDownloadControllerProvider,
-    (previous, next) {
-      final job = next[farmId];
-      final prevMessage = previous?[farmId]?.pendingSnackbar;
-      final message = job?.pendingSnackbar;
-      if (message == null || message == prevMessage) return;
-      if (!context.mounted) return;
-      _snack(context, message);
-      ref
-          .read(farmMapDownloadControllerProvider.notifier)
-          .acknowledgeSnackbar(farmId);
-    },
-  );
-}
-
 bool farmHasDrawablePolygons(List<FarmLinkedFieldSummary>? fields) {
   if (fields == null) return false;
   return fields.any((field) => field.vertices.length >= 3);
@@ -188,8 +167,6 @@ class FarmMapDownloadButton extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    _listenFarmMapDownloadSnackbar(ref, context, farmId);
-
     final enabled = farmHasDrawablePolygons(fields);
     final color = enabled ? PremiumTokens.brandGreen : Colors.grey;
     final job = ref.watch(farmMapDownloadControllerProvider)[farmId];
