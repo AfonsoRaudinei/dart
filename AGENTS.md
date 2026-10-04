@@ -338,10 +338,10 @@ Detalhes: `docs/02_ARQUITETURA_ATIVA/ADR-*.md`
 1. `docs/01_BASELINE/ARCH_BASELINE_v1.1_SCORE_90.md`
 2. `docs/01_BASELINE/FILOSOFIA_MARCA.md` (identidade de produto / copy / UX)
 3. `docs/02_ARQUITETURA_ATIVA/bounded_contexts.md`
-3. ADRs em `docs/02_ARQUITETURA_ATIVA/`
-4. Este `AGENTS.md`
-5. `lib/**/AGENTS.md` do módulo afetado
-6. `docs/03_ENFORCEMENT/enforcement-rules.md` + `docs/03_ENFORCEMENT/supervisor-merge-gate.md`
+4. ADRs em `docs/02_ARQUITETURA_ATIVA/`
+5. Este `AGENTS.md`
+6. `lib/**/AGENTS.md` do módulo afetado
+7. `docs/03_ENFORCEMENT/enforcement-rules.md` + `docs/03_ENFORCEMENT/supervisor-merge-gate.md`
 
 ### O que ler (índice operacional)
 
