@@ -1,5 +1,6 @@
 import 'package:latlong2/latlong.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:soloforte_app/core/session/session_controller.dart';
 import 'package:soloforte_app/core/services/offline_tile_cache_service.dart';
 import 'package:soloforte_app/core/state/map_state.dart';
 import 'package:soloforte_app/modules/consultoria/clients/presentation/farm_map_download_plan.dart';
@@ -35,12 +36,37 @@ class FarmMapDownloadJob {
   }
 }
 
+/// Snackbars novos após transição de estado (listener único no app shell).
+List<({String farmId, String message})> farmMapDownloadNewSnackbars({
+  Map<String, FarmMapDownloadJob>? previous,
+  required Map<String, FarmMapDownloadJob> next,
+}) {
+  final pending = <({String farmId, String message})>[];
+  for (final entry in next.entries) {
+    final message = entry.value.pendingSnackbar;
+    final previousMessage = previous?[entry.key]?.pendingSnackbar;
+    if (message != null && message != previousMessage) {
+      pending.add((farmId: entry.key, message: message));
+    }
+  }
+  return pending;
+}
+
 @Riverpod(keepAlive: true)
 class FarmMapDownloadController extends _$FarmMapDownloadController {
   final Map<String, bool> _cancelRequested = {};
 
   @override
-  Map<String, FarmMapDownloadJob> build() => {};
+  Map<String, FarmMapDownloadJob> build() {
+    SessionController.registerLogoutInvalidation(
+      key: 'farmMapDownloadControllerProvider',
+      invalidate: (ref) {
+        ref.read(farmMapDownloadControllerProvider.notifier).cancelAllForLogout();
+        ref.invalidate(farmMapDownloadControllerProvider);
+      },
+    );
+    return {};
+  }
 
   FarmMapDownloadJob? jobFor(String farmId) => state[farmId];
 
@@ -57,6 +83,13 @@ class FarmMapDownloadController extends _$FarmMapDownloadController {
 
   void cancel(String farmId) {
     _cancelRequested[farmId] = true;
+  }
+
+  /// Usado no logout: pede cancelamento de todos os jobs em andamento.
+  void cancelAllForLogout() {
+    for (final farmId in {...state.keys, ..._cancelRequested.keys}) {
+      _cancelRequested[farmId] = true;
+    }
   }
 
   Future<void> startDownload({
