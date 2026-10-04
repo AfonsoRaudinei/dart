@@ -1,5 +1,6 @@
 import 'package:latlong2/latlong.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:soloforte_app/core/providers/connectivity_provider.dart';
 import 'package:soloforte_app/core/session/session_controller.dart';
 import 'package:soloforte_app/core/services/offline_tile_cache_service.dart';
 import 'package:soloforte_app/core/state/map_state.dart';
@@ -10,11 +11,13 @@ part 'farm_map_download_controller.g.dart';
 /// Estado visível do download de mapa por fazenda (job em segundo plano).
 class FarmMapDownloadJob {
   final bool isRunning;
+  final bool isPaused;
   final OfflinePrefetchProgress progress;
   final String? pendingSnackbar;
 
   const FarmMapDownloadJob({
     required this.isRunning,
+    this.isPaused = false,
     required this.progress,
     this.pendingSnackbar,
   });
@@ -23,12 +26,14 @@ class FarmMapDownloadJob {
 
   FarmMapDownloadJob copyWith({
     bool? isRunning,
+    bool? isPaused,
     OfflinePrefetchProgress? progress,
     String? pendingSnackbar,
     bool clearSnackbar = false,
   }) {
     return FarmMapDownloadJob(
       isRunning: isRunning ?? this.isRunning,
+      isPaused: isPaused ?? this.isPaused,
       progress: progress ?? this.progress,
       pendingSnackbar:
           clearSnackbar ? null : (pendingSnackbar ?? this.pendingSnackbar),
@@ -65,12 +70,31 @@ class FarmMapDownloadController extends _$FarmMapDownloadController {
         ref.invalidate(farmMapDownloadControllerProvider);
       },
     );
+    ref.listen(isOnlineProvider, (previous, next) {
+      final online = next.asData?.value ?? true;
+      final paused = !online;
+      var changed = false;
+      final updated = <String, FarmMapDownloadJob>{};
+      for (final entry in state.entries) {
+        final job = entry.value;
+        if (job.isRunning && job.isPaused != paused) {
+          changed = true;
+          updated[entry.key] = job.copyWith(isPaused: paused);
+        } else {
+          updated[entry.key] = job;
+        }
+      }
+      if (changed) state = updated;
+    });
     return {};
   }
 
   FarmMapDownloadJob? jobFor(String farmId) => state[farmId];
 
   bool isRunningFor(String farmId) => state[farmId]?.isRunning ?? false;
+
+  bool get _isOffline =>
+      !(ref.read(isOnlineProvider).asData?.value ?? true);
 
   void acknowledgeSnackbar(String farmId) {
     final job = state[farmId];
@@ -114,6 +138,7 @@ class FarmMapDownloadController extends _$FarmMapDownloadController {
       ...state,
       farmId: FarmMapDownloadJob(
         isRunning: true,
+        isPaused: _isOffline,
         progress: initialProgress,
       ),
     };
@@ -137,10 +162,11 @@ class FarmMapDownloadController extends _$FarmMapDownloadController {
           if (current == null || !current.isRunning) return;
           state = {
             ...state,
-            farmId: current.copyWith(progress: value),
+            farmId: current.copyWith(progress: value, isPaused: _isOffline),
           };
         },
         shouldCancel: () => _cancelRequested[farmId] ?? false,
+        shouldPause: () => _isOffline,
       );
     } on OfflineTileCacheException catch (error) {
       state = {
