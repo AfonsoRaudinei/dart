@@ -1,11 +1,13 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:latlong2/latlong.dart';
 import 'package:soloforte_app/core/config/map_config.dart';
 import 'package:soloforte_app/core/domain/map_models.dart';
 import 'package:soloforte_app/core/providers/connectivity_provider.dart';
 import 'package:soloforte_app/core/services/offline_tile_cache_service.dart';
 import 'package:soloforte_app/core/state/map_state.dart';
+import 'package:soloforte_app/modules/consultoria/clients/presentation/farm_map_download_controller.dart';
 import 'package:soloforte_app/modules/consultoria/clients/presentation/farm_map_download_plan.dart';
 import 'package:soloforte_app/modules/consultoria/clients/presentation/providers/field_providers.dart';
 import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
@@ -50,159 +52,122 @@ Future<void> downloadFarmSatelliteMap({
   final cacheService = ref.read(offlineTileCacheServiceProvider);
   final layerKey = cacheService.layerKeyFromTemplate(tileConfig.urlTemplate);
 
-  var cancelRequested = false;
-  final progress = ValueNotifier(
-    OfflinePrefetchProgress(
-      total: plan.tileCount,
-      processed: 0,
-      downloaded: 0,
-      skipped: 0,
-      failed: 0,
-    ),
-  );
-
-  if (!context.mounted) {
-    progress.dispose();
-    return;
-  }
-
-  NavigatorState? progressDialogNavigator;
-  showDialog<void>(
-    context: context,
-    barrierDismissible: false,
-    builder: (dialogContext) {
-      progressDialogNavigator = Navigator.of(dialogContext);
-      return AlertDialog(
-        title: const Text('Baixando mapa da fazenda'),
-        content: ValueListenableBuilder<OfflinePrefetchProgress>(
-          valueListenable: progress,
-          builder: (_, value, __) {
-            return Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                LinearProgressIndicator(value: value.fraction),
-                const SizedBox(height: 12),
-                Text('${value.processed} de ${value.total} tiles'),
-              ],
-            );
-          },
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => cancelRequested = true,
-            child: const Text('Cancelar'),
-          ),
-        ],
-      );
-    },
-  );
-
-  void dismissProgressDialog() {
-    final nav = progressDialogNavigator;
-    if (nav != null && nav.mounted && nav.canPop()) {
-      nav.pop();
-    }
-  }
-
-  late final OfflinePrefetchResult result;
-  try {
-    try {
-      result = await cacheService.prefetchArea(
+  final controller = ref.read(farmMapDownloadControllerProvider.notifier);
+  if (!controller.isRunningFor(farmId)) {
+    unawaited(
+      controller.startDownload(
+        farmId: farmId,
+        plan: plan,
         layerKey: layerKey,
         urlTemplate: tileConfig.urlTemplate,
         subdomains: tileConfig.subdomains,
-        south: plan.south,
-        west: plan.west,
-        north: plan.north,
-        east: plan.east,
-        minZoom: plan.minZoom,
-        maxZoom: plan.maxZoom,
         headers: {'User-Agent': MapConfig.userAgent},
-        onProgress: (value) => progress.value = value,
-        shouldCancel: () => cancelRequested,
-      );
-    } on OfflineTileCacheException catch (error) {
-      if (context.mounted) _snack(context, error.message);
-      return;
-    } catch (_) {
-      if (context.mounted) {
-        _snack(context, 'Falha ao baixar o mapa. Tente novamente.');
-      }
-      return;
-    }
-
-    if (!result.isComplete) {
-      if (context.mounted) {
-        _snack(
-          context,
-          result.cancelled
-              ? 'Download do mapa cancelado.'
-              : 'Download incompleto: ${result.failed} tile(s) falharam. Tente novamente.',
-        );
-      }
-      return;
-    }
-
-    final center = LatLng(
-      (plan.south + plan.north) / 2,
-      (plan.west + plan.east) / 2,
+      ),
     );
-    OfflineMapAreaConfig? existing;
-    for (final area in ref.read(offlineMapAreasProvider)) {
-      if (area.layerKey == layerKey &&
-          area.covers(
-            layerKey: layerKey,
-            lat: center.latitude,
-            lng: center.longitude,
-            zoom: plan.minZoom.toDouble(),
-          )) {
-        existing = area;
-        break;
-      }
-    }
+  }
 
-    ref.read(offlineMapAreasProvider.notifier).updateArea(
-          existing != null
-              ? existing.mergeWithViewport(
-                  south: plan.south,
-                  west: plan.west,
-                  north: plan.north,
-                  east: plan.east,
-                  minZoom: plan.minZoom.toDouble(),
-                  maxZoom: plan.maxZoom.toDouble(),
-                  createdAt: result.downloaded > 0
-                      ? DateTime.now()
-                      : existing.createdAt,
-                )
-              : OfflineMapAreaConfig(
-                  id: 'farm:$farmId',
-                  layerKey: layerKey,
-                  south: plan.south,
-                  west: plan.west,
-                  north: plan.north,
-                  east: plan.east,
-                  minZoom: plan.minZoom.toDouble(),
-                  maxZoom: plan.maxZoom.toDouble(),
-                  createdAt: DateTime.now(),
-                ),
+  if (!context.mounted) return;
+
+  await showDialog<void>(
+    context: context,
+    barrierDismissible: false,
+    builder: (dialogContext) => _FarmMapDownloadProgressDialog(farmId: farmId),
+  );
+}
+
+class _FarmMapDownloadProgressDialog extends ConsumerStatefulWidget {
+  final String farmId;
+
+  const _FarmMapDownloadProgressDialog({required this.farmId});
+
+  @override
+  ConsumerState<_FarmMapDownloadProgressDialog> createState() =>
+      _FarmMapDownloadProgressDialogState();
+}
+
+class _FarmMapDownloadProgressDialogState
+    extends ConsumerState<_FarmMapDownloadProgressDialog> {
+  @override
+  void initState() {
+    super.initState();
+    ref.listenManual<Map<String, FarmMapDownloadJob>>(
+      farmMapDownloadControllerProvider,
+      (previous, next) {
+        final job = next[widget.farmId];
+        final wasRunning = previous?[widget.farmId]?.isRunning ?? false;
+        if (wasRunning && job != null && !job.isRunning && mounted) {
+          Navigator.of(context).pop();
+        }
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final job = ref.watch(farmMapDownloadControllerProvider)[widget.farmId];
+    final progress = job?.progress ??
+        const OfflinePrefetchProgress(
+          total: 0,
+          processed: 0,
+          downloaded: 0,
+          skipped: 0,
+          failed: 0,
         );
 
-    if (context.mounted) {
-      _snack(
-        context,
-        'Mapa da fazenda baixado: ${result.downloaded} tile(s) novo(s), '
-        '${result.skipped} já existente(s).',
-      );
-    }
-  } finally {
-    dismissProgressDialog();
-    progress.dispose();
+    return AlertDialog(
+      title: const Text('Baixando mapa da fazenda'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          LinearProgressIndicator(value: progress.fraction),
+          const SizedBox(height: 12),
+          Text('${progress.processed} de ${progress.total} tiles'),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () {
+            Navigator.of(context).pop();
+          },
+          child: const Text('Continuar em segundo plano'),
+        ),
+        TextButton(
+          onPressed: () {
+            ref
+                .read(farmMapDownloadControllerProvider.notifier)
+                .cancel(widget.farmId);
+          },
+          child: const Text('Cancelar'),
+        ),
+      ],
+    );
   }
 }
 
 void _snack(BuildContext context, String message) {
   ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+}
+
+void _listenFarmMapDownloadSnackbar(
+  WidgetRef ref,
+  BuildContext context,
+  String farmId,
+) {
+  ref.listen<Map<String, FarmMapDownloadJob>>(
+    farmMapDownloadControllerProvider,
+    (previous, next) {
+      final job = next[farmId];
+      final prevMessage = previous?[farmId]?.pendingSnackbar;
+      final message = job?.pendingSnackbar;
+      if (message == null || message == prevMessage) return;
+      if (!context.mounted) return;
+      _snack(context, message);
+      ref
+          .read(farmMapDownloadControllerProvider.notifier)
+          .acknowledgeSnackbar(farmId);
+    },
+  );
 }
 
 bool farmHasDrawablePolygons(List<FarmLinkedFieldSummary>? fields) {
@@ -223,24 +188,47 @@ class FarmMapDownloadButton extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    _listenFarmMapDownloadSnackbar(ref, context, farmId);
+
     final enabled = farmHasDrawablePolygons(fields);
     final color = enabled ? PremiumTokens.brandGreen : Colors.grey;
+    final job = ref.watch(farmMapDownloadControllerProvider)[farmId];
+    final isDownloading = job?.isRunning ?? false;
+
     return Align(
       alignment: Alignment.centerLeft,
-      child: TextButton.icon(
-        onPressed: enabled
-            ? () => downloadFarmSatelliteMap(
-                  context: context,
-                  ref: ref,
-                  farmId: farmId,
-                  fields: fields!,
-                )
-            : null,
-        icon: Icon(Icons.download_rounded, color: color),
-        label: Text(
-          'Baixar mapa',
-          style: TextStyle(color: color, fontWeight: FontWeight.bold),
-        ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextButton.icon(
+            onPressed: enabled
+                ? () => downloadFarmSatelliteMap(
+                      context: context,
+                      ref: ref,
+                      farmId: farmId,
+                      fields: fields!,
+                    )
+                : null,
+            icon: Icon(Icons.download_rounded, color: color),
+            label: Text(
+              'Baixar mapa',
+              style: TextStyle(color: color, fontWeight: FontWeight.bold),
+            ),
+          ),
+          if (isDownloading)
+            Padding(
+              padding: const EdgeInsets.only(left: 12, bottom: 4),
+              child: Text(
+                'Baixando mapa… ${job!.percent}%',
+                style: const TextStyle(
+                  color: PremiumTokens.brandGreen,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
