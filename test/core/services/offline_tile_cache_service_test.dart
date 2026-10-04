@@ -231,5 +231,48 @@ void main() {
       expect(result.isComplete, isTrue);
       expect(result.cancelled, isFalse);
     });
+
+    test('falha HTTP com pause logo depois não conta failed', () async {
+      installPathProviderTestBindings();
+      var paused = false;
+      var calls = 0;
+
+      Future<http.Response> flakyGet(
+        http.Client client,
+        Uri uri,
+        Map<String, String> headers,
+      ) async {
+        calls++;
+        if (calls == 1) {
+          Future<void>.delayed(const Duration(milliseconds: 30), () {
+            paused = true;
+          });
+          throw Exception('socket');
+        }
+        return http.Response.bytes(const [1, 2, 3], 200);
+      }
+
+      final future = service.prefetchArea(
+        layerKey: 'test-fail-grace-${DateTime.now().microsecondsSinceEpoch}',
+        urlTemplate: 'https://example.test/{z}/{x}/{y}.png',
+        subdomains: const [],
+        south: south,
+        west: west,
+        north: north,
+        east: east,
+        minZoom: zoom,
+        maxZoom: zoom,
+        forceRefresh: true,
+        pausePoll: const Duration(milliseconds: 20),
+        shouldPause: () => paused,
+        tileHttpGet: flakyGet,
+      );
+
+      await Future<void>.delayed(const Duration(milliseconds: 120));
+      paused = false;
+      final result = await future;
+      expect(result.failed, 0);
+      expect(result.isComplete, isTrue);
+    });
   });
 }
