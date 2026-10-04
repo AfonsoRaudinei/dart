@@ -71,7 +71,9 @@ class NdviRepositoryImpl implements INdviRepository {
     String imageDate,
   ) async {
     final cached = await _local.getByFieldIdAndDate(fieldId, imageDate);
-    if (cached != null && ndviModelHasRenderableData(cached)) {
+    if (cached != null &&
+        ndviModelHasRenderableData(cached) &&
+        ndviIsColormapSource(cached.source)) {
       return cached.toEntity();
     }
 
@@ -82,6 +84,15 @@ class NdviRepositoryImpl implements INdviRepository {
         tag: 'NDVI.Repository',
       );
       return cached?.toEntity();
+    }
+
+    if (cached != null && ndviModelHasRenderableData(cached)) {
+      final replacement = await _fetchSentinelForDate(
+        fieldId: fieldId,
+        summary: summary,
+        dateKey: imageDate,
+      );
+      return replacement ?? cached.toEntity();
     }
 
     AppLogger.debug(
@@ -119,8 +130,29 @@ class NdviRepositoryImpl implements INdviRepository {
     if (ndviIsColormapSource(latest.source)) return images;
 
     final dateKey = ndviImageDateKey(latest.imageDate);
+    final image = await _fetchSentinelForDate(
+      fieldId: fieldId,
+      summary: summary,
+      dateKey: dateKey,
+    );
+    if (image == null) return images;
+
+    final kept = [
+      for (final item in images)
+        if (ndviImageDateKey(item.imageDate) != dateKey) item,
+    ];
+    kept.add(image);
+    kept.sort((a, b) => b.imageDate.compareTo(a.imageDate));
+    return kept;
+  }
+
+  Future<NdviImage?> _fetchSentinelForDate({
+    required String fieldId,
+    required FieldSummary summary,
+    required String dateKey,
+  }) async {
     final attemptKey = '$fieldId|$dateKey';
-    if (_sentinelRetried.contains(attemptKey)) return images;
+    if (_sentinelRetried.contains(attemptKey)) return null;
     _sentinelRetried.add(attemptKey);
 
     try {
@@ -132,22 +164,16 @@ class NdviRepositoryImpl implements INdviRepository {
         source: 'sentinel',
       );
       final image = result?.image?.toEntity();
-      if (image == null) return images;
+      if (image == null) return null;
       await _local.save(image);
-      final kept = [
-        for (final item in images)
-          if (ndviImageDateKey(item.imageDate) != dateKey) item,
-      ];
-      kept.add(image);
-      kept.sort((a, b) => b.imageDate.compareTo(a.imageDate));
-      return kept;
+      return image;
     } catch (error) {
       AppLogger.warning(
         'NDVI sentinel retry falhou fieldId=$fieldId',
         tag: 'NDVI.Repository',
         error: error,
       );
-      return images;
+      return null;
     }
   }
 
@@ -200,7 +226,11 @@ class NdviRepositoryImpl implements INdviRepository {
 
     await _cachePolicy.markSynced(fieldId, ndviOriginFingerprint(summary));
     final all = await _local.getAll(fieldId);
-    return all.map((model) => model.toEntity()).toList();
+    return _replacePlanetPreview(
+      fieldId,
+      summary,
+      all.map((model) => model.toEntity()).toList(),
+    );
   }
 
   NdviImage _dateStub({
