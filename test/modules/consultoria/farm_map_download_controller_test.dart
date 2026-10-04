@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:soloforte_app/core/infra/preferences_service.dart';
+import 'package:soloforte_app/core/providers/connectivity_provider.dart';
 import 'package:soloforte_app/core/services/offline_tile_cache_service.dart';
 import 'package:soloforte_app/core/state/map_state.dart';
 import 'package:soloforte_app/modules/consultoria/clients/presentation/farm_map_download_controller.dart';
@@ -13,6 +16,7 @@ class _FakeOfflineTileCacheService extends OfflineTileCacheService {
 
   final Future<OfflinePrefetchResult> Function(
     bool Function()? shouldCancel,
+    bool Function()? shouldPause,
   ) onPrefetch;
 
   @override
@@ -29,7 +33,10 @@ class _FakeOfflineTileCacheService extends OfflineTileCacheService {
     Map<String, String> headers = const {},
     void Function(OfflinePrefetchProgress progress)? onProgress,
     bool Function()? shouldCancel,
+    bool Function()? shouldPause,
     bool forceRefresh = false,
+    Duration? requestTimeout,
+    Duration? pausePoll,
     Future<http.Response> Function(
       http.Client client,
       Uri uri,
@@ -37,7 +44,7 @@ class _FakeOfflineTileCacheService extends OfflineTileCacheService {
     )?
     tileHttpGet,
   }) {
-    return onPrefetch(shouldCancel);
+    return onPrefetch(shouldCancel, shouldPause);
   }
 }
 
@@ -45,6 +52,7 @@ void main() {
   late PreferencesService preferences;
 
   setUpAll(() async {
+    TestWidgetsFlutterBinding.ensureInitialized();
     SharedPreferences.setMockInitialValues({});
     preferences = PreferencesService(await SharedPreferences.getInstance());
   });
@@ -61,12 +69,17 @@ void main() {
   );
 
   group('FarmMapDownloadController', () {
+    Override alwaysOnline() => isOnlineProvider.overrideWith((ref) async* {
+          yield true;
+        });
+
     test('cancel marca snackbar de cancelamento', () async {
       final container = ProviderContainer(
         overrides: [
+          alwaysOnline(),
           offlineTileCacheServiceProvider.overrideWithValue(
             _FakeOfflineTileCacheService(
-              onPrefetch: (_) async {
+              onPrefetch: (_, __) async {
                 return const OfflinePrefetchResult(
                   total: 4,
                   processed: 1,
@@ -102,9 +115,10 @@ void main() {
       bool Function()? liveCancel;
       final container = ProviderContainer(
         overrides: [
+          alwaysOnline(),
           offlineTileCacheServiceProvider.overrideWithValue(
             _FakeOfflineTileCacheService(
-              onPrefetch: (shouldCancel) async {
+              onPrefetch: (shouldCancel, _) async {
                 liveCancel = shouldCancel;
                 await Future<void>.delayed(const Duration(milliseconds: 20));
                 return OfflinePrefetchResult(
@@ -142,10 +156,11 @@ void main() {
     test('logout invalidação zera jobs após cancelAllForLogout', () async {
       final container = ProviderContainer(
         overrides: [
+          alwaysOnline(),
           preferencesServiceProvider.overrideWithValue(preferences),
           offlineTileCacheServiceProvider.overrideWithValue(
             _FakeOfflineTileCacheService(
-              onPrefetch: (_) async {
+              onPrefetch: (_, __) async {
                 return const OfflinePrefetchResult(
                   total: 4,
                   processed: 4,
@@ -176,6 +191,84 @@ void main() {
       notifier.cancelAllForLogout();
       container.invalidate(farmMapDownloadControllerProvider);
       expect(container.read(farmMapDownloadControllerProvider), isEmpty);
+      container.dispose();
+    });
+
+    test('pausa offline não dispara snackbar de incompleto', () async {
+      final connectivity = StreamController<bool>.broadcast();
+      addTearDown(connectivity.close);
+      final enteredPause = Completer<void>();
+      final container = ProviderContainer(
+        overrides: [
+          isOnlineProvider.overrideWith((ref) async* {
+            yield true;
+            yield* connectivity.stream;
+          }),
+          offlineTileCacheServiceProvider.overrideWithValue(
+            _FakeOfflineTileCacheService(
+              onPrefetch: (shouldCancel, shouldPause) async {
+                while (!(shouldPause?.call() ?? false)) {
+                  if (shouldCancel?.call() ?? false) {
+                    return const OfflinePrefetchResult(
+                      total: 4,
+                      processed: 1,
+                      downloaded: 0,
+                      skipped: 0,
+                      failed: 0,
+                      cancelled: true,
+                    );
+                  }
+                  await Future<void>.delayed(const Duration(milliseconds: 5));
+                }
+                if (!enteredPause.isCompleted) enteredPause.complete();
+                while (shouldPause?.call() ?? false) {
+                  if (shouldCancel?.call() ?? false) {
+                    return const OfflinePrefetchResult(
+                      total: 4,
+                      processed: 1,
+                      downloaded: 0,
+                      skipped: 0,
+                      failed: 0,
+                      cancelled: true,
+                    );
+                  }
+                  await Future<void>.delayed(const Duration(milliseconds: 5));
+                }
+                return const OfflinePrefetchResult(
+                  total: 4,
+                  processed: 4,
+                  downloaded: 4,
+                  skipped: 0,
+                  failed: 0,
+                  cancelled: false,
+                );
+              },
+            ),
+          ),
+        ],
+      );
+
+      container.read(farmMapDownloadControllerProvider);
+      final notifier =
+          container.read(farmMapDownloadControllerProvider.notifier);
+      final future = notifier.startDownload(
+        farmId: farmId,
+        plan: plan,
+        layerKey: 'layer',
+        urlTemplate: 'https://example.test/{z}/{x}/{y}.png',
+        subdomains: const [],
+        headers: const {},
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+      connectivity.add(false);
+      await enteredPause.future.timeout(const Duration(seconds: 2));
+      final paused = container.read(farmMapDownloadControllerProvider)[farmId];
+      expect(paused?.isRunning, isTrue);
+      expect(paused?.pendingSnackbar, isNull);
+      notifier.cancel(farmId);
+      await future;
+      final job = container.read(farmMapDownloadControllerProvider)[farmId];
+      expect(job?.pendingSnackbar, isNot(contains('incompleto')));
       container.dispose();
     });
   });
