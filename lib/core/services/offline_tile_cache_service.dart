@@ -359,6 +359,25 @@ class OfflineTileCacheService {
             pending.add(item);
             continue;
           }
+
+          var pausedDuringGrace = false;
+          for (var tick = 0; tick < 4; tick++) {
+            await Future<void>.delayed(pauseWait);
+            if (shouldCancel?.call() ?? false) {
+              cancelled = true;
+              pending.add(item);
+              return;
+            }
+            if (shouldPause?.call() ?? false) {
+              pausedDuringGrace = true;
+              break;
+            }
+          }
+          if (pausedDuringGrace) {
+            pending.add(item);
+            continue;
+          }
+
           if (attempt < NetworkPolicy.kMaxRetries) {
             pending.add((z, x, y, attempt + 1));
             continue;
