@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart';
 import 'package:crypto/crypto.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
+import 'package:soloforte_app/core/network/network_policy.dart';
 
 class OfflineTileCacheException implements Exception {
   final String message;
@@ -60,6 +61,9 @@ class OfflineTileCacheService {
   static const maxTileDownloadCount = 5000;
   static const prefetchConcurrency = 8;
   static const maxZoom = 22;
+  static const progressEmitMinDelta = 50;
+  static const progressEmitMinInterval = Duration(milliseconds: 200);
+  static const pausePollInterval = Duration(milliseconds: 250);
   static const _maxWebMercatorLatitude = 85.05112878;
 
   String layerKeyFromTemplate(String template) =>
@@ -185,7 +189,10 @@ class OfflineTileCacheService {
     Map<String, String> headers = const {},
     void Function(OfflinePrefetchProgress progress)? onProgress,
     bool Function()? shouldCancel,
+    bool Function()? shouldPause,
     bool forceRefresh = false,
+    @visibleForTesting Duration? requestTimeout,
+    @visibleForTesting Duration? pausePoll,
     @visibleForTesting
     Future<http.Response> Function(
       http.Client client,
@@ -214,13 +221,30 @@ class OfflineTileCacheService {
     int skipped = 0;
     int failed = 0;
     bool cancelled = false;
+    var inFlight = 0;
+    var lastEmittedProcessed = -1;
+    DateTime? lastEmitAt;
+    final timeout = requestTimeout ?? NetworkPolicy.kTimeout;
+    final pauseWait = pausePoll ?? pausePollInterval;
     final client = http.Client();
     final getTile =
         tileHttpGet ??
         ((http.Client c, Uri uri, Map<String, String> h) =>
             c.get(uri, headers: h));
 
-    void emitProgress() {
+    void emitProgress({bool force = false}) {
+      final now = DateTime.now();
+      final delta = processed - lastEmittedProcessed;
+      final elapsed = lastEmitAt == null
+          ? progressEmitMinInterval
+          : now.difference(lastEmitAt!);
+      if (!force &&
+          delta < progressEmitMinDelta &&
+          elapsed < progressEmitMinInterval) {
+        return;
+      }
+      lastEmittedProcessed = processed;
+      lastEmitAt = now;
       onProgress?.call(
         OfflinePrefetchProgress(
           total: total,
@@ -232,7 +256,7 @@ class OfflineTileCacheService {
       );
     }
 
-    final coords = <(int z, int x, int y)>[];
+    final pending = <(int z, int x, int y, int attempt)>[];
     for (int z = minZoom; z <= maxZoom; z++) {
       final range = _rangeFor(
         south: south,
@@ -243,67 +267,114 @@ class OfflineTileCacheService {
       );
       for (int x = range.xMin; x <= range.xMax; x++) {
         for (int y = range.yMin; y <= range.yMax; y++) {
-          coords.add((z, x, y));
+          pending.add((z, x, y, 1));
         }
       }
     }
 
-    emitProgress();
-    var nextIndex = 0;
+    emitProgress(force: true);
 
-    int claimNext() {
-      if (nextIndex >= coords.length) {
-        return -1;
+    (int z, int x, int y, int attempt)? claimNext() {
+      if (pending.isEmpty) return null;
+      return pending.removeAt(0);
+    }
+
+    Future<bool> waitWhilePaused() async {
+      while (shouldPause?.call() ?? false) {
+        if (shouldCancel?.call() ?? false) {
+          cancelled = true;
+          return true;
+        }
+        await Future<void>.delayed(pauseWait);
       }
-      return nextIndex++;
+      if (shouldCancel?.call() ?? false) {
+        cancelled = true;
+        return true;
+      }
+      return false;
+    }
+
+    Future<http.Response> fetchTile(Uri uri) {
+      Future<http.Response> send() => getTile(client, uri, headers);
+      if (requestTimeout != null) {
+        return send().timeout(timeout);
+      }
+      return NetworkPolicy.withTimeout(send);
     }
 
     Future<void> worker() async {
       while (!cancelled) {
-        if (shouldCancel?.call() ?? false) {
-          cancelled = true;
-          return;
-        }
-        final i = claimNext();
-        if (i < 0) {
-          return;
-        }
-        final (z, x, y) = coords[i];
-        final file = await tileFile(layerKey: layerKey, z: z, x: x, y: y);
-        if (!forceRefresh && file.existsSync() && file.lengthSync() > 0) {
-          skipped++;
-          processed++;
-          emitProgress();
+        if (await waitWhilePaused()) return;
+        final item = claimNext();
+        if (item == null) {
+          if (inFlight == 0) return;
+          await Future<void>.delayed(const Duration(milliseconds: 20));
           continue;
         }
-
-        final url = _resolveUrl(
-          urlTemplate: urlTemplate,
-          z: z,
-          x: x,
-          y: y,
-          subdomains: subdomains,
-        );
-
+        inFlight++;
         try {
-          final res = await getTile(client, Uri.parse(url), headers);
-          if (res.statusCode >= 200 && res.statusCode < 300) {
-            await file.writeAsBytes(res.bodyBytes, flush: true);
-            downloaded++;
-          } else {
-            failed++;
+          if (await waitWhilePaused()) {
+            pending.add(item);
+            return;
           }
-        } catch (_) {
+          final (z, x, y, attempt) = item;
+          final file = await tileFile(layerKey: layerKey, z: z, x: x, y: y);
+          if (!forceRefresh && file.existsSync() && file.lengthSync() > 0) {
+            skipped++;
+            processed++;
+            emitProgress();
+            continue;
+          }
+
+          final url = _resolveUrl(
+            urlTemplate: urlTemplate,
+            z: z,
+            x: x,
+            y: y,
+            subdomains: subdomains,
+          );
+
+          var succeeded = false;
+          try {
+            final res = await fetchTile(Uri.parse(url));
+            if (res.statusCode >= 200 && res.statusCode < 300) {
+              await file.writeAsBytes(res.bodyBytes, flush: true);
+              downloaded++;
+              processed++;
+              succeeded = true;
+              emitProgress();
+            }
+          } catch (_) {
+            succeeded = false;
+          }
+
+          if (succeeded) continue;
+
+          if (shouldCancel?.call() ?? false) {
+            cancelled = true;
+            pending.add(item);
+            return;
+          }
+          if (shouldPause?.call() ?? false) {
+            pending.add(item);
+            continue;
+          }
+          if (attempt < NetworkPolicy.kMaxRetries) {
+            pending.add((z, x, y, attempt + 1));
+            continue;
+          }
           failed++;
+          processed++;
+          emitProgress();
+        } finally {
+          inFlight--;
         }
-        processed++;
-        emitProgress();
       }
     }
 
-    final workers = prefetchConcurrency < coords.length
+    final workers = prefetchConcurrency < pending.length
         ? prefetchConcurrency
-        : coords.length;
+        : pending.length;
     try {
       if (workers == 0) {
         // total == 0
@@ -311,6 +382,7 @@ class OfflineTileCacheService {
         await Future.wait(List.generate(workers, (_) => worker()));
       }
     } finally {
+      emitProgress(force: true);
       client.close();
     }
     return OfflinePrefetchResult(
