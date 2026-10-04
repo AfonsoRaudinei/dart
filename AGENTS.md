@@ -11,6 +11,7 @@
 | Atributo | Valor |
 |---|---|
 | App | SoloForte — agri-tech, **mobile-only** (iOS + Android) |
+| Filosofia | **SIMPLES. PODEROSO. TEU.** — `docs/01_BASELINE/FILOSOFIA_MARCA.md` |
 | Baseline doc | v1.1 — `docs/01_BASELINE/ARCH_BASELINE_v1.1_SCORE_90.md` |
 | Release estabilização | v1.2 (`release/v1.2`) |
 | Arquitetura | Map-First + Clean Architecture + Bounded Contexts |
@@ -335,7 +336,8 @@ Detalhes: `docs/02_ARQUITETURA_ATIVA/ADR-*.md`
 ## HIERARQUIA DE AUTORIDADE (conflito entre docs)
 
 1. `docs/01_BASELINE/ARCH_BASELINE_v1.1_SCORE_90.md`
-2. `docs/02_ARQUITETURA_ATIVA/bounded_contexts.md`
+2. `docs/01_BASELINE/FILOSOFIA_MARCA.md` (identidade de produto / copy / UX)
+3. `docs/02_ARQUITETURA_ATIVA/bounded_contexts.md`
 3. ADRs em `docs/02_ARQUITETURA_ATIVA/`
 4. Este `AGENTS.md`
 5. `lib/**/AGENTS.md` do módulo afetado
@@ -346,6 +348,7 @@ Detalhes: `docs/02_ARQUITETURA_ATIVA/ADR-*.md`
 | Precisa de… | Ler |
 |---|---|
 | Verdade do produto / proibições | Este `AGENTS.md` |
+| Filosofia de marca (SIMPLES. PODEROSO. TEU.) | `docs/01_BASELINE/FILOSOFIA_MARCA.md` |
 | Memória operacional (sync, IPA, preferências) | `.agent/AGENT_MEMORIA.md` (**canônico**) |
 | Regras de execução do agente | `.agent/AGENT_REGRAS.md` (**canônico**) |
 | Sheets / chrome mapa (anti-regressão) | `.agent/AUDITORIA_REGRESSAO_IPA210.md` · `.agent/Prompt.md` · `design/sheets.md` |
@@ -364,3 +367,6 @@ Detalhes: `docs/02_ARQUITETURA_ATIVA/ADR-*.md`
 
 > Zero achismo. Zero dado inventado. Zero refatoração oportunista.
 > Arquitetura > rapidez. Contrato > UI. Estado previsível > mágica.
+
+Produto: **SIMPLES. PODEROSO. TEU.** — transformar complexidade em decisões simples e produtivas.  
+Detalhe: `docs/01_BASELINE/FILOSOFIA_MARCA.md`.
