@@ -38,6 +38,11 @@ class FakeLocalDataSource implements NdviLocalDatasource {
     _saved['${model.fieldId}|${model.imageDate}'] = model;
   }
 
+  void seed(NdviImageModel model) {
+    lastSaved = model;
+    _saved['${model.fieldId}|${model.imageDate}'] = model;
+  }
+
   @override
   Future<void> deleteAll(String fieldId) async {
     _saved.removeWhere((_, model) => model.fieldId == fieldId);
@@ -50,9 +55,11 @@ class FakeLocalDataSource implements NdviLocalDatasource {
 
 class FakeRemoteDataSource implements NdviRemoteDatasource {
   NdviImageModel? nextReturn;
+  NdviImageModel? nextSentinelReturn;
   NdviRemoteFetchResult? nextResult;
   bool called = false;
   bool throwOnFetch = false;
+  int fetchCount = 0;
   String? lastDate;
   String? lastSource;
 
@@ -65,11 +72,15 @@ class FakeRemoteDataSource implements NdviRemoteDatasource {
     String source = 'auto',
   }) async {
     called = true;
+    fetchCount++;
     lastBbox = bbox;
     lastGeometry = geometry;
     lastDate = date;
     lastSource = source;
     if (throwOnFetch) throw Exception('remote unavailable');
+    if (source == 'sentinel' && nextSentinelReturn != null) {
+      return NdviRemoteFetchResult(image: nextSentinelReturn);
+    }
     if (nextResult != null) return nextResult;
     if (nextReturn != null) {
       return NdviRemoteFetchResult(image: nextReturn);
@@ -354,6 +365,168 @@ void main() {
       final again = await repository.getByFieldId(fieldId);
       expect(remote.called, isFalse);
       expect(again.single.source, 'sentinel');
+    },
+  );
+
+  test(
+    'cache sentinel colormap não chama remote',
+    () async {
+      const fieldId = 'F1';
+      lookup.nextReturn = const FieldSummary(
+        id: fieldId,
+        name: 'Teste',
+        farmId: 'FAZ1',
+        bbox: [-50.0, -20.0, -49.0, -19.0],
+      );
+      local.nextList = const [
+        NdviImageModel(
+          id: 'SENTINEL',
+          fieldId: fieldId,
+          imageDate: '2026-09-12',
+          ndviMin: 0.1,
+          ndviMax: 0.8,
+          ndviMean: 0.62,
+          source: 'sentinel',
+          fetchedAt: '2026-09-27T00:00:00',
+          syncStatus: 0,
+          localPath: '/tmp/ndvi.png',
+        ),
+      ];
+
+      final result = await repository.getByFieldId(fieldId);
+
+      expect(remote.called, isFalse);
+      expect(result.single.source, 'sentinel');
+      expect(ndviIsColormapSource(result.single.source), isTrue);
+    },
+  );
+
+  test(
+    'cache planet_preview com falha no retry devolve Preview RGB',
+    () async {
+      const fieldId = 'F1';
+      lookup.nextReturn = const FieldSummary(
+        id: fieldId,
+        name: 'Teste',
+        farmId: 'FAZ1',
+        bbox: [-50.0, -20.0, -49.0, -19.0],
+      );
+      local.nextList = const [
+        NdviImageModel(
+          id: 'PLANET',
+          fieldId: fieldId,
+          imageDate: '2026-09-12',
+          ndviMin: 0,
+          ndviMax: 0,
+          ndviMean: 0,
+          source: 'planet_preview',
+          fetchedAt: '2026-09-12T00:00:00',
+          syncStatus: 0,
+          localPath: '/tmp/planet.png',
+        ),
+      ];
+      remote.throwOnFetch = true;
+
+      final result = await repository.getByFieldId(fieldId);
+
+      expect(remote.called, isTrue);
+      expect(remote.lastSource, 'sentinel');
+      expect(result, hasLength(1));
+      expect(result.single.id, 'PLANET');
+      expect(result.single.source, 'planet_preview');
+      expect(ndviIsColormapSource(result.single.source), isFalse);
+    },
+  );
+
+  test(
+    'ensureImageForDate com planet_preview pede sentinel',
+    () async {
+      const fieldId = 'F1';
+      lookup.nextReturn = const FieldSummary(
+        id: fieldId,
+        name: 'Teste',
+        farmId: 'FAZ1',
+        bbox: [-50.0, -20.0, -49.0, -19.0],
+      );
+      local.seed(
+        const NdviImageModel(
+          id: 'PLANET',
+          fieldId: fieldId,
+          imageDate: '2026-09-12',
+          ndviMin: 0,
+          ndviMax: 0,
+          ndviMean: 0,
+          source: 'planet_preview',
+          fetchedAt: '2026-09-12T00:00:00',
+          syncStatus: 0,
+          localPath: '/tmp/planet.png',
+        ),
+      );
+      remote.nextReturn = const NdviImageModel(
+        id: 'SENTINEL',
+        fieldId: fieldId,
+        imageDate: '2026-09-12',
+        ndviMin: 0.1,
+        ndviMax: 0.8,
+        ndviMean: 0.62,
+        source: 'sentinel',
+        fetchedAt: '2026-09-27T00:00:00',
+        syncStatus: 0,
+        localPath: '/tmp/ndvi.png',
+      );
+
+      final result = await repository.ensureImageForDate(fieldId, '2026-09-12');
+
+      expect(remote.called, isTrue);
+      expect(remote.lastSource, 'sentinel');
+      expect(remote.lastDate, '2026-09-12');
+      expect(result?.source, 'sentinel');
+      expect(local.lastSaved?.localPath, '/tmp/ndvi.png');
+    },
+  );
+
+  test(
+    'refreshIndex com planet_preview pede sentinel na mesma chamada',
+    () async {
+      const fieldId = 'F1';
+      lookup.nextReturn = const FieldSummary(
+        id: fieldId,
+        name: 'Teste',
+        farmId: 'FAZ1',
+        bbox: [-50.0, -20.0, -49.0, -19.0],
+      );
+      remote.nextReturn = const NdviImageModel(
+        id: 'PLANET',
+        fieldId: fieldId,
+        imageDate: '2026-09-12',
+        ndviMin: 0,
+        ndviMax: 0,
+        ndviMean: 0,
+        source: 'planet_preview',
+        fetchedAt: '2026-09-12T00:00:00',
+        syncStatus: 0,
+        localPath: '/tmp/planet.png',
+      );
+      remote.nextSentinelReturn = const NdviImageModel(
+        id: 'SENTINEL',
+        fieldId: fieldId,
+        imageDate: '2026-09-12',
+        ndviMin: 0.1,
+        ndviMax: 0.8,
+        ndviMean: 0.62,
+        source: 'sentinel',
+        fetchedAt: '2026-09-27T00:00:00',
+        syncStatus: 0,
+        localPath: '/tmp/ndvi.png',
+      );
+
+      final result = await repository.getByFieldId(fieldId);
+
+      expect(remote.fetchCount, 2);
+      expect(remote.lastSource, 'sentinel');
+      expect(remote.lastDate, '2026-09-12');
+      expect(result.single.source, 'sentinel');
+      expect(local.lastSaved?.id, 'SENTINEL');
     },
   );
 
