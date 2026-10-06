@@ -1,4 +1,3 @@
-import 'package:latlong2/latlong.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:soloforte_app/core/providers/connectivity_provider.dart';
 import 'package:soloforte_app/core/session/session_controller.dart';
@@ -35,8 +34,9 @@ class FarmMapDownloadJob {
       isRunning: isRunning ?? this.isRunning,
       isPaused: isPaused ?? this.isPaused,
       progress: progress ?? this.progress,
-      pendingSnackbar:
-          clearSnackbar ? null : (pendingSnackbar ?? this.pendingSnackbar),
+      pendingSnackbar: clearSnackbar
+          ? null
+          : (pendingSnackbar ?? this.pendingSnackbar),
     );
   }
 }
@@ -66,7 +66,9 @@ class FarmMapDownloadController extends _$FarmMapDownloadController {
     SessionController.registerLogoutInvalidation(
       key: 'farmMapDownloadControllerProvider',
       invalidate: (ref) {
-        ref.read(farmMapDownloadControllerProvider.notifier).cancelAllForLogout();
+        ref
+            .read(farmMapDownloadControllerProvider.notifier)
+            .cancelAllForLogout();
         ref.invalidate(farmMapDownloadControllerProvider);
       },
     );
@@ -93,16 +95,12 @@ class FarmMapDownloadController extends _$FarmMapDownloadController {
 
   bool isRunningFor(String farmId) => state[farmId]?.isRunning ?? false;
 
-  bool get _isOffline =>
-      !(ref.read(isOnlineProvider).asData?.value ?? true);
+  bool get _isOffline => !(ref.read(isOnlineProvider).asData?.value ?? true);
 
   void acknowledgeSnackbar(String farmId) {
     final job = state[farmId];
     if (job == null || job.pendingSnackbar == null) return;
-    state = {
-      ...state,
-      farmId: job.copyWith(clearSnackbar: true),
-    };
+    state = {...state, farmId: job.copyWith(clearSnackbar: true)};
   }
 
   void cancel(String farmId) {
@@ -238,25 +236,18 @@ class FarmMapDownloadController extends _$FarmMapDownloadController {
     required String layerKey,
     required int downloaded,
   }) {
-    final center = LatLng(
-      (plan.south + plan.north) / 2,
-      (plan.west + plan.east) / 2,
-    );
+    final id = 'farm:$farmId';
     OfflineMapAreaConfig? existing;
     for (final area in ref.read(offlineMapAreasProvider)) {
-      if (area.layerKey == layerKey &&
-          area.covers(
-            layerKey: layerKey,
-            lat: center.latitude,
-            lng: center.longitude,
-            zoom: plan.minZoom.toDouble(),
-          )) {
+      if (area.id == id) {
         existing = area;
         break;
       }
     }
 
-    ref.read(offlineMapAreasProvider.notifier).updateArea(
+    ref
+        .read(offlineMapAreasProvider.notifier)
+        .updateArea(
           existing != null
               ? existing.mergeWithViewport(
                   south: plan.south,
@@ -265,11 +256,12 @@ class FarmMapDownloadController extends _$FarmMapDownloadController {
                   east: plan.east,
                   minZoom: plan.minZoom.toDouble(),
                   maxZoom: plan.maxZoom.toDouble(),
-                  createdAt:
-                      downloaded > 0 ? DateTime.now() : existing.createdAt,
+                  createdAt: downloaded > 0
+                      ? DateTime.now()
+                      : existing.createdAt,
                 )
               : OfflineMapAreaConfig(
-                  id: 'farm:$farmId',
+                  id: id,
                   layerKey: layerKey,
                   south: plan.south,
                   west: plan.west,
