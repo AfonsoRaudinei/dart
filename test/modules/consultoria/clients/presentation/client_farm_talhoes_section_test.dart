@@ -224,6 +224,61 @@ void main() {
 
     expect(counter.value, greaterThanOrEqualTo(1));
   });
+
+  testWidgets('com várias fazendas inicia recolhido e expande no toque', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(800, 1600);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          preferencesServiceProvider.overrideWithValue(preferences),
+          farmLinkedFieldsProvider.overrideWith(
+            (ref, farmId) async => linkedFields,
+          ),
+        ],
+        child: MaterialApp(
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: ClientFarmWithTalhoesSection(
+                client: client,
+                farm: farm,
+                initiallyExpanded: false,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(find.text('Fazenda Retiro'), findsOneWidget);
+    expect(find.text('Área Total'), findsOneWidget);
+    expect(find.byTooltip('Mostrar talhões'), findsOneWidget);
+    expect(find.text('Talhão Norte'), findsNothing);
+    expect(find.text('Talhões'), findsNothing);
+
+    await tester.tap(find.text('Fazenda Retiro'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(find.text('Talhão Norte'), findsOneWidget);
+    expect(find.text('Talhões'), findsOneWidget);
+    expect(find.byTooltip('Ocultar talhões'), findsOneWidget);
+
+    await tester.tap(find.text('Fazenda Retiro'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(find.text('Fazenda Retiro'), findsOneWidget);
+    expect(find.text('Talhão Norte'), findsNothing);
+    expect(find.byTooltip('Mostrar talhões'), findsOneWidget);
+  });
 }
 
 class _NdviLookupCounter {
