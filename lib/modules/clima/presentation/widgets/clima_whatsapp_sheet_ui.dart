@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 
 import 'package:soloforte_app/core/contracts/i_client_lookup.dart';
 import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
-import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 import 'package:soloforte_app/modules/clima/domain/clima_share_payload.dart';
 
 class ClimaWhatsAppHeroResumo extends StatelessWidget {
   const ClimaWhatsAppHeroResumo({
+    super.key,
     required this.payload,
     required this.accent,
     required this.titleColor,
@@ -141,6 +141,7 @@ class ClimaWhatsAppHeroResumo extends StatelessWidget {
 
 class ClimaWhatsAppHeroChip extends StatelessWidget {
   const ClimaWhatsAppHeroChip({
+    super.key,
     required this.label,
     required this.isIos,
     required this.labelColor,
@@ -178,6 +179,7 @@ class ClimaWhatsAppHeroChip extends StatelessWidget {
 
 class ClimaWhatsAppCityFilter extends StatelessWidget {
   const ClimaWhatsAppCityFilter({
+    super.key,
     required this.cidades,
     required this.selecionada,
     required this.accent,
@@ -271,6 +273,7 @@ class ClimaWhatsAppCityFilter extends StatelessWidget {
 
 class ClimaWhatsAppCityChip extends StatelessWidget {
   const ClimaWhatsAppCityChip({
+    super.key,
     required this.label,
     required this.selected,
     required this.accent,
@@ -315,6 +318,7 @@ class ClimaWhatsAppCityChip extends StatelessWidget {
 
 class ClimaWhatsAppProducerGroup extends StatelessWidget {
   const ClimaWhatsAppProducerGroup({
+    super.key,
     required this.clientes,
     required this.selecionados,
     required this.accent,
@@ -374,6 +378,7 @@ class ClimaWhatsAppProducerGroup extends StatelessWidget {
 
 class ClimaWhatsAppProducerRow extends StatelessWidget {
   const ClimaWhatsAppProducerRow({
+    super.key,
     required this.cliente,
     required this.selected,
     required this.accent,
@@ -451,6 +456,7 @@ class ClimaWhatsAppProducerRow extends StatelessWidget {
 
 class ClimaWhatsAppSelectionCheck extends StatelessWidget {
   const ClimaWhatsAppSelectionCheck({
+    super.key,
     required this.selected,
     required this.enabled,
     required this.accent,
@@ -483,6 +489,7 @@ class ClimaWhatsAppSelectionCheck extends StatelessWidget {
 
 class ClimaWhatsAppEmptyProducers extends StatelessWidget {
   const ClimaWhatsAppEmptyProducers({
+    super.key,
     required this.message,
     required this.labelColor,
     this.onClearFilter,
