@@ -41,6 +41,12 @@ final viewportStateProvider = StateProvider.autoDispose<InitialViewportState>(
   (ref) => InitialViewportState.idle,
 );
 
+/// URI `/map` já tem destino de câmera (`drawingId` ou `modo=foco`).
+/// O viewport inicial GPS/fazenda não deve competir com esse enquadramento.
+final explicitMapCameraIntentProvider = StateProvider.autoDispose<bool>(
+  (ref) => false,
+);
+
 // ── ADR-031 F1: migrados de setState em private_map_screen.dart ──────────────
 
 /// Guard de modal aberto — impede abertura simultânea de dois modais.
