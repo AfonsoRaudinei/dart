@@ -175,10 +175,10 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
     if (_handledMapFirstUri == key) return;
     _handledMapFirstUri = key;
     final drawingId = uri.queryParameters['drawingId'];
-    if ((drawingId != null && drawingId.isNotEmpty) ||
-        uri.queryParameters['modo'] == 'foco') {
-      ref.read(explicitMapCameraIntentProvider.notifier).state = true;
-    }
+    final explicit =
+        (drawingId != null && drawingId.isNotEmpty) ||
+        uri.queryParameters['modo'] == 'foco';
+    ref.read(explicitMapCameraIntentProvider.notifier).state = explicit;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       MapFirstQueryHandler.handle(
@@ -279,6 +279,7 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
           'Mapa não ficou pronto para focar coordenada da rota',
           tag: 'PrivateMap',
         );
+        _releaseExplicitCameraIntentAndApplyGps();
         return;
       }
       Future<void>.delayed(const Duration(milliseconds: 50), () {
