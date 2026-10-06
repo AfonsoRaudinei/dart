@@ -393,8 +393,10 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen> {
                     else
                       ...client.farms.map(
                         (farm) => ClientFarmWithTalhoesSection(
+                          key: ValueKey(farm.id),
                           client: client,
                           farm: farm,
+                          initiallyExpanded: client.farms.length <= 1,
                         ),
                       ),
 
