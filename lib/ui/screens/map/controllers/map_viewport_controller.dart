@@ -56,6 +56,17 @@ OfflineCameraChoice resolveOfflineCamera({
   return OfflineCameraChoice.gps;
 }
 
+/// GPS que chega depois do foco do talhão (ou de intent explícito) não move.
+@visibleForTesting
+bool shouldCommitGpsMove({
+  required InitialViewportState viewport,
+  required bool explicitCameraIntent,
+}) {
+  if (explicitCameraIntent) return false;
+  return viewport != InitialViewportState.applied &&
+      viewport != InitialViewportState.aborted;
+}
+
 class MapViewportController {
   MapViewportController._();
 
@@ -74,6 +85,8 @@ class MapViewportController {
     required bool isMounted,
   }) async {
     if (!isMounted) return;
+
+    if (ref.read(explicitMapCameraIntentProvider)) return;
 
     final vp = ref.read(viewportStateProvider);
     if (vp == InitialViewportState.applied ||
@@ -177,17 +190,25 @@ class MapViewportController {
     }
 
     if (locationState == LocationState.available) {
+      ref.read(viewportStateProvider.notifier).state =
+          InitialViewportState.waitingForData;
       final locationService = LocationService();
       final position = await locationService.getCurrentPosition();
 
-      if (position != null && isMounted) {
+      if (!isMounted) return;
+
+      final stillAllowed = shouldCommitGpsMove(
+        viewport: ref.read(viewportStateProvider),
+        explicitCameraIntent: ref.read(explicitMapCameraIntentProvider),
+      );
+      if (!stillAllowed) return;
+
+      if (position != null) {
         mapController.move(position.position, 16.0);
         ref.read(viewportStateProvider.notifier).state =
             InitialViewportState.applied;
         return;
       }
-
-      if (!isMounted) return;
       final fallback = resolveOfflineCamera(
         isProducer: false,
         hasStoredFarmPoints: farmPoints.isNotEmpty,
