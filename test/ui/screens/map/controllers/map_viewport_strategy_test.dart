@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:soloforte_app/core/state/map_ui_providers.dart';
 import 'package:soloforte_app/modules/consultoria/clients/domain/agronomic_models.dart';
 import 'package:soloforte_app/ui/screens/map/controllers/map_viewport_controller.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -94,5 +95,45 @@ void main() {
     final points = polygonPointsFromFields(fields);
     expect(points, isNotEmpty);
     expect(points.first, const LatLng(-15.0, -48.0));
+  });
+
+  test('GPS tardio não move se o talhão já enquadrou', () {
+    expect(
+      shouldCommitGpsMove(
+        viewport: InitialViewportState.applied,
+        explicitCameraIntent: false,
+      ),
+      isFalse,
+    );
+  });
+
+  test('GPS tardio não move com intent explícito mesmo em idle', () {
+    expect(
+      shouldCommitGpsMove(
+        viewport: InitialViewportState.idle,
+        explicitCameraIntent: true,
+      ),
+      isFalse,
+    );
+  });
+
+  test('GPS inicial move quando idle e sem intent', () {
+    expect(
+      shouldCommitGpsMove(
+        viewport: InitialViewportState.idle,
+        explicitCameraIntent: false,
+      ),
+      isTrue,
+    );
+  });
+
+  test('aborted também bloqueia o move GPS', () {
+    expect(
+      shouldCommitGpsMove(
+        viewport: InitialViewportState.aborted,
+        explicitCameraIntent: false,
+      ),
+      isFalse,
+    );
   });
 }
