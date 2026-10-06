@@ -62,10 +62,16 @@ LinearGradient climaWeatherGradient(String condicaoCodigo) {
             ? [const Color(0xFF5AC8FA), const Color(0xFF007AFF)]
             : [const Color(0xFF5856D6), const Color(0xFF1C1C3A)],
       ),
-    '02' || '03' => const LinearGradient(
+    // Sol entre nuvens continua azul: só encardece a partir de nublado (04).
+    '02' => const LinearGradient(
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
-        colors: [Color(0xFF8E8E93), Color(0xFF636366)],
+        colors: [Color(0xFF6E9BF8), Color(0xFF3B5FD9)],
+      ),
+    '03' => const LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [Color(0xFF7FA0D9), Color(0xFF4E6FAE)],
       ),
     '04' => const LinearGradient(
         begin: Alignment.topLeft,
