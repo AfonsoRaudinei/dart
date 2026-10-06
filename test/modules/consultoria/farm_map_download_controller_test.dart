@@ -59,7 +59,7 @@ void main() {
   });
 
   const farmId = 'farm-1';
-  final plan = FarmMapDownloadPlan(
+  const plan = FarmMapDownloadPlan(
     south: -10,
     west: -48,
     north: -9,
