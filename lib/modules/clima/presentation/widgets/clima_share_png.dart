@@ -21,11 +21,15 @@ Future<Uint8List?> _capturePng(GlobalKey boundaryKey) async {
 }
 
 /// Renderiza [ClimaShareCard] off-screen, captura PNG e abre o share sheet.
+///
+/// Com [incluirTexto] em `false` (padrão) vai só a imagem — o card já carrega
+/// cidade, leitura e fonte, e a legenda duplicada polui o envio no WhatsApp.
 /// Retorna `false` se a captura ou o share falhar.
 Future<bool> shareClimaCardAsPng(
   BuildContext context,
-  ClimaSharePayload payload,
-) async {
+  ClimaSharePayload payload, {
+  bool incluirTexto = false,
+}) async {
   final boundaryKey = GlobalKey();
   final overlay = Overlay.of(context);
   late OverlayEntry entry;
@@ -60,7 +64,7 @@ Future<bool> shareClimaCardAsPng(
     if (!context.mounted) return false;
     await Share.shareXFiles(
       [XFile(file.path, mimeType: 'image/png')],
-      text: payload.buildWhatsAppMessage(),
+      text: incluirTexto ? payload.buildWhatsAppMessage() : null,
       subject: 'Previsão do tempo — ${payload.cidade}',
       sharePositionOrigin: resolveSharePositionOrigin(context),
     );
