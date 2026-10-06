@@ -411,7 +411,21 @@ class OfflineMapAreaConfig {
         zoom <= maxZoom;
   }
 
-  /// Une bbox e faixa de zoom com a viewport atual, preservando [id] e [layerKey].
+  /// Interseção deste bbox com outro. Null se não há sobreposição.
+  ({double south, double west, double north, double east})? intersectionWith({
+    required double south,
+    required double west,
+    required double north,
+    required double east,
+  }) {
+    final iSouth = south > this.south ? south : this.south;
+    final iWest = west > this.west ? west : this.west;
+    final iNorth = north < this.north ? north : this.north;
+    final iEast = east < this.east ? east : this.east;
+    if (iSouth >= iNorth || iWest >= iEast) return null;
+    return (south: iSouth, west: iWest, north: iNorth, east: iEast);
+  }
+
   OfflineMapAreaConfig mergeWithViewport({
     required double south,
     required double west,
@@ -458,8 +472,9 @@ class OfflineMapAreasNotifier extends Notifier<List<OfflineMapAreaConfig>> {
     _persist();
   }
 
-  /// Atualiza área existente por [OfflineMapAreaConfig.id] ou substitui área
-  /// que já cobre o mesmo bbox/layer. Caso contrário, adiciona nova entrada.
+  /// Atualiza área existente por [OfflineMapAreaConfig.id]. Viewport do mapa
+  /// (id sem prefixo `farm:`) ainda pode unir bbox contido; registros `farm:`
+  /// nunca são engolidos por outro id.
   void updateArea(OfflineMapAreaConfig area) {
     final byIdIndex = state.indexWhere((existing) => existing.id == area.id);
     if (byIdIndex >= 0) {
@@ -470,14 +485,17 @@ class OfflineMapAreasNotifier extends Notifier<List<OfflineMapAreaConfig>> {
       return;
     }
 
-    final coveringIndex = state.indexWhere(
-      (existing) =>
-          existing.layerKey == area.layerKey &&
+    final incomingIsFarm = area.id.startsWith('farm:');
+    final coveringIndex = state.indexWhere((existing) {
+      if (incomingIsFarm || existing.id.startsWith('farm:')) {
+        return false;
+      }
+      return existing.layerKey == area.layerKey &&
           existing.south <= area.south &&
           existing.north >= area.north &&
           existing.west <= area.west &&
-          existing.east >= area.east,
-    );
+          existing.east >= area.east;
+    });
     if (coveringIndex >= 0) {
       final next = [...state];
       next[coveringIndex] = _mergeAreaUpdate(state[coveringIndex], area);
@@ -572,29 +590,41 @@ class OfflineCoverageQuery {
       Object.hash(layerKey, lat, lng, south, west, north, east, zoom);
 }
 
-/// Só informa cobertura quando a área foi registrada e todos os tiles visíveis
-/// existem fisicamente no cache local.
+/// Só informa cobertura quando o centro cai numa área registrada e os tiles
+/// da **interseção** viewport ∩ bbox dessa área existem no cache local.
 final offlineCoverageProvider = FutureProvider.autoDispose
     .family<bool, OfflineCoverageQuery>((ref, query) {
       final areas = ref.watch(offlineMapAreasProvider);
-      final metadataCovers = areas.any(
-        (area) => area.covers(
+      OfflineMapAreaConfig? covering;
+      for (final area in areas) {
+        if (area.covers(
           layerKey: query.layerKey,
           lat: query.lat,
           lng: query.lng,
           zoom: query.zoom.toDouble(),
-        ),
+        )) {
+          covering = area;
+          break;
+        }
+      }
+      if (covering == null) return false;
+
+      final clipped = covering.intersectionWith(
+        south: query.south,
+        west: query.west,
+        north: query.north,
+        east: query.east,
       );
-      if (!metadataCovers) return false;
+      if (clipped == null) return false;
 
       return ref
           .watch(offlineTileCacheServiceProvider)
           .hasTilesForArea(
             layerKey: query.layerKey,
-            south: query.south,
-            west: query.west,
-            north: query.north,
-            east: query.east,
+            south: clipped.south,
+            west: clipped.west,
+            north: clipped.north,
+            east: clipped.east,
             zoom: query.zoom,
           );
     });
