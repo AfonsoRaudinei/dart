@@ -1,6 +1,9 @@
 import 'dart:io';
 
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:soloforte_app/core/state/map_ui_providers.dart';
 
 /// Blindagem: Abrir no mapa (drawingId) vs GPS inicial da câmera.
 void main() {
@@ -61,5 +64,32 @@ void main() {
     expect(scheduleIdx, greaterThanOrEqualTo(0));
     expect(intentIdx, greaterThan(scheduleIdx));
     expect(intentIdx, lessThan(postFrameIdx));
+  });
+
+  test('MapInitialViewportListener faz watch do intent (anti-autoDispose)', () {
+    final hosts = File(
+      'lib/ui/screens/map/widgets/map_performance_hosts.dart',
+    ).readAsStringSync();
+    expect(hosts, contains('ref.watch(explicitMapCameraIntentProvider)'));
+    expect(hosts, contains('ref.watch(viewportStateProvider)'));
+  });
+
+  testWidgets('intent sobrevive um frame quando há watch', (tester) async {
+    late WidgetRef widgetRef;
+    await tester.pumpWidget(
+      ProviderScope(
+        child: Consumer(
+          builder: (context, ref, _) {
+            widgetRef = ref;
+            ref.watch(explicitMapCameraIntentProvider);
+            return const SizedBox.shrink();
+          },
+        ),
+      ),
+    );
+
+    widgetRef.read(explicitMapCameraIntentProvider.notifier).state = true;
+    await tester.pump();
+    expect(widgetRef.read(explicitMapCameraIntentProvider), isTrue);
   });
 }
