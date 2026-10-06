@@ -17,7 +17,8 @@ class _FakeOfflineTileCacheService extends OfflineTileCacheService {
   final Future<OfflinePrefetchResult> Function(
     bool Function()? shouldCancel,
     bool Function()? shouldPause,
-  ) onPrefetch;
+  )
+  onPrefetch;
 
   @override
   Future<OfflinePrefetchResult> prefetchArea({
@@ -70,8 +71,8 @@ void main() {
 
   group('FarmMapDownloadController', () {
     Override alwaysOnline() => isOnlineProvider.overrideWith((ref) async* {
-          yield true;
-        });
+      yield true;
+    });
 
     test('cancel marca snackbar de cancelamento', () async {
       final container = ProviderContainer(
@@ -94,8 +95,9 @@ void main() {
         ],
       );
 
-      final notifier =
-          container.read(farmMapDownloadControllerProvider.notifier);
+      final notifier = container.read(
+        farmMapDownloadControllerProvider.notifier,
+      );
       await notifier.startDownload(
         farmId: farmId,
         plan: plan,
@@ -136,8 +138,9 @@ void main() {
       );
 
       container.read(farmMapDownloadControllerProvider);
-      final notifier =
-          container.read(farmMapDownloadControllerProvider.notifier);
+      final notifier = container.read(
+        farmMapDownloadControllerProvider.notifier,
+      );
       final future = notifier.startDownload(
         farmId: farmId,
         plan: plan,
@@ -176,8 +179,9 @@ void main() {
       );
 
       container.read(farmMapDownloadControllerProvider);
-      final notifier =
-          container.read(farmMapDownloadControllerProvider.notifier);
+      final notifier = container.read(
+        farmMapDownloadControllerProvider.notifier,
+      );
       await notifier.startDownload(
         farmId: farmId,
         plan: plan,
@@ -249,8 +253,9 @@ void main() {
       );
 
       container.read(farmMapDownloadControllerProvider);
-      final notifier =
-          container.read(farmMapDownloadControllerProvider.notifier);
+      final notifier = container.read(
+        farmMapDownloadControllerProvider.notifier,
+      );
       final future = notifier.startDownload(
         farmId: farmId,
         plan: plan,
@@ -271,6 +276,78 @@ void main() {
       expect(job?.pendingSnackbar, isNot(contains('incompleto')));
       container.dispose();
     });
+
+    test(
+      'duas fazendas vizinhas registram farm:A e farm:B, sem fundir ids',
+      () async {
+        final container = ProviderContainer(
+          overrides: [
+            alwaysOnline(),
+            preferencesServiceProvider.overrideWithValue(preferences),
+            offlineTileCacheServiceProvider.overrideWithValue(
+              _FakeOfflineTileCacheService(
+                onPrefetch: (_, __) async {
+                  return const OfflinePrefetchResult(
+                    total: 4,
+                    processed: 4,
+                    downloaded: 4,
+                    skipped: 0,
+                    failed: 0,
+                    cancelled: false,
+                  );
+                },
+              ),
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+        container.read(offlineMapAreasProvider.notifier).clear();
+
+        final notifier = container.read(
+          farmMapDownloadControllerProvider.notifier,
+        );
+        const planA = FarmMapDownloadPlan(
+          south: -10,
+          west: -48,
+          north: -9,
+          east: -47,
+          minZoom: 14,
+          maxZoom: 14,
+          tileCount: 4,
+        );
+        // Centro de B (-9.3, -47.3) cai no bbox de A.
+        const planB = FarmMapDownloadPlan(
+          south: -9.6,
+          west: -47.6,
+          north: -9.0,
+          east: -47.0,
+          minZoom: 14,
+          maxZoom: 14,
+          tileCount: 4,
+        );
+
+        await notifier.startDownload(
+          farmId: 'A',
+          plan: planA,
+          layerKey: 'layer',
+          urlTemplate: 'https://example.test/{z}/{x}/{y}.png',
+          subdomains: const [],
+          headers: const {},
+        );
+        await notifier.startDownload(
+          farmId: 'B',
+          plan: planB,
+          layerKey: 'layer',
+          urlTemplate: 'https://example.test/{z}/{x}/{y}.png',
+          subdomains: const [],
+          headers: const {},
+        );
+
+        final areas = container.read(offlineMapAreasProvider);
+        expect(areas.map((a) => a.id), ['farm:A', 'farm:B']);
+        expect(areas.firstWhere((a) => a.id == 'farm:A').south, planA.south);
+      },
+    );
   });
 
   group('farmMapDownloadNewSnackbars', () {
@@ -283,10 +360,7 @@ void main() {
         failed: 0,
       );
       final previous = {
-        farmId: const FarmMapDownloadJob(
-          isRunning: true,
-          progress: progress,
-        ),
+        farmId: const FarmMapDownloadJob(isRunning: true, progress: progress),
       };
       final next = {
         farmId: const FarmMapDownloadJob(
