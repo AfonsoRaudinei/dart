@@ -172,8 +172,8 @@ void main() {
       ),
     );
 
-    expect(find.text('Sáb 26/Set'), findsOneWidget);
-    expect(find.text('Dom 27/Set'), findsOneWidget);
+    expect(find.text('SÁB 26/SET'), findsOneWidget);
+    expect(find.text('DOM 27/SET'), findsOneWidget);
     expect(find.text('Parcialmente ensolarado'), findsOneWidget);
 
     // Chuva em destaque: chance maior que a temperatura, mm ao lado.
@@ -181,9 +181,18 @@ void main() {
     expect(find.text('0.7 mm'), findsOneWidget);
     expect(find.text('5%'), findsOneWidget);
     expect(find.text('0 mm'), findsOneWidget);
+    expect(find.text('precip.'), findsOneWidget);
+    expect(find.text('sem chuva'), findsOneWidget);
+
+    // Max/Min com rótulo próprio, no lugar da linha "35° / 24°".
+    expect(find.text('35°'), findsOneWidget);
+    expect(find.text('24°'), findsNWidgets(2));
+    expect(find.text('MAX'), findsNWidgets(2));
+    expect(find.text('MIN'), findsNWidgets(2));
+    expect(find.text('Vento 8 km/h'), findsOneWidget);
 
     final chance = tester.widget<Text>(find.text('40%')).style!;
-    final temperatura = tester.widget<Text>(find.text('35° / 24°')).style!;
+    final temperatura = tester.widget<Text>(find.text('35°')).style!;
     expect(chance.fontSize, greaterThan(temperatura.fontSize!));
     expect(chance.fontWeight, FontWeight.w700);
 
@@ -233,8 +242,9 @@ void main() {
     );
     expect(find.text('100%'), findsOneWidget);
     expect(find.text('18 mm'), findsOneWidget);
-    expect(find.text('Sex 02/Out'), findsOneWidget);
-    expect(find.text('Qui 01/Out'), findsOneWidget);
+    expect(find.text('SEX 02/OUT'), findsOneWidget);
+    expect(find.text('QUI 01/OUT'), findsOneWidget);
+    expect(find.text('7 DIAS'), findsOneWidget);
   });
 
   group('climaCityMatchKey', () {
