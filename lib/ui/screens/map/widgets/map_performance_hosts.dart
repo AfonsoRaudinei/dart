@@ -34,12 +34,20 @@ class MapGeofenceLifecycleHost extends ConsumerWidget {
 
 /// Side-effects de viewport inicial — sem rebuild visual.
 class MapInitialViewportListener extends ConsumerWidget {
-  const MapInitialViewportListener({super.key, required this.applyInitialViewport});
+  const MapInitialViewportListener({
+    super.key,
+    required this.applyInitialViewport,
+  });
 
   final VoidCallback applyInitialViewport;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // watch: autoDispose sem listener some no próximo frame e o GPS
+    // volta a competir com o foco do talhão.
+    ref.watch(explicitMapCameraIntentProvider);
+    ref.watch(viewportStateProvider);
+
     ref.listen(mapFieldsProvider, (prev, next) {
       final vp = ref.read(viewportStateProvider);
       if (vp != InitialViewportState.applied &&
