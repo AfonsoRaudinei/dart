@@ -382,6 +382,9 @@ void main() {
     });
 
     testWidgets('cidade sem cliente mostra estado vazio', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(390, 844));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
@@ -421,6 +424,13 @@ void main() {
       expect(find.text('Nenhum cliente em Gurupi.'), findsOneWidget);
       expect(find.text('Ver todas as cidades'), findsOneWidget);
       expect(find.text('Cliente Com Telefone'), findsNothing);
+
+      final sheetBox = tester.renderObject<RenderBox>(
+        find.byType(ClimaWhatsAppSheet),
+      );
+      // Com filtro + hero o sheet não ocupa a tela inteira (antes ~100% com vazio).
+      expect(sheetBox.size.height, lessThan(844 * 0.9));
+      expect(sheetBox.size.height, greaterThan(280));
     });
 
     testWidgets('resumo hero visível sem overflow em 390x844', (tester) async {

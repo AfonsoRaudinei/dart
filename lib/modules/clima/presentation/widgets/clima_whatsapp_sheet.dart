@@ -14,6 +14,9 @@ import 'package:soloforte_app/modules/clima/presentation/widgets/clima_whatsapp_
 
 // ─── WhatsApp Sheet ───────────────────────────────────────────────────────────
 
+/// Chrome fixo estimado (header + footer + divisores) para limitar só o scroll.
+const double kClimaShareSheetChromeEstimate = 248;
+
 class ClimaWhatsAppSheet extends ConsumerStatefulWidget {
   final ClimaSharePayload payload;
 
@@ -257,9 +260,22 @@ class _ClimaWhatsAppSheetState extends ConsumerState<ClimaWhatsAppSheet> {
             ),
           );
 
+          final scrollMax = boundedHeight
+              ? (constraints.maxHeight - kClimaShareSheetChromeEstimate).clamp(
+                  96.0,
+                  constraints.maxHeight,
+                )
+              : double.infinity;
+
+          final body = boundedHeight
+              ? ConstrainedBox(
+                  constraints: BoxConstraints(maxHeight: scrollMax),
+                  child: scrollBody,
+                )
+              : scrollBody;
+
           return Column(
-            mainAxisSize:
-                boundedHeight ? MainAxisSize.max : MainAxisSize.min,
+            mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Padding(
@@ -300,7 +316,7 @@ class _ClimaWhatsAppSheetState extends ConsumerState<ClimaWhatsAppSheet> {
                   ],
                 ),
               ),
-              if (boundedHeight) Flexible(child: scrollBody) else scrollBody,
+              body,
               Divider(color: divider, height: 1),
               Padding(
                 padding: EdgeInsets.fromLTRB(
