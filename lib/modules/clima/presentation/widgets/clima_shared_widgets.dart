@@ -101,7 +101,7 @@ class ClimaShareButton extends StatelessWidget {
                 context: context,
                 isScrollControlled: true,
                 showDragHandle: true,
-                maxHeightFraction: 0.82,
+                maxHeightFraction: 0.9,
                 builder: (_) => ClimaWhatsAppSheet(payload: payload),
               ),
             ),
