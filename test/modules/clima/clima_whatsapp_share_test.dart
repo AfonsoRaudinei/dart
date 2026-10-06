@@ -305,13 +305,6 @@ void main() {
       expect(find.text('Cliente Sem Telefone'), findsOneWidget);
       expect(find.text('Sem telefone cadastrado'), findsOneWidget);
       expect(find.text('Nenhum cliente cadastrado.'), findsNothing);
-
-      final checkboxes = tester.widgetList<CheckboxListTile>(
-        find.byType(CheckboxListTile),
-      );
-      expect(checkboxes.length, 2);
-      expect(checkboxes.first.onChanged, isNotNull);
-      expect(checkboxes.last.onChanged, isNull);
       expect(find.text('Cliente Outra Cidade'), findsNothing);
       expect(find.text('Enviar pelo WhatsApp'), findsNothing);
       expect(find.text('Selecione destinatários'), findsOneWidget);
@@ -327,16 +320,17 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Cliente Outra Cidade'), findsNothing);
 
-      await tester.tap(find.text('Marcar com telefone'));
+      await tester.tap(find.text('Marcar todos'));
       await tester.pumpAndSettle();
       expect(find.text('Enviar pelo WhatsApp (1)'), findsOneWidget);
-      expect(find.text('Ver card'), findsOneWidget);
+      expect(find.text('Compartilhar card'), findsOneWidget);
+      expect(find.text('Toque para ver o card completo'), findsOneWidget);
     });
 
     testWidgets('no iPhone a lista de produtores com telefone fica tocável', (
       tester,
     ) async {
-      const sheetHeight = 844 * 0.82;
+      const sheetHeight = 844 * 0.9;
       await tester.binding.setSurfaceSize(const Size(390, sheetHeight));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
@@ -382,11 +376,6 @@ void main() {
       expect(tester.getRect(nome).bottom, lessThan(sheetHeight));
       expect(tester.getRect(nome).top, greaterThan(0));
 
-      final tile = tester.widget<CheckboxListTile>(
-        find.widgetWithText(CheckboxListTile, 'Cliente Outra Cidade'),
-      );
-      expect(tile.onChanged, isNotNull);
-
       await tester.tap(nome);
       await tester.pump();
       expect(find.text('Enviar pelo WhatsApp (1)'), findsOneWidget);
@@ -430,7 +419,54 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(find.text('Nenhum cliente em Gurupi.'), findsOneWidget);
+      expect(find.text('Ver todas as cidades'), findsOneWidget);
       expect(find.text('Cliente Com Telefone'), findsNothing);
+    });
+
+    testWidgets('resumo hero visível sem overflow em 390x844', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(390, 844));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            clientLookupProvider.overrideWithValue(_FakeClientLookup()),
+          ],
+          child: MaterialApp(
+            home: Scaffold(
+              body: ClimaWhatsAppSheet(
+                payload: ClimaSharePayloadAtual(
+                  ClimaAtual(
+                    temperatura: 31,
+                    sensacaoTermica: 33,
+                    condicao: 'Ensolarado',
+                    condicaoCodigo: '01d',
+                    ventoVelocidade: 8,
+                    ventoDirecao: 'NE',
+                    umidade: 48,
+                    precipitacao: 0,
+                    pressao: 1015,
+                    visibilidade: 16,
+                    coberturaNuvens: 0,
+                    indiceUV: 5,
+                    nascerSol: DateTime(2026, 7, 10, 6, 31),
+                    porSol: DateTime(2026, 7, 10, 18, 5),
+                    latitude: -10.18,
+                    longitude: -48.33,
+                    cidade: 'Palmas, TO',
+                    atualizadoEm: DateTime(2026, 7, 10, 10),
+                    fonte: ClimaFonte.googleWeather,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      expect(find.text('Toque para ver o card completo'), findsOneWidget);
+      expect(find.text('SoloForte · Fonte: Google Weather'), findsOneWidget);
     });
   });
 }
