@@ -174,6 +174,11 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
     final key = uri.toString();
     if (_handledMapFirstUri == key) return;
     _handledMapFirstUri = key;
+    final drawingId = uri.queryParameters['drawingId'];
+    if ((drawingId != null && drawingId.isNotEmpty) ||
+        uri.queryParameters['modo'] == 'foco') {
+      ref.read(explicitMapCameraIntentProvider.notifier).state = true;
+    }
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       MapFirstQueryHandler.handle(
@@ -185,6 +190,11 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
         focusCoordinate: _focusCoordinateFromQuery,
       );
     });
+  }
+
+  void _releaseExplicitCameraIntentAndApplyGps() {
+    ref.read(explicitMapCameraIntentProvider.notifier).state = false;
+    _applyInitialViewport();
   }
 
   Future<void> _focusDrawingFromQuery(
@@ -199,6 +209,7 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
           'Mapa não ficou pronto para focar drawing da rota: $drawingId',
           tag: 'PrivateMap',
         );
+        _releaseExplicitCameraIntentAndApplyGps();
         return;
       }
       Future<void>.delayed(const Duration(milliseconds: 50), () {
@@ -230,6 +241,7 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
         'Drawing informado na rota não foi encontrado: $drawingId',
         tag: 'PrivateMap',
       );
+      _releaseExplicitCameraIntentAndApplyGps();
       return;
     }
 
@@ -241,6 +253,8 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
     if (focused) {
       ref.read(viewportStateProvider.notifier).state =
           InitialViewportState.applied;
+    } else {
+      _releaseExplicitCameraIntentAndApplyGps();
     }
 
     if (edit) {
@@ -410,9 +424,7 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
       );
       return;
     }
-    _openMapMarkSheet(
-      LatLng(fix.position.latitude, fix.position.longitude),
-    );
+    _openMapMarkSheet(LatLng(fix.position.latitude, fix.position.longitude));
   }
 
   bool _isPinHit(LatLng point) {
@@ -677,8 +689,9 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
       east: east,
       zoom: _mapController.camera.zoom.round(),
     );
-    final hasExistingCoverage =
-        await ref.read(offlineCoverageProvider(coverageQuery).future);
+    final hasExistingCoverage = await ref.read(
+      offlineCoverageProvider(coverageQuery).future,
+    );
     OfflineMapAreaConfig? existingCoveringArea;
     if (hasExistingCoverage) {
       for (final area in ref.read(offlineMapAreasProvider)) {
@@ -748,11 +761,14 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
       return;
     }
 
-    final refreshedCreatedAt = existingCoveringArea == null || result.downloaded > 0
+    final refreshedCreatedAt =
+        existingCoveringArea == null || result.downloaded > 0
         ? DateTime.now()
         : existingCoveringArea.createdAt;
 
-    ref.read(offlineMapAreasProvider.notifier).updateArea(
+    ref
+        .read(offlineMapAreasProvider.notifier)
+        .updateArea(
           existingCoveringArea != null
               ? existingCoveringArea.mergeWithViewport(
                   south: south,
@@ -820,11 +836,7 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
   void _handleOccurrencePinTap(occ.Occurrence occurrence) {
     if (!mounted) return;
     if (ref.read(drawingControllerProvider).suppressesMapContextTaps) return;
-    OccurrenceDetailSheet.show(
-      context,
-      occurrence,
-      allowPinCorrection: true,
-    );
+    OccurrenceDetailSheet.show(context, occurrence, allowPinCorrection: true);
   }
 
   @override
@@ -838,7 +850,8 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
     // ADR-032 F3: Build orchestrado por MapBuildOrchestrator.
     // Todo o conteúdo do Stack (canvas, layers, overlays, controls, sheet)
     // vive em map/widgets/map_build_orchestrator.dart.
-    final pinCorrectionActive = ref.watch(pinPositionCorrectionProvider) != null;
+    final pinCorrectionActive =
+        ref.watch(pinPositionCorrectionProvider) != null;
 
     return PopScope(
       canPop: !pinCorrectionActive,
@@ -848,24 +861,24 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
         }
       },
       child: MapBuildOrchestrator(
-      mapController: _mapController,
-      setSheetState: _setSheetState,
-      openOccurrenceSheet: _openOccurrenceSheet,
-      handleMapLongPress: _handleMapLongPress,
-      finishDrawing: _finishDrawing,
-      toggleDrawMode: _toggleDrawMode,
-      centerOnUser: _centerOnUser,
-      onLocationModeChanged: _handleLocationModeChanged,
-      stopFollowing: () =>
-          MapLocationHandler.stopFollowing(mapController: _mapController),
-      handleOccurrencePinTap: _handleOccurrencePinTap,
-      applyInitialViewport: _applyInitialViewport,
-      openCoordinateSearch: _openCoordinateSearch,
-      openMunicipalitySearch: _openMunicipalitySearch,
-      downloadOfflineArea: _downloadOfflineArea,
-      absorbMapPointers: _actionsSheetOpen,
-      showLongPressHint: _showLongPressHint,
-      onMapUserInteraction: _onMapUserInteraction,
+        mapController: _mapController,
+        setSheetState: _setSheetState,
+        openOccurrenceSheet: _openOccurrenceSheet,
+        handleMapLongPress: _handleMapLongPress,
+        finishDrawing: _finishDrawing,
+        toggleDrawMode: _toggleDrawMode,
+        centerOnUser: _centerOnUser,
+        onLocationModeChanged: _handleLocationModeChanged,
+        stopFollowing: () =>
+            MapLocationHandler.stopFollowing(mapController: _mapController),
+        handleOccurrencePinTap: _handleOccurrencePinTap,
+        applyInitialViewport: _applyInitialViewport,
+        openCoordinateSearch: _openCoordinateSearch,
+        openMunicipalitySearch: _openMunicipalitySearch,
+        downloadOfflineArea: _downloadOfflineArea,
+        absorbMapPointers: _actionsSheetOpen,
+        showLongPressHint: _showLongPressHint,
+        onMapUserInteraction: _onMapUserInteraction,
       ),
     );
   }
