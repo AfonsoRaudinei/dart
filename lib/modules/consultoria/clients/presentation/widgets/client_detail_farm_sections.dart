@@ -19,18 +19,35 @@ import '../widgets/talhao_actions_sheet.dart';
 import '../widgets/talhao_union_sheet.dart';
 import '../widgets/talhao_map_preview.dart';
 
-class ClientFarmWithTalhoesSection extends ConsumerWidget {
+class ClientFarmWithTalhoesSection extends ConsumerStatefulWidget {
   final Client client;
   final Farm farm;
+  final bool initiallyExpanded;
 
   const ClientFarmWithTalhoesSection({
     super.key,
     required this.client,
     required this.farm,
+    this.initiallyExpanded = true,
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ClientFarmWithTalhoesSection> createState() =>
+      _ClientFarmWithTalhoesSectionState();
+}
+
+class _ClientFarmWithTalhoesSectionState
+    extends ConsumerState<ClientFarmWithTalhoesSection> {
+  late bool _expanded = widget.initiallyExpanded;
+
+  void _toggleExpanded() {
+    setState(() => _expanded = !_expanded);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final client = widget.client;
+    final farm = widget.farm;
     final fieldsAsync = ref.watch(farmLinkedFieldsProvider(farm.id));
     final linkedFields = fieldsAsync.asData?.value;
     final displayedAreaHa = linkedFields == null
@@ -39,20 +56,47 @@ class ClientFarmWithTalhoesSection extends ConsumerWidget {
     final areaUnit = ref.watch(areaDisplayUnitProvider);
     final showNdvi = ref.watch(talhaoCardNdviEnabledProvider(farm.id));
     final areaFormatted = formatAreaFromHectares(displayedAreaHa, areaUnit);
+    final toggleTooltip = _expanded ? 'Ocultar talhões' : 'Mostrar talhões';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          farm.name,
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        InkWell(
+          onTap: _toggleExpanded,
+          borderRadius: BorderRadius.circular(8),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        farm.name,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    Tooltip(
+                      message: toggleTooltip,
+                      child: Icon(
+                        _expanded ? Icons.expand_less : Icons.expand_more,
+                      ),
+                    ),
+                  ],
+                ),
+                Text(
+                  'Produtor: ${client.name}',
+                  style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                ),
+              ],
+            ),
+          ),
         ),
-        const SizedBox(height: 4),
-        Text(
-          'Produtor: ${client.name}',
-          style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-        ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 8),
         Container(
           width: double.infinity,
           padding: const EdgeInsets.all(16),
@@ -79,52 +123,54 @@ class ClientFarmWithTalhoesSection extends ConsumerWidget {
             ],
           ),
         ),
-        const SizedBox(height: 20),
-        Row(
-          children: [
-            const Text(
-              'Talhões',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            const Spacer(),
-            TalhaoCardNdviToggle(farmId: farm.id),
-            TextButton.icon(
-              onPressed: () => context.go(
-                farmMapCreateUri(clientId: client.id, farmId: farm.id),
+        if (_expanded) ...[
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              const Text(
+                'Talhões',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
-              icon: const Icon(Icons.add, color: PremiumTokens.brandGreen),
-              label: const Text(
-                'Novo',
-                style: TextStyle(
-                  color: PremiumTokens.brandGreen,
-                  fontWeight: FontWeight.bold,
+              const Spacer(),
+              TalhaoCardNdviToggle(farmId: farm.id),
+              TextButton.icon(
+                onPressed: () => context.go(
+                  farmMapCreateUri(clientId: client.id, farmId: farm.id),
+                ),
+                icon: const Icon(Icons.add, color: PremiumTokens.brandGreen),
+                label: const Text(
+                  'Novo',
+                  style: TextStyle(
+                    color: PremiumTokens.brandGreen,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
-            ),
-          ],
-        ),
-        FarmMapDownloadButton(farmId: farm.id, fields: linkedFields),
-        const SizedBox(height: 8),
-        fieldsAsync.when(
-          data: (fields) => FarmLinkedFieldList(
-            clientId: client.id,
-            farmId: farm.id,
-            fields: fields,
-            showNdvi: showNdvi,
+            ],
           ),
-          loading: () {
-            if ((linkedFields ?? const []).isEmpty) {
-              return const Center(child: CircularProgressIndicator());
-            }
-            return FarmLinkedFieldList(
+          FarmMapDownloadButton(farmId: farm.id, fields: linkedFields),
+          const SizedBox(height: 8),
+          fieldsAsync.when(
+            data: (fields) => FarmLinkedFieldList(
               clientId: client.id,
               farmId: farm.id,
-              fields: linkedFields!,
+              fields: fields,
               showNdvi: showNdvi,
-            );
-          },
-          error: (err, stack) => const SizedBox.shrink(),
-        ),
+            ),
+            loading: () {
+              if ((linkedFields ?? const []).isEmpty) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              return FarmLinkedFieldList(
+                clientId: client.id,
+                farmId: farm.id,
+                fields: linkedFields!,
+                showNdvi: showNdvi,
+              );
+            },
+            error: (err, stack) => const SizedBox.shrink(),
+          ),
+        ],
         const SizedBox(height: 12),
       ],
     );
