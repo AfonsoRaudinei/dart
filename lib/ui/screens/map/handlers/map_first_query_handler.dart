@@ -34,8 +34,9 @@ class MapFirstQueryHandler {
     final fazendaNome = uri.queryParameters['fazendaNome'];
     final drawingId = uri.queryParameters['drawingId'];
     final showNdvi = uri.queryParameters['ndvi'] == '1';
-    ref.read(mapNdviOverlayFieldIdProvider.notifier).state =
-        showNdvi && drawingId != null && drawingId.isNotEmpty
+    ref
+        .read(mapNdviOverlayFieldIdProvider.notifier)
+        .state = showNdvi && drawingId != null && drawingId.isNotEmpty
         ? drawingId
         : null;
 
@@ -54,12 +55,15 @@ class MapFirstQueryHandler {
             farmName: fazendaNome,
           );
       if (modo != 'editar') {
-        setSheetState(
-          const MapSheetState(type: MapSheetType.draw),
-          modo == 'uniao'
-              ? 'query_param_modo_uniao'
-              : 'query_param_modo_desenho',
-        );
+        final hasDrawingId = drawingId != null && drawingId.isNotEmpty;
+        if (!hasDrawingId) {
+          setSheetState(
+            const MapSheetState(type: MapSheetType.draw),
+            modo == 'uniao'
+                ? 'query_param_modo_uniao'
+                : 'query_param_modo_desenho',
+          );
+        }
       }
       if (drawingId != null && drawingId.isNotEmpty) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
