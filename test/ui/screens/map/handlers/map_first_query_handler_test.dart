@@ -48,11 +48,7 @@ void main() {
       ),
     );
 
-    return (
-      ref: capturedRef,
-      sheets: sheets,
-      focuses: focuses,
-    );
+    return (ref: capturedRef, sheets: sheets, focuses: focuses);
   }
 
   void handle({
@@ -68,9 +64,10 @@ void main() {
       setSheetState: (state, reason) =>
           sheets.add((state: state, reason: reason)),
       openMapMark: () => mapMarks?.add(1),
-      focusDrawing: (drawingId, {required bool edit, bool union = false}) async {
-        focuses.add((drawingId: drawingId, edit: edit, union: union));
-      },
+      focusDrawing:
+          (drawingId, {required bool edit, bool union = false}) async {
+            focuses.add((drawingId: drawingId, edit: edit, union: union));
+          },
       focusCoordinate: (LatLng point) {},
     );
   }
@@ -81,9 +78,7 @@ void main() {
       ref: host.ref,
       sheets: host.sheets,
       focuses: host.focuses,
-      uri: Uri.parse(
-        '/map?modo=editar&clienteId=c1&fazendaId=f1&drawingId=d1',
-      ),
+      uri: Uri.parse('/map?modo=editar&clienteId=c1&fazendaId=f1&drawingId=d1'),
     );
     await tester.pump();
 
@@ -94,7 +89,9 @@ void main() {
     expect(host.focuses.single.union, isFalse);
   });
 
-  testWidgets('modo=desenho chama setSheetState draw', (tester) async {
+  testWidgets('modo=desenho com drawingId NÃO abre sheet no handle', (
+    tester,
+  ) async {
     final host = await pumpHandlerHost(tester);
     handle(
       ref: host.ref,
@@ -106,35 +103,51 @@ void main() {
     );
     await tester.pump();
 
-    expect(host.sheets, hasLength(1));
-    expect(host.sheets.single.state.type, MapSheetType.draw);
-    expect(host.sheets.single.reason, 'query_param_modo_desenho');
+    expect(host.sheets, isEmpty);
     expect(host.focuses, hasLength(1));
     expect(host.focuses.single.edit, isFalse);
     expect(host.focuses.single.union, isFalse);
   });
 
-  testWidgets('modo=uniao chama setSheetState draw', (tester) async {
+  testWidgets('modo=desenho sem drawingId abre sheet de desenho', (
+    tester,
+  ) async {
     final host = await pumpHandlerHost(tester);
     handle(
       ref: host.ref,
       sheets: host.sheets,
       focuses: host.focuses,
-      uri: Uri.parse(
-        '/map?modo=uniao&clienteId=c1&fazendaId=f1&drawingId=d1',
-      ),
+      uri: Uri.parse('/map?modo=desenho&clienteId=c1&fazendaId=f1'),
     );
     await tester.pump();
 
     expect(host.sheets, hasLength(1));
     expect(host.sheets.single.state.type, MapSheetType.draw);
-    expect(host.sheets.single.reason, 'query_param_modo_uniao');
+    expect(host.sheets.single.reason, 'query_param_modo_desenho');
+    expect(host.focuses, isEmpty);
+  });
+
+  testWidgets('modo=uniao com drawingId NÃO abre sheet no handle', (
+    tester,
+  ) async {
+    final host = await pumpHandlerHost(tester);
+    handle(
+      ref: host.ref,
+      sheets: host.sheets,
+      focuses: host.focuses,
+      uri: Uri.parse('/map?modo=uniao&clienteId=c1&fazendaId=f1&drawingId=d1'),
+    );
+    await tester.pump();
+
+    expect(host.sheets, isEmpty);
     expect(host.focuses, hasLength(1));
     expect(host.focuses.single.edit, isFalse);
     expect(host.focuses.single.union, isTrue);
   });
 
-  testWidgets('modo=ocorrencia abre a ficha no GPS e não arma modo', (tester) async {
+  testWidgets('modo=ocorrencia abre a ficha no GPS e não arma modo', (
+    tester,
+  ) async {
     final host = await pumpHandlerHost(tester);
     final marks = <int>[];
     handle(
