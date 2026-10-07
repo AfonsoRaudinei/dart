@@ -1,6 +1,8 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 
+import '../../../../core/session/session_controller.dart';
 import '../../../../core/utils/app_logger.dart';
 
 enum PinCorrectionKind { occurrence, marketing }
@@ -25,6 +27,20 @@ class PinPositionCorrectionSession {
 /// (callbacks e container capturado no sheet sobrevivem ao pop).
 final pinPositionCorrectionProvider =
     StateProvider<PinPositionCorrectionSession?>((ref) => null);
+
+@visibleForTesting
+void pinCorrectionLogoutInvalidate(dynamic ref) {
+  ref.read(pinPositionCorrectionProvider.notifier).state = null;
+}
+
+// ignore: unused_element
+final _pinCorrectionLogoutRegistration = () {
+  SessionController.registerLogoutInvalidation(
+    key: 'pinPositionCorrectionProvider',
+    invalidate: pinCorrectionLogoutInvalidate,
+  );
+  return true;
+}();
 
 bool isValidPinCorrectionCoordinates(double latitude, double longitude) {
   if (!latitude.isFinite || !longitude.isFinite) return false;

@@ -61,10 +61,9 @@ class _DraggablePinLayerState extends ConsumerState<DraggablePinLayer> {
       top: screenPoint.y - hitHeight,
       width: hitWidth,
       height: hitHeight,
-      child: Listener(
+      child: GestureDetector(
         behavior: HitTestBehavior.opaque,
-        child: GestureDetector(
-          onPanStart: (_) {
+        onPanStart: (_) {
             setState(() => _isDragging = true);
             HapticFeedback.selectionClick();
           },
@@ -92,7 +91,6 @@ class _DraggablePinLayerState extends ConsumerState<DraggablePinLayer> {
             ),
           ),
         ),
-      ),
     );
   }
 }
