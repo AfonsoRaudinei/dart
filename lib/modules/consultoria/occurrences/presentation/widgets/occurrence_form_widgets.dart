@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:soloforte_app/core/design/sf_icons.dart';
 import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
+import 'package:soloforte_app/core/widgets/photo/soloforte_photo_picker_sheet.dart';
 import 'package:soloforte_app/ui/theme/premium/design_tokens.dart';
 
 import '../../domain/occurrence.dart';
@@ -479,70 +481,86 @@ class OccurrenceRadioChip extends StatelessWidget {
   }
 }
 
-// ── Sheet de seleção de fonte de foto ────────────────────────────────────
+// ── Três origens de foto (galeria, câmera, inversão vegetal) ─────────────
 
-class OccurrencePhotoSourceSheet extends StatelessWidget {
-  final String catEmoji;
-  final String catLabel;
-  final VoidCallback onCamera;
-  final VoidCallback onGallery;
+class OccurrencePhotoOriginToolbar extends StatelessWidget {
+  final Color accent;
+  final ValueChanged<SoloFortePhotoPickerOrigin> onOriginSelected;
 
-  const OccurrencePhotoSourceSheet({
+  const OccurrencePhotoOriginToolbar({
     super.key,
-    required this.catEmoji,
-    required this.catLabel,
-    required this.onCamera,
-    required this.onGallery,
+    required this.accent,
+    required this.onOriginSelected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: [
+        _OccurrencePhotoOriginButton(
+          tooltip: 'Galeria',
+          icon: SFIcons.photoLibrary,
+          accent: accent,
+          onTap: () => onOriginSelected(SoloFortePhotoPickerOrigin.gallery),
+        ),
+        _OccurrencePhotoOriginButton(
+          tooltip: 'Câmera',
+          icon: Icons.camera_alt_outlined,
+          accent: accent,
+          onTap: () => onOriginSelected(SoloFortePhotoPickerOrigin.camera),
+        ),
+        _OccurrencePhotoOriginButton(
+          tooltip: 'Inversão vegetal',
+          icon: SFIcons.leaf,
+          accent: accent,
+          onTap: () => onOriginSelected(SoloFortePhotoPickerOrigin.vegetal),
+        ),
+      ],
+    );
+  }
+}
+
+class _OccurrencePhotoOriginButton extends StatelessWidget {
+  final String tooltip;
+  final IconData icon;
+  final Color accent;
+  final VoidCallback onTap;
+
+  const _OccurrencePhotoOriginButton({
+    required this.tooltip,
+    required this.icon,
+    required this.accent,
+    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     final isIos = occurrenceFormIsIos(context);
-    final bg = isIos
-        ? SoloForteSheetSkinIos.cardBackground
-        : const Color(0xFF1C1C1E);
-    final radius =
-        isIos ? SoloForteSheetSkinIos.cardRadius : 16.0;
-    final titleColor =
-        isIos ? SoloForteSheetSkinIos.titleColor : Colors.white;
-    final iconColor =
-        isIos ? SoloForteSheetSkinIos.iconStroke : Colors.white70;
-    final tileColor =
-        isIos ? SoloForteSheetSkinIos.titleColor : Colors.white;
-
-    return Container(
-      margin: const EdgeInsets.all(12),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(radius),
-        border: isIos
-            ? Border.all(color: SoloForteSheetSkinIos.cardBorder)
-            : null,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            '$catEmoji $catLabel',
-            style: TextStyle(
-              color: titleColor,
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
-            ),
+    final surface = isIos
+        ? SoloForteSheetSkinIos.iconBackground
+        : accent.withValues(alpha: 0.12);
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(
+            isIos ? SoloForteSheetSkinIos.ctaRadius : 14,
           ),
-          const SizedBox(height: 16),
-          ListTile(
-            leading: Icon(Icons.camera_alt_outlined, color: iconColor),
-            title: Text('Câmera', style: TextStyle(color: tileColor)),
-            onTap: onCamera,
+          side: BorderSide(color: accent.withValues(alpha: 0.55)),
+        ),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(
+            isIos ? SoloForteSheetSkinIos.ctaRadius : 14,
           ),
-          ListTile(
-            leading: Icon(Icons.photo_library_outlined, color: iconColor),
-            title: Text('Galeria', style: TextStyle(color: tileColor)),
-            onTap: onGallery,
+          child: SizedBox(
+            width: 72,
+            height: 52,
+            child: Icon(icon, color: accent, size: 26),
           ),
-        ],
+        ),
       ),
     );
   }
