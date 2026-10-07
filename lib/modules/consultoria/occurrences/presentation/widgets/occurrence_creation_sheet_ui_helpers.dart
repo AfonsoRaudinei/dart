@@ -362,7 +362,7 @@ extension _OccurrenceCreationSheetAreaVisitadaUi
   String get _primarySaveButtonLabel {
     if (widget.initialOccurrence != null) return 'Salvar Alterações';
     if (_isAreaVisitada) return 'Salvar localização';
-    return 'Salvar Ocorrência';
+    return 'Salvar';
   }
 
   Widget _compactMapHeader({
