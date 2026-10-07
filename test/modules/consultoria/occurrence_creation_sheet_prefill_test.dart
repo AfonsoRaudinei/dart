@@ -97,11 +97,11 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.scrollUntilVisible(
-      find.text('Salvar Ocorrência'),
+      find.text('Salvar'),
       200,
       scrollable: find.byType(Scrollable).first,
     );
-    await tester.tap(find.text('Salvar Ocorrência'));
+    await tester.tap(find.text('Salvar'));
     await tester.pump();
 
     expect(

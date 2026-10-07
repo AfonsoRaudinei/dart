@@ -42,7 +42,7 @@ Future<Finder> _scrollToDescriptionField(WidgetTester tester) =>
     _scrollTo(tester, find.widgetWithText(TextField, 'Descreva a ocorrência…'));
 
 Future<Finder> _scrollToSaveButton(WidgetTester tester) =>
-    _scrollTo(tester, find.text('Salvar Ocorrência'));
+    _scrollTo(tester, find.text('Salvar'));
 
 Widget _buildSheet({
   required OccurrenceConfirmCallback onConfirm,
@@ -84,7 +84,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Salvar Ocorrência'));
+    await tester.tap(find.text('Salvar'));
     await tester.pumpAndSettle();
 
     expect(confirmCalls, 0);
