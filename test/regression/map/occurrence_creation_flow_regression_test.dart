@@ -48,13 +48,13 @@ void main() {
       );
     });
 
-    test('P0: foto fecha modal de origem antes do ImagePicker', () {
-      expect(uiHelpersSource, contains('Navigator.of(sheetContext).pop()'));
-      expect(uiHelpersSource, contains('_capturePhotoFromSource'));
-      expect(
-        uiHelpersSource.indexOf('Navigator.of(sheetContext).pop()'),
-        lessThan(uiHelpersSource.indexOf('_picker.pickImage')),
-      );
+    test('P0: foto usa picker compartilhado com inversão vegetal (sem sheet duplicado)',
+        () {
+      expect(uiHelpersSource, contains('resolveSoloFortePhotoPath'));
+      expect(uiHelpersSource, contains('OccurrencePhotoOriginToolbar'));
+      expect(uiHelpersSource, isNot(contains('OccurrencePhotoSourceSheet')));
+      expect(uiHelpersSource, isNot(contains('Adicionar foto')));
+      expect(uiHelpersSource, isNot(contains('_picker.pickImage')));
     });
 
     test('P1: showContent relaxado na criação de ocorrência', () {
