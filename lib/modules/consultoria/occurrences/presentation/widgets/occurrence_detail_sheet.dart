@@ -5,7 +5,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import 'package:latlong2/latlong.dart';
 import 'package:soloforte_app/core/contracts/i_client_lookup_provider.dart';
 import 'package:soloforte_app/core/router/app_routes.dart';
 import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
@@ -13,11 +12,11 @@ import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 
 import '../../../../../../core/design/sf_icons.dart';
 import '../../../../../../ui/theme/premium/design_tokens.dart';
-import '../../../../../../ui/screens/map/providers/pin_position_correction_provider.dart';
 import '../../domain/occurrence.dart';
 import '../controllers/occurrence_controller.dart';
 import 'occurrence_creation_sheet.dart';
 import 'occurrence_detail_pin_actions.dart';
+import 'occurrence_detail_pin_correction.dart';
 import 'occurrence_detail_photo_section.dart';
 
 /// Sheet de detalhe de uma ocorrência existente.
@@ -41,35 +40,6 @@ class OccurrenceDetailSheet extends ConsumerWidget {
   static bool occurrencePinCorrectionEligible(Occurrence occurrence) {
     return occurrence.cachedByUserId == null &&
         occurrence.getCoordinates() != null;
-  }
-
-  void _startPinCorrection(BuildContext context, WidgetRef ref) {
-    final coords = occurrence.getCoordinates();
-    if (coords == null) return;
-    HapticFeedback.selectionClick();
-    final repository = ref.read(occurrenceRepositoryProvider);
-    final container = ProviderScope.containerOf(context, listen: false);
-    Navigator.of(context).pop();
-    pinCorrectionStartSession(
-      container,
-      kind: PinCorrectionKind.occurrence,
-      entityId: occurrence.id,
-      position: LatLng(coords['lat']!, coords['long']!),
-      onConfirm: (newLat, newLng) async {
-        await repository.updateOccurrence(
-          occurrence.copyWith(
-            lat: newLat,
-            long: newLng,
-            geometry: jsonEncode({
-              'type': 'Point',
-              'coordinates': [newLng, newLat],
-            }),
-          ),
-        );
-        container.invalidate(occurrencesListProvider);
-        return true;
-      },
-    );
   }
 
   // ── API pública ──────────────────────────────────────────────────────────
@@ -589,8 +559,13 @@ class OccurrenceDetailSheet extends ConsumerWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: SizedBox(
                     width: double.infinity,
+                    height: 48,
                     child: OutlinedButton.icon(
-                      onPressed: () => _startPinCorrection(context, ref),
+                      onPressed: () => launchOccurrencePinCorrectionSession(
+                        context,
+                        ref,
+                        occurrence,
+                      ),
                       style: isIos
                           ? OutlinedButton.styleFrom(
                               foregroundColor: SoloForteSheetSkinIos.ghostText,
