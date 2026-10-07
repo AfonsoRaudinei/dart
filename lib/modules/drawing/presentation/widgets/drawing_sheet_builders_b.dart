@@ -188,7 +188,6 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
     final focusBorder = isIos
         ? SoloForteSheetSkinIos.iconStroke
         : PremiumTokens.brandGreen;
-
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Form(
@@ -267,33 +266,12 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
                 ),
               ),
 
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: panelBg,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: panelBorder),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _BigMetric(
-                    icon: Icons.aspect_ratio,
-                    value: '${f.format(area)} ha',
-                    label: 'Área',
-                  ),
-                  Container(
-                    width: 1,
-                    height: 40,
-                    color: panelBorder,
-                  ),
-                  _BigMetric(
-                    icon: Icons.straighten,
-                    value: '${f.format(perimeter)} km',
-                    label: 'Perímetro',
-                  ),
-                ],
-              ),
+            DrawingReviewMetricsPanel(
+              areaLabel: '${f.format(area)} ha',
+              perimeterLabel: '${f.format(perimeter)} km',
+              isIos: isIos,
+              panelBg: panelBg,
+              panelBorder: panelBorder,
             ),
             const SizedBox(height: 24),
 
