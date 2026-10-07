@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_map/flutter_map.dart' show MapCamera;
 import 'package:latlong2/latlong.dart';
 import '../../domain/models/drawing_models.dart';
 import '../../domain/drawing_utils.dart';

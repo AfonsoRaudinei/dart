@@ -100,6 +100,102 @@ extension DrawingControllerSketch on DrawingController {
   }
 
   /// Hit-test por proximidade para vértices do sketch (fallback via onTap do mapa).
+  /// Toque no mapa durante sketch de polígono: aresta vs vértice em pixels.
+  bool applySketchMapTap(LatLng tap, MapCamera camera) {
+    if (_isDisposed) return false;
+    if (_stateMachine.currentTool != DrawingTool.polygon) return false;
+    if (!_canAcceptSketchInput()) return false;
+    if (_currentPoints.length < 2) return false;
+
+    final vertexPx = DrawingUtils.editVertexHitPx;
+    final edgePx = DrawingUtils.editEdgeHitPx;
+    final edgeHit = _findSketchEdgeNearestPixels(camera, tap, edgePx);
+    final vertexHit = _findSketchVertexNearestPixels(camera, tap, vertexPx);
+
+    if (edgeHit != null && vertexHit != null) {
+      if (edgeHit.distancePx <= vertexHit.distancePx) {
+        insertSketchVertex(edgeHit.segment, edgeHit.point);
+        return true;
+      }
+      selectSketchVertex(vertexHit.index);
+      return true;
+    }
+    if (vertexHit != null) {
+      selectSketchVertex(vertexHit.index);
+      return true;
+    }
+    if (edgeHit != null) {
+      insertSketchVertex(edgeHit.segment, edgeHit.point);
+      return true;
+    }
+    return false;
+  }
+
+  void insertSketchVertex(int segmentIndex, LatLng point) {
+    if (_isDisposed) return;
+    if (_stateMachine.currentTool != DrawingTool.polygon) return;
+    if (!_canAcceptSketchInput()) return;
+    if (segmentIndex < 0 || segmentIndex >= _currentPoints.length - 1) {
+      return;
+    }
+    _currentPoints.insert(segmentIndex + 1, point);
+    _selectedSketchVertexIndex = segmentIndex + 1;
+    _updateRealTimeIntersection();
+    _notify();
+  }
+
+  ({int index, double distancePx})? _findSketchVertexNearestPixels(
+    MapCamera camera,
+    LatLng tap,
+    double maxPx,
+  ) {
+    int? best;
+    var closestPx = maxPx;
+    for (var i = 0; i < _currentPoints.length; i++) {
+      final distPx = DrawingUtils.vertexDistancePixels(
+        camera,
+        _currentPoints[i],
+        tap,
+      );
+      if (distPx <= closestPx) {
+        closestPx = distPx;
+        best = i;
+      }
+    }
+    if (best == null) return null;
+    return (index: best, distancePx: closestPx);
+  }
+
+  ({
+    int segment,
+    LatLng point,
+    double distancePx,
+  })? _findSketchEdgeNearestPixels(
+    MapCamera camera,
+    LatLng tap,
+    double maxPx,
+  ) {
+    int? bestSegment;
+    LatLng? bestPoint;
+    var closestPx = maxPx;
+    final points = _currentPoints;
+    for (var i = 0; i < points.length - 1; i++) {
+      final hit = DrawingUtils.closestPointOnSegmentPixels(
+        camera,
+        tap,
+        points[i],
+        points[i + 1],
+      );
+      if (hit.distancePx <= closestPx) {
+        closestPx = hit.distancePx;
+        bestSegment = i;
+        bestPoint = hit.point;
+      }
+    }
+    if (bestSegment == null || bestPoint == null) return null;
+    return (segment: bestSegment, point: bestPoint, distancePx: closestPx);
+  }
+
   int? findSketchVertexIndexNear(LatLng tap, double toleranceMeters) {
     if (_stateMachine.currentTool != DrawingTool.polygon) return null;
     if (!_canAcceptSketchInput()) return null;
