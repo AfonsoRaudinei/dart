@@ -229,6 +229,21 @@ void main() {
       );
     });
 
+    test('logout invalidation clears active pin correction session', () {
+      pinCorrectionStartSession(
+        container,
+        kind: PinCorrectionKind.occurrence,
+        entityId: 'occ-1',
+        position: const LatLng(-10, -50),
+        onConfirm: (_, __) async => true,
+      );
+      expect(container.read(pinPositionCorrectionProvider), isNotNull);
+
+      pinCorrectionLogoutInvalidate(container);
+
+      expect(container.read(pinPositionCorrectionProvider), isNull);
+    });
+
     test('cancel discards session without repository calls', () async {
       pinCorrectionStartSession(
         container,
