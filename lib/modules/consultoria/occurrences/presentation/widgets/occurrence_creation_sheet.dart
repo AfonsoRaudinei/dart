@@ -4,8 +4,8 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:soloforte_app/core/access/producer_create_context_resolver.dart';
+import 'package:soloforte_app/core/widgets/photo/soloforte_photo_picker_sheet.dart';
 import 'package:soloforte_app/core/constants/layout_constants.dart';
 import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
 import 'package:soloforte_app/core/contracts/i_client_lookup.dart';
@@ -80,7 +80,6 @@ class _OccurrenceCreationSheetState
   String? _selectedCategoryValue;
   final _descCtrl = TextEditingController();
   final _recomCtrl = TextEditingController();
-  final _picker = ImagePicker();
   bool _isSaving = false;
   String? _submitError;
 
