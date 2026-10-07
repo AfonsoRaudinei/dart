@@ -987,11 +987,12 @@ else
 fi
 
 if [ -f "$OCC_UI_HELPERS" ] \
-  && grep -q "Navigator.of(sheetContext).pop()" "$OCC_UI_HELPERS" \
-  && grep -q "_capturePhotoFromSource" "$OCC_UI_HELPERS"; then
-  pass "REGRA-OCC-3: foto fecha modal de origem antes do ImagePicker"
+  && grep -q "resolveSoloFortePhotoPath" "$OCC_UI_HELPERS" \
+  && grep -q "OccurrencePhotoOriginToolbar" "$OCC_UI_HELPERS" \
+  && ! grep -q "OccurrencePhotoSourceSheet" "$OCC_UI_HELPERS"; then
+  pass "REGRA-OCC-3: foto via picker compartilhado (galeria/câmera/inversão vegetal)"
 else
-  fail "REGRA-OCC-3: occurrence_creation_sheet_ui_helpers deve pop sheet antes de pickImage"
+  fail "REGRA-OCC-3: occurrence_creation_sheet_ui_helpers deve usar resolveSoloFortePhotoPath + toolbar (sem sheet duplicado)"
 fi
 
 if [ -f "$MAP_BOTTOM_SHEET" ] \
