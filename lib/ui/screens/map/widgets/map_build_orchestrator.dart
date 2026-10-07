@@ -135,11 +135,15 @@ class MapBuildOrchestrator extends ConsumerWidget {
         (c) => (c.currentTool, c.currentState, c.isFreehandStrokeActive),
       ),
     );
+    final pinCorrectionActive = ref.watch(
+      pinPositionCorrectionProvider.select((s) => s != null),
+    );
     final disableMapDrag =
-        freehandInteraction.$1 == DrawingTool.freehand &&
-        (freehandInteraction.$2 == DrawingState.armed ||
-            freehandInteraction.$2 == DrawingState.drawing ||
-            freehandInteraction.$3);
+        pinCorrectionActive ||
+        (freehandInteraction.$1 == DrawingTool.freehand &&
+            (freehandInteraction.$2 == DrawingState.armed ||
+                freehandInteraction.$2 == DrawingState.drawing ||
+                freehandInteraction.$3));
     final polygonSketchMode = ref.watch(
       drawingControllerProvider.select(
         (c) =>
