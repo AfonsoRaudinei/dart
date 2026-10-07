@@ -854,6 +854,21 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
     final pinCorrectionActive =
         ref.watch(pinPositionCorrectionProvider) != null;
 
+    ref.listen<PinPositionCorrectionSession?>(
+      pinPositionCorrectionProvider,
+      (previous, next) {
+        if (next == null || previous != null) return;
+        final zoom = _mapController.camera.zoom;
+        unawaited(
+          MapCameraEase.move(
+            _mapController,
+            to: next.current,
+            zoom: zoom < 16 ? 17.0 : zoom,
+          ),
+        );
+      },
+    );
+
     return PopScope(
       canPop: !pinCorrectionActive,
       onPopInvokedWithResult: (didPop, result) {

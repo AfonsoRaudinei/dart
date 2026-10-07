@@ -52,38 +52,45 @@ class _DraggablePinLayerState extends ConsumerState<DraggablePinLayer> {
     final screenPoint = widget.mapController.camera.latLngToScreenPoint(
       current,
     );
-    const pinWidth = 40.0;
-    const pinHeight = 44.0;
+    const hitWidth = 48.0;
+    const hitHeight = 52.0;
+    const pinIconSize = 36.0;
 
     return Positioned(
-      left: screenPoint.x - (pinWidth / 2),
-      top: screenPoint.y - pinHeight,
-      width: pinWidth,
-      height: pinHeight,
-      child: GestureDetector(
-        onPanStart: (_) {
-          setState(() => _isDragging = true);
-          HapticFeedback.selectionClick();
-        },
-        onPanUpdate: (details) {
-          final base = ref.read(pinPositionCorrectionProvider)!.current;
-          _handlePanUpdate(details, base);
-        },
-        onPanEnd: (_) => setState(() => _isDragging = false),
-        onPanCancel: () => setState(() => _isDragging = false),
-        child: Icon(
-          SFIcons.pinFill,
-          size: 36,
-          color: _isDragging
-              ? PremiumTokens.brandGreen.withValues(alpha: 0.85)
-              : PremiumTokens.brandGreen,
-          shadows: const [
-            Shadow(
-              color: Color(0x66000000),
-              blurRadius: 6,
-              offset: Offset(0, 2),
+      left: screenPoint.x - (hitWidth / 2),
+      top: screenPoint.y - hitHeight,
+      width: hitWidth,
+      height: hitHeight,
+      child: Listener(
+        behavior: HitTestBehavior.opaque,
+        child: GestureDetector(
+          onPanStart: (_) {
+            setState(() => _isDragging = true);
+            HapticFeedback.selectionClick();
+          },
+          onPanUpdate: (details) {
+            final base = ref.read(pinPositionCorrectionProvider)!.current;
+            _handlePanUpdate(details, base);
+          },
+          onPanEnd: (_) => setState(() => _isDragging = false),
+          onPanCancel: () => setState(() => _isDragging = false),
+          child: Align(
+            alignment: Alignment.bottomCenter,
+            child: Icon(
+              SFIcons.pinFill,
+              size: pinIconSize,
+              color: _isDragging
+                  ? PremiumTokens.brandGreen.withValues(alpha: 0.85)
+                  : PremiumTokens.brandGreen,
+              shadows: const [
+                Shadow(
+                  color: Color(0x66000000),
+                  blurRadius: 6,
+                  offset: Offset(0, 2),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
