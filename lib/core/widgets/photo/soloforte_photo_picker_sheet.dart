@@ -11,7 +11,8 @@ import '../../ui/sheets/sheet_tokens.dart';
 import '../../ui/sheets/soloforte_sheet.dart';
 import '../../utils/app_logger.dart';
 
-enum _PhotoPickerOrigin { camera, gallery, vegetal }
+/// Origem da foto ao usar [resolveSoloFortePhotoPath] ou [showSoloFortePhotoPicker].
+enum SoloFortePhotoPickerOrigin { camera, gallery, vegetal }
 
 /// Ponto de entrada único do picker de foto compartilhado.
 ///
@@ -23,7 +24,7 @@ Future<void> showSoloFortePhotoPicker({
   required String label,
   required Future<void> Function(String path) onPhotoSelected,
 }) async {
-  final origin = await showSoloForteSheet<_PhotoPickerOrigin>(
+  final origin = await showSoloForteSheet<SoloFortePhotoPickerOrigin>(
     context: context,
     backgroundColor: null,
     showDragHandle: false,
@@ -37,14 +38,19 @@ Future<void> showSoloFortePhotoPicker({
   await onPhotoSelected(path);
 }
 
-Future<String?> _resolvePhotoPath(_PhotoPickerOrigin origin) async {
+/// Captura ou seleciona foto conforme [origin], sem abrir o sheet de opções.
+Future<String?> resolveSoloFortePhotoPath(SoloFortePhotoPickerOrigin origin) {
+  return _resolvePhotoPath(origin);
+}
+
+Future<String?> _resolvePhotoPath(SoloFortePhotoPickerOrigin origin) async {
   try {
     switch (origin) {
-      case _PhotoPickerOrigin.camera:
+      case SoloFortePhotoPickerOrigin.camera:
         return await _pickRaw(ImageSource.camera);
-      case _PhotoPickerOrigin.gallery:
+      case SoloFortePhotoPickerOrigin.gallery:
         return await _pickRaw(ImageSource.gallery);
-      case _PhotoPickerOrigin.vegetal:
+      case SoloFortePhotoPickerOrigin.vegetal:
         return await _pickVegetalInversion();
     }
   } catch (e, st) {
@@ -161,7 +167,8 @@ class SoloFortePhotoPickerSheet extends StatelessWidget {
             subtitle: 'Tirar nova foto',
             titleColor: titleColor,
             subtitleColor: subColor,
-            onTap: () => Navigator.of(context).pop(_PhotoPickerOrigin.camera),
+            onTap: () =>
+                Navigator.of(context).pop(SoloFortePhotoPickerOrigin.camera),
           ),
           _PhotoPickerTile(
             icon: Icons.photo_library,
@@ -175,7 +182,8 @@ class SoloFortePhotoPickerSheet extends StatelessWidget {
             subtitle: 'Escolher da biblioteca de fotos',
             titleColor: titleColor,
             subtitleColor: subColor,
-            onTap: () => Navigator.of(context).pop(_PhotoPickerOrigin.gallery),
+            onTap: () =>
+                Navigator.of(context).pop(SoloFortePhotoPickerOrigin.gallery),
           ),
           _PhotoPickerTile(
             icon: SFIcons.leaf,
@@ -189,7 +197,8 @@ class SoloFortePhotoPickerSheet extends StatelessWidget {
             subtitle: 'Câmera com filtro de inversão',
             titleColor: titleColor,
             subtitleColor: subColor,
-            onTap: () => Navigator.of(context).pop(_PhotoPickerOrigin.vegetal),
+            onTap: () =>
+                Navigator.of(context).pop(SoloFortePhotoPickerOrigin.vegetal),
           ),
           const SizedBox(height: 8),
         ],
