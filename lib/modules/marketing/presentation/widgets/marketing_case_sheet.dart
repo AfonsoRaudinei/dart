@@ -46,22 +46,26 @@ class MarketingCaseSheet extends ConsumerWidget {
     HapticFeedback.selectionClick();
     final notifier = ref.read(marketingCasesProvider.notifier);
     final container = ProviderScope.containerOf(context, listen: false);
+    final lat = marketingCase.lat;
+    final lng = marketingCase.lng;
     Navigator.of(context).pop();
-    pinCorrectionStartSession(
-      container,
-      kind: PinCorrectionKind.marketing,
-      entityId: marketingCase.id,
-      position: LatLng(marketingCase.lat, marketingCase.lng),
-      onConfirm: (newLat, newLng) async {
-        final updated = MarketingCase.fromJson({
-          ...marketingCase.toJson(),
-          'lat': newLat,
-          'lng': newLng,
-        });
-        await notifier.updateCase(updated);
-        return true;
-      },
-    );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      pinCorrectionStartSession(
+        container,
+        kind: PinCorrectionKind.marketing,
+        entityId: marketingCase.id,
+        position: LatLng(lat, lng),
+        onConfirm: (newLat, newLng) async {
+          final updated = MarketingCase.fromJson({
+            ...marketingCase.toJson(),
+            'lat': newLat,
+            'lng': newLng,
+          });
+          await notifier.updateCase(updated);
+          return true;
+        },
+      );
+    });
   }
 
   /// Exibe o sheet como modal drag‑to‑dismiss
