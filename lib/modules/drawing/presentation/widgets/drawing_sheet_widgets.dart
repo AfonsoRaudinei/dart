@@ -260,33 +260,6 @@ class _FormatButton extends StatelessWidget {
   }
 }
 
-class _BigMetric extends StatelessWidget {
-  final IconData icon;
-  final String value;
-  final String label;
-
-  const _BigMetric({
-    required this.icon,
-    required this.value,
-    required this.label,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Icon(icon, color: context.premiumTextSecondary, size: 20),
-        const SizedBox(height: 8),
-        Text(
-          value,
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-        ),
-        Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey)),
-      ],
-    );
-  }
-}
-
 class _ColorOption extends StatelessWidget {
   final Color color;
   final Color selected;
