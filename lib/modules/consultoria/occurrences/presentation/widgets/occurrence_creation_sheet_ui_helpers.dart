@@ -180,47 +180,39 @@ extension _OccurrenceCreationSheetUiHelpers on _OccurrenceCreationSheetState {
     }
   }
 
-  Future<void> _pickPhoto(OccurrenceCategory cat) async {
-    await showSoloForteSheet<void>(
+  Future<OccurrenceCategory?> _resolveCategoryForPhoto() async {
+    if (_cats.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Selecione uma categoria antes de anexar foto.'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+      return null;
+    }
+    if (_cats.length == 1) return _cats.first;
+    return showSoloForteSheet<OccurrenceCategory>(
       context: context,
       backgroundColor: Colors.transparent,
       showDragHandle: false,
       useSafeArea: false,
       shape: const RoundedRectangleBorder(),
       clipBehavior: Clip.none,
-      builder: (sheetContext) => OccurrencePhotoSourceSheet(
-        catEmoji: cat.emoji,
-        catLabel: cat.label,
-        onCamera: () {
-          unawaited(
-            _capturePhotoFromSource(sheetContext, cat, ImageSource.camera),
-          );
-        },
-        onGallery: () {
-          unawaited(
-            _capturePhotoFromSource(sheetContext, cat, ImageSource.gallery),
-          );
-        },
-      ),
+      builder: (_) => OccurrenceCatPickerSheet(cats: _cats.toList()),
     );
   }
 
-  Future<void> _capturePhotoFromSource(
-    BuildContext sheetContext,
-    OccurrenceCategory cat,
-    ImageSource source,
+  Future<void> _onPhotoOriginSelected(
+    SoloFortePhotoPickerOrigin origin,
   ) async {
-    Navigator.of(sheetContext).pop();
-    if (!mounted) return;
+    HapticFeedback.selectionClick();
+    final cat = await _resolveCategoryForPhoto();
+    if (cat == null || !mounted) return;
 
-    final xFile = await _picker.pickImage(
-      source: source,
-      imageQuality: 80,
-      maxWidth: 1920,
-    );
-    if (xFile == null || !mounted) return;
+    final rawPath = await resolveSoloFortePhotoPath(origin);
+    if (rawPath == null || !mounted) return;
 
-    final persisted = await ImageStorageService().persistLocalCopy(xFile.path);
+    final persisted = await ImageStorageService().persistLocalCopy(rawPath);
     if (persisted == null) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -233,33 +225,6 @@ extension _OccurrenceCreationSheetUiHelpers on _OccurrenceCreationSheetState {
     }
 
     _registerPersistedPhoto(cat, persisted);
-  }
-
-  Future<void> _onAddPhotoPressed() async {
-    if (_cats.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Selecione uma categoria antes de anexar foto.'),
-          backgroundColor: Colors.redAccent,
-        ),
-      );
-      return;
-    }
-    HapticFeedback.selectionClick();
-    if (_cats.length == 1) {
-      await _pickPhoto(_cats.first);
-      return;
-    }
-    final cat = await showSoloForteSheet<OccurrenceCategory>(
-      context: context,
-      backgroundColor: Colors.transparent,
-      showDragHandle: false,
-      useSafeArea: false,
-      shape: const RoundedRectangleBorder(),
-      clipBehavior: Clip.none,
-      builder: (_) => OccurrenceCatPickerSheet(cats: _cats.toList()),
-    );
-    if (cat != null) await _pickPhoto(cat);
   }
 
   Widget _buildPhotoActionSection() {
@@ -294,7 +259,7 @@ extension _OccurrenceCreationSheetUiHelpers on _OccurrenceCreationSheetState {
           OccurrencePhotoStatusText(
             paths: _flatFotoPaths(),
             emptyHint:
-                'Anexe foto para aparecer no relatório. Selecione a categoria e toque abaixo.',
+                'Anexe foto para aparecer no relatório. Selecione a categoria e toque em um ícone abaixo.',
             hintColor: hint,
           ),
           if (total > 0) ...[
@@ -307,28 +272,11 @@ extension _OccurrenceCreationSheetUiHelpers on _OccurrenceCreationSheetState {
             ),
           ],
           const SizedBox(height: 12),
-          SizedBox(
-            height: 48,
-            child: OutlinedButton.icon(
-              onPressed: _onAddPhotoPressed,
-              style: OutlinedButton.styleFrom(
-                foregroundColor: accent,
-                side: BorderSide(
-                  color: accent,
-                  width: 1.5,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(
-                    isIos ? SoloForteSheetSkinIos.ctaRadius : 14,
-                  ),
-                ),
-              ),
-              icon: const Icon(Icons.camera_alt_outlined, size: 20),
-              label: Text(
-                total == 0 ? 'Tirar ou escolher foto' : 'Adicionar outra foto',
-                style: const TextStyle(fontWeight: FontWeight.w700),
-              ),
-            ),
+          OccurrencePhotoOriginToolbar(
+            accent: accent,
+            onOriginSelected: (origin) {
+              unawaited(_onPhotoOriginSelected(origin));
+            },
           ),
         ],
       ),
@@ -392,7 +340,7 @@ extension _OccurrenceCreationSheetUiHelpers on _OccurrenceCreationSheetState {
             ),
             if (_fotos[cat.name]?.isNotEmpty == true)
               Padding(
-                padding: const EdgeInsets.fromLTRB(14, 0, 14, 8),
+                padding: const EdgeInsets.fromLTRB(14, 0, 14, 12),
                 child: OccurrencePhotoGallery(
                   paths: List<String>.from(_fotos[cat.name]!),
                   thumbnailSize: 72,
@@ -402,20 +350,6 @@ extension _OccurrenceCreationSheetUiHelpers on _OccurrenceCreationSheetState {
                   ),
                 ),
               ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(14, 0, 14, 12),
-              child: TextButton.icon(
-                onPressed: () => _pickPhoto(cat),
-                icon: Icon(Icons.camera_alt_outlined, size: 18, color: color),
-                label: Text(
-                  'Adicionar foto',
-                  style: TextStyle(
-                    color: color,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ),
           ],
         ),
       ),
