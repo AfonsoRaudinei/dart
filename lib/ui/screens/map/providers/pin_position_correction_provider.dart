@@ -21,8 +21,10 @@ class PinPositionCorrectionSession {
   });
 }
 
+/// Sessão de correção persiste até confirmar/cancelar — não usar autoDispose
+/// (callbacks e container capturado no sheet sobrevivem ao pop).
 final pinPositionCorrectionProvider =
-    StateProvider.autoDispose<PinPositionCorrectionSession?>((ref) => null);
+    StateProvider<PinPositionCorrectionSession?>((ref) => null);
 
 bool isValidPinCorrectionCoordinates(double latitude, double longitude) {
   if (!latitude.isFinite || !longitude.isFinite) return false;
