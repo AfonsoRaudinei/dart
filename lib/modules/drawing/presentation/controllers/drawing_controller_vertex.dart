@@ -129,25 +129,72 @@ extension DrawingControllerVertexEditing on DrawingController {
     LatLng tap, {
     required double vertexToleranceMeters,
     required double edgeToleranceMeters,
+    MapCamera? camera,
   }) {
     if (_isDisposed) return false;
     if (_stateMachine.currentState != DrawingState.editing) return false;
     if (_editGeometry is! DrawingPolygon) return false;
 
-    final hit = findEditVertexNear(tap, vertexToleranceMeters);
-    if (hit != null) {
-      _toggleEditVertex(hit.ring, hit.point);
-      return true;
-    }
+    if (camera != null) {
+      final vertexPx = DrawingUtils.editVertexHitPx;
+      final edgePx = DrawingUtils.editEdgeHitPx;
+      final vertexHit = _findEditVertexNearestPixels(camera, tap, vertexPx);
+      final edgeHit = _findEditEdgeNearestPixels(camera, tap, edgePx);
 
-    final edge = findEditEdgeNear(tap, edgeToleranceMeters);
-    if (edge != null) {
-      insertVertex(
-        edge.ring,
-        edge.segment,
-        _edgeInsertionPoint(edge, vertexToleranceMeters),
-      );
-      return true;
+      if (edgeHit != null && vertexHit != null) {
+        if (edgeHit.distancePx <= vertexHit.distancePx) {
+          insertVertex(
+            edgeHit.ring,
+            edgeHit.segment,
+            _edgeInsertionPoint(
+              (
+                ring: edgeHit.ring,
+                segment: edgeHit.segment,
+                point: edgeHit.point,
+              ),
+              vertexToleranceMeters,
+            ),
+          );
+          return true;
+        }
+        _toggleEditVertex(vertexHit.ring, vertexHit.point);
+        return true;
+      }
+      if (vertexHit != null) {
+        _toggleEditVertex(vertexHit.ring, vertexHit.point);
+        return true;
+      }
+      if (edgeHit != null) {
+        insertVertex(
+          edgeHit.ring,
+          edgeHit.segment,
+          _edgeInsertionPoint(
+            (
+              ring: edgeHit.ring,
+              segment: edgeHit.segment,
+              point: edgeHit.point,
+            ),
+            vertexToleranceMeters,
+          ),
+        );
+        return true;
+      }
+    } else {
+      final hit = findEditVertexNear(tap, vertexToleranceMeters);
+      if (hit != null) {
+        _toggleEditVertex(hit.ring, hit.point);
+        return true;
+      }
+
+      final edge = findEditEdgeNear(tap, edgeToleranceMeters);
+      if (edge != null) {
+        insertVertex(
+          edge.ring,
+          edge.segment,
+          _edgeInsertionPoint(edge, vertexToleranceMeters),
+        );
+        return true;
+      }
     }
 
     if (_selectedEditRingIndex != null || _selectedEditPointIndex != null) {
@@ -155,6 +202,98 @@ extension DrawingControllerVertexEditing on DrawingController {
       return true;
     }
     return false;
+  }
+
+  ({int ring, int point, double distancePx})? _findEditVertexNearestPixels(
+    MapCamera camera,
+    LatLng tap,
+    double maxPx,
+  ) {
+    if (_editGeometry is! DrawingPolygon) return null;
+    final poly = _editGeometry as DrawingPolygon;
+    int? bestRing;
+    int? bestPoint;
+    var closestPx = maxPx;
+
+    for (var ringIdx = 0; ringIdx < poly.coordinates.length; ringIdx++) {
+      final ring = poly.coordinates[ringIdx]
+          .map((p) => LatLng(p[1], p[0]))
+          .toList();
+      final isClosed =
+          ring.isNotEmpty &&
+          ring.first.latitude == ring.last.latitude &&
+          ring.first.longitude == ring.last.longitude;
+      final logicalLength = isClosed ? ring.length - 1 : ring.length;
+
+      for (var i = 0; i < logicalLength; i++) {
+        final distPx = DrawingUtils.vertexDistancePixels(camera, ring[i], tap);
+        if (distPx <= closestPx) {
+          closestPx = distPx;
+          bestRing = ringIdx;
+          bestPoint = i;
+        }
+      }
+    }
+
+    if (bestRing == null || bestPoint == null) return null;
+    return (ring: bestRing, point: bestPoint, distancePx: closestPx);
+  }
+
+  ({
+    int ring,
+    int segment,
+    LatLng point,
+    double distancePx,
+  })? _findEditEdgeNearestPixels(
+    MapCamera camera,
+    LatLng tap,
+    double maxPx,
+  ) {
+    if (_editGeometry is! DrawingPolygon) return null;
+    final poly = _editGeometry as DrawingPolygon;
+    int? bestRing;
+    int? bestSegment;
+    LatLng? bestPoint;
+    var closestPx = maxPx;
+
+    for (var ringIdx = 0; ringIdx < poly.coordinates.length; ringIdx++) {
+      final ring = poly.coordinates[ringIdx]
+          .map((p) => LatLng(p[1], p[0]))
+          .toList();
+      if (ring.length < 2) continue;
+      final isClosed =
+          ring.first.latitude == ring.last.latitude &&
+          ring.first.longitude == ring.last.longitude;
+      final segmentCount = ring.length - 1;
+
+      for (var i = 0; i < segmentCount; i++) {
+        final next = isClosed && i == segmentCount - 1
+            ? ring.first
+            : ring[i + 1];
+        final hit = DrawingUtils.closestPointOnSegmentPixels(
+          camera,
+          tap,
+          ring[i],
+          next,
+        );
+        if (hit.distancePx <= closestPx) {
+          closestPx = hit.distancePx;
+          bestRing = ringIdx;
+          bestSegment = i;
+          bestPoint = hit.point;
+        }
+      }
+    }
+
+    if (bestRing == null || bestSegment == null || bestPoint == null) {
+      return null;
+    }
+    return (
+      ring: bestRing,
+      segment: bestSegment,
+      point: bestPoint,
+      distancePx: closestPx,
+    );
   }
 
   void _toggleEditVertex(int ring, int point) {

@@ -83,6 +83,44 @@ class DrawingUtils {
     );
   }
 
+  /// Ponto da aresta [a]–[b] mais perto de [tap] em pixels de tela.
+  static ({LatLng point, double distancePx, double t}) closestPointOnSegmentPixels(
+    MapCamera camera,
+    LatLng tap,
+    LatLng a,
+    LatLng b,
+  ) {
+    final tp = camera.latLngToScreenPoint(tap);
+    final ap = camera.latLngToScreenPoint(a);
+    final bp = camera.latLngToScreenPoint(b);
+    final ax = ap.x;
+    final ay = ap.y;
+    final dx = bp.x - ax;
+    final dy = bp.y - ay;
+    final len2 = dx * dx + dy * dy;
+    var t = 0.0;
+    if (len2 > 1e-6) {
+      t = ((tp.x - ax) * dx + (tp.y - ay) * dy) / len2;
+      if (t < 0) t = 0;
+      if (t > 1) t = 1;
+    }
+    final px = ax + t * dx;
+    final py = ay + t * dy;
+    final distPx = math.sqrt(
+      (tp.x - px) * (tp.x - px) + (tp.y - py) * (tp.y - py),
+    );
+    final point = camera.pointToLatLng(math.Point<double>(px, py));
+    return (point: point, distancePx: distPx, t: t);
+  }
+
+  static double vertexDistancePixels(MapCamera camera, LatLng a, LatLng b) {
+    final pa = camera.latLngToScreenPoint(a);
+    final pb = camera.latLngToScreenPoint(b);
+    return math.sqrt(
+      (pa.x - pb.x) * (pa.x - pb.x) + (pa.y - pb.y) * (pa.y - pb.y),
+    );
+  }
+
   /// Generates a new UUID v4
   static String generateId() => _uuid.v4();
 

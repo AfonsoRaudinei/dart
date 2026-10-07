@@ -232,6 +232,13 @@ class MapBuildOrchestrator extends ConsumerWidget {
                     final tol = DrawingUtils.vertexHitToleranceMeters(
                       mapController.camera,
                     );
+                    if (drawCtrl.currentPoints.length >= 2 &&
+                        drawCtrl.applySketchMapTap(
+                          point,
+                          mapController.camera,
+                        )) {
+                      return;
+                    }
                     final hit = drawCtrl.findSketchVertexIndexNear(point, tol);
                     if (hit != null) {
                       if (hit == 0 &&
@@ -268,6 +275,7 @@ class MapBuildOrchestrator extends ConsumerWidget {
                       mapController.camera,
                       hitPx: DrawingUtils.editEdgeHitPx,
                     ),
+                    camera: mapController.camera,
                   );
                   return;
                 }
