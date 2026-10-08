@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:soloforte_app/core/providers/connectivity_provider.dart';
-import 'package:soloforte_app/modules/clima/domain/entities/radar_fetch_result.dart';
-import 'package:soloforte_app/modules/clima/domain/entities/radar_rain_frame.dart';
 import 'package:soloforte_app/modules/clima/presentation/providers/radar_providers.dart';
 import 'package:soloforte_app/modules/clima/presentation/widgets/clima_radar_player_overlay.dart';
 
