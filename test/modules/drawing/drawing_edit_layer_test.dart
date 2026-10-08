@@ -1,3 +1,5 @@
+import 'dart:math' show Point;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -750,6 +752,50 @@ void main() {
         (controller.liveGeometry! as DrawingPolygon).coordinates.first.length,
         lengthWithVertex,
       );
+    },
+  );
+
+  test(
+    'edição: aresta oposta em pixels vence o vértice selecionado distante',
+    () async {
+      final repository = _UpsertDrawingRepository(_feature());
+      final controller = DrawingController(repository: repository);
+      addTearDown(controller.dispose);
+      await controller.loadFeatures();
+      controller.selectFeature(controller.features.single);
+      controller.startEditMode();
+      expect(controller.selectEditVertex(0, 0), isTrue);
+
+      final camera = MapCamera(
+        crs: const Epsg3857(),
+        center: const LatLng(0, 0),
+        zoom: 14,
+        rotation: 0,
+        nonRotatedSize: const Point(800, 800),
+      );
+      final before = (controller.liveGeometry! as DrawingPolygon)
+          .coordinates
+          .first
+          .length;
+
+      expect(
+        controller.applyEditMapTap(
+          const LatLng(0.01, 0),
+          vertexToleranceMeters: 40,
+          edgeToleranceMeters: 80,
+          camera: camera,
+        ),
+        isTrue,
+      );
+
+      final ring =
+          (controller.liveGeometry! as DrawingPolygon).coordinates.first;
+      expect(ring.length, before + 1);
+      expect(ring.first[0], -0.01);
+      expect(ring.first[1], -0.01);
+      expect(controller.selectedEditPointIndex, isNot(0));
+      final inserted = ring[controller.selectedEditPointIndex!];
+      expect(inserted[1], closeTo(0.01, 0.002));
     },
   );
 

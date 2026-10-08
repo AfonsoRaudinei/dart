@@ -135,9 +135,10 @@ extension DrawingControllerSketch on DrawingController {
     if (_isDisposed) return;
     if (_stateMachine.currentTool != DrawingTool.polygon) return;
     if (!_canAcceptSketchInput()) return;
-    if (segmentIndex < 0 || segmentIndex >= _currentPoints.length - 1) {
-      return;
-    }
+    final lastOpen = _currentPoints.length - 2;
+    final includesClose = _currentPoints.length >= 3;
+    final maxSegment = includesClose ? _currentPoints.length - 1 : lastOpen;
+    if (segmentIndex < 0 || segmentIndex > maxSegment) return;
     _currentPoints.insert(segmentIndex + 1, point);
     _selectedSketchVertexIndex = segmentIndex + 1;
     _updateRealTimeIntersection();
@@ -179,12 +180,15 @@ extension DrawingControllerSketch on DrawingController {
     LatLng? bestPoint;
     var closestPx = maxPx;
     final points = _currentPoints;
-    for (var i = 0; i < points.length - 1; i++) {
+    final segmentCount = points.length >= 3 ? points.length : points.length - 1;
+    for (var i = 0; i < segmentCount; i++) {
+      final start = points[i];
+      final end = i == points.length - 1 ? points.first : points[i + 1];
       final hit = DrawingUtils.closestPointOnSegmentPixels(
         camera,
         tap,
-        points[i],
-        points[i + 1],
+        start,
+        end,
       );
       if (hit.distancePx <= closestPx) {
         closestPx = hit.distancePx;

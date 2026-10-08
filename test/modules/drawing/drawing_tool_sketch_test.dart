@@ -1,3 +1,6 @@
+import 'dart:math' show Point;
+
+import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -187,6 +190,70 @@ void main() {
       expect(
         controller.findSketchVertexIndexNear(const LatLng(-20.0, -50.0), 5.0),
         isNull,
+      );
+    });
+
+    test(
+      'polígono: toque na aresta oposta insere vértice mesmo com o último selecionado',
+      () {
+        controller.selectTool('polygon');
+        const nw = LatLng(-15.002, -47.002);
+        const ne = LatLng(-15.002, -46.998);
+        const se = LatLng(-15.000, -46.998);
+        const sw = LatLng(-15.000, -47.002);
+        controller.appendDrawingPoint(nw);
+        controller.appendDrawingPoint(ne);
+        controller.appendDrawingPoint(se);
+        controller.appendDrawingPoint(sw);
+        expect(controller.selectSketchVertex(3), isTrue);
+
+        final camera = MapCamera(
+          crs: const Epsg3857(),
+          center: const LatLng(-15.001, -47.000),
+          zoom: 16,
+          rotation: 0,
+          nonRotatedSize: const Point(1000, 1000),
+        );
+        const northMid = LatLng(-15.002, -47.000);
+
+        expect(controller.applySketchMapTap(northMid, camera), isTrue);
+        expect(controller.currentPoints.length, 5);
+        expect(controller.currentPoints.last, sw);
+        expect(controller.selectedSketchVertexIndex, 1);
+        expect(controller.currentPoints[1].latitude, closeTo(nw.latitude, 0.0003));
+        expect(controller.currentState, DrawingState.drawing);
+      },
+    );
+
+    test('polígono: toque na aresta de fechamento insere antes de voltar ao início', () {
+      controller.selectTool('polygon');
+      const nw = LatLng(-15.002, -47.002);
+      const ne = LatLng(-15.002, -46.998);
+      const se = LatLng(-15.000, -46.998);
+      controller.appendDrawingPoint(nw);
+      controller.appendDrawingPoint(ne);
+      controller.appendDrawingPoint(se);
+      expect(controller.selectSketchVertex(2), isTrue);
+
+      final camera = MapCamera(
+        crs: const Epsg3857(),
+        center: const LatLng(-15.001, -47.000),
+        zoom: 16,
+        rotation: 0,
+        nonRotatedSize: const Point(1000, 1000),
+      );
+      final closeMid = LatLng(
+        (se.latitude + nw.latitude) / 2,
+        (se.longitude + nw.longitude) / 2,
+      );
+
+      expect(controller.applySketchMapTap(closeMid, camera), isTrue);
+      expect(controller.currentPoints.length, 4);
+      expect(controller.currentPoints[2], se);
+      expect(controller.selectedSketchVertexIndex, 3);
+      expect(
+        controller.currentPoints[3].longitude,
+        closeTo(closeMid.longitude, 0.0004),
       );
     });
 
