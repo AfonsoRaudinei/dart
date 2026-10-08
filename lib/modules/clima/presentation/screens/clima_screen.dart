@@ -17,6 +17,7 @@ import 'package:soloforte_app/modules/clima/domain/entities/previsao_horaria.dar
 import 'package:soloforte_app/modules/clima/presentation/providers/clima_providers.dart';
 import 'package:soloforte_app/modules/clima/presentation/widgets/clima_current_widgets.dart';
 import 'package:soloforte_app/modules/clima/presentation/widgets/clima_forecast_widgets.dart';
+import 'package:soloforte_app/modules/clima/presentation/widgets/clima_pulverizacao_card.dart';
 import 'package:soloforte_app/modules/clima/domain/clima_share_payload.dart';
 import 'package:soloforte_app/modules/clima/presentation/widgets/clima_city_selection_sheet.dart';
 import 'package:soloforte_app/modules/clima/presentation/widgets/clima_settings_sheet.dart';
@@ -318,6 +319,7 @@ class _CurrentView extends ConsumerWidget {
                   loading: () => const SizedBox.shrink(),
                   error: (_, __) => const SizedBox.shrink(),
                 ),
+                ClimaPulverizacaoCard(clima: clima),
                 ClimaDetailsCard(clima: clima),
                 const _ClimaMapRadarButton(),
               ],
