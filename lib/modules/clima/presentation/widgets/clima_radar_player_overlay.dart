@@ -39,7 +39,6 @@ class _ClimaRadarPlayerOverlayState
     final activeFrame = ref.watch(climaRadarActiveFrameProvider);
     final activeIndex = ref.watch(climaRadarFrameIndexProvider);
     final colorScheme = ref.watch(climaRadarColorSchemeProvider);
-    final coverageEnabled = ref.watch(climaRadarCoverageEnabledProvider);
     final controller = ref.read(climaRadarPlaybackControllerProvider);
 
     return framesAsync.maybeWhen(
@@ -177,43 +176,79 @@ class _ClimaRadarPlayerOverlayState
                                   ),
                                   const SizedBox(height: 5),
 
-                                  // Timeline de segmentos/dots
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: List.generate(total, (index) {
-                                      final isSelected = index == activeIndex;
-                                      final frame = frames[index];
-                                      final isNowcast = frame.isNowcast;
-
-                                      return GestureDetector(
-                                        onTap: () {
-                                          HapticFeedback.selectionClick();
-                                          controller.seekTo(index, total);
-                                        },
-                                        behavior: HitTestBehavior.opaque,
-                                        child: Padding(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 2,
-                                            vertical: 2,
+                                  // Timeline rolável (evita overflow com past + nowcast)
+                                  LayoutBuilder(
+                                    builder: (context, constraints) {
+                                      return SingleChildScrollView(
+                                        scrollDirection: Axis.horizontal,
+                                        child: ConstrainedBox(
+                                          constraints: BoxConstraints(
+                                            minWidth: constraints.maxWidth,
                                           ),
-                                          child: AnimatedContainer(
-                                            duration: const Duration(milliseconds: 180),
-                                            width: isSelected ? 12 : 5,
-                                            height: 5,
-                                            decoration: BoxDecoration(
-                                              color: isSelected
-                                                  ? (isNowcast
-                                                      ? const Color(0xFF64D2FF)
-                                                      : const Color(0xFF30D158))
-                                                  : (isNowcast
-                                                      ? const Color(0xFF64D2FF).withValues(alpha: 0.35)
-                                                      : Colors.white.withValues(alpha: 0.3)),
-                                              borderRadius: BorderRadius.circular(3),
-                                            ),
+                                          child: Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                            children: List.generate(total, (index) {
+                                              final isSelected =
+                                                  index == activeIndex;
+                                              final frame = frames[index];
+                                              final isNowcast =
+                                                  frame.isNowcast;
+
+                                              return GestureDetector(
+                                                onTap: () {
+                                                  HapticFeedback
+                                                      .selectionClick();
+                                                  controller.seekTo(
+                                                    index,
+                                                    total,
+                                                  );
+                                                },
+                                                behavior: HitTestBehavior.opaque,
+                                                child: Padding(
+                                                  padding:
+                                                      const EdgeInsets.symmetric(
+                                                    horizontal: 2,
+                                                    vertical: 2,
+                                                  ),
+                                                  child: AnimatedContainer(
+                                                    duration: const Duration(
+                                                      milliseconds: 180,
+                                                    ),
+                                                    width: isSelected ? 12 : 5,
+                                                    height: 5,
+                                                    decoration: BoxDecoration(
+                                                      color: isSelected
+                                                          ? (isNowcast
+                                                              ? const Color(
+                                                                  0xFF64D2FF,
+                                                                )
+                                                              : const Color(
+                                                                  0xFF30D158,
+                                                                ))
+                                                          : (isNowcast
+                                                              ? const Color(
+                                                                  0xFF64D2FF,
+                                                                ).withValues(
+                                                                  alpha: 0.35,
+                                                                )
+                                                              : Colors.white
+                                                                  .withValues(
+                                                                  alpha: 0.3,
+                                                                )),
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                        3,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                              );
+                                            }),
                                           ),
                                         ),
                                       );
-                                    }),
+                                    },
                                   ),
                                 ],
                               ),
@@ -237,12 +272,7 @@ class _ClimaRadarPlayerOverlayState
                               icon: Icons.tune_rounded,
                               tooltip: 'Ajustes do radar',
                               iconSize: 18,
-                              onTap: () => _openRadarOptionsMenu(
-                                context,
-                                colorScheme: colorScheme,
-                                coverageEnabled: coverageEnabled,
-                                controller: controller,
-                              ),
+                              onTap: () => _openRadarOptionsMenu(context),
                             ),
                           ],
                         ),
@@ -265,12 +295,7 @@ class _ClimaRadarPlayerOverlayState
     );
   }
 
-  void _openRadarOptionsMenu(
-    BuildContext context, {
-    required int colorScheme,
-    required bool coverageEnabled,
-    required ClimaRadarPlaybackController controller,
-  }) {
+  void _openRadarOptionsMenu(BuildContext context) {
     showSoloForteSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -357,7 +382,7 @@ class _RadarOptionsSheet extends ConsumerWidget {
             value: coverageEnabled,
             onChanged: (val) {
               HapticFeedback.selectionClick();
-              controller.toggleCoverage();
+              controller.setCoverageEnabled(val);
             },
           ),
           const Divider(height: 20),
