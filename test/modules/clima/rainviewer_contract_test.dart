@@ -19,7 +19,34 @@ void main() {
 
       expect(frames, isNotEmpty);
       expect(frames.first.path, startsWith('/v2/radar/'));
-      expect(frames.first.urlTemplate, contains('/512/{z}/{x}/{y}/2/1_1.png'));
+      expect(frames.first.urlTemplate, contains('/512/{z}/{x}/{y}/2/1_0.png'));
+      expect(frames.first.isNowcast, isFalse);
+    });
+
+    test('parseClimaRadarFrames suporta nowcast e scheme customizado', () {
+      final jsonWithNowcast = {
+        'host': 'https://tilecache.rainviewer.com',
+        'radar': {
+          'past': [
+            {'time': 1782607200, 'path': '/v2/radar/past1'},
+          ],
+          'nowcast': [
+            {'time': 1782607800, 'path': '/v2/radar/nowcast1'},
+          ],
+        },
+      };
+
+      final frames = parseClimaRadarFrames(
+        jsonWithNowcast,
+        colorScheme: 6, // NEXRAD
+        tileOptions: '1_0',
+      );
+
+      expect(frames, hasLength(2));
+      expect(frames.first.isNowcast, isFalse);
+      expect(frames.first.urlTemplate, contains('/6/1_0.png'));
+      expect(frames.last.isNowcast, isTrue);
+      expect(frames.last.urlTemplate, contains('/v2/radar/nowcast1/512/{z}/{x}/{y}/6/1_0.png'));
     });
 
     test('manifesto parseável a partir de fixture local (sem HTTP live)', () {
