@@ -201,6 +201,7 @@ class ClimaWeeklyContent extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
       child: Column(
         children: [
+          ClimaWeeklySummaryCard(previsoes: previsoes),
           ClimaDicaAgronomicaCard(previsoes: previsoes),
           ...previsoes.map((d) {
           final dataStr = climaDataDiaMes(d.data);
@@ -291,3 +292,118 @@ class ClimaWeeklyContent extends StatelessWidget {
     );
   }
 }
+
+/// Card de destaque com acumulado total de chuva previsto para 7 dias.
+class ClimaWeeklySummaryCard extends StatelessWidget {
+  final List<PrevisaoDiaria> previsoes;
+
+  const ClimaWeeklySummaryCard({super.key, required this.previsoes});
+
+  @override
+  Widget build(BuildContext context) {
+    if (previsoes.isEmpty) return const SizedBox.shrink();
+
+    final proximos7 = previsoes.take(7).toList();
+    final totalMm = proximos7.fold<double>(0.0, (acc, d) => acc + d.precipitacao);
+    final diasComChuva = proximos7.where((d) => d.precipitacao >= 1.0 || d.probabilidadeChuva >= 40).length;
+
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final backgroundColor = isDark
+        ? const Color(0xFF1B2433)
+        : const Color(0xFFEFF6FF);
+    final borderColor = isDark
+        ? const Color(0xFF007AFF).withValues(alpha: 0.35)
+        : const Color(0xFFBFDBFE);
+    final textColor = isDark
+        ? Colors.white
+        : const Color(0xFF1E3A8A);
+    final subtextColor = isDark
+        ? const Color(0xFF93C5FD)
+        : const Color(0xFF3B82F6);
+
+    final totalMmLabel = totalMm >= 10
+        ? totalMm.toStringAsFixed(0)
+        : totalMm.toStringAsFixed(1);
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: backgroundColor,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: borderColor, width: 0.8),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: (isDark ? const Color(0xFF2563EB) : const Color(0xFFDBEAFE)).withValues(alpha: 0.6),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              alignment: Alignment.center,
+              child: const Text('🌧️', style: TextStyle(fontSize: 22)),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'VOLUME PREVISTO (7 DIAS)',
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.8,
+                      color: subtextColor,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    diasComChuva == 0
+                        ? 'Sem chuva significativa prevista'
+                        : 'Previsão de chuva em $diasComChuva dos 7 dias',
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      color: textColor.withValues(alpha: 0.85),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  '$totalMmLabel mm',
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 20,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.5,
+                    color: textColor,
+                  ),
+                ),
+                Text(
+                  'acumulado',
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                    color: subtextColor,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
