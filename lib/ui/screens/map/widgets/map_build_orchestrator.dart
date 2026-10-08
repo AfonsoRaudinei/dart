@@ -40,6 +40,7 @@ import '../../../components/map/map_attribution_policy.dart';
 import '../../../components/map/widgets/map_canvas.dart';
 import '../../../components/map/widgets/map_layers.dart';
 import '../../../../modules/clima/presentation/providers/radar_providers.dart';
+import '../../../../modules/clima/presentation/widgets/clima_radar_player_overlay.dart';
 import '../../../../modules/clima/presentation/widgets/clima_radar_zoom_guard.dart';
 import '../../../../modules/clima/presentation/widgets/radar_layer_widget.dart';
 import '../../../components/map/widgets/map_markers.dart';
@@ -526,6 +527,7 @@ class MapBuildOrchestrator extends ConsumerWidget {
                 focusDrawingFeatureOnMap(mapController, feature),
           ),
           const ArmedModeBanner(),
+          const ClimaRadarPlayerOverlay(),
           DrawingVertexHandleOverlay(
             controller: ref.read(drawingControllerProvider),
             mapController: mapController,
