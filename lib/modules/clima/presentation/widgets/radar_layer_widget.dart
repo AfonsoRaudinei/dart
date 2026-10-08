@@ -27,6 +27,7 @@ class _ClimaRadarTileLayerWidgetState
     extends ConsumerState<ClimaRadarTileLayerWidget> {
   Timer? _animationTimer;
   int _animatedFrameCount = 0;
+  String _lastManifestKey = '';
 
   @override
   void dispose() {
@@ -95,11 +96,20 @@ class _ClimaRadarTileLayerWidgetState
           return const SizedBox.shrink();
         }
 
-        _syncAnimation(result.frames.length, isPlaying);
+        final frames = result.frames;
+        final manifestKey = climaRadarFramesManifestKey(frames);
+        if (manifestKey != _lastManifestKey) {
+          _lastManifestKey = manifestKey;
+          final controller = ref.read(climaRadarPlaybackControllerProvider);
+          controller.clampFrameIndex(frames.length);
+          controller.snapToLatestPastFrame(frames);
+        }
+
+        _syncAnimation(frames.length, isPlaying);
 
         final rawIndex = ref.watch(climaRadarFrameIndexProvider);
-        final frameIndex = rawIndex.clamp(0, result.frames.length - 1);
-        final activeFrame = result.frames[frameIndex];
+        final frameIndex = rawIndex.clamp(0, frames.length - 1);
+        final activeFrame = frames[frameIndex];
 
         final radarTileLayer = Opacity(
           opacity: MapConfig.radarOverlayOpacity,
