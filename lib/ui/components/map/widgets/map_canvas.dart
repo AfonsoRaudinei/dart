@@ -35,7 +35,7 @@ class MapCanvas extends StatelessWidget {
         onMapReady: onMapReady,
         initialCenter: const LatLng(-23.5505, -46.6333),
         initialZoom: 14.0,
-        minZoom: 4.0,
+        minZoom: MapConfig.minZoom,
         maxZoom: maxZoom,
         // 🛡 IPA-123: background branco antes dos tiles carregarem
         backgroundColor: Colors.white,
