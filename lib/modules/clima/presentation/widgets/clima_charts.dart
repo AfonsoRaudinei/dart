@@ -168,23 +168,36 @@ class ClimaPrecipitacaoBarChart extends StatelessWidget {
       ),
     );
 
+    final totalChuvaMm = previsoes.fold<double>(
+      0.0,
+      (acc, p) => acc + p.precipitacao,
+    );
+    final totalChuvaLabel = totalChuvaMm > 0
+        ? ' · total: ${totalChuvaMm >= 10 ? totalChuvaMm.toStringAsFixed(0) : totalChuvaMm.toStringAsFixed(1)} mm'
+        : '';
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
       child: Container(
-        height: 132,
+        height: 138,
         padding: const EdgeInsets.fromLTRB(12, 14, 16, 8),
         decoration: _chartCard(context),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              '☔  Prob. de Chuva (%)',
-              style: TextStyle(
-                fontFamily: 'Inter',
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: context.climaTextSecondary,
-              ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  '☔  Prob. de Chuva (%)$totalChuvaLabel',
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: context.climaTextSecondary,
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 4),
             Expanded(
