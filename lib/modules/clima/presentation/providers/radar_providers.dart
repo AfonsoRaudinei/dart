@@ -7,12 +7,14 @@ import '../../../../core/infra/preferences_service.dart';
 import '../../data/datasources/rainviewer_radar_datasource.dart';
 import '../../domain/entities/radar_fetch_result.dart';
 import '../../domain/entities/radar_rain_frame.dart';
+import '../../domain/radar_frame_index_utils.dart';
 
 export '../../data/datasources/rainviewer_radar_datasource.dart'
     show ClimaRadarFetch, parseClimaRadarFrames;
 export '../../domain/entities/radar_fetch_result.dart';
 export '../../domain/radar_frame_age_label.dart';
 export '../../domain/entities/radar_rain_frame.dart';
+export '../../domain/radar_frame_index_utils.dart';
 export '../../domain/radar_overlay_state.dart';
 
 /// Chave de persistência do toggle de radar (SharedPreferences).
@@ -128,12 +130,29 @@ class ClimaRadarPlaybackController {
   }
 
   void setColorScheme(int scheme) {
+    if (_ref.read(climaRadarColorSchemeProvider) == scheme) return;
     _ref.read(climaRadarColorSchemeProvider.notifier).state = scheme;
+  }
+
+  void setCoverageEnabled(bool enabled) {
+    _ref.read(climaRadarCoverageEnabledProvider.notifier).state = enabled;
   }
 
   void toggleCoverage() {
     final current = _ref.read(climaRadarCoverageEnabledProvider);
-    _ref.read(climaRadarCoverageEnabledProvider.notifier).state = !current;
+    setCoverageEnabled(!current);
+  }
+
+  void snapToLatestPastFrame(List<ClimaRadarFrame> frames) {
+    if (frames.isEmpty) return;
+    _ref.read(climaRadarFrameIndexProvider.notifier).state =
+        climaRadarLatestPastFrameIndex(frames);
+  }
+
+  void clampFrameIndex(int totalFrames) {
+    if (totalFrames <= 0) return;
+    final indexNotifier = _ref.read(climaRadarFrameIndexProvider.notifier);
+    indexNotifier.state = indexNotifier.state.clamp(0, totalFrames - 1);
   }
 }
 
