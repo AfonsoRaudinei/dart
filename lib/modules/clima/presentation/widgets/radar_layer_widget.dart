@@ -34,8 +34,8 @@ class _ClimaRadarTileLayerWidgetState
     super.dispose();
   }
 
-  void _syncAnimation(int frameCount) {
-    if (frameCount <= 1) {
+  void _syncAnimation(int frameCount, bool isPlaying) {
+    if (frameCount <= 1 || !isPlaying) {
       _stopAnimation();
       return;
     }
@@ -64,6 +64,8 @@ class _ClimaRadarTileLayerWidgetState
   Widget build(BuildContext context) {
     final showRadar = ref.watch(climaRadarEnabledProvider);
     final isOnline = ref.watch(isOnlineProvider).asData?.value ?? false;
+    final isPlaying = ref.watch(climaRadarPlayingProvider);
+    final showCoverage = ref.watch(climaRadarCoverageEnabledProvider);
 
     if (!showRadar) {
       _stopAnimation();
@@ -93,13 +95,13 @@ class _ClimaRadarTileLayerWidgetState
           return const SizedBox.shrink();
         }
 
-        _syncAnimation(result.frames.length);
+        _syncAnimation(result.frames.length, isPlaying);
 
         final rawIndex = ref.watch(climaRadarFrameIndexProvider);
         final frameIndex = rawIndex.clamp(0, result.frames.length - 1);
         final activeFrame = result.frames[frameIndex];
 
-        return Opacity(
+        final radarTileLayer = Opacity(
           opacity: MapConfig.radarOverlayOpacity,
           child: TileLayer(
             urlTemplate: activeFrame.urlTemplate,
@@ -111,6 +113,27 @@ class _ClimaRadarTileLayerWidgetState
             tileProvider: widget.tileProvider,
             subdomains: const [],
           ),
+        );
+
+        if (!showCoverage) return radarTileLayer;
+
+        return Stack(
+          children: [
+            Opacity(
+              opacity: 0.35,
+              child: TileLayer(
+                urlTemplate: MapConfig.rainViewerCoverageMaskTemplate,
+                userAgentPackageName: MapConfig.userAgent,
+                tileSize: MapConfig.rainViewerTileSize,
+                zoomOffset: MapConfig.rainViewerZoomOffset,
+                maxZoom: MapConfig.rainViewerMaxZoom,
+                maxNativeZoom: MapConfig.rainViewerMaxNativeZoom,
+                tileProvider: widget.tileProvider,
+                subdomains: const [],
+              ),
+            ),
+            radarTileLayer,
+          ],
         );
       },
       loading: () {
