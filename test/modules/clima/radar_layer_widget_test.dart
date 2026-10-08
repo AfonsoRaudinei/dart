@@ -110,7 +110,7 @@ ClimaRadarFetchResult _successResult() {
         time: 1713000000,
         path: '/v2/radar/1713000000',
         urlTemplate:
-            'https://tilecache.rainviewer.com/v2/radar/1713000000/512/{z}/{x}/{y}/2/1_1.png',
+            'https://tilecache.rainviewer.com/v2/radar/1713000000/512/{z}/{x}/{y}/2/1_0.png',
       ),
     ],
   );

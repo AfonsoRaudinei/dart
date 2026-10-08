@@ -26,7 +26,7 @@ void main() {
       expect(frames, hasLength(2));
       expect(
         frames[1].urlTemplate,
-        '${MapConfig.rainViewerTileBase}/v2/radar/1713000000/512/{z}/{x}/{y}/2/1_1.png',
+        '${MapConfig.rainViewerTileBase}/v2/radar/1713000000/512/{z}/{x}/{y}/2/1_0.png',
       );
     });
 
@@ -85,6 +85,27 @@ void main() {
       expect(
         formatClimaRadarFrameAgeLabel(now.millisecondsSinceEpoch ~/ 1000, now),
         'agora',
+      );
+    });
+
+    test('formata nowcast futuro', () {
+      final now = DateTime(2026, 6, 27, 12, 0);
+      final futureTime = now.add(const Duration(minutes: 20));
+      expect(
+        formatClimaRadarFrameAgeLabel(
+          futureTime.millisecondsSinceEpoch ~/ 1000,
+          now,
+          isNowcast: true,
+        ),
+        '+20 min (prev.)',
+      );
+    });
+
+    test('formata hora local HH:mm', () {
+      final dt = DateTime(2026, 6, 27, 14, 30);
+      expect(
+        formatClimaRadarFrameTimeString(dt.millisecondsSinceEpoch ~/ 1000),
+        '14:30',
       );
     });
   });
