@@ -326,9 +326,22 @@ class MapConfig {
       'https://api.rainviewer.com/public/weather-maps.json';
 
   /// Base dos tiles de radar RainViewer.
-  /// Template completo: '$rainViewerTileBase{path}/512/{z}/{x}/{y}/2/1_1.png'
+  /// Template completo: '$rainViewerTileBase{path}/512/{z}/{x}/{y}/2/1_0.png'
   /// {path} = valor de radar.past.last.path do manifesto JSON.
   static const String rainViewerTileBase = 'https://tilecache.rainviewer.com';
+
+  /// Esquema de cores default do radar RainViewer:
+  /// 2 = Universal Blue (suave, profissional)
+  /// 6 = NEXRAD Level III (meteorológico clássico: verde -> amarelo -> vermelho -> roxo)
+  static const int rainViewerDefaultColorScheme = 2;
+
+  /// Opções de renderização de tiles RainViewer:
+  /// {smooth}_{snow}: '1_0' = suavizado (1) sem esquema de neve (0) - ideal para clima tropical/Brasil.
+  static const String rainViewerDefaultTileOptions = '1_0';
+
+  /// URL template da máscara de cobertura de radar RainViewer (preto = sem cobertura, transparente = com cobertura).
+  static const String rainViewerCoverageMaskTemplate =
+      'https://tilecache.rainviewer.com/v2/coverage/0/512/{z}/{x}/{y}/0/0_0.png';
 
   /// Opacidade do overlay de radar (0.0–1.0).
   /// 0.75 = eco de chuva nítido sobre o satélite, mantendo o mapa base legível.
