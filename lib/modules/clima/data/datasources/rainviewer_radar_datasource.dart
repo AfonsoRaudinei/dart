@@ -12,15 +12,24 @@ import '../../domain/radar_overlay_logger.dart';
 
 typedef ClimaRadarFetch = Future<http.Response> Function(Uri uri);
 
-/// Lê só `radar.past`. `satellite.infrared` ficou vazio em 2026-01-01
-/// (satélite IR descontinuado em 2026-01-01): o mapa mostra chuva, não nuvem.
+/// Lê `radar.past` e opcionalmente `radar.nowcast` (frames de previsão futura).
+/// Por padrão utiliza opções 1_0 (suavizado sem neve) otimizado para o Brasil.
 @visibleForTesting
-List<ClimaRadarFrame> parseClimaRadarFrames(Map<String, dynamic> json) {
+List<ClimaRadarFrame> parseClimaRadarFrames(
+  Map<String, dynamic> json, {
+  int colorScheme = MapConfig.rainViewerDefaultColorScheme,
+  String tileOptions = MapConfig.rainViewerDefaultTileOptions,
+  bool includeNowcast = true,
+}) {
   final radarMap = json['radar'] as Map<String, dynamic>?;
   if (radarMap == null) return const [];
 
-  final past = radarMap['past'] as List<dynamic>?;
-  if (past == null || past.isEmpty) return const [];
+  final past = radarMap['past'] as List<dynamic>? ?? const [];
+  final nowcast = includeNowcast
+      ? (radarMap['nowcast'] as List<dynamic>? ?? const [])
+      : const [];
+
+  if (past.isEmpty && nowcast.isEmpty) return const [];
 
   final rawHost = (json['host'] as String?)?.trim().replaceAll(
     RegExp(r'/$'),
@@ -30,31 +39,42 @@ List<ClimaRadarFrame> parseClimaRadarFrames(Map<String, dynamic> json) {
       ? MapConfig.rainViewerTileBase
       : rawHost;
 
-  return past
-      .whereType<Map<String, dynamic>>()
-      .map((frame) {
-        final time = frame['time'];
-        final path = frame['path'] as String?;
-        if (time is! int || path == null || path.isEmpty) return null;
+  ClimaRadarFrame? toFrame(dynamic frame, {required bool isNowcast}) {
+    if (frame is! Map<String, dynamic>) return null;
+    final time = frame['time'];
+    final path = frame['path'] as String?;
+    if (time is! int || path == null || path.isEmpty) return null;
 
-        return ClimaRadarFrame(
-          time: time,
-          path: path,
-          urlTemplate: '$host$path/512/{z}/{x}/{y}/2/1_1.png',
-        );
-      })
-      .whereType<ClimaRadarFrame>()
-      .toList(growable: false);
+    return ClimaRadarFrame(
+      time: time,
+      path: path,
+      urlTemplate: '$host$path/512/{z}/{x}/{y}/$colorScheme/$tileOptions.png',
+      isNowcast: isNowcast,
+    );
+  }
+
+  final pastFrames = past
+      .map((f) => toFrame(f, isNowcast: false))
+      .whereType<ClimaRadarFrame>();
+  final nowcastFrames = nowcast
+      .map((f) => toFrame(f, isNowcast: true))
+      .whereType<ClimaRadarFrame>();
+
+  return [...pastFrames, ...nowcastFrames];
 }
 
-/// Busca frames passados do manifesto RainViewer.
+/// Busca frames de radar do manifesto RainViewer.
 class RainviewerRadarDatasource {
   const RainviewerRadarDatasource({required ClimaRadarFetch fetch})
     : _fetch = fetch;
 
   final ClimaRadarFetch _fetch;
 
-  Future<ClimaRadarFetchResult> fetchPastFrames() async {
+  Future<ClimaRadarFetchResult> fetchPastFrames({
+    int colorScheme = MapConfig.rainViewerDefaultColorScheme,
+    String tileOptions = MapConfig.rainViewerDefaultTileOptions,
+    bool includeNowcast = true,
+  }) async {
     final stopwatch = Stopwatch()..start();
     try {
       final response = await _fetch(Uri.parse(MapConfig.rainViewerApiUrl));
@@ -85,7 +105,12 @@ class RainviewerRadarDatasource {
         return result;
       }
 
-      final frames = parseClimaRadarFrames(decoded);
+      final frames = parseClimaRadarFrames(
+        decoded,
+        colorScheme: colorScheme,
+        tileOptions: tileOptions,
+        includeNowcast: includeNowcast,
+      );
       final result = ClimaRadarFetchResult(
         status: frames.isEmpty
             ? ClimaRadarFetchStatus.emptyManifest
