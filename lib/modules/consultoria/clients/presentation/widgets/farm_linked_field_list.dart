@@ -295,7 +295,10 @@ class _FarmTalhaoNdviCard extends ConsumerWidget {
     return latestAsync.when(
       loading: () => Stack(
         children: [
-          _preview(),
+          _preview(
+            showNdvi: true,
+            onNdviImageTap: onNdviImageTap,
+          ),
           const Positioned(
             top: 8,
             right: 8,
@@ -307,7 +310,10 @@ class _FarmTalhaoNdviCard extends ConsumerWidget {
           ),
         ],
       ),
-      error: (_, _) => _preview(showNdvi: true),
+      error: (_, _) => _preview(
+        showNdvi: true,
+        onNdviImageTap: onNdviImageTap,
+      ),
       data: (summary) => _preview(
         showNdvi: true,
         ndviIsColormap: summary?.isColormap ?? false,
