@@ -4,6 +4,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:soloforte_app/core/infra/preferences_service.dart';
 import 'package:soloforte_app/core/state/map_state.dart';
 
+import '../../support/path_provider_test_bindings.dart';
+
 void main() {
   late ProviderContainer container;
 
@@ -146,6 +148,24 @@ void main() {
       expect(areas.map((a) => a.id), ['farm:A', '1728000000000']);
     },
   );
+
+  test('deleteArea remove o registro e é a exclusão manual', () async {
+    installPathProviderTestBindings();
+    await setUpContainer();
+    container
+        .read(offlineMapAreasProvider.notifier)
+        .updateArea(
+          farmArea(farmId: 'A', south: -10, west: -48, north: -9, east: -47),
+        );
+
+    await container.read(offlineMapAreasProvider.notifier).deleteArea('farm:A');
+
+    expect(container.read(offlineMapAreasProvider), isEmpty);
+    final raw = container
+        .read(preferencesServiceProvider)
+        .getString('map_offline_areas_v1');
+    expect(raw, '[]');
+  });
 
   test('intersectionWith recorta e devolve null sem overlap', () {
     final area = OfflineMapAreaConfig(
