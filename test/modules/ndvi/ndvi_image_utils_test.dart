@@ -22,7 +22,11 @@ void main() {
   test('preview Planet expoe disclaimer', () {
     expect(
       ndviPreviewDisclaimer('planet_preview'),
-      contains('nao representa indice NDVI'),
+      contains('Preview RGB (Planet)'),
+    );
+    expect(
+      ndviPreviewDisclaimer('planet_preview'),
+      contains('Sentinel'),
     );
     expect(ndviPreviewDisclaimer('sentinel'), isNull);
   });

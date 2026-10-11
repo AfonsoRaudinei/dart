@@ -450,6 +450,73 @@ async function fetchPlanetThumbnail(
   return btoa(binary);
 }
 
+type SentinelTokenCache = { token: string; expiresAtMs: number };
+let sentinelTokenCache: SentinelTokenCache | null = null;
+
+/** Bearer para Process/Catalog API — OAuth client_credentials ou token estático. */
+async function resolveSentinelAccessToken(): Promise<{
+  token: string | null;
+  authError: string | null;
+}> {
+  const staticToken =
+    Deno.env.get("SENTINEL_HUB_TOKEN") ??
+    Deno.env.get("SENTINEL_HUB_API_KEY") ??
+    "";
+
+  const clientId =
+    Deno.env.get("SENTINEL_HUB_CLIENT_ID") ??
+    Deno.env.get("SENTINEL_API_USER_ID") ??
+    "";
+  const clientSecret =
+    Deno.env.get("SENTINEL_HUB_CLIENT_SECRET") ??
+    Deno.env.get("SENTINEL_API_TOKEN") ??
+    "";
+
+  if (clientId && clientSecret) {
+    const now = Date.now();
+    if (sentinelTokenCache && sentinelTokenCache.expiresAtMs > now + 60_000) {
+      return { token: sentinelTokenCache.token, authError: null };
+    }
+
+    const res = await fetch("https://services.sentinel-hub.com/oauth/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        grant_type: "client_credentials",
+        client_id: clientId,
+        client_secret: clientSecret,
+      }),
+    });
+
+    if (!res.ok) {
+      const detail = await res.text();
+      console.error("Sentinel Hub OAuth error:", detail);
+      if (staticToken) {
+        return { token: staticToken, authError: "sentinel_oauth_failed_using_static" };
+      }
+      return { token: null, authError: "sentinel_oauth_failed" };
+    }
+
+    const data = await res.json();
+    const accessToken = data.access_token as string | undefined;
+    if (!accessToken) {
+      return { token: staticToken || null, authError: "sentinel_oauth_empty_token" };
+    }
+    const expiresIn = (data.expires_in as number) ?? 3600;
+    sentinelTokenCache = {
+      token: accessToken,
+      expiresAtMs: now + expiresIn * 1000,
+    };
+    return { token: accessToken, authError: null };
+  }
+
+  if (staticToken) {
+    return { token: staticToken, authError: null };
+  }
+
+  return { token: null, authError: "sentinel_credentials_missing" };
+}
+
 // ── Handler principal ────────────────────────────────────────────────────────
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -500,13 +567,10 @@ serve(async (req) => {
     }
 
     // ── 2. Leitura de secrets ───────────────────────────────────────────────
-    // Suporta SENTINEL_HUB_TOKEN, SENTINEL_API_TOKEN ou SENTINEL_HUB_API_KEY
-    const sentinelToken =
-      Deno.env.get("SENTINEL_HUB_TOKEN") ??
-      Deno.env.get("SENTINEL_API_TOKEN") ??
-      Deno.env.get("SENTINEL_HUB_API_KEY") ??
-      "";
+    const { token: sentinelToken, authError: sentinelAuthError } =
+      await resolveSentinelAccessToken();
     const planetApiKey = Deno.env.get("PLANET_API_KEY") ?? "";
+    let sentinelDegradedReason: string | null = null;
 
     // ── 3. Janela de datas: últimos 90 dias ────────────────────────────────
     const today = new Date();
@@ -527,6 +591,12 @@ serve(async (req) => {
     // ── 4. Sentinel Hub (primária) ─────────────────────────────────────────
     if ((source === "sentinel" || source === "auto") && sentinelToken) {
       availableDates = await fetchSentinelDates(bbox, sentinelToken, fromDate, toDate);
+
+      if (availableDates.length === 0 && sentinelAuthError) {
+        sentinelDegradedReason = sentinelAuthError;
+      } else if (availableDates.length === 0) {
+        sentinelDegradedReason = "sentinel_no_scenes";
+      }
 
       if (availableDates.length > 0) {
         finalDate = requestedDate
@@ -551,11 +621,16 @@ serve(async (req) => {
           }
         }
       }
+    } else if (source === "sentinel" || source === "auto") {
+      sentinelDegradedReason = sentinelAuthError ?? "sentinel_credentials_missing";
     }
 
     // ── 5. Fallback: Planet (preview RGB — nao e NDVI) ─────────────────────
     if (!imageBase64 && (source === "planet" || source === "auto") && planetApiKey) {
       usedSource = "planet_preview";
+      if (!sentinelDegradedReason && !sentinelToken) {
+        sentinelDegradedReason = "sentinel_credentials_missing";
+      }
       const planetDates = await fetchPlanetDates(bbox, planetApiKey, fromDate, toDate);
 
       if (availableDates.length === 0) availableDates = planetDates;
@@ -593,6 +668,9 @@ serve(async (req) => {
       ndvi_min: ndviMin,
       ndvi_max: ndviMax,
       ndvi_mean: ndviMean,
+      sentinel_degraded_reason: usedSource === "planet_preview"
+        ? sentinelDegradedReason
+        : null,
     };
 
     return new Response(JSON.stringify(responseBody), {

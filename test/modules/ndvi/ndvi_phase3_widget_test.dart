@@ -184,7 +184,7 @@ void main() {
 
     expect(find.text('Preview RGB (Planet)'), findsOneWidget);
     expect(
-      find.text('Imagem RGB de referencia — nao representa indice NDVI.'),
+      find.textContaining('Preview RGB (Planet). Mapa NDVI Sentinel indisponivel'),
       findsOneWidget,
     );
     expect(find.text('Máscara verde'), findsNothing);

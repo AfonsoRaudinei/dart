@@ -49,5 +49,6 @@ String ndviSourceLabel(String source) {
 
 String? ndviPreviewDisclaimer(String source) {
   if (ndviIsColormapSource(source)) return null;
-  return 'Imagem RGB de referencia — nao representa indice NDVI.';
+  return 'Preview RGB (Planet). Mapa NDVI Sentinel indisponivel: '
+      'verifique credenciais Sentinel Hub no servidor ou aguarde passagem sem nuvens.';
 }
