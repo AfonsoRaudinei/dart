@@ -19,7 +19,7 @@
 | Deploy ops (Sentinel token) | N/A codigo | Manual pre-prod | Pendente ops |
 
 **Score codigo + testes + gates: 100%**  
-**Score E2E producao: ~95%** (depende deploy `ndvi-fetch` + `SENTINEL_HUB_TOKEN`)
+**Score E2E producao: ~95%** (depende deploy `ndvi-fetch` + OAuth Sentinel Hub)
 
 ---
 
@@ -71,6 +71,13 @@ Ultima execucao desta auditoria: **55/55 testes**, **analyze 0 issues**, **arch_
 
 ## Ops pre-go-live (fora do codigo)
 
-1. Configurar secret `SENTINEL_HUB_TOKEN` no projeto Supabase.
-2. Deploy: `supabase functions deploy ndvi-fetch`.
-3. Validar talhao com `bordadura_geo` em ambiente de homologacao.
+Mapa NDVI (colormap) **so** com `source: sentinel` (`is_ndvi: true`). Preview Planet (`planet_preview`) e RGB de referencia — nao e indice.
+
+1. Em [apps.sentinel-hub.com](https://apps.sentinel-hub.com/), criar **OAuth client** (`client_id` + `client_secret`). WMS Instance ID / token antigo **nao** substitui OAuth (`invalid_client` na edge).
+2. No Supabase (secrets da funcao `ndvi-fetch`):
+   - `SENTINEL_HUB_CLIENT_ID`
+   - `SENTINEL_HUB_CLIENT_SECRET`
+   - (opcional) `PLANET_API_KEY` para fallback RGB
+3. Deploy: `supabase functions deploy ndvi-fetch`.
+4. Smoke: POST `ndvi-fetch` com `source=auto` — esperar `source: sentinel`, `is_ndvi: true`. Se `sentinel_degraded_reason: sentinel_oauth_failed*`, credenciais ainda invalidas.
+5. Validar talhao com `bordadura_geo` no app (refresh NDVI no sheet apos limpar cache).

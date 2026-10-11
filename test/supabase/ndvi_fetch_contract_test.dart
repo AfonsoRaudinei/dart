@@ -26,6 +26,8 @@ void main() {
     expect(edgeFunction, contains('fetchSentinelNdviStats'));
     expect(edgeFunction, contains('NDVI_STATS_SAMPLE_EVALSCRIPT'));
     expect(edgeFunction, contains('SENTINEL_HUB_TOKEN'));
+    expect(edgeFunction, contains('resolveSentinelAccessToken'));
+    expect(edgeFunction, contains('sentinel_degraded_reason'));
   });
 
   test('validacao de entrada exige area_id e bbox ou geometry', () {
