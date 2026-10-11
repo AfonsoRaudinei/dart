@@ -258,6 +258,7 @@ class NdviRepositoryImpl implements INdviRepository {
   Future<void> deleteByFieldId(String fieldId) async {
     await _local.deleteAll(fieldId);
     await _cachePolicy.clear(fieldId);
+    _sentinelRetried.removeWhere((k) => k.startsWith('$fieldId|'));
   }
 }
 
