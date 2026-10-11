@@ -42,8 +42,12 @@ class _RecordingRepository implements INdviRepository {
   final List<NdviImage> images;
   String? lastEnsureDate;
 
+  String? deletedFieldId;
+
   @override
-  Future<void> deleteByFieldId(String fieldId) async {}
+  Future<void> deleteByFieldId(String fieldId) async {
+    deletedFieldId = fieldId;
+  }
 
   @override
   Future<NdviImage?> ensureImageForDate(
@@ -184,6 +188,12 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('Máscara verde'), findsNothing);
+
+    // Botão de refresh chama deleteByFieldId
+    expect(find.byIcon(Icons.refresh_rounded), findsOneWidget);
+    await tester.tap(find.byIcon(Icons.refresh_rounded));
+    await tester.pump();
+    expect(recordingRepo.deletedFieldId, fieldId);
   });
 }
 
