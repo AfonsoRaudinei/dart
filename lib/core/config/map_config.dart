@@ -218,6 +218,22 @@ class MapConfig {
       'https://servicodados.ibge.gov.br/api/v3/malhas/estados'
       '?formato=application/vnd.geo+json&qualidade=minima';
 
+  /// URL da camada que o mapa está mostrando, incluindo rótulos de satélite.
+  /// O cache offline usa essa mesma URL como chave — senão o download
+  /// fica num layerKey e a tela lê outro.
+  static MapLayerTileConfig tileConfigForVisibleLayer(
+    LayerType type, {
+    required bool satelliteLabelsEnabled,
+    String mapTilerApiKey = kMapTilerApiKey,
+  }) {
+    return tileConfigForLayer(
+      type,
+      mapTilerApiKey: mapTilerApiKey,
+      satelliteWithLabels:
+          type == LayerType.satellite && satelliteLabelsEnabled,
+    );
+  }
+
   static MapLayerTileConfig tileConfigForLayer(
     LayerType type, {
     required String mapTilerApiKey,
@@ -363,7 +379,6 @@ class MapConfig {
   static const Duration rainViewerAnimationFrameInterval = Duration(
     milliseconds: 700,
   );
-
 }
 
 /// Enum para facilitar seleção de estilos

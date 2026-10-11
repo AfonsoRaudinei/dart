@@ -51,9 +51,30 @@ class OfflinePrefetchResult extends OfflinePrefetchProgress {
   bool get isComplete => !cancelled && failed == 0 && processed == total;
 }
 
-/// TTL padrão do cache offline de tiles — após esse prazo a área é considerada
-/// desatualizada e o usuário pode forçar atualização.
+/// Idade a partir da qual a UI oferece atualizar as imagens.
+/// Os arquivos não são apagados: o mapa fica no aparelho até exclusão manual.
 const kOfflineTileCacheTtl = Duration(days: 180);
+
+/// Bbox de outra área baixada cujos tiles não podem ser apagados junto.
+class OfflineTileKeepRegion {
+  final String layerKey;
+  final double south;
+  final double west;
+  final double north;
+  final double east;
+  final int minZoom;
+  final int maxZoom;
+
+  const OfflineTileKeepRegion({
+    required this.layerKey,
+    required this.south,
+    required this.west,
+    required this.north,
+    required this.east,
+    required this.minZoom,
+    required this.maxZoom,
+  });
+}
 
 class OfflineTileCacheService {
   const OfflineTileCacheService();
@@ -68,6 +89,27 @@ class OfflineTileCacheService {
 
   String layerKeyFromTemplate(String template) =>
       sha256.convert(utf8.encode(template)).toString();
+
+  static String tileFilePath({
+    required String rootPath,
+    required String layerKey,
+    required int z,
+    required int x,
+    required int y,
+  }) => '$rootPath/$layerKey/$z/$x/$y.tile';
+
+  /// Tile gravado em disco é servido mesmo online. Some só se o arquivo sair.
+  static bool shouldServePersistedOfflineTile({required bool localTileExists}) {
+    return localTileExists;
+  }
+
+  static bool persistedTileFileExists(File file) {
+    try {
+      return file.existsSync() && file.lengthSync() > 0;
+    } catch (_) {
+      return false;
+    }
+  }
 
   /// Retorna `true` quando a área offline excedeu o [kOfflineTileCacheTtl].
   static bool isAreaExpired(DateTime createdAt) {
@@ -92,11 +134,88 @@ class OfflineTileCacheService {
     required int y,
   }) async {
     final root = await _baseDir();
-    final d = Directory('${root.path}/$layerKey/$z/$x');
-    if (!d.existsSync()) {
-      d.createSync(recursive: true);
+    final file = File(
+      tileFilePath(rootPath: root.path, layerKey: layerKey, z: z, x: x, y: y),
+    );
+    final parent = file.parent;
+    if (!parent.existsSync()) {
+      parent.createSync(recursive: true);
     }
-    return File('${d.path}/$y.tile');
+    return file;
+  }
+
+  /// Apaga só os tiles desta área que nenhuma [keep] ainda precisa.
+  /// Não há expiração automática: a chamada é a exclusão manual.
+  Future<int> deleteTilesInRange({
+    required String layerKey,
+    required double south,
+    required double west,
+    required double north,
+    required double east,
+    required int minZoom,
+    required int maxZoom,
+    List<OfflineTileKeepRegion> keep = const [],
+  }) async {
+    _validateArea(south: south, west: west, north: north, east: east);
+    _validateZoomRange(minZoom, maxZoom);
+    final root = await _baseDir();
+    var removed = 0;
+    for (var z = minZoom; z <= maxZoom; z++) {
+      final range = _rangeFor(
+        south: south,
+        west: west,
+        north: north,
+        east: east,
+        zoom: z,
+      );
+      for (var x = range.xMin; x <= range.xMax; x++) {
+        for (var y = range.yMin; y <= range.yMax; y++) {
+          if (_tileKept(layerKey: layerKey, z: z, x: x, y: y, keep: keep)) {
+            continue;
+          }
+          final file = File(
+            tileFilePath(
+              rootPath: root.path,
+              layerKey: layerKey,
+              z: z,
+              x: x,
+              y: y,
+            ),
+          );
+          if (!file.existsSync()) continue;
+          file.deleteSync();
+          removed++;
+        }
+      }
+    }
+    return removed;
+  }
+
+  bool _tileKept({
+    required String layerKey,
+    required int z,
+    required int x,
+    required int y,
+    required List<OfflineTileKeepRegion> keep,
+  }) {
+    for (final region in keep) {
+      if (region.layerKey != layerKey) continue;
+      if (z < region.minZoom || z > region.maxZoom) continue;
+      final range = _rangeFor(
+        south: region.south,
+        west: region.west,
+        north: region.north,
+        east: region.east,
+        zoom: z,
+      );
+      if (x >= range.xMin &&
+          x <= range.xMax &&
+          y >= range.yMin &&
+          y <= range.yMax) {
+        return true;
+      }
+    }
+    return false;
   }
 
   Future<bool> hasTile({
@@ -106,8 +225,11 @@ class OfflineTileCacheService {
     required int y,
   }) async {
     final root = await _baseDir();
-    final file = File('${root.path}/$layerKey/$z/$x/$y.tile');
-    return file.existsSync() && file.lengthSync() > 0;
+    return persistedTileFileExists(
+      File(
+        tileFilePath(rootPath: root.path, layerKey: layerKey, z: z, x: x, y: y),
+      ),
+    );
   }
 
   Future<bool> hasTileAtPoint({
