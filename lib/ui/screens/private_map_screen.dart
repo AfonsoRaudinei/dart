@@ -639,9 +639,9 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
     final east = bounds.east;
 
     final activeLayer = ref.read(activeLayerProvider);
-    final tileConfig = MapConfig.tileConfigForLayer(
+    final tileConfig = MapConfig.tileConfigForVisibleLayer(
       activeLayer,
-      mapTilerApiKey: MapConfig.kMapTilerApiKey,
+      satelliteLabelsEnabled: ref.read(mapSatelliteLabelsEnabledProvider),
     );
     final cacheService = ref.read(offlineTileCacheServiceProvider);
     final layerKey = cacheService.layerKeyFromTemplate(tileConfig.urlTemplate);
@@ -854,20 +854,20 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
     final pinCorrectionActive =
         ref.watch(pinPositionCorrectionProvider) != null;
 
-    ref.listen<PinPositionCorrectionSession?>(
-      pinPositionCorrectionProvider,
-      (previous, next) {
-        if (next == null || previous != null) return;
-        final zoom = _mapController.camera.zoom;
-        unawaited(
-          MapCameraEase.move(
-            _mapController,
-            to: next.current,
-            zoom: zoom < 16 ? 17.0 : zoom,
-          ),
-        );
-      },
-    );
+    ref.listen<PinPositionCorrectionSession?>(pinPositionCorrectionProvider, (
+      previous,
+      next,
+    ) {
+      if (next == null || previous != null) return;
+      final zoom = _mapController.camera.zoom;
+      unawaited(
+        MapCameraEase.move(
+          _mapController,
+          to: next.current,
+          zoom: zoom < 16 ? 17.0 : zoom,
+        ),
+      );
+    });
 
     return PopScope(
       canPop: !pinCorrectionActive,
