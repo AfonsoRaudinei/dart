@@ -1,1 +1,0 @@
-Ícone original anexado para atualização automática nas plataformas Android, iOS, Web e macOS. Utilize ferramentas como flutter_launcher_icons ou manual para gerar os tamanhos necessários.
