@@ -158,11 +158,13 @@ String mapLayerLabel(LayerType layerType) {
 class _OfflineStatusSnapshot {
   final LayerType activeLayer;
   final int areasForLayerCount;
+  final List<String> areaIds;
   final MapOfflineStatusPresentation presentation;
 
   const _OfflineStatusSnapshot({
     required this.activeLayer,
     required this.areasForLayerCount,
+    required this.areaIds,
     required this.presentation,
   });
 }
@@ -172,9 +174,9 @@ _OfflineStatusSnapshot? _watchOfflineStatusSnapshot(WidgetRef ref) {
   if (camera == null) return null;
 
   final activeLayer = ref.watch(activeLayerProvider);
-  final tileConfig = MapConfig.tileConfigForLayer(
+  final tileConfig = MapConfig.tileConfigForVisibleLayer(
     activeLayer,
-    mapTilerApiKey: MapConfig.kMapTilerApiKey,
+    satelliteLabelsEnabled: ref.watch(mapSatelliteLabelsEnabledProvider),
   );
   final cacheService = ref.watch(offlineTileCacheServiceProvider);
   final layerKey = cacheService.layerKeyFromTemplate(tileConfig.urlTemplate);
@@ -221,6 +223,7 @@ _OfflineStatusSnapshot? _watchOfflineStatusSnapshot(WidgetRef ref) {
   return _OfflineStatusSnapshot(
     activeLayer: activeLayer,
     areasForLayerCount: areasForLayer.length,
+    areaIds: [for (final area in areasForLayer) area.id],
     presentation: presentation,
   );
 }
@@ -362,15 +365,16 @@ class MapOfflineStatusCard extends ConsumerWidget {
     final cardBorder = isIos
         ? SoloForteSheetSkinIos.cardBorder
         : presentation.accentColor.withValues(alpha: 0.28);
-    final labelMuted =
-        isIos ? SoloForteSheetSkinIos.subtitleColor : Colors.white70;
-    final titleColor =
-        isIos ? SoloForteSheetSkinIos.titleColor : Colors.white;
+    final labelMuted = isIos
+        ? SoloForteSheetSkinIos.subtitleColor
+        : Colors.white70;
+    final titleColor = isIos ? SoloForteSheetSkinIos.titleColor : Colors.white;
     final subtitleColor = isIos
         ? SoloForteSheetSkinIos.subtitleColor
         : Colors.white.withValues(alpha: 0.62);
-    final downloadIconColor =
-        isIos ? SoloForteSheetSkinIos.iconStroke : Colors.white;
+    final downloadIconColor = isIos
+        ? SoloForteSheetSkinIos.iconStroke
+        : Colors.white;
     final downloadBg = isIos
         ? SoloForteSheetSkinIos.iconBackground
         : presentation.accentColor.withValues(alpha: 0.18);
@@ -439,6 +443,19 @@ class MapOfflineStatusCard extends ConsumerWidget {
                   ],
                 ),
               ),
+              if (areasCount > 0) ...[
+                const SizedBox(width: 4),
+                IconButton(
+                  tooltip: 'Excluir mapas baixados',
+                  onPressed: () =>
+                      _confirmDeleteSavedMaps(context, ref, snapshot.areaIds),
+                  icon: Icon(
+                    Icons.delete_outline,
+                    color: downloadIconColor,
+                    size: 20,
+                  ),
+                ),
+              ],
               if (canDownload) ...[
                 const SizedBox(width: 8),
                 Container(
@@ -464,15 +481,44 @@ class MapOfflineStatusCard extends ConsumerWidget {
   }
 }
 
+Future<void> _confirmDeleteSavedMaps(
+  BuildContext context,
+  WidgetRef ref,
+  List<String> areaIds,
+) async {
+  if (areaIds.isEmpty) return;
+  final confirmed = await showDialog<bool>(
+    context: context,
+    builder: (dialogContext) => AlertDialog(
+      title: const Text('Excluir mapas baixados'),
+      content: const Text(
+        'Os mapas salvos desta camada saem do aparelho. Eles só voltam se você baixar de novo.',
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(dialogContext).pop(false),
+          child: const Text('Cancelar'),
+        ),
+        TextButton(
+          onPressed: () => Navigator.of(dialogContext).pop(true),
+          child: const Text('Excluir'),
+        ),
+      ],
+    ),
+  );
+  if (confirmed != true || !context.mounted) return;
+  await ref.read(offlineMapAreasProvider.notifier).deleteAreas(areaIds);
+}
+
 class MapOfflineCoverageLayer extends ConsumerWidget {
   const MapOfflineCoverageLayer({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final activeLayer = ref.watch(activeLayerProvider);
-    final tileConfig = MapConfig.tileConfigForLayer(
+    final tileConfig = MapConfig.tileConfigForVisibleLayer(
       activeLayer,
-      mapTilerApiKey: MapConfig.kMapTilerApiKey,
+      satelliteLabelsEnabled: ref.watch(mapSatelliteLabelsEnabledProvider),
     );
     final cacheService = ref.watch(offlineTileCacheServiceProvider);
     final layerKey = cacheService.layerKeyFromTemplate(tileConfig.urlTemplate);

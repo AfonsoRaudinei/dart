@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
+import '../../../../core/services/persistent_offline_tile_provider.dart';
 import '../../../../core/state/map_state.dart';
 import '../../../../core/state/map_ui_providers.dart';
 import '../../../../core/config/map_config.dart';
@@ -11,16 +12,6 @@ import '../../../../core/config/cerrado_satellite_overlay.dart';
 import '../../../../core/domain/map_models.dart';
 import '../../../../core/utils/map_logger.dart';
 import '../../../../core/providers/connectivity_provider.dart';
-
-bool shouldUseOfflineTileLayer({
-  required bool hasOfflineCoverageForViewport,
-  required String? offlineTemplate,
-  required bool? isOnline,
-}) {
-  return offlineTemplate != null &&
-      hasOfflineCoverageForViewport &&
-      isOnline != true;
-}
 
 /// Overlay INPE só online — offline usa cache local sem WMS bloqueando tiles.
 bool shouldShowCerradoSatelliteOverlay({
@@ -38,56 +29,71 @@ bool shouldShowCerradoSatelliteOverlay({
       CerradoSatelliteOverlay.isWithinBounds(cameraLat, cameraLng);
 }
 
-/// Widget que observa apenas activeLayerProvider e renderiza o TileLayer.
-/// Rebuild isolado quando a camada muda.
-class MapLayersWidget extends ConsumerWidget {
+/// Camada base do mapa. Tile já baixado vem do disco, online ou offline.
+/// O que falta continua na rede. O arquivo só sai na exclusão manual.
+class MapLayersWidget extends ConsumerStatefulWidget {
   const MapLayersWidget({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<MapLayersWidget> createState() => _MapLayersWidgetState();
+}
+
+class _MapLayersWidgetState extends ConsumerState<MapLayersWidget> {
+  PersistentOfflineTileProvider? _persistedTiles;
+  String? _persistedTilesKey;
+
+  @override
+  void dispose() {
+    // O TileLayer dono da instância anterior já chamou dispose no provider.
+    _persistedTiles = null;
+    super.dispose();
+  }
+
+  PersistentOfflineTileProvider? _tilesFor({
+    required String? offlineRoot,
+    required String layerKey,
+  }) {
+    if (offlineRoot == null) {
+      _persistedTiles = null;
+      _persistedTilesKey = null;
+      return null;
+    }
+    final key = '$offlineRoot|$layerKey';
+    if (_persistedTiles != null && _persistedTilesKey == key) {
+      return _persistedTiles;
+    }
+    final headers = <String, String>{};
+    _persistedTilesKey = key;
+    _persistedTiles = PersistentOfflineTileProvider(
+      offlineRoot: offlineRoot,
+      layerKey: layerKey,
+      headers: headers,
+    );
+    return _persistedTiles;
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final activeLayer = ref.watch(activeLayerProvider);
     final satelliteLabelsEnabled = ref.watch(mapSatelliteLabelsEnabledProvider);
-    final cerradoOverlayEnabled = ref.watch(cerradoSatelliteOverlayEnabledProvider);
+    final cerradoOverlayEnabled = ref.watch(
+      cerradoSatelliteOverlayEnabledProvider,
+    );
     final wms = ref.watch(externalWmsLayerProvider);
     final raster = ref.watch(externalRasterLayerProvider);
     final isOnline = ref.watch(isOnlineProvider).asData?.value;
     final offlineRoot = ref.watch(offlineTileCacheRootPathProvider).valueOrNull;
     final cacheService = ref.watch(offlineTileCacheServiceProvider);
-    final tileConfig = MapConfig.tileConfigForLayer(
+    final tileConfig = MapConfig.tileConfigForVisibleLayer(
       activeLayer,
-      mapTilerApiKey: MapConfig.kMapTilerApiKey,
-      satelliteWithLabels:
-          activeLayer == LayerType.satellite && satelliteLabelsEnabled,
+      satelliteLabelsEnabled: satelliteLabelsEnabled,
     );
     final layerKey = cacheService.layerKeyFromTemplate(tileConfig.urlTemplate);
     final camera = ref.watch(mapCameraSnapshotProvider);
-    final offlineCoverageAsync = camera == null
-        ? null
-        : ref.watch(
-            offlineCoverageProvider(
-              OfflineCoverageQuery(
-                layerKey: layerKey,
-                lat: camera.center.latitude,
-                lng: camera.center.longitude,
-                south: camera.visibleBounds.south,
-                west: camera.visibleBounds.west,
-                north: camera.visibleBounds.north,
-                east: camera.visibleBounds.east,
-                zoom: camera.zoom.round(),
-              ),
-            ),
-          );
-    final hasOfflineCoverageForViewport = camera == null
-        ? false
-        : offlineCoverageAsync?.asData?.value ?? false;
-    final offlineTemplate = offlineRoot == null
-        ? null
-        : '$offlineRoot/$layerKey/{z}/{x}/{y}.tile';
     final rasterTemplate = _resolveRasterTemplate(raster);
-    final shouldUseOfflineTiles = shouldUseOfflineTileLayer(
-      hasOfflineCoverageForViewport: hasOfflineCoverageForViewport,
-      offlineTemplate: offlineTemplate,
-      isOnline: isOnline,
+    final persistedTiles = _tilesFor(
+      offlineRoot: offlineRoot,
+      layerKey: layerKey,
     );
     final showCerradoOverlay = shouldShowCerradoSatelliteOverlay(
       activeLayer: activeLayer,
@@ -99,47 +105,34 @@ class MapLayersWidget extends ConsumerWidget {
 
     return Stack(
       children: [
-        if (shouldUseOfflineTiles)
-          TileLayer(
-            urlTemplate: offlineTemplate,
-            tileProvider: FileTileProvider(),
-            userAgentPackageName: MapConfig.userAgent,
-            maxZoom: tileConfig.maxZoom,
-            maxNativeZoom: tileConfig.maxNativeZoom,
-            keepBuffer: 3,
-            panBuffer: 1,
-            errorTileCallback: (tile, error, stackTrace) {
-              MapLogger.logError(
-                'Offline tile error on $activeLayer: $error',
-                stackTrace,
-              );
-            },
-          )
-        else
-          TileLayer(
-            urlTemplate: tileConfig.urlTemplate,
-            fallbackUrl: tileConfig.fallbackUrl,
-            subdomains: tileConfig.subdomains,
-            userAgentPackageName: MapConfig.userAgent,
-            maxZoom: tileConfig.maxZoom,
-            maxNativeZoom: tileConfig.maxNativeZoom,
-            retinaMode:
-                tileConfig.retinaMode && RetinaMode.isHighDensity(context),
-            keepBuffer: 3,
-            panBuffer: 1,
-            errorTileCallback: (tile, error, stackTrace) {
-              MapLogger.logError(
-                'Tile error on $activeLayer: $error',
-                stackTrace,
-              );
-            },
-          ),
+        TileLayer(
+          key: ValueKey('base-tiles-$offlineRoot-$layerKey'),
+          urlTemplate: tileConfig.urlTemplate,
+          fallbackUrl: tileConfig.fallbackUrl,
+          subdomains: tileConfig.subdomains,
+          tileProvider: persistedTiles,
+          userAgentPackageName: MapConfig.userAgent,
+          maxZoom: tileConfig.maxZoom,
+          maxNativeZoom: tileConfig.maxNativeZoom,
+          retinaMode:
+              tileConfig.retinaMode && RetinaMode.isHighDensity(context),
+          keepBuffer: 3,
+          panBuffer: 1,
+          errorTileCallback: (tile, error, stackTrace) {
+            MapLogger.logError(
+              'Tile error on $activeLayer: $error',
+              stackTrace,
+            );
+          },
+        ),
         if (showCerradoOverlay)
           Opacity(
             opacity: CerradoSatelliteOverlay.defaultOpacity,
             child: TileLayer(
               wmsOptions: WMSTileLayerOptions(
-                baseUrl: _normalizeWmsBaseUrl(CerradoSatelliteOverlay.wmsBaseUrl),
+                baseUrl: _normalizeWmsBaseUrl(
+                  CerradoSatelliteOverlay.wmsBaseUrl,
+                ),
                 layers: const [CerradoSatelliteOverlay.layerName],
                 format: CerradoSatelliteOverlay.wmsFormat,
                 version: CerradoSatelliteOverlay.wmsVersion,
