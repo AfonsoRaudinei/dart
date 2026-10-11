@@ -112,6 +112,42 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pump();
   });
+
+  testWidgets('showNdvi com onNdviImageTap chama callback mesmo sem colormap', (
+    tester,
+  ) async {
+    final previousOnError = FlutterError.onError;
+    FlutterError.onError = (details) {
+      final message = details.exceptionAsString();
+      if (message.contains('ClientException') ||
+          message.contains('basemaps.cartocdn.com')) {
+        return;
+      }
+      previousOnError?.call(details);
+    };
+    addTearDown(() => FlutterError.onError = previousOnError);
+
+    var tapped = false;
+    await tester.pumpWidget(
+      _host(
+        TalhaoMapPreviewWidget(
+          vertices: _triangle,
+          nome: 'Th 4',
+          areaHa: 37,
+          showNdvi: true,
+          ndviBadge: 'Preview RGB',
+          onNdviImageTap: () => tapped = true,
+        ),
+      ),
+    );
+    await tester.pump();
+
+    await tester.tap(find.byType(InkWell).first);
+    expect(tapped, isTrue);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump();
+  });
 }
 
 const _triangle = <LatLng>[
