@@ -170,11 +170,10 @@ class TalhaoMapPreviewWidget extends StatelessWidget {
       );
     }
 
-    final opensNdvi =
-        ndviImage != null && vertices.length >= 3 && onNdviImageTap != null;
+    final opensNdvi = showNdvi && onNdviImageTap != null;
     return InkWell(
       onTap: opensNdvi ? onNdviImageTap : onTap,
-      child: SizedBox(height: 160, child: body),
+      child: SizedBox(height: 160, child: IgnorePointer(child: body)),
     );
   }
 
