@@ -56,6 +56,15 @@ soloforte_load_local_env() {
     SENTINEL_HUB_CLIENT_SECRET="$(
       python3 -c "import json; print(json.load(open('$json_file')).get('SENTINEL_HUB_CLIENT_SECRET',''))"
     )"
+    CDSE_CLIENT_ID="$(
+      python3 -c "import json; print(json.load(open('$json_file')).get('CDSE_CLIENT_ID',''))"
+    )"
+    CDSE_CLIENT_SECRET="$(
+      python3 -c "import json; print(json.load(open('$json_file')).get('CDSE_CLIENT_SECRET',''))"
+    )"
+    NDVI_SENTINEL_PROVIDER="$(
+      python3 -c "import json; print(json.load(open('$json_file')).get('NDVI_SENTINEL_PROVIDER','auto'))"
+    )"
     ENV="$(
       python3 -c "import json; print(json.load(open('$json_file')).get('ENV','development'))"
     )"
@@ -92,6 +101,7 @@ soloforte_load_local_env() {
   export SUPABASE_URL SUPABASE_ANON_KEY STADIA_API_KEY MAPTILER_API_KEY
   export GOOGLE_WEATHER_API_KEY PLANET_API_KEY PLANET_API_SECRET
   export SENTINEL_API_USER_ID SENTINEL_API_TOKEN SENTINEL_HUB_TOKEN
-  export SENTINEL_HUB_CLIENT_ID SENTINEL_HUB_CLIENT_SECRET ENV
+  export SENTINEL_HUB_CLIENT_ID SENTINEL_HUB_CLIENT_SECRET
+  export CDSE_CLIENT_ID CDSE_CLIENT_SECRET NDVI_SENTINEL_PROVIDER ENV
   return 0
 }
