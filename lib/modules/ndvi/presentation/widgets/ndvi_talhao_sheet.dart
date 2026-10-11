@@ -95,24 +95,47 @@ class NdviTalhaoSheet extends ConsumerWidget {
                         // Header
                         Row(
                           children: [
-                            Text(
-                              fieldName,
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: titleColor,
+                            Expanded(
+                              child: Row(
+                                children: [
+                                  Flexible(
+                                    child: Text(
+                                      fieldName,
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                        color: titleColor,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  if (areaHa != null) ...[
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      '•  ${areaHa!.toStringAsFixed(1)} ha',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        color: subtitleColor,
+                                      ),
+                                    ),
+                                  ],
+                                ],
                               ),
                             ),
-                            if (areaHa != null) ...[
-                              const SizedBox(width: 8),
-                              Text(
-                                '•  ${areaHa!.toStringAsFixed(1)} ha',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  color: subtitleColor,
-                                ),
+                            IconButton(
+                              tooltip: 'Recarregar imagens',
+                              icon: Icon(
+                                Icons.refresh_rounded,
+                                color: titleColor,
+                                size: 20,
                               ),
-                            ],
+                              onPressed: () async {
+                                await ref
+                                    .read(ndviRepositoryProvider)
+                                    .deleteByFieldId(fieldId);
+                                ref.invalidate(ndviImagesProvider(fieldId));
+                              },
+                            ),
                           ],
                         ),
                         const SizedBox(height: 4),
