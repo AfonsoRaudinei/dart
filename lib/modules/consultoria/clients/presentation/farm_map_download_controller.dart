@@ -7,6 +7,18 @@ import 'package:soloforte_app/modules/consultoria/clients/presentation/farm_map_
 
 part 'farm_map_download_controller.g.dart';
 
+const farmOfflineAreaPrefix = 'farm:';
+
+String farmOfflineAreaId(String farmId) => '$farmOfflineAreaPrefix$farmId';
+
+bool farmMapIsSaved(Iterable<OfflineMapAreaConfig> areas, String farmId) {
+  final id = farmOfflineAreaId(farmId);
+  for (final area in areas) {
+    if (area.id == id) return true;
+  }
+  return false;
+}
+
 /// Estado visível do download de mapa por fazenda (job em segundo plano).
 class FarmMapDownloadJob {
   final bool isRunning;
@@ -236,7 +248,7 @@ class FarmMapDownloadController extends _$FarmMapDownloadController {
     required String layerKey,
     required int downloaded,
   }) {
-    final id = 'farm:$farmId';
+    final id = farmOfflineAreaId(farmId);
     OfflineMapAreaConfig? existing;
     for (final area in ref.read(offlineMapAreasProvider)) {
       if (area.id == id) {
