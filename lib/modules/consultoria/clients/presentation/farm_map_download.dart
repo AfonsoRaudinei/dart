@@ -43,11 +43,9 @@ Future<void> downloadFarmSatelliteMap({
     return;
   }
 
-  final labelsEnabled = ref.read(mapSatelliteLabelsEnabledProvider);
-  final tileConfig = MapConfig.tileConfigForLayer(
+  final tileConfig = MapConfig.tileConfigForVisibleLayer(
     LayerType.satellite,
-    mapTilerApiKey: MapConfig.kMapTilerApiKey,
-    satelliteWithLabels: labelsEnabled,
+    satelliteLabelsEnabled: ref.read(mapSatelliteLabelsEnabledProvider),
   );
   final cacheService = ref.read(offlineTileCacheServiceProvider);
   final layerKey = cacheService.layerKeyFromTemplate(tileConfig.urlTemplate);
@@ -105,7 +103,8 @@ class _FarmMapDownloadProgressDialogState
   @override
   Widget build(BuildContext context) {
     final job = ref.watch(farmMapDownloadControllerProvider)[widget.farmId];
-    final progress = job?.progress ??
+    final progress =
+        job?.progress ??
         const OfflinePrefetchProgress(
           total: 0,
           processed: 0,
@@ -129,9 +128,7 @@ class _FarmMapDownloadProgressDialogState
           Text('${progress.processed} de ${progress.total} tiles'),
           if (job?.isPaused == true) ...[
             const SizedBox(height: 8),
-            const Text(
-              'Sem internet. Retomando quando conectar…',
-            ),
+            const Text('Sem internet. Retomando quando conectar…'),
           ],
         ],
       ),
@@ -159,6 +156,38 @@ void _snack(BuildContext context, String message) {
   ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
 }
 
+Future<void> _confirmDeleteFarmMap(
+  BuildContext context,
+  WidgetRef ref,
+  String farmId,
+) async {
+  final confirmed = await showDialog<bool>(
+    context: context,
+    builder: (dialogContext) => AlertDialog(
+      title: const Text('Excluir mapa'),
+      content: const Text(
+        'O mapa desta fazenda sai do aparelho. Ele só volta se você baixar de novo.',
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(dialogContext).pop(false),
+          child: const Text('Cancelar'),
+        ),
+        TextButton(
+          onPressed: () => Navigator.of(dialogContext).pop(true),
+          child: const Text('Excluir'),
+        ),
+      ],
+    ),
+  );
+  if (confirmed != true) return;
+  await ref
+      .read(offlineMapAreasProvider.notifier)
+      .deleteArea(farmOfflineAreaId(farmId));
+  if (!context.mounted) return;
+  _snack(context, 'Mapa da fazenda excluído.');
+}
+
 bool farmHasDrawablePolygons(List<FarmLinkedFieldSummary>? fields) {
   if (fields == null) return false;
   return fields.any((field) => field.vertices.length >= 3);
@@ -178,6 +207,7 @@ class FarmMapDownloadButton extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final enabled = farmHasDrawablePolygons(fields);
+    final saved = farmMapIsSaved(ref.watch(offlineMapAreasProvider), farmId);
     final color = enabled ? PremiumTokens.brandGreen : Colors.grey;
     final job = ref.watch(farmMapDownloadControllerProvider)[farmId];
     final isDownloading = job?.isRunning ?? false;
@@ -188,21 +218,42 @@ class FarmMapDownloadButton extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          TextButton.icon(
-            onPressed: enabled
-                ? () => downloadFarmSatelliteMap(
+          if (saved && !isDownloading)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.download_done_rounded, color: color),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Mapa baixado',
+                    style: TextStyle(color: color, fontWeight: FontWeight.bold),
+                  ),
+                ],
+              ),
+            )
+          else
+            TextButton.icon(
+              onPressed: enabled
+                  ? () => downloadFarmSatelliteMap(
                       context: context,
                       ref: ref,
                       farmId: farmId,
                       fields: fields!,
                     )
-                : null,
-            icon: Icon(Icons.download_rounded, color: color),
-            label: Text(
-              'Baixar mapa',
-              style: TextStyle(color: color, fontWeight: FontWeight.bold),
+                  : null,
+              icon: Icon(Icons.download_rounded, color: color),
+              label: Text(
+                'Baixar mapa',
+                style: TextStyle(color: color, fontWeight: FontWeight.bold),
+              ),
             ),
-          ),
+          if (saved && !isDownloading)
+            TextButton(
+              onPressed: () => _confirmDeleteFarmMap(context, ref, farmId),
+              child: const Text('Excluir mapa'),
+            ),
           if (isDownloading)
             Padding(
               padding: const EdgeInsets.only(left: 12, bottom: 4),
