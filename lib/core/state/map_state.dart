@@ -527,6 +527,47 @@ class OfflineMapAreasNotifier extends Notifier<List<OfflineMapAreaConfig>> {
     _persist();
   }
 
+  /// Tira a área do registro e apaga os tiles que nenhuma outra área usa.
+  /// Único caminho que remove um mapa já baixado.
+  Future<void> deleteAreas(Iterable<String> ids) async {
+    final idSet = ids.toSet();
+    if (idSet.isEmpty) return;
+    final doomed = state.where((area) => idSet.contains(area.id)).toList();
+    if (doomed.isEmpty) return;
+    final surviving = state.where((area) => !idSet.contains(area.id)).toList();
+    final cache = ref.read(offlineTileCacheServiceProvider);
+    final pending = [...doomed];
+    for (final area in doomed) {
+      pending.remove(area);
+      await cache.deleteTilesInRange(
+        layerKey: area.layerKey,
+        south: area.south,
+        west: area.west,
+        north: area.north,
+        east: area.east,
+        minZoom: area.minZoom.floor(),
+        maxZoom: area.maxZoom.ceil(),
+        keep: [
+          for (final other in [...surviving, ...pending])
+            if (other.layerKey == area.layerKey)
+              OfflineTileKeepRegion(
+                layerKey: other.layerKey,
+                south: other.south,
+                west: other.west,
+                north: other.north,
+                east: other.east,
+                minZoom: other.minZoom.floor(),
+                maxZoom: other.maxZoom.ceil(),
+              ),
+        ],
+      );
+    }
+    state = surviving;
+    _persist();
+  }
+
+  Future<void> deleteArea(String id) => deleteAreas([id]);
+
   void _persist() {
     final prefs = ref.read(preferencesServiceProvider);
     prefs.setString(
