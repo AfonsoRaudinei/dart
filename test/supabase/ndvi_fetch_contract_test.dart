@@ -26,7 +26,9 @@ void main() {
     expect(edgeFunction, contains('fetchSentinelNdviStats'));
     expect(edgeFunction, contains('NDVI_STATS_SAMPLE_EVALSCRIPT'));
     expect(edgeFunction, contains('SENTINEL_HUB_TOKEN'));
-    expect(edgeFunction, contains('resolveSentinelAccessToken'));
+    expect(edgeFunction, contains('resolveAccessTokenForBackend'));
+    expect(edgeFunction, contains('CDSE_API_BASE'));
+    expect(edgeFunction, contains('NDVI_SENTINEL_PROVIDER'));
     expect(edgeFunction, contains('sentinel_degraded_reason'));
   });
 

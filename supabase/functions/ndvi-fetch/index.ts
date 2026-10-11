@@ -154,13 +154,28 @@ function evaluatePixel(sample) {
 }
 `;
 
+const COMMERCIAL_API_BASE = "https://services.sentinel-hub.com/api/v1";
+const CDSE_API_BASE = "https://sh.dataspace.copernicus.eu/api/v1";
+
+type SentinelBackendId = "commercial" | "cdse";
+
+type SentinelBackendConfig = {
+  id: SentinelBackendId;
+  apiBase: string;
+  tokenUrl: string;
+  clientId: string;
+  clientSecret: string;
+  staticToken: string;
+};
+
 // ── Sentinel Hub: buscar datas disponíveis ───────────────────────────────────
 async function fetchSentinelDates(
+  apiBase: string,
   bbox: number[],
   token: string,
   fromDate: string,
   toDate: string
-): Promise<string[]> {
+): Promise<{ dates: string[]; catalogOk: boolean }> {
   const body = {
     bbox: bbox,
     datetime: `${fromDate}T00:00:00Z/${toDate}T23:59:59Z`,
@@ -170,19 +185,19 @@ async function fetchSentinelDates(
     "filter-lang": "cql2-text",
   };
 
-  const res = await fetch(
-    "https://services.sentinel-hub.com/api/v1/catalog/1.0.0/search",
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(body),
-    }
-  );
+  const res = await fetch(`${apiBase}/catalog/1.0.0/search`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
+  });
 
-  if (!res.ok) return [];
+  if (!res.ok) {
+    console.error("Sentinel catalog error:", await res.text());
+    return { dates: [], catalogOk: false };
+  }
 
   const data = await res.json();
   const dates: string[] = [];
@@ -190,12 +205,15 @@ async function fetchSentinelDates(
     const dt = feature.properties?.datetime as string | undefined;
     if (dt) dates.push(dt.substring(0, 10));
   }
-  // Deduplica e ordena decrescente
-  return [...new Set(dates)].sort((a, b) => b.localeCompare(a));
+  return {
+    dates: [...new Set(dates)].sort((a, b) => b.localeCompare(a)),
+    catalogOk: true,
+  };
 }
 
 // ── Sentinel Hub: buscar imagem NDVI em PNG base64 ──────────────────────────
 async function fetchSentinelImage(
+  apiBase: string,
   bbox: number[],
   token: string,
   date: string,
@@ -234,17 +252,14 @@ async function fetchSentinelImage(
     evalscript: NDVI_EVALSCRIPT,
   };
 
-  const res = await fetch(
-    "https://services.sentinel-hub.com/api/v1/process",
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(body),
-    }
-  );
+  const res = await fetch(`${apiBase}/process`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
+  });
 
   if (!res.ok) {
     console.error("Sentinel Hub process error:", await res.text());
@@ -260,6 +275,7 @@ async function fetchSentinelImage(
 }
 
 async function fetchSentinelNdviStats(
+  apiBase: string,
   bbox: number[],
   token: string,
   date: string,
@@ -298,17 +314,14 @@ async function fetchSentinelNdviStats(
     evalscript: NDVI_STATS_SAMPLE_EVALSCRIPT,
   };
 
-  const res = await fetch(
-    "https://services.sentinel-hub.com/api/v1/process",
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(body),
-    }
-  );
+  const res = await fetch(`${apiBase}/process`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
+  });
 
   if (!res.ok) {
     console.error("Sentinel Hub stats error:", await res.text());
@@ -451,34 +464,81 @@ async function fetchPlanetThumbnail(
 }
 
 type SentinelTokenCache = { token: string; expiresAtMs: number };
-let sentinelTokenCache: SentinelTokenCache | null = null;
+const sentinelTokenCaches = new Map<SentinelBackendId, SentinelTokenCache>();
 
-/** Bearer para Process/Catalog API — OAuth client_credentials ou token estático. */
-async function resolveSentinelAccessToken(): Promise<{
-  token: string | null;
-  authError: string | null;
-}> {
-  const staticToken =
-    Deno.env.get("SENTINEL_HUB_TOKEN") ??
-    Deno.env.get("SENTINEL_HUB_API_KEY") ??
-    "";
+function buildSentinelBackendConfigs(): SentinelBackendConfig[] {
+  const preference = (Deno.env.get("NDVI_SENTINEL_PROVIDER") ?? "auto")
+    .toLowerCase();
 
-  const clientId =
-    Deno.env.get("SENTINEL_HUB_CLIENT_ID") ??
-    Deno.env.get("SENTINEL_API_USER_ID") ??
-    "";
-  const clientSecret =
-    Deno.env.get("SENTINEL_HUB_CLIENT_SECRET") ??
-    Deno.env.get("SENTINEL_API_TOKEN") ??
-    "";
+  const commercial: SentinelBackendConfig = {
+    id: "commercial",
+    apiBase: COMMERCIAL_API_BASE,
+    tokenUrl:
+      "https://services.sentinel-hub.com/auth/realms/main/protocol/openid-connect/token",
+    clientId:
+      Deno.env.get("SENTINEL_HUB_CLIENT_ID") ??
+      Deno.env.get("SENTINEL_API_USER_ID") ??
+      "",
+    clientSecret: Deno.env.get("SENTINEL_HUB_CLIENT_SECRET") ?? "",
+    staticToken:
+      Deno.env.get("SENTINEL_HUB_TOKEN") ??
+      Deno.env.get("SENTINEL_HUB_API_KEY") ??
+      "",
+  };
+  if (!commercial.clientSecret) {
+    commercial.clientSecret = Deno.env.get("SENTINEL_API_TOKEN") ?? "";
+  }
+
+  const cdse: SentinelBackendConfig = {
+    id: "cdse",
+    apiBase: CDSE_API_BASE,
+    tokenUrl:
+      "https://identity.dataspace.copernicus.eu/auth/realms/CDSE/protocol/openid-connect/token",
+    clientId: Deno.env.get("CDSE_CLIENT_ID") ?? "",
+    clientSecret: Deno.env.get("CDSE_CLIENT_SECRET") ?? "",
+    staticToken: "",
+  };
+
+  const isConfigured = (cfg: SentinelBackendConfig) =>
+    (cfg.clientId.trim() && cfg.clientSecret.trim()) || cfg.staticToken.trim();
+
+  const ordered: SentinelBackendConfig[] = [];
+  const pushIfConfigured = (cfg: SentinelBackendConfig) => {
+    if (isConfigured(cfg)) ordered.push(cfg);
+  };
+
+  if (preference === "cdse") {
+    pushIfConfigured(cdse);
+    pushIfConfigured(commercial);
+  } else if (preference === "commercial") {
+    pushIfConfigured(commercial);
+    pushIfConfigured(cdse);
+  } else if (cdse.clientId && cdse.clientSecret) {
+    pushIfConfigured(cdse);
+    pushIfConfigured(commercial);
+  } else {
+    pushIfConfigured(commercial);
+    pushIfConfigured(cdse);
+  }
+
+  return ordered;
+}
+
+async function resolveAccessTokenForBackend(
+  cfg: SentinelBackendConfig,
+): Promise<{ token: string | null; authError: string | null }> {
+  const clientId = cfg.clientId.trim();
+  const clientSecret = cfg.clientSecret.trim();
+  const staticToken = cfg.staticToken.trim();
 
   if (clientId && clientSecret) {
     const now = Date.now();
-    if (sentinelTokenCache && sentinelTokenCache.expiresAtMs > now + 60_000) {
-      return { token: sentinelTokenCache.token, authError: null };
+    const cached = sentinelTokenCaches.get(cfg.id);
+    if (cached && cached.expiresAtMs > now + 60_000) {
+      return { token: cached.token, authError: null };
     }
 
-    const res = await fetch("https://services.sentinel-hub.com/oauth/token", {
+    const res = await fetch(cfg.tokenUrl, {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: new URLSearchParams({
@@ -490,23 +550,29 @@ async function resolveSentinelAccessToken(): Promise<{
 
     if (!res.ok) {
       const detail = await res.text();
-      console.error("Sentinel Hub OAuth error:", detail);
+      console.error(`Sentinel OAuth error (${cfg.id}):`, detail);
       if (staticToken) {
-        return { token: staticToken, authError: "sentinel_oauth_failed_using_static" };
+        return {
+          token: staticToken,
+          authError: `${cfg.id}_oauth_failed_using_static`,
+        };
       }
-      return { token: null, authError: "sentinel_oauth_failed" };
+      return { token: null, authError: `${cfg.id}_oauth_failed` };
     }
 
     const data = await res.json();
     const accessToken = data.access_token as string | undefined;
     if (!accessToken) {
-      return { token: staticToken || null, authError: "sentinel_oauth_empty_token" };
+      return {
+        token: staticToken || null,
+        authError: `${cfg.id}_oauth_empty_token`,
+      };
     }
     const expiresIn = (data.expires_in as number) ?? 3600;
-    sentinelTokenCache = {
+    sentinelTokenCaches.set(cfg.id, {
       token: accessToken,
       expiresAtMs: now + expiresIn * 1000,
-    };
+    });
     return { token: accessToken, authError: null };
   }
 
@@ -514,7 +580,113 @@ async function resolveSentinelAccessToken(): Promise<{
     return { token: staticToken, authError: null };
   }
 
-  return { token: null, authError: "sentinel_credentials_missing" };
+  return { token: null, authError: `${cfg.id}_credentials_missing` };
+}
+
+type SentinelFetchAttempt = {
+  imageBase64: string | null;
+  availableDates: string[];
+  finalDate: string;
+  ndviMin: number;
+  ndviMax: number;
+  ndviMean: number;
+  cloudCoverage: number;
+  degradedReason: string | null;
+};
+
+async function trySentinelBackends(
+  backends: SentinelBackendConfig[],
+  bbox: number[],
+  geometry: GeoJsonGeometry | undefined,
+  fromDate: string,
+  toDate: string,
+  requestedDate: string | undefined,
+  defaultDate: string,
+): Promise<SentinelFetchAttempt> {
+  let lastReason: string | null = backends.length === 0
+    ? "sentinel_credentials_missing"
+    : null;
+
+  for (const backend of backends) {
+    const { token, authError } = await resolveAccessTokenForBackend(backend);
+    if (!token) {
+      lastReason = authError;
+      continue;
+    }
+
+    const catalog = await fetchSentinelDates(
+      backend.apiBase,
+      bbox,
+      token,
+      fromDate,
+      toDate,
+    );
+
+    if (!catalog.catalogOk) {
+      lastReason = `${backend.id}_catalog_failed`;
+      continue;
+    }
+    if (catalog.dates.length === 0) {
+      lastReason = `${backend.id}_no_scenes`;
+      continue;
+    }
+
+    const finalDate = requestedDate
+      ? (catalog.dates.includes(requestedDate)
+        ? requestedDate
+        : catalog.dates[0])
+      : catalog.dates[0];
+
+    const result = await fetchSentinelImage(
+      backend.apiBase,
+      bbox,
+      token,
+      finalDate,
+      geometry,
+    );
+    if (!result) {
+      lastReason = `${backend.id}_process_failed`;
+      continue;
+    }
+
+    let ndviMin = 0;
+    let ndviMax = 0;
+    let ndviMean = 0;
+    const stats = await fetchSentinelNdviStats(
+      backend.apiBase,
+      bbox,
+      token,
+      finalDate,
+      geometry,
+    );
+    if (stats) {
+      ndviMin = stats.ndviMin;
+      ndviMax = stats.ndviMax;
+      ndviMean = stats.ndviMean;
+    }
+
+    return {
+      imageBase64: result.base64,
+      availableDates: catalog.dates,
+      finalDate,
+      ndviMin,
+      ndviMax,
+      ndviMean,
+      cloudCoverage: result.cloudCoverage,
+      degradedReason: null,
+    };
+  }
+
+  return {
+    imageBase64: null,
+    availableDates: [],
+    finalDate: defaultDate,
+    ndviMin: 0,
+    ndviMax: 0,
+    ndviMean: 0,
+    cloudCoverage: 0,
+    degradedReason: lastReason,
+  };
 }
 
 // ── Handler principal ────────────────────────────────────────────────────────
@@ -567,8 +739,7 @@ serve(async (req) => {
     }
 
     // ── 2. Leitura de secrets ───────────────────────────────────────────────
-    const { token: sentinelToken, authError: sentinelAuthError } =
-      await resolveSentinelAccessToken();
+    const sentinelBackends = buildSentinelBackendConfigs();
     const planetApiKey = Deno.env.get("PLANET_API_KEY") ?? "";
     let sentinelDegradedReason: string | null = null;
 
@@ -588,47 +759,38 @@ serve(async (req) => {
     let ndviMax = 0;
     let ndviMean = 0;
 
-    // ── 4. Sentinel Hub (primária) ─────────────────────────────────────────
-    if ((source === "sentinel" || source === "auto") && sentinelToken) {
-      availableDates = await fetchSentinelDates(bbox, sentinelToken, fromDate, toDate);
-
-      if (availableDates.length === 0 && sentinelAuthError) {
-        sentinelDegradedReason = sentinelAuthError;
-      } else if (availableDates.length === 0) {
-        sentinelDegradedReason = "sentinel_no_scenes";
-      }
-
-      if (availableDates.length > 0) {
-        finalDate = requestedDate
-          ? (availableDates.includes(requestedDate) ? requestedDate : availableDates[0])
-          : availableDates[0];
-
-        const result = await fetchSentinelImage(bbox, sentinelToken, finalDate, geometry);
-        if (result) {
-          imageBase64 = result.base64;
-          cloudCoverage = result.cloudCoverage;
-          usedSource = "sentinel";
-          const stats = await fetchSentinelNdviStats(
-            bbox,
-            sentinelToken,
-            finalDate,
-            geometry,
-          );
-          if (stats) {
-            ndviMin = stats.ndviMin;
-            ndviMax = stats.ndviMax;
-            ndviMean = stats.ndviMean;
-          }
+    // ── 4. Sentinel Hub / CDSE (primária) ───────────────────────────────────
+    if (source === "sentinel" || source === "auto") {
+      const attempt = await trySentinelBackends(
+        sentinelBackends,
+        bbox,
+        geometry,
+        fromDate,
+        toDate,
+        requestedDate,
+        finalDate,
+      );
+      if (attempt.imageBase64) {
+        imageBase64 = attempt.imageBase64;
+        availableDates = attempt.availableDates;
+        finalDate = attempt.finalDate;
+        ndviMin = attempt.ndviMin;
+        ndviMax = attempt.ndviMax;
+        ndviMean = attempt.ndviMean;
+        cloudCoverage = attempt.cloudCoverage;
+        usedSource = "sentinel";
+      } else {
+        sentinelDegradedReason = attempt.degradedReason;
+        if (attempt.availableDates.length > 0) {
+          availableDates = attempt.availableDates;
         }
       }
-    } else if (source === "sentinel" || source === "auto") {
-      sentinelDegradedReason = sentinelAuthError ?? "sentinel_credentials_missing";
     }
 
     // ── 5. Fallback: Planet (preview RGB — nao e NDVI) ─────────────────────
     if (!imageBase64 && (source === "planet" || source === "auto") && planetApiKey) {
       usedSource = "planet_preview";
-      if (!sentinelDegradedReason && !sentinelToken) {
+      if (!sentinelDegradedReason && sentinelBackends.length === 0) {
         sentinelDegradedReason = "sentinel_credentials_missing";
       }
       const planetDates = await fetchPlanetDates(bbox, planetApiKey, fromDate, toDate);
@@ -649,6 +811,7 @@ serve(async (req) => {
         JSON.stringify({
           error: "no_images_available",
           message: "Nenhuma imagem disponível para esta área e período.",
+          sentinel_degraded_reason: sentinelDegradedReason,
         }),
         {
           status: 404,
