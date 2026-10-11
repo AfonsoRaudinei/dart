@@ -133,7 +133,8 @@ void main() {
         forceRefresh: true,
         requestTimeout: const Duration(milliseconds: 40),
         pausePoll: const Duration(milliseconds: 5),
-        tileHttpGet: (client, uri, headers) => Completer<http.Response>().future,
+        tileHttpGet: (client, uri, headers) =>
+            Completer<http.Response>().future,
       );
 
       expect(DateTime.now().difference(started).inSeconds, lessThan(3));
@@ -274,5 +275,52 @@ void main() {
       expect(result.failed, 0);
       expect(result.isComplete, isTrue);
     });
+  });
+
+  group('OfflineTileCacheService.deleteTilesInRange', () {
+    test(
+      'exclusão manual apaga o tile e a área vizinha conserva o compartilhado',
+      () async {
+        installPathProviderTestBindings();
+        const layer = 'persist-delete';
+        final file = await service.tileFile(layerKey: layer, z: 0, x: 0, y: 0);
+        await file.writeAsBytes(const [9]);
+
+        final kept = await service.deleteTilesInRange(
+          layerKey: layer,
+          south: -10,
+          west: -50,
+          north: -9,
+          east: -49,
+          minZoom: 0,
+          maxZoom: 0,
+          keep: const [
+            OfflineTileKeepRegion(
+              layerKey: layer,
+              south: -20,
+              west: -40,
+              north: -15,
+              east: -30,
+              minZoom: 0,
+              maxZoom: 0,
+            ),
+          ],
+        );
+        expect(kept, 0);
+        expect(file.existsSync(), isTrue);
+
+        final removed = await service.deleteTilesInRange(
+          layerKey: layer,
+          south: -10,
+          west: -50,
+          north: -9,
+          east: -49,
+          minZoom: 0,
+          maxZoom: 0,
+        );
+        expect(removed, 1);
+        expect(file.existsSync(), isFalse);
+      },
+    );
   });
 }

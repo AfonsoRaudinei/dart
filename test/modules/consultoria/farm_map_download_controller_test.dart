@@ -350,6 +350,25 @@ void main() {
     );
   });
 
+  group('farmMapIsSaved', () {
+    test('fazenda registrada permanece baixada até o id sair', () {
+      final saved = OfflineMapAreaConfig(
+        id: farmOfflineAreaId('farm-1'),
+        layerKey: 'sat',
+        south: -10,
+        west: -48,
+        north: -9,
+        east: -47,
+        minZoom: 14,
+        maxZoom: 18,
+        createdAt: DateTime(2026, 10, 5),
+      );
+      expect(farmMapIsSaved([saved], 'farm-1'), isTrue);
+      expect(farmMapIsSaved([saved], 'farm-2'), isFalse);
+      expect(farmMapIsSaved(const [], 'farm-1'), isFalse);
+    });
+  });
+
   group('farmMapDownloadNewSnackbars', () {
     test('detecta pending snackbar sem FarmMapDownloadButton montado', () {
       const progress = OfflinePrefetchProgress(
