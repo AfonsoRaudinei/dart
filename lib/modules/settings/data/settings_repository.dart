@@ -259,6 +259,7 @@ class SettingsRepository {
     };
   }
 
+  /// Só o diretório temporário. Mapas em Documents/offline_tiles ficam até exclusão manual.
   Future<void> clearCache() async {
     final tempDir = await getTemporaryDirectory();
     if (tempDir.existsSync()) {
