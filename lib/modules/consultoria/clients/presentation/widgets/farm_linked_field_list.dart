@@ -107,8 +107,8 @@ class FarmLinkedFieldList extends ConsumerWidget {
               areaUnit: areaUnit,
               onOpenField: () => _openField(context, field),
               actions: _fieldActions(context, ref, field),
-              onNdviImageTap: () {
-                ref
+              onNdviImageTap: () async {
+                await ref
                     .read(ndviFieldPresenterProvider)
                     .showTalhaoSheet(
                       context,
@@ -116,6 +116,7 @@ class FarmLinkedFieldList extends ConsumerWidget {
                       fieldName: field.name,
                       areaHa: field.areaHa,
                     );
+                ref.invalidate(talhaoCardNdviLatestProvider(field.id));
               },
             )
           else
