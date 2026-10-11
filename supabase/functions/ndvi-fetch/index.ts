@@ -500,9 +500,10 @@ serve(async (req) => {
     }
 
     // ── 2. Leitura de secrets ───────────────────────────────────────────────
-    // Suporta tanto SENTINEL_HUB_TOKEN quanto SENTINEL_HUB_API_KEY (alias)
+    // Suporta SENTINEL_HUB_TOKEN, SENTINEL_API_TOKEN ou SENTINEL_HUB_API_KEY
     const sentinelToken =
       Deno.env.get("SENTINEL_HUB_TOKEN") ??
+      Deno.env.get("SENTINEL_API_TOKEN") ??
       Deno.env.get("SENTINEL_HUB_API_KEY") ??
       "";
     const planetApiKey = Deno.env.get("PLANET_API_KEY") ?? "";
