@@ -439,6 +439,52 @@ void main() {
   );
 
   test(
+    'deleteByFieldId limpa _sentinelRetried e permite nova tentativa de sentinel',
+    () async {
+      const fieldId = 'F1';
+      const date = '2026-09-12';
+      const planetModel = NdviImageModel(
+        id: 'PLANET',
+        fieldId: fieldId,
+        imageDate: date,
+        ndviMin: 0,
+        ndviMax: 0,
+        ndviMean: 0,
+        source: 'planet_preview',
+        fetchedAt: '2026-09-12T00:00:00',
+        syncStatus: 0,
+        localPath: '/tmp/planet.png',
+      );
+      lookup.nextReturn = const FieldSummary(
+        id: fieldId,
+        name: 'Teste',
+        farmId: 'FAZ1',
+        bbox: [-50.0, -20.0, -49.0, -19.0],
+      );
+      local.seed(planetModel);
+      remote.throwOnFetch = true;
+
+      // 1ª tentativa: falha e grava tentativa no _sentinelRetried
+      await repository.ensureImageForDate(fieldId, date);
+      expect(remote.fetchCount, 1);
+
+      // 2ª tentativa sem limpar: não tenta sentinel de novo por causa do gate
+      await repository.ensureImageForDate(fieldId, date);
+      expect(remote.fetchCount, 1);
+
+      // deleteByFieldId limpa o gate daquele fieldId
+      await repository.deleteByFieldId(fieldId);
+
+      // Re-sementeia planet no cache local para testar a tentativa de upgrade
+      local.seed(planetModel);
+
+      // 3ª tentativa: deve tentar o sentinel novamente porque _sentinelRetried foi limpo
+      await repository.ensureImageForDate(fieldId, date);
+      expect(remote.fetchCount, 2);
+    },
+  );
+
+  test(
     'ensureImageForDate com planet_preview pede sentinel',
     () async {
       const fieldId = 'F1';
