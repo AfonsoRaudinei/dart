@@ -24,6 +24,7 @@ void main() {
 
   test('Sentinel permanece fonte primaria com stats dedicados', () {
     expect(edgeFunction, contains('fetchSentinelNdviStats'));
+    expect(edgeFunction, contains('PNG.sync.read(Buffer.from(bytes))'));
     expect(edgeFunction, contains('NDVI_STATS_SAMPLE_EVALSCRIPT'));
     expect(edgeFunction, contains('SENTINEL_HUB_TOKEN'));
     expect(edgeFunction, contains('resolveAccessTokenForBackend'));
