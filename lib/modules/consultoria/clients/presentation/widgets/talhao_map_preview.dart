@@ -86,7 +86,7 @@ class TalhaoMapPreviewWidget extends StatelessWidget {
                             ),
                           ),
                         ],
-                        if (ndviImage != null &&
+                        if (showNdvi &&
                             ndviCaption != null &&
                             ndviCaption!.isNotEmpty) ...[
                           const SizedBox(height: 3),
@@ -134,9 +134,9 @@ class TalhaoMapPreviewWidget extends StatelessWidget {
     );
   }
 
-  /// Imagem NDVI renderizável: arquivo local existente ou URL não vazia.
+  /// Raster no card (Sentinel colormap ou preview Planet recortado ao polígono).
   ImageProvider<Object>? get _ndviImageProvider {
-    if (!showNdvi || !ndviIsColormap) return null;
+    if (!showNdvi) return null;
     final path = ndviLocalPath;
     if (path != null && path.isNotEmpty) {
       final file = File(path);
@@ -171,9 +171,29 @@ class TalhaoMapPreviewWidget extends StatelessWidget {
     }
 
     final opensNdvi = showNdvi && onNdviImageTap != null;
-    return InkWell(
-      onTap: opensNdvi ? onNdviImageTap : onTap,
-      child: SizedBox(height: 160, child: IgnorePointer(child: body)),
+    final openHistory = onNdviImageTap;
+    return SizedBox(
+      height: 160,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          IgnorePointer(child: body),
+          Positioned.fill(
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: opensNdvi ? openHistory : onTap,
+              ),
+            ),
+          ),
+          if (openHistory != null)
+            Positioned(
+              right: 8,
+              bottom: 8,
+              child: _NdviHistoryChip(onPressed: openHistory),
+            ),
+        ],
+      ),
     );
   }
 
@@ -257,6 +277,42 @@ class _SemNdviLabel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const _NdviBadge(label: 'Sem NDVI');
+  }
+}
+
+class _NdviHistoryChip extends StatelessWidget {
+  const _NdviHistoryChip({required this.onPressed});
+
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.black.withAlpha(175),
+      borderRadius: BorderRadius.circular(8),
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(8),
+        child: const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.history_rounded, size: 16, color: Colors.white),
+              SizedBox(width: 6),
+              Text(
+                'Histórico',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 

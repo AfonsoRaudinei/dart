@@ -48,7 +48,7 @@ void main() {
       localPath: '/tmp/ndvi.png',
     );
 
-    expect(talhaoCardNdviCaption(planet), isNull);
+    expect(talhaoCardNdviCaption(planet), 'Preview · 22/09');
     expect(talhaoCardNdviBadge(planet), 'Preview RGB');
     expect(talhaoCardNdviCaption(sentinel), '0.62 · 12/09');
     expect(talhaoCardNdviBadge(sentinel), isNull);
@@ -104,10 +104,43 @@ void main() {
     );
     await tester.pump();
 
-    expect(find.byKey(const Key('ndvi-polygon-overlay')), findsNothing);
+    expect(find.byKey(const Key('ndvi-polygon-overlay')), findsOneWidget);
     expect(find.text('Preview RGB'), findsOneWidget);
-    expect(find.text('0.00 · 22/09'), findsNothing);
+    expect(find.text('Preview · 22/09'), findsNothing);
     expect(find.text('Sem NDVI'), findsNothing);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump();
+  });
+
+  testWidgets('chip Histórico chama onNdviImageTap', (tester) async {
+    final previousOnError = FlutterError.onError;
+    FlutterError.onError = (details) {
+      final message = details.exceptionAsString();
+      if (message.contains('ClientException') ||
+          message.contains('basemaps.cartocdn.com')) {
+        return;
+      }
+      previousOnError?.call(details);
+    };
+    addTearDown(() => FlutterError.onError = previousOnError);
+
+    var tapped = false;
+    await tester.pumpWidget(
+      _host(
+        TalhaoMapPreviewWidget(
+          vertices: _triangle,
+          nome: 'Th 4',
+          areaHa: 37,
+          showNdvi: true,
+          onNdviImageTap: () => tapped = true,
+        ),
+      ),
+    );
+    await tester.pump();
+
+    await tester.tap(find.text('Histórico'));
+    expect(tapped, isTrue);
 
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pump();
