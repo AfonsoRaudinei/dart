@@ -46,10 +46,13 @@ final talhaoCardNdviLatestProvider = FutureProvider.autoDispose
 /// `0.62 · 12/09` — média com 2 casas e dia/mês com 2 dígitos.
 /// Preview RGB não tem média NDVI; o default 0 não entra na legenda.
 String? talhaoCardNdviCaption(NdviLatestSummary summary) {
-  if (!summary.isColormap || !_summaryHasRenderableImage(summary)) return null;
-  final mean = summary.ndviMean.toStringAsFixed(2);
+  if (!_summaryHasRenderableImage(summary)) return null;
   final day = summary.imageDate.day.toString().padLeft(2, '0');
   final month = summary.imageDate.month.toString().padLeft(2, '0');
+  if (!summary.isColormap) {
+    return 'Preview · $day/$month';
+  }
+  final mean = summary.ndviMean.toStringAsFixed(2);
   return '$mean · $day/$month';
 }
 
