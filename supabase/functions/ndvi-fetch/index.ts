@@ -1,3 +1,4 @@
+import { Buffer } from "node:buffer";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
@@ -328,10 +329,17 @@ async function fetchSentinelNdviStats(
     return null;
   }
 
-  const bytes = new Uint8Array(await res.arrayBuffer());
-  const { PNG } = await import("npm:pngjs@7.0.0");
-  const png = PNG.sync.read(bytes);
-  return statsFromSamplePixels(png.data);
+  try {
+    const bytes = new Uint8Array(await res.arrayBuffer());
+    const { PNG } = await import("npm:pngjs@7.0.0");
+    // pngjs expects Node Buffer; Uint8Array alone breaks sync.read (readUInt32BE).
+    const png = PNG.sync.read(Buffer.from(bytes));
+    return statsFromSamplePixels(png.data);
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("Sentinel Hub stats PNG parse error:", message);
+    return null;
+  }
 }
 
 // ── Planet: buscar datas disponíveis ────────────────────────────────────────
