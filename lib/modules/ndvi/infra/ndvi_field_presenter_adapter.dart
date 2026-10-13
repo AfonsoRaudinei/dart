@@ -19,7 +19,6 @@ class NdviFieldPresenterAdapter implements INdviFieldPresenter {
     return showSoloForteSheet<void>(
       context: context,
       isScrollControlled: true,
-      showDragHandle: false,
       useSafeArea: false,
       builder: (_) => NdviTalhaoSheet(
         fieldId: fieldId,
