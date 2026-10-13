@@ -52,3 +52,11 @@ String? ndviPreviewDisclaimer(String source) {
   return 'Preview RGB (Planet). Mapa NDVI Sentinel indisponivel: '
       'verifique credenciais Sentinel Hub no servidor ou aguarde passagem sem nuvens.';
 }
+
+/// Stats reais da edge; stubs e falha de amostragem ficam 0/0/0.
+bool ndviImageHasMeasuredStats(NdviImage image) {
+  if (!ndviImageHasRenderableData(image)) return false;
+  return image.ndviMin != 0 ||
+      image.ndviMax != 0 ||
+      image.ndviMean != 0;
+}

@@ -28,47 +28,20 @@ class NdviTalhaoSheet extends ConsumerWidget {
     ref.watch(ndviEnsureCurrentDateProvider(fieldId));
     final ndviAsync = ref.watch(ndviImagesProvider(fieldId));
     final isIos = soloForteSheetIsIos(context);
-    // Modal já pinta prata iOS — evitar segundo painel opaco (“dois sheets”).
-    final sheetBg = isIos
-        ? Colors.transparent
-        : const Color(0xFF1C1C1E);
-    final sheetRadius = isIos ? SoloForteSheetSkinIos.sheetRadius : 16.0;
-    final handleColor = isIos
-        ? SoloForteSheetSkinIos.handleColor
-        : const Color(0xFF3A3A3C);
-    final titleColor = isIos ? SoloForteSheetSkinIos.titleColor : null;
+    final scheme = Theme.of(context).colorScheme;
+    final titleColor = isIos
+        ? SoloForteSheetSkinIos.titleColor
+        : scheme.onSurface;
     final subtitleColor = isIos
         ? SoloForteSheetSkinIos.subtitleColor
-        : Theme.of(context).colorScheme.onSurfaceVariant;
+        : scheme.onSurfaceVariant;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: sheetBg,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(sheetRadius)),
-        border: isIos
-            ? const Border(
-                top: BorderSide(color: SoloForteSheetSkinIos.sheetBorder),
-              )
-            : null,
-      ),
-      child: Column(
-        children: [
-          Center(
-            child: Container(
-              margin: const EdgeInsets.only(top: 12, bottom: 8),
-              width: 36,
-              height: 4,
-              decoration: BoxDecoration(
-                color: handleColor,
-                borderRadius: BorderRadius.circular(10),
-              ),
-            ),
-          ),
-
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
-              child: ndviAsync.when(
+    return Column(
+      children: [
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
+            child: ndviAsync.when(
                 loading: () => const SizedBox(
                   height: 300,
                   child: Center(child: CircularProgressIndicator()),
@@ -316,22 +289,23 @@ class NdviTalhaoSheet extends ConsumerWidget {
                           ],
                         ),
 
-                        const SizedBox(height: 12),
-
-                        // Dados NDVI
-                        Text(
-                          'NDVI médio: ${current.ndviMean.toStringAsFixed(2)}',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: titleColor,
+                        if (ndviImageHasMeasuredStats(current)) ...[
+                          const SizedBox(height: 12),
+                          Text(
+                            'NDVI médio: ${current.ndviMean.toStringAsFixed(2)}',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: titleColor,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Mín: ${current.ndviMin.toStringAsFixed(2)}   Máx: ${current.ndviMax.toStringAsFixed(2)}',
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(color: subtitleColor),
-                        ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Mín: ${current.ndviMin.toStringAsFixed(2)}   '
+                            'Máx: ${current.ndviMax.toStringAsFixed(2)}',
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(color: subtitleColor),
+                          ),
+                        ],
 
                         const SizedBox(height: kFabSafeArea),
                       ],
@@ -341,8 +315,7 @@ class NdviTalhaoSheet extends ConsumerWidget {
               ),
             ),
           ),
-        ],
-      ),
+      ],
     );
   }
 
@@ -507,19 +480,20 @@ class _InfoPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isIos = soloForteSheetIsIos(context);
+    final scheme = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
       decoration: BoxDecoration(
         color: isIos
             ? SoloForteSheetSkinIos.cardBackground
-            : Colors.white.withValues(alpha: 0.06),
+            : scheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(
           isIos ? SoloForteSheetSkinIos.cardRadius : 999,
         ),
         border: Border.all(
           color: isIos
               ? SoloForteSheetSkinIos.cardBorder
-              : Colors.white.withValues(alpha: 0.08),
+              : scheme.outlineVariant,
         ),
       ),
       child: Row(
@@ -528,14 +502,14 @@ class _InfoPill extends StatelessWidget {
           Icon(
             icon,
             size: 14,
-            color: isIos ? SoloForteSheetSkinIos.iconStroke : Colors.white70,
+            color: isIos ? SoloForteSheetSkinIos.iconStroke : scheme.onSurfaceVariant,
           ),
           const SizedBox(width: 6),
           Text(
             label,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
               fontWeight: FontWeight.w600,
-              color: isIos ? SoloForteSheetSkinIos.titleColor : null,
+              color: isIos ? SoloForteSheetSkinIos.titleColor : scheme.onSurface,
             ),
           ),
         ],
