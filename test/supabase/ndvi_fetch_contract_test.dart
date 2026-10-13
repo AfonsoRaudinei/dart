@@ -33,6 +33,12 @@ void main() {
     expect(edgeFunction, contains('sentinel_degraded_reason'));
   });
 
+  test('catalogo Sentinel usa revisita de 5 dias e eo:cloud_cover', () {
+    expect(edgeFunction, contains('SENTINEL_REVISIT_WINDOW_DAYS = 5'));
+    expect(edgeFunction, contains('thinSentinelDatesByRevisit'));
+    expect(edgeFunction, contains('eo:cloud_cover'));
+  });
+
   test('validacao de entrada exige area_id e bbox ou geometry', () {
     expect(
       edgeFunction,

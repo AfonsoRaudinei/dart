@@ -169,6 +169,50 @@ type SentinelBackendConfig = {
   staticToken: string;
 };
 
+/** Revisita Sentinel-2 ~5 dias; órbitas vizinhas podem cruzar em 1–2 dias. */
+const SENTINEL_REVISIT_WINDOW_DAYS = 5;
+
+type SentinelSceneCandidate = { date: string; cloudCover: number };
+
+function sentinelSceneCloudCover(properties: Record<string, unknown>): number {
+  const value = properties["eo:cloud_cover"];
+  return typeof value === "number" ? value : 100;
+}
+
+function daysBetweenIsoDates(a: string, b: string): number {
+  const msA = Date.parse(`${a}T12:00:00Z`);
+  const msB = Date.parse(`${b}T12:00:00Z`);
+  return Math.abs(msA - msB) / 86_400_000;
+}
+
+/** Uma cena por janela de revisita — menor `eo:cloud_cover`. */
+function thinSentinelDatesByRevisit(
+  candidates: SentinelSceneCandidate[],
+): string[] {
+  if (candidates.length === 0) return [];
+  const sorted = [...candidates].sort((a, b) => b.date.localeCompare(a.date));
+  const selected: SentinelSceneCandidate[] = [];
+
+  for (const candidate of sorted) {
+    const neighborIndex = selected.findIndex(
+      (picked) =>
+        daysBetweenIsoDates(picked.date, candidate.date) <
+        SENTINEL_REVISIT_WINDOW_DAYS,
+    );
+    if (neighborIndex === -1) {
+      selected.push(candidate);
+      continue;
+    }
+    if (candidate.cloudCover < selected[neighborIndex].cloudCover) {
+      selected[neighborIndex] = candidate;
+    }
+  }
+
+  return selected
+    .map((item) => item.date)
+    .sort((a, b) => b.localeCompare(a));
+}
+
 // ── Sentinel Hub: buscar datas disponíveis ───────────────────────────────────
 async function fetchSentinelDates(
   apiBase: string,
@@ -181,7 +225,7 @@ async function fetchSentinelDates(
     bbox: bbox,
     datetime: `${fromDate}T00:00:00Z/${toDate}T23:59:59Z`,
     collections: ["sentinel-2-l2a"],
-    limit: 20,
+    limit: 50,
     filter: "eo:cloud_cover < 80",
     "filter-lang": "cql2-text",
   };
@@ -201,13 +245,19 @@ async function fetchSentinelDates(
   }
 
   const data = await res.json();
-  const dates: string[] = [];
+  const candidates: SentinelSceneCandidate[] = [];
   for (const feature of data.features ?? []) {
-    const dt = feature.properties?.datetime as string | undefined;
-    if (dt) dates.push(dt.substring(0, 10));
+    const props = feature.properties as Record<string, unknown> | undefined;
+    const dt = props?.datetime as string | undefined;
+    if (!dt) continue;
+    candidates.push({
+      date: dt.substring(0, 10),
+      cloudCover: sentinelSceneCloudCover(props ?? {}),
+    });
   }
+  const dates = thinSentinelDatesByRevisit(candidates);
   return {
-    dates: [...new Set(dates)].sort((a, b) => b.localeCompare(a)),
+    dates,
     catalogOk: true,
   };
 }
