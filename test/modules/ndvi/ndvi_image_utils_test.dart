@@ -30,4 +30,19 @@ void main() {
     );
     expect(ndviPreviewDisclaimer('sentinel'), isNull);
   });
+
+  test('preview Planet usa motivo degradado quando disponivel', () {
+    final text = ndviPreviewDisclaimer(
+      'planet_preview',
+      sentinelDegradedReason: 'cdse_oauth_failed',
+    );
+    expect(text, contains('OAuth Copernicus'));
+  });
+
+  test('ndviDateChipLabel inclui nuvem quando informada', () {
+    expect(
+      ndviDateChipLabel(DateTime(2026, 10, 8), cloudCoverage: 12.4),
+      '08/10 · 12%',
+    );
+  });
 }

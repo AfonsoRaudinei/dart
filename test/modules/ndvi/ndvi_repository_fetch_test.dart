@@ -92,6 +92,9 @@ class FakeRemoteDataSource implements NdviRemoteDatasource {
   String? lastGeometry;
 
   @override
+  Future<void> deletePngsForField(String fieldId) async {}
+
+  @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
