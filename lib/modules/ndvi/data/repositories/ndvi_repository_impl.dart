@@ -4,6 +4,9 @@ import 'package:soloforte_app/modules/ndvi/data/datasources/ndvi_local_datasourc
 import 'package:soloforte_app/modules/ndvi/data/datasources/ndvi_remote_datasource.dart';
 import 'package:soloforte_app/modules/ndvi/data/ndvi_cache_policy.dart';
 import 'package:soloforte_app/modules/ndvi/data/repositories/i_ndvi_repository.dart';
+import 'dart:io';
+
+import 'package:soloforte_app/modules/ndvi/data/processing/ndvi_colormap_stats_processor.dart';
 import 'package:soloforte_app/modules/ndvi/domain/entities/ndvi_image.dart';
 import 'package:soloforte_app/modules/ndvi/domain/ndvi_image_utils.dart';
 
@@ -46,10 +49,9 @@ class NdviRepositoryImpl implements INdviRepository {
         'NDVI cache hit fieldId=$fieldId count=${cached.length}',
         tag: 'NDVI.Repository',
       );
-      return _replacePlanetPreview(
-        fieldId,
-        summary,
-        cached.map((model) => model.toEntity()).toList(),
+      final entities = cached.map((model) => model.toEntity()).toList();
+      return _enrichAllStats(
+        await _replacePlanetPreview(fieldId, summary, entities),
       );
     }
 
@@ -177,6 +179,42 @@ class NdviRepositoryImpl implements INdviRepository {
     }
   }
 
+  Future<NdviImage> _maybeEnrichStatsFromPng(NdviImage image) async {
+    if (ndviImageHasMeasuredStats(image) || !ndviIsColormapSource(image.source)) {
+      return image;
+    }
+    final path = image.localPath;
+    if (path == null || path.isEmpty) return image;
+    final stats = computeNdviStatsFromColormapPngFile(File(path));
+    if (stats == null) return image;
+
+    final enriched = NdviImage(
+      id: image.id,
+      fieldId: image.fieldId,
+      imageDate: image.imageDate,
+      ndviMin: stats.ndviMin,
+      ndviMax: stats.ndviMax,
+      ndviMean: stats.ndviMean,
+      imageUrl: image.imageUrl,
+      localPath: image.localPath,
+      source: image.source,
+      fetchedAt: image.fetchedAt,
+      syncStatus: image.syncStatus,
+      cloudCoverage: image.cloudCoverage,
+      sentinelDegradedReason: image.sentinelDegradedReason,
+    );
+    await _local.save(enriched);
+    return enriched;
+  }
+
+  Future<List<NdviImage>> _enrichAllStats(List<NdviImage> images) async {
+    final out = <NdviImage>[];
+    for (final image in images) {
+      out.add(await _maybeEnrichStatsFromPng(image));
+    }
+    return out;
+  }
+
   NdviImage _firstRenderable(List<NdviImage> images) {
     for (final image in images) {
       if (ndviImageHasRenderableData(image)) return image;
@@ -226,10 +264,12 @@ class NdviRepositoryImpl implements INdviRepository {
 
     await _cachePolicy.markSynced(fieldId, ndviOriginFingerprint(summary));
     final all = await _local.getAll(fieldId);
-    return _replacePlanetPreview(
-      fieldId,
-      summary,
-      all.map((model) => model.toEntity()).toList(),
+    return _enrichAllStats(
+      await _replacePlanetPreview(
+        fieldId,
+        summary,
+        all.map((model) => model.toEntity()).toList(),
+      ),
     );
   }
 
@@ -257,6 +297,7 @@ class NdviRepositoryImpl implements INdviRepository {
   @override
   Future<void> deleteByFieldId(String fieldId) async {
     await _local.deleteAll(fieldId);
+    await _remote.deletePngsForField(fieldId);
     await _cachePolicy.clear(fieldId);
     _sentinelRetried.removeWhere((k) => k.startsWith('$fieldId|'));
   }

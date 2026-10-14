@@ -6,6 +6,7 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:soloforte_app/modules/ndvi/data/models/ndvi_image_model.dart';
+import 'package:soloforte_app/modules/ndvi/data/processing/ndvi_colormap_stats_processor.dart';
 import 'package:soloforte_app/modules/ndvi/domain/ndvi_image_utils.dart';
 
 /// Resultado bruto da Edge Function `ndvi-fetch`.
@@ -76,6 +77,9 @@ class NdviRemoteDatasource {
     );
   }
 
+  Future<void> deletePngsForField(String fieldId) =>
+      _fileStore.deletePngsForField(fieldId);
+
   Future<NdviImageModel> modelFromFunctionData({
     required Map<String, dynamic> data,
     required String fieldId,
@@ -94,18 +98,43 @@ class NdviRemoteDatasource {
             imageDate: imageDate,
           );
 
+    var ndviMin = (data['ndvi_min'] as num?)?.toDouble() ?? 0.0;
+    var ndviMax = (data['ndvi_max'] as num?)?.toDouble() ?? 0.0;
+    var ndviMean = (data['ndvi_mean'] as num?)?.toDouble() ?? 0.0;
+
+    if (localPath != null &&
+        ndviIsColormapSource(source) &&
+        ndviMin == 0 &&
+        ndviMax == 0 &&
+        ndviMean == 0) {
+      final stats = computeNdviStatsFromColormapPngFile(File(localPath));
+      if (stats != null) {
+        ndviMin = stats.ndviMin;
+        ndviMax = stats.ndviMax;
+        ndviMean = stats.ndviMean;
+      }
+    }
+
+    final cloudRaw = data['cloud_coverage'];
+    final cloudCoverage = cloudRaw is num ? cloudRaw.toDouble() : null;
+    final degradedRaw = data['sentinel_degraded_reason'] as String?;
+    final degraded = degradedRaw?.trim();
+
     return NdviImageModel(
       id: id,
       fieldId: fieldId,
       imageDate: imageDate,
-      ndviMin: (data['ndvi_min'] as num?)?.toDouble() ?? 0.0,
-      ndviMax: (data['ndvi_max'] as num?)?.toDouble() ?? 0.0,
-      ndviMean: (data['ndvi_mean'] as num?)?.toDouble() ?? 0.0,
+      ndviMin: ndviMin,
+      ndviMax: ndviMax,
+      ndviMean: ndviMean,
       imageUrl: data['image_url'] as String?,
       localPath: localPath,
       source: source,
       fetchedAt: DateTime.now().toIso8601String(),
       syncStatus: 0,
+      cloudCoverage: cloudCoverage,
+      sentinelDegradedReason:
+          degraded == null || degraded.isEmpty ? null : degraded,
     );
   }
 }
@@ -140,6 +169,26 @@ class NdviImageFileStore {
   String _safePathSegment(String value) {
     final sanitized = value.replaceAll(RegExp(r'[^a-zA-Z0-9._-]+'), '-');
     return sanitized.isEmpty ? 'unknown' : sanitized;
+  }
+
+  Future<void> deletePngsForField(String fieldId) async {
+    final docs = _directoryProvider == null
+        ? await getApplicationDocumentsDirectory()
+        : await _directoryProvider();
+    final dir = Directory(p.join(docs.path, 'ndvi'));
+    if (!dir.existsSync()) return;
+
+    final segment = _safePathSegment(fieldId);
+    final prefix = 'ndvi_color_${segment}_';
+    for (final entity in dir.listSync()) {
+      if (entity is! File) continue;
+      final name = p.basename(entity.path);
+      if (name.startsWith(prefix) && name.endsWith('.png')) {
+        try {
+          await entity.delete();
+        } catch (_) {}
+      }
+    }
   }
 }
 

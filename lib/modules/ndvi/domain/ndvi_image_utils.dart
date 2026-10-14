@@ -47,10 +47,50 @@ String ndviSourceLabel(String source) {
   };
 }
 
-String? ndviPreviewDisclaimer(String source) {
+String? ndviDegradedReasonLabel(String? code) {
+  if (code == null || code.isEmpty) return null;
+  return switch (code) {
+    'cdse_oauth_failed' =>
+      'OAuth Copernicus (CDSE) invalido ou expirado no servidor.',
+    'commercial_oauth_failed' =>
+      'OAuth Sentinel Hub comercial invalido no servidor.',
+    'sentinel_credentials_missing' =>
+      'Credenciais Sentinel nao configuradas no servidor.',
+    'cdse_catalog_failed' || 'commercial_catalog_failed' =>
+      'Catalogo Sentinel indisponivel para esta area.',
+    'cdse_no_scenes' || 'commercial_no_scenes' =>
+      'Nenhuma cena Sentinel sem nuvens excessivas no periodo.',
+    'cdse_process_failed' || 'commercial_process_failed' =>
+      'Processamento NDVI falhou nesta data.',
+    _ => 'Sentinel indisponivel ($code).',
+  };
+}
+
+String? ndviPreviewDisclaimer(
+  String source, {
+  String? sentinelDegradedReason,
+}) {
   if (ndviIsColormapSource(source)) return null;
+  final detail = ndviDegradedReasonLabel(sentinelDegradedReason);
+  if (detail != null) {
+    return 'Preview RGB (Planet). $detail';
+  }
   return 'Preview RGB (Planet). Mapa NDVI Sentinel indisponivel: '
       'verifique credenciais Sentinel Hub no servidor ou aguarde passagem sem nuvens.';
+}
+
+String? ndviCloudCoverageLabel(double? cloudCoverage) {
+  if (cloudCoverage == null) return null;
+  if (cloudCoverage < 0) return null;
+  return 'Nuvem ${cloudCoverage.round()}%';
+}
+
+String ndviDateChipLabel(DateTime date, {double? cloudCoverage}) {
+  final day = date.day.toString().padLeft(2, '0');
+  final month = date.month.toString().padLeft(2, '0');
+  final cloud = ndviCloudCoverageLabel(cloudCoverage);
+  if (cloud == null) return '$day/$month';
+  return '$day/$month · ${cloudCoverage!.round()}%';
 }
 
 /// Stats reais da edge; stubs e falha de amostragem ficam 0/0/0.

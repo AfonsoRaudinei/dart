@@ -10,6 +10,8 @@ class NdviImage {
   final String source;        // 'sentinel' | 'planet' | 'auto'
   final DateTime fetchedAt;   // era cachedAt — renomeado
   final int syncStatus;       // 0=synced | 1=pending — novo
+  final double? cloudCoverage;
+  final String? sentinelDegradedReason;
 
   const NdviImage({
     required this.id,
@@ -23,5 +25,7 @@ class NdviImage {
     required this.syncStatus,
     this.imageUrl,
     this.localPath,
+    this.cloudCoverage,
+    this.sentinelDegradedReason,
   });
 }

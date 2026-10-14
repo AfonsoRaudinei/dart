@@ -124,6 +124,14 @@ class NdviTalhaoSheet extends ConsumerWidget {
                               icon: Icons.cloud_outlined,
                               label: ndviSourceLabel(current.source),
                             ),
+                            if (ndviCloudCoverageLabel(current.cloudCoverage) !=
+                                null)
+                              _InfoPill(
+                                icon: Icons.wb_cloudy_outlined,
+                                label: ndviCloudCoverageLabel(
+                                  current.cloudCoverage,
+                                )!,
+                              ),
                             _InfoPill(
                               icon: Icons.storage_outlined,
                               label: _imageStatusLabel(current),
@@ -141,7 +149,12 @@ class NdviTalhaoSheet extends ConsumerWidget {
                               itemBuilder: (context, chipIndex) {
                                 final image = images[chipIndex];
                                 return ChoiceChip(
-                                  label: Text(_shortDate(image.imageDate)),
+                                  label: Text(
+                                    ndviDateChipLabel(
+                                      image.imageDate,
+                                      cloudCoverage: image.cloudCoverage,
+                                    ),
+                                  ),
                                   selected: chipIndex == safeIndex,
                                   onSelected: (_) {
                                     ref
@@ -163,7 +176,12 @@ class NdviTalhaoSheet extends ConsumerWidget {
                           const SizedBox(height: 12),
                         ],
 
-                        if (ndviPreviewDisclaimer(current.source) != null) ...[
+                        if (ndviPreviewDisclaimer(
+                              current.source,
+                              sentinelDegradedReason:
+                                  current.sentinelDegradedReason,
+                            ) !=
+                            null) ...[
                           Container(
                             width: double.infinity,
                             padding: const EdgeInsets.all(10),
@@ -175,7 +193,11 @@ class NdviTalhaoSheet extends ConsumerWidget {
                               ),
                             ),
                             child: Text(
-                              ndviPreviewDisclaimer(current.source)!,
+                              ndviPreviewDisclaimer(
+                                current.source,
+                                sentinelDegradedReason:
+                                    current.sentinelDegradedReason,
+                              )!,
                               style: Theme.of(context).textTheme.bodySmall,
                             ),
                           ),
@@ -369,11 +391,6 @@ class NdviTalhaoSheet extends ConsumerWidget {
     return '${date.day.toString().padLeft(2, '0')}/'
         '${date.month.toString().padLeft(2, '0')}/'
         '${date.year}';
-  }
-
-  String _shortDate(DateTime date) {
-    return '${date.day.toString().padLeft(2, '0')}/'
-        '${date.month.toString().padLeft(2, '0')}';
   }
 
   String _imageStatusLabel(NdviImage image) {

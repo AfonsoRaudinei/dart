@@ -12,6 +12,8 @@ class NdviImageModel {
   final String source;
   final String fetchedAt;
   final int syncStatus;
+  final double? cloudCoverage;
+  final String? sentinelDegradedReason;
 
   const NdviImageModel({
     required this.id,
@@ -25,6 +27,8 @@ class NdviImageModel {
     required this.syncStatus,
     this.imageUrl,
     this.localPath,
+    this.cloudCoverage,
+    this.sentinelDegradedReason,
   });
 
   factory NdviImageModel.fromMap(Map<String, dynamic> map) {
@@ -40,6 +44,8 @@ class NdviImageModel {
       source: map['source'] as String,
       fetchedAt: map['fetched_at'] as String,
       syncStatus: map['sync_status'] as int? ?? 0,
+      cloudCoverage: (map['cloud_coverage'] as num?)?.toDouble(),
+      sentinelDegradedReason: map['sentinel_degraded_reason'] as String?,
     );
   }
 
@@ -56,6 +62,9 @@ class NdviImageModel {
       'source': source,
       'fetched_at': fetchedAt,
       'sync_status': syncStatus,
+      if (cloudCoverage != null) 'cloud_coverage': cloudCoverage,
+      if (sentinelDegradedReason != null)
+        'sentinel_degraded_reason': sentinelDegradedReason,
     };
   }
 
@@ -72,6 +81,8 @@ class NdviImageModel {
       source: source,
       fetchedAt: DateTime.parse(fetchedAt),
       syncStatus: syncStatus,
+      cloudCoverage: cloudCoverage,
+      sentinelDegradedReason: sentinelDegradedReason,
     );
   }
 
@@ -88,6 +99,8 @@ class NdviImageModel {
       source: entity.source,
       fetchedAt: entity.fetchedAt.toIso8601String(),
       syncStatus: entity.syncStatus,
+      cloudCoverage: entity.cloudCoverage,
+      sentinelDegradedReason: entity.sentinelDegradedReason,
     );
   }
 }
