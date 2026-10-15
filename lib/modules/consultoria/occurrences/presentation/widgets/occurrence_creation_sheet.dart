@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:soloforte_app/core/access/producer_create_context_resolver.dart';
 import 'package:soloforte_app/core/widgets/photo/soloforte_photo_picker_sheet.dart';
 import 'package:soloforte_app/core/constants/layout_constants.dart';
+import 'package:soloforte_app/core/ui/sheets/sheet_keyboard_inset.dart';
 import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
 import 'package:soloforte_app/core/contracts/i_client_lookup.dart';
 import 'package:soloforte_app/core/contracts/i_client_lookup_provider.dart';
@@ -41,9 +42,16 @@ class OccurrenceCreationSheet extends ConsumerStatefulWidget {
   final ScrollController? scrollController;
   final Occurrence? initialOccurrence;
   final OccurrenceFormGuard? formGuard;
+
   /// Pré-seleciona categoria na criação (ex.: `area_visitada` via ações rápidas).
   final String? initialCategoryValue;
   final bool compactHeader;
+
+  /// Sobe a barra Cancelar/Salvar acima do teclado.
+  ///
+  /// False nos hosts do mapa ([MapBottomSheet] / mark sheet), que já
+  /// subtraem `viewInsets` do detent.
+  final bool liftStickyActionsForKeyboard;
 
   const OccurrenceCreationSheet({
     super.key,
@@ -56,6 +64,7 @@ class OccurrenceCreationSheet extends ConsumerStatefulWidget {
     this.formGuard,
     this.initialCategoryValue,
     this.compactHeader = false,
+    this.liftStickyActionsForKeyboard = true,
   });
 
   @override
@@ -382,8 +391,14 @@ class _OccurrenceCreationSheetState
 
   @override
   Widget build(BuildContext context) {
-    final safeBottom = MediaQuery.of(context).padding.bottom;
-    final actionBarBottomPadding = safeBottom + kFabSafeArea;
+    final safeBottom = MediaQuery.paddingOf(context).bottom;
+    final keyboard = MediaQuery.viewInsetsOf(context).bottom;
+    final actionBarBottomPadding = sheetStickyActionBottomPadding(
+      safeBottom: safeBottom,
+      keyboard: keyboard,
+      liftForKeyboard: widget.liftStickyActionsForKeyboard,
+      closedExtra: kFabSafeArea,
+    );
     final isIos = occurrenceFormIsIos(context);
     final sheetBg = isIos
         ? SoloForteSheetSkinIos.background
@@ -391,8 +406,7 @@ class _OccurrenceCreationSheetState
     final accent = isIos
         ? SoloForteSheetSkinIos.iconStroke
         : PremiumTokens.brandGreen;
-    final titleColor =
-        isIos ? SoloForteSheetSkinIos.titleColor : Colors.white;
+    final titleColor = isIos ? SoloForteSheetSkinIos.titleColor : Colors.white;
     final muted = isIos
         ? SoloForteSheetSkinIos.subtitleColor
         : const Color(0xFF8E8E93);
@@ -403,394 +417,383 @@ class _OccurrenceCreationSheetState
           Expanded(
             child: ListView(
               controller: widget.scrollController,
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
               children: [
-              if (_buildSubmitErrorBanner() case final banner?) banner,
-              if (widget.compactHeader && widget.initialOccurrence == null)
-                _compactMapHeader(muted: muted, titleColor: titleColor)
-              else
-              Row(
-                children: [
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: accent.withValues(alpha: .15),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: accent,
-                        width: .6,
-                      ),
-                    ),
-                    child: Icon(
-                      Icons.location_on_rounded,
-                      color: accent,
-                      size: 22,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          widget.initialOccurrence == null
-                              ? (_isAreaVisitada
-                                    ? 'Área Visitada'
-                                    : 'Nova Ocorrência')
-                              : 'Editar Ocorrência',
-                          style: TextStyle(
-                            color: titleColor,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        Text(
-                          'Ponto definido no mapa',
-                          style: TextStyle(
-                            color: muted,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  if (widget.onCancel != null)
-                    IconButton(
-                      icon: const Icon(Icons.close),
-                      onPressed: _handleCancel,
-                      color: muted,
-                    ),
-                ],
-              ),
-              const SizedBox(height: 20),
-
-              SheetSectionHeader(
-                icon: Icon(
-                  Icons.person_outline,
-                  size: 18,
-                  color: isIos
-                      ? SoloForteSheetSkinIos.iconStroke
-                      : Colors.white70,
-                ),
-                label: _isAreaVisitada ? 'Cliente (opcional)' : 'Cliente',
-              ),
-              OccurrenceClientSelector(
-                clientsFuture: _clientsFuture,
-                selectedClient: _selectedClient,
-                onChanged: (value) => _patchForm(() => _selectedClient = value),
-              ),
-              if (_isAreaVisitada && _selectedClient == null) ...[
-                const SizedBox(height: 8),
-                Text(
-                  'Sem cliente agora? Você pode vincular depois na ficha.',
-                  style: TextStyle(color: muted, fontSize: 12, height: 1.35),
-                ),
-              ],
-              const SizedBox(height: 20),
-
-              if (!_isAreaVisitada) ...[
-              const OccurrenceSectionHeader(
-                icon: '🏷',
-                title: 'Categorias da Ocorrência',
-              ),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 12,
-                runSpacing: 12,
-                alignment: WrapAlignment.center,
-                children: _categories.map((cat) {
-                  final isSelected = _selectedCategoryValue == cat.value;
-                  final selectedColor =
-                      cat.enumValue?.markerColor ?? const Color(0xFF795548);
-                  return GestureDetector(
-                    onTap: () {
-                      HapticFeedback.selectionClick();
-                      _patchForm(() {
-                        _selectedCategoryValue = cat.value;
-                        _cats.clear();
-                        if (cat.enumValue != null) {
-                          _cats.add(cat.enumValue!);
-                        }
-                        if (cat.value == kOccurrenceAreaVisitadaCategory) {
-                          _selectedClient = null;
-                        }
-                      });
-                    },
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          width: 44,
-                          height: 44,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: isSelected
-                                ? selectedColor.withValues(alpha: 0.2)
-                                : (isIos
-                                      ? SoloForteSheetSkinIos.cardBackground
-                                      : Colors.grey[800]),
-                            border: isSelected
-                                ? Border.all(color: selectedColor, width: 2)
-                                : (isIos
-                                      ? Border.all(
-                                          color: SoloForteSheetSkinIos.cardBorder,
-                                        )
-                                      : null),
-                          ),
-                          child: Icon(
-                            cat.icon,
-                            size: 22,
-                            color: isSelected
-                                ? selectedColor
-                                : (isIos
-                                      ? SoloForteSheetSkinIos.subtitleColor
-                                      : Colors.white70),
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        SizedBox(
-                          width: 64,
-                          child: Text(
-                            cat.label,
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: isSelected
-                                  ? selectedColor
-                                  : (isIos
-                                        ? SoloForteSheetSkinIos.subtitleColor
-                                        : Colors.white70),
-                            ),
-                            textAlign: TextAlign.center,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                }).toList(),
-              ),
-              const SizedBox(height: 16),
-              ],
-
-              if (!_isAreaVisitada) ...[
-              const OccurrenceSectionHeader(
-                icon: '🌱',
-                title: 'Cultivar & Plantio',
-              ),
-              const SizedBox(height: 10),
-              OccurrenceDarkField(
-                controller: _cultivarCtrl,
-                label: 'Cultivar (opcional)',
-                hint: 'ex.: Intacta 2 IPRO, M6410 IPRO…',
-              ),
-              const SizedBox(height: 10),
-              GestureDetector(
-                onTap: () async {
-                  final picked = await showDatePicker(
-                    context: context,
-                    initialDate: _dataPlantio ?? DateTime.now(),
-                    firstDate: DateTime(2010),
-                    lastDate: DateTime.now().add(const Duration(days: 365)),
-                    helpText: 'Data de Plantio',
-                  );
-                  if (picked != null) _patchForm(() => _dataPlantio = picked);
-                },
-                child: Container(
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: isIos
-                        ? SoloForteSheetSkinIos.cardBackground
-                        : const Color(0xFF1C1C1E),
-                    borderRadius: BorderRadius.circular(
-                      isIos ? SoloForteSheetSkinIos.cardRadius : 12,
-                    ),
-                    border: Border.all(
-                      color: isIos
-                          ? SoloForteSheetSkinIos.cardBorder
-                          : Colors.white12,
-                    ),
-                  ),
-                  child: Row(
+                if (_buildSubmitErrorBanner() case final banner?) banner,
+                if (widget.compactHeader && widget.initialOccurrence == null)
+                  _compactMapHeader(muted: muted, titleColor: titleColor)
+                else
+                  Row(
                     children: [
-                      Icon(
-                        Icons.calendar_today_outlined,
-                        size: 18,
-                        color: isIos
-                            ? SoloForteSheetSkinIos.iconStroke
-                            : Colors.white54,
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          _dataPlantio != null
-                              ? _formatDate(_dataPlantio!)
-                              : 'Data de Plantio (opcional)',
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: _dataPlantio != null
-                                ? titleColor
-                                : muted,
-                            fontSize: 14,
-                          ),
-                        ),
-                      ),
-                      if (_dataPlantio != null) ...[
-                        GestureDetector(
-                          onTap: () => _patchForm(() => _dataPlantio = null),
-                          child: Icon(
-                            Icons.clear,
-                            size: 16,
-                            color: muted,
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-              ),
-              if (_dataPlantio != null)
-                Padding(
-                  padding: const EdgeInsets.only(top: 6),
-                  child: Row(
-                    children: [
-                      Icon(Icons.grass, size: 14, color: muted),
-                      const SizedBox(width: 6),
-                      Text(
-                        '${DateTime.now().difference(_dataPlantio!).inDays} dias desde o plantio (DAP real)',
-                        style: TextStyle(
-                          color: muted,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              const SizedBox(height: 20),
-
-              const OccurrenceSectionHeader(
-                icon: '📊',
-                title: 'Estádio Fenológico',
-              ),
-              const SizedBox(height: 10),
-              OccurrenceEstadioDropdown(
-                selected: _estadio,
-                expanded: _estadioCardExpanded,
-                onChanged: (e) => _patchForm(() => _estadio = e),
-                onToggleCard: () => _patchForm(
-                  () => _estadioCardExpanded = !_estadioCardExpanded,
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              ..._cats
-                  .where((cat) => cat != OccurrenceCategory.areaVisitada)
-                  .map((cat) => _buildCategorySection(cat)),
-
-              const OccurrenceSectionHeader(icon: '⚡', title: 'Urgência'),
-              const SizedBox(height: 8),
-              Row(
-                children: ['Baixa', 'Média', 'Alta'].map((u) {
-                  final sel = _urgency == u;
-                  final color = u == 'Baixa'
-                      ? const Color(0xFFFFCC00)
-                      : u == 'Média'
-                      ? const Color(0xFFFF9500)
-                      : const Color(0xFFFF3B30);
-                  return Expanded(
-                    child: GestureDetector(
-                      onTap: () => _patchForm(() => _urgency = u),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        margin: const EdgeInsets.only(right: 6),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
+                      Container(
+                        width: 40,
+                        height: 40,
                         decoration: BoxDecoration(
-                          color: sel
-                              ? color.withValues(alpha: .18)
-                              : (isIos
-                                    ? SoloForteSheetSkinIos.cardBackground
-                                    : const Color(0xFF1C1C1E)),
-                          borderRadius: BorderRadius.circular(
-                            isIos ? SoloForteSheetSkinIos.cardRadius : 16,
-                          ),
-                          border: Border.all(
-                            color: sel
-                                ? color
-                                : (isIos
-                                      ? SoloForteSheetSkinIos.cardBorder
-                                      : Colors.white12),
-                            width: sel ? 1.5 : 1,
-                          ),
+                          color: accent.withValues(alpha: .15),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: accent, width: .6),
                         ),
-                        child: Center(
-                          child: Text(
-                            u,
-                            style: TextStyle(
+                        child: Icon(
+                          Icons.location_on_rounded,
+                          color: accent,
+                          size: 22,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              widget.initialOccurrence == null
+                                  ? (_isAreaVisitada
+                                        ? 'Área Visitada'
+                                        : 'Nova Ocorrência')
+                                  : 'Editar Ocorrência',
+                              style: TextStyle(
+                                color: titleColor,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            Text(
+                              'Ponto definido no mapa',
+                              style: TextStyle(color: muted, fontSize: 12),
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (widget.onCancel != null)
+                        IconButton(
+                          icon: const Icon(Icons.close),
+                          onPressed: _handleCancel,
+                          color: muted,
+                        ),
+                    ],
+                  ),
+                const SizedBox(height: 20),
+
+                SheetSectionHeader(
+                  icon: Icon(
+                    Icons.person_outline,
+                    size: 18,
+                    color: isIos
+                        ? SoloForteSheetSkinIos.iconStroke
+                        : Colors.white70,
+                  ),
+                  label: _isAreaVisitada ? 'Cliente (opcional)' : 'Cliente',
+                ),
+                OccurrenceClientSelector(
+                  clientsFuture: _clientsFuture,
+                  selectedClient: _selectedClient,
+                  onChanged: (value) =>
+                      _patchForm(() => _selectedClient = value),
+                ),
+                if (_isAreaVisitada && _selectedClient == null) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    'Sem cliente agora? Você pode vincular depois na ficha.',
+                    style: TextStyle(color: muted, fontSize: 12, height: 1.35),
+                  ),
+                ],
+                const SizedBox(height: 20),
+
+                if (!_isAreaVisitada) ...[
+                  const OccurrenceSectionHeader(
+                    icon: '🏷',
+                    title: 'Categorias da Ocorrência',
+                  ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 12,
+                    runSpacing: 12,
+                    alignment: WrapAlignment.center,
+                    children: _categories.map((cat) {
+                      final isSelected = _selectedCategoryValue == cat.value;
+                      final selectedColor =
+                          cat.enumValue?.markerColor ?? const Color(0xFF795548);
+                      return GestureDetector(
+                        onTap: () {
+                          HapticFeedback.selectionClick();
+                          _patchForm(() {
+                            _selectedCategoryValue = cat.value;
+                            _cats.clear();
+                            if (cat.enumValue != null) {
+                              _cats.add(cat.enumValue!);
+                            }
+                            if (cat.value == kOccurrenceAreaVisitadaCategory) {
+                              _selectedClient = null;
+                            }
+                          });
+                        },
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 44,
+                              height: 44,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: isSelected
+                                    ? selectedColor.withValues(alpha: 0.2)
+                                    : (isIos
+                                          ? SoloForteSheetSkinIos.cardBackground
+                                          : Colors.grey[800]),
+                                border: isSelected
+                                    ? Border.all(color: selectedColor, width: 2)
+                                    : (isIos
+                                          ? Border.all(
+                                              color: SoloForteSheetSkinIos
+                                                  .cardBorder,
+                                            )
+                                          : null),
+                              ),
+                              child: Icon(
+                                cat.icon,
+                                size: 22,
+                                color: isSelected
+                                    ? selectedColor
+                                    : (isIos
+                                          ? SoloForteSheetSkinIos.subtitleColor
+                                          : Colors.white70),
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            SizedBox(
+                              width: 64,
+                              child: Text(
+                                cat.label,
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: isSelected
+                                      ? selectedColor
+                                      : (isIos
+                                            ? SoloForteSheetSkinIos
+                                                  .subtitleColor
+                                            : Colors.white70),
+                                ),
+                                textAlign: TextAlign.center,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                  const SizedBox(height: 16),
+                ],
+
+                if (!_isAreaVisitada) ...[
+                  const OccurrenceSectionHeader(
+                    icon: '🌱',
+                    title: 'Cultivar & Plantio',
+                  ),
+                  const SizedBox(height: 10),
+                  OccurrenceDarkField(
+                    controller: _cultivarCtrl,
+                    label: 'Cultivar (opcional)',
+                    hint: 'ex.: Intacta 2 IPRO, M6410 IPRO…',
+                  ),
+                  const SizedBox(height: 10),
+                  GestureDetector(
+                    onTap: () async {
+                      final picked = await showDatePicker(
+                        context: context,
+                        initialDate: _dataPlantio ?? DateTime.now(),
+                        firstDate: DateTime(2010),
+                        lastDate: DateTime.now().add(const Duration(days: 365)),
+                        helpText: 'Data de Plantio',
+                      );
+                      if (picked != null)
+                        _patchForm(() => _dataPlantio = picked);
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: isIos
+                            ? SoloForteSheetSkinIos.cardBackground
+                            : const Color(0xFF1C1C1E),
+                        borderRadius: BorderRadius.circular(
+                          isIos ? SoloForteSheetSkinIos.cardRadius : 12,
+                        ),
+                        border: Border.all(
+                          color: isIos
+                              ? SoloForteSheetSkinIos.cardBorder
+                              : Colors.white12,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.calendar_today_outlined,
+                            size: 18,
+                            color: isIos
+                                ? SoloForteSheetSkinIos.iconStroke
+                                : Colors.white54,
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              _dataPlantio != null
+                                  ? _formatDate(_dataPlantio!)
+                                  : 'Data de Plantio (opcional)',
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: _dataPlantio != null
+                                    ? titleColor
+                                    : muted,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ),
+                          if (_dataPlantio != null) ...[
+                            GestureDetector(
+                              onTap: () =>
+                                  _patchForm(() => _dataPlantio = null),
+                              child: Icon(Icons.clear, size: 16, color: muted),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ),
+                  if (_dataPlantio != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 6),
+                      child: Row(
+                        children: [
+                          Icon(Icons.grass, size: 14, color: muted),
+                          const SizedBox(width: 6),
+                          Text(
+                            '${DateTime.now().difference(_dataPlantio!).inDays} dias desde o plantio (DAP real)',
+                            style: TextStyle(color: muted, fontSize: 12),
+                          ),
+                        ],
+                      ),
+                    ),
+                  const SizedBox(height: 20),
+
+                  const OccurrenceSectionHeader(
+                    icon: '📊',
+                    title: 'Estádio Fenológico',
+                  ),
+                  const SizedBox(height: 10),
+                  OccurrenceEstadioDropdown(
+                    selected: _estadio,
+                    expanded: _estadioCardExpanded,
+                    onChanged: (e) => _patchForm(() => _estadio = e),
+                    onToggleCard: () => _patchForm(
+                      () => _estadioCardExpanded = !_estadioCardExpanded,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+
+                  ..._cats
+                      .where((cat) => cat != OccurrenceCategory.areaVisitada)
+                      .map((cat) => _buildCategorySection(cat)),
+
+                  const OccurrenceSectionHeader(icon: '⚡', title: 'Urgência'),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: ['Baixa', 'Média', 'Alta'].map((u) {
+                      final sel = _urgency == u;
+                      final color = u == 'Baixa'
+                          ? const Color(0xFFFFCC00)
+                          : u == 'Média'
+                          ? const Color(0xFFFF9500)
+                          : const Color(0xFFFF3B30);
+                      return Expanded(
+                        child: GestureDetector(
+                          onTap: () => _patchForm(() => _urgency = u),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            margin: const EdgeInsets.only(right: 6),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            decoration: BoxDecoration(
                               color: sel
-                                  ? color
+                                  ? color.withValues(alpha: .18)
                                   : (isIos
-                                        ? SoloForteSheetSkinIos.subtitleColor
-                                        : Colors.white38),
-                              fontWeight: sel
-                                  ? FontWeight.bold
-                                  : FontWeight.normal,
-                              fontSize: 14,
+                                        ? SoloForteSheetSkinIos.cardBackground
+                                        : const Color(0xFF1C1C1E)),
+                              borderRadius: BorderRadius.circular(
+                                isIos ? SoloForteSheetSkinIos.cardRadius : 16,
+                              ),
+                              border: Border.all(
+                                color: sel
+                                    ? color
+                                    : (isIos
+                                          ? SoloForteSheetSkinIos.cardBorder
+                                          : Colors.white12),
+                                width: sel ? 1.5 : 1,
+                              ),
+                            ),
+                            child: Center(
+                              child: Text(
+                                u,
+                                style: TextStyle(
+                                  color: sel
+                                      ? color
+                                      : (isIos
+                                            ? SoloForteSheetSkinIos
+                                                  .subtitleColor
+                                            : Colors.white38),
+                                  fontWeight: sel
+                                      ? FontWeight.bold
+                                      : FontWeight.normal,
+                                  fontSize: 14,
+                                ),
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                    ),
-                  );
-                }).toList(),
-              ),
-              const SizedBox(height: 20),
-              ],
+                      );
+                    }).toList(),
+                  ),
+                  const SizedBox(height: 20),
+                ],
 
-              OccurrenceSectionHeader(
-                icon: '📝',
-                title: _isAreaVisitada
-                    ? 'Observações (opcional)'
-                    : 'Observações Gerais',
-              ), // ignore: prefer_const_constructors — title dinâmico
-              const SizedBox(height: 8),
-              OccurrenceDarkField(
-                controller: _descCtrl,
-                label: _isAreaVisitada ? 'Notas' : 'Descrição',
-                hint: _isAreaVisitada
-                    ? 'Ex.: trecho da estrada, entrada do talhão…'
-                    : 'Descreva a ocorrência…',
-                maxLines: 4,
-              ),
-              if (!_isAreaVisitada) ...[
-                const SizedBox(height: 20),
-                const OccurrenceSectionHeader(
-                  icon: '✅',
-                  title: 'Recomendações',
-                ),
+                OccurrenceSectionHeader(
+                  icon: '📝',
+                  title: _isAreaVisitada
+                      ? 'Observações (opcional)'
+                      : 'Observações Gerais',
+                ), // ignore: prefer_const_constructors — title dinâmico
                 const SizedBox(height: 8),
                 OccurrenceDarkField(
-                  controller: _recomCtrl,
-                  label: 'Recomendações',
-                  hint: 'Ações sugeridas para correção…',
-                  maxLines: 3,
+                  controller: _descCtrl,
+                  label: _isAreaVisitada ? 'Notas' : 'Descrição',
+                  hint: _isAreaVisitada
+                      ? 'Ex.: trecho da estrada, entrada do talhão…'
+                      : 'Descreva a ocorrência…',
+                  maxLines: 4,
                 ),
-                const SizedBox(height: 24),
-                _buildPhotoActionSection(),
-                const SizedBox(height: 20),
+                if (!_isAreaVisitada) ...[
+                  const SizedBox(height: 20),
+                  const OccurrenceSectionHeader(
+                    icon: '✅',
+                    title: 'Recomendações',
+                  ),
+                  const SizedBox(height: 8),
+                  OccurrenceDarkField(
+                    controller: _recomCtrl,
+                    label: 'Recomendações',
+                    hint: 'Ações sugeridas para correção…',
+                    maxLines: 3,
+                  ),
+                  const SizedBox(height: 24),
+                  _buildPhotoActionSection(),
+                  const SizedBox(height: 20),
+                ],
               ],
-            ],
-          ),
+            ),
           ),
           SafeArea(
             top: false,
             child: Padding(
-              padding: EdgeInsets.fromLTRB(
-                16,
-                12,
-                16,
-                actionBarBottomPadding,
-              ),
+              padding: EdgeInsets.fromLTRB(16, 12, 16, actionBarBottomPadding),
               child: Row(
                 children: [
                   TextButton(

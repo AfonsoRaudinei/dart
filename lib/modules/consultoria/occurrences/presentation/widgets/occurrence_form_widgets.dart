@@ -76,18 +76,17 @@ class OccurrenceDarkField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isIos = occurrenceFormIsIos(context);
-    final textColor =
-        isIos ? SoloForteSheetSkinIos.titleColor : Colors.white;
-    final labelColor =
-        isIos ? SoloForteSheetSkinIos.subtitleColor : Colors.white38;
-    final hintColor =
-        isIos ? SoloForteSheetSkinIos.subtitleColor : Colors.white24;
+    final textColor = isIos ? SoloForteSheetSkinIos.titleColor : Colors.white;
+    final labelColor = isIos
+        ? SoloForteSheetSkinIos.subtitleColor
+        : Colors.white38;
+    final hintColor = isIos
+        ? SoloForteSheetSkinIos.subtitleColor
+        : Colors.white24;
     final fill = isIos
         ? SoloForteSheetSkinIos.cardBackground
         : const Color(0xFF1C1C1E);
-    final border = isIos
-        ? SoloForteSheetSkinIos.cardBorder
-        : Colors.white12;
+    final border = isIos ? SoloForteSheetSkinIos.cardBorder : Colors.white12;
     final focus = isIos
         ? SoloForteSheetSkinIos.iconStroke
         : PremiumTokens.brandGreen;
@@ -96,6 +95,7 @@ class OccurrenceDarkField extends StatelessWidget {
     return TextField(
       controller: controller,
       maxLines: maxLines,
+      onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
       style: TextStyle(color: textColor, fontSize: 14),
       decoration: InputDecoration(
         labelText: label,
@@ -144,10 +144,10 @@ class OccurrenceSliderRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isIos = occurrenceFormIsIos(context);
-    final labelColor =
-        isIos ? SoloForteSheetSkinIos.titleColor : Colors.white70;
-    final inactive =
-        isIos ? SoloForteSheetSkinIos.rowDivider : Colors.white12;
+    final labelColor = isIos
+        ? SoloForteSheetSkinIos.titleColor
+        : Colors.white70;
+    final inactive = isIos ? SoloForteSheetSkinIos.rowDivider : Colors.white12;
     return Padding(
       padding: const EdgeInsets.fromLTRB(14, 4, 14, 0),
       child: Column(
@@ -156,10 +156,7 @@ class OccurrenceSliderRow extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                label,
-                style: TextStyle(color: labelColor, fontSize: 13),
-              ),
+              Text(label, style: TextStyle(color: labelColor, fontSize: 13)),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
@@ -234,13 +231,9 @@ class OccurrenceEstadioDropdown extends StatelessWidget {
     final surface = isIos
         ? SoloForteSheetSkinIos.cardBackground
         : const Color(0xFF1C1C1E);
-    final border = isIos
-        ? SoloForteSheetSkinIos.cardBorder
-        : Colors.white12;
-    final muted =
-        isIos ? SoloForteSheetSkinIos.subtitleColor : Colors.white38;
-    final title =
-        isIos ? SoloForteSheetSkinIos.titleColor : Colors.white;
+    final border = isIos ? SoloForteSheetSkinIos.cardBorder : Colors.white12;
+    final muted = isIos ? SoloForteSheetSkinIos.subtitleColor : Colors.white38;
+    final title = isIos ? SoloForteSheetSkinIos.titleColor : Colors.white;
     final dropdownBg = isIos
         ? SoloForteSheetSkinIos.background
         : const Color(0xFF2C2C2E);
@@ -284,10 +277,7 @@ class OccurrenceEstadioDropdown extends StatelessWidget {
                           value: e,
                           child: Text(
                             e.name,
-                            style: TextStyle(
-                              color: title,
-                              fontSize: 13,
-                            ),
+                            style: TextStyle(color: title, fontSize: 13),
                           ),
                         ),
                       ),
@@ -444,8 +434,9 @@ class OccurrenceRadioChip extends StatelessWidget {
     final idleBorder = isIos
         ? SoloForteSheetSkinIos.cardBorder
         : Colors.white12;
-    final idleText =
-        isIos ? SoloForteSheetSkinIos.subtitleColor : Colors.white38;
+    final idleText = isIos
+        ? SoloForteSheetSkinIos.subtitleColor
+        : Colors.white38;
     final radius = isIos ? SoloForteSheetSkinIos.cardRadius : 12.0;
 
     return GestureDetector(
@@ -579,12 +570,9 @@ class OccurrenceCatPickerSheet extends StatelessWidget {
     final bg = isIos
         ? SoloForteSheetSkinIos.cardBackground
         : const Color(0xFF1C1C1E);
-    final radius =
-        isIos ? SoloForteSheetSkinIos.cardRadius : 16.0;
-    final titleColor =
-        isIos ? SoloForteSheetSkinIos.titleColor : Colors.white;
-    final tileColor =
-        isIos ? SoloForteSheetSkinIos.titleColor : Colors.white;
+    final radius = isIos ? SoloForteSheetSkinIos.cardRadius : 16.0;
+    final titleColor = isIos ? SoloForteSheetSkinIos.titleColor : Colors.white;
+    final tileColor = isIos ? SoloForteSheetSkinIos.titleColor : Colors.white;
 
     return Container(
       margin: const EdgeInsets.all(12),

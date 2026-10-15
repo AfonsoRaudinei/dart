@@ -20,13 +20,7 @@ import '../../../screens/map/handlers/novo_case_modal_launcher.dart';
 import '../map_occurrence_post_create.dart';
 
 /// O que marcar no ponto do mapa. A escolha fica no topo da mesma ficha.
-enum MapMarkKind {
-  resultado,
-  antesDepois,
-  avaliacao,
-  areaVisitada,
-  ocorrencia,
-}
+enum MapMarkKind { resultado, antesDepois, avaliacao, areaVisitada, ocorrencia }
 
 /// Uma ficha: cinco opções no topo, campos da opção escolhida embaixo.
 class MapMarkSheet extends ConsumerStatefulWidget {
@@ -73,8 +67,8 @@ class _MapMarkSheetState extends ConsumerState<MapMarkSheet> {
     HapticFeedback.selectionClick();
     setState(() {
       _kind = kind;
-      _occurrenceGuard = kind == MapMarkKind.ocorrencia ||
-              kind == MapMarkKind.areaVisitada
+      _occurrenceGuard =
+          kind == MapMarkKind.ocorrencia || kind == MapMarkKind.areaVisitada
           ? OccurrenceFormGuard()
           : null;
     });
@@ -188,29 +182,29 @@ class _MapMarkSheetState extends ConsumerState<MapMarkSheet> {
 
     final sheet = switch (tipo) {
       CaseTipo.resultado => NovoResultadoCaseSheet(
-          lat: lat,
-          lng: lng,
-          initialVisitContext: widget.visitContext,
-          onClose: widget.onClose,
-          onPublicar: publicar,
-          compactHeader: true,
-        ),
+        lat: lat,
+        lng: lng,
+        initialVisitContext: widget.visitContext,
+        onClose: widget.onClose,
+        onPublicar: publicar,
+        compactHeader: true,
+      ),
       CaseTipo.antesDepois => NovoAntesDepoisCaseSheet(
-          lat: lat,
-          lng: lng,
-          initialVisitContext: widget.visitContext,
-          onClose: widget.onClose,
-          onPublicar: publicar,
-          compactHeader: true,
-        ),
+        lat: lat,
+        lng: lng,
+        initialVisitContext: widget.visitContext,
+        onClose: widget.onClose,
+        onPublicar: publicar,
+        compactHeader: true,
+      ),
       CaseTipo.avaliacao => NovaAvaliacaoCaseSheet(
-          lat: lat,
-          lng: lng,
-          initialVisitContext: widget.visitContext,
-          onClose: widget.onClose,
-          onPublicar: publicar,
-          compactHeader: true,
-        ),
+        lat: lat,
+        lng: lng,
+        initialVisitContext: widget.visitContext,
+        onClose: widget.onClose,
+        onPublicar: publicar,
+        compactHeader: true,
+      ),
     };
     return sheet;
   }
@@ -227,6 +221,7 @@ class _MapMarkSheetState extends ConsumerState<MapMarkSheet> {
       formGuard: guard,
       compactHeader: true,
       initialCategoryValue: initialCategory,
+      liftStickyActionsForKeyboard: false,
       onCancel: () async {
         final canClose = await OccurrenceCloseCoordinator.confirmDiscardIfDirty(
           context,
@@ -242,7 +237,9 @@ class _MapMarkSheetState extends ConsumerState<MapMarkSheet> {
             'Ponto do mapa inválido. Toque novamente no mapa para marcar a ocorrência.',
           );
         }
-        await ref.read(occurrenceControllerProvider).createOccurrence(
+        await ref
+            .read(occurrenceControllerProvider)
+            .createOccurrence(
               type: data.type,
               description: data.description,
               clientId: data.clientId,
@@ -451,10 +448,7 @@ class _MarkScrollEdgeFade extends StatelessWidget {
         gradient: LinearGradient(
           begin: begin,
           end: end,
-          colors: [
-            color,
-            color.withValues(alpha: 0),
-          ],
+          colors: [color, color.withValues(alpha: 0)],
         ),
       ),
       child: showChevron
@@ -503,8 +497,7 @@ class _MarkToggleSegment extends StatelessWidget {
     final idleLabel = isIos
         ? SoloForteSheetSkinIos.titleColor
         : const Color(0xFFE5E5EA);
-    final selectedLabel =
-        isIos ? SoloForteSheetSkinIos.ctaText : Colors.white;
+    final selectedLabel = isIos ? SoloForteSheetSkinIos.ctaText : Colors.white;
 
     return Material(
       color: Colors.transparent,
