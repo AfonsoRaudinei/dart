@@ -67,6 +67,7 @@ class TalhaoCardNdviToggle extends ConsumerWidget {
 
     return SegmentedButton<bool>(
       showSelectedIcon: false,
+      emptySelectionAllowed: selected.isEmpty,
       style: const ButtonStyle(
         visualDensity: VisualDensity.compact,
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -77,6 +78,7 @@ class TalhaoCardNdviToggle extends ConsumerWidget {
       ],
       selected: selected,
       onSelectionChanged: (selection) {
+        if (selection.isEmpty) return;
         setTalhaoCardNdviEnabledForFarm(
           ref,
           fieldIds: fieldIds,
