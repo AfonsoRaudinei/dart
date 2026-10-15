@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../../domain/drawing_feature_actions_mode.dart';
 import '../../../domain/models/drawing_models.dart';
 import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
 import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
@@ -37,10 +38,12 @@ class DrawingActionsBar extends StatelessWidget {
   final VoidCallback? onDeleteSelected;
   final bool isMultiSelectEnabled;
   final int selectedCount;
+  final DrawingFeatureActionsMode actionsMode;
 
   const DrawingActionsBar({
     super.key,
     required this.selectedFeature,
+    this.actionsMode = DrawingFeatureActionsMode.compact,
     this.onEditGeometry,
     this.onEditMetadata,
     this.onUnion,
@@ -150,6 +153,7 @@ class DrawingActionsBar extends StatelessWidget {
               onEditMetadata?.call();
             },
           ),
+          if (actionsMode == DrawingFeatureActionsMode.full) ...[
           const SizedBox(height: 16),
           const Divider(height: 1),
           const SizedBox(height: 16),
@@ -324,6 +328,7 @@ class DrawingActionsBar extends StatelessWidget {
               _showDeleteConfirmation(context);
             },
           ),
+          ],
         ],
       ),
     );

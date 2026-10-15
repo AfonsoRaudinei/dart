@@ -21,6 +21,7 @@ extension _DrawingSheetBuildersB on _DrawingSheetState {
 
     return DrawingActionsBar(
       selectedFeature: feature,
+      actionsMode: widget.controller.featureActionsMode,
       onEditGeometry: widget.controller.startEditMode,
       onEditMetadata: () => _rebuild(() => _isEditingMetadata = true),
       onUnion: widget.controller.startUnionMode,
