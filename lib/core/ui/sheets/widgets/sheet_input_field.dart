@@ -27,10 +27,12 @@ class SheetInputField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isIos = soloForteSheetIsIos(context);
-    final textColor =
-        isIos ? SoloForteSheetSkinIos.titleColor : SoloForteSheetTokens.inputText;
-    final hintColor =
-        isIos ? SoloForteSheetSkinIos.subtitleColor : SoloForteSheetTokens.inputHint;
+    final textColor = isIos
+        ? SoloForteSheetSkinIos.titleColor
+        : SoloForteSheetTokens.inputText;
+    final hintColor = isIos
+        ? SoloForteSheetSkinIos.subtitleColor
+        : SoloForteSheetTokens.inputHint;
     final fillColor = isIos
         ? SoloForteSheetSkinIos.cardBackground
         : SoloForteSheetTokens.inputBackground;
@@ -47,6 +49,7 @@ class SheetInputField extends StatelessWidget {
       onTap: onTap,
       keyboardType: keyboardType,
       maxLines: maxLines,
+      onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
       style: TextStyle(color: textColor),
       decoration: InputDecoration(
         hintText: hintText,
