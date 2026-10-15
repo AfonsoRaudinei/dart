@@ -18,6 +18,7 @@ import '../../modules/auth/services/auth_service.dart';
 import '../../core/utils/app_logger.dart';
 import '../../modules/drawing/presentation/providers/drawing_provider.dart';
 import '../../modules/drawing/domain/drawing_state.dart';
+import '../../modules/drawing/domain/drawing_feature_actions_mode.dart';
 import '../../modules/drawing/domain/models/drawing_models.dart';
 import '../../modules/dashboard/providers/location_providers.dart';
 import '../../modules/dashboard/services/location_service.dart';
@@ -201,6 +202,7 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
     String drawingId, {
     required bool edit,
     bool union = false,
+    bool ferramentasCompleto = false,
     int attempt = 0,
   }) async {
     if (!ref.read(mapReadyStateProvider)) {
@@ -218,6 +220,7 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
           drawingId,
           edit: edit,
           union: union,
+          ferramentasCompleto: ferramentasCompleto,
           attempt: attempt + 1,
         );
       });
@@ -245,7 +248,12 @@ class _PrivateMapScreenState extends ConsumerState<PrivateMapScreen> {
       return;
     }
 
-    controller.selectFeature(feature);
+    controller.selectFeature(
+      feature,
+      actionsMode: ferramentasCompleto
+          ? DrawingFeatureActionsMode.full
+          : DrawingFeatureActionsMode.compact,
+    );
     final focused = MapViewportController.focusDrawingFeature(
       mapController: _mapController,
       feature: feature,

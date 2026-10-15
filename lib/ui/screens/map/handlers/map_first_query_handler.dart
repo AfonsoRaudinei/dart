@@ -23,6 +23,7 @@ class MapFirstQueryHandler {
       String drawingId, {
       required bool edit,
       bool union,
+      bool ferramentasCompleto,
     })
     focusDrawing,
     required void Function(LatLng point) focusCoordinate,
@@ -33,6 +34,8 @@ class MapFirstQueryHandler {
     final fazendaId = uri.queryParameters['fazendaId'];
     final fazendaNome = uri.queryParameters['fazendaNome'];
     final drawingId = uri.queryParameters['drawingId'];
+    final ferramentasCompleto =
+        uri.queryParameters['ferramentas'] == 'completo';
     final showNdvi = uri.queryParameters['ndvi'] == '1';
     ref
         .read(mapNdviOverlayFieldIdProvider.notifier)
@@ -71,6 +74,7 @@ class MapFirstQueryHandler {
             drawingId,
             edit: modo == 'editar',
             union: modo == 'uniao',
+            ferramentasCompleto: ferramentasCompleto,
           );
         });
       }
