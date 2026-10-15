@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:latlong2/latlong.dart';
 
+import '../../../core/ui/sheets/sheet_keyboard_inset.dart';
 import '../../../core/ui/sheets/sheet_tokens.dart';
 import '../../../core/ui/sheets/soloforte_sheet.dart';
 import '../../../core/ui/sheets/widgets/sheet_input_field.dart';
@@ -32,7 +33,8 @@ class MapMunicipalitySearchSheet extends StatefulWidget {
       _MapMunicipalitySearchSheetState();
 }
 
-class _MapMunicipalitySearchSheetState extends State<MapMunicipalitySearchSheet> {
+class _MapMunicipalitySearchSheetState
+    extends State<MapMunicipalitySearchSheet> {
   final _datasource = IbgeLocalidadesDatasource();
   final _searchController = TextEditingController();
 
@@ -151,7 +153,8 @@ class _MapMunicipalitySearchSheetState extends State<MapMunicipalitySearchSheet>
     if (coords == null) {
       setState(() {
         _geocoding = false;
-        _error = 'Não foi possível localizar ${municipio.nome}, ${municipio.uf}.';
+        _error =
+            'Não foi possível localizar ${municipio.nome}, ${municipio.uf}.';
       });
       return;
     }
@@ -167,7 +170,10 @@ class _MapMunicipalitySearchSheetState extends State<MapMunicipalitySearchSheet>
 
   @override
   Widget build(BuildContext context) {
-    final bottomPad = MediaQuery.paddingOf(context).bottom;
+    final bottomPad = sheetFormKeyboardBottomPadding(
+      safeBottom: MediaQuery.paddingOf(context).bottom,
+      keyboard: MediaQuery.viewInsetsOf(context).bottom,
+    );
     final isIos = soloForteSheetIsIos(context);
     final titleColor = isIos
         ? SoloForteSheetSkinIos.titleColor
@@ -200,8 +206,9 @@ class _MapMunicipalitySearchSheetState extends State<MapMunicipalitySearchSheet>
         ? SoloForteSheetSkinIos.subtitleColor
         : SoloForteSheetTokens.categoryLabel;
 
-    return Padding(
-      padding: EdgeInsets.fromLTRB(20, 4, 20, 16 + bottomPad),
+    return SingleChildScrollView(
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+      padding: EdgeInsets.fromLTRB(20, 4, 20, bottomPad),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -218,21 +225,17 @@ class _MapMunicipalitySearchSheetState extends State<MapMunicipalitySearchSheet>
           if (_loadingEstados)
             Padding(
               padding: const EdgeInsets.all(24),
-              child: Center(
-                child: CircularProgressIndicator(color: accent),
-              ),
+              child: Center(child: CircularProgressIndicator(color: accent)),
             )
           else ...[
             DropdownButtonFormField<IbgeEstado>(
               initialValue: _estadoSelecionado,
               dropdownColor: dropdownBg,
-              style: TextStyle(
-                color: inputText,
-                fontSize: 16,
-              ),
+              style: TextStyle(color: inputText, fontSize: 16),
               iconEnabledColor: iconColor,
-              decoration:
-                  _fieldDecoration(isIos).copyWith(labelText: 'Estado (UF)'),
+              decoration: _fieldDecoration(
+                isIos,
+              ).copyWith(labelText: 'Estado (UF)'),
               items: _estados
                   .map(
                     (e) => DropdownMenuItem(
@@ -259,10 +262,7 @@ class _MapMunicipalitySearchSheetState extends State<MapMunicipalitySearchSheet>
               child: SheetInputField(
                 controller: _searchController,
                 hintText: 'Buscar município…',
-                prefixIcon: Icon(
-                  Icons.search,
-                  color: hintColor,
-                ),
+                prefixIcon: Icon(Icons.search, color: hintColor),
               ),
             ),
             const SizedBox(height: 12),
@@ -271,10 +271,7 @@ class _MapMunicipalitySearchSheetState extends State<MapMunicipalitySearchSheet>
                 padding: const EdgeInsets.only(bottom: 8),
                 child: Text(
                   _error!,
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: accent,
-                  ),
+                  style: TextStyle(fontSize: 13, color: accent),
                 ),
               ),
             ConstrainedBox(
@@ -282,17 +279,12 @@ class _MapMunicipalitySearchSheetState extends State<MapMunicipalitySearchSheet>
                 maxHeight: MediaQuery.of(context).size.height * 0.42,
               ),
               child: _loadingMunicipios || _geocoding
-                  ? Center(
-                      child: CircularProgressIndicator(color: accent),
-                    )
+                  ? Center(child: CircularProgressIndicator(color: accent))
                   : _filteredMunicipios.isEmpty
                   ? Center(
                       child: Text(
                         'Nenhum município encontrado.',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: muted,
-                        ),
+                        style: TextStyle(fontSize: 14, color: muted),
                       ),
                     )
                   : Container(
@@ -310,10 +302,7 @@ class _MapMunicipalitySearchSheetState extends State<MapMunicipalitySearchSheet>
                         itemCount: _filteredMunicipios.length,
                         separatorBuilder: (_, __) => Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: Divider(
-                            height: 1,
-                            color: divider,
-                          ),
+                          child: Divider(height: 1, color: divider),
                         ),
                         itemBuilder: (context, index) {
                           final municipio = _filteredMunicipios[index];

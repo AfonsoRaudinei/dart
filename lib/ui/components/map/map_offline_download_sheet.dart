@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../../core/services/offline_tile_cache_service.dart';
+import '../../../core/ui/sheets/sheet_keyboard_inset.dart';
 import '../../../core/ui/sheets/sheet_tokens.dart';
 import '../../../core/ui/sheets/soloforte_sheet.dart';
 import '../../../core/ui/sheets/widgets/sheet_input_field.dart';
@@ -42,10 +43,8 @@ Future<void> showMapOfflineDownloadProgressSheet(
     enableDrag: false,
     showDragHandle: false,
     maxHeightFraction: 0.38,
-    builder: (ctx) => MapOfflineDownloadProgressSheet(
-      progress: progress,
-      onCancel: onCancel,
-    ),
+    builder: (ctx) =>
+        MapOfflineDownloadProgressSheet(progress: progress, onCancel: onCancel),
   );
 }
 
@@ -81,7 +80,10 @@ class _MapOfflineDownloadSheetState extends State<MapOfflineDownloadSheet> {
   @override
   Widget build(BuildContext context) {
     final isIos = soloForteSheetIsIos(context);
-    final bottom = MediaQuery.paddingOf(context).bottom;
+    final bottom = sheetFormKeyboardBottomPadding(
+      safeBottom: MediaQuery.paddingOf(context).bottom,
+      keyboard: MediaQuery.viewInsetsOf(context).bottom,
+    );
     final titleColor = isIos
         ? SoloForteSheetSkinIos.titleColor
         : SoloForteSheetTokens.titleColor;
@@ -102,7 +104,8 @@ class _MapOfflineDownloadSheetState extends State<MapOfflineDownloadSheet> {
     return SafeArea(
       top: false,
       child: SingleChildScrollView(
-        padding: EdgeInsets.fromLTRB(20, 8, 20, 16 + bottom),
+        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+        padding: EdgeInsets.fromLTRB(20, 8, 20, bottom),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           mainAxisSize: MainAxisSize.min,
