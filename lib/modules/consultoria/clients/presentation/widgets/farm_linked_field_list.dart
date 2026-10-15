@@ -12,7 +12,6 @@ import 'package:soloforte_app/core/router/app_routes.dart';
 import 'package:soloforte_app/modules/consultoria/clients/presentation/providers/clients_providers.dart';
 import 'package:soloforte_app/modules/consultoria/clients/presentation/providers/field_providers.dart';
 import 'package:soloforte_app/modules/consultoria/clients/presentation/widgets/talhao_actions_sheet.dart';
-import 'package:soloforte_app/modules/consultoria/clients/presentation/widgets/talhao_union_sheet.dart';
 import 'package:soloforte_app/modules/consultoria/clients/presentation/providers/talhao_card_ndvi_provider.dart';
 import 'package:soloforte_app/modules/consultoria/clients/presentation/widgets/talhao_map_preview.dart';
 
@@ -190,37 +189,18 @@ class FarmLinkedFieldList extends ConsumerWidget {
     context.go(AppRoutes.fieldDetail(clientId, farmId, field.id));
   }
 
-  List<TalhaoUnionCandidate> _unionCandidates(FarmLinkedFieldSummary field) {
-    return fields
-        .where((candidate) => candidate.isDrawing && candidate.id != field.id)
-        .map(
-          (candidate) => TalhaoUnionCandidate(
-            id: candidate.id,
-            name: candidate.name,
-            areaHa: candidate.areaHa,
-            vertices: candidate.vertices,
-          ),
-        )
-        .toList();
-  }
-
   Future<void> _openActions(
     BuildContext context,
     FarmLinkedFieldSummary field,
-  ) {
-    return showTalhaoActionsSheet(
-      context,
-      clientId: clientId,
-      farmId: farmId,
-      fieldId: field.id,
-      fieldName: field.name,
-      initialCultura: field.crop,
-      initialMaterial: field.material,
-      initialSafra: field.harvest,
-      fieldAreaHa: field.areaHa,
-      primaryVertices: field.vertices,
-      showUnionAction: field.isDrawing,
-      unionCandidates: _unionCandidates(field),
+  ) async {
+    context.go(
+      talhaoMapUri(
+        modo: 'desenho',
+        clientId: clientId,
+        farmId: farmId,
+        drawingId: field.id,
+        ferramentasCompleto: true,
+      ),
     );
   }
 
