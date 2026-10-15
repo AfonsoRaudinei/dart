@@ -12,6 +12,7 @@ import 'package:soloforte_app/modules/drawing/presentation/coordinators/drawing_
 import 'package:soloforte_app/modules/drawing/presentation/controllers/drawing_controller.dart';
 import 'package:soloforte_app/modules/drawing/presentation/widgets/drawing_sheet.dart';
 import 'package:soloforte_app/modules/drawing/domain/drawing_state.dart';
+import 'package:soloforte_app/modules/drawing/domain/drawing_feature_actions_mode.dart';
 
 void main() {
   setUpAll(() async {
@@ -39,7 +40,10 @@ void main() {
       final controller = DrawingController(repository: repository);
       addTearDown(controller.dispose);
       await controller.loadFeatures();
-      controller.selectFeature(controller.features.single);
+      controller.selectFeature(
+        controller.features.single,
+        actionsMode: DrawingFeatureActionsMode.full,
+      );
       var closeCount = 0;
 
       await tester.pumpWidget(
@@ -114,7 +118,10 @@ void main() {
     final controller = DrawingController(repository: repository);
     addTearDown(controller.dispose);
     await controller.loadFeatures();
-    controller.selectFeature(controller.features.single);
+    controller.selectFeature(
+        controller.features.single,
+        actionsMode: DrawingFeatureActionsMode.full,
+      );
 
     await tester.pumpWidget(
       ProviderScope(
@@ -164,7 +171,10 @@ void main() {
     final controller = DrawingController(repository: repository);
     addTearDown(controller.dispose);
     await controller.loadFeatures();
-    controller.selectFeature(controller.features.single);
+    controller.selectFeature(
+        controller.features.single,
+        actionsMode: DrawingFeatureActionsMode.full,
+      );
     var closeCount = 0;
 
     await tester.pumpWidget(
@@ -218,7 +228,10 @@ void main() {
     final controller = DrawingController(repository: repository);
     addTearDown(controller.dispose);
     await controller.loadFeatures();
-    controller.selectFeature(controller.features.single);
+    controller.selectFeature(
+        controller.features.single,
+        actionsMode: DrawingFeatureActionsMode.full,
+      );
     var closeCount = 0;
 
     await tester.pumpWidget(
@@ -270,7 +283,10 @@ void main() {
       final controller = DrawingController(repository: repository);
       addTearDown(controller.dispose);
       await controller.loadFeatures();
-      controller.selectFeature(controller.features.single);
+      controller.selectFeature(
+        controller.features.single,
+        actionsMode: DrawingFeatureActionsMode.full,
+      );
 
       await tester.pumpWidget(
         ProviderScope(
@@ -337,7 +353,10 @@ void main() {
       final controller = DrawingController(repository: repository);
       addTearDown(controller.dispose);
       await controller.loadFeatures();
-      controller.selectFeature(controller.features.single);
+      controller.selectFeature(
+        controller.features.single,
+        actionsMode: DrawingFeatureActionsMode.full,
+      );
 
       await tester.pumpWidget(
         ProviderScope(
@@ -391,7 +410,10 @@ void main() {
       final controller = DrawingController(repository: repository);
       addTearDown(controller.dispose);
       await controller.loadFeatures();
-      controller.selectFeature(controller.features.single);
+      controller.selectFeature(
+        controller.features.single,
+        actionsMode: DrawingFeatureActionsMode.full,
+      );
       var closeCount = 0;
 
       await tester.pumpWidget(
@@ -445,7 +467,10 @@ void main() {
     final controller = DrawingController(repository: repository);
     addTearDown(controller.dispose);
     await controller.loadFeatures();
-    controller.selectFeature(controller.features.single);
+    controller.selectFeature(
+        controller.features.single,
+        actionsMode: DrawingFeatureActionsMode.full,
+      );
 
     await tester.pumpWidget(
       ProviderScope(
@@ -494,7 +519,10 @@ void main() {
     final controller = DrawingController(repository: repository);
     addTearDown(controller.dispose);
     await controller.loadFeatures();
-    controller.selectFeature(controller.features.single);
+    controller.selectFeature(
+        controller.features.single,
+        actionsMode: DrawingFeatureActionsMode.full,
+      );
 
     await tester.pumpWidget(
       ProviderScope(
@@ -538,7 +566,10 @@ void main() {
       final controller = DrawingController(repository: repository);
       addTearDown(controller.dispose);
       await controller.loadFeatures();
-      controller.selectFeature(controller.features.single);
+      controller.selectFeature(
+        controller.features.single,
+        actionsMode: DrawingFeatureActionsMode.full,
+      );
 
       await tester.pumpWidget(
         ProviderScope(
