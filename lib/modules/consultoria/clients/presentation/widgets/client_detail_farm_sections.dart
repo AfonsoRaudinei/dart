@@ -54,7 +54,6 @@ class _ClientFarmWithTalhoesSectionState
         ? farm.totalAreaHa
         : totalFarmLinkedAreaHa(linkedFields);
     final areaUnit = ref.watch(areaDisplayUnitProvider);
-    final showNdvi = ref.watch(talhaoCardNdviEnabledProvider(farm.id));
     final areaFormatted = formatAreaFromHectares(displayedAreaHa, areaUnit);
     final toggleTooltip = _expanded ? 'Ocultar talhões' : 'Mostrar talhões';
 
@@ -155,7 +154,6 @@ class _ClientFarmWithTalhoesSectionState
               clientId: client.id,
               farmId: farm.id,
               fields: fields,
-              showNdvi: showNdvi,
             ),
             loading: () {
               if ((linkedFields ?? const []).isEmpty) {
@@ -165,7 +163,6 @@ class _ClientFarmWithTalhoesSectionState
                 clientId: client.id,
                 farmId: farm.id,
                 fields: linkedFields!,
-                showNdvi: showNdvi,
               );
             },
             error: (err, stack) => const SizedBox.shrink(),
