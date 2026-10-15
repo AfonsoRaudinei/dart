@@ -13,6 +13,7 @@ import 'package:soloforte_app/modules/consultoria/clients/presentation/providers
 import 'package:soloforte_app/modules/consultoria/clients/presentation/providers/field_providers.dart';
 import 'package:soloforte_app/modules/consultoria/clients/presentation/widgets/talhao_actions_sheet.dart';
 import 'package:soloforte_app/modules/consultoria/clients/presentation/widgets/talhao_union_sheet.dart';
+import 'package:soloforte_app/modules/consultoria/clients/presentation/providers/talhao_card_ndvi_provider.dart';
 import 'package:soloforte_app/modules/consultoria/clients/presentation/widgets/talhao_map_preview.dart';
 
 String formatLinkedFieldAreaHa(double areaHa) {
@@ -74,7 +75,6 @@ class FarmLinkedFieldList extends ConsumerWidget {
   final String farmId;
   final List<FarmLinkedFieldSummary> fields;
   final String emptyMessage;
-  final bool showNdvi;
 
   const FarmLinkedFieldList({
     super.key,
@@ -82,7 +82,6 @@ class FarmLinkedFieldList extends ConsumerWidget {
     required this.farmId,
     required this.fields,
     this.emptyMessage = 'Nenhum talhão cadastrado',
-    this.showNdvi = false,
   });
 
   @override
@@ -104,7 +103,7 @@ class FarmLinkedFieldList extends ConsumerWidget {
     return Column(
       children: [
         for (final field in fields)
-          if (showNdvi)
+          if (ref.watch(talhaoCardNdviEnabledProvider(field.id)))
             _FarmTalhaoNdviCard(
               field: field,
               areaUnit: areaUnit,
@@ -140,11 +139,13 @@ class FarmLinkedFieldList extends ConsumerWidget {
     WidgetRef ref,
     FarmLinkedFieldSummary field,
   ) {
+    final showNdvi = ref.read(talhaoCardNdviEnabledProvider(field.id));
     final actions = <Widget>[
+      TalhaoCardNdviModeIconButton(fieldId: field.id),
       IconButton(
         tooltip: 'Abrir no mapa',
         icon: const Icon(Icons.open_in_full, size: 20),
-        onPressed: () => context.go(_mapViewUri(field.id)),
+        onPressed: () => context.go(_mapViewUri(field.id, showNdvi)),
       ),
     ];
 
@@ -266,13 +267,13 @@ class FarmLinkedFieldList extends ConsumerWidget {
     ).showSnackBar(const SnackBar(content: Text('Talhão excluído.')));
   }
 
-  String _mapViewUri(String drawingId) {
+  String _mapViewUri(String drawingId, bool ndvi) {
     return talhaoMapUri(
       modo: 'desenho',
       clientId: clientId,
       farmId: farmId,
       drawingId: drawingId,
-      ndvi: showNdvi,
+      ndvi: ndvi,
     );
   }
 }

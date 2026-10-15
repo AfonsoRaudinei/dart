@@ -38,8 +38,6 @@ class FarmDetailScreen extends ConsumerWidget {
     final clientAsync = ref.watch(clientDetailProvider(clientId));
     final linkedFieldsAsync = ref.watch(farmLinkedFieldsProvider(farmId));
     final areaUnit = ref.watch(areaDisplayUnitProvider);
-    final showNdvi = ref.watch(talhaoCardNdviEnabledProvider(farmId));
-
     return Scaffold(
       backgroundColor: Colors.white,
       body: farmAsync.when(
@@ -188,7 +186,6 @@ class FarmDetailScreen extends ConsumerWidget {
                             clientId: clientId,
                             farmId: farmId,
                             fields: fields,
-                            showNdvi: showNdvi,
                           ),
                           loading: () {
                             if ((linkedFieldsAsync.asData?.value ?? const [])
@@ -201,7 +198,6 @@ class FarmDetailScreen extends ConsumerWidget {
                               clientId: clientId,
                               farmId: farmId,
                               fields: linkedFields!,
-                              showNdvi: showNdvi,
                             );
                           },
                           error: (e, s) => Center(

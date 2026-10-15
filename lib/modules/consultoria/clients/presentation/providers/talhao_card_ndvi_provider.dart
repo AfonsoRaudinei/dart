@@ -1,11 +1,41 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:soloforte_app/core/infra/preferences_service.dart';
 
-/// Mapa (false) ou NDVI (true) nos cards de talhão de uma fazenda.
-/// Sessão apenas — não persiste. Um controle por fazenda.
-final talhaoCardNdviEnabledProvider = StateProvider.autoDispose
-    .family<bool, String>((ref, farmId) => false);
+import 'field_providers.dart';
 
+String _talhaoCardNdviPrefsKey(String fieldId) =>
+    'consultoria_talhao_card_ndvi_$fieldId';
+
+/// Mapa (false) ou NDVI (true) no card de um talhão — persiste por [fieldId].
+final talhaoCardNdviEnabledProvider = StateProvider.family<bool, String>(
+  (ref, fieldId) {
+    return ref.read(preferencesServiceProvider).getBool(
+          _talhaoCardNdviPrefsKey(fieldId),
+        ) ??
+        false;
+  },
+);
+
+void setTalhaoCardNdviEnabled(WidgetRef ref, String fieldId, bool enabled) {
+  ref.read(talhaoCardNdviEnabledProvider(fieldId).notifier).state = enabled;
+  ref.read(preferencesServiceProvider).setBool(
+        _talhaoCardNdviPrefsKey(fieldId),
+        enabled,
+      );
+}
+
+void setTalhaoCardNdviEnabledForFarm(
+  WidgetRef ref, {
+  required Iterable<String> fieldIds,
+  required bool enabled,
+}) {
+  for (final fieldId in fieldIds) {
+    setTalhaoCardNdviEnabled(ref, fieldId, enabled);
+  }
+}
+
+/// Atalho por fazenda: aplica a todos os talhões; seleção vazia quando há modos mistos.
 class TalhaoCardNdviToggle extends ConsumerWidget {
   const TalhaoCardNdviToggle({super.key, required this.farmId});
 
@@ -13,7 +43,28 @@ class TalhaoCardNdviToggle extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final enabled = ref.watch(talhaoCardNdviEnabledProvider(farmId));
+    final fields = ref.watch(farmLinkedFieldsProvider(farmId)).asData?.value;
+    final fieldIds = fields?.map((f) => f.id).toList() ?? const <String>[];
+
+    if (fieldIds.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    final modes = fieldIds
+        .map((id) => ref.watch(talhaoCardNdviEnabledProvider(id)))
+        .toList();
+    final allNdvi = modes.every((m) => m);
+    final allMap = modes.every((m) => !m);
+
+    final Set<bool> selected;
+    if (allNdvi) {
+      selected = {true};
+    } else if (allMap) {
+      selected = {false};
+    } else {
+      selected = {};
+    }
+
     return SegmentedButton<bool>(
       showSelectedIcon: false,
       style: const ButtonStyle(
@@ -24,11 +75,31 @@ class TalhaoCardNdviToggle extends ConsumerWidget {
         ButtonSegment<bool>(value: false, label: Text('Mapa')),
         ButtonSegment<bool>(value: true, label: Text('NDVI')),
       ],
-      selected: {enabled},
+      selected: selected,
       onSelectionChanged: (selection) {
-        ref.read(talhaoCardNdviEnabledProvider(farmId).notifier).state =
-            selection.first;
+        setTalhaoCardNdviEnabledForFarm(
+          ref,
+          fieldIds: fieldIds,
+          enabled: selection.first,
+        );
       },
+    );
+  }
+}
+
+/// Alterna mapa/NDVI só neste talhão (ícone na barra de ações do card).
+class TalhaoCardNdviModeIconButton extends ConsumerWidget {
+  const TalhaoCardNdviModeIconButton({super.key, required this.fieldId});
+
+  final String fieldId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final ndvi = ref.watch(talhaoCardNdviEnabledProvider(fieldId));
+    return IconButton(
+      tooltip: ndvi ? 'Ver mapa no card' : 'Ver NDVI no card',
+      icon: Icon(ndvi ? Icons.map_outlined : Icons.grass_outlined, size: 20),
+      onPressed: () => setTalhaoCardNdviEnabled(ref, fieldId, !ndvi),
     );
   }
 }

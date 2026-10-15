@@ -55,6 +55,8 @@ class _ClientFormScreenState extends ConsumerState<ClientFormScreen> {
   // ── Seção 5 — Observações
   final _observacoesController = TextEditingController();
 
+  bool _validateAfterSubmit = false;
+
   @override
   void dispose() {
     _nomeController.dispose();
@@ -276,6 +278,7 @@ class _ClientFormScreenState extends ConsumerState<ClientFormScreen> {
   }
 
   Future<void> _saveClient() async {
+    setState(() => _validateAfterSubmit = true);
     if (_formKey.currentState?.validate() != true) return;
     HapticFeedback.mediumImpact();
 
@@ -343,6 +346,9 @@ class _ClientFormScreenState extends ConsumerState<ClientFormScreen> {
             Expanded(
               child: Form(
                 key: _formKey,
+                autovalidateMode: _validateAfterSubmit
+                    ? AutovalidateMode.onUserInteraction
+                    : AutovalidateMode.disabled,
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.all(20),
                   child: Column(
