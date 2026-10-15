@@ -11,7 +11,6 @@ import '../../domain/client.dart';
 import '../farm_map_download.dart';
 import '../providers/clients_providers.dart';
 import '../providers/field_providers.dart';
-import '../providers/talhao_card_ndvi_provider.dart';
 import '../widgets/client_detail_sub_widgets.dart';
 import '../widgets/farm_linked_field_list.dart';
 import '../widgets/link_drawing_to_farm_sheet.dart';
@@ -131,7 +130,6 @@ class _ClientFarmWithTalhoesSectionState
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
               const Spacer(),
-              TalhaoCardNdviToggle(farmId: farm.id),
               TextButton.icon(
                 onPressed: () => context.go(
                   farmMapCreateUri(clientId: client.id, farmId: farm.id),

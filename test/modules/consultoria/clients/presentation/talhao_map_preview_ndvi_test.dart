@@ -181,6 +181,113 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pump();
   });
+
+  testWidgets('path morto cai para imageUrl e monta overlay', (tester) async {
+    final previousOnError = FlutterError.onError;
+    FlutterError.onError = (details) {
+      final message = details.exceptionAsString();
+      if (message.contains('ClientException') ||
+          message.contains('HTTP') ||
+          message.contains('SocketException')) {
+        return;
+      }
+      previousOnError?.call(details);
+    };
+    addTearDown(() => FlutterError.onError = previousOnError);
+
+    await tester.pumpWidget(
+      _host(
+        TalhaoMapPreviewWidget(
+          vertices: _triangle,
+          nome: 'Th 10',
+          areaHa: 95,
+          showNdvi: true,
+          ndviIsColormap: true,
+          ndviLocalPath: '/tmp/soloforte_ndvi_missing.png',
+          ndviImageUrl: 'https://example.invalid/ndvi.png',
+          ndviCaption: '-0.20 · 10/10',
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.byKey(const Key('ndvi-polygon-overlay')), findsOneWidget);
+    expect(find.text('Sem NDVI'), findsNothing);
+    expect(find.text('-0.20 · 10/10'), findsOneWidget);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump();
+  });
+
+  testWidgets('colormap com caption e sem arquivo não mostra Sem NDVI', (
+    tester,
+  ) async {
+    final previousOnError = FlutterError.onError;
+    FlutterError.onError = (details) {
+      final message = details.exceptionAsString();
+      if (message.contains('ClientException') ||
+          message.contains('basemaps.cartocdn.com')) {
+        return;
+      }
+      previousOnError?.call(details);
+    };
+    addTearDown(() => FlutterError.onError = previousOnError);
+
+    await tester.pumpWidget(
+      _host(
+        TalhaoMapPreviewWidget(
+          vertices: _triangle,
+          nome: 'Th 10',
+          areaHa: 95,
+          showNdvi: true,
+          ndviIsColormap: true,
+          ndviLocalPath: '/tmp/soloforte_ndvi_missing.png',
+          ndviCaption: '-0.20 · 10/10',
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.byKey(const Key('ndvi-polygon-overlay')), findsNothing);
+    expect(find.text('Sem NDVI'), findsNothing);
+    expect(find.text('-0.20 · 10/10'), findsOneWidget);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump();
+  });
+
+  testWidgets('modo mapa não mostra Histórico nem overlay NDVI', (tester) async {
+    final previousOnError = FlutterError.onError;
+    FlutterError.onError = (details) {
+      final message = details.exceptionAsString();
+      if (message.contains('ClientException') ||
+          message.contains('basemaps.cartocdn.com')) {
+        return;
+      }
+      previousOnError?.call(details);
+    };
+    addTearDown(() => FlutterError.onError = previousOnError);
+
+    await tester.pumpWidget(
+      _host(
+        TalhaoMapPreviewWidget(
+          vertices: _triangle,
+          nome: 'Th 10',
+          areaHa: 95,
+          ndviLocalPath: png.path,
+          onNdviImageTap: () {},
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.byKey(const Key('ndvi-polygon-overlay')), findsNothing);
+    expect(find.text('Histórico'), findsNothing);
+    expect(find.text('Sem NDVI'), findsNothing);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump();
+  });
 }
 
 const _triangle = <LatLng>[
