@@ -216,9 +216,11 @@ void main() {
     await tester.pump(const Duration(milliseconds: 100));
 
     expect(counter.value, 0);
-    expect(find.text('Mapa'), findsOneWidget);
+    expect(find.text('Mapa'), findsNothing);
+    expect(find.text('NDVI'), findsNothing);
+    expect(find.byTooltip('Ver NDVI no card'), findsWidgets);
 
-    await tester.tap(find.text('NDVI'));
+    await tester.tap(find.byTooltip('Ver NDVI no card').first);
     await tester.pump();
     await tester.pump();
 

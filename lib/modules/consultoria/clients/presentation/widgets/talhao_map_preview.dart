@@ -135,9 +135,10 @@ class TalhaoMapPreviewWidget extends StatelessWidget {
   }
 
   /// Raster no card (Sentinel colormap ou preview Planet recortado ao polígono).
+  /// Path no registro sem arquivo no disco não conta — cai para [ndviImageUrl].
   ImageProvider<Object>? get _ndviImageProvider {
     if (!showNdvi) return null;
-    final path = ndviLocalPath;
+    final path = ndviLocalPath?.trim();
     if (path != null && path.isNotEmpty) {
       final file = File(path);
       if (file.existsSync()) return FileImage(file);
@@ -149,9 +150,11 @@ class TalhaoMapPreviewWidget extends StatelessWidget {
 
   Widget _buildMapSlot(ImageProvider<Object>? ndviImage) {
     final badge = ndviBadge?.trim();
+    final hasCaption = ndviCaption != null && ndviCaption!.trim().isNotEmpty;
     final showLegend =
         showNdvi &&
         ndviImage == null &&
+        !hasCaption &&
         (badge == null || badge.isEmpty) &&
         vertices.length >= 3;
     Widget body = vertices.length < 3
@@ -186,7 +189,7 @@ class TalhaoMapPreviewWidget extends StatelessWidget {
               ),
             ),
           ),
-          if (openHistory != null)
+          if (showNdvi && openHistory != null)
             Positioned(
               right: 8,
               bottom: 8,
@@ -198,14 +201,17 @@ class TalhaoMapPreviewWidget extends StatelessWidget {
   }
 
   Widget _buildMap(ImageProvider<Object>? ndviImage) {
+    // Colormap preenche o polígono; satélite competiria com as cores NDVI.
+    // Preview RGB (Planet) e modo mapa mantêm o basemap.
+    final hideSatellite = ndviIsColormap && ndviImage != null;
     // Mesma resolução de provedor da camada satélite do mapa principal
     // (MapTiler com key; fallback licenciado sem key). Auditoria A-001.
-    final tileConfig = ndviImage == null
-        ? MapConfig.tileConfigForLayer(
+    final tileConfig = hideSatellite
+        ? null
+        : MapConfig.tileConfigForLayer(
             LayerType.satellite,
             mapTilerApiKey: MapConfig.mapTilerApiKey,
-          )
-        : null;
+          );
     return FlutterMap(
       options: MapOptions(
         initialCameraFit: CameraFit.bounds(
