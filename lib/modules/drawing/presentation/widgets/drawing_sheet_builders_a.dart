@@ -288,7 +288,10 @@ extension _DrawingSheetBuildersA on _DrawingSheetState {
                           ),
                           trailing: const Icon(Icons.chevron_right),
                           onTap: () {
-                            widget.controller.selectFeature(f);
+                            widget.controller.selectFeature(
+                              f,
+                              actionsMode: DrawingFeatureActionsMode.full,
+                            );
                             widget.onFocusFeature?.call(f);
                             Navigator.of(ctx).pop();
                           },
