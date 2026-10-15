@@ -8,6 +8,7 @@ import 'package:soloforte_app/core/feature_flags/feature_flag_model.dart';
 import 'package:soloforte_app/core/feature_flags/feature_flag_providers.dart';
 import 'package:soloforte_app/modules/drawing/data/repositories/drawing_repository.dart';
 import 'package:soloforte_app/modules/drawing/domain/drawing_state.dart';
+import 'package:soloforte_app/modules/drawing/domain/drawing_feature_actions_mode.dart';
 import 'package:soloforte_app/modules/drawing/domain/models/drawing_models.dart';
 import 'package:soloforte_app/modules/drawing/presentation/controllers/drawing_controller.dart';
 import 'package:soloforte_app/ui/components/map/map_bottom_sheet.dart';
@@ -34,7 +35,10 @@ void main() {
     final hostKey = GlobalKey<_MapBottomSheetHostState>();
     addTearDown(controller.dispose);
 
-    controller.selectFeature(controller.features.single);
+    controller.selectFeature(
+      controller.features.single,
+      actionsMode: DrawingFeatureActionsMode.full,
+    );
 
     await _pumpHost(tester, hostKey, controller);
 
@@ -58,7 +62,10 @@ void main() {
     final hostKey = GlobalKey<_MapBottomSheetHostState>();
     addTearDown(controller.dispose);
 
-    controller.selectFeature(controller.features.single);
+    controller.selectFeature(
+      controller.features.single,
+      actionsMode: DrawingFeatureActionsMode.full,
+    );
 
     await _pumpHost(tester, hostKey, controller);
 
@@ -78,7 +85,10 @@ void main() {
     final hostKey = GlobalKey<_MapBottomSheetHostState>();
     addTearDown(controller.dispose);
 
-    controller.selectFeature(controller.features.single);
+    controller.selectFeature(
+      controller.features.single,
+      actionsMode: DrawingFeatureActionsMode.full,
+    );
 
     await _pumpHost(tester, hostKey, controller);
 
@@ -104,7 +114,10 @@ void main() {
     final hostKey = GlobalKey<_MapBottomSheetHostState>();
     addTearDown(controller.dispose);
 
-    controller.selectFeature(controller.features.single);
+    controller.selectFeature(
+      controller.features.single,
+      actionsMode: DrawingFeatureActionsMode.full,
+    );
 
     await _pumpHost(tester, hostKey, controller);
 
@@ -139,7 +152,10 @@ void main() {
     final hostKey = GlobalKey<_MapBottomSheetHostState>();
     addTearDown(controller.dispose);
 
-    controller.selectFeature(controller.features.single);
+    controller.selectFeature(
+      controller.features.single,
+      actionsMode: DrawingFeatureActionsMode.full,
+    );
     final original = (controller.selectedFeature!.geometry as DrawingPolygon)
         .coordinates
         .first
@@ -180,7 +196,10 @@ void main() {
     final hostKey = GlobalKey<_MapBottomSheetHostState>();
     addTearDown(controller.dispose);
 
-    controller.selectFeature(controller.features.single);
+    controller.selectFeature(
+      controller.features.single,
+      actionsMode: DrawingFeatureActionsMode.full,
+    );
 
     await _pumpHost(tester, hostKey, controller);
 
@@ -246,7 +265,10 @@ void main() {
     await _pumpHost(tester, hostKey, controller);
 
     for (var i = 0; i < 3; i++) {
-      controller.selectFeature(controller.features.single);
+      controller.selectFeature(
+      controller.features.single,
+      actionsMode: DrawingFeatureActionsMode.full,
+    );
       hostKey.currentState!.show();
       await tester.pumpAndSettle();
 
