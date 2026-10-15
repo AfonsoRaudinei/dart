@@ -228,16 +228,18 @@ class _AgendaAiSheetState extends ConsumerState<_AgendaAiSheet> {
       final start = now.add(const Duration(hours: 1));
       final end = start.add(const Duration(hours: 1));
 
-      await ref.read(agendaAiVisitWriterProvider).createSuggestedVisit(
-        AgendaAiSuggestedVisitRequest(
-          clientId: rec['clientId'] as String,
-          clientName: rec['clientName'] as String? ?? 'Cliente',
-          titulo: 'Visita sugerida IA • ${rec['clientName'] ?? 'Cliente'}',
-          dataInicioPlanejada: start,
-          dataFimPlanejada: end,
-          currentUserId: LocalSessionIdentity.resolveUserId(),
-        ),
-      );
+      await ref
+          .read(agendaAiVisitWriterProvider)
+          .createSuggestedVisit(
+            AgendaAiSuggestedVisitRequest(
+              clientId: rec['clientId'] as String,
+              clientName: rec['clientName'] as String? ?? 'Cliente',
+              titulo: 'Visita sugerida IA • ${rec['clientName'] ?? 'Cliente'}',
+              dataInicioPlanejada: start,
+              dataFimPlanejada: end,
+              currentUserId: LocalSessionIdentity.resolveUserId(),
+            ),
+          );
 
       if (!mounted) return;
       final userId = LocalSessionIdentity.resolveUserId();
@@ -273,15 +275,14 @@ class _AgendaAiSheetState extends ConsumerState<_AgendaAiSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final height = MediaQuery.of(context).size.height * 0.86;
+    final keyboard = MediaQuery.viewInsetsOf(context).bottom;
+    final screenHeight = MediaQuery.sizeOf(context).height;
+    final maxHeight = (screenHeight - keyboard).clamp(280.0, screenHeight);
+    final height = (screenHeight * 0.86).clamp(280.0, maxHeight);
     final isIos = soloForteSheetIsIos(context);
     // Modal já pinta prata iOS — evitar segundo painel opaco (“dois sheets”).
-    final sheetBg = isIos
-        ? Colors.transparent
-        : const Color(0xFF1C1C1E);
-    final sheetRadius = isIos
-        ? SoloForteSheetSkinIos.sheetRadius
-        : 24.0;
+    final sheetBg = isIos ? Colors.transparent : const Color(0xFF1C1C1E);
+    final sheetRadius = isIos ? SoloForteSheetSkinIos.sheetRadius : 24.0;
     final handleColor = isIos
         ? SoloForteSheetSkinIos.handleColor
         : const Color(0xFF3A3A3C);
@@ -292,16 +293,12 @@ class _AgendaAiSheetState extends ConsumerState<_AgendaAiSheet> {
     final chatPanelBg = isIos
         ? SoloForteSheetSkinIos.cardBackground
         : const Color(0xFFF7F7F9);
-    final chatPanelRadius = isIos
-        ? SoloForteSheetSkinIos.cardRadius
-        : 12.0;
+    final chatPanelRadius = isIos ? SoloForteSheetSkinIos.cardRadius : 12.0;
     final userBubble = isIos
         ? SoloForteSheetSkinIos.badgeBackground
         : const Color(0xFFE7F7EC);
     final aiBubble = isIos ? Colors.white : Colors.white;
-    final inputFill = isIos
-        ? Colors.white
-        : const Color(0xFF2C2C2E);
+    final inputFill = isIos ? Colors.white : const Color(0xFF2C2C2E);
     final inputHint = isIos
         ? SoloForteSheetSkinIos.subtitleColor
         : const Color(0xFF8E8E93);
@@ -312,102 +309,77 @@ class _AgendaAiSheetState extends ConsumerState<_AgendaAiSheet> {
     final ctaRadius = isIos ? SoloForteSheetSkinIos.ctaRadius : 12.0;
     final chatTextColor = isIos ? SoloForteSheetSkinIos.titleColor : null;
 
-    return Container(
-      height: height,
-      decoration: BoxDecoration(
-        color: sheetBg,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(sheetRadius)),
-        border: isIos
-            ? const Border(
-                top: BorderSide(color: SoloForteSheetSkinIos.sheetBorder),
-              )
-            : null,
-      ),
-      child: Column(
-        children: [
-          const SizedBox(height: 10),
-          Container(
-            width: isIos
-                ? SoloForteSheetSkinIos.handleSize.width
-                : 36,
-            height: isIos
-                ? SoloForteSheetSkinIos.handleSize.height
-                : 4,
-            decoration: BoxDecoration(
-              color: handleColor,
-              borderRadius: BorderRadius.circular(999),
-            ),
+    return Padding(
+      padding: EdgeInsets.only(bottom: keyboard),
+      child: Container(
+        height: height,
+        decoration: BoxDecoration(
+          color: sheetBg,
+          borderRadius: BorderRadius.vertical(
+            top: Radius.circular(sheetRadius),
           ),
-          const SizedBox(height: 12),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              children: [
-                Icon(Icons.auto_awesome, color: iconColor),
-                const SizedBox(width: 8),
-                Text(
-                  'Assistente IA • Agenda + Carteira',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: titleColor,
+          border: isIos
+              ? const Border(
+                  top: BorderSide(color: SoloForteSheetSkinIos.sheetBorder),
+                )
+              : null,
+        ),
+        child: Column(
+          children: [
+            const SizedBox(height: 10),
+            Container(
+              width: isIos ? SoloForteSheetSkinIos.handleSize.width : 36,
+              height: isIos ? SoloForteSheetSkinIos.handleSize.height : 4,
+              decoration: BoxDecoration(
+                color: handleColor,
+                borderRadius: BorderRadius.circular(999),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                children: [
+                  Icon(Icons.auto_awesome, color: iconColor),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Assistente IA • Agenda + Carteira',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: titleColor,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          const SizedBox(height: 12),
-          Expanded(
-            child: _loading
-                ? Center(
-                    child: CircularProgressIndicator(
-                      color: isIos ? SoloForteSheetSkinIos.iconStroke : null,
-                    ),
-                  )
-                : _error != null
-                ? Center(
-                    child: Text(
-                      _error!,
-                      style: TextStyle(color: titleColor),
-                    ),
-                  )
-                : ListView(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                    children: [
-                      Text(
-                        'Sugestão de visita',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w700,
-                          color: titleColor,
-                        ),
+            const SizedBox(height: 12),
+            Expanded(
+              child: _loading
+                  ? Center(
+                      child: CircularProgressIndicator(
+                        color: isIos ? SoloForteSheetSkinIos.iconStroke : null,
                       ),
-                      const SizedBox(height: 8),
-                      if (_recommendations.isEmpty)
-                        Card(
-                          color: isIos
-                              ? SoloForteSheetSkinIos.cardBackground
-                              : null,
-                          shape: isIos
-                              ? RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(
-                                    SoloForteSheetSkinIos.cardRadius,
-                                  ),
-                                  side: const BorderSide(
-                                    color: SoloForteSheetSkinIos.cardBorder,
-                                  ),
-                                )
-                              : null,
-                          child: Padding(
-                            padding: const EdgeInsets.all(12),
-                            child: Text(
-                              'Sem sugestão elegível no momento.',
-                              style: TextStyle(color: titleColor),
-                            ),
+                    )
+                  : _error != null
+                  ? Center(
+                      child: Text(_error!, style: TextStyle(color: titleColor)),
+                    )
+                  : ListView(
+                      keyboardDismissBehavior:
+                          ScrollViewKeyboardDismissBehavior.onDrag,
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                      children: [
+                        Text(
+                          'Sugestão de visita',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                            color: titleColor,
                           ),
-                        )
-                      else
-                        ..._recommendations.map(
-                          (rec) => Card(
+                        ),
+                        const SizedBox(height: 8),
+                        if (_recommendations.isEmpty)
+                          Card(
                             color: isIos
                                 ? SoloForteSheetSkinIos.cardBackground
                                 : null,
@@ -421,168 +393,200 @@ class _AgendaAiSheetState extends ConsumerState<_AgendaAiSheet> {
                                     ),
                                   )
                                 : null,
-                            child: ListTile(
-                              title: Text(
-                                rec['clientName'] as String? ?? 'Cliente',
+                            child: Padding(
+                              padding: const EdgeInsets.all(12),
+                              child: Text(
+                                'Sem sugestão elegível no momento.',
                                 style: TextStyle(color: titleColor),
                               ),
-                              subtitle: Text(
-                                rec['reason'] as String? ?? '',
-                                style: TextStyle(
-                                  color: isIos
-                                      ? SoloForteSheetSkinIos.subtitleColor
-                                      : null,
-                                ),
-                              ),
-                              trailing: _creatingVisit
-                                  ? SizedBox(
-                                      width: 20,
-                                      height: 20,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        color: isIos
-                                            ? SoloForteSheetSkinIos.iconStroke
-                                            : null,
+                            ),
+                          )
+                        else
+                          ..._recommendations.map(
+                            (rec) => Card(
+                              color: isIos
+                                  ? SoloForteSheetSkinIos.cardBackground
+                                  : null,
+                              shape: isIos
+                                  ? RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(
+                                        SoloForteSheetSkinIos.cardRadius,
+                                      ),
+                                      side: const BorderSide(
+                                        color: SoloForteSheetSkinIos.cardBorder,
                                       ),
                                     )
-                                  : IconButton(
-                                      icon: Icon(
-                                        Icons.add_task,
-                                        color: isIos
-                                            ? SoloForteSheetSkinIos.iconStroke
-                                            : null,
+                                  : null,
+                              child: ListTile(
+                                title: Text(
+                                  rec['clientName'] as String? ?? 'Cliente',
+                                  style: TextStyle(color: titleColor),
+                                ),
+                                subtitle: Text(
+                                  rec['reason'] as String? ?? '',
+                                  style: TextStyle(
+                                    color: isIos
+                                        ? SoloForteSheetSkinIos.subtitleColor
+                                        : null,
+                                  ),
+                                ),
+                                trailing: _creatingVisit
+                                    ? SizedBox(
+                                        width: 20,
+                                        height: 20,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: isIos
+                                              ? SoloForteSheetSkinIos.iconStroke
+                                              : null,
+                                        ),
+                                      )
+                                    : IconButton(
+                                        icon: Icon(
+                                          Icons.add_task,
+                                          color: isIos
+                                              ? SoloForteSheetSkinIos.iconStroke
+                                              : null,
+                                        ),
+                                        onPressed: () =>
+                                            _createVisitFromRecommendation(rec),
                                       ),
-                                      onPressed: () =>
-                                          _createVisitFromRecommendation(rec),
-                                    ),
+                              ),
                             ),
                           ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Chat rápido',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                            color: titleColor,
+                          ),
                         ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Chat rápido',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w700,
-                          color: titleColor,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: chatPanelBg,
-                          borderRadius: BorderRadius.circular(chatPanelRadius),
-                          border: isIos
-                              ? Border.all(
-                                  color: SoloForteSheetSkinIos.cardBorder,
-                                )
-                              : null,
-                        ),
-                        child: Column(
-                          children: [
-                            if (_chat.isEmpty)
-                              Align(
-                                alignment: Alignment.centerLeft,
-                                child: Text(
-                                  'Pergunte algo sobre a sugestão e próximos passos.',
-                                  style: TextStyle(color: chatTextColor),
-                                ),
-                              )
-                            else
-                              ..._chat.map(
-                                (m) => Align(
-                                  alignment: m.isUser
-                                      ? Alignment.centerRight
-                                      : Alignment.centerLeft,
-                                  child: Container(
-                                    margin: const EdgeInsets.only(bottom: 8),
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 10,
-                                      vertical: 8,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: m.isUser ? userBubble : aiBubble,
-                                      borderRadius: BorderRadius.circular(10),
-                                      border: isIos
-                                          ? Border.all(
-                                              color: SoloForteSheetSkinIos
-                                                  .cardBorder,
-                                            )
-                                          : null,
-                                    ),
-                                    child: Text(
-                                      m.text,
-                                      style: TextStyle(color: chatTextColor),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            const SizedBox(height: 8),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: TextField(
-                                    controller: _chatController,
-                                    style: TextStyle(color: chatTextColor),
-                                    decoration: InputDecoration(
-                                      hintText:
-                                          'Ex: qual abordagem usar nessa visita?',
-                                      hintStyle: TextStyle(color: inputHint),
-                                      filled: true,
-                                      fillColor: inputFill,
-                                      border: OutlineInputBorder(
-                                        borderSide: isIos
-                                            ? const BorderSide(
-                                                color: SoloForteSheetSkinIos
-                                                    .cardBorder,
-                                              )
-                                            : BorderSide.none,
-                                        borderRadius: const BorderRadius.all(
-                                          Radius.circular(12),
-                                        ),
-                                      ),
-                                      enabledBorder: OutlineInputBorder(
-                                        borderSide: isIos
-                                            ? const BorderSide(
-                                                color: SoloForteSheetSkinIos
-                                                    .cardBorder,
-                                              )
-                                            : BorderSide.none,
-                                        borderRadius: const BorderRadius.all(
-                                          Radius.circular(12),
-                                        ),
-                                      ),
-                                      isDense: true,
-                                    ),
-                                    onSubmitted: (_) => _sendChat(),
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                ElevatedButton(
-                                  onPressed: _sendChat,
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: ctaBg,
-                                    foregroundColor: ctaFg,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius:
-                                          BorderRadius.circular(ctaRadius),
-                                    ),
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 16,
-                                      vertical: 10,
-                                    ),
-                                  ),
-                                  child: const Text('Enviar'),
-                                ),
-                              ],
+                        const SizedBox(height: 8),
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: chatPanelBg,
+                            borderRadius: BorderRadius.circular(
+                              chatPanelRadius,
                             ),
-                          ],
+                            border: isIos
+                                ? Border.all(
+                                    color: SoloForteSheetSkinIos.cardBorder,
+                                  )
+                                : null,
+                          ),
+                          child: Column(
+                            children: [
+                              if (_chat.isEmpty)
+                                Align(
+                                  alignment: Alignment.centerLeft,
+                                  child: Text(
+                                    'Pergunte algo sobre a sugestão e próximos passos.',
+                                    style: TextStyle(color: chatTextColor),
+                                  ),
+                                )
+                              else
+                                ..._chat.map(
+                                  (m) => Align(
+                                    alignment: m.isUser
+                                        ? Alignment.centerRight
+                                        : Alignment.centerLeft,
+                                    child: Container(
+                                      margin: const EdgeInsets.only(bottom: 8),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 10,
+                                        vertical: 8,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: m.isUser ? userBubble : aiBubble,
+                                        borderRadius: BorderRadius.circular(10),
+                                        border: isIos
+                                            ? Border.all(
+                                                color: SoloForteSheetSkinIos
+                                                    .cardBorder,
+                                              )
+                                            : null,
+                                      ),
+                                      child: Text(
+                                        m.text,
+                                        style: TextStyle(color: chatTextColor),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              const SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: TextField(
+                                      controller: _chatController,
+                                      onTapOutside: (_) => FocusManager
+                                          .instance
+                                          .primaryFocus
+                                          ?.unfocus(),
+                                      style: TextStyle(color: chatTextColor),
+                                      decoration: InputDecoration(
+                                        hintText:
+                                            'Ex: qual abordagem usar nessa visita?',
+                                        hintStyle: TextStyle(color: inputHint),
+                                        filled: true,
+                                        fillColor: inputFill,
+                                        border: OutlineInputBorder(
+                                          borderSide: isIos
+                                              ? const BorderSide(
+                                                  color: SoloForteSheetSkinIos
+                                                      .cardBorder,
+                                                )
+                                              : BorderSide.none,
+                                          borderRadius: const BorderRadius.all(
+                                            Radius.circular(12),
+                                          ),
+                                        ),
+                                        enabledBorder: OutlineInputBorder(
+                                          borderSide: isIos
+                                              ? const BorderSide(
+                                                  color: SoloForteSheetSkinIos
+                                                      .cardBorder,
+                                                )
+                                              : BorderSide.none,
+                                          borderRadius: const BorderRadius.all(
+                                            Radius.circular(12),
+                                          ),
+                                        ),
+                                        isDense: true,
+                                      ),
+                                      onSubmitted: (_) => _sendChat(),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  ElevatedButton(
+                                    onPressed: _sendChat,
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: ctaBg,
+                                      foregroundColor: ctaFg,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(
+                                          ctaRadius,
+                                        ),
+                                      ),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 16,
+                                        vertical: 10,
+                                      ),
+                                    ),
+                                    child: const Text('Enviar'),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-          ),
-        ],
+                      ],
+                    ),
+            ),
+          ],
+        ),
       ),
     );
   }

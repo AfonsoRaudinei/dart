@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../../core/ui/sheets/sheet_keyboard_inset.dart';
 import '../../../core/ui/sheets/sheet_tokens.dart';
 import '../../../core/ui/sheets/soloforte_sheet.dart';
 import '../../../core/ui/sheets/widgets/sheet_input_field.dart';
@@ -46,7 +47,10 @@ class _MapCoordinateSearchSheetState extends State<MapCoordinateSearchSheet> {
   @override
   Widget build(BuildContext context) {
     final isIos = soloForteSheetIsIos(context);
-    final bottom = MediaQuery.paddingOf(context).bottom;
+    final bottom = sheetFormKeyboardBottomPadding(
+      safeBottom: MediaQuery.paddingOf(context).bottom,
+      keyboard: MediaQuery.viewInsetsOf(context).bottom,
+    );
     final titleColor = isIos
         ? SoloForteSheetSkinIos.titleColor
         : SoloForteSheetTokens.titleColor;
@@ -67,7 +71,8 @@ class _MapCoordinateSearchSheetState extends State<MapCoordinateSearchSheet> {
     return SafeArea(
       top: false,
       child: SingleChildScrollView(
-        padding: EdgeInsets.fromLTRB(20, 8, 20, 16 + bottom),
+        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+        padding: EdgeInsets.fromLTRB(20, 8, 20, bottom),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           mainAxisSize: MainAxisSize.min,

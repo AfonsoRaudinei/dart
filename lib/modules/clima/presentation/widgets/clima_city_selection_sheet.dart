@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:soloforte_app/core/ui/sheets/sheet_keyboard_inset.dart';
 import 'package:soloforte_app/core/ui/sheets/sheet_tokens.dart';
 import 'package:soloforte_app/core/ui/sheets/soloforte_sheet.dart';
 import 'package:soloforte_app/core/ui/sheets/widgets/sheet_input_field.dart';
@@ -47,7 +48,8 @@ class ClimaCitySelectionSheet extends StatefulWidget {
   final Future<void> Function(ClimaSelectedCity) onSelected;
 
   @override
-  State<ClimaCitySelectionSheet> createState() => _ClimaCitySelectionSheetState();
+  State<ClimaCitySelectionSheet> createState() =>
+      _ClimaCitySelectionSheetState();
 }
 
 class _ClimaCitySelectionSheetState extends State<ClimaCitySelectionSheet> {
@@ -183,7 +185,8 @@ class _ClimaCitySelectionSheetState extends State<ClimaCitySelectionSheet> {
     if (coords == null) {
       setState(() {
         _geocoding = false;
-        _error = 'Não foi possível localizar ${municipio.nome}, ${municipio.uf}.';
+        _error =
+            'Não foi possível localizar ${municipio.nome}, ${municipio.uf}.';
       });
       return;
     }
@@ -205,7 +208,10 @@ class _ClimaCitySelectionSheetState extends State<ClimaCitySelectionSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final bottomPad = MediaQuery.paddingOf(context).bottom;
+    final bottomPad = sheetFormKeyboardBottomPadding(
+      safeBottom: MediaQuery.paddingOf(context).bottom,
+      keyboard: MediaQuery.viewInsetsOf(context).bottom,
+    );
     final isIos = soloForteSheetIsIos(context);
     final titleColor = isIos
         ? SoloForteSheetSkinIos.titleColor
@@ -235,8 +241,9 @@ class _ClimaCitySelectionSheetState extends State<ClimaCitySelectionSheet> {
         ? SoloForteSheetSkinIos.cardBackground
         : SoloForteSheetTokens.inputBackground;
 
-    return Padding(
-      padding: EdgeInsets.fromLTRB(20, 4, 20, 16 + bottomPad),
+    return SingleChildScrollView(
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+      padding: EdgeInsets.fromLTRB(20, 4, 20, bottomPad),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -253,9 +260,7 @@ class _ClimaCitySelectionSheetState extends State<ClimaCitySelectionSheet> {
           if (_loadingEstados)
             Padding(
               padding: const EdgeInsets.all(24),
-              child: Center(
-                child: CircularProgressIndicator(color: accent),
-              ),
+              child: Center(child: CircularProgressIndicator(color: accent)),
             )
           else ...[
             DropdownButtonFormField<IbgeEstado>(
@@ -263,9 +268,9 @@ class _ClimaCitySelectionSheetState extends State<ClimaCitySelectionSheet> {
               dropdownColor: dropdownBg,
               style: TextStyle(color: inputText, fontSize: 16),
               iconEnabledColor: categoryLabel,
-              decoration: _fieldDecoration(isIos).copyWith(
-                labelText: 'Estado (UF)',
-              ),
+              decoration: _fieldDecoration(
+                isIos,
+              ).copyWith(labelText: 'Estado (UF)'),
               items: _estados
                   .map(
                     (e) => DropdownMenuItem(
@@ -337,8 +342,7 @@ class _ClimaCitySelectionSheetState extends State<ClimaCitySelectionSheet> {
                         itemBuilder: (context, index) {
                           final municipio = _filteredMunicipios[index];
                           final label = '${municipio.nome}, ${municipio.uf}';
-                          final isSelected =
-                              widget.selectedCity?.nome == label;
+                          final isSelected = widget.selectedCity?.nome == label;
                           return Material(
                             color: Colors.transparent,
                             child: InkWell(
