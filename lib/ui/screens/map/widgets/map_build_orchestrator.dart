@@ -19,6 +19,7 @@ import '../../../../core/utils/map_logger.dart';
 import '../../../../modules/drawing/presentation/providers/drawing_provider.dart';
 import '../../../../modules/drawing/presentation/coordinators/drawing_close_coordinator.dart';
 import '../../../../modules/drawing/domain/drawing_state.dart';
+import '../../../../modules/drawing/domain/drawing_feature_actions_mode.dart';
 import '../../../../modules/drawing/domain/drawing_utils.dart';
 import '../../../../modules/drawing/domain/models/drawing_models.dart';
 import '../../../../modules/drawing/presentation/widgets/drawing_layers.dart';
@@ -293,7 +294,10 @@ class MapBuildOrchestrator extends ConsumerWidget {
                     if (drawCtrl.isMultiSelectEnabled) {
                       drawCtrl.toggleFeatureSelection(drawingFeature);
                     } else {
-                      drawCtrl.selectFeature(drawingFeature);
+                      drawCtrl.selectFeature(
+                        drawingFeature,
+                        actionsMode: DrawingFeatureActionsMode.compact,
+                      );
                     }
                     HapticFeedback.selectionClick();
                     // 🔧 FIX-DRAW-SYNC: Reutilizar MapBottomSheet existente
@@ -393,7 +397,10 @@ class MapBuildOrchestrator extends ConsumerWidget {
                   onFeatureTap: (feature) {
                     final drawCtrl = ref.read(drawingControllerProvider);
                     if (drawCtrl.suppressesMapContextTaps) return;
-                    ref.read(drawingControllerProvider).selectFeature(feature);
+                    ref.read(drawingControllerProvider).selectFeature(
+                      feature,
+                      actionsMode: DrawingFeatureActionsMode.compact,
+                    );
                     HapticFeedback.selectionClick();
                   },
                   onDrawingComplete: finishDrawing,
