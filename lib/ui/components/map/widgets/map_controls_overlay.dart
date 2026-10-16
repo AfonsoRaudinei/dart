@@ -160,8 +160,6 @@ class _MapControlsOverlayState extends ConsumerState<MapControlsOverlay> {
             mainAxisSize: MainAxisSize.min,
             children: [
               // Indicador unificado: offline / online / clima no mapa
-              const _MapPinsToggle(),
-              const SizedBox(width: 6),
               const _MapStatusIndicator(),
               const SizedBox(width: 6),
               // Botão de Localização com 3 estados
@@ -479,7 +477,7 @@ class _MapButtonLabel extends StatelessWidget {
   }
 }
 
-/// Botão circular do topo direito (Pinos / Chuva / Localização).
+/// Botão circular do topo direito (Chuva / Localização).
 /// Diferencia da coluna direita, que permanece quadrado com r=12.
 class _MapRoundToggleButton extends StatelessWidget {
   const _MapRoundToggleButton({
@@ -488,7 +486,6 @@ class _MapRoundToggleButton extends StatelessWidget {
     required this.iconColor,
     required this.isOn,
     this.showSlash,
-    this.iconSize = 22,
     this.onTap,
     this.onLongPress,
   });
@@ -501,7 +498,6 @@ class _MapRoundToggleButton extends StatelessWidget {
   /// Quando null, o risco segue `!isOn`. Offline da chuva passa `false`
   /// (`wifi_off` já comunica desligado).
   final bool? showSlash;
-  final double iconSize;
   final VoidCallback? onTap;
   final VoidCallback? onLongPress;
 
@@ -531,7 +527,7 @@ class _MapRoundToggleButton extends StatelessWidget {
           child: Stack(
             alignment: Alignment.center,
             children: [
-              Icon(icon, size: iconSize, color: iconColor),
+              Icon(icon, size: 22, color: iconColor),
               if (slash) const Positioned.fill(child: _IconOffSlash()),
             ],
           ),
@@ -587,31 +583,6 @@ class _IconOffSlashPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
-
-/// Toggle de pinos no mapa (`showMarkersProvider`).
-class _MapPinsToggle extends ConsumerWidget {
-  const _MapPinsToggle();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final show = ref.watch(showMarkersProvider);
-    return Semantics(
-      button: true,
-      label: show ? 'Ocultar pinos' : 'Mostrar pinos',
-      child: _MapRoundToggleButton(
-        buttonKey: const Key('map_control_pins'),
-        icon: SFIcons.pinFill,
-        iconSize: 20,
-        iconColor: show ? const Color(0xFF1976D2) : Colors.grey.shade600,
-        isOn: show,
-        onTap: () {
-          HapticFeedback.selectionClick();
-          ref.read(showMarkersProvider.notifier).toggle();
-        },
-      ),
-    );
-  }
 }
 
 /// Indicador unificado do mapa:
