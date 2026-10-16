@@ -45,9 +45,9 @@ class _RelatoriosProducerSelector extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.premiumSurface,
         borderRadius: BorderRadius.circular(PremiumTokens.borderRadiusSm),
-        border: Border.all(color: const Color(0xFFD1D1D6)),
+        border: Border.all(color: context.premiumHairline),
         boxShadow: PremiumTokens.premiumShadow,
       ),
       child: DropdownButtonHideUnderline(
