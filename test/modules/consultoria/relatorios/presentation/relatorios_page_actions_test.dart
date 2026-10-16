@@ -487,7 +487,9 @@ void main() {
 
     await _selectSegment(tester, 'Ocorrências');
 
-    expect(find.textContaining('Selecione um produtor'), findsWidgets);
+    expect(find.text('Selecione um produtor'), findsOneWidget);
+    expect(find.text('Lista de Ocorrências'), findsNothing);
+    expect(find.text('Exportar lista'), findsNothing);
 
     await tester.tap(find.text('Selecione um produtor').first);
     await tester.pumpAndSettle();
@@ -497,6 +499,8 @@ void main() {
     await tester.tap(find.text('Produtor A · 1').last);
     await tester.pumpAndSettle();
 
+    expect(find.text('Lista de Ocorrências'), findsOneWidget);
+    expect(find.text('Exportar lista'), findsOneWidget);
     expect(find.text('1 ocorrência(s)'), findsOneWidget);
     expect(find.text('Produtor A · 1'), findsOneWidget);
     expect(find.text('Produtor B · 1'), findsNothing);
