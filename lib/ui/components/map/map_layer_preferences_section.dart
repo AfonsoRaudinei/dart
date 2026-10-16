@@ -14,6 +14,7 @@ class MapLayerPreferencesSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final showPins = ref.watch(showMarkersProvider);
     final labels = ref.watch(mapSatelliteLabelsEnabledProvider);
     final cerrado = ref.watch(cerradoSatelliteOverlayEnabledProvider);
     final borders = ref.watch(mapStateBoundariesEnabledProvider);
@@ -28,6 +29,20 @@ class MapLayerPreferencesSection extends ConsumerWidget {
 
     return Column(
       children: [
+        SwitchListTile(
+          key: const Key('map_settings_show_pins'),
+          title: const Text('Pinos no mapa'),
+          subtitle: Text(
+            showPins
+                ? 'Mostra marcadores de talhões, ocorrências e outros pinos.'
+                : 'Oculta todos os pinos sobre o mapa.',
+          ),
+          value: showPins,
+          onChanged: (enabled) {
+            HapticFeedback.selectionClick();
+            ref.read(showMarkersProvider.notifier).setEnabled(enabled);
+          },
+        ),
         SwitchListTile(
           title: const Text('Nomes e estradas'),
           subtitle: Text(
