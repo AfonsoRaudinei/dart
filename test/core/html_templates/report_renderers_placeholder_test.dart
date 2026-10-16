@@ -291,6 +291,90 @@ void main() {
       expect(html, isNot(contains('cat-emoji')));
     },
   );
+
+  test('ocorrencia detalhada: fotos ampliáveis, sem emoji, só Criado em e '
+      'cliente/fazenda/talhão', () async {
+    await initializeDateFormatting('pt_BR');
+
+    final html = await OcorrenciaHtmlRenderer.renderDetalhe({
+      'id': 'occ-lb',
+      'type': 'Alta',
+      'description': 'Lagarta no baixeiro',
+      'category': 'insetos',
+      'status': 'draft',
+      'created_at': now.toIso8601String(),
+      'updated_at': now.add(const Duration(days: 2)).toIso8601String(),
+      'sync_status': 'local',
+      'foto_base64': 'https://example.com/capa.jpg',
+      'fotos_categorias_json': jsonEncode({
+        'insetos': ['https://example.com/a.jpg', 'https://example.com/b.jpg'],
+        'doenca': ['https://example.com/c.jpg'],
+      }),
+      'notas_categorias_json': jsonEncode({'insetos': 'Nota técnica'}),
+      'metricas_json': jsonEncode({
+        'insetos': {'severidade': 3},
+      }),
+      'cliente_nome': 'Produtor <Teste>',
+      'fazenda_nome': 'Fazenda Norte',
+      'talhao_nome': 'Talhão 7',
+    });
+
+    expect(html, isNot(contains(RegExp(r'\{\{[^}]+\}\}'))));
+
+    expect(html, contains('id="sf-foto-hero" class="sf-lb-toggle"'));
+    expect(html, contains('<label for="sf-foto-hero" class="photo-hero">'));
+    for (final n in [1, 2, 3]) {
+      expect(
+        RegExp('id="sf-foto-$n"').allMatches(html).length,
+        1,
+        reason: 'id sf-foto-$n deve ser único',
+      );
+      expect(html, contains('<label for="sf-foto-$n" class="galeria-foto">'));
+    }
+    expect(html, isNot(contains('id="sf-foto-4"')));
+    expect(html, contains('.sf-lb-toggle:checked + label'));
+    expect(html, isNot(contains('<div class="galeria-foto">')));
+
+    for (final emoji in ['🐛', '🦠', '🌿', '🧪', '💧', '🪨', '🌾']) {
+      expect(html, isNot(contains(emoji)), reason: emoji);
+    }
+    expect(html, isNot(contains('galeria-grupo-emoji')));
+    expect(html, isNot(contains('nota-emoji')));
+
+    expect(html, isNot(contains('Histórico')));
+    expect(html, isNot(contains('Atualizado em')));
+    expect(html, contains('<div class="sf-created-at">Criado em '));
+    expect(
+      html.indexOf('class="sf-created-at"'),
+      lessThan(html.indexOf('<footer')),
+    );
+
+    expect(html, contains('Produtor &lt;Teste&gt;'));
+    expect(html, contains('>Fazenda</div>'));
+    expect(html, contains('Fazenda Norte'));
+    expect(html, contains('>Talhão</div>'));
+    expect(html, contains('Talhão 7'));
+  });
+
+  test(
+    'ocorrencia detalhada oculta cards de cliente/fazenda/talhão vazios',
+    () async {
+      await initializeDateFormatting('pt_BR');
+
+      final html = await OcorrenciaHtmlRenderer.renderDetalhe({
+        'id': 'occ-sem-local',
+        'type': 'Baixa',
+        'category': 'doenca',
+        'created_at': now.toIso8601String(),
+        'cliente_nome': '',
+      });
+
+      expect(html, isNot(contains('>Cliente</div>')));
+      expect(html, isNot(contains('>Fazenda</div>')));
+      expect(html, isNot(contains('>Talhão</div>')));
+      expect(html, contains('>Categoria</div>'));
+    },
+  );
 }
 
 Map<String, dynamic> _marketingBase(String tipo) {
