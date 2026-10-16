@@ -6,10 +6,6 @@ String _occurrenceCategoryLabel(String? category) {
   return OccurrenceCategory.fromString(category).label;
 }
 
-String _occurrenceCategoryEmoji(String? category) {
-  return OccurrenceCategory.fromString(category).emoji;
-}
-
 String _occurrenceUrgencyLabel(String? type) {
   switch ((type ?? '').toLowerCase()) {
     case 'alta':
@@ -30,7 +26,7 @@ String _occurrenceUrgencyLabel(String? type) {
 String _occurrenceCardTitle(Occurrence occurrence) {
   final category = occurrence.category;
   if (category != null && category.trim().isNotEmpty) {
-    return '${_occurrenceCategoryEmoji(category)} ${_occurrenceCategoryLabel(category)}';
+    return _occurrenceCategoryLabel(category);
   }
   // type pode ser urgência OU categoria legada
   final asCategory = OccurrenceCategory.fromString(occurrence.type);
@@ -38,7 +34,7 @@ String _occurrenceCardTitle(Occurrence occurrence) {
       asCategory != OccurrenceCategory.doenca ||
       occurrence.type.toLowerCase() == 'doenca' ||
       occurrence.type.toLowerCase() == 'doença') {
-    return '${asCategory.emoji} ${asCategory.label}';
+    return asCategory.label;
   }
   return _occurrenceUrgencyLabel(occurrence.type);
 }
