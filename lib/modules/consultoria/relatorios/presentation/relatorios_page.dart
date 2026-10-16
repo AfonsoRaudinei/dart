@@ -644,8 +644,6 @@ class _OccurrenciaCardState extends ConsumerState<_OccurrenciaCard> {
           width: 60,
           height: 80,
           color: category.markerColor.withValues(alpha: 0.12),
-          alignment: Alignment.center,
-          child: Text(category.emoji, style: const TextStyle(fontSize: 24)),
         ),
       ),
     );
