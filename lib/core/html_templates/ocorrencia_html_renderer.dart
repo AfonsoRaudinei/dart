@@ -6,7 +6,8 @@ class OcorrenciaHtmlRenderer {
   /// [data] = Occurrence convertido para Map pelo chamador.
   ///
   /// Estrutura esperada: campos do schema occurrences e campos calculados
-  /// opcionais: categoria_emoji, categoria_label, urgencia_class, foto_base64.
+  /// opcionais: categoria_label, urgencia_class, foto_base64, cliente_nome,
+  /// fazenda_nome, talhao_nome.
   static Future<String> renderDetalhe(
     Map<String, dynamic> data, {
     String? reportBrandName,
@@ -29,8 +30,16 @@ class OcorrenciaHtmlRenderer {
 
     tpl = RelatorioHtmlRenderer.replacePlaceholders(tpl, {
       ...branding,
-      'categoria_emoji': data['categoria_emoji'] as String? ?? cat.emoji,
       'categoria_label': data['categoria_label'] as String? ?? cat.label,
+      'cliente_nome': RelatorioHtmlRenderer.escapeHtml(
+        data['cliente_nome'] as String?,
+      ),
+      'fazenda_nome': RelatorioHtmlRenderer.escapeHtml(
+        data['fazenda_nome'] as String?,
+      ),
+      'talhao_nome': RelatorioHtmlRenderer.escapeHtml(
+        data['talhao_nome'] as String?,
+      ),
       'category': category,
       'type': RelatorioHtmlRenderer.escapeHtml(data['type'] as String? ?? ''),
       'urgencia_class':
@@ -58,9 +67,6 @@ class OcorrenciaHtmlRenderer {
       'created_at_formatado': RelatorioHtmlRenderer.formatDateTime(
         _parseDateTime(data['created_at'] as String?),
       ),
-      'updated_at_formatado': RelatorioHtmlRenderer.formatDateTime(
-        _parseDateTime(data['updated_at'] as String?),
-      ),
       'id_curto': RelatorioHtmlRenderer.shortId(data['id'] as String? ?? ''),
       'sync_status': data['sync_status'] as String? ?? '',
     });
@@ -72,6 +78,13 @@ class OcorrenciaHtmlRenderer {
     final metricas = _renderMetricas(data['metricas_json'] as String?);
     final nutrientes = _renderNutrientes(data['nutrientes_json'] as String?);
 
+    for (final key in const ['cliente_nome', 'fazenda_nome', 'talhao_nome']) {
+      tpl = _resolveRepeatedIf(
+        tpl,
+        key,
+        (data[key] as String?)?.trim().isNotEmpty == true,
+      );
+    }
     tpl = _resolveRepeatedIf(
       tpl,
       'status',
@@ -298,6 +311,7 @@ class OcorrenciaHtmlRenderer {
     if (map.isEmpty) return '';
 
     final sb = StringBuffer();
+    var fotoIndex = 0;
     for (final entry in map.entries) {
       final fotos = _asStringList(entry.value);
       if (fotos.isEmpty) continue;
@@ -313,17 +327,18 @@ class OcorrenciaHtmlRenderer {
       sb.write('''
         <div class="galeria-grupo">
           <div class="galeria-grupo-header">
-            <span class="galeria-grupo-emoji">${cat.emoji}</span>
             <span class="galeria-grupo-nome">${RelatorioHtmlRenderer.escapeHtml(cat.label)}</span>
             <span class="galeria-grupo-count">${imagens.length} fotos</span>
           </div>
           <div class="galeria-grid">
       ''');
       for (final image in imagens) {
+        fotoIndex++;
         sb.write('''
-            <div class="galeria-foto">
+            <input type="checkbox" id="sf-foto-$fotoIndex" class="sf-lb-toggle" hidden>
+            <label for="sf-foto-$fotoIndex" class="galeria-foto">
               <img src="$image" alt="Foto" loading="lazy">
-            </div>
+            </label>
         ''');
       }
       sb.write('''
@@ -348,7 +363,6 @@ class OcorrenciaHtmlRenderer {
       sb.write('''
         <div class="nota-item">
           <div class="nota-header">
-            <span class="nota-emoji">${cat.emoji}</span>
             <span class="nota-categoria">${RelatorioHtmlRenderer.escapeHtml(cat.label)}</span>
           </div>
           <div class="nota-texto">${RelatorioHtmlRenderer.escapeHtml(texto)}</div>
@@ -379,7 +393,6 @@ class OcorrenciaHtmlRenderer {
       sb.write('''
         <div class="metricas-grupo">
           <div class="metricas-grupo-titulo">
-            <span>${cat.emoji}</span>
             <span>${RelatorioHtmlRenderer.escapeHtml(cat.label)}</span>
           </div>
           <div class="metricas-items">
