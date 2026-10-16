@@ -248,6 +248,7 @@
 
   /* ═══ FOTO ÚNICA PRINCIPAL ═══ */
   .photo-hero {
+    display: block;
     border-radius: 16px;
     overflow: hidden;
     position: relative;
@@ -289,8 +290,6 @@
     margin-bottom: 10px;
   }
 
-  .galeria-grupo-emoji { font-size: 18px; }
-
   .galeria-grupo-nome {
     font-size: 12px;
     font-weight: 600;
@@ -313,6 +312,7 @@
   }
 
   .galeria-foto {
+    display: block;
     border-radius: 10px;
     overflow: hidden;
     aspect-ratio: 1/1;
@@ -325,6 +325,45 @@
     height: 100%;
     object-fit: cover;
     display: block;
+  }
+
+  /* ═══ AMPLIAR FOTO (CSS puro — WebView sem JavaScript) ═══ */
+  .sf-lb-toggle { display: none; }
+
+  .photo-hero, .galeria-foto {
+    cursor: zoom-in;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  @media screen {
+    .sf-lb-toggle:checked + label {
+      position: fixed;
+      top: 0; right: 0; bottom: 0; left: 0;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 9999;
+      margin: 0;
+      padding: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 0, 0.92);
+      border-radius: 0;
+      aspect-ratio: auto;
+      box-shadow: none;
+      overflow: hidden;
+      cursor: zoom-out;
+    }
+
+    .sf-lb-toggle:checked + label img {
+      width: auto;
+      height: auto;
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+      border-radius: 0;
+    }
   }
 
   /* ═══ NOTAS POR CATEGORIA ═══ */
@@ -343,8 +382,6 @@
     gap: 6px;
     margin-bottom: 4px;
   }
-
-  .nota-emoji { font-size: 14px; }
 
   .nota-categoria {
     font-size: 11px;
@@ -494,33 +531,12 @@
     margin: 0;
   }
 
-  /* ═══ TIMESTAMPS ═══ */
-  .timestamps {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-    margin-bottom: 28px;
-  }
-
-  .timestamp-item {
-    background: var(--sf-cream);
-    border-radius: 10px;
-    padding: 10px 14px;
-    border-left: 2px solid var(--sf-amber);
-  }
-
-  .timestamp-label {
-    font-size: 10px;
+  /* ═══ DATA DE CRIAÇÃO (discreta, acima do rodapé) ═══ */
+  .sf-created-at {
+    padding: 0 32px 12px;
+    text-align: right;
+    font-size: 11px;
     color: var(--sf-text-muted);
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    margin-bottom: 2px;
-  }
-
-  .timestamp-value {
-    font-size: 13px;
-    color: var(--sf-text);
-    font-weight: 500;
   }
 
   /* ═══ FOOTER ═══ */
@@ -564,7 +580,7 @@
     .pill { font-size: 10.5px; padding: 3px 9px; }
     .visao-grid { grid-template-columns: 1fr 1fr; }
     .galeria-grid { grid-template-columns: repeat(2, 1fr); }
-    .timestamps { grid-template-columns: 1fr; }
+    .sf-created-at { padding: 0 20px 12px; }
   }
 
   @media (max-width: 380px) {
@@ -654,6 +670,27 @@
     </div>
 
     <div class="visao-grid">
+      <!-- {{#if cliente_nome}} -->
+      <div class="visao-card">
+        <div class="visao-card-label">Cliente</div>
+        <div class="visao-card-value">{{cliente_nome}}</div>
+      </div>
+      <!-- {{/if}} -->
+
+      <!-- {{#if fazenda_nome}} -->
+      <div class="visao-card">
+        <div class="visao-card-label">Fazenda</div>
+        <div class="visao-card-value">{{fazenda_nome}}</div>
+      </div>
+      <!-- {{/if}} -->
+
+      <!-- {{#if talhao_nome}} -->
+      <div class="visao-card">
+        <div class="visao-card-label">Talhão</div>
+        <div class="visao-card-value">{{talhao_nome}}</div>
+      </div>
+      <!-- {{/if}} -->
+
       <div class="visao-card">
         <div class="visao-card-label">Categoria</div>
         <div class="visao-card-value">{{categoria_label}}</div>
@@ -701,9 +738,10 @@
       <div class="section-label-bar"></div>
       <span class="section-label-text">Registro Fotográfico</span>
     </div>
-    <div class="photo-hero">
+    <input type="checkbox" id="sf-foto-hero" class="sf-lb-toggle" hidden>
+    <label for="sf-foto-hero" class="photo-hero">
       <img src="{{photo_base64}}" alt="Foto principal da ocorrência" loading="lazy">
-    </div>
+    </label>
     <!-- {{/if}} -->
 
     <!-- GALERIA POR CATEGORIA (fotosCategoriasJson) -->
@@ -716,15 +754,15 @@
     <!-- {{#each fotos_categorias}} -->
     <div class="galeria-grupo">
       <div class="galeria-grupo-header">
-        <span class="galeria-grupo-emoji">{{categoria_emoji}}</span>
         <span class="galeria-grupo-nome">{{categoria_label}}</span>
         <span class="galeria-grupo-count">{{count}} fotos</span>
       </div>
       <div class="galeria-grid">
         <!-- {{#each fotos_base64}} -->
-        <div class="galeria-foto">
+        <input type="checkbox" id="sf-foto-{{index}}" class="sf-lb-toggle" hidden>
+        <label for="sf-foto-{{index}}" class="galeria-foto">
           <img src="{{base64}}" alt="Foto" loading="lazy">
-        </div>
+        </label>
         <!-- {{/each}} -->
       </div>
     </div>
@@ -742,7 +780,6 @@
       <!-- {{#each notas_categorias}} -->
       <div class="nota-item">
         <div class="nota-header">
-          <span class="nota-emoji">{{categoria_emoji}}</span>
           <span class="nota-categoria">{{categoria_label}}</span>
         </div>
         <div class="nota-texto">{{texto}}</div>
@@ -762,7 +799,6 @@
       <!-- {{#each metricas}} -->
       <div class="metricas-grupo">
         <div class="metricas-grupo-titulo">
-          <span>{{categoria_emoji}}</span>
           <span>{{categoria_label}}</span>
         </div>
         <div class="metricas-items">
@@ -810,23 +846,9 @@
     </div>
     <!-- {{/if}} -->
 
-    <!-- TIMESTAMPS -->
-    <div class="section-label">
-      <div class="section-label-bar"></div>
-      <span class="section-label-text">Histórico</span>
-    </div>
-    <div class="timestamps">
-      <div class="timestamp-item">
-        <div class="timestamp-label">Criado em</div>
-        <div class="timestamp-value">{{created_at_formatado}}</div>
-      </div>
-      <div class="timestamp-item">
-        <div class="timestamp-label">Atualizado em</div>
-        <div class="timestamp-value">{{updated_at_formatado}}</div>
-      </div>
-    </div>
-
   </main>
+
+  <div class="sf-created-at">Criado em {{created_at_formatado}}</div>
 
   <!-- ══════════ FOOTER ══════════ -->
   <footer class="footer">
