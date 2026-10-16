@@ -197,7 +197,7 @@ void main() {
 
     await tester.pumpWidget(
       _host(
-        TalhaoMapPreviewWidget(
+        const TalhaoMapPreviewWidget(
           vertices: _triangle,
           nome: 'Th 10',
           areaHa: 95,
@@ -235,7 +235,7 @@ void main() {
 
     await tester.pumpWidget(
       _host(
-        TalhaoMapPreviewWidget(
+        const TalhaoMapPreviewWidget(
           vertices: _triangle,
           nome: 'Th 10',
           areaHa: 95,
