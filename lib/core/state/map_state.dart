@@ -87,10 +87,12 @@ class ShowMarkers extends _$ShowMarkers {
     return prefs.getBool(_kKey) ?? true;
   }
 
-  void toggle() {
-    state = !state;
-    ref.read(preferencesServiceProvider).setBool(_kKey, state);
+  void setEnabled(bool enabled) {
+    state = enabled;
+    ref.read(preferencesServiceProvider).setBool(_kKey, enabled);
   }
+
+  void toggle() => setEnabled(!state);
 }
 
 /// Labels (cidades/estradas) sobre a camada Satélite via MapTiler Hybrid.
